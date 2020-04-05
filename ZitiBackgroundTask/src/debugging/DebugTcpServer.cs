@@ -11,6 +11,13 @@ namespace NetFoundry.VPN.Debugging
 {
 	public sealed class DebugTcpServer
 	{
+		static void Main(string[] args)
+		{
+			DebugTcpServer.Start();
+			Console.WriteLine("listening. press any key to quit");
+			Console.ReadKey();
+		}
+
 		private static bool started = false;
 		public static void Start()
 		{
@@ -32,21 +39,18 @@ namespace NetFoundry.VPN.Debugging
 					StreamWriter writer = new StreamWriter(stream, Encoding.ASCII) { AutoFlush = true };
 					StreamReader reader = new StreamReader(stream, Encoding.ASCII);
 
-					while (true)
+					try
 					{
-						try
+						string inputLine = "";
+						while (inputLine != null)
 						{
-							string inputLine = "";
-							while (inputLine != null)
-							{
-								inputLine = reader.ReadLine();
-								writer.WriteLine("Echoing string: " + inputLine);
-								Console.WriteLine("Echoing string: " + inputLine);
-							}
+							inputLine = reader.ReadLine();
+							writer.WriteLine("Echoing string: " + inputLine);
+							Console.WriteLine("Echoing string: " + inputLine);
 						}
-						catch { /* don't really care at this point */}
-						Console.WriteLine("Server saw disconnect from client.");
 					}
+					catch { /* don't really care at this point */}
+					Console.WriteLine("Server saw disconnect from client.");
 				});
 			}
 		}
