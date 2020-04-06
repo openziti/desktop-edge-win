@@ -13,6 +13,8 @@ import (
   "syscall"
 )
 
+const bufferSize = 64 * 1024
+
 func main() {
 	user, err := user2.Current()
 
@@ -65,6 +67,15 @@ func main() {
 	term := make(chan os.Signal, 1)
 
 	fmt.Println("running")
+
+	buffer := make([]byte, bufferSize)
+	for {
+		n, err := tunDevice.Read(buffer, bufferSize)
+		if err != nil {
+			fatal(err)
+		}
+		fmt.Printf("read [%d] bytes from TUN", n)
+	}
 
 	signal.Notify(term, os.Interrupt)
 	signal.Notify(term, os.Kill)
