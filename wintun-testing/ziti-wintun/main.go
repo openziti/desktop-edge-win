@@ -68,13 +68,14 @@ func main() {
 
 	fmt.Println("running")
 
-	buffer := make([]byte, bufferSize)
+
 	for {
-		n, err := tunDevice.Read(buffer, bufferSize)
+		buffer := make([]byte, bufferSize)
+		n, err := tunDevice.Read(buffer, 0)
 		if err != nil {
 			fatal(err)
 		}
-		fmt.Printf("read [%d] bytes from TUN\n", n)
+		fmt.Printf("read [%d] bytes from TUN [%v]\n", n, buffer[:n])
 	}
 
 	signal.Notify(term, os.Interrupt)
