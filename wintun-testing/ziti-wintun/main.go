@@ -74,7 +74,7 @@ func main() {
 		if err != nil {
 			fatal(err)
 		}
-		fmt.Printf("read [%d] bytes from TUN", n)
+		fmt.Printf("read [%d] bytes from TUN\n", n)
 	}
 
 	signal.Notify(term, os.Interrupt)
