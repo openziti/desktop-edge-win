@@ -1,16 +1,16 @@
 package main
 
 import (
-  "fmt"
-  "golang.org/x/sys/windows"
-  "golang.zx2c4.com/wireguard/tun"
-  "golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
-  "net"
-  "os"
-  "os/signal"
-  user2 "os/user"
-  "path/filepath"
-  "syscall"
+	"fmt"
+	"golang.org/x/sys/windows"
+	"golang.zx2c4.com/wireguard/tun"
+	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
+	"net"
+	"os"
+	"os/signal"
+	user2 "os/user"
+	"path/filepath"
+	"syscall"
 )
 
 const bufferSize = 64 * 1024
@@ -38,7 +38,6 @@ func main() {
 		fmt.Printf("error creating TUN device: (%v)\n", err)
 		os.Exit(1)
 	}
-	defer func() { _ = tunDevice.Close() }()
 	if name, err := tunDevice.Name(); err == nil {
 		fmt.Printf("created TUN device [%s]\n", name)
 	}
@@ -68,14 +67,17 @@ func main() {
 
 	fmt.Println("running")
 
-
 	for {
 		buffer := make([]byte, bufferSize)
 		n, err := tunDevice.Read(buffer, 0)
 		if err != nil {
 			fatal(err)
 		}
-		fmt.Printf("read [%d] bytes from TUN [%v]\n", n, buffer[:n])
+		fmt.Printf("read [%d] bytes [", n)
+		for i := 0; i < n; i++ {
+			fmt.Printf("%x ", buffer[i])
+		}
+		fmt.Println("]")
 	}
 
 	signal.Notify(term, os.Interrupt)
