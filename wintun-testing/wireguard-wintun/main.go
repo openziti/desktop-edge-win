@@ -61,29 +61,26 @@ func main() {
 	log.Println("Watching network interfaces")
 	watcher, err = wireguard.WatchInterface()
 	if err != nil {
-		serviceError = services.ErrorSetNetConfig
-		return
+		panic(err)
 	}
 
 	log.Println("Resolving DNS names")
 	uapiConf, err := conf.ToUAPI()
 	if err != nil {
-		serviceError = services.ErrorDNSLookup
-		return
+		panic(err)
 	}
 
 	log.Println("Creating Wintun interface")
 	tunDevice, err := tun.CreateTUN(interfaceName, 0)
 	if err != nil {
-		serviceError = services.ErrorCreateWintun
-		return
+		panic(err)
 	}
 	defer tunDevice.Close()
 
 	nativeTun := tunDevice.(*tun.NativeTun)
 	wintunVersion, ndisVersion, err := nativeTun.Version()
 	if err != nil {
-		log.Printf("Warning: unable to determine Wintun version: %v", err)
+		panic(err)
 	} else {
 		log.Printf("Using Wintun/%s (NDIS %s)", wintunVersion, ndisVersion)
 	}
@@ -91,23 +88,13 @@ func main() {
 	log.Println("Enabling firewall rules")
 	err = wireguard.EnableFirewall(conf, nativeTun)
 	if err != nil {
-		log.Printf("ERROR: %v", err)
-		serviceError = services.ErrorFirewall
-		return
-	}
-
-	log.Println("Enabling firewall rules")
-	err = wireguard.EnableFirewall(conf, nativeTun)
-	if err != nil {
-		serviceError = services.ErrorFirewall
-		return
+		panic(err)
 	}
 
 	log.Println("Dropping privileges")
 	err = elevate.DropAllPrivileges(true)
 	if err != nil {
-		serviceError = services.ErrorDropPrivileges
-		return
+		panic(err)
 	}
 
 	log.Println("Creating interface instance")
@@ -118,14 +105,11 @@ func main() {
 	log.Println("Setting interface configuration")
 	uapi, err := ipc.UAPIListen(conf.Name)
 	if err != nil {
-		serviceError = services.ErrorUAPIListen
-		return
+		panic(err)
 	}
 	ipcErr := dev.IpcSetOperation(bufio.NewReader(strings.NewReader(uapiConf)))
 	if ipcErr != nil {
-		err = ipcErr
-		serviceError = services.ErrorDeviceSetConfig
-		return
+		panic(err)
 	}
 
 	log.Println("Bringing peers up")
