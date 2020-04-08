@@ -10,7 +10,6 @@ import (
 	"golang.zx2c4.com/wireguard/tun"
 	"golang.zx2c4.com/wireguard/windows/conf"
 	"golang.zx2c4.com/wireguard/windows/elevate"
-	"golang.zx2c4.com/wireguard/windows/ringlogger"
 	"golang.zx2c4.com/wireguard/windows/services"
 	"golang.zx2c4.com/wireguard/windows/version"
 	"log"
@@ -98,9 +97,10 @@ func main() {
 	}
 
 	log.Println("Creating interface instance")
-	logOutput := log.New(ringlogger.Global, logPrefix, 0)
-	logger := &device.Logger{logOutput, logOutput, logOutput}
-	dev := device.NewDevice(tunDevice, logger)
+	dev := device.NewDevice(tunDevice, device.NewLogger(
+		device.LogLevelDebug,
+		fmt.Sprintf("(%s) ", interfaceName),
+	))
 
 	log.Println("Setting interface configuration")
 	uapi, err := ipc.UAPIListen(conf.Name)
