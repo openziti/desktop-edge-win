@@ -1,0 +1,22 @@
+﻿<UserControl x:Class="ZitiTunneler.MenuItem"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ZitiTunneler"
+             mc:Ignorable="d" 
+             d:DesignHeight="50" HorizontalAlignment="Stretch" d:DesignWidth="375" Cursor="Hand">
+    <StackPanel Orientation="Vertical">
+        <Grid Height="49">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="50"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="50"/>
+            </Grid.ColumnDefinitions>
+            <Image Name="MainSource" Source="/Assets/Images/advanced.png" Width="20" Height="20"></Image>
+            <Label Name="MainLabel" Grid.Column="1" Content="Main Menu" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
+            <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/nextArrow.png" Width="20" Height="20" Margin="0,0,0,0" />
+        </Grid>
+        <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
+    </StackPanel>
+</UserControl>

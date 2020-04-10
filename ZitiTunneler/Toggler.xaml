@@ -1,0 +1,26 @@
+﻿<UserControl x:Class="ZitiTunneler.Toggler"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ZitiTunneler"
+             mc:Ignorable="d" 
+             d:DesignHeight="70" d:DesignWidth="70" Width="70" Height="70" Loaded="OnLoad">
+    <StackPanel Orientation="Vertical" Margin="10,10,10,10">
+        <Button Name="OnButton" Click="ToggleConnect">
+            <Button.Template>
+                <ControlTemplate>
+                    <Image Source="/Assets/Images/on.png"></Image>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
+        <Button Name="OffButton" Click="ToggleConnect" Visibility="Collapsed">
+            <Button.Template>
+                <ControlTemplate>
+                    <Image Source="/Assets/Images/off.png"></Image>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
+        <Label Name="Status" Content="ENABLED" FontSize="12" Margin="0,-4,0,0" Typography.Capitals="AllSmallCaps" Foreground="White" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Left" Width="50"></Label>
+    </StackPanel>
+</UserControl>
