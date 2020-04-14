@@ -10,11 +10,15 @@ namespace ZitiTunneler.Models {
 		public string Name { get; set; }
 		public string ControllerUrl { get; set; }
 		public bool IsEnabled { get; set; }
+		public string EnrollmentStatus { get; set; }
+		public string Status { get; set; }
 		public ZitiIdentity(string Name, string ControllerUrl, bool IsEnabled, ZitiService[] Services) {
 			this.Name = Name;
 			this.Services = Services;
 			this.ControllerUrl = ControllerUrl;
 			this.IsEnabled = IsEnabled;
+			this.EnrollmentStatus = "Enrolled";
+			this.Status = "Available";
 		}
 	}
 }

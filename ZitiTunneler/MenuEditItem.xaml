@@ -13,7 +13,7 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Label Name="MainLabel" Grid.Column="0" Content="Main Menu" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
-            <TextBox Name="MainEdit" Grid.Column="1" BorderThickness="0" Background="White" TextAlignment="Right" Padding="12,12,12,12" FontSize="19" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
+            <TextBox Name="MainEdit" Grid.Column="1" BorderThickness="0" Background="White" TextAlignment="Right" Padding="12,12,12,12" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
         </Grid>
         <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
     </StackPanel>

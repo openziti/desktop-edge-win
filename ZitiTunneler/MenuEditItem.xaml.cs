@@ -32,10 +32,18 @@ namespace ZitiTunneler {
 		}
 		public string Value {
 			get {
-				return MainEdit.Text;
+				return MainEdit.Text; 
 			}
 			set {
 				MainEdit.Text = value;
+			}
+		}
+		public bool IsLocked {
+			get {
+				return MainEdit.IsReadOnly;
+			} 
+			set {
+				MainEdit.IsReadOnly = value;
 			}
 		}
 

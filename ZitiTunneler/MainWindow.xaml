@@ -104,5 +104,6 @@
             </Grid>
         </StackPanel>
         <local:MainMenu x:Name="MainMenu" Visibility="Collapsed"></local:MainMenu>
+        <local:IdentityDetails x:Name="IdentityMenu" Visibility="Collapsed"></local:IdentityDetails>
     </Canvas>
 </Window>

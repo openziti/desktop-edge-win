@@ -1,0 +1,51 @@
+﻿<UserControl x:Class="ZitiTunneler.IdentityDetails"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ZitiTunneler"
+             mc:Ignorable="d" 
+             d:DesignHeight="400" d:DesignWidth="375">
+    <Canvas Width="375" VerticalAlignment="Stretch">
+        <Rectangle HorizontalAlignment="Center" Height="40" Fill="White" VerticalAlignment="Top" Width="40" ClipToBounds="True" Canvas.Left="158" Canvas.Bottom="-30" Canvas.Top="573">
+            <Rectangle.LayoutTransform>
+                <RotateTransform Angle="-45"/>
+            </Rectangle.LayoutTransform>
+        </Rectangle>
+        <Rectangle HorizontalAlignment="Left" Height="610" Fill="White" VerticalAlignment="Top" Width="375" RadiusY="10" RadiusX="10" ClipToBounds="True"></Rectangle>
+
+        <Grid HorizontalAlignment="Stretch" Width="375" Margin="0,0,0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Stretch" Height="550" Margin="20,20,20,20">
+                <Grid Margin="0,0,0,20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="70"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="70"/>
+                    </Grid.ColumnDefinitions>
+                    <local:Toggler x:Name="IdDetailToggle"></local:Toggler>
+                    <Label Grid.Column="0"></Label>
+                    <Label Name="IdDetailName" Grid.Column="1" Content="ID Name" HorizontalAlignment="Center" FontSize="14" FontWeight="SemiBold" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="#0F0F23"></Label>
+                    <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/x.png" Width="20" Height="20" Margin="0,0,0,0" MouseDown="HideMenu" />
+                </Grid>
+                <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
+                <Grid>
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto">
+                        <StackPanel Name="MainItems" Orientation="Vertical" HorizontalAlignment="Stretch">
+                            <local:MenuEditItem x:Name="IdentityName" HorizontalAlignment="Stretch" Width="Auto" Label="Name" IsLocked="True"></local:MenuEditItem>
+                            <local:MenuEditItem x:Name="IdentityNetwork" HorizontalAlignment="Stretch" Width="Auto" Label="Network" IsLocked="True"></local:MenuEditItem>
+                            <local:MenuEditItem x:Name="IdentityStatus" HorizontalAlignment="Stretch" Width="Auto" Label="Status" IsLocked="True"></local:MenuEditItem>
+                            <local:MenuEditItem x:Name="IdentityEnrollment" HorizontalAlignment="Stretch" Width="Auto" Label="Enrollment Status" IsLocked="True"></local:MenuEditItem>
+                            <Label Content="SERVICES" Foreground="Gray" FontWeight="SemiBold" />
+                            <StackPanel Name="ServiceList" Orientation="Vertical"></StackPanel>
+                            <Label Name="ForgetIdentityButton" Content="Forget This Identity" Foreground="#F4044D" HorizontalAlignment="Center" MouseUp="ForgetIdentity"></Label>
+                            <Image Source="/Assets/Images/identity.png" Height="100" Width="100" HorizontalAlignment="Stretch" ></Image>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </StackPanel>
+        </Grid>
+    </Canvas>
+</UserControl>

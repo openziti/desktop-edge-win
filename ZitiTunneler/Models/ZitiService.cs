@@ -7,8 +7,10 @@ using System.Threading.Tasks;
 namespace ZitiTunneler.Models {
     public class ZitiService {
 		public string Name { get; set; }
-		public ZitiService(string Name) {
+		public string Url { get; set; }
+		public ZitiService(string Name, string Url) {
 			this.Name = Name;
+			this.Url = Url;
 		}
 	}
 }

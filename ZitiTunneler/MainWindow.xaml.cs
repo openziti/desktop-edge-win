@@ -37,23 +37,30 @@ namespace ZitiTunneler {
 		}
 
 		private void CreateFakeData() {
-			services.Add(new ZitiService("Hush Services"));
-			services.Add(new ZitiService("mPOS Service"));
+			services.Add(new ZitiService("Hush Services","https://hughservice:80"));
+			services.Add(new ZitiService("mPOS Service", "https://mps:8080"));
 			identities.Add(new ZitiIdentity("Jeremy-PC", "demo.ziti.controller.com:1280", true, services.ToArray()));
-			services.Add(new ZitiService("eugenes secure hard drive"));
+			services.Add(new ZitiService("eugenes secure hard drive", "C:\\delete\\*.*"));
 			identities.Add(new ZitiIdentity("Jeremy-iPaq", "ziti.netfoundry.io:1408", false, services.ToArray()));
-			services.Add(new ZitiService("Red Tube Access"));
-			services.Add(new ZitiService("Storage Services"));
+			services.Add(new ZitiService("Red Tube Access", "https://tubered.com:22"));
+			services.Add(new ZitiService("Storage Services", "https://aureafit:21"));
 			identities.Add(new ZitiIdentity("Hart-Mac", "ziti.supersecret.io:1408", true, services.ToArray()));
 		}
 
 		private void LoadIdentities() {
+			IdList.Children.Clear();
 			ZitiIdentity[] ids = identities.ToArray();
 			for (int i=0; i<ids.Length; i++) {
 				IdentityItem id = new IdentityItem();
 				id.Identity = ids[i];
+				id.MouseUp += OpenIdentity;
 				IdList.Children.Add(id);
 			}
+		}
+
+		private void OpenIdentity(object sender, MouseButtonEventArgs e) {
+			IdentityMenu.Identity = (sender as IdentityItem).Identity;
+			IdentityMenu.Visibility = Visibility.Visible;
 		}
 
 		private void ShowMenu(object sender, MouseButtonEventArgs e) {
