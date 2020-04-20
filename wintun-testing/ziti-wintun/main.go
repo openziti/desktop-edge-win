@@ -12,7 +12,6 @@ import (
 	user2 "os/user"
 	"path/filepath"
 	"syscall"
-	"time"
 	"wintun-testing/cziti"
 )
 
@@ -74,13 +73,12 @@ func main() {
 
 	cziti.Start()
 	_, err = cziti.HookupTun(tunDevice)
-	if err != nil  {
+	if err != nil {
 		panic(err)
 	}
 
-
 	cmd := exec.Command("netsh", "interface", "ipv4", "set",
-		"dnsservers", "name=" + interfaceName,
+		"dnsservers", "name="+interfaceName,
 		"source=static", "address=169.254.1.253",
 		"register=primary", "validate=no")
 	cmd.Stderr = os.Stderr
@@ -90,7 +88,6 @@ func main() {
 		fmt.Print(err)
 	}
 
-
 	if ctx, err := cziti.LoadZiti(os.Args[2]); err != nil {
 		panic(err)
 	} else {
@@ -98,21 +95,21 @@ func main() {
 	}
 	//tunnel.AddIntercept("awesome sauce service", "169.254.1.42", 8080)
 	/*
-	for {
-		buffer := make([]byte, bufferSize)
-		n, err := tunDevice.Read(buffer, 0)
-		if err != nil {
-			fatal(err)
-		}
-		printPacket(buffer[:n])
+		for {
+			buffer := make([]byte, bufferSize)
+			n, err := tunDevice.Read(buffer, 0)
+			if err != nil {
+				fatal(err)
+			}
+			printPacket(buffer[:n])
 
-		//fmt.Printf("read [%d] bytes [", n)
-		//for i := 0; i < n; i++ {
-		//	fmt.Printf("%x ", buffer[i])
-		//}
-		//fmt.Println("]")
-	}
-	 */
+			//fmt.Printf("read [%d] bytes [", n)
+			//for i := 0; i < n; i++ {
+			//	fmt.Printf("%x ", buffer[i])
+			//}
+			//fmt.Println("]")
+		}
+	*/
 
 	signal.Notify(term, os.Interrupt)
 	signal.Notify(term, os.Kill)
