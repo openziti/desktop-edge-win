@@ -1,0 +1,301 @@
+package cziti
+
+//
+/*
+#cgo LDFLAGS: -l ziti_tunneler -l lwipcore -l lwipwin32arch -l ziti_tunneler
+
+#include "nf/netif_driver.h"
+#include <nf/ziti_tunneler.h>
+#include <uv.h>
+
+extern int netifClose(netif_handle dev);
+extern ssize_t netifRead(netif_handle dev, void *buf, size_t buf_len);
+extern ssize_t netifWrite(netif_handle dev, void *buf, size_t len);
+extern int netifSetup(netif_handle dev, uv_loop_t *loop, packet_cb packetCb, void* ctx);
+
+extern tunneler_sdk_options* new_tun_opts();
+typedef struct netif_handle_s {
+   const char* id;
+   packet_cb on_packet_cb;
+   void *packet_cb_ctx;
+} netif_handle_t;
+
+extern void* zitiDial(char *service_name, void *ziti_dial_ctx, tunneler_io_context tnlr_io_ctx);
+extern void zitiClose(void *ziti_dial_ctx);
+extern int zitiWrite(void *ziti_io_ctx, void *data, int len);
+extern void readAsync(struct uv_async_s *a);
+
+extern void call_on_packet(void *packet, ssize_t len, packet_cb cb, void *ctx);
+extern uv_async_t* new_async();
+
+extern void dnsHandler(tunneler_io_context tio, void *ctx, addr_t src, uint16_t sport, void *data, ssize_t len);
+ */
+import "C"
+import (
+	"errors"
+	"fmt"
+	"github.com/miekg/dns"
+	"golang.zx2c4.com/wireguard/tun"
+	"net"
+	"strings"
+	"unsafe"
+)
+
+const dnsIP = "169.254.1.253"
+
+type Tunnel interface {
+	AddIntercept(service string, hostname string, port int)
+}
+
+type tunnel struct{
+	dev tun.Device
+	driver C.netif_driver
+	writeQ chan []byte
+	readQ chan []byte
+
+	read *C.uv_async_t
+	loop *C.uv_loop_t
+	onPacket C.packet_cb
+	onPacketCtx unsafe.Pointer
+
+	tunCtx C.tunneler_context
+}
+
+var devMap = make(map[string]*tunnel)
+
+func HookupTun(dev tun.Device) (Tunnel, error) {
+	fmt.Println("in HookupTun")
+	defer fmt.Println("exiting HookupTun")
+	name, err := dev.Name()
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	drv := makeDriver(name)
+
+	fmt.Println("in HookupTun2")
+
+	t := &tunnel{
+		dev:    dev,
+		driver: drv,
+		writeQ: make(chan []byte),
+		readQ: make(chan []byte, 64),
+	}
+	devMap[name] = t
+
+	opts := C.new_tun_opts()
+	opts.netif_driver = drv
+	opts.ziti_dial = C.ziti_dial_cb(C.zitiDial)
+	opts.ziti_close = C.ziti_close_cb(C.zitiClose)
+	opts.ziti_write = C.ziti_write_cb(C.zitiWrite)
+
+	t.tunCtx = C.NF_tunneler_init(opts, _impl.libuvCtx.l)
+
+
+	dnsServer := C.CString(dnsIP)
+	rc := C.NF_udp_handler(t.tunCtx, dnsServer, C.int(53), C.ziti_udp_cb(C.dnsHandler), unsafe.Pointer(nil))
+	fmt.Println("registered  UDP handler = ", int64(rc));
+
+	return t, nil
+}
+
+func makeDriver(name string) C.netif_driver {
+	driver := &C.netif_driver_t{}
+	driver.handle = &C.netif_handle_t{}
+	driver.handle.id = C.CString(name)
+	driver.close = C.netif_close_cb(C.netifClose)
+	driver.setup = C.setup_packet_cb(C.netifSetup)
+	driver.write = C.netif_write_cb(C.netifWrite)
+	return driver
+}
+
+//export netifWrite
+func netifWrite(h C.netif_handle, buf unsafe.Pointer, length C.size_t) C.ssize_t {
+	t, found := devMap[C.GoString(h.id)]
+	if !found {
+		fmt.Errorf("should  not be here\n")
+		return -1
+	}
+	fmt.Println("netifWrite len=", length);
+
+	b := C.GoBytes(buf, C.int(length))
+
+	t.writeQ <- b
+
+	return C.ssize_t(len(b))
+}
+
+//export netifClose
+func netifClose(h C.netif_handle) C.int {
+	fmt.Println("in netifClose");
+	return C.int(0)
+}
+
+//export netifSetup
+func netifSetup(h C.netif_handle, l *C.uv_loop_t, packetCb C.packet_cb, ctx unsafe.Pointer) C.int {
+	t, found := devMap[C.GoString(h.id)]
+	if !found {
+		fmt.Errorf("should not be here\n")
+		return -1
+	}
+
+	t.read = C.new_async()
+	C.uv_async_init(l, t.read, C.uv_async_cb(C.readAsync))
+	t.read.data = unsafe.Pointer(h)
+	fmt.Printf("in netifSetup netif[%s] handle[%p]\n", C.GoString(h.id), h)
+
+	t.onPacket = packetCb
+	t.onPacketCtx = ctx
+	t.loop = l
+
+	go t.runWriteLoop()
+	go t.runReadLoop()
+
+	return C.int(0)
+}
+
+func (t *tunnel)runReadLoop() {
+	mtu, err := t.dev.MTU()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("starting tun read loop mtu=%d\n", mtu)
+	defer fmt.Println("tun read loop is done")
+	for {
+		buf := make([]byte, mtu)
+		nr, err := t.dev.Read(buf,0)
+		if err != nil {
+			panic(err)
+		}
+		t.readQ <- buf[:nr]
+		C.uv_async_send((*C.uv_async_t)(unsafe.Pointer(t.read)))
+	}
+}
+
+//export readAsync
+func readAsync(a *C.uv_async_t) {
+	i := 0
+
+	dev := (*C.netif_handle_t)(a.data)
+
+	id := C.GoString(dev.id)
+	t, found := devMap[id]
+	if !found {
+		fmt.Printf("should not be here id = [%s]\n", id)
+		panic(errors.New("where is my tunnel?"))
+	}
+
+	for len(t.readQ) > 0 {
+		b := <- t.readQ
+		buf := C.CBytes(b)
+		C.call_on_packet(buf, C.ssize_t(len(b)), t.onPacket, t.onPacketCtx)
+		C.free(buf)
+		i++
+	}
+}
+
+
+func (t *tunnel) runWriteLoop() {
+	fmt.Printf("starting Write Loop\n")
+	defer fmt.Println("write loop finished")
+	for {
+		select {
+		case p := <-t.writeQ:
+			if p == nil {
+				return
+			}
+
+			n, err := t.dev.Write(p, 0)
+			if err != nil {
+				panic(err)
+			}
+
+			if n < len(p) {
+				fmt.Println("Error short write")
+			}
+		}
+	}
+
+}
+
+func (t *tunnel) AddIntercept(service string, host string, port int) {
+	res := C.NF_tunneler_intercept_v1(t.tunCtx, unsafe.Pointer(nil), C.CString(service), C.CString(host), C.int(port))
+	fmt.Println("intercept added", res)
+}
+
+// extern void dnsHandler(tunneler_io_context tio, void *ctx, addr_t src, uint16_t sport, void *data, ssize_t len);
+//export dnsHandler
+func dnsHandler(tio C.tunneler_io_context, ctx unsafe.Pointer, src C.addr_t, sport C.uint16_t,  b unsafe.Pointer, bl C.ssize_t) {
+	q := &dns.Msg{}
+	if err := q.Unpack(C.GoBytes(b, C.int(bl))); err != nil {
+		fmt.Println("error", err)
+	}
+
+	msg := dns.Msg{}
+	msg.SetReply(q)
+	msg.RecursionAvailable = false
+
+	query := q.Question[0]
+	var ip net.IP
+	if query.Qtype == dns.TypeA {
+		ip = DNS.Resolve(query.Name)
+	}
+
+	if ip != nil {
+		msg.Authoritative = true
+		msg.Rcode = dns.RcodeSuccess
+		answer := &dns.A{
+			Hdr: dns.RR_Header{Name: query.Name, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: 60},
+			A:   ip,
+		}
+		msg.Answer = append(msg.Answer, answer)
+
+	} else {
+		// msg.Rcode = dns.RcodeNotImplemented
+		msg.Authoritative = false
+		msg.Rcode = dns.RcodeRefused
+	}
+
+	reply, err := msg.Pack()
+	if err == nil {
+		replyC := C.CBytes(reply)
+		rc := C.NF_udp_send(tio, src, sport, replyC, C.ssize_t(len(reply)))
+		if rc != 0 {
+			fmt.Println("NF_udp_reply rc=", rc)
+		}
+	} else {
+		fmt.Println("dns message error", err)
+	}
+}
+
+/*******************************************************************/
+//export zitiDial
+func zitiDial(service *C.char, ziti_dial_ctx unsafe.Pointer,  tio C.tunneler_io_context) unsafe.Pointer {
+	fmt.Println("received dial request for ", C.GoString(service))
+	defer fmt.Println("dial finished")
+	msg := []byte("welcome to Canadian translator\n")
+
+	msgC := C.CBytes(msg)
+	C.NF_tunneler_write(tio, msgC, C.int(len(msg)))
+	// C.free(msgC)
+
+	return unsafe.Pointer(tio)
+}
+
+//export zitiClose
+func zitiClose(ziti_dial_ctx unsafe.Pointer) {
+	fmt.Println("in zitiClose")
+}
+
+//export zitiWrite
+func zitiWrite(zio unsafe.Pointer, data unsafe.Pointer, length C.int) C.int {
+	msg := strings.TrimSpace(string(C.GoBytes(data, length)))
+
+	reply := []byte(fmt.Sprint(msg, ", eh?\n"))
+
+	replyC := C.CBytes(reply)
+	C.NF_tunneler_write(C.tunneler_io_context(zio), replyC, C.int(len(reply)))
+	//C.free(replyC)
+
+	return C.ZITI_CONNECTED
+}

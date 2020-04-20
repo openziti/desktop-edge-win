@@ -79,6 +79,7 @@ func serviceCB(nf C.nf_context, service *C.ziti_service, status C.int, data unsa
 
 	name := C.GoString(service.name)
 	if status == C.ZITI_SERVICE_UNAVAILABLE {
+		DNS.DeregisterService(ctx, name)
 		delete(*ctx.Services, name)
 	} else if status == C.ZITI_OK {
 		cfg := C.ziti_service_get_raw_config(service, tunCfgName)
@@ -98,6 +99,14 @@ func serviceCB(nf C.nf_context, service *C.ziti_service, status C.int, data unsa
 			Id: C.GoString(service.id),
 			InterceptHost: host,
 			InterceptPort: port,
+		}
+		if host != "" && port != -1 {
+			ip, err := DNS.RegisterService(host, uint16(port), ctx, name)
+			if err != nil {
+				fmt.Println(err)
+			} else {
+				fmt.Printf("service[%s] is mapped to <%s:%d>\n", name, ip.String(), port)
+			}
 		}
 	}
 }
