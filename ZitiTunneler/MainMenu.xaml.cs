@@ -24,7 +24,7 @@ namespace ZitiTunneler
 
 		public string menuState = "Main";
 
-		public string licenseData = "Clint, I need license data here.";
+		public string licenseData = "it's open source - someone motivated could track this down. we'll add this some day i'm sure";
 
 		public MainMenu() {
             InitializeComponent();
