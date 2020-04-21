@@ -16,13 +16,22 @@ using System.IO;
 using Microsoft.Win32;
 using ZitiTunneler.Models;
 
+using ZitiTunneler.ServiceClient;
+
 namespace ZitiTunneler {
 	/// <summary>
 	/// Interaction logic for MainWindow.xaml
 	/// </summary>
 	public partial class MainWindow:Window {
+		private ServiceClient.Client serviceClient = null;
 
-		private List<ZitiIdentity> identities = new List<ZitiIdentity>();
+		private List<ZitiIdentity> identities
+		{
+			get
+			{
+				return (List<ZitiIdentity>)Application.Current.Properties["Identities"];
+			}
+		}
 		private List<ZitiService> services = new List<ZitiService>();
 		public MainWindow() {
 			InitializeComponent();
@@ -32,19 +41,45 @@ namespace ZitiTunneler {
 			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
 			this.Left = desktopWorkingArea.Right-this.Width-25;
 			this.Top = desktopWorkingArea.Bottom-this.Height-25;
-			CreateFakeData();
+
+			// add a new service client
+			serviceClient = new ServiceClient.Client();
+			Application.Current.Properties.Add("ServiceClient", serviceClient);
+			Application.Current.Properties.Add("Identities", new List<ZitiIdentity>());
+			LoadStatusFromService();
 			LoadIdentities();
 		}
 
-		private void CreateFakeData() {
-			services.Add(new ZitiService("Hush Services","https://hughservice:80"));
-			services.Add(new ZitiService("mPOS Service", "https://mps:8080"));
-			identities.Add(new ZitiIdentity("Jeremy-PC", "demo.ziti.controller.com:1280", true, services.ToArray()));
-			services.Add(new ZitiService("eugenes secure hard drive", "C:\\delete\\*.*"));
-			identities.Add(new ZitiIdentity("Jeremy-iPaq", "ziti.netfoundry.io:1408", false, services.ToArray()));
-			services.Add(new ZitiService("Red Tube Access", "https://tubered.com:22"));
-			services.Add(new ZitiService("Storage Services", "https://aureafit:21"));
-			identities.Add(new ZitiIdentity("Hart-Mac", "ziti.supersecret.io:1408", true, services.ToArray()));
+		private void LoadStatusFromService() {
+			ZitiTunnelStatus currentData = serviceClient.GetStatus();
+
+			foreach(var id in currentData.Identities)
+			{
+				updateViewWithIdentity(id);
+			}
+		}
+
+		private void updateViewWithIdentity(Identity id)
+		{
+			var zid = ZitiIdentity.FromClient(id);/*new ZitiIdentity()
+			{
+				Name = id.Name,
+				ControllerUrl = id.Config.ztAPI,
+				Fingerprint = id.FingerPrint,
+				EnrollmentStatus = id.Status,
+				Status = id.Status,
+				IsEnabled = id.Active
+			};
+			if (id.Services != null)
+			{
+				foreach (var svc in id.Services)
+				{
+					var zsvc = new ZitiService(svc.Name, svc.HostName + ":" + svc.Port);
+					zid.Services.Add(zsvc);
+					services.Add(zsvc);
+				}
+			}*/
+			identities.Add(zid);
 		}
 
 		private void LoadIdentities() {
@@ -73,17 +108,68 @@ namespace ZitiTunneler {
 			jwtDialog.Filter = "Ziti Identities (*.jwt)|*.jwt";
 			if (jwtDialog.ShowDialog() == true) {
 				string fileContent = File.ReadAllText(jwtDialog.FileName);
-				// Clint!! AxedaBuddy - What to do with the jwt file?
+
+				// Jeremy!! AxedaBuddy - DUN!
+				try
+				{
+					Identity createdId = serviceClient.AddIdentity(System.IO.Path.GetFileName(jwtDialog.FileName), false, fileContent);
+					if (createdId != null)
+					{
+						identities.Add(ZitiIdentity.FromClient(createdId));
+						MessageBox.Show("New identity added with fingerprint: " + createdId.FingerPrint);
+						updateViewWithIdentity(createdId);
+					}
+					else
+					{
+						// Jeremy buddy - error popup here
+						MessageBox.Show("created id was null - wtf jeremy. your fault");
+					}
+				}
+				catch(ServiceClient.ServiceException se)
+				{
+					MessageBox.Show(se.AdditionalInfo, se.Message);
+				}
+				catch(Exception ex)
+				{
+					MessageBox.Show("Unexpected error", ex.Message);
+				}
 			}
+			LoadIdentities();
 		}
 
 		private void Connect(object sender, RoutedEventArgs e) {
 			ConnectButton.Visibility = Visibility.Collapsed;
 			DisconnectButton.Visibility = Visibility.Visible;
+
+			try
+			{
+				serviceClient.SetTunnelState(true);
+			}
+			catch (ServiceClient.ServiceException se)
+			{
+				MessageBox.Show(se.AdditionalInfo, se.Message);
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show("Unexpected error", ex.Message);
+			}
 		}
 		private void Disconnect(object sender, RoutedEventArgs e) {
 			ConnectButton.Visibility = Visibility.Visible;
 			DisconnectButton.Visibility = Visibility.Collapsed;
+
+			try
+			{
+				serviceClient.SetTunnelState(false);
+			}
+			catch (ServiceClient.ServiceException se)
+			{
+				MessageBox.Show(se.AdditionalInfo, se.Message);
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show("Unexpected error", ex.Message);
+			}
 		}
 	}
 }

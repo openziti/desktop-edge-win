@@ -35,7 +35,7 @@ namespace ZitiTunneler {
 			ToggleSwitch.Enabled = _identity.IsEnabled;
 			IdName.Content = _identity.Name;
 			IdUrl.Content = _identity.ControllerUrl;
-			ServiceCount.Content = _identity.Services.Length.ToString();
+			ServiceCount.Content = _identity.Services.Count.ToString();
 		}
 
 		public bool isOn = false;

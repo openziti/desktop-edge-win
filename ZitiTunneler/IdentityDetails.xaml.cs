@@ -20,6 +20,14 @@ namespace ZitiTunneler {
 	/// </summary>
 	public partial class IdentityDetails:UserControl {
 
+		private List<ZitiIdentity> identities
+		{
+			get
+			{
+				return (List<ZitiIdentity>)Application.Current.Properties["Identities"];
+			}
+		}
+
 		private ZitiIdentity _identity;
 
 		public ZitiIdentity Identity {
@@ -40,7 +48,7 @@ namespace ZitiTunneler {
 			IdentityEnrollment.Value = _identity.EnrollmentStatus;
 			IdentityStatus.Value = _identity.Status;
 			ServiceList.Children.Clear();
-			for (int i=0; i<_identity.Services.Length; i++) {
+			for (int i=0; i<_identity.Services.Count; i++) {
 				MenuEditItem editor = new MenuEditItem();
 				editor.Label = _identity.Services[i].Name;
 				editor.Value = _identity.Services[i].Url;
@@ -56,8 +64,30 @@ namespace ZitiTunneler {
 		}
 
 		private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
-			// Clint Forget and bubble me up to remove
+			// Jeremy - this works now as long as you pass a fingerprint that's valid!
 			this.Visibility = Visibility.Collapsed;
+			ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
+			try
+			{
+				client.RemoveIdentity(_identity.Fingerprint);
+				
+				foreach(var id in identities)
+				{
+					if(id.Fingerprint == _identity.Fingerprint)
+					{
+						identities.Remove(id);
+						break;
+					}
+				}
+			}
+			catch (ServiceClient.ServiceException se)
+			{
+				MessageBox.Show(se.AdditionalInfo, se.Message);
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show("Unexpected error", ex.Message);
+			}
 		}
 	}
 }
