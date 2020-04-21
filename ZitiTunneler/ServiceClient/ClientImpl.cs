@@ -172,19 +172,9 @@ namespace ZitiTunneler.ServiceClient
                 NamedPipeClientStream logClient = new NamedPipeClientStream(localPipeServer, logPipe, PipeDirection.In);
                 reader = new StreamReader(logClient);
                 logClient.Connect(ServiceConnectTimeout);
-                /*
-                string line = null;
-                System.Text.StringBuilder sb = new System.Text.StringBuilder();
-                do
-                {
-                    line = reader.ReadLine();
-                    sb.Append(line);
-                    sb.Append("\r\n");
-                    Debug.WriteLine(line);
-                } while (line != null);
-                */
+
                 string content = reader.ReadToEnd();
-                //string content = sb.ToString();
+
                 //ugly hack to turn ansi escaping to not... _bleck_
                 //todo: fix this :point_up:
                 content = new System.Text.RegularExpressions.Regex(@"\x1B\[[^@-~]*[@-~]").Replace(content, "");
@@ -212,147 +202,6 @@ namespace ZitiTunneler.ServiceClient
             }
         }
 
-        /*
-        void MainThing(string[] args)
-        {
-            using (NamedPipeClientStream pipeClient = new NamedPipeClientStream(".", @"NetFoundry\tunneler\ipc", PipeDirection.InOut))
-            {
-                // Connect to the pipe or wait until the pipe is available.
-                Console.Write("Attempting to connect to pipe...");
-                pipeClient.Connect();
-
-                Console.WriteLine("Connected to pipe.");
-
-                GetStatus(sw, sr);
-
-                var enrolledId = NewId(sw, sr);
-                if (enrolledId != null)
-                {
-                    Console.WriteLine(enrolledId.Name);
-                }
-                Console.WriteLine("");
-                Console.WriteLine("");
-                Console.WriteLine("Get status 1:");
-                GetStatus(sw, sr);
-
-                RemoveIdentity(enrolledId.FingerPrint, sw, sr);
-
-                Console.WriteLine("");
-                Console.WriteLine("");
-                Console.WriteLine("Get status 2:");
-                GetStatus(sw, sr);
-
-                TunnelState(true, sw, sr);
-                Console.WriteLine("Get status 3:");
-                GetStatus(sw, sr);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                string resp = "not null for sure";
-                if (resp != null)
-                {
-                    return;
-                }
-
-                string msg = @"{""Function"":""Bob"", ""Payload"": { ""arbitrary"": ""some other this is just a value"" } }";
-                //Console.WriteLine(msg);
-                //Console.Write('\n');
-                sw.Write(msg);
-                //sw.Write('\n');
-                sw.Flush();
-
-                SvcResponse r = (SvcResponse)serializer.Deserialize(sr, typeof(SvcResponse));
-                Console.WriteLine(r.ToString());
-
-
-
-
-
-
-                msg = @"{""Function"":""GetLogData"", ""Payload"": { ""fingerprint"" : ""put a fingerprint here to remove"" } }";
-                //Console.WriteLine(msg);
-                sw.Write(msg);
-                sw.Flush();
-
-                r = (SvcResponse)serializer.Deserialize(sr, typeof(SvcResponse));
-                Console.WriteLine(r.ToString());
-
-
-
-                msg = @"{""Function"":""ListIdentities"", ""Payload"": { ""fingerprint"" : ""put a fingerprint here to remove"" } }";
-                //Console.WriteLine(msg);
-                sw.Write(msg);
-                sw.Flush();
-                r = (SvcResponse)serializer.Deserialize(sr, typeof(SvcResponse));
-                Console.WriteLine(r.ToString());
-
-
-                msg = @"{""Function"":""OnOff"", ""Payload"": { ""onOff"" : false } }";
-                //Console.WriteLine(msg);
-                sw.Write(msg);
-                sw.Flush();
-                r = (SvcResponse)serializer.Deserialize(sr, typeof(SvcResponse));
-                Console.WriteLine(r.ToString());
-
-
-                msg = @"{""Function"":""OnOff"", ""Payload"": { ""onOff"" : true } }";
-                //Console.WriteLine(msg);
-                sw.Write(msg);
-                sw.Flush();
-                r = (SvcResponse)serializer.Deserialize(sr, typeof(SvcResponse));
-                Console.WriteLine(r.ToString());
-
-
-                msg = @"{""Function"":""IdentityOnOff"", ""Payload"": { ""fingerprint"" : ""FINGERPRINTHERE"", ""onOff"" : true } }";
-                //Console.WriteLine(msg);
-                sw.Write(msg);
-                sw.Flush();
-                r = (SvcResponse)serializer.Deserialize(sr, typeof(SvcResponse));
-                Console.WriteLine(r.ToString());
-
-
-                msg = @"{""Function"":""IdentityOnOff"", ""Payload"": { ""fingerprint"" : ""FINGERPRINTHERE"", ""onOff"" : false } }";
-                //Console.WriteLine(msg);
-                sw.Write(msg);
-                sw.Flush();
-                r = (SvcResponse)serializer.Deserialize(sr, typeof(SvcResponse));
-                Console.WriteLine(r.ToString());
-
-
-                msg = @"{""Function"":""Unknown"", ""Payload"": { ""fingerprint"" : ""put a fingerprint here to remove"" } }";
-                //Console.WriteLine(msg);
-                sw.Write(msg);
-                sw.Flush();
-                r = (SvcResponse)serializer.Deserialize(sr, typeof(SvcResponse));
-                Console.WriteLine(r.ToString());
-                Identity rid = (Identity)serializer.Deserialize(sr, typeof(Identity));
-                Console.WriteLine(rid.Name);
-
-
-                pipeClient.WaitForPipeDrain();
-                sw.Close();
-                sr.Close();
-            }
-            Console.Write("Press Enter to continue...");
-            //Console.ReadLine();
-        }
-
-        */
         private void send(object objToSend)
         {
             string json = JsonConvert.SerializeObject(objToSend, Formatting.Indented);

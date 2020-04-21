@@ -10,14 +10,14 @@ import (
 )
 
 func File() string {
-	return Path() + string(os.PathSeparator) + "config.json"
+	return Path() + "config.json"
 }
 func Path() string {
 	path, _ := os.UserConfigDir()
 	return path + string(os.PathSeparator) + "NetFoundry" + string(os.PathSeparator)
 }
 func LogFile() string {
-	return Path() + string(os.PathSeparator) + "ziti-tunneler.log"
+	return Path() + "ziti-tunneler.log"
 }
 
 func ParseLevel(lvl string) logrus.Level {

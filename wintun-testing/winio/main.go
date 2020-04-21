@@ -45,7 +45,6 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	defer ipc.Close()
 	go acceptIPC(ipc)
 	log.Info("IPC listener ready")
 
@@ -53,13 +52,14 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	defer logs.Close()
 	go acceptLogs(logs)
 	log.Info("log listener ready")
 
 	initialize()
 	<-finished
 	<-finished
+	_ = ipc.Close()
+	_ = logs.Close()
 }
 
 func acceptIPC(p net.Listener) {
@@ -74,25 +74,37 @@ func acceptIPC(p net.Listener) {
 	}
 }
 
-func initialize() error {
+func initialize() {
 	log.Debugf("reading config file located at s%:", config.File())
 	file, err := os.OpenFile(config.File(), os.O_RDONLY, 0640)
 	if err != nil {
-		return err
+		// file does not exist or process has no rights to read the file - return leaving configuration empty
+		// this is expected when first starting
+		return
 	}
-	defer file.Close()
 
 	r := bufio.NewReader(file)
 	dec := json.NewDecoder(r)
 
 	_ = dec.Decode(&state)
+
+	err = file.Close()
+	if err != nil {
+		log.Panic("could not close configuration file. this is not normal.")
+	}
 	log.Debugf("initial state loaded")
-	return nil
+}
+
+func closeConn(conn net.Conn) {
+	err := conn.Close()
+	if err != nil {
+		log.Warn("abnormal error while closing connection. ", err.Error())
+	}
 }
 
 func serveIpc(conn net.Conn) {
 	log.Debug("beginning receive loop")
-	defer conn.Close() //close the connection after this function invoked as go routine exits
+	defer closeConn(conn) //close the connection after this function invoked as go routine exits
 
 	writer := bufio.NewWriter(conn)
 	rw := bufio.NewReadWriter(bufio.NewReader(conn), writer)
