@@ -21,7 +21,7 @@ type sdk struct {
 var _impl sdk
 
 func init() {
-	_impl.libuvCtx = C.new_libuv_ctx()
+	_impl.libuvCtx = (*C.libuv_ctx)(C.calloc(1, C.sizeof_libuv_ctx))
 	C.libuv_init(_impl.libuvCtx)
 }
 
@@ -69,13 +69,10 @@ var tunCfgName = C.CString("ziti-tunneler-client.v1")
 func serviceCB(nf C.nf_context, service *C.ziti_service, status C.int, data unsafe.Pointer) {
 	ctx := (*CZitiCtx)(data)
 
-	fmt.Printf("%+v\n", ctx)
 	if ctx.Services == nil {
 		m := make(map[string]Service)
 		ctx.Services = &m
 	}
-	fmt.Printf("%+v\n", ctx)
-
 
 	name := C.GoString(service.name)
 	if status == C.ZITI_SERVICE_UNAVAILABLE {
@@ -106,6 +103,9 @@ func serviceCB(nf C.nf_context, service *C.ziti_service, status C.int, data unsa
 				fmt.Println(err)
 			} else {
 				fmt.Printf("service[%s] is mapped to <%s:%d>\n", name, ip.String(), port)
+				for _, t := range devMap {
+					t.AddIntercept(name, ip.String(), port, unsafe.Pointer(ctx.nf))
+				}
 			}
 		}
 	}
