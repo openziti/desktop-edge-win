@@ -20,9 +20,11 @@ namespace ZitiTunneler.ServiceClient
         JsonSerializer serializer = new JsonSerializer();
 
         private object namedPipeSyncLock = new object();
-        const string namedPipe = @"NetFoundry\tunneler\ipc";
+        const string ipcPipe = @"NetFoundry\tunneler\ipc";
+        const string logPipe = @"NetFoundry\tunneler\logs";
         const string localPipeServer = ".";
         const PipeDirection inOut = PipeDirection.InOut;
+        const int ServiceConnectTimeout = 5000;
 
         NamedPipeClientStream pipeClient = null;
         StreamWriter writer = null;
@@ -42,10 +44,10 @@ namespace ZitiTunneler.ServiceClient
                 {
                     pipeClient.Dispose();
                 }
-                pipeClient = new NamedPipeClientStream(localPipeServer, namedPipe, inOut);
+                pipeClient = new NamedPipeClientStream(localPipeServer, ipcPipe, inOut);
                 writer = new StreamWriter(pipeClient);
                 reader = new StreamReader(pipeClient);
-                pipeClient.Connect();
+                pipeClient.Connect(ServiceConnectTimeout);
             }
         }
 
@@ -134,6 +136,30 @@ namespace ZitiTunneler.ServiceClient
                 setupPipe();
                 throw ioe;
             }
+        }
+
+        public string GetLogs()
+        {
+            NamedPipeClientStream logClient = new NamedPipeClientStream(localPipeServer, logPipe, PipeDirection.In);
+            reader = new StreamReader(logClient);
+            logClient.Connect(ServiceConnectTimeout);
+            /*
+            string line = null;
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            do
+            {
+                line = reader.ReadLine();
+                sb.Append(line);
+                sb.Append("\r\n");
+                Debug.WriteLine(line);
+            } while (line != null);
+            */
+            string content = reader.ReadToEnd();
+            //string content = sb.ToString();
+            //ugly hack to turn ansi escaping to not... _bleck_
+            //todo: fix this :point_up:
+            content = new System.Text.RegularExpressions.Regex(@"\x1B\[[^@-~]*[@-~]").Replace(content, "");
+            return content;
         }
 
         public void IdentityOnOff(Identity id)

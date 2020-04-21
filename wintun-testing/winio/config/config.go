@@ -46,6 +46,7 @@ func InitLogger(level string) {
 	logLevel := ParseLevel(level)
 	logrus.SetLevel(logLevel)
 
+	_ = os.Remove(LogFile()) //reset the log on startup
 	multiWriter := io.MultiWriter(os.Stdout, &lumberjack.Logger{
 		Filename:   LogFile(),
 		MaxSize:    1, // megabytes

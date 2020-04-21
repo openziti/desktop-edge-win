@@ -5,16 +5,15 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"net"
-	"os"
-
 	"github.com/Microsoft/go-winio"
 	"github.com/michaelquigley/pfxlog"
 	"github.com/netfoundry/ziti-foundation/identity/identity"
 	idcfg "github.com/netfoundry/ziti-sdk-golang/ziti/config"
 	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
+	"io"
+	"io/ioutil"
+	"net"
+	"os"
 
 	"wintun-testing/winio/config"
 	"wintun-testing/winio/dto"
@@ -120,9 +119,9 @@ func serveIpc(conn net.Conn) {
 		case "RemoveIdentity":
 			log.Debugf("Request received to remove an identity")
 			removeIdentity(enc, cmd.Payload["Fingerprint"].(string))
-		case "GetLogData":
-			log.Debugf("request for log data received")
-			_ = enc.Encode(dto.Response{Message: "this is my message"})
+		/*case "GetLogStream":
+		log.Debugf("request for log data received")
+		getLogs(*writer);*/
 		case "Status":
 			reportStatus(enc)
 		case "TunnelState":
@@ -163,12 +162,19 @@ func serveLogs(conn net.Conn) {
 	}
 
 	r := bufio.NewReader(file)
+	wrote, err := io.Copy(w, r)
+	if err != nil{
+		log.Errorf("problem responding with log data")
+	}
+	log.Debugf("wrote %d bytes to client from logs", wrote)
+	w.Write([]byte("end of logs\n"))
+	w.Flush()
+	_ = conn.Close() //close the connection
+
 	err = file.Close()
 	if err != nil {
 		log.Error("error closing log file", err)
 	}
-	io.Copy(w,r)
-	_ = conn.Close() //close the connection
 }
 
 func reportStatus(out *json.Encoder) {
@@ -240,7 +246,6 @@ func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
 			"Check the process has access to the temporary folder", COULD_NOT_WRITE_FILE, err)
 		return
 	}
-	defer removeTempFile(*enrolled)
 
 	enc := json.NewEncoder(enrolled)
 	enc.SetEscapeHTML(false)
@@ -268,19 +273,17 @@ func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
 	newId.Id.Status = "Enrolled"
 
 	err = enrolled.Close()
-	if err != nil{
+	if err != nil {
 		panic(err)
 	}
 	newPath := config.Path() + newId.Id.FingerPrint + ".json"
 
 	//move the temp file to its final home after enrollment
 	err = os.Rename(enrolled.Name(), newPath)
-	if err != nil{
+	if err != nil {
 		log.Errorf("unexpected issue renaming the enrollment! attempting to remove the temporary file at: %s", enrolled.Name())
-		err = os.Remove(enrolled.Name()) //if this fails... we tried :(
-		if err != nil {
-			log.Panic(err)
-		}
+		removeTempFile(*enrolled)
+		respondWithError(out, "a problem occurred while writing the identity file.", COULD_NOT_ENROLL, err)
 	}
 
 	//newId.Id.Active = false //set to false by default - enable the id after persisting

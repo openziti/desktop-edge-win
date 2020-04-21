@@ -16,7 +16,7 @@ using System.Diagnostics;
 using System.Windows.Navigation;
 
 namespace ZitiTunneler
-{
+{	
     /// <summary>
     /// Interaction logic for MainMenu.xaml
     /// </summary>
@@ -26,7 +26,7 @@ namespace ZitiTunneler
 
 		// Clint: all these need to be wired to something
 		public string licenseData = "Clint, I need license data here.";
-		public string logData = "Clint, I need log data here";
+		
 		public string ip = "169.254.0.1";
 		public string subnet = "255.255.255.0";
 		public string mtu = "1600";
@@ -94,9 +94,11 @@ namespace ZitiTunneler
 				MenuTitle.Content = "Third Party Licenses";
 				LicensesItems.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
-			} else if (menuState=="Logs") {
+			} else if (menuState=="Logs")
+			{
+				ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
 				MenuTitle.Content = "Application Logs";
-				LogsItems.Text = logData;
+				LogsItems.Text = client.GetLogs();
 				LogsItems.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
 			} else if (menuState=="Config") {
