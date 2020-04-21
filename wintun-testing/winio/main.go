@@ -128,8 +128,8 @@ func serveIpc(conn net.Conn) {
 			onOff := cmd.Payload["OnOff"].(bool)
 			tunnelState(onOff, enc)
 		case "IdentityOnOff":
-			onOff := cmd.Payload["onOff"]
-			fingerprint := cmd.Payload["fingerprint"]
+			onOff := cmd.Payload["OnOff"]
+			fingerprint := cmd.Payload["Fingerprint"]
 			log.Debugf("toggle ziti on/off for %s: %t", fingerprint, onOff)
 			_ = enc.Encode(dto.Response{Message: "this is my message"})
 		default:
@@ -192,7 +192,7 @@ func reportStatus(out *json.Encoder) {
 
 func tunnelState(onOff bool, out *json.Encoder) {
 	log.Debugf("toggle ziti on/off: %t", onOff)
-	runtime.TunState = onOff
+	runtime.TunnelActive = onOff
 	runtime.SaveState(&state)
 	//TODO: actually turn the tunnel on and off as well as handle errors
 	_ = out.Encode(dto.Response{Message: "this is my message", Code: SUCCESS, Error: "", Payload: nil})

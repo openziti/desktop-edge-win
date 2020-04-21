@@ -10,7 +10,7 @@ import (
 )
 
 var log = pfxlog.Logger()
-var TunState bool
+var TunnelActive bool
 
 type TunnelerState struct {
 	TunnelActive bool
@@ -46,19 +46,19 @@ func SaveState(s *TunnelerState) {
 	// overwrite file if it exists
 	_ = os.MkdirAll(config.Path(), 0640)
 
-	file, err := os.OpenFile(config.File(), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0640)
+	cfg, err := os.OpenFile(config.File(), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0640)
 	if err != nil {
 		panic(err)
 	}
-
-	err = file.Close()
-	if err != nil{
-		panic(err)
-	}
-
-	w := bufio.NewWriter(bufio.NewWriter(file))
+	w := bufio.NewWriter(bufio.NewWriter(cfg))
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	_ = enc.Encode(s)
 	_ = w.Flush()
+
+	err = cfg.Close()
+	if err != nil{
+		panic(err)
+	}
+
 }
