@@ -1,28 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.IO;
-using Microsoft.Win32;
 using ZitiTunneler.Models;
 
 using ZitiTunneler.ServiceClient;
 
+
 namespace ZitiTunneler {
+
 	/// <summary>
 	/// Interaction logic for MainWindow.xaml
 	/// </summary>
-	public partial class MainWindow:Window {
+	public partial class MainWindow:Window
+	{
+		public System.Windows.Forms.NotifyIcon notifyIcon;
 		private ServiceClient.Client serviceClient = null;
 
 		private List<ZitiIdentity> identities
@@ -35,6 +28,26 @@ namespace ZitiTunneler {
 		private List<ZitiService> services = new List<ZitiService>();
 		public MainWindow() {
 			InitializeComponent();
+			App.Current.MainWindow.WindowState = WindowState.Normal;
+
+			notifyIcon = new System.Windows.Forms.NotifyIcon();
+			notifyIcon.Visible = true;
+			notifyIcon.Click += TargetNotifyIcon_Click;
+
+			SetNotifyIcon("white");
+
+			InitializeComponent();
+		}
+
+		private void TargetNotifyIcon_Click(object sender, EventArgs e) {
+			if (App.Current.MainWindow.WindowState==WindowState.Minimized) {
+				App.Current.MainWindow.WindowState = WindowState.Normal;
+				App.Current.MainWindow.BringIntoView();
+				//this.Opacity = 1;
+			} else {
+				App.Current.MainWindow.WindowState = WindowState.Minimized;
+				//this.Opacity = 0;
+			}
 		}
 
 		private void MainWindow1_Loaded(object sender, RoutedEventArgs e) {
@@ -81,6 +94,10 @@ namespace ZitiTunneler {
 			}*/
 			identities.Add(zid);
 		}
+		private void SetNotifyIcon(string iconPrefix) {
+			System.IO.Stream iconStream = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,/Assets/Images/ziti-"+iconPrefix+".ico")).Stream;
+			notifyIcon.Icon = new System.Drawing.Icon(iconStream);
+		}
 
 		private void LoadIdentities() {
 			IdList.Children.Clear();
@@ -88,13 +105,19 @@ namespace ZitiTunneler {
 			for (int i=0; i<ids.Length; i++) {
 				IdentityItem id = new IdentityItem();
 				id.Identity = ids[i];
-				id.MouseUp += OpenIdentity;
+				id.OnClick += OpenIdentity;
 				IdList.Children.Add(id);
 			}
+			UIMain.Height = 480+(identities.Count*60);
+			BgColor.Height = 480+(identities.Count*60);
+			App.Current.MainWindow.Height = 490+(identities.Count*60);
+			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
+			this.Left = desktopWorkingArea.Right-this.Width-25;
+			this.Top = desktopWorkingArea.Bottom-this.Height-25;
 		}
 
-		private void OpenIdentity(object sender, MouseButtonEventArgs e) {
-			IdentityMenu.Identity = (sender as IdentityItem).Identity;
+		private void OpenIdentity(ZitiIdentity identity) {
+			IdentityMenu.Identity = identity;
 			IdentityMenu.Visibility = Visibility.Visible;
 		}
 
@@ -103,7 +126,7 @@ namespace ZitiTunneler {
 		}
 
 		private void AddIdentity(object sender, MouseButtonEventArgs e) {
-			OpenFileDialog jwtDialog = new OpenFileDialog();
+			Microsoft.Win32.OpenFileDialog jwtDialog = new Microsoft.Win32.OpenFileDialog();
 			jwtDialog.DefaultExt = ".jwt";
 			jwtDialog.Filter = "Ziti Identities (*.jwt)|*.jwt";
 			if (jwtDialog.ShowDialog() == true) {
@@ -138,6 +161,7 @@ namespace ZitiTunneler {
 		}
 
 		private void Connect(object sender, RoutedEventArgs e) {
+			SetNotifyIcon("green");
 			ConnectButton.Visibility = Visibility.Collapsed;
 			DisconnectButton.Visibility = Visibility.Visible;
 
@@ -155,6 +179,7 @@ namespace ZitiTunneler {
 			}
 		}
 		private void Disconnect(object sender, RoutedEventArgs e) {
+			SetNotifyIcon("white");
 			ConnectButton.Visibility = Visibility.Visible;
 			DisconnectButton.Visibility = Visibility.Collapsed;
 

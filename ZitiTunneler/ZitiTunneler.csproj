@@ -61,6 +61,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="ControllerScreen.xaml.cs">
+      <DependentUpon>ControllerScreen.xaml</DependentUpon>
+    </Compile>
     <Compile Include="IdentityDetails.xaml.cs">
       <DependentUpon>IdentityDetails.xaml</DependentUpon>
     </Compile>
@@ -72,6 +75,9 @@
     </Compile>
     <Compile Include="ServiceClient\DataStructures.cs" />
     <Compile Include="ServiceClient\ClientImpl.cs" />
+    <Compile Include="RegistrationScreen.xaml.cs">
+      <DependentUpon>RegistrationScreen.xaml</DependentUpon>
+    </Compile>
     <Compile Include="SubMenuItem.xaml.cs">
       <DependentUpon>SubMenuItem.xaml</DependentUpon>
     </Compile>
@@ -83,6 +89,10 @@
     <Compile Include="Toggler.xaml.cs">
       <DependentUpon>Toggler.xaml</DependentUpon>
     </Compile>
+    <Page Include="ControllerScreen.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="IdentityDetails.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -113,6 +123,10 @@
     <Page Include="MenuEditItem.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="RegistrationScreen.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="SubMenuItem.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -222,6 +236,20 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Assets\Images\detach.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Images\ziti-green.ico" />
+    <Resource Include="Assets\Images\Ziti-Green.png" />
+    <Resource Include="Assets\Images\ziti-red.ico" />
+    <Resource Include="Assets\Images\Ziti-Red.png" />
+    <Resource Include="Assets\Images\ziti-white.ico" />
+    <Resource Include="Assets\Images\Ziti-White.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ZitiNotifyIcon\ZitiNotifyIcon.csproj">
+      <Project>{f620947d-5c32-4a6f-beaa-4dcbb2032668}</Project>
+      <Name>ZitiNotifyIcon</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

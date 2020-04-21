@@ -176,6 +176,12 @@
       <Version>4.5.3</Version>
     </PackageReference>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ZitiBackgroundTask\ZitiBackgroundTask.csproj">
+      <Project>{7393400b-5f2d-493c-bc39-ab3198a9749f}</Project>
+      <Name>ZitiBackgroundTask</Name>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>

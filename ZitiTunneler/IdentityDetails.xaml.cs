@@ -56,6 +56,11 @@ namespace ZitiTunneler {
 				ServiceList.Children.Add(editor);
 			}
 		}
+
+		private void IdToggle(bool on) {
+			// Clint, turn me on or turn me off
+		}
+
 		public IdentityDetails() {
 			InitializeComponent();
 		}
@@ -70,7 +75,7 @@ namespace ZitiTunneler {
 			try
 			{
 				client.RemoveIdentity(_identity.Fingerprint);
-				
+
 				foreach(var id in identities)
 				{
 					if(id.Fingerprint == _identity.Fingerprint)

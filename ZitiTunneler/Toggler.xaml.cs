@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Media.Animation;
 
 namespace ZitiTunneler {
     /// <summary>
@@ -19,8 +20,10 @@ namespace ZitiTunneler {
     /// </summary>
     public partial class Toggler : UserControl {
 
+		public delegate void Toggled(bool on);
+		public event Toggled OnToggled;
 		private bool _isEnabled = false;
-        public Toggler() {
+		public Toggler() {
             InitializeComponent();
         }
 
@@ -31,27 +34,35 @@ namespace ZitiTunneler {
 			set {
 				_isEnabled = value;
 				// Clinton of the Clints... Need to blow an event bubble and turn this bad boy on or off
+				
 				if (_isEnabled) {
-					Status.Content = "ENABLED";
-					OnButton.Visibility = Visibility.Collapsed;
-					OffButton.Visibility = Visibility.Visible;
+					OnColor.Opacity = 1;
+					// ToggleTab.SetValue(Canvas.LeftProperty, 11);
+					Canvas.SetLeft(ToggleTab, 16);
+					//Storyboard board = LayoutRoot.FindResource("OnAnimate") as Storyboard;
+					//board.Begin();
 				} else {
-					Status.Content = "DISABLED";
-					OnButton.Visibility = Visibility.Visible;
-					OffButton.Visibility = Visibility.Collapsed;
+					OnColor.Opacity = 0;
+					// ToggleTab.SetValue(Canvas.LeftProperty, "1");
+					Canvas.SetLeft(ToggleTab, 1);
+					//Storyboard board = LayoutRoot.FindResource("OffAnimate") as Storyboard;
+					//board.Begin();
 				}
 			}
 		}
-
-		private void ToggleConnect(object sender, RoutedEventArgs e) {
+		
+		private void OnToggle(object sender, RoutedEventArgs e) {
 			Enabled = !Enabled;
+			if (OnToggled != null) {
+				OnToggled(Enabled);
+			}
 		}
 
 		private void OnLoad(object sender, RoutedEventArgs e) {
 			if (_isEnabled) {
-				Status.Content = "ENABLED";
+
 			} else {
-				Status.Content = "DISABLED";
+
 			}
 		}
 	}

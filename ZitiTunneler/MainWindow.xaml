@@ -5,29 +5,37 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ZitiTunneler"
         mc:Ignorable="d"
-        
-        Title="MainWindow" Height="660" 
+        ShowInTaskbar="True"
+        Title="MainWindow" Height="510" 
         Width="375" ResizeMode="NoResize" 
         Icon="Assets/Images/icon.png" AllowsTransparency="True" 
         WindowStyle="None" Loaded="MainWindow1_Loaded" Background="#000F0F23">
-    <Canvas HorizontalAlignment="Stretch" Height="600" VerticalAlignment="Top">
-        <Rectangle HorizontalAlignment="Center" Height="40" Fill="#070826" VerticalAlignment="Top" Width="40" ClipToBounds="True" Canvas.Left="158" Canvas.Bottom="-30" Canvas.Top="573">
+    <Window.Resources>
+        <Storyboard x:Key="gridFadeInStoryBoard">
+            <DoubleAnimation Storyboard.TargetName="UIMain" BeginTime="0:0:0.1" Storyboard.TargetProperty="Opacity" From="0.00" To="1.00" AutoReverse="False" Duration="0:0:0.3" />
+        </Storyboard>
+        <Storyboard x:Key="gridFadeOutStoryBoard">
+            <DoubleAnimation Storyboard.TargetName="UIMain" BeginTime="0:0:0.5" Storyboard.TargetProperty="Opacity" From="1.00" To="0.00" AutoReverse="False" Duration="0:0:0.3" />
+        </Storyboard>
+    </Window.Resources>
+    <Canvas Name="UIMain" HorizontalAlignment="Stretch" Height="500" VerticalAlignment="Top">
+        <Rectangle HorizontalAlignment="Center" Height="40" Fill="#070826" VerticalAlignment="Top" Width="40" ClipToBounds="True" Canvas.Left="158" Canvas.Bottom="-30">
             <Rectangle.LayoutTransform>
                 <RotateTransform Angle="-45"/>
             </Rectangle.LayoutTransform>
         </Rectangle>
-        <Border HorizontalAlignment="Stretch" VerticalAlignment="Stretch" BorderBrush="Black" BorderThickness="3" CornerRadius="10">
+        <Border Name="UIBorder" Width="375" Height="510" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" BorderBrush="Black" BorderThickness="3" CornerRadius="10">
             <Border.Effect>
                 <DropShadowEffect />
             </Border.Effect>
         </Border>
-        <Rectangle Width="375" Height="610" Stroke="Black" RadiusY="10" RadiusX="10" ClipToBounds="True">
+        <Rectangle Name="BgColor" Width="375" Height="510" Stroke="Black" RadiusY="10" RadiusX="10" ClipToBounds="True">
             <Rectangle.Fill>
                 <ImageBrush ImageSource="/Assets/Images/background.png" />
             </Rectangle.Fill>
         </Rectangle>
         <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch">
-            <Grid HorizontalAlignment="Stretch" Width="Auto">
+            <Grid HorizontalAlignment="Stretch" Width="375">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="100"/>
                     <ColumnDefinition Width="*"/>
@@ -92,9 +100,8 @@
                     <Label Foreground="White" Margin="0,-20,0,30" Content="Mbps" FontSize="11" HorizontalAlignment="Center" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" />
                 </StackPanel>
             </Grid>
-            <ScrollViewer HorizontalScrollBarVisibility="Auto">
-                <StackPanel Name="IdList" Orientation="Vertical" Height="150">
-                </StackPanel>
+            <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Visible" SnapsToDevicePixels="True" CanContentScroll="True">
+                <StackPanel Name="IdList" Orientation="Vertical"></StackPanel>
             </ScrollViewer>
             <Grid HorizontalAlignment="Stretch" Margin="0,10,0,10" Width="Auto">
                 <Grid.ColumnDefinitions>

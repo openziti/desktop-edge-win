@@ -6,31 +6,35 @@
              xmlns:local="clr-namespace:ZitiTunneler"
              mc:Ignorable="d" 
              d:DesignHeight="60" d:DesignWidth="375" Width="375"  Height="60">
-    <Canvas>
+    <Canvas MouseEnter="Canvas_MouseEnter" MouseLeave="Canvas_MouseLeave">
         <Rectangle Fill="#0F0C28" HorizontalAlignment="Left" Height="60" Stroke="Black" VerticalAlignment="Top" Width="375" ClipToBounds="True"></Rectangle>
-
+        <Rectangle Name="OverState" Fill="#FFFFFF" Height="60" Width="375" Opacity="0" ClipToBounds="True"></Rectangle> 
         <Grid Width="375" Height="60">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="70"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="60"/>
                 <ColumnDefinition Width="30"/>
             </Grid.ColumnDefinitions>
-            <local:Toggler x:Name="ToggleSwitch" Grid.Column="0"></local:Toggler>
-            <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Stretch">
-                <Label Name="IdName"  Content="" Margin="10,10,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" FontSize="18" Foreground="White" HorizontalAlignment="Left"></Label>
-                <Label Name="IdUrl" Content="" Margin="10,-15,0,0" Typography.Capitals="AllSmallCaps" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" FontSize="12" Foreground="White" HorizontalAlignment="Left"></Label>
-            </StackPanel>
-            <StackPanel Grid.Column="2" Orientation="Vertical">
-                <StackPanel Width="60" Orientation="Vertical">
-                    <Canvas Width="34" Height="36">
-                        <Rectangle Margin="0,12,0,0" Name="BackCircle" Width="28" Height="28" RadiusY="28" RadiusX="28" Fill="#0069FF"></Rectangle>
-                        <Label Name="ServiceCount" Margin="0,12,0,0" Width="28" Content="0" Foreground="White" HorizontalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold" FontSize="13"></Label>
-                    </Canvas>
-                    <Label Content="SERVICES" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Typography.Capitals="AllSmallCaps" FontSize="12" Foreground="White" HorizontalAlignment="Center"></Label>
-                </StackPanel>
-            </StackPanel>
-            <Image Grid.Column="3" Source="/Assets/Images/next.png" Width="12"></Image>
+            <Grid HorizontalAlignment="Stretch">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="70"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="50"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="40"/>
+                    <RowDefinition Height="20"/>
+                </Grid.RowDefinitions>
+                <local:Toggler x:Name="ToggleSwitch" Grid.Column="0" Grid.Row="0" Margin="0,14,0,0"></local:Toggler>
+                <Label Name="ToggleStatus" Grid.Column="0" Grid.Row="1" Margin="0,-5,0,0" Content="Enabled" Foreground="White" FontSize="11" Typography.Capitals="AllSmallCaps" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"></Label>
+                <Label Name="IdName" MouseDown="OpenDetails" Grid.Column="1" Margin="10,9,0,0"  Content="Identity Title" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" FontSize="18" Foreground="White" HorizontalAlignment="Left"></Label>
+                <Label Name="IdUrl" MouseDown="OpenDetails" Grid.Column="1" Grid.Row="1" Content="serverUrl:8080" FontSize="11" Margin="10,-5,0,0" Typography.Capitals="AllSmallCaps" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" HorizontalAlignment="Left"></Label>
+                <Canvas Grid.Column="2" Grid.Row="0" Width="50" Height="40" MouseDown="OpenDetails">
+                    <Border Width="44" Height="26" Background="#0068F9" CornerRadius="12" Canvas.Top="12" Canvas.Left="3"></Border>
+                    <Label Name="ServiceCount" Width="50" Height="26" Canvas.Top="11" Padding="0,0,0,0" FontSize="17" Content="23" Foreground="White" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"></Label>
+                </Canvas>
+                <Label Grid.Column="3" MouseDown="OpenDetails" Grid.Row="1" Margin="0,-5,0,0" Content="Services" Foreground="White" FontSize="11" HorizontalAlignment="Stretch" Typography.Capitals="AllSmallCaps" HorizontalContentAlignment="Center"></Label>
+            </Grid>
+            <Image Grid.Column="1" Source="/Assets/Images/next.png" Width="12" MouseDown="OpenDetails"></Image>
         </Grid>
     </Canvas>
 </UserControl>

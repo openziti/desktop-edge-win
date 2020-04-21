@@ -7,10 +7,12 @@ import (
 	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
 	"net"
 	"os"
+	"os/exec"
 	"os/signal"
 	user2 "os/user"
 	"path/filepath"
 	"syscall"
+	"wintun-testing/cziti"
 )
 
 const bufferSize = 64 * 1024
@@ -20,7 +22,7 @@ func main() {
 
 	fmt.Printf("user [%v]\n", user)
 
-	if len(os.Args) != 2 {
+	if len(os.Args) < 2 {
 		fmt.Printf("usage: %s <interfaceName>\n", filepath.Base(os.Args[0]))
 		os.Exit(1)
 	}
@@ -38,13 +40,14 @@ func main() {
 		fmt.Printf("error creating TUN device: (%v)\n", err)
 		os.Exit(1)
 	}
+
 	if name, err := tunDevice.Name(); err == nil {
 		fmt.Printf("created TUN device [%s]\n", name)
 	}
 
 	nativeTunDevice := tunDevice.(*tun.NativeTun)
 	luid := winipcfg.LUID(nativeTunDevice.LUID())
-	ip, ipnet, err := net.ParseCIDR("169.254.100.200/32")
+	ip, ipnet, err := net.ParseCIDR("169.254.1.1/24")
 	if err != nil {
 		fatal(err)
 	}
@@ -66,19 +69,47 @@ func main() {
 	term := make(chan os.Signal, 1)
 
 	fmt.Println("running")
+	cziti.DnsInit("169.254.1.1", 24)
 
-	for {
-		buffer := make([]byte, bufferSize)
-		n, err := tunDevice.Read(buffer, 0)
-		if err != nil {
-			fatal(err)
-		}
-		fmt.Printf("read [%d] bytes [", n)
-		for i := 0; i < n; i++ {
-			fmt.Printf("%x ", buffer[i])
-		}
-		fmt.Println("]")
+	cziti.Start()
+	_, err = cziti.HookupTun(tunDevice)
+	if err != nil {
+		panic(err)
 	}
+
+	cmd := exec.Command("netsh", "interface", "ipv4", "set",
+		"dnsservers", "name="+interfaceName,
+		"source=static", "address=169.254.1.253",
+		"register=primary", "validate=no")
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	err = cmd.Run()
+	if err != nil {
+		fmt.Print(err)
+	}
+
+	if ctx, err := cziti.LoadZiti(os.Args[2]); err != nil {
+		panic(err)
+	} else {
+		fmt.Printf("successfully loaded %s@%s\n", ctx.Name(), ctx.Controller())
+	}
+	//tunnel.AddIntercept("awesome sauce service", "169.254.1.42", 8080)
+	/*
+		for {
+			buffer := make([]byte, bufferSize)
+			n, err := tunDevice.Read(buffer, 0)
+			if err != nil {
+				fatal(err)
+			}
+			printPacket(buffer[:n])
+
+			//fmt.Printf("read [%d] bytes [", n)
+			//for i := 0; i < n; i++ {
+			//	fmt.Printf("%x ", buffer[i])
+			//}
+			//fmt.Println("]")
+		}
+	*/
 
 	signal.Notify(term, os.Interrupt)
 	signal.Notify(term, os.Kill)
