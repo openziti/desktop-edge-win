@@ -54,6 +54,26 @@ namespace ZitiTunneler.ServiceClient
         public BooleanPayload Payload { get; set; }
     }
 
+    public class IdentityTogglePayload
+    {
+        public bool OnOff { get; set; }
+        public string Fingerprint { get; set; }
+    }
+
+    public class IdentityToggleFunction : ServiceFunction
+    {
+        public IdentityToggleFunction(string fingerprint, bool theBool)
+        {
+            this.Function = "IdentityOnOff";
+            this.Payload = new IdentityTogglePayload()
+            {
+                OnOff = theBool,
+                Fingerprint = fingerprint
+            };
+        }
+        public IdentityTogglePayload Payload { get; set; }
+    }
+
     public class FingerprintPayload
     {
         public string Fingerprint { get; set; }
@@ -80,7 +100,6 @@ namespace ZitiTunneler.ServiceClient
     public class Identity
     {
         public string Name { get; set; }
-        //public string Jwt { get; set; }
         public string FingerPrint { get; set; }
         public bool Active { get; set; }
         public Config Config { get; set; }

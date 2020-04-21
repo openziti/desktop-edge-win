@@ -9,19 +9,7 @@ namespace ZitiTunneler.Models {
 		public List<ZitiService> Services { get; set; }
 		public string Name { get; set; }
 		public string ControllerUrl { get; set; }
-
-		private bool isEnabled = false;
-		public bool IsEnabled
-		{
-			get
-			{
-				return isEnabled;
-			}
-			set
-			{
-				this.isEnabled = value;
-			}
-		}
+		public bool IsEnabled { get; set; }
 		public string EnrollmentStatus { get; set; }
 		public string Status { get; set; }
 

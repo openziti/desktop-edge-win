@@ -123,8 +123,17 @@ namespace ZitiTunneler.ServiceClient
 
         public void SetTunnelState(bool onOff)
         {
-            send(new BooleanFunction("TunnelState", onOff));
-            read<SvcResponse>();
+            try
+            {
+                send(new BooleanFunction("TunnelState", onOff));
+                read<SvcResponse>();
+            }
+            catch (IOException ioe)
+            {
+                //almost certainly a problem with the pipe - recreate the pipe...
+                setupPipe();
+                throw ioe;
+            }
         }
 
         public void IdentityOnOff(Identity id)

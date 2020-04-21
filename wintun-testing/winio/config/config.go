@@ -1,0 +1,60 @@
+package config
+
+import (
+	"github.com/michaelquigley/pfxlog"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/natefinch/lumberjack.v2"
+	"io"
+	"os"
+	"strings"
+)
+
+func File() string {
+	return Path() + string(os.PathSeparator) + "config.json"
+}
+func Path() string {
+	path, _ := os.UserConfigDir()
+	return path + string(os.PathSeparator) + "NetFoundry" + string(os.PathSeparator)
+}
+func LogFile() string {
+	return Path() + string(os.PathSeparator) + "ziti-tunneler.log"
+}
+
+func ParseLevel(lvl string) logrus.Level {
+	switch strings.ToLower(lvl) {
+	case "panic":
+		return logrus.PanicLevel
+	case "fatal":
+		return logrus.FatalLevel
+	case "error":
+		return logrus.ErrorLevel
+	case "warn", "warning":
+		return logrus.WarnLevel
+	case "info":
+		return logrus.InfoLevel
+	case "debug":
+		return logrus.DebugLevel
+	case "trace":
+		return logrus.TraceLevel
+	default:
+		logrus.Warnf("level not recognized: %s. Using Info", lvl)
+		return logrus.InfoLevel
+	}
+}
+
+func InitLogger(level string) {
+	logLevel := ParseLevel(level)
+	logrus.SetLevel(logLevel)
+
+	multiWriter := io.MultiWriter(os.Stdout, &lumberjack.Logger{
+		Filename:   LogFile(),
+		MaxSize:    1, // megabytes
+		MaxBackups: 2,
+		MaxAge:     30,   //days
+		Compress:   false, // disabled by default
+	})
+
+	logrus.SetOutput(multiWriter)
+	logrus.SetFormatter(pfxlog.NewFormatter())
+	pfxlog.Logger().Infof("Logger initialized. Log file located at: %s", LogFile())
+}
