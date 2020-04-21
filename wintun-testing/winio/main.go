@@ -119,24 +119,20 @@ func serveIpc(conn net.Conn) {
 		case "RemoveIdentity":
 			log.Debugf("Request received to remove an identity")
 			removeIdentity(enc, cmd.Payload["Fingerprint"].(string))
-		/*case "GetLogStream":
-		log.Debugf("request for log data received")
-		getLogs(*writer);*/
 		case "Status":
 			reportStatus(enc)
 		case "TunnelState":
 			onOff := cmd.Payload["OnOff"].(bool)
 			tunnelState(onOff, enc)
 		case "IdentityOnOff":
-			onOff := cmd.Payload["OnOff"]
-			fingerprint := cmd.Payload["Fingerprint"]
-			log.Debugf("toggle ziti on/off for %s: %t", fingerprint, onOff)
-			_ = enc.Encode(dto.Response{Message: "this is my message"})
+			onOff := cmd.Payload["OnOff"].(bool)
+			fingerprint := cmd.Payload["Fingerprint"].(string)
+			toggleIdentity(enc, fingerprint, onOff)
 		default:
 			log.Debugf("Unknown operation: %s. Returning error on pipe", cmd.Function)
 			respondWithError(enc, "Something unexpected has happened", UNKNOWN_ERROR, nil)
 		}
-		_ = writer.WriteByte('\n')
+		_ = writer.WriteByte('\n') //just in case the client tries to read a line
 		_ = rw.Flush()
 	}
 }
@@ -192,10 +188,20 @@ func reportStatus(out *json.Encoder) {
 
 func tunnelState(onOff bool, out *json.Encoder) {
 	log.Debugf("toggle ziti on/off: %t", onOff)
-	runtime.TunnelActive = onOff
+	state.TunnelActive = onOff
 	runtime.SaveState(&state)
 	//TODO: actually turn the tunnel on and off as well as handle errors
-	_ = out.Encode(dto.Response{Message: "this is my message", Code: SUCCESS, Error: "", Payload: nil})
+	_ = out.Encode(dto.Response{Message: "tunnel state updated successfully", Code: SUCCESS, Error: "", Payload: nil})
+}
+
+func toggleIdentity(out *json.Encoder, fingerprint string, onOff bool) {
+	log.Debugf("toggle ziti on/off for %s: %t", fingerprint, onOff)
+
+	_, id := state.Find(fingerprint)
+	*id.Active = onOff
+
+	_ = out.Encode(dto.Response{Message: "identity toggled", Code: SUCCESS, Error: "", Payload: nil})
+	runtime.SaveState(&state)
 }
 
 func removeTempFile(file os.File) {
@@ -289,7 +295,7 @@ func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
 	//newId.Id.Active = false //set to false by default - enable the id after persisting
 	log.Infof("enrolled successfully. identity file written to: %s", newPath)
 
-	if newId.Id.Active == true {
+	if *newId.Id.Active == true {
 		connectIdentity(&newId.Id)
 	}
 

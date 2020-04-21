@@ -52,11 +52,23 @@ namespace ZitiTunneler {
 		}
 
 		private void ToggleIdentity(bool on) {
-			// clint Turn me on or turn me off, you decide
-			if (on) {
-				ToggleStatus.Content = "ENABLED";
-			} else {
-				ToggleStatus.Content = "DISABLED";
+			// Jeremy - make the messagebox pretty or something
+			try
+			{
+				ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
+				client.IdentityOnOff(_identity.Fingerprint, on);
+				if (on)
+				{
+					ToggleStatus.Content = "ENABLED";
+				}
+				else
+				{
+					ToggleStatus.Content = "DISABLED";
+				}
+			}
+			catch(ServiceClient.ServiceException se)
+			{
+				MessageBox.Show(se.AdditionalInfo, se.Message);
 			}
 		}
 

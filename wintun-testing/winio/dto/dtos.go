@@ -19,7 +19,7 @@ type Service struct {
 type Identity struct {
 	Name        string
 	FingerPrint string
-	Active      bool
+	Active      *bool
 	Config      idcfg.Config
 	Status      string
 	Services    []Service

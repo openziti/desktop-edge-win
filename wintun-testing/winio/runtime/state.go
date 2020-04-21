@@ -10,7 +10,6 @@ import (
 )
 
 var log = pfxlog.Logger()
-var TunnelActive bool
 
 type TunnelerState struct {
 	TunnelActive bool

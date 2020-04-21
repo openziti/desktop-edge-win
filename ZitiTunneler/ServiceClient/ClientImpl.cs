@@ -197,16 +197,19 @@ namespace ZitiTunneler.ServiceClient
             }
         }
 
-        public void IdentityOnOff(Identity id)
+        public void IdentityOnOff(string fingerprint, bool onOff)
         {
-            string msg = @"{""Function"":""IdentityOnOff"", ""Payload"": { ""fingerprint"" : ""FINGERPRINTHERE"", ""onOff"" : true } }";
-            //Console.WriteLine(msg);
-            /*
-            sw.Write(msg);
-            sw.Flush();
-            SvcResponse r = (SvcResponse)serializer.Deserialize(sr, typeof(SvcResponse));
-            Console.WriteLine(r.ToString());
-            */
+            try
+            {
+                send(new IdentityToggleFunction(fingerprint, onOff));
+                read<SvcResponse>();
+            }
+            catch (IOException ioe)
+            {
+                //almost certainly a problem with the pipe - recreate the pipe...
+                setupPipe();
+                throw ioe;
+            }
         }
 
         /*
@@ -358,6 +361,7 @@ namespace ZitiTunneler.ServiceClient
             try
             {
                 serializer.Serialize(writer, objToSend);
+                writer.Flush();
             }
             catch
             {
@@ -365,7 +369,6 @@ namespace ZitiTunneler.ServiceClient
                 //will trigger the pipe to rebuild
                 throw new IOException("Unexpected error when sending data to service");
             }
-            writer.Flush();
         }
 
         private T read<T>() where T : SvcResponse
