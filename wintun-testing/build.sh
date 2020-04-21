@@ -21,7 +21,10 @@ if [[ ! -f ./build/CMakeCache.txt ]]; then
 fi
 "${CMAKE}" --build ./build --target install
 
+cp ./install/lib/ziti.dll .
+cp ./install/lib/libuv.dll .
+
 export CGO_CFLAGS="-DNOGDI -I $(cygpath -a -m ./install/include)"
 export CGO_LDFLAGS="-L $(cygpath -a -m ./install/lib)"
-go build ./ziti-wintun
+go build -a ./ziti-wintun
 

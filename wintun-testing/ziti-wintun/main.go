@@ -29,7 +29,7 @@ func main() {
 	interfaceName := os.Args[1]
 
 	fmt.Println("creating TUN device")
-	tunDevice, err := tun.CreateTUN(interfaceName, 0)
+	tunDevice, err := tun.CreateTUN(interfaceName, 64 * 1024)
 	if err == nil {
 		realInterfaceName, err2 := tunDevice.Name()
 		if err2 == nil {

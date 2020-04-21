@@ -2,10 +2,12 @@ package cziti
 
 //
 /*
-#cgo LDFLAGS: -l ziti_tunneler -l lwipcore -l lwipwin32arch -l ziti_tunneler
+#cgo LDFLAGS: -l ziti_tunneler -l lwipcore -l lwipwin32arch -l ziti_tunneler -l ziti_tunneler_cbs
 
-#include "nf/netif_driver.h"
+#include <nf/netif_driver.h>
 #include <nf/ziti_tunneler.h>
+#include <nf/ziti_tunneler_cbs.h>
+
 #include <uv.h>
 
 extern int netifClose(netif_handle dev);
@@ -13,20 +15,15 @@ extern ssize_t netifRead(netif_handle dev, void *buf, size_t buf_len);
 extern ssize_t netifWrite(netif_handle dev, void *buf, size_t len);
 extern int netifSetup(netif_handle dev, uv_loop_t *loop, packet_cb packetCb, void* ctx);
 
-extern tunneler_sdk_options* new_tun_opts();
 typedef struct netif_handle_s {
    const char* id;
    packet_cb on_packet_cb;
    void *packet_cb_ctx;
 } netif_handle_t;
 
-extern void* zitiDial(char *service_name, void *ziti_dial_ctx, tunneler_io_context tnlr_io_ctx);
-extern void zitiClose(void *ziti_dial_ctx);
-extern int zitiWrite(void *ziti_io_ctx, void *data, int len);
 extern void readAsync(struct uv_async_s *a);
 
 extern void call_on_packet(void *packet, ssize_t len, packet_cb cb, void *ctx);
-extern uv_async_t* new_async();
 
 extern void dnsHandler(tunneler_io_context tio, void *ctx, addr_t src, uint16_t sport, void *data, ssize_t len);
  */
@@ -37,14 +34,13 @@ import (
 	"github.com/miekg/dns"
 	"golang.zx2c4.com/wireguard/tun"
 	"net"
-	"strings"
 	"unsafe"
 )
 
 const dnsIP = "169.254.1.253"
 
 type Tunnel interface {
-	AddIntercept(service string, hostname string, port int)
+	AddIntercept(service string, hostname string, port int, ctx unsafe.Pointer)
 }
 
 type tunnel struct{
@@ -64,7 +60,7 @@ type tunnel struct{
 var devMap = make(map[string]*tunnel)
 
 func HookupTun(dev tun.Device) (Tunnel, error) {
-	fmt.Println("in HookupTun")
+	fmt.Println("in HookupTun ")
 	defer fmt.Println("exiting HookupTun")
 	name, err := dev.Name()
 	if err != nil {
@@ -78,16 +74,16 @@ func HookupTun(dev tun.Device) (Tunnel, error) {
 	t := &tunnel{
 		dev:    dev,
 		driver: drv,
-		writeQ: make(chan []byte),
+		writeQ: make(chan []byte, 64),
 		readQ: make(chan []byte, 64),
 	}
 	devMap[name] = t
 
-	opts := C.new_tun_opts()
+	opts := (*C.tunneler_sdk_options)(C.calloc(1, C.sizeof_tunneler_sdk_options))
 	opts.netif_driver = drv
-	opts.ziti_dial = C.ziti_dial_cb(C.zitiDial)
-	opts.ziti_close = C.ziti_close_cb(C.zitiClose)
-	opts.ziti_write = C.ziti_write_cb(C.zitiWrite)
+	opts.ziti_dial = C.ziti_dial_cb(C.ziti_sdk_c_dial)
+	opts.ziti_close = C.ziti_close_cb(C.ziti_sdk_c_close)
+	opts.ziti_write = C.ziti_write_cb(C.ziti_sdk_c_write)
 
 	t.tunCtx = C.NF_tunneler_init(opts, _impl.libuvCtx.l)
 
@@ -113,10 +109,9 @@ func makeDriver(name string) C.netif_driver {
 func netifWrite(h C.netif_handle, buf unsafe.Pointer, length C.size_t) C.ssize_t {
 	t, found := devMap[C.GoString(h.id)]
 	if !found {
-		fmt.Errorf("should  not be here\n")
+		panic("should  not be here\n")
 		return -1
 	}
-	fmt.Println("netifWrite len=", length);
 
 	b := C.GoBytes(buf, C.int(length))
 
@@ -139,7 +134,7 @@ func netifSetup(h C.netif_handle, l *C.uv_loop_t, packetCb C.packet_cb, ctx unsa
 		return -1
 	}
 
-	t.read = C.new_async()
+	t.read = (*C.uv_async_t)(C.calloc(1, C.sizeof_uv_async_t))
 	C.uv_async_init(l, t.read, C.uv_async_cb(C.readAsync))
 	t.read.data = unsafe.Pointer(h)
 	fmt.Printf("in netifSetup netif[%s] handle[%p]\n", C.GoString(h.id), h)
@@ -167,6 +162,10 @@ func (t *tunnel)runReadLoop() {
 		if err != nil {
 			panic(err)
 		}
+
+		if len(t.readQ) == cap(t.readQ) {
+			fmt.Println("read loop is about to block")
+		}
 		t.readQ <- buf[:nr]
 		C.uv_async_send((*C.uv_async_t)(unsafe.Pointer(t.read)))
 	}
@@ -174,8 +173,6 @@ func (t *tunnel)runReadLoop() {
 
 //export readAsync
 func readAsync(a *C.uv_async_t) {
-	i := 0
-
 	dev := (*C.netif_handle_t)(a.data)
 
 	id := C.GoString(dev.id)
@@ -185,12 +182,12 @@ func readAsync(a *C.uv_async_t) {
 		panic(errors.New("where is my tunnel?"))
 	}
 
-	for len(t.readQ) > 0 {
+	np := len(t.readQ)
+	for i := np; i > 0; i-- {
 		b := <- t.readQ
 		buf := C.CBytes(b)
 		C.call_on_packet(buf, C.ssize_t(len(b)), t.onPacket, t.onPacketCtx)
 		C.free(buf)
-		i++
 	}
 }
 
@@ -218,8 +215,11 @@ func (t *tunnel) runWriteLoop() {
 
 }
 
-func (t *tunnel) AddIntercept(service string, host string, port int) {
-	res := C.NF_tunneler_intercept_v1(t.tunCtx, unsafe.Pointer(nil), C.CString(service), C.CString(host), C.int(port))
+func (t *tunnel) AddIntercept(service string, host string, port int, ctx unsafe.Pointer) {
+	zitiCtx := (*C.ziti_context)(C.malloc(C.sizeof_ziti_context))
+	zitiCtx.nf_ctx = ctx
+	res := C.NF_tunneler_intercept_v1(t.tunCtx, unsafe.Pointer(zitiCtx),
+		C.CString(service), C.CString(host), C.int(port))
 	fmt.Println("intercept added", res)
 }
 
@@ -260,6 +260,7 @@ func dnsHandler(tio C.tunneler_io_context, ctx unsafe.Pointer, src C.addr_t, spo
 	if err == nil {
 		replyC := C.CBytes(reply)
 		rc := C.NF_udp_send(tio, src, sport, replyC, C.ssize_t(len(reply)))
+		C.free(replyC)
 		if rc != 0 {
 			fmt.Println("NF_udp_reply rc=", rc)
 		}
@@ -269,33 +270,3 @@ func dnsHandler(tio C.tunneler_io_context, ctx unsafe.Pointer, src C.addr_t, spo
 }
 
 /*******************************************************************/
-//export zitiDial
-func zitiDial(service *C.char, ziti_dial_ctx unsafe.Pointer,  tio C.tunneler_io_context) unsafe.Pointer {
-	fmt.Println("received dial request for ", C.GoString(service))
-	defer fmt.Println("dial finished")
-	msg := []byte("welcome to Canadian translator\n")
-
-	msgC := C.CBytes(msg)
-	C.NF_tunneler_write(tio, msgC, C.int(len(msg)))
-	// C.free(msgC)
-
-	return unsafe.Pointer(tio)
-}
-
-//export zitiClose
-func zitiClose(ziti_dial_ctx unsafe.Pointer) {
-	fmt.Println("in zitiClose")
-}
-
-//export zitiWrite
-func zitiWrite(zio unsafe.Pointer, data unsafe.Pointer, length C.int) C.int {
-	msg := strings.TrimSpace(string(C.GoBytes(data, length)))
-
-	reply := []byte(fmt.Sprint(msg, ", eh?\n"))
-
-	replyC := C.CBytes(reply)
-	C.NF_tunneler_write(C.tunneler_io_context(zio), replyC, C.int(len(reply)))
-	//C.free(replyC)
-
-	return C.ZITI_CONNECTED
-}
