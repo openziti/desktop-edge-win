@@ -24,7 +24,7 @@ namespace ZitiTunneler.ServiceClient
         const string logPipe = @"NetFoundry\tunneler\logs";
         const string localPipeServer = ".";
         const PipeDirection inOut = PipeDirection.InOut;
-        const int ServiceConnectTimeout = 5000;
+        const int ServiceConnectTimeout = 500;
 
         NamedPipeClientStream pipeClient = null;
         StreamWriter writer = null;
@@ -40,22 +40,52 @@ namespace ZitiTunneler.ServiceClient
         {
             lock (namedPipeSyncLock)
             {
-                if(pipeClient != null)
+                if (pipeClient != null)
                 {
                     pipeClient.Dispose();
                 }
                 pipeClient = new NamedPipeClientStream(localPipeServer, ipcPipe, inOut);
                 writer = new StreamWriter(pipeClient);
                 reader = new StreamReader(pipeClient);
-                pipeClient.Connect(ServiceConnectTimeout);
+                try
+                {
+                    pipeClient.Connect(ServiceConnectTimeout);
+                }
+                catch
+                {
+                    //todo: better error
+                    Debug.WriteLine("There was a problem connecting to the service");
+                    reader.Close();
+                    try
+                    {
+                        writer.Close();
+                    }
+                    catch
+                    {
+                        //intentionally ignored
+                    }
+                    pipeClient.Close();
+                    reader = null;
+                    writer = null;
+                    pipeClient = null;
+                }
             }
         }
 
         public ZitiTunnelStatus GetStatus()
         {
-            send(new ServiceFunction() { Function = "Status" });
-            var rtn = read<ZitiTunnelStatus>();
-            return rtn;
+            try
+            {
+                send(new ServiceFunction() { Function = "Status" });
+                var rtn = read<ZitiTunnelStatus>();
+                return rtn;
+            }
+            catch (IOException ioe)
+            {
+                //almost certainly a problem with the pipe - recreate the pipe...
+                setupPipe();
+                throw ioe;
+            }
         }
 
         ServiceFunction AddIdentityFunction = new ServiceFunction() { Function = "AddIdentity" };
@@ -78,21 +108,18 @@ namespace ZitiTunneler.ServiceClient
                     }
                 };
 
-
-                //serializer.Serialize(Console.Out, newId);
                 send(AddIdentityFunction);
                 send(newId);
                 var resp = read<NewIdentityResponse>();
-                //NewIdentityResponse nidresp = (NewIdentityResponse)serializer.Deserialize(sr, typeof(NewIdentityResponse));
                 Debug.WriteLine(resp.ToString());
 
                 return resp.Payload;
             }
-            catch(IOException ioe)
+            catch (IOException ioe)
             {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 setupPipe();
-                throw ioe;
+                throw;
             }
         }
 
@@ -140,26 +167,34 @@ namespace ZitiTunneler.ServiceClient
 
         public string GetLogs()
         {
-            NamedPipeClientStream logClient = new NamedPipeClientStream(localPipeServer, logPipe, PipeDirection.In);
-            reader = new StreamReader(logClient);
-            logClient.Connect(ServiceConnectTimeout);
-            /*
-            string line = null;
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            do
+            try
             {
-                line = reader.ReadLine();
-                sb.Append(line);
-                sb.Append("\r\n");
-                Debug.WriteLine(line);
-            } while (line != null);
-            */
-            string content = reader.ReadToEnd();
-            //string content = sb.ToString();
-            //ugly hack to turn ansi escaping to not... _bleck_
-            //todo: fix this :point_up:
-            content = new System.Text.RegularExpressions.Regex(@"\x1B\[[^@-~]*[@-~]").Replace(content, "");
-            return content;
+                NamedPipeClientStream logClient = new NamedPipeClientStream(localPipeServer, logPipe, PipeDirection.In);
+                reader = new StreamReader(logClient);
+                logClient.Connect(ServiceConnectTimeout);
+                /*
+                string line = null;
+                System.Text.StringBuilder sb = new System.Text.StringBuilder();
+                do
+                {
+                    line = reader.ReadLine();
+                    sb.Append(line);
+                    sb.Append("\r\n");
+                    Debug.WriteLine(line);
+                } while (line != null);
+                */
+                string content = reader.ReadToEnd();
+                //string content = sb.ToString();
+                //ugly hack to turn ansi escaping to not... _bleck_
+                //todo: fix this :point_up:
+                content = new System.Text.RegularExpressions.Regex(@"\x1B\[[^@-~]*[@-~]").Replace(content, "");
+                return content;
+            }
+            catch
+            {
+                //almost certainly a problem with the pipe - probably means the service is NOT running
+                return "Error fetching logs from service. Is it running?";
+            }
         }
 
         public void IdentityOnOff(Identity id)
@@ -320,14 +355,23 @@ namespace ZitiTunneler.ServiceClient
             string json = JsonConvert.SerializeObject(objToSend, Formatting.Indented);
 
             Debug.WriteLine(json);
-            serializer.Serialize(writer, objToSend);
+            try
+            {
+                serializer.Serialize(writer, objToSend);
+            }
+            catch
+            {
+                //if this fails it's usually because the writer is null/invalid. throwing IOException
+                //will trigger the pipe to rebuild
+                throw new IOException("Unexpected error when sending data to service");
+            }
             writer.Flush();
         }
 
         private T read<T>() where T : SvcResponse
         {
             T resp = (T)serializer.Deserialize(reader, typeof(T));
-            if(resp.Code != 0)
+            if (resp.Code != 0)
             {
                 throw new ServiceException(resp.Message, resp.Code, resp.Error);
             }

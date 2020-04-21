@@ -18,7 +18,7 @@ namespace ZitiTunneler {
 		public System.Windows.Forms.NotifyIcon notifyIcon;
 		private DateTime _startDate;
 		private System.Windows.Forms.Timer _timer;
-		private ServiceClient.Client serviceClient = null;
+		private Client serviceClient = null;
 
 		private List<ZitiIdentity> identities
 		{
@@ -65,10 +65,18 @@ namespace ZitiTunneler {
 			this.Top = desktopWorkingArea.Bottom-this.Height-25;
 
 			// add a new service client
-			serviceClient = new ServiceClient.Client();
+			serviceClient = new Client();
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
 			Application.Current.Properties.Add("Identities", new List<ZitiIdentity>());
-			LoadStatusFromService();
+			try
+			{
+				LoadStatusFromService();
+			}
+			catch
+			{
+				//probably some kind of problem with the service...
+				MessageBox.Show("oh my goodness - problem with the service. Almost certainly means the service is NOT RUNNING... Jeremy make this pretty");
+			}
 			LoadIdentities();
 		}
 
@@ -125,7 +133,32 @@ namespace ZitiTunneler {
 			jwtDialog.Filter = "Ziti Identities (*.jwt)|*.jwt";
 			if (jwtDialog.ShowDialog() == true) {
 				string fileContent = File.ReadAllText(jwtDialog.FileName);
-				// Clint!! AxedaBuddy - What to do with the jwt file?
+
+				// Jeremy!! AxedaBuddy - DUN!
+				try
+				{
+					Identity createdId = serviceClient.AddIdentity(System.IO.Path.GetFileName(jwtDialog.FileName), false, fileContent);
+					if (createdId != null)
+					{
+						identities.Add(ZitiIdentity.FromClient(createdId));
+						MessageBox.Show("New identity added with fingerprint: " + createdId.FingerPrint);
+						updateViewWithIdentity(createdId);
+					}
+					else
+					{
+						// Jeremy buddy - error popup here
+						MessageBox.Show("created id was null - wtf jeremy. your fault");
+					}
+				}
+				catch (ServiceException se)
+				{
+					MessageBox.Show(se.AdditionalInfo, se.Message);
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show("Unexpected error", ex.Message);
+				}
+				LoadIdentities();
 			}
 		}
 
@@ -144,7 +177,7 @@ namespace ZitiTunneler {
 			{
 				serviceClient.SetTunnelState(true);
 			}
-			catch (ServiceClient.ServiceException se)
+			catch (ServiceException se)
 			{
 				MessageBox.Show(se.AdditionalInfo, se.Message);
 			}
@@ -175,7 +208,7 @@ namespace ZitiTunneler {
 			{
 				serviceClient.SetTunnelState(false);
 			}
-			catch (ServiceClient.ServiceException se)
+			catch (ServiceException se)
 			{
 				MessageBox.Show(se.AdditionalInfo, se.Message);
 			}

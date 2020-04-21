@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="go build main.go" type="GoApplicationRunConfiguration" factoryName="Go Application" nameIsGenerated="true">
     <module name="wintun-testing" />
-    <working_directory value="$PROJECT_DIR$/" />
+    <working_directory value="$PROJECT_DIR$" />
     <go_parameters value="-i" />
     <envs>
       <env name="PATH" value="v:\dev\tools\mingw-w64\bin" />
