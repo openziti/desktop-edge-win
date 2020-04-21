@@ -5,22 +5,24 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ZitiTunneler"
              mc:Ignorable="d" 
-             d:DesignHeight="70" d:DesignWidth="70" Width="70" Height="70" Loaded="OnLoad">
-    <StackPanel Orientation="Vertical" Margin="10,10,10,10">
-        <Button Name="OnButton" Click="ToggleConnect">
-            <Button.Template>
-                <ControlTemplate>
-                    <Image Source="/Assets/Images/on.png"></Image>
-                </ControlTemplate>
-            </Button.Template>
-        </Button>
-        <Button Name="OffButton" Click="ToggleConnect" Visibility="Collapsed">
-            <Button.Template>
-                <ControlTemplate>
-                    <Image Source="/Assets/Images/off.png"></Image>
-                </ControlTemplate>
-            </Button.Template>
-        </Button>
-        <Label Name="Status" Content="ENABLED" FontSize="12" Margin="0,-4,0,0" Typography.Capitals="AllSmallCaps" Foreground="White" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Left" Width="50"></Label>
+             d:DesignHeight="20" d:DesignWidth="35" Width="35" Height="20" Padding="0,0,0,0" Loaded="OnLoad">
+    <StackPanel Orientation="Vertical" Margin="0,0,0,0">
+        <Canvas Name="LayoutRoot" Cursor="Hand" MouseDown="OnToggle">
+            <Canvas.Resources>
+                <Storyboard Name="AnimateOnBoard" x:Key="OnAnimate">
+                    <DoubleAnimation Name="OpaqueOnAnimate" Storyboard.TargetName="OnColor" Storyboard.TargetProperty="Opacity" Duration="1" To="1"></DoubleAnimation>
+                </Storyboard>
+                <Storyboard Name="AnimateOffBoard" x:Key="OffAnimate">
+                    <DoubleAnimation Name="OpaqueOffAnimate" Storyboard.TargetName="OnColor" Storyboard.TargetProperty="Opacity" Duration="1" To="1"></DoubleAnimation>
+                </Storyboard>
+            </Canvas.Resources>
+            <Border Name="BackColor" Width="35" Height="20" CornerRadius="9" Background="#E5EAED"></Border>
+            <Border Name="OnColor" Width="35" Height="20" CornerRadius="9" Background="#34A22B" Opacity="0"></Border>
+            <Border Name="ToggleTab" Width="18" Height="18" Canvas.Top="1" Canvas.Left="1" CornerRadius="9,9,9,9" Background="White">
+                <Border.Effect>
+                    <DropShadowEffect Direction="270" Opacity=".2"  />
+                </Border.Effect>
+            </Border>
+        </Canvas>
     </StackPanel>
 </UserControl>

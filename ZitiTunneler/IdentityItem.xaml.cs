@@ -20,6 +20,8 @@ namespace ZitiTunneler {
 	/// </summary>
 	public partial class IdentityItem:UserControl {
 
+		public delegate void Click(ZitiIdentity identity);
+		public event Click OnClick;
 		private ZitiIdentity _identity;
 		public ZitiIdentity Identity {
 			get {
@@ -36,15 +38,44 @@ namespace ZitiTunneler {
 			IdName.Content = _identity.Name;
 			IdUrl.Content = _identity.ControllerUrl;
 			ServiceCount.Content = _identity.Services.Length.ToString();
+			if (ToggleSwitch.Enabled) {
+				ToggleStatus.Content = "ENABLED";
+			} else {
+				ToggleStatus.Content = "DISABLED";
+			}
 		}
 
 		public bool isOn = false;
 		public IdentityItem() {
 			InitializeComponent();
+			ToggleSwitch.OnToggled += ToggleIdentity;
+		}
+
+		private void ToggleIdentity(bool on) {
+			// clint Turn me on or turn me off, you decide
+			if (on) {
+				ToggleStatus.Content = "ENABLED";
+			} else {
+				ToggleStatus.Content = "DISABLED";
+			}
 		}
 
 		private void ToggleButton_Checked(object sender, RoutedEventArgs e) {
 			isOn = !isOn;
+		}
+
+		private void Canvas_MouseEnter(object sender, MouseEventArgs e) {
+			OverState.Opacity = 0.2;
+		}
+
+		private void Canvas_MouseLeave(object sender, MouseEventArgs e) {
+			OverState.Opacity = 0;
+		}
+
+		private void OpenDetails(object sender, MouseButtonEventArgs e) {
+			if (OnClick != null) {
+				OnClick(_identity);
+			}
 		}
 	}
 }

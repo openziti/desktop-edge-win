@@ -40,6 +40,7 @@ namespace ZitiTunneler {
 			IdentityEnrollment.Value = _identity.EnrollmentStatus;
 			IdentityStatus.Value = _identity.Status;
 			ServiceList.Children.Clear();
+			IdDetailToggle.OnToggled += IdToggle;
 			for (int i=0; i<_identity.Services.Length; i++) {
 				MenuEditItem editor = new MenuEditItem();
 				editor.Label = _identity.Services[i].Name;
@@ -48,6 +49,11 @@ namespace ZitiTunneler {
 				ServiceList.Children.Add(editor);
 			}
 		}
+
+		private void IdToggle(bool on) {
+			// Clint, turn me on or turn me off
+		}
+
 		public IdentityDetails() {
 			InitializeComponent();
 		}
@@ -57,7 +63,7 @@ namespace ZitiTunneler {
 
 		private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
 			// Clint Forget and bubble me up to remove
-			this.Visibility = Visibility.Collapsed;
+			// this.Visibility = Visibility.Collapsed;
 		}
 	}
 }
