@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 /// <summary>
 /// These classes represent the data structures that are passed back and forth
@@ -122,10 +123,20 @@ namespace ZitiTunneler.ServiceClient
         public string AdditionalCAs { get; set; }
     }
 
-     class ZitiTunnelStatus : SvcResponse
+    class IpInfo
+    {
+        public string Ip { get; set; }
+        public string Subnet { get; set; }
+        public Int16 MTU { get; set; }
+        public string DNS { get; set; }
+    }
+
+    class ZitiTunnelStatus : SvcResponse
     {
         public bool TunnelActive { get; set; }
         public List<Identity> Identities { get; set; }
+        
+        public IpInfo IpInfo { get; set; }
 
         public void Dump(System.IO.TextWriter writer)
         {

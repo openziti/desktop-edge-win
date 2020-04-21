@@ -14,8 +14,15 @@ var log = pfxlog.Logger()
 type TunnelerState struct {
 	TunnelActive bool
 	Identities   []dto.Identity
+	IpInfo       *TunIpInfo `json:"IpInfo,omitempty"`
 }
 
+type TunIpInfo struct {
+	Ip string
+	Subnet string
+	MTU int16
+	DNS string
+}
 
 func (t *TunnelerState) RemoveByFingerprint(fingerprint string) {
 	log.Debugf("removing fingerprint: %s", fingerprint)
@@ -41,7 +48,7 @@ func (t *TunnelerState) FindByIdentity(id dto.Identity) (int, *dto.Identity) {
 	return t.Find(id.FingerPrint)
 }
 
-func SaveState(s *TunnelerState) {
+func SaveState(s TunnelerState) {
 	// overwrite file if it exists
 	_ = os.MkdirAll(config.Path(), 0640)
 
@@ -52,6 +59,7 @@ func SaveState(s *TunnelerState) {
 	w := bufio.NewWriter(bufio.NewWriter(cfg))
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
+	s.IpInfo = nil
 	_ = enc.Encode(s)
 	_ = w.Flush()
 
@@ -59,5 +67,4 @@ func SaveState(s *TunnelerState) {
 	if err != nil{
 		panic(err)
 	}
-
 }

@@ -24,13 +24,7 @@ namespace ZitiTunneler
 
 		public string menuState = "Main";
 
-		// Clint: all these need to be wired to something
 		public string licenseData = "Clint, I need license data here.";
-		
-		public string ip = "169.254.0.1";
-		public string subnet = "255.255.255.0";
-		public string mtu = "1600";
-		public string dns = "165.254.0.2";
 
 		public MainMenu() {
             InitializeComponent();
@@ -106,10 +100,11 @@ namespace ZitiTunneler
 				ConfigItems.Visibility = Visibility.Visible;
 				ConfigSaveButton.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
-				ConfigIp.Value = ip;
-				ConfigSubnet.Value = subnet;
-				ConfigMtu.Value = mtu;
-				ConfigDns.Value = dns;
+				
+				ConfigIp.Value = Application.Current.Properties["ip"]?.ToString();
+				ConfigSubnet.Value = Application.Current.Properties["subnet"]?.ToString();
+				ConfigMtu.Value = Application.Current.Properties["mtu"]?.ToString();
+				ConfigDns.Value = Application.Current.Properties["dns"]?.ToString();
 			} else {
 				MenuTitle.Content = "Main Menu";
 				MainItems.Visibility = Visibility.Visible;
@@ -144,11 +139,7 @@ namespace ZitiTunneler
 		}
 
 		private void SaveConfig(object sender, RoutedEventArgs e) {
-			// Clint: I need this to save or do whatever it is suppose to do
-			ip = ConfigIp.Value;
-			mtu = ConfigMtu.Value;
-			subnet = ConfigSubnet.Value;
-			dns = ConfigDns.Value;
+			// Jeremy - this can just be removed - saving the config is not important to this client
 		}
 	}
 }

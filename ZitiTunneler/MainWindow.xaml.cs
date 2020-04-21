@@ -71,7 +71,7 @@ namespace ZitiTunneler {
 			try
 			{
 				LoadStatusFromService();
-			}
+	}
 			catch
 			{
 				//probably some kind of problem with the service...
@@ -81,11 +81,22 @@ namespace ZitiTunneler {
 		}
 
 		private void LoadStatusFromService() {
-			ZitiTunnelStatus currentData = serviceClient.GetStatus();
-
-			foreach(var id in currentData.Identities)
+			ZitiTunnelStatus status = serviceClient.GetStatus();
+			if (status != null)
 			{
-				updateViewWithIdentity(id);
+				Application.Current.Properties.Add("ip", status.IpInfo.Ip);
+				Application.Current.Properties.Add("subnet", status.IpInfo.Subnet);
+				Application.Current.Properties.Add("mtu", status.IpInfo.MTU);
+				Application.Current.Properties.Add("dns", status.IpInfo.DNS);
+
+				foreach (var id in status.Identities)
+				{
+					updateViewWithIdentity(id);
+				}
+			}
+			else
+			{
+				MessageBox.Show("could not get status - make this pretty Jeremy");
 			}
 		}
 

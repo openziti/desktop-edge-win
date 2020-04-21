@@ -8,12 +8,12 @@ import (
 	"github.com/Microsoft/go-winio"
 	"github.com/michaelquigley/pfxlog"
 	"github.com/netfoundry/ziti-foundation/identity/identity"
-	idcfg "github.com/netfoundry/ziti-sdk-golang/ziti/config"
 	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
 	"io"
 	"io/ioutil"
 	"net"
 	"os"
+	"wintun-testing/winio/idutil"
 
 	"wintun-testing/winio/config"
 	"wintun-testing/winio/dto"
@@ -36,8 +36,6 @@ const (
 	IDENTITY_NOT_FOUND     = 1000
 )
 
-var debug = true
-
 func main() {
 	config.InitLogger("debug")
 
@@ -56,6 +54,7 @@ func main() {
 	log.Info("log listener ready")
 
 	initialize()
+	establishTun()
 	<-finished
 	<-finished
 	_ = ipc.Close()
@@ -92,7 +91,19 @@ func initialize() {
 	if err != nil {
 		log.Panic("could not close configuration file. this is not normal.")
 	}
-	log.Debugf("initial state loaded")
+	log.Debugf("initial state loaded from configuration file")
+}
+
+func establishTun() {
+	//do something to make the tun
+
+	//set the tun info into the state
+	state.IpInfo = &runtime.TunIpInfo{
+		Ip:     "1.1.1.1",
+		DNS:    "5.5.5.5",
+		MTU:    1400,
+		Subnet: "255.255.255.0",
+	}
 }
 
 func closeConn(conn net.Conn) {
@@ -187,21 +198,13 @@ func serveLogs(conn net.Conn) {
 
 func reportStatus(out *json.Encoder) {
 	log.Debugf("request for status")
-	rtn := state
-
-	//remove the config from the status
-	ids := make([]dto.Identity, len(rtn.Identities))
-	for i, id := range rtn.Identities {
-		ids[i] = cleanId(id)
-	}
-	rtn.Identities = ids
-	_ = out.Encode(rtn)
+	_ = out.Encode(state)
 }
 
 func tunnelState(onOff bool, out *json.Encoder) {
 	log.Debugf("toggle ziti on/off: %t", onOff)
 	state.TunnelActive = onOff
-	runtime.SaveState(&state)
+	runtime.SaveState(state)
 	//TODO: actually turn the tunnel on and off as well as handle errors
 	_ = out.Encode(dto.Response{Message: "tunnel state updated successfully", Code: SUCCESS, Error: "", Payload: nil})
 }
@@ -213,7 +216,7 @@ func toggleIdentity(out *json.Encoder, fingerprint string, onOff bool) {
 	*id.Active = onOff
 
 	_ = out.Encode(dto.Response{Message: "identity toggled", Code: SUCCESS, Error: "", Payload: nil})
-	runtime.SaveState(&state)
+	runtime.SaveState(state)
 }
 
 func removeTempFile(file os.File) {
@@ -315,10 +318,10 @@ func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
 	state.Identities = append(state.Identities, newId.Id)
 
 	//save the state
-	runtime.SaveState(&state)
+	runtime.SaveState(state)
 
 	//return successful message
-	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: cleanId(newId.Id)}
+	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: idutil.Clean(newId.Id)}
 
 	respond(out, resp)
 }
@@ -370,7 +373,7 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 		return
 	}
 	state.RemoveByIdentity(*id)
-	runtime.SaveState(&state)
+	runtime.SaveState(state)
 
 	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: nil}
 	_ = out.Encode(resp)
@@ -379,12 +382,4 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 func respond(out *json.Encoder, thing interface{}) {
 	//debug json to stdout if needed _ = json.NewEncoder(os.Stdout).Encode(thing)
 	_ = out.Encode(thing)
-}
-
-//Removes the Config from the provided identity and returns a 'cleaned' id
-func cleanId(id dto.Identity) dto.Identity {
-	nid := id
-	nid.Config = idcfg.Config{}
-	nid.Config.ZtAPI = id.Config.ZtAPI
-	return nid
 }
