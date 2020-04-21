@@ -26,6 +26,8 @@ namespace ZitiTunneler {
 	public partial class MainWindow:Window {
 
 		public NotifyIcon notifyIcon;
+		private DateTime _startDate;
+		private Timer _timer;
 
 		private List<ZitiIdentity> identities = new List<ZitiIdentity>();
 		private List<ZitiService> services = new List<ZitiService>();
@@ -36,6 +38,7 @@ namespace ZitiTunneler {
 			notifyIcon = new NotifyIcon();
 			notifyIcon.Visible = true;
 			notifyIcon.Click += TargetNotifyIcon_Click;
+			notifyIcon.Visible = true;
 
 			SetNotifyIcon("white");
 
@@ -43,14 +46,22 @@ namespace ZitiTunneler {
 		}
 
 		private void TargetNotifyIcon_Click(object sender, EventArgs e) {
+			this.Show();
+			this.Activate();
+			/*
 			if (App.Current.MainWindow.WindowState==WindowState.Minimized) {
 				App.Current.MainWindow.WindowState = WindowState.Normal;
-				App.Current.MainWindow.BringIntoView();
+				//App.Current.MainWindow.BringIntoView();
+				App.Current.MainWindow.Show();
+				App.Current.MainWindow.Activate();
 				//this.Opacity = 1;
+				//this.Activate();
 			} else {
 				App.Current.MainWindow.WindowState = WindowState.Minimized;
+				this.Close();
 				//this.Opacity = 0;
 			}
+			*/
 		}
 		
 		private void MainWindow1_Loaded(object sender, RoutedEventArgs e) {
@@ -87,6 +98,8 @@ namespace ZitiTunneler {
 			}
 			UIMain.Height = 480+(identities.Count*60);
 			BgColor.Height = 480+(identities.Count*60);
+			FormGrowAnimation.To = UIMain.Height;
+			FormGrowOutAnimation.From = BgColor.Height;
 			App.Current.MainWindow.Height = 490+(identities.Count*60);
 			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
 			this.Left = desktopWorkingArea.Right-this.Width-25;
@@ -114,13 +127,46 @@ namespace ZitiTunneler {
 
 		private void Connect(object sender, RoutedEventArgs e) {
 			SetNotifyIcon("green");
+			_startDate = DateTime.Now;
+			_timer = new Timer();
+			_timer.Interval = 1000;
+			_timer.Tick += OnTimedEvent;
+			_timer.Enabled = true;
+			_timer.Start();
 			ConnectButton.Visibility = Visibility.Collapsed;
 			DisconnectButton.Visibility = Visibility.Visible;
 		}
+
+		private void OnTimedEvent(object sender, EventArgs e) {
+			TimeSpan span = (DateTime.Now - _startDate);
+			int hours = span.Hours;
+			int minutes = span.Minutes;
+			int seconds = span.Seconds;
+			var hoursString = (hours>9)?hours.ToString():"0"+hours;		
+			var minutesString = (minutes>9)? minutes.ToString():"0"+minutes;
+			var secondsString = (seconds>9) ? seconds.ToString() : "0"+seconds;
+			ConnectedTime.Content = hoursString+":"+minutesString+":"+secondsString;
+		}
+
 		private void Disconnect(object sender, RoutedEventArgs e) {
+			_timer.Stop();
 			SetNotifyIcon("white");
 			ConnectButton.Visibility = Visibility.Visible;
 			DisconnectButton.Visibility = Visibility.Collapsed;
+		}
+
+
+
+		private void FormFadeOut_Completed(object sender, EventArgs e) {
+			closeCompleted = true;
+			//this.Close();
+		}
+		private bool closeCompleted = false;
+		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
+			if (!closeCompleted) {
+				FormFadeOut.Begin();
+				e.Cancel = true;
+			}
 		}
 	}
 }
