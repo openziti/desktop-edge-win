@@ -112,7 +112,7 @@ namespace ZitiTunneler.ServiceClient
     {
         public string Name { get; set; }
         public string HostName { get; set; }
-        public int Port { get; set; }
+        public UInt16 Port { get; set; }
     }
 
     public class EnrollmentFlags
@@ -127,7 +127,7 @@ namespace ZitiTunneler.ServiceClient
     {
         public string Ip { get; set; }
         public string Subnet { get; set; }
-        public Int16 MTU { get; set; }
+        public UInt16 MTU { get; set; }
         public string DNS { get; set; }
     }
 

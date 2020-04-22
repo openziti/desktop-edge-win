@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 
 /// <summary>
@@ -115,7 +116,7 @@ namespace ZitiTunneler.ServiceClient
 
                 return resp.Payload;
             }
-            catch (IOException ioe)
+            catch (IOException)
             {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 setupPipe();
