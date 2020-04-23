@@ -7,20 +7,21 @@ import (
 	"os"
 	"wintun-testing/winio/config"
 	"wintun-testing/winio/dto"
+	"wintun-testing/winio/idutil"
 )
 
 var log = pfxlog.Logger()
 
 type TunnelerState struct {
 	TunnelActive bool
-	Identities   []dto.Identity
+	Identities   []*dto.Identity
 	IpInfo       *TunIpInfo `json:"IpInfo,omitempty"`
 }
 
 type TunIpInfo struct {
 	Ip string
 	Subnet string
-	MTU int16
+	MTU uint16
 	DNS string
 }
 
@@ -34,7 +35,7 @@ func (t *TunnelerState) RemoveByFingerprint(fingerprint string) {
 func (t *TunnelerState) Find(fingerprint string) (int, *dto.Identity) {
 	for i, n := range t.Identities {
 		if n.FingerPrint == fingerprint {
-			return i, &n
+			return i, n
 		}
 	}
 	return len(t.Identities), nil
@@ -48,7 +49,7 @@ func (t *TunnelerState) FindByIdentity(id dto.Identity) (int, *dto.Identity) {
 	return t.Find(id.FingerPrint)
 }
 
-func SaveState(s TunnelerState) {
+func SaveState(s *TunnelerState) {
 	// overwrite file if it exists
 	_ = os.MkdirAll(config.Path(), 0640)
 
@@ -67,4 +68,17 @@ func SaveState(s TunnelerState) {
 	if err != nil{
 		panic(err)
 	}
+}
+
+func (s TunnelerState) Clean() TunnelerState {
+	rtn := TunnelerState{
+		TunnelActive: s.TunnelActive,
+		Identities:   make([]*dto.Identity, len(s.Identities)),
+		IpInfo:       s.IpInfo,
+	}
+	for i, id := range s.Identities {
+		rtn.Identities[i] = idutil.Clean(*id)
+	}
+
+	return rtn
 }

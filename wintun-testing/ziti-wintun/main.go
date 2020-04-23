@@ -19,8 +19,7 @@ const bufferSize = 64 * 1024
 
 func main() {
 	user, err := user2.Current()
-
-	fmt.Printf("user [%v]\n", user)
+	fmt.Printf("welcome to cziti-cli testing: [%v]\n", user)
 
 	if len(os.Args) < 2 {
 		fmt.Printf("usage: %s <interfaceName>\n", filepath.Base(os.Args[0]))
@@ -120,6 +119,7 @@ func main() {
 	case <-errs:
 	}
 
+	_ = tunDevice.Close()
 	fmt.Println("shutting down")
 }
 

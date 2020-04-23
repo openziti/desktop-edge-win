@@ -13,16 +13,16 @@ type AddIdentity struct {
 type Service struct {
 	Name     string
 	HostName string
-	Port     int16
+	Port     uint16
 }
 
 type Identity struct {
 	Name        string
 	FingerPrint string
-	Active      *bool
+	Active      bool
 	Config      idcfg.Config
 	Status      string
-	Services    []Service
+	Services    []*Service
 	Metrics     Metrics
 }
 type Metrics struct {
