@@ -25,7 +25,7 @@ namespace ZitiTunneler.ServiceClient
         public Identity Id { get; set; }
     }
 
-    class NewIdentityResponse : SvcResponse
+    class IdentityResponse : SvcResponse
     {
         public Identity Payload { get; set; }
     }

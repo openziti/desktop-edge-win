@@ -56,14 +56,16 @@ namespace ZitiTunneler {
 			try
 			{
 				ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
-				client.IdentityOnOff(_identity.Fingerprint, on);
+				ServiceClient.Identity id = client.IdentityOnOff(_identity.Fingerprint, on);
 				if (on)
 				{
 					ToggleStatus.Content = "ENABLED";
+					MessageBox.Show("jeremy - update the identity and services here. When disabled there will be services returned. service count: " + id.Services.Count());
 				}
 				else
 				{
 					ToggleStatus.Content = "DISABLED";
+					MessageBox.Show("jeremy - update the identity and services here. When disabled there will be no services, service count: " + id.Services.Count());
 				}
 			}
 			catch(ServiceClient.ServiceException se)

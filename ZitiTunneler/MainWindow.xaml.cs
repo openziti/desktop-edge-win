@@ -71,6 +71,7 @@ namespace ZitiTunneler {
 			try
 			{
 				LoadStatusFromService();
+				MessageBox.Show("identites are returned from the server. Any that were 'on' will have services. any off won't. Update the toggles to show if they are on or off");
 			}
 			catch(Exception ex)
 			{

@@ -111,7 +111,7 @@ namespace ZitiTunneler.ServiceClient
 
                 send(AddIdentityFunction);
                 send(newId);
-                var resp = read<NewIdentityResponse>();
+                var resp = read<IdentityResponse>();
                 Debug.WriteLine(resp.ToString());
 
                 return resp.Payload;
@@ -188,12 +188,13 @@ namespace ZitiTunneler.ServiceClient
             }
         }
 
-        public void IdentityOnOff(string fingerprint, bool onOff)
+        public Identity IdentityOnOff(string fingerprint, bool onOff)
         {
             try
             {
                 send(new IdentityToggleFunction(fingerprint, onOff));
-                read<SvcResponse>();
+                IdentityResponse idr = read<IdentityResponse>();
+                return idr.Payload;
             }
             catch (IOException ioe)
             {
@@ -207,7 +208,7 @@ namespace ZitiTunneler.ServiceClient
         {
             try
             {
-                string toSend = JsonConvert.SerializeObject(objToSend, Formatting.Indented);
+                string toSend = JsonConvert.SerializeObject(objToSend, Formatting.None);
                 /*
                 StringWriter w = new StringWriter();
                 serializer.Serialize(w, objToSend);
@@ -219,6 +220,7 @@ namespace ZitiTunneler.ServiceClient
                     Debug.WriteLine("===============  sending message =============== ");
                     Debug.WriteLine(toSend);
                     ipcWriter.Write(toSend);
+                    ipcWriter.Write('\n');
                     Debug.WriteLine("=============== flushing message =============== ");
                     ipcWriter.Flush();
                     Debug.WriteLine("===============     sent message =============== ");
