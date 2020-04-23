@@ -38,7 +38,7 @@ func main() {
 	}
 }
 
-var commands = make(map[string]func([]string)error)
+var commands = make(map[string]func([]string) error)
 
 func init() {
 	commands["quit"] = quit
@@ -77,7 +77,7 @@ func quit(_ []string) error {
 	return nil
 }
 
-func help(_[]string) error {
+func help(_ []string) error {
 	fmt.Println("available commands:")
 	for k, _ := range commands {
 		fmt.Println("\t", k)

@@ -1,11 +1,12 @@
 package cziti
+
 /*
 #cgo windows LDFLAGS: -l libziti.imp -luv -lws2_32 -lpsapi
 
 #include "sdk.h"
 extern void initCB(nf_context nf, int status, void *ctx);
 extern void serviceCB(nf_context nf, ziti_service*, int status, void *ctx);
- */
+*/
 import "C"
 import (
 	"encoding/json"
@@ -21,7 +22,7 @@ type sdk struct {
 var _impl sdk
 
 func init() {
-	_impl.libuvCtx = C.new_libuv_ctx()
+	_impl.libuvCtx = (*C.libuv_ctx)(C.calloc(1, C.sizeof_libuv_ctx))
 	C.libuv_init(_impl.libuvCtx)
 }
 
@@ -42,15 +43,15 @@ func Stop() {
 }
 
 type Service struct {
-	Name string
-	Id   string
+	Name          string
+	Id            string
 	InterceptHost string
 	InterceptPort int
 }
 
 type CZitiCtx struct {
 	options C.nf_options
-	nf C.nf_context
+	nf      C.nf_context
 
 	Services *map[string]Service
 }
@@ -69,13 +70,10 @@ var tunCfgName = C.CString("ziti-tunneler-client.v1")
 func serviceCB(nf C.nf_context, service *C.ziti_service, status C.int, data unsafe.Pointer) {
 	ctx := (*CZitiCtx)(data)
 
-	fmt.Printf("%+v\n", ctx)
 	if ctx.Services == nil {
 		m := make(map[string]Service)
 		ctx.Services = &m
 	}
-	fmt.Printf("%+v\n", ctx)
-
 
 	name := C.GoString(service.name)
 	if status == C.ZITI_SERVICE_UNAVAILABLE {
@@ -95,8 +93,8 @@ func serviceCB(nf C.nf_context, service *C.ziti_service, status C.int, data unsa
 			}
 		}
 		(*ctx.Services)[name] = Service{
-			Name: name,
-			Id: C.GoString(service.id),
+			Name:          name,
+			Id:            C.GoString(service.id),
 			InterceptHost: host,
 			InterceptPort: port,
 		}
@@ -106,6 +104,9 @@ func serviceCB(nf C.nf_context, service *C.ziti_service, status C.int, data unsa
 				fmt.Println(err)
 			} else {
 				fmt.Printf("service[%s] is mapped to <%s:%d>\n", name, ip.String(), port)
+				for _, t := range devMap {
+					t.AddIntercept(name, ip.String(), port, unsafe.Pointer(ctx.nf))
+				}
 			}
 		}
 	}
@@ -131,12 +132,12 @@ func zitiError(code C.int) error {
 	return errors.New(C.GoString(C.ziti_errorstr(code)))
 }
 
-func LoadZiti(cfg string) (*CZitiCtx, error)  {
+func LoadZiti(cfg string) (*CZitiCtx, error) {
 	ctx := CZitiCtx{}
 	ctx.options.config = C.CString(cfg)
 	ctx.options.init_cb = C.nf_init_cb(C.initCB)
 	ctx.options.service_cb = C.nf_service_cb(C.serviceCB)
-	ctx.options.refresh_interval = C.int(10)
+	ctx.options.refresh_interval = C.int(600)
 	ctx.options.config_types = C.all_configs
 	//ctx.options.ctx = unsafe.Pointer(&ctx)
 
@@ -147,7 +148,7 @@ func LoadZiti(cfg string) (*CZitiCtx, error)  {
 		return nil, zitiError(rc)
 	}
 
-	res := <- ch
+	res := <-ch
 
 	if c, ok := res.(*CZitiCtx); ok {
 		return c, nil
