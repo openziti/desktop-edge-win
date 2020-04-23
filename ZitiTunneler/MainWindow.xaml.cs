@@ -71,11 +71,11 @@ namespace ZitiTunneler {
 			try
 			{
 				LoadStatusFromService();
-	}
-			catch
+			}
+			catch(Exception ex)
 			{
 				//probably some kind of problem with the service...
-				MessageBox.Show("oh my goodness - problem with the service. Almost certainly means the service is NOT RUNNING... Jeremy make this pretty");
+				MessageBox.Show("oh my goodness - problem with the service. Almost certainly means the service is NOT RUNNING... Jeremy make this pretty.\n" + ex.Message);
 			}
 			LoadIdentities();
 		}
@@ -84,10 +84,10 @@ namespace ZitiTunneler {
 			ZitiTunnelStatus status = serviceClient.GetStatus();
 			if (status != null)
 			{
-				Application.Current.Properties.Add("ip", status.IpInfo.Ip);
-				Application.Current.Properties.Add("subnet", status.IpInfo.Subnet);
-				Application.Current.Properties.Add("mtu", status.IpInfo.MTU);
-				Application.Current.Properties.Add("dns", status.IpInfo.DNS);
+				Application.Current.Properties.Add("ip", status?.IpInfo?.Ip);
+				Application.Current.Properties.Add("subnet", status?.IpInfo?.Subnet);
+				Application.Current.Properties.Add("mtu", status?.IpInfo?.MTU);
+				Application.Current.Properties.Add("dns", status?.IpInfo?.DNS);
 
 				foreach (var id in status.Identities)
 				{
@@ -167,7 +167,7 @@ namespace ZitiTunneler {
 				}
 				catch (Exception ex)
 				{
-					MessageBox.Show("Unexpected error", ex.Message);
+					MessageBox.Show("Unexpected error 2", ex.Message);
 				}
 				LoadIdentities();
 			}
@@ -194,7 +194,7 @@ namespace ZitiTunneler {
 			}
 			catch (Exception ex)
 			{
-				MessageBox.Show("Unexpected error", ex.Message);
+				MessageBox.Show("Unexpected error 3", ex.Message);
 			}
 		}
 
@@ -225,7 +225,7 @@ namespace ZitiTunneler {
 			}
 			catch (Exception ex)
 			{
-				MessageBox.Show("Unexpected error", ex.Message);
+				MessageBox.Show("Unexpected error 4", ex.Message);
 			}
 		}
 

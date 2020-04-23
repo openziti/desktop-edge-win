@@ -93,7 +93,7 @@ namespace ZitiTunneler {
 			}
 			catch (Exception ex)
 			{
-				MessageBox.Show("Unexpected error", ex.Message);
+				MessageBox.Show("Unexpected error 1", ex.Message);
 			}
 		}
 	}

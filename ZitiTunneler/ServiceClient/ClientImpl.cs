@@ -28,8 +28,8 @@ namespace ZitiTunneler.ServiceClient
         const int ServiceConnectTimeout = 500;
 
         NamedPipeClientStream pipeClient = null;
-        StreamWriter writer = null;
-        StreamReader reader = null;
+        StreamWriter ipcWriter = null;
+        StreamReader ipcReader = null;
 
         public Client()
         {
@@ -46,8 +46,8 @@ namespace ZitiTunneler.ServiceClient
                     pipeClient.Dispose();
                 }
                 pipeClient = new NamedPipeClientStream(localPipeServer, ipcPipe, inOut);
-                writer = new StreamWriter(pipeClient);
-                reader = new StreamReader(pipeClient);
+                ipcWriter = new StreamWriter(pipeClient);
+                ipcReader = new StreamReader(pipeClient);
                 try
                 {
                     pipeClient.Connect(ServiceConnectTimeout);
@@ -56,18 +56,18 @@ namespace ZitiTunneler.ServiceClient
                 {
                     //todo: better error
                     Debug.WriteLine("There was a problem connecting to the service");
-                    reader.Close();
+                    ipcReader.Close();
                     try
                     {
-                        writer.Close();
+                        ipcWriter.Close();
                     }
                     catch
                     {
                         //intentionally ignored
                     }
                     pipeClient.Close();
-                    reader = null;
-                    writer = null;
+                    ipcReader = null;
+                    ipcWriter = null;
                     pipeClient = null;
                 }
             }
@@ -171,10 +171,10 @@ namespace ZitiTunneler.ServiceClient
             try
             {
                 NamedPipeClientStream logClient = new NamedPipeClientStream(localPipeServer, logPipe, PipeDirection.In);
-                reader = new StreamReader(logClient);
+                StreamReader logReader = new StreamReader(logClient);
                 logClient.Connect(ServiceConnectTimeout);
 
-                string content = reader.ReadToEnd();
+                string content = logReader.ReadToEnd();
 
                 //ugly hack to turn ansi escaping to not... _bleck_
                 //todo: fix this :point_up:
@@ -205,13 +205,30 @@ namespace ZitiTunneler.ServiceClient
 
         private void send(object objToSend)
         {
-            string json = JsonConvert.SerializeObject(objToSend, Formatting.Indented);
-
-            Debug.WriteLine(json);
             try
             {
-                serializer.Serialize(writer, objToSend);
-                writer.Flush();
+                string toSend = JsonConvert.SerializeObject(objToSend, Formatting.Indented);
+                /*
+                StringWriter w = new StringWriter();
+                serializer.Serialize(w, objToSend);
+
+                string toSend = w.ToString();
+                */
+                if (toSend?.Trim() != null)
+                {
+                    Debug.WriteLine("===============  sending message =============== ");
+                    Debug.WriteLine(toSend);
+                    ipcWriter.Write(toSend);
+                    Debug.WriteLine("=============== flushing message =============== ");
+                    ipcWriter.Flush();
+                    Debug.WriteLine("===============     sent message =============== ");
+                    Debug.WriteLine("");
+                    Debug.WriteLine("");
+                }
+                else
+                {
+                    Debug.WriteLine("NOT sending empty object??? " + objToSend?.ToString());
+                }
             }
             catch
             {
@@ -223,12 +240,53 @@ namespace ZitiTunneler.ServiceClient
 
         private T read<T>() where T : SvcResponse
         {
-            T resp = (T)serializer.Deserialize(reader, typeof(T));
-            if (resp.Code != 0)
+            try
             {
-                throw new ServiceException(resp.Message, resp.Code, resp.Error);
+                int emptyCount = 1;
+
+                Debug.WriteLine("===============  reading message =============== " + emptyCount);
+                string respAsString = ipcReader.ReadLine();
+                Debug.WriteLine(respAsString);
+                Debug.WriteLine("===============     read message =============== " + emptyCount);
+                while (string.IsNullOrEmpty(respAsString?.Trim()))
+                {
+                    //T resp = (T)serializer.Deserialize(reader, typeof(T));
+                    if (ipcReader.EndOfStream)
+                    {
+                        throw new Exception("the pipe has closed");
+                    }
+                    Debug.WriteLine("Received empty payload - continuing to read until a payload is received");
+                    //now how'd that happen...
+                    Debug.WriteLine("===============  reading message =============== " + emptyCount);
+                    respAsString = ipcReader.ReadLine();
+                    Debug.WriteLine(respAsString);
+                    Debug.WriteLine("===============     read message =============== " + emptyCount);
+                    emptyCount++;
+                    if (emptyCount > 5)
+                    {
+                        Debug.WriteLine("are we there yet? " + ipcReader.EndOfStream);
+                        //that's just too many...
+                        setupPipe();
+                        return null;
+                    }
+                }
+                Debug.WriteLine("");
+                Debug.WriteLine("");
+
+                T resp = (T)serializer.Deserialize(new StringReader(respAsString), typeof(T));
+
+                if (resp.Code != 0)
+                {
+                    throw new ServiceException(resp.Message, resp.Code, resp.Error);
+                }
+                return resp;
             }
-            return resp;
+            catch (IOException ioe)
+            {
+                //almost certainly a problem with the pipe - recreate the pipe...
+                setupPipe();
+                throw ioe;
+            }
         }
     }
 }
