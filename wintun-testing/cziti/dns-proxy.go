@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/miekg/dns"
 	"net"
+	"time"
 	"wintun-testing/cziti/windns"
 )
 
@@ -97,7 +98,7 @@ func runListener(ip net.IP, port int, reqch chan dnsreq) {
 	if len(ip.To4()) == net.IPv4len {
 		network = "udp4"
 	}
-	fmt.Println(network, ip)
+
 	server, err := net.ListenUDP(network, laddr)
 	if err != nil {
 		panic(err)
@@ -123,6 +124,7 @@ type proxiedReq struct {
 	req  *dns.Msg
 	peer *net.UDPAddr
 	s    *net.UDPConn
+	exp  time.Time
 }
 
 var proxiedRequests chan *proxiedReq
@@ -132,6 +134,7 @@ func proxyDNS(req *dns.Msg, peer *net.UDPAddr, serv *net.UDPConn) {
 		req:  req,
 		peer: peer,
 		s:    serv,
+		exp:  time.Now().Add(30 * time.Second),
 	}
 }
 
@@ -195,6 +198,15 @@ func runDNSproxy(dnsServers []string) {
 				} else {
 					fmt.Println("matching request was not found for ",
 						dns.Type(reply.Question[0].Qtype), reply.Question[0].Name)
+				}
+			}
+		case <-time.After(time.Minute):
+			// cleanup requests we didn't get answers for
+			now := time.Now()
+			for k, r := range reqs {
+				if now.After(r.exp) {
+					fmt.Println("req expired", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
+					delete(reqs, k)
 				}
 			}
 		}
