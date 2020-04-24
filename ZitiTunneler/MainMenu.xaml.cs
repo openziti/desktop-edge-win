@@ -123,7 +123,14 @@ namespace ZitiTunneler
 			Process.Start(new ProcessStartInfo("https://support.netfoundry.io") { UseShellExecute = true });
 		}
 		private void DetachWindow(object sender, MouseButtonEventArgs e) {
-
+			Application.Current.MainWindow.ShowInTaskbar = true;
+			DetachButton.Visibility = Visibility.Collapsed;
+			AttachButton.Visibility = Visibility.Visible;
+		}
+		private void RetachWindow(object sender, MouseButtonEventArgs e) {
+			Application.Current.MainWindow.ShowInTaskbar = false;
+			DetachButton.Visibility = Visibility.Visible;
+			AttachButton.Visibility = Visibility.Collapsed;
 		}
 
 		private void SaveConfig(object sender, RoutedEventArgs e) {

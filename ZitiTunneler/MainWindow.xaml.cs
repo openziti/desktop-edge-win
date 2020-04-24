@@ -120,13 +120,14 @@ namespace ZitiTunneler {
 				id.OnClick += OpenIdentity;
 				IdList.Children.Add(id);
 			}
-			UIMain.Height = 480+(identities.Count*60);
-			BgColor.Height = 480+(identities.Count*60);
-			FormGrowAnimation.To = UIMain.Height;
-			FormGrowOutAnimation.From = BgColor.Height;
-			App.Current.MainWindow.Height = 490+(identities.Count*60);
+			//MainUI.Height = 480+(identities.Count*60);
+			//BgColor.Height = 480+(identities.Count*60);
+			//FormGrowAnimation.To = MainUI.Height;
+			//FormGrowOutAnimation.From = BgColor.Height;
+			//App.Current.MainWindow.Height = 490+(identities.Count*60);
 			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
 			this.Left = desktopWorkingArea.Right-this.Width-25;
+			this.Top = desktopWorkingArea.Bottom-this.Height-25;
 			this.Top = desktopWorkingArea.Bottom-this.Height-25;
 		}
 

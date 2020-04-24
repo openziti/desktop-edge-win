@@ -6,7 +6,21 @@
              xmlns:local="clr-namespace:ZitiTunneler"
              mc:Ignorable="d" 
              d:DesignHeight="50" HorizontalAlignment="Stretch" d:DesignWidth="375" Cursor="Hand">
-    <StackPanel Orientation="Vertical">
+    <StackPanel Orientation="Vertical" Cursor="Hand">
+        <StackPanel.Triggers>
+            <EventTrigger RoutedEvent="StackPanel.MouseLeftButtonDown" >
+                <BeginStoryboard>
+                    <Storyboard>
+                        <DoubleAnimation Storyboard.TargetProperty="Opacity" Storyboard.TargetName="BgFill" From="0" To="1.0" Duration="0:0:1"></DoubleAnimation>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="BgFill" Storyboard.TargetProperty="Visibility">
+                            <DiscreteObjectKeyFrame KeyTime="0:0:1" Value="{x:Static Visibility.Visible}"/>
+                        </ObjectAnimationUsingKeyFrames>
+                        <DoubleAnimation Storyboard.TargetProperty="Opacity" Storyboard.TargetName="BgFill" From="0" To="1.0" Duration="0:0:1"></DoubleAnimation>
+                    </Storyboard>
+                </BeginStoryboard>
+            </EventTrigger>
+        </StackPanel.Triggers>
+        <Rectangle Name="BgFill" Fill="#7d8faf"></Rectangle>
         <Grid Height="49">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="50"/>

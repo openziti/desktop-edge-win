@@ -27,7 +27,7 @@ namespace ZitiTunneler {
 			}
 			set {
 				this._label = value;
-				MainLabel.Content = this._label;
+				MainLabel.Text = this._label;
 			}
 		}
 		public string Value {

@@ -5,33 +5,55 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ZitiTunneler"
              mc:Ignorable="d" 
-             d:DesignHeight="400" d:DesignWidth="375">
-    <Canvas Width="375" VerticalAlignment="Stretch">
-        <Rectangle HorizontalAlignment="Center" Height="40" Fill="White" VerticalAlignment="Top" Width="40" ClipToBounds="True" Canvas.Left="158" Canvas.Bottom="-30" Canvas.Top="573">
-            <Rectangle.LayoutTransform>
-                <RotateTransform Angle="-45"/>
-            </Rectangle.LayoutTransform>
-        </Rectangle>
-        <Rectangle HorizontalAlignment="Left" Height="610" Fill="White" VerticalAlignment="Top" Width="375" RadiusY="10" RadiusX="10" ClipToBounds="True"></Rectangle>
+             x:Name="MainMenuArea"
+             d:DesignHeight="400" d:DesignWidth="350">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="50"/>
+        </Grid.RowDefinitions>
+        <Canvas>
+            <Rectangle HorizontalAlignment="Center" Height="20" Fill="White" VerticalAlignment="Bottom" Width="20" Canvas.Bottom="-10">
+                <Rectangle.LayoutTransform>
+                    <RotateTransform Angle="-45"/>
+                </Rectangle.LayoutTransform>
+            </Rectangle>
+        </Canvas>
+        <Rectangle Fill="White" RadiusY="10" RadiusX="10" ClipToBounds="True"></Rectangle>
 
-        <Grid HorizontalAlignment="Stretch" Width="375" Margin="0,0,0,20">
+        <Grid Margin="0,0,0,20">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Stretch" Height="550" Margin="20,20,20,20">
+            <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Vertical" Margin="20,20,20,20">
                 <Grid Margin="0,0,0,20">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="70"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="70"/>
                     </Grid.ColumnDefinitions>
-                    <StackPanel Name="BackArrow" Cursor="Hand" Grid.Column="0" Orientation="Horizontal" MouseUp="GoBack">
+                    <StackPanel Name="BackArrow" Cursor="Hand" Grid.Column="0" Orientation="Horizontal" Visibility="Collapsed" MouseLeftButtonDown="GoBack">
                         <Image Source="/Assets/Images/lastArrow.png" Width="20" Height="20"></Image>
                         <Label FontSize="12" FontWeight="SemiBold" Content="Back" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                     </StackPanel>
-                    <Label Grid.Column="0"></Label>
                     <Label Name="MenuTitle" Grid.Column="1" Content="Main Menu" HorizontalAlignment="Center" FontSize="14" FontWeight="SemiBold" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="#0F0F23"></Label>
-                    <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/x.png" Width="20" Height="20" Margin="0,0,0,0" MouseDown="HideMenu" />
+                    <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/x.png" Width="20" Height="20" Margin="0,0,0,0" MouseDown="HideMenu" HorizontalAlignment="Right">
+                        <Image.Triggers>
+                            <EventTrigger RoutedEvent="Image.MouseDown" >
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetProperty="Opacity" Storyboard.TargetName="MainMenuArea" From="1.0" To="0" Duration="0:0:1"></DoubleAnimation>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="MainMenuArea" Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0:0:2" Value="{x:Static Visibility.Collapsed}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Image.Triggers>
+                    </Image>
                 </Grid>
                 <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
                 <StackPanel Name="MainItems" Orientation="Vertical" HorizontalAlignment="Stretch">
@@ -39,7 +61,8 @@
                     <local:MenuItem Label="About" Icon="/Assets/Images/about.png" MouseUp="ShowAbout"></local:MenuItem>
                     <local:MenuItem Label="Feedback" Icon="/Assets/Images/feedback.png" MouseUp="ShowFeedback"></local:MenuItem>
                     <local:MenuItem Label="Support" Icon="/Assets/Images/support.png" MouseUp="ShowSupport"></local:MenuItem>
-                    <local:MenuItem Label="Detach App" Icon="/Assets/Images/detach.png" MouseUp="DetachWindow"></local:MenuItem>
+                    <local:MenuItem x:Name="DetachButton" Label="Detach App" Icon="/Assets/Images/detach.png" MouseUp="DetachWindow"></local:MenuItem>
+                    <local:MenuItem x:Name="AttachButton" Label="Attach App" Icon="/Assets/Images/detach.png" MouseUp="RetachWindow" Visibility="Collapsed"></local:MenuItem>
                 </StackPanel>
                 <StackPanel Name="AboutItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <local:SubMenuItem HorizontalAlignment="Stretch" Width="Auto" Label="Privacy Policy" MouseUp="ShowPrivacy"></local:SubMenuItem>
@@ -60,11 +83,13 @@
                 <TextBox Name="LogsItems" Width="380" Height="400" Visibility="Collapsed"></TextBox>
             </StackPanel>
         </Grid>
-        <Button Name="ConfigSaveButton" Cursor="Hand" Click="SaveConfig" Visibility="Collapsed" Content="SAVE" FontSize="10" FontWeight="SemiBold" Canvas.Top="560" Padding="20,7,20,7" Canvas.Right="20" Background="#0069FF" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Canvas.Left="290"></Button>
-        <StackPanel Name="AboutItemsButton" Canvas.Top="520" Canvas.Left="50" Orientation="Vertical" HorizontalAlignment="Stretch" Visibility="Collapsed">
-            <Image Grid.Column="0" Source="/Assets/Images/logo.png" Height="60" Width="240"></Image>
-            <Label HorizontalAlignment="Center" Content="Version 1.0 (23)" FontSize="10" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
-        </StackPanel>
-        <Label Name="MainItemsButton" Canvas.Top="572" Foreground="#F4044D" FontWeight="SemiBold" Content="Quit Ziti Tunneler" Cursor="Hand" MouseDown="CloseApp" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Stretch" Canvas.Left="134"></Label>
-    </Canvas>
+        <Canvas>
+            <Button Name="ConfigSaveButton" Cursor="Hand" Click="SaveConfig" Visibility="Collapsed" Content="SAVE" FontSize="10" FontWeight="SemiBold" Canvas.Top="560" Padding="20,7,20,7" Canvas.Right="20" Background="#0069FF" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Canvas.Left="290"></Button>
+            <StackPanel Name="AboutItemsButton" Canvas.Top="520" Canvas.Left="50" Orientation="Vertical" HorizontalAlignment="Stretch" Visibility="Collapsed">
+                <Image Grid.Column="0" Source="/Assets/Images/logo.png" Height="60" Width="240"></Image>
+                <Label HorizontalAlignment="Center" Content="Version 1.0 (23)" FontSize="10" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
+            </StackPanel>
+            <Label Name="MainItemsButton" Canvas.Top="572" Foreground="#F4044D" FontWeight="SemiBold" Content="Quit Ziti Tunneler" Cursor="Hand" MouseDown="CloseApp" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Stretch" Canvas.Left="134"></Label>
+        </Canvas>
+    </Grid>
 </UserControl>

@@ -37,7 +37,7 @@ namespace ZitiTunneler.Models {
 				ControllerUrl = id.Config.ztAPI,
 				EnrollmentStatus = "status",
 				Fingerprint = id.FingerPrint,
-				IsEnabled = false,
+				IsEnabled = id.Active,
 				Name = id.Name,
 				Status = id.Status,
 			};

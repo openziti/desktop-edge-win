@@ -7,8 +7,8 @@
         mc:Ignorable="d"
         ShowInTaskbar="False"
         x:Name="MainUI"
-        Title="MainWindow" Height="510" 
-        Width="375" ResizeMode="NoResize" 
+        Title="MainWindow" Height="560" 
+        Width="350" ResizeMode="NoResize" 
         Icon="Assets/Images/icon.png" AllowsTransparency="True" 
         Closing="Window_Closing"
         WindowStyle="None" Loaded="MainWindow1_Loaded" Background="#000F0F23">
@@ -16,15 +16,14 @@
         <EventTrigger RoutedEvent="Window.Loaded">
             <BeginStoryboard>
                 <Storyboard Name="FormFade">
+                    <!-- <DoubleAnimation From="0" To="-505" Duration="00:00:4" Storyboard.TargetProperty="X" Storyboard.TargetName="MainUI"  /> -->
                     <DoubleAnimation  Name="FormFadeAnimation" Storyboard.TargetName="MainUI" Storyboard.TargetProperty="(Window.Opacity)" From="0.0" To="1.0" Duration="0:0:.5" AutoReverse="False" RepeatBehavior="1x" />
-                    <DoubleAnimation  Name="FormGrowAnimation" Storyboard.TargetName="MainUI" Storyboard.TargetProperty="(Window.Height)" From="300" To="575" Duration="0:0:.5" AutoReverse="False" RepeatBehavior="1x" />
                 </Storyboard>
             </BeginStoryboard>
         </EventTrigger>
         <EventTrigger RoutedEvent="Window.Unloaded">
             <BeginStoryboard>
                 <Storyboard Name="FormFadeOut" Completed="FormFadeOut_Completed">
-                    <DoubleAnimation  Name="FormGrowOutAnimation" Storyboard.TargetName="MainUI" Storyboard.TargetProperty="(Window.Height)" From="575" To="200" Duration="0:0:.5" AutoReverse="False" RepeatBehavior="1x" />
                     <DoubleAnimation  Name="FormFadeOutAnimation" Storyboard.TargetName="MainUI" Storyboard.TargetProperty="(Window.Opacity)" From="1.0" To="0.0" Duration="0:0:.5" AutoReverse="False"  RepeatBehavior="1x" />
                 </Storyboard>
             </BeginStoryboard>
@@ -38,58 +37,79 @@
             <DoubleAnimation Storyboard.TargetName="UIMain" BeginTime="0:0:0.5" Storyboard.TargetProperty="Opacity" From="1.00" To="0.00" AutoReverse="False" Duration="0:0:0.3" />
         </Storyboard>
     </Window.Resources>
-    <Canvas Name="UIMain" HorizontalAlignment="Stretch" Height="500" VerticalAlignment="Top">
-        <Rectangle HorizontalAlignment="Center" Height="40" Fill="#070826" VerticalAlignment="Top" Width="40" ClipToBounds="True" Canvas.Left="158" Canvas.Bottom="-30">
-            <Rectangle.LayoutTransform>
-                <RotateTransform Angle="-45"/>
-            </Rectangle.LayoutTransform>
-        </Rectangle>
-        <Border Name="UIBorder" Width="375" Height="510" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" BorderBrush="Black" BorderThickness="3" CornerRadius="10">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Canvas ClipToBounds="False">
+            <Rectangle HorizontalAlignment="Center" Height="20" Fill="#070826" Width="20" ClipToBounds="True" Canvas.Left="175" Canvas.Bottom="10">
+                <Rectangle.LayoutTransform>
+                    <RotateTransform Angle="-45"/>
+                </Rectangle.LayoutTransform>
+            </Rectangle>
+        </Canvas>
+        <Border Name="UIBorder"  BorderBrush="Black" BorderThickness="3" CornerRadius="10">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="15" Direction="0" RenderingBias="Quality" ShadowDepth="2" Opacity="0.2"/>
             </Border.Effect>
         </Border>
-        <Rectangle Name="BgColor" Width="375" Height="510" Stroke="Black" RadiusY="10" RadiusX="10" ClipToBounds="True">
+        <Rectangle Name="BgColor" Stroke="Black" RadiusY="10" RadiusX="10" ClipToBounds="True">
             <Rectangle.Fill>
                 <ImageBrush ImageSource="/Assets/Images/background.png" />
             </Rectangle.Fill>
         </Rectangle>
-        <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch">
-            <Grid HorizontalAlignment="Stretch" Width="375">
+        <StackPanel>
+            <Grid HorizontalAlignment="Stretch">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="100"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="100"/>
                 </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0" Cursor="Hand" Orientation="Vertical" Margin="12,12,12,12" MouseLeftButtonDown="ShowMenu">
+                <StackPanel Grid.Column="0" Cursor="Hand" Orientation="Vertical" Margin="14,16,14,14" MouseLeftButtonDown="ShowMenu">
+                    <StackPanel.Triggers>
+                        <EventTrigger RoutedEvent="StackPanel.MouseLeftButtonDown" >
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetProperty="Opacity" Storyboard.TargetName="MainMenu" From="0" To="1.0" Duration="0:0:.5"></DoubleAnimation>
+                                    <ObjectAnimationUsingKeyFrames Storyboard.TargetName="MainMenu" Storyboard.TargetProperty="Visibility">
+                                        <DiscreteObjectKeyFrame KeyTime="0:0:.5" Value="{x:Static Visibility.Visible}"/>
+                                    </ObjectAnimationUsingKeyFrames>
+                                    <DoubleAnimation Storyboard.TargetProperty="Opacity" Storyboard.TargetName="MainMenu" From="0" To="1.0" Duration="0:0:.5"></DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </StackPanel.Triggers>
                     <Image Source="/Assets/Images/hamburger.png" Margin="5,0,0,-4" Width="26" Height="26" HorizontalAlignment="Left"></Image>
                     <Label Content="MAIN" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" FontSize="10"></Label>
                     <Label Content="MENU" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" Margin="0,-14,0,0" FontSize="10"></Label>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,12">
                     <Image Source="/Assets/Images/z.png" Height="40" RenderOptions.BitmapScalingMode="Fant"></Image>
-                    <Label Content="Ziti Tunneler V1" FontFamily="pack://application:,,,/Assets/Fonts/#Russo One" FontSize="18" Foreground="White" HorizontalAlignment="Center"></Label>
+                    <Label Content="Tap to Connect" Margin="0,-3,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Russo One" FontSize="14" Foreground="White" HorizontalAlignment="Center"></Label>
                 </StackPanel>
-                <StackPanel Grid.Column="2" Cursor="Hand" Orientation="Vertical" Margin="12,12,12,12" MouseLeftButtonDown="AddIdentity">
+                <StackPanel Grid.Column="2" Cursor="Hand" Orientation="Vertical" Margin="14,16,14,14" MouseLeftButtonDown="AddIdentity">
                     <Image Source="/Assets/Images/identity.png" Margin="0,0,5,-4" Width="26" Height="26" HorizontalAlignment="Right"></Image>
-                    <Label Content="ADD" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" FontSize="12" HorizontalAlignment="Right"></Label>
-                    <Label Content="IDENTITY" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" Margin="0,-14,0,0" FontSize="12" HorizontalAlignment="Right"></Label>
+                    <Label Content="ADD" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" FontSize="10" HorizontalAlignment="Right"></Label>
+                    <Label Content="IDENTITY" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" Margin="0,-14,0,0" FontSize="10" HorizontalAlignment="Right"></Label>
                 </StackPanel>
             </Grid>
-            <Canvas Name="ConnectButton" Width="375" Height="160" MouseDown="Connect" Visibility="Visible">
-                <Grid Width="{Binding ActualWidth, ElementName=ConnectButton}" Height="180">
-                    <Image Source="/Assets/Images/connect.png" Height="180" HorizontalAlignment="Center" />
+            <Canvas Name="ConnectButton" Width="350" Height="160" MouseDown="Connect" Visibility="Visible">
+                <Grid Width="{Binding ActualWidth, ElementName=ConnectButton}" Height="140">
+                    <Image Source="/Assets/Images/connect.png" Height="140" HorizontalAlignment="Center" />
                 </Grid>
             </Canvas>
-            <Canvas Name="DisconnectButton" Width="375" Height="160" MouseDown="Disconnect" Visibility="Collapsed">
-                <Grid Width="{Binding ActualWidth, ElementName=DisconnectButton}" Height="180">
-                    <Image Source="/Assets/Images/connected.png" Height="180" HorizontalAlignment="Center" />
+            <Canvas Name="DisconnectButton" Width="350" Height="160" MouseDown="Disconnect" Visibility="Collapsed">
+                <Grid Width="{Binding ActualWidth, ElementName=DisconnectButton}" Height="140">
+                    <Image Source="/Assets/Images/connected.png" Height="140" HorizontalAlignment="Center" />
                 </Grid>
-                <Grid Width="{Binding ActualWidth, ElementName=DisconnectButton}" Height="180">
-                    <Label Name="ConnectedTime" HorizontalAlignment="Center" Content="00:00:00" Foreground="White" Padding="0,115,0,0"/>
+                <Grid Width="{Binding ActualWidth, ElementName=DisconnectButton}" Height="140">
+                    <Label Name="ConnectedTime" HorizontalAlignment="Center" Content="00:00:00" Foreground="White" Padding="0,90,0,0"/>
                 </Grid>
-                <Grid Width="{Binding ActualWidth, ElementName=DisconnectButton}" Height="180">
-                    <Label HorizontalAlignment="Center"  Content="STOP" Foreground="White" Padding="0,130,0,0"/>
+                <Grid Width="{Binding ActualWidth, ElementName=DisconnectButton}" Height="140">
+                    <Label HorizontalAlignment="Center"  Content="STOP" Foreground="White" Padding="0,105,0,0"/>
                 </Grid>
             </Canvas>
             <Grid HorizontalAlignment="Stretch" Width="Auto" Margin="0,30,0,0">
@@ -103,10 +123,10 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="40"/>
                         </Grid.ColumnDefinitions>
-                        <Label Grid.Column="0" Content="Download Speed" Foreground="White" HorizontalAlignment="Right" FontSize="16" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
+                        <Label Grid.Column="0" Content="Download Speed" Foreground="White" HorizontalAlignment="Right" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                         <Image Grid.Column="1" Source="/Assets/Images/down.png" Width="20" HorizontalAlignment="Left" Height="20"></Image>
                     </Grid>
-                    <Label Name="DownloadSpeed" Margin="0,-16,0,0" Foreground="#0069FF" Content="0" FontSize="50" HorizontalAlignment="Center" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" />
+                    <Label Name="DownloadSpeed" Margin="0,-16,0,0" Foreground="#0069FF" Content="0" FontSize="40" HorizontalAlignment="Center" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" />
                     <Label Foreground="White" Margin="0,-20,0,30" Content="Mbps" FontSize="11" HorizontalAlignment="Center" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Vertical">
@@ -115,10 +135,10 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="50"/>
                         </Grid.ColumnDefinitions>
-                        <Label Grid.Column="0" Content="Upload Speed" Foreground="White" HorizontalAlignment="Right" FontSize="16" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
+                        <Label Grid.Column="0" Content="Upload Speed" Foreground="White" HorizontalAlignment="Right" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                         <Image Grid.Column="1" Source="/Assets/Images/up.png" Width="20" HorizontalAlignment="Left" Height="20"></Image>
                     </Grid>
-                    <Label Name="UploadSpeed" Margin="0,-16,0,0" Foreground="#FF0047" Content="0" FontSize="50" HorizontalAlignment="Center" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" />
+                    <Label Name="UploadSpeed" Margin="0,-16,0,0" Foreground="#FF0047" Content="0" FontSize="40" HorizontalAlignment="Center" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" />
                     <Label Foreground="White" Margin="0,-20,0,30" Content="Mbps" FontSize="11" HorizontalAlignment="Center" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" />
                 </StackPanel>
             </Grid>
@@ -134,5 +154,5 @@
         </StackPanel>
         <local:MainMenu x:Name="MainMenu" Visibility="Collapsed"></local:MainMenu>
         <local:IdentityDetails x:Name="IdentityMenu" Visibility="Collapsed"></local:IdentityDetails>
-    </Canvas>
+    </Grid>
 </Window>
