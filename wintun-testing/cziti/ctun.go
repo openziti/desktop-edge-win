@@ -32,13 +32,10 @@ import "C"
 import (
 	"errors"
 	"fmt"
-	"github.com/miekg/dns"
 	"golang.zx2c4.com/wireguard/tun"
 	"net"
 	"unsafe"
 )
-
-const dnsIP = "169.254.1.253"
 
 type Tunnel interface {
 	AddIntercept(service string, hostname string, port int, ctx unsafe.Pointer)
@@ -61,7 +58,7 @@ type tunnel struct {
 
 var devMap = make(map[string]*tunnel)
 
-func HookupTun(dev tun.Device) (Tunnel, error) {
+func HookupTun(dev tun.Device, dns []net.IP) (Tunnel, error) {
 	fmt.Println("in HookupTun ")
 	defer fmt.Println("exiting HookupTun")
 	name, err := dev.Name()
@@ -89,9 +86,7 @@ func HookupTun(dev tun.Device) (Tunnel, error) {
 
 	t.tunCtx = C.NF_tunneler_init(opts, _impl.libuvCtx.l)
 
-	dnsServer := C.CString(dnsIP)
-	rc := C.NF_udp_handler(t.tunCtx, dnsServer, C.int(53), C.ziti_udp_cb(C.dnsHandler), unsafe.Pointer(nil))
-	fmt.Println("registered  UDP handler = ", int64(rc))
+	go runDNSserver(dns)
 
 	return t, nil
 }
@@ -241,47 +236,19 @@ func (t *tunnel) AddIntercept(service string, host string, port int, ctx unsafe.
 // extern void dnsHandler(tunneler_io_context tio, void *ctx, addr_t src, uint16_t sport, void *data, ssize_t len);
 //export dnsHandler
 func dnsHandler(tio C.tunneler_io_context, ctx unsafe.Pointer, src C.addr_t, sport C.uint16_t, b unsafe.Pointer, bl C.ssize_t) {
-	q := &dns.Msg{}
-	if err := q.Unpack(C.GoBytes(b, C.int(bl))); err != nil {
-		fmt.Println("error", err)
-	}
+	/*
+		reply, err := processDNSquery(C.GoBytes(b, C.int(bl)))
 
-	msg := dns.Msg{}
-	msg.SetReply(q)
-	msg.RecursionAvailable = false
-
-	query := q.Question[0]
-	var ip net.IP
-	if query.Qtype == dns.TypeA {
-		ip = DNS.Resolve(query.Name)
-	}
-
-	if ip != nil {
-		msg.Authoritative = true
-		msg.Rcode = dns.RcodeSuccess
-		answer := &dns.A{
-			Hdr: dns.RR_Header{Name: query.Name, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: 60},
-			A:   ip,
+		if err == nil {
+			replyC := C.CBytes(reply)
+			rc := C.NF_udp_send(tio, src, sport, replyC, C.ssize_t(len(reply)))
+			C.free(replyC)
+			if rc != 0 {
+				fmt.Println("NF_udp_reply rc=", rc)
+			}
+		} else {
+			fmt.Println("dns message error", err)
 		}
-		msg.Answer = append(msg.Answer, answer)
 
-	} else {
-		// msg.Rcode = dns.RcodeNotImplemented
-		msg.Authoritative = false
-		msg.Rcode = dns.RcodeRefused
-	}
-
-	reply, err := msg.Pack()
-	if err == nil {
-		replyC := C.CBytes(reply)
-		rc := C.NF_udp_send(tio, src, sport, replyC, C.ssize_t(len(reply)))
-		C.free(replyC)
-		if rc != 0 {
-			fmt.Println("NF_udp_reply rc=", rc)
-		}
-	} else {
-		fmt.Println("dns message error", err)
-	}
+	*/
 }
-
-/*******************************************************************/

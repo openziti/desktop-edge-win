@@ -4,7 +4,7 @@
     <working_directory value="$PROJECT_DIR$" />
     <go_parameters value="-i" />
     <envs>
-      <env name="PATH" value="v:\dev\tools\mingw-w64\bin" />
+      <env name="PATH" value="v:\dev\tools\mingw-w64\bin;c:\windows\system32" />
       <env name="PFXLOG_NO_JSON" value="true" />
     </envs>
     <kind value="FILE" />

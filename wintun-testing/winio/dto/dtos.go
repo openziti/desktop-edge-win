@@ -3,6 +3,8 @@ package dto
 import (
 	idcfg "github.com/netfoundry/ziti-sdk-golang/ziti/config"
 	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
+	"log"
+	"wintun-testing/winio/config"
 )
 
 type AddIdentity struct {
@@ -24,6 +26,8 @@ type Identity struct {
 	Status      string
 	Services    []*Service
 	Metrics     Metrics
+
+	Connected   bool `json:"-"`
 }
 type Metrics struct {
 	TotalBytes int64
@@ -43,4 +47,11 @@ type ZitiTunnelStatus struct {
 	Message string
 	Error   string
 	Payload Identity
+}
+
+func (id *Identity) Path() string {
+	if id.FingerPrint == "" {
+		log.Fatalf("fingerprint is invalid for id %s", id.Name)
+	}
+	return config.Path() + id.FingerPrint + ".json"
 }

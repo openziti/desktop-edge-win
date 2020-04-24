@@ -70,7 +70,12 @@ namespace ZitiTunneler {
 			}
 			catch(ServiceClient.ServiceException se)
 			{
+				MessageBox.Show("Unexpected error 5 the toggle needs to be rolled back!!! jeremy!", se.Message);
 				MessageBox.Show(se.AdditionalInfo, se.Message);
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show("Unexpected error 5 the toggle needs to be rolled back!!! jeremy!", ex.Message);
 			}
 		}
 
