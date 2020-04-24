@@ -7,15 +7,27 @@ import (
 	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
 	"net"
 	"os"
-	"os/exec"
 	"os/signal"
 	user2 "os/user"
 	"path/filepath"
 	"syscall"
 	"wintun-testing/cziti"
+	"wintun-testing/cziti/windns"
 )
 
 const bufferSize = 64 * 1024
+
+// TUN IPs
+const ipv4ip = "169.254.1.1"
+const ipv4mask = 24
+const ipv4dns = "127.0.0.1" // use lo -- don't pass DNS queries through tunneler SDK
+
+// IPv6 CIDR fe80:6e66:7a69:7469::/64
+//   <link-local>: nf : zi : ti ::
+const ipv6pfx = "fe80:6e66:7a69:7469"
+const ipv6ip = "1"
+const ipv6mask = 64
+const ipv6dns = "::1" // must be in "ipv6ip/ipv6mask" CIDR block
 
 func main() {
 	user, err := user2.Current()
@@ -29,7 +41,7 @@ func main() {
 	interfaceName := os.Args[1]
 
 	fmt.Println("creating TUN device")
-	tunDevice, err := tun.CreateTUN(interfaceName, 64 * 1024)
+	tunDevice, err := tun.CreateTUN(interfaceName, 64*1024)
 	if err == nil {
 		realInterfaceName, err2 := tunDevice.Name()
 		if err2 == nil {
@@ -47,7 +59,7 @@ func main() {
 
 	nativeTunDevice := tunDevice.(*tun.NativeTun)
 	luid := winipcfg.LUID(nativeTunDevice.LUID())
-	ip, ipnet, err := net.ParseCIDR("169.254.1.1/24")
+	ip, ipnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", ipv4ip, ipv4mask))
 	if err != nil {
 		fatal(err)
 	}
@@ -56,7 +68,20 @@ func main() {
 	if err != nil {
 		fatal(err)
 	}
-	fmt.Printf("TUN interface address set to [%s]\n", ip)
+
+	dnsServers := []net.IP{
+		net.ParseIP(ipv4dns).To4(),
+		net.ParseIP(ipv6dns),
+	}
+	err = luid.AddDNS(dnsServers)
+	if err != nil {
+		fatal(err)
+	}
+	dns, err := luid.DNS()
+	if err != nil {
+		fatal(err)
+	}
+	fmt.Println("dns servers = ", dns)
 
 	fmt.Printf("routing destination [%s] through [%s]\n", *ipnet, ipnet.IP)
 	err = luid.SetRoutes([]*winipcfg.RouteData{{*ipnet, ipnet.IP, 0}})
@@ -69,23 +94,12 @@ func main() {
 	term := make(chan os.Signal, 1)
 
 	fmt.Println("running")
-	cziti.DnsInit("169.254.1.1", 24)
+	cziti.DnsInit(ipv4ip, 24)
 
 	cziti.Start()
-	_, err = cziti.HookupTun(tunDevice)
+	_, err = cziti.HookupTun(tunDevice, dns)
 	if err != nil {
 		panic(err)
-	}
-
-	cmd := exec.Command("netsh", "interface", "ipv4", "set",
-		"dnsservers", "name="+interfaceName,
-		"source=static", "address=169.254.1.253",
-		"register=primary", "validate=no")
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	err = cmd.Run()
-	if err != nil {
-		fmt.Print(err)
 	}
 
 	if ctx, err := cziti.LoadZiti(os.Args[2]); err != nil {
@@ -93,23 +107,6 @@ func main() {
 	} else {
 		fmt.Printf("successfully loaded %s@%s\n", ctx.Name(), ctx.Controller())
 	}
-	//tunnel.AddIntercept("awesome sauce service", "169.254.1.42", 8080)
-	/*
-		for {
-			buffer := make([]byte, bufferSize)
-			n, err := tunDevice.Read(buffer, 0)
-			if err != nil {
-				fatal(err)
-			}
-			printPacket(buffer[:n])
-
-			//fmt.Printf("read [%d] bytes [", n)
-			//for i := 0; i < n; i++ {
-			//	fmt.Printf("%x ", buffer[i])
-			//}
-			//fmt.Println("]")
-		}
-	*/
 
 	signal.Notify(term, os.Interrupt)
 	signal.Notify(term, os.Kill)
@@ -119,6 +116,8 @@ func main() {
 	case <-term:
 	case <-errs:
 	}
+
+	windns.ResetDNS()
 
 	fmt.Println("shutting down")
 }

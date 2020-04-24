@@ -26,5 +26,6 @@ cp ./install/lib/libuv.dll .
 
 export CGO_CFLAGS="-DNOGDI -I $(cygpath -a -m ./install/include)"
 export CGO_LDFLAGS="-L $(cygpath -a -m ./install/lib)"
-go build -a ./ziti-wintun
+rm ./ziti-wintun.exe
+go build -v ./ziti-wintun
 
