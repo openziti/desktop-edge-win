@@ -85,6 +85,17 @@ namespace ZitiTunneler {
 			ZitiTunnelStatus status = serviceClient.GetStatus();
 			if (status != null)
 			{
+				if (status.Active)
+				{
+					InitializeTimer((int)status.Duration);
+					ConnectButton.Visibility = Visibility.Collapsed;
+					DisconnectButton.Visibility = Visibility.Visible;
+				}
+				else
+				{
+					ConnectButton.Visibility = Visibility.Visible;
+					DisconnectButton.Visibility = Visibility.Collapsed;
+				}
 				Application.Current.Properties.Add("ip", status?.IpInfo?.Ip);
 				Application.Current.Properties.Add("subnet", status?.IpInfo?.Subnet);
 				Application.Current.Properties.Add("mtu", status?.IpInfo?.MTU);
@@ -175,19 +186,14 @@ namespace ZitiTunneler {
 		}
 
 		private void Connect(object sender, RoutedEventArgs e) {
-			SetNotifyIcon("green");
-			_startDate = DateTime.Now;
-			_timer = new System.Windows.Forms.Timer();
-			_timer.Interval = 1000;
-			_timer.Tick += OnTimedEvent;
-			_timer.Enabled = true;
-			_timer.Start();
-			ConnectButton.Visibility = Visibility.Collapsed;
-			DisconnectButton.Visibility = Visibility.Visible;
 
 			try
 			{
 				serviceClient.SetTunnelState(true);
+				SetNotifyIcon("green");
+				InitializeTimer(0);
+				ConnectButton.Visibility = Visibility.Collapsed;
+				DisconnectButton.Visibility = Visibility.Visible;
 			}
 			catch (ServiceException se)
 			{
@@ -210,15 +216,24 @@ namespace ZitiTunneler {
 			ConnectedTime.Content = hoursString+":"+minutesString+":"+secondsString;
 		}
 
+		private void InitializeTimer(int millisAgoStarted)
+		{
+			_startDate = DateTime.Now.Subtract(new TimeSpan(0,0,0,0, millisAgoStarted));
+			_timer = new System.Windows.Forms.Timer();
+			_timer.Interval = 100;
+			_timer.Tick += OnTimedEvent;
+			_timer.Enabled = true;
+			_timer.Start();
+		}
 		private void Disconnect(object sender, RoutedEventArgs e) {
-			_timer.Stop();
-			SetNotifyIcon("white");
-			ConnectButton.Visibility = Visibility.Visible;
-			DisconnectButton.Visibility = Visibility.Collapsed;
-
 			try
 			{
+				ConnectedTime.Content =  "00:00:00";
+				_timer.Stop();
 				serviceClient.SetTunnelState(false);
+				SetNotifyIcon("white");
+				ConnectButton.Visibility = Visibility.Visible;
+				DisconnectButton.Visibility = Visibility.Collapsed;
 			}
 			catch (ServiceException se)
 			{
