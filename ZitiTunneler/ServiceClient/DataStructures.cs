@@ -133,14 +133,17 @@ namespace ZitiTunneler.ServiceClient
 
     class ZitiTunnelStatus : SvcResponse
     {
-        public bool TunnelActive { get; set; }
+        public bool Active { get; set; }
+
+        public long Duration { get; set; }
+
         public List<Identity> Identities { get; set; }
         
         public IpInfo IpInfo { get; set; }
 
         public void Dump(System.IO.TextWriter writer)
         {
-            writer.WriteLine($"Tunnel Active: {TunnelActive}");
+            writer.WriteLine($"Tunnel Active: {Active}");
             foreach (Identity id in Identities)
             {
                 writer.WriteLine($"  FingerPrint: {id.FingerPrint}");

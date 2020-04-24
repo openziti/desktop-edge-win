@@ -42,7 +42,13 @@ func SubMain() {
 
 	config.InitLogger("debug")
 
-	logs, err := winio.ListenPipe(logsPipeName, nil)
+	pc := winio.PipeConfig{
+		SecurityDescriptor: "",
+		MessageMode:        false,
+		InputBufferSize:    0,
+		OutputBufferSize:   0,
+	}
+	logs, err := winio.ListenPipe(logsPipeName, pc)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -272,7 +278,7 @@ func removeTempFile(file os.File) {
 	if err != nil {
 		log.Warnf("could not remove temp file: %s", file.Name())
 	}
-	err = file.Close()
+	err = file.Close()	
 	if err != nil {
 		log.Warnf("could not close the temp file: %s", file.Name())
 	}

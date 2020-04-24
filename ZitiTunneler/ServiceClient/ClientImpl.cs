@@ -2,8 +2,11 @@
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
-using System.Threading.Tasks;
+using System.Security.Principal;
+using System.Security.AccessControl;
+
 using Newtonsoft.Json;
+
 
 /// <summary>
 /// The implementation will abstract away the setup of the communication to
@@ -36,6 +39,17 @@ namespace ZitiTunneler.ServiceClient
             //establish the named pipe to the service
             setupPipe();
         }
+        PipeSecurity CreateSystemIOPipeSecurity()
+        {
+            PipeSecurity pipeSecurity = new PipeSecurity();
+
+            var id = new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null);
+
+            // Allow Everyone read and write access to the pipe. 
+            pipeSecurity.SetAccessRule(new PipeAccessRule(id, PipeAccessRights.ReadWrite, AccessControlType.Allow));
+
+            return pipeSecurity;
+        }
 
         private void setupPipe()
         {
@@ -46,29 +60,50 @@ namespace ZitiTunneler.ServiceClient
                     pipeClient.Dispose();
                 }
                 pipeClient = new NamedPipeClientStream(localPipeServer, ipcPipe, inOut);
-                ipcWriter = new StreamWriter(pipeClient);
-                ipcReader = new StreamReader(pipeClient);
+                /*
+                PipeSecurity pipeSecurity = CreateSystemIOPipeSecurity();
+                var pipeServer = new NamedPipeServerStream(ipcPipe,
+                                                       PipeDirection.InOut,
+                                                       1,
+                                                       PipeTransmissionMode.Message,
+                                                       PipeOptions.Asynchronous,
+                                                       0x4000,
+                                                       0x400,
+                                                       pipeSecurity,
+                                                       HandleInheritability.Inheritable);
+
+                pipeClient = new NamedPipeClientStream(localPipeServer,
+                             ipcPipe,
+                             PipeAccessRights.Read | PipeAccessRights.Write,
+                             PipeOptions.None,
+                             System.Security.Principal.TokenImpersonationLevel.None,
+                             System.IO.HandleInheritability.None);
+                             */
                 try
                 {
+
+                    ipcWriter = new StreamWriter(pipeClient);
+                    ipcReader = new StreamReader(pipeClient);
                     pipeClient.Connect(ServiceConnectTimeout);
                 }
-                catch
+                catch(Exception ex)
                 {
                     //todo: better error
-                    Debug.WriteLine("There was a problem connecting to the service");
-                    ipcReader.Close();
+                    Debug.WriteLine("There was a problem connecting to the service. " + ex.Message);
                     try
                     {
-                        ipcWriter.Close();
+                        ipcReader?.Close();
+                        ipcWriter?.Close();
+                        pipeClient?.Close();
                     }
                     catch
                     {
                         //intentionally ignored
                     }
-                    pipeClient.Close();
                     ipcReader = null;
                     ipcWriter = null;
                     pipeClient = null;
+                    throw;
                 }
             }
         }
@@ -232,11 +267,11 @@ namespace ZitiTunneler.ServiceClient
                     Debug.WriteLine("NOT sending empty object??? " + objToSend?.ToString());
                 }
             }
-            catch
+            catch(Exception ex)
             {
                 //if this fails it's usually because the writer is null/invalid. throwing IOException
                 //will trigger the pipe to rebuild
-                throw new IOException("Unexpected error when sending data to service");
+                throw new IOException("Unexpected error when sending data to service. " + ex.Message);
             }
         }
 
