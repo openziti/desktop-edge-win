@@ -16,6 +16,7 @@ type DnsManager interface {
 	DeregisterService(ctx *CZitiCtx, name string)
 	GetService(ip net.IP, port uint16) (*CZitiCtx, string, error)
 }
+
 const defaultCidr = "169.254.0.0"
 const defaultMaskBits = 16
 
@@ -23,7 +24,7 @@ var initOnce = sync.Once{}
 var DNS = &dnsImpl{}
 
 type dnsImpl struct {
-	cidr uint32
+	cidr    uint32
 	counter uint32
 
 	serviceMap map[string]ctxService
@@ -35,7 +36,7 @@ type dnsImpl struct {
 }
 
 type ctxService struct {
-	ctx *CZitiCtx
+	ctx  *CZitiCtx
 	name string
 }
 
@@ -69,11 +70,11 @@ func (dns *dnsImpl) RegisterService(dnsName string, port uint16, ctx *CZitiCtx, 
 	return nextIp, nil
 }
 
-func (dns *dnsImpl)Resolve(dnsName string) net.IP {
+func (dns *dnsImpl) Resolve(dnsName string) net.IP {
 	return dns.hostnameMap[dnsName]
 }
 
-func (dns *dnsImpl)DeregisterService(ctx *CZitiCtx, name string) {
+func (dns *dnsImpl) DeregisterService(ctx *CZitiCtx, name string) {
 	for k, sc := range dns.serviceMap {
 		if sc.ctx == ctx && sc.name == name {
 			delete(dns.serviceMap, k)
@@ -82,7 +83,7 @@ func (dns *dnsImpl)DeregisterService(ctx *CZitiCtx, name string) {
 	}
 }
 
-func (this *dnsImpl)GetService(ip net.IP, port uint16) (*CZitiCtx, string, error) {
+func (this *dnsImpl) GetService(ip net.IP, port uint16) (*CZitiCtx, string, error) {
 	ipv4 := binary.BigEndian.Uint32(ip)
 	dns, found := this.ipMap[ipv4]
 	if !found {
@@ -108,4 +109,3 @@ func DnsInit(ip string, maskBits int) {
 		DNS.counter = 2
 	})
 }
-
