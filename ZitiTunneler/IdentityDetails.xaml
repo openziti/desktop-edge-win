@@ -9,11 +9,11 @@
              d:DesignHeight="500" d:DesignWidth="350">
     <Grid>
         <Canvas>
-        <Rectangle HorizontalAlignment="Center" Height="20" Fill="White" Width="20" Canvas.Left="165" ClipToBounds="True" Canvas.Bottom="-10">
-            <Rectangle.LayoutTransform>
-                <RotateTransform Angle="-45"/>
-            </Rectangle.LayoutTransform>
-        </Rectangle>
+            <Rectangle Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="White" Width="20" Canvas.Left="165" ClipToBounds="True" Canvas.Bottom="-10">
+                <Rectangle.LayoutTransform>
+                    <RotateTransform Angle="-45"/>
+                </Rectangle.LayoutTransform>
+            </Rectangle>
         </Canvas>
         <Rectangle Fill="White" RadiusY="10" RadiusX="10"></Rectangle>
 
@@ -21,7 +21,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Stretch" Height="550" Margin="20,20,20,20">
+            <StackPanel Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="20,20,20,-70">
                 <Grid Margin="0,0,0,20">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="70"/>
@@ -55,7 +55,7 @@
                             <local:MenuEditItem x:Name="IdentityEnrollment" HorizontalAlignment="Stretch" Label="Enrollment Status" IsLocked="True"></local:MenuEditItem>
                             <Label Content="SERVICES" Foreground="Gray" FontWeight="SemiBold" />
                             <StackPanel Name="ServiceList" Orientation="Vertical"></StackPanel>
-                            <Label Name="ForgetIdentityButton" Content="Forget This Identity" Foreground="#F4044D" HorizontalAlignment="Center" MouseUp="ForgetIdentity"></Label>
+                            <Label Name="ForgetIdentityButton" Margin="0,10,0,10" Content="Forget This Identity" Cursor="Hand" Foreground="#F4044D" HorizontalAlignment="Center" MouseUp="ForgetIdentity"></Label>
                             <Image Source="/Assets/Images/identity.png" Height="100" Width="100" HorizontalAlignment="Stretch">
                             </Image>
                         </StackPanel>

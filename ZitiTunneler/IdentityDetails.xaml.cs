@@ -20,10 +20,10 @@ namespace ZitiTunneler {
 	/// </summary>
 	public partial class IdentityDetails:UserControl {
 
-		private List<ZitiIdentity> identities
-		{
-			get
-			{
+		private bool _isAttached = true;
+
+		private List<ZitiIdentity> identities {
+			get {
 				return (List<ZitiIdentity>)Application.Current.Properties["Identities"];
 			}
 		}
@@ -37,6 +37,17 @@ namespace ZitiTunneler {
 			set {
 				_identity = value;
 				UpdateView();
+			}
+		}
+
+		public bool IsAttached {
+			get {
+				return _isAttached;
+			}
+			set {
+				_isAttached = value;
+				if (_isAttached) Arrow.Visibility = Visibility.Visible;
+				else Arrow.Visibility = Visibility.Collapsed;
 			}
 		}
 
@@ -74,25 +85,18 @@ namespace ZitiTunneler {
 			// Jeremy - this works now as long as you pass a fingerprint that's valid!
 			this.Visibility = Visibility.Collapsed;
 			ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
-			try
-			{
+			try {
 				client.RemoveIdentity(_identity.Fingerprint);
 
-				foreach(var id in identities)
-				{
-					if(id.Fingerprint == _identity.Fingerprint)
-					{
+				foreach (var id in identities) {
+					if (id.Fingerprint == _identity.Fingerprint) {
 						identities.Remove(id);
 						break;
 					}
 				}
-			}
-			catch (ServiceClient.ServiceException se)
-			{
+			} catch (ServiceClient.ServiceException se) {
 				MessageBox.Show(se.AdditionalInfo, se.Message);
-			}
-			catch (Exception ex)
-			{
+			} catch (Exception ex) {
 				MessageBox.Show("Unexpected error 1", ex.Message);
 			}
 		}

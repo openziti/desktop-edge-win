@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         ShowInTaskbar="False"
         x:Name="MainUI"
-        Title="MainWindow" Height="560" 
+        Title="MainWindow" Height="520" 
         Width="350" ResizeMode="NoResize" 
         Icon="Assets/Images/icon.png" AllowsTransparency="True" 
         Closing="Window_Closing"
@@ -17,26 +17,18 @@
             <BeginStoryboard>
                 <Storyboard Name="FormFade">
                     <!-- <DoubleAnimation From="0" To="-505" Duration="00:00:4" Storyboard.TargetProperty="X" Storyboard.TargetName="MainUI"  /> -->
-                    <DoubleAnimation  Name="FormFadeAnimation" Storyboard.TargetName="MainUI" Storyboard.TargetProperty="(Window.Opacity)" From="0.0" To="1.0" Duration="0:0:.5" AutoReverse="False" RepeatBehavior="1x" />
+                    <DoubleAnimation  Name="FormFadeAnimation" Storyboard.TargetName="MainUI" Storyboard.TargetProperty="(Window.Opacity)" From="0.0" To="1.0" Duration="0:0:0.5" AutoReverse="False" RepeatBehavior="1x" />
                 </Storyboard>
             </BeginStoryboard>
         </EventTrigger>
         <EventTrigger RoutedEvent="Window.Unloaded">
             <BeginStoryboard>
                 <Storyboard Name="FormFadeOut" Completed="FormFadeOut_Completed">
-                    <DoubleAnimation  Name="FormFadeOutAnimation" Storyboard.TargetName="MainUI" Storyboard.TargetProperty="(Window.Opacity)" From="1.0" To="0.0" Duration="0:0:.5" AutoReverse="False"  RepeatBehavior="1x" />
+                    <DoubleAnimation  Name="FormFadeOutAnimation" Storyboard.TargetName="MainUI" Storyboard.TargetProperty="(Window.Opacity)" From="1.0" To="0.0" Duration="0:0:0.5" AutoReverse="False"  RepeatBehavior="1x" />
                 </Storyboard>
             </BeginStoryboard>
         </EventTrigger>
     </Window.Triggers>
-    <Window.Resources>
-        <Storyboard x:Key="gridFadeInStoryBoard">
-            <DoubleAnimation Storyboard.TargetName="UIMain" BeginTime="0:0:0.1" Storyboard.TargetProperty="Opacity" From="0.00" To="1.00" AutoReverse="False" Duration="0:0:0.3" />
-        </Storyboard>
-        <Storyboard x:Key="gridFadeOutStoryBoard">
-            <DoubleAnimation Storyboard.TargetName="UIMain" BeginTime="0:0:0.5" Storyboard.TargetProperty="Opacity" From="1.00" To="0.00" AutoReverse="False" Duration="0:0:0.3" />
-        </Storyboard>
-    </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
@@ -45,7 +37,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Canvas ClipToBounds="False">
-            <Rectangle HorizontalAlignment="Center" Height="20" Fill="#070826" Width="20" ClipToBounds="True" Canvas.Left="175" Canvas.Bottom="10">
+            <Rectangle Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="#070826" Width="20" ClipToBounds="True" Canvas.Left="165" Canvas.Bottom="-10">
                 <Rectangle.LayoutTransform>
                     <RotateTransform Angle="-45"/>
                 </Rectangle.LayoutTransform>
@@ -53,7 +45,7 @@
         </Canvas>
         <Border Name="UIBorder"  BorderBrush="Black" BorderThickness="3" CornerRadius="10">
             <Border.Effect>
-                <DropShadowEffect BlurRadius="15" Direction="0" RenderingBias="Quality" ShadowDepth="2" Opacity="0.2"/>
+                <DropShadowEffect BlurRadius="15" Direction="2" RenderingBias="Quality" ShadowDepth="4" Opacity="1"/>
             </Border.Effect>
         </Border>
         <Rectangle Name="BgColor" Stroke="Black" RadiusY="10" RadiusX="10" ClipToBounds="True">
@@ -86,7 +78,7 @@
                     <Label Content="MAIN" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" FontSize="10"></Label>
                     <Label Content="MENU" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" Margin="0,-14,0,0" FontSize="10"></Label>
                 </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,12">
+                <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,12" MouseDown="Window_MouseDown">
                     <Image Source="/Assets/Images/z.png" Height="40" RenderOptions.BitmapScalingMode="Fant"></Image>
                     <Label Content="Tap to Connect" Margin="0,-3,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Russo One" FontSize="14" Foreground="White" HorizontalAlignment="Center"></Label>
                 </StackPanel>
@@ -142,10 +134,10 @@
                     <Label Foreground="White" Margin="0,-20,0,30" Content="Mbps" FontSize="11" HorizontalAlignment="Center" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" />
                 </StackPanel>
             </Grid>
-            <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Visible" SnapsToDevicePixels="True" CanContentScroll="True">
+            <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" SnapsToDevicePixels="True" CanContentScroll="True">
                 <StackPanel Name="IdList" Orientation="Vertical"></StackPanel>
             </ScrollViewer>
-            <Grid HorizontalAlignment="Stretch" Margin="0,10,0,10" Width="Auto">
+            <Grid HorizontalAlignment="Stretch" Margin="0,20,0,10" Width="Auto">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>

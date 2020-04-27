@@ -9,14 +9,13 @@
              d:DesignHeight="400" d:DesignWidth="350">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="50"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Canvas>
-            <Rectangle HorizontalAlignment="Center" Height="20" Fill="White" VerticalAlignment="Bottom" Width="20" Canvas.Bottom="-10">
+            <Rectangle Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="White" VerticalAlignment="Bottom" Width="20" Canvas.Bottom="-10" Canvas.Left="165">
                 <Rectangle.LayoutTransform>
                     <RotateTransform Angle="-45"/>
                 </Rectangle.LayoutTransform>
@@ -45,9 +44,9 @@
                             <EventTrigger RoutedEvent="Image.MouseDown" >
                                 <BeginStoryboard>
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetProperty="Opacity" Storyboard.TargetName="MainMenuArea" From="1.0" To="0" Duration="0:0:1"></DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetProperty="Opacity" Storyboard.TargetName="MainMenuArea" From="1.0" To="0" Duration="0:0:0.5"></DoubleAnimation>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="MainMenuArea" Storyboard.TargetProperty="Visibility">
-                                            <DiscreteObjectKeyFrame KeyTime="0:0:2" Value="{x:Static Visibility.Collapsed}"/>
+                                            <DiscreteObjectKeyFrame KeyTime="0:0:0.5" Value="{x:Static Visibility.Collapsed}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </BeginStoryboard>
@@ -81,15 +80,14 @@
                 </StackPanel>
                 <TextBox Name="LicensesItems" Width="380" Height="400" Visibility="Collapsed"></TextBox>
                 <TextBox Name="LogsItems" Width="380" Height="400" Visibility="Collapsed"></TextBox>
+                
+                <Button Name="ConfigSaveButton" Cursor="Hand" Click="SaveConfig" Visibility="Collapsed" Content="SAVE" FontSize="10" FontWeight="SemiBold" Padding="20,7,20,7" Background="#0069FF" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White"></Button>
+                <StackPanel Name="AboutItemsButton" Orientation="Vertical" HorizontalAlignment="Stretch" Visibility="Collapsed">
+                    <Image Grid.Column="0" Source="/Assets/Images/logo.png" Height="60" Width="240"></Image>
+                    <Label HorizontalAlignment="Center" Content="Version 1.0 (23)" FontSize="10" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
+                </StackPanel>
+                <Label Name="MainItemsButton" Margin="0,30,0,0" Foreground="#F4044D" FontWeight="SemiBold" Content="Quit Ziti Tunneler" Cursor="Hand" MouseDown="CloseApp" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Center"></Label>
             </StackPanel>
         </Grid>
-        <Canvas>
-            <Button Name="ConfigSaveButton" Cursor="Hand" Click="SaveConfig" Visibility="Collapsed" Content="SAVE" FontSize="10" FontWeight="SemiBold" Canvas.Top="560" Padding="20,7,20,7" Canvas.Right="20" Background="#0069FF" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Canvas.Left="290"></Button>
-            <StackPanel Name="AboutItemsButton" Canvas.Top="520" Canvas.Left="50" Orientation="Vertical" HorizontalAlignment="Stretch" Visibility="Collapsed">
-                <Image Grid.Column="0" Source="/Assets/Images/logo.png" Height="60" Width="240"></Image>
-                <Label HorizontalAlignment="Center" Content="Version 1.0 (23)" FontSize="10" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
-            </StackPanel>
-            <Label Name="MainItemsButton" Canvas.Top="572" Foreground="#F4044D" FontWeight="SemiBold" Content="Quit Ziti Tunneler" Cursor="Hand" MouseDown="CloseApp" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Stretch" Canvas.Left="134"></Label>
-        </Canvas>
     </Grid>
 </UserControl>

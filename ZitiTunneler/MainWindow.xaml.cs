@@ -19,14 +19,14 @@ namespace ZitiTunneler {
 		private DateTime _startDate;
 		private System.Windows.Forms.Timer _timer;
 		private Client serviceClient = null;
+		private bool _isAttached = true;
 
-		private List<ZitiIdentity> identities
-		{
-			get
-			{
+		private List<ZitiIdentity> identities {
+			get {
 				return (List<ZitiIdentity>)Application.Current.Properties["Identities"];
 			}
 		}
+
 		private List<ZitiService> services = new List<ZitiService>();
 		public MainWindow() {
 			InitializeComponent();
@@ -40,6 +40,9 @@ namespace ZitiTunneler {
 			SetNotifyIcon("white");
 
 			InitializeComponent();
+		}
+		private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
+			if (!_isAttached&&e.ChangedButton == MouseButton.Left) this.DragMove();
 		}
 
 		private void TargetNotifyIcon_Click(object sender, EventArgs e) {
@@ -68,31 +71,44 @@ namespace ZitiTunneler {
 			serviceClient = new Client();
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
 			Application.Current.Properties.Add("Identities", new List<ZitiIdentity>());
-			try
-			{
+			MainMenu.OnAttachmentChange += AttachmentChanged;
+			try {
 				LoadStatusFromService();
-				MessageBox.Show("identites are returned from the server. Any that were 'on' will have services. any off won't. Update the toggles to show if they are on or off");
+				// MessageBox.Show("identites are returned from the server. Any that were 'on' will have services. any off won't. Update the toggles to show if they are on or off");
 			}
-			catch(Exception ex)
-			{
+			catch(Exception ex) {
 				//probably some kind of problem with the service...
-				MessageBox.Show("oh my goodness - problem with the service. Almost certainly means the service is NOT RUNNING... Jeremy make this pretty.\n" + ex.Message);
+				// MessageBox.Show("oh my goodness - problem with the service. Almost certainly means the service is NOT RUNNING... Jeremy make this pretty.\n" + ex.Message);
 			}
 			LoadIdentities();
 		}
 
+		private void AttachmentChanged(bool attached) {
+			_isAttached = attached;
+			if (_isAttached) {
+				Arrow.Visibility = Visibility.Visible;
+				var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
+				this.Left = desktopWorkingArea.Right-this.Width-25;
+				this.Top = desktopWorkingArea.Bottom-this.Height-25;
+			} else {
+				Arrow.Visibility = Visibility.Collapsed;
+				var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
+				this.Left = desktopWorkingArea.Right-this.Width-75;
+				this.Top = desktopWorkingArea.Bottom-this.Height-75;
+			}
+			MainMenu.Opacity = 0.0;
+			MainMenu.Visibility = Visibility.Collapsed;
+		}
+
 		private void LoadStatusFromService() {
 			ZitiTunnelStatus status = serviceClient.GetStatus();
-			if (status != null)
-			{
-				if (status.Active)
-				{
+			if (status != null) {
+				if (status.Active) {
 					InitializeTimer((int)status.Duration);
 					ConnectButton.Visibility = Visibility.Collapsed;
 					DisconnectButton.Visibility = Visibility.Visible;
-				}
-				else
-				{
+					SetNotifyIcon("green");
+				} else {
 					ConnectButton.Visibility = Visibility.Visible;
 					DisconnectButton.Visibility = Visibility.Collapsed;
 				}
@@ -101,19 +117,15 @@ namespace ZitiTunneler {
 				Application.Current.Properties.Add("mtu", status?.IpInfo?.MTU);
 				Application.Current.Properties.Add("dns", status?.IpInfo?.DNS);
 
-				foreach (var id in status.Identities)
-				{
+				foreach (var id in status.Identities) {
 					updateViewWithIdentity(id);
 				}
-			}
-			else
-			{
+			} else {
 				MessageBox.Show("could not get status - make this pretty Jeremy");
 			}
 		}
 
-		private void updateViewWithIdentity(Identity id)
-		{
+		private void updateViewWithIdentity(Identity id) {
 			var zid = ZitiIdentity.FromClient(id);
 			identities.Add(zid);
 		}
@@ -131,11 +143,6 @@ namespace ZitiTunneler {
 				id.OnClick += OpenIdentity;
 				IdList.Children.Add(id);
 			}
-			//MainUI.Height = 480+(identities.Count*60);
-			//BgColor.Height = 480+(identities.Count*60);
-			//FormGrowAnimation.To = MainUI.Height;
-			//FormGrowOutAnimation.From = BgColor.Height;
-			//App.Current.MainWindow.Height = 490+(identities.Count*60);
 			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
 			this.Left = desktopWorkingArea.Right-this.Width-25;
 			this.Top = desktopWorkingArea.Bottom-this.Height-25;
@@ -157,29 +164,20 @@ namespace ZitiTunneler {
 			jwtDialog.Filter = "Ziti Identities (*.jwt)|*.jwt";
 			if (jwtDialog.ShowDialog() == true) {
 				string fileContent = File.ReadAllText(jwtDialog.FileName);
-
-				// Jeremy!! AxedaBuddy - DUN!
-				try
-				{
+				
+				try {
 					Identity createdId = serviceClient.AddIdentity(System.IO.Path.GetFileName(jwtDialog.FileName), false, fileContent);
-					if (createdId != null)
-					{
+					if (createdId != null) {
 						identities.Add(ZitiIdentity.FromClient(createdId));
 						MessageBox.Show("New identity added with fingerprint: " + createdId.FingerPrint);
 						updateViewWithIdentity(createdId);
-					}
-					else
-					{
+					} else {
 						// Jeremy buddy - error popup here
 						MessageBox.Show("created id was null - wtf jeremy. your fault");
 					}
-				}
-				catch (ServiceException se)
-				{
+				} catch (ServiceException se) {
 					MessageBox.Show(se.AdditionalInfo, se.Message);
-				}
-				catch (Exception ex)
-				{
+				} catch (Exception ex) {
 					MessageBox.Show("Unexpected error 2", ex.Message);
 				}
 				LoadIdentities();
@@ -187,21 +185,15 @@ namespace ZitiTunneler {
 		}
 
 		private void Connect(object sender, RoutedEventArgs e) {
-
-			try
-			{
+			try {
 				serviceClient.SetTunnelState(true);
 				SetNotifyIcon("green");
 				InitializeTimer(0);
 				ConnectButton.Visibility = Visibility.Collapsed;
 				DisconnectButton.Visibility = Visibility.Visible;
-			}
-			catch (ServiceException se)
-			{
+			} catch (ServiceException se) {
 				MessageBox.Show(se.AdditionalInfo, se.Message);
-			}
-			catch (Exception ex)
-			{
+			} catch (Exception ex) {
 				MessageBox.Show("Unexpected error 3", ex.Message);
 			}
 		}
@@ -217,8 +209,7 @@ namespace ZitiTunneler {
 			ConnectedTime.Content = hoursString+":"+minutesString+":"+secondsString;
 		}
 
-		private void InitializeTimer(int millisAgoStarted)
-		{
+		private void InitializeTimer(int millisAgoStarted) {
 			_startDate = DateTime.Now.Subtract(new TimeSpan(0,0,0,0, millisAgoStarted));
 			_timer = new System.Windows.Forms.Timer();
 			_timer.Interval = 100;
@@ -227,26 +218,19 @@ namespace ZitiTunneler {
 			_timer.Start();
 		}
 		private void Disconnect(object sender, RoutedEventArgs e) {
-			try
-			{
+			try {
 				ConnectedTime.Content =  "00:00:00";
 				_timer.Stop();
 				serviceClient.SetTunnelState(false);
 				SetNotifyIcon("white");
 				ConnectButton.Visibility = Visibility.Visible;
 				DisconnectButton.Visibility = Visibility.Collapsed;
-			}
-			catch (ServiceException se)
-			{
+			} catch (ServiceException se) {
 				MessageBox.Show(se.AdditionalInfo, se.Message);
-			}
-			catch (Exception ex)
-			{
+			} catch (Exception ex) {
 				MessageBox.Show("Unexpected error 4", ex.Message);
 			}
 		}
-
-
 
 		private void FormFadeOut_Completed(object sender, EventArgs e) {
 			closeCompleted = true;
