@@ -13,7 +13,12 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
+	"wintun-testing/cziti"
+	"wintun-testing/cziti/windns"
 	"wintun-testing/winio/config"
 	"wintun-testing/winio/dto"
 	"wintun-testing/winio/idutil"
@@ -36,36 +41,71 @@ const (
 	IDENTITY_NOT_FOUND     = 1000
 )
 
-var delim = []byte("====")
+//var delim = []byte("====")
+const (
+	// see: https://docs.microsoft.com/en-us/windows/win32/secauthz/sid-strings
+	// breaks down to
+	//		"allow" 	  	 - A   (A;;
+	// 	 	"full access" 	 - FA  (A;;FA
+	//		"well-known sid" - IU  (A;;FA;;;IU)
+	InteractivelyLoggedInUser = "(A;;GRGW;;;IU)" //generic read/write. We will want to tune this to a specific group but that is not working with Windows 10 home at the moment
+	System                    = "(A;;FA;;;SY)"
+	BuiltinAdmins             = "(A;;FA;;;BA)"
+	LocalService              = "(A;;FA;;;LS)"
+)
 
 func SubMain() {
-
+	errs := make(chan error)
+	term := make(chan os.Signal, 1)
 	config.InitLogger("debug")
 
+	//ensure the necessary group exists and the process has access to the group
+	//	sid := runtime.EnsurePermissions(runtime.NF_GROUP_NAME) //will return the string or Fatal/Panic
+	//	onlyNF := "S:(ML;;NW;;;LW)D:(A;;FA;;;" + sid + ")"
+	grps := []string{InteractivelyLoggedInUser, System, BuiltinAdmins, LocalService}
+	auth := "D:" + strings.Join(grps, "")
+
 	pc := winio.PipeConfig{
-		SecurityDescriptor: "",
+		SecurityDescriptor: auth,
 		MessageMode:        false,
-		InputBufferSize:    0,
-		OutputBufferSize:   0,
+		InputBufferSize:    1024,
+		OutputBufferSize:   1024,
 	}
-	logs, err := winio.ListenPipe(logsPipeName, pc)
+	logs, err := winio.ListenPipe(logsPipeName, &pc)
 	if err != nil {
 		log.Panic(err)
 	}
 	go acceptLogs(logs)
-	log.Info("log listener ready")
+	log.Info("log listener ready. pipe: %s", logsPipeName)
 
-	ipc, err := winio.ListenPipe(ipcPipeName, nil)
+	pc2 := winio.PipeConfig{
+		SecurityDescriptor: auth,
+		MessageMode:        false,
+		InputBufferSize:    1024,
+		OutputBufferSize:   1024,
+	}
+	ipc, err := winio.ListenPipe(ipcPipeName, &pc2)
 	if err != nil {
 		log.Panic(err)
 	}
 	go acceptIPC(ipc)
-	log.Info("IPC listener ready")
+	log.Info("IPC listener ready pipe: %s", ipcPipeName)
 
 	initialize()
 	establishTun()
-	<-finished
-	<-finished
+
+	signal.Notify(term, os.Interrupt)
+	signal.Notify(term, os.Kill)
+	signal.Notify(term, syscall.SIGTERM)
+
+	select {
+	case <-term:
+	case <-errs:
+	}
+
+	windns.ResetDNS()
+
+	state.Close()
 	_ = ipc.Close()
 	_ = logs.Close()
 }
@@ -73,17 +113,17 @@ func SubMain() {
 func acceptIPC(p net.Listener) {
 	for {
 		c, err := p.Accept()
-		log.Debugf("accepting a new client")
 		if err != nil {
 			panic(err)
 		}
+		log.Debugf("accepting a new client")
 
 		go serveIpc(c)
 	}
 }
 
 func initialize() {
-	log.Debugf("reading config file located at %s:", config.File())
+	log.Debugf("reading config file located at : %s", config.File())
 	file, err := os.OpenFile(config.File(), os.O_RDONLY, 0640)
 	if err != nil {
 		// file does not exist or process has no rights to read the file - return leaving configuration empty
@@ -96,10 +136,12 @@ func initialize() {
 
 	_ = dec.Decode(&state)
 
+	// decide if the tunnel should be active or not and if so - activate it
+	setTunnelState(state.Active)
+
+	// connect any identities that are enabled
 	for _, id := range state.Identities {
-		if id.Active {
-			loadServices(id)
-		}
+		connectIdentity(id)
 	}
 
 	err = file.Close()
@@ -140,13 +182,15 @@ func serveIpc(conn net.Conn) {
 	for {
 		log.Debug("beginning read")
 		msg, err := reader.ReadString('\n')
-		if err != nil{
+		if err != nil {
 			respondWithError(enc, "could not read string properly", UNKNOWN_ERROR, err)
 			return
 		}
-		os.Stdout.Write(delim)
-		os.Stdout.Write([]byte(msg))
-		os.Stdout.Write(delim)
+		/*
+			os.Stdout.Write(delim)
+			os.Stdout.Write([]byte(msg))
+			os.Stdout.Write(delim)
+		*/
 		log.Debugf("msg received: %s", msg)
 		dec := json.NewDecoder(strings.NewReader(msg))
 		var cmd dto.CommandMsg
@@ -158,8 +202,21 @@ func serveIpc(conn net.Conn) {
 
 		switch cmd.Function {
 		case "AddIdentity":
+			addIdMsg, err := reader.ReadString('\n')
+			if err != nil {
+				respondWithError(enc, "could not read string properly", UNKNOWN_ERROR, err)
+				return
+			}
+			/*
+				os.Stdout.Write(delim)
+				os.Stdout.Write([]byte(addIdMsg))
+				os.Stdout.Write(delim)
+			*/
+			log.Debugf("msg received: %s", addIdMsg)
+			addIdDec := json.NewDecoder(strings.NewReader(addIdMsg))
+
 			var newId dto.AddIdentity
-			if err := dec.Decode(&newId); err == io.EOF {
+			if err := addIdDec.Decode(&newId); err == io.EOF {
 				break
 			} else if err != nil {
 				log.Fatal(err)
@@ -194,10 +251,10 @@ func acceptLogs(p net.Listener) {
 	log.Debug("beginning logs receive loop")
 	for {
 		l, err := p.Accept()
-		log.Debug("accepted a connection, returning logs")
 		if err != nil {
 			panic(err)
 		}
+		log.Debug("accepted a connection, returning logs")
 
 		go serveLogs(l)
 	}
@@ -248,26 +305,55 @@ func reportStatus(out *json.Encoder) {
 
 func tunnelState(onOff bool, out *json.Encoder) {
 	log.Debugf("toggle ziti on/off: %t", onOff)
-	state.TunnelActive = onOff
+	if onOff == state.Active {
+		log.Debug("nothing to do. the state of the tunnel already matches the requested state: %t", onOff)
+		return
+	}
+	setTunnelState(onOff)
+	state.Active = onOff
 	runtime.SaveState(&state)
-	//TODO: actually turn the tunnel on and off as well as handle errors
+
 	respond(out, dto.Response{Message: "tunnel state updated successfully", Code: SUCCESS, Error: "", Payload: nil})
 	log.Debugf("toggle ziti on/off: %t responded to", onOff)
+}
+
+func setTunnelState(onOff bool) {
+	if state.Active == onOff {
+		log.Debugf("noop. tunnel state is already active: %t", onOff)
+		return
+	}
+
+	if onOff {
+		state.CreateTun()
+		runtime.TunStarted = time.Now()
+
+		for _, id := range state.Identities {
+			connectIdentity(id)
+		}
+	} else {
+		state.Close()
+	}
 }
 
 func toggleIdentity(out *json.Encoder, fingerprint string, onOff bool) {
 	log.Debugf("toggle ziti on/off for %s: %t", fingerprint, onOff)
 
 	_, id := state.Find(fingerprint)
-	id.Active = onOff
-
-	if onOff {
-		//enable the identity
-		loadServices(id)
-	} else {
-		//clear out the services before returning
-		id.Services = nil
+	if id.Active == onOff {
+		log.Debugf("nothing to do - the provided identity %s is already set to active=%t", id.Name, id.Active)
+		//nothing to do...
+		respond(out, dto.Response{
+			Code:    SUCCESS,
+			Message: fmt.Sprintf("no update performed. identity is already set to active=%t", onOff),
+			Error:   "",
+			Payload: nil,
+		})
+		return
 	}
+
+	id.Active = onOff
+	connectIdentity(id)
+
 	respond(out, dto.Response{Message: "identity toggled", Code: SUCCESS, Error: "", Payload: idutil.Clean(*id)})
 	log.Debugf("toggle ziti on/off for %s: %t responded to", fingerprint, onOff)
 	runtime.SaveState(&state)
@@ -278,7 +364,7 @@ func removeTempFile(file os.File) {
 	if err != nil {
 		log.Warnf("could not remove temp file: %s", file.Name())
 	}
-	err = file.Close()	
+	err = file.Close()
 	if err != nil {
 		log.Warnf("could not close the temp file: %s", file.Name())
 	}
@@ -351,7 +437,7 @@ func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
 	if err != nil {
 		panic(err)
 	}
-	newPath := config.Path() + newId.Id.FingerPrint + ".json"
+	newPath := newId.Id.Path()
 
 	//move the temp file to its final home after enrollment
 	err = os.Rename(enrolled.Name(), newPath)
@@ -391,8 +477,29 @@ func respondWithError(out *json.Encoder, msg string, code int, err error) {
 }
 
 func connectIdentity(id *dto.Identity) {
+	if !id.Active && !state.Active {
+		//clear out the services before returning
+		id.Services = nil
+		log.Infof("not connecting identity: %s as it is not active", id.Name)
+		return
+	}
+
+	if id.Connected {
+		log.Debugf("id: %s is already connected - not attempting to connect again fingerprint:%s", id.Name, id.FingerPrint)
+		return
+	}
+
 	//tell the c sdk to use the file from the id and connect
 	log.Infof("Connecting identity: %s", id.Name)
+
+	if ctx, err := cziti.LoadZiti(id.Path()); err != nil {
+		log.Panic(err)
+	} else {
+		log.Infof("successfully loaded %s@%s\n", ctx.Name(), ctx.Controller())
+	}
+
+	id.Connected = true
+
 	loadServices(id)
 	log.Infof("Connecting identity: %s responded to", id.Name)
 }
@@ -406,12 +513,22 @@ func loadServices(id *dto.Identity) {
 	)
 }
 
-func disconnectIdentity(id dto.Identity) error {
+func disconnectIdentity(id *dto.Identity) error {
 	//tell the c sdk to disconnect the identity/services etc
 	log.Infof("Disconnecting identity: %s", id.Name)
 
+	if id.Connected {
+		// actually disconnect from the c sdk here
+		log.Warn("not implemented yet - disconnected an already connected id doesn't actually work yet...")
+
+		return nil
+		id.Connected = false
+	} else {
+		log.Debugf("id: %s is already disconnected - not attempting to disconnected again fingerprint:%s", id.Name, id.FingerPrint)
+	}
+
 	//remove the file from the filesystem - first verify it's the proper file
-	err := os.Remove(config.Path() + id.FingerPrint + ".json")
+	err := os.Remove(id.Path())
 	if err != nil {
 		log.Warn("could not remove file: %s", config.Path()+id.FingerPrint+".json")
 	}
@@ -426,7 +543,7 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 		return
 	}
 
-	err := disconnectIdentity(*id)
+	err := disconnectIdentity(id)
 	if err != nil {
 		respondWithError(out, "Error when disconnecting identity", ERROR_DISCONNECTING_ID, err)
 		return
@@ -440,8 +557,9 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 }
 
 func respond(out *json.Encoder, thing interface{}) {
-	os.Stdout.Write(delim)
+	/*os.Stdout.Write(delim)
 	_ = json.NewEncoder(os.Stdout).Encode(thing)
 	os.Stdout.Write(delim)
+	*/
 	_ = out.Encode(thing)
 }

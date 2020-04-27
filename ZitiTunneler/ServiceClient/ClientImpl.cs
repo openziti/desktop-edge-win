@@ -60,25 +60,6 @@ namespace ZitiTunneler.ServiceClient
                     pipeClient.Dispose();
                 }
                 pipeClient = new NamedPipeClientStream(localPipeServer, ipcPipe, inOut);
-                /*
-                PipeSecurity pipeSecurity = CreateSystemIOPipeSecurity();
-                var pipeServer = new NamedPipeServerStream(ipcPipe,
-                                                       PipeDirection.InOut,
-                                                       1,
-                                                       PipeTransmissionMode.Message,
-                                                       PipeOptions.Asynchronous,
-                                                       0x4000,
-                                                       0x400,
-                                                       pipeSecurity,
-                                                       HandleInheritability.Inheritable);
-
-                pipeClient = new NamedPipeClientStream(localPipeServer,
-                             ipcPipe,
-                             PipeAccessRights.Read | PipeAccessRights.Write,
-                             PipeOptions.None,
-                             System.Security.Principal.TokenImpersonationLevel.None,
-                             System.IO.HandleInheritability.None);
-                             */
                 try
                 {
 
@@ -92,18 +73,16 @@ namespace ZitiTunneler.ServiceClient
                     Debug.WriteLine("There was a problem connecting to the service. " + ex.Message);
                     try
                     {
-                        ipcReader?.Close();
-                        ipcWriter?.Close();
                         pipeClient?.Close();
                     }
-                    catch
+                    catch (Exception exc)
                     {
                         //intentionally ignored
+                        Debug.WriteLine(exc.Message);
                     }
                     ipcReader = null;
                     ipcWriter = null;
                     pipeClient = null;
-                    throw;
                 }
             }
         }
