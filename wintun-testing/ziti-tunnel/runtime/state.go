@@ -186,8 +186,8 @@ func (t *TunnelerState) LoadIdentity(id *dto.Identity) {
 		if ctx, err := cziti.LoadZiti(id.Path()); err != nil {
 			log.Errorf("error when loading identity %v", err)
 		} else {
-			log.Infof("successfully loaded %s@%s", ctx.Name(), ctx.Controller())
 			time.Sleep(1 * time.Second) //eek - need a channel to wait on here instead
+			log.Infof("successfully loaded %s@%s", ctx.Name(), ctx.Controller())
 			if ctx.Services != nil {
 				log.Debug("ranging over services...")
 				id.Services = make([]*dto.Service, 0)
