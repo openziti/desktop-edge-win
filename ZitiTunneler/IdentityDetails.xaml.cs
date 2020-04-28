@@ -37,6 +37,9 @@ namespace ZitiTunneler {
 			set {
 				_identity = value;
 				UpdateView();
+				IdentityArea.Opacity = 1.0;
+				IdentityArea.Visibility = Visibility.Visible;
+				this.Visibility = Visibility.Visible;
 			}
 		}
 

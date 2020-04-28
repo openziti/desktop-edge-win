@@ -65,7 +65,7 @@ namespace ZitiTunneler {
 		private void MainWindow1_Loaded(object sender, RoutedEventArgs e) {
 			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
 			this.Left = desktopWorkingArea.Right-this.Width-25;
-			this.Top = desktopWorkingArea.Bottom-this.Height-25;
+			this.Top = desktopWorkingArea.Bottom-this.Height-50;
 
 			// add a new service client
 			serviceClient = new Client();
@@ -75,8 +75,7 @@ namespace ZitiTunneler {
 			try {
 				LoadStatusFromService();
 				// MessageBox.Show("identites are returned from the server. Any that were 'on' will have services. any off won't. Update the toggles to show if they are on or off");
-			}
-			catch(Exception ex) {
+			} catch(Exception ex) {
 				//probably some kind of problem with the service...
 				// MessageBox.Show("oh my goodness - problem with the service. Almost certainly means the service is NOT RUNNING... Jeremy make this pretty.\n" + ex.Message);
 			}
@@ -89,14 +88,13 @@ namespace ZitiTunneler {
 				Arrow.Visibility = Visibility.Visible;
 				var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
 				this.Left = desktopWorkingArea.Right-this.Width-25;
-				this.Top = desktopWorkingArea.Bottom-this.Height-25;
+				this.Top = desktopWorkingArea.Bottom-this.Height-50;
 			} else {
 				Arrow.Visibility = Visibility.Collapsed;
 				var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
 				this.Left = desktopWorkingArea.Right-this.Width-75;
 				this.Top = desktopWorkingArea.Bottom-this.Height-75;
 			}
-			MainMenu.Opacity = 0.0;
 			MainMenu.Visibility = Visibility.Collapsed;
 		}
 
@@ -128,6 +126,7 @@ namespace ZitiTunneler {
 		private void updateViewWithIdentity(Identity id) {
 			var zid = ZitiIdentity.FromClient(id);
 			identities.Add(zid);
+			LoadIdentities();
 		}
 		private void SetNotifyIcon(string iconPrefix) {
 			System.IO.Stream iconStream = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,/Assets/Images/ziti-"+iconPrefix+".ico")).Stream;
@@ -137,6 +136,7 @@ namespace ZitiTunneler {
 		private void LoadIdentities() {
 			IdList.Children.Clear();
 			ZitiIdentity[] ids = identities.ToArray();
+			this.Height = 460+(ids.Length*60);
 			for (int i=0; i<ids.Length; i++) {
 				IdentityItem id = new IdentityItem();
 				id.Identity = ids[i];
@@ -145,13 +145,11 @@ namespace ZitiTunneler {
 			}
 			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
 			this.Left = desktopWorkingArea.Right-this.Width-25;
-			this.Top = desktopWorkingArea.Bottom-this.Height-25;
-			this.Top = desktopWorkingArea.Bottom-this.Height-25;
+			this.Top = desktopWorkingArea.Bottom-this.Height-50;
 		}
 
 		private void OpenIdentity(ZitiIdentity identity) {
 			IdentityMenu.Identity = identity;
-			IdentityMenu.Visibility = Visibility.Visible;
 		}
 
 		private void ShowMenu(object sender, MouseButtonEventArgs e) {
@@ -173,7 +171,7 @@ namespace ZitiTunneler {
 						updateViewWithIdentity(createdId);
 					} else {
 						// Jeremy buddy - error popup here
-						MessageBox.Show("created id was null - wtf jeremy. your fault");
+						MessageBox.Show("created id was null - wtf jeremy. your fault, um nope your fault clint, or probably Andrews");
 					}
 				} catch (ServiceException se) {
 					MessageBox.Show(se.AdditionalInfo, se.Message);

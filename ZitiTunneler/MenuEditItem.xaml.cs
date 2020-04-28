@@ -50,5 +50,10 @@ namespace ZitiTunneler {
 		public MenuEditItem() {
             InitializeComponent();
         }
-    }
+
+		private void MainEdit_GotFocus(object sender, RoutedEventArgs e) {
+			var textbox = (sender as TextBox);
+			textbox.SelectAll();
+		}
+	}
 }
