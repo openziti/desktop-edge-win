@@ -18,7 +18,6 @@ import (
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/eventlog"
 
-	"wintun-testing/cziti"
 	"wintun-testing/cziti/windns"
 	"wintun-testing/ziti-tunnel/config"
 	"wintun-testing/ziti-tunnel/dto"
@@ -55,7 +54,7 @@ func SubMain(ops <- chan string, changes chan<- svc.Status) error {
 	}
 	// listen for log requests
 	go acceptLogs(logs)
-	log.Info("log listener ready. pipe: %s", logsPipeName)
+	log.Infof("log listener ready. pipe: %s", logsPipeName)
 
 	pc2 := winio.PipeConfig{
 		SecurityDescriptor: auth,
@@ -70,7 +69,7 @@ func SubMain(ops <- chan string, changes chan<- svc.Status) error {
 
 	// listen for ipc messages
 	go acceptIPC(ipc)
-	log.Info("ipc listener ready pipe: %s", ipcPipeName)
+	log.Infof("ipc listener ready pipe: %s", ipcPipeName)
 
 	// initialize the network interface
 	err = initialize()
@@ -81,6 +80,7 @@ func SubMain(ops <- chan string, changes chan<- svc.Status) error {
 	// notify the service is running
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 	_ = Elog.Info(20, SvcName + " status set to running")
+	log.Info(SvcName + " status set to running. starting cancel loop")
 
 	loop:
 		for {
@@ -98,12 +98,6 @@ func SubMain(ops <- chan string, changes chan<- svc.Status) error {
 	shutdownConnections()
 
 	windns.ResetDNS()
-
-	if ! runtime.NoZiti {
-		cziti.Stop()
-	} else {
-		log.Warnf("NOZITI set to true. fix this ")
-	}
 
 	state.Close()
 	_ = ipc.Close()
@@ -142,7 +136,7 @@ func acceptIPC(p net.Listener) {
 }
 
 func initialize() error {
-	log.Debugf("reading config file located at : %s", config.File())
+	log.Debugf("reading config file located at: %s", config.File())
 	file, err := os.OpenFile(config.File(), os.O_RDONLY, 0640)
 	if err != nil {
 		// file does not exist or process has no rights to read the file - return leaving configuration empty
@@ -155,15 +149,11 @@ func initialize() error {
 
 	_ = dec.Decode(&state)
 
-	if ! runtime.NoZiti {
-		err := state.CreateTun()
-		if err != nil {
-			return err
-		}
-		setTunInfo()
-	} else {
-		log.Warnf("NOZITI set to true. fix this ")
+	err = state.CreateTun()
+	if err != nil {
+		return err
 	}
+	setTunInfo()
 
 	// decide if the tunnel should be active or not and if so - activate it
 	setTunnelState(state.Active)
@@ -540,29 +530,9 @@ func connectIdentity(id *dto.Identity) {
 	//tell the c sdk to use the file from the id and connect
 	log.Infof("Connecting identity: %s", id.Name)
 
-	if ! runtime.NoZiti {
-		if ctx, err := cziti.LoadZiti(id.Path()); err != nil {
-			log.Panic(err)
-		} else {
-			log.Infof("successfully loaded %s@%s\n", ctx.Name(), ctx.Controller())
-		}
-	} else {
-		log.Warnf("NOZITI set to true. fix this ")
-	}
-
+	state.LoadIdentity(id)
 	id.Connected = true
-
-	loadServices(id)
 	log.Infof("Connecting identity: %s responded to", id.Name)
-}
-
-func loadServices(id *dto.Identity) {
-	id.Services = make([]*dto.Service, 0)
-	id.Services = append(id.Services,
-		&dto.Service{Name: "ServiceOne", HostName: "MyServiceName", Port: 1111},
-		&dto.Service{Name: "SecondOne", HostName: "SecondService", Port: 2222},
-		&dto.Service{Name: "LastDummy Service With Spaces and is very very long", HostName: "10.10.10.10", Port: 3333},
-	)
 }
 
 func disconnectIdentity(id *dto.Identity) error {

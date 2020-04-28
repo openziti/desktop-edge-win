@@ -25,4 +25,3 @@ const ipv6ip = "1"
 const ipv6mask = 64
 const Ipv6dns = "::1" // must be in "ipv6ip/ipv6mask" CIDR block
 
-const NoZiti = true

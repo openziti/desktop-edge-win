@@ -25,7 +25,7 @@ func (m *zitiService) Execute(args []string, r <-chan svc.ChangeRequest, changes
 	go func() {
 		err := ipc.SubMain(control, changes)
 		if err != nil {
-			log.Errorf("unexpected error received from ipc subroutine: %v", err)
+			log.Errorf("the main loop exited with an unexpected error: %v", err)
 		}
 	}()
 loop:

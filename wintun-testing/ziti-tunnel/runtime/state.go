@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"time"
 
 	"golang.zx2c4.com/wireguard/tun"
@@ -104,18 +105,6 @@ func (t TunnelerState) Clean() TunnelerState {
 
 func (t *TunnelerState) CreateTun() error {
 
-	wt, err := tun.WintunPool.GetInterface(TunName)
-
-	if err != nil {
-		return err
-	}
-
-	if wt != nil {
-		log.Infof("interface already exists with name: %s", TunName)
-		//todo: probably need to handle this better by ripping it down and recreating it. will need sdk testing to make sure that works
-		return nil
-	}
-
 	log.Infof("creating TUN device: %s", TunName)
 	tunDevice, err := tun.CreateTUN(TunName, 64*1024)
 	if err == nil {
@@ -129,7 +118,7 @@ func (t *TunnelerState) CreateTun() error {
 	}
 
 	if name, err := tunDevice.Name(); err == nil {
-		fmt.Printf("created TUN device [%s]\n", name)
+		log.Debugf("created TUN device [%s]", name)
 	}
 
 	nativeTunDevice := tunDevice.(*tun.NativeTun)
@@ -138,7 +127,7 @@ func (t *TunnelerState) CreateTun() error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("setting TUN interface address to [%s]\n", ip)
+	log.Debugf("setting TUN interface address to [%s]", ip)
 	err = luid.SetIPAddresses([]net.IPNet{{ip, ipnet.Mask}})
 	if err != nil {
 		log.Fatal(err)
@@ -156,22 +145,24 @@ func (t *TunnelerState) CreateTun() error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("dns servers = ", dns)
+	log.Debugf("dns servers = %s", dns)
 
-	fmt.Printf("routing destination [%s] through [%s]\n", *ipnet, ipnet.IP)
+	log.Infof("routing destination [%s] through [%s]", *ipnet, ipnet.IP)
 	err = luid.SetRoutes([]*winipcfg.RouteData{{*ipnet, ipnet.IP, 0}})
 	if err != nil {
 		return err
 	}
-	fmt.Println("routing applied")
+	log.Info("routing applied")
 
-	fmt.Println("running")
-	cziti.DnsInit(Ipv4ip, 24)
-
-	cziti.Start()
-	_, err = cziti.HookupTun(tunDevice, dns)
-	if err != nil {
-		panic(err)
+	if ! noZiti() {
+		cziti.DnsInit(Ipv4ip, 24)
+		cziti.Start()
+		_, err = cziti.HookupTun(tunDevice, dns)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		log.Warnf("NOZITI set to true. this should be only used for debugging")
 	}
 	return nil
 }
@@ -179,10 +170,51 @@ func (t *TunnelerState) CreateTun() error {
 func (t *TunnelerState) Close() {
 	if t.tun != nil {
 		log.Warn("TODO: actually close the tun - or disable all the identies etc.")
-/*		err := t.tun.Close()
+/*
+		cziti.Stop()
+		err := t.tun.Close()
 		if err != nil {
 			log.Fatalf("problem closing tunnel!")
 		}
  */
 	}
+}
+
+func (t *TunnelerState) LoadIdentity(id *dto.Identity) {
+	if ! noZiti() {
+		if ctx, err := cziti.LoadZiti(id.Path()); err != nil {
+			log.Errorf("error when loading identity %v", err)
+		} else {
+			log.Infof("successfully loaded %s@%s", ctx.Name(), ctx.Controller())
+			if *ctx.Services!=nil {
+				id.Services = make([]*dto.Service, 0)
+				for key, svc := range *ctx.Services {
+					id.Services = append(id.Services, &dto.Service{
+						Name: svc.Name,
+						HostName: svc.InterceptHost,
+						Port: uint16(svc.InterceptPort)})
+					log.Debugf("key is: %s. same as name: %s", key, svc.Name)
+				}
+			} else {
+				log.Debugf("no services to load for service name: %s", ctx.Name())
+			}
+		}
+	} else {
+		log.Warnf("NOZITI set to true. this should be only used for debugging")
+		//loadDummyServices(id)
+	}
+}
+
+func noZiti() bool {
+	v, _ := strconv.ParseBool(os.Getenv("NOZITI"))
+	return v
+}
+
+
+func loadDummyServices(id *dto.Identity) {
+	id.Services = append(id.Services,
+		&dto.Service{Name: "ServiceOne", HostName: "MyServiceName", Port: 1111},
+		&dto.Service{Name: "SecondOne", HostName: "SecondService", Port: 2222},
+		&dto.Service{Name: "LastDummy Service With Spaces and is very very long", HostName: "10.10.10.10", Port: 3333},
+	)
 }
