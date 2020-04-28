@@ -7,15 +7,33 @@ void libuv_stopper(uv_async_t *a) {
      uv_stop(a->loop);
 }
 
+void setLogOut(intptr_t h) {
+    int fd = _open_osfhandle(h, _O_APPEND | _O_RDONLY);
+
+    if (fd == -1) {
+       fprintf(stderr, "failed to get fd from handle: %d\n", errno);
+       fflush(stderr);
+       return;
+    }
+
+    FILE *f = _fdopen(fd, "a+");
+    if (f == NULL) {
+        fprintf(stderr, "setLogOut: %d\n", errno);
+        fflush(stderr);
+        return;
+    }
+
+    ziti_set_log(f);
+}
+
 void libuv_init(libuv_ctx *lctx) {
+    init_debug();
     lctx->l = uv_default_loop();
     uv_async_init(lctx->l, &lctx->stopper, libuv_stopper);
 }
 
 void libuv_runner(void *arg) {
-    init_debug();
     ZITI_LOG(INFO, "starting event loop");
-    fflush(stdout);
     uv_loop_t *l = arg;
     uv_run(l, UV_RUN_DEFAULT);
 
