@@ -11,9 +11,11 @@ import "C"
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
+	"github.com/michaelquigley/pfxlog"
 	"unsafe"
 )
+
+var log = pfxlog.Logger()
 
 type sdk struct {
 	libuvCtx *C.libuv_ctx
@@ -28,8 +30,7 @@ func init() {
 
 func Start() {
 	v := C.NF_get_version()
-	fmt.Printf("starting ziti-sdk-c %s(%s)[%s]\n",
-		C.GoString(v.version), C.GoString(v.revision), C.GoString(v.build_date))
+	log.Infof("starting ziti-sdk-c %s(%s)[%s]", C.GoString(v.version), C.GoString(v.revision), C.GoString(v.build_date))
 
 	_impl.run()
 }
@@ -101,9 +102,9 @@ func serviceCB(nf C.nf_context, service *C.ziti_service, status C.int, data unsa
 		if host != "" && port != -1 {
 			ip, err := DNS.RegisterService(host, uint16(port), ctx, name)
 			if err != nil {
-				fmt.Println(err)
+				log.Error(err)
 			} else {
-				fmt.Printf("service[%s] is mapped to <%s:%d>\n", name, ip.String(), port)
+				log.Infof("service[%s] is mapped to <%s:%d>", name, ip.String(), port)
 				for _, t := range devMap {
 					t.AddIntercept(name, ip.String(), port, unsafe.Pointer(ctx.nf))
 				}
@@ -115,14 +116,14 @@ func serviceCB(nf C.nf_context, service *C.ziti_service, status C.int, data unsa
 //export initCB
 func initCB(nf C.nf_context, status C.int, data unsafe.Pointer) {
 	ctx := (*CZitiCtx)(data)
-	fmt.Printf("status %d: ctx = %+v, nf = %+v\n", status, ctx, nf)
+	log.Debugf("status %d: ctx = %+v, nf = %+v", status, ctx, nf)
 	ctx.nf = nf
 	ctx.options.ctx = data
 	cfg := C.GoString(ctx.options.config)
 	if ch, ok := initMap[cfg]; ok {
 		ch <- ctx
 	} else {
-		fmt.Printf("respose channel not found\n")
+		log.Warn("response channel not found")
 	}
 }
 

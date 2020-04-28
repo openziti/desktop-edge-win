@@ -20,6 +20,14 @@ namespace ZitiTunneler {
 	/// </summary>
 	public partial class IdentityDetails:UserControl {
 
+		private bool _isAttached = true;
+
+		private List<ZitiIdentity> identities {
+			get {
+				return (List<ZitiIdentity>)Application.Current.Properties["Identities"];
+			}
+		}
+
 		private ZitiIdentity _identity;
 
 		public ZitiIdentity Identity {
@@ -29,6 +37,20 @@ namespace ZitiTunneler {
 			set {
 				_identity = value;
 				UpdateView();
+				IdentityArea.Opacity = 1.0;
+				IdentityArea.Visibility = Visibility.Visible;
+				this.Visibility = Visibility.Visible;
+			}
+		}
+
+		public bool IsAttached {
+			get {
+				return _isAttached;
+			}
+			set {
+				_isAttached = value;
+				if (_isAttached) Arrow.Visibility = Visibility.Visible;
+				else Arrow.Visibility = Visibility.Collapsed;
 			}
 		}
 
@@ -40,8 +62,7 @@ namespace ZitiTunneler {
 			IdentityEnrollment.Value = _identity.EnrollmentStatus;
 			IdentityStatus.Value = _identity.Status;
 			ServiceList.Children.Clear();
-			IdDetailToggle.OnToggled += IdToggle;
-			for (int i=0; i<_identity.Services.Length; i++) {
+			for (int i=0; i<_identity.Services.Count; i++) {
 				MenuEditItem editor = new MenuEditItem();
 				editor.Label = _identity.Services[i].Name;
 				editor.Value = _identity.Services[i].Url;
@@ -51,7 +72,9 @@ namespace ZitiTunneler {
 		}
 
 		private void IdToggle(bool on) {
-			// Clint, turn me on or turn me off
+			// Jeremy - on and off but it's not wired in yet!
+			ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
+			client.IdentityOnOff(_identity.Fingerprint, on);
 		}
 
 		public IdentityDetails() {
@@ -62,8 +85,23 @@ namespace ZitiTunneler {
 		}
 
 		private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
-			// Clint Forget and bubble me up to remove
-			// this.Visibility = Visibility.Collapsed;
+			// Jeremy - this works now as long as you pass a fingerprint that's valid!
+			this.Visibility = Visibility.Collapsed;
+			ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
+			try {
+				client.RemoveIdentity(_identity.Fingerprint);
+
+				foreach (var id in identities) {
+					if (id.Fingerprint == _identity.Fingerprint) {
+						identities.Remove(id);
+						break;
+					}
+				}
+			} catch (ServiceClient.ServiceException se) {
+				MessageBox.Show(se.AdditionalInfo, se.Message);
+			} catch (Exception ex) {
+				MessageBox.Show("Unexpected error 1", ex.Message);
+			}
 		}
 	}
 }

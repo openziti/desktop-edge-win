@@ -1,36 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Diagnostics;
-using System.Windows.Navigation;
 
 namespace ZitiTunneler
-{
+{	
     /// <summary>
     /// Interaction logic for MainMenu.xaml
     /// </summary>
     public partial class MainMenu : UserControl {
 
-		public string menuState = "Main";
 
-		// Clint: all these need to be wired to something
-		public string licenseData = "Clint, I need license data here.";
-		public string logData = "Clint, I need log data here";
-		public string ip = "169.254.0.1";
-		public string subnet = "255.255.255.0";
-		public string mtu = "1600";
-		public string dns = "165.254.0.2";
+		public delegate void AttachementChanged(bool attached);
+		public event AttachementChanged OnAttachmentChange;
+		public string menuState = "Main";
+		public string licenseData = "it's open source - someone motivated could track this down. we'll add this some day i'm sure";
 
 		public MainMenu() {
             InitializeComponent();
@@ -73,13 +57,13 @@ namespace ZitiTunneler
 			MainItems.Visibility = Visibility.Collapsed;
 			AboutItems.Visibility = Visibility.Collapsed;
 			MainItemsButton.Visibility = Visibility.Collapsed;
+			AboutItemsButton.Visibility = Visibility.Collapsed;
 			BackArrow.Visibility = Visibility.Collapsed;
 			AdvancedItems.Visibility = Visibility.Collapsed;
 			LicensesItems.Visibility = Visibility.Collapsed;
 			LogsItems.Visibility = Visibility.Collapsed;
 			ConfigSaveButton.Visibility = Visibility.Collapsed;
 			ConfigItems.Visibility = Visibility.Collapsed;
-
 
 			if (menuState=="About") {
 				MenuTitle.Content = "About";
@@ -95,8 +79,9 @@ namespace ZitiTunneler
 				LicensesItems.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
 			} else if (menuState=="Logs") {
+				ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
 				MenuTitle.Content = "Application Logs";
-				LogsItems.Text = logData;
+				LogsItems.Text = client.GetLogs();
 				LogsItems.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
 			} else if (menuState=="Config") {
@@ -104,10 +89,11 @@ namespace ZitiTunneler
 				ConfigItems.Visibility = Visibility.Visible;
 				ConfigSaveButton.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
-				ConfigIp.Value = ip;
-				ConfigSubnet.Value = subnet;
-				ConfigMtu.Value = mtu;
-				ConfigDns.Value = dns;
+				
+				ConfigIp.Value = Application.Current.Properties["ip"]?.ToString();
+				ConfigSubnet.Value = Application.Current.Properties["subnet"]?.ToString();
+				ConfigMtu.Value = Application.Current.Properties["mtu"]?.ToString();
+				ConfigDns.Value = Application.Current.Properties["dns"]?.ToString();
 			} else {
 				MenuTitle.Content = "Main Menu";
 				MainItems.Visibility = Visibility.Visible;
@@ -138,15 +124,26 @@ namespace ZitiTunneler
 			Process.Start(new ProcessStartInfo("https://support.netfoundry.io") { UseShellExecute = true });
 		}
 		private void DetachWindow(object sender, MouseButtonEventArgs e) {
-
+			Application.Current.MainWindow.ShowInTaskbar = true;
+			DetachButton.Visibility = Visibility.Collapsed;
+			AttachButton.Visibility = Visibility.Visible;
+			Arrow.Visibility = Visibility.Collapsed;
+			if (OnAttachmentChange != null) {
+				OnAttachmentChange(false);
+			}
+		}
+		private void RetachWindow(object sender, MouseButtonEventArgs e) {
+			Application.Current.MainWindow.ShowInTaskbar = false;
+			DetachButton.Visibility = Visibility.Visible;
+			AttachButton.Visibility = Visibility.Collapsed;
+			Arrow.Visibility = Visibility.Visible;
+			if (OnAttachmentChange != null) {
+				OnAttachmentChange(true);
+			}
 		}
 
 		private void SaveConfig(object sender, RoutedEventArgs e) {
-			// Clint: I need this to save or do whatever it is suppose to do
-			ip = ConfigIp.Value;
-			mtu = ConfigMtu.Value;
-			subnet = ConfigSubnet.Value;
-			dns = ConfigDns.Value;
+			// Jeremy - this can just be removed - saving the config is not important to this client
 		}
 	}
 }

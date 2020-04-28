@@ -27,7 +27,7 @@ namespace ZitiTunneler {
 			}
 			set {
 				this._label = value;
-				MainLabel.Content = this._label;
+				MainLabel.Text = this._label;
 			}
 		}
 		public string Value {
@@ -50,5 +50,10 @@ namespace ZitiTunneler {
 		public MenuEditItem() {
             InitializeComponent();
         }
-    }
+
+		private void MainEdit_GotFocus(object sender, RoutedEventArgs e) {
+			var textbox = (sender as TextBox);
+			textbox.SelectAll();
+		}
+	}
 }

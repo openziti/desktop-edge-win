@@ -15,7 +15,7 @@ import (
 	"log"
 	"os"
 	"strings"
-	"wintun-testing/wireguard"
+	"wintun-testing/wireguard-wintun/wireguard"
 )
 
 func main() {

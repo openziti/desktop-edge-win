@@ -36,6 +36,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.12.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
@@ -70,6 +73,8 @@
     <Compile Include="MenuEditItem.xaml.cs">
       <DependentUpon>MenuEditItem.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ServiceClient\DataStructures.cs" />
+    <Compile Include="ServiceClient\ClientImpl.cs" />
     <Compile Include="RegistrationScreen.xaml.cs">
       <DependentUpon>RegistrationScreen.xaml</DependentUpon>
     </Compile>
@@ -164,6 +169,10 @@
     <Resource Include="Assets\Fonts\russo_one.ttf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Resource>
+    <None Include="..\.editorconfig">
+      <Link>.editorconfig</Link>
+    </None>
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -238,6 +247,12 @@
     <Resource Include="Assets\Images\Ziti-Red.png" />
     <Resource Include="Assets\Images\ziti-white.ico" />
     <Resource Include="Assets\Images\Ziti-White.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ZitiNotifyIcon\ZitiNotifyIcon.csproj">
+      <Project>{f620947d-5c32-4a6f-beaa-4dcbb2032668}</Project>
+      <Name>ZitiNotifyIcon</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

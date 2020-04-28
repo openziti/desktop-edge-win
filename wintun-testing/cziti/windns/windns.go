@@ -7,10 +7,14 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/michaelquigley/pfxlog"
 )
 
+var log = pfxlog.Logger()
+
 func ResetDNS() {
-	fmt.Println("Resetting DNS to original-ish state")
+	log.Info("restoring dns to original-ish state")
 
 	script := `Get-NetIPInterface | ForEach-Object { Set-DnsClientServerAddress -InterfaceIndex $_.ifIndex -ResetServerAddresses }`
 
@@ -68,6 +72,6 @@ func ReplaceDNS(ips []net.IP) {
 	cmd.Stdout = os.Stdout
 
 	if err := cmd.Run(); err != nil {
-		fmt.Println("ERROR", err)
+		log.Errorf("ERROR resetting DNS (%v)", err)
 	}
 }
