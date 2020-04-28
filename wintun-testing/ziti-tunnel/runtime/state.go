@@ -4,15 +4,17 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"golang.zx2c4.com/wireguard/tun"
-	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
 	"net"
 	"os"
 	"time"
+
+	"golang.zx2c4.com/wireguard/tun"
+	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
+
 	"wintun-testing/cziti"
-	"wintun-testing/winio/config"
-	"wintun-testing/winio/dto"
-	"wintun-testing/winio/idutil"
+	"wintun-testing/ziti-tunnel/config"
+	"wintun-testing/ziti-tunnel/dto"
+	"wintun-testing/ziti-tunnel/idutil"
 )
 
 type TunnelerState struct {
@@ -100,7 +102,20 @@ func (t TunnelerState) Clean() TunnelerState {
 	return rtn
 }
 
-func (t *TunnelerState) CreateTun() {
+func (t *TunnelerState) CreateTun() error {
+
+	wt, err := tun.WintunPool.GetInterface(TunName)
+
+	if err != nil {
+		return err
+	}
+
+	if wt != nil {
+		log.Infof("interface already exists with name: %s", TunName)
+		//todo: probably need to handle this better by ripping it down and recreating it. will need sdk testing to make sure that works
+		return nil
+	}
+
 	log.Infof("creating TUN device: %s", TunName)
 	tunDevice, err := tun.CreateTUN(TunName, 64*1024)
 	if err == nil {
@@ -119,7 +134,7 @@ func (t *TunnelerState) CreateTun() {
 
 	nativeTunDevice := tunDevice.(*tun.NativeTun)
 	luid := winipcfg.LUID(nativeTunDevice.LUID())
-	ip, ipnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", ipv4ip, ipv4mask))
+	ip, ipnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", Ipv4ip, Ipv4mask))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -130,8 +145,8 @@ func (t *TunnelerState) CreateTun() {
 	}
 
 	dnsServers := []net.IP{
-		net.ParseIP(ipv4dns).To4(),
-		net.ParseIP(ipv6dns),
+		net.ParseIP(Ipv4dns).To4(),
+		net.ParseIP(Ipv6dns),
 	}
 	err = luid.AddDNS(dnsServers)
 	if err != nil {
@@ -146,27 +161,28 @@ func (t *TunnelerState) CreateTun() {
 	fmt.Printf("routing destination [%s] through [%s]\n", *ipnet, ipnet.IP)
 	err = luid.SetRoutes([]*winipcfg.RouteData{{*ipnet, ipnet.IP, 0}})
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	fmt.Println("routing applied")
 
 	fmt.Println("running")
-	cziti.DnsInit(ipv4ip, 24)
+	cziti.DnsInit(Ipv4ip, 24)
 
 	cziti.Start()
 	_, err = cziti.HookupTun(tunDevice, dns)
 	if err != nil {
 		panic(err)
 	}
-
+	return nil
 }
 
 func (t *TunnelerState) Close() {
-	cziti.Stop()
 	if t.tun != nil {
-		err := t.tun.Close()
+		log.Warn("TODO: actually close the tun - or disable all the identies etc.")
+/*		err := t.tun.Close()
 		if err != nil {
 			log.Fatalf("problem closing tunnel!")
 		}
+ */
 	}
 }

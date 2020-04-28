@@ -1,10 +1,12 @@
 package dto
 
 import (
-	idcfg "github.com/netfoundry/ziti-sdk-golang/ziti/config"
-	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
 	"log"
-	"wintun-testing/winio/config"
+
+	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
+
+	idcfg "github.com/netfoundry/ziti-sdk-golang/ziti/config"
+	"wintun-testing/ziti-tunnel/config"
 )
 
 type AddIdentity struct {
@@ -27,7 +29,7 @@ type Identity struct {
 	Services    []*Service
 	Metrics     Metrics
 
-	Connected   bool `json:"-"`
+	Connected bool `json:"-"`
 }
 type Metrics struct {
 	TotalBytes int64

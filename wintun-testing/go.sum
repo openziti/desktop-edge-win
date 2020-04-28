@@ -1,5 +1,7 @@
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
+github.com/Freman/eventloghook v0.0.0-20191003051739-e4d803b6b48b h1:IltY1fRcdIshI/c8KOdmaO8P4lBwDXHJYPymMisvvDs=
+github.com/Freman/eventloghook v0.0.0-20191003051739-e4d803b6b48b/go.mod h1:VGwG8f2pQ8SAFjTSH3PEDmLdlvi0XTd7a4C4AZn+pVw=
 github.com/Jeffail/gabs v1.4.0 h1://5fYRRTq1edjfIrQGvdkcd22pkYUrHZ5YC/H2GJVAo=
 github.com/Jeffail/gabs v1.4.0/go.mod h1:6xMvQMK4k33lb7GUUpaAPh6nKMmemQeg5d4gn7/bOXc=
 github.com/Microsoft/go-winio v0.4.14 h1:+hMXMk01us9KgxGb7ftKQt2Xpf5hH/yky+TDA+qxleU=
@@ -61,7 +63,6 @@ github.com/mitchellh/mapstructure v1.1.2/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh
 github.com/netfoundry/secretstream v0.1.1/go.mod h1:uasYkYSp0MmNSlKOWJ2sVzxPms8e58TS4ENq4yro86k=
 github.com/netfoundry/ziti-foundation v0.9.8 h1:Nyx4U+pZ6iPtXBYSIad8xg5nBVjQNLatCHg5krQmeWM=
 github.com/netfoundry/ziti-foundation v0.9.8/go.mod h1:desAxe5jN/V/+cYe99TGEqxtMVdlJ1HfSRzCmuPJD7M=
-github.com/netfoundry/ziti-foundation v0.9.11 h1:FKLAdAkXjYeSbCSbcpyvY2vHPE9a1zDswaWAGiW5Brc=
 github.com/netfoundry/ziti-sdk-golang v0.11.16 h1:YZxHtDq4o+r141ISHvElT0CH4DKdb+EeQaoxSDVJAq0=
 github.com/netfoundry/ziti-sdk-golang v0.11.16/go.mod h1:Onxp1kNm0xarDjl6S43Y9PQPVHfXgUFcM157KQKqHm4=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=

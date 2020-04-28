@@ -1,12 +1,13 @@
 package config
 
 import (
-	"github.com/michaelquigley/pfxlog"
-	"github.com/sirupsen/logrus"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
 	"os"
 	"strings"
+
+	"github.com/michaelquigley/pfxlog"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 func File() string {
@@ -47,13 +48,13 @@ func InitLogger(level string) {
 	logrus.SetLevel(logLevel)
 
 	_ = os.Remove(LogFile()) //reset the log on startup
-	multiWriter := io.MultiWriter(os.Stdout, &lumberjack.Logger{
+	multiWriter := io.MultiWriter(&lumberjack.Logger{
 		Filename:   LogFile(),
 		MaxSize:    1, // megabytes
 		MaxBackups: 2,
 		MaxAge:     30,   //days
 		Compress:   false, // disabled by default
-	})
+	}, os.Stdout)
 
 	logrus.SetOutput(multiWriter)
 	logrus.SetFormatter(pfxlog.NewFormatter())

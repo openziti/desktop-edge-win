@@ -2,7 +2,7 @@ package idutil
 
 import (
 	idcfg "github.com/netfoundry/ziti-sdk-golang/ziti/config"
-	"wintun-testing/winio/dto"
+	"wintun-testing/ziti-tunnel/dto"
 )
 
 //Removes the Config from the provided identity and returns a 'cleaned' id

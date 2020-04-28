@@ -5,66 +5,44 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
-	"github.com/Microsoft/go-winio"
-	"github.com/michaelquigley/pfxlog"
-	"github.com/netfoundry/ziti-foundation/identity/identity"
-	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
 	"io"
 	"io/ioutil"
 	"net"
 	"os"
-	"os/signal"
 	"strings"
-	"syscall"
 	"time"
+
+	"github.com/Microsoft/go-winio"
+	"github.com/netfoundry/ziti-foundation/identity/identity"
+	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
+	"golang.org/x/sys/windows/svc"
+	"golang.org/x/sys/windows/svc/eventlog"
+
 	"wintun-testing/cziti"
 	"wintun-testing/cziti/windns"
-	"wintun-testing/winio/config"
-	"wintun-testing/winio/dto"
-	"wintun-testing/winio/idutil"
-	"wintun-testing/winio/runtime"
+	"wintun-testing/ziti-tunnel/config"
+	"wintun-testing/ziti-tunnel/dto"
+	"wintun-testing/ziti-tunnel/idutil"
+	"wintun-testing/ziti-tunnel/runtime"
 )
 
-var ipcPipeName = `\\.\pipe\NetFoundry\tunneler\ipc`
-var logsPipeName = `\\.\pipe\NetFoundry\tunneler\logs`
-var finished chan bool
-var log = pfxlog.Logger()
-var state = runtime.TunnelerState{}
+func SubMain(ops <- chan string, changes chan<- svc.Status) error {
+	// open and assign the event log for this service
+	Elog, err := eventlog.Open(SvcName)
+	if err != nil {
+		return err
+	}
 
-const (
-	SUCCESS              = 0
-	COULD_NOT_WRITE_FILE = 1
-	COULD_NOT_ENROLL     = 2
+	_ = Elog.Info(20, SvcName + " starting. log file located at " + config.LogFile())
 
-	UNKNOWN_ERROR          = 100
-	ERROR_DISCONNECTING_ID = 50
-	IDENTITY_NOT_FOUND     = 1000
-)
+	// create a channel for notifying any connections that they are to be interrupted
+	interrupt = make(chan struct{})
 
-//var delim = []byte("====")
-const (
-	// see: https://docs.microsoft.com/en-us/windows/win32/secauthz/sid-strings
-	// breaks down to
-	//		"allow" 	  	 - A   (A;;
-	// 	 	"full access" 	 - FA  (A;;FA
-	//		"well-known sid" - IU  (A;;FA;;;IU)
-	InteractivelyLoggedInUser = "(A;;GRGW;;;IU)" //generic read/write. We will want to tune this to a specific group but that is not working with Windows 10 home at the moment
-	System                    = "(A;;FA;;;SY)"
-	BuiltinAdmins             = "(A;;FA;;;BA)"
-	LocalService              = "(A;;FA;;;LS)"
-)
-
-func SubMain() {
-	errs := make(chan error)
-	term := make(chan os.Signal, 1)
-	config.InitLogger("debug")
-
-	//ensure the necessary group exists and the process has access to the group
-	//	sid := runtime.EnsurePermissions(runtime.NF_GROUP_NAME) //will return the string or Fatal/Panic
-	//	onlyNF := "S:(ML;;NW;;;LW)D:(A;;FA;;;" + sid + ")"
+	// create the ACE string representing the following groups have access to the pipes created
 	grps := []string{InteractivelyLoggedInUser, System, BuiltinAdmins, LocalService}
 	auth := "D:" + strings.Join(grps, "")
 
+	// create the pipes
 	pc := winio.PipeConfig{
 		SecurityDescriptor: auth,
 		MessageMode:        false,
@@ -73,8 +51,9 @@ func SubMain() {
 	}
 	logs, err := winio.ListenPipe(logsPipeName, &pc)
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
+	// listen for log requests
 	go acceptLogs(logs)
 	log.Info("log listener ready. pipe: %s", logsPipeName)
 
@@ -86,55 +65,105 @@ func SubMain() {
 	}
 	ipc, err := winio.ListenPipe(ipcPipeName, &pc2)
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
+
+	// listen for ipc messages
 	go acceptIPC(ipc)
-	log.Info("IPC listener ready pipe: %s", ipcPipeName)
+	log.Info("ipc listener ready pipe: %s", ipcPipeName)
 
-	initialize()
-	establishTun()
-
-	signal.Notify(term, os.Interrupt)
-	signal.Notify(term, os.Kill)
-	signal.Notify(term, syscall.SIGTERM)
-
-	select {
-	case <-term:
-	case <-errs:
+	// initialize the network interface
+	err = initialize()
+	if err != nil {
+		return err
 	}
+
+	// notify the service is running
+	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
+	_ = Elog.Info(20, SvcName + " status set to running")
+
+	loop:
+		for {
+			select {
+			case c := <-ops:
+				log.Infof("request for control received, %v", c)
+				if c == "stop" {
+					break loop
+				} else {
+					log.Info("operation: " + c)
+				}
+			}
+		}
+
+	shutdownConnections()
 
 	windns.ResetDNS()
+
+	if ! runtime.NoZiti {
+		cziti.Stop()
+	} else {
+		log.Warnf("NOZITI set to true. fix this ")
+	}
 
 	state.Close()
 	_ = ipc.Close()
 	_ = logs.Close()
+	log.Info("shutdown complete. exiting process")
+
+	return nil
+}
+
+func shutdownConnections() {
+	log.Info("waiting for all connections to close...")
+
+	for i := 0; i < connections; i++ {
+		log.Debug("cancelling read loop")
+		interrupt <- struct{}{}
+	}
+	wg.Wait()
+	log.Info("all connections closed")
 }
 
 func acceptIPC(p net.Listener) {
 	for {
 		c, err := p.Accept()
 		if err != nil {
-			panic(err)
+			if err != winio.ErrPipeListenerClosed {
+				log.Errorf("unexpected error while accepting a connection. exiting loop. %v", err)
+			}
+			return
 		}
+		wg.Add(1)
+		connections ++
 		log.Debugf("accepting a new client")
 
 		go serveIpc(c)
 	}
 }
 
-func initialize() {
+func initialize() error {
 	log.Debugf("reading config file located at : %s", config.File())
 	file, err := os.OpenFile(config.File(), os.O_RDONLY, 0640)
 	if err != nil {
 		// file does not exist or process has no rights to read the file - return leaving configuration empty
 		// this is expected when first starting
-		return
+		return nil
 	}
 
 	r := bufio.NewReader(file)
 	dec := json.NewDecoder(r)
 
 	_ = dec.Decode(&state)
+
+	if ! runtime.NoZiti {
+		err := state.CreateTun()
+		if err != nil {
+			return err
+		}
+		setTunInfo()
+	} else {
+		log.Warnf("NOZITI set to true. fix this ")
+	}
 
 	// decide if the tunnel should be active or not and if so - activate it
 	setTunnelState(state.Active)
@@ -146,18 +175,17 @@ func initialize() {
 
 	err = file.Close()
 	if err != nil {
-		log.Panic("could not close configuration file. this is not normal.")
+		return fmt.Errorf("could not close configuration file. this is not normal! %v", err)
 	}
 	log.Debugf("initial state loaded from configuration file")
+	return nil
 }
 
-func establishTun() {
-	//do something to make the tun
-
+func setTunInfo() {
 	//set the tun info into the state
 	state.IpInfo = &runtime.TunIpInfo{
-		Ip:     "1.1.1.1",
-		DNS:    "5.5.5.5",
+		Ip:     runtime.Ipv4ip,
+		DNS:    runtime.Ipv4dns,
 		MTU:    1400,
 		Subnet: "255.255.255.0",
 	}
@@ -174,6 +202,21 @@ func serveIpc(conn net.Conn) {
 	log.Debug("beginning ipc receive loop")
 	defer closeConn(conn) //close the connection after this function invoked as go routine exits
 
+	done := make(chan struct{})
+	defer close(done) // ensure that goroutine exits
+	defer wg.Done() // count down whenever the function exits
+
+	go func() {
+		select {
+		case <-interrupt:
+			log.Info("request to interrupt read loop received")
+			conn.Close()
+			log.Warnf("read loop interrupted")
+		case <-done:
+			log.Debug("loop finished normally")
+		}
+	}()
+
 	writer := bufio.NewWriter(conn)
 	reader := bufio.NewReader(conn)
 	rw := bufio.NewReadWriter(reader, writer)
@@ -183,9 +226,15 @@ func serveIpc(conn net.Conn) {
 		log.Debug("beginning read")
 		msg, err := reader.ReadString('\n')
 		if err != nil {
-			respondWithError(enc, "could not read string properly", UNKNOWN_ERROR, err)
+			if err != winio.ErrFileClosed {
+				log.Errorf("unexpected error while reading line. %v", err)
+
+				//try to respond...
+				respondWithError(enc, "could not read line properly! exiting loop!", UNKNOWN_ERROR, err)
+			}
 			return
 		}
+
 		/*
 			os.Stdout.Write(delim)
 			os.Stdout.Write([]byte(msg))
@@ -250,23 +299,24 @@ func serveIpc(conn net.Conn) {
 func acceptLogs(p net.Listener) {
 	log.Debug("beginning logs receive loop")
 	for {
-		l, err := p.Accept()
+		lcon, err := p.Accept()
 		if err != nil {
-			panic(err)
+			log.Errorf("unexpected error during accept. exiting accept loop! %v", err)
+			return
 		}
-		log.Debug("accepted a connection, returning logs")
 
-		go serveLogs(l)
+		go serveLogs(lcon) //serveLogs will close the connection for us
 	}
 }
 
 func serveLogs(conn net.Conn) {
-	log.Debug("writing logs to pipe")
+	log.Debug("accepted a connection, writing logs to pipe")
 	w := bufio.NewWriter(conn)
 
 	file, err := os.OpenFile(config.LogFile(), os.O_RDONLY, 0640)
 	if err != nil {
 		log.Errorf("could not open log file at %s", config.LogFile())
+		_, _ = w.WriteString("an unexpected error occurred while retrieving logs. look at the actual log file.")
 		return
 	}
 
@@ -307,6 +357,7 @@ func tunnelState(onOff bool, out *json.Encoder) {
 	log.Debugf("toggle ziti on/off: %t", onOff)
 	if onOff == state.Active {
 		log.Debug("nothing to do. the state of the tunnel already matches the requested state: %t", onOff)
+		respond(out, dto.Response{Message: fmt.Sprintf("noop: tunnel state already set to %t", onOff), Code: SUCCESS, Error: "", Payload: nil})
 		return
 	}
 	setTunnelState(onOff)
@@ -318,13 +369,7 @@ func tunnelState(onOff bool, out *json.Encoder) {
 }
 
 func setTunnelState(onOff bool) {
-	if state.Active == onOff {
-		log.Debugf("noop. tunnel state is already active: %t", onOff)
-		return
-	}
-
 	if onOff {
-		state.CreateTun()
 		runtime.TunStarted = time.Now()
 
 		for _, id := range state.Identities {
@@ -336,7 +381,7 @@ func setTunnelState(onOff bool) {
 }
 
 func toggleIdentity(out *json.Encoder, fingerprint string, onOff bool) {
-	log.Debugf("toggle ziti on/off for %s: %t", fingerprint, onOff)
+	log.Debugf("toggle ziti on/off5 for %s: %t", fingerprint, onOff)
 
 	_, id := state.Find(fingerprint)
 	if id.Active == onOff {
@@ -351,8 +396,11 @@ func toggleIdentity(out *json.Encoder, fingerprint string, onOff bool) {
 		return
 	}
 
-	id.Active = onOff
-	connectIdentity(id)
+	if onOff {
+		connectIdentity(id)
+	} else {
+		disconnectIdentity(id)
+	}
 
 	respond(out, dto.Response{Message: "identity toggled", Code: SUCCESS, Error: "", Payload: idutil.Clean(*id)})
 	log.Debugf("toggle ziti on/off for %s: %t responded to", fingerprint, onOff)
@@ -492,10 +540,14 @@ func connectIdentity(id *dto.Identity) {
 	//tell the c sdk to use the file from the id and connect
 	log.Infof("Connecting identity: %s", id.Name)
 
-	if ctx, err := cziti.LoadZiti(id.Path()); err != nil {
-		log.Panic(err)
+	if ! runtime.NoZiti {
+		if ctx, err := cziti.LoadZiti(id.Path()); err != nil {
+			log.Panic(err)
+		} else {
+			log.Infof("successfully loaded %s@%s\n", ctx.Name(), ctx.Controller())
+		}
 	} else {
-		log.Infof("successfully loaded %s@%s\n", ctx.Name(), ctx.Controller())
+		log.Warnf("NOZITI set to true. fix this ")
 	}
 
 	id.Connected = true

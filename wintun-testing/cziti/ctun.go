@@ -33,7 +33,9 @@ import (
 	"errors"
 	"fmt"
 	"golang.zx2c4.com/wireguard/tun"
+	"io"
 	"net"
+	"os"
 	"unsafe"
 )
 
@@ -162,6 +164,10 @@ func (t *tunnel) runReadLoop() {
 	for {
 		nr, err := t.dev.Read(mtuBuf, 0)
 		if err != nil {
+			if err == io.EOF || err == os.ErrClosed {
+				//that's fine...
+				return
+			}
 			panic(err)
 		}
 

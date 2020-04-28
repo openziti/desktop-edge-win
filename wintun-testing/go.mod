@@ -3,6 +3,7 @@ module wintun-testing
 go 1.14
 
 require (
+	github.com/Freman/eventloghook v0.0.0-20191003051739-e4d803b6b48b
 	github.com/Microsoft/go-winio v0.4.14
 	github.com/michaelquigley/pfxlog v0.0.0-20190813191113-2be43bd0dccc
 	github.com/miekg/dns v1.1.29
