@@ -9,6 +9,7 @@
         x:Name="MainUI"
         Title="MainWindow" Height="520" 
         Width="350" ResizeMode="NoResize" 
+        ClipToBounds="False"
         Icon="Assets/Images/icon.png" AllowsTransparency="True" 
         Closing="Window_Closing"
         WindowStyle="None" Loaded="MainWindow1_Loaded" Background="#000F0F23">
@@ -29,7 +30,7 @@
             </BeginStoryboard>
         </EventTrigger>
     </Window.Triggers>
-    <Grid>
+    <Grid Margin="0,0,0,0">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
@@ -53,7 +54,7 @@
                 <ImageBrush ImageSource="/Assets/Images/background.png" />
             </Rectangle.Fill>
         </Rectangle>
-        <StackPanel>
+        <StackPanel Margin="0,0,0,-40">
             <Grid HorizontalAlignment="Stretch">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="100"/>

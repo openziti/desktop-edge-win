@@ -17,11 +17,11 @@
         </Canvas>
         <Rectangle Fill="White" RadiusY="10" RadiusX="10"></Rectangle>
 
-        <Grid Margin="0,0,0,0">
+        <Grid Margin="10,10,10,10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="20,20,20,-70">
+            <StackPanel Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="10,10,10,10">
                 <Grid Margin="0,0,0,20">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="70"/>
@@ -30,25 +30,12 @@
                     </Grid.ColumnDefinitions>
                     <local:Toggler x:Name="IdDetailToggle" Grid.Column="0" HorizontalAlignment="Left"></local:Toggler>
                     <Label Name="IdDetailName" Grid.Column="1" Content="ID Name" HorizontalAlignment="Center" FontSize="14" FontWeight="SemiBold" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="#0F0F23"></Label>
-                    <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/x.png" Width="20" Height="20" Margin="0,0,0,0" HorizontalAlignment="Right" MouseDown="HideMenu">
-                        <Image.Triggers>
-                            <EventTrigger RoutedEvent="Image.MouseDown" >
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetProperty="Opacity" Storyboard.TargetName="IdentityArea" From="1.0" To="0" Duration="0:0:1"></DoubleAnimation>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="IdentityArea" Storyboard.TargetProperty="Visibility">
-                                            <DiscreteObjectKeyFrame KeyTime="0:0:2" Value="{x:Static Visibility.Collapsed}"/>
-                                        </ObjectAnimationUsingKeyFrames>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </EventTrigger>
-                        </Image.Triggers>
-                    </Image>
+                    <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/x.png" Width="20" Height="20" Margin="0,0,0,0" HorizontalAlignment="Right" MouseDown="HideMenu"></Image>
                 </Grid>
                 <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
                 <Grid>
-                    <ScrollViewer HorizontalScrollBarVisibility="Auto">
-                        <StackPanel Name="MainItems" Orientation="Vertical" HorizontalAlignment="Stretch">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="True">
+                        <StackPanel Name="MainItems" Orientation="Vertical">
                             <local:MenuEditItem x:Name="IdentityName" HorizontalAlignment="Stretch" Label="Name" IsLocked="True"></local:MenuEditItem>
                             <local:MenuEditItem x:Name="IdentityNetwork" HorizontalAlignment="Stretch" Label="Network" IsLocked="True"></local:MenuEditItem>
                             <local:MenuEditItem x:Name="IdentityStatus" HorizontalAlignment="Stretch" Label="Status" IsLocked="True"></local:MenuEditItem>
