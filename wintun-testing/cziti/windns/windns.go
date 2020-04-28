@@ -3,11 +3,12 @@ package windns
 import (
 	"bytes"
 	"fmt"
-	"github.com/michaelquigley/pfxlog"
 	"net"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/michaelquigley/pfxlog"
 )
 
 var log = pfxlog.Logger()
@@ -23,7 +24,7 @@ func ResetDNS() {
 
 	err := cmd.Run()
 	if err != nil {
-		log.Errorf("ERROR resetting DNS (%v)", err)
+		fmt.Println("ERROR resetting DNS", err)
 	}
 }
 
@@ -66,11 +67,11 @@ func ReplaceDNS(ips []net.IP) {
 	script := fmt.Sprintf(
 		`Get-NetIPInterface | ForEach-Object { Set-DnsClientServerAddress -InterfaceIndex $_.ifIndex -ServerAddresses %s }`,
 		addresses)
-	cmd := exec.Command("powershell", "-Command", script) //expects powershell to be on the path - this generally is true
+	cmd := exec.Command("powershell", "-Command", script)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 
 	if err := cmd.Run(); err != nil {
-		log.Errorf("ERROR %v", err)
+		log.Errorf("ERROR resetting DNS (%v)", err)
 	}
 }
