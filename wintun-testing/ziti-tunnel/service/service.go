@@ -8,7 +8,6 @@ import (
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
 
-	"wintun-testing/ziti-tunnel/config"
 	"wintun-testing/ziti-tunnel/ipc"
 	log2 "wintun-testing/ziti-tunnel/log"
 )
@@ -19,7 +18,6 @@ const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown | svc.AcceptPauseAndCon
 
 func (m *zitiService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
 	changes <- svc.Status{State: svc.StartPending}
-	config.InitLogger("debug")
 
 	control := make(chan string)
 	go func() {
@@ -71,6 +69,7 @@ func RunService(isDebug bool) {
 		run = debug.Run
 	}
 	err := run(SvcName, &zitiService{})
+
 	if err != nil {
 		_ = log2.Elog.Error(ErrorEvent, fmt.Sprintf("%s service failed: %v", SvcName, err))
 		return

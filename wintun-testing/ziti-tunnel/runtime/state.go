@@ -24,7 +24,7 @@ type TunnelerState struct {
 	Identities []*dto.Identity
 	IpInfo     *TunIpInfo `json:"IpInfo,omitempty"`
 
-	tun     tun.Device
+	tun     *tun.Device
 	tunName string
 }
 
@@ -108,7 +108,7 @@ func (t *TunnelerState) CreateTun() error {
 	log.Infof("creating TUN device: %s", TunName)
 	tunDevice, err := tun.CreateTUN(TunName, 64*1024)
 	if err == nil {
-		t.tun = tunDevice
+		t.tun = &tunDevice
 		tunName, err2 := tunDevice.Name()
 		if err2 == nil {
 			t.tunName = tunName
@@ -154,7 +154,7 @@ func (t *TunnelerState) CreateTun() error {
 	}
 	log.Info("routing applied")
 
-	if ! noZiti() {
+	if !noZiti() {
 		cziti.DnsInit(Ipv4ip, 24)
 		cziti.Start()
 		_, err = cziti.HookupTun(tunDevice, dns)
@@ -170,33 +170,35 @@ func (t *TunnelerState) CreateTun() error {
 func (t *TunnelerState) Close() {
 	if t.tun != nil {
 		log.Warn("TODO: actually close the tun - or disable all the identies etc.")
-/*
-		cziti.Stop()
-		err := t.tun.Close()
+		/*
+			cziti.Stop()
+		*/
+		tu := *t.tun
+		err := tu.Close()
 		if err != nil {
 			log.Fatalf("problem closing tunnel!")
 		}
- */
 	}
 }
 
 func (t *TunnelerState) LoadIdentity(id *dto.Identity) {
-	if ! noZiti() {
+	if !noZiti() {
 		if ctx, err := cziti.LoadZiti(id.Path()); err != nil {
 			log.Errorf("error when loading identity %v", err)
 		} else {
 			log.Infof("successfully loaded %s@%s", ctx.Name(), ctx.Controller())
-			if *ctx.Services!=nil {
+			time.Sleep(1 * time.Second) //eek - need a channel to wait on here instead
+			if ctx.Services != nil {
+				log.Debug("ranging over services...")
 				id.Services = make([]*dto.Service, 0)
-				for key, svc := range *ctx.Services {
+				for _, svc := range *ctx.Services {
 					id.Services = append(id.Services, &dto.Service{
-						Name: svc.Name,
+						Name:     svc.Name,
 						HostName: svc.InterceptHost,
-						Port: uint16(svc.InterceptPort)})
-					log.Debugf("key is: %s. same as name: %s", key, svc.Name)
+						Port:     uint16(svc.InterceptPort)})
 				}
 			} else {
-				log.Debugf("no services to load for service name: %s", ctx.Name())
+				log.Warnf("no services to load for service name: %s", ctx.Name())
 			}
 		}
 	} else {
@@ -209,7 +211,6 @@ func noZiti() bool {
 	v, _ := strconv.ParseBool(os.Getenv("NOZITI"))
 	return v
 }
-
 
 func loadDummyServices(id *dto.Identity) {
 	id.Services = append(id.Services,

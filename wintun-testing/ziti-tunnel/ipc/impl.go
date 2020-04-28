@@ -515,24 +515,11 @@ func respondWithError(out *json.Encoder, msg string, code int, err error) {
 }
 
 func connectIdentity(id *dto.Identity) {
-	if !id.Active && !state.Active {
-		//clear out the services before returning
-		id.Services = nil
-		log.Infof("not connecting identity: %s as it is not active", id.Name)
-		return
-	}
-
-	if id.Connected {
-		log.Debugf("id: %s is already connected - not attempting to connect again fingerprint:%s", id.Name, id.FingerPrint)
-		return
-	}
-
 	//tell the c sdk to use the file from the id and connect
 	log.Infof("Connecting identity: %s", id.Name)
-
 	state.LoadIdentity(id)
+
 	id.Connected = true
-	log.Infof("Connecting identity: %s responded to", id.Name)
 }
 
 func disconnectIdentity(id *dto.Identity) error {
