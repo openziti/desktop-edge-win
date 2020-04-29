@@ -20,6 +20,8 @@ namespace ZitiTunneler {
 		private System.Windows.Forms.Timer _timer;
 		private Client serviceClient = null;
 		private bool _isAttached = true;
+		private int _right = 75;
+		private int _bottom = -10;
 
 		private List<ZitiIdentity> identities {
 			get {
@@ -64,8 +66,8 @@ namespace ZitiTunneler {
 
 		private void MainWindow1_Loaded(object sender, RoutedEventArgs e) {
 			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-			this.Left = desktopWorkingArea.Right-this.Width-25;
-			this.Top = desktopWorkingArea.Bottom-this.Height-50;
+			this.Left = desktopWorkingArea.Right-this.Width-_right;
+			this.Top = desktopWorkingArea.Bottom-this.Height-_bottom;
 
 			// add a new service client
 			serviceClient = new Client();
@@ -80,6 +82,17 @@ namespace ZitiTunneler {
 				// MessageBox.Show("oh my goodness - problem with the service. Almost certainly means the service is NOT RUNNING... Jeremy make this pretty.\n" + ex.Message);
 			}
 			LoadIdentities();
+			IdentityMenu.OnForgot += IdentityForgotten;
+		}
+
+		private void IdentityForgotten(ZitiIdentity forgotten) {
+			ZitiTunnelStatus status = serviceClient.GetStatus();
+			identities.Clear();
+			foreach (var id in status.Identities) {
+				var zid = ZitiIdentity.FromClient(id);
+				identities.Add(zid);
+			}
+			LoadIdentities();
 		}
 
 		private void AttachmentChanged(bool attached) {
@@ -87,8 +100,8 @@ namespace ZitiTunneler {
 			if (_isAttached) {
 				Arrow.Visibility = Visibility.Visible;
 				var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-				this.Left = desktopWorkingArea.Right-this.Width-25;
-				this.Top = desktopWorkingArea.Bottom-this.Height-50;
+				this.Left = desktopWorkingArea.Right-this.Width-_right;
+				this.Top = desktopWorkingArea.Bottom-this.Height-_bottom;
 			} else {
 				Arrow.Visibility = Visibility.Collapsed;
 				var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
@@ -144,8 +157,8 @@ namespace ZitiTunneler {
 				IdList.Children.Add(id);
 			}
 			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-			this.Left = desktopWorkingArea.Right-this.Width-25;
-			this.Top = desktopWorkingArea.Bottom-this.Height-50;
+			this.Left = desktopWorkingArea.Right-this.Width-_right;
+			this.Top = desktopWorkingArea.Bottom-this.Height-_bottom;
 		}
 
 		private void OpenIdentity(ZitiIdentity identity) {
@@ -165,10 +178,13 @@ namespace ZitiTunneler {
 				
 				try {
 					Identity createdId = serviceClient.AddIdentity(System.IO.Path.GetFileName(jwtDialog.FileName), false, fileContent);
+					ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
+					client.IdentityOnOff(createdId.FingerPrint, true);
 					if (createdId != null) {
 						identities.Add(ZitiIdentity.FromClient(createdId));
-						MessageBox.Show("New identity added with fingerprint: " + createdId.FingerPrint);
-						updateViewWithIdentity(createdId);
+						LoadIdentities();
+						//MessageBox.Show("New identity added with fingerprint: " + createdId.FingerPrint);
+						//updateViewWithIdentity(createdId);
 					} else {
 						// Jeremy buddy - error popup here
 						MessageBox.Show("created id was null - wtf jeremy. your fault, um nope your fault clint, or probably Andrews");

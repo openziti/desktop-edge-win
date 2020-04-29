@@ -27,7 +27,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Vertical" Margin="20,20,20,20">
+            <StackPanel Name="MainStack" Grid.Column="0" Grid.Row="0" Orientation="Vertical" Margin="20,20,20,20">
                 <Grid Margin="0,0,0,20">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="70"/>
@@ -78,9 +78,9 @@
                     <local:MenuEditItem x:Name="ConfigMtu" HorizontalAlignment="Stretch" Width="Auto" Label="MTU:"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigDns" HorizontalAlignment="Stretch" Width="Auto" Label="DNS Servers:"></local:MenuEditItem>
                 </StackPanel>
-                <TextBox Name="LicensesItems" Width="380" Height="400" Visibility="Collapsed"></TextBox>
-                <TextBox Name="LogsItems" Width="380" Height="400" Visibility="Collapsed"></TextBox>
-                
+                <TextBox Name="LicensesItems" Height="400" Width="{Binding ActualWidth, ElementName=MainStack}" TextWrapping="Wrap" Visibility="Collapsed"></TextBox>
+                <TextBox Name="LogsItems" Height="400" Width="{Binding ActualWidth, ElementName=MainStack}" TextWrapping="Wrap" Visibility="Collapsed"></TextBox>
+
                 <Button Name="ConfigSaveButton" Cursor="Hand" Click="SaveConfig" Visibility="Collapsed" Content="SAVE" FontSize="10" FontWeight="SemiBold" Padding="20,7,20,7" Background="#0069FF" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White"></Button>
                 <StackPanel Name="AboutItemsButton" Orientation="Vertical" HorizontalAlignment="Stretch" Visibility="Collapsed">
                     <Image Grid.Column="0" Source="/Assets/Images/logo.png" Height="60" Width="240"></Image>
