@@ -21,6 +21,8 @@ namespace ZitiTunneler {
 	public partial class IdentityDetails:UserControl {
 
 		private bool _isAttached = true;
+		public delegate void Forgot(ZitiIdentity forgotten);
+		public event Forgot OnForgot;
 
 		private List<ZitiIdentity> identities {
 			get {
@@ -63,7 +65,7 @@ namespace ZitiTunneler {
 			IdentityStatus.Value = _identity.Status;
 			ServiceList.Children.Clear();
 			for (int i=0; i<_identity.Services.Count; i++) {
-				MenuEditItem editor = new MenuEditItem();
+				ServiceInfo editor = new ServiceInfo();
 				editor.Label = _identity.Services[i].Name;
 				editor.Value = _identity.Services[i].Url;
 				editor.IsLocked = true;
@@ -86,21 +88,30 @@ namespace ZitiTunneler {
 
 		private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
 			// Jeremy - this works now as long as you pass a fingerprint that's valid!
-			this.Visibility = Visibility.Collapsed;
-			ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
-			try {
-				client.RemoveIdentity(_identity.Fingerprint);
+			MessageBoxResult messageBoxResult = MessageBox.Show("Are you sure you want to forget this identity?", "Delete Confirmation", System.Windows.MessageBoxButton.YesNo);
+			if (messageBoxResult == MessageBoxResult.Yes) {
+				this.Visibility = Visibility.Collapsed;
+				ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
+				try {
+					client.RemoveIdentity(_identity.Fingerprint);
 
-				foreach (var id in identities) {
-					if (id.Fingerprint == _identity.Fingerprint) {
-						identities.Remove(id);
-						break;
+					ZitiIdentity forgotten = new ZitiIdentity();
+					foreach (var id in identities) {
+						if (id.Fingerprint == _identity.Fingerprint) {
+							forgotten = id;
+							identities.Remove(id);
+							break;
+						}
 					}
+
+					if (OnForgot != null) {
+						OnForgot(forgotten);
+					}
+				} catch (ServiceClient.ServiceException se) {
+					MessageBox.Show(se.AdditionalInfo, se.Message);
+				} catch (Exception ex) {
+					MessageBox.Show("Unexpected error 1", ex.Message);
 				}
-			} catch (ServiceClient.ServiceException se) {
-				MessageBox.Show(se.AdditionalInfo, se.Message);
-			} catch (Exception ex) {
-				MessageBox.Show("Unexpected error 1", ex.Message);
 			}
 		}
 	}

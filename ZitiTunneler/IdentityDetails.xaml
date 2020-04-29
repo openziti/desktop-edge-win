@@ -42,7 +42,7 @@
                             <local:MenuEditItem x:Name="IdentityEnrollment" HorizontalAlignment="Stretch" Label="Enrollment Status" IsLocked="True"></local:MenuEditItem>
                             <Label Content="SERVICES" Foreground="Gray" FontWeight="SemiBold" />
                             <StackPanel Name="ServiceList" Orientation="Vertical"></StackPanel>
-                            <Label Name="ForgetIdentityButton" Margin="0,10,0,10" Content="Forget This Identity" Cursor="Hand" Foreground="#F4044D" HorizontalAlignment="Center" MouseUp="ForgetIdentity"></Label>
+                            <Label Name="ForgetIdentityButton" Margin="0,10,0,10" Content="Forget This Identity" Cursor="Hand" Foreground="#F4044D" HorizontalAlignment="Center" Mouse.MouseDown="ForgetIdentity"></Label>
                             <Image Source="/Assets/Images/identity.png" Height="100" Width="100" HorizontalAlignment="Stretch">
                             </Image>
                         </StackPanel>
