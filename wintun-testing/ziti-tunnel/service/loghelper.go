@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"wintun-testing/ziti-tunnel/service"
 
 	"github.com/michaelquigley/pfxlog"
 	"github.com/sirupsen/logrus"
@@ -12,7 +13,6 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"wintun-testing/ziti-tunnel/config"
-	"wintun-testing/ziti-tunnel/ipc"
 )
 
 var Logger = *pfxlog.Logger()
@@ -61,9 +61,9 @@ func ParseLevel(lvl string) logrus.Level {
 func InitEventLog(interactive bool) {
 	var err error
 	if !interactive {
-		Elog = debug.New(ipc.SvcName)
+		Elog = debug.New(service.SvcName)
 	} else {
-		Elog, err = eventlog.Open(ipc.SvcName)
+		Elog, err = eventlog.Open(service.SvcName)
 		if err != nil {
 			return
 		}
