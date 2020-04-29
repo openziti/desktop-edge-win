@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/michaelquigley/pfxlog"
+	"os"
 	"unsafe"
 )
 
@@ -28,7 +29,16 @@ func init() {
 	C.libuv_init(_impl.libuvCtx)
 }
 
+func SetLog(f *os.File) {
+	C.setLogOut(C.intptr_t(f.Fd()))
+}
+
+func SetLogLevel(level int) {
+	C.setLogLevel(C.int(level))
+}
+
 func Start() {
+
 	v := C.NF_get_version()
 	log.Infof("starting ziti-sdk-c %s(%s)[%s]", C.GoString(v.version), C.GoString(v.revision), C.GoString(v.build_date))
 

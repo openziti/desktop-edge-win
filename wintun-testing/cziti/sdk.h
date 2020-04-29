@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #define USING_ZITI_SHARED
 #include <nf/ziti.h>
+#include <nf/ziti_log.h>
 #include <uv.h>
 
 
@@ -22,5 +23,8 @@ void libuv_init(libuv_ctx *lctx);
 void libuv_runner(void *arg);
 void libuv_run(libuv_ctx *lctx);
 void libuv_stop(libuv_ctx *lctx);
+
+void setLogOut(intptr_t h);
+void setLogLevel(int level);
 
 extern const char** all_configs;

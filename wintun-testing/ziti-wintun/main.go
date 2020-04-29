@@ -96,6 +96,13 @@ func main() {
 	fmt.Println("running")
 	cziti.DnsInit(ipv4ip, 24)
 
+	logFile, err := os.OpenFile("cziti.log", os.O_RDWR | os.O_CREATE, 0644)
+	if err != nil {
+		panic(err)
+	}
+	cziti.SetLog(logFile)
+	cziti.SetLogLevel(4)
+
 	cziti.Start()
 	_, err = cziti.HookupTun(tunDevice, dns)
 	if err != nil {
