@@ -101,6 +101,7 @@ func main() {
 		panic(err)
 	}
 	cziti.SetLog(logFile)
+	cziti.SetLogLevel(4)
 
 	cziti.Start()
 	_, err = cziti.HookupTun(tunDevice, dns)

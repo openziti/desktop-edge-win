@@ -33,6 +33,10 @@ func SetLog(f *os.File) {
 	C.setLogOut(C.intptr_t(f.Fd()))
 }
 
+func SetLogLevel(level int) {
+	C.setLogLevel(C.int(level))
+}
+
 func Start() {
 
 	v := C.NF_get_version()

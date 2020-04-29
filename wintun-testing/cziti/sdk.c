@@ -6,6 +6,9 @@
 void libuv_stopper(uv_async_t *a) {
      uv_stop(a->loop);
 }
+void setLogLevel(int level) {
+    ziti_debug_level = level;
+}
 
 void setLogOut(intptr_t h) {
     int fd = _open_osfhandle(h, _O_APPEND | _O_RDONLY);
