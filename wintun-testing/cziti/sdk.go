@@ -61,18 +61,33 @@ type Service struct {
 }
 
 type CZitiCtx struct {
-	options C.nf_options
-	nf      C.nf_context
+	options   C.nf_options
+	nf        C.nf_context
+	status    int
+	statusErr error
 
 	Services *map[string]Service
 }
 
+func (c *CZitiCtx) Status() (int, error) {
+	return c.status, c.statusErr
+}
+
 func (c *CZitiCtx) Name() string {
-	return C.GoString(C.NF_get_identity(c.nf).name)
+	if c.nf != nil {
+		id := C.NF_get_identity(c.nf)
+		if id != nil {
+			return C.GoString(id.name)
+		}
+	}
+	return "<unknown>"
 }
 
 func (c *CZitiCtx) Controller() string {
-	return C.GoString(C.NF_get_controller(c.nf))
+	if c.nf != nil {
+		return C.GoString(C.NF_get_controller(c.nf))
+	}
+	return C.GoString(c.options.controller)
 }
 
 var tunCfgName = C.CString("ziti-tunneler-client.v1")
@@ -126,9 +141,12 @@ func serviceCB(nf C.nf_context, service *C.ziti_service, status C.int, data unsa
 //export initCB
 func initCB(nf C.nf_context, status C.int, data unsafe.Pointer) {
 	ctx := (*CZitiCtx)(data)
-	log.Debugf("status %d: ctx = %+v, nf = %+v", status, ctx, nf)
+
 	ctx.nf = nf
 	ctx.options.ctx = data
+	ctx.status = int(status)
+	ctx.statusErr = zitiError(status)
+
 	cfg := C.GoString(ctx.options.config)
 	if ch, ok := initMap[cfg]; ok {
 		ch <- ctx
@@ -137,14 +155,17 @@ func initCB(nf C.nf_context, status C.int, data unsafe.Pointer) {
 	}
 }
 
-var initMap = make(map[string]chan interface{})
+var initMap = make(map[string]chan *CZitiCtx)
 
 func zitiError(code C.int) error {
-	return errors.New(C.GoString(C.ziti_errorstr(code)))
+	if int(code) != 0 {
+		return errors.New(C.GoString(C.ziti_errorstr(code)))
+	}
+	return nil
 }
 
-func LoadZiti(cfg string) (*CZitiCtx, error) {
-	ctx := CZitiCtx{}
+func LoadZiti(cfg string) *CZitiCtx {
+	ctx := &CZitiCtx{}
 	ctx.options.config = C.CString(cfg)
 	ctx.options.init_cb = C.nf_init_cb(C.initCB)
 	ctx.options.service_cb = C.nf_service_cb(C.serviceCB)
@@ -152,17 +173,18 @@ func LoadZiti(cfg string) (*CZitiCtx, error) {
 	ctx.options.config_types = C.all_configs
 	//ctx.options.ctx = unsafe.Pointer(&ctx)
 
-	ch := make(chan interface{})
+	ch := make(chan *CZitiCtx)
 	initMap[cfg] = ch
-	rc := C.NF_init_opts(&ctx.options, _impl.libuvCtx.l, unsafe.Pointer(&ctx))
+	rc := C.NF_init_opts(&ctx.options, _impl.libuvCtx.l, unsafe.Pointer(ctx))
 	if rc != C.ZITI_OK {
-		return nil, zitiError(rc)
+		ctx.status, ctx.statusErr = int(rc), zitiError(rc)
+		go func() {
+			ch <- ctx
+		}()
 	}
 
 	res := <-ch
+	delete(initMap, cfg)
 
-	if c, ok := res.(*CZitiCtx); ok {
-		return c, nil
-	}
-	return nil, res.(error)
+	return res
 }
