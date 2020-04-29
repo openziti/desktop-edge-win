@@ -8,11 +8,11 @@ import (
 	"os"
 	"strconv"
 	"time"
+	"wintun-testing/cziti"
 
 	"golang.zx2c4.com/wireguard/tun"
 	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
 
-	"wintun-testing/cziti"
 	"wintun-testing/ziti-tunnel/config"
 	"wintun-testing/ziti-tunnel/dto"
 	"wintun-testing/ziti-tunnel/idutil"
@@ -114,7 +114,7 @@ func (t *TunnelerState) CreateTun() error {
 			t.tunName = tunName
 		}
 	} else {
-		log.Fatalf("error creating TUN device: (%v)", err)
+		return fmt.Errorf("error creating TUN device: (%v)", err)
 	}
 
 	if name, err := tunDevice.Name(); err == nil {
@@ -125,12 +125,12 @@ func (t *TunnelerState) CreateTun() error {
 	luid := winipcfg.LUID(nativeTunDevice.LUID())
 	ip, ipnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", Ipv4ip, Ipv4mask))
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("error parsing CIDR block: (%v)", err)
 	}
 	log.Debugf("setting TUN interface address to [%s]", ip)
 	err = luid.SetIPAddresses([]net.IPNet{{ip, ipnet.Mask}})
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to set IP address: (%v)", err)
 	}
 
 	dnsServers := []net.IP{
@@ -139,13 +139,13 @@ func (t *TunnelerState) CreateTun() error {
 	}
 	err = luid.AddDNS(dnsServers)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to add DNS address: (%v)", err)
 	}
 	dns, err := luid.DNS()
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to fetch DNS address: (%v)", err)
 	}
-	log.Debugf("dns servers = %s", dns)
+	log.Debugf("dns servers set to = %s", dns)
 
 	log.Infof("routing destination [%s] through [%s]", *ipnet, ipnet.IP)
 	err = luid.SetRoutes([]*winipcfg.RouteData{{*ipnet, ipnet.IP, 0}})
@@ -188,6 +188,7 @@ func (t *TunnelerState) LoadIdentity(id *dto.Identity) {
 		} else {
 			time.Sleep(1 * time.Second) //eek - need a channel to wait on here instead
 			log.Infof("successfully loaded %s@%s", ctx.Name(), ctx.Controller())
+			id.Name = ctx.Name()
 			if ctx.Services != nil {
 				log.Debug("ranging over services...")
 				id.Services = make([]*dto.Service, 0)
@@ -205,6 +206,7 @@ func (t *TunnelerState) LoadIdentity(id *dto.Identity) {
 		log.Warnf("NOZITI set to true. this should be only used for debugging")
 		//loadDummyServices(id)
 	}
+	id.Connected = true
 }
 
 func noZiti() bool {

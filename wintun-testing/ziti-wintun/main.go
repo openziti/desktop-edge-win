@@ -34,7 +34,7 @@ func main() {
 
 	fmt.Printf("user [%v]\n", user)
 
-	if len(os.Args) < 2 {
+	if len(os.Args) < 3 {
 		fmt.Printf("usage: %s <interfaceName>\n", filepath.Base(os.Args[0]))
 		os.Exit(1)
 	}

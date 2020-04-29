@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"wintun-testing/cziti"
 
 	"github.com/Microsoft/go-winio"
 	"github.com/netfoundry/ziti-foundation/identity/identity"
@@ -29,7 +30,7 @@ func SubMain(ops <- chan string, changes chan<- svc.Status) error {
 	// open and assign the event log for this service
 	Elog, err := eventlog.Open(SvcName)
 	if err != nil {
-		return err
+	   return err
 	}
 
 	_ = Elog.Info(20, SvcName + " starting. log file located at " + config.LogFile())
@@ -71,9 +72,20 @@ func SubMain(ops <- chan string, changes chan<- svc.Status) error {
 	go acceptIPC(ipc)
 	log.Infof("ipc listener ready pipe: %s", ipcPipeName)
 
+	// wire in a log file for csdk troubleshooting
+	logFile, err := os.OpenFile(config.Path() + "cziti.log", os.O_RDWR | os.O_CREATE, 0644)
+	if err != nil {
+		log.Warnf("could not open log for writing. no debug information will be captured.")
+	} else {
+		cziti.SetLog(logFile)
+		cziti.SetLogLevel(3)
+		defer logFile.Close()
+	}
+
 	// initialize the network interface
 	err = initialize()
 	if err != nil {
+		log.Errorf("unexpected err: %v", err)
 		return err
 	}
 
@@ -88,17 +100,21 @@ func SubMain(ops <- chan string, changes chan<- svc.Status) error {
 			case c := <-ops:
 				log.Infof("request for control received, %v", c)
 				if c == "stop" {
+					log.Debug("====== stop request received beginning shutdown")
 					break loop
 				} else {
-					log.Info("operation: " + c)
+					log.Debug("unexpected operation: " + c)
 				}
 			}
 		}
 
+	log.Debug("======           shutdownConnections")
 	shutdownConnections()
 
+	log.Debug("======           resetting dns")
 	windns.ResetDNS()
 
+	log.Debug("======           closing handles")
 	state.Close()
 	_ = ipc.Close()
 	_ = logs.Close()
@@ -225,11 +241,6 @@ func serveIpc(conn net.Conn) {
 			return
 		}
 
-		/*
-			os.Stdout.Write(delim)
-			os.Stdout.Write([]byte(msg))
-			os.Stdout.Write(delim)
-		*/
 		log.Debugf("msg received: %s", msg)
 		dec := json.NewDecoder(strings.NewReader(msg))
 		var cmd dto.CommandMsg
@@ -246,11 +257,6 @@ func serveIpc(conn net.Conn) {
 				respondWithError(enc, "could not read string properly", UNKNOWN_ERROR, err)
 				return
 			}
-			/*
-				os.Stdout.Write(delim)
-				os.Stdout.Write([]byte(addIdMsg))
-				os.Stdout.Write(delim)
-			*/
 			log.Debugf("msg received: %s", addIdMsg)
 			addIdDec := json.NewDecoder(strings.NewReader(addIdMsg))
 
@@ -366,7 +372,7 @@ func setTunnelState(onOff bool) {
 			connectIdentity(id)
 		}
 	} else {
-		state.Close()
+		// state.Close()
 	}
 }
 
@@ -409,7 +415,6 @@ func removeTempFile(file os.File) {
 }
 
 func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
-
 	log.Debugf("new identity for %s: %s", newId.Id.Name, newId.EnrollmentFlags.JwtString)
 
 	tokenStr := newId.EnrollmentFlags.JwtString
@@ -515,11 +520,13 @@ func respondWithError(out *json.Encoder, msg string, code int, err error) {
 }
 
 func connectIdentity(id *dto.Identity) {
-	//tell the c sdk to use the file from the id and connect
-	log.Infof("Connecting identity: %s", id.Name)
-	state.LoadIdentity(id)
-
-	id.Connected = true
+	if !id.Connected {
+		//tell the c sdk to use the file from the id and connect
+		log.Infof("Connecting identity: %s", id.Name)
+		state.LoadIdentity(id)
+	} else {
+		log.Debugf("id [%s] is already connected - not reconnecting", id.Name)
+	}
 }
 
 func disconnectIdentity(id *dto.Identity) error {
@@ -529,9 +536,8 @@ func disconnectIdentity(id *dto.Identity) error {
 	if id.Connected {
 		// actually disconnect from the c sdk here
 		log.Warn("not implemented yet - disconnected an already connected id doesn't actually work yet...")
-
-		return nil
 		id.Connected = false
+		return nil
 	} else {
 		log.Debugf("id: %s is already disconnected - not attempting to disconnected again fingerprint:%s", id.Name, id.FingerPrint)
 	}

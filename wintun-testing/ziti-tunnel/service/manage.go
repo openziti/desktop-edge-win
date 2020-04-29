@@ -4,6 +4,7 @@ package service
 import (
 	"fmt"
 	"time"
+	"wintun-testing/ziti-tunnel/ipc"
 
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/mgr"
@@ -15,7 +16,7 @@ func StartService() error {
 		return err
 	}
 	defer m.Disconnect()
-	s, err := m.OpenService(SvcName)
+	s, err := m.OpenService(ipc.SvcStartName)
 	if err != nil {
 		return fmt.Errorf("could not access service: %v", err)
 	}
@@ -33,7 +34,7 @@ func ControlService(c svc.Cmd, to svc.State) error {
 		return err
 	}
 	defer m.Disconnect()
-	s, err := m.OpenService(SvcName)
+	s, err := m.OpenService(ipc.SvcStartName)
 	if err != nil {
 		return fmt.Errorf("could not access service: %v", err)
 	}

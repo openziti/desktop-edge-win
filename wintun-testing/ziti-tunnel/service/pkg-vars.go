@@ -15,10 +15,4 @@ const (
 	StopEvent = 100
 	ShutdownEvent = 101
 	ErrorEvent = 500
-
-	// This is the name you will use for the NET START command
-	SvcName = "ziti"
-
-	// This is the name that will appear in the Services control panel
-	SvcNameLong = SvcName + " long description here"
 )

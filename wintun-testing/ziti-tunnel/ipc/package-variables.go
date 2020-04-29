@@ -38,14 +38,18 @@ const (
 	LocalService              = "(A;;FA;;;LS)"
 
 	cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown | svc.AcceptPauseAndContinue
+
+	// This is the name you will use for the NET START command
+	SvcStartName = "ziti"
+
+	// This is the name that will appear in the Services control panel
+	SvcName = "Ziti Tunneler"
+
+	// This is the longer description that will be shown in Services
+	SvcNameLong = "Provides a client for accessing Ziti networks"
 )
 
 var Plog = pfxlog.Logger()
 var log = Plog
 var Elog *eventlog.Log
 
-// This is the name you will use for the NET START command
-const SvcName = "ziti"
-
-// This is the name that will appear in the Services control panel
-const SvcNameLong = SvcName + " long description here"

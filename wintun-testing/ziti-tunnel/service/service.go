@@ -63,16 +63,16 @@ loop:
 }
 
 func RunService(isDebug bool) {
-	_ = log2.Elog.Info(StartEvent, fmt.Sprintf("starting %s service", SvcName))
+	_ = log2.Elog.Info(StartEvent, fmt.Sprintf("starting %s service", ipc.SvcStartName))
 	run := svc.Run
 	if isDebug {
 		run = debug.Run
 	}
-	err := run(SvcName, &zitiService{})
+	err := run(ipc.SvcStartName, &zitiService{})
 
 	if err != nil {
-		_ = log2.Elog.Error(ErrorEvent, fmt.Sprintf("%s service failed: %v", SvcName, err))
+		_ = log2.Elog.Error(ErrorEvent, fmt.Sprintf("%s service failed: %v", ipc.SvcStartName, err))
 		return
 	}
-	_ = log2.Elog.Info(StopEvent, fmt.Sprintf("%s service stopped", SvcName))
+	_ = log2.Elog.Info(StopEvent, fmt.Sprintf("%s service stopped", ipc.SvcStartName))
 }

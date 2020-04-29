@@ -31,6 +31,15 @@ func main() {
 
 	// if not interactive that means this is running as a service via services
 	if !isIntSess {
+		err = os.Setenv("ZITI_LOG", "5")
+		if err != nil {
+			log.Warnf("error setting env: %v", err)
+		}else {
+			log.Warn("ziti_log set to 5")
+			log.Warn("ziti_log set to 5")
+			log.Warn("ziti_log set to 5")
+			log.Warn("ziti_log set to 5")
+		}
 		log.Info("service is starting")
 		service.RunService(false)
 		log.Info("service has stopped")
