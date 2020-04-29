@@ -109,8 +109,10 @@ func main() {
 		panic(err)
 	}
 
-	if ctx, err := cziti.LoadZiti(os.Args[2]); err != nil {
-		panic(err)
+	ctx := cziti.LoadZiti(os.Args[2])
+	if rc, err := ctx.Status(); err != nil {
+		fmt.Printf("failed to start %s@%s: %v\n", ctx.Name(), ctx.Controller(), err)
+		os.Exit(rc)
 	} else {
 		fmt.Printf("successfully loaded %s@%s\n", ctx.Name(), ctx.Controller())
 	}
