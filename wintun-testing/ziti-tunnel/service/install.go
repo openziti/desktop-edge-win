@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"wintun-testing/ziti-tunnel/ipc"
 
 	"golang.org/x/sys/windows/svc/eventlog"
 	"golang.org/x/sys/windows/svc/mgr"
@@ -18,10 +17,10 @@ func InstallService() error {
 	}
 	defer m.Disconnect()
 
-	s, err := m.OpenService(ipc.SvcStartName)
+	s, err := m.OpenService(SvcStartName)
 	if err == nil {
 		s.Close()
-		return fmt.Errorf("service %s already exists", ipc.SvcStartName)
+		return fmt.Errorf("service %s already exists", SvcStartName)
 	}
 
 	exePath := os.Args[0]
@@ -35,17 +34,17 @@ func InstallService() error {
 	}
 
 	log.Infof("service installed using path: %s", fullPath)
-	s, err = m.CreateService(ipc.SvcStartName, fullPath, mgr.Config{
+	s, err = m.CreateService(SvcStartName, fullPath, mgr.Config{
 		StartType:        mgr.StartAutomatic,
-		DisplayName:      ipc.SvcName,
-		Description:      ipc.SvcNameLong,
+		DisplayName:      SvcName,
+		Description:      SvcNameLong,
 	})
 	if err != nil {
 		return err
 	}
 	defer s.Close()
 
-	err = eventlog.InstallAsEventCreate(ipc.SvcStartName, eventlog.Error|eventlog.Warning|eventlog.Info)
+	err = eventlog.InstallAsEventCreate(SvcStartName, eventlog.Error|eventlog.Warning|eventlog.Info)
 	if err != nil {
 		s.Delete()
 		return fmt.Errorf("SetupEventLogSource() failed: %s", err)
@@ -59,16 +58,16 @@ func RemoveService() error {
 		return err
 	}
 	defer m.Disconnect()
-	s, err := m.OpenService(ipc.SvcStartName)
+	s, err := m.OpenService(SvcStartName)
 	if err != nil {
-		return fmt.Errorf("service %s is not installed", ipc.SvcStartName)
+		return fmt.Errorf("service %s is not installed", SvcStartName)
 	}
 	defer s.Close()
 	err = s.Delete()
 	if err != nil {
 		return err
 	}
-	err = eventlog.Remove(ipc.SvcStartName)
+	err = eventlog.Remove(SvcStartName)
 	if err != nil {
 		return fmt.Errorf("RemoveEventLogSource() failed: %s", err)
 	}

@@ -10,24 +10,22 @@ import (
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
 
-	"wintun-testing/ziti-tunnel/ipc"
-	pkglog "wintun-testing/ziti-tunnel/log"
 	"wintun-testing/ziti-tunnel/service"
 )
 
-var log = pkglog.Logger
-var elog = pkglog.Elog
+var log = service.Logger
+var elog = service.Elog
 
 func main() {
-	pkglog.InitLogger("debug")
+	service.InitLogger("debug")
 
 	isIntSess, err := svc.IsAnInteractiveSession()
 	if err != nil {
 		log.Fatalf("failed to determine if we are running in an interactive session: %v", err)
 	}
 
-	pkglog.InitEventLog(isIntSess)
-	defer pkglog.Elog.Close()
+	service.InitEventLog(isIntSess)
+	defer service.Elog.Close()
 
 	// if not interactive that means this is running as a service via services
 	if !isIntSess {
@@ -52,9 +50,9 @@ func main() {
 	}
 
 	if !isIntSess {
-		elog = debug.New(ipc.SvcName)
+		elog = debug.New(service.SvcName)
 	} else {
-		elog, err = eventlog.Open(ipc.SvcName)
+		elog, err = eventlog.Open(service.SvcName)
 		if err != nil {
 			return
 		}
@@ -65,10 +63,10 @@ func main() {
 		service.RunService(true)
 		return
 	case "install":
-		elog.Info(service.InstallEvent, "installing service: "+ipc.SvcName)
+		elog.Info(service.InstallEvent, "installing service: "+service.SvcName)
 		err = service.InstallService()
 	case "remove":
-		elog.Info(service.InstallEvent, "removing service: "+ipc.SvcName)
+		elog.Info(service.InstallEvent, "removing service: "+service.SvcName)
 		err = service.RemoveService()
 	case "start":
 		err = service.StartService()
@@ -82,8 +80,8 @@ func main() {
 		usage(fmt.Sprintf("invalid command %s", cmd))
 	}
 	if err != nil {
-		elog.Error(10, fmt.Sprintf("failed to %s %s: %v", cmd, ipc.SvcName, err))
-		log.Fatalf("failed to %s %s: %v", cmd, ipc.SvcName, err)
+		elog.Error(10, fmt.Sprintf("failed to %s %s: %v", cmd, service.SvcName, err))
+		log.Fatalf("failed to %s %s: %v", cmd, service.SvcName, err)
 	}
 	return
 }

@@ -1,11 +1,9 @@
-package log
+package service
 
 import (
 	"io"
 	"os"
 	"strings"
-	"wintun-testing/ziti-tunnel/service"
-
 	"github.com/michaelquigley/pfxlog"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/windows/svc/debug"
@@ -61,9 +59,9 @@ func ParseLevel(lvl string) logrus.Level {
 func InitEventLog(interactive bool) {
 	var err error
 	if !interactive {
-		Elog = debug.New(service.SvcName)
+		Elog = debug.New(SvcName)
 	} else {
-		Elog, err = eventlog.Open(service.SvcName)
+		Elog, err = eventlog.Open(SvcName)
 		if err != nil {
 			return
 		}
