@@ -89,6 +89,8 @@ func SubMain(ops <- chan string, changes chan<- svc.Status) error {
 		return err
 	}
 
+	setTunnelState(true)
+
 	// notify the service is running
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 	_ = Elog.Info(InformationEvent, SvcName + " status set to running")
