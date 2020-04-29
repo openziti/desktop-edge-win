@@ -62,7 +62,6 @@ namespace ZitiTunneler.ServiceClient
                 pipeClient = new NamedPipeClientStream(localPipeServer, ipcPipe, inOut);
                 try
                 {
-
                     ipcWriter = new StreamWriter(pipeClient);
                     ipcReader = new StreamReader(pipeClient);
                     pipeClient.Connect(ServiceConnectTimeout);
@@ -220,37 +219,55 @@ namespace ZitiTunneler.ServiceClient
 
         private void send(object objToSend)
         {
-            try
+            bool retried = false;
+            while (true)
             {
-                string toSend = JsonConvert.SerializeObject(objToSend, Formatting.None);
-                /*
-                StringWriter w = new StringWriter();
-                serializer.Serialize(w, objToSend);
+                try
+                {
+                    if (ipcWriter == null)
+                    {
+                        setupPipe();
+                    }
+                    string toSend = JsonConvert.SerializeObject(objToSend, Formatting.None);
 
-                string toSend = w.ToString();
-                */
-                if (toSend?.Trim() != null)
-                {
-                    Debug.WriteLine("===============  sending message =============== ");
-                    Debug.WriteLine(toSend);
-                    ipcWriter.Write(toSend);
-                    ipcWriter.Write('\n');
-                    Debug.WriteLine("=============== flushing message =============== ");
-                    ipcWriter.Flush();
-                    Debug.WriteLine("===============     sent message =============== ");
-                    Debug.WriteLine("");
-                    Debug.WriteLine("");
+                    if (toSend?.Trim() != null)
+                    {
+                        Debug.WriteLine("===============  sending message =============== ");
+                        Debug.WriteLine(toSend);
+                        ipcWriter.Write(toSend);
+                        ipcWriter.Write('\n');
+                        Debug.WriteLine("=============== flushing message =============== ");
+                        ipcWriter.Flush();
+                        Debug.WriteLine("===============     sent message =============== ");
+                        Debug.WriteLine("");
+                        Debug.WriteLine("");
+                    }
+                    else
+                    {
+                        Debug.WriteLine("NOT sending empty object??? " + objToSend?.ToString());
+                    }
+                    break;
                 }
-                else
+                catch (IOException ioe)
                 {
-                    Debug.WriteLine("NOT sending empty object??? " + objToSend?.ToString());
+                    //almost certainly a problem with the pipe - recreate the pipe... try one more time.
+                    setupPipe();
+                    if (retried)
+                    {
+                        //we tried - throw the error...
+                        throw ioe;
+                    }
+                    else
+                    {
+                        retried = true; //fall back through to the while and try again
+                    }
                 }
-            }
-            catch(Exception ex)
-            {
-                //if this fails it's usually because the writer is null/invalid. throwing IOException
-                //will trigger the pipe to rebuild
-                throw new IOException("Unexpected error when sending data to service. " + ex.Message);
+                catch (Exception ex)
+                {
+                    //if this fails it's usually because the writer is null/invalid. throwing IOException
+                    //will trigger the pipe to rebuild
+                    throw new IOException("Unexpected error when sending data to service. " + ex.Message);
+                }
             }
         }
 

@@ -28,14 +28,14 @@ const (
 
 	cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown | svc.AcceptPauseAndContinue
 
-	StartEvent = 1
+	InformationEvent = 1
 	ContinueEvent = 2
 	PauseEvent = 3
 	InstallEvent = 4
-	InterrogateEvent = 10
-	StopEvent = 100
-	ShutdownEvent = 101
-	ErrorEvent = 500
+	InterrogateEvent = 5
+	StopEvent = 6
+	ShutdownEvent = 7
+	ErrorEvent = 1000
 
 	// This is the name you will use for the NET START command
 	SvcStartName = "ziti"

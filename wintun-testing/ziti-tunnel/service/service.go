@@ -59,7 +59,7 @@ loop:
 }
 
 func RunService(isDebug bool) {
-	_ = Elog.Info(StartEvent, fmt.Sprintf("starting %s service", SvcStartName))
+	_ = Elog.Info(InformationEvent, fmt.Sprintf("starting %s service", SvcStartName))
 	run := svc.Run
 	if isDebug {
 		run = debug.Run

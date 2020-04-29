@@ -33,7 +33,7 @@ func SubMain(ops <- chan string, changes chan<- svc.Status) error {
 	   return err
 	}
 
-	_ = Elog.Info(20, SvcName + " starting. log file located at " + config.LogFile())
+	_ = Elog.Info(InformationEvent, SvcName + " starting. log file located at " + config.LogFile())
 
 	// create a channel for notifying any connections that they are to be interrupted
 	interrupt = make(chan struct{})
@@ -73,12 +73,12 @@ func SubMain(ops <- chan string, changes chan<- svc.Status) error {
 	log.Infof("ipc listener ready pipe: %s", ipcPipeName)
 
 	// wire in a log file for csdk troubleshooting
-	logFile, err := os.OpenFile(config.Path() + "cziti.log", os.O_RDWR | os.O_CREATE, 0644)
+	logFile, err := os.OpenFile(config.Path() + "cziti.log", os.O_WRONLY | os.O_TRUNC | os.O_APPEND | os.O_CREATE, 0644)
 	if err != nil {
 		log.Warnf("could not open log for writing. no debug information will be captured.")
 	} else {
 		cziti.SetLog(logFile)
-		cziti.SetLogLevel(3)
+		cziti.SetLogLevel(4)
 		defer logFile.Close()
 	}
 
@@ -91,7 +91,7 @@ func SubMain(ops <- chan string, changes chan<- svc.Status) error {
 
 	// notify the service is running
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
-	_ = Elog.Info(20, SvcName + " status set to running")
+	_ = Elog.Info(InformationEvent, SvcName + " status set to running")
 	log.Info(SvcName + " status set to running. starting cancel loop")
 
 	loop:
@@ -242,6 +242,13 @@ func serveIpc(conn net.Conn) {
 		}
 
 		log.Debugf("msg received: %s", msg)
+
+		if strings.TrimSpace(msg) == "" {
+			// empty message. ignore it and read again
+			log.Debug("empty line received. ignoring")
+			continue
+		}
+
 		dec := json.NewDecoder(strings.NewReader(msg))
 		var cmd dto.CommandMsg
 		if err := dec.Decode(&cmd); err == io.EOF {
@@ -280,16 +287,12 @@ func serveIpc(conn net.Conn) {
 			fingerprint := cmd.Payload["Fingerprint"].(string)
 			toggleIdentity(enc, fingerprint, onOff)
 		default:
-			log.Debugf("Unknown operation: %s. Returning error on pipe", cmd.Function)
+			log.Warnf("Unknown operation: %s. Returning error on pipe", cmd.Function)
 			respondWithError(enc, "Something unexpected has happened", UNKNOWN_ERROR, nil)
-		}
-		if cmd.Function != "" {
-			//_ = writer.WriteByte('\n') //just in case the client tries to read a line
-		} else {
-			log.Warn("Empty input received?")
 		}
 		_ = rw.Flush()
 	}
+	log.Info("IPC Loop has exited")
 }
 
 func acceptLogs(p net.Listener) {
