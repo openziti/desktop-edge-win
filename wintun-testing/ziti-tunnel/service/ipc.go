@@ -5,6 +5,11 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
+	"github.com/Microsoft/go-winio"
+	"github.com/netfoundry/ziti-foundation/identity/identity"
+	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
+	"golang.org/x/sys/windows/svc"
+	"golang.org/x/sys/windows/svc/eventlog"
 	"io"
 	"io/ioutil"
 	"net"
@@ -13,12 +18,6 @@ import (
 	"time"
 	"wintun-testing/cziti"
 
-	"github.com/Microsoft/go-winio"
-	"github.com/netfoundry/ziti-foundation/identity/identity"
-	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
-	"golang.org/x/sys/windows/svc"
-	"golang.org/x/sys/windows/svc/eventlog"
-
 	"wintun-testing/cziti/windns"
 	"wintun-testing/ziti-tunnel/config"
 	"wintun-testing/ziti-tunnel/dto"
@@ -26,13 +25,16 @@ import (
 	"wintun-testing/ziti-tunnel/runtime"
 )
 
+
 func SubMain(ops <- chan string, changes chan<- svc.Status) error {
+	log.Debug("")
+	log.Debug("")
+	log.Debug("===============================================================================")
 	// open and assign the event log for this service
 	Elog, err := eventlog.Open(SvcName)
 	if err != nil {
 	   return err
 	}
-
 	_ = Elog.Info(InformationEvent, SvcName + " starting. log file located at " + config.LogFile())
 
 	// create a channel for notifying any connections that they are to be interrupted
@@ -75,7 +77,7 @@ func SubMain(ops <- chan string, changes chan<- svc.Status) error {
 	// wire in a log file for csdk troubleshooting
 	logFile, err := os.OpenFile(config.Path() + "cziti.log", os.O_WRONLY | os.O_TRUNC | os.O_APPEND | os.O_CREATE, 0644)
 	if err != nil {
-		log.Warnf("could not open log for writing. no debug information will be captured.")
+		log.Warnf("could not open cziti.log for writing. no debug information will be captured.")
 	} else {
 		cziti.SetLog(logFile)
 		cziti.SetLogLevel(4)
@@ -98,25 +100,19 @@ func SubMain(ops <- chan string, changes chan<- svc.Status) error {
 
 	loop:
 		for {
-			select {
-			case c := <-ops:
+			c := <-ops
 				log.Infof("request for control received, %v", c)
 				if c == "stop" {
-					log.Debug("====== stop request received beginning shutdown")
 					break loop
 				} else {
 					log.Debug("unexpected operation: " + c)
 				}
-			}
 		}
 
-	log.Debug("======           shutdownConnections")
 	shutdownConnections()
 
-	log.Debug("======           resetting dns")
 	windns.ResetDNS()
 
-	log.Debug("======           closing handles")
 	state.Close()
 	_ = ipc.Close()
 	_ = logs.Close()
@@ -155,7 +151,7 @@ func acceptIPC(p net.Listener) {
 
 func initialize() error {
 	log.Debugf("reading config file located at: %s", config.File())
-	file, err := os.OpenFile(config.File(), os.O_RDONLY, 0640)
+	file, err := os.OpenFile(config.File(), os.O_RDONLY, 0644)
 	if err != nil {
 		// file does not exist or process has no rights to read the file - return leaving configuration empty
 		// this is expected when first starting
@@ -314,7 +310,7 @@ func serveLogs(conn net.Conn) {
 	log.Debug("accepted a connection, writing logs to pipe")
 	w := bufio.NewWriter(conn)
 
-	file, err := os.OpenFile(config.LogFile(), os.O_RDONLY, 0640)
+	file, err := os.OpenFile(config.LogFile(), os.O_RDONLY, 0644)
 	if err != nil {
 		log.Errorf("could not open log file at %s", config.LogFile())
 		_, _ = w.WriteString("an unexpected error occurred while retrieving logs. look at the actual log file.")
@@ -498,10 +494,12 @@ func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
 	//newId.Id.Active = false //set to false by default - enable the id after persisting
 	log.Infof("enrolled successfully. identity file written to: %s", newPath)
 
+	connectIdentity(&newId.Id)
+	/*
 	if newId.Id.Active == true {
 		connectIdentity(&newId.Id)
 	}
-
+	*/
 	//if successful parse the output and add the config to the identity
 	state.Identities = append(state.Identities, &newId.Id)
 
@@ -512,7 +510,7 @@ func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
 	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: idutil.Clean(newId.Id)}
 
 	respond(out, resp)
-	log.Debugf("new identity for %s: %s responded to", newId.Id.Name, newId.EnrollmentFlags.JwtString)
+	log.Debugf("new identity for %s responded to", newId.Id.Name)
 }
 
 func respondWithError(out *json.Encoder, msg string, code int, err error) {
@@ -527,21 +525,24 @@ func respondWithError(out *json.Encoder, msg string, code int, err error) {
 func connectIdentity(id *dto.Identity) {
 	if !id.Connected {
 		//tell the c sdk to use the file from the id and connect
-		log.Infof("Connecting identity: %s", id.Name)
+		log.Debugf("loading identity %s with fingerprint %s", id.Name, id.FingerPrint)
 		state.LoadIdentity(id)
 	} else {
 		log.Debugf("id [%s] is already connected - not reconnecting", id.Name)
 	}
+	id.Active = true
+	log.Infof("identity [%s] connected [%t] and set to active [%t]", id.Name, id.Connected, id.Active)
 }
 
 func disconnectIdentity(id *dto.Identity) error {
 	//tell the c sdk to disconnect the identity/services etc
 	log.Infof("Disconnecting identity: %s", id.Name)
 
+	id.Active = false
 	if id.Connected {
 		// actually disconnect from the c sdk here
 		log.Warn("not implemented yet - disconnected an already connected id doesn't actually work yet...")
-		id.Connected = false
+		//id.Connected = false
 		return nil
 	} else {
 		log.Debugf("id: %s is already disconnected - not attempting to disconnected again fingerprint:%s", id.Name, id.FingerPrint)
@@ -577,9 +578,5 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 }
 
 func respond(out *json.Encoder, thing interface{}) {
-	/*os.Stdout.Write(delim)
-	_ = json.NewEncoder(os.Stdout).Encode(thing)
-	os.Stdout.Write(delim)
-	*/
 	_ = out.Encode(thing)
 }

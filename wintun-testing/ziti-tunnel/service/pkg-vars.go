@@ -1,13 +1,13 @@
 package service
 
 import (
-	"github.com/michaelquigley/pfxlog"
 	"golang.org/x/sys/windows/svc"
 	"sync"
+	"wintun-testing/ziti-tunnel/globals"
 	"wintun-testing/ziti-tunnel/runtime"
 )
 
-var log = pfxlog.Logger()
+var log = globals.Logger()
 
 var ipcPipeName = `\\.\pipe\NetFoundry\tunneler\ipc`
 var logsPipeName = `\\.\pipe\NetFoundry\tunneler\logs`

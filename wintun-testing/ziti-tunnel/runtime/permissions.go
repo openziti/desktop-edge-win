@@ -1,9 +1,8 @@
 package runtime
 
 import (
-	"os/user"
-
 	"github.com/netfoundry/ziti-foundation/util/stringz"
+	"os/user"
 )
 
 func EnsurePermissions(group string) string {

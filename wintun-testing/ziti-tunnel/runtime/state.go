@@ -4,14 +4,13 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"golang.zx2c4.com/wireguard/tun"
+	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
 	"net"
 	"os"
 	"strconv"
 	"time"
 	"wintun-testing/cziti"
-
-	"golang.zx2c4.com/wireguard/tun"
-	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
 
 	"wintun-testing/ziti-tunnel/config"
 	"wintun-testing/ziti-tunnel/dto"
@@ -61,9 +60,9 @@ func (t *TunnelerState) FindByIdentity(id dto.Identity) (int, *dto.Identity) {
 
 func SaveState(s *TunnelerState) {
 	// overwrite file if it exists
-	_ = os.MkdirAll(config.Path(), 0640)
+	_ = os.MkdirAll(config.Path(), 0644)
 
-	cfg, err := os.OpenFile(config.File(), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0640)
+	cfg, err := os.OpenFile(config.File(), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -78,9 +77,10 @@ func SaveState(s *TunnelerState) {
 	if err != nil {
 		panic(err)
 	}
+	log.Debug("state saved")
 }
 
-func (t TunnelerState) Clean() TunnelerState {
+func (t *TunnelerState) Clean() TunnelerState {
 	var d int64
 	if t.Active {
 		now := time.Now()
@@ -97,6 +97,7 @@ func (t TunnelerState) Clean() TunnelerState {
 		IpInfo:     t.IpInfo,
 	}
 	for i, id := range t.Identities {
+		log.Debug("returning clean identity: %s", id.Name)
 		rtn.Identities[i] = idutil.Clean(*id)
 	}
 
@@ -104,6 +105,10 @@ func (t TunnelerState) Clean() TunnelerState {
 }
 
 func (t *TunnelerState) CreateTun() error {
+	if noZiti() {
+		log.Warnf("NOZITI set to true. this should be only used for debugging")
+		return nil
+	}
 
 	log.Infof("creating TUN device: %s", TunName)
 	tunDevice, err := tun.CreateTUN(TunName, 64*1024)
@@ -154,22 +159,18 @@ func (t *TunnelerState) CreateTun() error {
 	}
 	log.Info("routing applied")
 
-	if !noZiti() {
-		cziti.DnsInit(Ipv4ip, 24)
-		cziti.Start()
-		_, err = cziti.HookupTun(tunDevice, dns)
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		log.Warnf("NOZITI set to true. this should be only used for debugging")
+	cziti.DnsInit(Ipv4ip, 24)
+	cziti.Start()
+	_, err = cziti.HookupTun(tunDevice, dns)
+	if err != nil {
+		panic(err)
 	}
 	return nil
 }
 
 func (t *TunnelerState) Close() {
 	if t.tun != nil {
-		log.Warn("TODO: actually close the tun - or disable all the identies etc.")
+		log.Warn("TODO: actually close the tun - or disable all the identities etc.")
 		/*
 			cziti.Stop()
 		*/
@@ -183,41 +184,40 @@ func (t *TunnelerState) Close() {
 
 func (t *TunnelerState) LoadIdentity(id *dto.Identity) {
 	if !noZiti() {
-		if ctx, err := cziti.LoadZiti(id.Path()); err != nil {
-			log.Errorf("error when loading identity %v", err)
-		} else {
-			time.Sleep(1 * time.Second) //eek - need a channel to wait on here instead
-			log.Infof("successfully loaded %s@%s", ctx.Name(), ctx.Controller())
-			id.Name = ctx.Name()
-			if ctx.Services != nil {
-				log.Debug("ranging over services...")
-				id.Services = make([]*dto.Service, 0)
-				for _, svc := range *ctx.Services {
-					id.Services = append(id.Services, &dto.Service{
-						Name:     svc.Name,
-						HostName: svc.InterceptHost,
-						Port:     uint16(svc.InterceptPort)})
-				}
-			} else {
-				log.Warnf("no services to load for service name: %s", ctx.Name())
+		if id.Connected {
+			log.Warnf("id [%s] already connected", id.FingerPrint)
+			return
+		}
+		log.Infof("loading identity %s with fingerprint %s", id.Name, id.FingerPrint)
+		ctx := cziti.LoadZiti(id.Path())
+		id.Connected = true
+		if ctx == nil {
+			log.Warnf("connecting to identity with fingerprint [%s] did not error but no context was returned", id.FingerPrint)
+			return
+		}
+		log.Infof("successfully loaded %s@%s", ctx.Name(), ctx.Controller())
+
+		log.Debug("name changed from %s to %s", id.Name, ctx.Name())
+		id.Name = ctx.Name()
+
+		if ctx.Services != nil {
+			log.Debug("ranging over services...")
+			id.Services = make([]*dto.Service, 0)
+			for _, svc := range *ctx.Services {
+				id.Services = append(id.Services, &dto.Service{
+					Name:     svc.Name,
+					HostName: svc.InterceptHost,
+					Port:     uint16(svc.InterceptPort)})
 			}
+		} else {
+			log.Warnf("no services to load for service name: %s", ctx.Name())
 		}
 	} else {
 		log.Warnf("NOZITI set to true. this should be only used for debugging")
-		//loadDummyServices(id)
 	}
-	id.Connected = true
 }
 
 func noZiti() bool {
 	v, _ := strconv.ParseBool(os.Getenv("NOZITI"))
 	return v
-}
-
-func loadDummyServices(id *dto.Identity) {
-	id.Services = append(id.Services,
-		&dto.Service{Name: "ServiceOne", HostName: "MyServiceName", Port: 1111},
-		&dto.Service{Name: "SecondOne", HostName: "SecondService", Port: 2222},
-		&dto.Service{Name: "LastDummy Service With Spaces and is very very long", HostName: "10.10.10.10", Port: 3333},
-	)
 }

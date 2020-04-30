@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"wintun-testing/ziti-tunnel/globals"
 
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
@@ -13,25 +14,21 @@ import (
 	"wintun-testing/ziti-tunnel/service"
 )
 
-var log = service.Logger
-var elog = service.Elog
+var log = globals.Logger()
 
 func main() {
-	service.InitLogger("debug")
+	globals.InitLogger("debug")
 
 	isIntSess, err := svc.IsAnInteractiveSession()
 	if err != nil {
 		log.Fatalf("failed to determine if we are running in an interactive session: %v", err)
 	}
 
-	service.InitEventLog(isIntSess)
-	defer service.Elog.Close()
-
-	// if not interactive that means this is running as a service via services
-	if !isIntSess {
-		log.Info("service is starting")
+	// if not interactive that means this is probably running as a service via services
+	hasArgs := len(os.Args) > 1
+	if !isIntSess && !hasArgs {
 		service.RunService(false)
-		log.Info("service has stopped")
+		log.Info("service has completed")
 		return
 	}
 
@@ -41,13 +38,17 @@ func main() {
 	}
 
 	if !isIntSess {
-		elog = debug.New(service.SvcName)
+		globals.Elog = debug.New(service.SvcName)
 	} else {
-		elog, err = eventlog.Open(service.SvcName)
+		globals.Elog, err = eventlog.Open(service.SvcName)
 		if err != nil {
 			return
 		}
 	}
+	defer globals.Elog.Close()
+
+	elog := globals.Elog
+
 	cmd := strings.ToLower(os.Args[1])
 	switch cmd {
 	case "debug":

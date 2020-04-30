@@ -9,6 +9,7 @@
       <env name="PFXLOG_NO_JSON" value="true" />
       <env name="CGO_CFLAGS" value="-DNOGDI -I c:\git\github\ziti-tunneler-sdk-c\install\include" />
       <env name="CGO_LDFLAGS" value="-L c:\git\github\ziti-tunneler-sdk-c\install\lib" />
+      <env name="NOZITI" value="true" />
     </envs>
     <kind value="FILE" />
     <filePath value="$PROJECT_DIR$/ziti-tunnel/main.go" />

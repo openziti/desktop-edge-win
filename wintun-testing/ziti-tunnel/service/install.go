@@ -3,11 +3,10 @@ package service
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-
 	"golang.org/x/sys/windows/svc/eventlog"
 	"golang.org/x/sys/windows/svc/mgr"
+	"os"
+	"path/filepath"
 )
 
 func InstallService() error {
