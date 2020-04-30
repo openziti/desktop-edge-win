@@ -3,11 +3,10 @@ package service
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-
 	"golang.org/x/sys/windows/svc/eventlog"
 	"golang.org/x/sys/windows/svc/mgr"
+	"os"
+	"path/filepath"
 )
 
 func InstallService() error {
@@ -17,10 +16,10 @@ func InstallService() error {
 	}
 	defer m.Disconnect()
 
-	s, err := m.OpenService(SvcName)
+	s, err := m.OpenService(SvcStartName)
 	if err == nil {
 		s.Close()
-		return fmt.Errorf("service %s already exists", SvcName)
+		return fmt.Errorf("service %s already exists", SvcStartName)
 	}
 
 	exePath := os.Args[0]
@@ -34,7 +33,7 @@ func InstallService() error {
 	}
 
 	log.Infof("service installed using path: %s", fullPath)
-	s, err = m.CreateService(SvcName, fullPath, mgr.Config{
+	s, err = m.CreateService(SvcStartName, fullPath, mgr.Config{
 		StartType:        mgr.StartAutomatic,
 		DisplayName:      SvcName,
 		Description:      SvcNameLong,
@@ -44,7 +43,7 @@ func InstallService() error {
 	}
 	defer s.Close()
 
-	err = eventlog.InstallAsEventCreate(SvcName, eventlog.Error|eventlog.Warning|eventlog.Info)
+	err = eventlog.InstallAsEventCreate(SvcStartName, eventlog.Error|eventlog.Warning|eventlog.Info)
 	if err != nil {
 		s.Delete()
 		return fmt.Errorf("SetupEventLogSource() failed: %s", err)
@@ -58,16 +57,16 @@ func RemoveService() error {
 		return err
 	}
 	defer m.Disconnect()
-	s, err := m.OpenService(SvcName)
+	s, err := m.OpenService(SvcStartName)
 	if err != nil {
-		return fmt.Errorf("service %s is not installed", SvcName)
+		return fmt.Errorf("service %s is not installed", SvcStartName)
 	}
 	defer s.Close()
 	err = s.Delete()
 	if err != nil {
 		return err
 	}
-	err = eventlog.Remove(SvcName)
+	err = eventlog.Remove(SvcStartName)
 	if err != nil {
 		return fmt.Errorf("RemoveEventLogSource() failed: %s", err)
 	}

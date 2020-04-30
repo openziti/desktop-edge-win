@@ -34,8 +34,8 @@ func main() {
 
 	fmt.Printf("user [%v]\n", user)
 
-	if len(os.Args) < 2 {
-		fmt.Printf("usage: %s <interfaceName>\n", filepath.Base(os.Args[0]))
+	if len(os.Args) < 3 {
+		fmt.Printf("usage: %s <interfaceName> <config file path>\n", filepath.Base(os.Args[0]))
 		os.Exit(1)
 	}
 	interfaceName := os.Args[1]

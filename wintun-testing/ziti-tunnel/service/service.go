@@ -4,55 +4,57 @@ package service
 
 import (
 	"fmt"
-
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
-
-	"wintun-testing/ziti-tunnel/ipc"
-	log2 "wintun-testing/ziti-tunnel/log"
+	"wintun-testing/ziti-tunnel/globals"
 )
 
 
 type zitiService struct{}
-const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown | svc.AcceptPauseAndContinue
 
 func (m *zitiService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
 	changes <- svc.Status{State: svc.StartPending}
 
+	log.Errorf("the main loop exited with an unexpected error: %v")
 	control := make(chan string)
+	mainLoop := make(chan struct{})
 	go func() {
-		err := ipc.SubMain(control, changes)
+		err := SubMain(control, changes)
 		if err != nil {
 			log.Errorf("the main loop exited with an unexpected error: %v", err)
 		}
+		mainLoop <- struct{}{}
 	}()
 loop:
 	for {
 		select {
+		case <-mainLoop:
+			log.Debug("the main loop exited. stop listening for control commands")
+			break loop
 		case c := <-r:
 			switch c.Cmd {
 			case svc.Interrogate:
 				changes <- c.CurrentStatus
-				_ = log2.Elog.Info(ipc.InterrogateEvent, "interrogate request received")
+				_ = globals.Elog.Info(InterrogateEvent, "interrogate request received")
 				changes <- c.CurrentStatus
 			case svc.Stop:
-				_ = log2.Elog.Info(ipc.StopEvent, "issuing stop")
+				_ = globals.Elog.Info(StopEvent, "issuing stop")
 				control <- "stop"
-				_ = log2.Elog.Info(ipc.StopEvent, "stop issued")
+				_ = globals.Elog.Info(StopEvent, "stop issued")
 				break loop
 			case svc.Shutdown:
-				_ = log2.Elog.Info(ipc.ShutdownEvent, "issuing shutdown")
+				_ = globals.Elog.Info(ShutdownEvent, "issuing shutdown")
 				control <- "stop"
-				_ = log2.Elog.Info(ipc.ShutdownEvent, "shutdown issued")
+				_ = globals.Elog.Info(ShutdownEvent, "shutdown issued")
 				break loop
 			case svc.Pause:
 				changes <- svc.Status{State: svc.Paused, Accepts: cmdsAccepted}
-				_ = log2.Elog.Info(ipc.PauseEvent, "request to pause service received. todo - unimplemented")
+				_ = globals.Elog.Info(PauseEvent, "request to pause service received. todo - unimplemented")
 			case svc.Continue:
 				changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
-				_ = log2.Elog.Info(ipc.ContinueEvent, "request to continue service received. todo - unimplemented")
+				_ = globals.Elog.Info(ContinueEvent, "request to continue service received. todo - unimplemented")
 			default:
-				_ = log2.Elog.Error(1, fmt.Sprintf("unexpected control request #%d", c))
+				_ = globals.Elog.Error(1, fmt.Sprintf("unexpected control request #%d", c))
 			}
 		}
 	}
@@ -63,16 +65,17 @@ loop:
 }
 
 func RunService(isDebug bool) {
-	_ = log2.Elog.Info(StartEvent, fmt.Sprintf("starting %s service", SvcName))
+	_ = globals.Elog.Info(InformationEvent, fmt.Sprintf("starting %s service", SvcStartName))
 	run := svc.Run
 	if isDebug {
+		log.Info("debug specified. using debug.run")
 		run = debug.Run
 	}
-	err := run(SvcName, &zitiService{})
+	err := run(SvcStartName, &zitiService{})
 
 	if err != nil {
-		_ = log2.Elog.Error(ErrorEvent, fmt.Sprintf("%s service failed: %v", SvcName, err))
+		_ = globals.Elog.Error(ErrorEvent, fmt.Sprintf("%s service failed: %v", SvcStartName, err))
 		return
 	}
-	_ = log2.Elog.Info(StopEvent, fmt.Sprintf("%s service stopped", SvcName))
+	_ = globals.Elog.Info(StopEvent, fmt.Sprintf("%s service stopped", SvcStartName))
 }

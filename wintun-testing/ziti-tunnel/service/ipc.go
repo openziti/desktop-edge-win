@@ -1,22 +1,22 @@
-package ipc
+package service
 
 import (
 	"bufio"
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
+	"github.com/Microsoft/go-winio"
+	"github.com/netfoundry/ziti-foundation/identity/identity"
+	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
+	"golang.org/x/sys/windows/svc"
+	"golang.org/x/sys/windows/svc/eventlog"
 	"io"
 	"io/ioutil"
 	"net"
 	"os"
 	"strings"
 	"time"
-
-	"github.com/Microsoft/go-winio"
-	"github.com/netfoundry/ziti-foundation/identity/identity"
-	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
-	"golang.org/x/sys/windows/svc"
-	"golang.org/x/sys/windows/svc/eventlog"
+	"wintun-testing/cziti"
 
 	"wintun-testing/cziti/windns"
 	"wintun-testing/ziti-tunnel/config"
@@ -25,14 +25,17 @@ import (
 	"wintun-testing/ziti-tunnel/runtime"
 )
 
+
 func SubMain(ops <- chan string, changes chan<- svc.Status) error {
+	log.Debug("")
+	log.Debug("")
+	log.Debug("===============================================================================")
 	// open and assign the event log for this service
 	Elog, err := eventlog.Open(SvcName)
 	if err != nil {
-		return err
+	   return err
 	}
-
-	_ = Elog.Info(20, SvcName + " starting. log file located at " + config.LogFile())
+	_ = Elog.Info(InformationEvent, SvcName + " starting. log file located at " + config.LogFile())
 
 	// create a channel for notifying any connections that they are to be interrupted
 	interrupt = make(chan struct{})
@@ -71,28 +74,39 @@ func SubMain(ops <- chan string, changes chan<- svc.Status) error {
 	go acceptIPC(ipc)
 	log.Infof("ipc listener ready pipe: %s", ipcPipeName)
 
+	// wire in a log file for csdk troubleshooting
+	logFile, err := os.OpenFile(config.Path() + "cziti.log", os.O_WRONLY | os.O_TRUNC | os.O_APPEND | os.O_CREATE, 0644)
+	if err != nil {
+		log.Warnf("could not open cziti.log for writing. no debug information will be captured.")
+	} else {
+		cziti.SetLog(logFile)
+		cziti.SetLogLevel(4)
+		defer logFile.Close()
+	}
+
 	// initialize the network interface
 	err = initialize()
 	if err != nil {
+		log.Errorf("unexpected err: %v", err)
 		return err
 	}
 
+	setTunnelState(true)
+
 	// notify the service is running
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
-	_ = Elog.Info(20, SvcName + " status set to running")
+	_ = Elog.Info(InformationEvent, SvcName + " status set to running")
 	log.Info(SvcName + " status set to running. starting cancel loop")
 
 	loop:
 		for {
-			select {
-			case c := <-ops:
+			c := <-ops
 				log.Infof("request for control received, %v", c)
 				if c == "stop" {
 					break loop
 				} else {
-					log.Info("operation: " + c)
+					log.Debug("unexpected operation: " + c)
 				}
-			}
 		}
 
 	shutdownConnections()
@@ -137,7 +151,7 @@ func acceptIPC(p net.Listener) {
 
 func initialize() error {
 	log.Debugf("reading config file located at: %s", config.File())
-	file, err := os.OpenFile(config.File(), os.O_RDONLY, 0640)
+	file, err := os.OpenFile(config.File(), os.O_RDONLY, 0644)
 	if err != nil {
 		// file does not exist or process has no rights to read the file - return leaving configuration empty
 		// this is expected when first starting
@@ -225,12 +239,14 @@ func serveIpc(conn net.Conn) {
 			return
 		}
 
-		/*
-			os.Stdout.Write(delim)
-			os.Stdout.Write([]byte(msg))
-			os.Stdout.Write(delim)
-		*/
 		log.Debugf("msg received: %s", msg)
+
+		if strings.TrimSpace(msg) == "" {
+			// empty message. ignore it and read again
+			log.Debug("empty line received. ignoring")
+			continue
+		}
+
 		dec := json.NewDecoder(strings.NewReader(msg))
 		var cmd dto.CommandMsg
 		if err := dec.Decode(&cmd); err == io.EOF {
@@ -246,11 +262,6 @@ func serveIpc(conn net.Conn) {
 				respondWithError(enc, "could not read string properly", UNKNOWN_ERROR, err)
 				return
 			}
-			/*
-				os.Stdout.Write(delim)
-				os.Stdout.Write([]byte(addIdMsg))
-				os.Stdout.Write(delim)
-			*/
 			log.Debugf("msg received: %s", addIdMsg)
 			addIdDec := json.NewDecoder(strings.NewReader(addIdMsg))
 
@@ -274,16 +285,12 @@ func serveIpc(conn net.Conn) {
 			fingerprint := cmd.Payload["Fingerprint"].(string)
 			toggleIdentity(enc, fingerprint, onOff)
 		default:
-			log.Debugf("Unknown operation: %s. Returning error on pipe", cmd.Function)
+			log.Warnf("Unknown operation: %s. Returning error on pipe", cmd.Function)
 			respondWithError(enc, "Something unexpected has happened", UNKNOWN_ERROR, nil)
-		}
-		if cmd.Function != "" {
-			//_ = writer.WriteByte('\n') //just in case the client tries to read a line
-		} else {
-			log.Warn("Empty input received?")
 		}
 		_ = rw.Flush()
 	}
+	log.Info("IPC Loop has exited")
 }
 
 func acceptLogs(p net.Listener) {
@@ -303,7 +310,7 @@ func serveLogs(conn net.Conn) {
 	log.Debug("accepted a connection, writing logs to pipe")
 	w := bufio.NewWriter(conn)
 
-	file, err := os.OpenFile(config.LogFile(), os.O_RDONLY, 0640)
+	file, err := os.OpenFile(config.LogFile(), os.O_RDONLY, 0644)
 	if err != nil {
 		log.Errorf("could not open log file at %s", config.LogFile())
 		_, _ = w.WriteString("an unexpected error occurred while retrieving logs. look at the actual log file.")
@@ -366,7 +373,7 @@ func setTunnelState(onOff bool) {
 			connectIdentity(id)
 		}
 	} else {
-		state.Close()
+		// state.Close()
 	}
 }
 
@@ -409,7 +416,6 @@ func removeTempFile(file os.File) {
 }
 
 func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
-
 	log.Debugf("new identity for %s: %s", newId.Id.Name, newId.EnrollmentFlags.JwtString)
 
 	tokenStr := newId.EnrollmentFlags.JwtString
@@ -488,10 +494,12 @@ func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
 	//newId.Id.Active = false //set to false by default - enable the id after persisting
 	log.Infof("enrolled successfully. identity file written to: %s", newPath)
 
+	connectIdentity(&newId.Id)
+	/*
 	if newId.Id.Active == true {
 		connectIdentity(&newId.Id)
 	}
-
+	*/
 	//if successful parse the output and add the config to the identity
 	state.Identities = append(state.Identities, &newId.Id)
 
@@ -502,7 +510,7 @@ func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
 	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: idutil.Clean(newId.Id)}
 
 	respond(out, resp)
-	log.Debugf("new identity for %s: %s responded to", newId.Id.Name, newId.EnrollmentFlags.JwtString)
+	log.Debugf("new identity for %s responded to", newId.Id.Name)
 }
 
 func respondWithError(out *json.Encoder, msg string, code int, err error) {
@@ -515,23 +523,27 @@ func respondWithError(out *json.Encoder, msg string, code int, err error) {
 }
 
 func connectIdentity(id *dto.Identity) {
-	//tell the c sdk to use the file from the id and connect
-	log.Infof("Connecting identity: %s", id.Name)
-	state.LoadIdentity(id)
-
-	id.Connected = true
+	if !id.Connected {
+		//tell the c sdk to use the file from the id and connect
+		log.Debugf("loading identity %s with fingerprint %s", id.Name, id.FingerPrint)
+		state.LoadIdentity(id)
+	} else {
+		log.Debugf("id [%s] is already connected - not reconnecting", id.Name)
+	}
+	id.Active = true
+	log.Infof("identity [%s] connected [%t] and set to active [%t]", id.Name, id.Connected, id.Active)
 }
 
 func disconnectIdentity(id *dto.Identity) error {
 	//tell the c sdk to disconnect the identity/services etc
 	log.Infof("Disconnecting identity: %s", id.Name)
 
+	id.Active = false
 	if id.Connected {
 		// actually disconnect from the c sdk here
 		log.Warn("not implemented yet - disconnected an already connected id doesn't actually work yet...")
-
+		//id.Connected = false
 		return nil
-		id.Connected = false
 	} else {
 		log.Debugf("id: %s is already disconnected - not attempting to disconnected again fingerprint:%s", id.Name, id.FingerPrint)
 	}
@@ -566,9 +578,5 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 }
 
 func respond(out *json.Encoder, thing interface{}) {
-	/*os.Stdout.Write(delim)
-	_ = json.NewEncoder(os.Stdout).Encode(thing)
-	os.Stdout.Write(delim)
-	*/
 	_ = out.Encode(thing)
 }

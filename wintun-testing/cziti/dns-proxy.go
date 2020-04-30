@@ -11,7 +11,7 @@ import (
 func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn) {
 	q := &dns.Msg{}
 	if err := q.Unpack(packet); err != nil {
-		fmt.Println("ERROR", err)
+		log.Errorf("ERROR", err)
 		return
 	}
 
@@ -29,7 +29,7 @@ func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn) {
 
 	// never proxy hostnames that we know about regardless of type
 	if ip != nil {
-		fmt.Println("resolved ", query.Name, ip)
+		log.Debug("resolved ", query.Name, ip)
 
 		var answer *dns.A
 		if query.Qtype == dns.TypeA && len(ip.To4()) == net.IPv4len {
@@ -56,10 +56,10 @@ func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn) {
 			_, _, err = s.WriteMsgUDP(repB, nil, p)
 		}
 		if err != nil {
-			fmt.Println("dns error", err)
+			log.Debug("dns error", err)
 		}
 	} else {
-		// fmt.Println("proxying ", dns.Type(query.Qtype), query.Name, q.Id, " for ", p)
+		// log.Debug("proxying ", dns.Type(query.Qtype), query.Name, q.Id, " for ", p)
 		proxyDNS(q, p, s)
 	}
 }
@@ -143,11 +143,11 @@ func runDNSproxy(dnsServers []string) {
 	for _, s := range dnsServers {
 		sAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:53", s))
 		if err != nil {
-			fmt.Println("skipping upstream", s, err.Error())
+			log.Debug("skipping upstream", s, err.Error())
 		} else {
 			conn, err := net.DialUDP("udp", nil, sAddr)
 			if err != nil {
-				fmt.Println("skipping upstream", s, err.Error())
+				log.Debug("skipping upstream", s, err.Error())
 			}
 			dnsUpstreams = append(dnsUpstreams, conn)
 		}
@@ -162,7 +162,7 @@ func runDNSproxy(dnsServers []string) {
 				resp := make([]byte, 1024)
 				n, err := proxy.Read(resp)
 				if err != nil {
-					fmt.Println("error receiving from ", proxy.RemoteAddr(), err)
+					log.Debug("error receiving from ", proxy.RemoteAddr(), err)
 				} else {
 					respChan <- resp[:n]
 				}
@@ -178,11 +178,11 @@ func runDNSproxy(dnsServers []string) {
 			id := (uint32(pr.req.Id) << 16) | uint32(pr.req.Question[0].Qtype)
 			reqs[id] = pr
 			b, _ := pr.req.Pack()
-			// fmt.Println("sending proxy req", id, dns.Type(pr.req.Question[0].Qtype), pr.req.Question[0].Name)
+			// log.Debug("sending proxy req", id, dns.Type(pr.req.Question[0].Qtype), pr.req.Question[0].Name)
 			for _, proxy := range dnsUpstreams {
-				// fmt.Println("sending proxy req", dns.Type(pr.req.Question[0].Qtype), pr.req.Question[0].Name, proxy.RemoteAddr())
+				// log.Debug("sending proxy req", dns.Type(pr.req.Question[0].Qtype), pr.req.Question[0].Name, proxy.RemoteAddr())
 				if _, err := proxy.Write(b); err != nil {
-					fmt.Println("failed to proxy DNS to ", proxy)
+					log.Debug("failed to proxy DNS to ", proxy)
 				}
 			}
 
@@ -196,7 +196,7 @@ func runDNSproxy(dnsServers []string) {
 					// fmt.Printf("proxy resolved %+v for %v\n\n", reply, req.peer)
 					req.s.WriteMsgUDP(rep, nil, req.peer)
 				} else {
-					fmt.Println("matching request was not found for ",
+					log.Debug("matching request was not found for ",
 						dns.Type(reply.Question[0].Qtype), reply.Question[0].Name)
 				}
 			}
@@ -205,7 +205,7 @@ func runDNSproxy(dnsServers []string) {
 			now := time.Now()
 			for k, r := range reqs {
 				if now.After(r.exp) {
-					fmt.Println("req expired", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
+					log.Debug("req expired", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
 					delete(reqs, k)
 				}
 			}
