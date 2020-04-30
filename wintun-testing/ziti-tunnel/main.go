@@ -3,14 +3,13 @@ package main
 
 import (
 	"fmt"
+	"golang.org/x/sys/windows/svc/debug"
+	"golang.org/x/sys/windows/svc/eventlog"
 	"os"
 	"strings"
 	"wintun-testing/ziti-tunnel/globals"
 
 	"golang.org/x/sys/windows/svc"
-	"golang.org/x/sys/windows/svc/debug"
-	"golang.org/x/sys/windows/svc/eventlog"
-
 	"wintun-testing/ziti-tunnel/service"
 )
 
@@ -19,32 +18,32 @@ var log = globals.Logger()
 func main() {
 	globals.InitLogger("debug")
 
-	isIntSess, err := svc.IsAnInteractiveSession()
-	if err != nil {
-		log.Fatalf("failed to determine if we are running in an interactive session: %v", err)
-	}
-
-	// if not interactive that means this is probably running as a service via services
+	// passing no arguments is an indicator that this is excpecting to be run 'as a service'.
+	// using arg count instead of svc.IsAnInteractiveSession() as svc.IsAnInteractiveSession()
+	// seems to return false even when run in an interactive shell as via `psexec -i -s cmd.exe`
 	hasArgs := len(os.Args) > 1
-	if !isIntSess && !hasArgs {
-		service.RunService(false)
-		log.Info("service has completed")
-		return
-	}
 
-	// all this code below is to either support installing/removing the service or testing it
-	if len(os.Args) < 2 {
-		usage("no command specified")
-	}
-
-	if !isIntSess {
+	var err error
+	if hasArgs {
 		globals.Elog = debug.New(service.SvcName)
 	} else {
 		globals.Elog, err = eventlog.Open(service.SvcName)
 		if err != nil {
 			return
 		}
+		log.Info("running as service")
+		service.RunService(false)
+		log.Info("service has completed")
+		return
 	}
+
+	log.Info("running interactively")
+
+	// all this code below is to either support installing/removing the service or testing it
+	if len(os.Args) < 2 {
+		usage("no command specified")
+	}
+
 	defer globals.Elog.Close()
 
 	elog := globals.Elog
