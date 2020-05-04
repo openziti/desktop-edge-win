@@ -6,7 +6,8 @@ using System.Security.Principal;
 using System.Security.AccessControl;
 
 using Newtonsoft.Json;
-
+using System.Threading;
+using System.Threading.Tasks;
 
 /// <summary>
 /// The implementation will abstract away the setup of the communication to
@@ -19,13 +20,35 @@ using Newtonsoft.Json;
 /// </summary>
 namespace ZitiTunneler.ServiceClient
 {
+
     internal class Client
     {
+        public event EventHandler<TunnelStatus> OnTunnelStatusUpdate;
+        public event EventHandler<Metrics> OnMetricsUpdate;
+
+        protected virtual void ZitiTunnelStatusUpdate(TunnelStatus e)
+        {
+            EventHandler<TunnelStatus> handler = OnTunnelStatusUpdate;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+        protected virtual void MetricsUpdate(Metrics e)
+        {
+            EventHandler<Metrics> handler = OnMetricsUpdate;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
         JsonSerializer serializer = new JsonSerializer();
 
         private object namedPipeSyncLock = new object();
         const string ipcPipe = @"NetFoundry\tunneler\ipc";
         const string logPipe = @"NetFoundry\tunneler\logs";
+        const string eventPipe = @"NetFoundry\tunneler\events";
         const string localPipeServer = ".";
         const PipeDirection inOut = PipeDirection.InOut;
         const int ServiceConnectTimeout = 500;
@@ -38,6 +61,23 @@ namespace ZitiTunneler.ServiceClient
         {
             //establish the named pipe to the service
             setupPipe();
+
+            Task.Run(() => {
+                Console.WriteLine("THREAD BEGINS");
+                NamedPipeClientStream eventClient = new NamedPipeClientStream(localPipeServer, eventPipe, PipeDirection.In);
+                eventClient.Connect();
+                StreamReader eventReader = new StreamReader(eventClient);
+                while (true)
+                {
+                    var r = read<StatusUpdateResponse>("event: ", eventReader);
+                    if (eventReader.EndOfStream)
+                    {
+                        break;
+                    }
+                    Debug.WriteLine(r.Payload);
+                }
+                Console.WriteLine("THREAD DONE");
+            });
         }
         PipeSecurity CreateSystemIOPipeSecurity()
         {
@@ -91,7 +131,7 @@ namespace ZitiTunneler.ServiceClient
             try
             {
                 send(new ServiceFunction() { Function = "Status" });
-                var rtn = read<ZitiTunnelStatus>();
+                var rtn = read<ZitiTunnelStatus>("   ipc: ", ipcReader);
                 return rtn;
             }
             catch (IOException ioe)
@@ -124,7 +164,7 @@ namespace ZitiTunneler.ServiceClient
 
                 send(AddIdentityFunction);
                 send(newId);
-                var resp = read<IdentityResponse>();
+                var resp = read<IdentityResponse>("   ipc: ", ipcReader);
                 Debug.WriteLine(resp.ToString());
 
                 return resp.Payload;
@@ -154,7 +194,7 @@ namespace ZitiTunneler.ServiceClient
                     Payload = new FingerprintPayload() { Fingerprint = fingerPrint }
                 };
                 send(removeFunction);
-                var r = read<SvcResponse>();
+                var r = read<SvcResponse>("   ipc: ", ipcReader);
             }
             catch (IOException ioe)
             {
@@ -169,7 +209,7 @@ namespace ZitiTunneler.ServiceClient
             try
             {
                 send(new BooleanFunction("TunnelState", onOff));
-                read<SvcResponse>();
+                read<SvcResponse>("   ipc: ", ipcReader);
             }
             catch (IOException ioe)
             {
@@ -206,7 +246,7 @@ namespace ZitiTunneler.ServiceClient
             try
             {
                 send(new IdentityToggleFunction(fingerprint, onOff));
-                IdentityResponse idr = read<IdentityResponse>();
+                IdentityResponse idr = read<IdentityResponse>("   ipc: ", ipcReader);
                 return idr.Payload;
             }
             catch (IOException ioe)
@@ -271,33 +311,33 @@ namespace ZitiTunneler.ServiceClient
             }
         }
 
-        private T read<T>() where T : SvcResponse
+        private T read<T>(string prefix, StreamReader reader) where T : SvcResponse
         {
             try
             {
                 int emptyCount = 1;
 
-                Debug.WriteLine("===============  reading message =============== " + emptyCount);
-                string respAsString = ipcReader.ReadLine();
+                Debug.WriteLine(prefix + "===============  reading message =============== " + emptyCount);
+                string respAsString = reader.ReadLine();
                 Debug.WriteLine(respAsString);
-                Debug.WriteLine("===============     read message =============== " + emptyCount);
+                Debug.WriteLine(prefix + "===============     read message =============== " + emptyCount);
                 while (string.IsNullOrEmpty(respAsString?.Trim()))
                 {
                     //T resp = (T)serializer.Deserialize(reader, typeof(T));
-                    if (ipcReader.EndOfStream)
+                    if (reader.EndOfStream)
                     {
                         throw new Exception("the pipe has closed");
                     }
                     Debug.WriteLine("Received empty payload - continuing to read until a payload is received");
                     //now how'd that happen...
-                    Debug.WriteLine("===============  reading message =============== " + emptyCount);
-                    respAsString = ipcReader.ReadLine();
+                    Debug.WriteLine(prefix + "===============  reading message =============== " + emptyCount);
+                    respAsString = reader.ReadLine();
                     Debug.WriteLine(respAsString);
-                    Debug.WriteLine("===============     read message =============== " + emptyCount);
+                    Debug.WriteLine(prefix + "===============     read message =============== " + emptyCount);
                     emptyCount++;
                     if (emptyCount > 5)
                     {
-                        Debug.WriteLine("are we there yet? " + ipcReader.EndOfStream);
+                        Debug.WriteLine("are we there yet? " + reader.EndOfStream);
                         //that's just too many...
                         setupPipe();
                         return null;
@@ -319,6 +359,11 @@ namespace ZitiTunneler.ServiceClient
                 //almost certainly a problem with the pipe - recreate the pipe...
                 setupPipe();
                 throw ioe;
+            }
+            catch (Exception ee)
+            {
+                //almost certainly a problem with the pipe - recreate the pipe...
+                throw ee;
             }
         }
     }

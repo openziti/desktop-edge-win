@@ -1,4 +1,4 @@
-package runtime
+package service
 
 import (
 	"bufio"
@@ -11,54 +11,42 @@ import (
 	"strconv"
 	"time"
 	"wintun-testing/cziti"
-
 	"wintun-testing/ziti-tunnel/config"
 	"wintun-testing/ziti-tunnel/dto"
 	"wintun-testing/ziti-tunnel/idutil"
 )
 
-type TunnelerState struct {
-	Active     bool
-	Duration   int64
-	Identities []*dto.Identity
-	IpInfo     *TunIpInfo `json:"IpInfo,omitempty"`
-
+type RuntimeState struct {
+	state   *dto.TunnelStatus
 	tun     *tun.Device
 	tunName string
 }
 
-type TunIpInfo struct {
-	Ip     string
-	Subnet string
-	MTU    uint16
-	DNS    string
-}
-
-func (t *TunnelerState) RemoveByFingerprint(fingerprint string) {
+func (t *RuntimeState) RemoveByFingerprint(fingerprint string) {
 	log.Debugf("removing fingerprint: %s", fingerprint)
-	if index, _ := t.Find(fingerprint); index < len(t.Identities) {
-		t.Identities = append(t.Identities[:index], t.Identities[index+1:]...)
+	if index, _ := t.Find(fingerprint); index < len(t.state.Identities) {
+		t.state.Identities = append(t.state.Identities[:index], t.state.Identities[index+1:]...)
 	}
 }
 
-func (t *TunnelerState) Find(fingerprint string) (int, *dto.Identity) {
-	for i, n := range t.Identities {
+func (t *RuntimeState) Find(fingerprint string) (int, *dto.Identity) {
+	for i, n := range t.state.Identities {
 		if n.FingerPrint == fingerprint {
 			return i, n
 		}
 	}
-	return len(t.Identities), nil
+	return len(t.state.Identities), nil
 }
 
-func (t *TunnelerState) RemoveByIdentity(id dto.Identity) {
+func (t *RuntimeState) RemoveByIdentity(id dto.Identity) {
 	t.RemoveByFingerprint(id.FingerPrint)
 }
 
-func (t *TunnelerState) FindByIdentity(id dto.Identity) (int, *dto.Identity) {
+func (t *RuntimeState) FindByIdentity(id dto.Identity) (int, *dto.Identity) {
 	return t.Find(id.FingerPrint)
 }
 
-func SaveState(s *TunnelerState) {
+func SaveState(t *RuntimeState) {
 	// overwrite file if it exists
 	_ = os.MkdirAll(config.Path(), 0644)
 
@@ -69,8 +57,8 @@ func SaveState(s *TunnelerState) {
 	w := bufio.NewWriter(bufio.NewWriter(cfg))
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
-	s.IpInfo = nil
-	_ = enc.Encode(s)
+	t.state.IpInfo = nil
+	_ = enc.Encode(t.state)
 	_ = w.Flush()
 
 	err = cfg.Close()
@@ -80,9 +68,9 @@ func SaveState(s *TunnelerState) {
 	log.Debug("state saved")
 }
 
-func (t *TunnelerState) Clean() TunnelerState {
+func (t *RuntimeState) ToStatus() *dto.TunnelStatus {
 	var d int64
-	if t.Active {
+	if t.state.Active {
 		now := time.Now()
 		dd := now.Sub(TunStarted)
 		d = dd.Milliseconds()
@@ -90,21 +78,21 @@ func (t *TunnelerState) Clean() TunnelerState {
 		d = 0
 	}
 
-	rtn := TunnelerState{
-		Active:     t.Active,
+	clean := dto.TunnelStatus{
+		Active:     t.state.Active,
 		Duration:   d,
-		Identities: make([]*dto.Identity, len(t.Identities)),
-		IpInfo:     t.IpInfo,
+		Identities: make([]*dto.Identity, len(t.state.Identities)),
+		IpInfo:     t.state.IpInfo,
 	}
-	for i, id := range t.Identities {
-		log.Debug("returning clean identity: %s", id.Name)
-		rtn.Identities[i] = idutil.Clean(*id)
+	for i, id := range t.state.Identities {
+		log.Debugf("returning clean identity: %s", id.Name)
+		clean.Identities[i] = idutil.Clean(*id)
 	}
 
-	return rtn
+	return &clean
 }
 
-func (t *TunnelerState) CreateTun() error {
+func (t *RuntimeState) CreateTun() error {
 	if noZiti() {
 		log.Warnf("NOZITI set to true. this should be only used for debugging")
 		return nil
@@ -168,21 +156,7 @@ func (t *TunnelerState) CreateTun() error {
 	return nil
 }
 
-func (t *TunnelerState) Close() {
-	if t.tun != nil {
-		log.Warn("TODO: actually close the tun - or disable all the identities etc.")
-		/*
-			cziti.Stop()
-		*/
-		tu := *t.tun
-		err := tu.Close()
-		if err != nil {
-			log.Fatalf("problem closing tunnel!")
-		}
-	}
-}
-
-func (t *TunnelerState) LoadIdentity(id *dto.Identity) {
+func (t *RuntimeState) LoadIdentity(id *dto.Identity) {
 	if !noZiti() {
 		if id.Connected {
 			log.Warnf("id [%s] already connected", id.FingerPrint)
@@ -220,4 +194,68 @@ func (t *TunnelerState) LoadIdentity(id *dto.Identity) {
 func noZiti() bool {
 	v, _ := strconv.ParseBool(os.Getenv("NOZITI"))
 	return v
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+func (t *RuntimeState) Close() {
+	if t.tun != nil {
+		log.Warn("TODO: actually close the tun - or disable all the identities etc.")
+		/*
+			cziti.Stop()
+		*/
+		tu := *t.tun
+		err := tu.Close()
+		if err != nil {
+			log.Fatalf("problem closing tunnel!")
+		}
+	}
+}
+
+func (t *RuntimeState) LoadConfig() {
+
+	log.Debugf("reading config file located at: %s", config.File())
+	file, err := os.OpenFile(config.File(), os.O_RDONLY, 0644)
+	if err != nil {
+		t.state = &dto.TunnelStatus{}
+		return
+	}
+
+	r := bufio.NewReader(file)
+	dec := json.NewDecoder(r)
+
+	err = dec.Decode(&rts.state)
+	if err != nil {
+		log.Warnf("unexpected error reading config file. %v", err)
+		t.state = &dto.TunnelStatus{}
+		return
+	}
+
+
+	err = file.Close()
+	if err != nil {
+		log.Errorf("could not close configuration file. this is not normal! %v", err)
+	}
 }

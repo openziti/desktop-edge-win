@@ -71,6 +71,7 @@ namespace ZitiTunneler {
 
 			// add a new service client
 			serviceClient = new Client();
+			serviceClient.OnTunnelStatusUpdate += ServiceClient_OnTunnelStatusUpdated;
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
 			Application.Current.Properties.Add("Identities", new List<ZitiIdentity>());
 			MainMenu.OnAttachmentChange += AttachmentChanged;
@@ -85,8 +86,12 @@ namespace ZitiTunneler {
 			IdentityMenu.OnForgot += IdentityForgotten;
 		}
 
+		private void ServiceClient_OnTunnelStatusUpdated(object sender, TunnelStatus e)
+		{
+		}
+
 		private void IdentityForgotten(ZitiIdentity forgotten) {
-			ZitiTunnelStatus status = serviceClient.GetStatus();
+			TunnelStatus status = serviceClient.GetStatus().Status;
 			identities.Clear();
 			foreach (var id in status.Identities) {
 				var zid = ZitiIdentity.FromClient(id);
@@ -112,7 +117,7 @@ namespace ZitiTunneler {
 		}
 
 		private void LoadStatusFromService() {
-			ZitiTunnelStatus status = serviceClient.GetStatus();
+			TunnelStatus status = serviceClient.GetStatus().Status;
 			if (status != null) {
 				if (status.Active) {
 					InitializeTimer((int)status.Duration);
@@ -256,6 +261,11 @@ namespace ZitiTunneler {
 				FormFadeOut.Begin();
 				e.Cancel = true;
 			}
+		}
+
+		private void Button_Click(object sender, RoutedEventArgs e)
+		{
+			//
 		}
 	}
 }

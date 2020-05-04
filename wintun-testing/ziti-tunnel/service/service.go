@@ -15,8 +15,7 @@ type zitiService struct{}
 func (m *zitiService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
 	changes <- svc.Status{State: svc.StartPending}
 
-	log.Errorf("the main loop exited with an unexpected error: %v")
-	control := make(chan string)
+	control := make(chan string, 1)
 	mainLoop := make(chan struct{})
 	go func() {
 		err := SubMain(control, changes)

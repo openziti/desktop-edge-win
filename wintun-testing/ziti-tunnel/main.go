@@ -51,6 +51,7 @@ func main() {
 	cmd := strings.ToLower(os.Args[1])
 	switch cmd {
 	case "debug":
+		service.Debug = true
 		service.RunService(true)
 		return
 	case "install":

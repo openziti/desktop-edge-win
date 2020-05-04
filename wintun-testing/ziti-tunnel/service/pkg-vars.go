@@ -1,21 +1,21 @@
 package service
 
 import (
+	"github.com/tv42/topic"
 	"golang.org/x/sys/windows/svc"
 	"sync"
-	"wintun-testing/ziti-tunnel/globals"
-	"wintun-testing/ziti-tunnel/runtime"
 )
 
-var log = globals.Logger()
+var pipeBase = `\\.\pipe\NetFoundry\tunneler\`
+//var tunStatus = RuntimeState{}
 
-var ipcPipeName = `\\.\pipe\NetFoundry\tunneler\ipc`
-var logsPipeName = `\\.\pipe\NetFoundry\tunneler\logs`
-var state = runtime.TunnelerState{}
+//var state = dto.TunnelStatusa{}
+var rts = RuntimeState{}
 var interrupt chan struct{}
 
 var wg sync.WaitGroup
 var connections int
+var Debug bool
 
 const (
 	SUCCESS              = 0
@@ -56,3 +56,23 @@ const (
 	BuiltinAdmins             = "(A;;FA;;;BA)"
 	LocalService              = "(A;;FA;;;LS)"
 )
+
+func pipeName(path string) string {
+	if !Debug {
+		return pipeBase + path
+	} else {
+		return pipeBase + `debug\` + path
+	}
+}
+
+var top = topic.New()
+
+func ipcPipeName() string {
+	return pipeName("ipc")
+}
+func logsPipeName() string {
+	return pipeName("logs")
+}
+func eventsPipeName() string {
+	return pipeName("events")
+}

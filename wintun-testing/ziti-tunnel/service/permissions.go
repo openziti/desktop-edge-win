@@ -1,4 +1,4 @@
-package runtime
+package service
 
 import (
 	"github.com/netfoundry/ziti-foundation/util/stringz"
