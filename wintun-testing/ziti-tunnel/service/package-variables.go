@@ -1,9 +1,8 @@
-package runtime
+package service
 
 import (
 	"time"
-
-	"github.com/michaelquigley/pfxlog"
+	"wintun-testing/ziti-tunnel/globals"
 )
 
 const (
@@ -11,8 +10,8 @@ const (
 	TunName = "ZitiTUN"
 )
 
-var log = pfxlog.Logger()
 var TunStarted time.Time
+var log = globals.Logger()
 
 const Ipv4ip = "169.254.1.1"
 const Ipv4mask = 24

@@ -31,7 +31,6 @@ extern void dnsHandler(tunneler_io_context tio, void *ctx, addr_t src, uint16_t 
 import "C"
 import (
 	"errors"
-	"fmt"
 	"golang.zx2c4.com/wireguard/tun"
 	"io"
 	"net"
@@ -61,16 +60,16 @@ type tunnel struct {
 var devMap = make(map[string]*tunnel)
 
 func HookupTun(dev tun.Device, dns []net.IP) (Tunnel, error) {
-	fmt.Println("in HookupTun ")
-	defer fmt.Println("exiting HookupTun")
+	log.Debug("in HookupTun ")
+	defer log.Debug("exiting HookupTun")
 	name, err := dev.Name()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		return nil, err
 	}
 	drv := makeDriver(name)
 
-	fmt.Println("in HookupTun2")
+	log.Debug("in HookupTun2")
 
 	t := &tunnel{
 		dev:    dev,
@@ -107,7 +106,7 @@ func makeDriver(name string) C.netif_driver {
 func netifWrite(h C.netif_handle, buf unsafe.Pointer, length C.size_t) C.ssize_t {
 	t, found := devMap[C.GoString(h.id)]
 	if !found {
-		panic("should  not be here\n")
+		panic("should not be here")
 		return -1
 	}
 
@@ -120,7 +119,7 @@ func netifWrite(h C.netif_handle, buf unsafe.Pointer, length C.size_t) C.ssize_t
 
 //export netifClose
 func netifClose(h C.netif_handle) C.int {
-	fmt.Println("in netifClose")
+	log.Debug("in netifClose")
 	return C.int(0)
 }
 
@@ -128,20 +127,20 @@ func netifClose(h C.netif_handle) C.int {
 func netifSetup(h C.netif_handle, l *C.uv_loop_t, packetCb C.packet_cb, ctx unsafe.Pointer) C.int {
 	t, found := devMap[C.GoString(h.id)]
 	if !found {
-		fmt.Errorf("should not be here\n")
+		log.Error("should not be here")
 		return -1
 	}
 
 	t.read = (*C.uv_async_t)(C.calloc(1, C.sizeof_uv_async_t))
 	C.uv_async_init(l, t.read, C.uv_async_cb(C.readAsync))
 	t.read.data = unsafe.Pointer(h)
-	fmt.Printf("in netifSetup netif[%s] handle[%p]\n", C.GoString(h.id), h)
+	log.Debug("in netifSetup netif[%s] handle[%p]", C.GoString(h.id), h)
 
 	t.idleR = (*C.uv_prepare_t)(C.calloc(1, C.sizeof_uv_prepare_t))
 	C.uv_prepare_init(l, t.idleR)
 	t.idleR.data = unsafe.Pointer(h)
 	C.uv_prepare_start(t.idleR, C.uv_prepare_cb(C.readIdle))
-	fmt.Printf("in netifSetup netif[%s] handle[%p]\n", C.GoString(h.id), h)
+	log.Debug("in netifSetup netif[%s] handle[%p]", C.GoString(h.id), h)
 
 	t.onPacket = packetCb
 	t.onPacketCtx = ctx
@@ -158,8 +157,8 @@ func (t *tunnel) runReadLoop() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("starting tun read loop mtu=%d\n", mtu)
-	defer fmt.Println("tun read loop is done")
+	log.Debug("starting tun read loop mtu=%d", mtu)
+	defer log.Debug("tun read loop is done")
 	mtuBuf := make([]byte, mtu)
 	for {
 		nr, err := t.dev.Read(mtuBuf, 0)
@@ -172,7 +171,7 @@ func (t *tunnel) runReadLoop() {
 		}
 
 		if len(t.readQ) == cap(t.readQ) {
-			fmt.Println("read loop is about to block")
+			log.Debug("read loop is about to block")
 		}
 
 		buf := make([]byte, nr)
@@ -189,7 +188,7 @@ func readIdle(idler *C.uv_prepare_t) {
 	id := C.GoString(dev.id)
 	t, found := devMap[id]
 	if !found {
-		fmt.Printf("should not be here id = [%s]\n", id)
+		log.Debug("should not be here id = [%s]", id)
 		panic(errors.New("where is my tunnel?"))
 	}
 
@@ -209,8 +208,8 @@ func readAsync(a *C.uv_async_t) {
 }
 
 func (t *tunnel) runWriteLoop() {
-	fmt.Printf("starting Write Loop\n")
-	defer fmt.Println("write loop finished")
+	log.Debug("starting Write Loop")
+	defer log.Debug("write loop finished")
 	for {
 		select {
 		case p := <-t.writeQ:
@@ -224,7 +223,7 @@ func (t *tunnel) runWriteLoop() {
 			}
 
 			if n < len(p) {
-				fmt.Println("Error short write")
+				log.Debug("Error short write")
 			}
 		}
 	}
@@ -236,7 +235,7 @@ func (t *tunnel) AddIntercept(service string, host string, port int, ctx unsafe.
 	zitiCtx.nf_ctx = ctx
 	res := C.NF_tunneler_intercept_v1(t.tunCtx, unsafe.Pointer(zitiCtx),
 		C.CString(service), C.CString(host), C.int(port))
-	fmt.Println("intercept added", res)
+	log.Debug("intercept added", res)
 }
 
 // extern void dnsHandler(tunneler_io_context tio, void *ctx, addr_t src, uint16_t sport, void *data, ssize_t len);
@@ -250,10 +249,10 @@ func dnsHandler(tio C.tunneler_io_context, ctx unsafe.Pointer, src C.addr_t, spo
 			rc := C.NF_udp_send(tio, src, sport, replyC, C.ssize_t(len(reply)))
 			C.free(replyC)
 			if rc != 0 {
-				fmt.Println("NF_udp_reply rc=", rc)
+				log.Debug("NF_udp_reply rc=", rc)
 			}
 		} else {
-			fmt.Println("dns message error", err)
+			log.Debug("dns message error", err)
 		}
 
 	*/

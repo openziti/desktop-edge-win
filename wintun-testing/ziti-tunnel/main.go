@@ -3,63 +3,62 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"strings"
-
-	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
+	"os"
+	"strings"
+	"wintun-testing/ziti-tunnel/globals"
 
-	"wintun-testing/ziti-tunnel/ipc"
-	pkglog "wintun-testing/ziti-tunnel/log"
+	"golang.org/x/sys/windows/svc"
 	"wintun-testing/ziti-tunnel/service"
 )
 
-var log = pkglog.Logger
-var elog = pkglog.Elog
+var log = globals.Logger()
 
 func main() {
-	pkglog.InitLogger("debug")
+	globals.InitLogger("debug")
 
-	isIntSess, err := svc.IsAnInteractiveSession()
-	if err != nil {
-		log.Fatalf("failed to determine if we are running in an interactive session: %v", err)
-	}
+	// passing no arguments is an indicator that this is excpecting to be run 'as a service'.
+	// using arg count instead of svc.IsAnInteractiveSession() as svc.IsAnInteractiveSession()
+	// seems to return false even when run in an interactive shell as via `psexec -i -s cmd.exe`
+	hasArgs := len(os.Args) > 1
 
-	pkglog.InitEventLog(isIntSess)
-	defer pkglog.Elog.Close()
-
-	// if not interactive that means this is running as a service via services
-	if !isIntSess {
-		log.Info("service is starting")
+	var err error
+	if hasArgs {
+		globals.Elog = debug.New(service.SvcName)
+	} else {
+		globals.Elog, err = eventlog.Open(service.SvcName)
+		if err != nil {
+			return
+		}
+		log.Info("running as service")
 		service.RunService(false)
-		log.Info("service has stopped")
+		log.Info("service has completed")
 		return
 	}
+
+	log.Info("running interactively")
 
 	// all this code below is to either support installing/removing the service or testing it
 	if len(os.Args) < 2 {
 		usage("no command specified")
 	}
 
-	if !isIntSess {
-		elog = debug.New(ipc.SvcName)
-	} else {
-		elog, err = eventlog.Open(ipc.SvcName)
-		if err != nil {
-			return
-		}
-	}
+	defer globals.Elog.Close()
+
+	elog := globals.Elog
+
 	cmd := strings.ToLower(os.Args[1])
 	switch cmd {
 	case "debug":
+		service.Debug = true
 		service.RunService(true)
 		return
 	case "install":
-		elog.Info(service.InstallEvent, "installing service: "+ipc.SvcName)
+		elog.Info(service.InstallEvent, "installing service: "+service.SvcName)
 		err = service.InstallService()
 	case "remove":
-		elog.Info(service.InstallEvent, "removing service: "+ipc.SvcName)
+		elog.Info(service.InstallEvent, "removing service: "+service.SvcName)
 		err = service.RemoveService()
 	case "start":
 		err = service.StartService()
@@ -73,8 +72,8 @@ func main() {
 		usage(fmt.Sprintf("invalid command %s", cmd))
 	}
 	if err != nil {
-		elog.Error(10, fmt.Sprintf("failed to %s %s: %v", cmd, ipc.SvcName, err))
-		log.Fatalf("failed to %s %s: %v", cmd, ipc.SvcName, err)
+		elog.Error(10, fmt.Sprintf("failed to %s %s: %v", cmd, service.SvcName, err))
+		log.Fatalf("failed to %s %s: %v", cmd, service.SvcName, err)
 	}
 	return
 }

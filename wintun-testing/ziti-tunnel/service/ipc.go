@@ -1,42 +1,107 @@
-package ipc
+package service
 
 import (
 	"bufio"
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
+	"github.com/Microsoft/go-winio"
+	"github.com/netfoundry/ziti-foundation/identity/identity"
+	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
+	"golang.org/x/sys/windows/svc"
 	"io"
 	"io/ioutil"
 	"net"
 	"os"
 	"strings"
 	"time"
-
-	"github.com/Microsoft/go-winio"
-	"github.com/netfoundry/ziti-foundation/identity/identity"
-	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
-	"golang.org/x/sys/windows/svc"
-	"golang.org/x/sys/windows/svc/eventlog"
+	"wintun-testing/cziti"
+	"wintun-testing/ziti-tunnel/globals"
 
 	"wintun-testing/cziti/windns"
 	"wintun-testing/ziti-tunnel/config"
 	"wintun-testing/ziti-tunnel/dto"
 	"wintun-testing/ziti-tunnel/idutil"
-	"wintun-testing/ziti-tunnel/runtime"
 )
 
-func SubMain(ops <- chan string, changes chan<- svc.Status) error {
-	// open and assign the event log for this service
-	Elog, err := eventlog.Open(SvcName)
-	if err != nil {
-		return err
-	}
+type Pipes struct {
+	ipc    net.Listener
+	logs   net.Listener
+	events net.Listener
+}
 
-	_ = Elog.Info(20, SvcName + " starting. log file located at " + config.LogFile())
+func(p *Pipes) Close() {
+	p.ipc.Close()
+	p.logs.Close()
+	p.events.Close()
+}
+
+func SubMain(ops <- chan string, changes chan<- svc.Status) error {
+	defer close(top.Broadcast)
+	log.Info("============================== service begins ==============================")
+
+	_ = globals.Elog.Info(InformationEvent, SvcName + " starting. log file located at " + config.LogFile())
 
 	// create a channel for notifying any connections that they are to be interrupted
 	interrupt = make(chan struct{})
 
+	pipes, err := openPipes()
+	if err != nil {
+		return err
+	}
+	defer pipes.Close()
+
+	// wire in a log file for csdk troubleshooting
+	logFile, err := os.OpenFile(config.Path() + "cziti.log", os.O_WRONLY | os.O_TRUNC | os.O_APPEND | os.O_CREATE, 0644)
+	if err != nil {
+		log.Warnf("could not open cziti.log for writing. no debug information will be captured.")
+	} else {
+		cziti.SetLog(logFile)
+		cziti.SetLogLevel(4)
+		defer logFile.Close()
+	}
+
+	// initialize the network interface
+	err = initialize()
+	if err != nil {
+		log.Errorf("unexpected err: %v", err)
+		return err
+	}
+
+	setTunnelState(true)
+
+	// notify the service is running
+	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
+	_ = globals.Elog.Info(InformationEvent, SvcName + " status set to running")
+	log.Info(SvcName + " status set to running. starting cancel loop")
+
+	waitForStopRequest(ops)
+
+	pipes.shutdownConnections()
+
+	windns.ResetDNS()
+
+	rts.Close()
+
+	log.Info("==============================  service ends  ==============================")
+
+	return nil
+}
+func waitForStopRequest(ops <- chan string) {
+
+loop:
+	for {
+		c := <-ops
+		log.Infof("request for control received, %v", c)
+		if c == "stop" {
+			break loop
+		} else {
+			log.Debug("unexpected operation: " + c)
+		}
+	}
+}
+
+func openPipes() (*Pipes, error) {
 	// create the ACE string representing the following groups have access to the pipes created
 	grps := []string{InteractivelyLoggedInUser, System, BuiltinAdmins, LocalService}
 	auth := "D:" + strings.Join(grps, "")
@@ -48,66 +113,39 @@ func SubMain(ops <- chan string, changes chan<- svc.Status) error {
 		InputBufferSize:    1024,
 		OutputBufferSize:   1024,
 	}
-	logs, err := winio.ListenPipe(logsPipeName, &pc)
+	logs, err := winio.ListenPipe(logsPipeName(), &pc)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	// listen for log requests
-	go acceptLogs(logs)
-	log.Infof("log listener ready. pipe: %s", logsPipeName)
+	ipc, err := winio.ListenPipe(ipcPipeName(), &pc)
+	if err != nil {
+		return nil, err
+	}
+	events, err := winio.ListenPipe(eventsPipeName(), &pc)
+	if err != nil {
+		return nil, err
+	}
 
-	pc2 := winio.PipeConfig{
-		SecurityDescriptor: auth,
-		MessageMode:        false,
-		InputBufferSize:    1024,
-		OutputBufferSize:   1024,
-	}
-	ipc, err := winio.ListenPipe(ipcPipeName, &pc2)
-	if err != nil {
-		return err
-	}
+	// listen for log requests
+	go accept(logs, serveLogs)
+	log.Infof("log listener ready. pipe: %s", logsPipeName())
 
 	// listen for ipc messages
-	go acceptIPC(ipc)
-	log.Infof("ipc listener ready pipe: %s", ipcPipeName)
+	go accept(ipc, serveIpc)
+	log.Infof("ipc listener ready pipe: %s", ipcPipeName())
 
-	// initialize the network interface
-	err = initialize()
-	if err != nil {
-		return err
-	}
+	// listen for events messages
+	go accept(events, serveEvents)
+	log.Infof("events listener ready pipe: %s", eventsPipeName())
 
-	// notify the service is running
-	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
-	_ = Elog.Info(20, SvcName + " status set to running")
-	log.Info(SvcName + " status set to running. starting cancel loop")
-
-	loop:
-		for {
-			select {
-			case c := <-ops:
-				log.Infof("request for control received, %v", c)
-				if c == "stop" {
-					break loop
-				} else {
-					log.Info("operation: " + c)
-				}
-			}
-		}
-
-	shutdownConnections()
-
-	windns.ResetDNS()
-
-	state.Close()
-	_ = ipc.Close()
-	_ = logs.Close()
-	log.Info("shutdown complete. exiting process")
-
-	return nil
+	return &Pipes{
+		ipc: ipc,
+		logs: logs,
+		events: events,
+	}, nil
 }
 
-func shutdownConnections() {
+func(p *Pipes) shutdownConnections() {
 	log.Info("waiting for all connections to close...")
 
 	for i := 0; i < connections; i++ {
@@ -118,7 +156,46 @@ func shutdownConnections() {
 	log.Info("all connections closed")
 }
 
-func acceptIPC(p net.Listener) {
+func initialize() error {
+	rts.LoadConfig()
+
+	err := rts.CreateTun()
+	if err != nil {
+		return err
+	}
+	setTunInfo(rts.state)
+
+	s := rts.state
+	// decide if the tunnel should be active or not and if so - activate it
+	setTunnelState(s.Active)
+
+	// connect any identities that are enabled
+	for _, id := range s.Identities {
+		connectIdentity(id)
+	}
+
+	log.Debugf("initial state loaded from configuration file")
+	return nil
+}
+
+func setTunInfo(s *dto.TunnelStatus) {
+	//set the tun info into the state
+	s.IpInfo = &dto.TunIpInfo{
+		Ip:     Ipv4ip,
+		DNS:    Ipv4dns,
+		MTU:    1400,
+		Subnet: "255.255.255.0",
+	}
+}
+
+func closeConn(conn net.Conn) {
+	err := conn.Close()
+	if err != nil {
+		log.Warnf("abnormal error while closing connection. %v", err)
+	}
+}
+
+func accept(p net.Listener, serveFunction func(net.Conn)) {
 	for {
 		c, err := p.Accept()
 		if err != nil {
@@ -131,60 +208,7 @@ func acceptIPC(p net.Listener) {
 		connections ++
 		log.Debugf("accepting a new client")
 
-		go serveIpc(c)
-	}
-}
-
-func initialize() error {
-	log.Debugf("reading config file located at: %s", config.File())
-	file, err := os.OpenFile(config.File(), os.O_RDONLY, 0640)
-	if err != nil {
-		// file does not exist or process has no rights to read the file - return leaving configuration empty
-		// this is expected when first starting
-		return nil
-	}
-
-	r := bufio.NewReader(file)
-	dec := json.NewDecoder(r)
-
-	_ = dec.Decode(&state)
-
-	err = state.CreateTun()
-	if err != nil {
-		return err
-	}
-	setTunInfo()
-
-	// decide if the tunnel should be active or not and if so - activate it
-	setTunnelState(state.Active)
-
-	// connect any identities that are enabled
-	for _, id := range state.Identities {
-		connectIdentity(id)
-	}
-
-	err = file.Close()
-	if err != nil {
-		return fmt.Errorf("could not close configuration file. this is not normal! %v", err)
-	}
-	log.Debugf("initial state loaded from configuration file")
-	return nil
-}
-
-func setTunInfo() {
-	//set the tun info into the state
-	state.IpInfo = &runtime.TunIpInfo{
-		Ip:     runtime.Ipv4ip,
-		DNS:    runtime.Ipv4dns,
-		MTU:    1400,
-		Subnet: "255.255.255.0",
-	}
-}
-
-func closeConn(conn net.Conn) {
-	err := conn.Close()
-	if err != nil {
-		log.Warnf("abnormal error while closing connection. %v", err)
+		go serveFunction(c)
 	}
 }
 
@@ -225,12 +249,14 @@ func serveIpc(conn net.Conn) {
 			return
 		}
 
-		/*
-			os.Stdout.Write(delim)
-			os.Stdout.Write([]byte(msg))
-			os.Stdout.Write(delim)
-		*/
 		log.Debugf("msg received: %s", msg)
+
+		if strings.TrimSpace(msg) == "" {
+			// empty message. ignore it and read again
+			log.Debug("empty line received. ignoring")
+			continue
+		}
+
 		dec := json.NewDecoder(strings.NewReader(msg))
 		var cmd dto.CommandMsg
 		if err := dec.Decode(&cmd); err == io.EOF {
@@ -246,11 +272,6 @@ func serveIpc(conn net.Conn) {
 				respondWithError(enc, "could not read string properly", UNKNOWN_ERROR, err)
 				return
 			}
-			/*
-				os.Stdout.Write(delim)
-				os.Stdout.Write([]byte(addIdMsg))
-				os.Stdout.Write(delim)
-			*/
 			log.Debugf("msg received: %s", addIdMsg)
 			addIdDec := json.NewDecoder(strings.NewReader(addIdMsg))
 
@@ -273,37 +294,25 @@ func serveIpc(conn net.Conn) {
 			onOff := cmd.Payload["OnOff"].(bool)
 			fingerprint := cmd.Payload["Fingerprint"].(string)
 			toggleIdentity(enc, fingerprint, onOff)
+			
+			top.Broadcast <- dto.ZitiTunnelStatus{
+				Status:  rts.ToStatus(),
+				Metrics: nil,
+			}
 		default:
-			log.Debugf("Unknown operation: %s. Returning error on pipe", cmd.Function)
+			log.Warnf("Unknown operation: %s. Returning error on pipe", cmd.Function)
 			respondWithError(enc, "Something unexpected has happened", UNKNOWN_ERROR, nil)
-		}
-		if cmd.Function != "" {
-			//_ = writer.WriteByte('\n') //just in case the client tries to read a line
-		} else {
-			log.Warn("Empty input received?")
 		}
 		_ = rw.Flush()
 	}
-}
-
-func acceptLogs(p net.Listener) {
-	log.Debug("beginning logs receive loop")
-	for {
-		lcon, err := p.Accept()
-		if err != nil {
-			log.Errorf("unexpected error during accept. exiting accept loop! %v", err)
-			return
-		}
-
-		go serveLogs(lcon) //serveLogs will close the connection for us
-	}
+	log.Info("IPC Loop has exited")
 }
 
 func serveLogs(conn net.Conn) {
 	log.Debug("accepted a connection, writing logs to pipe")
 	w := bufio.NewWriter(conn)
 
-	file, err := os.OpenFile(config.LogFile(), os.O_RDONLY, 0640)
+	file, err := os.OpenFile(config.LogFile(), os.O_RDONLY, 0644)
 	if err != nil {
 		log.Errorf("could not open log file at %s", config.LogFile())
 		_, _ = w.WriteString("an unexpected error occurred while retrieving logs. look at the actual log file.")
@@ -337,14 +346,54 @@ func serveLogs(conn net.Conn) {
 	}
 }
 
+func serveEvents(conn net.Conn) {
+	log.Debug("accepted a connection, writing events to pipe")
+
+	consumer := make(chan interface{}, 1)
+	top.Register(consumer)
+
+	w := bufio.NewWriter(conn)
+	o := json.NewEncoder(w)
+
+	for {
+		msg := <-consumer
+		status, ok := msg.(dto.ZitiTunnelStatus)
+		if !ok {
+			log.Errorf("message received couldn't be converted to status? %v", status)
+			 break
+		}
+		respond(o, dto.Response{Payload: status})
+		_, err := w.WriteString("\n")
+		if err != nil {
+			if err == io.EOF {
+				//fine client disconnected
+				log.Debug("exiting from serveEvents - client disconnected")
+			} else {
+				log.Errorf("exiting from serveEvents - unexpected error %v", err)
+			}
+			top.Unregister(consumer)
+			break
+		}
+		_ = w.Flush()
+
+		log.Infof("got %v", msg)
+	}
+	log.Info("exiting serve events")
+}
+
 func reportStatus(out *json.Encoder) {
 	log.Debugf("request for status")
-	respond(out, state.Clean())
+
+	respond(out, dto.ZitiTunnelStatus{
+		Status:  rts.ToStatus(),
+		Metrics: nil,
+	})
 	log.Debugf("request for status responded to")
 }
 
 func tunnelState(onOff bool, out *json.Encoder) {
 	log.Debugf("toggle ziti on/off: %t", onOff)
+	state := rts.state
 	if onOff == state.Active {
 		log.Debug("nothing to do. the state of the tunnel already matches the requested state: %t", onOff)
 		respond(out, dto.Response{Message: fmt.Sprintf("noop: tunnel state already set to %t", onOff), Code: SUCCESS, Error: "", Payload: nil})
@@ -352,7 +401,7 @@ func tunnelState(onOff bool, out *json.Encoder) {
 	}
 	setTunnelState(onOff)
 	state.Active = onOff
-	runtime.SaveState(&state)
+	SaveState(&rts)
 
 	respond(out, dto.Response{Message: "tunnel state updated successfully", Code: SUCCESS, Error: "", Payload: nil})
 	log.Debugf("toggle ziti on/off: %t responded to", onOff)
@@ -360,20 +409,21 @@ func tunnelState(onOff bool, out *json.Encoder) {
 
 func setTunnelState(onOff bool) {
 	if onOff {
-		runtime.TunStarted = time.Now()
+		TunStarted = time.Now()
 
+		state := rts.state
 		for _, id := range state.Identities {
 			connectIdentity(id)
 		}
 	} else {
-		state.Close()
+		// state.Close()
 	}
 }
 
 func toggleIdentity(out *json.Encoder, fingerprint string, onOff bool) {
 	log.Debugf("toggle ziti on/off5 for %s: %t", fingerprint, onOff)
 
-	_, id := state.Find(fingerprint)
+	_, id := rts.Find(fingerprint)
 	if id.Active == onOff {
 		log.Debugf("nothing to do - the provided identity %s is already set to active=%t", id.Name, id.Active)
 		//nothing to do...
@@ -394,7 +444,7 @@ func toggleIdentity(out *json.Encoder, fingerprint string, onOff bool) {
 
 	respond(out, dto.Response{Message: "identity toggled", Code: SUCCESS, Error: "", Payload: idutil.Clean(*id)})
 	log.Debugf("toggle ziti on/off for %s: %t responded to", fingerprint, onOff)
-	runtime.SaveState(&state)
+	SaveState(&rts)
 }
 
 func removeTempFile(file os.File) {
@@ -409,7 +459,6 @@ func removeTempFile(file os.File) {
 }
 
 func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
-
 	log.Debugf("new identity for %s: %s", newId.Id.Name, newId.EnrollmentFlags.JwtString)
 
 	tokenStr := newId.EnrollmentFlags.JwtString
@@ -488,21 +537,20 @@ func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
 	//newId.Id.Active = false //set to false by default - enable the id after persisting
 	log.Infof("enrolled successfully. identity file written to: %s", newPath)
 
-	if newId.Id.Active == true {
-		connectIdentity(&newId.Id)
-	}
+	connectIdentity(&newId.Id)
 
+	state := rts.state
 	//if successful parse the output and add the config to the identity
 	state.Identities = append(state.Identities, &newId.Id)
 
 	//save the state
-	runtime.SaveState(&state)
+	SaveState(&rts)
 
 	//return successful message
 	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: idutil.Clean(newId.Id)}
 
 	respond(out, resp)
-	log.Debugf("new identity for %s: %s responded to", newId.Id.Name, newId.EnrollmentFlags.JwtString)
+	log.Debugf("new identity for %s responded to", newId.Id.Name)
 }
 
 func respondWithError(out *json.Encoder, msg string, code int, err error) {
@@ -515,23 +563,27 @@ func respondWithError(out *json.Encoder, msg string, code int, err error) {
 }
 
 func connectIdentity(id *dto.Identity) {
-	//tell the c sdk to use the file from the id and connect
-	log.Infof("Connecting identity: %s", id.Name)
-	state.LoadIdentity(id)
-
-	id.Connected = true
+	if !id.Connected {
+		//tell the c sdk to use the file from the id and connect
+		log.Debugf("loading identity %s with fingerprint %s", id.Name, id.FingerPrint)
+		rts.LoadIdentity(id)
+	} else {
+		log.Debugf("id [%s] is already connected - not reconnecting", id.Name)
+	}
+	id.Active = true
+	log.Infof("identity [%s] connected [%t] and set to active [%t]", id.Name, id.Connected, id.Active)
 }
 
 func disconnectIdentity(id *dto.Identity) error {
 	//tell the c sdk to disconnect the identity/services etc
 	log.Infof("Disconnecting identity: %s", id.Name)
 
+	id.Active = false
 	if id.Connected {
 		// actually disconnect from the c sdk here
 		log.Warn("not implemented yet - disconnected an already connected id doesn't actually work yet...")
-
+		//id.Connected = false
 		return nil
-		id.Connected = false
 	} else {
 		log.Debugf("id: %s is already disconnected - not attempting to disconnected again fingerprint:%s", id.Name, id.FingerPrint)
 	}
@@ -546,7 +598,7 @@ func disconnectIdentity(id *dto.Identity) error {
 
 func removeIdentity(out *json.Encoder, fingerprint string) {
 	log.Infof("request to remove identity by fingerprint: %s", fingerprint)
-	_, id := state.Find(fingerprint)
+	_, id := rts.Find(fingerprint)
 	if id == nil {
 		respondWithError(out, fmt.Sprintf("Could not find identity by fingerprint: %s", fingerprint), IDENTITY_NOT_FOUND, nil)
 		return
@@ -557,8 +609,8 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 		respondWithError(out, "Error when disconnecting identity", ERROR_DISCONNECTING_ID, err)
 		return
 	}
-	state.RemoveByIdentity(*id)
-	runtime.SaveState(&state)
+	rts.RemoveByIdentity(*id)
+	SaveState(&rts)
 
 	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: nil}
 	respond(out, resp)
@@ -566,9 +618,7 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 }
 
 func respond(out *json.Encoder, thing interface{}) {
-	/*os.Stdout.Write(delim)
-	_ = json.NewEncoder(os.Stdout).Encode(thing)
-	os.Stdout.Write(delim)
-	*/
+	//leave for debugging j := json.NewEncoder(os.Stdout)
+	//leave for debugging j.Encode(thing)
 	_ = out.Encode(thing)
 }

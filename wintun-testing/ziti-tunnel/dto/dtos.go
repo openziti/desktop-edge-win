@@ -1,11 +1,9 @@
 package dto
 
 import (
-	"log"
-
-	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
-
 	idcfg "github.com/netfoundry/ziti-sdk-golang/ziti/config"
+	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
+	"log"
 	"wintun-testing/ziti-tunnel/config"
 )
 
@@ -44,11 +42,12 @@ type Response struct {
 	Error   string
 	Payload interface{} `json:"Payload"`
 }
-type ZitiTunnelStatus struct {
-	Code    int
-	Message string
-	Error   string
-	Payload Identity
+
+type TunIpInfo struct {
+	Ip     string
+	Subnet string
+	MTU    uint16
+	DNS    string
 }
 
 func (id *Identity) Path() string {
@@ -56,4 +55,17 @@ func (id *Identity) Path() string {
 		log.Fatalf("fingerprint is invalid for id %s", id.Name)
 	}
 	return config.Path() + id.FingerPrint + ".json"
+}
+
+
+type TunnelStatus struct {
+	Active     bool
+	Duration   int64 `json:"-"`
+	Identities []*Identity
+	IpInfo     *TunIpInfo `json:"IpInfo,omitempty"`
+}
+
+type ZitiTunnelStatus struct {
+	Status  *TunnelStatus `json:",omitempty"`
+	Metrics *Metrics `json:",omitempty"`
 }

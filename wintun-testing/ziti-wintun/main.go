@@ -34,8 +34,8 @@ func main() {
 
 	fmt.Printf("user [%v]\n", user)
 
-	if len(os.Args) < 2 {
-		fmt.Printf("usage: %s <interfaceName>\n", filepath.Base(os.Args[0]))
+	if len(os.Args) < 3 {
+		fmt.Printf("usage: %s <interfaceName> <config file path>\n", filepath.Base(os.Args[0]))
 		os.Exit(1)
 	}
 	interfaceName := os.Args[1]
@@ -109,8 +109,10 @@ func main() {
 		panic(err)
 	}
 
-	if ctx, err := cziti.LoadZiti(os.Args[2]); err != nil {
-		panic(err)
+	ctx := cziti.LoadZiti(os.Args[2])
+	if rc, err := ctx.Status(); err != nil {
+		fmt.Printf("failed to start %s@%s: %v\n", ctx.Name(), ctx.Controller(), err)
+		os.Exit(rc)
 	} else {
 		fmt.Printf("successfully loaded %s@%s\n", ctx.Name(), ctx.Controller())
 	}

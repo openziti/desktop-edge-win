@@ -19,6 +19,18 @@ namespace ZitiTunneler.ServiceClient
         }
     }
 
+    class StatusUpdateResponse : SvcResponse
+    {
+        public StatusUpdate Payload { get; set; }
+    }
+
+    class StatusUpdate
+    {
+        public string Operation { get; set; }
+        public TunnelStatus Status { get; set; }
+        public Metrics Metrics { get; set; }
+    }
+
     public class NewIdentity
     {
         public EnrollmentFlags Flags { get; set; }
@@ -96,6 +108,8 @@ namespace ZitiTunneler.ServiceClient
     public class Metrics
     {
         public int TotalBytes { get; set; }
+        public double Upload { get; set; }
+        public double Download { get; set; }
     }
 
     public class Identity
@@ -132,6 +146,11 @@ namespace ZitiTunneler.ServiceClient
     }
 
     class ZitiTunnelStatus : SvcResponse
+    {
+        public TunnelStatus Status { get; set; }
+    }
+
+    class TunnelStatus
     {
         public bool Active { get; set; }
 

@@ -1,39 +1,43 @@
-package log
+package globals
 
 import (
-	"io"
-	"os"
-	"strings"
-
+	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/michaelquigley/pfxlog"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
-	"gopkg.in/natefinch/lumberjack.v2"
+	"io"
+	"os"
+	"strings"
+	"time"
 
 	"wintun-testing/ziti-tunnel/config"
-	"wintun-testing/ziti-tunnel/ipc"
 )
 
-var Logger = *pfxlog.Logger()
 var Elog debug.Log
+var logger *logrus.Entry
+
+func Logger() *logrus.Entry {
+	if logger == nil {
+		logger = pfxlog.Logger()
+	}
+	return logger
+}
 
 func InitLogger(level string) {
 	logLevel := ParseLevel(level)
 	logrus.SetLevel(logLevel)
 
-	_ = os.Remove(config.LogFile()) //reset the log on startup
-	multiWriter := io.MultiWriter(&lumberjack.Logger{
-		Filename:   config.LogFile(),
-		MaxSize:    1, // megabytes
-		MaxBackups: 2,
-		MaxAge:     30,    //days
-		Compress:   false, // disabled by default
-	}, os.Stdout)
+	rl, _ := rotatelogs.New(config.LogFile() + ".%Y%m%d%H%M",
+		rotatelogs.WithRotationTime(24 * time.Hour),
+		rotatelogs.WithRotationCount(7),
+		rotatelogs.WithLinkName(config.LogFile()))
+
+	multiWriter := io.MultiWriter(rl, os.Stdout)
 
 	logrus.SetOutput(multiWriter)
 	logrus.SetFormatter(pfxlog.NewFormatter())
-	pfxlog.Logger().Infof("Logger initialized. Log file located at: %s", config.LogFile())
+	logger.Infof("Logger initialized. Log file located at: %s", config.LogFile())
 }
 
 func ParseLevel(lvl string) logrus.Level {
@@ -58,12 +62,12 @@ func ParseLevel(lvl string) logrus.Level {
 	}
 }
 
-func InitEventLog(interactive bool) {
+func InitEventLog(svcName string, interactive bool) {
 	var err error
 	if !interactive {
-		Elog = debug.New(ipc.SvcName)
+		Elog = debug.New(svcName)
 	} else {
-		Elog, err = eventlog.Open(ipc.SvcName)
+		Elog, err = eventlog.Open(svcName)
 		if err != nil {
 			return
 		}

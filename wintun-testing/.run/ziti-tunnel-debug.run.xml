@@ -1,0 +1,20 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="ziti-tunnel-debug" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="wintun-testing" />
+    <working_directory value="$PROJECT_DIR$" />
+    <go_parameters value="-i" />
+    <parameters value="debug" />
+    <envs>
+      <env name="PATH" value="v:\dev\tools\mingw-w64\bin;C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin;c:\windows\system32" />
+      <env name="PFXLOG_NO_JSON" value="true" />
+      <env name="CGO_CFLAGS" value="-DNOGDI -I c:\git\github\ziti-tunneler-sdk-c\install\include" />
+      <env name="CGO_LDFLAGS" value="-L c:\git\github\ziti-tunneler-sdk-c\install\lib" />
+      <env name="NOZITI" value="true" />
+    </envs>
+    <kind value="FILE" />
+    <filePath value="$PROJECT_DIR$/ziti-tunnel/main.go" />
+    <package value="wintun-testing" />
+    <directory value="$PROJECT_DIR$/" />
+    <method v="2" />
+  </configuration>
+</component>
