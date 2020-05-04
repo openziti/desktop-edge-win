@@ -35,7 +35,7 @@
                 <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
                 <Grid>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="True">
-                        <StackPanel Name="MainItems" Orientation="Vertical">
+                        <StackPanel>
                             <local:MenuEditItem x:Name="IdentityName" HorizontalAlignment="Stretch" Label="Name" IsLocked="True"></local:MenuEditItem>
                             <local:MenuEditItem x:Name="IdentityNetwork" HorizontalAlignment="Stretch" Label="Network" IsLocked="True"></local:MenuEditItem>
                             <local:MenuEditItem x:Name="IdentityStatus" HorizontalAlignment="Stretch" Label="Status" IsLocked="True"></local:MenuEditItem>

@@ -22,6 +22,7 @@ namespace ZitiTunneler {
 		private bool _isAttached = true;
 		private int _right = 75;
 		private int _bottom = -10;
+		private double _maxHeight = 800d;
 
 		private List<ZitiIdentity> identities {
 			get {
@@ -66,9 +67,10 @@ namespace ZitiTunneler {
 
 		private void MainWindow1_Loaded(object sender, RoutedEventArgs e) {
 			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
+			_maxHeight = Math.Ceiling(.50*desktopWorkingArea.Height);
 			this.Left = desktopWorkingArea.Right-this.Width-_right;
 			this.Top = desktopWorkingArea.Bottom-this.Height-_bottom;
-
+			MessageBox.Show("Heo "+this.Height+" "+desktopWorkingArea.Bottom+" "+desktopWorkingArea.Height);
 			// add a new service client
 			serviceClient = new Client();
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
@@ -131,6 +133,7 @@ namespace ZitiTunneler {
 				foreach (var id in status.Identities) {
 					updateViewWithIdentity(id);
 				}
+				LoadIdentities();
 			} else {
 				MessageBox.Show("could not get status - make this pretty Jeremy");
 			}
@@ -139,7 +142,6 @@ namespace ZitiTunneler {
 		private void updateViewWithIdentity(Identity id) {
 			var zid = ZitiIdentity.FromClient(id);
 			identities.Add(zid);
-			LoadIdentities();
 		}
 		private void SetNotifyIcon(string iconPrefix) {
 			System.IO.Stream iconStream = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,/Assets/Images/ziti-"+iconPrefix+".ico")).Stream;
@@ -150,6 +152,9 @@ namespace ZitiTunneler {
 			IdList.Children.Clear();
 			ZitiIdentity[] ids = identities.ToArray();
 			this.Height = 460+(ids.Length*60);
+			MessageBox.Show("Height: "+this.Height+" "+_maxHeight);
+			if (this.Height>_maxHeight) this.Height = _maxHeight;
+			MessageBox.Show("Height: "+this.Height+" "+_maxHeight);
 			for (int i=0; i<ids.Length; i++) {
 				IdentityItem id = new IdentityItem();
 				id.Identity = ids[i];
