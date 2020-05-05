@@ -14,6 +14,7 @@ require (
 	github.com/netfoundry/ziti-foundation v0.9.8
 	github.com/netfoundry/ziti-sdk-golang v0.11.16
 	github.com/sirupsen/logrus v1.5.0
+	github.com/spf13/cobra v0.0.5
 	github.com/tebeka/strftime v0.1.4 // indirect
 	github.com/tv42/topic v0.0.0-20130729201830-aa72cbe81b48
 	golang.org/x/sys v0.0.0-20200406113430-c6e801f48ba2
