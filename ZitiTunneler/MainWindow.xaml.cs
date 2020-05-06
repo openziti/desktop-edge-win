@@ -21,7 +21,7 @@ namespace ZitiTunneler {
 		private Client serviceClient = null;
 		private bool _isAttached = true;
 		private int _right = 75;
-		private int _bottom = -10;
+		private int _bottom = 0;
 		private double _maxHeight = 800d;
 
 		private List<ZitiIdentity> identities {
@@ -40,12 +40,20 @@ namespace ZitiTunneler {
 			notifyIcon.Click += TargetNotifyIcon_Click;
 			notifyIcon.Visible = true;
 
+			notifyIcon.ShowBalloonTip(5000, "Test", "Testing", System.Windows.Forms.ToolTipIcon.Info);
+			
+
 			SetNotifyIcon("white");
 
 			InitializeComponent();
 		}
+
 		private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
 			if (!_isAttached&&e.ChangedButton == MouseButton.Left) this.DragMove();
+		}
+
+		private void Repaint() {
+			LoadIdentities();
 		}
 
 		private void TargetNotifyIcon_Click(object sender, EventArgs e) {
@@ -67,10 +75,9 @@ namespace ZitiTunneler {
 
 		private void MainWindow1_Loaded(object sender, RoutedEventArgs e) {
 			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-			_maxHeight = Math.Ceiling(.50*desktopWorkingArea.Height);
+			_maxHeight = Math.Ceiling(.80*desktopWorkingArea.Height);
 			this.Left = desktopWorkingArea.Right-this.Width-_right;
 			this.Top = desktopWorkingArea.Bottom-this.Height-_bottom;
-			MessageBox.Show("Heo "+this.Height+" "+desktopWorkingArea.Bottom+" "+desktopWorkingArea.Height);
 			// add a new service client
 			serviceClient = new Client();
 			serviceClient.OnTunnelStatusUpdate += ServiceClient_OnTunnelStatusUpdated;
@@ -88,8 +95,7 @@ namespace ZitiTunneler {
 			IdentityMenu.OnForgot += IdentityForgotten;
 		}
 
-		private void ServiceClient_OnTunnelStatusUpdated(object sender, TunnelStatus e)
-		{
+		private void ServiceClient_OnTunnelStatusUpdated(object sender, TunnelStatus e) {
 		}
 
 		private void IdentityForgotten(ZitiIdentity forgotten) {
@@ -155,16 +161,18 @@ namespace ZitiTunneler {
 
 		private void LoadIdentities() {
 			IdList.Children.Clear();
+			IdList.Height = 0;
+			IdList.MaxHeight = _maxHeight-520;
 			ZitiIdentity[] ids = identities.ToArray();
 			this.Height = 460+(ids.Length*60);
-			MessageBox.Show("Height: "+this.Height+" "+_maxHeight);
 			if (this.Height>_maxHeight) this.Height = _maxHeight;
-			MessageBox.Show("Height: "+this.Height+" "+_maxHeight);
+			IdentityMenu.SetHeight(this.Height-160);
 			for (int i=0; i<ids.Length; i++) {
 				IdentityItem id = new IdentityItem();
 				id.Identity = ids[i];
 				id.OnClick += OpenIdentity;
 				IdList.Children.Add(id);
+				IdList.Height += 60;
 			}
 			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
 			this.Left = desktopWorkingArea.Right-this.Width-_right;

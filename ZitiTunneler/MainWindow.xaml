@@ -135,7 +135,7 @@
                     <Label Foreground="White" Margin="0,-20,0,30" Content="Mbps" FontSize="11" HorizontalAlignment="Center" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" />
                 </StackPanel>
             </Grid>
-            <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" SnapsToDevicePixels="True" CanContentScroll="True">
+            <ScrollViewer ScrollViewer.HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" CanContentScroll="True">
                 <StackPanel Name="IdList" Orientation="Vertical"></StackPanel>
             </ScrollViewer>
             <Grid HorizontalAlignment="Stretch" Margin="0,20,0,10" Width="Auto">
@@ -147,6 +147,5 @@
         </StackPanel>
         <local:MainMenu x:Name="MainMenu" Visibility="Collapsed"></local:MainMenu>
         <local:IdentityDetails x:Name="IdentityMenu" Visibility="Collapsed"></local:IdentityDetails>
-        <Button Content="Button" HorizontalAlignment="Left" Margin="47,244,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click"/>
     </Grid>
 </Window>

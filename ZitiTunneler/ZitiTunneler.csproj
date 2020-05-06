@@ -255,11 +255,5 @@
     <Resource Include="Assets\Images\ziti-white.ico" />
     <Resource Include="Assets\Images\Ziti-White.png" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\ZitiNotifyIcon\ZitiNotifyIcon.csproj">
-      <Project>{f620947d-5c32-4a6f-beaa-4dcbb2032668}</Project>
-      <Name>ZitiNotifyIcon</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

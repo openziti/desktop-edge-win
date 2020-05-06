@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+	<Product Id="*" Name="ZitiSetup" Language="1033" Version="1.0.0.0" Manufacturer="NetFoundry" UpgradeCode="f7c9f870-3db2-4e53-a207-15f629a01305">
+		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+
+		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+		<MediaTemplate />
+
+		<Feature Id="ProductFeature" Title="ZitiSetup" Level="1">
+			<ComponentGroupRef Id="ProductComponents" />
+		</Feature>
+	</Product>
+
+	<Fragment>
+		<Directory Id="TARGETDIR" Name="SourceDir">
+			<Directory Id="ProgramFilesFolder">
+				<Directory Id="INSTALLFOLDER" Name="ZitiSetup" />
+			</Directory>
+		</Directory>
+	</Fragment>
+  
+  <Fragment>
+    <DirectoryRef Id="APPLICATIONROOTDIRECTORY">
+      <Component Id="ZitiService" Guid="EBA641C5-F941-443B-A36B-B0517F31D776">
+        <File Id="ZitiService" Source="service\ziti-tunnel.exe" KeyPath="yes" Checksum="yes"/>
+      </Component>
+      <Component Id="LibC" Guid="BBDAE1BB-A0D7-4C48-BB79-BEB428BB8682">
+        <File Id="LibC" Source="service/libgcc_s_seh-1.dll" KeyPath="yes"/>
+      </Component>
+      <Component Id="LibUV" Guid="D045A19E-FB14-4752-B3E7-D33B92EA5C66">
+        <File Id="LibUV" Source="service/libuv.dll" KeyPath="yes"/>
+      </Component>
+      <Component Id="LibThread" Guid="90420E8C-3E88-4F3B-B57B-DF39BF184A44">
+        <File Id="LibThread" Source="service/libwinpthread-1.dll" KeyPath="yes"/>
+      </Component>
+      <Component Id="ZITI" Guid="7888AF3C-0312-4045-B3C4-B44B8314AE80">
+        <File Id="ZITI" Source="service\ziti.dll" KeyPath="yes"/>
+      </Component>
+    </DirectoryRef>
+  </Fragment>
+
+	<Fragment>
+		<ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+			<!-- TODO: Remove the comments around this Component element and the ComponentRef below in order to add resources to this installer. -->
+			<!-- <Component Id="ProductComponent"> -->
+				<!-- TODO: Insert files, registry keys, and other resources here. -->
+			<!-- </Component> -->
+      <Component>
+        <File Id="ZitiService" Name="ziti-tunnel.exe" DiskId="1" Source="service\ziti-tunnel.exe" KeyPath="yes"/>
+        <ServiceInstall
+          Id="ServiceInstaller"
+          Type="ownProcess"
+          Name="JobService"
+          DisplayName="Ziti Service"
+          Description="NetFoundry Ziti Tunnel Service"
+          Start="auto"
+          Account="[SERVICEACCOUNT]"
+          Password="[SERVICEPASSWORD]"
+          ErrorControl="normal"
+        />
+        <ServiceControl Id="StartService" Start="install" Stop="both" Remove="uninstall" Name="JobService" Wait="yes" />
+      </Component>      
+		</ComponentGroup>
+	</Fragment>
+</Wix>
