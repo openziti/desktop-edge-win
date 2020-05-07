@@ -119,7 +119,14 @@ namespace ZitiTunneler.ServiceClient
                         {
                             break;
                         }
-                        MetricsUpdate(r.Payload.Metrics);
+                        if (r?.Payload?.Status != null)
+                        {
+                            ZitiTunnelStatusUpdate(r.Payload.Status);
+                        }
+                        if (r?.Payload?.Metrics != null)
+                        {
+                            MetricsUpdate(r.Payload.Metrics);
+                        }
                     }
                     Console.WriteLine("THREAD DONE");
                 });

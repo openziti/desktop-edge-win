@@ -108,8 +108,8 @@ namespace ZitiTunneler.ServiceClient
     public class Metrics
     {
         public int TotalBytes { get; set; }
-        public double Up { get; set; }
-        public double Down { get; set; }
+        public long Up { get; set; }
+        public long Down { get; set; }
     }
 
     public class Identity

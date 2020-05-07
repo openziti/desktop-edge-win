@@ -26,7 +26,7 @@ type Identity struct {
 	Config      idcfg.Config
 	Status      string
 	Services    []*Service
-	Metrics     Metrics
+	Metrics     *Metrics
 
 	Connected bool `json:"-"`
 	NFContext *cziti.CZitiCtx `json:"-"`

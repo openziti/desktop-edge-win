@@ -89,15 +89,37 @@ namespace ZitiTunneler {
 
 		private void ServiceClient_OnMetricsUpdate(object sender, Metrics e)
 		{
-			this.Dispatcher.Invoke(() =>
-			{
-				DownloadSpeed.Content = (e.Down / 1000).ToString();
-				UploadSpeed.Content = (e.Up / 1000).ToString();
-			});
+			if (e != null) {
+				this.Dispatcher.Invoke(() =>
+				{
+					DownloadSpeed.Content = (e.Down / 1000).ToString();
+					UploadSpeed.Content = (e.Up / 1000).ToString();
+				});
+			}
 		}
 
 		private void ServiceClient_OnTunnelStatusUpdated(object sender, TunnelStatus e)
 		{
+			if (e != null)
+			{
+				long totalUp = 0;
+				long totalDown = 0;
+				foreach (var id in e.Identities)
+				{
+					System.Diagnostics.Debug.WriteLine($"id {id.Name} down: {totalDown} up:{totalUp}");
+					if (id?.Metrics != null)
+					{
+						totalDown += id.Metrics.Down;
+						totalUp += id.Metrics.Up;
+					}
+				}
+				this.Dispatcher.Invoke(() =>
+				{
+					System.Diagnostics.Debug.WriteLine($"Triggering update of total down: {totalDown} up:{totalUp}");
+					DownloadSpeed.Content = (totalDown / 1000).ToString();
+					UploadSpeed.Content = (totalUp / 1000).ToString();
+				});
+			}
 		}
 
 		private void IdentityForgotten(ZitiIdentity forgotten) {
