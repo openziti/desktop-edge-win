@@ -88,6 +88,7 @@ namespace ZitiTunneler {
 				LoadStatusFromService();
 				// MessageBox.Show("identites are returned from the server. Any that were 'on' will have services. any off won't. Update the toggles to show if they are on or off");
 			} catch(Exception ex) {
+				NoServiceView.Visibility = Visibility.Visible;
 				//probably some kind of problem with the service...
 				// MessageBox.Show("oh my goodness - problem with the service. Almost certainly means the service is NOT RUNNING... Jeremy make this pretty.\n" + ex.Message);
 			}
@@ -127,6 +128,7 @@ namespace ZitiTunneler {
 		private void LoadStatusFromService() {
 			TunnelStatus status = serviceClient.GetStatus().Status;
 			if (status != null) {
+				NoServiceView.Visibility = Visibility.Collapsed;
 				if (status.Active) {
 					InitializeTimer((int)status.Duration);
 					ConnectButton.Visibility = Visibility.Collapsed;
@@ -146,7 +148,7 @@ namespace ZitiTunneler {
 				}
 				LoadIdentities();
 			} else {
-				MessageBox.Show("could not get status - make this pretty Jeremy");
+				NoServiceView.Visibility = Visibility.Visible;
 			}
 		}
 
