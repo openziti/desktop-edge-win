@@ -6,7 +6,10 @@ using System.IO;
 using ZitiTunneler.Models;
 
 using ZitiTunneler.ServiceClient;
-
+using System.ServiceProcess;
+using System.Linq;
+using System.Runtime.Remoting.Messaging;
+using System.Diagnostics;
 
 namespace ZitiTunneler {
 
@@ -39,13 +42,51 @@ namespace ZitiTunneler {
 			notifyIcon.Visible = true;
 			notifyIcon.Click += TargetNotifyIcon_Click;
 			notifyIcon.Visible = true;
-
 			notifyIcon.ShowBalloonTip(5000, "Test", "Testing", System.Windows.Forms.ToolTipIcon.Info);
-			
+
+			ServiceController ctl = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName=="ziti");
+			if (ctl==null) {
+				MessageBox.Show("Not installed");
+
+				ProcessStartInfo installService = new ProcessStartInfo();
+				installService.CreateNoWindow = true;
+				installService.UseShellExecute = false;
+				installService.FileName =Path.Combine(Environment.CurrentDirectory, "services")+@"\ziti-tunnel.exe";
+				installService.WindowStyle = ProcessWindowStyle.Hidden;
+				installService.Arguments =" install";
+
+				try {
+					using (Process exeProcess = Process.Start(installService)) {
+						exeProcess.WaitForExit();
+					}
+					ctl = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName=="ziti");
+					if (ctl.Status!=ServiceControllerStatus.Running) {
+						try {
+							ctl.Start();
+						} catch (Exception e) {
+							SetCantDisplay();
+						}
+					}
+				} catch (Exception e) {
+					MessageBox.Show(e.ToString());
+				}
+			} else {
+				if (ctl.Status!=ServiceControllerStatus.Running) {
+					try {
+						ctl.Start();
+					} catch (Exception e) {
+						SetCantDisplay();
+					}
+				}
+			}
 
 			SetNotifyIcon("white");
-
 			InitializeComponent();
+		}
+
+		private void SetCantDisplay() {
+			NoServiceView.Visibility=Visibility.Visible;
+			SetNotifyIcon("red");
 		}
 
 		private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
@@ -87,7 +128,7 @@ namespace ZitiTunneler {
 			try {
 				LoadStatusFromService();
 			} catch (Exception ex) {
-				NoServiceView.Visibility = Visibility.Visible;
+				SetCantDisplay();
 			}
 			LoadIdentities();
 			IdentityMenu.OnForgot += IdentityForgotten;
@@ -133,6 +174,7 @@ namespace ZitiTunneler {
 			TunnelStatus status = s.Status;
 			if (status != null) {
 				NoServiceView.Visibility = Visibility.Collapsed;
+				SetNotifyIcon("white");
 				if (status.Active) {
 					InitializeTimer((int)status.Duration);
 					ConnectButton.Visibility = Visibility.Collapsed;
@@ -152,7 +194,7 @@ namespace ZitiTunneler {
 				}
 				LoadIdentities();
 			} else {
-				NoServiceView.Visibility = Visibility.Visible;
+				SetCantDisplay();
 			}
 		}
 
