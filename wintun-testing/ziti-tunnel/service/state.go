@@ -68,7 +68,7 @@ func SaveState(t *RuntimeState) {
 	log.Debug("state saved")
 }
 
-func (t *RuntimeState) ToStatus() *dto.TunnelStatus {
+func (t *RuntimeState) ToStatus() dto.TunnelStatus {
 	var d int64
 	if t.state.Active {
 		now := time.Now()
@@ -86,10 +86,11 @@ func (t *RuntimeState) ToStatus() *dto.TunnelStatus {
 	}
 	for i, id := range t.state.Identities {
 		log.Debugf("returning clean identity: %s", id.Name)
-		clean.Identities[i] = idutil.Clean(*id)
+		cid := idutil.Clean(*id)
+		clean.Identities[i] = &cid
 	}
 
-	return &clean
+ 	return clean
 }
 
 func (t *RuntimeState) CreateTun() error {

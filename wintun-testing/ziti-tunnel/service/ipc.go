@@ -80,7 +80,7 @@ func SubMain(ops <-chan string, changes chan<- svc.Status) error {
 			case <-every5sDone:
 				return
 			case <-every5s.C:
-				stat := rst
+				/*
 				for _, a := range activeIds {
 					up, down := cziti.GetTransferRates(a.NFContext)
 					top.Broadcast <- dto.ZitiTunnelStatus{
@@ -90,7 +90,12 @@ func SubMain(ops <-chan string, changes chan<- svc.Status) error {
 							Down: down,
 						},
 					}
-				}
+				}*/
+				s := rts.ToStatus()
+				top.Broadcast <- dto.ZitiTunnelStatus{
+					Status: &s,
+					Metrics: nil,
+					}
 			}
 		}
 	}()
@@ -405,8 +410,9 @@ func serveEvents(conn net.Conn) {
 func reportStatus(out *json.Encoder) {
 	log.Debugf("request for status")
 
+	s := rts.ToStatus()
 	respond(out, dto.ZitiTunnelStatus{
-		Status:  rts.ToStatus(),
+		Status:  &s,
 		Metrics: nil,
 	})
 	log.Debugf("request for status responded to")
