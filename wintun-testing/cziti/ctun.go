@@ -26,7 +26,7 @@ extern void readIdle(uv_prepare_t *idler);
 
 extern void call_on_packet(void *packet, ssize_t len, packet_cb cb, void *ctx);
 
-extern void dnsHandler(tunneler_io_context tio, void *ctx, addr_t src, uint16_t sport, void *data, ssize_t len);
+
 */
 import "C"
 import (
@@ -227,7 +227,6 @@ func (t *tunnel) runWriteLoop() {
 			}
 		}
 	}
-
 }
 
 func (t *tunnel) AddIntercept(service string, host string, port int, ctx unsafe.Pointer) {
@@ -236,24 +235,4 @@ func (t *tunnel) AddIntercept(service string, host string, port int, ctx unsafe.
 	res := C.NF_tunneler_intercept_v1(t.tunCtx, unsafe.Pointer(zitiCtx),
 		C.CString(service), C.CString(host), C.int(port))
 	log.Debug("intercept added", res)
-}
-
-// extern void dnsHandler(tunneler_io_context tio, void *ctx, addr_t src, uint16_t sport, void *data, ssize_t len);
-//export dnsHandler
-func dnsHandler(tio C.tunneler_io_context, ctx unsafe.Pointer, src C.addr_t, sport C.uint16_t, b unsafe.Pointer, bl C.ssize_t) {
-	/*
-		reply, err := processDNSquery(C.GoBytes(b, C.int(bl)))
-
-		if err == nil {
-			replyC := C.CBytes(reply)
-			rc := C.NF_udp_send(tio, src, sport, replyC, C.ssize_t(len(reply)))
-			C.free(replyC)
-			if rc != 0 {
-				log.Debug("NF_udp_reply rc=", rc)
-			}
-		} else {
-			log.Debug("dns message error", err)
-		}
-
-	*/
 }

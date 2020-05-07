@@ -4,6 +4,7 @@ import (
 	idcfg "github.com/netfoundry/ziti-sdk-golang/ziti/config"
 	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
 	"log"
+	"wintun-testing/cziti"
 	"wintun-testing/ziti-tunnel/config"
 )
 
@@ -28,9 +29,11 @@ type Identity struct {
 	Metrics     Metrics
 
 	Connected bool `json:"-"`
+	NFContext *cziti.CZitiCtx `json:"-"`
 }
 type Metrics struct {
-	TotalBytes int64
+	Up int64
+ 	Down int64
 }
 type CommandMsg struct {
 	Function string

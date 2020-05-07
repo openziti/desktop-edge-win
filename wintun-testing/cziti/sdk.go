@@ -3,9 +3,12 @@ package cziti
 /*
 #cgo windows LDFLAGS: -l libziti.imp -luv -lws2_32 -lpsapi
 
+#include <nf/ziti.h>
+
 #include "sdk.h"
 extern void initCB(nf_context nf, int status, void *ctx);
 extern void serviceCB(nf_context nf, ziti_service*, int status, void *ctx);
+
 */
 import "C"
 import (
@@ -169,7 +172,7 @@ func LoadZiti(cfg string) *CZitiCtx {
 	ctx.options.config = C.CString(cfg)
 	ctx.options.init_cb = C.nf_init_cb(C.initCB)
 	ctx.options.service_cb = C.nf_service_cb(C.serviceCB)
-	ctx.options.refresh_interval = C.int(600)
+	ctx.options.refresh_interval = C.long(600)
 	ctx.options.config_types = C.all_configs
 	//ctx.options.ctx = unsafe.Pointer(&ctx)
 
@@ -187,4 +190,12 @@ func LoadZiti(cfg string) *CZitiCtx {
 	delete(initMap, cfg)
 
 	return res
+}
+
+func GetTransferRates(ctx *CZitiCtx) (int64, int64) { //extern void NF_get_transfer_rates(nf_context nf, double* up, double* down);
+	var up, down C.double
+	C.NF_get_transfer_rates(ctx.nf, &up, &down)
+	log.Tracef("Up: %v Down %v", up, down)
+
+	return int64(up), int64(down)
 }

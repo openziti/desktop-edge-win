@@ -75,27 +75,30 @@ namespace ZitiTunneler {
 
 		private void MainWindow1_Loaded(object sender, RoutedEventArgs e) {
 			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-			_maxHeight = Math.Ceiling(.80*desktopWorkingArea.Height);
-			this.Left = desktopWorkingArea.Right-this.Width-_right;
-			this.Top = desktopWorkingArea.Bottom-this.Height-_bottom;
+			this.Left = desktopWorkingArea.Right - this.Width - _right;
+			this.Top = desktopWorkingArea.Bottom - this.Height - _bottom;
 			// add a new service client
 			serviceClient = new Client();
 			serviceClient.OnTunnelStatusUpdate += ServiceClient_OnTunnelStatusUpdated;
+			serviceClient.OnMetricsUpdate += ServiceClient_OnMetricsUpdate;
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
 			Application.Current.Properties.Add("Identities", new List<ZitiIdentity>());
 			MainMenu.OnAttachmentChange += AttachmentChanged;
 			try {
 				LoadStatusFromService();
-				// MessageBox.Show("identites are returned from the server. Any that were 'on' will have services. any off won't. Update the toggles to show if they are on or off");
-			} catch(Exception ex) {
+			} catch (Exception ex) {
 				NoServiceView.Visibility = Visibility.Visible;
-				//probably some kind of problem with the service...
-				// MessageBox.Show("oh my goodness - problem with the service. Almost certainly means the service is NOT RUNNING... Jeremy make this pretty.\n" + ex.Message);
 			}
 			LoadIdentities();
 			IdentityMenu.OnForgot += IdentityForgotten;
 		}
 
+		private void ServiceClient_OnMetricsUpdate(object sender, Metrics e) {
+			this.Dispatcher.Invoke(() => {
+				DownloadSpeed.Content = (e.Down / 1000).ToString();
+				UploadSpeed.Content = (e.Up / 1000).ToString();
+			});
+		}
 		private void ServiceClient_OnTunnelStatusUpdated(object sender, TunnelStatus e) {
 		}
 
@@ -126,7 +129,8 @@ namespace ZitiTunneler {
 		}
 
 		private void LoadStatusFromService() {
-			TunnelStatus status = serviceClient.GetStatus().Status;
+			var s = serviceClient.GetStatus();
+			TunnelStatus status = s.Status;
 			if (status != null) {
 				NoServiceView.Visibility = Visibility.Collapsed;
 				if (status.Active) {
