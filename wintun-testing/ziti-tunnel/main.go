@@ -7,7 +7,6 @@ import (
 	"golang.org/x/sys/windows/svc/eventlog"
 	"os"
 	"strings"
-	"wintun-testing/ziti-tunnel/cmd"
 	"wintun-testing/ziti-tunnel/globals"
 
 	"golang.org/x/sys/windows/svc"
@@ -19,14 +18,14 @@ var log = globals.Logger()
 func main() {
 	globals.InitLogger("debug")
 
-	if len(os.Args) < 2 {
-		// if no args supplied - expect to run as service
-		os.Args = append(os.Args, "service")
-	}
-	cmd.Execute()
-	if true {
-		os.Exit(0)
-	}
+	//if len(os.Args) < 2 {
+	//	// if no args supplied - expect to run as service
+	//	os.Args = append(os.Args, "service")
+	//}
+	//cmd.Execute()
+	//if true {
+	//	os.Exit(0)
+	//}
 
 	// passing no arguments is an indicator that this is expecting to be run 'as a service'.
 	// using arg count instead of svc.IsAnInteractiveSession() as svc.IsAnInteractiveSession()

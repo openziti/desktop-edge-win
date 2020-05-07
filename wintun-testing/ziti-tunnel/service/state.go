@@ -164,6 +164,8 @@ func (t *RuntimeState) LoadIdentity(id *dto.Identity) {
 		}
 		log.Infof("loading identity %s with fingerprint %s", id.Name, id.FingerPrint)
 		ctx := cziti.LoadZiti(id.Path())
+		id.NFContext = ctx
+
 		id.Connected = true
 		if ctx == nil {
 			log.Warnf("connecting to identity with fingerprint [%s] did not error but no context was returned", id.FingerPrint)
@@ -171,7 +173,7 @@ func (t *RuntimeState) LoadIdentity(id *dto.Identity) {
 		}
 		log.Infof("successfully loaded %s@%s", ctx.Name(), ctx.Controller())
 
-		log.Debug("name changed from %s to %s", id.Name, ctx.Name())
+		log.Debugf("name changed from %s to %s", id.Name, ctx.Name())
 		id.Name = ctx.Name()
 
 		if ctx.Services != nil {

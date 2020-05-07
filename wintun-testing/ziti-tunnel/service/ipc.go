@@ -30,17 +30,17 @@ type Pipes struct {
 	events net.Listener
 }
 
-func(p *Pipes) Close() {
+func (p *Pipes) Close() {
 	p.ipc.Close()
 	p.logs.Close()
 	p.events.Close()
 }
 
-func SubMain(ops <- chan string, changes chan<- svc.Status) error {
+func SubMain(ops <-chan string, changes chan<- svc.Status) error {
 	defer close(top.Broadcast)
 	log.Info("============================== service begins ==============================")
 
-	_ = globals.Elog.Info(InformationEvent, SvcName + " starting. log file located at " + config.LogFile())
+	_ = globals.Elog.Info(InformationEvent, SvcName+" starting. log file located at "+config.LogFile())
 
 	// create a channel for notifying any connections that they are to be interrupted
 	interrupt = make(chan struct{})
@@ -52,7 +52,7 @@ func SubMain(ops <- chan string, changes chan<- svc.Status) error {
 	defer pipes.Close()
 
 	// wire in a log file for csdk troubleshooting
-	logFile, err := os.OpenFile(config.Path() + "cziti.log", os.O_WRONLY | os.O_TRUNC | os.O_APPEND | os.O_CREATE, 0644)
+	logFile, err := os.OpenFile(config.Path()+"cziti.log", os.O_WRONLY|os.O_TRUNC|os.O_APPEND|os.O_CREATE, 0644)
 	if err != nil {
 		log.Warnf("could not open cziti.log for writing. no debug information will be captured.")
 	} else {
@@ -70,12 +70,40 @@ func SubMain(ops <- chan string, changes chan<- svc.Status) error {
 
 	setTunnelState(true)
 
+	// setup metrics notifier
+	every5s := time.NewTicker(5 * time.Second)
+
+	every5sDone := make(chan bool)
+	go func() {
+		for {
+			select {
+			case <-every5sDone:
+				return
+			case <-every5s.C:
+				stat := rst
+				for _, a := range activeIds {
+					up, down := cziti.GetTransferRates(a.NFContext)
+					top.Broadcast <- dto.ZitiTunnelStatus{
+						Status: nil,
+						Metrics: &dto.Metrics{
+							Up:   up,
+							Down: down,
+						},
+					}
+				}
+			}
+		}
+	}()
+
 	// notify the service is running
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
-	_ = globals.Elog.Info(InformationEvent, SvcName + " status set to running")
+	_ = globals.Elog.Info(InformationEvent, SvcName+" status set to running")
 	log.Info(SvcName + " status set to running. starting cancel loop")
 
 	waitForStopRequest(ops)
+
+	// stop the metrics ticker
+	every5sDone <- true
 
 	pipes.shutdownConnections()
 
@@ -87,7 +115,7 @@ func SubMain(ops <- chan string, changes chan<- svc.Status) error {
 
 	return nil
 }
-func waitForStopRequest(ops <- chan string) {
+func waitForStopRequest(ops <-chan string) {
 
 loop:
 	for {
@@ -139,13 +167,13 @@ func openPipes() (*Pipes, error) {
 	log.Infof("events listener ready pipe: %s", eventsPipeName())
 
 	return &Pipes{
-		ipc: ipc,
-		logs: logs,
+		ipc:    ipc,
+		logs:   logs,
 		events: events,
 	}, nil
 }
 
-func(p *Pipes) shutdownConnections() {
+func (p *Pipes) shutdownConnections() {
 	log.Info("waiting for all connections to close...")
 
 	for i := 0; i < connections; i++ {
@@ -205,7 +233,7 @@ func accept(p net.Listener, serveFunction func(net.Conn)) {
 			return
 		}
 		wg.Add(1)
-		connections ++
+		connections++
 		log.Debugf("accepting a new client")
 
 		go serveFunction(c)
@@ -218,7 +246,7 @@ func serveIpc(conn net.Conn) {
 
 	done := make(chan struct{})
 	defer close(done) // ensure that goroutine exits
-	defer wg.Done() // count down whenever the function exits
+	defer wg.Done()   // count down whenever the function exits
 
 	go func() {
 		select {
@@ -294,11 +322,6 @@ func serveIpc(conn net.Conn) {
 			onOff := cmd.Payload["OnOff"].(bool)
 			fingerprint := cmd.Payload["Fingerprint"].(string)
 			toggleIdentity(enc, fingerprint, onOff)
-			
-			top.Broadcast <- dto.ZitiTunnelStatus{
-				Status:  rts.ToStatus(),
-				Metrics: nil,
-			}
 		default:
 			log.Warnf("Unknown operation: %s. Returning error on pipe", cmd.Function)
 			respondWithError(enc, "Something unexpected has happened", UNKNOWN_ERROR, nil)
@@ -360,7 +383,7 @@ func serveEvents(conn net.Conn) {
 		status, ok := msg.(dto.ZitiTunnelStatus)
 		if !ok {
 			log.Errorf("message received couldn't be converted to status? %v", status)
-			 break
+			break
 		}
 		respond(o, dto.Response{Payload: status})
 		_, err := w.WriteString("\n")
@@ -375,8 +398,6 @@ func serveEvents(conn net.Conn) {
 			break
 		}
 		_ = w.Flush()
-
-		log.Infof("got %v", msg)
 	}
 	log.Info("exiting serve events")
 }
@@ -567,6 +588,7 @@ func connectIdentity(id *dto.Identity) {
 		//tell the c sdk to use the file from the id and connect
 		log.Debugf("loading identity %s with fingerprint %s", id.Name, id.FingerPrint)
 		rts.LoadIdentity(id)
+		activeIds[id.FingerPrint] = id
 	} else {
 		log.Debugf("id [%s] is already connected - not reconnecting", id.Name)
 	}
@@ -621,4 +643,24 @@ func respond(out *json.Encoder, thing interface{}) {
 	//leave for debugging j := json.NewEncoder(os.Stdout)
 	//leave for debugging j.Encode(thing)
 	_ = out.Encode(thing)
+}
+
+func pipeName(path string) string {
+	if !Debug {
+		return pipeBase + path
+	} else {
+		return pipeBase /*+ `debug\`*/ + path
+	}
+}
+
+func ipcPipeName() string {
+	return pipeName("ipc")
+}
+
+func logsPipeName() string {
+	return pipeName("logs")
+}
+
+func eventsPipeName() string {
+	return pipeName("events")
 }

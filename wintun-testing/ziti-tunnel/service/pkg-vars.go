@@ -4,18 +4,25 @@ import (
 	"github.com/tv42/topic"
 	"golang.org/x/sys/windows/svc"
 	"sync"
+	"time"
+	"wintun-testing/ziti-tunnel/dto"
+	"wintun-testing/ziti-tunnel/globals"
 )
 
 var pipeBase = `\\.\pipe\NetFoundry\tunneler\`
-//var tunStatus = RuntimeState{}
 
-//var state = dto.TunnelStatusa{}
+var activeIds = make(map[string]*dto.Identity)
 var rts = RuntimeState{}
 var interrupt chan struct{}
 
 var wg sync.WaitGroup
 var connections int
 var Debug bool
+
+var top = topic.New()
+
+var TunStarted time.Time
+var log = globals.Logger()
 
 const (
 	SUCCESS              = 0
@@ -55,24 +62,18 @@ const (
 	System                    = "(A;;FA;;;SY)"
 	BuiltinAdmins             = "(A;;FA;;;BA)"
 	LocalService              = "(A;;FA;;;LS)"
+
+	NF_GROUP_NAME = "NetFoundry Tunneler Users"
+	TunName = "ZitiTUN"
+
+	Ipv4ip = "169.254.1.1"
+	Ipv4mask = 24
+	Ipv4dns = "127.0.0.1" // use lo -- don't pass DNS queries through tunneler SDK
+
+	// IPv6 CIDR fe80:6e66:7a69:7469::/64
+	//   <link-local>: nf : zi : ti ::
+	ipv6pfx = "fe80:6e66:7a69:7469"
+	ipv6ip = "1"
+	ipv6mask = 64
+	Ipv6dns = "::1" // must be in "ipv6ip/ipv6mask" CIDR block
 )
-
-func pipeName(path string) string {
-	if !Debug {
-		return pipeBase + path
-	} else {
-		return pipeBase + `debug\` + path
-	}
-}
-
-var top = topic.New()
-
-func ipcPipeName() string {
-	return pipeName("ipc")
-}
-func logsPipeName() string {
-	return pipeName("logs")
-}
-func eventsPipeName() string {
-	return pipeName("events")
-}
