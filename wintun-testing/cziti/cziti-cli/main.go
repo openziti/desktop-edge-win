@@ -92,12 +92,9 @@ func load(args []string) error {
 		return fmt.Errorf("path to configfile required")
 	}
 
-	if ctx, err := cziti.LoadZiti(args[0]); err != nil {
-		return err
-	} else {
-		fmt.Printf("successfully loaded %s@%s\n", ctx.Name(), ctx.Controller())
-		contexts = append(contexts, ctx)
-	}
+	ctx := cziti.LoadZiti(args[0])
+	fmt.Printf("successfully loaded %s@%s\n", ctx.Name(), ctx.Controller())
+	contexts = append(contexts, ctx)
 
 	return nil
 }

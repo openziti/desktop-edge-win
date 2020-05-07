@@ -72,6 +72,7 @@ namespace ZitiTunneler {
 			// add a new service client
 			serviceClient = new Client();
 			serviceClient.OnTunnelStatusUpdate += ServiceClient_OnTunnelStatusUpdated;
+			serviceClient.OnMetricsUpdate += ServiceClient_OnMetricsUpdate;
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
 			Application.Current.Properties.Add("Identities", new List<ZitiIdentity>());
 			MainMenu.OnAttachmentChange += AttachmentChanged;
@@ -84,6 +85,15 @@ namespace ZitiTunneler {
 			}
 			LoadIdentities();
 			IdentityMenu.OnForgot += IdentityForgotten;
+		}
+
+		private void ServiceClient_OnMetricsUpdate(object sender, Metrics e)
+		{
+			this.Dispatcher.Invoke(() =>
+			{
+				DownloadSpeed.Content = (e.Down / 1000).ToString();
+				UploadSpeed.Content = (e.Up / 1000).ToString();
+			});
 		}
 
 		private void ServiceClient_OnTunnelStatusUpdated(object sender, TunnelStatus e)
@@ -117,7 +127,8 @@ namespace ZitiTunneler {
 		}
 
 		private void LoadStatusFromService() {
-			TunnelStatus status = serviceClient.GetStatus().Status;
+			var s = serviceClient.GetStatus();
+			TunnelStatus status = s.Status;
 			if (status != null) {
 				if (status.Active) {
 					InitializeTimer((int)status.Duration);

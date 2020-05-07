@@ -61,23 +61,6 @@ namespace ZitiTunneler.ServiceClient
         {
             //establish the named pipe to the service
             setupPipe();
-
-            Task.Run(() => {
-                Console.WriteLine("THREAD BEGINS");
-                NamedPipeClientStream eventClient = new NamedPipeClientStream(localPipeServer, eventPipe, PipeDirection.In);
-                eventClient.Connect();
-                StreamReader eventReader = new StreamReader(eventClient);
-                while (true)
-                {
-                    var r = read<StatusUpdateResponse>("event: ", eventReader);
-                    if (eventReader.EndOfStream)
-                    {
-                        break;
-                    }
-                    Debug.WriteLine(r.Payload);
-                }
-                Console.WriteLine("THREAD DONE");
-            });
         }
         PipeSecurity CreateSystemIOPipeSecurity()
         {
@@ -123,6 +106,23 @@ namespace ZitiTunneler.ServiceClient
                     ipcWriter = null;
                     pipeClient = null;
                 }
+
+                Task.Run(() => {
+                    Console.WriteLine("THREAD BEGINS");
+                    NamedPipeClientStream eventClient = new NamedPipeClientStream(localPipeServer, eventPipe, PipeDirection.In);
+                    eventClient.Connect();
+                    StreamReader eventReader = new StreamReader(eventClient);
+                    while (true)
+                    {
+                        var r = read<StatusUpdateResponse>("event: ", eventReader);
+                        if (eventReader.EndOfStream)
+                        {
+                            break;
+                        }
+                        MetricsUpdate(r.Payload.Metrics);
+                    }
+                    Console.WriteLine("THREAD DONE");
+                });
             }
         }
 
