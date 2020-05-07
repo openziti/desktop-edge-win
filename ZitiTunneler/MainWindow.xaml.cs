@@ -46,12 +46,10 @@ namespace ZitiTunneler {
 
 			ServiceController ctl = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName=="ziti");
 			if (ctl==null) {
-				MessageBox.Show("Not installed");
-
 				ProcessStartInfo installService = new ProcessStartInfo();
 				installService.CreateNoWindow = true;
 				installService.UseShellExecute = false;
-				installService.FileName =Path.Combine(Environment.CurrentDirectory, "services")+@"\ziti-tunnel.exe";
+				installService.FileName = Path.Combine(Environment.CurrentDirectory, "Service")+@"\ziti-tunnel.exe";
 				installService.WindowStyle = ProcessWindowStyle.Hidden;
 				installService.Arguments =" install";
 

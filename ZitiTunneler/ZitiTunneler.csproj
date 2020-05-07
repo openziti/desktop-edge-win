@@ -175,7 +175,9 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Include="app.manifest" />
-    <None Include="Service\NFWintunInstaller.msi" />
+    <None Include="Service\NFWintunInstaller.msi">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <Resource Include="Assets\Fonts\open_sans.ttf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Resource>
@@ -262,11 +264,21 @@
     <Resource Include="Assets\Images\Ziti-White.png" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Service\libgcc_s_seh-1.dll" />
-    <Content Include="Service\libuv.dll" />
-    <Content Include="Service\libwinpthread-1.dll" />
-    <Content Include="Service\ziti-tunnel.exe" />
-    <Content Include="Service\ziti.dll" />
+    <Content Include="Service\libgcc_s_seh-1.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Service\libuv.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Service\libwinpthread-1.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Service\ziti-tunnel.exe">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Service\ziti.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
