@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.572
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29318.209
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D66B1C6A-ADFE-437E-B037-C4C849A6CA97}"
 	ProjectSection(SolutionItems) = preProject
@@ -14,6 +14,8 @@ EndProject
 Project("{C7167F0D-BC9F-4E6E-AFE1-012C56B48DB5}") = "ZitiTunnelerSetup", "ZitiTunnelerSetup\ZitiTunnelerSetup.wapproj", "{7B36FB31-5662-4F87-A376-BCE564533D58}"
 EndProject
 Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "ZitiSetup", "ZitiSetup\ZitiSetup.wixproj", "{B44CE05F-CD5D-4333-9225-60D3BA0F4762}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "ZitiInstaller", "ZitiInstaller\ZitiInstaller.vdproj", "{5D4B2918-2168-4278-A3C9-3C67BB807217}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -91,6 +93,16 @@ Global
 		{B44CE05F-CD5D-4333-9225-60D3BA0F4762}.Release|x64.ActiveCfg = Release|x86
 		{B44CE05F-CD5D-4333-9225-60D3BA0F4762}.Release|x86.ActiveCfg = Release|x86
 		{B44CE05F-CD5D-4333-9225-60D3BA0F4762}.Release|x86.Build.0 = Release|x86
+		{5D4B2918-2168-4278-A3C9-3C67BB807217}.Debug|Any CPU.ActiveCfg = Debug
+		{5D4B2918-2168-4278-A3C9-3C67BB807217}.Debug|ARM.ActiveCfg = Debug
+		{5D4B2918-2168-4278-A3C9-3C67BB807217}.Debug|ARM64.ActiveCfg = Debug
+		{5D4B2918-2168-4278-A3C9-3C67BB807217}.Debug|x64.ActiveCfg = Debug
+		{5D4B2918-2168-4278-A3C9-3C67BB807217}.Debug|x86.ActiveCfg = Debug
+		{5D4B2918-2168-4278-A3C9-3C67BB807217}.Release|Any CPU.ActiveCfg = Release
+		{5D4B2918-2168-4278-A3C9-3C67BB807217}.Release|ARM.ActiveCfg = Release
+		{5D4B2918-2168-4278-A3C9-3C67BB807217}.Release|ARM64.ActiveCfg = Release
+		{5D4B2918-2168-4278-A3C9-3C67BB807217}.Release|x64.ActiveCfg = Release
+		{5D4B2918-2168-4278-A3C9-3C67BB807217}.Release|x86.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
