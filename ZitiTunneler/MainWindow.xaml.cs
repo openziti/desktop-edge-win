@@ -72,7 +72,7 @@ namespace ZitiTunneler {
 			// add a new service client
 			serviceClient = new Client();
 			serviceClient.OnTunnelStatusUpdate += ServiceClient_OnTunnelStatusUpdated;
-			serviceClient.OnMetricsUpdate += ServiceClient_OnMetricsUpdate;
+			
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
 			Application.Current.Properties.Add("Identities", new List<ZitiIdentity>());
 			MainMenu.OnAttachmentChange += AttachmentChanged;

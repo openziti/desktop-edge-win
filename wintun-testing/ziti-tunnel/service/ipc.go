@@ -36,6 +36,8 @@ func (p *Pipes) Close() {
 	p.events.Close()
 }
 
+var shutdown = make(chan bool) //a channel informing go routines to exit
+
 func SubMain(ops <-chan string, changes chan<- svc.Status) error {
 	defer close(top.Broadcast)
 	log.Info("============================== service begins ==============================")
@@ -73,11 +75,10 @@ func SubMain(ops <-chan string, changes chan<- svc.Status) error {
 	// setup metrics notifier
 	every5s := time.NewTicker(5 * time.Second)
 
-	every5sDone := make(chan bool)
 	go func() {
 		for {
 			select {
-			case <-every5sDone:
+			case <-shutdown:
 				return
 			case <-every5s.C:
 				/*
@@ -100,6 +101,9 @@ func SubMain(ops <-chan string, changes chan<- svc.Status) error {
 		}
 	}()
 
+	//listen for services that show up
+	go acceptServices()
+
 	// notify the service is running
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 	_ = globals.Elog.Info(InformationEvent, SvcName+" status set to running")
@@ -107,8 +111,8 @@ func SubMain(ops <-chan string, changes chan<- svc.Status) error {
 
 	waitForStopRequest(ops)
 
-	// stop the metrics ticker
-	every5sDone <- true
+	shutdown <- true // stop the metrics ticker
+	shutdown <- true // stop the service change listener
 
 	pipes.shutdownConnections()
 
@@ -669,4 +673,40 @@ func logsPipeName() string {
 
 func eventsPipeName() string {
 	return pipeName("events")
+}
+
+func acceptServices() {
+	for {
+		select {
+		case <-shutdown:
+			return
+		case c := <-cziti.ServiceChanges:
+			matched := false
+			//find the id using the context
+			for _, id := range activeIds {
+				if id.NFContext == c.NFContext {
+					matched = true
+					switch c.Operation {
+					case cziti.ADDED:
+						//add the service to the identity
+						id.Services = append(id.Services, &dto.Service{
+							Name:     c.Servicename,
+							HostName: c.Host,
+							Port:     uint16(c.Port),
+						})
+					case cziti.REMOVED:
+						for idx, svc := range id.Services {
+							if svc.Name == c.Servicename {
+								id.Services = append(id.Services[:idx], id.Services[idx+1:]...)
+							}
+						}
+					}
+				}
+			}
+
+			if !matched {
+				log.Warnf("service update received but matched no context. this is unexpected. service name: %s", c.Servicename)
+			}
+		}
+	}
 }

@@ -28,7 +28,8 @@ namespace ZitiTunneler.ServiceClient
     {
         public string Operation { get; set; }
         public TunnelStatus Status { get; set; }
-        public Metrics Metrics { get; set; }
+
+        public Identity NewIdentity { get; set; }
     }
 
     public class NewIdentity

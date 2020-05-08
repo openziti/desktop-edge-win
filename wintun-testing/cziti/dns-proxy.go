@@ -196,7 +196,7 @@ func runDNSproxy(dnsServers []string) {
 					// fmt.Printf("proxy resolved %+v for %v\n\n", reply, req.peer)
 					req.s.WriteMsgUDP(rep, nil, req.peer)
 				} else {
-					log.Debug("matching request was not found for ",
+					log.Trace("matching request was not found for ",
 						dns.Type(reply.Question[0].Qtype), reply.Question[0].Name)
 				}
 			}

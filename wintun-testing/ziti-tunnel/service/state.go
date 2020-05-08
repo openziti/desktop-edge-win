@@ -85,7 +85,7 @@ func (t *RuntimeState) ToStatus() dto.TunnelStatus {
 		IpInfo:     t.state.IpInfo,
 	}
 	for i, id := range t.state.Identities {
-		log.Debugf("returning clean identity: %s", id.Name)
+		log.Tracef("returning clean identity: %s", id.Name)
 		cid := idutil.Clean(*id)
 		clean.Identities[i] = &cid
 	}
@@ -176,19 +176,8 @@ func (t *RuntimeState) LoadIdentity(id *dto.Identity) {
 
 		log.Debugf("name changed from %s to %s", id.Name, ctx.Name())
 		id.Name = ctx.Name()
-
-		if ctx.Services != nil {
-			log.Debug("ranging over services...")
-			id.Services = make([]*dto.Service, 0)
-			for _, svc := range *ctx.Services {
-				id.Services = append(id.Services, &dto.Service{
-					Name:     svc.Name,
-					HostName: svc.InterceptHost,
-					Port:     uint16(svc.InterceptPort)})
-			}
-		} else {
-			log.Warnf("no services to load for service name: %s", ctx.Name())
-		}
+		id.Services = make([]*dto.Service, 0)
+		
 	} else {
 		log.Warnf("NOZITI set to true. this should be only used for debugging")
 	}

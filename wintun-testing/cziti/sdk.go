@@ -19,10 +19,23 @@ import (
 	"unsafe"
 )
 
+const (
+	ADDED = "added"
+	REMOVED = "removed"
+)
+
+var ServiceChanges = make(chan ServiceChange)
 var log = pfxlog.Logger()
 
 type sdk struct {
 	libuvCtx *C.libuv_ctx
+}
+type ServiceChange struct {
+	Operation string
+	Servicename string
+	Host string
+	Port int
+	NFContext *CZitiCtx
 }
 
 var _impl sdk
@@ -108,6 +121,11 @@ func serviceCB(nf C.nf_context, service *C.ziti_service, status C.int, data unsa
 	if status == C.ZITI_SERVICE_UNAVAILABLE {
 		DNS.DeregisterService(ctx, name)
 		delete(*ctx.Services, name)
+		ServiceChanges <- ServiceChange{
+			Operation:   REMOVED,
+			Servicename: name,
+			NFContext: ctx,
+		}
 	} else if status == C.ZITI_OK {
 		cfg := C.ziti_service_get_raw_config(service, tunCfgName)
 
@@ -135,6 +153,13 @@ func serviceCB(nf C.nf_context, service *C.ziti_service, status C.int, data unsa
 				log.Infof("service[%s] is mapped to <%s:%d>", name, ip.String(), port)
 				for _, t := range devMap {
 					t.AddIntercept(name, ip.String(), port, unsafe.Pointer(ctx.nf))
+				}
+				ServiceChanges <- ServiceChange{
+					Operation:   ADDED,
+					Servicename: name,
+					Host: ip.String(),
+					Port: port,
+					NFContext: ctx,
 				}
 			}
 		}

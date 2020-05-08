@@ -24,19 +24,10 @@ namespace ZitiTunneler.ServiceClient
     internal class Client
     {
         public event EventHandler<TunnelStatus> OnTunnelStatusUpdate;
-        public event EventHandler<Metrics> OnMetricsUpdate;
 
         protected virtual void ZitiTunnelStatusUpdate(TunnelStatus e)
         {
             EventHandler<TunnelStatus> handler = OnTunnelStatusUpdate;
-            if (handler != null)
-            {
-                handler(this, e);
-            }
-        }
-        protected virtual void MetricsUpdate(Metrics e)
-        {
-            EventHandler<Metrics> handler = OnMetricsUpdate;
             if (handler != null)
             {
                 handler(this, e);
@@ -122,10 +113,6 @@ namespace ZitiTunneler.ServiceClient
                         if (r?.Payload?.Status != null)
                         {
                             ZitiTunnelStatusUpdate(r.Payload.Status);
-                        }
-                        if (r?.Payload?.Metrics != null)
-                        {
-                            MetricsUpdate(r.Payload.Metrics);
                         }
                     }
                     Console.WriteLine("THREAD DONE");
