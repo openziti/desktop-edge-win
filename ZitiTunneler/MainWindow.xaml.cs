@@ -44,6 +44,7 @@ namespace ZitiTunneler {
 			notifyIcon.Visible = true;
 			notifyIcon.ShowBalloonTip(5000, "Test", "Testing", System.Windows.Forms.ToolTipIcon.Info);
 
+			
 			ServiceController ctl = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName=="ziti");
 			if (ctl==null) {
 				ProcessStartInfo installService = new ProcessStartInfo();
@@ -77,6 +78,7 @@ namespace ZitiTunneler {
 					}
 				}
 			}
+			
 
 			SetNotifyIcon("white");
 			InitializeComponent();
@@ -132,22 +134,11 @@ namespace ZitiTunneler {
 			IdentityMenu.OnForgot += IdentityForgotten;
 		}
 
-<<<<<<< HEAD
 		private void ServiceClient_OnMetricsUpdate(object sender, Metrics e) {
-			this.Dispatcher.Invoke(() => {
-				DownloadSpeed.Content = (e.Down / 1000).ToString();
-				UploadSpeed.Content = (e.Up / 1000).ToString();
-			});
-		}
-		private void ServiceClient_OnTunnelStatusUpdated(object sender, TunnelStatus e) {
-=======
-		private void ServiceClient_OnMetricsUpdate(object sender, Metrics e)
-		{
-			if (e != null) {
-				this.Dispatcher.Invoke(() =>
-				{
-					DownloadSpeed.Content = (e.Down / 1000).ToString();
-					UploadSpeed.Content = (e.Up / 1000).ToString();
+			if (e!=null) {
+				this.Dispatcher.Invoke(() => {
+					DownloadSpeed.Content=(e.Down/1000).ToString();
+					UploadSpeed.Content=(e.Up/1000).ToString();
 				});
 			}
 		}
@@ -174,7 +165,6 @@ namespace ZitiTunneler {
 					UploadSpeed.Content = (totalUp / 1000).ToString();
 				});
 			}
->>>>>>> origin/bug-fixing
 		}
 
 		private void IdentityForgotten(ZitiIdentity forgotten) {
