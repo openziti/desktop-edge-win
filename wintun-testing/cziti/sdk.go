@@ -118,6 +118,7 @@ func serviceCB(nf C.nf_context, service *C.ziti_service, status C.int, data unsa
 	}
 
 	name := C.GoString(service.name)
+	log.Warnf("============ INSIDE serviceCB - status: %s - %v, %v, %v ============", name, status, C.ZITI_SERVICE_UNAVAILABLE, C.ZITI_OK)
 	if status == C.ZITI_SERVICE_UNAVAILABLE {
 		DNS.DeregisterService(ctx, name)
 		delete(*ctx.Services, name)
@@ -197,7 +198,8 @@ func LoadZiti(cfg string) *CZitiCtx {
 	ctx.options.config = C.CString(cfg)
 	ctx.options.init_cb = C.nf_init_cb(C.initCB)
 	ctx.options.service_cb = C.nf_service_cb(C.serviceCB)
-	ctx.options.refresh_interval = C.long(600)
+	//TODO don't commit this - ctx.options.refresh_interval = C.long(600)
+	ctx.options.refresh_interval = C.long(15)
 	ctx.options.config_types = C.all_configs
 	//ctx.options.ctx = unsafe.Pointer(&ctx)
 
@@ -223,7 +225,6 @@ func GetTransferRates(ctx *CZitiCtx) (int64, int64, bool) { //extern void NF_get
 	}
 	var up, down C.double
 	C.NF_get_transfer_rates(ctx.nf, &up, &down)
-	log.Tracef("Up: %v Down %v", up, down)
 
 	return int64(up), int64(down), true
 }

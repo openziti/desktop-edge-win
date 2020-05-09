@@ -58,6 +58,9 @@ func SaveState(t *RuntimeState) {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	t.state.IpInfo = nil
+	for _, id := range t.state.Identities {
+		id.Services = nil
+	}
 	_ = enc.Encode(t.state)
 	_ = w.Flush()
 
@@ -75,10 +78,15 @@ func (t *RuntimeState) ToStatus() dto.TunnelStatus {
 	tunStart := now.Sub(TunStarted)
 	uptime = tunStart.Milliseconds()
 
+	var idCount int
+	if t.state != nil && t.state.Identities != nil {
+		idCount = len(t.state.Identities)
+	}
+
 	clean := dto.TunnelStatus{
 		Active:     t.state.Active,
 		Duration:   uptime,
-		Identities: make([]*dto.Identity, len(t.state.Identities)),
+		Identities: make([]*dto.Identity, idCount),
 		IpInfo:     t.state.IpInfo,
 	}
 

@@ -19,13 +19,16 @@ func Clean(id dto.Identity) dto.Identity {
 	for i, svc := range id.Services{
 		nid.Services[i] = svc
 	}
-	AddMetrics(nid)
+	AddMetrics(&nid)
+	log.Debugf("Up: %v Down %v", nid.Metrics.Up, nid.Metrics.Down)
 	return nid
 }
 
-func AddMetrics(id dto.Identity) {
+func AddMetrics(id *dto.Identity) {
 	up, down, _ := cziti.GetTransferRates(id.NFContext)
 
-	id.Metrics.Up = up
-	id.Metrics.Down = down
+	id.Metrics = &dto.Metrics{
+		Up:   up,
+		Down: down,
+	}
 }

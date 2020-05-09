@@ -378,6 +378,18 @@ func serveEvents(conn net.Conn) {
 	w := bufio.NewWriter(conn)
 	o := json.NewEncoder(w)
 
+	log.Info("new event client connected - sending current status")
+	err := o.Encode(	dto.TunnelStatusEvent{
+		StatusEvent: dto.StatusEvent{Op: "status"},
+		Status:      rts.ToStatus(),
+	})
+
+	if err != nil {
+		log.Errorf("could not send status to event client: %v", err)
+	} else {
+		log.Info("status sent. listening for new events")
+	}
+
 	for {
 		msg := <-consumer
 
@@ -575,7 +587,6 @@ func respondWithError(out *json.Encoder, msg string, code int, err error) {
 func connectIdentity(id *dto.Identity) {
 	if !id.Connected {
 		//tell the c sdk to use the file from the id and connect
-		log.Debugf("loading identity %s with fingerprint %s", id.Name, id.FingerPrint)
 		rts.LoadIdentity(id)
 		activeIds[id.FingerPrint] = id
 	} else {
@@ -706,7 +717,7 @@ func acceptServices() {
 
 func handleEvents(){
 	events.run()
-	d := 30 * time.Second
+	d := 5 * time.Second
 	every5s := time.NewTicker(d)
 
 	defer log.Debugf("exiting handleEvents. loops were set for %v", d)

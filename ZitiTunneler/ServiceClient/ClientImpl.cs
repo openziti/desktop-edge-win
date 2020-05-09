@@ -106,7 +106,7 @@ namespace ZitiTunneler.ServiceClient
         StreamReader ipcReader = null;
 
         NamedPipeClientStream eventClient = null;
-        bool _extendedDebug = true;
+        bool _extendedDebug = false; //set this to true if you need to diagnose issues with the service comms
 
         public Client()
         {
@@ -220,7 +220,6 @@ namespace ZitiTunneler.ServiceClient
                 Task.Run(() => { //hack for now until it's async...
                     try
                     {
-                        Console.WriteLine("Event stream connected");
                         StreamReader eventReader = new StreamReader(eventClient);
                         while (true)
                         {
@@ -236,7 +235,6 @@ namespace ZitiTunneler.ServiceClient
                     {
                         Debug.WriteLine("unepxected error: " + ex.ToString());
                     }
-                    Console.WriteLine("THREAD DONE");
                     
                     // since this thread is always sitting waiting to read
                     // it should be the only one triggering this event

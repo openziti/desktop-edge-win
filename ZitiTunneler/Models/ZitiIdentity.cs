@@ -46,7 +46,7 @@ namespace ZitiTunneler.Models {
 			{
 				foreach (var svc in id.Services)
 				{
-					var zsvc = new ZitiService(svc.Name, svc.HostName + ":" + svc.Port);
+					var zsvc = new ZitiService(svc.Name, svc.HostName, svc.Port);
 					zid.Services.Add(zsvc);
 				}
 			}
