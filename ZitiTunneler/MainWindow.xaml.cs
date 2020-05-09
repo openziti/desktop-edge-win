@@ -206,7 +206,7 @@ namespace ZitiTunneler {
 				long totalDown = 0;
 				foreach (var id in ids)
 				{
-					Debug.WriteLine($"==== MetricsEvent     : id {id.Name} down: {totalDown} up:{totalUp}");
+					Debug.WriteLine($"==== MetricsEvent     : id {id.Name} down: {id.Metrics.Down} up:{id.Metrics.Up}");
 					if (id?.Metrics != null)
 					{
 						totalDown += id.Metrics.Down;
