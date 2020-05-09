@@ -166,10 +166,22 @@ namespace ZitiTunneler {
 
 		private void ServiceClient_OnIdentityEvent(object sender, IdentityEvent e)
 		{
-			if (e == null) return; //just skip it for now...
-			Debug.WriteLine(e.Op);
-			Debug.WriteLine(e.Action);
-			Debug.WriteLine(e.Id?.FingerPrint);
+			this.Dispatcher.Invoke(() =>
+			{
+				if (e == null) return; //just skip it for now...
+
+				ZitiIdentity zid = ZitiIdentity.FromClient(e.Id);
+				MessageBox.Show($"IDENTITY EVENT. Action: {e.Action} fingerprint: {zid.Fingerprint}");
+				if (e.Action == "added")
+				{
+					identities.Add(zid);
+				}
+				else
+				{
+					IdentityForgotten(ZitiIdentity.FromClient(e.Id));
+				}
+				LoadIdentities();
+			});
 		}
 
 		private void ServiceClient_OnMetricsEvent(object sender, List<Identity> ids)
@@ -217,12 +229,16 @@ namespace ZitiTunneler {
 		}
 
 		private void IdentityForgotten(ZitiIdentity forgotten) {
-			TunnelStatus status = serviceClient.GetStatus().Status;
-			identities.Clear();
-			foreach (var id in status.Identities) {
-				var zid = ZitiIdentity.FromClient(id);
-				identities.Add(zid);
+			ZitiIdentity idToRemove = null;
+			foreach (var id in identities)
+			{
+				if(id.Fingerprint == forgotten.Fingerprint)
+				{
+					idToRemove = id;
+					break;
+				}
 			}
+			identities.Remove(idToRemove);
 			LoadIdentities();
 		}
 
@@ -395,9 +411,24 @@ namespace ZitiTunneler {
 			}
 		}
 
-		private void Button_Click(object sender, RoutedEventArgs e)
+		private void Button_Click_1(object sender, RoutedEventArgs e)
 		{
-			//
+			serviceClient.debug();
+		}
+
+		private void Button_Click_2(object sender, RoutedEventArgs e)
+		{
+			serviceClient.debug();
+		}
+
+		private void Button_Click_3(object sender, RoutedEventArgs e)
+		{
+			serviceClient.debug();
+		}
+
+		private void Button_Click_4(object sender, RoutedEventArgs e)
+		{
+			serviceClient.debug();
 		}
 	}
 }

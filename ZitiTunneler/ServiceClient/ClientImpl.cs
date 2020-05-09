@@ -546,40 +546,27 @@ namespace ZitiTunneler.ServiceClient
                 throw ee;
             }
         }
-        
-        private T readOld<T>(StreamReader reader) where T : SvcResponse
-        {/*
-            try
-            {
-
-
-                if (resp.Code != 0)
-                {
-                    throw new ServiceException(resp.Message, resp.Code, resp.Error);
-                }
-                return resp;
-            }
-            catch (IOException ioe)
-            {
-                //almost certainly a problem with the pipe - recreate the pipe...
-                //setupPipe();
-                throw ioe;
-            }
-            catch (Exception ee)
-            {
-                //almost certainly a problem with the pipe - recreate the pipe...
-                //throw ee;
-                ClientDisconnected(null);
-            }
-            */
-            return null;
-        }
 
         private void debugServiceCommunication(string msg)
         {
             if (_extendedDebug)
             {
                 Debug.WriteLine(msg);
+            }
+        }
+        public ZitiTunnelStatus debug()
+        {
+            try
+            {
+                send(new ServiceFunction() { Function = "Debug" });
+                var rtn = read<ZitiTunnelStatus>(ipcReader);
+                return rtn;
+            }
+            catch (IOException ioe)
+            {
+                //almost certainly a problem with the pipe - recreate the pipe...
+                //setupPipe();
+                throw ioe;
             }
         }
     }

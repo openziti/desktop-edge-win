@@ -163,6 +163,11 @@
                 <Label Foreground="White" Content="Service Not Started" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
                 <Label Foreground="LightGray" Content="Start the Ziti Tunnel Service to get started" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
             </Grid>
+            <Button Content="Button" HorizontalAlignment="Left" Height="100" Margin="13,194,0,0" VerticalAlignment="Top" Width="75"/>
         </Grid>
+        <Button Content="Rem Id" HorizontalAlignment="Left" Margin="265,255,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click_1"/>
+        <Button Content="Add Svc" HorizontalAlignment="Left" Margin="265,230,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click_2"/>
+        <Button Content="Rem Svc" HorizontalAlignment="Left" Margin="265,201,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click_3"/>
+        <Button Content="Add Id" HorizontalAlignment="Left" Margin="265,176,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click_4"/>
     </Grid>
 </Window>

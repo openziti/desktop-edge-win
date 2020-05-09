@@ -71,11 +71,9 @@ func SaveState(t *RuntimeState) {
 func (t *RuntimeState) ToStatus() dto.TunnelStatus {
 	var uptime int64
 
-	if t.state.Active {
-		now := time.Now()
-		tunStart := now.Sub(TunStarted)
-		uptime = tunStart.Milliseconds()
-	}
+	now := time.Now()
+	tunStart := now.Sub(TunStarted)
+	uptime = tunStart.Milliseconds()
 
 	clean := dto.TunnelStatus{
 		Active:     t.state.Active,

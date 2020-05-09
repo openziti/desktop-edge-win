@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/Microsoft/go-winio"
 	"github.com/netfoundry/ziti-foundation/identity/identity"
-	idcfg "github.com/netfoundry/ziti-sdk-golang/ziti/config"
 	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
 	"golang.org/x/sys/windows/svc"
 	"io"
@@ -313,6 +312,14 @@ func serveIpc(conn net.Conn) {
 			onOff := cmd.Payload["OnOff"].(bool)
 			fingerprint := cmd.Payload["Fingerprint"].(string)
 			toggleIdentity(enc, fingerprint, onOff)
+		case "Debug":
+			dbg()
+			respond(enc, dto.Response{
+				Code:    0,
+				Message: "debug",
+				Error:   "debug",
+				Payload: nil,
+			})
 		default:
 			log.Warnf("Unknown operation: %s. Returning error on pipe", cmd.Function)
 			respondWithError(enc, "Something unexpected has happened", UNKNOWN_ERROR, nil)
@@ -386,8 +393,6 @@ func serveEvents(conn net.Conn) {
 }
 
 func reportStatus(out *json.Encoder) {
-	log.Debugf("request for status")
-
 	s := rts.ToStatus()
 	respond(out, dto.ZitiTunnelStatus{
 		Status:  &s,
@@ -523,7 +528,7 @@ func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
 	if newId.Id.Name == "" {
 		newId.Id.Name = newId.Id.FingerPrint
 	}
-	newId.Id.Status = "Enrolled"
+	newId.Id.Status = STATUS_ENROLLED
 
 	err = enrolled.Close()
 	if err != nil {
@@ -701,7 +706,7 @@ func acceptServices() {
 
 func handleEvents(){
 	events.run()
-	d := 5 * time.Second
+	d := 30 * time.Second
 	every5s := time.NewTicker(d)
 
 	defer log.Debugf("exiting handleEvents. loops were set for %v", d)
@@ -715,54 +720,6 @@ func handleEvents(){
 			events.broadcast <- dto.MetricsEvent{
 				StatusEvent: dto.StatusEvent{Op: "metrics"},
 				Identities:  s.Identities,
-			}
-
-			events.broadcast <- dto.IdentityEvent{
-				ActionEvent: IDENTITY_ADDED,
-				Id:          dto.Identity{
-					Name:        "",
-					FingerPrint: "",
-					Active:      false,
-					Config:      idcfg.Config{},
-					Status:      "",
-					Services:    nil,
-					Metrics:     nil,
-					Connected:   false,
-					NFContext:   nil,
-				},
-			}
-
-			events.broadcast <- dto.IdentityEvent{
-				ActionEvent: IDENTITY_REMOVED,
-				Id:          dto.Identity{
-					Name:        "",
-					FingerPrint: "",
-					Active:      false,
-					Config:      idcfg.Config{},
-					Status:      "",
-					Services:    nil,
-					Metrics:     nil,
-					Connected:   false,
-					NFContext:   nil,
-				},
-			}
-
-			events.broadcast <- dto.ServiceEvent{
-				ActionEvent: SERVICE_ADDED,
-				Service:     dto.Service{
-					Name:     "new service",
-					HostName: "some new hostname",
-					Port:     5000,
-				},
-				Fingerprint: "fake fingerprint",
-			}
-
-			events.broadcast <- dto.ServiceEvent{
-				ActionEvent: SERVICE_REMOVED,
-				Service:     dto.Service{
-					Name:     "removed service",
-				},
-				Fingerprint: "fake fingerprint",
 			}
 		}
 	}

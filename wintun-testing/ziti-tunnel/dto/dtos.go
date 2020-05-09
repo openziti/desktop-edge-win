@@ -62,7 +62,7 @@ func (id *Identity) Path() string {
 
 type TunnelStatus struct {
 	Active     bool
-	Duration   int64 `json:"-"`
+	Duration   int64
 	Identities []*Identity
 	IpInfo     *TunIpInfo `json:"IpInfo,omitempty"`
 }

@@ -75,4 +75,6 @@ const (
 	ipv6ip = "1"
 	ipv6mask = 64
 	Ipv6dns = "::1" // must be in "ipv6ip/ipv6mask" CIDR block
+
+	STATUS_ENROLLED = "enrolled"
 )
