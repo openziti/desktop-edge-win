@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
 using System.IO;
-using ZitiTunneler.Models;
 
+using ZitiTunneler.Models;
 using ZitiTunneler.ServiceClient;
 
 
@@ -71,12 +72,18 @@ namespace ZitiTunneler {
 
 			// add a new service client
 			serviceClient = new Client();
-			serviceClient.OnTunnelStatusUpdate += ServiceClient_OnTunnelStatusUpdated;
-			
+			serviceClient.OnClientConnected += ServiceClient_OnClientConnected;
+			serviceClient.OnClientDisconnected += ServiceClient_OnClientDisconnected;
+			serviceClient.OnIdentityEvent += ServiceClient_OnIdentityEvent;
+			serviceClient.OnMetricsEvent += ServiceClient_OnMetricsEvent;
+			serviceClient.OnServiceEvent += ServiceClient_OnServiceEvent;
+			serviceClient.OnTunnelStatusEvent += ServiceClient_OnTunnelStatusEvent;
+
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
 			Application.Current.Properties.Add("Identities", new List<ZitiIdentity>());
 			MainMenu.OnAttachmentChange += AttachmentChanged;
 			try {
+				serviceClient.Connect();
 				LoadStatusFromService();
 				// MessageBox.Show("identites are returned from the server. Any that were 'on' will have services. any off won't. Update the toggles to show if they are on or off");
 			} catch(Exception ex) {
@@ -87,26 +94,37 @@ namespace ZitiTunneler {
 			IdentityMenu.OnForgot += IdentityForgotten;
 		}
 
-		private void ServiceClient_OnMetricsUpdate(object sender, Metrics e)
+		private void ServiceClient_OnClientConnected(object sender, object e)
 		{
-			if (e != null) {
-				this.Dispatcher.Invoke(() =>
-				{
-					DownloadSpeed.Content = (e.Down / 1000).ToString();
-					UploadSpeed.Content = (e.Up / 1000).ToString();
-				});
-			}
+			//e is _ALWAYS_ null at this time use this to display something if you want
+			MessageBox.Show("AWWWW YEAH! We're connected!!!!");
+
 		}
 
-		private void ServiceClient_OnTunnelStatusUpdated(object sender, TunnelStatus e)
+		private void ServiceClient_OnClientDisconnected(object sender, object e)
 		{
-			if (e != null)
+			MessageBox.Show("ah dang it jeremy... the client is disconnected!\n\n" +
+				"Don't worry - it's trying to reconnect. the OnClientConnected will fire\n" +
+				"when it's reconnected properly...");
+		}
+
+		private void ServiceClient_OnIdentityEvent(object sender, IdentityEvent e)
+		{
+			if (e == null) return; //just skip it for now...
+			Debug.WriteLine(e.Op);
+			Debug.WriteLine(e.Action);
+			Debug.WriteLine(e.Id?.FingerPrint);
+		}
+
+		private void ServiceClient_OnMetricsEvent(object sender, List<Identity> ids)
+		{
+			if (ids != null)
 			{
 				long totalUp = 0;
 				long totalDown = 0;
-				foreach (var id in e.Identities)
+				foreach (var id in ids)
 				{
-					System.Diagnostics.Debug.WriteLine($"id {id.Name} down: {totalDown} up:{totalUp}");
+					Debug.WriteLine($"id {id.Name} down: {totalDown} up:{totalUp}");
 					if (id?.Metrics != null)
 					{
 						totalDown += id.Metrics.Down;
@@ -115,11 +133,26 @@ namespace ZitiTunneler {
 				}
 				this.Dispatcher.Invoke(() =>
 				{
-					System.Diagnostics.Debug.WriteLine($"Triggering update of total down: {totalDown} up:{totalUp}");
 					DownloadSpeed.Content = (totalDown / 1000).ToString();
 					UploadSpeed.Content = (totalUp / 1000).ToString();
 				});
 			}
+		}
+
+		private void ServiceClient_OnServiceEvent(object sender, ServiceEvent e)
+		{
+			if (e == null) return; //just skip it for now...
+			Debug.WriteLine(e.Op);
+			Debug.WriteLine(e.Action);
+			Debug.WriteLine(e.Fingerprint);
+			Debug.WriteLine(e.Service?.Name);
+		}
+
+		private void ServiceClient_OnTunnelStatusEvent(object sender, TunnelStatusEvent e)
+		{
+			if (e == null) return; //just skip it for now...
+			Debug.WriteLine(e.Op);
+			Debug.WriteLine(e.Status.Active);
 		}
 
 		private void IdentityForgotten(ZitiIdentity forgotten) {

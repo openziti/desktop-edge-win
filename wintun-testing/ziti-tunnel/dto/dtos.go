@@ -28,12 +28,12 @@ type Identity struct {
 	Services    []*Service
 	Metrics     *Metrics
 
-	Connected bool `json:"-"`
+	Connected bool            `json:"-"`
 	NFContext *cziti.CZitiCtx `json:"-"`
 }
 type Metrics struct {
-	Up int64
- 	Down int64
+	Up   int64
+	Down int64
 }
 type CommandMsg struct {
 	Function string
@@ -60,7 +60,6 @@ func (id *Identity) Path() string {
 	return config.Path() + id.FingerPrint + ".json"
 }
 
-
 type TunnelStatus struct {
 	Active     bool
 	Duration   int64 `json:"-"`
@@ -70,5 +69,35 @@ type TunnelStatus struct {
 
 type ZitiTunnelStatus struct {
 	Status  *TunnelStatus `json:",omitempty"`
-	Metrics *Metrics `json:",omitempty"`
+	Metrics *Metrics      `json:",omitempty"`
+}
+
+type StatusEvent struct {
+	Op      string
+}
+
+type ActionEvent struct {
+	StatusEvent
+	Action string
+}
+
+type TunnelStatusEvent struct {
+	StatusEvent
+	Status TunnelStatus
+}
+
+type MetricsEvent struct {
+	StatusEvent
+	Identities []*Identity
+}
+
+type ServiceEvent struct {
+	ActionEvent
+	Fingerprint string
+	Service Service
+}
+
+type IdentityEvent struct {
+	ActionEvent
+	Id Identity
 }

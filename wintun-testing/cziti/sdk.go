@@ -217,10 +217,14 @@ func LoadZiti(cfg string) *CZitiCtx {
 	return res
 }
 
-func GetTransferRates(ctx *CZitiCtx) (int64, int64) { //extern void NF_get_transfer_rates(nf_context nf, double* up, double* down);
+func GetTransferRates(ctx *CZitiCtx) (int64, int64, bool) { //extern void NF_get_transfer_rates(nf_context nf, double* up, double* down);
+	if ctx == nil {
+		log.Warn("the provided context is nil!")
+		return 0, 0, false
+	}
 	var up, down C.double
 	C.NF_get_transfer_rates(ctx.nf, &up, &down)
 	log.Tracef("Up: %v Down %v", up, down)
 
-	return int64(up), int64(down)
+	return int64(up), int64(down), true
 }

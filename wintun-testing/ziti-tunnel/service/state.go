@@ -69,23 +69,22 @@ func SaveState(t *RuntimeState) {
 }
 
 func (t *RuntimeState) ToStatus() dto.TunnelStatus {
-	var d int64
+	var uptime int64
+
 	if t.state.Active {
 		now := time.Now()
-		dd := now.Sub(TunStarted)
-		d = dd.Milliseconds()
-	} else {
-		d = 0
+		tunStart := now.Sub(TunStarted)
+		uptime = tunStart.Milliseconds()
 	}
 
 	clean := dto.TunnelStatus{
 		Active:     t.state.Active,
-		Duration:   d,
+		Duration:   uptime,
 		Identities: make([]*dto.Identity, len(t.state.Identities)),
 		IpInfo:     t.state.IpInfo,
 	}
+
 	for i, id := range t.state.Identities {
-		log.Tracef("returning clean identity: %s", id.Name)
 		cid := idutil.Clean(*id)
 		clean.Identities[i] = &cid
 	}
@@ -177,7 +176,7 @@ func (t *RuntimeState) LoadIdentity(id *dto.Identity) {
 		log.Debugf("name changed from %s to %s", id.Name, ctx.Name())
 		id.Name = ctx.Name()
 		id.Services = make([]*dto.Service, 0)
-		
+
 	} else {
 		log.Warnf("NOZITI set to true. this should be only used for debugging")
 	}
@@ -187,30 +186,6 @@ func noZiti() bool {
 	v, _ := strconv.ParseBool(os.Getenv("NOZITI"))
 	return v
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func (t *RuntimeState) Close() {
 	if t.tun != nil {

@@ -1,13 +1,17 @@
 package idutil
 
 import (
+	"github.com/michaelquigley/pfxlog"
 	idcfg "github.com/netfoundry/ziti-sdk-golang/ziti/config"
 	"wintun-testing/cziti"
 	"wintun-testing/ziti-tunnel/dto"
 )
 
+var log = pfxlog.Logger()
+
 //Removes the Config from the provided identity and returns a 'cleaned' id
 func Clean(id dto.Identity) dto.Identity {
+	log.Tracef("cleaning identity: %s", id.Name)
 	nid := id
 	nid.Config = idcfg.Config{}
 	nid.Config.ZtAPI = id.Config.ZtAPI
@@ -15,18 +19,13 @@ func Clean(id dto.Identity) dto.Identity {
 	for i, svc := range id.Services{
 		nid.Services[i] = svc
 	}
-	GetMetrics(nid)
+	AddMetrics(nid)
 	return nid
 }
 
-func GetMetrics(id dto.Identity) /*dto.Metrics*/ {
-	up, down := cziti.GetTransferRates(id.NFContext)
+func AddMetrics(id dto.Identity) {
+	up, down, _ := cziti.GetTransferRates(id.NFContext)
+
 	id.Metrics.Up = up
 	id.Metrics.Down = down
-	/*
-	return dto.Metrics{
-		Up:   up,
-		Down: down,
-	}
-	*/
 }

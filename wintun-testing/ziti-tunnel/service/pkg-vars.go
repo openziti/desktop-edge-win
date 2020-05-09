@@ -1,7 +1,6 @@
 package service
 
 import (
-	"github.com/tv42/topic"
 	"golang.org/x/sys/windows/svc"
 	"sync"
 	"time"
@@ -19,10 +18,10 @@ var wg sync.WaitGroup
 var connections int
 var Debug bool
 
-var top = topic.New()
-
 var TunStarted time.Time
 var log = globals.Logger()
+
+var	events = newTopic()
 
 const (
 	SUCCESS              = 0

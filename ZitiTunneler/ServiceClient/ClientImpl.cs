@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipes;
 using System.Security.Principal;
@@ -8,6 +9,9 @@ using System.Security.AccessControl;
 using Newtonsoft.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.Remoting.Contexts;
+using System.Windows.Interop;
+using System.Windows.Documents;
 
 /// <summary>
 /// The implementation will abstract away the setup of the communication to
@@ -20,14 +24,66 @@ using System.Threading.Tasks;
 /// </summary>
 namespace ZitiTunneler.ServiceClient
 {
-
     internal class Client
     {
-        public event EventHandler<TunnelStatus> OnTunnelStatusUpdate;
+        public event EventHandler<TunnelStatusEvent> OnTunnelStatusEvent;
+        public event EventHandler<List<Identity>> OnMetricsEvent;
+        public event EventHandler<IdentityEvent> OnIdentityEvent;
+        public event EventHandler<ServiceEvent> OnServiceEvent;
+        public event EventHandler<object> OnClientConnected;
+        public event EventHandler<object> OnClientDisconnected;
 
-        protected virtual void ZitiTunnelStatusUpdate(TunnelStatus e)
+        protected virtual void TunnelStatusEvent(TunnelStatusEvent e)
         {
-            EventHandler<TunnelStatus> handler = OnTunnelStatusUpdate;
+            EventHandler<TunnelStatusEvent> handler = OnTunnelStatusEvent;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
+        protected virtual void MetricsEvent(List<Identity> e)
+        {
+            EventHandler<List<Identity>> handler = OnMetricsEvent;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
+        protected virtual void IdentityEvent(IdentityEvent e)
+        {
+            EventHandler<IdentityEvent> handler = OnIdentityEvent;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
+        protected virtual void ServiceEvent(ServiceEvent e)
+        {
+            EventHandler<ServiceEvent> handler = OnServiceEvent;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
+        protected virtual void ClientConnected(object e)
+        {
+            Connected = true;
+            this.Reconnecting = false;
+            EventHandler<object> handler = OnClientConnected;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
+        protected virtual void ClientDisconnected(object e)
+        {
+            Connected = false;
+            EventHandler<object> handler = OnClientDisconnected;
             if (handler != null)
             {
                 handler(this, e);
@@ -48,11 +104,86 @@ namespace ZitiTunneler.ServiceClient
         StreamWriter ipcWriter = null;
         StreamReader ipcReader = null;
 
+        NamedPipeClientStream eventClient = null;
+        bool _extendedDebug = true;
+
         public Client()
+        {
+            try
+            {
+                string extDebugEnv = Environment.GetEnvironmentVariable("ZITI_EXTENDED_DEBUG");
+                if (extDebugEnv != null)
+                {
+                    if (bool.Parse(extDebugEnv))
+                    {
+                        _extendedDebug = true;
+                    }
+                }
+                //establish the named pipe to the service
+                setupPipe();
+            }
+            catch(Exception ex)
+            {
+                Debug.WriteLine("EXCEPTION IN CLIENT CONNECT: " + ex.Message);
+                //if this happens - enter retry mode...
+                Reconnect();
+            }
+        }
+
+        public bool Reconnecting { get; set; }
+        public bool Connected { get; set; }
+
+        public void Connect()
         {
             //establish the named pipe to the service
             setupPipe();
         }
+
+        public void Reconnect()
+        {
+            if (Reconnecting)
+            {
+                Debug.WriteLine("Already in reconnect mode.");
+                return;
+            }
+            else
+            {
+                Reconnecting = true;
+            }
+
+            Task.Run(() =>
+            {
+                while (true)
+                {
+                    try
+                    {
+                        Thread.Sleep(2500); //wait 500ms and try to reconnect...
+                        Debug.WriteLine("Attempting to connect to service...");
+                        pipeClient?.Close();
+                        eventClient?.Close();
+                        setupPipe();
+
+                        if (Connected)
+                        {
+                            Debug.WriteLine("Connected to the service - exiting reconect loop");
+                            this.Connected = true;
+                            return;
+                        }
+                        else
+                        {
+                            ClientDisconnected(null);
+                        }
+                    }
+                    catch
+                    {
+                        //fire the event and just try it all over....
+                        ClientDisconnected(null);
+                    }
+                    Debug.WriteLine("Reconnect failed. Trying again...");
+                }
+            });
+        }
+
         PipeSecurity CreateSystemIOPipeSecurity()
         {
             PipeSecurity pipeSecurity = new PipeSecurity();
@@ -69,53 +200,80 @@ namespace ZitiTunneler.ServiceClient
         {
             lock (namedPipeSyncLock)
             {
-                if (pipeClient != null)
-                {
-                    pipeClient.Dispose();
-                }
                 pipeClient = new NamedPipeClientStream(localPipeServer, ipcPipe, inOut);
+                eventClient = new NamedPipeClientStream(localPipeServer, eventPipe, PipeDirection.In);
+
                 try
                 {
+                    eventClient.Connect(ServiceConnectTimeout);
+                    pipeClient.Connect(ServiceConnectTimeout);
                     ipcWriter = new StreamWriter(pipeClient);
                     ipcReader = new StreamReader(pipeClient);
-                    pipeClient.Connect(ServiceConnectTimeout);
+                    ClientConnected(null);
                 }
                 catch(Exception ex)
                 {
-                    //todo: better error
-                    Debug.WriteLine("There was a problem connecting to the service. " + ex.Message);
-                    try
-                    {
-                        pipeClient?.Close();
-                    }
-                    catch (Exception exc)
-                    {
-                        //intentionally ignored
-                        Debug.WriteLine(exc.Message);
-                    }
-                    ipcReader = null;
-                    ipcWriter = null;
-                    pipeClient = null;
+                    throw new ServiceException("Could not connect to the service.", 1, ex.Message);
                 }
 
-                Task.Run(() => {
-                    Console.WriteLine("THREAD BEGINS");
-                    NamedPipeClientStream eventClient = new NamedPipeClientStream(localPipeServer, eventPipe, PipeDirection.In);
-                    eventClient.Connect();
-                    StreamReader eventReader = new StreamReader(eventClient);
-                    while (true)
+                Task.Run(() => { //hack for now until it's async...
+                    try
                     {
-                        var r = read<StatusUpdateResponse>("event: ", eventReader);
-                        if (eventReader.EndOfStream)
+                        Console.WriteLine("Event stream connected");
+                        StreamReader eventReader = new StreamReader(eventClient);
+                        while (true)
                         {
-                            break;
-                        }
-                        if (r?.Payload?.Status != null)
-                        {
-                            ZitiTunnelStatusUpdate(r.Payload.Status);
+                            if (eventReader.EndOfStream)
+                            {
+                                break;
+                            }
+
+                            processEvent(eventReader);
+                            //var r = readEvent<MetricsEvent>(eventReader);
+
+                            /*
+                            if (r != null)
+                            {
+                                switch (r.Op)
+                                {
+                                    case "metrics":
+                                        var st = read<MetricsStatus>(eventReader);
+                                        if (st != null) {
+                                            ZitiTunnelStatusUpdate(st.Payload);
+                                        }
+                                        break;
+                                    case "NewService":
+                                    default:
+                                        Debug.WriteLine("unexpected operation! " + r.Op);
+                                        break;
+                                }
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    if (eventReader.EndOfStream)
+                                    {
+                                        break;
+                                    }
+                                }
+                                catch (ObjectDisposedException)
+                                {
+                                    //don't care about this one - all others can be bubbled out
+                                    break;
+                                }
+                            }*/
                         }
                     }
+                    catch(Exception ex)
+                    {
+                        Debug.WriteLine("unepxected error: " + ex.ToString());
+                    }
                     Console.WriteLine("THREAD DONE");
+                    
+                    // since this thread is always sitting waiting to read
+                    // it should be the only one triggering this event
+                    ClientDisconnected(null); 
                 });
             }
         }
@@ -125,18 +283,19 @@ namespace ZitiTunneler.ServiceClient
             try
             {
                 send(new ServiceFunction() { Function = "Status" });
-                var rtn = read<ZitiTunnelStatus>("   ipc: ", ipcReader);
+                var rtn = read<ZitiTunnelStatus>(ipcReader);
                 return rtn;
             }
             catch (IOException ioe)
             {
                 //almost certainly a problem with the pipe - recreate the pipe...
-                setupPipe();
+                //setupPipe();
                 throw ioe;
             }
         }
 
         ServiceFunction AddIdentityFunction = new ServiceFunction() { Function = "AddIdentity" };
+
         public Identity AddIdentity(string identityName, bool activate, string jwt)
         {
             try
@@ -158,7 +317,7 @@ namespace ZitiTunneler.ServiceClient
 
                 send(AddIdentityFunction);
                 send(newId);
-                var resp = read<IdentityResponse>("   ipc: ", ipcReader);
+                var resp = read<IdentityResponse>(ipcReader);
                 Debug.WriteLine(resp.ToString());
 
                 return resp.Payload;
@@ -166,7 +325,7 @@ namespace ZitiTunneler.ServiceClient
             catch (IOException)
             {
                 //almost certainly a problem with the pipe - recreate the pipe...
-                setupPipe();
+                //setupPipe();
                 throw;
             }
         }
@@ -188,27 +347,40 @@ namespace ZitiTunneler.ServiceClient
                     Payload = new FingerprintPayload() { Fingerprint = fingerPrint }
                 };
                 send(removeFunction);
-                var r = read<SvcResponse>("   ipc: ", ipcReader);
+                var r = read<SvcResponse>(ipcReader);
             }
             catch (IOException ioe)
             {
                 //almost certainly a problem with the pipe - recreate the pipe...
-                setupPipe();
+                //setupPipe();
                 throw ioe;
+            }
+        }
+
+        private void checkConnected()
+        {
+            if (this.Reconnecting)
+            {
+                throw new ServiceException("Client is not connected", 2, "Cannot use the client at this time, it is reconnecting");
+            }
+            if (!this.Connected)
+            {
+                throw new ServiceException("Client is not connected", 2, "Cannot use the client at this time, it is not connected");
             }
         }
 
         public void SetTunnelState(bool onOff)
         {
+            checkConnected();
             try
             {
                 send(new BooleanFunction("TunnelState", onOff));
-                read<SvcResponse>("   ipc: ", ipcReader);
+                read<SvcResponse>(ipcReader);
             }
             catch (IOException ioe)
             {
                 //almost certainly a problem with the pipe - recreate the pipe...
-                setupPipe();
+                //setupPipe();
                 throw ioe;
             }
         }
@@ -240,13 +412,13 @@ namespace ZitiTunneler.ServiceClient
             try
             {
                 send(new IdentityToggleFunction(fingerprint, onOff));
-                IdentityResponse idr = read<IdentityResponse>("   ipc: ", ipcReader);
+                IdentityResponse idr = read<IdentityResponse>(ipcReader);
                 return idr.Payload;
             }
             catch (IOException ioe)
             {
                 //almost certainly a problem with the pipe - recreate the pipe...
-                setupPipe();
+                //setupPipe();
                 throw ioe;
             }
         }
@@ -260,21 +432,21 @@ namespace ZitiTunneler.ServiceClient
                 {
                     if (ipcWriter == null)
                     {
-                        setupPipe();
+                        //setupPipe();
                     }
                     string toSend = JsonConvert.SerializeObject(objToSend, Formatting.None);
 
                     if (toSend?.Trim() != null)
                     {
-                        Debug.WriteLine("===============  sending message =============== ");
-                        Debug.WriteLine(toSend);
+                        debugServiceCommunication("===============  sending message =============== ");
+                        debugServiceCommunication(toSend);
                         ipcWriter.Write(toSend);
                         ipcWriter.Write('\n');
-                        Debug.WriteLine("=============== flushing message =============== ");
+                        debugServiceCommunication("=============== flushing message =============== ");
                         ipcWriter.Flush();
-                        Debug.WriteLine("===============     sent message =============== ");
-                        Debug.WriteLine("");
-                        Debug.WriteLine("");
+                        debugServiceCommunication("===============     sent message =============== ");
+                        debugServiceCommunication("");
+                        debugServiceCommunication("");
                     }
                     else
                     {
@@ -285,7 +457,7 @@ namespace ZitiTunneler.ServiceClient
                 catch (IOException ioe)
                 {
                     //almost certainly a problem with the pipe - recreate the pipe... try one more time.
-                    setupPipe();
+                    //setupPipe();
                     if (retried)
                     {
                         //we tried - throw the error...
@@ -305,42 +477,118 @@ namespace ZitiTunneler.ServiceClient
             }
         }
 
-        private T read<T>(string prefix, StreamReader reader) where T : SvcResponse
+        private T read<T>(StreamReader reader) where T : SvcResponse
+        {
+            string respAsString = readMessage(reader);
+            T resp = (T)serializer.Deserialize(new StringReader(respAsString), typeof(T));
+            return resp;
+        }
+
+        private void processEvent(StreamReader reader)
+        {
+            string respAsString = readMessage(reader);
+            StatusEvent evt = (StatusEvent)serializer.Deserialize(new StringReader(respAsString), typeof(StatusEvent));
+
+            switch (evt.Op)
+            {
+                case "metrics":
+                    MetricsEvent m = (MetricsEvent)serializer.Deserialize(new StringReader(respAsString), typeof(MetricsEvent));
+                    
+                    if (m != null)
+                    {
+                        this.MetricsEvent(m.Identities);
+                    }
+                    break;
+                case "status":
+                    TunnelStatusEvent se = (TunnelStatusEvent)serializer.Deserialize(new StringReader(respAsString), typeof(TunnelStatusEvent));
+                    
+                    if (se != null)
+                    {
+                        this.TunnelStatusEvent(se);
+                    }
+                    break;
+                case "identity":
+                    IdentityEvent id = (IdentityEvent)serializer.Deserialize(new StringReader(respAsString), typeof(IdentityEvent));
+
+                    if (id != null)
+                    {
+                        this.IdentityEvent(id);
+                    }
+                    break;
+                case "service":
+                    ServiceEvent svc = (ServiceEvent)serializer.Deserialize(new StringReader(respAsString), typeof(ServiceEvent));
+
+                    if (svc != null)
+                    {
+                        this.ServiceEvent(svc);
+                    }
+                    break;
+                default:
+                    Debug.WriteLine("unexpected operation! " + evt.Op);
+                    break;
+            }
+        }
+
+        public string readMessage(StreamReader reader)
         {
             try
             {
-                int emptyCount = 1;
+                if (reader.EndOfStream)
+                {
+                    throw new ServiceException("the pipe has closed", 0, "end of stream reached");
+                }
+                int emptyCount = 1; //just a stop gap in case something crazy happens in the communication
 
-                Debug.WriteLine(prefix + "===============  reading message =============== " + emptyCount);
+                debugServiceCommunication( "===============  reading message =============== " + emptyCount);
                 string respAsString = reader.ReadLine();
-                Debug.WriteLine(respAsString);
-                Debug.WriteLine(prefix + "===============     read message =============== " + emptyCount);
+                debugServiceCommunication(respAsString);
+                debugServiceCommunication("===============     read message =============== " + emptyCount);
                 while (string.IsNullOrEmpty(respAsString?.Trim()))
                 {
-                    //T resp = (T)serializer.Deserialize(reader, typeof(T));
                     if (reader.EndOfStream)
                     {
                         throw new Exception("the pipe has closed");
                     }
-                    Debug.WriteLine("Received empty payload - continuing to read until a payload is received");
+                    debugServiceCommunication("Received empty payload - continuing to read until a payload is received");
                     //now how'd that happen...
-                    Debug.WriteLine(prefix + "===============  reading message =============== " + emptyCount);
+                    debugServiceCommunication("===============  reading message =============== " + emptyCount);
                     respAsString = reader.ReadLine();
-                    Debug.WriteLine(respAsString);
-                    Debug.WriteLine(prefix + "===============     read message =============== " + emptyCount);
+                    debugServiceCommunication(respAsString);
+                    debugServiceCommunication("===============     read message =============== " + emptyCount);
                     emptyCount++;
                     if (emptyCount > 5)
                     {
                         Debug.WriteLine("are we there yet? " + reader.EndOfStream);
                         //that's just too many...
-                        setupPipe();
+                        //setupPipe();
                         return null;
                     }
                 }
-                Debug.WriteLine("");
-                Debug.WriteLine("");
+                debugServiceCommunication("");
+                debugServiceCommunication("");
+                return respAsString;
+            }
+            catch (IOException ioe)
+            {
+                //almost certainly a problem with the pipe
+                Debug.WriteLine("io error in read: " + ioe.Message);
+                ClientDisconnected(null);
+                throw ioe;
+            }
+            catch (Exception ee)
+            {
+                //almost certainly a problem with the pipe
+                Debug.WriteLine("unexpected error in read: " + ee.Message);
+                ClientDisconnected(null);
+                throw ee;
+            }
+        }
+        
+        private T readOld<T>(StreamReader reader) where T : SvcResponse
+        {/*
+            try
+            {
 
-                T resp = (T)serializer.Deserialize(new StringReader(respAsString), typeof(T));
 
                 if (resp.Code != 0)
                 {
@@ -351,13 +599,24 @@ namespace ZitiTunneler.ServiceClient
             catch (IOException ioe)
             {
                 //almost certainly a problem with the pipe - recreate the pipe...
-                setupPipe();
+                //setupPipe();
                 throw ioe;
             }
             catch (Exception ee)
             {
                 //almost certainly a problem with the pipe - recreate the pipe...
-                throw ee;
+                //throw ee;
+                ClientDisconnected(null);
+            }
+            */
+            return null;
+        }
+
+        private void debugServiceCommunication(string msg)
+        {
+            if (_extendedDebug)
+            {
+                Debug.WriteLine(msg);
             }
         }
     }

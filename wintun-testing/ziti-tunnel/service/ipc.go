@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"github.com/Microsoft/go-winio"
 	"github.com/netfoundry/ziti-foundation/identity/identity"
+	idcfg "github.com/netfoundry/ziti-sdk-golang/ziti/config"
 	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
 	"golang.org/x/sys/windows/svc"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net"
 	"os"
 	"strings"
@@ -39,7 +41,6 @@ func (p *Pipes) Close() {
 var shutdown = make(chan bool) //a channel informing go routines to exit
 
 func SubMain(ops <-chan string, changes chan<- svc.Status) error {
-	defer close(top.Broadcast)
 	log.Info("============================== service begins ==============================")
 
 	_ = globals.Elog.Info(InformationEvent, SvcName+" starting. log file located at "+config.LogFile())
@@ -73,30 +74,82 @@ func SubMain(ops <-chan string, changes chan<- svc.Status) error {
 	setTunnelState(true)
 
 	// setup metrics notifier
+	events.run()
 	every5s := time.NewTicker(5 * time.Second)
 
 	go func() {
+		defer func() {
+			log.Debug("exiting every5s loop")
+		}()
 		for {
 			select {
 			case <-shutdown:
-				return
+ 				return
 			case <-every5s.C:
-				/*
-				for _, a := range activeIds {
-					up, down := cziti.GetTransferRates(a.NFContext)
-					top.Broadcast <- dto.ZitiTunnelStatus{
-						Status: nil,
-						Metrics: &dto.Metrics{
-							Up:   up,
-							Down: down,
-						},
-					}
-				}*/
 				s := rts.ToStatus()
-				top.Broadcast <- dto.ZitiTunnelStatus{
-					Status: &s,
-					Metrics: nil,
-					}
+
+				events.broadcast <- dto.MetricsEvent{
+					StatusEvent: dto.StatusEvent{Op: "metrics"},
+					Identities:  s.Identities,
+				}
+
+				events.broadcast <- dto.TunnelStatusEvent{
+					StatusEvent: dto.StatusEvent{Op: "status"},
+					Status:      dto.TunnelStatus{
+						Active:     false,
+						Duration:   0,
+						Identities: nil,
+						IpInfo:     nil,
+					},
+				}
+
+				events.broadcast <- dto.IdentityEvent{
+					ActionEvent: IDENTITY_ADDED,
+					Id:          dto.Identity{
+						Name:        "",
+						FingerPrint: "",
+						Active:      false,
+						Config:      idcfg.Config{},
+						Status:      "",
+						Services:    nil,
+						Metrics:     nil,
+						Connected:   false,
+						NFContext:   nil,
+					},
+				}
+
+				events.broadcast <- dto.IdentityEvent{
+					ActionEvent: IDENTITY_REMOVED,
+					Id:          dto.Identity{
+						Name:        "",
+						FingerPrint: "",
+						Active:      false,
+						Config:      idcfg.Config{},
+						Status:      "",
+						Services:    nil,
+						Metrics:     nil,
+						Connected:   false,
+						NFContext:   nil,
+					},
+				}
+
+				events.broadcast <- dto.ServiceEvent{
+					ActionEvent: SERVICE_ADDED,
+					Service:     dto.Service{
+						Name:     "new service",
+						HostName: "some new hostname",
+						Port:     5000,
+					},
+					Fingerprint: "fake fingerprint",
+				}
+
+				events.broadcast <- dto.ServiceEvent{
+					ActionEvent: SERVICE_REMOVED,
+					Service:     dto.Service{
+						Name:     "removed service",
+					},
+					Fingerprint: "fake fingerprint",
+				}
 			}
 		}
 	}()
@@ -115,6 +168,7 @@ func SubMain(ops <-chan string, changes chan<- svc.Status) error {
 	shutdown <- true // stop the service change listener
 
 	pipes.shutdownConnections()
+	events.shutdown()
 
 	windns.ResetDNS()
 
@@ -164,15 +218,15 @@ func openPipes() (*Pipes, error) {
 	}
 
 	// listen for log requests
-	go accept(logs, serveLogs)
+	go accept(logs, serveLogs, "  logs")
 	log.Infof("log listener ready. pipe: %s", logsPipeName())
 
 	// listen for ipc messages
-	go accept(ipc, serveIpc)
+	go accept(ipc, serveIpc, "    ipc")
 	log.Infof("ipc listener ready pipe: %s", ipcPipeName())
 
 	// listen for events messages
-	go accept(events, serveEvents)
+	go accept(events, serveEvents, "events")
 	log.Infof("events listener ready pipe: %s", eventsPipeName())
 
 	return &Pipes{
@@ -232,7 +286,7 @@ func closeConn(conn net.Conn) {
 	}
 }
 
-func accept(p net.Listener, serveFunction func(net.Conn)) {
+func accept(p net.Listener, serveFunction func(net.Conn), debug string) {
 	for {
 		c, err := p.Accept()
 		if err != nil {
@@ -243,7 +297,7 @@ func accept(p net.Listener, serveFunction func(net.Conn)) {
 		}
 		wg.Add(1)
 		connections++
-		log.Debugf("accepting a new client")
+		log.Debugf("accepting a new client for %s", debug)
 
 		go serveFunction(c)
 	}
@@ -341,7 +395,7 @@ func serveIpc(conn net.Conn) {
 }
 
 func serveLogs(conn net.Conn) {
-	log.Debug("accepted a connection, writing logs to pipe")
+	log.Debug("accepted a logs connection, writing logs to pipe")
 	w := bufio.NewWriter(conn)
 
 	file, err := os.OpenFile(config.LogFile(), os.O_RDONLY, 0644)
@@ -379,36 +433,29 @@ func serveLogs(conn net.Conn) {
 }
 
 func serveEvents(conn net.Conn) {
-	log.Debug("accepted a connection, writing events to pipe")
+	randomInt:= rand.Int()
+	log.Debug("accepted an events connection, writing events to pipe")
+	defer closeConn(conn) //close the connection after this function invoked as go routine exits
 
 	consumer := make(chan interface{}, 1)
-	top.Register(consumer)
+	events.register(randomInt, consumer)
+	defer events.unregister(randomInt)
 
 	w := bufio.NewWriter(conn)
 	o := json.NewEncoder(w)
 
 	for {
 		msg := <-consumer
-		status, ok := msg.(dto.ZitiTunnelStatus)
-		if !ok {
-			log.Errorf("message received couldn't be converted to status? %v", status)
-			break
-		}
-		respond(o, dto.Response{Payload: status})
-		_, err := w.WriteString("\n")
+
+		err := o.Encode(msg)
+
 		if err != nil {
-			if err == io.EOF {
-				//fine client disconnected
-				log.Debug("exiting from serveEvents - client disconnected")
-			} else {
-				log.Errorf("exiting from serveEvents - unexpected error %v", err)
-			}
-			top.Unregister(consumer)
+			log.Infof("exiting from serveEvents - %v", err)
 			break
 		}
 		_ = w.Flush()
 	}
-	log.Info("exiting serve events")
+	log.Debug("exiting serve events")
 }
 
 func reportStatus(out *json.Encoder) {
@@ -452,7 +499,7 @@ func setTunnelState(onOff bool) {
 }
 
 func toggleIdentity(out *json.Encoder, fingerprint string, onOff bool) {
-	log.Debugf("toggle ziti on/off5 for %s: %t", fingerprint, onOff)
+	log.Debugf("toggle ziti on/off for %s: %t", fingerprint, onOff)
 
 	_, id := rts.Find(fingerprint)
 	if id.Active == onOff {
@@ -689,15 +736,29 @@ func acceptServices() {
 					switch c.Operation {
 					case cziti.ADDED:
 						//add the service to the identity
-						id.Services = append(id.Services, &dto.Service{
+						svc := dto.Service{
 							Name:     c.Servicename,
 							HostName: c.Host,
 							Port:     uint16(c.Port),
-						})
+						}
+						id.Services = append(id.Services, &svc)
+
+						events.broadcast <- dto.ServiceEvent{
+							ActionEvent: SERVICE_ADDED,
+							Fingerprint: id.FingerPrint,
+							Service:     svc,
+						}
 					case cziti.REMOVED:
 						for idx, svc := range id.Services {
 							if svc.Name == c.Servicename {
 								id.Services = append(id.Services[:idx], id.Services[idx+1:]...)
+
+								events.broadcast <- dto.ServiceEvent{
+									ActionEvent: SERVICE_REMOVED,
+									Fingerprint: id.FingerPrint,
+									Service:     *svc,
+								}
+
 							}
 						}
 					}
