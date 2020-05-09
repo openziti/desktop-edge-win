@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
 using System.IO;
-
 using ZitiTunneler.Models;
-using ZitiTunneler.ServiceClient;
 
+using ZitiTunneler.ServiceClient;
+using System.ServiceProcess;
+using System.Linq;
+using System.Runtime.Remoting.Messaging;
+using System.Diagnostics;
 
 namespace ZitiTunneler {
 
@@ -22,7 +24,8 @@ namespace ZitiTunneler {
 		private Client serviceClient = null;
 		private bool _isAttached = true;
 		private int _right = 75;
-		private int _bottom = -10;
+		private int _bottom = 0;
+		private double _maxHeight = 800d;
 
 		private List<ZitiIdentity> identities {
 			get {
@@ -39,13 +42,64 @@ namespace ZitiTunneler {
 			notifyIcon.Visible = true;
 			notifyIcon.Click += TargetNotifyIcon_Click;
 			notifyIcon.Visible = true;
+			notifyIcon.ShowBalloonTip(5000, "Test", "Testing", System.Windows.Forms.ToolTipIcon.Info);
+
+
+			ServiceController ctl = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName=="ziti");
+			if (ctl==null) {
+				ProcessStartInfo installService = new ProcessStartInfo();
+				installService.CreateNoWindow = true;
+				installService.UseShellExecute = false;
+				installService.FileName = Path.Combine(Environment.CurrentDirectory, "Service")+@"\ziti-tunnel.exe";
+				installService.WindowStyle = ProcessWindowStyle.Hidden;
+				installService.Arguments =" install";
+
+				try {
+					using (Process exeProcess = Process.Start(installService)) {
+						exeProcess.WaitForExit();
+					}
+					ctl = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName=="ziti");
+					if (ctl.Status!=ServiceControllerStatus.Running) {
+						try {
+							ctl.Start();
+						} catch (Exception e) {
+							SetCantDisplay();
+						}
+					}
+				} catch (Exception e) {
+					MessageBox.Show(e.ToString());
+				}
+			} else {
+				if (ctl.Status!=ServiceControllerStatus.Running) {
+					try {
+						ctl.Start();
+					} catch (Exception e) {
+						SetCantDisplay();
+					}
+				}
+			}
 
 			SetNotifyIcon("white");
-
 			InitializeComponent();
 		}
+
+		private void SetCantDisplay()
+		{
+			NoServiceView.Visibility = Visibility.Visible;
+			SetNotifyIcon("red");
+		}
+		private void SetCanDisplay()
+		{
+			NoServiceView.Visibility = Visibility.Collapsed;
+			SetNotifyIcon("green");
+		}
+
 		private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
 			if (!_isAttached&&e.ChangedButton == MouseButton.Left) this.DragMove();
+		}
+
+		private void Repaint() {
+			LoadIdentities();
 		}
 
 		private void TargetNotifyIcon_Click(object sender, EventArgs e) {
@@ -67,9 +121,8 @@ namespace ZitiTunneler {
 
 		private void MainWindow1_Loaded(object sender, RoutedEventArgs e) {
 			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-			this.Left = desktopWorkingArea.Right-this.Width-_right;
-			this.Top = desktopWorkingArea.Bottom-this.Height-_bottom;
-
+			this.Left = desktopWorkingArea.Right - this.Width - _right;
+			this.Top = desktopWorkingArea.Bottom - this.Height - _bottom;
 			// add a new service client
 			serviceClient = new Client();
 			serviceClient.OnClientConnected += ServiceClient_OnClientConnected;
@@ -84,11 +137,10 @@ namespace ZitiTunneler {
 			MainMenu.OnAttachmentChange += AttachmentChanged;
 			try {
 				serviceClient.Connect();
-				LoadStatusFromService();
-				// MessageBox.Show("identites are returned from the server. Any that were 'on' will have services. any off won't. Update the toggles to show if they are on or off");
-			} catch(Exception ex) {
-				//probably some kind of problem with the service...
-				// MessageBox.Show("oh my goodness - problem with the service. Almost certainly means the service is NOT RUNNING... Jeremy make this pretty.\n" + ex.Message);
+				var s = serviceClient.GetStatus();
+				LoadStatusFromService(s.Status);
+			} catch (Exception ex) {
+				SetCantDisplay();
 			}
 			LoadIdentities();
 			IdentityMenu.OnForgot += IdentityForgotten;
@@ -96,16 +148,20 @@ namespace ZitiTunneler {
 
 		private void ServiceClient_OnClientConnected(object sender, object e)
 		{
-			//e is _ALWAYS_ null at this time use this to display something if you want
-			MessageBox.Show("AWWWW YEAH! We're connected!!!!");
-
+			this.Dispatcher.Invoke(() =>
+			{
+				//e is _ALWAYS_ null at this time use this to display something if you want
+				NoServiceView.Visibility = Visibility.Collapsed;
+				SetNotifyIcon("white");
+			});
 		}
 
 		private void ServiceClient_OnClientDisconnected(object sender, object e)
 		{
-			MessageBox.Show("ah dang it jeremy... the client is disconnected!\n\n" +
-				"Don't worry - it's trying to reconnect. the OnClientConnected will fire\n" +
-				"when it's reconnected properly...");
+			this.Dispatcher.Invoke(() =>
+			{
+				SetCantDisplay();
+			});
 		}
 
 		private void ServiceClient_OnIdentityEvent(object sender, IdentityEvent e)
@@ -153,6 +209,11 @@ namespace ZitiTunneler {
 			if (e == null) return; //just skip it for now...
 			Debug.WriteLine(e.Op);
 			Debug.WriteLine(e.Status.Active);
+
+			this.Dispatcher.Invoke(() =>
+			{
+				InitializeTimer((int)e.Status.Duration);
+			});
 		}
 
 		private void IdentityForgotten(ZitiIdentity forgotten) {
@@ -181,10 +242,10 @@ namespace ZitiTunneler {
 			MainMenu.Visibility = Visibility.Collapsed;
 		}
 
-		private void LoadStatusFromService() {
-			var s = serviceClient.GetStatus();
-			TunnelStatus status = s.Status;
+		private void LoadStatusFromService(TunnelStatus status) {
 			if (status != null) {
+				NoServiceView.Visibility = Visibility.Collapsed;
+				SetNotifyIcon("white");
 				if (status.Active) {
 					InitializeTimer((int)status.Duration);
 					ConnectButton.Visibility = Visibility.Collapsed;
@@ -202,8 +263,9 @@ namespace ZitiTunneler {
 				foreach (var id in status.Identities) {
 					updateViewWithIdentity(id);
 				}
+				LoadIdentities();
 			} else {
-				MessageBox.Show("could not get status - make this pretty Jeremy");
+				SetCantDisplay();
 			}
 		}
 
@@ -219,13 +281,18 @@ namespace ZitiTunneler {
 
 		private void LoadIdentities() {
 			IdList.Children.Clear();
+			IdList.Height = 0;
+			IdList.MaxHeight = _maxHeight-520;
 			ZitiIdentity[] ids = identities.ToArray();
 			this.Height = 460+(ids.Length*60);
+			if (this.Height>_maxHeight) this.Height = _maxHeight;
+			IdentityMenu.SetHeight(this.Height-160);
 			for (int i=0; i<ids.Length; i++) {
 				IdentityItem id = new IdentityItem();
 				id.Identity = ids[i];
 				id.OnClick += OpenIdentity;
 				IdList.Children.Add(id);
+				IdList.Height += 60;
 			}
 			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
 			this.Left = desktopWorkingArea.Right-this.Width-_right;
@@ -273,7 +340,6 @@ namespace ZitiTunneler {
 			try {
 				serviceClient.SetTunnelState(true);
 				SetNotifyIcon("green");
-				InitializeTimer(0);
 				ConnectButton.Visibility = Visibility.Collapsed;
 				DisconnectButton.Visibility = Visibility.Visible;
 			} catch (ServiceException se) {

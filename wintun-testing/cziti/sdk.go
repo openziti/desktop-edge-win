@@ -219,7 +219,6 @@ func LoadZiti(cfg string) *CZitiCtx {
 
 func GetTransferRates(ctx *CZitiCtx) (int64, int64, bool) { //extern void NF_get_transfer_rates(nf_context nf, double* up, double* down);
 	if ctx == nil {
-		log.Warn("the provided context is nil!")
 		return 0, 0, false
 	}
 	var up, down C.double

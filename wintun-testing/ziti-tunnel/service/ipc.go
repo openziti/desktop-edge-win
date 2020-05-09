@@ -73,86 +73,8 @@ func SubMain(ops <-chan string, changes chan<- svc.Status) error {
 
 	setTunnelState(true)
 
-	// setup metrics notifier
-	events.run()
-	every5s := time.NewTicker(5 * time.Second)
-
-	go func() {
-		defer func() {
-			log.Debug("exiting every5s loop")
-		}()
-		for {
-			select {
-			case <-shutdown:
- 				return
-			case <-every5s.C:
-				s := rts.ToStatus()
-
-				events.broadcast <- dto.MetricsEvent{
-					StatusEvent: dto.StatusEvent{Op: "metrics"},
-					Identities:  s.Identities,
-				}
-
-				events.broadcast <- dto.TunnelStatusEvent{
-					StatusEvent: dto.StatusEvent{Op: "status"},
-					Status:      dto.TunnelStatus{
-						Active:     false,
-						Duration:   0,
-						Identities: nil,
-						IpInfo:     nil,
-					},
-				}
-
-				events.broadcast <- dto.IdentityEvent{
-					ActionEvent: IDENTITY_ADDED,
-					Id:          dto.Identity{
-						Name:        "",
-						FingerPrint: "",
-						Active:      false,
-						Config:      idcfg.Config{},
-						Status:      "",
-						Services:    nil,
-						Metrics:     nil,
-						Connected:   false,
-						NFContext:   nil,
-					},
-				}
-
-				events.broadcast <- dto.IdentityEvent{
-					ActionEvent: IDENTITY_REMOVED,
-					Id:          dto.Identity{
-						Name:        "",
-						FingerPrint: "",
-						Active:      false,
-						Config:      idcfg.Config{},
-						Status:      "",
-						Services:    nil,
-						Metrics:     nil,
-						Connected:   false,
-						NFContext:   nil,
-					},
-				}
-
-				events.broadcast <- dto.ServiceEvent{
-					ActionEvent: SERVICE_ADDED,
-					Service:     dto.Service{
-						Name:     "new service",
-						HostName: "some new hostname",
-						Port:     5000,
-					},
-					Fingerprint: "fake fingerprint",
-				}
-
-				events.broadcast <- dto.ServiceEvent{
-					ActionEvent: SERVICE_REMOVED,
-					Service:     dto.Service{
-						Name:     "removed service",
-					},
-					Fingerprint: "fake fingerprint",
-				}
-			}
-		}
-	}()
+	// setup events handler
+	go handleEvents()
 
 	//listen for services that show up
 	go acceptServices()
@@ -222,7 +144,7 @@ func openPipes() (*Pipes, error) {
 	log.Infof("log listener ready. pipe: %s", logsPipeName())
 
 	// listen for ipc messages
-	go accept(ipc, serveIpc, "    ipc")
+	go accept(ipc, serveIpc, "   ipc")
 	log.Infof("ipc listener ready pipe: %s", ipcPipeName())
 
 	// listen for events messages
@@ -305,7 +227,13 @@ func accept(p net.Listener, serveFunction func(net.Conn), debug string) {
 
 func serveIpc(conn net.Conn) {
 	log.Debug("beginning ipc receive loop")
+	defer log.Warn("IPC Loop has exited")
 	defer closeConn(conn) //close the connection after this function invoked as go routine exits
+
+	events.broadcast <- dto.TunnelStatusEvent{
+		StatusEvent: dto.StatusEvent{Op: "status"},
+		Status:      rts.ToStatus(),
+	}
 
 	done := make(chan struct{})
 	defer close(done) // ensure that goroutine exits
@@ -391,7 +319,6 @@ func serveIpc(conn net.Conn) {
 		}
 		_ = rw.Flush()
 	}
-	log.Info("IPC Loop has exited")
 }
 
 func serveLogs(conn net.Conn) {
@@ -637,7 +564,7 @@ func respondWithError(out *json.Encoder, msg string, code int, err error) {
 	} else {
 		respond(out, dto.Response{Message: msg, Code: code, Error: ""})
 	}
-	log.Debugf("responding with error: %s, %d, %v", msg, code, err)
+	log.Debugf("responded with error: %s, %d, %v", msg, code, err)
 }
 
 func connectIdentity(id *dto.Identity) {
@@ -767,6 +694,75 @@ func acceptServices() {
 
 			if !matched {
 				log.Warnf("service update received but matched no context. this is unexpected. service name: %s", c.Servicename)
+			}
+		}
+	}
+}
+
+func handleEvents(){
+	events.run()
+	d := 5 * time.Second
+	every5s := time.NewTicker(d)
+
+	defer log.Debugf("exiting handleEvents. loops were set for %v", d)
+	for {
+		select {
+		case <-shutdown:
+			return
+		case <-every5s.C:
+			s := rts.ToStatus()
+
+			events.broadcast <- dto.MetricsEvent{
+				StatusEvent: dto.StatusEvent{Op: "metrics"},
+				Identities:  s.Identities,
+			}
+
+			events.broadcast <- dto.IdentityEvent{
+				ActionEvent: IDENTITY_ADDED,
+				Id:          dto.Identity{
+					Name:        "",
+					FingerPrint: "",
+					Active:      false,
+					Config:      idcfg.Config{},
+					Status:      "",
+					Services:    nil,
+					Metrics:     nil,
+					Connected:   false,
+					NFContext:   nil,
+				},
+			}
+
+			events.broadcast <- dto.IdentityEvent{
+				ActionEvent: IDENTITY_REMOVED,
+				Id:          dto.Identity{
+					Name:        "",
+					FingerPrint: "",
+					Active:      false,
+					Config:      idcfg.Config{},
+					Status:      "",
+					Services:    nil,
+					Metrics:     nil,
+					Connected:   false,
+					NFContext:   nil,
+				},
+			}
+
+			events.broadcast <- dto.ServiceEvent{
+				ActionEvent: SERVICE_ADDED,
+				Service:     dto.Service{
+					Name:     "new service",
+					HostName: "some new hostname",
+					Port:     5000,
+				},
+				Fingerprint: "fake fingerprint",
+			}
+
+			events.broadcast <- dto.ServiceEvent{
+				ActionEvent: SERVICE_REMOVED,
+				Service:     dto.Service{
+					Name:     "removed service",
+				},
+				Fingerprint: "fake fingerprint",
 			}
 		}
 	}

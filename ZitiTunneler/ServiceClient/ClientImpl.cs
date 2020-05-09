@@ -82,6 +82,7 @@ namespace ZitiTunneler.ServiceClient
 
         protected virtual void ClientDisconnected(object e)
         {
+            Reconnect();
             Connected = false;
             EventHandler<object> handler = OnClientDisconnected;
             if (handler != null)
@@ -229,40 +230,6 @@ namespace ZitiTunneler.ServiceClient
                             }
 
                             processEvent(eventReader);
-                            //var r = readEvent<MetricsEvent>(eventReader);
-
-                            /*
-                            if (r != null)
-                            {
-                                switch (r.Op)
-                                {
-                                    case "metrics":
-                                        var st = read<MetricsStatus>(eventReader);
-                                        if (st != null) {
-                                            ZitiTunnelStatusUpdate(st.Payload);
-                                        }
-                                        break;
-                                    case "NewService":
-                                    default:
-                                        Debug.WriteLine("unexpected operation! " + r.Op);
-                                        break;
-                                }
-                            }
-                            else
-                            {
-                                try
-                                {
-                                    if (eventReader.EndOfStream)
-                                    {
-                                        break;
-                                    }
-                                }
-                                catch (ObjectDisposedException)
-                                {
-                                    //don't care about this one - all others can be bubbled out
-                                    break;
-                                }
-                            }*/
                         }
                     }
                     catch(Exception ex)
@@ -430,10 +397,6 @@ namespace ZitiTunneler.ServiceClient
             {
                 try
                 {
-                    if (ipcWriter == null)
-                    {
-                        //setupPipe();
-                    }
                     string toSend = JsonConvert.SerializeObject(objToSend, Formatting.None);
 
                     if (toSend?.Trim() != null)
