@@ -464,25 +464,5 @@ namespace ZitiTunneler {
 				e.Cancel = true;
 			}
 		}
-
-		private void Button_Click_1(object sender, RoutedEventArgs e)
-		{
-			serviceClient.debug();
-		}
-
-		private void Button_Click_2(object sender, RoutedEventArgs e)
-		{
-			serviceClient.debug();
-		}
-
-		private void Button_Click_3(object sender, RoutedEventArgs e)
-		{
-			serviceClient.debug();
-		}
-
-		private void Button_Click_4(object sender, RoutedEventArgs e)
-		{
-			serviceClient.debug();
-		}
 	}
 }
