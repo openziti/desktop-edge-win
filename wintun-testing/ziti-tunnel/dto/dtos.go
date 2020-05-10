@@ -65,6 +65,7 @@ type TunnelStatus struct {
 	Duration   int64
 	Identities []*Identity
 	IpInfo     *TunIpInfo `json:"IpInfo,omitempty"`
+	LogLevel   string
 }
 
 type ZitiTunnelStatus struct {

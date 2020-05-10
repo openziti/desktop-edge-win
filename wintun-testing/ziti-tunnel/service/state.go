@@ -208,8 +208,7 @@ func (t *RuntimeState) Close() {
 }
 
 func (t *RuntimeState) LoadConfig() {
-
-	log.Debugf("reading config file located at: %s", config.File())
+	log.Infof("reading config file located at: %s", config.File())
 	file, err := os.OpenFile(config.File(), os.O_RDONLY, 0644)
 	if err != nil {
 		t.state = &dto.TunnelStatus{}
@@ -225,7 +224,6 @@ func (t *RuntimeState) LoadConfig() {
 		t.state = &dto.TunnelStatus{}
 		return
 	}
-
 
 	err = file.Close()
 	if err != nil {

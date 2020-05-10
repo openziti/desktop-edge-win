@@ -20,7 +20,7 @@ func Clean(id dto.Identity) dto.Identity {
 		nid.Services[i] = svc
 	}
 	AddMetrics(&nid)
-	log.Debugf("Up: %v Down %v", nid.Metrics.Up, nid.Metrics.Down)
+	log.Tracef("Up: %v Down %v", nid.Metrics.Up, nid.Metrics.Down)
 	return nid
 }
 

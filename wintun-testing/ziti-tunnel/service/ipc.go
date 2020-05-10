@@ -42,16 +42,16 @@ var shutdown = make(chan bool) //a channel informing go routines to exit
 func SubMain(ops <-chan string, changes chan<- svc.Status) error {
 	log.Info("============================== service begins ==============================")
 
+	rts.LoadConfig()
+	l := rts.state.LogLevel
+	logLevel := globals.ParseLevel(l)
+	globals.InitLogger(logLevel)
+
+
 	_ = globals.Elog.Info(InformationEvent, SvcName+" starting. log file located at "+config.LogFile())
 
 	// create a channel for notifying any connections that they are to be interrupted
 	interrupt = make(chan struct{})
-
-	pipes, err := openPipes()
-	if err != nil {
-		return err
-	}
-	defer pipes.Close()
 
 	// wire in a log file for csdk troubleshooting
 	logFile, err := os.OpenFile(config.Path()+"cziti.log", os.O_WRONLY|os.O_TRUNC|os.O_APPEND|os.O_CREATE, 0644)
@@ -77,6 +77,13 @@ func SubMain(ops <-chan string, changes chan<- svc.Status) error {
 
 	//listen for services that show up
 	go acceptServices()
+
+	// open the pipe for business
+	pipes, err := openPipes()
+	if err != nil {
+		return err
+	}
+	defer pipes.Close()
 
 	// notify the service is running
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
@@ -169,8 +176,6 @@ func (p *Pipes) shutdownConnections() {
 }
 
 func initialize() error {
-	rts.LoadConfig()
-
 	err := rts.CreateTun()
 	if err != nil {
 		return err
@@ -259,11 +264,16 @@ func serveIpc(conn net.Conn) {
 		msg, err := reader.ReadString('\n')
 		if err != nil {
 			if err != winio.ErrFileClosed {
-				log.Errorf("unexpected error while reading line. %v", err)
+				if err == io.EOF {
+					log.Debug("pipe closed. client likely disconnected")
+				} else {
+					log.Errorf("unexpected error while reading line. %v", err)
 
-				//try to respond...
-				respondWithError(enc, "could not read line properly! exiting loop!", UNKNOWN_ERROR, err)
+					//try to respond... likely won't work but try...
+					respondWithError(enc, "could not read line properly! exiting loop!", UNKNOWN_ERROR, err)
+				}
 			}
+			log.Debug("exiting read loop for ipc")
 			return
 		}
 
