@@ -24,8 +24,7 @@ func Logger() *logrus.Entry {
 	return logger
 }
 
-func InitLogger(level string) {
-	logLevel := ParseLevel(level)
+func InitLogger(logLevel logrus.Level) {
 	logrus.SetLevel(logLevel)
 
 	rl, _ := rotatelogs.New(config.LogFile() + ".%Y%m%d%H%M",

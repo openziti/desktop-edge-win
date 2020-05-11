@@ -1,7 +1,6 @@
 package service
 
 import (
-	"github.com/tv42/topic"
 	"golang.org/x/sys/windows/svc"
 	"sync"
 	"time"
@@ -19,10 +18,10 @@ var wg sync.WaitGroup
 var connections int
 var Debug bool
 
-var top = topic.New()
-
 var TunStarted time.Time
 var log = globals.Logger()
+
+var	events = newTopic()
 
 const (
 	SUCCESS              = 0
@@ -76,4 +75,6 @@ const (
 	ipv6ip = "1"
 	ipv6mask = 64
 	Ipv6dns = "::1" // must be in "ipv6ip/ipv6mask" CIDR block
+
+	STATUS_ENROLLED = "enrolled"
 )

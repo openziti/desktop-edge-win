@@ -28,7 +28,8 @@ namespace ZitiTunneler.ServiceClient
     {
         public string Operation { get; set; }
         public TunnelStatus Status { get; set; }
-        public Metrics Metrics { get; set; }
+
+        public Identity NewIdentity { get; set; }
     }
 
     public class NewIdentity
@@ -157,7 +158,7 @@ namespace ZitiTunneler.ServiceClient
         public long Duration { get; set; }
 
         public List<Identity> Identities { get; set; }
-        
+
         public IpInfo IpInfo { get; set; }
 
         public void Dump(System.IO.TextWriter writer)
@@ -189,5 +190,36 @@ namespace ZitiTunneler.ServiceClient
 
         public int Code { get; }
         public string AdditionalInfo { get; }
+    }
+
+    class StatusEvent
+    {
+        public string Op { get; set; }
+    }
+
+    class ActionEvent : StatusEvent
+    {
+        public string Action { get; set; }
+    }
+
+    class TunnelStatusEvent : StatusEvent
+    {
+        public TunnelStatus Status { get; set; }
+    }
+
+    class MetricsEvent : StatusEvent
+    {
+        public List<Identity> Identities { get; set; }
+    }
+
+    class ServiceEvent : ActionEvent
+    {
+        public string Fingerprint { get; set; }
+        public Service Service { get; set; }
+    }
+
+    class IdentityEvent : ActionEvent
+    {
+        public Identity Id { get; set; }
     }
 }

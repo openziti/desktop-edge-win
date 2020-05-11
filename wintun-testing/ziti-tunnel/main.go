@@ -16,7 +16,7 @@ import (
 var log = globals.Logger()
 
 func main() {
-	globals.InitLogger("debug")
+	globals.InitLogger(globals.ParseLevel("info"))
 
 	//if len(os.Args) < 2 {
 	//	// if no args supplied - expect to run as service

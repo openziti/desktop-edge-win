@@ -13,5 +13,8 @@ echo COPIED dlls to .
 
 set CGO_CFLAGS=-DNOGDI -I %TUNNELER_SDK_DIR%\install\include
 set CGO_LDFLAGS=-L %TUNNELER_SDK_DIR%\install\lib
-go build -a ./ziti-wintun
+REM go build -a ./ziti-wintun
 go build -a ./ziti-tunnel
+
+copy *.dll c:\temp\ziti-windows-tunneler\
+copy ziti-tunnel.exe c:\temp\ziti-windows-tunneler\

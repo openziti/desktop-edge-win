@@ -58,6 +58,9 @@ func SaveState(t *RuntimeState) {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	t.state.IpInfo = nil
+	for _, id := range t.state.Identities {
+		id.Services = nil
+	}
 	_ = enc.Encode(t.state)
 	_ = w.Flush()
 
@@ -69,23 +72,25 @@ func SaveState(t *RuntimeState) {
 }
 
 func (t *RuntimeState) ToStatus() dto.TunnelStatus {
-	var d int64
-	if t.state.Active {
-		now := time.Now()
-		dd := now.Sub(TunStarted)
-		d = dd.Milliseconds()
-	} else {
-		d = 0
+	var uptime int64
+
+	now := time.Now()
+	tunStart := now.Sub(TunStarted)
+	uptime = tunStart.Milliseconds()
+
+	var idCount int
+	if t.state != nil && t.state.Identities != nil {
+		idCount = len(t.state.Identities)
 	}
 
 	clean := dto.TunnelStatus{
 		Active:     t.state.Active,
-		Duration:   d,
-		Identities: make([]*dto.Identity, len(t.state.Identities)),
+		Duration:   uptime,
+		Identities: make([]*dto.Identity, idCount),
 		IpInfo:     t.state.IpInfo,
 	}
+
 	for i, id := range t.state.Identities {
-		log.Debugf("returning clean identity: %s", id.Name)
 		cid := idutil.Clean(*id)
 		clean.Identities[i] = &cid
 	}
@@ -176,19 +181,8 @@ func (t *RuntimeState) LoadIdentity(id *dto.Identity) {
 
 		log.Debugf("name changed from %s to %s", id.Name, ctx.Name())
 		id.Name = ctx.Name()
+		id.Services = make([]*dto.Service, 0)
 
-		if ctx.Services != nil {
-			log.Debug("ranging over services...")
-			id.Services = make([]*dto.Service, 0)
-			for _, svc := range *ctx.Services {
-				id.Services = append(id.Services, &dto.Service{
-					Name:     svc.Name,
-					HostName: svc.InterceptHost,
-					Port:     uint16(svc.InterceptPort)})
-			}
-		} else {
-			log.Warnf("no services to load for service name: %s", ctx.Name())
-		}
 	} else {
 		log.Warnf("NOZITI set to true. this should be only used for debugging")
 	}
@@ -198,30 +192,6 @@ func noZiti() bool {
 	v, _ := strconv.ParseBool(os.Getenv("NOZITI"))
 	return v
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func (t *RuntimeState) Close() {
 	if t.tun != nil {
@@ -238,8 +208,7 @@ func (t *RuntimeState) Close() {
 }
 
 func (t *RuntimeState) LoadConfig() {
-
-	log.Debugf("reading config file located at: %s", config.File())
+	log.Infof("reading config file located at: %s", config.File())
 	file, err := os.OpenFile(config.File(), os.O_RDONLY, 0644)
 	if err != nil {
 		t.state = &dto.TunnelStatus{}
@@ -255,7 +224,6 @@ func (t *RuntimeState) LoadConfig() {
 		t.state = &dto.TunnelStatus{}
 		return
 	}
-
 
 	err = file.Close()
 	if err != nil {
