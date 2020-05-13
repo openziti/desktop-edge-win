@@ -1,4 +1,4 @@
-* Ziti Tunnel for Windows
+# Ziti Tunnel for Windows
 
 (the uwp project which used to be here has moved to uwp-vpnplugin-archive and is likely abandoned)
 
