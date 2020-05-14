@@ -7,10 +7,10 @@ import (
 	"golang.org/x/sys/windows/svc/eventlog"
 	"os"
 	"strings"
-	"wintun-testing/ziti-tunnel/globals"
+	"service/ziti-tunnel/globals"
 
 	"golang.org/x/sys/windows/svc"
-	"wintun-testing/ziti-tunnel/service"
+	"service/ziti-tunnel/service"
 )
 
 var log = globals.Logger()

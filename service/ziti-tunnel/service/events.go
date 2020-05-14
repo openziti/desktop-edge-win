@@ -1,6 +1,6 @@
 package service
 
-import "wintun-testing/ziti-tunnel/dto"
+import "service/ziti-tunnel/dto"
 
 const (
 	ADDED = "added"

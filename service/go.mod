@@ -1,4 +1,4 @@
-module wintun-testing
+module service
 
 go 1.14
 

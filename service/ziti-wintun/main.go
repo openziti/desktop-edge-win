@@ -11,8 +11,8 @@ import (
 	user2 "os/user"
 	"path/filepath"
 	"syscall"
-	"wintun-testing/cziti"
-	"wintun-testing/cziti/windns"
+	"service/cziti"
+	"service/cziti/windns"
 )
 
 const bufferSize = 64 * 1024
@@ -122,7 +122,8 @@ func main() {
 	signal.Notify(term, syscall.SIGTERM)
 
 	select {
-	case <-term:
+	case sig := <-term:
+		fmt.Println("received signal: %v", sig)
 	case <-errs:
 	}
 

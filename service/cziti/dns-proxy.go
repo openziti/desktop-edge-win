@@ -5,7 +5,7 @@ import (
 	"github.com/miekg/dns"
 	"net"
 	"time"
-	"wintun-testing/cziti/windns"
+	"service/cziti/windns"
 )
 
 func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn) {

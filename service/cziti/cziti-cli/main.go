@@ -8,7 +8,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"wintun-testing/cziti"
+	"service/cziti"
 )
 
 func main() {

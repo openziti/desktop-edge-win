@@ -9,6 +9,7 @@ import (
 	"github.com/netfoundry/ziti-foundation/identity/identity"
 	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
 	"golang.org/x/sys/windows/svc"
+	"golang.zx2c4.com/wireguard/tun"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -16,13 +17,13 @@ import (
 	"os"
 	"strings"
 	"time"
-	"wintun-testing/cziti"
-	"wintun-testing/ziti-tunnel/globals"
+	"service/cziti"
+	"service/ziti-tunnel/globals"
 
-	"wintun-testing/cziti/windns"
-	"wintun-testing/ziti-tunnel/config"
-	"wintun-testing/ziti-tunnel/dto"
-	"wintun-testing/ziti-tunnel/idutil"
+	"service/cziti/windns"
+	"service/ziti-tunnel/config"
+	"service/ziti-tunnel/dto"
+	"service/ziti-tunnel/idutil"
 )
 
 type Pipes struct {
@@ -65,6 +66,7 @@ func SubMain(ops <-chan string, changes chan<- svc.Status) error {
 
 	// initialize the network interface
 	err = initialize()
+
 	if err != nil {
 		log.Errorf("unexpected err: %v", err)
 		return err
@@ -99,6 +101,19 @@ func SubMain(ops <-chan string, changes chan<- svc.Status) error {
 	events.shutdown()
 
 	windns.ResetDNS()
+
+
+	log.Error("DELETING INTERFACE!")
+	wt, err := tun.WintunPool.GetInterface(TunName)
+	if err == nil {
+		// If so, we delete it, in case it has weird residual configuration.
+		_, err = wt.DeleteInterface()
+		if err != nil {
+			log.Errorf("Error deleting already existing interface: %v", err)
+		}
+	} else {
+		log.Errorf("INTERFACE %s was nil? %v", TunName, err)
+	}
 
 	rts.Close()
 

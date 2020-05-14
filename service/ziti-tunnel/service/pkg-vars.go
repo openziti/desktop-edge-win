@@ -4,8 +4,8 @@ import (
 	"golang.org/x/sys/windows/svc"
 	"sync"
 	"time"
-	"wintun-testing/ziti-tunnel/dto"
-	"wintun-testing/ziti-tunnel/globals"
+	"service/ziti-tunnel/dto"
+	"service/ziti-tunnel/globals"
 )
 
 var pipeBase = `\\.\pipe\NetFoundry\tunneler\`

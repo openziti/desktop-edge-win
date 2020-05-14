@@ -10,10 +10,10 @@ import (
 	"os"
 	"strconv"
 	"time"
-	"wintun-testing/cziti"
-	"wintun-testing/ziti-tunnel/config"
-	"wintun-testing/ziti-tunnel/dto"
-	"wintun-testing/ziti-tunnel/idutil"
+	"service/cziti"
+	"service/ziti-tunnel/config"
+	"service/ziti-tunnel/dto"
+	"service/ziti-tunnel/idutil"
 )
 
 type RuntimeState struct {

@@ -2,7 +2,7 @@ package service
 
 import (
 	idcfg "github.com/netfoundry/ziti-sdk-golang/ziti/config"
-	"wintun-testing/ziti-tunnel/dto"
+	"service/ziti-tunnel/dto"
 )
 
 func dbg() {

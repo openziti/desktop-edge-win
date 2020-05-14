@@ -4,8 +4,8 @@ import (
 	idcfg "github.com/netfoundry/ziti-sdk-golang/ziti/config"
 	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
 	"log"
-	"wintun-testing/cziti"
-	"wintun-testing/ziti-tunnel/config"
+	"service/cziti"
+	"service/ziti-tunnel/config"
 )
 
 type AddIdentity struct {

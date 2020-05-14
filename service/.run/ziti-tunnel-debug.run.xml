@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="ziti-tunnel-debug" type="GoApplicationRunConfiguration" factoryName="Go Application">
-    <module name="wintun-testing" />
+    <module name="ziti-tunnel-win" />
     <working_directory value="$PROJECT_DIR$" />
     <go_parameters value="-i" />
     <parameters value="debug" />
@@ -12,7 +12,7 @@
       <env name="NOZITI" value="true" />
     </envs>
     <kind value="FILE" />
-    <filePath value="$PROJECT_DIR$/ziti-tunnel/main.go" />
+    <filePath value="$PROJECT_DIR$/service/ziti-tunnel/main.go" />
     <package value="wintun-testing" />
     <directory value="$PROJECT_DIR$/" />
     <method v="2" />

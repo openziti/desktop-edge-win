@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"wintun-testing/ziti-tunnel/config"
+	"service/ziti-tunnel/config"
 )
 
 var Elog debug.Log

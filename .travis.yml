@@ -1,0 +1,12 @@
+os: windows
+
+language: go
+
+go:
+  - 1.14.x
+
+git:
+  depth: 1
+
+notifications:
+  email: false
