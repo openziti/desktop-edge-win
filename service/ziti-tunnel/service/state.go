@@ -1,0 +1,237 @@
+package service
+
+import (
+	"bufio"
+	"encoding/json"
+	"fmt"
+	"golang.zx2c4.com/wireguard/tun"
+	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
+	"net"
+	"os"
+	"strconv"
+	"time"
+	"wintun-testing/cziti"
+	"wintun-testing/ziti-tunnel/config"
+	"wintun-testing/ziti-tunnel/dto"
+	"wintun-testing/ziti-tunnel/idutil"
+)
+
+type RuntimeState struct {
+	state   *dto.TunnelStatus
+	tun     *tun.Device
+	tunName string
+}
+
+func (t *RuntimeState) RemoveByFingerprint(fingerprint string) {
+	log.Debugf("removing fingerprint: %s", fingerprint)
+	if index, _ := t.Find(fingerprint); index < len(t.state.Identities) {
+		t.state.Identities = append(t.state.Identities[:index], t.state.Identities[index+1:]...)
+	}
+}
+
+func (t *RuntimeState) Find(fingerprint string) (int, *dto.Identity) {
+	for i, n := range t.state.Identities {
+		if n.FingerPrint == fingerprint {
+			return i, n
+		}
+	}
+	return len(t.state.Identities), nil
+}
+
+func (t *RuntimeState) RemoveByIdentity(id dto.Identity) {
+	t.RemoveByFingerprint(id.FingerPrint)
+}
+
+func (t *RuntimeState) FindByIdentity(id dto.Identity) (int, *dto.Identity) {
+	return t.Find(id.FingerPrint)
+}
+
+func SaveState(t *RuntimeState) {
+	// overwrite file if it exists
+	_ = os.MkdirAll(config.Path(), 0644)
+
+	cfg, err := os.OpenFile(config.File(), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		panic(err)
+	}
+	w := bufio.NewWriter(bufio.NewWriter(cfg))
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	t.state.IpInfo = nil
+	for _, id := range t.state.Identities {
+		id.Services = nil
+	}
+	_ = enc.Encode(t.state)
+	_ = w.Flush()
+
+	err = cfg.Close()
+	if err != nil {
+		panic(err)
+	}
+	log.Debug("state saved")
+}
+
+func (t *RuntimeState) ToStatus() dto.TunnelStatus {
+	var uptime int64
+
+	now := time.Now()
+	tunStart := now.Sub(TunStarted)
+	uptime = tunStart.Milliseconds()
+
+	var idCount int
+	if t.state != nil && t.state.Identities != nil {
+		idCount = len(t.state.Identities)
+	}
+
+	clean := dto.TunnelStatus{
+		Active:     t.state.Active,
+		Duration:   uptime,
+		Identities: make([]*dto.Identity, idCount),
+		IpInfo:     t.state.IpInfo,
+	}
+
+	for i, id := range t.state.Identities {
+		cid := idutil.Clean(*id)
+		clean.Identities[i] = &cid
+	}
+
+ 	return clean
+}
+
+func (t *RuntimeState) CreateTun() error {
+	if noZiti() {
+		log.Warnf("NOZITI set to true. this should be only used for debugging")
+		return nil
+	}
+
+	log.Infof("creating TUN device: %s", TunName)
+	tunDevice, err := tun.CreateTUN(TunName, 64*1024)
+	if err == nil {
+		t.tun = &tunDevice
+		tunName, err2 := tunDevice.Name()
+		if err2 == nil {
+			t.tunName = tunName
+		}
+	} else {
+		return fmt.Errorf("error creating TUN device: (%v)", err)
+	}
+
+	if name, err := tunDevice.Name(); err == nil {
+		log.Debugf("created TUN device [%s]", name)
+	}
+
+	nativeTunDevice := tunDevice.(*tun.NativeTun)
+	luid := winipcfg.LUID(nativeTunDevice.LUID())
+	ip, ipnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", Ipv4ip, Ipv4mask))
+	if err != nil {
+		return fmt.Errorf("error parsing CIDR block: (%v)", err)
+	}
+	log.Debugf("setting TUN interface address to [%s]", ip)
+	err = luid.SetIPAddresses([]net.IPNet{{ip, ipnet.Mask}})
+	if err != nil {
+		return fmt.Errorf("failed to set IP address: (%v)", err)
+	}
+
+	dnsServers := []net.IP{
+		net.ParseIP(Ipv4dns).To4(),
+		net.ParseIP(Ipv6dns),
+	}
+	err = luid.AddDNS(dnsServers)
+	if err != nil {
+		return fmt.Errorf("failed to add DNS address: (%v)", err)
+	}
+	dns, err := luid.DNS()
+	if err != nil {
+		return fmt.Errorf("failed to fetch DNS address: (%v)", err)
+	}
+	log.Debugf("dns servers set to = %s", dns)
+
+	log.Infof("routing destination [%s] through [%s]", *ipnet, ipnet.IP)
+	err = luid.SetRoutes([]*winipcfg.RouteData{{*ipnet, ipnet.IP, 0}})
+	if err != nil {
+		return err
+	}
+	log.Info("routing applied")
+
+	cziti.DnsInit(Ipv4ip, 24)
+	cziti.Start()
+	_, err = cziti.HookupTun(tunDevice, dns)
+	if err != nil {
+		panic(err)
+	}
+	return nil
+}
+
+func (t *RuntimeState) LoadIdentity(id *dto.Identity) {
+	if !noZiti() {
+		if id.Connected {
+			log.Warnf("id [%s] already connected", id.FingerPrint)
+			return
+		}
+		log.Infof("loading identity %s with fingerprint %s", id.Name, id.FingerPrint)
+		ctx := cziti.LoadZiti(id.Path())
+		id.NFContext = ctx
+
+		id.Connected = true
+		if ctx == nil {
+			log.Warnf("connecting to identity with fingerprint [%s] did not error but no context was returned", id.FingerPrint)
+			return
+		}
+		log.Infof("successfully loaded %s@%s", ctx.Name(), ctx.Controller())
+
+		log.Debugf("name changed from %s to %s", id.Name, ctx.Name())
+		id.Name = ctx.Name()
+		id.Services = make([]*dto.Service, 0)
+
+	} else {
+		log.Warnf("NOZITI set to true. this should be only used for debugging")
+	}
+}
+
+func noZiti() bool {
+	v, _ := strconv.ParseBool(os.Getenv("NOZITI"))
+	return v
+}
+
+func (t *RuntimeState) Close() {
+	if t.tun != nil {
+		log.Warn("TODO: actually close the tun - or disable all the identities etc.")
+		/*
+			cziti.Stop()
+		*/
+		tu := *t.tun
+		err := tu.Close()
+		if err != nil {
+			log.Fatalf("problem closing tunnel!")
+		}
+	} else {
+		log.Warn("the TUN WAS NULL? ")
+		log.Warn("the TUN WAS NULL? ")
+		log.Warn("the TUN WAS NULL? ")
+		log.Warn("the TUN WAS NULL? ")
+	}
+}
+
+func (t *RuntimeState) LoadConfig() {
+	log.Infof("reading config file located at: %s", config.File())
+	file, err := os.OpenFile(config.File(), os.O_RDONLY, 0644)
+	if err != nil {
+		t.state = &dto.TunnelStatus{}
+		return
+	}
+
+	r := bufio.NewReader(file)
+	dec := json.NewDecoder(r)
+
+	err = dec.Decode(&rts.state)
+	if err != nil {
+		log.Warnf("unexpected error reading config file. %v", err)
+		t.state = &dto.TunnelStatus{}
+		return
+	}
+
+	err = file.Close()
+	if err != nil {
+		log.Errorf("could not close configuration file. this is not normal! %v", err)
+	}
+}
