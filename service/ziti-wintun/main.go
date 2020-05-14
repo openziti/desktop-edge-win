@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"syscall"
 	"github.com/netfoundry/ziti-tunnel-win/service/cziti"
-	"service/cziti/windns"
+	"github.com/netfoundry/ziti-tunnel-win/service/cziti/windns"
 )
 
 const bufferSize = 64 * 1024
