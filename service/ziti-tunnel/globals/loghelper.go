@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"service/ziti-tunnel/config"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/config"
 )
 
 var Elog debug.Log

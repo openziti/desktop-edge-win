@@ -1,6 +1,6 @@
 package service
 
-import "service/ziti-tunnel/dto"
+import "github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/dto"
 
 const (
 	ADDED = "added"

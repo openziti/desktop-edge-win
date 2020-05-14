@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
-	"service/ziti-tunnel/globals"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/globals"
 )
 
 

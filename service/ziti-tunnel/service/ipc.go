@@ -17,13 +17,13 @@ import (
 	"os"
 	"strings"
 	"time"
-	"service/cziti"
-	"service/ziti-tunnel/globals"
+	"github.com/netfoundry/ziti-tunnel-win/service/cziti"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/globals"
 
-	"service/cziti/windns"
-	"service/ziti-tunnel/config"
-	"service/ziti-tunnel/dto"
-	"service/ziti-tunnel/idutil"
+	"github.com/netfoundry/ziti-tunnel-win/service/cziti/windns"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/config"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/dto"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/idutil"
 )
 
 type Pipes struct {

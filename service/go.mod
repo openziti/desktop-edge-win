@@ -1,4 +1,4 @@
-module service
+module github.com/netfoundry/ziti-tunnel-win/service
 
 go 1.14
 

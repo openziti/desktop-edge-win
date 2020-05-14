@@ -8,7 +8,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"service/cziti"
+	"github.com/netfoundry/ziti-tunnel-win/service/cziti"
 )
 
 func main() {

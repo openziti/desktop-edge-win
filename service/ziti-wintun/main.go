@@ -11,7 +11,7 @@ import (
 	user2 "os/user"
 	"path/filepath"
 	"syscall"
-	"service/cziti"
+	"github.com/netfoundry/ziti-tunnel-win/service/cziti"
 	"service/cziti/windns"
 )
 
