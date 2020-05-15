@@ -1,4 +1,9 @@
-SET TUNNELER_SDK_DIR=c:\git\github\ziti-tunneler-sdk-c
+@echo Updating submodules...
+git submodule update --init --recursive
+
+set SVC_ROOT_DIR=%~dp0
+
+SET TUNNELER_SDK_DIR=%SVC_ROOT_DIR%deps\ziti-tunneler-sdk-c
 set CGO_CFLAGS=-DNOGDI -I %TUNNELER_SDK_DIR%\install\include
 set CGO_LDFLAGS=-L %TUNNELER_SDK_DIR%\install\lib
 
