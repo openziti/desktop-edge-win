@@ -20,6 +20,3 @@ echo COPIED dlls to .
 
 REM go build -a ./ziti-wintun
 go build -a ./ziti-tunnel
-
-copy *.dll c:\temp\ziti-windows-tunneler\
-copy ziti-tunnel.exe c:\temp\ziti-windows-tunneler\
