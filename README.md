@@ -15,4 +15,3 @@ components:
 * A Windows UWP UI application that allows the interactively logged on user to interact with the Windows service
 
 
-
