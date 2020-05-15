@@ -1,0 +1,4 @@
+[submodule "service/deps/ziti-tunneler-sdk-c"]
+	path = service/deps/ziti-tunneler-sdk-c
+	url = git@github.com:netfoundry/ziti-tunneler-sdk-c.git
+	branch = master
