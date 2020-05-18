@@ -4,7 +4,6 @@ pwd
 cd service
 pwd
 dir
-.\build-step1.bat
 
 @echo build.bat starts
 set SVC_ROOT_DIR=%~dp0
@@ -33,7 +32,7 @@ cmake --build %TUNNELER_SDK_DIR%\build --target install
 cp %TUNNELER_SDK_DIR%\install\lib\ziti.dll %SVC_ROOT_DIR%
 cp %TUNNELER_SDK_DIR%\install\lib\libuv.dll %SVC_ROOT_DIR%
 
-echo COPIED dlls to %SVC_ROOT_DIR%
+@echo COPIED dlls to %SVC_ROOT_DIR%
 cd %SVC_ROOT_DIR%
 
 REM go build -a ./ziti-wintun
