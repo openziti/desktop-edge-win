@@ -37,3 +37,5 @@ cd %SVC_ROOT_DIR%
 
 REM go build -a ./ziti-wintun
 go build -a ./ziti-tunnel
+
+dir
