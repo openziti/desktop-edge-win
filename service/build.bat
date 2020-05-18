@@ -9,7 +9,7 @@ dir
 set SVC_ROOT_DIR=%~dp0
 
 mkdir deps
-cd deps
+cd %SVC_ROOT_DIR%\deps
 @echo deps created and cd'ed to
 
 git clone https://github.com/netfoundry/ziti-tunneler-sdk-c.git
@@ -19,7 +19,7 @@ git checkout update-submodule-to-https-vs-git
 @echo Updating submodules...
 git submodule update --init --recursive
 
-SET TUNNELER_SDK_DIR=deps\ziti-tunneler-sdk-c
+SET TUNNELER_SDK_DIR=%SVC_ROOT_DIR%\deps\ziti-tunneler-sdk-c
 set CGO_CFLAGS=-DNOGDI -I %TUNNELER_SDK_DIR%\install\include
 set CGO_LDFLAGS=-L %TUNNELER_SDK_DIR%\install\lib
 
