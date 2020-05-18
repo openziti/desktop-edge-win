@@ -36,5 +36,4 @@ cp %TUNNELER_SDK_DIR%\install\lib\libuv.dll %SVC_ROOT_DIR%
 cd %SVC_ROOT_DIR%
 
 REM go build -a ./ziti-wintun
-go get ./...
 go build -a ./ziti-tunnel
