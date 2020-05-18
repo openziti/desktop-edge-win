@@ -1,3 +1,11 @@
+echo 1 > version
+ziti-ci configure-git
+pwd
+cd service
+pwd
+dir
+.\build-step1.bat
+
 @echo build.bat starts
 set SVC_ROOT_DIR=%~dp0
 

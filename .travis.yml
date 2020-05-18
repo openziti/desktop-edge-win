@@ -9,12 +9,5 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then choco install -y ninja; fi
 
 script:
-  - echo 1 > version
-  - ziti-ci configure-git
-  - pwd
-  - cd service
-  - pwd
-  - dir
-  - .\build-step1.bat
   - build.bat
   
