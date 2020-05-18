@@ -1,5 +1,7 @@
 addons:
-  ssh_known_hosts: git.savannah.nongnu.org
+  ssh_known_hosts:
+    - git.savannah.nongnu.org
+    - github.com
 
 import:
   - source: netfoundry/ziti-ci:ziti-ci.yml@v1
