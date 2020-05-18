@@ -11,6 +11,10 @@ install:
 script:
   - echo 1 > version
   - ziti-ci configure-git
+  - pwd
   - cd service
+  - pwd
+  - dir
+  - .\build-step1.bat
   - build.bat
   
