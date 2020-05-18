@@ -1,7 +1,10 @@
+@echo build.bat starts
 set SVC_ROOT_DIR=%~dp0
 
 mkdir deps
 cd deps
+@echo deps created and cd'ed to
+
 git clone https://github.com/netfoundry/ziti-tunneler-sdk-c.git
 cd ziti-tunneler-sdk-c
 git checkout update-submodule-to-https-vs-git
