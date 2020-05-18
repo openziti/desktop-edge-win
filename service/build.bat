@@ -1,5 +1,7 @@
 set SVC_ROOT_DIR=%~dp0
 
+mkdir deps
+cd deps
 git clone https://github.com/netfoundry/ziti-tunneler-sdk-c.git
 cd ziti-tunneler-sdk-c
 git checkout update-submodule-to-https-vs-git
@@ -20,7 +22,8 @@ cmake --build %TUNNELER_SDK_DIR%\build --target install
 cp %TUNNELER_SDK_DIR%\install\lib\ziti.dll %SVC_ROOT_DIR%
 cp %TUNNELER_SDK_DIR%\install\lib\libuv.dll %SVC_ROOT_DIR%
 
-echo COPIED dlls to .
+echo COPIED dlls to %SVC_ROOT_DIR%
+cd %SVC_ROOT_DIR%
 
 REM go build -a ./ziti-wintun
 go build -a ./ziti-tunnel
