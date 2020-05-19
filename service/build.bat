@@ -12,12 +12,20 @@ mkdir deps
 cd %SVC_ROOT_DIR%deps
 @echo deps created and cd'ed to
 
-git clone git@github.com:netfoundry/ziti-tunneler-sdk-c.git
+SET REPO_URL=https://github.com/netfoundry/ziti-tunneler-sdk-c.git
+SET REPO_BRANCH=update-submodule-to-https-vs-git
+
+git clone %REPO_URL%
+IF %ERRORLEVEL% NEQ 0 @echo Could not clone git repo:%REPO_URL%
+
 cd ziti-tunneler-sdk-c
-git checkout update-submodule-to-https-vs-git
+git checkout %REPO_BRANCH%
+IF %ERRORLEVEL% NEQ 0 @echo Could not checkout branch :%REPO_BRANCH%
+
 
 @echo Updating submodules...
 git submodule update --init --recursive
+IF %ERRORLEVEL% NEQ 0 @echo Could not update submodules
 
 SET TUNNELER_SDK_DIR=%SVC_ROOT_DIR%deps\ziti-tunneler-sdk-c
 set CGO_CFLAGS=-DNOGDI -I %TUNNELER_SDK_DIR%\install\include
