@@ -20,4 +20,7 @@ script:
   - ziti-ci publish artifactory --groupId amd64.windows --artifactId ziti-tunnel-win --version 0.0.1 --target ziti-tunnel.exe
 
 before_script:
-  - go get github.com/netfoundry/ziti-ci@v1.2
+  - git clone git@github.com:netfoundry/ziti-ci.git
+  - cd ziti-ci
+  - git checkout v1.2
+  - go install .
