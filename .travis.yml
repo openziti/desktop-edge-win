@@ -3,9 +3,6 @@ addons:
     - git.savannah.nongnu.org
     - github.com
 
-import:
-  - source: netfoundry/ziti-ci:ziti-ci.yml@v1.2
-
 language: go
 
 go:
@@ -21,3 +18,6 @@ script:
   - service/build.bat
   - cd service
   - ziti-ci publish artifactory --groupId amd64.windows --artifactId ziti-tunnel-win --version 0.0.1 --target ziti-tunnel.exe
+
+before_script:
+  - go get github.com/netfoundry/ziti-ci@v1.2
