@@ -407,9 +407,9 @@ namespace ZitiTunneler {
 				ConnectButton.Visibility = Visibility.Collapsed;
 				DisconnectButton.Visibility = Visibility.Visible;
 			} catch (ServiceException se) {
-				MessageBox.Show(se.AdditionalInfo, se.Message);
+				ShowError(se.AdditionalInfo, se.Message);
 			} catch (Exception ex) {
-				MessageBox.Show("Unexpected error 3", ex.Message);
+				ShowError("Unexpected Error", "Code 3:" + ex.Message);
 			}
 		}
 
@@ -441,9 +441,9 @@ namespace ZitiTunneler {
 				ConnectButton.Visibility = Visibility.Visible;
 				DisconnectButton.Visibility = Visibility.Collapsed;
 			} catch (ServiceException se) {
-				MessageBox.Show(se.AdditionalInfo, se.Message);
+				ShowError(se.AdditionalInfo, se.Message);
 			} catch (Exception ex) {
-				MessageBox.Show("Unexpected error 4", ex.Message);
+				ShowError("Unexpected Error", "Code 4:"+ex.Message);
 			}
 		}
 
@@ -458,6 +458,17 @@ namespace ZitiTunneler {
 				e.Cancel = true;
 			}
 		}
+
+		private void ShowError(String title, String message) {
+			ErrorTitle.Content = title;
+			ErrorDetails.Text = message;
+			ErrorView.Visibility = Visibility.Visible;
+		}
+
+		private void CloseError(object sender, MouseButtonEventArgs e) {
+			ErrorView.Visibility = Visibility.Collapsed;
+		}
+
 		private void CloseApp(object sender, MouseButtonEventArgs e) {
 			Application.Current.Shutdown();
 		}

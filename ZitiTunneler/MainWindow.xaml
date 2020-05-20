@@ -166,5 +166,31 @@
                 <Label Name="QuitButton" Grid.Row="3" Foreground="#F4044D" FontWeight="SemiBold" Content="Quit Ziti Tunneler" Cursor="Hand" MouseDown="CloseApp" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Center"></Label>
             </Grid>
         </Grid>
+        <Grid x:Name="ErrorView" Visibility="Collapsed" Width="350">
+            <Rectangle RadiusX="10" RadiusY="10">
+                <Rectangle.Fill>
+                    <SolidColorBrush Color="Black" Opacity="0.9"/>
+                </Rectangle.Fill>
+            </Rectangle>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+            </Grid>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"></RowDefinition>
+                    <RowDefinition Height="60"></RowDefinition>
+                    <RowDefinition Height="80"></RowDefinition>
+                    <RowDefinition Height="30"></RowDefinition>
+                    <RowDefinition Height="30"></RowDefinition>
+                    <RowDefinition Height="*"></RowDefinition>
+                </Grid.RowDefinitions>
+                <Label Name="ErrorTitle" Foreground="White" Content="An Error Occurred" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
+                <TextBlock x:Name="ErrorDetails" TextWrapping="WrapWithOverflow" Foreground="LightGray" Padding="10" Text="An Unknown Error Occurred, you could try restarting the service and the interface to continue" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
+                <Label Grid.Row="3" Foreground="Gray" FontWeight="Light" Content="Check the Log for Details" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Center"></Label>
+                <Label Name="QuitErrorButton" Grid.Row="4" Foreground="#F4044D" FontWeight="SemiBold" Content="Close" Cursor="Hand" MouseDown="CloseError" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Center"></Label>
+            </Grid>
+        </Grid>
     </Grid>
 </Window>
