@@ -49,7 +49,7 @@ ziti-ci generate-build-info ziti-tunnel/version.go main
 REM go build -a ./ziti-wintun
 go build -a ./ziti-tunnel
 
-dir
-
 @echo creating the distribution zip file
 zip ziti-tunnel-win.zip *.dll ziti*exe
+
+dir
