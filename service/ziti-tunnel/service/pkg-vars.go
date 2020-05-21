@@ -1,21 +1,44 @@
+/*
+ * Copyright NetFoundry, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 package service
 
 import (
 	"golang.org/x/sys/windows/svc"
 	"sync"
-	"wintun-testing/ziti-tunnel/globals"
-	"wintun-testing/ziti-tunnel/runtime"
+	"time"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/dto"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/globals"
 )
 
-var log = globals.Logger()
+var pipeBase = `\\.\pipe\NetFoundry\tunneler\`
 
-var ipcPipeName = `\\.\pipe\NetFoundry\tunneler\ipc`
-var logsPipeName = `\\.\pipe\NetFoundry\tunneler\logs`
-var state = runtime.TunnelerState{}
+var activeIds = make(map[string]*dto.Identity)
+var rts = RuntimeState{}
 var interrupt chan struct{}
 
 var wg sync.WaitGroup
 var connections int
+var Debug bool
+
+var TunStarted time.Time
+var log = globals.Logger()
+
+var	events = newTopic()
 
 const (
 	SUCCESS              = 0
@@ -55,4 +78,20 @@ const (
 	System                    = "(A;;FA;;;SY)"
 	BuiltinAdmins             = "(A;;FA;;;BA)"
 	LocalService              = "(A;;FA;;;LS)"
+
+	NF_GROUP_NAME = "NetFoundry Tunneler Users"
+	TunName = "ZitiTUN"
+
+	Ipv4ip = "169.254.1.1"
+	Ipv4mask = 24
+	Ipv4dns = "127.0.0.1" // use lo -- don't pass DNS queries through tunneler SDK
+
+	// IPv6 CIDR fe80:6e66:7a69:7469::/64
+	//   <link-local>: nf : zi : ti ::
+	ipv6pfx = "fe80:6e66:7a69:7469"
+	ipv6ip = "1"
+	ipv6mask = 64
+	Ipv6dns = "::1" // must be in "ipv6ip/ipv6mask" CIDR block
+
+	STATUS_ENROLLED = "enrolled"
 )

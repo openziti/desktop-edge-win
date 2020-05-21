@@ -11,10 +11,10 @@
             <Grid Height="35">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="150"/>
                 </Grid.ColumnDefinitions>
-                <TextBox Name="MainLabel" MaxWidth="150" BorderThickness="0" Background="White" ClipToBounds="True" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBox>
-                <TextBox Name="MainEdit" MaxWidth="150" BorderThickness="0" Background="White" ClipToBounds="True" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBox>
+                <TextBox Name="MainLabel" BorderThickness="0" Background="White" ClipToBounds="True" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBox>
+                <TextBox Name="MainEdit" BorderThickness="0" Background="White" ClipToBounds="True" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBox>
             </Grid>
             <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
         </StackPanel>

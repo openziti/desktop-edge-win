@@ -34,8 +34,8 @@
                 </Grid>
                 <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
                 <Grid>
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="True">
-                        <StackPanel Name="MainItems" Orientation="Vertical">
+                    <ScrollViewer Name="MainDetailScroll" VerticalScrollBarVisibility="Auto" CanContentScroll="True">
+                        <StackPanel>
                             <local:MenuEditItem x:Name="IdentityName" HorizontalAlignment="Stretch" Label="Name" IsLocked="True"></local:MenuEditItem>
                             <local:MenuEditItem x:Name="IdentityNetwork" HorizontalAlignment="Stretch" Label="Network" IsLocked="True"></local:MenuEditItem>
                             <local:MenuEditItem x:Name="IdentityStatus" HorizontalAlignment="Stretch" Label="Status" IsLocked="True"></local:MenuEditItem>
@@ -43,8 +43,7 @@
                             <Label Content="SERVICES" Foreground="Gray" FontWeight="SemiBold" />
                             <StackPanel Name="ServiceList" Orientation="Vertical"></StackPanel>
                             <Label Name="ForgetIdentityButton" Margin="0,10,0,10" Content="Forget This Identity" Cursor="Hand" Foreground="#F4044D" HorizontalAlignment="Center" Mouse.MouseDown="ForgetIdentity"></Label>
-                            <Image Source="/Assets/Images/identity.png" Height="100" Width="100" HorizontalAlignment="Stretch">
-                            </Image>
+                            <Image Source="/Assets/Images/identity.png" Height="160" Width="160" HorizontalAlignment="Stretch"></Image>
                         </StackPanel>
                     </ScrollViewer>
                 </Grid>

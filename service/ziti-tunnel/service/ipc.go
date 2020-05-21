@@ -1,3 +1,20 @@
+/*
+ * Copyright NetFoundry, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 package service
 
 import (
@@ -9,37 +26,133 @@ import (
 	"github.com/netfoundry/ziti-foundation/identity/identity"
 	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
 	"golang.org/x/sys/windows/svc"
-	"golang.org/x/sys/windows/svc/eventlog"
+	"golang.zx2c4.com/wireguard/tun"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net"
 	"os"
 	"strings"
 	"time"
-	"wintun-testing/cziti"
+	"github.com/netfoundry/ziti-tunnel-win/service/cziti"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/globals"
 
-	"wintun-testing/cziti/windns"
-	"wintun-testing/ziti-tunnel/config"
-	"wintun-testing/ziti-tunnel/dto"
-	"wintun-testing/ziti-tunnel/idutil"
-	"wintun-testing/ziti-tunnel/runtime"
+	"github.com/netfoundry/ziti-tunnel-win/service/cziti/windns"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/config"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/dto"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/idutil"
 )
 
+type Pipes struct {
+	ipc    net.Listener
+	logs   net.Listener
+	events net.Listener
+}
 
-func SubMain(ops <- chan string, changes chan<- svc.Status) error {
-	log.Debug("")
-	log.Debug("")
-	log.Debug("===============================================================================")
-	// open and assign the event log for this service
-	Elog, err := eventlog.Open(SvcName)
-	if err != nil {
-	   return err
-	}
-	_ = Elog.Info(InformationEvent, SvcName + " starting. log file located at " + config.LogFile())
+func (p *Pipes) Close() {
+	p.ipc.Close()
+	p.logs.Close()
+	p.events.Close()
+}
+
+var shutdown = make(chan bool) //a channel informing go routines to exit
+
+func SubMain(ops <-chan string, changes chan<- svc.Status) error {
+	log.Info("============================== service begins ==============================")
+
+	rts.LoadConfig()
+	l := rts.state.LogLevel
+	logLevel := globals.ParseLevel(l)
+	globals.InitLogger(logLevel)
+
+
+	_ = globals.Elog.Info(InformationEvent, SvcName+" starting. log file located at "+config.LogFile())
 
 	// create a channel for notifying any connections that they are to be interrupted
 	interrupt = make(chan struct{})
 
+	// wire in a log file for csdk troubleshooting
+	logFile, err := os.OpenFile(config.Path()+"cziti.log", os.O_WRONLY|os.O_TRUNC|os.O_APPEND|os.O_CREATE, 0644)
+	if err != nil {
+		log.Warnf("could not open cziti.log for writing. no debug information will be captured.")
+	} else {
+		cziti.SetLog(logFile)
+		cziti.SetLogLevel(4)
+		defer logFile.Close()
+	}
+
+	// initialize the network interface
+	err = initialize()
+
+	if err != nil {
+		log.Errorf("unexpected err: %v", err)
+		return err
+	}
+
+	setTunnelState(true)
+
+	// setup events handler
+	go handleEvents()
+
+	//listen for services that show up
+	go acceptServices()
+
+	// open the pipe for business
+	pipes, err := openPipes()
+	if err != nil {
+		return err
+	}
+	defer pipes.Close()
+
+	// notify the service is running
+	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
+	_ = globals.Elog.Info(InformationEvent, SvcName+" status set to running")
+	log.Info(SvcName + " status set to running. starting cancel loop")
+
+	waitForStopRequest(ops)
+
+	shutdown <- true // stop the metrics ticker
+	shutdown <- true // stop the service change listener
+
+	pipes.shutdownConnections()
+	events.shutdown()
+
+	windns.ResetDNS()
+
+
+	log.Error("DELETING INTERFACE!")
+	wt, err := tun.WintunPool.GetInterface(TunName)
+	if err == nil {
+		// If so, we delete it, in case it has weird residual configuration.
+		_, err = wt.DeleteInterface()
+		if err != nil {
+			log.Errorf("Error deleting already existing interface: %v", err)
+		}
+	} else {
+		log.Errorf("INTERFACE %s was nil? %v", TunName, err)
+	}
+
+	rts.Close()
+
+	log.Info("==============================  service ends  ==============================")
+
+	return nil
+}
+func waitForStopRequest(ops <-chan string) {
+
+loop:
+	for {
+		c := <-ops
+		log.Infof("request for control received, %v", c)
+		if c == "stop" {
+			break loop
+		} else {
+			log.Debug("unexpected operation: " + c)
+		}
+	}
+}
+
+func openPipes() (*Pipes, error) {
 	// create the ACE string representing the following groups have access to the pipes created
 	grps := []string{InteractivelyLoggedInUser, System, BuiltinAdmins, LocalService}
 	auth := "D:" + strings.Join(grps, "")
@@ -51,77 +164,39 @@ func SubMain(ops <- chan string, changes chan<- svc.Status) error {
 		InputBufferSize:    1024,
 		OutputBufferSize:   1024,
 	}
-	logs, err := winio.ListenPipe(logsPipeName, &pc)
+	logs, err := winio.ListenPipe(logsPipeName(), &pc)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	// listen for log requests
-	go acceptLogs(logs)
-	log.Infof("log listener ready. pipe: %s", logsPipeName)
+	ipc, err := winio.ListenPipe(ipcPipeName(), &pc)
+	if err != nil {
+		return nil, err
+	}
+	events, err := winio.ListenPipe(eventsPipeName(), &pc)
+	if err != nil {
+		return nil, err
+	}
 
-	pc2 := winio.PipeConfig{
-		SecurityDescriptor: auth,
-		MessageMode:        false,
-		InputBufferSize:    1024,
-		OutputBufferSize:   1024,
-	}
-	ipc, err := winio.ListenPipe(ipcPipeName, &pc2)
-	if err != nil {
-		return err
-	}
+	// listen for log requests
+	go accept(logs, serveLogs, "  logs")
+	log.Infof("log listener ready. pipe: %s", logsPipeName())
 
 	// listen for ipc messages
-	go acceptIPC(ipc)
-	log.Infof("ipc listener ready pipe: %s", ipcPipeName)
+	go accept(ipc, serveIpc, "   ipc")
+	log.Infof("ipc listener ready pipe: %s", ipcPipeName())
 
-	// wire in a log file for csdk troubleshooting
-	logFile, err := os.OpenFile(config.Path() + "cziti.log", os.O_WRONLY | os.O_TRUNC | os.O_APPEND | os.O_CREATE, 0644)
-	if err != nil {
-		log.Warnf("could not open cziti.log for writing. no debug information will be captured.")
-	} else {
-		cziti.SetLog(logFile)
-		cziti.SetLogLevel(4)
-		defer logFile.Close()
-	}
+	// listen for events messages
+	go accept(events, serveEvents, "events")
+	log.Infof("events listener ready pipe: %s", eventsPipeName())
 
-	// initialize the network interface
-	err = initialize()
-	if err != nil {
-		log.Errorf("unexpected err: %v", err)
-		return err
-	}
-
-	setTunnelState(true)
-
-	// notify the service is running
-	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
-	_ = Elog.Info(InformationEvent, SvcName + " status set to running")
-	log.Info(SvcName + " status set to running. starting cancel loop")
-
-	loop:
-		for {
-			c := <-ops
-				log.Infof("request for control received, %v", c)
-				if c == "stop" {
-					break loop
-				} else {
-					log.Debug("unexpected operation: " + c)
-				}
-		}
-
-	shutdownConnections()
-
-	windns.ResetDNS()
-
-	state.Close()
-	_ = ipc.Close()
-	_ = logs.Close()
-	log.Info("shutdown complete. exiting process")
-
-	return nil
+	return &Pipes{
+		ipc:    ipc,
+		logs:   logs,
+		events: events,
+	}, nil
 }
 
-func shutdownConnections() {
+func (p *Pipes) shutdownConnections() {
 	log.Info("waiting for all connections to close...")
 
 	for i := 0; i < connections; i++ {
@@ -132,64 +207,31 @@ func shutdownConnections() {
 	log.Info("all connections closed")
 }
 
-func acceptIPC(p net.Listener) {
-	for {
-		c, err := p.Accept()
-		if err != nil {
-			if err != winio.ErrPipeListenerClosed {
-				log.Errorf("unexpected error while accepting a connection. exiting loop. %v", err)
-			}
-			return
-		}
-		wg.Add(1)
-		connections ++
-		log.Debugf("accepting a new client")
-
-		go serveIpc(c)
-	}
-}
-
 func initialize() error {
-	log.Debugf("reading config file located at: %s", config.File())
-	file, err := os.OpenFile(config.File(), os.O_RDONLY, 0644)
-	if err != nil {
-		// file does not exist or process has no rights to read the file - return leaving configuration empty
-		// this is expected when first starting
-		return nil
-	}
-
-	r := bufio.NewReader(file)
-	dec := json.NewDecoder(r)
-
-	_ = dec.Decode(&state)
-
-	err = state.CreateTun()
+	err := rts.CreateTun()
 	if err != nil {
 		return err
 	}
-	setTunInfo()
+	setTunInfo(rts.state)
 
+	s := rts.state
 	// decide if the tunnel should be active or not and if so - activate it
-	setTunnelState(state.Active)
+	setTunnelState(s.Active)
 
 	// connect any identities that are enabled
-	for _, id := range state.Identities {
+	for _, id := range s.Identities {
 		connectIdentity(id)
 	}
 
-	err = file.Close()
-	if err != nil {
-		return fmt.Errorf("could not close configuration file. this is not normal! %v", err)
-	}
 	log.Debugf("initial state loaded from configuration file")
 	return nil
 }
 
-func setTunInfo() {
+func setTunInfo(s *dto.TunnelStatus) {
 	//set the tun info into the state
-	state.IpInfo = &runtime.TunIpInfo{
-		Ip:     runtime.Ipv4ip,
-		DNS:    runtime.Ipv4dns,
+	s.IpInfo = &dto.TunIpInfo{
+		Ip:     Ipv4ip,
+		DNS:    Ipv4dns,
 		MTU:    1400,
 		Subnet: "255.255.255.0",
 	}
@@ -202,13 +244,36 @@ func closeConn(conn net.Conn) {
 	}
 }
 
+func accept(p net.Listener, serveFunction func(net.Conn), debug string) {
+	for {
+		c, err := p.Accept()
+		if err != nil {
+			if err != winio.ErrPipeListenerClosed {
+				log.Errorf("unexpected error while accepting a connection. exiting loop. %v", err)
+			}
+			return
+		}
+		wg.Add(1)
+		connections++
+		log.Debugf("accepting a new client for %s", debug)
+
+		go serveFunction(c)
+	}
+}
+
 func serveIpc(conn net.Conn) {
 	log.Debug("beginning ipc receive loop")
+	defer log.Warn("IPC Loop has exited")
 	defer closeConn(conn) //close the connection after this function invoked as go routine exits
+
+	events.broadcast <- dto.TunnelStatusEvent{
+		StatusEvent: dto.StatusEvent{Op: "status"},
+		Status:      rts.ToStatus(),
+	}
 
 	done := make(chan struct{})
 	defer close(done) // ensure that goroutine exits
-	defer wg.Done() // count down whenever the function exits
+	defer wg.Done()   // count down whenever the function exits
 
 	go func() {
 		select {
@@ -231,11 +296,16 @@ func serveIpc(conn net.Conn) {
 		msg, err := reader.ReadString('\n')
 		if err != nil {
 			if err != winio.ErrFileClosed {
-				log.Errorf("unexpected error while reading line. %v", err)
+				if err == io.EOF {
+					log.Debug("pipe closed. client likely disconnected")
+				} else {
+					log.Errorf("unexpected error while reading line. %v", err)
 
-				//try to respond...
-				respondWithError(enc, "could not read line properly! exiting loop!", UNKNOWN_ERROR, err)
+					//try to respond... likely won't work but try...
+					respondWithError(enc, "could not read line properly! exiting loop!", UNKNOWN_ERROR, err)
+				}
 			}
+			log.Debug("exiting read loop for ipc")
 			return
 		}
 
@@ -284,30 +354,24 @@ func serveIpc(conn net.Conn) {
 			onOff := cmd.Payload["OnOff"].(bool)
 			fingerprint := cmd.Payload["Fingerprint"].(string)
 			toggleIdentity(enc, fingerprint, onOff)
+		case "Debug":
+			dbg()
+			respond(enc, dto.Response{
+				Code:    0,
+				Message: "debug",
+				Error:   "debug",
+				Payload: nil,
+			})
 		default:
 			log.Warnf("Unknown operation: %s. Returning error on pipe", cmd.Function)
 			respondWithError(enc, "Something unexpected has happened", UNKNOWN_ERROR, nil)
 		}
 		_ = rw.Flush()
 	}
-	log.Info("IPC Loop has exited")
-}
-
-func acceptLogs(p net.Listener) {
-	log.Debug("beginning logs receive loop")
-	for {
-		lcon, err := p.Accept()
-		if err != nil {
-			log.Errorf("unexpected error during accept. exiting accept loop! %v", err)
-			return
-		}
-
-		go serveLogs(lcon) //serveLogs will close the connection for us
-	}
 }
 
 func serveLogs(conn net.Conn) {
-	log.Debug("accepted a connection, writing logs to pipe")
+	log.Debug("accepted a logs connection, writing logs to pipe")
 	w := bufio.NewWriter(conn)
 
 	file, err := os.OpenFile(config.LogFile(), os.O_RDONLY, 0644)
@@ -344,14 +408,56 @@ func serveLogs(conn net.Conn) {
 	}
 }
 
+func serveEvents(conn net.Conn) {
+	randomInt:= rand.Int()
+	log.Debug("accepted an events connection, writing events to pipe")
+	defer closeConn(conn) //close the connection after this function invoked as go routine exits
+
+	consumer := make(chan interface{}, 1)
+	events.register(randomInt, consumer)
+	defer events.unregister(randomInt)
+
+	w := bufio.NewWriter(conn)
+	o := json.NewEncoder(w)
+
+	log.Info("new event client connected - sending current status")
+	err := o.Encode(	dto.TunnelStatusEvent{
+		StatusEvent: dto.StatusEvent{Op: "status"},
+		Status:      rts.ToStatus(),
+	})
+
+	if err != nil {
+		log.Errorf("could not send status to event client: %v", err)
+	} else {
+		log.Info("status sent. listening for new events")
+	}
+
+	for {
+		msg := <-consumer
+
+		err := o.Encode(msg)
+
+		if err != nil {
+			log.Infof("exiting from serveEvents - %v", err)
+			break
+		}
+		_ = w.Flush()
+	}
+	log.Debug("exiting serve events")
+}
+
 func reportStatus(out *json.Encoder) {
-	log.Debugf("request for status")
-	respond(out, state.Clean())
+	s := rts.ToStatus()
+	respond(out, dto.ZitiTunnelStatus{
+		Status:  &s,
+		Metrics: nil,
+	})
 	log.Debugf("request for status responded to")
 }
 
 func tunnelState(onOff bool, out *json.Encoder) {
 	log.Debugf("toggle ziti on/off: %t", onOff)
+	state := rts.state
 	if onOff == state.Active {
 		log.Debug("nothing to do. the state of the tunnel already matches the requested state: %t", onOff)
 		respond(out, dto.Response{Message: fmt.Sprintf("noop: tunnel state already set to %t", onOff), Code: SUCCESS, Error: "", Payload: nil})
@@ -359,7 +465,7 @@ func tunnelState(onOff bool, out *json.Encoder) {
 	}
 	setTunnelState(onOff)
 	state.Active = onOff
-	runtime.SaveState(&state)
+	SaveState(&rts)
 
 	respond(out, dto.Response{Message: "tunnel state updated successfully", Code: SUCCESS, Error: "", Payload: nil})
 	log.Debugf("toggle ziti on/off: %t responded to", onOff)
@@ -367,8 +473,9 @@ func tunnelState(onOff bool, out *json.Encoder) {
 
 func setTunnelState(onOff bool) {
 	if onOff {
-		runtime.TunStarted = time.Now()
+		TunStarted = time.Now()
 
+		state := rts.state
 		for _, id := range state.Identities {
 			connectIdentity(id)
 		}
@@ -378,9 +485,9 @@ func setTunnelState(onOff bool) {
 }
 
 func toggleIdentity(out *json.Encoder, fingerprint string, onOff bool) {
-	log.Debugf("toggle ziti on/off5 for %s: %t", fingerprint, onOff)
+	log.Debugf("toggle ziti on/off for %s: %t", fingerprint, onOff)
 
-	_, id := state.Find(fingerprint)
+	_, id := rts.Find(fingerprint)
 	if id.Active == onOff {
 		log.Debugf("nothing to do - the provided identity %s is already set to active=%t", id.Name, id.Active)
 		//nothing to do...
@@ -401,7 +508,7 @@ func toggleIdentity(out *json.Encoder, fingerprint string, onOff bool) {
 
 	respond(out, dto.Response{Message: "identity toggled", Code: SUCCESS, Error: "", Payload: idutil.Clean(*id)})
 	log.Debugf("toggle ziti on/off for %s: %t responded to", fingerprint, onOff)
-	runtime.SaveState(&state)
+	SaveState(&rts)
 }
 
 func removeTempFile(file os.File) {
@@ -475,7 +582,7 @@ func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
 	if newId.Id.Name == "" {
 		newId.Id.Name = newId.Id.FingerPrint
 	}
-	newId.Id.Status = "Enrolled"
+	newId.Id.Status = STATUS_ENROLLED
 
 	err = enrolled.Close()
 	if err != nil {
@@ -495,16 +602,13 @@ func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
 	log.Infof("enrolled successfully. identity file written to: %s", newPath)
 
 	connectIdentity(&newId.Id)
-	/*
-	if newId.Id.Active == true {
-		connectIdentity(&newId.Id)
-	}
-	*/
+
+	state := rts.state
 	//if successful parse the output and add the config to the identity
 	state.Identities = append(state.Identities, &newId.Id)
 
 	//save the state
-	runtime.SaveState(&state)
+	SaveState(&rts)
 
 	//return successful message
 	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: idutil.Clean(newId.Id)}
@@ -519,14 +623,14 @@ func respondWithError(out *json.Encoder, msg string, code int, err error) {
 	} else {
 		respond(out, dto.Response{Message: msg, Code: code, Error: ""})
 	}
-	log.Debugf("responding with error: %s, %d, %v", msg, code, err)
+	log.Debugf("responded with error: %s, %d, %v", msg, code, err)
 }
 
 func connectIdentity(id *dto.Identity) {
 	if !id.Connected {
 		//tell the c sdk to use the file from the id and connect
-		log.Debugf("loading identity %s with fingerprint %s", id.Name, id.FingerPrint)
-		state.LoadIdentity(id)
+		rts.LoadIdentity(id)
+		activeIds[id.FingerPrint] = id
 	} else {
 		log.Debugf("id [%s] is already connected - not reconnecting", id.Name)
 	}
@@ -558,7 +662,7 @@ func disconnectIdentity(id *dto.Identity) error {
 
 func removeIdentity(out *json.Encoder, fingerprint string) {
 	log.Infof("request to remove identity by fingerprint: %s", fingerprint)
-	_, id := state.Find(fingerprint)
+	_, id := rts.Find(fingerprint)
 	if id == nil {
 		respondWithError(out, fmt.Sprintf("Could not find identity by fingerprint: %s", fingerprint), IDENTITY_NOT_FOUND, nil)
 		return
@@ -569,8 +673,8 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 		respondWithError(out, "Error when disconnecting identity", ERROR_DISCONNECTING_ID, err)
 		return
 	}
-	state.RemoveByIdentity(*id)
-	runtime.SaveState(&state)
+	rts.RemoveByIdentity(*id)
+	SaveState(&rts)
 
 	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: nil}
 	respond(out, resp)
@@ -578,5 +682,98 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 }
 
 func respond(out *json.Encoder, thing interface{}) {
+	//leave for debugging j := json.NewEncoder(os.Stdout)
+	//leave for debugging j.Encode(thing)
 	_ = out.Encode(thing)
+}
+
+func pipeName(path string) string {
+	if !Debug {
+		return pipeBase + path
+	} else {
+		return pipeBase /*+ `debug\`*/ + path
+	}
+}
+
+func ipcPipeName() string {
+	return pipeName("ipc")
+}
+
+func logsPipeName() string {
+	return pipeName("logs")
+}
+
+func eventsPipeName() string {
+	return pipeName("events")
+}
+
+func acceptServices() {
+	for {
+		select {
+		case <-shutdown:
+			return
+		case c := <-cziti.ServiceChanges:
+			matched := false
+			//find the id using the context
+			for _, id := range activeIds {
+				if id.NFContext == c.NFContext {
+					matched = true
+					switch c.Operation {
+					case cziti.ADDED:
+						//add the service to the identity
+						svc := dto.Service{
+							Name:     c.Servicename,
+							HostName: c.Host,
+							Port:     uint16(c.Port),
+						}
+						id.Services = append(id.Services, &svc)
+
+						events.broadcast <- dto.ServiceEvent{
+							ActionEvent: SERVICE_ADDED,
+							Fingerprint: id.FingerPrint,
+							Service:     svc,
+						}
+					case cziti.REMOVED:
+						for idx, svc := range id.Services {
+							if svc.Name == c.Servicename {
+								id.Services = append(id.Services[:idx], id.Services[idx+1:]...)
+
+								events.broadcast <- dto.ServiceEvent{
+									ActionEvent: SERVICE_REMOVED,
+									Fingerprint: id.FingerPrint,
+									Service:     *svc,
+								}
+
+							}
+						}
+					}
+				}
+			}
+
+			if !matched {
+				log.Warnf("service update received but matched no context. this is unexpected. service name: %s", c.Servicename)
+			}
+		}
+	}
+}
+
+func handleEvents(){
+	events.run()
+	d := 5 * time.Second
+	every5s := time.NewTicker(d)
+
+	defer log.Debugf("exiting handleEvents. loops were set for %v", d)
+	for {
+		select {
+		case <-shutdown:
+			return
+		case <-every5s.C:
+			s := rts.ToStatus()
+
+			events.broadcast <- dto.MetricsEvent{
+				StatusEvent: dto.StatusEvent{Op: "metrics"},
+				Identities:  s.Identities,
+			}
+		}
+	}
 }

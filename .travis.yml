@@ -1,0 +1,23 @@
+addons:
+  ssh_known_hosts:
+    - git.savannah.nongnu.org
+    - github.com
+
+import:
+  - source: netfoundry/ziti-ci:ziti-ci.yml@v1.2
+
+language: go
+
+go:
+  - 1.14.x
+
+os:
+  - windows
+
+install:
+  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then choco install -y zip ninja; fi
+
+script:
+  - service/build.bat
+  - cd service
+  - ziti-ci publish artifactory --groupId ziti-tunnel-win.amd64.windows --artifactId ziti-tunnel-win --version 0.0.3 --target ziti-tunnel-win.zip

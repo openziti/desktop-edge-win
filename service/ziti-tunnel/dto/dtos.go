@@ -1,12 +1,28 @@
+/*
+ * Copyright NetFoundry, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 package dto
 
 import (
-	"log"
-
-	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
-
 	idcfg "github.com/netfoundry/ziti-sdk-golang/ziti/config"
-	"wintun-testing/ziti-tunnel/config"
+	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
+	"log"
+	"github.com/netfoundry/ziti-tunnel-win/service/cziti"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/config"
 )
 
 type AddIdentity struct {
@@ -26,13 +42,15 @@ type Identity struct {
 	Active      bool
 	Config      idcfg.Config
 	Status      string
-	Services    []*Service
-	Metrics     Metrics
+	Services    []*Service `json:",omitempty"`
+	Metrics     *Metrics `json:",omitempty"`
 
-	Connected bool `json:"-"`
+	Connected bool            `json:"-"`
+	NFContext *cziti.CZitiCtx `json:"-"`
 }
 type Metrics struct {
-	TotalBytes int64
+	Up   int64
+	Down int64
 }
 type CommandMsg struct {
 	Function string
@@ -44,11 +62,12 @@ type Response struct {
 	Error   string
 	Payload interface{} `json:"Payload"`
 }
-type ZitiTunnelStatus struct {
-	Code    int
-	Message string
-	Error   string
-	Payload Identity
+
+type TunIpInfo struct {
+	Ip     string
+	Subnet string
+	MTU    uint16
+	DNS    string
 }
 
 func (id *Identity) Path() string {
@@ -56,4 +75,47 @@ func (id *Identity) Path() string {
 		log.Fatalf("fingerprint is invalid for id %s", id.Name)
 	}
 	return config.Path() + id.FingerPrint + ".json"
+}
+
+type TunnelStatus struct {
+	Active     bool
+	Duration   int64
+	Identities []*Identity
+	IpInfo     *TunIpInfo `json:"IpInfo,omitempty"`
+	LogLevel   string
+}
+
+type ZitiTunnelStatus struct {
+	Status  *TunnelStatus `json:",omitempty"`
+	Metrics *Metrics      `json:",omitempty"`
+}
+
+type StatusEvent struct {
+	Op      string
+}
+
+type ActionEvent struct {
+	StatusEvent
+	Action string
+}
+
+type TunnelStatusEvent struct {
+	StatusEvent
+	Status TunnelStatus
+}
+
+type MetricsEvent struct {
+	StatusEvent
+	Identities []*Identity
+}
+
+type ServiceEvent struct {
+	ActionEvent
+	Fingerprint string
+	Service Service
+}
+
+type IdentityEvent struct {
+	ActionEvent
+	Id Identity
 }

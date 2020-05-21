@@ -1,3 +1,20 @@
+/*
+ * Copyright NetFoundry, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 // +build windows
 package main
 
@@ -7,18 +24,27 @@ import (
 	"golang.org/x/sys/windows/svc/eventlog"
 	"os"
 	"strings"
-	"wintun-testing/ziti-tunnel/globals"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/globals"
 
 	"golang.org/x/sys/windows/svc"
-	"wintun-testing/ziti-tunnel/service"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/service"
 )
 
 var log = globals.Logger()
 
 func main() {
-	globals.InitLogger("debug")
+	globals.InitLogger(globals.ParseLevel("info"))
 
-	// passing no arguments is an indicator that this is excpecting to be run 'as a service'.
+	//if len(os.Args) < 2 {
+	//	// if no args supplied - expect to run as service
+	//	os.Args = append(os.Args, "service")
+	//}
+	//cmd.Execute()
+	//if true {
+	//	os.Exit(0)
+	//}
+
+	// passing no arguments is an indicator that this is expecting to be run 'as a service'.
 	// using arg count instead of svc.IsAnInteractiveSession() as svc.IsAnInteractiveSession()
 	// seems to return false even when run in an interactive shell as via `psexec -i -s cmd.exe`
 	hasArgs := len(os.Args) > 1
@@ -51,6 +77,7 @@ func main() {
 	cmd := strings.ToLower(os.Args[1])
 	switch cmd {
 	case "debug":
+		service.Debug = true
 		service.RunService(true)
 		return
 	case "install":

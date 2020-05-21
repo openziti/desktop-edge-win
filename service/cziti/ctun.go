@@ -1,3 +1,20 @@
+/*
+ * Copyright NetFoundry, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 package cziti
 
 //
@@ -26,7 +43,7 @@ extern void readIdle(uv_prepare_t *idler);
 
 extern void call_on_packet(void *packet, ssize_t len, packet_cb cb, void *ctx);
 
-extern void dnsHandler(tunneler_io_context tio, void *ctx, addr_t src, uint16_t sport, void *data, ssize_t len);
+
 */
 import "C"
 import (
@@ -134,13 +151,13 @@ func netifSetup(h C.netif_handle, l *C.uv_loop_t, packetCb C.packet_cb, ctx unsa
 	t.read = (*C.uv_async_t)(C.calloc(1, C.sizeof_uv_async_t))
 	C.uv_async_init(l, t.read, C.uv_async_cb(C.readAsync))
 	t.read.data = unsafe.Pointer(h)
-	log.Debug("in netifSetup netif[%s] handle[%p]", C.GoString(h.id), h)
+	log.Debugf("in netifSetup netif[%s] handle[%p]", C.GoString(h.id), h)
 
 	t.idleR = (*C.uv_prepare_t)(C.calloc(1, C.sizeof_uv_prepare_t))
 	C.uv_prepare_init(l, t.idleR)
 	t.idleR.data = unsafe.Pointer(h)
 	C.uv_prepare_start(t.idleR, C.uv_prepare_cb(C.readIdle))
-	log.Debug("in netifSetup netif[%s] handle[%p]", C.GoString(h.id), h)
+	log.Debugf("in netifSetup netif[%s] handle[%p]", C.GoString(h.id), h)
 
 	t.onPacket = packetCb
 	t.onPacketCtx = ctx
@@ -227,7 +244,6 @@ func (t *tunnel) runWriteLoop() {
 			}
 		}
 	}
-
 }
 
 func (t *tunnel) AddIntercept(service string, host string, port int, ctx unsafe.Pointer) {
@@ -236,24 +252,4 @@ func (t *tunnel) AddIntercept(service string, host string, port int, ctx unsafe.
 	res := C.NF_tunneler_intercept_v1(t.tunCtx, unsafe.Pointer(zitiCtx),
 		C.CString(service), C.CString(host), C.int(port))
 	log.Debug("intercept added", res)
-}
-
-// extern void dnsHandler(tunneler_io_context tio, void *ctx, addr_t src, uint16_t sport, void *data, ssize_t len);
-//export dnsHandler
-func dnsHandler(tio C.tunneler_io_context, ctx unsafe.Pointer, src C.addr_t, sport C.uint16_t, b unsafe.Pointer, bl C.ssize_t) {
-	/*
-		reply, err := processDNSquery(C.GoBytes(b, C.int(bl)))
-
-		if err == nil {
-			replyC := C.CBytes(reply)
-			rc := C.NF_udp_send(tio, src, sport, replyC, C.ssize_t(len(reply)))
-			C.free(replyC)
-			if rc != 0 {
-				log.Debug("NF_udp_reply rc=", rc)
-			}
-		} else {
-			log.Debug("dns message error", err)
-		}
-
-	*/
 }

@@ -86,6 +86,10 @@ namespace ZitiTunneler {
 			this.Visibility = Visibility.Collapsed;
 		}
 
+		public void SetHeight(double height) {
+			MainDetailScroll.Height = height;
+		}
+
 		private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
 			// Jeremy - this works now as long as you pass a fingerprint that's valid!
 			MessageBoxResult messageBoxResult = MessageBox.Show("Are you sure you want to forget this identity?", "Delete Confirmation", System.Windows.MessageBoxButton.YesNo);
