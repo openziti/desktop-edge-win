@@ -261,3 +261,6 @@ __pycache__/
 *.pyc
 
 */*.dll
+github_deploy_key
+ziti-tunnel-win.zip
+service/deps

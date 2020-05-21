@@ -15,4 +15,4 @@ install:
 script:
   - service/build.bat
   - cd service
-  - ziti-ci publish artifactory --groupId amd64.windows --artifactId ziti-tunnel-win --version 0.0.2-SNAPSHOT --target ziti-tunnel.exe
+  - ziti-ci publish artifactory --groupId ziti-tunnel-win.amd64.windows --artifactId ziti-tunnel-win --version 0.0.2-SNAPSHOT --target ziti-tunnel.zip

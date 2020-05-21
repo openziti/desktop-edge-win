@@ -16,7 +16,6 @@ require (
 	github.com/sirupsen/logrus v1.5.0
 	github.com/spf13/cobra v0.0.5
 	github.com/tebeka/strftime v0.1.4 // indirect
-	github.com/tv42/topic v0.0.0-20130729201830-aa72cbe81b48
 	golang.org/x/sys v0.0.0-20200406113430-c6e801f48ba2
 	golang.zx2c4.com/wireguard v0.0.20200320
 	golang.zx2c4.com/wireguard/windows v0.1.0

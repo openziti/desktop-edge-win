@@ -109,8 +109,6 @@ github.com/stretchr/testify v1.5.1 h1:nOGnQDM7FYENwehXlg/kFVnos3rEvtKTjRvOWSzb6H
 github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
 github.com/tebeka/strftime v0.1.4 h1:e0FKSyxthD1Xk4cIixFPoyfD33u2SbjNngOaaC3ePoU=
 github.com/tebeka/strftime v0.1.4/go.mod h1:7wJm3dZlpr4l/oVK0t1HYIc4rMzQ2XJlOMIUJUJH6XQ=
-github.com/tv42/topic v0.0.0-20130729201830-aa72cbe81b48 h1:4HadKLQh7sw8SobBMRWhMOZXHm+Nyx+c9xfhJlWEI2Y=
-github.com/tv42/topic v0.0.0-20130729201830-aa72cbe81b48/go.mod h1:b4JA15yUof03YRQ6IiKevPk2syaMBMJb92x9PeyU+Xc=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
 github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:aYKd//L2LvnjZzWKhF00oedf4jCCReLcmhLdhm1A27Q=
 go.etcd.io/bbolt v1.3.3/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
