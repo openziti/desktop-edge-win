@@ -60,17 +60,17 @@ namespace ZitiTunneler {
 				if (IsAdministrator()) {
 					UpdateServiceFiles();
 					ProcessStartInfo installService = new ProcessStartInfo();
-					installService.CreateNoWindow=true;
-					installService.UseShellExecute=false;
-					installService.FileName=Path.Combine(Environment.CurrentDirectory, "Service")+@"\ziti-tunnel.exe";
-					installService.WindowStyle=ProcessWindowStyle.Hidden;
-					installService.Arguments="install";
+					installService.CreateNoWindow = true;
+					installService.UseShellExecute = false;
+					installService.FileName = Path.Combine(Environment.CurrentDirectory, "Service") + @"\ziti-tunnel.exe";
+					installService.WindowStyle = ProcessWindowStyle.Hidden;
+					installService.Arguments = "install";
 
 					try {
 						using (Process exeProcess = Process.Start(installService)) {
 							exeProcess.WaitForExit();
-							ctl=ServiceController.GetServices().FirstOrDefault(s => s.ServiceName=="ziti");
-							if (ctl.Status!=ServiceControllerStatus.Running) {
+							ctl = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == "ziti");
+							if (ctl.Status != ServiceControllerStatus.Running) {
 								try {
 									ctl.Start();
 								} catch (Exception e) {
@@ -79,9 +79,11 @@ namespace ZitiTunneler {
 							}
 						}
 					} catch (Exception e) {
-						MessageBox.Show(e.ToString());
+						ShowError("Error Installing Service", e.ToString());
 					}
-				} else MessageBox.Show("Not an admin");
+				} else {
+					ShowError("Admin Account", "Unable to install service, Admin Account required.");
+				}
 			} else {
 				if (ctl.Status!=ServiceControllerStatus.Running) {
 					try {
@@ -200,7 +202,7 @@ namespace ZitiTunneler {
 				}
 				LoadIdentities();
 			});
-			MessageBox.Show($"IDENTITY EVENT. Action: {e.Action} fingerprint: {zid.Fingerprint}");
+			Debug.WriteLine($"IDENTITY EVENT. Action: {e.Action} fingerprint: {zid.Fingerprint}");
 		}
 
 		private void ServiceClient_OnMetricsEvent(object sender, List<Identity> ids) {
@@ -388,13 +390,12 @@ namespace ZitiTunneler {
 						//MessageBox.Show("New identity added with fingerprint: " + createdId.FingerPrint);
 						//updateViewWithIdentity(createdId);
 					} else {
-						// Jeremy buddy - error popup here
-						MessageBox.Show("created id was null - wtf jeremy. your fault, um nope your fault clint, or probably Andrews");
+						ShowError("Identity Error", "Identity Id was null, please try again");
 					}
 				} catch (ServiceException se) {
-					MessageBox.Show(se.AdditionalInfo, se.Message);
+					ShowError(se.AdditionalInfo, se.Message);
 				} catch (Exception ex) {
-					MessageBox.Show("Unexpected error 2", ex.Message);
+					ShowError("Unexpected Error", "Code 2:" + ex.Message);
 				}
 				LoadIdentities();
 			}
