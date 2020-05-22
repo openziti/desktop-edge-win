@@ -4,7 +4,7 @@ addons:
     - github.com
 
 import:
-  - source: netfoundry/ziti-ci:ziti-ci.yml@may22
+  - source: netfoundry/ziti-ci:ziti-ci.yml@may22-updates
 
 language: go
 
