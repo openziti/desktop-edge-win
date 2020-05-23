@@ -5,6 +5,8 @@ addons:
 
 import:
   - source: netfoundry/ziti-ci:ziti-ci.yml@may22-updates
+before_install:
+  - get-ziti-ci.bat
 
 language: go
 
