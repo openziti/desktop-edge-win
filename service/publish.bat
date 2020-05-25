@@ -4,7 +4,6 @@ set /p BUILD_VERSION=<%SVC_ROOT_DIR%..\version
 
 IF "%BUILD_VERSION%"=="" GOTO BUILD_VERSION_ERROR
 
-goto END
 IF "%TRAVIS_BRANCH%"=="master" GOTO RELEASE
 @echo Publishing to snapshot repo
 ziti-ci publish artifactory --groupId=ziti-tunnel-win.amd64.windows --artifactId=ziti-tunnel-win --version=%ZITT_TUNNEL_WIN_VER%-SNAPSHOT --target=service/ziti-tunnel-win.zip
