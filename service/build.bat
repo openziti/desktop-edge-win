@@ -10,6 +10,9 @@ ziti-ci configure-git
 pwd
 cd service
 
+SET REPO_URL=https://github.com/netfoundry/ziti-tunneler-sdk-c.git
+SET REPO_BRANCH=update-submodule-to-https-vs-git
+
 @echo cloning %REPO_URL%
 git clone %REPO_URL%
 IF %ERRORLEVEL% NEQ 0 @echo Could not clone git repo:%REPO_URL%
