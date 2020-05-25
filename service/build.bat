@@ -1,20 +1,14 @@
-echo 1 > version
+@echo fetching ziti-ci
+call ../get-ziti-ci.bat
+ziti-ci version
+
+@echo configuring git
+@echo 1 > version
 ziti-ci configure-git
 pwd
 cd service
-pwd
-dir
 
-@echo build.bat starts
-set SVC_ROOT_DIR=%~dp0
-
-mkdir deps
-cd %SVC_ROOT_DIR%deps
-@echo deps created and cd'ed to
-
-SET REPO_URL=https://github.com/netfoundry/ziti-tunneler-sdk-c.git
-SET REPO_BRANCH=update-submodule-to-https-vs-git
-
+@echo cloning %REPO_URL%
 git clone %REPO_URL%
 IF %ERRORLEVEL% NEQ 0 @echo Could not clone git repo:%REPO_URL%
 
