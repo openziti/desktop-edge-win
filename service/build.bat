@@ -57,5 +57,6 @@ GOTO END
 
 :BUILD_VERSION_ERROR
 @echo The build version environment variable was not set - cannot proceed
+exit 1
 
 :END

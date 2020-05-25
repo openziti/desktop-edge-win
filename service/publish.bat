@@ -14,6 +14,7 @@ GOTO END
 
 :BUILD_VERSION_ERROR
 @echo The build version environment variable was not set - cannot publish
+exit 1
 
 :END
 @echo publishing complete
