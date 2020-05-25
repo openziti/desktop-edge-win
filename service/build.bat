@@ -1,7 +1,7 @@
-set /p BUILD_VERSION=<version
-IF "%BUILD_VERSION%"=="" GOTO BUILD_VERSION_ERROR
-
 set SVC_ROOT_DIR=%~dp0
+
+set /p BUILD_VERSION=<%SVC_ROOT_DIR%\..\version
+IF "%BUILD_VERSION%"=="" GOTO BUILD_VERSION_ERROR
 
 @echo fetching ziti-ci
 call %SVC_ROOT_DIR%/../get-ziti-ci.bat
