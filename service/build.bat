@@ -1,5 +1,7 @@
+set SVC_ROOT_DIR=%~dp0
+
 @echo fetching ziti-ci
-call ../get-ziti-ci.bat
+call %SVC_ROOT_DIR%/../get-ziti-ci.bat
 ziti-ci version
 
 @echo configuring git
