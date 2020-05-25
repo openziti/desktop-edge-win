@@ -1,3 +1,6 @@
+set /p BUILD_VERSION=<version
+IF "%BUILD_VERSION%"=="" GOTO BUILD_VERSION_ERROR
+
 set SVC_ROOT_DIR=%~dp0
 
 @echo fetching ziti-ci
@@ -5,16 +8,18 @@ call %SVC_ROOT_DIR%/../get-ziti-ci.bat
 ziti-ci version
 
 @echo configuring git
-@echo 1 > version
 ziti-ci configure-git
 pwd
 cd service
+GOTO END
 
 SET REPO_URL=https://github.com/netfoundry/ziti-tunneler-sdk-c.git
 SET REPO_BRANCH=update-submodule-to-https-vs-git
+SET TUNNELER_SDK_DIR=%SVC_ROOT_DIR%deps\ziti-tunneler-sdk-c
+mkdir %TUNNELER_SDK_DIR%
 
 @echo cloning %REPO_URL%
-git clone %REPO_URL%
+git clone %REPO_URL% %TUNNELER_SDK_DIR%
 IF %ERRORLEVEL% NEQ 0 @echo Could not clone git repo:%REPO_URL%
 
 cd ziti-tunneler-sdk-c
@@ -25,10 +30,6 @@ IF %ERRORLEVEL% NEQ 0 @echo Could not checkout branch :%REPO_BRANCH%
 @echo Updating submodules...
 git submodule update --init --recursive
 IF %ERRORLEVEL% NEQ 0 @echo Could not update submodules
-
-SET TUNNELER_SDK_DIR=%SVC_ROOT_DIR%deps\ziti-tunneler-sdk-c
-set CGO_CFLAGS=-DNOGDI -I %TUNNELER_SDK_DIR%\install\include
-set CGO_LDFLAGS=-L %TUNNELER_SDK_DIR%\install\lib
 
 if not exist %TUNNELER_SDK_DIR%\build mkdir %TUNNELER_SDK_DIR%\build
 if not exist %TUNNELER_SDK_DIR%\install mkdir %TUNNELER_SDK_DIR%\install
@@ -52,3 +53,9 @@ go build -a ./ziti-tunnel
 zip ziti-tunnel-win.zip *.dll ziti*exe
 
 dir
+GOTO END
+
+:BUILD_VERSION_ERROR
+@echo The build version environment variable was not set - cannot proceed
+
+:END
