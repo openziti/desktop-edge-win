@@ -6,7 +6,7 @@ IF "%BUILD_VERSION%"=="" GOTO BUILD_VERSION_ERROR
 
 IF "%TRAVIS_BRANCH%"=="master" GOTO RELEASE
 @echo Publishing to snapshot repo
-ziti-ci publish artifactory --groupId=ziti-tunnel-win.amd64.windows --artifactId=ziti-tunnel-win --version=%BUILD_VERSION%-SNAPSHOT --target=service/ziti-tunnel-win.zip
+ziti-ci publish artifactory --groupId=ziti-tunnel-win.amd64.windows --artifactId=ziti-tunnel-win --version=%BUILD_VERSION%-SNAPSHOT --target=service/ziti-tunnel-win.zip --classifier=$TRAVIS_BRANCH
 GOTO END
 
 :RELEASE
