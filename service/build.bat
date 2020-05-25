@@ -1,6 +1,7 @@
+@echo off
 set SVC_ROOT_DIR=%~dp0
+set /p BUILD_VERSION=<%SVC_ROOT_DIR%..\version
 
-set /p BUILD_VERSION=<%SVC_ROOT_DIR%\..\version
 IF "%BUILD_VERSION%"=="" GOTO BUILD_VERSION_ERROR
 
 @echo fetching ziti-ci
@@ -57,6 +58,6 @@ GOTO END
 
 :BUILD_VERSION_ERROR
 @echo The build version environment variable was not set - cannot proceed
-exit 1
+exit /b 1
 
 :END
