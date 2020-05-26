@@ -21,9 +21,9 @@ package cziti
 /*
 #cgo LDFLAGS: -l ziti_tunneler -l lwipcore -l lwipwin32arch -l ziti_tunneler -l ziti_tunneler_cbs
 
-#include <nf/netif_driver.h>
-#include <nf/ziti_tunneler.h>
-#include <nf/ziti_tunneler_cbs.h>
+#include <ziti/netif_driver.h>
+#include <ziti/ziti_tunneler.h>
+#include <ziti/ziti_tunneler_cbs.h>
 
 #include <uv.h>
 
