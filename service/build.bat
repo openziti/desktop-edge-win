@@ -25,10 +25,9 @@ mkdir %TUNNELER_SDK_DIR%
 git clone %REPO_URL% %TUNNELER_SDK_DIR%
 IF %ERRORLEVEL% NEQ 0 @echo Could not clone git repo:%REPO_URL%
 
-cd ziti-tunneler-sdk-c
+cd %TUNNELER_SDK_DIR%
 git checkout %REPO_BRANCH%
 IF %ERRORLEVEL% NEQ 0 @echo Could not checkout branch :%REPO_BRANCH%
-
 
 @echo Updating submodules...
 git submodule update --init --recursive
