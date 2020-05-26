@@ -16,7 +16,7 @@ ziti-ci configure-git
 pwd
 cd service
 
-SET REPO_URL=https://github.com/netfoundry/ziti-tunneler-sdk-c.git
+SET REPO_URL=https://github.com/openziti/ziti-tunneler-sdk-c.git
 SET REPO_BRANCH=update-submodule-to-https-vs-git
 SET TUNNELER_SDK_DIR=%SVC_ROOT_DIR%deps\ziti-tunneler-sdk-c
 mkdir %TUNNELER_SDK_DIR%
