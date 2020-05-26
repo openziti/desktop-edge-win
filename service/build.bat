@@ -8,6 +8,9 @@ IF "%BUILD_VERSION%"=="" GOTO BUILD_VERSION_ERROR
 call %SVC_ROOT_DIR%/../get-ziti-ci.bat
 ziti-ci version
 
+@echo generating version info - this will not be pushed
+ziti-ci generate-build-info --useVersion=false %SVC_ROOT_DIR%/ziti-tunnel/version.go main
+
 @echo configuring git
 ziti-ci configure-git
 pwd
@@ -42,9 +45,6 @@ cp %TUNNELER_SDK_DIR%\install\lib\libuv.dll %SVC_ROOT_DIR%
 
 @echo COPIED dlls to %SVC_ROOT_DIR%
 cd %SVC_ROOT_DIR%
-
-@echo emitting version information
-ziti-ci generate-build-info ziti-tunnel/version.go main
 
 REM go build -a ./ziti-wintun
 go build -a ./ziti-tunnel
