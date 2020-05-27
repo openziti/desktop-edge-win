@@ -1,6 +1,8 @@
 @echo off
 set SVC_ROOT_DIR=%~dp0
-set /p BUILD_VERSION=<%SVC_ROOT_DIR%..\version
+set ZITI_TUNNEL_WIN_ROOT=%SVC_ROOT_DIR%..\
+set /p BUILD_VERSION=<%ZITI_TUNNEL_WIN_ROOT%version
+cd %ZITI_TUNNEL_WIN_ROOT%
 
 IF "%BUILD_VERSION%"=="" GOTO BUILD_VERSION_ERROR
 
@@ -23,32 +25,37 @@ set CGO_CFLAGS=-DNOGDI -I %TUNNELER_SDK_DIR%\install\include
 set CGO_LDFLAGS=-L %TUNNELER_SDK_DIR%\install\lib
 mkdir %TUNNELER_SDK_DIR%
 
-@echo cloning %REPO_URL%
-git clone %REPO_URL% %TUNNELER_SDK_DIR%
-IF %ERRORLEVEL% NEQ 0 @echo Could not clone git repo:%REPO_URL%
+if not exist %SVC_ROOT_DIR%ziti.dll (
+    @echo cloning %REPO_URL%
+    git clone %REPO_URL% %TUNNELER_SDK_DIR%
+    IF %ERRORLEVEL% NEQ 0 @echo Could not clone git repo:%REPO_URL%
 
-cd %TUNNELER_SDK_DIR%
-git checkout %REPO_BRANCH%
-IF %ERRORLEVEL% NEQ 0 @echo Could not checkout branch :%REPO_BRANCH%
+    cd %TUNNELER_SDK_DIR%
+    git checkout %REPO_BRANCH%
+    IF %ERRORLEVEL% NEQ 0 @echo Could not checkout branch :%REPO_BRANCH%
 
-@echo Updating submodules...
-git submodule update --init --recursive
-IF %ERRORLEVEL% NEQ 0 @echo Could not update submodules
+    @echo Updating submodules...
+    git submodule update --init --recursive
+    IF %ERRORLEVEL% NEQ 0 @echo Could not update submodules
 
-if not exist %TUNNELER_SDK_DIR%\build mkdir %TUNNELER_SDK_DIR%\build
-if not exist %TUNNELER_SDK_DIR%\install mkdir %TUNNELER_SDK_DIR%\install
+    if not exist %TUNNELER_SDK_DIR%\build mkdir %TUNNELER_SDK_DIR%\build
+    if not exist %TUNNELER_SDK_DIR%\install mkdir %TUNNELER_SDK_DIR%\install
 
-cmake -G Ninja -S %TUNNELER_SDK_DIR% -B %TUNNELER_SDK_DIR%\build -DCMAKE_INSTALL_PREFIX=%TUNNELER_SDK_DIR%\install
-cmake --build %TUNNELER_SDK_DIR%\build --target install
-if %ERRORLEVEL% GEQ 1 EXIT /B %ERRORLEVEL%
+    cmake -G Ninja -S %TUNNELER_SDK_DIR% -B %TUNNELER_SDK_DIR%\build -DCMAKE_INSTALL_PREFIX=%TUNNELER_SDK_DIR%\install
+    cmake --build %TUNNELER_SDK_DIR%\build --target install
+    if %ERRORLEVEL% GEQ 1 EXIT /B %ERRORLEVEL%
 
-cp %TUNNELER_SDK_DIR%\install\lib\ziti.dll %SVC_ROOT_DIR%
-cp %TUNNELER_SDK_DIR%\install\lib\libuv.dll %SVC_ROOT_DIR%
+    cp %TUNNELER_SDK_DIR%\install\lib\ziti.dll %SVC_ROOT_DIR%
+    cp %TUNNELER_SDK_DIR%\install\lib\libuv.dll %SVC_ROOT_DIR%
 
-@echo COPIED dlls to %SVC_ROOT_DIR%
-cd %SVC_ROOT_DIR%
+    @echo COPIED dlls to %SVC_ROOT_DIR%
+    cd %SVC_ROOT_DIR%
+) else (
+    @echo ------------------------------------------------------------------------------
+    @echo SKIPPED BUILDING ziti.dll because ziti.dll was found at %SVC_ROOT_DIR%ziti.dll
+    @echo ------------------------------------------------------------------------------
+)
 
-REM go build -a ./ziti-wintun
 go build -a ./ziti-tunnel
 if %ERRORLEVEL% GEQ 1 EXIT /B %ERRORLEVEL%
 
