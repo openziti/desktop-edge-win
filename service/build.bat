@@ -47,6 +47,7 @@ cd %SVC_ROOT_DIR%
 
 REM go build -a ./ziti-wintun
 go build -a ./ziti-tunnel
+if %ERRORLEVEL% GEQ 1 EXIT /B %ERRORLEVEL%
 
 @echo creating the distribution zip file
 zip ziti-tunnel-win.zip *.dll ziti*exe
