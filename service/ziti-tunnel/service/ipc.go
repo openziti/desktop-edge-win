@@ -1,3 +1,20 @@
+/*
+ * Copyright NetFoundry, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 package service
 
 import (
@@ -9,6 +26,7 @@ import (
 	"github.com/netfoundry/ziti-foundation/identity/identity"
 	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
 	"golang.org/x/sys/windows/svc"
+	"golang.zx2c4.com/wireguard/tun"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -16,13 +34,13 @@ import (
 	"os"
 	"strings"
 	"time"
-	"wintun-testing/cziti"
-	"wintun-testing/ziti-tunnel/globals"
+	"github.com/netfoundry/ziti-tunnel-win/service/cziti"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/globals"
 
-	"wintun-testing/cziti/windns"
-	"wintun-testing/ziti-tunnel/config"
-	"wintun-testing/ziti-tunnel/dto"
-	"wintun-testing/ziti-tunnel/idutil"
+	"github.com/netfoundry/ziti-tunnel-win/service/cziti/windns"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/config"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/dto"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/idutil"
 )
 
 type Pipes struct {
@@ -65,6 +83,7 @@ func SubMain(ops <-chan string, changes chan<- svc.Status) error {
 
 	// initialize the network interface
 	err = initialize()
+
 	if err != nil {
 		log.Errorf("unexpected err: %v", err)
 		return err
@@ -99,6 +118,19 @@ func SubMain(ops <-chan string, changes chan<- svc.Status) error {
 	events.shutdown()
 
 	windns.ResetDNS()
+
+
+	log.Error("DELETING INTERFACE!")
+	wt, err := tun.WintunPool.GetInterface(TunName)
+	if err == nil {
+		// If so, we delete it, in case it has weird residual configuration.
+		_, err = wt.DeleteInterface()
+		if err != nil {
+			log.Errorf("Error deleting already existing interface: %v", err)
+		}
+	} else {
+		log.Errorf("INTERFACE %s was nil? %v", TunName, err)
+	}
 
 	rts.Close()
 
