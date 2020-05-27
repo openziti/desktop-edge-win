@@ -333,5 +333,8 @@
       <DefaultIcon>Assets\Images\ziti-white.ico</DefaultIcon>
     </FileAssociation>
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Images\server.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

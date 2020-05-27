@@ -65,7 +65,6 @@ namespace ZitiTunneler
 			AdvancedItems.Visibility = Visibility.Collapsed;
 			LicensesItems.Visibility = Visibility.Collapsed;
 			LogsItems.Visibility = Visibility.Collapsed;
-			ConfigSaveButton.Visibility = Visibility.Collapsed;
 			ConfigItems.Visibility = Visibility.Collapsed;
 
 			if (menuState=="About") {
@@ -90,7 +89,6 @@ namespace ZitiTunneler
 			} else if (menuState=="Config") {
 				MenuTitle.Content = "Tunnel Configuration";
 				ConfigItems.Visibility = Visibility.Visible;
-				ConfigSaveButton.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
 				
 				ConfigIp.Value = Application.Current.Properties["ip"]?.ToString();
@@ -160,10 +158,6 @@ namespace ZitiTunneler
 			if (OnAttachmentChange != null) {
 				OnAttachmentChange(true);
 			}
-		}
-
-		private void SaveConfig(object sender, RoutedEventArgs e) {
-			// Jeremy - this can just be removed - saving the config is not important to this client
 		}
 	}
 }

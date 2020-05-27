@@ -82,7 +82,6 @@
                 <TextBox Name="LicensesItems" Height="400" Width="{Binding ActualWidth, ElementName=MainStack}" TextWrapping="Wrap" Visibility="Collapsed"></TextBox>
                 <TextBox Name="LogsItems" Height="400" Width="{Binding ActualWidth, ElementName=MainStack}" TextWrapping="Wrap" Visibility="Collapsed"></TextBox>
 
-                <Button Name="ConfigSaveButton" Cursor="Hand" Click="SaveConfig" Visibility="Collapsed" Content="SAVE" FontSize="10" FontWeight="SemiBold" Padding="20,7,20,7" Background="#0069FF" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White"></Button>
                 <StackPanel Name="AboutItemsButton" Orientation="Vertical" HorizontalAlignment="Stretch" Visibility="Collapsed">
                     <Image Grid.Column="0" Source="/Assets/Images/logo.png" Height="60" Width="240"></Image>
                     <Label HorizontalAlignment="Center" Content="Version 1.0 (23)" FontSize="10" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
