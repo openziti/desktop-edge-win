@@ -43,7 +43,6 @@ extern void readIdle(uv_prepare_t *idler);
 
 extern void call_on_packet(void *packet, ssize_t len, packet_cb cb, void *ctx);
 
-
 */
 import "C"
 import (
@@ -247,7 +246,7 @@ func (t *tunnel) runWriteLoop() {
 }
 
 func (t *tunnel) AddIntercept(service string, host string, port int, ctx unsafe.Pointer) {
-	zitiCtx := (*C.ziti_context)(C.malloc(C.sizeof_ziti_context))
+	zitiCtx := (*C.intercept_ctx_t)(C.malloc(C.sizeof_intercept_ctx_t))
 	zitiCtx.ziti_ctx = ctx
 	res := C.ziti_tunneler_intercept_v1(t.tunCtx, unsafe.Pointer(zitiCtx),
 		C.CString(service), C.CString(host), C.int(port))

@@ -20,11 +20,11 @@ package cziti
 /*
 #cgo windows LDFLAGS: -l libziti.imp -luv -lws2_32 -lpsapi
 
-#include <nf/ziti.h>
+#include <ziti/ziti.h>
 
 #include "sdk.h"
-extern void initCB(nf_context nf, int status, void *ctx);
-extern void serviceCB(nf_context nf, ziti_service*, int status, void *ctx);
+extern void initCB(ziti_context nf, int status, void *ctx);
+extern void serviceCB(ziti_context nf, ziti_service*, int status, void *ctx);
 
 */
 import "C"
@@ -236,7 +236,7 @@ func LoadZiti(cfg string) *CZitiCtx {
 	return res
 }
 
-func GetTransferRates(ctx *CZitiCtx) (int64, int64, bool) { //extern void NF_get_transfer_rates(nf_context nf, double* up, double* down);
+func GetTransferRates(ctx *CZitiCtx) (int64, int64, bool) { //extern void NF_get_transfer_rates(ziti_context nf, double* up, double* down);
 	if ctx == nil {
 		return 0, 0, false
 	}
