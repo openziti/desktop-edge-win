@@ -44,6 +44,7 @@ namespace ZitiTunneler {
 		}
 
 		private void UpdateServiceFiles() {
+			if (!Directory.Exists(Path.Combine(Environment.CurrentDirectory, "Service"))) Directory.CreateDirectory(Path.Combine(Environment.CurrentDirectory, "Service"));
 			string[] files = Directory.GetFiles(Path.Combine(Environment.CurrentDirectory, "Service"));
 			foreach (string file in files) {
 				File.Delete(file);
