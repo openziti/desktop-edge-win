@@ -11,7 +11,7 @@ require (
 	github.com/lestrrat-go/strftime v1.0.1 // indirect
 	github.com/michaelquigley/pfxlog v0.0.0-20190813191113-2be43bd0dccc
 	github.com/miekg/dns v1.1.29
-	github.com/netfoundry/ziti-ci v0.0.0-20200522192519-a95b5ebe20c6 // indirect
+	github.com/netfoundry/ziti-ci v0.0.0-20200525130813-03a689aae69d // indirect
 	github.com/netfoundry/ziti-foundation v0.9.8
 	github.com/netfoundry/ziti-sdk-golang v0.11.16
 	github.com/sirupsen/logrus v1.5.0
