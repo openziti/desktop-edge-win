@@ -19,6 +19,8 @@ cd service
 SET REPO_URL=https://github.com/openziti/ziti-tunneler-sdk-c.git
 SET REPO_BRANCH=update-submodule-to-https-vs-git
 SET TUNNELER_SDK_DIR=%SVC_ROOT_DIR%deps\ziti-tunneler-sdk-c
+set CGO_CFLAGS=-DNOGDI -I %TUNNELER_SDK_DIR%\install\include
+set CGO_LDFLAGS=-L %TUNNELER_SDK_DIR%\install\lib
 mkdir %TUNNELER_SDK_DIR%
 
 @echo cloning %REPO_URL%
@@ -38,6 +40,7 @@ if not exist %TUNNELER_SDK_DIR%\install mkdir %TUNNELER_SDK_DIR%\install
 
 cmake -G Ninja -S %TUNNELER_SDK_DIR% -B %TUNNELER_SDK_DIR%\build -DCMAKE_INSTALL_PREFIX=%TUNNELER_SDK_DIR%\install
 cmake --build %TUNNELER_SDK_DIR%\build --target install
+if %ERRORLEVEL% GEQ 1 EXIT /B %ERRORLEVEL%
 
 cp %TUNNELER_SDK_DIR%\install\lib\ziti.dll %SVC_ROOT_DIR%
 cp %TUNNELER_SDK_DIR%\install\lib\libuv.dll %SVC_ROOT_DIR%
