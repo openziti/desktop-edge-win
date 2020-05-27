@@ -98,11 +98,11 @@ func HookupTun(dev tun.Device, dns []net.IP) (Tunnel, error) {
 
 	opts := (*C.tunneler_sdk_options)(C.calloc(1, C.sizeof_tunneler_sdk_options))
 	opts.netif_driver = drv
-	opts.ziti_dial = C.ziti_dial_cb(C.ziti_sdk_c_dial)
-	opts.ziti_close = C.ziti_close_cb(C.ziti_sdk_c_close)
-	opts.ziti_write = C.ziti_write_cb(C.ziti_sdk_c_write)
+	opts.ziti_dial = C.ziti_sdk_dial_cb(C.ziti_sdk_c_dial)
+	opts.ziti_close = C.ziti_sdk_close_cb(C.ziti_sdk_c_close)
+	opts.ziti_write = C.ziti_sdk_write_cb(C.ziti_sdk_c_write)
 
-	t.tunCtx = C.NF_tunneler_init(opts, _impl.libuvCtx.l)
+	t.tunCtx = C.ziti_tunneler_init(opts, _impl.libuvCtx.l)
 
 	go runDNSserver(dns)
 
@@ -248,8 +248,8 @@ func (t *tunnel) runWriteLoop() {
 
 func (t *tunnel) AddIntercept(service string, host string, port int, ctx unsafe.Pointer) {
 	zitiCtx := (*C.ziti_context)(C.malloc(C.sizeof_ziti_context))
-	zitiCtx.nf_ctx = ctx
-	res := C.NF_tunneler_intercept_v1(t.tunCtx, unsafe.Pointer(zitiCtx),
+	zitiCtx.ziti_ctx = ctx
+	res := C.ziti_tunneler_intercept_v1(t.tunCtx, unsafe.Pointer(zitiCtx),
 		C.CString(service), C.CString(host), C.int(port))
 	log.Debug("intercept added", res)
 }

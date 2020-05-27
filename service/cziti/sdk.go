@@ -72,7 +72,7 @@ func SetLogLevel(level int) {
 
 func Start() {
 
-	v := C.NF_get_version()
+	v := C.ziti_get_version()
 	log.Infof("starting ziti-sdk-c %s(%s)[%s]", C.GoString(v.version), C.GoString(v.revision), C.GoString(v.build_date))
 
 	_impl.run()
@@ -94,8 +94,8 @@ type Service struct {
 }
 
 type CZitiCtx struct {
-	options   C.nf_options
-	nf        C.nf_context
+	options   C.ziti_options
+	nf        C.ziti_context
 	status    int
 	statusErr error
 
@@ -108,7 +108,7 @@ func (c *CZitiCtx) Status() (int, error) {
 
 func (c *CZitiCtx) Name() string {
 	if c.nf != nil {
-		id := C.NF_get_identity(c.nf)
+		id := C.ziti_get_identity(c.nf)
 		if id != nil {
 			return C.GoString(id.name)
 		}
@@ -118,7 +118,7 @@ func (c *CZitiCtx) Name() string {
 
 func (c *CZitiCtx) Controller() string {
 	if c.nf != nil {
-		return C.GoString(C.NF_get_controller(c.nf))
+		return C.GoString(C.ziti_get_controller(c.nf))
 	}
 	return C.GoString(c.options.controller)
 }
@@ -126,7 +126,7 @@ func (c *CZitiCtx) Controller() string {
 var tunCfgName = C.CString("ziti-tunneler-client.v1")
 
 //export serviceCB
-func serviceCB(nf C.nf_context, service *C.ziti_service, status C.int, data unsafe.Pointer) {
+func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data unsafe.Pointer) {
 	ctx := (*CZitiCtx)(data)
 
 	if ctx.Services == nil {
@@ -185,7 +185,7 @@ func serviceCB(nf C.nf_context, service *C.ziti_service, status C.int, data unsa
 }
 
 //export initCB
-func initCB(nf C.nf_context, status C.int, data unsafe.Pointer) {
+func initCB(nf C.ziti_context, status C.int, data unsafe.Pointer) {
 	ctx := (*CZitiCtx)(data)
 
 	ctx.nf = nf
@@ -213,8 +213,8 @@ func zitiError(code C.int) error {
 func LoadZiti(cfg string) *CZitiCtx {
 	ctx := &CZitiCtx{}
 	ctx.options.config = C.CString(cfg)
-	ctx.options.init_cb = C.nf_init_cb(C.initCB)
-	ctx.options.service_cb = C.nf_service_cb(C.serviceCB)
+	ctx.options.init_cb = C.ziti_init_cb(C.initCB)
+	ctx.options.service_cb = C.ziti_service_cb(C.serviceCB)
 	//TODO don't commit this - ctx.options.refresh_interval = C.long(600)
 	ctx.options.refresh_interval = C.long(15)
 	ctx.options.config_types = C.all_configs
@@ -222,7 +222,7 @@ func LoadZiti(cfg string) *CZitiCtx {
 
 	ch := make(chan *CZitiCtx)
 	initMap[cfg] = ch
-	rc := C.NF_init_opts(&ctx.options, _impl.libuvCtx.l, unsafe.Pointer(ctx))
+	rc := C.ziti_init_opts(&ctx.options, _impl.libuvCtx.l, unsafe.Pointer(ctx))
 	if rc != C.ZITI_OK {
 		ctx.status, ctx.statusErr = int(rc), zitiError(rc)
 		go func() {
@@ -241,7 +241,7 @@ func GetTransferRates(ctx *CZitiCtx) (int64, int64, bool) { //extern void NF_get
 		return 0, 0, false
 	}
 	var up, down C.double
-	C.NF_get_transfer_rates(ctx.nf, &up, &down)
+	C.ziti_get_transfer_rates(ctx.nf, &up, &down)
 
 	return int64(up), int64(down), true
 }
