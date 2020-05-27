@@ -18,14 +18,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #define USING_ZITI_SHARED
-#include <nf/ziti.h>
-#include <nf/ziti_log.h>
+#include <ziti/ziti.h>
+#include <ziti/ziti_log.h>
 #include <uv.h>
 
 
 typedef struct cziti_ctx_s {
-    nf_options opts;
-    nf_context nf;
+    ziti_options opts;
+    ziti_context nf;
     uv_async_t async;
 } cziti_ctx;
 

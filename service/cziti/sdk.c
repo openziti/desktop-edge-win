@@ -16,8 +16,8 @@
  */
 
 #include "sdk.h"
-#include <nf/ziti_tunneler.h>
-#include <nf/ziti_log.h>
+#include <ziti/ziti_tunneler.h>
+#include <ziti/ziti_log.h>
 
 void libuv_stopper(uv_async_t *a) {
      uv_stop(a->loop);
