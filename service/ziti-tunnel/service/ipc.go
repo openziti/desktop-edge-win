@@ -57,7 +57,7 @@ func (p *Pipes) Close() {
 
 var shutdown = make(chan bool) //a channel informing go routines to exit
 
-func SubMain(ops <-chan string, changes chan<- svc.Status) error {
+func SubMain(ops chan string, changes chan<- svc.Status) error {
 	log.Info("============================== service begins ==============================")
 
 	rts.LoadConfig()
@@ -114,13 +114,16 @@ func SubMain(ops <-chan string, changes chan<- svc.Status) error {
 	shutdown <- true // stop the metrics ticker
 	shutdown <- true // stop the service change listener
 
+	log.Infof("shutting down connections...")
 	pipes.shutdownConnections()
+
+	log.Infof("shutting down events...")
 	events.shutdown()
 
+	log.Infof("resetting dns...")
 	windns.ResetDNS()
 
-
-	log.Error("DELETING INTERFACE!")
+	log.Infof("Removing existing interface: %s", TunName)
 	wt, err := tun.WintunPool.GetInterface(TunName)
 	if err == nil {
 		// If so, we delete it, in case it has weird residual configuration.
@@ -136,6 +139,7 @@ func SubMain(ops <-chan string, changes chan<- svc.Status) error {
 
 	log.Info("==============================  service ends  ==============================")
 
+	ops <- "done"
 	return nil
 }
 func waitForStopRequest(ops <-chan string) {
@@ -143,13 +147,14 @@ func waitForStopRequest(ops <-chan string) {
 loop:
 	for {
 		c := <-ops
-		log.Infof("request for control received, %v", c)
+		log.Infof("request for control received: %v", c)
 		if c == "stop" {
 			break loop
 		} else {
 			log.Debug("unexpected operation: " + c)
 		}
 	}
+	log.Infof("wait loop is exiting")
 }
 
 func openPipes() (*Pipes, error) {
@@ -713,6 +718,7 @@ func acceptServices() {
 		case <-shutdown:
 			return
 		case c := <-cziti.ServiceChanges:
+			log.Debug("processing service change event")
 			matched := false
 			//find the id using the context
 			for _, id := range activeIds {
@@ -733,17 +739,17 @@ func acceptServices() {
 							Fingerprint: id.FingerPrint,
 							Service:     svc,
 						}
+						log.Debug(" dispatched added service change event")
 					case cziti.REMOVED:
 						for idx, svc := range id.Services {
 							if svc.Name == c.Servicename {
 								id.Services = append(id.Services[:idx], id.Services[idx+1:]...)
-
 								events.broadcast <- dto.ServiceEvent{
 									ActionEvent: SERVICE_REMOVED,
 									Fingerprint: id.FingerPrint,
 									Service:     *svc,
 								}
-
+								log.Debug(" dispatched remove service change event")
 							}
 						}
 					}

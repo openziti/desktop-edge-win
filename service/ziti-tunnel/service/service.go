@@ -77,6 +77,10 @@ loop:
 
 	log.Info("main loop exiting")
 	changes <- svc.Status{State: svc.StopPending}
+
+	log.Infof("waiting for shutdown to complete")
+	<- control
+	log.Infof("shutdown to complete")
 	return
 }
 
