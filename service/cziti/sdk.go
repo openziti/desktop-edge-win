@@ -41,7 +41,7 @@ const (
 	REMOVED = "removed"
 )
 
-var ServiceChanges = make(chan ServiceChange)
+var ServiceChanges = make(chan ServiceChange, 256)
 var log = pfxlog.Logger()
 
 type sdk struct {
