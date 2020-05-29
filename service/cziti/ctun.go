@@ -21,9 +21,9 @@ package cziti
 /*
 #cgo LDFLAGS: -l ziti_tunneler -l lwipcore -l lwipwin32arch -l ziti_tunneler -l ziti_tunneler_cbs
 
-#include <nf/netif_driver.h>
-#include <nf/ziti_tunneler.h>
-#include <nf/ziti_tunneler_cbs.h>
+#include <ziti/netif_driver.h>
+#include <ziti/ziti_tunneler.h>
+#include <ziti/ziti_tunneler_cbs.h>
 
 #include <uv.h>
 
@@ -42,7 +42,6 @@ extern void readAsync(struct uv_async_s *a);
 extern void readIdle(uv_prepare_t *idler);
 
 extern void call_on_packet(void *packet, ssize_t len, packet_cb cb, void *ctx);
-
 
 */
 import "C"
@@ -98,11 +97,11 @@ func HookupTun(dev tun.Device, dns []net.IP) (Tunnel, error) {
 
 	opts := (*C.tunneler_sdk_options)(C.calloc(1, C.sizeof_tunneler_sdk_options))
 	opts.netif_driver = drv
-	opts.ziti_dial = C.ziti_dial_cb(C.ziti_sdk_c_dial)
-	opts.ziti_close = C.ziti_close_cb(C.ziti_sdk_c_close)
-	opts.ziti_write = C.ziti_write_cb(C.ziti_sdk_c_write)
+	opts.ziti_dial = C.ziti_sdk_dial_cb(C.ziti_sdk_c_dial)
+	opts.ziti_close = C.ziti_sdk_close_cb(C.ziti_sdk_c_close)
+	opts.ziti_write = C.ziti_sdk_write_cb(C.ziti_sdk_c_write)
 
-	t.tunCtx = C.NF_tunneler_init(opts, _impl.libuvCtx.l)
+	t.tunCtx = C.ziti_tunneler_init(opts, _impl.libuvCtx.l)
 
 	go runDNSserver(dns)
 
@@ -213,6 +212,7 @@ func readIdle(idler *C.uv_prepare_t) {
 	for i := np; i > 0; i-- {
 		b := <-t.readQ
 		buf := C.CBytes(b)
+
 		C.call_on_packet(buf, C.ssize_t(len(b)), t.onPacket, t.onPacketCtx)
 		C.free(buf)
 	}
@@ -247,9 +247,6 @@ func (t *tunnel) runWriteLoop() {
 }
 
 func (t *tunnel) AddIntercept(service string, host string, port int, ctx unsafe.Pointer) {
-	zitiCtx := (*C.ziti_context)(C.malloc(C.sizeof_ziti_context))
-	zitiCtx.nf_ctx = ctx
-	res := C.NF_tunneler_intercept_v1(t.tunCtx, unsafe.Pointer(zitiCtx),
-		C.CString(service), C.CString(host), C.int(port))
+	res := C.ziti_tunneler_intercept_v1(t.tunCtx, ctx, C.CString(service), C.CString(host), C.int(port))
 	log.Debug("intercept added", res)
 }

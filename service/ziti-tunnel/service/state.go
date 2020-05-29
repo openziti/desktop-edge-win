@@ -212,7 +212,7 @@ func noZiti() bool {
 
 func (t *RuntimeState) Close() {
 	if t.tun != nil {
-		log.Warn("TODO: actually close the tun - or disable all the identities etc.")
+		log.Debug("TODO: actually close the tun - or disable all the identities etc.")
 		/*
 			cziti.Stop()
 		*/

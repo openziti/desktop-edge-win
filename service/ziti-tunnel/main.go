@@ -33,7 +33,8 @@ import (
 var log = globals.Logger()
 
 func main() {
-	globals.InitLogger(globals.ParseLevel("info"))
+	l, _ := globals.ParseLevel("info")
+	globals.InitLogger(l)
 
 	//if len(os.Args) < 2 {
 	//	// if no args supplied - expect to run as service
@@ -94,6 +95,8 @@ func main() {
 		err = service.ControlService(svc.Pause, svc.Paused)
 	case "continue":
 		err = service.ControlService(svc.Continue, svc.Running)
+	case "version":
+		printVersion()
 	default:
 		usage(fmt.Sprintf("invalid command %s", cmd))
 	}
@@ -112,4 +115,9 @@ func usage(errmsg string) {
 			"       install, remove, debug, start, stop, pause or continue.\n",
 		errmsg, os.Args[0])
 	os.Exit(2)
+}
+
+func printVersion() {
+	fmt.Printf("%v version: %v, revision: %v, branch: %v, build-by: %v, built-on: %v\n",
+		os.Args[0], Version, Revision, Branch, BuildUser, BuildDate)
 }

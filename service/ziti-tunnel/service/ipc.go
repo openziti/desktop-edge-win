@@ -50,21 +50,20 @@ type Pipes struct {
 }
 
 func (p *Pipes) Close() {
-	p.ipc.Close()
-	p.logs.Close()
-	p.events.Close()
+	_ = p.ipc.Close()
+	_ = p.logs.Close()
+	_ = p.events.Close()
 }
 
 var shutdown = make(chan bool) //a channel informing go routines to exit
 
-func SubMain(ops <-chan string, changes chan<- svc.Status) error {
+func SubMain(ops chan string, changes chan<- svc.Status) error {
 	log.Info("============================== service begins ==============================")
 
 	rts.LoadConfig()
 	l := rts.state.LogLevel
-	logLevel := globals.ParseLevel(l)
+	logLevel, czitiLevel := globals.ParseLevel(l)
 	globals.InitLogger(logLevel)
-
 
 	_ = globals.Elog.Info(InformationEvent, SvcName+" starting. log file located at "+config.LogFile())
 
@@ -77,7 +76,7 @@ func SubMain(ops <-chan string, changes chan<- svc.Status) error {
 		log.Warnf("could not open cziti.log for writing. no debug information will be captured.")
 	} else {
 		cziti.SetLog(logFile)
-		cziti.SetLogLevel(4)
+		cziti.SetLogLevel(czitiLevel)
 		defer logFile.Close()
 	}
 
@@ -114,13 +113,16 @@ func SubMain(ops <-chan string, changes chan<- svc.Status) error {
 	shutdown <- true // stop the metrics ticker
 	shutdown <- true // stop the service change listener
 
+	log.Infof("shutting down connections...")
 	pipes.shutdownConnections()
+
+	log.Infof("shutting down events...")
 	events.shutdown()
 
+	log.Infof("resetting dns...")
 	windns.ResetDNS()
 
-
-	log.Error("DELETING INTERFACE!")
+	log.Infof("Removing existing interface: %s", TunName)
 	wt, err := tun.WintunPool.GetInterface(TunName)
 	if err == nil {
 		// If so, we delete it, in case it has weird residual configuration.
@@ -136,6 +138,7 @@ func SubMain(ops <-chan string, changes chan<- svc.Status) error {
 
 	log.Info("==============================  service ends  ==============================")
 
+	ops <- "done"
 	return nil
 }
 func waitForStopRequest(ops <-chan string) {
@@ -143,13 +146,14 @@ func waitForStopRequest(ops <-chan string) {
 loop:
 	for {
 		c := <-ops
-		log.Infof("request for control received, %v", c)
+		log.Infof("request for control received: %v", c)
 		if c == "stop" {
 			break loop
 		} else {
 			log.Debug("unexpected operation: " + c)
 		}
 	}
+	log.Infof("wait loop is exiting")
 }
 
 func openPipes() (*Pipes, error) {
@@ -198,6 +202,7 @@ func openPipes() (*Pipes, error) {
 
 func (p *Pipes) shutdownConnections() {
 	log.Info("waiting for all connections to close...")
+	p.Close()
 
 	for i := 0; i < connections; i++ {
 		log.Debug("cancelling read loop")
@@ -255,7 +260,7 @@ func accept(p net.Listener, serveFunction func(net.Conn), debug string) {
 		}
 		wg.Add(1)
 		connections++
-		log.Debugf("accepting a new client for %s", debug)
+		log.Debugf("accepting a new client for %s. total connection count: %d", debug, connections)
 
 		go serveFunction(c)
 	}
@@ -280,7 +285,7 @@ func serveIpc(conn net.Conn) {
 		case <-interrupt:
 			log.Info("request to interrupt read loop received")
 			conn.Close()
-			log.Warnf("read loop interrupted")
+			log.Info("read loop interrupted")
 		case <-done:
 			log.Debug("loop finished normally")
 		}
@@ -305,7 +310,7 @@ func serveIpc(conn net.Conn) {
 					respondWithError(enc, "could not read line properly! exiting loop!", UNKNOWN_ERROR, err)
 				}
 			}
-			log.Debug("exiting read loop for ipc")
+			log.Debugf("connection closed due to shutdown request for ipc: %v", err)
 			return
 		}
 
@@ -713,6 +718,7 @@ func acceptServices() {
 		case <-shutdown:
 			return
 		case c := <-cziti.ServiceChanges:
+			log.Debug("processing service change event")
 			matched := false
 			//find the id using the context
 			for _, id := range activeIds {
@@ -733,17 +739,17 @@ func acceptServices() {
 							Fingerprint: id.FingerPrint,
 							Service:     svc,
 						}
+						log.Debug(" dispatched added service change event")
 					case cziti.REMOVED:
 						for idx, svc := range id.Services {
 							if svc.Name == c.Servicename {
 								id.Services = append(id.Services[:idx], id.Services[idx+1:]...)
-
 								events.broadcast <- dto.ServiceEvent{
 									ActionEvent: SERVICE_REMOVED,
 									Fingerprint: id.FingerPrint,
 									Service:     *svc,
 								}
-
+								log.Debug(" dispatched remove service change event")
 							}
 						}
 					}
