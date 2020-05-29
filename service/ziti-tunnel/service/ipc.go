@@ -50,9 +50,9 @@ type Pipes struct {
 }
 
 func (p *Pipes) Close() {
-	p.ipc.Close()
-	p.logs.Close()
-	p.events.Close()
+	_ = p.ipc.Close()
+	_ = p.logs.Close()
+	_ = p.events.Close()
 }
 
 var shutdown = make(chan bool) //a channel informing go routines to exit
@@ -62,9 +62,8 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 
 	rts.LoadConfig()
 	l := rts.state.LogLevel
-	logLevel := globals.ParseLevel(l)
+	logLevel, czitiLevel := globals.ParseLevel(l)
 	globals.InitLogger(logLevel)
-
 
 	_ = globals.Elog.Info(InformationEvent, SvcName+" starting. log file located at "+config.LogFile())
 
@@ -77,7 +76,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 		log.Warnf("could not open cziti.log for writing. no debug information will be captured.")
 	} else {
 		cziti.SetLog(logFile)
-		cziti.SetLogLevel(4)
+		cziti.SetLogLevel(czitiLevel)
 		defer logFile.Close()
 	}
 
@@ -203,6 +202,7 @@ func openPipes() (*Pipes, error) {
 
 func (p *Pipes) shutdownConnections() {
 	log.Info("waiting for all connections to close...")
+	p.Close()
 
 	for i := 0; i < connections; i++ {
 		log.Debug("cancelling read loop")
@@ -260,7 +260,7 @@ func accept(p net.Listener, serveFunction func(net.Conn), debug string) {
 		}
 		wg.Add(1)
 		connections++
-		log.Debugf("accepting a new client for %s", debug)
+		log.Debugf("accepting a new client for %s. total connection count: %d", debug, connections)
 
 		go serveFunction(c)
 	}
@@ -285,7 +285,7 @@ func serveIpc(conn net.Conn) {
 		case <-interrupt:
 			log.Info("request to interrupt read loop received")
 			conn.Close()
-			log.Warnf("read loop interrupted")
+			log.Info("read loop interrupted")
 		case <-done:
 			log.Debug("loop finished normally")
 		}
@@ -310,7 +310,7 @@ func serveIpc(conn net.Conn) {
 					respondWithError(enc, "could not read line properly! exiting loop!", UNKNOWN_ERROR, err)
 				}
 			}
-			log.Debug("exiting read loop for ipc")
+			log.Debugf("connection closed due to shutdown request for ipc: %v", err)
 			return
 		}
 

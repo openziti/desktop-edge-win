@@ -67,6 +67,7 @@ func SetLog(f *os.File) {
 }
 
 func SetLogLevel(level int) {
+	log.Infof("Setting cziti log level to: %d", level)
 	C.setLogLevel(C.int(level))
 }
 

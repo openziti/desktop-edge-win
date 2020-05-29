@@ -212,6 +212,7 @@ func readIdle(idler *C.uv_prepare_t) {
 	for i := np; i > 0; i-- {
 		b := <-t.readQ
 		buf := C.CBytes(b)
+
 		C.call_on_packet(buf, C.ssize_t(len(b)), t.onPacket, t.onPacketCtx)
 		C.free(buf)
 	}
@@ -246,9 +247,6 @@ func (t *tunnel) runWriteLoop() {
 }
 
 func (t *tunnel) AddIntercept(service string, host string, port int, ctx unsafe.Pointer) {
-	zitiCtx := (*C.intercept_ctx_t)(C.malloc(C.sizeof_intercept_ctx_t))
-	zitiCtx.ziti_ctx = ctx
-	res := C.ziti_tunneler_intercept_v1(t.tunCtx, unsafe.Pointer(zitiCtx),
-		C.CString(service), C.CString(host), C.int(port))
+	res := C.ziti_tunneler_intercept_v1(t.tunCtx, ctx, C.CString(service), C.CString(host), C.int(port))
 	log.Debug("intercept added", res)
 }

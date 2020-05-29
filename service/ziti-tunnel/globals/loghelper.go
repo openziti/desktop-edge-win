@@ -56,25 +56,25 @@ func InitLogger(logLevel logrus.Level) {
 	logger.Infof("Logger initialized. Log file located at: %s", config.LogFile())
 }
 
-func ParseLevel(lvl string) logrus.Level {
+func ParseLevel(lvl string) (logrus.Level, int) {
 	switch strings.ToLower(lvl) {
 	case "panic":
-		return logrus.PanicLevel
+		return logrus.PanicLevel, 0
 	case "fatal":
-		return logrus.FatalLevel
+		return logrus.FatalLevel, 1
 	case "error":
-		return logrus.ErrorLevel
+		return logrus.ErrorLevel, 2
 	case "warn", "warning":
-		return logrus.WarnLevel
+		return logrus.WarnLevel, 3
 	case "info":
-		return logrus.InfoLevel
+		return logrus.InfoLevel, 4
 	case "debug":
-		return logrus.DebugLevel
+		return logrus.DebugLevel, 5
 	case "trace":
-		return logrus.TraceLevel
+		return logrus.TraceLevel, 6
 	default:
 		logrus.Warnf("level not recognized: %s. Using Info", lvl)
-		return logrus.InfoLevel
+		return logrus.InfoLevel, 4
 	}
 }
 
