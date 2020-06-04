@@ -33,11 +33,11 @@ if not exist %SVC_ROOT_DIR%ziti.dll (
         echo.
         echo issuing git pull to pick up any changes
         git pull
-        git submodule update --remote --merge
+        git submodule update --init --recursive
         popd
     ) else (
         echo cloning %REPO_URL%
-        git clone %REPO_URL% %TUNNELER_SDK_DIR%
+        git clone %REPO_URL% %TUNNELER_SDK_DIR% --recurse-submodules
     )
     IF %ERRORLEVEL% NEQ 0 (
         SET ACTUAL_ERR=%ERRORLEVEL%
