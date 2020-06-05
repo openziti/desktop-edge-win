@@ -52,6 +52,7 @@ if not exist %SVC_ROOT_DIR%ziti.dll (
 
     echo changing to %TUNNELER_SDK_DIR%
     cd %TUNNELER_SDK_DIR%
+    echo current directory is %CD% - should be %TUNNELER_SDK_DIR%
     echo checking out branch: %REPO_BRANCH%
     git checkout %REPO_BRANCH%
     IF %ERRORLEVEL% NEQ 0 (
