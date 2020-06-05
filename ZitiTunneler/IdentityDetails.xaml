@@ -29,7 +29,9 @@
                         <ColumnDefinition Width="70"/>
                     </Grid.ColumnDefinitions>
                     <local:Toggler x:Name="IdDetailToggle" Grid.Column="0" HorizontalAlignment="Left"></local:Toggler>
-                    <Label Name="IdDetailName" Grid.Column="1" Content="ID Name" HorizontalAlignment="Center" FontSize="14" FontWeight="SemiBold" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="#0F0F23"></Label>
+                    <Label Name="IdDetailName" Grid.Column="1" HorizontalAlignment="Center" MaxWidth="160" FontSize="14" FontWeight="SemiBold" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="#0F0F23">
+                        <TextBlock TextTrimming="CharacterEllipsis">Identity Name</TextBlock>
+                    </Label>
                     <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/x.png" Width="20" Height="20" Margin="0,0,0,0" HorizontalAlignment="Right" MouseDown="HideMenu"></Image>
                 </Grid>
                 <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>

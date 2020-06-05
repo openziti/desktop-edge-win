@@ -60,6 +60,7 @@
                     <local:MenuItem Label="About" Icon="/Assets/Images/about.png" MouseUp="ShowAbout"></local:MenuItem>
                     <local:MenuItem Label="Feedback" Icon="/Assets/Images/feedback.png" MouseUp="ShowFeedback"></local:MenuItem>
                     <local:MenuItem Label="Support" Icon="/Assets/Images/support.png" MouseUp="ShowSupport"></local:MenuItem>
+                    <local:MenuItem Label="Reset Network" Icon="/Assets/Images/server.png" MouseUp="ResetNetwork"></local:MenuItem>
                     <local:MenuItem x:Name="DetachButton" Label="Detach App" Icon="/Assets/Images/detach.png" MouseUp="DetachWindow"></local:MenuItem>
                     <local:MenuItem x:Name="AttachButton" Label="Attach App" Icon="/Assets/Images/detach.png" MouseUp="RetachWindow" Visibility="Collapsed"></local:MenuItem>
                 </StackPanel>
@@ -81,7 +82,6 @@
                 <TextBox Name="LicensesItems" Height="400" Width="{Binding ActualWidth, ElementName=MainStack}" TextWrapping="Wrap" Visibility="Collapsed"></TextBox>
                 <TextBox Name="LogsItems" Height="400" Width="{Binding ActualWidth, ElementName=MainStack}" TextWrapping="Wrap" Visibility="Collapsed"></TextBox>
 
-                <Button Name="ConfigSaveButton" Cursor="Hand" Click="SaveConfig" Visibility="Collapsed" Content="SAVE" FontSize="10" FontWeight="SemiBold" Padding="20,7,20,7" Background="#0069FF" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White"></Button>
                 <StackPanel Name="AboutItemsButton" Orientation="Vertical" HorizontalAlignment="Stretch" Visibility="Collapsed">
                     <Image Grid.Column="0" Source="/Assets/Images/logo.png" Height="60" Width="240"></Image>
                     <Label HorizontalAlignment="Center" Content="Version 1.0 (23)" FontSize="10" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>

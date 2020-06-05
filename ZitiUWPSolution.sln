@@ -11,7 +11,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZitiTunneler", "ZitiTunneler\ZitiTunneler.csproj", "{FA4291EA-A97E-4854-959F-91EE7B330B37}"
 EndProject
-Project("{C7167F0D-BC9F-4E6E-AFE1-012C56B48DB5}") = "ZitiTunnelerSetup", "ZitiTunnelerSetup\ZitiTunnelerSetup.wapproj", "{7B36FB31-5662-4F87-A376-BCE564533D58}"
+Project("{C7167F0D-BC9F-4E6E-AFE1-012C56B48DB5}") = "ZitiInstaller", "ZitiInstaller\ZitiInstaller.wapproj", "{520E523A-1E9B-4983-ABA9-0EB3B27B6420}"
 EndProject
 Global
 EndGlobal
