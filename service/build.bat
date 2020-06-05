@@ -79,7 +79,6 @@ if not exist %SVC_ROOT_DIR%ziti.dll (
         echo Build of %TUNNELER_SDK_DIR%build failed
         echo.
         goto FAIL
-        EXIT /B %ERRORLEVEL%
     )
 
     cp %TUNNELER_SDK_DIR%install\lib\ziti.dll %SVC_ROOT_DIR%
@@ -100,7 +99,6 @@ if %ERRORLEVEL% GEQ 1 (
     echo Building ziti-tunnel failed
     echo.
     goto FAIL
-    EXIT /B %ERRORLEVEL%
 )
 
 echo creating the distribution zip file
@@ -118,7 +116,7 @@ exit /b 1
 echo.
 echo ACTUAL_ERR: %ACTUAL_ERR%
 cd %CURDIR%
-EXIT /B %ERRORLEVEL%
+EXIT /B %ACTUAL_ERR%
 
 :END
 cd /d %CURDIR%
