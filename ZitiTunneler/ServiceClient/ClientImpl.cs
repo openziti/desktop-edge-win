@@ -284,7 +284,10 @@ namespace ZitiTunneler.ServiceClient
                 send(newId);
                 var resp = read<IdentityResponse>(ipcReader);
                 Debug.WriteLine(resp.ToString());
-
+                if(resp.Code != 0)
+                {
+                    throw new ServiceException(resp.Message, resp.Code, resp.Error);
+                }
                 return resp.Payload;
             }
             catch (IOException)

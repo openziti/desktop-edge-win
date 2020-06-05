@@ -35,8 +35,12 @@ if not exist %SVC_ROOT_DIR%ziti.dll (
     @echo ------------------------------------------------------------------------------
 )
 
+cd /d %SVC_ROOT_DIR%
 go build -a ./ziti-tunnel
-if %ERRORLEVEL% GEQ 1 EXIT /B %ERRORLEVEL%
+if %ERRORLEVEL% GEQ 1 (
+    cd /d %CURDIR%
+    EXIT /B %ERRORLEVEL%
+)
 
 :END
 cd /d %CURDIR%
