@@ -1,8 +1,10 @@
 @echo off
 set SVC_ROOT_DIR=%~dp0
-set /p BUILD_VERSION=<%SVC_ROOT_DIR%..\version
 
+set /p BUILD_VERSION=<%SVC_ROOT_DIR%..\version
 IF "%BUILD_VERSION%"=="" GOTO BUILD_VERSION_ERROR
+
+%SVC_ROOT_DIR%\build.bat
 
 IF "%TRAVIS_BRANCH%"=="master" GOTO RELEASE
 @echo Publishing to snapshot repo

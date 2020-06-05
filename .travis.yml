@@ -20,5 +20,4 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then choco install -y zip ninja; fi
 
 script:
-  - service/build.bat
   - service/publish.bat
