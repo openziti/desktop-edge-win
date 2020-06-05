@@ -60,7 +60,6 @@
                     <local:MenuItem Label="About" Icon="/Assets/Images/about.png" MouseUp="ShowAbout"></local:MenuItem>
                     <local:MenuItem Label="Feedback" Icon="/Assets/Images/feedback.png" MouseUp="ShowFeedback"></local:MenuItem>
                     <local:MenuItem Label="Support" Icon="/Assets/Images/support.png" MouseUp="ShowSupport"></local:MenuItem>
-                    <local:MenuItem Label="Reset Network" Icon="/Assets/Images/server.png" MouseUp="ResetNetwork"></local:MenuItem>
                     <local:MenuItem x:Name="DetachButton" Label="Detach App" Icon="/Assets/Images/detach.png" MouseUp="DetachWindow"></local:MenuItem>
                     <local:MenuItem x:Name="AttachButton" Label="Attach App" Icon="/Assets/Images/detach.png" MouseUp="RetachWindow" Visibility="Collapsed"></local:MenuItem>
                 </StackPanel>

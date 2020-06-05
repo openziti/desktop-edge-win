@@ -125,22 +125,6 @@ namespace ZitiTunneler
 			Process.Start(new ProcessStartInfo("https://support.netfoundry.io") { UseShellExecute = true });
 		}
 
-		private void RunScript(string scriptText) {
-			using (PowerShell PowerShellInstance = PowerShell.Create()) {
-				PowerShellInstance.AddScript(scriptText);
-				IAsyncResult result = PowerShellInstance.BeginInvoke();
-				while (result.IsCompleted==false) {
-					Console.WriteLine("Waiting for pipeline to finish...");
-					Thread.Sleep(1000);
-				}
-				System.Windows.MessageBox.Show("Network Reset");
-			}
-		}
-
-		private void ResetNetwork(object sender, MouseButtonEventArgs e) {
-			RunScript("get-netipinterface|ForEach-Object { Set-DnsClientServerAddress-InterfaceIndex $_.ifIndex-ResetServerAddresses}");
-		}
-
 		private void DetachWindow(object sender, MouseButtonEventArgs e) {
 			Application.Current.MainWindow.ShowInTaskbar = true;
 			DetachButton.Visibility = Visibility.Collapsed;

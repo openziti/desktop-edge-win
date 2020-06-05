@@ -36,55 +36,10 @@ namespace ZitiTunneler {
 			}
 		}
 
-		public static bool IsAdministrator() {
-			using (WindowsIdentity identity = WindowsIdentity.GetCurrent()) {
-				WindowsPrincipal principal = new WindowsPrincipal(identity);
-				return principal.IsInRole(WindowsBuiltInRole.Administrator);
-			}
-		}
-
-		private void UpdateServiceFiles() {
-			if (!Directory.Exists(Path.Combine(Environment.CurrentDirectory, "Service"))) Directory.CreateDirectory(Path.Combine(Environment.CurrentDirectory, "Service"));
-			string[] files = Directory.GetFiles(Path.Combine(Environment.CurrentDirectory, "Service"));
-			foreach (string file in files) {
-				File.Delete(file);
-				Console.WriteLine($"{file} is deleted.");
-			}
-			WebClient webClient = new WebClient();
-			webClient.DownloadFile("https://actieve.com/windows-tunneler.zip", Path.Combine(Environment.CurrentDirectory, "Service")+@"\windows-tunneler.zip");
-			ZipFile.ExtractToDirectory(Path.Combine(Environment.CurrentDirectory, "Service")+@"\windows-tunneler.zip", Path.Combine(Environment.CurrentDirectory, "Service"));
-		}
-
 		private void LaunchOrInstall() {
 			ServiceController ctl = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName=="ziti");
 			if (ctl==null) {
-				if (IsAdministrator()) {
-					UpdateServiceFiles();
-					ProcessStartInfo installService = new ProcessStartInfo();
-					installService.CreateNoWindow = true;
-					installService.UseShellExecute = false;
-					installService.FileName = Path.Combine(Environment.CurrentDirectory, "Service") + @"\ziti-tunnel.exe";
-					installService.WindowStyle = ProcessWindowStyle.Hidden;
-					installService.Arguments = "install";
-
-					try {
-						using (Process exeProcess = Process.Start(installService)) {
-							exeProcess.WaitForExit();
-							ctl = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == "ziti");
-							if (ctl.Status != ServiceControllerStatus.Running) {
-								try {
-									ctl.Start();
-								} catch (Exception e) {
-									SetCantDisplay();
-								}
-							}
-						}
-					} catch (Exception e) {
-						ShowError("Error Installing Service", e.ToString());
-					}
-				} else {
-					ShowError("Admin Account", "Unable to install service, Admin Account required.");
-				}
+				SetCantDisplay();
 			} else {
 				if (ctl.Status!=ServiceControllerStatus.Running) {
 					try {
@@ -260,10 +215,8 @@ namespace ZitiTunneler {
 
 		private void IdentityForgotten(ZitiIdentity forgotten) {
 			ZitiIdentity idToRemove = null;
-			foreach (var id in identities)
-			{
-				if(id.Fingerprint == forgotten.Fingerprint)
-				{
+			foreach (var id in identities) {
+				if(id.Fingerprint == forgotten.Fingerprint) {
 					idToRemove = id;
 					break;
 				}
@@ -301,25 +254,20 @@ namespace ZitiTunneler {
 					ConnectButton.Visibility = Visibility.Visible;
 					DisconnectButton.Visibility = Visibility.Collapsed;
 				}
-				if (!Application.Current.Properties.Contains("ip"))
-				{
+				if (!Application.Current.Properties.Contains("ip")) {
 					Application.Current.Properties.Add("ip", status?.IpInfo?.Ip);
 				}
-				if (!Application.Current.Properties.Contains("subnet"))
-				{
+				if (!Application.Current.Properties.Contains("subnet")) {
 					Application.Current.Properties.Add("subnet", status?.IpInfo?.Subnet);
 				}
-				if (!Application.Current.Properties.Contains("mtu"))
-				{
+				if (!Application.Current.Properties.Contains("mtu")) {
 					Application.Current.Properties.Add("mtu", status?.IpInfo?.MTU);
 				}
-				if (!Application.Current.Properties.Contains("dns"))
-				{
+				if (!Application.Current.Properties.Contains("dns")) {
 					Application.Current.Properties.Add("dns", status?.IpInfo?.DNS);
 				}
 
-				foreach (var id in status.Identities)
-				{
+				foreach (var id in status.Identities) {
 					updateViewWithIdentity(id);
 				}
 				LoadIdentities();
