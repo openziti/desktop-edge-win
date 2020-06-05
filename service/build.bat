@@ -29,6 +29,8 @@ mkdir %TUNNELER_SDK_DIR%
 
 if not exist %SVC_ROOT_DIR%ziti.dll (
     if exist %TUNNELER_SDK_DIR% (
+        echo in: %CD%
+        echo TUNNELER_SDK_DIR: %TUNNELER_SDK_DIR%
         pushd %TUNNELER_SDK_DIR%
         echo.
         echo in: %CD%
