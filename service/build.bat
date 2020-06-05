@@ -31,13 +31,14 @@ if not exist %SVC_ROOT_DIR%ziti.dll (
     if exist %TUNNELER_SDK_DIR% (
         echo in: %CD%
         echo TUNNELER_SDK_DIR: %TUNNELER_SDK_DIR%
-        pushd %TUNNELER_SDK_DIR%
+        set BEFORE_GIT=%cd%
+        cd %TUNNELER_SDK_DIR%
         echo.
         echo in: %CD%
         echo issuing git pull to pick up any changes
         git pull
         git submodule update --init --recursive
-        popd
+        cd %BEFORE_GIT%
     ) else (
         echo cloning %REPO_URL%
         git clone %REPO_URL% %TUNNELER_SDK_DIR% --recurse-submodules
