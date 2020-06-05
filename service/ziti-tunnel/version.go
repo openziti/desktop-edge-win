@@ -4,8 +4,8 @@ package main
 
 const (
 	Version   = "0.0.7"
-	Revision  = "9f540fa4e0fd"
+	Revision  = "ee8f31eaf4a4"
 	Branch    = "jun5"
 	BuildUser = "Clint D"
-	BuildDate = "2020-06-05 12:50:05"
+	BuildDate = "2020-06-05 12:51:43"
 )
