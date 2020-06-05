@@ -31,6 +31,7 @@ if not exist %SVC_ROOT_DIR%ziti.dll (
     if exist %TUNNELER_SDK_DIR% (
         pushd %TUNNELER_SDK_DIR%
         echo.
+        echo in: %CD%
         echo issuing git pull to pick up any changes
         git pull
         git submodule update --init --recursive

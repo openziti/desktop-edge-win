@@ -176,7 +176,7 @@ func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data un
 				ServiceChanges <- ServiceChange{
 					Operation:   ADDED,
 					Servicename: name,
-					Host: ip.String(),
+					Host: host,
 					Port: port,
 					NFContext: ctx,
 				}

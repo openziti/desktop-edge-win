@@ -25,6 +25,12 @@ import (
 	"github.com/Microsoft/go-winio"
 	"github.com/netfoundry/ziti-foundation/identity/identity"
 	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
+	"github.com/netfoundry/ziti-tunnel-win/service/cziti"
+	"github.com/netfoundry/ziti-tunnel-win/service/cziti/windns"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/config"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/dto"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/globals"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/idutil"
 	"golang.org/x/sys/windows/svc"
 	"golang.zx2c4.com/wireguard/tun"
 	"io"
@@ -34,13 +40,6 @@ import (
 	"os"
 	"strings"
 	"time"
-	"github.com/netfoundry/ziti-tunnel-win/service/cziti"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/globals"
-
-	"github.com/netfoundry/ziti-tunnel-win/service/cziti/windns"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/config"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/dto"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/idutil"
 )
 
 type Pipes struct {
@@ -632,36 +631,37 @@ func respondWithError(out *json.Encoder, msg string, code int, err error) {
 }
 
 func connectIdentity(id *dto.Identity) {
+	log.Infof("connecting identity: %s", id.Name)
+
 	if !id.Connected {
 		//tell the c sdk to use the file from the id and connect
 		rts.LoadIdentity(id)
 		activeIds[id.FingerPrint] = id
 	} else {
 		log.Debugf("id [%s] is already connected - not reconnecting", id.Name)
+		for _, s := range id.Services {
+			cziti.AddIntercept(s.Name, s.HostName, s.Port, id.NFContext)
+		}
+		id.Connected = true
 	}
 	id.Active = true
+	SaveState(&rts)
 	log.Infof("identity [%s] connected [%t] and set to active [%t]", id.Name, id.Connected, id.Active)
 }
 
 func disconnectIdentity(id *dto.Identity) error {
-	//tell the c sdk to disconnect the identity/services etc
-	log.Infof("Disconnecting identity: %s", id.Name)
+	log.Infof("disconnecting identity: %s", id.Name)
 
 	id.Active = false
 	if id.Connected {
-		// actually disconnect from the c sdk here
-		log.Warn("not implemented yet - disconnected an already connected id doesn't actually work yet...")
-		//id.Connected = false
-		return nil
+		for _, s := range id.Services {
+			cziti.RemoveIntercept(s.Name)
+		}
+		id.Connected = false
 	} else {
 		log.Debugf("id: %s is already disconnected - not attempting to disconnected again fingerprint:%s", id.Name, id.FingerPrint)
 	}
-
-	//remove the file from the filesystem - first verify it's the proper file
-	err := os.Remove(id.Path())
-	if err != nil {
-		log.Warn("could not remove file: %s", config.Path()+id.FingerPrint+".json")
-	}
+	SaveState(&rts)
 	return nil
 }
 
@@ -678,7 +678,16 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 		respondWithError(out, "Error when disconnecting identity", ERROR_DISCONNECTING_ID, err)
 		return
 	}
+
 	rts.RemoveByIdentity(*id)
+
+	//remove the file from the filesystem - first verify it's the proper file
+	log.Debug("removing identity file for fingerprint %s at %s", id.FingerPrint, id.Path())
+	err = os.Remove(id.Path())
+	if err != nil {
+		log.Warn("could not remove file: %s", config.Path()+id.FingerPrint+".json")
+	}
+
 	SaveState(&rts)
 
 	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: nil}
