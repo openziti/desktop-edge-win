@@ -10,7 +10,7 @@
   <Identity
     Name="NetFoundryInc.ZitiTunnel"
     Publisher="CN=793EB682-E668-4D33-984F-2399413F3801"
-    Version="1.0.0.0" />
+    Version="0.1.1.0" />
 
   <Properties>
     <DisplayName>Ziti Tunnel</DisplayName>
@@ -46,6 +46,11 @@
         </uap:DefaultTile >
         <uap:SplashScreen Image="Images\SplashScreen.png" />
       </uap:VisualElements>
+      <Extensions>
+        <uap:Extension Category="windows.appService" Executable="ZitiUpdateService.exe">
+          <uap:AppService Name="Ziti Update Service"/>
+        </uap:Extension>
+      </Extensions>
     </Application>
   </Applications>
 

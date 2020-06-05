@@ -8,6 +8,26 @@
       <Configuration>Debug</Configuration>
       <Platform>x86</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Releases|AnyCPU">
+      <Configuration>Releases</Configuration>
+      <Platform>AnyCPU</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Releases|ARM">
+      <Configuration>Releases</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Releases|ARM64">
+      <Configuration>Releases</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Releases|x64">
+      <Configuration>Releases</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Releases|x86">
+      <Configuration>Releases</Configuration>
+      <Platform>x86</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Release|x86">
       <Configuration>Release</Configuration>
       <Platform>x86</Platform>
@@ -156,6 +176,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ZitiTunneler\ZitiTunneler.csproj" />
+    <ProjectReference Include="..\ZitiUpdateService\ZitiUpdateService.csproj" />
   </ItemGroup>
   <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.targets" />
 </Project>
