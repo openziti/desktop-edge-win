@@ -27,18 +27,13 @@ set CGO_CFLAGS=-DNOGDI -I %TUNNELER_SDK_DIR%install\include
 set CGO_LDFLAGS=-L %TUNNELER_SDK_DIR%install\lib
 
 if not exist %SVC_ROOT_DIR%ziti.dll (
+    set BEFORE_GIT=%cd%
     if exist %TUNNELER_SDK_DIR% (
-        set BEFORE_GIT=%cd%
-        echo changing to %TUNNELER_SDK_DIR%
-        cd %TUNNELER_SDK_DIR%
-        echo now in %CD% - should be in %TUNNELER_SDK_DIR%
-        echo.
         echo ------------------------------------------------------------------------------
         echo issuing git pull to pick up any changes
         echo ------------------------------------------------------------------------------
         git pull
         git submodule update --init --recursive
-        cd %BEFORE_GIT%
         echo ------------------------------------------------------------------------------
     ) else (
         echo ------------------------------------------------------------------------------
@@ -55,8 +50,9 @@ if not exist %SVC_ROOT_DIR%ziti.dll (
         goto FAIL
     )
 
+    echo changing to %TUNNELER_SDK_DIR%
     cd %TUNNELER_SDK_DIR%
-    echo checking out %REPO_BRANCH%
+    echo checking out branch: %REPO_BRANCH%
     git checkout %REPO_BRANCH%
     IF %ERRORLEVEL% NEQ 0 (
         SET ACTUAL_ERR=%ERRORLEVEL%
@@ -75,6 +71,9 @@ if not exist %SVC_ROOT_DIR%ziti.dll (
         echo.
         goto FAIL
     )
+
+    echo changing back to %BEFORE_GIT%
+    cd %BEFORE_GIT%
 
     if not exist %TUNNELER_SDK_DIR%build mkdir %TUNNELER_SDK_DIR%build
     if not exist %TUNNELER_SDK_DIR%install mkdir %TUNNELER_SDK_DIR%install
