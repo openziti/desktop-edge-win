@@ -25,23 +25,26 @@ SET REPO_BRANCH=master
 SET TUNNELER_SDK_DIR=%SVC_ROOT_DIR%deps\ziti-tunneler-sdk-c\
 set CGO_CFLAGS=-DNOGDI -I %TUNNELER_SDK_DIR%install\include
 set CGO_LDFLAGS=-L %TUNNELER_SDK_DIR%install\lib
-mkdir %TUNNELER_SDK_DIR%
 
 if not exist %SVC_ROOT_DIR%ziti.dll (
     if exist %TUNNELER_SDK_DIR% (
-        echo in: %CD%
-        echo TUNNELER_SDK_DIR: %TUNNELER_SDK_DIR%
         set BEFORE_GIT=%cd%
         echo changing to %TUNNELER_SDK_DIR%
         cd %TUNNELER_SDK_DIR%
         echo now in %CD% - should be in %TUNNELER_SDK_DIR%
         echo.
+        echo ------------------------------------------------------------------------------
         echo issuing git pull to pick up any changes
+        echo ------------------------------------------------------------------------------
         git pull
         git submodule update --init --recursive
         cd %BEFORE_GIT%
+        echo ------------------------------------------------------------------------------
     ) else (
+        echo ------------------------------------------------------------------------------
         echo cloning %REPO_URL%
+        echo ------------------------------------------------------------------------------
+        mkdir %TUNNELER_SDK_DIR%
         git clone %REPO_URL% %TUNNELER_SDK_DIR% --recurse-submodules
     )
     IF %ERRORLEVEL% NEQ 0 (
