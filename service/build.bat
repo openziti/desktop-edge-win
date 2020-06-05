@@ -32,9 +32,10 @@ if not exist %SVC_ROOT_DIR%ziti.dll (
         echo in: %CD%
         echo TUNNELER_SDK_DIR: %TUNNELER_SDK_DIR%
         set BEFORE_GIT=%cd%
+        echo changing to %TUNNELER_SDK_DIR%
         cd %TUNNELER_SDK_DIR%
+        echo now in %CD% - should be in %TUNNELER_SDK_DIR%
         echo.
-        echo in: %CD%
         echo issuing git pull to pick up any changes
         git pull
         git submodule update --init --recursive
