@@ -30,7 +30,7 @@ namespace ZitiTunneler {
 		private int _right = 75;
 		private int _bottom = 0;
 		private double _maxHeight = 800d;
-		private string[] suffixes = { "Bytes", "KB", "MB", "GB", "TB", "PB" };
+		private string[] suffixes = { "bps", "kbps", "mbps", "gbps", "tbps", "pbps" };
 
 		private List<ZitiIdentity> identities {
 			get {
