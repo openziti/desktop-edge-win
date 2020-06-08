@@ -27,7 +27,7 @@ namespace ZitiTunneler
 		private void HideMenu(object sender, MouseButtonEventArgs e) {
 			menuState = "Menu";
 			UpdateState();
-			this.Visibility = Visibility.Collapsed;
+			MainMenuArea.Visibility = Visibility.Collapsed;
 		}
 
 		private void CloseApp(object sender, MouseButtonEventArgs e) {
@@ -133,6 +133,7 @@ namespace ZitiTunneler
 			if (OnAttachmentChange != null) {
 				OnAttachmentChange(false);
 			}
+			MainMenuArea.Visibility = Visibility.Collapsed;
 		}
 		private void RetachWindow(object sender, MouseButtonEventArgs e) {
 			Application.Current.MainWindow.ShowInTaskbar = false;
