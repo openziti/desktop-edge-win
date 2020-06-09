@@ -13,6 +13,7 @@ using System.Runtime.Remoting.Messaging;
 using System.Diagnostics;
 using System.Security.Principal;
 using System.Net;
+using System.Windows.Controls;
 
 namespace ZitiTunneler {
 
@@ -29,6 +30,7 @@ namespace ZitiTunneler {
 		private int _right = 75;
 		private int _bottom = 0;
 		private double _maxHeight = 800d;
+		private string[] suffixes = { "bps", "kbps", "mbps", "gbps", "tbps", "pbps" };
 
 		private List<ZitiIdentity> identities {
 			get {
@@ -67,21 +69,18 @@ namespace ZitiTunneler {
 			InitializeComponent();
 		}
 
-		private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
-		{
+		private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
 			notifyIcon.Visible = false;
 			notifyIcon.Icon.Dispose();
 			notifyIcon.Dispose();
 		}
 
-		private void SetCantDisplay()
-		{
+		private void SetCantDisplay() {
 			NoServiceView.Visibility = Visibility.Visible;
 			SetNotifyIcon("red");
 		}
 
-		private void SetCanDisplay()
-		{
+		private void SetCanDisplay() {
 			NoServiceView.Visibility = Visibility.Collapsed;
 			SetNotifyIcon("green");
 		}
@@ -115,6 +114,7 @@ namespace ZitiTunneler {
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
 			Application.Current.Properties.Add("Identities", new List<ZitiIdentity>());
 			MainMenu.OnAttachmentChange += AttachmentChanged;
+			IdentityMenu.OnError += IdentityMenu_OnError;
 
 			try {
 				serviceClient.Connect();
@@ -125,6 +125,10 @@ namespace ZitiTunneler {
 			}
 			LoadIdentities();
 			IdentityMenu.OnForgot += IdentityForgotten;
+		}
+
+		private void IdentityMenu_OnError(string message) {
+			ShowError("Identity Error", message);
 		}
 
 		private void ServiceClient_OnClientConnected(object sender, object e) {
@@ -173,10 +177,20 @@ namespace ZitiTunneler {
 					}
 				}
 				this.Dispatcher.Invoke(() => {
-					DownloadSpeed.Content = (totalDown / 1000).ToString();
-					UploadSpeed.Content = (totalUp / 1000).ToString();
+					SetSpeed(totalUp, UploadSpeed, UploadSpeedLabel);
+					SetSpeed(totalDown, DownloadSpeed, DownloadSpeedLabel);
 				});
 			}
+		}
+
+		public void SetSpeed(decimal bytes, Label speed, Label speedLabel) {
+			int counter = 0;
+			while (Math.Round(bytes / 1024) >= 1) {
+				bytes = bytes / 1024;
+				counter++;
+			}
+			speed.Content = speed.ToString();
+			speedLabel.Content = suffixes[counter];
 		}
 
 		private void ServiceClient_OnServiceEvent(object sender, ServiceEvent e) {

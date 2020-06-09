@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:ZitiTunneler"
              mc:Ignorable="d" 
              x:Name="MainMenuArea"
-             d:DesignHeight="400" d:DesignWidth="350">
+             d:DesignHeight="400" d:DesignWidth="350" Margin="1,1,1,1">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
@@ -39,20 +39,7 @@
                         <Label FontSize="12" FontWeight="SemiBold" Content="Back" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                     </StackPanel>
                     <Label Name="MenuTitle" Grid.Column="1" Content="Main Menu" HorizontalAlignment="Center" FontSize="14" FontWeight="SemiBold" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="#0F0F23"></Label>
-                    <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/x.png" Height="20" Margin="50,4,0,5" MouseDown="HideMenu">
-                        <Image.Triggers>
-                            <EventTrigger RoutedEvent="Image.MouseDown" >
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetProperty="Opacity" Storyboard.TargetName="MainMenuArea" From="1.0" To="0" Duration="0:0:0.5"></DoubleAnimation>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="MainMenuArea" Storyboard.TargetProperty="Visibility">
-                                            <DiscreteObjectKeyFrame KeyTime="0:0:0.5" Value="{x:Static Visibility.Collapsed}"/>
-                                        </ObjectAnimationUsingKeyFrames>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </EventTrigger>
-                        </Image.Triggers>
-                    </Image>
+                    <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/x.png" Height="20" Margin="50,4,0,5" MouseDown="HideMenu"></Image>
                 </Grid>
                 <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
                 <StackPanel Name="MainItems" Orientation="Vertical" HorizontalAlignment="Stretch">
