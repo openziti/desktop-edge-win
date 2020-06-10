@@ -63,6 +63,7 @@ if not exist %SVC_ROOT_DIR%ziti.dll (
         goto FAIL
     )
 
+    echo ------------------------------------------------------------------------------
     type %TUNNELER_SDK_DIR%.gitmodules
     echo.
     echo updating any ssh submodules to https using:
@@ -70,6 +71,7 @@ if not exist %SVC_ROOT_DIR%ziti.dll (
     echo.
     powershell "(get-content -path %TUNNELER_SDK_DIR%.gitmodules) -replace 'git@(.*)\:(.*)\.git', 'https://$1/$2.git' | Set-Content -Path %TUNNELER_SDK_DIR%.gitmodules"
     type %TUNNELER_SDK_DIR%.gitmodules
+    echo ------------------------------------------------------------------------------
 
     echo Updating submodules...
     git config --get remote.origin.url

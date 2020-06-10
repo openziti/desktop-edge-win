@@ -31,6 +31,7 @@ import (
 var log = pfxlog.Logger()
 
 func ResetDNS() {
+	log.Infof("resetting dns...")
 	log.Info("restoring dns to original-ish state")
 
 	script := `Get-NetIPInterface | ForEach-Object { Set-DnsClientServerAddress -InterfaceIndex $_.ifIndex -ResetServerAddresses }`

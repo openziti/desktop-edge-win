@@ -136,7 +136,7 @@ func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data un
 	}
 
 	name := C.GoString(service.name)
-	log.Debugf("============ INSIDE serviceCB - status: %s - %v, %v, %v ============", name, status, C.ZITI_SERVICE_UNAVAILABLE, C.ZITI_OK)
+	log.Tracef("============ INSIDE serviceCB - status: %s - %v, %v, %v ============", name, status, C.ZITI_SERVICE_UNAVAILABLE, C.ZITI_OK)
 	if status == C.ZITI_SERVICE_UNAVAILABLE {
 		DNS.DeregisterService(ctx, name)
 		delete(*ctx.Services, name)

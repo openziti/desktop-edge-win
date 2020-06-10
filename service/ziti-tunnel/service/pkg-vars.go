@@ -31,8 +31,11 @@ var activeIds = make(map[string]*dto.Identity)
 var rts = RuntimeState{}
 var interrupt chan struct{}
 
-var wg sync.WaitGroup
-var connections int
+var ipcWg sync.WaitGroup
+var eventsWg sync.WaitGroup
+var ipcConnections int
+var eventsConnections int
+
 var Debug bool
 
 var TunStarted time.Time
