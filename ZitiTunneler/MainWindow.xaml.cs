@@ -46,7 +46,7 @@ namespace ZitiTunneler {
 				if (ctl.Status!=ServiceControllerStatus.Running) {
 					try {
 						ctl.Start();
-					} catch (Exception e) {
+					} catch /*ignored for now (Exception e)*/ {
 						SetCantDisplay();
 					}
 				}
@@ -120,7 +120,7 @@ namespace ZitiTunneler {
 				serviceClient.Connect();
 				//var s = serviceClient.GetStatus();
 				//LoadStatusFromService(s.Status);
-			} catch (Exception ex) {
+			} catch /*ignored for now (Exception ex) */{
 				SetCantDisplay();
 			}
 			LoadIdentities();
@@ -189,7 +189,7 @@ namespace ZitiTunneler {
 				bytes = bytes / 1024;
 				counter++;
 			}
-			speed.Content = speed.ToString();
+			speed.Content = bytes;
 			speedLabel.Content = suffixes[counter];
 		}
 
@@ -207,8 +207,18 @@ namespace ZitiTunneler {
 
 				if (e.Action == "added") {
 					ZitiService zs = new ZitiService(e.Service.Name, e.Service.HostName, e.Service.Port);
-					found.Services.Add(zs);
+					var svc = found.Services.Find(s => s.Name == zs.Name);
+
+					if (svc == null)
+					{
+						found.Services.Add(zs);
+					}
+					else
+					{
+						Debug.WriteLine("the service named " + zs.Name + " is already accounted for on this identity.");
+					}
 				} else {
+					Debug.WriteLine("removing the service named: " + e.Service.Name);
 					found.Services.RemoveAll(s => s.Name == e.Service.Name);
 				}
 				LoadIdentities();

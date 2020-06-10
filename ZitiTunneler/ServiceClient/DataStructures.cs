@@ -9,11 +9,11 @@ namespace ZitiTunneler.ServiceClient
 {
     class SvcResponse
     {
-        public int Code;
-        public string Message;
-        public string Error;
+        public int Code { get; set; }
+        public string Message { get; set; }
+        public string Error { get; set; }
 
-        public string ToString()
+        override public string ToString()
         {
             return $"Code: {Code}\nMessage: {Message}\nError: {Error}";
         }

@@ -168,17 +168,18 @@ namespace ZitiTunneler.ServiceClient
                         {
                             Debug.WriteLine("Connected to the service - exiting reconect loop");
                             this.Connected = true;
+                            Reconnecting = false;
                             return;
                         }
                         else
                         {
-                            ClientDisconnected(null);
+                            //ClientDisconnected(null);
                         }
                     }
                     catch
                     {
                         //fire the event and just try it all over....
-                        ClientDisconnected(null);
+                        //ClientDisconnected(null);
                     }
                     Debug.WriteLine("Reconnect failed. Trying again...");
                 }
@@ -450,46 +451,55 @@ namespace ZitiTunneler.ServiceClient
 
         private void processEvent(StreamReader reader)
         {
-            string respAsString = readMessage(reader);
-            StatusEvent evt = (StatusEvent)serializer.Deserialize(new StringReader(respAsString), typeof(StatusEvent));
-
-            switch (evt.Op)
+            try
             {
-                case "metrics":
-                    MetricsEvent m = (MetricsEvent)serializer.Deserialize(new StringReader(respAsString), typeof(MetricsEvent));
-                    
-                    if (m != null)
-                    {
-                        this.MetricsEvent(m.Identities);
-                    }
-                    break;
-                case "status":
-                    TunnelStatusEvent se = (TunnelStatusEvent)serializer.Deserialize(new StringReader(respAsString), typeof(TunnelStatusEvent));
-                    
-                    if (se != null)
-                    {
-                        this.TunnelStatusEvent(se);
-                    }
-                    break;
-                case "identity":
-                    IdentityEvent id = (IdentityEvent)serializer.Deserialize(new StringReader(respAsString), typeof(IdentityEvent));
+                string respAsString = readMessage(reader);
+                debugServiceCommunication("----------------------------------------------------------------------");
+                debugServiceCommunication(respAsString);
+                debugServiceCommunication("----------------------------------------------------------------------");
+                StatusEvent evt = (StatusEvent)serializer.Deserialize(new StringReader(respAsString), typeof(StatusEvent));
 
-                    if (id != null)
-                    {
-                        this.IdentityEvent(id);
-                    }
-                    break;
-                case "service":
-                    ServiceEvent svc = (ServiceEvent)serializer.Deserialize(new StringReader(respAsString), typeof(ServiceEvent));
+                switch (evt.Op)
+                {
+                    case "metrics":
+                        MetricsEvent m = (MetricsEvent)serializer.Deserialize(new StringReader(respAsString), typeof(MetricsEvent));
 
-                    if (svc != null)
-                    {
-                        this.ServiceEvent(svc);
-                    }
-                    break;
-                default:
-                    Debug.WriteLine("unexpected operation! " + evt.Op);
-                    break;
+                        if (m != null)
+                        {
+                            this.MetricsEvent(m.Identities);
+                        }
+                        break;
+                    case "status":
+                        TunnelStatusEvent se = (TunnelStatusEvent)serializer.Deserialize(new StringReader(respAsString), typeof(TunnelStatusEvent));
+
+                        if (se != null)
+                        {
+                            this.TunnelStatusEvent(se);
+                        }
+                        break;
+                    case "identity":
+                        IdentityEvent id = (IdentityEvent)serializer.Deserialize(new StringReader(respAsString), typeof(IdentityEvent));
+
+                        if (id != null)
+                        {
+                            this.IdentityEvent(id);
+                        }
+                        break;
+                    case "service":
+                        ServiceEvent svc = (ServiceEvent)serializer.Deserialize(new StringReader(respAsString), typeof(ServiceEvent));
+
+                        if (svc != null)
+                        {
+                            this.ServiceEvent(svc);
+                        }
+                        break;
+                    default:
+                        Debug.WriteLine("unexpected operation! " + evt.Op);
+                        break;
+                }
+            } catch (Exception e)
+            {
+                Debug.WriteLine(e.Message);
             }
         }
 
