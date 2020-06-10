@@ -467,7 +467,7 @@ loop:
 				err := o.Encode(msg)
 				if err != nil {
 					log.Infof("exiting from serveEvents - %v", err)
-					break
+					break loop
 				}
 				_ = w.Flush()
 			case <-interrupt:
