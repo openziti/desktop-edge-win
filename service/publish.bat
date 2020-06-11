@@ -22,5 +22,5 @@ exit /b 1
 
 :END
 @echo publishing complete - committing version.go as ci
-git add ziti-tunnel/version.go
+git add service/ziti-tunnel/version.go
 git diff-index --quiet HEAD || git commit -m "[ci skip] committing updated version information" && git push
