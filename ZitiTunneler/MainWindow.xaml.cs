@@ -189,7 +189,7 @@ namespace ZitiTunneler {
 				bytes = bytes / 1024;
 				counter++;
 			}
-			speed.Content = bytes;
+			speed.Content = bytes.ToString("0.0");
 			speedLabel.Content = suffixes[counter];
 		}
 
