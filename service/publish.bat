@@ -21,6 +21,9 @@ GOTO END
 exit /b 1
 
 :END
+echo configuring git - relies on build.bat successfully grabbing ziti-ci
+ziti-ci configure-git
+
 @echo publishing complete - committing version.go as ci
 git add service/ziti-tunnel/version.go
 @echo git add service/ziti-tunnel/version.go complete: %ERRORLEVEL%

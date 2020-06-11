@@ -15,9 +15,6 @@ ziti-ci version
 echo generating version info - this will pushed from publish.bat in CI
 ziti-ci generate-build-info --useVersion=false %SVC_ROOT_DIR%/ziti-tunnel/version.go main
 
-echo configuring git
-ziti-ci configure-git
-pwd
 cd service
 
 SET REPO_URL=https://github.com/openziti/ziti-tunneler-sdk-c.git
