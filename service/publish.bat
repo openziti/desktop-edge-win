@@ -1,4 +1,5 @@
 @echo off
+set CURDIR=%CD%
 set SVC_ROOT_DIR=%~dp0
 
 set /p BUILD_VERSION=<%SVC_ROOT_DIR%..\version
@@ -34,4 +35,5 @@ git commit -m "[ci skip] committing updated version information"
 git push
 @echo git push complete: %ERRORLEVEL%
 
+cd %CURDIR%
 @echo publish script has completed
