@@ -110,6 +110,7 @@ if not exist %SVC_ROOT_DIR%ziti.dll (
     echo ------------------------------------------------------------------------------
 )
 
+echo building the go program
 go build -a ./ziti-tunnel
 SET ACTUAL_ERR=%ERRORLEVEL%
 if %ACTUAL_ERR% NEQ 0 (
@@ -117,6 +118,8 @@ if %ACTUAL_ERR% NEQ 0 (
     echo Building ziti-tunnel failed
     echo.
     goto FAIL
+) else (
+    echo go build complete
 )
 
 IF "%1"=="quick" GOTO END
