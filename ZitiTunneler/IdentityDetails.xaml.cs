@@ -76,7 +76,6 @@ namespace ZitiTunneler {
 		}
 
 		private void IdToggle(bool on) {
-			// Jeremy - on and off but it's not wired in yet!
 			ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
 			client.IdentityOnOff(_identity.Fingerprint, on);
 		}

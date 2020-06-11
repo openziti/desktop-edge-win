@@ -26,10 +26,10 @@
                 </Grid.RowDefinitions>
                 <local:Toggler x:Name="ToggleSwitch" Grid.Column="0" Grid.Row="0" Margin="0,10,0,0"></local:Toggler>
                 <Label Name="ToggleStatus" Grid.Column="0" Grid.Row="1" Margin="0,-5,0,0" Content="Enabled" Foreground="White" FontSize="11" Typography.Capitals="AllSmallCaps" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"></Label>
-                <Label Name="IdName" MouseDown="OpenDetails" MaxWidth="200" Grid.Column="1" Margin="0,6,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" FontSize="18" Foreground="White" HorizontalAlignment="Left">
+                <Label Name="IdName" MouseDown="OpenDetails" MaxWidth="180" Grid.Column="1" Margin="0,6,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" FontSize="18" Foreground="White" HorizontalAlignment="Left">
                     <TextBlock TextTrimming="CharacterEllipsis">Identity Name</TextBlock>
                 </Label>
-                <Label Name="IdUrl" MouseDown="OpenDetails" MaxWidth="200" Grid.Column="1" Grid.Row="1" FontSize="11" Margin="0,-5,0,0" Typography.Capitals="AllSmallCaps" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" HorizontalAlignment="Left">
+                <Label Name="IdUrl" MouseDown="OpenDetails" MaxWidth="180" Grid.Column="1" Grid.Row="1" FontSize="11" Margin="0,-5,0,0" Typography.Capitals="AllSmallCaps" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" HorizontalAlignment="Left">
                     <TextBlock TextTrimming="CharacterEllipsis">https://serverUrlThisShouldTrimIfItsLong:8080</TextBlock>
                 </Label>
                 <Canvas Grid.Column="2" Grid.Row="0" Width="50" Height="40" MouseDown="OpenDetails">
