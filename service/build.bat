@@ -21,7 +21,7 @@ pwd
 cd service
 
 SET REPO_URL=https://github.com/openziti/ziti-tunneler-sdk-c.git
-SET REPO_BRANCH=master
+SET ZITI_TUNNEL_REPO_BRANCH=master
 SET TUNNELER_SDK_DIR=%SVC_ROOT_DIR%deps\ziti-tunneler-sdk-c\
 set CGO_CFLAGS=-DNOGDI -I %TUNNELER_SDK_DIR%install\include
 set CGO_LDFLAGS=-L %TUNNELER_SDK_DIR%install\lib
@@ -53,12 +53,12 @@ if not exist %SVC_ROOT_DIR%ziti.dll (
     echo changing to %TUNNELER_SDK_DIR%
     cd %TUNNELER_SDK_DIR%
     echo current directory is %CD% - should be %TUNNELER_SDK_DIR%
-    echo checking out branch: %REPO_BRANCH%
-    git checkout %REPO_BRANCH%
+    echo checking out branch: %ZITI_TUNNEL_REPO_BRANCH%
+    git checkout %ZITI_TUNNEL_REPO_BRANCH%
     IF %ERRORLEVEL% NEQ 0 (
         SET ACTUAL_ERR=%ERRORLEVEL%
         echo.
-        echo Could not checkout branch :%REPO_BRANCH%
+        echo Could not checkout branch :%ZITI_TUNNEL_REPO_BRANCH%
         echo.
         goto FAIL
     )
