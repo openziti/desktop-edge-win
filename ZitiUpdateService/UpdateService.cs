@@ -13,6 +13,8 @@ using System.Net;
 using System.Timers;
 using System.Management.Automation;
 using System.Xml;
+using System.Configuration;
+using System.Collections.Specialized;
 
 namespace ZitiUpdateService {
 	public partial class UpdateService : ServiceBase {
@@ -27,6 +29,7 @@ namespace ZitiUpdateService {
 		private string _rootDirectory = "";
 		private string _logDirectory = "";
 		private bool _isJustStopped = true;
+		private string _versionType = "release";
 
 		ServiceController controller;
 		public UpdateService() {
@@ -34,6 +37,8 @@ namespace ZitiUpdateService {
 		}
 
 		protected override void OnStart(string[] args) {
+			if (ConfigurationManager.AppSettings.Get("UpdateUrl")!=null) _versionUrl = ConfigurationManager.AppSettings.Get("UpdateUrl");
+			if (ConfigurationManager.AppSettings.Get("Version") !=null) _versionType = ConfigurationManager.AppSettings.Get("Version");
 			_rootDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "NetFoundry");
 			if (!Directory.Exists(_rootDirectory)) Directory.CreateDirectory(_rootDirectory);
 			_logDirectory = Path.Combine(_rootDirectory, "Logs");
@@ -90,7 +95,7 @@ namespace ZitiUpdateService {
 			var result = readStream.ReadToEnd();
 			XmlDocument xmlDoc = new XmlDocument();
 			xmlDoc.LoadXml(result);
-			XmlNode node = xmlDoc.SelectSingleNode("metadata/versioning/release");
+			XmlNode node = xmlDoc.SelectSingleNode("metadata/versioning/"+ _versionType);
 			string version = node.InnerText;
 			Log("Version Checked: " + version+" on "+_version);
 			if (version != _version) {
