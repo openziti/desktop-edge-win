@@ -23,13 +23,12 @@ exit /b 1
 :END
 @echo publishing complete - committing version.go as ci
 git add service/ziti-tunnel/version.go
-git diff-index --quiet HEAD || git commit -m "[ci skip] committing updated version information" && git push
+@echo git add service/ziti-tunnel/version.go complete: %ERRORLEVEL%
 
-IF %ERRORLEVEL% NEQ 0 (
-    echo.
-    echo Could not commit or push - see log for help
-    echo.
-    exit /b 1
-)
+git commit -m "[ci skip] committing updated version information"
+@echo git commit -m "[ci skip] committing updated version information" complete: %ERRORLEVEL%
+
+git push
+@echo git push complete: %ERRORLEVEL%
 
 @echo publish script has completed
