@@ -1,4 +1,5 @@
 @echo off
+set CURDIR=%CD%
 set SVC_ROOT_DIR=%~dp0
 
 set /p BUILD_VERSION=<%SVC_ROOT_DIR%..\version
@@ -6,9 +7,10 @@ IF "%BUILD_VERSION%"=="" GOTO BUILD_VERSION_ERROR
 
 call %SVC_ROOT_DIR%\build.bat
 
-IF "%TRAVIS_BRANCH%"=="master" GOTO RELEASE
+IF "%GIT_BRANCH%"=="master" GOTO RELEASE
 @echo Publishing to snapshot repo
-ziti-ci publish artifactory --groupId=ziti-tunnel-win.amd64.windows --artifactId=ziti-tunnel-win --version=%BUILD_VERSION%-SNAPSHOT --target=service/ziti-tunnel-win.zip --classifier=%TRAVIS_BRANCH%
+ziti-ci publish artifactory --groupId=ziti-tunnel-win.amd64.windows --artifactId=ziti-tunnel-win --version=%BUILD_VERSION%-SNAPSHOT --target=service/ziti-tunnel-win.zip
+REM ziti-ci publish artifactory --groupId=ziti-tunnel-win.amd64.windows --artifactId=ziti-tunnel-win --version=%BUILD_VERSION%-SNAPSHOT --target=service/ziti-tunnel-win.zip --classifier=%GIT_BRANCH%
 GOTO END
 
 :RELEASE
@@ -21,6 +23,18 @@ GOTO END
 exit /b 1
 
 :END
+echo configuring git - relies on build.bat successfully grabbing ziti-ci
+ziti-ci configure-git
+
 @echo publishing complete - committing version.go as ci
-git add ziti-tunnel/version.go
-git diff-index --quiet HEAD || git commit -m "[ci skip] committing updated version information" && git push
+git add service/ziti-tunnel/version.go
+@echo git add service/ziti-tunnel/version.go complete: %ERRORLEVEL%
+
+git commit -m "[ci skip] committing updated version information"
+@echo git commit -m "[ci skip] committing updated version information" complete: %ERRORLEVEL%
+
+git push
+@echo git push complete: %ERRORLEVEL%
+
+cd %CURDIR%
+@echo publish script has completed

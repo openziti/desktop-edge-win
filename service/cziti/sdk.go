@@ -33,6 +33,7 @@ import (
 	"errors"
 	"github.com/michaelquigley/pfxlog"
 	"os"
+	"sync"
 	"unsafe"
 )
 
@@ -100,7 +101,7 @@ type CZitiCtx struct {
 	status    int
 	statusErr error
 
-	Services *map[string]Service
+	Services *sync.Map
 }
 
 func (c *CZitiCtx) Status() (int, error) {
@@ -131,7 +132,7 @@ func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data un
 	ctx := (*CZitiCtx)(data)
 
 	if ctx.Services == nil {
-		m := make(map[string]Service)
+		m := sync.Map{} //make(map[string]Service)
 		ctx.Services = &m
 	}
 
@@ -139,7 +140,7 @@ func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data un
 	log.Tracef("============ INSIDE serviceCB - status: %s - %v, %v, %v ============", name, status, C.ZITI_SERVICE_UNAVAILABLE, C.ZITI_OK)
 	if status == C.ZITI_SERVICE_UNAVAILABLE {
 		DNS.DeregisterService(ctx, name)
-		delete(*ctx.Services, name)
+		ctx.Services.Delete(name)
 		ServiceChanges <- ServiceChange{
 			Operation:   REMOVED,
 			Servicename: name,
@@ -158,12 +159,12 @@ func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data un
 				port = int(c["port"].(float64))
 			}
 		}
-		(*ctx.Services)[name] = Service{
+		ctx.Services.Store(name, Service{
 			Name:          name,
 			Id:            C.GoString(service.id),
 			InterceptHost: host,
 			InterceptPort: port,
-		}
+		})
 		if host != "" && port != -1 {
 			ip, err := DNS.RegisterService(host, uint16(port), ctx, name)
 			if err != nil {
@@ -217,7 +218,7 @@ func LoadZiti(cfg string) *CZitiCtx {
 	ctx.options.init_cb = C.ziti_init_cb(C.initCB)
 	ctx.options.service_cb = C.ziti_service_cb(C.serviceCB)
 	//TODO don't commit this - ctx.options.refresh_interval = C.long(600)
-	ctx.options.refresh_interval = C.long(15)
+	ctx.options.refresh_interval = C.long(6)
 	ctx.options.config_types = C.all_configs
 	//ctx.options.ctx = unsafe.Pointer(&ctx)
 
