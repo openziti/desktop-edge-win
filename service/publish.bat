@@ -37,6 +37,10 @@ echo configuring git - relies on build.bat successfully grabbing ziti-ci
 ziti-ci configure-git 2>1
 
 @echo publishing complete - committing version.go as ci
+
+@echo executing: git checkout %GIT_BRANCH%
+git checkout %GIT_BRANCH%
+
 git add service/ziti-tunnel/version.go 2>1
 @echo git add service/ziti-tunnel/version.go complete: %ERRORLEVEL%
 
