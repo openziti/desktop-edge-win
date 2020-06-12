@@ -29,6 +29,9 @@ set CGO_LDFLAGS=-L %TUNNELER_SDK_DIR%install\lib
 
 set BEFORE_GIT=%cd%
 echo BEFORE_GIT set to %BEFORE_GIT%
+dir %SVC_ROOT_DIR%
+dir %SVC_ROOT_DIR%ziti.dll
+echo :pointup: how is an IF failing???
 
 if not exist %SVC_ROOT_DIR%ziti.dll (
     echo ziti.dll does not exist
