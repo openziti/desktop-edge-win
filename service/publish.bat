@@ -34,16 +34,16 @@ exit /b 1
 
 :END
 echo configuring git - relies on build.bat successfully grabbing ziti-ci
-ziti-ci configure-git
+ziti-ci configure-git 2>1
 
 @echo publishing complete - committing version.go as ci
-git add service/ziti-tunnel/version.go
+git add service/ziti-tunnel/version.go 2>1
 @echo git add service/ziti-tunnel/version.go complete: %ERRORLEVEL%
 
-git commit -m "[ci skip] committing updated version information"
+git commit -m "[ci skip] committing updated version information" 2>1
 @echo git commit -m "[ci skip] committing updated version information" complete: %ERRORLEVEL%
 
-git push
+git push 2>1
 @echo git push complete: %ERRORLEVEL%
 
 cd %CURDIR%
