@@ -81,7 +81,7 @@
     <OutputPath>bin\Releases\</OutputPath>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>Assets\Images\icon.ico</ApplicationIcon>
+    <ApplicationIcon>ziti.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
@@ -333,7 +333,9 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Resource Include="ziti.ico" />
+  </ItemGroup>
   <ItemGroup>
     <Resource Include="Assets\Images\server.png" />
   </ItemGroup>

@@ -41,7 +41,7 @@ namespace ZitiUpdateService {
 				if (ConfigurationManager.AppSettings.Get("UpdateUrl") != null) _versionUrl = ConfigurationManager.AppSettings.Get("UpdateUrl");
 				if (ConfigurationManager.AppSettings.Get("Version") != null) _versionType = ConfigurationManager.AppSettings.Get("Version");
 			} catch (Exception e) {
-
+				Log(e.ToString());
 			}
 			_rootDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "NetFoundry");
 			if (!Directory.Exists(_rootDirectory)) Directory.CreateDirectory(_rootDirectory);
