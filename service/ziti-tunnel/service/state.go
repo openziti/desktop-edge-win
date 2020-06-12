@@ -21,16 +21,17 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	idcfg "github.com/netfoundry/ziti-sdk-golang/ziti/config"
+	"github.com/netfoundry/ziti-tunnel-win/service/cziti"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/config"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/dto"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/idutil"
 	"golang.zx2c4.com/wireguard/tun"
 	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
 	"net"
 	"os"
 	"strconv"
 	"time"
-	"github.com/netfoundry/ziti-tunnel-win/service/cziti"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/config"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/dto"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/idutil"
 )
 
 type RuntimeState struct {
@@ -143,7 +144,7 @@ func (t *RuntimeState) CreateTun() error {
 	if err != nil {
 		return fmt.Errorf("error parsing CIDR block: (%v)", err)
 	}
-	log.Debugf("setting TUN interface address to [%s]", ip)
+	log.Infof("setting TUN interface address to [%s]", ip)
 	err = luid.SetIPAddresses([]net.IPNet{{ip, ipnet.Mask}})
 	if err != nil {
 		return fmt.Errorf("failed to set IP address: (%v)", err)
@@ -196,12 +197,29 @@ func (t *RuntimeState) LoadIdentity(id *dto.Identity) {
 		}
 		log.Infof("successfully loaded %s@%s", ctx.Name(), ctx.Controller())
 
-		log.Debugf("name changed from %s to %s", id.Name, ctx.Name())
-		id.Name = ctx.Name()
-		id.Services = make([]*dto.Service, 0)
+		// hack for now - if the identity name is '<unknown>' don't set it... :(
+		if ctx.Name() == "<unknown>" {
+			log.Debugf("name is set to <unknown> which probably indicates the controller is down - not changing the name")
+		} else {
+			log.Debugf("name changed from %s to %s", id.Name, ctx.Name())
+			id.Name = ctx.Name()
+		}
 
+		id.Services = make([]*dto.Service, 0)
 	} else {
 		log.Warnf("NOZITI set to true. this should be only used for debugging")
+	}
+
+	events.broadcast <- dto.IdentityEvent{
+		ActionEvent: IDENTITY_ADDED,
+		Id: dto.Identity{
+			Name:        id.Name,
+			FingerPrint: id.FingerPrint,
+			Active:      id.Active,
+			Config:      idcfg.Config{},
+			Status:      "enrolled",
+			Services:    id.Services,
+		},
 	}
 }
 
@@ -212,10 +230,6 @@ func noZiti() bool {
 
 func (t *RuntimeState) Close() {
 	if t.tun != nil {
-		log.Debug("TODO: actually close the tun - or disable all the identities etc.")
-		/*
-			cziti.Stop()
-		*/
 		tu := *t.tun
 		err := tu.Close()
 		if err != nil {

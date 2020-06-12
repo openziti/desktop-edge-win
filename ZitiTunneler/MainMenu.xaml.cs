@@ -2,6 +2,9 @@
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Diagnostics;
+using System;
+using System.Threading;
+using System.Management.Automation;
 
 namespace ZitiTunneler
 {	
@@ -24,7 +27,7 @@ namespace ZitiTunneler
 		private void HideMenu(object sender, MouseButtonEventArgs e) {
 			menuState = "Menu";
 			UpdateState();
-			this.Visibility = Visibility.Collapsed;
+			MainMenuArea.Visibility = Visibility.Collapsed;
 		}
 
 		private void CloseApp(object sender, MouseButtonEventArgs e) {
@@ -62,7 +65,6 @@ namespace ZitiTunneler
 			AdvancedItems.Visibility = Visibility.Collapsed;
 			LicensesItems.Visibility = Visibility.Collapsed;
 			LogsItems.Visibility = Visibility.Collapsed;
-			ConfigSaveButton.Visibility = Visibility.Collapsed;
 			ConfigItems.Visibility = Visibility.Collapsed;
 
 			if (menuState=="About") {
@@ -87,7 +89,6 @@ namespace ZitiTunneler
 			} else if (menuState=="Config") {
 				MenuTitle.Content = "Tunnel Configuration";
 				ConfigItems.Visibility = Visibility.Visible;
-				ConfigSaveButton.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
 				
 				ConfigIp.Value = Application.Current.Properties["ip"]?.ToString();
@@ -123,6 +124,7 @@ namespace ZitiTunneler
 		private void ShowSupport(object sender, MouseButtonEventArgs e) {
 			Process.Start(new ProcessStartInfo("https://support.netfoundry.io") { UseShellExecute = true });
 		}
+
 		private void DetachWindow(object sender, MouseButtonEventArgs e) {
 			Application.Current.MainWindow.ShowInTaskbar = true;
 			DetachButton.Visibility = Visibility.Collapsed;
@@ -131,6 +133,7 @@ namespace ZitiTunneler
 			if (OnAttachmentChange != null) {
 				OnAttachmentChange(false);
 			}
+			MainMenuArea.Visibility = Visibility.Collapsed;
 		}
 		private void RetachWindow(object sender, MouseButtonEventArgs e) {
 			Application.Current.MainWindow.ShowInTaskbar = false;
@@ -140,10 +143,6 @@ namespace ZitiTunneler
 			if (OnAttachmentChange != null) {
 				OnAttachmentChange(true);
 			}
-		}
-
-		private void SaveConfig(object sender, RoutedEventArgs e) {
-			// Jeremy - this can just be removed - saving the config is not important to this client
 		}
 	}
 }

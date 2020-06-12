@@ -45,7 +45,8 @@
             <Setter Property="Stylus.IsFlicksEnabled" Value="true" />
             <Setter Property="Foreground" Value="LightGray" />
             <Setter Property="Background" Value="#000F0F23" />
-            <Setter Property="Width" Value="6" />
+            <Setter Property="Width" Value="3" />
+            <Setter Property="Opacity" Value="0.6"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type ScrollBar}">
@@ -89,7 +90,7 @@
                                         <RotateTransform Angle="-90" />
                                     </Setter.Value>
                                 </Setter>
-                                <Setter Property="Width" Value="6" />
+                                <Setter Property="Width" Value="3" />
                                 <Setter Property="Height" Value="12" />
                                 <Setter TargetName="Thumb" Property="Tag" Value="Horizontal" />
                                 <Setter TargetName="PageDown" Property="Command" Value="ScrollBar.PageLeftCommand" />

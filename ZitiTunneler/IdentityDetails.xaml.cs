@@ -17,12 +17,14 @@ using ZitiTunneler.Models;
 namespace ZitiTunneler {
 	/// <summary>
 	/// Interaction logic for IdentityDetails.xaml
-	/// </summary>
+	/// </summary> 
 	public partial class IdentityDetails:UserControl {
 
 		private bool _isAttached = true;
 		public delegate void Forgot(ZitiIdentity forgotten);
 		public event Forgot OnForgot;
+		public delegate void ErrorOccurred(string message);
+		public event ErrorOccurred OnError;
 
 		private List<ZitiIdentity> identities {
 			get {
@@ -74,7 +76,6 @@ namespace ZitiTunneler {
 		}
 
 		private void IdToggle(bool on) {
-			// Jeremy - on and off but it's not wired in yet!
 			ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
 			client.IdentityOnOff(_identity.Fingerprint, on);
 		}
@@ -112,9 +113,9 @@ namespace ZitiTunneler {
 						OnForgot(forgotten);
 					}
 				} catch (ServiceClient.ServiceException se) {
-					MessageBox.Show(se.AdditionalInfo, se.Message);
+					OnError(se.Message);
 				} catch (Exception ex) {
-					MessageBox.Show("Unexpected error 1", ex.Message);
+					OnError(ex.Message);
 				}
 			}
 		}

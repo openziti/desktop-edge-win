@@ -32,7 +32,7 @@ type zitiService struct{}
 func (m *zitiService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
 	changes <- svc.Status{State: svc.StartPending}
 
-	control := make(chan string, 1)
+	control := make(chan string)
 	mainLoop := make(chan struct{})
 	go func() {
 		err := SubMain(control, changes)
@@ -75,7 +75,7 @@ loop:
 		}
 	}
 
-	log.Info("main loop exiting")
+	log.Debug("main loop exiting")
 	changes <- svc.Status{State: svc.StopPending}
 
 	log.Infof("waiting for shutdown to complete")

@@ -4,12 +4,16 @@ using System.Windows;
 using System.Windows.Input;
 using System.IO;
 using ZitiTunneler.Models;
+using System.IO.Compression;
 
 using ZitiTunneler.ServiceClient;
 using System.ServiceProcess;
 using System.Linq;
 using System.Runtime.Remoting.Messaging;
 using System.Diagnostics;
+using System.Security.Principal;
+using System.Net;
+using System.Windows.Controls;
 
 namespace ZitiTunneler {
 
@@ -26,6 +30,7 @@ namespace ZitiTunneler {
 		private int _right = 75;
 		private int _bottom = 0;
 		private double _maxHeight = 800d;
+		private string[] suffixes = { "bps", "kbps", "mbps", "gbps", "tbps", "pbps" };
 
 		private List<ZitiIdentity> identities {
 			get {
@@ -33,70 +38,49 @@ namespace ZitiTunneler {
 			}
 		}
 
+		private void LaunchOrInstall() {
+			ServiceController ctl = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName=="ziti");
+			if (ctl==null) {
+				SetCantDisplay();
+			} else {
+				if (ctl.Status!=ServiceControllerStatus.Running) {
+					try {
+						ctl.Start();
+					} catch /*ignored for now (Exception e)*/ {
+						SetCantDisplay();
+					}
+				}
+			}
+		}
+
 		private List<ZitiService> services = new List<ZitiService>();
 		public MainWindow() {
 			InitializeComponent();
+
 			App.Current.MainWindow.WindowState = WindowState.Normal;
 			App.Current.MainWindow.Closing += MainWindow_Closing;
 			notifyIcon = new System.Windows.Forms.NotifyIcon();
 			notifyIcon.Visible = true;
 			notifyIcon.Click += TargetNotifyIcon_Click;
 			notifyIcon.Visible = true;
-			notifyIcon.ShowBalloonTip(5000, "Test", "Testing", System.Windows.Forms.ToolTipIcon.Info);
 
-			ServiceController ctl = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName=="ziti");
-			if (ctl==null) {
-				ProcessStartInfo installService = new ProcessStartInfo();
-				installService.CreateNoWindow = true;
-				installService.UseShellExecute = false;
-				installService.FileName = Path.Combine(Environment.CurrentDirectory, "Service")+@"\ziti-tunnel.exe";
-				installService.WindowStyle = ProcessWindowStyle.Hidden;
-				installService.Arguments =" install";
-
-				try {
-					using (Process exeProcess = Process.Start(installService)) {
-						exeProcess.WaitForExit();
-					}
-					ctl = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName=="ziti");
-					if (ctl.Status!=ServiceControllerStatus.Running) {
-						try {
-							ctl.Start();
-						} catch (Exception e) {
-							SetCantDisplay();
-						}
-					}
-				} catch (Exception e) {
-					MessageBox.Show(e.ToString());
-				}
-			} else {
-				if (ctl.Status!=ServiceControllerStatus.Running) {
-					try {
-						ctl.Start();
-					} catch (Exception e) {
-						SetCantDisplay();
-					}
-				}
-			}
-
+			LaunchOrInstall();
 			SetNotifyIcon("white");
 			InitializeComponent();
 		}
 
-		private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
-		{
+		private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
 			notifyIcon.Visible = false;
 			notifyIcon.Icon.Dispose();
 			notifyIcon.Dispose();
 		}
 
-		private void SetCantDisplay()
-		{
+		private void SetCantDisplay() {
 			NoServiceView.Visibility = Visibility.Visible;
 			SetNotifyIcon("red");
 		}
 
-		private void SetCanDisplay()
-		{
+		private void SetCanDisplay() {
 			NoServiceView.Visibility = Visibility.Collapsed;
 			SetNotifyIcon("green");
 		}
@@ -112,18 +96,6 @@ namespace ZitiTunneler {
 		private void TargetNotifyIcon_Click(object sender, EventArgs e) {
 			this.Show();
 			this.Activate();
-			/*
-			if (App.Current.MainWindow.WindowState==WindowState.Minimized) {
-				App.Current.MainWindow.WindowState = WindowState.Normal;
-				App.Current.MainWindow.BringIntoView();
-				//this.Opacity = 1;
-				//this.Activate();
-			} else {
-				App.Current.MainWindow.WindowState = WindowState.Minimized;
-				this.Close();
-				//this.Opacity = 0;
-			}
-			*/
 		}
 
 		private void MainWindow1_Loaded(object sender, RoutedEventArgs e) {
@@ -142,107 +114,111 @@ namespace ZitiTunneler {
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
 			Application.Current.Properties.Add("Identities", new List<ZitiIdentity>());
 			MainMenu.OnAttachmentChange += AttachmentChanged;
+			IdentityMenu.OnError += IdentityMenu_OnError;
 
 			try {
 				serviceClient.Connect();
 				//var s = serviceClient.GetStatus();
 				//LoadStatusFromService(s.Status);
-			} catch (Exception ex) {
+			} catch /*ignored for now (Exception ex) */{
 				SetCantDisplay();
 			}
 			LoadIdentities();
 			IdentityMenu.OnForgot += IdentityForgotten;
 		}
 
-		private void ServiceClient_OnClientConnected(object sender, object e)
-		{
-			this.Dispatcher.Invoke(() =>
-			{
+		private void IdentityMenu_OnError(string message) {
+			ShowError("Identity Error", message);
+		}
+
+		private void ServiceClient_OnClientConnected(object sender, object e) {
+			this.Dispatcher.Invoke(() => {
 				//e is _ALWAYS_ null at this time use this to display something if you want
 				NoServiceView.Visibility = Visibility.Collapsed;
 				SetNotifyIcon("white");
 			});
 		}
 
-		private void ServiceClient_OnClientDisconnected(object sender, object e)
-		{
-			this.Dispatcher.Invoke(() =>
-			{
+		private void ServiceClient_OnClientDisconnected(object sender, object e) {
+			this.Dispatcher.Invoke(() => {
 				SetCantDisplay();
 			});
 		}
 
-		private void ServiceClient_OnIdentityEvent(object sender, IdentityEvent e)
-		{
+		private void ServiceClient_OnIdentityEvent(object sender, IdentityEvent e) {
 			if (e == null) return;
 
 			ZitiIdentity zid = ZitiIdentity.FromClient(e.Id);
 			Debug.WriteLine($"==== IdentityEvent    : action:{e.Action} fingerprint:{e.Id.FingerPrint} name:{e.Id.Name} ");
 
-			this.Dispatcher.Invoke(() =>
-			{
-				if (e.Action == "added")
-				{
+			this.Dispatcher.Invoke(() => {
+				if (e.Action == "added") {
 					var found = identities.Find(i => i.Fingerprint == e.Id.FingerPrint);
-					if (found == null)
-					{
+					if (found == null) {
 						identities.Add(zid);
 					}
-				}
-				else
-				{
+				} else {
 					IdentityForgotten(ZitiIdentity.FromClient(e.Id));
 				}
 				LoadIdentities();
 			});
-			MessageBox.Show($"IDENTITY EVENT. Action: {e.Action} fingerprint: {zid.Fingerprint}");
+			Debug.WriteLine($"IDENTITY EVENT. Action: {e.Action} fingerprint: {zid.Fingerprint}");
 		}
 
-		private void ServiceClient_OnMetricsEvent(object sender, List<Identity> ids)
-		{
-			if (ids != null)
-			{
+		private void ServiceClient_OnMetricsEvent(object sender, List<Identity> ids) {
+			if (ids != null) {
 				long totalUp = 0;
 				long totalDown = 0;
-				foreach (var id in ids)
-				{
+				foreach (var id in ids) {
 					Debug.WriteLine($"==== MetricsEvent     : id {id.Name} down: {id.Metrics.Down} up:{id.Metrics.Up}");
-					if (id?.Metrics != null)
-					{
+					if (id?.Metrics != null) {
 						totalDown += id.Metrics.Down;
 						totalUp += id.Metrics.Up;
 					}
 				}
-				this.Dispatcher.Invoke(() =>
-				{
-					DownloadSpeed.Content = (totalDown / 1000).ToString();
-					UploadSpeed.Content = (totalUp / 1000).ToString();
+				this.Dispatcher.Invoke(() => {
+					SetSpeed(totalUp, UploadSpeed, UploadSpeedLabel);
+					SetSpeed(totalDown, DownloadSpeed, DownloadSpeedLabel);
 				});
 			}
 		}
 
-		private void ServiceClient_OnServiceEvent(object sender, ServiceEvent e)
-		{
+		public void SetSpeed(decimal bytes, Label speed, Label speedLabel) {
+			int counter = 0;
+			while (Math.Round(bytes / 1024) >= 1) {
+				bytes = bytes / 1024;
+				counter++;
+			}
+			speed.Content = bytes.ToString("0.0");
+			speedLabel.Content = suffixes[counter];
+		}
+
+		private void ServiceClient_OnServiceEvent(object sender, ServiceEvent e) {
 			if (e == null) return;
 			
 			Debug.WriteLine($"==== ServiceEvent     : action:{e.Action} fingerprint:{e.Fingerprint} name:{e.Service.Name} ");
-			this.Dispatcher.Invoke(() =>
-			{
+			this.Dispatcher.Invoke(() => {
 				var found = identities.Find(id => id.Fingerprint == e.Fingerprint);
 
-				if (found == null)
-				{
+				if (found == null) {
 					Debug.WriteLine($"{e.Action} service event for {e.Service.Name} but the provided identity fingerprint {e.Fingerprint} is not found!");
 					return;
 				}
 
-				if (e.Action == "added")
-				{
+				if (e.Action == "added") {
 					ZitiService zs = new ZitiService(e.Service.Name, e.Service.HostName, e.Service.Port);
-					found.Services.Add(zs);
-				}
-				else
-				{
+					var svc = found.Services.Find(s => s.Name == zs.Name);
+
+					if (svc == null)
+					{
+						found.Services.Add(zs);
+					}
+					else
+					{
+						Debug.WriteLine("the service named " + zs.Name + " is already accounted for on this identity.");
+					}
+				} else {
+					Debug.WriteLine("removing the service named: " + e.Service.Name);
 					found.Services.RemoveAll(s => s.Name == e.Service.Name);
 				}
 				LoadIdentities();
@@ -263,10 +239,8 @@ namespace ZitiTunneler {
 
 		private void IdentityForgotten(ZitiIdentity forgotten) {
 			ZitiIdentity idToRemove = null;
-			foreach (var id in identities)
-			{
-				if(id.Fingerprint == forgotten.Fingerprint)
-				{
+			foreach (var id in identities) {
+				if(id.Fingerprint == forgotten.Fingerprint) {
 					idToRemove = id;
 					break;
 				}
@@ -304,25 +278,20 @@ namespace ZitiTunneler {
 					ConnectButton.Visibility = Visibility.Visible;
 					DisconnectButton.Visibility = Visibility.Collapsed;
 				}
-				if (!Application.Current.Properties.Contains("ip"))
-				{
+				if (!Application.Current.Properties.Contains("ip")) {
 					Application.Current.Properties.Add("ip", status?.IpInfo?.Ip);
 				}
-				if (!Application.Current.Properties.Contains("subnet"))
-				{
+				if (!Application.Current.Properties.Contains("subnet")) {
 					Application.Current.Properties.Add("subnet", status?.IpInfo?.Subnet);
 				}
-				if (!Application.Current.Properties.Contains("mtu"))
-				{
+				if (!Application.Current.Properties.Contains("mtu")) {
 					Application.Current.Properties.Add("mtu", status?.IpInfo?.MTU);
 				}
-				if (!Application.Current.Properties.Contains("dns"))
-				{
+				if (!Application.Current.Properties.Contains("dns")) {
 					Application.Current.Properties.Add("dns", status?.IpInfo?.DNS);
 				}
 
-				foreach (var id in status.Identities)
-				{
+				foreach (var id in status.Identities) {
 					updateViewWithIdentity(id);
 				}
 				LoadIdentities();
@@ -394,13 +363,12 @@ namespace ZitiTunneler {
 						//MessageBox.Show("New identity added with fingerprint: " + createdId.FingerPrint);
 						//updateViewWithIdentity(createdId);
 					} else {
-						// Jeremy buddy - error popup here
-						MessageBox.Show("created id was null - wtf jeremy. your fault, um nope your fault clint, or probably Andrews");
+						ShowError("Identity Error", "Identity Id was null, please try again");
 					}
 				} catch (ServiceException se) {
-					MessageBox.Show(se.AdditionalInfo, se.Message);
+					ShowError(se.AdditionalInfo, se.Message);
 				} catch (Exception ex) {
-					MessageBox.Show("Unexpected error 2", ex.Message);
+					ShowError("Unexpected Error", "Code 2:" + ex.Message);
 				}
 				LoadIdentities();
 			}
@@ -413,9 +381,9 @@ namespace ZitiTunneler {
 				ConnectButton.Visibility = Visibility.Collapsed;
 				DisconnectButton.Visibility = Visibility.Visible;
 			} catch (ServiceException se) {
-				MessageBox.Show(se.AdditionalInfo, se.Message);
+				ShowError(se.AdditionalInfo, se.Message);
 			} catch (Exception ex) {
-				MessageBox.Show("Unexpected error 3", ex.Message);
+				ShowError("Unexpected Error", "Code 3:" + ex.Message);
 			}
 		}
 
@@ -447,9 +415,9 @@ namespace ZitiTunneler {
 				ConnectButton.Visibility = Visibility.Visible;
 				DisconnectButton.Visibility = Visibility.Collapsed;
 			} catch (ServiceException se) {
-				MessageBox.Show(se.AdditionalInfo, se.Message);
+				ShowError(se.AdditionalInfo, se.Message);
 			} catch (Exception ex) {
-				MessageBox.Show("Unexpected error 4", ex.Message);
+				ShowError("Unexpected Error", "Code 4:"+ex.Message);
 			}
 		}
 
@@ -463,6 +431,20 @@ namespace ZitiTunneler {
 				FormFadeOut.Begin();
 				e.Cancel = true;
 			}
+		}
+
+		private void ShowError(String title, String message) {
+			ErrorTitle.Content = title;
+			ErrorDetails.Text = message;
+			ErrorView.Visibility = Visibility.Visible;
+		}
+
+		private void CloseError(object sender, MouseButtonEventArgs e) {
+			ErrorView.Visibility = Visibility.Collapsed;
+		}
+
+		private void CloseApp(object sender, MouseButtonEventArgs e) {
+			Application.Current.Shutdown();
 		}
 	}
 }

@@ -26,8 +26,8 @@ type topic struct {
 func newTopic() topic {
 	return topic{
 		broadcast: make(chan interface{}, 8),
-		channels:  make(map[int]chan interface{}),
-		done:      make(chan bool),
+		channels:  make(map[int]chan interface{}, 8),
+		done:      make(chan bool, 8),
 	}
 }
 

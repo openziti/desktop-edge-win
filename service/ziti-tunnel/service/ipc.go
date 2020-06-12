@@ -25,6 +25,12 @@ import (
 	"github.com/Microsoft/go-winio"
 	"github.com/netfoundry/ziti-foundation/identity/identity"
 	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
+	"github.com/netfoundry/ziti-tunnel-win/service/cziti"
+	"github.com/netfoundry/ziti-tunnel-win/service/cziti/windns"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/config"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/dto"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/globals"
+	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/idutil"
 	"golang.org/x/sys/windows/svc"
 	"golang.zx2c4.com/wireguard/tun"
 	"io"
@@ -34,13 +40,6 @@ import (
 	"os"
 	"strings"
 	"time"
-	"github.com/netfoundry/ziti-tunnel-win/service/cziti"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/globals"
-
-	"github.com/netfoundry/ziti-tunnel-win/service/cziti/windns"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/config"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/dto"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/idutil"
 )
 
 type Pipes struct {
@@ -55,7 +54,7 @@ func (p *Pipes) Close() {
 	_ = p.events.Close()
 }
 
-var shutdown = make(chan bool) //a channel informing go routines to exit
+var shutdown = make(chan bool, 8) //a channel informing go routines to exit
 
 func SubMain(ops chan string, changes chan<- svc.Status) error {
 	log.Info("============================== service begins ==============================")
@@ -68,7 +67,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	_ = globals.Elog.Info(InformationEvent, SvcName+" starting. log file located at "+config.LogFile())
 
 	// create a channel for notifying any connections that they are to be interrupted
-	interrupt = make(chan struct{})
+	interrupt = make(chan struct{}, 8)
 
 	// wire in a log file for csdk troubleshooting
 	logFile, err := os.OpenFile(config.Path()+"cziti.log", os.O_WRONLY|os.O_TRUNC|os.O_APPEND|os.O_CREATE, 0644)
@@ -119,7 +118,6 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	log.Infof("shutting down events...")
 	events.shutdown()
 
-	log.Infof("resetting dns...")
 	windns.ResetDNS()
 
 	log.Infof("Removing existing interface: %s", TunName)
@@ -153,7 +151,7 @@ loop:
 			log.Debug("unexpected operation: " + c)
 		}
 	}
-	log.Infof("wait loop is exiting")
+	log.Debugf("wait loop is exiting")
 }
 
 func openPipes() (*Pipes, error) {
@@ -183,15 +181,15 @@ func openPipes() (*Pipes, error) {
 
 	// listen for log requests
 	go accept(logs, serveLogs, "  logs")
-	log.Infof("log listener ready. pipe: %s", logsPipeName())
+	log.Debugf("log listener ready. pipe: %s", logsPipeName())
 
 	// listen for ipc messages
 	go accept(ipc, serveIpc, "   ipc")
-	log.Infof("ipc listener ready pipe: %s", ipcPipeName())
+	log.Debugf("ipc listener ready pipe: %s", ipcPipeName())
 
 	// listen for events messages
 	go accept(events, serveEvents, "events")
-	log.Infof("events listener ready pipe: %s", eventsPipeName())
+	log.Debugf("events listener ready pipe: %s", eventsPipeName())
 
 	return &Pipes{
 		ipc:    ipc,
@@ -204,12 +202,21 @@ func (p *Pipes) shutdownConnections() {
 	log.Info("waiting for all connections to close...")
 	p.Close()
 
-	for i := 0; i < connections; i++ {
-		log.Debug("cancelling read loop")
+	for i := 0; i < ipcConnections; i++ {
+		log.Debug("cancelling ipc read loop...")
 		interrupt <- struct{}{}
 	}
-	wg.Wait()
-	log.Info("all connections closed")
+	log.Info("waiting for all ipc connections to close...")
+	ipcWg.Wait()
+	log.Info("all ipc connections closed")
+
+	for i := 0; i < eventsConnections; i++ {
+		log.Debug("cancelling events read loop...")
+		interrupt <- struct{}{}
+	}
+	log.Info("waiting for all events connections to close...")
+	eventsWg.Wait()
+	log.Info("all events connections closed")
 }
 
 func initialize() error {
@@ -258,9 +265,6 @@ func accept(p net.Listener, serveFunction func(net.Conn), debug string) {
 			}
 			return
 		}
-		wg.Add(1)
-		connections++
-		log.Debugf("accepting a new client for %s. total connection count: %d", debug, connections)
 
 		go serveFunction(c)
 	}
@@ -276,9 +280,18 @@ func serveIpc(conn net.Conn) {
 		Status:      rts.ToStatus(),
 	}
 
-	done := make(chan struct{})
+	done := make(chan struct{}, 8)
 	defer close(done) // ensure that goroutine exits
-	defer wg.Done()   // count down whenever the function exits
+
+	ipcWg.Add(1)
+	ipcConnections++
+	defer func() {
+		log.Debugf("serveIpc is exiting. total connection count now: %d", ipcConnections)
+		ipcWg.Done()
+		ipcConnections --
+		log.Debugf("serveIpc is exiting. total connection count now: %d", ipcConnections)
+	}()   // count down whenever the function exits
+	log.Debugf("accepting a new client for serveIpc. total connection count: %d", ipcConnections)
 
 	go func() {
 		select {
@@ -418,7 +431,17 @@ func serveEvents(conn net.Conn) {
 	log.Debug("accepted an events connection, writing events to pipe")
 	defer closeConn(conn) //close the connection after this function invoked as go routine exits
 
-	consumer := make(chan interface{}, 1)
+	eventsWg.Add(1)
+	eventsConnections++
+	defer func() {
+		log.Debugf("serveEvents is exiting. total connection count now: %d", eventsConnections)
+		eventsWg.Done()
+		eventsConnections --
+		log.Debugf("serveEvents is exiting. total connection count now: %d", eventsConnections)
+	}()   // count down whenever the function exits
+	log.Debugf("accepting a new client for serveEvents. total connection count: %d", eventsConnections)
+
+	consumer := make(chan interface{}, 8)
 	events.register(randomInt, consumer)
 	defer events.unregister(randomInt)
 
@@ -437,16 +460,19 @@ func serveEvents(conn net.Conn) {
 		log.Info("status sent. listening for new events")
 	}
 
+loop:
 	for {
-		msg := <-consumer
-
-		err := o.Encode(msg)
-
-		if err != nil {
-			log.Infof("exiting from serveEvents - %v", err)
-			break
+		select {
+			case msg := <-consumer:
+				err := o.Encode(msg)
+				if err != nil {
+					log.Infof("exiting from serveEvents - %v", err)
+					break loop
+				}
+				_ = w.Flush()
+			case <-interrupt:
+				break loop
 		}
-		_ = w.Flush()
 	}
 	log.Debug("exiting serve events")
 }
@@ -632,36 +658,38 @@ func respondWithError(out *json.Encoder, msg string, code int, err error) {
 }
 
 func connectIdentity(id *dto.Identity) {
+	log.Infof("connecting identity: %s", id.Name)
+
 	if !id.Connected {
 		//tell the c sdk to use the file from the id and connect
 		rts.LoadIdentity(id)
 		activeIds[id.FingerPrint] = id
 	} else {
 		log.Debugf("id [%s] is already connected - not reconnecting", id.Name)
+		for _, s := range id.Services {
+			cziti.AddIntercept(s.Name, s.HostName, s.Port, id.NFContext)
+		}
+		id.Connected = true
 	}
 	id.Active = true
+	SaveState(&rts)
 	log.Infof("identity [%s] connected [%t] and set to active [%t]", id.Name, id.Connected, id.Active)
 }
 
 func disconnectIdentity(id *dto.Identity) error {
-	//tell the c sdk to disconnect the identity/services etc
-	log.Infof("Disconnecting identity: %s", id.Name)
+	log.Infof("disconnecting identity: %s", id.Name)
 
 	id.Active = false
 	if id.Connected {
-		// actually disconnect from the c sdk here
-		log.Warn("not implemented yet - disconnected an already connected id doesn't actually work yet...")
-		//id.Connected = false
-		return nil
+		for _, s := range id.Services {
+			cziti.RemoveIntercept(s.Name)
+			cziti.DNS.DeregisterService(id.NFContext, s.Name)
+		}
+		id.Connected = false
 	} else {
 		log.Debugf("id: %s is already disconnected - not attempting to disconnected again fingerprint:%s", id.Name, id.FingerPrint)
 	}
-
-	//remove the file from the filesystem - first verify it's the proper file
-	err := os.Remove(id.Path())
-	if err != nil {
-		log.Warn("could not remove file: %s", config.Path()+id.FingerPrint+".json")
-	}
+	SaveState(&rts)
 	return nil
 }
 
@@ -678,7 +706,16 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 		respondWithError(out, "Error when disconnecting identity", ERROR_DISCONNECTING_ID, err)
 		return
 	}
+
 	rts.RemoveByIdentity(*id)
+
+	//remove the file from the filesystem - first verify it's the proper file
+	log.Debug("removing identity file for fingerprint %s at %s", id.FingerPrint, id.Path())
+	err = os.Remove(id.Path())
+	if err != nil {
+		log.Warn("could not remove file: %s", config.Path()+id.FingerPrint+".json")
+	}
+
 	SaveState(&rts)
 
 	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: nil}

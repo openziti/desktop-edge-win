@@ -94,6 +94,7 @@ func (dns *dnsImpl) Resolve(dnsName string) net.IP {
 func (dns *dnsImpl) DeregisterService(ctx *CZitiCtx, name string) {
 	for k, sc := range dns.serviceMap {
 		if sc.ctx == ctx && sc.name == name {
+			log.Infof("removing %s from DNS mapping", name)
 			delete(dns.serviceMap, k)
 			return
 		}
