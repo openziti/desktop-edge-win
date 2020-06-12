@@ -23,13 +23,13 @@ namespace ZitiUpdateService {
 		private bool _isNew = true;
 		/// private int _majorVersion = 1;
 		private string _versionUrl = "https://netfoundry.jfrog.io/netfoundry/ziti-maven-snapshot/ziti-tunnel-win/amd64/windows/ziti-tunnel-win/maven-metadata.xml";
-		private string _serviceUrl = "https://netfoundry.jfrog.io/netfoundry/ziti-maven-snapshot/ziti-tunnel-win/amd64/windows/ziti-tunnel-win/${version}/ziti-tunnel-win-${version}.zip";
+		private string _serviceUrl = "https://netfoundry.jfrog.io/netfoundry/ziti-maven-snapshot/ziti-tunnel-win/amd64/windows/ziti-tunnel-win/0.0.8-SNAPSHOT/ziti-tunnel-win-0.0.8-SNAPSHOT.zip";
 		private System.Timers.Timer _checkTimer = new System.Timers.Timer();
 		private System.Timers.Timer _updateTimer = new System.Timers.Timer();
 		private string _rootDirectory = "";
 		private string _logDirectory = "";
 		private bool _isJustStopped = true;
-		private string _versionType = "release";
+		private string _versionType = "latest";
 
 		ServiceController controller;
 		public UpdateService() {
@@ -37,8 +37,12 @@ namespace ZitiUpdateService {
 		}
 
 		protected override void OnStart(string[] args) {
-			if (ConfigurationManager.AppSettings.Get("UpdateUrl")!=null) _versionUrl = ConfigurationManager.AppSettings.Get("UpdateUrl");
-			if (ConfigurationManager.AppSettings.Get("Version") !=null) _versionType = ConfigurationManager.AppSettings.Get("Version");
+			try {
+				if (ConfigurationManager.AppSettings.Get("UpdateUrl") != null) _versionUrl = ConfigurationManager.AppSettings.Get("UpdateUrl");
+				if (ConfigurationManager.AppSettings.Get("Version") != null) _versionType = ConfigurationManager.AppSettings.Get("Version");
+			} catch (Exception e) {
+
+			}
 			_rootDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "NetFoundry");
 			if (!Directory.Exists(_rootDirectory)) Directory.CreateDirectory(_rootDirectory);
 			_logDirectory = Path.Combine(_rootDirectory, "Logs");
@@ -97,7 +101,7 @@ namespace ZitiUpdateService {
 			xmlDoc.LoadXml(result);
 			XmlNode node = xmlDoc.SelectSingleNode("metadata/versioning/"+ _versionType);
 			string version = node.InnerText;
-			Log("Version Checked: " + version+" on "+_version);
+			Log("Version Checked: " + version+" on "+_version+" from "+_versionType);
 			if (version != _version) {
 				StopZiti();
 				UpdateServiceFiles();
@@ -135,9 +139,9 @@ namespace ZitiUpdateService {
 			var result = readStream.ReadToEnd();
 			XmlDocument xmlDoc = new XmlDocument();
 			xmlDoc.LoadXml(result);
-			XmlNode node = xmlDoc.SelectSingleNode("metadata/versioning/release");
+			XmlNode node = xmlDoc.SelectSingleNode("metadata/versioning/"+_versionType);
 			string version = node.InnerText;
-			Log("Got Version: " + version);
+			Log("Got Version: " + version+" from "+_versionType);
 
 			string remoteService = _serviceUrl.Replace("${version}", version);
 
@@ -152,6 +156,7 @@ namespace ZitiUpdateService {
 				}
 			} 
 			WebClient webClient = new WebClient();
+			Log("Get From: "+remoteService);
 			webClient.DownloadFile(remoteService, Path.Combine(_rootDirectory, "Service") + @"\windows-tunneler.zip");
 			Log("Zip Downloaded");
 			ZipFile.ExtractToDirectory(Path.Combine(_rootDirectory, "Service") + @"\windows-tunneler.zip", Path.Combine(_rootDirectory, "Service"));
