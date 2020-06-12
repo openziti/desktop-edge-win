@@ -33,6 +33,18 @@ dir %SVC_ROOT_DIR%
 dir %SVC_ROOT_DIR%ziti.dll
 echo :pointup: how is an IF failing???
 
+if not exist %SVC_ROOT_DIR% (
+  echo i did the FIRST if and it was true
+) else (
+  echo i did the FIRST if and it was false
+)
+if not exist %SVC_ROOT_DIR%ziti.dll (
+  echo i did the SECOND if and it was true
+) else (
+  echo i did the SECOND if and it was false
+)
+echo seriously? we made it HERE???
+
 if not exist %SVC_ROOT_DIR%ziti.dll (
     echo ziti.dll does not exist
     if exist %TUNNELER_SDK_DIR% (
