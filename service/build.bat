@@ -15,8 +15,10 @@ ziti-ci version
 
 echo generating version info - this will pushed from publish.bat in CI
 ziti-ci generate-build-info --useVersion=false %SVC_ROOT_DIR%/ziti-tunnel/version.go main
+echo version info generated
 
 :QUICK
+echo changing to %SVC_ROOT_DIR% and setting a bunch of variables
 cd %SVC_ROOT_DIR%
 
 SET REPO_URL=https://github.com/openziti/ziti-tunneler-sdk-c.git
@@ -25,8 +27,10 @@ SET TUNNELER_SDK_DIR=%SVC_ROOT_DIR%deps\ziti-tunneler-sdk-c\
 set CGO_CFLAGS=-DNOGDI -I %TUNNELER_SDK_DIR%install\include
 set CGO_LDFLAGS=-L %TUNNELER_SDK_DIR%install\lib
 
+set BEFORE_GIT=%cd%
+echo BEFORE_GIT set to %BEFORE_GIT%
+
 if not exist %SVC_ROOT_DIR%ziti.dll (
-    set BEFORE_GIT=%cd%
     if exist %TUNNELER_SDK_DIR% (
         echo ------------------------------------------------------------------------------
         echo issuing git pull to pick up any changes
