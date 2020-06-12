@@ -31,6 +31,7 @@ set BEFORE_GIT=%cd%
 echo BEFORE_GIT set to %BEFORE_GIT%
 
 if not exist %SVC_ROOT_DIR%ziti.dll (
+    echo ziti.dll does not exist
     if exist %TUNNELER_SDK_DIR% (
         echo ------------------------------------------------------------------------------
         echo issuing git pull to pick up any changes
