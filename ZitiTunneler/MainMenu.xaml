@@ -53,7 +53,6 @@
                 <StackPanel Name="AboutItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <local:SubMenuItem HorizontalAlignment="Stretch" Width="Auto" Label="Privacy Policy" MouseUp="ShowPrivacy"></local:SubMenuItem>
                     <local:SubMenuItem HorizontalAlignment="Stretch" Width="Auto" Label="Terms of Service" MouseUp="ShowTerms"></local:SubMenuItem>
-                    <local:SubMenuItem HorizontalAlignment="Stretch" Width="Auto" Label="Third Party Licenses" MouseUp="ShowLicenses"></local:SubMenuItem>
                 </StackPanel>
                 <StackPanel Name="AdvancedItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/wrench.png" Width="Auto" Label="Tunnel Configuration" MouseUp="ShowConfig"></local:MenuItem>
@@ -69,7 +68,7 @@
                 <TextBox Name="LogsItems" Height="400" Width="{Binding ActualWidth, ElementName=MainStack}" TextWrapping="Wrap" Visibility="Collapsed"></TextBox>
 
                 <StackPanel Name="AboutItemsButton" Orientation="Vertical" HorizontalAlignment="Stretch" Visibility="Collapsed">
-                    <Label HorizontalAlignment="Center" Content="Version 1.0 (23)" FontSize="10" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
+                    <Label Name="ServiceVersion" HorizontalAlignment="Center" FontSize="10" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                 </StackPanel>
                 <Label Name="MainItemsButton" Margin="0,30,0,0" Foreground="#F4044D" FontWeight="SemiBold" Content="Quit Ziti Tunneler" Cursor="Hand" MouseDown="CloseApp" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Center"></Label>
             </StackPanel>

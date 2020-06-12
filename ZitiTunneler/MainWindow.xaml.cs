@@ -30,6 +30,7 @@ namespace ZitiTunneler {
 		private int _right = 75;
 		private int _bottom = 0;
 		private double _maxHeight = 800d;
+		private string _serviceVersion = "0.0.8";
 		private string[] suffixes = { "bps", "kbps", "mbps", "gbps", "tbps", "pbps" };
 
 		private List<ZitiIdentity> identities {
@@ -65,6 +66,8 @@ namespace ZitiTunneler {
 			notifyIcon.Visible = true;
 
 			LaunchOrInstall();
+
+			MainMenu.ServiceVersion.Content = _serviceVersion;
 			SetNotifyIcon("white");
 			InitializeComponent();
 		}
