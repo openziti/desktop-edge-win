@@ -50,15 +50,22 @@ if not exist %SVC_ROOT_DIR%ziti.dll (
         echo ------------------------------------------------------------------------------
     ) else (
         echo ------------------------------------------------------------------------------
-        echo cloning %REPO_URL%
+        echo mkdir %TUNNELER_SDK_DIR%
         echo ------------------------------------------------------------------------------
         mkdir %TUNNELER_SDK_DIR%
+        dir %TUNNELER_SDK_DIR%
+        echo ------------------------------------------------------------------------------
+        echo cloning %REPO_URL%
+        echo ------------------------------------------------------------------------------
         git clone %REPO_URL% %TUNNELER_SDK_DIR% --recurse-submodules
-    )
-    IF %ERRORLEVEL% NEQ 0 (
         SET ACTUAL_ERR=%ERRORLEVEL%
+        echo ------------------------------------------------------------------------------
+        echo clone is complete
+        echo ------------------------------------------------------------------------------
+    )
+    IF %ACTUAL_ERR% NEQ 0 (
         echo.
-        echo Could not pull or clone git repo:%REPO_URL%
+        echo Could not clone git repo:%REPO_URL% ?
         echo.
         goto FAIL
     )
@@ -77,7 +84,7 @@ if not exist %SVC_ROOT_DIR%ziti.dll (
     )
 
 
-    
+
 ) else (
   echo i did the SECOND if and it was false
 )

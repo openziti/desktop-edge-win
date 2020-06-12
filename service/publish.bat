@@ -6,6 +6,16 @@ set /p BUILD_VERSION=<%SVC_ROOT_DIR%..\version
 IF "%BUILD_VERSION%"=="" GOTO BUILD_VERSION_ERROR
 
 call %SVC_ROOT_DIR%\build.bat
+SET ACTUAL_ERR=%ERRORLEVEL%
+if %ACTUAL_ERR% NEQ 0 (
+    echo.
+    echo call to build.bat failed with %ACTUAL_ERR%
+    echo.
+    exit /b 1
+) else (
+    echo.
+    echo result of ninja build: %ACTUAL_ERR%
+)
 
 IF "%GIT_BRANCH%"=="master" GOTO RELEASE
 @echo Publishing to snapshot repo
