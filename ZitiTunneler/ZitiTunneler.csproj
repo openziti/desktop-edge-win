@@ -132,6 +132,7 @@
     <Compile Include="MainMenu.xaml.cs">
       <DependentUpon>MainMenu.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Models\UILog.cs" />
     <Compile Include="ServiceInfo.xaml.cs">
       <DependentUpon>ServiceInfo.xaml</DependentUpon>
     </Compile>
@@ -338,6 +339,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Assets\Images\server.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Views\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
