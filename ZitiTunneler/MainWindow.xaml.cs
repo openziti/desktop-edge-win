@@ -14,6 +14,8 @@ using System.Diagnostics;
 using System.Security.Principal;
 using System.Net;
 using System.Windows.Controls;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace ZitiTunneler {
 
@@ -30,6 +32,7 @@ namespace ZitiTunneler {
 		private int _right = 75;
 		private int _bottom = 0;
 		private double _maxHeight = 800d;
+		private string _serviceVersion = "0.0.8";
 		private string[] suffixes = { "bps", "kbps", "mbps", "gbps", "tbps", "pbps" };
 
 		private List<ZitiIdentity> identities {
@@ -46,7 +49,8 @@ namespace ZitiTunneler {
 				if (ctl.Status!=ServiceControllerStatus.Running) {
 					try {
 						ctl.Start();
-					} catch /*ignored for now (Exception e)*/ {
+					} catch (Exception e) {
+						UILog.Log(e.Message);
 						SetCantDisplay();
 					}
 				}
@@ -65,6 +69,8 @@ namespace ZitiTunneler {
 			notifyIcon.Visible = true;
 
 			LaunchOrInstall();
+
+			MainMenu.ServiceVersion.Content = _serviceVersion;
 			SetNotifyIcon("white");
 			InitializeComponent();
 		}
@@ -208,15 +214,8 @@ namespace ZitiTunneler {
 				if (e.Action == "added") {
 					ZitiService zs = new ZitiService(e.Service.Name, e.Service.HostName, e.Service.Port);
 					var svc = found.Services.Find(s => s.Name == zs.Name);
-
-					if (svc == null)
-					{
-						found.Services.Add(zs);
-					}
-					else
-					{
-						Debug.WriteLine("the service named " + zs.Name + " is already accounted for on this identity.");
-					}
+					if (svc == null) found.Services.Add(zs);
+					else Debug.WriteLine("the service named " + zs.Name + " is already accounted for on this identity.");
 				} else {
 					Debug.WriteLine("removing the service named: " + e.Service.Name);
 					found.Services.RemoveAll(s => s.Name == e.Service.Name);
@@ -229,8 +228,7 @@ namespace ZitiTunneler {
 		{
 			if (e == null) return; //just skip it for now...
 			Debug.WriteLine($"==== TunnelStatusEvent: ");
-			this.Dispatcher.Invoke(() =>
-			{
+			this.Dispatcher.Invoke(() => {
 				InitializeTimer((int)e.Status.Duration);
 				LoadStatusFromService(e.Status);
 				LoadIdentities();
@@ -240,7 +238,7 @@ namespace ZitiTunneler {
 		private void IdentityForgotten(ZitiIdentity forgotten) {
 			ZitiIdentity idToRemove = null;
 			foreach (var id in identities) {
-				if(id.Fingerprint == forgotten.Fingerprint) {
+				if (id.Fingerprint == forgotten.Fingerprint) {
 					idToRemove = id;
 					break;
 				}
@@ -302,10 +300,8 @@ namespace ZitiTunneler {
 
 		private void updateViewWithIdentity(Identity id) {
 			var zid = ZitiIdentity.FromClient(id);
-			foreach (var i in identities)
-			{
-				if(i.Fingerprint == zid.Fingerprint)
-				{
+			foreach (var i in identities) {
+				if (i.Fingerprint == zid.Fingerprint) {
 					identities.Remove(i);
 					break;
 				}
@@ -328,6 +324,11 @@ namespace ZitiTunneler {
 			IdentityMenu.SetHeight(this.Height-160);
 			for (int i=0; i<ids.Length; i++) {
 				IdentityItem id = new IdentityItem();
+				if (ids[i].IsEnabled) {
+					SetNotifyIcon("green");
+					ConnectButton.Visibility = Visibility.Collapsed;
+					DisconnectButton.Visibility = Visibility.Visible;
+				}
 				id.Identity = ids[i];
 				id.OnClick += OpenIdentity;
 				IdList.Children.Add(id);
@@ -351,6 +352,7 @@ namespace ZitiTunneler {
 			jwtDialog.DefaultExt = ".jwt";
 			jwtDialog.Filter = "Ziti Identities (*.jwt)|*.jwt";
 			if (jwtDialog.ShowDialog() == true) {
+				ShowLoad();
 				string fileContent = File.ReadAllText(jwtDialog.FileName);
 				
 				try {
@@ -360,8 +362,6 @@ namespace ZitiTunneler {
 					if (createdId != null) {
 						identities.Add(ZitiIdentity.FromClient(createdId));
 						LoadIdentities();
-						//MessageBox.Show("New identity added with fingerprint: " + createdId.FingerPrint);
-						//updateViewWithIdentity(createdId);
 					} else {
 						ShowError("Identity Error", "Identity Id was null, please try again");
 					}
@@ -371,19 +371,7 @@ namespace ZitiTunneler {
 					ShowError("Unexpected Error", "Code 2:" + ex.Message);
 				}
 				LoadIdentities();
-			}
-		}
-
-		private void Connect(object sender, RoutedEventArgs e) {
-			try {
-				serviceClient.SetTunnelState(true);
-				SetNotifyIcon("green");
-				ConnectButton.Visibility = Visibility.Collapsed;
-				DisconnectButton.Visibility = Visibility.Visible;
-			} catch (ServiceException se) {
-				ShowError(se.AdditionalInfo, se.Message);
-			} catch (Exception ex) {
-				ShowError("Unexpected Error", "Code 3:" + ex.Message);
+				HideLoad();
 			}
 		}
 
@@ -406,7 +394,37 @@ namespace ZitiTunneler {
 			_timer.Enabled = true;
 			_timer.Start();
 		}
+		private async void Connect(object sender, RoutedEventArgs e) {
+			ShowLoad();
+			Dispatcher.Invoke(new Action(() => { }), System.Windows.Threading.DispatcherPriority.ContextIdle);
+			DoConnect();
+			HideLoad();
+		}
+
+		private void DoConnect() {
+			try {
+				serviceClient.SetTunnelState(true);
+				SetNotifyIcon("green");
+				ConnectButton.Visibility = Visibility.Collapsed;
+				DisconnectButton.Visibility = Visibility.Visible;
+
+				for (int i = 0; i < identities.Count; i++) {
+					serviceClient.IdentityOnOff(identities[i].Fingerprint, true);
+				}
+				for (int i = 0; i < IdList.Children.Count; i++) {
+					IdentityItem item = IdList.Children[i] as IdentityItem;
+					item.isOn = true;
+					item._identity.IsEnabled = true;
+					item.RefreshUI();
+				}
+			} catch (ServiceException se) {
+				ShowError(se.AdditionalInfo, se.Message);
+			} catch (Exception ex) {
+				ShowError("Unexpected Error", "Code 3:" + ex.Message);
+			}
+		}
 		private void Disconnect(object sender, RoutedEventArgs e) {
+			ShowLoad();
 			try {
 				ConnectedTime.Content =  "00:00:00";
 				_timer.Stop();
@@ -414,11 +432,31 @@ namespace ZitiTunneler {
 				SetNotifyIcon("white");
 				ConnectButton.Visibility = Visibility.Visible;
 				DisconnectButton.Visibility = Visibility.Collapsed;
+				for (int i = 0; i < identities.Count; i++) {
+					serviceClient.IdentityOnOff(identities[i].Fingerprint, false);
+				}
+				for (int i = 0; i < IdList.Children.Count; i++) {
+					IdentityItem item = IdList.Children[i] as IdentityItem;
+					item.isOn = false;
+					item._identity.IsEnabled = false;
+					item.RefreshUI();
+				}
 			} catch (ServiceException se) {
 				ShowError(se.AdditionalInfo, se.Message);
 			} catch (Exception ex) {
 				ShowError("Unexpected Error", "Code 4:"+ex.Message);
 			}
+			HideLoad();
+		}
+
+		private void ShowLoad() {
+			LoadProgress.IsIndeterminate = true;
+			LoadingScreen.Visibility = Visibility.Visible;
+		}
+
+		private void HideLoad() {
+			LoadingScreen.Visibility = Visibility.Collapsed;
+			LoadProgress.IsIndeterminate = false;
 		}
 
 		private void FormFadeOut_Completed(object sender, EventArgs e) {
@@ -445,6 +483,14 @@ namespace ZitiTunneler {
 
 		private void CloseApp(object sender, MouseButtonEventArgs e) {
 			Application.Current.Shutdown();
+		}
+
+		private void MainUI_Deactivated(object sender, EventArgs e) {
+			this.WindowState = WindowState.Minimized;
+		}
+
+		private void MainUI_Activated(object sender, EventArgs e) {
+			this.WindowState = WindowState.Normal;
 		}
 	}
 }

@@ -22,7 +22,7 @@ namespace ZitiTunneler {
 
 		public delegate void Click(ZitiIdentity identity);
 		public event Click OnClick;
-		private ZitiIdentity _identity;
+		public ZitiIdentity _identity;
 		public ZitiIdentity Identity {
 			get {
 				return _identity;
@@ -64,14 +64,10 @@ namespace ZitiTunneler {
 					ToggleStatus.Content = "DISABLED";
 					// MessageBox.Show("jeremy - update the identity and services here. When disabled there will be no services, service count: " + id?.Services?.Count());
 				}
-			}
-			catch(ServiceClient.ServiceException se)
-			{
+			} catch(ServiceClient.ServiceException se) {
 				MessageBox.Show("Unexpected error 5 the toggle needs to be rolled back!!! jeremy!", se.Message);
 				MessageBox.Show(se.AdditionalInfo, se.Message);
-			}
-			catch (Exception ex)
-			{
+			} catch (Exception ex) {
 				MessageBox.Show("Unexpected error 5 the toggle needs to be rolled back!!! jeremy!", ex.Message);
 			}
 		}
