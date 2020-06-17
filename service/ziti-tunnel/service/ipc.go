@@ -667,7 +667,7 @@ func connectIdentity(id *dto.Identity) {
 	} else {
 		log.Debugf("id [%s] is already connected - not reconnecting", id.Name)
 		for _, s := range id.Services {
-			cziti.AddIntercept(s.Name, s.HostName, s.Port, id.NFContext)
+			cziti.AddIntercept(s.Id, s.Name, s.HostName, s.Port, id.NFContext)
 		}
 		id.Connected = true
 	}
@@ -682,7 +682,7 @@ func disconnectIdentity(id *dto.Identity) error {
 	id.Active = false
 	if id.Connected {
 		for _, s := range id.Services {
-			cziti.RemoveIntercept(s.Name)
+			cziti.RemoveIntercept(s.Id)
 			cziti.DNS.DeregisterService(id.NFContext, s.Name)
 		}
 		id.Connected = false
@@ -755,7 +755,7 @@ func acceptServices() {
 		case <-shutdown:
 			return
 		case c := <-cziti.ServiceChanges:
-			log.Debug("processing service change event")
+			log.Debugf("processing service change event. id:%s name:%s", c.Service.Id, c.Service.Name)
 			matched := false
 			//find the id using the context
 			for _, id := range activeIds {
@@ -765,9 +765,10 @@ func acceptServices() {
 					case cziti.ADDED:
 						//add the service to the identity
 						svc := dto.Service{
-							Name:     c.Servicename,
-							HostName: c.Host,
-							Port:     uint16(c.Port),
+							Name:     c.Service.Name,
+							HostName: c.Service.InterceptHost,
+							Port:     uint16(c.Service.InterceptPort),
+							Id:       c.Service.Id,
 						}
 						id.Services = append(id.Services, &svc)
 
@@ -779,7 +780,7 @@ func acceptServices() {
 						log.Debug(" dispatched added service change event")
 					case cziti.REMOVED:
 						for idx, svc := range id.Services {
-							if svc.Name == c.Servicename {
+							if svc.Name == c.Service.Name {
 								id.Services = append(id.Services[:idx], id.Services[idx+1:]...)
 								events.broadcast <- dto.ServiceEvent{
 									ActionEvent: SERVICE_REMOVED,
@@ -794,7 +795,7 @@ func acceptServices() {
 			}
 
 			if !matched {
-				log.Warnf("service update received but matched no context. this is unexpected. service name: %s", c.Servicename)
+				log.Warnf("service update received but matched no context. this is unexpected. service name: %s", c.Service.Name)
 			}
 		}
 	}

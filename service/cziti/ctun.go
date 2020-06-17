@@ -55,7 +55,7 @@ import (
 )
 
 type Tunnel interface {
-	AddIntercept(service string, hostname string, port int, ctx unsafe.Pointer)
+	AddIntercept(svcId string, service string, hostname string, port int, ctx unsafe.Pointer)
 }
 
 type tunnel struct {
@@ -246,23 +246,23 @@ func (t *tunnel) runWriteLoop() {
 	}
 }
 
-func (t *tunnel) AddIntercept(service string, host string, port int, ctx unsafe.Pointer) {
-	log.Debug("about to add intercept for: %s, %s, %d", service, host, port)
-	res := C.ziti_tunneler_intercept_v1(t.tunCtx, ctx, C.CString(service), C.CString(host), C.int(port))
-	log.Debug("intercept added", res)
+func (t *tunnel) AddIntercept(svcId string, service string, host string, port int, ctx unsafe.Pointer) {
+	log.Debugf("about to add intercept for: %s, %s, %d", service, host, port)
+	res := C.ziti_tunneler_intercept_v1(t.tunCtx, ctx, C.CString(svcId), C.CString(service), C.CString(host), C.int(port))
+	log.Debugf("intercept added", res)
 }
 
-func RemoveIntercept(service string) {
+func RemoveIntercept(svcvId string) {
 	for _, t := range devMap {
-		log.Infof("issuing stop intercepting for %s", service)
-		C.ziti_tunneler_stop_intercepting(t.tunCtx, C.CString(service))
+		log.Infof("issuing stop intercepting for service id: %s", svcvId)
+		C.ziti_tunneler_stop_intercepting(t.tunCtx, C.CString(svcvId))
 	}
 }
 
-func AddIntercept(service string, host string, port uint16, ctx *CZitiCtx) {
+func AddIntercept(svcId string, service string, host string, port uint16, ctx *CZitiCtx) {
 	for _, t := range devMap {
 		log.Debug("adding intercept for: %s, %s, %d", service, host, port)
-		res := C.ziti_tunneler_intercept_v1(t.tunCtx, unsafe.Pointer(ctx.nf), C.CString(service), C.CString(host), C.int(port))
+		res := C.ziti_tunneler_intercept_v1(t.tunCtx, unsafe.Pointer(ctx.nf), C.CString(svcId), C.CString(service), C.CString(host), C.int(port))
 		log.Debug("intercept added", res)
 	}
 }

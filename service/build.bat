@@ -7,6 +7,7 @@ set GO111MODULE=on
 cd /d %ZITI_TUNNEL_WIN_ROOT%
 
 IF "%BUILD_VERSION%"=="" GOTO BUILD_VERSION_ERROR
+IF "%1"=="clean" GOTO CLEAN
 IF "%1"=="quick" GOTO QUICK
 
 echo fetching ziti-ci
@@ -16,12 +17,17 @@ ziti-ci version
 echo generating version info - this will pushed from publish.bat in CI
 ziti-ci generate-build-info --useVersion=false %SVC_ROOT_DIR%/ziti-tunnel/version.go main
 echo version info generated
+goto QUICK
+
+:CLEAN
+rmdir /s /q deps
+del /q %SVC_ROOT_DIR%ziti.dll
 
 :QUICK
 cd %SVC_ROOT_DIR%
 
 SET REPO_URL=https://github.com/openziti/ziti-tunneler-sdk-c.git
-SET ZITI_TUNNEL_REPO_BRANCH=5s-moving-avg
+SET ZITI_TUNNEL_REPO_BRANCH=master
 SET TUNNELER_SDK_DIR=%SVC_ROOT_DIR%deps\ziti-tunneler-sdk-c\
 set CGO_CFLAGS=-DNOGDI -I %TUNNELER_SDK_DIR%install\include
 set CGO_LDFLAGS=-L %TUNNELER_SDK_DIR%install\lib

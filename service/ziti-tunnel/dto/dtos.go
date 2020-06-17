@@ -20,8 +20,8 @@ package dto
 import (
 	idcfg "github.com/netfoundry/ziti-sdk-golang/ziti/config"
 	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
-	"log"
 	"github.com/netfoundry/ziti-tunnel-win/service/cziti"
+	"log"
 	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/config"
 )
 
@@ -34,6 +34,7 @@ type Service struct {
 	Name     string
 	HostName string
 	Port     uint16
+	Id       string
 }
 
 type Identity struct {
