@@ -263,6 +263,6 @@ func AddIntercept(svcId string, service string, host string, port uint16, ctx *C
 	for _, t := range devMap {
 		log.Debug("adding intercept for: %s, %s, %d", service, host, port)
 		res := C.ziti_tunneler_intercept_v1(t.tunCtx, unsafe.Pointer(ctx.nf), C.CString(svcId), C.CString(service), C.CString(host), C.int(port))
-		log.Debug("intercept added", res)
+		log.Debugf("intercept added", res)
 	}
 }

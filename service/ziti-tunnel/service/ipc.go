@@ -681,6 +681,7 @@ func disconnectIdentity(id *dto.Identity) error {
 
 	id.Active = false
 	if id.Connected {
+		log.Debugf("ranging over services all services to remove intercept and deregister the service")
 		for _, s := range id.Services {
 			cziti.RemoveIntercept(s.Id)
 			cziti.DNS.DeregisterService(id.NFContext, s.Name)
@@ -777,7 +778,7 @@ func acceptServices() {
 							Fingerprint: id.FingerPrint,
 							Service:     svc,
 						}
-						log.Debug(" dispatched added service change event")
+						log.Debug("dispatched added service change event")
 					case cziti.REMOVED:
 						for idx, svc := range id.Services {
 							if svc.Name == c.Service.Name {
