@@ -75,10 +75,6 @@ func SaveState(t *RuntimeState) {
 	w := bufio.NewWriter(bufio.NewWriter(cfg))
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
-	t.state.IpInfo = nil
-	for _, id := range t.state.Identities {
-		id.Services = nil
-	}
 	_ = enc.Encode(t.state)
 	_ = w.Flush()
 

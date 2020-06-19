@@ -384,6 +384,10 @@ func serveIpc(conn net.Conn) {
 			log.Warnf("Unknown operation: %s. Returning error on pipe", cmd.Function)
 			respondWithError(enc, "Something unexpected has happened", UNKNOWN_ERROR, nil)
 		}
+
+		//save the state
+		SaveState(&rts)
+		
 		_ = rw.Flush()
 	}
 }
@@ -496,7 +500,6 @@ func tunnelState(onOff bool, out *json.Encoder) {
 	}
 	setTunnelState(onOff)
 	state.Active = onOff
-	SaveState(&rts)
 
 	respond(out, dto.Response{Message: "tunnel state updated successfully", Code: SUCCESS, Error: "", Payload: nil})
 	log.Debugf("toggle ziti on/off: %t responded to", onOff)
@@ -539,7 +542,6 @@ func toggleIdentity(out *json.Encoder, fingerprint string, onOff bool) {
 
 	respond(out, dto.Response{Message: "identity toggled", Code: SUCCESS, Error: "", Payload: idutil.Clean(*id)})
 	log.Debugf("toggle ziti on/off for %s: %t responded to", fingerprint, onOff)
-	SaveState(&rts)
 }
 
 func removeTempFile(file os.File) {
@@ -638,9 +640,6 @@ func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
 	//if successful parse the output and add the config to the identity
 	state.Identities = append(state.Identities, &newId.Id)
 
-	//save the state
-	SaveState(&rts)
-
 	//return successful message
 	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: idutil.Clean(newId.Id)}
 
@@ -672,7 +671,6 @@ func connectIdentity(id *dto.Identity) {
 		id.Connected = true
 	}
 	id.Active = true
-	SaveState(&rts)
 	log.Infof("identity [%s] connected [%t] and set to active [%t]", id.Name, id.Connected, id.Active)
 }
 
@@ -682,6 +680,9 @@ func disconnectIdentity(id *dto.Identity) error {
 	id.Active = false
 	if id.Connected {
 		log.Debugf("ranging over services all services to remove intercept and deregister the service")
+		if len(id.Services) < 1 {
+			log.Errorf("identity with fingerprint %s has no services?", id.FingerPrint)
+		}
 		for _, s := range id.Services {
 			cziti.RemoveIntercept(s.Id)
 			cziti.DNS.DeregisterService(id.NFContext, s.Name)
@@ -690,7 +691,6 @@ func disconnectIdentity(id *dto.Identity) error {
 	} else {
 		log.Debugf("id: %s is already disconnected - not attempting to disconnected again fingerprint:%s", id.Name, id.FingerPrint)
 	}
-	SaveState(&rts)
 	return nil
 }
 
@@ -716,8 +716,6 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 	if err != nil {
 		log.Warn("could not remove file: %s", config.Path()+id.FingerPrint+".json")
 	}
-
-	SaveState(&rts)
 
 	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: nil}
 	respond(out, resp)
