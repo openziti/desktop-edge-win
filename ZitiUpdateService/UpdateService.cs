@@ -23,7 +23,7 @@ namespace ZitiUpdateService {
 		private bool _isNew = true;
 		/// private int _majorVersion = 1;
 		private string _versionUrl = "https://netfoundry.jfrog.io/netfoundry/ziti-maven-snapshot/ziti-tunnel-win/amd64/windows/ziti-tunnel-win/maven-metadata.xml";
-		private string _serviceUrl = "https://netfoundry.jfrog.io/netfoundry/ziti-maven-snapshot/ziti-tunnel-win/amd64/windows/ziti-tunnel-win/0.0.8-SNAPSHOT/ziti-tunnel-win-0.0.8-SNAPSHOT.zip";
+		private string _serviceUrl = "https://netfoundry.jfrog.io/netfoundry/ziti-maven-snapshot/ziti-tunnel-win/amd64/windows/ziti-tunnel-win/${version}/ziti-tunnel-win-${version}.zip";
 		private System.Timers.Timer _checkTimer = new System.Timers.Timer();
 		private System.Timers.Timer _updateTimer = new System.Timers.Timer();
 		private string _rootDirectory = "";
