@@ -175,7 +175,7 @@ func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data un
 		if host != "" && port != -1 {
 			ip, err := DNS.RegisterService(host, uint16(port), ctx, name)
 			if err != nil {
-				log.Error(err)
+				log.Warn(err)
 			} else {
 				log.Infof("service[%s] is mapped to <%s:%d>", name, ip.String(), port)
 				for _, t := range devMap {

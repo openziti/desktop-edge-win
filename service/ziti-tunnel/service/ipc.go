@@ -80,7 +80,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	}
 
 	// initialize the network interface
-	err = initialize()
+	err = initialize(rts.state.TunIpv4, rts.state.TunIpv4Mask)
 
 	if err != nil {
 		log.Errorf("unexpected err: %v", err)
@@ -219,12 +219,12 @@ func (p *Pipes) shutdownConnections() {
 	log.Info("all events connections closed")
 }
 
-func initialize() error {
-	err := rts.CreateTun()
+func initialize(ipv4 string, ipv4mask int) error {
+	err := rts.CreateTun(ipv4, ipv4mask)
 	if err != nil {
 		return err
 	}
-	setTunInfo(rts.state)
+	setTunInfo(rts.state, ipv4, ipv4mask)
 
 	s := rts.state
 	// decide if the tunnel should be active or not and if so - activate it
@@ -239,14 +239,35 @@ func initialize() error {
 	return nil
 }
 
-func setTunInfo(s *dto.TunnelStatus) {
+func setTunInfo(s *dto.TunnelStatus, ipv4 string, ipv4mask int) {
+	if strings.TrimSpace(ipv4) == "" {
+		log.Infof("ip not provided using default: %d", ipv4)
+		ipv4 = Ipv4ip
+	}
+	if ipv4mask < 16 || ipv4mask > 24 {
+		log.Warnf("provided mask is invalid: %d. using default value: %d", ipv4mask, Ipv4mask)
+		ipv4mask = Ipv4mask
+	}
+	_, ipnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", ipv4, ipv4mask))
+	if err != nil {
+		log.Errorf("error parsing CIDR block: (%v)", err)
+		return
+	}
 	//set the tun info into the state
 	s.IpInfo = &dto.TunIpInfo{
-		Ip:     Ipv4ip,
+		Ip:     ipv4,
 		DNS:    Ipv4dns,
 		MTU:    1400,
-		Subnet: "255.255.255.0",
+		Subnet: ipv4MaskString(ipnet.Mask),
 	}
+}
+
+func ipv4MaskString(m []byte) string {
+	if len(m) != 4 {
+		panic("ipv4Mask: len must be 4 bytes")
+	}
+
+	return fmt.Sprintf("%d.%d.%d.%d", m[0], m[1], m[2], m[3])
 }
 
 func closeConn(conn net.Conn) {
