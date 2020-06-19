@@ -136,16 +136,17 @@ func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data un
 
 	name := C.GoString(service.name)
 	id := C.GoString(service.id)
-	log.Errorf("============ INSIDE serviceCB - status: %s:%s - %v, %v, %v ============", name, id, status, C.ZITI_SERVICE_UNAVAILABLE, C.ZITI_OK)
+	log.Debugf("============ INSIDE serviceCB - status: %s:%s - %v, %v, %v ============", name, id, status, C.ZITI_SERVICE_UNAVAILABLE, C.ZITI_OK)
 	if status == C.ZITI_SERVICE_UNAVAILABLE {
 		found, ok := ctx.Services.Load(id)
+		fs := found.(Service)
 		if ok {
 			DNS.DeregisterService(ctx, name)
 			ctx.Services.Delete(id)
 			ServiceChanges <- ServiceChange{
 				Operation: REMOVED,
 				//Servicename: name,
-				Service:   found.(*Service),
+				Service:   &fs,
 				NFContext: ctx,
 			}
 		} else {
