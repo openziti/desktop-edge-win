@@ -310,8 +310,11 @@ namespace ZitiTunneler {
 			LoadIdentities();
 		}
 		private void SetNotifyIcon(string iconPrefix) {
-			System.IO.Stream iconStream = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,/Assets/Images/ziti-"+iconPrefix+".ico")).Stream;
+			var iconUri = new Uri("pack://application:,,/Assets/Images/ziti-" + iconPrefix + ".ico");
+			System.IO.Stream iconStream = System.Windows.Application.GetResourceStream(iconUri).Stream;
 			notifyIcon.Icon = new System.Drawing.Icon(iconStream);
+
+			Application.Current.MainWindow.Icon = System.Windows.Media.Imaging.BitmapFrame.Create(iconUri);
 		}
 
 		private void LoadIdentities() {
