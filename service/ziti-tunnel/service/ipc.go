@@ -244,7 +244,7 @@ func setTunInfo(s *dto.TunnelStatus, ipv4 string, ipv4mask int) {
 		log.Infof("ip not provided using default: %d", ipv4)
 		ipv4 = Ipv4ip
 	}
-	if ipv4mask < 16 || ipv4mask > 24 {
+	if ipv4mask < 8 || ipv4mask > 24 {
 		log.Warnf("provided mask is invalid: %d. using default value: %d", ipv4mask, Ipv4mask)
 		ipv4mask = Ipv4mask
 	}
