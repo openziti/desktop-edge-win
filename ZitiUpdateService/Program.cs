@@ -11,12 +11,18 @@ namespace ZitiUpdateService {
 		/// The main entry point for the application.
 		/// </summary>
 		static void Main() {
+			UpdateService updateSvc = new UpdateService();
+#if DEBUG
+			updateSvc.Debug();
+			System.Threading.Thread.Sleep(System.Threading.Timeout.Infinite);
+#else
 			ServiceBase[] ServicesToRun;
 			ServicesToRun = new ServiceBase[]
 			{
-				new UpdateService()
+				updateSvc
 			};
 			ServiceBase.Run(ServicesToRun);
+#endif
 		}
 	}
 }
