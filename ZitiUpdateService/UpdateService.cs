@@ -19,6 +19,9 @@ using System.Collections.Specialized;
 namespace ZitiUpdateService {
 	public partial class UpdateService : ServiceBase {
 
+		private int checkTimerDefault = 60000;
+		private int updateTimerDefault = 600000;
+
 		private string _version = "";
 		private bool _isNew = true;
 		/// private int _majorVersion = 1;
@@ -36,6 +39,11 @@ namespace ZitiUpdateService {
 			InitializeComponent();
 		}
 
+		public void Debug()
+        {
+			OnStart(null);
+        }
+
 		protected override void OnStart(string[] args) {
 			try {
 				if (ConfigurationManager.AppSettings.Get("UpdateUrl") != null) _versionUrl = ConfigurationManager.AppSettings.Get("UpdateUrl");
@@ -47,48 +55,46 @@ namespace ZitiUpdateService {
 			if (!Directory.Exists(_rootDirectory)) Directory.CreateDirectory(_rootDirectory);
 			_logDirectory = Path.Combine(_rootDirectory, "Logs");
 			if (!Directory.Exists(_logDirectory)) Directory.CreateDirectory(_logDirectory);
-			Log("Setup Watchers");
-			SetupServiceWatcher(); 
+			
+			SetupWatcher();
 		}
 
 		protected override void OnStop() {
 			Log("Stopping update Service");
 		}
 
-		private void SetupServiceWatcher() {
-			controller = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == "ziti");
-			if (controller==null) {
-				Log("Get Installation");
-				UpdateServiceFiles();
-			} else {
-				Log("Check Version");
-				_isNew = false;
-				if (File.Exists(Path.Combine(_rootDirectory, @"Service\Version.txt"))) {
-					_version = File.ReadAllText(Path.Combine(_rootDirectory, @"Service\Version.txt"));
-					Log("Version Found: " + _version);
-					if (controller.Status==ServiceControllerStatus.Stopped) {
-						StartZiti();
-					} else {
-						SetupWatcher();
-					}
-				} else {	
-					UpdateServiceFiles();
-				}
-			}
-		}
-
 		private void SetupWatcher() {
+			Log("Setting Up Watchers");
+
+			var serviceTimerInterval = ConfigurationManager.AppSettings.Get("ServiceTimer");
+			var serviceInt = TimeSpan.Zero;
+			if (!TimeSpan.TryParse(serviceTimerInterval, out serviceInt))
+			{
+				serviceInt = new TimeSpan(0, 1, 0);
+			}
+
+			var updateTimerInterval = ConfigurationManager.AppSettings.Get("UpdateTimer");
+			var upInt = TimeSpan.Zero;
+			if (!TimeSpan.TryParse(updateTimerInterval, out upInt))
+			{
+				upInt = new TimeSpan(0, 1, 0);
+			}
+
 			Log("Ziti Update Setting Up Watchers");
-;			_checkTimer = new System.Timers.Timer();
+
+			_checkTimer = new System.Timers.Timer();
 			_checkTimer.Elapsed += CheckService;
-			_checkTimer.Interval = 60000;
+			_checkTimer.Interval = serviceInt.TotalMilliseconds;
 			_checkTimer.Enabled = true;
 			_checkTimer.Start();
+			Log("Service Checker is running");
+
 			_updateTimer = new System.Timers.Timer();
 			_updateTimer.Elapsed += CheckUpdate;
-			_updateTimer.Interval = 600000;
+			_updateTimer.Interval = upInt.TotalMilliseconds;
 			_updateTimer.Enabled = true;
 			_updateTimer.Start();
+			Log("Version Checker is running");
 		}
 
 		private void CheckUpdate(object sender, ElapsedEventArgs e) {
@@ -101,10 +107,9 @@ namespace ZitiUpdateService {
 			xmlDoc.LoadXml(result);
 			XmlNode node = xmlDoc.SelectSingleNode("metadata/versioning/"+ _versionType);
 			string version = node.InnerText;
-			Log("Version Checked: " + version+" on "+_version+" from "+_versionType);
 			if (version != _version) {
-				StopZiti();
-				UpdateServiceFiles();
+				Log("Version Checked: " + version + " on " + _version + " from " + _versionType);
+				UpdateServiceFiles(version);
 			}
 		}
 
@@ -114,7 +119,8 @@ namespace ZitiUpdateService {
 				if (_isJustStopped) {
 					_isJustStopped = false;
 					Log("Ziti Service has been stopped, update Network");
-					RunScript();
+					//should not be necessary in v0.0.10+ RunScript();
+					StartZiti();
 				}
 			} else {
 				if (controller.Status==ServiceControllerStatus.Running) {
@@ -123,15 +129,7 @@ namespace ZitiUpdateService {
 			}
 		}
 
-		private void UpdateServiceFiles() {
-			if (controller!=null) {
-				controller.Stop();
-			} else {
-				GetFiles();
-			}
-		}
-
-		private void GetFiles() {
+		private void UpdateServiceFiles(string currentVersion) {
 			var request = WebRequest.Create(_versionUrl) as HttpWebRequest;
 			var response = request.GetResponse();
 			Stream receiveStream = response.GetResponseStream();
@@ -143,6 +141,14 @@ namespace ZitiUpdateService {
 			string version = node.InnerText;
 			Log("Got Version: " + version+" from "+_versionType);
 
+            if (version.Trim() == currentVersion.Trim())
+			{
+				_version = currentVersion;
+				Log("Version local is the same as the version remote: " + version);
+				return;
+			}
+
+			StopZiti();
 			string remoteService = _serviceUrl.Replace("${version}", version);
 
 			if (!Directory.Exists(Path.Combine(_rootDirectory, "Service"))) Directory.CreateDirectory(Path.Combine(_rootDirectory, "Service"));
@@ -177,16 +183,15 @@ namespace ZitiUpdateService {
 				try {
 					Process exeProcess = Process.Start(installService);
 					exeProcess.WaitForExit();
-					StartZiti();
 					Log("Installed " + installService.FileName + " " + installService.Arguments);
 
 				} catch (Exception e) {
 					Log("Cannot Install Service - " + e.ToString());
 				}
 			} else {
-				StartZiti();
+				// nothing to do
 			}
-
+			StartZiti();
 		}
 
 		private void RunScript() {
@@ -207,7 +212,7 @@ namespace ZitiUpdateService {
 				try {
 					Log("Starting Service");
 					controller.Start();
-					controller.WaitForStatus(ServiceControllerStatus.Running);
+					controller.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
 					SetupWatcher();
 				} catch (Exception e) {
 					Log("Cannot Start Service - " + e.ToString());
@@ -227,9 +232,12 @@ namespace ZitiUpdateService {
 			}
 		}
 
+		object logLock = new object();
 		private void Log(string message) {
-			File.AppendAllText(Path.Combine(_logDirectory, @"Log.log"), DateTime.Now.ToString()+" "+message);
-			EventLog.WriteEntry("Ziti Update Service", message, EventLogEntryType.Information);
+			lock (logLock) {
+				File.AppendAllText(Path.Combine(_logDirectory, @"Log.log"), DateTime.Now.ToString() + " " + message + '\n');
+				EventLog.WriteEntry("Ziti Update Service", message, EventLogEntryType.Information);
+			}
 		}
 	}
 }
