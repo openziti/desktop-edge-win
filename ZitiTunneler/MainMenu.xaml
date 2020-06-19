@@ -53,11 +53,11 @@
                 <StackPanel Name="AboutItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <local:SubMenuItem HorizontalAlignment="Stretch" Width="Auto" Label="Privacy Policy" MouseUp="ShowPrivacy"></local:SubMenuItem>
                     <local:SubMenuItem HorizontalAlignment="Stretch" Width="Auto" Label="Terms of Service" MouseUp="ShowTerms"></local:SubMenuItem>
-                    <local:SubMenuItem HorizontalAlignment="Stretch" Width="Auto" Label="Third Party Licenses" MouseUp="ShowLicenses"></local:SubMenuItem>
                 </StackPanel>
                 <StackPanel Name="AdvancedItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/wrench.png" Width="Auto" Label="Tunnel Configuration" MouseUp="ShowConfig"></local:MenuItem>
-                    <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/logs.png" Width="Auto" Label="Logs" MouseUp="ShowLogs"></local:MenuItem>
+                    <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/logs.png" Width="Auto" Label="Service Logs" MouseUp="ShowLogs"></local:MenuItem>
+                    <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/logs.png" Width="Auto" Label="Application Logs" MouseUp="ShowUILogs"></local:MenuItem>
                 </StackPanel>
                 <StackPanel Name="ConfigItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <local:MenuEditItem x:Name="ConfigIp" HorizontalAlignment="Stretch" Width="Auto" Label="IPv4 Address:"></local:MenuEditItem>
@@ -66,11 +66,10 @@
                     <local:MenuEditItem x:Name="ConfigDns" HorizontalAlignment="Stretch" Width="Auto" Label="DNS Servers:"></local:MenuEditItem>
                 </StackPanel>
                 <TextBox Name="LicensesItems" Height="400" Width="{Binding ActualWidth, ElementName=MainStack}" TextWrapping="Wrap" Visibility="Collapsed"></TextBox>
-                <TextBox Name="LogsItems" Height="400" Width="{Binding ActualWidth, ElementName=MainStack}" TextWrapping="Wrap" Visibility="Collapsed"></TextBox>
+                <TextBox Name="LogsItems" Height="400" Width="{Binding ActualWidth, ElementName=MainStack}" TextWrapping="Wrap" Visibility="Collapsed" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"></TextBox>
 
                 <StackPanel Name="AboutItemsButton" Orientation="Vertical" HorizontalAlignment="Stretch" Visibility="Collapsed">
-                    <Image Grid.Column="0" Source="/Assets/Images/logo.png" Height="60" Width="240"></Image>
-                    <Label HorizontalAlignment="Center" Content="Version 1.0 (23)" FontSize="10" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
+                    <Label Name="ServiceVersion" HorizontalAlignment="Center" FontSize="10" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                 </StackPanel>
                 <Label Name="MainItemsButton" Margin="0,30,0,0" Foreground="#F4044D" FontWeight="SemiBold" Content="Quit Ziti Tunneler" Cursor="Hand" MouseDown="CloseApp" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Center"></Label>
             </StackPanel>

@@ -31,6 +31,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -75,10 +76,6 @@ func SaveState(t *RuntimeState) {
 	w := bufio.NewWriter(bufio.NewWriter(cfg))
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
-	t.state.IpInfo = nil
-	for _, id := range t.state.Identities {
-		id.Services = nil
-	}
 	_ = enc.Encode(t.state)
 	_ = w.Flush()
 
@@ -116,7 +113,7 @@ func (t *RuntimeState) ToStatus() dto.TunnelStatus {
  	return clean
 }
 
-func (t *RuntimeState) CreateTun() error {
+func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 	if noZiti() {
 		log.Warnf("NOZITI set to true. this should be only used for debugging")
 		return nil
@@ -140,10 +137,20 @@ func (t *RuntimeState) CreateTun() error {
 
 	nativeTunDevice := tunDevice.(*tun.NativeTun)
 	luid := winipcfg.LUID(nativeTunDevice.LUID())
-	ip, ipnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", Ipv4ip, Ipv4mask))
+
+	if strings.TrimSpace(ipv4) == "" {
+		log.Infof("ip not provided using default: %d", ipv4)
+		ipv4 = Ipv4ip
+	}
+	if ipv4mask < 8 || ipv4mask > 24 {
+		log.Warnf("provided mask is invalid: %d. using default value: %d", ipv4mask, Ipv4mask)
+		ipv4mask = Ipv4mask
+	}
+	ip, ipnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", ipv4, ipv4mask))
 	if err != nil {
 		return fmt.Errorf("error parsing CIDR block: (%v)", err)
 	}
+
 	log.Infof("setting TUN interface address to [%s]", ip)
 	err = luid.SetIPAddresses([]net.IPNet{{ip, ipnet.Mask}})
 	if err != nil {
@@ -171,7 +178,7 @@ func (t *RuntimeState) CreateTun() error {
 	}
 	log.Info("routing applied")
 
-	cziti.DnsInit(Ipv4ip, 24)
+	cziti.DnsInit(ipv4, ipv4mask)
 	cziti.Start()
 	_, err = cziti.HookupTun(tunDevice, dns)
 	if err != nil {
@@ -236,10 +243,7 @@ func (t *RuntimeState) Close() {
 			log.Fatalf("problem closing tunnel!")
 		}
 	} else {
-		log.Warn("the TUN WAS NULL? ")
-		log.Warn("the TUN WAS NULL? ")
-		log.Warn("the TUN WAS NULL? ")
-		log.Warn("the TUN WAS NULL? ")
+		log.Warn("unexpected situation. the TUN was null? ")
 	}
 }
 

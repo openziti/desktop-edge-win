@@ -80,7 +80,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	}
 
 	// initialize the network interface
-	err = initialize()
+	err = initialize(rts.state.TunIpv4, rts.state.TunIpv4Mask)
 
 	if err != nil {
 		log.Errorf("unexpected err: %v", err)
@@ -219,12 +219,12 @@ func (p *Pipes) shutdownConnections() {
 	log.Info("all events connections closed")
 }
 
-func initialize() error {
-	err := rts.CreateTun()
+func initialize(ipv4 string, ipv4mask int) error {
+	err := rts.CreateTun(ipv4, ipv4mask)
 	if err != nil {
 		return err
 	}
-	setTunInfo(rts.state)
+	setTunInfo(rts.state, ipv4, ipv4mask)
 
 	s := rts.state
 	// decide if the tunnel should be active or not and if so - activate it
@@ -239,14 +239,35 @@ func initialize() error {
 	return nil
 }
 
-func setTunInfo(s *dto.TunnelStatus) {
+func setTunInfo(s *dto.TunnelStatus, ipv4 string, ipv4mask int) {
+	if strings.TrimSpace(ipv4) == "" {
+		log.Infof("ip not provided using default: %d", ipv4)
+		ipv4 = Ipv4ip
+	}
+	if ipv4mask < 8 || ipv4mask > 24 {
+		log.Warnf("provided mask is invalid: %d. using default value: %d", ipv4mask, Ipv4mask)
+		ipv4mask = Ipv4mask
+	}
+	_, ipnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", ipv4, ipv4mask))
+	if err != nil {
+		log.Errorf("error parsing CIDR block: (%v)", err)
+		return
+	}
 	//set the tun info into the state
 	s.IpInfo = &dto.TunIpInfo{
-		Ip:     Ipv4ip,
+		Ip:     ipv4,
 		DNS:    Ipv4dns,
 		MTU:    1400,
-		Subnet: "255.255.255.0",
+		Subnet: ipv4MaskString(ipnet.Mask),
 	}
+}
+
+func ipv4MaskString(m []byte) string {
+	if len(m) != 4 {
+		panic("ipv4Mask: len must be 4 bytes")
+	}
+
+	return fmt.Sprintf("%d.%d.%d.%d", m[0], m[1], m[2], m[3])
 }
 
 func closeConn(conn net.Conn) {
@@ -384,6 +405,10 @@ func serveIpc(conn net.Conn) {
 			log.Warnf("Unknown operation: %s. Returning error on pipe", cmd.Function)
 			respondWithError(enc, "Something unexpected has happened", UNKNOWN_ERROR, nil)
 		}
+
+		//save the state
+		SaveState(&rts)
+
 		_ = rw.Flush()
 	}
 }
@@ -496,7 +521,6 @@ func tunnelState(onOff bool, out *json.Encoder) {
 	}
 	setTunnelState(onOff)
 	state.Active = onOff
-	SaveState(&rts)
 
 	respond(out, dto.Response{Message: "tunnel state updated successfully", Code: SUCCESS, Error: "", Payload: nil})
 	log.Debugf("toggle ziti on/off: %t responded to", onOff)
@@ -539,7 +563,6 @@ func toggleIdentity(out *json.Encoder, fingerprint string, onOff bool) {
 
 	respond(out, dto.Response{Message: "identity toggled", Code: SUCCESS, Error: "", Payload: idutil.Clean(*id)})
 	log.Debugf("toggle ziti on/off for %s: %t responded to", fingerprint, onOff)
-	SaveState(&rts)
 }
 
 func removeTempFile(file os.File) {
@@ -638,9 +661,6 @@ func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
 	//if successful parse the output and add the config to the identity
 	state.Identities = append(state.Identities, &newId.Id)
 
-	//save the state
-	SaveState(&rts)
-
 	//return successful message
 	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: idutil.Clean(newId.Id)}
 
@@ -667,12 +687,11 @@ func connectIdentity(id *dto.Identity) {
 	} else {
 		log.Debugf("id [%s] is already connected - not reconnecting", id.Name)
 		for _, s := range id.Services {
-			cziti.AddIntercept(s.Name, s.HostName, s.Port, id.NFContext)
+			cziti.AddIntercept(s.Id, s.Name, s.HostName, s.Port, id.NFContext)
 		}
 		id.Connected = true
 	}
 	id.Active = true
-	SaveState(&rts)
 	log.Infof("identity [%s] connected [%t] and set to active [%t]", id.Name, id.Connected, id.Active)
 }
 
@@ -681,15 +700,18 @@ func disconnectIdentity(id *dto.Identity) error {
 
 	id.Active = false
 	if id.Connected {
+		log.Debugf("ranging over services all services to remove intercept and deregister the service")
+		if len(id.Services) < 1 {
+			log.Errorf("identity with fingerprint %s has no services?", id.FingerPrint)
+		}
 		for _, s := range id.Services {
-			cziti.RemoveIntercept(s.Name)
+			cziti.RemoveIntercept(s.Id)
 			cziti.DNS.DeregisterService(id.NFContext, s.Name)
 		}
 		id.Connected = false
 	} else {
 		log.Debugf("id: %s is already disconnected - not attempting to disconnected again fingerprint:%s", id.Name, id.FingerPrint)
 	}
-	SaveState(&rts)
 	return nil
 }
 
@@ -715,8 +737,6 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 	if err != nil {
 		log.Warn("could not remove file: %s", config.Path()+id.FingerPrint+".json")
 	}
-
-	SaveState(&rts)
 
 	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: nil}
 	respond(out, resp)
@@ -755,7 +775,7 @@ func acceptServices() {
 		case <-shutdown:
 			return
 		case c := <-cziti.ServiceChanges:
-			log.Debug("processing service change event")
+			log.Debugf("processing service change event. id:%s name:%s", c.Service.Id, c.Service.Name)
 			matched := false
 			//find the id using the context
 			for _, id := range activeIds {
@@ -765,9 +785,10 @@ func acceptServices() {
 					case cziti.ADDED:
 						//add the service to the identity
 						svc := dto.Service{
-							Name:     c.Servicename,
-							HostName: c.Host,
-							Port:     uint16(c.Port),
+							Name:     c.Service.Name,
+							HostName: c.Service.InterceptHost,
+							Port:     uint16(c.Service.InterceptPort),
+							Id:       c.Service.Id,
 						}
 						id.Services = append(id.Services, &svc)
 
@@ -776,10 +797,10 @@ func acceptServices() {
 							Fingerprint: id.FingerPrint,
 							Service:     svc,
 						}
-						log.Debug(" dispatched added service change event")
+						log.Debug("dispatched added service change event")
 					case cziti.REMOVED:
 						for idx, svc := range id.Services {
-							if svc.Name == c.Servicename {
+							if svc.Name == c.Service.Name {
 								id.Services = append(id.Services[:idx], id.Services[idx+1:]...)
 								events.broadcast <- dto.ServiceEvent{
 									ActionEvent: SERVICE_REMOVED,
@@ -794,7 +815,7 @@ func acceptServices() {
 			}
 
 			if !matched {
-				log.Warnf("service update received but matched no context. this is unexpected. service name: %s", c.Servicename)
+				log.Warnf("service update received but matched no context. this is unexpected. service name: %s", c.Service.Name)
 			}
 		}
 	}

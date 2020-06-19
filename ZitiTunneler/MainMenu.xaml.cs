@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System;
 using System.Threading;
 using System.Management.Automation;
+using ZitiTunneler.Models;
 
 namespace ZitiTunneler
 {	
@@ -55,6 +56,10 @@ namespace ZitiTunneler
 			menuState = "Logs";
 			UpdateState();
 		}
+		private void ShowUILogs(object sender, MouseButtonEventArgs e) {
+			menuState = "UILogs";
+			UpdateState();
+		}
 
 		private void UpdateState() {
 			MainItems.Visibility = Visibility.Collapsed;
@@ -82,8 +87,14 @@ namespace ZitiTunneler
 				BackArrow.Visibility = Visibility.Visible;
 			} else if (menuState=="Logs") {
 				ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
-				MenuTitle.Content = "Application Logs";
+				MenuTitle.Content = "Service Logs";
 				LogsItems.Text = client.GetLogs();
+				LogsItems.Visibility = Visibility.Visible;
+				BackArrow.Visibility = Visibility.Visible;
+			} else if (menuState == "UILogs") {
+				ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
+				MenuTitle.Content = "Application Logs";
+				LogsItems.Text = UILog.GetLogs();
 				LogsItems.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
 			} else if (menuState=="Config") {
@@ -103,7 +114,7 @@ namespace ZitiTunneler
 		}
 
 		private void GoBack(object sender, MouseButtonEventArgs e) {
-			if (menuState=="Config"||menuState=="Logs") {
+			if (menuState=="Config"||menuState=="Logs"||menuState=="UILogs") {
 				menuState = "Advanced";
 			} else if (menuState=="Licenses") {
 				menuState = "About";

@@ -49,11 +49,9 @@ type sdk struct {
 	libuvCtx *C.libuv_ctx
 }
 type ServiceChange struct {
-	Operation string
-	Servicename string
-	Host string
-	Port int
-	NFContext *CZitiCtx
+	Operation   string
+	Service		*Service
+	NFContext   *CZitiCtx
 }
 
 var _impl sdk
@@ -137,14 +135,22 @@ func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data un
 	}
 
 	name := C.GoString(service.name)
-	log.Tracef("============ INSIDE serviceCB - status: %s - %v, %v, %v ============", name, status, C.ZITI_SERVICE_UNAVAILABLE, C.ZITI_OK)
+	id := C.GoString(service.id)
+	log.Debugf("============ INSIDE serviceCB - status: %s:%s - %v, %v, %v ============", name, id, status, C.ZITI_SERVICE_UNAVAILABLE, C.ZITI_OK)
 	if status == C.ZITI_SERVICE_UNAVAILABLE {
-		DNS.DeregisterService(ctx, name)
-		ctx.Services.Delete(name)
-		ServiceChanges <- ServiceChange{
-			Operation:   REMOVED,
-			Servicename: name,
-			NFContext: ctx,
+		found, ok := ctx.Services.Load(id)
+		fs := found.(Service)
+		if ok {
+			DNS.DeregisterService(ctx, name)
+			ctx.Services.Delete(id)
+			ServiceChanges <- ServiceChange{
+				Operation: REMOVED,
+				//Servicename: name,
+				Service:   &fs,
+				NFContext: ctx,
+			}
+		} else {
+			log.Warnf("could not find a service with id: %s, name: %s", service.id, service.name)
 		}
 	} else if status == C.ZITI_OK {
 		cfg := C.ziti_service_get_raw_config(service, tunCfgName)
@@ -159,26 +165,25 @@ func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data un
 				port = int(c["port"].(float64))
 			}
 		}
-		ctx.Services.Store(name, Service{
+		added := Service{
 			Name:          name,
-			Id:            C.GoString(service.id),
+			Id:            id,
 			InterceptHost: host,
 			InterceptPort: port,
-		})
+		}
+		ctx.Services.Store(id, added)
 		if host != "" && port != -1 {
 			ip, err := DNS.RegisterService(host, uint16(port), ctx, name)
 			if err != nil {
-				log.Error(err)
+				log.Warn(err)
 			} else {
 				log.Infof("service[%s] is mapped to <%s:%d>", name, ip.String(), port)
 				for _, t := range devMap {
-					t.AddIntercept(name, ip.String(), port, unsafe.Pointer(ctx.nf))
+					t.AddIntercept(id, name, ip.String(), port, unsafe.Pointer(ctx.nf))
 				}
 				ServiceChanges <- ServiceChange{
 					Operation:   ADDED,
-					Servicename: name,
-					Host: host,
-					Port: port,
+					Service: &added,
 					NFContext: ctx,
 				}
 			}
@@ -217,10 +222,8 @@ func LoadZiti(cfg string) *CZitiCtx {
 	ctx.options.config = C.CString(cfg)
 	ctx.options.init_cb = C.ziti_init_cb(C.initCB)
 	ctx.options.service_cb = C.ziti_service_cb(C.serviceCB)
-	//TODO don't commit this - ctx.options.refresh_interval = C.long(600)
-	ctx.options.refresh_interval = C.long(6)
+	ctx.options.refresh_interval = C.long(15)
 	ctx.options.config_types = C.all_configs
-	//ctx.options.ctx = unsafe.Pointer(&ctx)
 
 	ch := make(chan *CZitiCtx)
 	initMap[cfg] = ch
