@@ -19,18 +19,18 @@ package windns
 
 import (
 	"bytes"
-	"fmt"
+	"github.com/michaelquigley/pfxlog"
 	"net"
 	"os"
 	"os/exec"
 	"strings"
-
-	"github.com/michaelquigley/pfxlog"
 )
 
 var log = pfxlog.Logger()
 
 func ResetDNS() {
+	log.Infof("skipping ResetDNS for now")
+
 	log.Infof("resetting dns...")
 	log.Info("restoring dns to original-ish state")
 
@@ -77,14 +77,85 @@ func GetUpstreamDNS() []string {
 }
 
 func ReplaceDNS(ips []net.IP) {
+
+	/*
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		fmt.Print(fmt.Errorf("localAddresses: %+v\n", err.Error()))
+		return
+	}
+	for _, i := range ifaces {
+		addrs, err := i.Addrs()
+		if err != nil {
+			fmt.Print(fmt.Errorf("localAddresses: %+v\n", err.Error()))
+			continue
+		}
+		for _, a := range addrs {
+			switch v := a.(type) {
+			case *net.IPAddr:
+				fmt.Printf("%v : %s (%s)\n", i.Name, v, v.IP.DefaultMask())
+
+			case *net.IPNet:
+				fmt.Printf("%v : %s [%v/%v]\n", i.Name, v, v.IP, v.Mask)
+			}
+
+		}
+	}
+
 	var names []string
 	for _, i := range ips {
 		names = append(names, i.String())
 	}
 	addresses := strings.Join(names, ",")
+
+	*/
+	/*
 	script := fmt.Sprintf(
 		`Get-NetIPInterface | ForEach-Object { Set-DnsClientServerAddress -InterfaceIndex $_.ifIndex -ServerAddresses %s }`,
 		addresses)
+	*/
+
+
+
+	script := `$dnsinfo=Get-DnsClientServerAddress
+
+# see https://docs.microsoft.com/en-us/dotnet/api/system.net.sockets.addressfamily
+$IPv4=2
+$IPv6=23
+
+$dnsUpdates = @{}
+
+foreach ($dns in $dnsinfo)
+{
+    if($dnsUpdates[$dns.InterfaceIndex] -eq $null) { $dnsUpdates[$dns.InterfaceIndex]=[System.Collections.ArrayList]@() }
+    if($dns.AddressFamily -eq $IPv6) {
+        $dnsServers=$dns.ServerAddresses
+        $ArrList=[System.Collections.ArrayList]@($dnsServers)
+        if(($dnsServers -ne $null) -and ($dnsServers.Contains("::1")) ) {
+            echo ($dns.InterfaceAlias + " IPv6 already contains ::1")
+        } else {
+            $ArrList.Insert(0,"::1")
+        }
+        $dnsUpdates[$dns.InterfaceIndex].AddRange($ArrList)
+    }
+    elseif($dns.AddressFamily -eq $IPv4){
+        $dnsServers=$dns.ServerAddresses
+        $ArrList=[System.Collections.ArrayList]@($dnsServers)
+        if(($dnsServers -ne $null) -and ($dnsServers.Contains("127.0.0.1")) ) {
+            echo ($dns.InterfaceAlias + " IPv4 already contains 127.0.0.1")
+        } else {
+            $ArrList.Insert(0,"127.0.0.1")
+        }
+        $dnsUpdates[$dns.InterfaceIndex].AddRange($ArrList)
+    }
+}
+
+foreach ($key in $dnsUpdates.Keys)
+{
+    $dnsServers=$dnsUpdates[$key]
+    Set-DnsClientServerAddress -InterfaceIndex $key -ServerAddresses ($dnsServers)
+}`
+
 	cmd := exec.Command("powershell", "-Command", script)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout

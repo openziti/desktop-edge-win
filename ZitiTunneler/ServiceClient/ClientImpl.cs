@@ -340,6 +340,7 @@ namespace ZitiTunneler.ServiceClient
 
         public void SetTunnelState(bool onOff)
         {
+            /*
             checkConnected();
             try
             {
@@ -352,6 +353,7 @@ namespace ZitiTunneler.ServiceClient
                 //setupPipe();
                 throw ioe;
             }
+            */
         }
 
         public string GetLogs()
