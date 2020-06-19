@@ -145,7 +145,6 @@ func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data un
 			ctx.Services.Delete(id)
 			ServiceChanges <- ServiceChange{
 				Operation: REMOVED,
-				//Servicename: name,
 				Service:   &fs,
 				NFContext: ctx,
 			}

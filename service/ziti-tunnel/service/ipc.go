@@ -407,7 +407,7 @@ func serveIpc(conn net.Conn) {
 		}
 
 		//save the state
-		SaveState(&rts)
+		rts.SaveState()
 
 		_ = rw.Flush()
 	}

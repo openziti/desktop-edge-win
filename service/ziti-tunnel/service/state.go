@@ -65,7 +65,7 @@ func (t *RuntimeState) FindByIdentity(id dto.Identity) (int, *dto.Identity) {
 	return t.Find(id.FingerPrint)
 }
 
-func SaveState(t *RuntimeState) {
+func (t *RuntimeState) SaveState() {
 	// overwrite file if it exists
 	_ = os.MkdirAll(config.Path(), 0644)
 
