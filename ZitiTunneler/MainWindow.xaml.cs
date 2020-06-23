@@ -16,6 +16,7 @@ using System.Net;
 using System.Windows.Controls;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Text;
 
 namespace ZitiTunneler {
 
@@ -344,6 +345,7 @@ namespace ZitiTunneler {
 
 		private void OpenIdentity(ZitiIdentity identity) {
 			IdentityMenu.Identity = identity;
+
 		}
 
 		private void ShowMenu(object sender, MouseButtonEventArgs e) {
@@ -351,7 +353,9 @@ namespace ZitiTunneler {
 		}
 
 		private void AddIdentity(object sender, MouseButtonEventArgs e) {
+			UIModel.HideOnLostFocus = false;
 			Microsoft.Win32.OpenFileDialog jwtDialog = new Microsoft.Win32.OpenFileDialog();
+			UIModel.HideOnLostFocus = true;
 			jwtDialog.DefaultExt = ".jwt";
 			jwtDialog.Filter = "Ziti Identities (*.jwt)|*.jwt";
 			if (jwtDialog.ShowDialog() == true) {
@@ -397,11 +401,15 @@ namespace ZitiTunneler {
 			_timer.Enabled = true;
 			_timer.Start();
 		}
-		private async void Connect(object sender, RoutedEventArgs e) {
-			ShowLoad();
-			Dispatcher.Invoke(new Action(() => { }), System.Windows.Threading.DispatcherPriority.ContextIdle);
-			DoConnect();
-			HideLoad();
+		private async void Connect(object sender, RoutedEventArgs e)
+		{
+			this.Dispatcher.Invoke(() =>
+			{
+				ShowLoad();
+				//Dispatcher.Invoke(new Action(() => { }), System.Windows.Threading.DispatcherPriority.ContextIdle);
+				DoConnect();
+				HideLoad();
+			});
 		}
 
 		private void DoConnect() {
@@ -489,7 +497,10 @@ namespace ZitiTunneler {
 		}
 
 		private void MainUI_Deactivated(object sender, EventArgs e) {
-			this.WindowState = WindowState.Minimized;
+			if (UIModel.HideOnLostFocus)
+			{
+				this.WindowState = WindowState.Minimized;
+			}
 		}
 
 		private void MainUI_Activated(object sender, EventArgs e) {

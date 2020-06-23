@@ -172,6 +172,7 @@ func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data un
 		}
 		ctx.Services.Store(id, added)
 		if host != "" && port != -1 {
+			log.Infof("service intercept beginning for service: %s @ %s:%d")
 			ip, err := DNS.RegisterService(host, uint16(port), ctx, name)
 			if err != nil {
 				log.Warn(err)
