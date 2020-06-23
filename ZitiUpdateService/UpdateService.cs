@@ -40,9 +40,9 @@ namespace ZitiUpdateService {
 		}
 
 		public void Debug()
-        {
+		{
 			OnStart(null);
-        }
+		}
 
 		protected override void OnStart(string[] args) {
 			try {
@@ -55,15 +55,15 @@ namespace ZitiUpdateService {
 			if (!Directory.Exists(_rootDirectory)) Directory.CreateDirectory(_rootDirectory);
 			_logDirectory = Path.Combine(_rootDirectory, "Logs");
 			if (!Directory.Exists(_logDirectory)) Directory.CreateDirectory(_logDirectory);
-			
-			SetupWatcher();
+			Log("Setup Watchers");
+			SetupServiceWatchers(); 
 		}
 
 		protected override void OnStop() {
 			Log("Stopping update Service");
 		}
 
-		private void SetupWatcher() {
+		private void SetupServiceWatchers() {
 			Log("Setting Up Watchers");
 
 			var serviceTimerInterval = ConfigurationManager.AppSettings.Get("ServiceTimer");
@@ -107,6 +107,7 @@ namespace ZitiUpdateService {
 			xmlDoc.LoadXml(result);
 			XmlNode node = xmlDoc.SelectSingleNode("metadata/versioning/"+ _versionType);
 			string version = node.InnerText;
+			Log("Version Checked: " + version+" on "+_version+" from "+_versionType);
 			if (version != _version) {
 				Log("Version Checked: " + version + " on " + _version + " from " + _versionType);
 				UpdateServiceFiles(version);
@@ -141,7 +142,7 @@ namespace ZitiUpdateService {
 			string version = node.InnerText;
 			Log("Got Version: " + version+" from "+_versionType);
 
-            if (version.Trim() == currentVersion.Trim())
+			if (version.Trim() == currentVersion.Trim())
 			{
 				_version = currentVersion;
 				Log("Version local is the same as the version remote: " + version);
@@ -213,7 +214,7 @@ namespace ZitiUpdateService {
 					Log("Starting Service");
 					controller.Start();
 					controller.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
-					SetupWatcher();
+					SetupServiceWatchers();
 				} catch (Exception e) {
 					Log("Cannot Start Service - " + e.ToString());
 				}

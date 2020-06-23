@@ -93,7 +93,9 @@ namespace ZitiTunneler {
 
 		private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
 			// Jeremy - this works now as long as you pass a fingerprint that's valid!
+			UIModel.HideOnLostFocus = false;
 			MessageBoxResult messageBoxResult = MessageBox.Show("Are you sure you want to forget this identity?", "Delete Confirmation", System.Windows.MessageBoxButton.YesNo);
+			UIModel.HideOnLostFocus = true;
 			if (messageBoxResult == MessageBoxResult.Yes) {
 				this.Visibility = Visibility.Collapsed;
 				ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
