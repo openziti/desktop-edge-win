@@ -40,9 +40,9 @@ namespace ZitiUpdateService {
 		}
 
 		public void Debug()
-        {
+		{
 			OnStart(null);
-        }
+		}
 
 		protected override void OnStart(string[] args) {
 			try {
@@ -56,14 +56,14 @@ namespace ZitiUpdateService {
 			_logDirectory = Path.Combine(_rootDirectory, "Logs");
 			if (!Directory.Exists(_logDirectory)) Directory.CreateDirectory(_logDirectory);
 			Log("Setup Watchers");
-			SetupServiceWatcher(); 
+			SetupServiceWatchers(); 
 		}
 
 		protected override void OnStop() {
 			Log("Stopping update Service");
 		}
 
-		private void SetupWatcher() {
+		private void SetupServiceWatchers() {
 			Log("Setting Up Watchers");
 
 			var serviceTimerInterval = ConfigurationManager.AppSettings.Get("ServiceTimer");
@@ -214,7 +214,7 @@ namespace ZitiUpdateService {
 					Log("Starting Service");
 					controller.Start();
 					controller.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
-					SetupWatcher();
+					SetupServiceWatchers();
 				} catch (Exception e) {
 					Log("Cannot Start Service - " + e.ToString());
 				}
