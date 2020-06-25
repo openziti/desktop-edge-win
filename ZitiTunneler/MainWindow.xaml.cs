@@ -163,6 +163,10 @@ namespace ZitiTunneler {
 					var found = identities.Find(i => i.Fingerprint == e.Id.FingerPrint);
 					if (found == null) {
 						identities.Add(zid);
+					} else {
+						//if we get here exit out so that LoadIdentities() doesn't get called
+						found.IsEnabled = true;
+						return;
 					}
 				} else {
 					IdentityForgotten(ZitiIdentity.FromClient(e.Id));
@@ -334,7 +338,7 @@ namespace ZitiTunneler {
 					DisconnectButton.Visibility = Visibility.Visible;
 				}
 				id.Identity = ids[i];
-				id.OnClick += OpenIdentity;
+				//id.OnClick += OpenIdentity;
 				IdList.Children.Add(id);
 				IdList.Height += 60;
 			}
@@ -345,7 +349,7 @@ namespace ZitiTunneler {
 
 		private void OpenIdentity(ZitiIdentity identity) {
 			IdentityMenu.Identity = identity;
-
+			
 		}
 
 		private void ShowMenu(object sender, MouseButtonEventArgs e) {
@@ -401,7 +405,7 @@ namespace ZitiTunneler {
 			_timer.Enabled = true;
 			_timer.Start();
 		}
-		private async void Connect(object sender, RoutedEventArgs e)
+		private void Connect(object sender, RoutedEventArgs e)
 		{
 			this.Dispatcher.Invoke(() =>
 			{
@@ -424,7 +428,6 @@ namespace ZitiTunneler {
 				}
 				for (int i = 0; i < IdList.Children.Count; i++) {
 					IdentityItem item = IdList.Children[i] as IdentityItem;
-					item.isOn = true;
 					item._identity.IsEnabled = true;
 					item.RefreshUI();
 				}
@@ -448,7 +451,6 @@ namespace ZitiTunneler {
 				}
 				for (int i = 0; i < IdList.Children.Count; i++) {
 					IdentityItem item = IdList.Children[i] as IdentityItem;
-					item.isOn = false;
 					item._identity.IsEnabled = false;
 					item.RefreshUI();
 				}
