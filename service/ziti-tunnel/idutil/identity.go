@@ -42,7 +42,7 @@ func Clean(id dto.Identity) dto.Identity {
 }
 
 func AddMetrics(id *dto.Identity) {
-	up, down, _ := cziti.GetTransferRates(id.NFContext)
+	up, down, _ := cziti.GetTransferRates(id.ZitiContext)
 
 	id.Metrics = &dto.Metrics{
 		Up:   up,

@@ -694,7 +694,7 @@ func connectIdentity(id *dto.Identity) {
 	} else {
 		log.Debugf("id [%s] is already connected - not reconnecting", id.Name)
 		for _, s := range id.Services {
-			cziti.AddIntercept(s.Id, s.Name, s.HostName, s.Port, id.NFContext)
+			cziti.AddIntercept(s.Id, s.Name, s.HostName, s.Port, id.ZitiContext)
 		}
 		id.Connected = true
 	}
@@ -725,7 +725,7 @@ func disconnectIdentity(id *dto.Identity) error {
 		}
 		for _, s := range id.Services {
 			cziti.RemoveIntercept(s.Id)
-			cziti.DNS.DeregisterService(id.NFContext, s.Name)
+			cziti.DNS.DeregisterService(id.ZitiContext, s.Name)
 		}
 		id.Connected = false
 	} else {
@@ -798,7 +798,7 @@ func acceptServices() {
 			matched := false
 			//find the id using the context
 			for _, id := range activeIds {
-				if id.NFContext == c.NFContext {
+				if id.ZitiContext == c.ZitiContext {
 					matched = true
 					switch c.Operation {
 					case cziti.ADDED:

@@ -87,7 +87,7 @@ func dbg() {
 			Services:    nil,
 			Metrics:     nil,
 			Connected:   false,
-			NFContext:   nil,
+			ZitiContext:   nil,
 		},
 	}
 }
