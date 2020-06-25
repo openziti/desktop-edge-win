@@ -42,7 +42,7 @@ func ResetDNS() {
 
 	err := cmd.Run()
 	if err != nil {
-		log.Errorf("ERROR resetting DNS", err)
+		log.Errorf("ERROR resetting DNS: %v", err)
 	}
 }
 

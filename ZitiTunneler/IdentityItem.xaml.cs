@@ -20,8 +20,6 @@ namespace ZitiTunneler {
 	/// </summary>
 	public partial class IdentityItem:UserControl {
 
-		public delegate void Click(ZitiIdentity identity);
-		public event Click OnClick;
 		public ZitiIdentity _identity;
 		public ZitiIdentity Identity {
 			get {
@@ -45,7 +43,6 @@ namespace ZitiTunneler {
 			}
 		}
 
-		public bool isOn = false;
 		public IdentityItem() {
 			InitializeComponent();
 			ToggleSwitch.OnToggled += ToggleIdentity;
@@ -72,10 +69,6 @@ namespace ZitiTunneler {
 			}
 		}
 
-		private void ToggleButton_Checked(object sender, RoutedEventArgs e) {
-			isOn = !isOn;
-		}
-
 		private void Canvas_MouseEnter(object sender, MouseEventArgs e) {
 			OverState.Opacity = 0.2;
 		}
@@ -85,9 +78,10 @@ namespace ZitiTunneler {
 		}
 
 		private void OpenDetails(object sender, MouseButtonEventArgs e) {
-			if (OnClick != null) {
-				OnClick(_identity);
-			}
+			IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
+			deets.SelectedIdentity = this;
+			deets.Identity = this.Identity;
+			this.ToggleSwitch.IsEnabled = this.Identity.IsEnabled;
 		}
 	}
 }

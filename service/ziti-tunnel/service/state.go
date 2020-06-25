@@ -21,7 +21,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	idcfg "github.com/netfoundry/ziti-sdk-golang/ziti/config"
 	"github.com/netfoundry/ziti-tunnel-win/service/cziti"
 	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/config"
 	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/dto"
@@ -198,6 +197,7 @@ func (t *RuntimeState) LoadIdentity(id *dto.Identity) {
 		id.NFContext = ctx
 
 		id.Connected = true
+		id.Active = true
 		if ctx == nil {
 			log.Warnf("connecting to identity with fingerprint [%s] did not error but no context was returned", id.FingerPrint)
 			return
@@ -215,18 +215,6 @@ func (t *RuntimeState) LoadIdentity(id *dto.Identity) {
 		id.Services = make([]*dto.Service, 0)
 	} else {
 		log.Warnf("NOZITI set to true. this should be only used for debugging")
-	}
-
-	events.broadcast <- dto.IdentityEvent{
-		ActionEvent: IDENTITY_ADDED,
-		Id: dto.Identity{
-			Name:        id.Name,
-			FingerPrint: id.FingerPrint,
-			Active:      id.Active,
-			Config:      idcfg.Config{},
-			Status:      "enrolled",
-			Services:    id.Services,
-		},
 	}
 }
 
