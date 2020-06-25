@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"github.com/Microsoft/go-winio"
 	"github.com/netfoundry/ziti-foundation/identity/identity"
+	idcfg "github.com/netfoundry/ziti-sdk-golang/ziti/config"
 	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
 	"github.com/netfoundry/ziti-tunnel-win/service/cziti"
 	"github.com/netfoundry/ziti-tunnel-win/service/cziti/windns"
@@ -38,6 +39,7 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"os/signal"
 	"strings"
 	"time"
 )
@@ -140,15 +142,20 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	return nil
 }
 func waitForStopRequest(ops <-chan string) {
-
+	sig := make(chan os.Signal)
+	signal.Notify(sig)
 loop:
 	for {
-		c := <-ops
-		log.Infof("request for control received: %v", c)
-		if c == "stop" {
-			break loop
-		} else {
-			log.Debug("unexpected operation: " + c)
+		select {
+		case c := <-ops:
+			log.Infof("request for control received: %v", c)
+			if c == "stop" {
+				break loop
+			} else {
+				log.Debug("unexpected operation: " + c)
+			}
+		case s := <-sig:
+			log.Warnf("signal received! %v", s)
 		}
 	}
 	log.Debugf("wait loop is exiting")
@@ -693,6 +700,18 @@ func connectIdentity(id *dto.Identity) {
 	}
 	id.Active = true
 	log.Infof("identity [%s] connected [%t] and set to active [%t]", id.Name, id.Connected, id.Active)
+
+	events.broadcast <- dto.IdentityEvent{
+		ActionEvent: IDENTITY_ADDED,
+		Id: dto.Identity{
+			Name:        id.Name,
+			FingerPrint: id.FingerPrint,
+			Active:      id.Active,
+			Config:      idcfg.Config{},
+			Status:      "enrolled",
+			Services:    id.Services,
+		},
+	}
 }
 
 func disconnectIdentity(id *dto.Identity) error {

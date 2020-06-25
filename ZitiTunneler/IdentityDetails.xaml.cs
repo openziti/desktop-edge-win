@@ -40,12 +40,16 @@ namespace ZitiTunneler {
 			}
 			set {
 				_identity = value;
+				this.IdDetailToggle.Enabled = _identity.IsEnabled;
 				UpdateView();
 				IdentityArea.Opacity = 1.0;
 				IdentityArea.Visibility = Visibility.Visible;
 				this.Visibility = Visibility.Visible;
 			}
 		}
+
+		public IdentityItem SelectedIdentity { get; set; }
+
 
 		public bool IsAttached {
 			get {
@@ -63,8 +67,8 @@ namespace ZitiTunneler {
 			IdDetailToggle.Enabled = _identity.IsEnabled;
 			IdentityName.Value = _identity.Name;
 			IdentityNetwork.Value = _identity.ControllerUrl;
-			IdentityEnrollment.Value = _identity.EnrollmentStatus;
-			IdentityStatus.Value = _identity.Status;
+			IdentityEnrollment.Value = _identity.Status;
+			IdentityStatus.Value = _identity.IsEnabled ? "active" : "disabled";
 			ServiceList.Children.Clear();
 			for (int i=0; i<_identity.Services.Count; i++) {
 				ServiceInfo editor = new ServiceInfo();
@@ -78,6 +82,9 @@ namespace ZitiTunneler {
 		private void IdToggle(bool on) {
 			ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
 			client.IdentityOnOff(_identity.Fingerprint, on);
+			SelectedIdentity.ToggleSwitch.Enabled = on;
+			_identity.IsEnabled = on;
+			IdentityStatus.Value = _identity.IsEnabled ? "active" : "disabled";
 		}
 
 		public IdentityDetails() {
