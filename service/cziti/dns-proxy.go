@@ -46,7 +46,7 @@ func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn) {
 
 	// never proxy hostnames that we know about regardless of type
 	if ip != nil {
-		log.Debug("resolved ", query.Name, ip)
+		log.Debugf("resolved %s as %v", query.Name, ip)
 
 		var answer *dns.A
 		if query.Qtype == dns.TypeA && len(ip.To4()) == net.IPv4len {

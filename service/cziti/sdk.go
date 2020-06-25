@@ -172,11 +172,11 @@ func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data un
 		}
 		ctx.Services.Store(id, added)
 		if host != "" && port != -1 {
-			log.Infof("service intercept beginning for service: %s @ %s:%d")
 			ip, err := DNS.RegisterService(host, uint16(port), ctx, name)
 			if err != nil {
 				log.Warn(err)
 			} else {
+				log.Infof("service intercept beginning for service: %s@%s:%d on ip %s", name, host, port, ip.String())
 				log.Infof("service[%s] is mapped to <%s:%d>", name, ip.String(), port)
 				for _, t := range devMap {
 					t.AddIntercept(id, name, ip.String(), port, unsafe.Pointer(ctx.nf))

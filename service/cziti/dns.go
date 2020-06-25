@@ -58,6 +58,7 @@ type ctxService struct {
 }
 
 func (dns *dnsImpl) RegisterService(dnsName string, port uint16, ctx *CZitiCtx, name string) (net.IP, error) {
+	log.Infof("adding DNS entry for service name %s@%s:%d", name, dnsName, port)
 	DnsInit(defaultCidr, defaultMaskBits)
 	dnsName = dnsName + "."
 	key := fmt.Sprint(dnsName, ':', port)
