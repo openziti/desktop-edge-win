@@ -141,6 +141,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	ops <- "done"
 	return nil
 }
+
 func waitForStopRequest(ops <-chan string) {
 	sig := make(chan os.Signal)
 	signal.Notify(sig)
@@ -430,18 +431,42 @@ func serveLogs(conn net.Conn) {
 		_, _ = w.WriteString("an unexpected error occurred while retrieving logs. look at the actual log file.")
 		return
 	}
+	writeLogToStream(file, w)
 
-	r := bufio.NewReader(file)
-	wrote, err := io.Copy(w, r)
+	file, err = os.OpenFile(config.LogFile(), os.O_RDONLY, 0644)
 	if err != nil {
-		log.Errorf("problem responding with log data")
+		log.Errorf("could not open log file at %s", config.LogFile())
+		_, _ = w.WriteString("an unexpected error occurred while retrieving logs. look at the actual log file.")
+		return
 	}
-	_, err = w.Write([]byte("end of logs\n"))
+	writeLogToStream(file, w)
+
+	file, err = os.OpenFile(config.Path()+"cziti.log", os.O_RDONLY, 0644)
+	if err != nil {
+		log.Errorf("could not open log file at %s", config.LogFile())
+		_, _ = w.WriteString("an unexpected error occurred while retrieving logs. look at the actual log file.")
+		return
+	}
+	writeLogToStream(file, w)
+
+	err = conn.Close()
+	if err != nil {
+		log.Error("error closing connection", err)
+	}
+}
+
+func writeLogToStream(file *os.File, writer *bufio.Writer) {
+	r := bufio.NewReader(file)
+	wrote, err := io.Copy(writer, r)
+	if err != nil {
+		log.Errorf("problem responding with log data for: %v", file)
+	}
+	_, err = writer.Write([]byte("end of logs\n"))
 	if err != nil {
 		log.Errorf("unexpected error writing log response: %v", err)
 	}
 
-	err = w.Flush()
+	err = writer.Flush()
 	if err != nil {
 		log.Errorf("unexpected error flushing log response: %v", err)
 	}
@@ -450,11 +475,6 @@ func serveLogs(conn net.Conn) {
 	err = file.Close()
 	if err != nil {
 		log.Error("error closing log file", err)
-	}
-
-	err = conn.Close()
-	if err != nil {
-		log.Error("error closing connection", err)
 	}
 }
 

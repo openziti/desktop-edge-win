@@ -114,7 +114,6 @@ namespace ZitiUpdateService {
 				xmlDoc.LoadXml(result);
 				XmlNode node = xmlDoc.SelectSingleNode("metadata/versioning/" + _versionType);
 				string version = node.InnerText;
-				Log("Version Checked: " + version + " on " + _version + " from " + _versionType);
 				if (version != _version)
 				{
 					Log("Version Checked: " + version + " on " + _version + " from " + _versionType);
@@ -237,7 +236,7 @@ namespace ZitiUpdateService {
 
 		private void StartZiti() {
 			controller = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == "ziti");
-			if (controller.Status != ServiceControllerStatus.Running) {
+			if (controller != null && controller.Status != ServiceControllerStatus.Running) {
 				try {
 					Log("Starting Service");
 					controller.Start();
