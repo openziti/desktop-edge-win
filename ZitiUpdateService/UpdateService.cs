@@ -29,6 +29,8 @@ namespace ZitiUpdateService {
 		private string _serviceUrl = "https://netfoundry.jfrog.io/netfoundry/ziti-maven-snapshot/ziti-tunnel-win/amd64/windows/ziti-tunnel-win/${version}/ziti-tunnel-win-${version}.zip";
 		private System.Timers.Timer _checkTimer = new System.Timers.Timer();
 		private System.Timers.Timer _updateTimer = new System.Timers.Timer();
+		private bool inUpdateCheck = false;
+		private bool inServiceCheck = false;
 		private string _rootDirectory = "";
 		private string _logDirectory = "";
 		private bool _isJustStopped = true;
@@ -95,39 +97,64 @@ namespace ZitiUpdateService {
 			_updateTimer.Enabled = true;
 			_updateTimer.Start();
 			Log("Version Checker is running");
+			CheckUpdate(null, null); //check immediately
 		}
 
 		private void CheckUpdate(object sender, ElapsedEventArgs e) {
-			var request = WebRequest.Create(_versionUrl) as HttpWebRequest;
-			var response = request.GetResponse();
-			Stream receiveStream = response.GetResponseStream();
-			StreamReader readStream = new StreamReader(receiveStream, Encoding.UTF8);
-			var result = readStream.ReadToEnd();
-			XmlDocument xmlDoc = new XmlDocument();
-			xmlDoc.LoadXml(result);
-			XmlNode node = xmlDoc.SelectSingleNode("metadata/versioning/"+ _versionType);
-			string version = node.InnerText;
-			Log("Version Checked: " + version+" on "+_version+" from "+_versionType);
-			if (version != _version) {
-				Log("Version Checked: " + version + " on " + _version + " from " + _versionType);
-				UpdateServiceFiles(version);
-			}
+			if (inUpdateCheck) return;
+			inUpdateCheck = true; //simple semaphone
+			try
+			{
+				var request = WebRequest.Create(_versionUrl) as HttpWebRequest;
+				var response = request.GetResponse();
+				Stream receiveStream = response.GetResponseStream();
+				StreamReader readStream = new StreamReader(receiveStream, Encoding.UTF8);
+				var result = readStream.ReadToEnd();
+				XmlDocument xmlDoc = new XmlDocument();
+				xmlDoc.LoadXml(result);
+				XmlNode node = xmlDoc.SelectSingleNode("metadata/versioning/" + _versionType);
+				string version = node.InnerText;
+				if (version != _version)
+				{
+					Log("Version Checked: " + version + " on " + _version + " from " + _versionType);
+					UpdateServiceFiles(version);
+				}
+			} catch
+            {
+
+            }
+			inUpdateCheck = false;
 		}
 
 		private void CheckService(object sender, ElapsedEventArgs e) {
-			controller = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == "ziti");
-			if (controller.Status == ServiceControllerStatus.Stopped|| controller.Status == ServiceControllerStatus.StopPending) {
-				if (_isJustStopped) {
-					_isJustStopped = false;
-					Log("Ziti Service has been stopped, update Network");
-					//should not be necessary in v0.0.10+ RunScript();
-					StartZiti();
+			if (inServiceCheck || inUpdateCheck) return;
+			inServiceCheck = true; //simple semaphone
+			try
+			{
+				controller = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == "ziti");
+				if (controller == null) return; //means it's not installed or the user doesn't have privs
+
+				if (controller.Status == ServiceControllerStatus.Stopped || controller.Status == ServiceControllerStatus.StopPending)
+				{
+					if (_isJustStopped)
+					{
+						_isJustStopped = false;
+						Log("Ziti Service has been stopped, update Network");
+						//should not be necessary in v0.0.10+ RunScript();
+						StartZiti();
+					}
 				}
-			} else {
-				if (controller.Status==ServiceControllerStatus.Running) {
-					_isJustStopped = true;
+				else
+				{
+					if (controller.Status == ServiceControllerStatus.Running)
+					{
+						_isJustStopped = true;
+					}
 				}
+			} catch {
+
 			}
+			inServiceCheck = false;
 		}
 
 		private void UpdateServiceFiles(string currentVersion) {
@@ -142,7 +169,7 @@ namespace ZitiUpdateService {
 			string version = node.InnerText;
 			Log("Got Version: " + version+" from "+_versionType);
 
-			if (version.Trim() == currentVersion.Trim())
+			if (_version.Trim() == currentVersion.Trim())
 			{
 				_version = currentVersion;
 				Log("Version local is the same as the version remote: " + version);
@@ -209,7 +236,7 @@ namespace ZitiUpdateService {
 
 		private void StartZiti() {
 			controller = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == "ziti");
-			if (controller.Status != ServiceControllerStatus.Running) {
+			if (controller != null && controller.Status != ServiceControllerStatus.Running) {
 				try {
 					Log("Starting Service");
 					controller.Start();
@@ -223,10 +250,10 @@ namespace ZitiUpdateService {
 
 		private void StopZiti() {
 			controller = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == "ziti");
-			if (controller.Status != ServiceControllerStatus.Stopped) {
+			if (controller != null && controller.Status != ServiceControllerStatus.Stopped) {
 				try {
 					controller.Stop();
-					controller.WaitForStatus(ServiceControllerStatus.Stopped);
+					controller.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
 				} catch (Exception e) {
 					Log("Cannot Stop Service - " + e.ToString());
 				}
