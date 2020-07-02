@@ -130,10 +130,10 @@ namespace ZitiTunneler
 			Process.Start(new ProcessStartInfo("https://netfoundry.io/terms") { UseShellExecute = true });
 		}
 		private void ShowFeedback(object sender, MouseButtonEventArgs e) {
-			Process.Start(new ProcessStartInfo("mailto:support@netfoundry.io") { UseShellExecute = true });
+			Process.Start(new ProcessStartInfo("mailto:ziti-support@netfoundry.io") { UseShellExecute = true });
 		}
 		private void ShowSupport(object sender, MouseButtonEventArgs e) {
-			Process.Start(new ProcessStartInfo("https://support.netfoundry.io") { UseShellExecute = true });
+			Process.Start(new ProcessStartInfo("https://openziti.discourse.group/") { UseShellExecute = true });
 		}
 
 		private void DetachWindow(object sender, MouseButtonEventArgs e) {
