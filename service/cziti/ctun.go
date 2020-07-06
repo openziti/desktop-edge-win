@@ -173,7 +173,7 @@ func (t *tunnel) runReadLoop() {
 	if err != nil {
 		panic(err)
 	}
-	log.Debug("starting tun read loop mtu=%d", mtu)
+	log.Debugf("starting tun read loop mtu=%d", mtu)
 	defer log.Debug("tun read loop is done")
 	mtuBuf := make([]byte, mtu)
 	for {
