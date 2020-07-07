@@ -223,6 +223,7 @@ func LoadZiti(cfg string) *CZitiCtx {
 	ctx.options.init_cb = C.ziti_init_cb(C.initCB)
 	ctx.options.service_cb = C.ziti_service_cb(C.serviceCB)
 	ctx.options.refresh_interval = C.long(15)
+	ctx.options.metrics_type = C.INSTANT
 	ctx.options.config_types = C.all_configs
 
 	ch := make(chan *CZitiCtx)

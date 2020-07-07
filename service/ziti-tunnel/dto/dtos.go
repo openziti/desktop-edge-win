@@ -18,11 +18,11 @@
 package dto
 
 import (
-	idcfg "github.com/netfoundry/ziti-sdk-golang/ziti/config"
-	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
-	"github.com/netfoundry/ziti-tunnel-win/service/cziti"
+	idcfg "github.com/openziti/sdk-golang/ziti/config"
+	"github.com/openziti/sdk-golang/ziti/enroll"
+	"github.com/openziti/ziti-tunnel-win/service/cziti"
 	"log"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/config"
+	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/config"
 )
 
 type AddIdentity struct {
