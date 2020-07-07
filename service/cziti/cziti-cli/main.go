@@ -25,7 +25,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"github.com/netfoundry/ziti-tunnel-win/service/cziti"
+	"github.com/openziti/ziti-tunnel-win/service/cziti"
 )
 
 func main() {
