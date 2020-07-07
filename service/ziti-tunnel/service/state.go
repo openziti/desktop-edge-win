@@ -138,7 +138,7 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 	luid := winipcfg.LUID(nativeTunDevice.LUID())
 
 	if strings.TrimSpace(ipv4) == "" {
-		log.Infof("ip not provided using default: %d", ipv4)
+		log.Infof("ip not provided using default: %v", ipv4)
 		ipv4 = Ipv4ip
 	}
 	if ipv4mask < 8 || ipv4mask > 24 {
