@@ -18,7 +18,7 @@
 package service
 
 import (
-	"github.com/netfoundry/ziti-foundation/util/stringz"
+	"github.com/openziti/foundation/util/stringz"
 	"os/user"
 )
 
