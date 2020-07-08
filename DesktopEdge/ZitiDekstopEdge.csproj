@@ -28,7 +28,7 @@
     <MapFileExtensions>true</MapFileExtensions>
     <SupportUrl>https://support.netfoundry.io</SupportUrl>
     <TargetCulture>en-US</TargetCulture>
-    <ProductName>Ziti Tunneler</ProductName>
+    <ProductName>Ziti Desktop Edge</ProductName>
     <PublisherName>NetFoundry</PublisherName>
     <SuiteName>Ziti</SuiteName>
     <AutorunEnabled>true</AutorunEnabled>
@@ -235,7 +235,7 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Include="app.manifest" />
-    <None Include="ZitiTunneler_TemporaryKey.pfx" />
+    <None Include="ZitiDesktopEdge_TemporaryKey.pfx" />
     <Resource Include="Assets\Fonts\open_sans.ttf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Resource>
