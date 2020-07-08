@@ -23,15 +23,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Microsoft/go-winio"
-	"github.com/netfoundry/ziti-foundation/identity/identity"
-	idcfg "github.com/netfoundry/ziti-sdk-golang/ziti/config"
-	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
-	"github.com/netfoundry/ziti-tunnel-win/service/cziti"
-	"github.com/netfoundry/ziti-tunnel-win/service/cziti/windns"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/config"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/dto"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/globals"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/idutil"
+	"github.com/openziti/foundation/identity/identity"
+	idcfg "github.com/openziti/sdk-golang/ziti/config"
+	"github.com/openziti/sdk-golang/ziti/enroll"
+	"github.com/openziti/ziti-tunnel-win/service/cziti"
+	"github.com/openziti/ziti-tunnel-win/service/cziti/windns"
+	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/config"
+	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/dto"
+	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/globals"
+	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/idutil"
 	"golang.org/x/sys/windows/svc"
 	"golang.zx2c4.com/wireguard/tun"
 	"io"
@@ -249,7 +249,7 @@ func initialize(ipv4 string, ipv4mask int) error {
 
 func setTunInfo(s *dto.TunnelStatus, ipv4 string, ipv4mask int) {
 	if strings.TrimSpace(ipv4) == "" {
-		log.Infof("ip not provided using default: %d", ipv4)
+		log.Infof("ip not provided using default: %v", ipv4)
 		ipv4 = Ipv4ip
 	}
 	if ipv4mask < 8 || ipv4mask > 24 {

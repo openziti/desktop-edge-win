@@ -64,6 +64,8 @@ namespace ZitiTunneler {
 
 			App.Current.MainWindow.WindowState = WindowState.Normal;
 			App.Current.MainWindow.Closing += MainWindow_Closing;
+			App.Current.MainWindow.Deactivated += MainWindow_Deactivated;
+			App.Current.MainWindow.Activated += MainWindow_Activated;
 			notifyIcon = new System.Windows.Forms.NotifyIcon();
 			notifyIcon.Visible = true;
 			notifyIcon.Click += TargetNotifyIcon_Click;
@@ -74,6 +76,14 @@ namespace ZitiTunneler {
 			MainMenu.ServiceVersion.Content = _serviceVersion;
 			SetNotifyIcon("white");
 			InitializeComponent();
+		}
+
+		private void MainWindow_Activated(object sender, EventArgs e) {
+			this.Visibility = Visibility.Visible;
+		}
+
+		private void MainWindow_Deactivated(object sender, EventArgs e) {
+			this.Visibility = Visibility.Collapsed;
 		}
 
 		private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
@@ -343,8 +353,10 @@ namespace ZitiTunneler {
 				IdList.Height += 60;
 			}
 			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-			this.Left = desktopWorkingArea.Right-this.Width-_right;
-			this.Top = desktopWorkingArea.Bottom-this.Height-_bottom;
+			if (this._isAttached) {
+				this.Left = desktopWorkingArea.Right - this.Width - _right;
+				this.Top = desktopWorkingArea.Bottom - this.Height - _bottom;
+			}
 		}
 
 		private void OpenIdentity(ZitiIdentity identity) {
