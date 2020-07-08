@@ -9,7 +9,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZitiDekstopEdge", "ZitiTunneler\ZitiDekstopEdge.csproj", "{FA4291EA-A97E-4854-959F-91EE7B330B37}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZitiDekstopEdge", "DesktopEdge\ZitiDekstopEdge.csproj", "{FA4291EA-A97E-4854-959F-91EE7B330B37}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZitiUpdateService", "ZitiUpdateService\ZitiUpdateService.csproj", "{9AB81609-F5DD-40A6-87B5-F3279D48514D}"
 EndProject
