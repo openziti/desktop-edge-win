@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ZitiTunneler.Models
+namespace ZitiDesktopEdge.Models
 {
     static class UIModel
     {

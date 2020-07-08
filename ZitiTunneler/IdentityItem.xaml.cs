@@ -12,9 +12,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using ZitiTunneler.Models;
+using ZitiDesktopEdge.Models;
 
-namespace ZitiTunneler {
+namespace ZitiDesktopEdge {
 	/// <summary>
 	/// User Control to list Identities and give status
 	/// </summary>

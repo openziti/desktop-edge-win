@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ZitiTunneler.Models {
+namespace ZitiDesktopEdge.Models {
     public class ZitiService {
 		public string Name { get; set; }
 		public string Url { get; set; }

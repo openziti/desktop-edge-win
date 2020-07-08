@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace ZitiTunneler.Models {
+namespace ZitiDesktopEdge.Models {
 	public class UILog {
 
 		private static string _logDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "NetFoundry" ,"Logs", "Log.log");

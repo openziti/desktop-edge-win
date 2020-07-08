@@ -14,7 +14,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Media.Animation;
 
-namespace ZitiTunneler {
+namespace ZitiDesktopEdge {
     /// <summary>
     /// Interaction logic for Toggler.xaml
     /// </summary>

@@ -5,9 +5,9 @@ using System.Diagnostics;
 using System;
 using System.Threading;
 using System.Management.Automation;
-using ZitiTunneler.Models;
+using ZitiDesktopEdge.Models;
 
-namespace ZitiTunneler
+namespace ZitiDesktopEdge
 {	
     /// <summary>
     /// Interaction logic for MainMenu.xaml

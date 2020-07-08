@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
 using System.IO;
-using ZitiTunneler.Models;
+using ZitiDesktopEdge.Models;
 using System.IO.Compression;
 
-using ZitiTunneler.ServiceClient;
+using ZitiDesktopEdge.ServiceClient;
 using System.ServiceProcess;
 using System.Linq;
 using System.Runtime.Remoting.Messaging;
@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Text;
 
-namespace ZitiTunneler {
+namespace ZitiDesktopEdge {
 
 	/// <summary>
 	/// Interaction logic for MainWindow.xaml

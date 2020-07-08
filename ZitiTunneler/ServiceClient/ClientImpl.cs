@@ -22,7 +22,7 @@ using System.Windows.Documents;
 /// one or more messages returned.
 /// 
 /// </summary>
-namespace ZitiTunneler.ServiceClient
+namespace ZitiDesktopEdge.ServiceClient
 {
     internal class Client
     {

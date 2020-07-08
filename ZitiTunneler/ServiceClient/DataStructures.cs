@@ -5,7 +5,7 @@ using System.Collections.Generic;
 /// These classes represent the data structures that are passed back and forth
 /// between the service and the client.
 /// </summary>
-namespace ZitiTunneler.ServiceClient
+namespace ZitiDesktopEdge.ServiceClient
 {
     class SvcResponse
     {
