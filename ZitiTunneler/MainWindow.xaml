@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         ShowInTaskbar="False"
         x:Name="MainUI"
-        Title="ZitiTunneler" Height="520" 
+        Title="Ziti Desktop Edge" Height="520" 
         Width="350" ResizeMode="NoResize" 
         ClipToBounds="False"
         Icon="Assets/Images/icon.png" AllowsTransparency="True" 
