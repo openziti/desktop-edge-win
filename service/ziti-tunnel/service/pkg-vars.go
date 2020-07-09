@@ -21,8 +21,8 @@ import (
 	"golang.org/x/sys/windows/svc"
 	"sync"
 	"time"
-	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/dto"
-	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/globals"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/globals"
 )
 
 var pipeBase = `\\.\pipe\NetFoundry\tunneler\`

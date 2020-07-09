@@ -20,9 +20,9 @@ package dto
 import (
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"github.com/openziti/sdk-golang/ziti/enroll"
-	"github.com/openziti/ziti-tunnel-win/service/cziti"
+	"github.com/openziti/desktop-edge-win/service/cziti"
 	"log"
-	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/config"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 )
 
 type AddIdentity struct {

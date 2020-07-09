@@ -19,7 +19,7 @@ package service
 
 import (
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
-	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/dto"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 )
 
 func dbg() {

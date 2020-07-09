@@ -1,4 +1,4 @@
-module github.com/openziti/ziti-tunnel-win/service
+module github.com/openziti/desktop-edge-win/service
 
 go 1.14
 
