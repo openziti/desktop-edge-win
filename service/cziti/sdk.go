@@ -26,11 +26,8 @@ package cziti
 extern void initCB(ziti_context nf, int status, void *ctx);
 extern void serviceCB(ziti_context nf, ziti_service*, int status, void *ctx);
 extern void cron_callback(uv_async_t *handle);
+extern void free_async(uv_handle_t* timer);
 
-static void go_uv_async_send(uv_loop_t *loop, uv_async_t *async) {
-	uv_async_init(loop, async, &cron_callback);
-	uv_async_send(async);
- }
 */
 import "C"
 import (
@@ -82,7 +79,6 @@ func SetLogLevel(level int) {
 }
 
 func Start() {
-
 	v := C.ziti_get_version()
 	log.Infof("starting ziti-sdk-c %s(%s)[%s]", C.GoString(v.version), C.GoString(v.revision), C.GoString(v.build_date))
 
@@ -265,6 +261,7 @@ func GetTransferRates(ctx *CZitiCtx) (int64, int64, bool) { //extern void NF_get
 
 var logFile *os.File //the current, active log file
 var logLevel int //set in InitializeCLogger
+var lastRollover = time.Now()
 
 func InitializeCLogger(level int) {
 	logLevel = level
@@ -276,16 +273,20 @@ func InitializeCLogger(level int) {
 }
 
 func initiateRollLog() {
-	var async C.uv_async_t
-	C.go_uv_async_send(_impl.libuvCtx.l, &async)
+	lastRollover = time.Now()
+	async := (*C.uv_async_t)(C.malloc(C.sizeof_uv_async_t))
+	C.uv_async_init(_impl.libuvCtx.l, async, C.uv_async_cb(C.cron_callback))
+	C.uv_async_send((*C.uv_async_t)(unsafe.Pointer(async)))
+}
+
+//export free_async
+func free_async(handle *C.uv_handle_t){
+	C.free(unsafe.Pointer(handle))
 }
 
 //export cron_callback
-func cron_callback(handle_do_not_use *C.uv_async_t) {
-	// don't use handle_do_not_use - it's declared on the stack and
-	// goes out of scope immediately. it's not needed as this function
-	// exists entirely to allow the go runtime to rotate the c log file
-	// while on the uv loop
+func cron_callback(async *C.uv_async_t) {
+	// roll the log while on the uv loop
 	if logFile == nil {
 		log.Warn("log file is nil. this is unexpected. log rolling aborted")
 	}
@@ -301,6 +302,8 @@ func cron_callback(handle_do_not_use *C.uv_async_t) {
 
 	// find any logs older than 7 days and remove them
 	removeFilesOlderThanRetentionPolicy()
+
+	C.uv_close((*C.uv_handle_t)(unsafe.Pointer(async)), C.uv_close_cb(C.free_async))
 }
 
 func initializeLogForToday() {
@@ -318,13 +321,13 @@ func removeFilesOlderThanRetentionPolicy() {
 	if err != nil {
 		return
 	}
-
+	now := time.Now()
 	for _, file := range logFiles {
 		if !strings.HasPrefix(file.Name(), "cziti-") {
 			continue
 		}
 		if file.Mode().IsRegular() {
-			if isOlderThanRetentionPolicy(file.ModTime()) {
+			if isOlderThanRetentionPolicy(now, file.ModTime()) {
 				log.Infof("removing file %s because it is older than the retention policy.", file.Name())
 				os.Remove(config.Path() + file.Name())
 			}
@@ -333,6 +336,7 @@ func removeFilesOlderThanRetentionPolicy() {
 	return
 }
 
-func isOlderThanRetentionPolicy(t time.Time) bool {
-	return time.Now().Sub(t) > 7*24*time.Hour // one week
+func isOlderThanRetentionPolicy(asOf time.Time, t time.Time) bool {
+	oneWeek := 7 * 24 * time.Hour
+	return asOf.Sub(t) > oneWeek
 }
