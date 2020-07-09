@@ -21,10 +21,10 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/netfoundry/ziti-tunnel-win/service/cziti"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/config"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/dto"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/idutil"
+	"github.com/openziti/ziti-tunnel-win/service/cziti"
+	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/config"
+	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/dto"
+	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/idutil"
 	"golang.zx2c4.com/wireguard/tun"
 	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
 	"net"
@@ -139,7 +139,7 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 	luid := winipcfg.LUID(nativeTunDevice.LUID())
 
 	if strings.TrimSpace(ipv4) == "" {
-		log.Infof("ip not provided using default: %d", ipv4)
+		log.Infof("ip not provided using default: %v", ipv4)
 		ipv4 = Ipv4ip
 	}
 	if ipv4mask < 8 || ipv4mask > 24 {

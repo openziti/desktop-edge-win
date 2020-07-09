@@ -23,15 +23,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Microsoft/go-winio"
-	"github.com/netfoundry/ziti-foundation/identity/identity"
-	idcfg "github.com/netfoundry/ziti-sdk-golang/ziti/config"
-	"github.com/netfoundry/ziti-sdk-golang/ziti/enroll"
-	"github.com/netfoundry/ziti-tunnel-win/service/cziti"
-	"github.com/netfoundry/ziti-tunnel-win/service/cziti/windns"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/config"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/dto"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/globals"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/idutil"
+	"github.com/openziti/foundation/identity/identity"
+	idcfg "github.com/openziti/sdk-golang/ziti/config"
+	"github.com/openziti/sdk-golang/ziti/enroll"
+	"github.com/openziti/ziti-tunnel-win/service/cziti"
+	"github.com/openziti/ziti-tunnel-win/service/cziti/windns"
+	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/config"
+	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/dto"
+	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/globals"
+	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/idutil"
 	"golang.org/x/sys/windows/svc"
 	"golang.zx2c4.com/wireguard/tun"
 	"io"
@@ -72,17 +72,10 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	interrupt = make(chan struct{}, 8)
 
 	// wire in a log file for csdk troubleshooting
-	logFile, err := os.OpenFile(config.Path()+"cziti.log", os.O_WRONLY|os.O_TRUNC|os.O_APPEND|os.O_CREATE, 0644)
-	if err != nil {
-		log.Warnf("could not open cziti.log for writing. no debug information will be captured.")
-	} else {
-		cziti.SetLog(logFile)
-		cziti.SetLogLevel(czitiLevel)
-		defer logFile.Close()
-	}
+	cziti.InitializeCLogger(czitiLevel)
 
 	// initialize the network interface
-	err = initialize(rts.state.TunIpv4, rts.state.TunIpv4Mask)
+	err := initialize(rts.state.TunIpv4, rts.state.TunIpv4Mask)
 
 	if err != nil {
 		log.Errorf("unexpected err: %v", err)
@@ -141,6 +134,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	ops <- "done"
 	return nil
 }
+
 func waitForStopRequest(ops <-chan string) {
 	sig := make(chan os.Signal)
 	signal.Notify(sig)
@@ -248,7 +242,7 @@ func initialize(ipv4 string, ipv4mask int) error {
 
 func setTunInfo(s *dto.TunnelStatus, ipv4 string, ipv4mask int) {
 	if strings.TrimSpace(ipv4) == "" {
-		log.Infof("ip not provided using default: %d", ipv4)
+		log.Infof("ip not provided using default: %v", ipv4)
 		ipv4 = Ipv4ip
 	}
 	if ipv4mask < 8 || ipv4mask > 24 {
@@ -430,18 +424,42 @@ func serveLogs(conn net.Conn) {
 		_, _ = w.WriteString("an unexpected error occurred while retrieving logs. look at the actual log file.")
 		return
 	}
+	writeLogToStream(file, w)
 
-	r := bufio.NewReader(file)
-	wrote, err := io.Copy(w, r)
+	file, err = os.OpenFile(config.LogFile(), os.O_RDONLY, 0644)
 	if err != nil {
-		log.Errorf("problem responding with log data")
+		log.Errorf("could not open log file at %s", config.LogFile())
+		_, _ = w.WriteString("an unexpected error occurred while retrieving logs. look at the actual log file.")
+		return
 	}
-	_, err = w.Write([]byte("end of logs\n"))
+	writeLogToStream(file, w)
+
+	file, err = os.OpenFile(config.Path()+"cziti.log", os.O_RDONLY, 0644)
+	if err != nil {
+		log.Errorf("could not open log file at %s", config.LogFile())
+		_, _ = w.WriteString("an unexpected error occurred while retrieving logs. look at the actual log file.")
+		return
+	}
+	writeLogToStream(file, w)
+
+	err = conn.Close()
+	if err != nil {
+		log.Error("error closing connection", err)
+	}
+}
+
+func writeLogToStream(file *os.File, writer *bufio.Writer) {
+	r := bufio.NewReader(file)
+	wrote, err := io.Copy(writer, r)
+	if err != nil {
+		log.Errorf("problem responding with log data for: %v", file)
+	}
+	_, err = writer.Write([]byte("end of logs\n"))
 	if err != nil {
 		log.Errorf("unexpected error writing log response: %v", err)
 	}
 
-	err = w.Flush()
+	err = writer.Flush()
 	if err != nil {
 		log.Errorf("unexpected error flushing log response: %v", err)
 	}
@@ -450,11 +468,6 @@ func serveLogs(conn net.Conn) {
 	err = file.Close()
 	if err != nil {
 		log.Error("error closing log file", err)
-	}
-
-	err = conn.Close()
-	if err != nil {
-		log.Error("error closing connection", err)
 	}
 }
 

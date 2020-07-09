@@ -22,7 +22,7 @@ import (
 	"github.com/miekg/dns"
 	"net"
 	"time"
-	"github.com/netfoundry/ziti-tunnel-win/service/cziti/windns"
+	"github.com/openziti/ziti-tunnel-win/service/cziti/windns"
 )
 
 func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn) {
@@ -199,7 +199,12 @@ func runDNSproxy(dnsServers []string) {
 			for _, proxy := range dnsUpstreams {
 				// log.Debug("sending proxy req", dns.Type(pr.req.Question[0].Qtype), pr.req.Question[0].Name, proxy.RemoteAddr())
 				if _, err := proxy.Write(b); err != nil {
-					log.Debug("failed to proxy DNS to ", proxy)
+					//TODO: if this happens -does this mean the next dns server is not available?
+					log.Debugf("failed to proxy DNS to %s %s %v. %v",
+						dns.Type(pr.req.Question[0].Qtype),
+						pr.req.Question[0].Name,
+						proxy.RemoteAddr(),
+						err)
 				}
 			}
 
@@ -222,7 +227,7 @@ func runDNSproxy(dnsServers []string) {
 			now := time.Now()
 			for k, r := range reqs {
 				if now.After(r.exp) {
-					log.Debug("req expired", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
+					log.Debugf("req expired %s %s", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
 					delete(reqs, k)
 				}
 			}

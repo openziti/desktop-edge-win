@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/globals"
+	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/globals"
 )
 
 

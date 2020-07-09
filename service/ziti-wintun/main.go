@@ -28,8 +28,8 @@ import (
 	user2 "os/user"
 	"path/filepath"
 	"syscall"
-	"github.com/netfoundry/ziti-tunnel-win/service/cziti"
-	"github.com/netfoundry/ziti-tunnel-win/service/cziti/windns"
+	"github.com/openziti/ziti-tunnel-win/service/cziti"
+	"github.com/openziti/ziti-tunnel-win/service/cziti/windns"
 )
 
 const bufferSize = 64 * 1024

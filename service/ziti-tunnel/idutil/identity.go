@@ -19,9 +19,9 @@ package idutil
 
 import (
 	"github.com/michaelquigley/pfxlog"
-	idcfg "github.com/netfoundry/ziti-sdk-golang/ziti/config"
-	"github.com/netfoundry/ziti-tunnel-win/service/cziti"
-	"github.com/netfoundry/ziti-tunnel-win/service/ziti-tunnel/dto"
+	idcfg "github.com/openziti/sdk-golang/ziti/config"
+	"github.com/openziti/ziti-tunnel-win/service/cziti"
+	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/dto"
 )
 
 var log = pfxlog.Logger()

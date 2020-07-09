@@ -1,8 +1,8 @@
-# Ziti Tunnel for Windows
+# Ziti Desktop Edge for Windows
 
 (the uwp project which used to be here has moved to [uwp-vpnplugin-archive](.uwp-vpnplugin-archive) and is likely abandoned)
 
-The Ziti Tunnel for Windows is an application that is necessary to integrate applications which cannot embed a Ziti SDK
+The Ziti Desktop Edge for Windows is an application that is necessary to integrate applications which cannot embed a Ziti SDK
 directly into the application. This is colloquially known as a "brown field" Ziti-enabled application because the app
 itself has no understanding that it has been Ziti-enabled.
 
