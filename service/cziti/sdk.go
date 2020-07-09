@@ -25,6 +25,8 @@ package cziti
 #include "sdk.h"
 extern void initCB(ziti_context nf, int status, void *ctx);
 extern void serviceCB(ziti_context nf, ziti_service*, int status, void *ctx);
+extern void cron_callback(uv_async_t *handle);
+extern void free_async(uv_handle_t* timer);
 
 */
 import "C"
@@ -32,8 +34,13 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/michaelquigley/pfxlog"
+	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/config"
+	"github.com/robfig/cron/v3"
+	"io/ioutil"
 	"os"
+	"strings"
 	"sync"
+	"time"
 	"unsafe"
 )
 
@@ -44,6 +51,7 @@ const (
 
 var ServiceChanges = make(chan ServiceChange, 256)
 var log = pfxlog.Logger()
+var c = cron.New()
 
 type sdk struct {
 	libuvCtx *C.libuv_ctx
@@ -71,7 +79,6 @@ func SetLogLevel(level int) {
 }
 
 func Start() {
-
 	v := C.ziti_get_version()
 	log.Infof("starting ziti-sdk-c %s(%s)[%s]", C.GoString(v.version), C.GoString(v.revision), C.GoString(v.build_date))
 
@@ -250,4 +257,86 @@ func GetTransferRates(ctx *CZitiCtx) (int64, int64, bool) { //extern void NF_get
 	C.ziti_get_transfer_rates(ctx.nf, &up, &down)
 
 	return int64(up), int64(down), true
+}
+
+var logFile *os.File //the current, active log file
+var logLevel int //set in InitializeCLogger
+var lastRollover = time.Now()
+
+func InitializeCLogger(level int) {
+	logLevel = level
+	SetLogLevel(logLevel)
+	initializeLogForToday()
+
+	c.AddFunc("@midnight", initiateRollLog)
+	c.Start()
+}
+
+func initiateRollLog() {
+	lastRollover = time.Now()
+	async := (*C.uv_async_t)(C.malloc(C.sizeof_uv_async_t))
+	C.uv_async_init(_impl.libuvCtx.l, async, C.uv_async_cb(C.cron_callback))
+	C.uv_async_send((*C.uv_async_t)(unsafe.Pointer(async)))
+}
+
+//export free_async
+func free_async(handle *C.uv_handle_t){
+	C.free(unsafe.Pointer(handle))
+}
+
+//export cron_callback
+func cron_callback(async *C.uv_async_t) {
+	// roll the log while on the uv loop
+	if logFile == nil {
+		log.Warn("log file is nil. this is unexpected. log rolling aborted")
+	}
+
+	_ = logFile.Close() //close the log file
+
+	//rename the log file to 'now'
+	nowFormatted := time.Now().Format("2006-01-02-030405")
+	_ = os.Rename(config.Path()+"cziti.log", config.Path()+"cziti-" + nowFormatted + ".log")
+
+	// set the log file in the c sdk
+	initializeLogForToday()
+
+	// find any logs older than 7 days and remove them
+	removeFilesOlderThanRetentionPolicy()
+
+	C.uv_close((*C.uv_handle_t)(unsafe.Pointer(async)), C.uv_close_cb(C.free_async))
+}
+
+func initializeLogForToday() {
+	var err error
+	logFile, err = os.OpenFile(config.Path()+"cziti.log", os.O_WRONLY|os.O_TRUNC|os.O_APPEND|os.O_CREATE, 0644)
+	if err != nil {
+		log.Warnf("could not open cziti.log for writing. no debug information will be captured.")
+	} else {
+		SetLog(logFile)
+	}
+}
+
+func removeFilesOlderThanRetentionPolicy() {
+	logFiles, err := ioutil.ReadDir(config.Path())
+	if err != nil {
+		return
+	}
+	now := time.Now()
+	for _, file := range logFiles {
+		if !strings.HasPrefix(file.Name(), "cziti-") {
+			continue
+		}
+		if file.Mode().IsRegular() {
+			if isOlderThanRetentionPolicy(now, file.ModTime()) {
+				log.Infof("removing file %s because it is older than the retention policy.", file.Name())
+				os.Remove(config.Path() + file.Name())
+			}
+		}
+	}
+	return
+}
+
+func isOlderThanRetentionPolicy(asOf time.Time, t time.Time) bool {
+	oneWeek := 7 * 24 * time.Hour
+	return asOf.Sub(t) > oneWeek
 }
