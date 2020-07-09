@@ -26,12 +26,12 @@ import (
 	"github.com/openziti/foundation/identity/identity"
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"github.com/openziti/sdk-golang/ziti/enroll"
-	"github.com/openziti/ziti-tunnel-win/service/cziti"
-	"github.com/openziti/ziti-tunnel-win/service/cziti/windns"
-	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/config"
-	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/dto"
-	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/globals"
-	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/idutil"
+	"github.com/openziti/desktop-edge-win/service/cziti"
+	"github.com/openziti/desktop-edge-win/service/cziti/windns"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/globals"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/idutil"
 	"golang.org/x/sys/windows/svc"
 	"golang.zx2c4.com/wireguard/tun"
 	"io"
@@ -707,7 +707,7 @@ func connectIdentity(id *dto.Identity) {
 	} else {
 		log.Debugf("id [%s] is already connected - not reconnecting", id.Name)
 		for _, s := range id.Services {
-			cziti.AddIntercept(s.Id, s.Name, s.HostName, s.Port, id.NFContext)
+			cziti.AddIntercept(s.Id, s.Name, s.HostName, s.Port, id.ZitiContext)
 		}
 		id.Connected = true
 	}
@@ -738,7 +738,7 @@ func disconnectIdentity(id *dto.Identity) error {
 		}
 		for _, s := range id.Services {
 			cziti.RemoveIntercept(s.Id)
-			cziti.DNS.DeregisterService(id.NFContext, s.Name)
+			cziti.DNS.DeregisterService(id.ZitiContext, s.Name)
 		}
 		id.Connected = false
 	} else {
@@ -811,7 +811,7 @@ func acceptServices() {
 			matched := false
 			//find the id using the context
 			for _, id := range activeIds {
-				if id.NFContext == c.NFContext {
+				if id.ZitiContext == c.ZitiContext {
 					matched = true
 					switch c.Operation {
 					case cziti.ADDED:

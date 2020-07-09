@@ -24,10 +24,10 @@ import (
 	"golang.org/x/sys/windows/svc/eventlog"
 	"os"
 	"strings"
-	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/globals"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/globals"
 
 	"golang.org/x/sys/windows/svc"
-	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/service"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/service"
 )
 
 var log = globals.Logger()

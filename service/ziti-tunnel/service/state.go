@@ -21,10 +21,10 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/openziti/ziti-tunnel-win/service/cziti"
-	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/config"
-	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/dto"
-	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/idutil"
+	"github.com/openziti/desktop-edge-win/service/cziti"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/idutil"
 	"golang.zx2c4.com/wireguard/tun"
 	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
 	"net"
@@ -42,7 +42,8 @@ type RuntimeState struct {
 
 func (t *RuntimeState) RemoveByFingerprint(fingerprint string) {
 	log.Debugf("removing fingerprint: %s", fingerprint)
-	if index, _ := t.Find(fingerprint); index < len(t.state.Identities) {
+	if index, removed := t.Find(fingerprint); index < len(t.state.Identities) {
+		removed.ZitiContext.Shutdown()
 		t.state.Identities = append(t.state.Identities[:index], t.state.Identities[index+1:]...)
 	}
 }
@@ -194,7 +195,7 @@ func (t *RuntimeState) LoadIdentity(id *dto.Identity) {
 		}
 		log.Infof("loading identity %s with fingerprint %s", id.Name, id.FingerPrint)
 		ctx := cziti.LoadZiti(id.Path())
-		id.NFContext = ctx
+		id.ZitiContext = ctx
 
 		id.Connected = true
 		id.Active = true

@@ -173,7 +173,7 @@ func (t *tunnel) runReadLoop() {
 	if err != nil {
 		panic(err)
 	}
-	log.Debug("starting tun read loop mtu=%d", mtu)
+	log.Debugf("starting tun read loop mtu=%d", mtu)
 	defer log.Debug("tun read loop is done")
 	mtuBuf := make([]byte, mtu)
 	for {
@@ -262,7 +262,7 @@ func RemoveIntercept(svcvId string) {
 func AddIntercept(svcId string, service string, host string, port uint16, ctx *CZitiCtx) {
 	for _, t := range devMap {
 		log.Debug("adding intercept for: %s, %s, %d", service, host, port)
-		res := C.ziti_tunneler_intercept_v1(t.tunCtx, unsafe.Pointer(ctx.nf), C.CString(svcId), C.CString(service), C.CString(host), C.int(port))
+		res := C.ziti_tunneler_intercept_v1(t.tunCtx, unsafe.Pointer(ctx.zctx), C.CString(svcId), C.CString(service), C.CString(host), C.int(port))
 		log.Debugf("intercept added: %v", res)
 	}
 }

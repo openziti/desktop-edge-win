@@ -34,7 +34,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/michaelquigley/pfxlog"
-	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/config"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	"github.com/robfig/cron/v3"
 	"io/ioutil"
 	"os"
@@ -59,7 +59,7 @@ type sdk struct {
 type ServiceChange struct {
 	Operation   string
 	Service		*Service
-	NFContext   *CZitiCtx
+	ZitiContext   *CZitiCtx
 }
 
 var _impl sdk
@@ -102,7 +102,7 @@ type Service struct {
 
 type CZitiCtx struct {
 	options   C.ziti_options
-	nf        C.ziti_context
+	zctx      C.ziti_context
 	status    int
 	statusErr error
 
@@ -114,8 +114,8 @@ func (c *CZitiCtx) Status() (int, error) {
 }
 
 func (c *CZitiCtx) Name() string {
-	if c.nf != nil {
-		id := C.ziti_get_identity(c.nf)
+	if c.zctx != nil {
+		id := C.ziti_get_identity(c.zctx)
 		if id != nil {
 			return C.GoString(id.name)
 		}
@@ -124,8 +124,8 @@ func (c *CZitiCtx) Name() string {
 }
 
 func (c *CZitiCtx) Controller() string {
-	if c.nf != nil {
-		return C.GoString(C.ziti_get_controller(c.nf))
+	if c.zctx != nil {
+		return C.GoString(C.ziti_get_controller(c.zctx))
 	}
 	return C.GoString(c.options.controller)
 }
@@ -153,7 +153,7 @@ func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data un
 			ServiceChanges <- ServiceChange{
 				Operation: REMOVED,
 				Service:   &fs,
-				NFContext: ctx,
+				ZitiContext: ctx,
 			}
 		} else {
 			log.Warnf("could not find a service with id: %s, name: %s", service.id, service.name)
@@ -186,12 +186,12 @@ func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data un
 				log.Infof("service intercept beginning for service: %s@%s:%d on ip %s", name, host, port, ip.String())
 				log.Infof("service[%s] is mapped to <%s:%d>", name, ip.String(), port)
 				for _, t := range devMap {
-					t.AddIntercept(id, name, ip.String(), port, unsafe.Pointer(ctx.nf))
+					t.AddIntercept(id, name, ip.String(), port, unsafe.Pointer(ctx.zctx))
 				}
 				ServiceChanges <- ServiceChange{
 					Operation:   ADDED,
 					Service: &added,
-					NFContext: ctx,
+					ZitiContext: ctx,
 				}
 			}
 		}
@@ -202,7 +202,7 @@ func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data un
 func initCB(nf C.ziti_context, status C.int, data unsafe.Pointer) {
 	ctx := (*CZitiCtx)(data)
 
-	ctx.nf = nf
+	ctx.zctx = nf
 	ctx.options.ctx = data
 	ctx.status = int(status)
 	ctx.statusErr = zitiError(status)
@@ -254,9 +254,20 @@ func GetTransferRates(ctx *CZitiCtx) (int64, int64, bool) { //extern void NF_get
 		return 0, 0, false
 	}
 	var up, down C.double
-	C.ziti_get_transfer_rates(ctx.nf, &up, &down)
+	C.ziti_get_transfer_rates(ctx.zctx, &up, &down)
 
 	return int64(up), int64(down), true
+}
+
+func(c *CZitiCtx) Shutdown() {
+	if c != nil && c.zctx != nil {
+		log.Info("shutting down c-sdk ziti context begins")
+		C.ziti_shutdown(c.zctx)
+
+		log.Info("shutting down c-sdk ziti context completed")
+	} else {
+		log.Info("shutdown called for identity but it has no context")
+	}
 }
 
 var logFile *os.File //the current, active log file
