@@ -72,17 +72,10 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	interrupt = make(chan struct{}, 8)
 
 	// wire in a log file for csdk troubleshooting
-	logFile, err := os.OpenFile(config.Path()+"cziti.log", os.O_WRONLY|os.O_TRUNC|os.O_APPEND|os.O_CREATE, 0644)
-	if err != nil {
-		log.Warnf("could not open cziti.log for writing. no debug information will be captured.")
-	} else {
-		cziti.SetLog(logFile)
-		cziti.SetLogLevel(czitiLevel)
-		defer logFile.Close()
-	}
+	cziti.InitializeCLogger(czitiLevel)
 
 	// initialize the network interface
-	err = initialize(rts.state.TunIpv4, rts.state.TunIpv4Mask)
+	err := initialize(rts.state.TunIpv4, rts.state.TunIpv4Mask)
 
 	if err != nil {
 		log.Errorf("unexpected err: %v", err)
