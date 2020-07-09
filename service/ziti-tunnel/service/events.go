@@ -17,7 +17,7 @@
 
 package service
 
-import "github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/dto"
+import "github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 
 const (
 	ADDED = "added"

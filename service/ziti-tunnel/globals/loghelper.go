@@ -28,7 +28,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/config"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 )
 
 var Elog debug.Log

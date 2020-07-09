@@ -34,7 +34,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/michaelquigley/pfxlog"
-	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/config"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	"github.com/robfig/cron/v3"
 	"io/ioutil"
 	"os"
