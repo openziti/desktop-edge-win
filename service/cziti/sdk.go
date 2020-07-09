@@ -36,7 +36,6 @@ import "C"
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/michaelquigley/pfxlog"
 	"github.com/openziti/ziti-tunnel-win/service/ziti-tunnel/config"
 	"github.com/robfig/cron/v3"
@@ -272,8 +271,7 @@ func InitializeCLogger(level int) {
 	SetLogLevel(logLevel)
 	initializeLogForToday()
 
-	c.AddFunc("@midnight", func() { fmt.Println("Every hour on the half hour") })
-	c.AddFunc("@every 15s", initiateRollLog)
+	c.AddFunc("@midnight", initiateRollLog)
 	c.Start()
 }
 
