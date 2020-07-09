@@ -302,7 +302,7 @@ func cron_callback(handle_do_not_use *C.uv_async_t) {
 	initializeLogForToday()
 
 	// find any logs older than 7 days and remove them
-	removeFilesOlderThan()
+	removeFilesOlderThanRetentionPolicy()
 }
 
 func initializeLogForToday() {
@@ -315,7 +315,7 @@ func initializeLogForToday() {
 	}
 }
 
-func removeFilesOlderThan() {
+func removeFilesOlderThanRetentionPolicy() {
 	logFiles, err := ioutil.ReadDir(config.Path())
 	if err != nil {
 		return
