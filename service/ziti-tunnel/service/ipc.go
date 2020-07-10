@@ -74,6 +74,9 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	// wire in a log file for csdk troubleshooting
 	cziti.InitializeCLogger(czitiLevel)
 
+	// setup events handler - needs to be before initialization
+	go handleEvents()
+
 	// initialize the network interface
 	err := initialize(rts.state.TunIpv4, rts.state.TunIpv4Mask)
 
@@ -83,9 +86,6 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	}
 
 	setTunnelState(true)
-
-	// setup events handler
-	go handleEvents()
 
 	//listen for services that show up
 	go acceptServices()
@@ -227,12 +227,8 @@ func initialize(ipv4 string, ipv4mask int) error {
 	}
 	setTunInfo(rts.state, ipv4, ipv4mask)
 
-	s := rts.state
-	// decide if the tunnel should be active or not and if so - activate it
-	setTunnelState(s.Active)
-
 	// connect any identities that are enabled
-	for _, id := range s.Identities {
+	for _, id := range rts.state.Identities {
 		connectIdentity(id)
 	}
 
@@ -244,10 +240,12 @@ func setTunInfo(s *dto.TunnelStatus, ipv4 string, ipv4mask int) {
 	if strings.TrimSpace(ipv4) == "" {
 		log.Infof("ip not provided using default: %v", ipv4)
 		ipv4 = Ipv4ip
+		rts.UpdateIpv4(ipv4)
 	}
 	if ipv4mask < 8 || ipv4mask > 24 {
 		log.Warnf("provided mask is invalid: %d. using default value: %d", ipv4mask, Ipv4mask)
 		ipv4mask = Ipv4mask
+		rts.UpdateIpv4Mask(ipv4mask)
 	}
 	_, ipnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", ipv4, ipv4mask))
 	if err != nil {
@@ -550,8 +548,7 @@ func setTunnelState(onOff bool) {
 	if onOff {
 		TunStarted = time.Now()
 
-		state := rts.state
-		for _, id := range state.Identities {
+		for _, id := range rts.state.Identities {
 			connectIdentity(id)
 		}
 	} else {
@@ -698,9 +695,9 @@ func respondWithError(out *json.Encoder, msg string, code int, err error) {
 }
 
 func connectIdentity(id *dto.Identity) {
-	log.Infof("connecting identity: %s", id.Name)
 
 	if !id.Connected {
+		log.Infof("connecting identity: %s", id.Name)
 		//tell the c sdk to use the file from the id and connect
 		rts.LoadIdentity(id)
 		activeIds[id.FingerPrint] = id
