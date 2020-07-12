@@ -27,7 +27,7 @@ del /q %SVC_ROOT_DIR%ziti.dll
 cd %SVC_ROOT_DIR%
 
 SET REPO_URL=https://github.com/openziti/ziti-tunneler-sdk-c.git
-SET ZITI_TUNNEL_REPO_BRANCH=master
+SET ZITI_TUNNEL_REPO_BRANCH=parse-tcp-opts
 SET TUNNELER_SDK_DIR=%SVC_ROOT_DIR%deps\ziti-tunneler-sdk-c\
 set CGO_CFLAGS=-DNOGDI -I %TUNNELER_SDK_DIR%install\include
 set CGO_LDFLAGS=-L %TUNNELER_SDK_DIR%install\lib
@@ -44,6 +44,11 @@ echo BUILDING ziti.dll begins
 echo ------------------------------------------------------------------------------
 
 set BEFORE_GIT=%cd%
+
+echo changing to %TUNNELER_SDK_DIR%
+cd %TUNNELER_SDK_DIR%
+echo current directory is %CD% - should be %TUNNELER_SDK_DIR%
+
 if exist %TUNNELER_SDK_DIR% (
     echo ------------------------------------------------------------------------------
     echo issuing git pull to pick up any changes
@@ -67,16 +72,12 @@ IF %ACTUAL_ERR% NEQ 0 (
     goto FAIL
 )
 
-echo changing to %TUNNELER_SDK_DIR%
-cd %TUNNELER_SDK_DIR%
-echo current directory is %CD% - should be %TUNNELER_SDK_DIR%
-
 echo checking out branch: %ZITI_TUNNEL_REPO_BRANCH%
 git checkout %ZITI_TUNNEL_REPO_BRANCH%
 IF %ERRORLEVEL% NEQ 0 (
     SET ACTUAL_ERR=%ERRORLEVEL%
     echo.
-    echo Could not checkout branch :%ZITI_TUNNEL_REPO_BRANCH%
+    echo Could not checkout branch: %ZITI_TUNNEL_REPO_BRANCH%
     echo.
     goto FAIL
 )
