@@ -259,3 +259,12 @@ func (t *RuntimeState) LoadConfig() {
 		log.Errorf("could not close configuration file. this is not normal! %v", err)
 	}
 }
+
+func (t *RuntimeState) UpdateIpv4Mask(ipv4mask int){
+	rts.state.TunIpv4Mask = ipv4mask
+	rts.SaveState()
+}
+func (t *RuntimeState) UpdateIpv4(ipv4 string){
+	rts.state.TunIpv4 = ipv4
+	rts.SaveState()
+}
