@@ -84,7 +84,7 @@ namespace ZitiDesktopEdge {
 
 		private void MainWindow_Deactivated(object sender, EventArgs e) {
 #if DEBUG
-			Debug.WriteLine("window should not minimize?");
+			Debug.WriteLine("debug is enabled - not minimizing window");
 #else
 			this.Visibility = Visibility.Collapsed;
 #endif
@@ -521,7 +521,7 @@ namespace ZitiDesktopEdge {
 			if (UIModel.HideOnLostFocus)
 			{
 #if DEBUG
-				Debug.WriteLine("window should not minimize?");
+				Debug.WriteLine("debug is enabled - not minimizing window");
 #else
 				this.WindowState = WindowState.Minimized;
 #endif
