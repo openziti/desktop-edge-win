@@ -26,6 +26,7 @@ package cziti
 extern void initCB(ziti_context nf, int status, void *ctx);
 extern void serviceCB(ziti_context nf, ziti_service*, int status, void *ctx);
 extern void cron_callback(uv_async_t *handle);
+extern void shutdown_callback(uv_async_t *handle);
 extern void free_async(uv_handle_t* timer);
 
 */
@@ -184,15 +185,14 @@ func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data un
 				log.Warn(err)
 			} else {
 				log.Infof("service intercept beginning for service: %s@%s:%d on ip %s", name, host, port, ip.String())
-				log.Infof("service[%s] is mapped to <%s:%d>", name, ip.String(), port)
 				for _, t := range devMap {
 					t.AddIntercept(id, name, ip.String(), port, unsafe.Pointer(ctx.zctx))
 				}
-				ServiceChanges <- ServiceChange{
-					Operation:   ADDED,
-					Service: &added,
-					ZitiContext: ctx,
-				}
+			}
+			ServiceChanges <- ServiceChange{
+				Operation:   ADDED,
+				Service: &added,
+				ZitiContext: ctx,
 			}
 		}
 	}
@@ -261,10 +261,10 @@ func GetTransferRates(ctx *CZitiCtx) (int64, int64, bool) { //extern void NF_get
 
 func(c *CZitiCtx) Shutdown() {
 	if c != nil && c.zctx != nil {
-		log.Info("shutting down c-sdk ziti context begins")
-		C.ziti_shutdown(c.zctx)
-
-		log.Info("shutting down c-sdk ziti context completed")
+		async := (*C.uv_async_t)(C.malloc(C.sizeof_uv_async_t))
+		async.data = unsafe.Pointer(c.zctx)
+		C.uv_async_init(_impl.libuvCtx.l, async, C.uv_async_cb(C.cron_callback))
+		C.uv_async_send((*C.uv_async_t)(unsafe.Pointer(async)))
 	} else {
 		log.Info("shutdown called for identity but it has no context")
 	}
@@ -293,6 +293,13 @@ func initiateRollLog() {
 //export free_async
 func free_async(handle *C.uv_handle_t){
 	C.free(unsafe.Pointer(handle))
+}
+
+//export shutdown_callback
+func shutdown_callback(async *C.uv_async_t) {
+	log.Debug("shutting down c-sdk ziti context")
+	C.ziti_shutdown((C.ziti_context)(async.data))
+	C.uv_close((*C.uv_handle_t)(unsafe.Pointer(async)), C.uv_close_cb(C.free_async))
 }
 
 //export cron_callback
