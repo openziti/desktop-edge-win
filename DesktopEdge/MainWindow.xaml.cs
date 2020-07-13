@@ -83,7 +83,11 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void MainWindow_Deactivated(object sender, EventArgs e) {
+#if DEBUG
+			Debug.WriteLine("window should not minimize?");
+#else
 			this.Visibility = Visibility.Collapsed;
+#endif
 		}
 
 		private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
@@ -516,7 +520,11 @@ namespace ZitiDesktopEdge {
 		private void MainUI_Deactivated(object sender, EventArgs e) {
 			if (UIModel.HideOnLostFocus)
 			{
+#if DEBUG
+				Debug.WriteLine("window should not minimize?");
+#else
 				this.WindowState = WindowState.Minimized;
+#endif
 			}
 		}
 
