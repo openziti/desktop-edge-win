@@ -297,12 +297,8 @@ func free_async(handle *C.uv_handle_t){
 
 //export shutdown_callback
 func shutdown_callback(async *C.uv_async_t) {
-
-	log.Info("shutting down c-sdk ziti context begins")
+	log.Debug("shutting down c-sdk ziti context")
 	C.ziti_shutdown((C.ziti_context)(async.data))
-
-	log.Info("shutting down c-sdk ziti context completed")
-
 	C.uv_close((*C.uv_handle_t)(unsafe.Pointer(async)), C.uv_close_cb(C.free_async))
 }
 

@@ -45,10 +45,6 @@ echo ---------------------------------------------------------------------------
 
 set BEFORE_GIT=%cd%
 
-echo changing to %TUNNELER_SDK_DIR%
-cd %TUNNELER_SDK_DIR%
-echo current directory is %CD% - should be %TUNNELER_SDK_DIR%
-
 if exist %TUNNELER_SDK_DIR% (
     echo ------------------------------------------------------------------------------
     echo issuing git pull to pick up any changes
@@ -61,7 +57,13 @@ if exist %TUNNELER_SDK_DIR% (
     echo ------------------------------------------------------------------------------
     echo cloning %REPO_URL%
     echo ------------------------------------------------------------------------------
+    echo issuing mkdir %TUNNELER_SDK_DIR%
     mkdir %TUNNELER_SDK_DIR%
+
+    echo changing to %TUNNELER_SDK_DIR%
+    cd %TUNNELER_SDK_DIR%
+    
+    echo current directory is %CD% - should be %TUNNELER_SDK_DIR%
     git clone %REPO_URL% %TUNNELER_SDK_DIR% --recurse-submodules
     SET ACTUAL_ERR=%ERRORLEVEL%
 )
