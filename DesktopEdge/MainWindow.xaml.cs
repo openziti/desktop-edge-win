@@ -279,6 +279,9 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void LoadStatusFromService(TunnelStatus status) {
+			//clear any identities
+			this.identities.Clear();
+
 			if (status != null) {
 				NoServiceView.Visibility = Visibility.Collapsed;
 				SetNotifyIcon("white");
