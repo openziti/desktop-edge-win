@@ -695,9 +695,9 @@ func respondWithError(out *json.Encoder, msg string, code int, err error) {
 }
 
 func connectIdentity(id *dto.Identity) {
+	log.Infof("connecting identity: %s", id.Name)
 
 	if !id.Connected {
-		log.Infof("connecting identity: %s", id.Name)
 		//tell the c sdk to use the file from the id and connect
 		rts.LoadIdentity(id)
 		activeIds[id.FingerPrint] = id
