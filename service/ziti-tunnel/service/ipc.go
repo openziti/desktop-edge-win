@@ -252,11 +252,19 @@ func setTunInfo(s *dto.TunnelStatus, ipv4 string, ipv4mask int) {
 		log.Errorf("error parsing CIDR block: (%v)", err)
 		return
 	}
+
+	t := *rts.tun
+	mtu, err := t.MTU()
+	if err != nil {
+		log.Errorf("error reading MTU - using 0 for MTU: (%v)", err)
+		mtu = 0
+	}
+
 	//set the tun info into the state
 	s.IpInfo = &dto.TunIpInfo{
 		Ip:     ipv4,
 		DNS:    Ipv4dns,
-		MTU:    1400,
+		MTU:    uint16(mtu),
 		Subnet: ipv4MaskString(ipnet.Mask),
 	}
 }
