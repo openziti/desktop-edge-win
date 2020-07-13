@@ -145,6 +145,7 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 	if ipv4mask < 8 || ipv4mask > 24 {
 		log.Warnf("provided mask is invalid: %d. using default value: %d", ipv4mask, Ipv4mask)
 		ipv4mask = Ipv4mask
+		rts.UpdateIpv4Mask(ipv4mask)
 	}
 	ip, ipnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", ipv4, ipv4mask))
 	if err != nil {

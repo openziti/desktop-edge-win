@@ -227,6 +227,11 @@ func initialize(ipv4 string, ipv4mask int) error {
 	}
 	setTunInfo(rts.state, ipv4, ipv4mask)
 
+	// connect any identities that are enabled
+	for _, id := range rts.state.Identities {
+		connectIdentity(id)
+	}
+
 	log.Debugf("initial state loaded from configuration file")
 	return nil
 }
@@ -690,9 +695,9 @@ func respondWithError(out *json.Encoder, msg string, code int, err error) {
 }
 
 func connectIdentity(id *dto.Identity) {
+	log.Infof("connecting identity: %s", id.Name)
 
 	if !id.Connected {
-		log.Infof("connecting identity: %s", id.Name)
 		//tell the c sdk to use the file from the id and connect
 		rts.LoadIdentity(id)
 		activeIds[id.FingerPrint] = id
@@ -726,12 +731,11 @@ func disconnectIdentity(id *dto.Identity) error {
 	if id.Connected {
 		log.Debugf("ranging over services all services to remove intercept and deregister the service")
 		if len(id.Services) < 1 {
-			log.Infof("identity with fingerprint %s has no services to remove/disconnect/unregister", id.FingerPrint)
-		} else {
-			for _, s := range id.Services {
-				cziti.RemoveIntercept(s.Id)
-				cziti.DNS.DeregisterService(id.ZitiContext, s.Name)
-			}
+			log.Errorf("identity with fingerprint %s has no services?", id.FingerPrint)
+		}
+		for _, s := range id.Services {
+			cziti.RemoveIntercept(s.Id)
+			cziti.DNS.DeregisterService(id.ZitiContext, s.Name)
 		}
 		id.Connected = false
 	} else {
@@ -757,7 +761,7 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 	rts.RemoveByIdentity(*id)
 
 	//remove the file from the filesystem - first verify it's the proper file
-	log.Debugf("removing identity file for fingerprint %s at %s", id.FingerPrint, id.Path())
+	log.Debug("removing identity file for fingerprint %s at %s", id.FingerPrint, id.Path())
 	err = os.Remove(id.Path())
 	if err != nil {
 		log.Warn("could not remove file: %s", config.Path()+id.FingerPrint+".json")
