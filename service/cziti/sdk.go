@@ -272,7 +272,6 @@ func(c *CZitiCtx) Shutdown() {
 
 var logFile *os.File //the current, active log file
 var logLevel int //set in InitializeCLogger
-var lastRollover = time.Now()
 
 func InitializeCLogger(level int) {
 	logLevel = level
@@ -284,7 +283,6 @@ func InitializeCLogger(level int) {
 }
 
 func initiateRollLog() {
-	lastRollover = time.Now()
 	async := (*C.uv_async_t)(C.malloc(C.sizeof_uv_async_t))
 	C.uv_async_init(_impl.libuvCtx.l, async, C.uv_async_cb(C.cron_callback))
 	C.uv_async_send((*C.uv_async_t)(unsafe.Pointer(async)))
