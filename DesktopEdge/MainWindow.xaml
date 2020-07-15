@@ -12,7 +12,7 @@
         ClipToBounds="False"
         Icon="Assets/Images/icon.png" AllowsTransparency="True" 
         Closing="Window_Closing"
-        WindowStyle="None" Loaded="MainWindow1_Loaded" Deactivated="MainUI_Deactivated" Activated="MainUI_Activated" Background="#000F0F23">
+        WindowStyle="None" Loaded="MainWindow_Loaded" Background="#000F0F23">
     <Window.Resources>
         <Style TargetType="Image">
             <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality" />
