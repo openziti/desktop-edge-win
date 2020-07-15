@@ -74,6 +74,7 @@ namespace ZitiDesktopEdge {
 				ServiceInfo editor = new ServiceInfo();
 				editor.Label = _identity.Services[i].Name;
 				editor.Value = _identity.Services[i].Url;
+				editor.Warning = _identity.Services[i].Warning;
 				editor.IsLocked = true;
 				ServiceList.Children.Add(editor);
 			}

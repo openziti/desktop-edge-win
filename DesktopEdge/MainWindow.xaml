@@ -136,7 +136,7 @@
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,12" MouseDown="Window_MouseDown">
                     <Image Source="/Assets/Images/z.png" Height="40" RenderOptions.BitmapScalingMode="Fant"></Image>
-                    <Label Content="Tap to Connect" Margin="0,-3,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Russo One" FontSize="14" Foreground="White" HorizontalAlignment="Center"></Label>
+                    <Label Content="Tap to Connect" MouseDoubleClick="Label_MouseDoubleClick" Margin="0,-3,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Russo One" FontSize="14" Foreground="White" HorizontalAlignment="Center"></Label>
                 </StackPanel>
                 <StackPanel Grid.Column="2" Cursor="Hand" Orientation="Vertical" Margin="14,16,14,14" MouseLeftButtonDown="AddIdentity">
                     <Image Source="/Assets/Images/identity.png" Margin="0,0,5,-4" Width="26" Height="26" HorizontalAlignment="Right"></Image>
@@ -146,7 +146,11 @@
             </Grid>
             <Canvas Name="ConnectButton" Width="350" Height="160" MouseDown="Connect" Visibility="Visible">
                 <Grid Width="{Binding ActualWidth, ElementName=ConnectButton}" Height="140">
-                    <Image Source="/Assets/Images/connect.png" Height="140" HorizontalAlignment="Center" />
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="221*"/>
+                        <ColumnDefinition Width="129*"/>
+                    </Grid.ColumnDefinitions>
+                    <Image Source="/Assets/Images/connect.png" Height="140" HorizontalAlignment="Center" Grid.ColumnSpan="2" Margin="105,0" />
                 </Grid>
             </Canvas>
             <Canvas Name="DisconnectButton" Width="350" Height="160" MouseDown="Disconnect" Visibility="Collapsed">

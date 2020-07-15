@@ -17,6 +17,7 @@ using System.Windows.Controls;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Text;
+using System.Runtime.InteropServices;
 
 namespace ZitiDesktopEdge {
 
@@ -80,14 +81,12 @@ namespace ZitiDesktopEdge {
 
 		private void MainWindow_Activated(object sender, EventArgs e) {
 			this.Visibility = Visibility.Visible;
+			Debug.WriteLine("Activation");
+			Placement();
 		}
 
 		private void MainWindow_Deactivated(object sender, EventArgs e) {
-#if DEBUG
-			Debug.WriteLine("debug is enabled - not minimizing window");
-#else
 			this.Visibility = Visibility.Collapsed;
-#endif
 		}
 
 		private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
@@ -120,9 +119,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void MainWindow1_Loaded(object sender, RoutedEventArgs e) {
-			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-			this.Left = desktopWorkingArea.Right - this.Width - _right;
-			this.Top = desktopWorkingArea.Bottom - this.Height - _bottom;
+			Placement();
 			// add a new service client
 			serviceClient = new Client();
 			serviceClient.OnClientConnected += ServiceClient_OnClientConnected;
@@ -144,6 +141,7 @@ namespace ZitiDesktopEdge {
 			} catch /*ignored for now (Exception ex) */{
 				SetCantDisplay();
 			}
+			Debug.WriteLine("App Loaded");
 			LoadIdentities();
 			IdentityMenu.OnForgot += IdentityForgotten;
 		}
@@ -177,6 +175,7 @@ namespace ZitiDesktopEdge {
 					var found = identities.Find(i => i.Fingerprint == e.Id.FingerPrint);
 					if (found == null) {
 						identities.Add(zid);
+						LoadIdentities();
 					} else {
 						//if we get here exit out so that LoadIdentities() doesn't get called
 						found.IsEnabled = true;
@@ -185,7 +184,6 @@ namespace ZitiDesktopEdge {
 				} else {
 					IdentityForgotten(ZitiIdentity.FromClient(e.Id));
 				}
-				LoadIdentities();
 			});
 			Debug.WriteLine($"IDENTITY EVENT. Action: {e.Action} fingerprint: {zid.Fingerprint}");
 		}
@@ -195,7 +193,7 @@ namespace ZitiDesktopEdge {
 				long totalUp = 0;
 				long totalDown = 0;
 				foreach (var id in ids) {
-					Debug.WriteLine($"==== MetricsEvent     : id {id.Name} down: {id.Metrics.Down} up:{id.Metrics.Up}");
+					//Debug.WriteLine($"==== MetricsEvent     : id {id.Name} down: {id.Metrics.Down} up:{id.Metrics.Up}");
 					if (id?.Metrics != null) {
 						totalDown += id.Metrics.Down;
 						totalUp += id.Metrics.Up;
@@ -231,7 +229,7 @@ namespace ZitiDesktopEdge {
 				}
 
 				if (e.Action == "added") {
-					ZitiService zs = new ZitiService(e.Service.Name, e.Service.HostName, e.Service.Port);
+					ZitiService zs = new ZitiService(e.Service.Name, e.Service.HostName, e.Service.Port, ""); // CLINT: Gimme an error
 					var svc = found.Services.Find(s => s.Name == zs.Name);
 					if (svc == null) found.Services.Add(zs);
 					else Debug.WriteLine("the service named " + zs.Name + " is already accounted for on this identity.");
@@ -268,17 +266,12 @@ namespace ZitiDesktopEdge {
 
 		private void AttachmentChanged(bool attached) {
 			_isAttached = attached;
-			if (_isAttached) {
-				Arrow.Visibility = Visibility.Visible;
+			if (!_isAttached) {
 				var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-				this.Left = desktopWorkingArea.Right-this.Width-_right;
-				this.Top = desktopWorkingArea.Bottom-this.Height-_bottom;
-			} else {
-				Arrow.Visibility = Visibility.Collapsed;
-				var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-				this.Left = desktopWorkingArea.Right-this.Width-75;
-				this.Top = desktopWorkingArea.Bottom-this.Height-75;
+				this.Left = desktopWorkingArea.Right - this.Width - 75;
+				this.Top = desktopWorkingArea.Bottom - this.Height - 75;
 			}
+			Placement();
 			MainMenu.Visibility = Visibility.Collapsed;
 		}
 
@@ -314,6 +307,7 @@ namespace ZitiDesktopEdge {
 				foreach (var id in status.Identities) {
 					updateViewWithIdentity(id);
 				}
+				Debug.WriteLine("Load From Service");
 				LoadIdentities();
 			} else {
 				SetCantDisplay();
@@ -359,11 +353,21 @@ namespace ZitiDesktopEdge {
 				IdList.Children.Add(id);
 				IdList.Height += 60;
 			}
+			Debug.WriteLine("Ids Loaded "+ ids.Length);
+			if (this._isAttached) Placement();
+		}
+
+		public void Placement() {
 			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-			if (this._isAttached) {
+			if (_isAttached) {
+				Arrow.Visibility = Visibility.Visible;
 				this.Left = desktopWorkingArea.Right - this.Width - _right;
 				this.Top = desktopWorkingArea.Bottom - this.Height - _bottom;
+			} else {
+				Arrow.Visibility = Visibility.Collapsed;
 			}
+			Debug.WriteLine("Placement: " + this.Left + " " + desktopWorkingArea.Right + " " + this.Width + " " + _right);
+			Debug.WriteLine("Place: " + this.Top + " " + desktopWorkingArea.Bottom + " " + this.Height + " " + _bottom);
 		}
 
 		private void OpenIdentity(ZitiIdentity identity) {
@@ -391,7 +395,6 @@ namespace ZitiDesktopEdge {
 					client.IdentityOnOff(createdId.FingerPrint, true);
 					if (createdId != null) {
 						identities.Add(ZitiIdentity.FromClient(createdId));
-						LoadIdentities();
 					} else {
 						ShowError("Identity Error", "Identity Id was null, please try again");
 					}
@@ -518,18 +521,18 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void MainUI_Deactivated(object sender, EventArgs e) {
-			if (UIModel.HideOnLostFocus)
-			{
-#if DEBUG
-				Debug.WriteLine("debug is enabled - not minimizing window");
-#else
-				this.WindowState = WindowState.Minimized;
-#endif
+			if (UIModel.HideOnLostFocus) {
+				this.Visibility = Visibility.Collapsed;
 			}
 		}
 
 		private void MainUI_Activated(object sender, EventArgs e) {
-			this.WindowState = WindowState.Normal;
+			this.Visibility = Visibility.Visible;
+			//this.WindowState = WindowState.Normal;
+		}
+
+		private void Label_MouseDoubleClick(object sender, MouseButtonEventArgs e) {
+			Placement();
 		}
 	}
 }

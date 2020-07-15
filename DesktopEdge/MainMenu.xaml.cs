@@ -6,6 +6,7 @@ using System;
 using System.Threading;
 using System.Management.Automation;
 using ZitiDesktopEdge.Models;
+using System.Web;
 
 namespace ZitiDesktopEdge
 {	
@@ -18,7 +19,7 @@ namespace ZitiDesktopEdge
 		public delegate void AttachementChanged(bool attached);
 		public event AttachementChanged OnAttachmentChange;
 		public string menuState = "Main";
-		public string licenseData = "it's open source - someone motivated could track this down. we'll add this some day i'm sure";
+		public string licenseData = "it's open source.";
 
 		public MainMenu() {
             InitializeComponent();
@@ -92,7 +93,6 @@ namespace ZitiDesktopEdge
 				LogsItems.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
 			} else if (menuState == "UILogs") {
-				ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
 				MenuTitle.Content = "Application Logs";
 				LogsItems.Text = UILog.GetLogs();
 				LogsItems.Visibility = Visibility.Visible;
@@ -130,7 +130,9 @@ namespace ZitiDesktopEdge
 			Process.Start(new ProcessStartInfo("https://netfoundry.io/terms") { UseShellExecute = true });
 		}
 		private void ShowFeedback(object sender, MouseButtonEventArgs e) {
-			Process.Start(new ProcessStartInfo("mailto:ziti-support@netfoundry.io") { UseShellExecute = true });
+			ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
+			string body = HttpUtility.UrlEncode("\n\nService Logs\n\n" + client.GetLogs());// + "\n\nApplication Logs\n\n" + UILog.GetLogs());
+			Process.Start(new ProcessStartInfo("mailto:ziti-support@netfoundry.io?subject=Ziti%20Support&body="+body) { UseShellExecute = true });
 		}
 		private void ShowSupport(object sender, MouseButtonEventArgs e) {
 			Process.Start(new ProcessStartInfo("https://openziti.discourse.group/") { UseShellExecute = true });
