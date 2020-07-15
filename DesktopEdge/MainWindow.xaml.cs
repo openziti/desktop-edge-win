@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Windows.Interop;
 
 namespace ZitiDesktopEdge {
 
@@ -94,10 +95,15 @@ namespace ZitiDesktopEdge {
 			notifyIcon.Icon.Dispose();
 			notifyIcon.Dispose();
 		}
-
-		private void SetCantDisplay() {
+		
+		private void SetCantDisplay(string msg, string detailMessage) {
 			NoServiceView.Visibility = Visibility.Visible;
+			ErrorMsg.Content = msg;
+			ErrorMsgDetail.Content = detailMessage;
 			SetNotifyIcon("red");
+		}
+		private void SetCantDisplay() {
+			SetCantDisplay("Service Not Started", "Start the Ziti Tunnel Service to get started");
 		}
 
 		private void SetCanDisplay() {
@@ -246,6 +252,12 @@ namespace ZitiDesktopEdge {
 			if (e == null) return; //just skip it for now...
 			Debug.WriteLine($"==== TunnelStatusEvent: ");
 			this.Dispatcher.Invoke(() => {
+				/* coming soon
+				if(e.ApiVersion != Client.EXPECTED_API_VERSION) {
+					SetCantDisplay("Version mismatch!", "The version of the Service is not compatible");
+					return;
+                }
+				*/
 				InitializeTimer((int)e.Status.Duration);
 				LoadStatusFromService(e.Status);
 				LoadIdentities();
