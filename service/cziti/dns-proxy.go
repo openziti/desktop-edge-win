@@ -155,18 +155,32 @@ func proxyDNS(req *dns.Msg, peer *net.UDPAddr, serv *net.UDPConn) {
 	}
 }
 
+func dnsPanicRecover(dnsServers []string) {
+	//just rerun the dns proxy function
+	go runDNSproxy(dnsServers)
+}
+
 func runDNSproxy(dnsServers []string) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("Recovered in f. %v", r)
+			dnsPanicRecover(dnsServers)
+		}
+	}()
+
 	var dnsUpstreams []*net.UDPConn
 	for _, s := range dnsServers {
 		sAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:53", s))
 		if err != nil {
-			log.Debug("skipping upstream", s, err.Error())
+			log.Debugf("skipping upstream: %s, %v", s, err.Error())
 		} else {
+			log.Debugf("adding upstream dns server: %s", s)
 			conn, err := net.DialUDP("udp", nil, sAddr)
 			if err != nil {
-				log.Debug("skipping upstream", s, err.Error())
+				log.Debugf("skipping upstream due to dial udp issue to %s. error: %v", s, err.Error())
+			} else {
+				dnsUpstreams = append(dnsUpstreams, conn)
 			}
-			dnsUpstreams = append(dnsUpstreams, conn)
 		}
 	}
 
@@ -175,8 +189,8 @@ func runDNSproxy(dnsServers []string) {
 
 	for _, proxy := range dnsUpstreams {
 		go func() {
+			resp := make([]byte, 1024) //make a buffer which is reused
 			for {
-				resp := make([]byte, 1024)
 				n, err := proxy.Read(resp)
 				if err != nil {
 					log.Debug("error receiving from ", proxy.RemoteAddr(), err)
@@ -195,12 +209,16 @@ func runDNSproxy(dnsServers []string) {
 			id := (uint32(pr.req.Id) << 16) | uint32(pr.req.Question[0].Qtype)
 			reqs[id] = pr
 			b, _ := pr.req.Pack()
-			// log.Debug("sending proxy req", id, dns.Type(pr.req.Question[0].Qtype), pr.req.Question[0].Name)
 			for _, proxy := range dnsUpstreams {
-				// log.Debug("sending proxy req", dns.Type(pr.req.Question[0].Qtype), pr.req.Question[0].Name, proxy.RemoteAddr())
 				if _, err := proxy.Write(b); err != nil {
 					//TODO: if this happens -does this mean the next dns server is not available?
-					log.Debugf("failed to proxy DNS to %s %s %v. %v",
+
+					proxy.Close() //first thing - close the proxy connection
+
+					// when this hits - it never seems to recover. throw a panic which will get recovered
+					// via the defer specified above and try to recreate the connections. this is a heavy
+					// handed way of reconnecting to the DNS server but it should be infrequent
+					log.Panicf("failed to proxy DNS to %s %s %v. %v",
 						dns.Type(pr.req.Question[0].Qtype),
 						pr.req.Question[0].Name,
 						proxy.RemoteAddr(),

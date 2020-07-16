@@ -74,6 +74,9 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	// wire in a log file for csdk troubleshooting
 	cziti.InitializeCLogger(czitiLevel)
 
+	// setup events handler - needs to be before initialization
+	go handleEvents()
+
 	// initialize the network interface
 	err := initialize(rts.state.TunIpv4, rts.state.TunIpv4Mask)
 
@@ -83,9 +86,6 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	}
 
 	setTunnelState(true)
-
-	// setup events handler
-	go handleEvents()
 
 	//listen for services that show up
 	go acceptServices()
@@ -227,12 +227,8 @@ func initialize(ipv4 string, ipv4mask int) error {
 	}
 	setTunInfo(rts.state, ipv4, ipv4mask)
 
-	s := rts.state
-	// decide if the tunnel should be active or not and if so - activate it
-	setTunnelState(s.Active)
-
 	// connect any identities that are enabled
-	for _, id := range s.Identities {
+	for _, id := range rts.state.Identities {
 		connectIdentity(id)
 	}
 
@@ -244,21 +240,31 @@ func setTunInfo(s *dto.TunnelStatus, ipv4 string, ipv4mask int) {
 	if strings.TrimSpace(ipv4) == "" {
 		log.Infof("ip not provided using default: %v", ipv4)
 		ipv4 = Ipv4ip
+		rts.UpdateIpv4(ipv4)
 	}
 	if ipv4mask < 8 || ipv4mask > 24 {
 		log.Warnf("provided mask is invalid: %d. using default value: %d", ipv4mask, Ipv4mask)
 		ipv4mask = Ipv4mask
+		rts.UpdateIpv4Mask(ipv4mask)
 	}
 	_, ipnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", ipv4, ipv4mask))
 	if err != nil {
 		log.Errorf("error parsing CIDR block: (%v)", err)
 		return
 	}
+
+	t := *rts.tun
+	mtu, err := t.MTU()
+	if err != nil {
+		log.Errorf("error reading MTU - using 0 for MTU: (%v)", err)
+		mtu = 0
+	}
+
 	//set the tun info into the state
 	s.IpInfo = &dto.TunIpInfo{
 		Ip:     ipv4,
 		DNS:    Ipv4dns,
-		MTU:    1400,
+		MTU:    uint16(mtu),
 		Subnet: ipv4MaskString(ipnet.Mask),
 	}
 }
@@ -300,6 +306,7 @@ func serveIpc(conn net.Conn) {
 	events.broadcast <- dto.TunnelStatusEvent{
 		StatusEvent: dto.StatusEvent{Op: "status"},
 		Status:      rts.ToStatus(),
+		ApiVersion: API_VERSION,
 	}
 
 	done := make(chan struct{}, 8)
@@ -497,6 +504,7 @@ func serveEvents(conn net.Conn) {
 	err := o.Encode(	dto.TunnelStatusEvent{
 		StatusEvent: dto.StatusEvent{Op: "status"},
 		Status:      rts.ToStatus(),
+		ApiVersion: API_VERSION,
 	})
 
 	if err != nil {
@@ -550,8 +558,7 @@ func setTunnelState(onOff bool) {
 	if onOff {
 		TunStarted = time.Now()
 
-		state := rts.state
-		for _, id := range state.Identities {
+		for _, id := range rts.state.Identities {
 			connectIdentity(id)
 		}
 	} else {
@@ -707,7 +714,7 @@ func connectIdentity(id *dto.Identity) {
 	} else {
 		log.Debugf("id [%s] is already connected - not reconnecting", id.Name)
 		for _, s := range id.Services {
-			cziti.AddIntercept(s.Id, s.Name, s.HostName, s.Port, id.ZitiContext)
+			cziti.AddIntercept(s.Id, s.Name, s.InterceptHost, s.InterceptPort, id.ZitiContext)
 		}
 		id.Connected = true
 	}
@@ -817,10 +824,10 @@ func acceptServices() {
 					case cziti.ADDED:
 						//add the service to the identity
 						svc := dto.Service{
-							Name:     c.Service.Name,
-							HostName: c.Service.InterceptHost,
-							Port:     uint16(c.Service.InterceptPort),
-							Id:       c.Service.Id,
+							Name:          c.Service.Name,
+							InterceptHost: c.Service.InterceptHost,
+							InterceptPort: c.Service.InterceptPort,
+							Id:            c.Service.Id,
 						}
 						id.Services = append(id.Services, &svc)
 

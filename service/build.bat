@@ -44,6 +44,7 @@ echo BUILDING ziti.dll begins
 echo ------------------------------------------------------------------------------
 
 set BEFORE_GIT=%cd%
+
 if exist %TUNNELER_SDK_DIR% (
     echo ------------------------------------------------------------------------------
     echo issuing git pull to pick up any changes
@@ -56,7 +57,13 @@ if exist %TUNNELER_SDK_DIR% (
     echo ------------------------------------------------------------------------------
     echo cloning %REPO_URL%
     echo ------------------------------------------------------------------------------
+    echo issuing mkdir %TUNNELER_SDK_DIR%
     mkdir %TUNNELER_SDK_DIR%
+
+    echo changing to %TUNNELER_SDK_DIR%
+    cd %TUNNELER_SDK_DIR%
+    
+    echo current directory is %CD% - should be %TUNNELER_SDK_DIR%
     git clone %REPO_URL% %TUNNELER_SDK_DIR% --recurse-submodules
     SET ACTUAL_ERR=%ERRORLEVEL%
 )
@@ -67,16 +74,12 @@ IF %ACTUAL_ERR% NEQ 0 (
     goto FAIL
 )
 
-echo changing to %TUNNELER_SDK_DIR%
-cd %TUNNELER_SDK_DIR%
-echo current directory is %CD% - should be %TUNNELER_SDK_DIR%
-
 echo checking out branch: %ZITI_TUNNEL_REPO_BRANCH%
 git checkout %ZITI_TUNNEL_REPO_BRANCH%
 IF %ERRORLEVEL% NEQ 0 (
     SET ACTUAL_ERR=%ERRORLEVEL%
     echo.
-    echo Could not checkout branch :%ZITI_TUNNEL_REPO_BRANCH%
+    echo Could not checkout branch: %ZITI_TUNNEL_REPO_BRANCH%
     echo.
     goto FAIL
 )

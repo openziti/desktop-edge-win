@@ -17,6 +17,8 @@ using System.Windows.Controls;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Text;
+using System.Runtime.InteropServices;
+using System.Windows.Interop;
 
 namespace ZitiDesktopEdge {
 
@@ -80,10 +82,16 @@ namespace ZitiDesktopEdge {
 
 		private void MainWindow_Activated(object sender, EventArgs e) {
 			this.Visibility = Visibility.Visible;
+			Debug.WriteLine("Activation");
+			Placement();
 		}
 
 		private void MainWindow_Deactivated(object sender, EventArgs e) {
-			this.Visibility = Visibility.Collapsed;
+#if DEBUG
+				Debug.WriteLine("debug is enabled - windows pinned");
+#else
+				this.Visibility = Visibility.Collapsed;
+#endif
 		}
 
 		private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
@@ -91,23 +99,19 @@ namespace ZitiDesktopEdge {
 			notifyIcon.Icon.Dispose();
 			notifyIcon.Dispose();
 		}
-
-		private void SetCantDisplay() {
+		
+		private void SetCantDisplay(string msg, string detailMessage) {
 			NoServiceView.Visibility = Visibility.Visible;
+			ErrorMsg.Content = msg;
+			ErrorMsgDetail.Content = detailMessage;
 			SetNotifyIcon("red");
 		}
-
-		private void SetCanDisplay() {
-			NoServiceView.Visibility = Visibility.Collapsed;
-			SetNotifyIcon("green");
+		private void SetCantDisplay() {
+			SetCantDisplay("Service Not Started", "Start the Ziti Tunnel Service to get started");
 		}
 
 		private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
 			if (!_isAttached&&e.ChangedButton == MouseButton.Left) this.DragMove();
-		}
-
-		private void Repaint() {
-			LoadIdentities();
 		}
 
 		private void TargetNotifyIcon_Click(object sender, EventArgs e) {
@@ -115,10 +119,8 @@ namespace ZitiDesktopEdge {
 			this.Activate();
 		}
 
-		private void MainWindow1_Loaded(object sender, RoutedEventArgs e) {
-			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-			this.Left = desktopWorkingArea.Right - this.Width - _right;
-			this.Top = desktopWorkingArea.Bottom - this.Height - _bottom;
+		private void MainWindow_Loaded(object sender, RoutedEventArgs e) {
+			Placement();
 			// add a new service client
 			serviceClient = new Client();
 			serviceClient.OnClientConnected += ServiceClient_OnClientConnected;
@@ -140,7 +142,7 @@ namespace ZitiDesktopEdge {
 			} catch /*ignored for now (Exception ex) */{
 				SetCantDisplay();
 			}
-			LoadIdentities();
+			Debug.WriteLine("App Loaded");
 			IdentityMenu.OnForgot += IdentityForgotten;
 		}
 
@@ -153,6 +155,7 @@ namespace ZitiDesktopEdge {
 				//e is _ALWAYS_ null at this time use this to display something if you want
 				NoServiceView.Visibility = Visibility.Collapsed;
 				SetNotifyIcon("white");
+				LoadIdentities(true);
 			});
 		}
 
@@ -173,6 +176,7 @@ namespace ZitiDesktopEdge {
 					var found = identities.Find(i => i.Fingerprint == e.Id.FingerPrint);
 					if (found == null) {
 						identities.Add(zid);
+						LoadIdentities(true);
 					} else {
 						//if we get here exit out so that LoadIdentities() doesn't get called
 						found.IsEnabled = true;
@@ -181,7 +185,6 @@ namespace ZitiDesktopEdge {
 				} else {
 					IdentityForgotten(ZitiIdentity.FromClient(e.Id));
 				}
-				LoadIdentities();
 			});
 			Debug.WriteLine($"IDENTITY EVENT. Action: {e.Action} fingerprint: {zid.Fingerprint}");
 		}
@@ -191,7 +194,7 @@ namespace ZitiDesktopEdge {
 				long totalUp = 0;
 				long totalDown = 0;
 				foreach (var id in ids) {
-					Debug.WriteLine($"==== MetricsEvent     : id {id.Name} down: {id.Metrics.Down} up:{id.Metrics.Up}");
+					//Debug.WriteLine($"==== MetricsEvent     : id {id.Name} down: {id.Metrics.Down} up:{id.Metrics.Up}");
 					if (id?.Metrics != null) {
 						totalDown += id.Metrics.Down;
 						totalUp += id.Metrics.Up;
@@ -227,7 +230,7 @@ namespace ZitiDesktopEdge {
 				}
 
 				if (e.Action == "added") {
-					ZitiService zs = new ZitiService(e.Service.Name, e.Service.HostName, e.Service.Port);
+					ZitiService zs = new ZitiService(e.Service.Name, e.Service.HostName, e.Service.Port, ""); // CLINT: Gimme an error
 					var svc = found.Services.Find(s => s.Name == zs.Name);
 					if (svc == null) found.Services.Add(zs);
 					else Debug.WriteLine("the service named " + zs.Name + " is already accounted for on this identity.");
@@ -235,18 +238,22 @@ namespace ZitiDesktopEdge {
 					Debug.WriteLine("removing the service named: " + e.Service.Name);
 					found.Services.RemoveAll(s => s.Name == e.Service.Name);
 				}
-				LoadIdentities();
+				LoadIdentities(false);
 			});
 		}
 
-		private void ServiceClient_OnTunnelStatusEvent(object sender, TunnelStatusEvent e)
-		{
+		private void ServiceClient_OnTunnelStatusEvent(object sender, TunnelStatusEvent e) {
 			if (e == null) return; //just skip it for now...
 			Debug.WriteLine($"==== TunnelStatusEvent: ");
 			this.Dispatcher.Invoke(() => {
+				if(e.ApiVersion != Client.EXPECTED_API_VERSION) {
+					SetCantDisplay("Version mismatch!", "The version of the Service is not compatible");
+					return;
+                }
+				
 				InitializeTimer((int)e.Status.Duration);
 				LoadStatusFromService(e.Status);
-				LoadIdentities();
+				LoadIdentities(false);
 			});
 		}
 
@@ -259,26 +266,24 @@ namespace ZitiDesktopEdge {
 				}
 			}
 			identities.Remove(idToRemove);
-			LoadIdentities();
+			LoadIdentities(false);
 		}
 
 		private void AttachmentChanged(bool attached) {
 			_isAttached = attached;
-			if (_isAttached) {
-				Arrow.Visibility = Visibility.Visible;
+			if (!_isAttached) {
 				var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-				this.Left = desktopWorkingArea.Right-this.Width-_right;
-				this.Top = desktopWorkingArea.Bottom-this.Height-_bottom;
-			} else {
-				Arrow.Visibility = Visibility.Collapsed;
-				var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-				this.Left = desktopWorkingArea.Right-this.Width-75;
-				this.Top = desktopWorkingArea.Bottom-this.Height-75;
+				this.Left = desktopWorkingArea.Right - this.Width - 75;
+				this.Top = desktopWorkingArea.Bottom - this.Height - 75;
 			}
+			Placement();
 			MainMenu.Visibility = Visibility.Collapsed;
 		}
 
 		private void LoadStatusFromService(TunnelStatus status) {
+			//clear any identities
+			this.identities.Clear();
+
 			if (status != null) {
 				NoServiceView.Visibility = Visibility.Collapsed;
 				SetNotifyIcon("white");
@@ -307,7 +312,8 @@ namespace ZitiDesktopEdge {
 				foreach (var id in status.Identities) {
 					updateViewWithIdentity(id);
 				}
-				LoadIdentities();
+				Debug.WriteLine("Load From Service");
+				LoadIdentities(true);
 			} else {
 				SetCantDisplay();
 			}
@@ -322,7 +328,6 @@ namespace ZitiDesktopEdge {
 				}
 			}
 			identities.Add(zid);
-			LoadIdentities();
 		}
 		private void SetNotifyIcon(string iconPrefix) {
 			var iconUri = new Uri("pack://application:,,/Assets/Images/ziti-" + iconPrefix + ".ico");
@@ -332,13 +337,15 @@ namespace ZitiDesktopEdge {
 			Application.Current.MainWindow.Icon = System.Windows.Media.Imaging.BitmapFrame.Create(iconUri);
 		}
 
-		private void LoadIdentities() {
+		private void LoadIdentities(Boolean repaint) {
 			IdList.Children.Clear();
 			IdList.Height = 0;
 			IdList.MaxHeight = _maxHeight-520;
 			ZitiIdentity[] ids = identities.ToArray();
-			this.Height = 460+(ids.Length*60);
-			if (this.Height>_maxHeight) this.Height = _maxHeight;
+			double height = 460 + (ids.Length * 60);
+			if (height > _maxHeight) height = _maxHeight;
+			Debug.WriteLine("Set Height: " + height);
+			this.Height = height;
 			IdentityMenu.SetHeight(this.Height-160);
 			for (int i=0; i<ids.Length; i++) {
 				IdentityItem id = new IdentityItem();
@@ -352,11 +359,21 @@ namespace ZitiDesktopEdge {
 				IdList.Children.Add(id);
 				IdList.Height += 60;
 			}
+			Debug.WriteLine("Ids Loaded "+ ids.Length);
+			if (this._isAttached&&repaint) Placement();
+		}
+
+		public void Placement() {
 			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-			if (this._isAttached) {
+			if (_isAttached) {
+				Arrow.Visibility = Visibility.Visible;
 				this.Left = desktopWorkingArea.Right - this.Width - _right;
 				this.Top = desktopWorkingArea.Bottom - this.Height - _bottom;
+			} else {
+				Arrow.Visibility = Visibility.Collapsed;
 			}
+			Debug.WriteLine("Placement: " + this.Left + " " + desktopWorkingArea.Right + " " + this.Width + " " + _right);
+			Debug.WriteLine("Place: " + this.Top + " " + desktopWorkingArea.Bottom + " " + this.Height + " " + _bottom);
 		}
 
 		private void OpenIdentity(ZitiIdentity identity) {
@@ -384,7 +401,7 @@ namespace ZitiDesktopEdge {
 					client.IdentityOnOff(createdId.FingerPrint, true);
 					if (createdId != null) {
 						identities.Add(ZitiIdentity.FromClient(createdId));
-						LoadIdentities();
+						LoadIdentities(true);
 					} else {
 						ShowError("Identity Error", "Identity Id was null, please try again");
 					}
@@ -393,7 +410,6 @@ namespace ZitiDesktopEdge {
 				} catch (Exception ex) {
 					ShowError("Unexpected Error", "Code 2:" + ex.Message);
 				}
-				LoadIdentities();
 				HideLoad();
 			}
 		}
@@ -511,14 +527,17 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void MainUI_Deactivated(object sender, EventArgs e) {
-			if (UIModel.HideOnLostFocus)
-			{
-				this.WindowState = WindowState.Minimized;
+			if (UIModel.HideOnLostFocus) {
+#if DEBUG
+				Debug.WriteLine("debug is enabled - windows pinned");
+#else
+				this.Visibility = Visibility.Collapsed;
+#endif
 			}
 		}
 
-		private void MainUI_Activated(object sender, EventArgs e) {
-			this.WindowState = WindowState.Normal;
+		private void Label_MouseDoubleClick(object sender, MouseButtonEventArgs e) {
+			Placement();
 		}
 	}
 }

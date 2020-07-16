@@ -205,6 +205,7 @@ namespace ZitiDesktopEdge.ServiceClient
     class TunnelStatusEvent : StatusEvent
     {
         public TunnelStatus Status { get; set; }
+        public int ApiVersion { get; set; }
     }
 
     class MetricsEvent : StatusEvent

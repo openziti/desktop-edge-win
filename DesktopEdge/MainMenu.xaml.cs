@@ -6,6 +6,10 @@ using System;
 using System.Threading;
 using System.Management.Automation;
 using ZitiDesktopEdge.Models;
+using System.Reflection;
+using System.Web;
+using System.Net.Mail;
+using System.IO;
 
 namespace ZitiDesktopEdge
 {	
@@ -18,7 +22,7 @@ namespace ZitiDesktopEdge
 		public delegate void AttachementChanged(bool attached);
 		public event AttachementChanged OnAttachmentChange;
 		public string menuState = "Main";
-		public string licenseData = "it's open source - someone motivated could track this down. we'll add this some day i'm sure";
+		public string licenseData = "it's open source.";
 
 		public MainMenu() {
             InitializeComponent();
@@ -92,7 +96,6 @@ namespace ZitiDesktopEdge
 				LogsItems.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
 			} else if (menuState == "UILogs") {
-				ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
 				MenuTitle.Content = "Application Logs";
 				LogsItems.Text = UILog.GetLogs();
 				LogsItems.Visibility = Visibility.Visible;
@@ -130,7 +133,47 @@ namespace ZitiDesktopEdge
 			Process.Start(new ProcessStartInfo("https://netfoundry.io/terms") { UseShellExecute = true });
 		}
 		private void ShowFeedback(object sender, MouseButtonEventArgs e) {
-			Process.Start(new ProcessStartInfo("mailto:ziti-support@netfoundry.io") { UseShellExecute = true });
+			ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
+			var mailMessage = new MailMessage();
+			mailMessage.From = new MailAddress("ziti-support@netfoundry.io");
+			mailMessage.Subject = "Ziti Support";
+			mailMessage.IsBodyHtml = true;
+			mailMessage.Body = "";
+
+			string serviceLogTempFile = Path.Combine(Path.GetTempPath(), "Ziti-Service.log");
+			using (StreamWriter sw = new StreamWriter(serviceLogTempFile)) {
+				sw.WriteLine(client.GetLogs());
+			}
+
+			string uiLogTempFile = Path.Combine(Path.GetTempPath(), "Ziti-Application.log");
+			using (StreamWriter sw = new StreamWriter(uiLogTempFile)) {
+				sw.WriteLine(UILog.GetLogs());
+			}
+
+			mailMessage.Attachments.Add(new Attachment(serviceLogTempFile));
+			mailMessage.Attachments.Add(new Attachment(uiLogTempFile));
+
+			string emlFile = Path.Combine(Path.GetTempPath(), "ziti.eml");
+
+			using (var filestream = File.Open(emlFile, FileMode.Create)) {
+				var binaryWriter = new BinaryWriter(filestream);
+				binaryWriter.Write(System.Text.Encoding.UTF8.GetBytes("X-Unsent: 1" + Environment.NewLine));
+				var assembly = typeof(SmtpClient).Assembly;
+				var mailWriterType = assembly.GetType("System.Net.Mail.MailWriter");
+				var mailWriterContructor = mailWriterType.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null, new[] { typeof(Stream) }, null);
+				var mailWriter = mailWriterContructor.Invoke(new object[] { filestream });
+				var sendMethod = typeof(MailMessage).GetMethod("Send", BindingFlags.Instance | BindingFlags.NonPublic);
+				sendMethod.Invoke(mailMessage, BindingFlags.Instance | BindingFlags.NonPublic, null, new object[] { mailWriter, true, true }, null);
+				var closeMethod = mailWriter.GetType().GetMethod("Close", BindingFlags.Instance | BindingFlags.NonPublic);
+				closeMethod.Invoke(mailWriter, BindingFlags.Instance | BindingFlags.NonPublic, null, new object[] { }, null);
+			}
+
+			Process.Start(emlFile);
+
+
+
+			//string body = HttpUtility.UrlEncode("\n\nService Logs\n\n" + client.GetLogs());// + "\n\nApplication Logs\n\n" + UILog.GetLogs());
+			//Process.Start(new ProcessStartInfo("mailto:ziti-support@netfoundry.io?subject=Ziti%20Support&body="+body) { UseShellExecute = true });
 		}
 		private void ShowSupport(object sender, MouseButtonEventArgs e) {
 			Process.Start(new ProcessStartInfo("https://openziti.discourse.group/") { UseShellExecute = true });
