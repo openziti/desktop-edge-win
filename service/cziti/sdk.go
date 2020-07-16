@@ -99,6 +99,7 @@ type Service struct {
 	Id            string
 	InterceptHost string
 	InterceptPort uint16
+	AssignedIP    string
 }
 
 type CZitiCtx struct {
@@ -172,13 +173,6 @@ func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data un
 				port = int(c["port"].(float64))
 			}
 		}
-		added := Service{
-			Name:          name,
-			Id:            id,
-			InterceptHost: host,
-			InterceptPort: uint16(port),
-		}
-		ctx.Services.Store(id, added)
 		if host != "" && port != -1 {
 			ip, err := DNS.RegisterService(host, uint16(port), ctx, name)
 			if err != nil {
@@ -189,6 +183,14 @@ func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data un
 					t.AddIntercept(id, name, ip.String(), port, unsafe.Pointer(ctx.zctx))
 				}
 			}
+			added := Service{
+				Name:          name,
+				Id:            id,
+				InterceptHost: host,
+				InterceptPort: uint16(port),
+				AssignedIP:    ip.String(),
+			}
+			ctx.Services.Store(id, added)
 			ServiceChanges <- ServiceChange{
 				Operation:   ADDED,
 				Service: &added,
@@ -272,7 +274,6 @@ func(c *CZitiCtx) Shutdown() {
 
 var logFile *os.File //the current, active log file
 var logLevel int //set in InitializeCLogger
-var lastRollover = time.Now()
 
 func InitializeCLogger(level int) {
 	logLevel = level
@@ -284,7 +285,6 @@ func InitializeCLogger(level int) {
 }
 
 func initiateRollLog() {
-	lastRollover = time.Now()
 	async := (*C.uv_async_t)(C.malloc(C.sizeof_uv_async_t))
 	C.uv_async_init(_impl.libuvCtx.l, async, C.uv_async_cb(C.cron_callback))
 	C.uv_async_send((*C.uv_async_t)(unsafe.Pointer(async)))

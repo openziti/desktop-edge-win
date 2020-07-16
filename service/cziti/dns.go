@@ -57,33 +57,37 @@ type ctxService struct {
 	name string
 }
 
-func (dns *dnsImpl) RegisterService(dnsName string, port uint16, ctx *CZitiCtx, name string) (net.IP, error) {
-	log.Infof("adding DNS entry for service name %s@%s:%d", name, dnsName, port)
+// RegisterService will return the next ip address in the configured range. If the ip address is not
+// assigned to a hostname an error will also be returned indicating why.
+func (dns *dnsImpl) RegisterService(dnsNameToReg string, port uint16, ctx *CZitiCtx, name string) (net.IP, error) {
+	log.Infof("adding DNS entry for service name %s@%s:%d", name, dnsNameToReg, port)
 	DnsInit(defaultCidr, defaultMaskBits)
-	dnsName = dnsName + "."
+	dnsName := dnsNameToReg + "."
 	key := fmt.Sprint(dnsName, ':', port)
-	if cs, found := dns.serviceMap[key]; found {
-		if cs.ctx != ctx || cs.name != name {
-			return nil, fmt.Errorf(
-				"service mapping conflict: %s:%d is already mapped for another context", dnsName, port)
-		}
-		return dns.hostnameMap[dnsName], nil
-	}
-
-	dns.serviceMap[key] = ctxService{
-		ctx:  ctx,
-		name: name,
-	}
-
-	if ip, mapped := dns.hostnameMap[dnsName]; mapped {
-		return ip, nil
-	}
 
 	nextAddr := dns.cidr | atomic.AddUint32(&dns.counter, 1)
 	nextIp := make(net.IP, 4)
 	binary.BigEndian.PutUint32(nextIp, nextAddr)
-	dns.hostnameMap[dnsName] = nextIp
-	dns.ipMap[nextAddr] = dnsName
+
+	if cs, found := dns.serviceMap[key]; found {
+		if cs.ctx != ctx || cs.name != name {
+			return nextIp, fmt.Errorf(
+				"service mapping conflict: %s:%d is already mapped for another context", dnsNameToReg, port)
+		}
+		return nextIp, nil
+	} else {
+		dns.serviceMap[key] = ctxService{
+			ctx:  ctx,
+			name: name,
+		}
+
+		if ip, mapped := dns.hostnameMap[dnsName]; mapped {
+			return ip, nil
+		}
+
+		dns.hostnameMap[dnsName] = nextIp
+		dns.ipMap[nextAddr] = dnsName
+	}
 
 	return nextIp, nil
 }

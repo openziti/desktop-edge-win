@@ -230,7 +230,7 @@ namespace ZitiDesktopEdge {
 				}
 
 				if (e.Action == "added") {
-					ZitiService zs = new ZitiService(e.Service.Name, e.Service.HostName, e.Service.Port, ""); // CLINT: Gimme an error
+					ZitiService zs = new ZitiService(e.Service);
 					var svc = found.Services.Find(s => s.Name == zs.Name);
 					if (svc == null) found.Services.Add(zs);
 					else Debug.WriteLine("the service named " + zs.Name + " is already accounted for on this identity.");

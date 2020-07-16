@@ -122,8 +122,6 @@ namespace ZitiDesktopEdge.ServiceClient
                         _extendedDebug = true;
                     }
                 }
-                //establish the named pipe to the service
-                setupPipe();
             }
             catch(Exception ex)
             {
