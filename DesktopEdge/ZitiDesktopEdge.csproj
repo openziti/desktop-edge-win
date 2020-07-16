@@ -104,6 +104,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System.ServiceProcess" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
@@ -134,10 +135,10 @@
     </Compile>
     <Compile Include="Models\UILog.cs" />
     <Compile Include="Models\UIModel.cs" />
-    <Compile Include="ServiceInfo.xaml.cs">
+    <Compile Include="Views\ItemRenderers\ServiceInfo.xaml.cs">
       <DependentUpon>ServiceInfo.xaml</DependentUpon>
     </Compile>
-    <Compile Include="MenuEditItem.xaml.cs">
+    <Compile Include="Views\ItemRenderers\MenuEditItem.xaml.cs">
       <DependentUpon>MenuEditItem.xaml</DependentUpon>
     </Compile>
     <Compile Include="ServiceClient\DataStructures.cs" />
@@ -145,10 +146,10 @@
     <Compile Include="RegistrationScreen.xaml.cs">
       <DependentUpon>RegistrationScreen.xaml</DependentUpon>
     </Compile>
-    <Compile Include="SubMenuItem.xaml.cs">
+    <Compile Include="Views\ItemRenderers\SubMenuItem.xaml.cs">
       <DependentUpon>SubMenuItem.xaml</DependentUpon>
     </Compile>
-    <Compile Include="MenuItem.xaml.cs">
+    <Compile Include="Views\ItemRenderers\MenuItem.xaml.cs">
       <DependentUpon>MenuItem.xaml</DependentUpon>
     </Compile>
     <Compile Include="Models\ZitiIdentity.cs" />
@@ -164,7 +165,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="IdentityItem.xaml">
+    <Page Include="Views\ItemRenderers\IdentityItem.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -180,18 +181,18 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="IdentityItem.xaml.cs">
+    <Compile Include="Views\ItemRenderers\IdentityItem.xaml.cs">
       <DependentUpon>IdentityItem.xaml</DependentUpon>
     </Compile>
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="ServiceInfo.xaml">
+    <Page Include="Views\ItemRenderers\ServiceInfo.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="MenuEditItem.xaml">
+    <Page Include="Views\ItemRenderers\MenuEditItem.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -199,11 +200,11 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="SubMenuItem.xaml">
+    <Page Include="Views\ItemRenderers\SubMenuItem.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="MenuItem.xaml">
+    <Page Include="Views\ItemRenderers\MenuItem.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -342,7 +343,11 @@
     <Resource Include="Assets\Images\server.png" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Views\" />
+    <Folder Include="Views\Controls\" />
+    <Folder Include="Views\Screens\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Images\Warning.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

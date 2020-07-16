@@ -32,7 +32,7 @@
                     <Label Name="IdDetailName" Grid.Column="1" HorizontalAlignment="Center" MaxWidth="160" FontSize="14" FontWeight="SemiBold" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="#0F0F23">
                         <TextBlock TextTrimming="CharacterEllipsis">Identity Name</TextBlock>
                     </Label>
-                    <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/x.png" Width="20" Height="20" Margin="0,0,0,0" HorizontalAlignment="Right" MouseDown="HideMenu"></Image>
+                    <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/x.png" Width="20" Height="20" Margin="0,0,0,0" HorizontalAlignment="Right" MouseUp="HideMenu"></Image>
                 </Grid>
                 <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
                 <Grid>
@@ -44,8 +44,8 @@
                             <local:MenuEditItem x:Name="IdentityEnrollment" HorizontalAlignment="Stretch" Label="Enrollment Status" IsLocked="True"></local:MenuEditItem>
                             <Label Content="SERVICES" Foreground="Gray" FontWeight="SemiBold" />
                             <StackPanel Name="ServiceList" Orientation="Vertical"></StackPanel>
-                            <Label Name="ForgetIdentityButton" Margin="0,10,0,10" Content="Forget This Identity" Cursor="Hand" Foreground="#F4044D" HorizontalAlignment="Center" Mouse.MouseDown="ForgetIdentity"></Label>
-                            <Image Source="/Assets/Images/identity.png" Height="160" Width="160" HorizontalAlignment="Stretch"></Image>
+                            <Label Name="ForgetIdentityButton" Margin="0,10,0,10" Content="Forget This Identity" Cursor="Hand" Foreground="#F4044D" HorizontalAlignment="Center" Mouse.MouseUp="ForgetIdentity"></Label>
+                            <Image Source="/Assets/Images/identity.png" Height="100" Width="100" Opacity="0.3" HorizontalAlignment="Stretch"></Image>
                         </StackPanel>
                     </ScrollViewer>
                 </Grid>
