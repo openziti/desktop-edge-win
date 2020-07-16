@@ -44,7 +44,7 @@ func Logger() *logrus.Entry {
 func InitLogger(logLevel logrus.Level) {
 	logrus.SetLevel(logLevel)
 
-	rl, _ := rotatelogs.New(config.LogFile() + ".%Y%m%d%H%M",
+	rl, _ := rotatelogs.New(config.LogFile() + ".%Y%m%d%H%M.log",
 		rotatelogs.WithRotationTime(24 * time.Hour),
 		rotatelogs.WithRotationCount(7),
 		rotatelogs.WithLinkName(config.LogFile()))
