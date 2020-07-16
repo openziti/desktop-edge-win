@@ -20,6 +20,21 @@ namespace ZitiDesktopEdge {
     public partial class ServiceInfo: UserControl {
 
 		private string _label = "";
+		private string _warning = "";
+
+		public string Warning {
+			get {
+				return _warning;
+			}
+			set {
+				_warning = value;
+				if (_warning.Length>0) {
+					WarnIcon.ToolTip = _warning;
+					WarnIcon.Visibility = Visibility.Visible;
+					WarningColumn.Width = new GridLength(30);
+				}
+			} 
+		}
 
 		public string Label {
 			get {

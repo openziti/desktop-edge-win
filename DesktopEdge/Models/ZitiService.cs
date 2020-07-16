@@ -8,9 +8,11 @@ namespace ZitiDesktopEdge.Models {
     public class ZitiService {
 		public string Name { get; set; }
 		public string Url { get; set; }
-		public ZitiService(string Name, string hostname, int port) {
+		public string Warning { get; set; }
+		public ZitiService(string Name, string hostname, int port, string warning) {
 			this.Name = Name;
 			this.Url = hostname + ":" + port;
+			this.Warning = warning;
 		}
 	}
 }

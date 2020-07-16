@@ -98,7 +98,7 @@ type Service struct {
 	Name          string
 	Id            string
 	InterceptHost string
-	InterceptPort int
+	InterceptPort uint16
 }
 
 type CZitiCtx struct {
@@ -176,7 +176,7 @@ func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data un
 			Name:          name,
 			Id:            id,
 			InterceptHost: host,
-			InterceptPort: port,
+			InterceptPort: uint16(port),
 		}
 		ctx.Services.Store(id, added)
 		if host != "" && port != -1 {

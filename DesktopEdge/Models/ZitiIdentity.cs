@@ -42,11 +42,9 @@ namespace ZitiDesktopEdge.Models {
 				Status = id.Status,
 			};
 
-			if (id.Services != null)
-			{
-				foreach (var svc in id.Services)
-				{
-					var zsvc = new ZitiService(svc.Name, svc.HostName, svc.Port);
+			if (id.Services != null) {
+				foreach (var svc in id.Services) {
+					var zsvc = new ZitiService(svc.Name, svc.HostName, svc.Port, ""); // CLINT: Warning needed
 					zid.Services.Add(zsvc);
 				}
 			}

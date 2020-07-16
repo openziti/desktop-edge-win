@@ -44,6 +44,8 @@ var log = globals.Logger()
 var	events = newTopic()
 
 const (
+	API_VERSION = 1
+
 	SUCCESS              = 0
 	COULD_NOT_WRITE_FILE = 1
 	COULD_NOT_ENROLL     = 2
