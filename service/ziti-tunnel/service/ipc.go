@@ -306,6 +306,7 @@ func serveIpc(conn net.Conn) {
 	events.broadcast <- dto.TunnelStatusEvent{
 		StatusEvent: dto.StatusEvent{Op: "status"},
 		Status:      rts.ToStatus(),
+		ApiVersion: API_VERSION,
 	}
 
 	done := make(chan struct{}, 8)
@@ -503,6 +504,7 @@ func serveEvents(conn net.Conn) {
 	err := o.Encode(	dto.TunnelStatusEvent{
 		StatusEvent: dto.StatusEvent{Op: "status"},
 		Status:      rts.ToStatus(),
+		ApiVersion: API_VERSION,
 	})
 
 	if err != nil {
@@ -712,7 +714,7 @@ func connectIdentity(id *dto.Identity) {
 	} else {
 		log.Debugf("id [%s] is already connected - not reconnecting", id.Name)
 		for _, s := range id.Services {
-			cziti.AddIntercept(s.Id, s.Name, s.HostName, s.Port, id.ZitiContext)
+			cziti.AddIntercept(s.Id, s.Name, s.InterceptHost, s.InterceptPort, id.ZitiContext)
 		}
 		id.Connected = true
 	}
@@ -822,10 +824,10 @@ func acceptServices() {
 					case cziti.ADDED:
 						//add the service to the identity
 						svc := dto.Service{
-							Name:     c.Service.Name,
-							HostName: c.Service.InterceptHost,
-							Port:     uint16(c.Service.InterceptPort),
-							Id:       c.Service.Id,
+							Name:          c.Service.Name,
+							InterceptHost: c.Service.InterceptHost,
+							InterceptPort: c.Service.InterceptPort,
+							Id:            c.Service.Id,
 						}
 						id.Services = append(id.Services, &svc)
 

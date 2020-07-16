@@ -246,12 +246,11 @@ namespace ZitiDesktopEdge {
 			if (e == null) return; //just skip it for now...
 			Debug.WriteLine($"==== TunnelStatusEvent: ");
 			this.Dispatcher.Invoke(() => {
-				/* coming soon
 				if(e.ApiVersion != Client.EXPECTED_API_VERSION) {
 					SetCantDisplay("Version mismatch!", "The version of the Service is not compatible");
 					return;
                 }
-				*/
+				
 				InitializeTimer((int)e.Status.Duration);
 				LoadStatusFromService(e.Status);
 				LoadIdentities(false);

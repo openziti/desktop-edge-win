@@ -18,9 +18,9 @@
 package dto
 
 import (
+	"github.com/openziti/desktop-edge-win/service/cziti"
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"github.com/openziti/sdk-golang/ziti/enroll"
-	"github.com/openziti/desktop-edge-win/service/cziti"
 	"log"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 )
@@ -31,10 +31,13 @@ type AddIdentity struct {
 }
 
 type Service struct {
-	Name     string
-	HostName string
-	Port     uint16
-	Id       string
+	Name          string
+	AssignedIP    string
+	InterceptHost string
+	InterceptPort uint16
+	Id            string
+	OwnsIntercept bool 	// a boolean that indicates if this service owns the intercept
+	                  	// since intercept hostname spans identities
 }
 
 type Identity struct {
@@ -44,9 +47,9 @@ type Identity struct {
 	Config      idcfg.Config
 	Status      string
 	Services    []*Service `json:",omitempty"`
-	Metrics     *Metrics `json:",omitempty"`
+	Metrics     *Metrics   `json:",omitempty"`
 
-	Connected bool            `json:"-"`
+	Connected   bool            `json:"-"`
 	ZitiContext *cziti.CZitiCtx `json:"-"`
 }
 type Metrics struct {
@@ -104,7 +107,8 @@ type ActionEvent struct {
 
 type TunnelStatusEvent struct {
 	StatusEvent
-	Status TunnelStatus
+	Status     TunnelStatus
+	ApiVersion int
 }
 
 type MetricsEvent struct {
@@ -115,7 +119,7 @@ type MetricsEvent struct {
 type ServiceEvent struct {
 	ActionEvent
 	Fingerprint string
-	Service Service
+	Service     Service
 }
 
 type IdentityEvent struct {
