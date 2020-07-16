@@ -35,7 +35,7 @@ namespace ZitiDesktopEdge.Models {
 				}
 				else
 				{
-					return $"Another identity is already mapped the specified hostname: {Host}.\nThis service is only available via IP";
+					return $"Another identity already mapped the specified hostname: {Host}.\nThis service is only available via IP";
 				}
 			}
 		}
