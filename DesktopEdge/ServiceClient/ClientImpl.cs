@@ -26,6 +26,8 @@ namespace ZitiDesktopEdge.ServiceClient
 {
     internal class Client
     {
+        public const int EXPECTED_API_VERSION = 1;
+
         public event EventHandler<TunnelStatusEvent> OnTunnelStatusEvent;
         public event EventHandler<List<Identity>> OnMetricsEvent;
         public event EventHandler<IdentityEvent> OnIdentityEvent;
