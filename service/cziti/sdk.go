@@ -99,6 +99,7 @@ type Service struct {
 	Id            string
 	InterceptHost string
 	InterceptPort uint16
+	AssignedIP    string
 }
 
 type CZitiCtx struct {
@@ -172,13 +173,6 @@ func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data un
 				port = int(c["port"].(float64))
 			}
 		}
-		added := Service{
-			Name:          name,
-			Id:            id,
-			InterceptHost: host,
-			InterceptPort: uint16(port),
-		}
-		ctx.Services.Store(id, added)
 		if host != "" && port != -1 {
 			ip, err := DNS.RegisterService(host, uint16(port), ctx, name)
 			if err != nil {
@@ -189,6 +183,14 @@ func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data un
 					t.AddIntercept(id, name, ip.String(), port, unsafe.Pointer(ctx.zctx))
 				}
 			}
+			added := Service{
+				Name:          name,
+				Id:            id,
+				InterceptHost: host,
+				InterceptPort: uint16(port),
+				AssignedIP:    ip.String(),
+			}
+			ctx.Services.Store(id, added)
 			ServiceChanges <- ServiceChange{
 				Operation:   ADDED,
 				Service: &added,
