@@ -2,11 +2,15 @@
 
 * What's New
 
+  * [#70](https://github.com/openziti/desktop-edge-win/issues/70) - added api ApiVersion to TunnelStatusEvent 
+  * [#71](https://github.com/openziti/desktop-edge-win/issues/71) - add .log to rolled over log files
+  * 
+  
 * Bug fixes
   * [#59](https://github.com/openziti/desktop-edge-win/issues/59) - too many services blocked service from accepting connections from the UI
   * [#61](https://github.com/openziti/desktop-edge-win/issues/61) - identity shutdown needs to be on the uv loop (issue with forgetting identities)
   * [#63](https://github.com/openziti/desktop-edge-win/issues/63) - when service restarts and UI reconnects clear identities and let the service repopulate the UI
-  * [#65](https://github.com/openziti/desktop-edge-win/issues/65) - set the MTU based on the value reported from the interface
+  * [#67](https://github.com/openziti/desktop-edge-win/issues/67) - set the MTU based on the value reported from the interface
 
 
 # Release 0.0.16
