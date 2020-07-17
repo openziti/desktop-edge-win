@@ -829,6 +829,7 @@ func acceptServices() {
 							InterceptPort: c.Service.InterceptPort,
 							Id:            c.Service.Id,
 							AssignedIP:    c.Service.AssignedIP,
+							OwnsIntercept: c.Service.OwnsIntercept,
 						}
 						id.Services = append(id.Services, &svc)
 
