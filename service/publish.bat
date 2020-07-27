@@ -45,20 +45,35 @@ IF %~1 NEQ 0 (
 exit /b 0
 
 :END
-@echo publishing complete - committing version.go as ci
-
-@echo configuring git - relies on build.bat successfully grabbing ziti-ci
+echo configuring git - relies on build.bat successfully grabbing ziti-ci
 ziti-ci configure-git 2>1
 
-git add service/ziti-tunnel/version.go 2>1
+@echo publishing complete - committing version.go as ci
+
+@echo mv'ing new version.go to service/ziti-tunnel/version.go-temp
+mv service/ziti-tunnel/version.go service/ziti-tunnel/version.go-temp
+
+@echo changing git to be on branch: %GIT_BRANCH%
+git checkout %GIT_BRANCH%
+CALL :FAIL %ERRORLEVEL% "checkout failed"
+@echo git checkout %GIT_BRANCH% complete: %ERRORLEVEL%
+
+@echo mv'ing service/ziti-tunnel/version.go-temp onto service/ziti-tunnel/version.go
+mv service/ziti-tunnel/version.go-temp service/ziti-tunnel/version.go
+
+@echo adding service/ziti-tunnel/version.go to git
+git add service/ziti-tunnel/version.go
 CALL :FAIL %ERRORLEVEL% "git add failed"
 @echo git add service/ziti-tunnel/version.go complete: %ERRORLEVEL%
+
+@echo issuing git status "just because"
+git status
 
 git commit -m "[ci skip] committing updated version information" 2>1
 CALL :FAIL %ERRORLEVEL% "git commit failed"
 @echo git commit -m "[ci skip] committing updated version information" complete: %ERRORLEVEL%
 
-git push
+git push 2>1
 CALL :FAIL %ERRORLEVEL% "git push failed"
 @echo git push complete: %ERRORLEVEL%
 
