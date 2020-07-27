@@ -27,7 +27,7 @@ del /q %SVC_ROOT_DIR%ziti.dll
 cd %SVC_ROOT_DIR%
 
 SET REPO_URL=https://github.com/openziti/ziti-tunneler-sdk-c.git
-SET ZITI_TUNNEL_REPO_BRANCH=master
+SET ZITI_TUNNEL_REPO_BRANCH=1a55fc75a918bd27f410ea01c7dfd64099e15cc2
 SET TUNNELER_SDK_DIR=%SVC_ROOT_DIR%deps\ziti-tunneler-sdk-c\
 set CGO_CFLAGS=-DNOGDI -I %TUNNELER_SDK_DIR%install\include
 set CGO_LDFLAGS=-L %TUNNELER_SDK_DIR%install\lib
