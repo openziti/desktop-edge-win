@@ -260,7 +260,8 @@ paket-files/
 __pycache__/
 *.pyc
 
-*/*.dll
 github_deploy_key
 ziti-tunnel-win.zip
 service/deps
+service/ziti.dll
+service/libuv.dll
