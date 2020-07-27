@@ -14,7 +14,6 @@ require (
 	github.com/openziti/sdk-golang v0.13.20
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sirupsen/logrus v1.6.0
-	github.com/spf13/cobra v0.0.7
 	github.com/tebeka/strftime v0.1.4 // indirect
 	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae
 	golang.zx2c4.com/wireguard v0.0.20200320

@@ -45,16 +45,10 @@ IF %~1 NEQ 0 (
 exit /b 0
 
 :END
-echo configuring git - relies on build.bat successfully grabbing ziti-ci
-ziti-ci configure-git 2>1
-
 @echo publishing complete - committing version.go as ci
 
-git stash 2>1
-git checkout %GIT_BRANCH% 2>1
-git stash pop 2>1
-CALL :FAIL %ERRORLEVEL% "checkout failed"
-@echo git checkout %GIT_BRANCH% complete: %ERRORLEVEL%
+@echo configuring git - relies on build.bat successfully grabbing ziti-ci
+ziti-ci configure-git 2>1
 
 git add service/ziti-tunnel/version.go 2>1
 CALL :FAIL %ERRORLEVEL% "git add failed"

@@ -64,8 +64,6 @@ func main() {
 		return
 	}
 
-	log.Info("running interactively")
-
 	// all this code below is to either support installing/removing the service or testing it
 	if len(os.Args) < 2 {
 		usage("no command specified")
@@ -78,6 +76,7 @@ func main() {
 	cmd := strings.ToLower(os.Args[1])
 	switch cmd {
 	case "debug":
+		log.Infof("running interactively: %s", version())
 		service.Debug = true
 		service.RunService(true)
 		return
@@ -88,15 +87,19 @@ func main() {
 		elog.Info(service.InstallEvent, "removing service: "+service.SvcName)
 		err = service.RemoveService()
 	case "start":
+		log.Infof("starting as service: %s", version())
 		err = service.StartService()
 	case "stop":
+		log.Infof("stopping service: %s", version())
 		err = service.ControlService(svc.Stop, svc.Stopped)
 	case "pause":
+		log.Infof("pausing service: %s", version())
 		err = service.ControlService(svc.Pause, svc.Paused)
 	case "continue":
+		log.Infof("continuing service: %s", version())
 		err = service.ControlService(svc.Continue, svc.Running)
 	case "version":
-		printVersion()
+		fmt.Println(version())
 	default:
 		usage(fmt.Sprintf("invalid command %s", cmd))
 	}
@@ -117,7 +120,7 @@ func usage(errmsg string) {
 	os.Exit(2)
 }
 
-func printVersion() {
-	fmt.Printf("%v version: %v, revision: %v, branch: %v, build-by: %v, built-on: %v\n",
+func version() string {
+	return fmt.Sprintf("%v version: %v, revision: %v, branch: %v, build-by: %v, built-on: %v\n",
 		os.Args[0], Version, Revision, Branch, BuildUser, BuildDate)
 }
