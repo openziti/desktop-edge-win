@@ -126,8 +126,10 @@ namespace ZitiDesktopEdge.ServiceClient
     public class Service
     {
         public string Name { get; set; }
-        public string HostName { get; set; }
-        public UInt16 Port { get; set; }
+        public string InterceptHost { get; set; }
+        public UInt16 InterceptPort { get; set; }
+        public bool OwnsIntercept { get; set; }
+        public string AssignedIP { get; set; }
     }
 
     public class EnrollmentFlags
@@ -173,7 +175,7 @@ namespace ZitiDesktopEdge.ServiceClient
                 writer.WriteLine($"    Services:");
                 foreach (Service s in id.Services)
                 {
-                    writer.WriteLine($"      Name: {s.Name} HostName: {s.HostName} Port: {s.Port}");
+                    writer.WriteLine($"      Name: {s.Name} HostName: {s.InterceptHost} Port: {s.InterceptPort}");
                 }
                 writer.WriteLine("=============================================");
             }

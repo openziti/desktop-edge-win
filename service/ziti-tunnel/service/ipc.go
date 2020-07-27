@@ -300,7 +300,7 @@ func accept(p net.Listener, serveFunction func(net.Conn), debug string) {
 
 func serveIpc(conn net.Conn) {
 	log.Debug("beginning ipc receive loop")
-	defer log.Warn("IPC Loop has exited")
+	defer log.Info("A connected IPC client has disconnected")
 	defer closeConn(conn) //close the connection after this function invoked as go routine exits
 
 	events.broadcast <- dto.TunnelStatusEvent{
@@ -519,7 +519,7 @@ loop:
 			case msg := <-consumer:
 				err := o.Encode(msg)
 				if err != nil {
-					log.Infof("exiting from serveEvents - %v", err)
+					log.Debugf("exiting from serveEvents - %v", err)
 					break loop
 				}
 				_ = w.Flush()
@@ -527,7 +527,7 @@ loop:
 				break loop
 		}
 	}
-	log.Debug("exiting serve events")
+	log.Info("a connected event client has disconnected")
 }
 
 func reportStatus(out *json.Encoder) {
@@ -828,6 +828,8 @@ func acceptServices() {
 							InterceptHost: c.Service.InterceptHost,
 							InterceptPort: c.Service.InterceptPort,
 							Id:            c.Service.Id,
+							AssignedIP:    c.Service.AssignedIP,
+							OwnsIntercept: c.Service.OwnsIntercept,
 						}
 						id.Services = append(id.Services, &svc)
 

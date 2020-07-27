@@ -15,7 +15,7 @@ call %SVC_ROOT_DIR%/../get-ziti-ci.bat
 ziti-ci version
 
 echo generating version info - this will pushed from publish.bat in CI
-ziti-ci generate-build-info --useVersion=false %SVC_ROOT_DIR%/ziti-tunnel/version.go main
+ziti-ci generate-build-info --useVersion=false %SVC_ROOT_DIR%/ziti-tunnel/version.go main --verbose
 echo version info generated
 goto QUICK
 
