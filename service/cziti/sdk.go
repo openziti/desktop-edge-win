@@ -100,6 +100,7 @@ type Service struct {
 	InterceptHost string
 	InterceptPort uint16
 	AssignedIP    string
+	OwnsIntercept bool
 }
 
 type CZitiCtx struct {
@@ -135,7 +136,7 @@ func (c *CZitiCtx) Controller() string {
 var tunCfgName = C.CString("ziti-tunneler-client.v1")
 
 //export serviceCB
-func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data unsafe.Pointer) {
+func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, data unsafe.Pointer) {
 	ctx := (*CZitiCtx)(data)
 
 	if ctx.Services == nil {
@@ -144,14 +145,14 @@ func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data un
 	}
 
 	name := C.GoString(service.name)
-	id := C.GoString(service.id)
-	log.Debugf("============ INSIDE serviceCB - status: %s:%s - %v, %v, %v ============", name, id, status, C.ZITI_SERVICE_UNAVAILABLE, C.ZITI_OK)
+	svcId := C.GoString(service.id)
+	log.Debugf("============ INSIDE serviceCB - status: %s:%s - %v, %v, %v ============", name, svcId, status, C.ZITI_SERVICE_UNAVAILABLE, C.ZITI_OK)
 	if status == C.ZITI_SERVICE_UNAVAILABLE {
-		found, ok := ctx.Services.Load(id)
+		found, ok := ctx.Services.Load(svcId)
 		fs := found.(Service)
 		if ok {
 			DNS.DeregisterService(ctx, name)
-			ctx.Services.Delete(id)
+			ctx.Services.Delete(svcId)
 			ServiceChanges <- ServiceChange{
 				Operation: REMOVED,
 				Service:   &fs,
@@ -174,23 +175,26 @@ func serviceCB(nf C.ziti_context, service *C.ziti_service, status C.int, data un
 			}
 		}
 		if host != "" && port != -1 {
-			ip, err := DNS.RegisterService(host, uint16(port), ctx, name)
+			ownsIntercept := true
+			ip, err := DNS.RegisterService(svcId, host, uint16(port), ctx, name)
 			if err != nil {
 				log.Warn(err)
+				ownsIntercept = false
 			} else {
 				log.Infof("service intercept beginning for service: %s@%s:%d on ip %s", name, host, port, ip.String())
 				for _, t := range devMap {
-					t.AddIntercept(id, name, ip.String(), port, unsafe.Pointer(ctx.zctx))
+					t.AddIntercept(svcId, name, ip.String(), port, unsafe.Pointer(ctx.zctx))
 				}
 			}
 			added := Service{
 				Name:          name,
-				Id:            id,
+				Id:            svcId,
 				InterceptHost: host,
 				InterceptPort: uint16(port),
 				AssignedIP:    ip.String(),
+				OwnsIntercept: ownsIntercept,
 			}
-			ctx.Services.Store(id, added)
+			ctx.Services.Store(svcId, added)
 			ServiceChanges <- ServiceChange{
 				Operation:   ADDED,
 				Service: &added,

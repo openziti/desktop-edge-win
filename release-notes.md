@@ -2,7 +2,7 @@
 
 * What's New
 
-  * [#70](https://github.com/openziti/desktop-edge-win/issues/70) - 
+  * [#70](https://github.com/openziti/desktop-edge-win/issues/70) - Version added to api to report when model changes occur
   
 * Bug fixes
 
