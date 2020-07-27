@@ -50,24 +50,17 @@ ziti-ci configure-git 2>1
 
 @echo publishing complete - committing version.go as ci
 
-@echo mv'ing new version.go to service/ziti-tunnel/version.go-temp
-mv service/ziti-tunnel/version.go service/ziti-tunnel/version.go-temp
-
-@echo changing git to be on branch: %GIT_BRANCH%
-git checkout %GIT_BRANCH%
+git stash 2>1
+CALL :FAIL %ERRORLEVEL% "git stash failed"
+git checkout %GIT_BRANCH% 2>1
 CALL :FAIL %ERRORLEVEL% "checkout failed"
+git stash pop 2>1
+CALL :FAIL %ERRORLEVEL% "git stash pop failed"
 @echo git checkout %GIT_BRANCH% complete: %ERRORLEVEL%
 
-@echo mv'ing service/ziti-tunnel/version.go-temp onto service/ziti-tunnel/version.go
-mv service/ziti-tunnel/version.go-temp service/ziti-tunnel/version.go
-
-@echo adding service/ziti-tunnel/version.go to git
-git add service/ziti-tunnel/version.go
+git add service/ziti-tunnel/version.go 2>1
 CALL :FAIL %ERRORLEVEL% "git add failed"
 @echo git add service/ziti-tunnel/version.go complete: %ERRORLEVEL%
-
-@echo issuing git status "just because"
-git status
 
 git commit -m "[ci skip] committing updated version information" 2>1
 CALL :FAIL %ERRORLEVEL% "git commit failed"
