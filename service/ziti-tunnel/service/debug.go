@@ -28,6 +28,7 @@ func dbg() {
 	events.broadcast <- dto.TunnelStatusEvent{
 		StatusEvent: dto.StatusEvent{Op: "status"},
 		Status:      r,
+		ApiVersion: API_VERSION,
 	}
 
 	svcs := make([]*dto.Service, 2)

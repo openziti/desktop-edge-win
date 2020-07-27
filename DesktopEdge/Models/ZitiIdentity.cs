@@ -44,7 +44,7 @@ namespace ZitiDesktopEdge.Models {
 
 			if (id.Services != null) {
 				foreach (var svc in id.Services) {
-					var zsvc = new ZitiService(svc.Name, svc.HostName, svc.Port, ""); // CLINT: Warning needed
+					var zsvc = new ZitiService(svc);
 					zid.Services.Add(zsvc);
 				}
 			}
