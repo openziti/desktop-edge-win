@@ -14,8 +14,8 @@
                     <ColumnDefinition Width="150"/>
                     <ColumnDefinition x:Name="WarningColumn" Width="0"/>
                 </Grid.ColumnDefinitions>
-                <TextBox Name="MainLabel" BorderThickness="0" Background="White" ClipToBounds="True" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBox>
-                <TextBox Name="MainEdit" BorderThickness="0" Background="White" ClipToBounds="True" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBox>
+                <TextBox Name="MainLabel" BorderThickness="0" MinWidth="100" MaxWidth="140" Background="White" ClipToBounds="True" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBox>
+                <TextBox Name="MainEdit" TextAlignment="Right" BorderThickness="0" MinWidth="100" MaxWidth="140" Background="White" ClipToBounds="True" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBox>
                 <Image x:Name="WarnIcon" Visibility="Collapsed" Source="/Assets/Images/Warning.png" Grid.Column="2" Width="20" Height="20"/>
             </Grid>
             <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
