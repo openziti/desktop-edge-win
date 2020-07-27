@@ -58,7 +58,7 @@ git commit -m "[ci skip] committing updated version information" 2>1
 CALL :FAIL %ERRORLEVEL% "git commit failed"
 @echo git commit -m "[ci skip] committing updated version information" complete: %ERRORLEVEL%
 
-git push 2>1
+git push
 CALL :FAIL %ERRORLEVEL% "git push failed"
 @echo git push complete: %ERRORLEVEL%
 
