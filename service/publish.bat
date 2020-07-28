@@ -46,27 +46,31 @@ exit /b 0
 
 :END
 echo configuring git - relies on build.bat successfully grabbing ziti-ci and build.bat updating service/ziti-tunnel/version.go
-ziti-ci configure-git 2>1
+ziti-ci configure-git 2>&1
 
 @echo publishing complete - committing version.go as ci
 
-git checkout %GIT_BRANCH% 2>1
+git checkout %GIT_BRANCH% 2>&1
 CALL :FAIL %ERRORLEVEL% "checkout failed"
 
 @echo git checkout %GIT_BRANCH% complete: %ERRORLEVEL%
 
-git add service/ziti-tunnel/version.go
+git add service/ziti-tunnel/version.go 2>&1
 CALL :FAIL %ERRORLEVEL% "git add failed"
 @echo git add service/ziti-tunnel/version.go complete: %ERRORLEVEL%
 
-git status
-git diff
-git commit -m "[ci skip] committing updated version information"
+@echo issuing status, diff, commit
+@echo ========================================================
+git status 2>&1
+git diff 2>&1
+git commit -m "[ci skip] committing updated version information" 2>&1
 CALL :FAIL %ERRORLEVEL% "git commit failed"
 @echo git commit -m "[ci skip] committing updated version information" complete: %ERRORLEVEL%
 
-git status
-git push
+@echo issuing git status and push now
+@echo ========================================================
+git status 2>&1
+git push 2>&1
 CALL :FAIL %ERRORLEVEL% "git push failed"
 @echo git push complete: %ERRORLEVEL%
 
