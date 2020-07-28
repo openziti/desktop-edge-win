@@ -45,7 +45,7 @@ IF %~1 NEQ 0 (
 exit /b 0
 
 :END
-echo configuring git - relies on build.bat successfully grabbing ziti-ci
+echo configuring git - relies on build.bat successfully grabbing ziti-ci and build.bat updating service/ziti-tunnel/version.go
 ziti-ci configure-git 2>1
 
 @echo publishing complete - committing version.go as ci
