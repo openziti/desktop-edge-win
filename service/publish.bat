@@ -50,12 +50,15 @@ ziti-ci configure-git 2>1
 
 @echo publishing complete - committing version.go as ci
 
-git stash 2>1
-CALL :FAIL %ERRORLEVEL% "git stash failed"
+REM git stash 2>1
+REM CALL :FAIL %ERRORLEVEL% "git stash failed"
+
 git checkout %GIT_BRANCH% 2>1
 CALL :FAIL %ERRORLEVEL% "checkout failed"
-git stash pop 2>1
-CALL :FAIL %ERRORLEVEL% "git stash pop failed"
+
+REM git stash pop 2>1
+REM CALL :FAIL %ERRORLEVEL% "git stash pop failed"
+
 @echo git checkout %GIT_BRANCH% complete: %ERRORLEVEL%
 
 git add service/ziti-tunnel/version.go 2>1
