@@ -20,7 +20,9 @@ package cziti
 import (
 	"fmt"
 	"github.com/miekg/dns"
+	"io"
 	"net"
+	"os"
 	"time"
 	"github.com/openziti/desktop-edge-win/service/cziti/windns"
 )
@@ -155,16 +157,16 @@ func proxyDNS(req *dns.Msg, peer *net.UDPAddr, serv *net.UDPConn) {
 	}
 }
 
-func dnsPanicRecover(dnsServers []string) {
-	//just rerun the dns proxy function
-	go runDNSproxy(dnsServers)
+func dnsPanicRecover() {
+	// get dns again and reconfigure
+	go runDNSproxy(windns.GetUpstreamDNS())
 }
 
 func runDNSproxy(dnsServers []string) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Errorf("Recovered in f. %v", r)
-			dnsPanicRecover(dnsServers)
+			dnsPanicRecover()
 		}
 	}()
 
@@ -193,7 +195,12 @@ func runDNSproxy(dnsServers []string) {
 			for {
 				n, err := proxy.Read(resp)
 				if err != nil {
-					log.Debug("error receiving from ", proxy.RemoteAddr(), err)
+					// something is wrong with the DNS connection panic and let DNS recovery kick in
+					if err == io.EOF || err == os.ErrClosed || err.Error() == "use of closed network connection" {
+						log.Panicf("error receiving from ", proxy.RemoteAddr(), err)
+					} else {
+						log.Panicf("UNEXPECTED error receiving from ", proxy.RemoteAddr(), err)
+					}
 				} else {
 					respChan <- resp[:n]
 				}
