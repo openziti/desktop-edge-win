@@ -24,6 +24,7 @@ rmdir /s /q deps
 del /q %SVC_ROOT_DIR%ziti.dll
 
 :QUICK
+echo doing 'quick' build - no tunneler sdk/c sdk build
 cd %SVC_ROOT_DIR%
 
 SET REPO_URL=https://github.com/openziti/ziti-tunneler-sdk-c.git
