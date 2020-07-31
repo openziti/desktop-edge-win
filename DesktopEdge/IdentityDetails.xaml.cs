@@ -99,35 +99,37 @@ namespace ZitiDesktopEdge {
 			MainDetailScroll.Height = height;
 		}
 
-		private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
-			// Jeremy - this works now as long as you pass a fingerprint that's valid!
-			UIModel.HideOnLostFocus = false;
-			MessageBoxResult messageBoxResult = MessageBox.Show("Are you sure you want to forget this identity?", "Delete Confirmation", System.Windows.MessageBoxButton.YesNo);
-			UIModel.HideOnLostFocus = true;
-			if (messageBoxResult == MessageBoxResult.Yes) {
-				this.Visibility = Visibility.Collapsed;
-				ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
-				try {
-					client.RemoveIdentity(_identity.Fingerprint);
+		private void CancelConfirm(object sender, MouseButtonEventArgs e) {
+			ConfirmView.Visibility = Visibility.Collapsed;
+		}
 
-					ZitiIdentity forgotten = new ZitiIdentity();
-					foreach (var id in identities) {
-						if (id.Fingerprint == _identity.Fingerprint) {
-							forgotten = id;
-							identities.Remove(id);
-							break;
-						}
-					}
+		private void ConfirmForget(object sender, MouseButtonEventArgs e) {
+			this.Visibility = Visibility.Collapsed;
+			ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
+			try {
+				client.RemoveIdentity(_identity.Fingerprint);
 
-					if (OnForgot != null) {
-						OnForgot(forgotten);
+				ZitiIdentity forgotten = new ZitiIdentity();
+				foreach (var id in identities) {
+					if (id.Fingerprint == _identity.Fingerprint) {
+						forgotten = id;
+						identities.Remove(id);
+						break;
 					}
-				} catch (ServiceClient.ServiceException se) {
-					OnError(se.Message);
-				} catch (Exception ex) {
-					OnError(ex.Message);
 				}
+
+				if (OnForgot != null) {
+					OnForgot(forgotten);
+				}
+			} catch (ServiceClient.ServiceException se) {
+				OnError(se.Message);
+			} catch (Exception ex) {
+				OnError(ex.Message);
 			}
+		}
+
+		private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
+			ConfirmView.Visibility = Visibility.Visible;
 		}
 	}
 }

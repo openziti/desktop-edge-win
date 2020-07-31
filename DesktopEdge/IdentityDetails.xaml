@@ -51,5 +51,38 @@
                 </Grid>
             </StackPanel>
         </Grid>
+
+        <Grid x:Name="ConfirmView" Visibility="Collapsed" Width="350">
+            <Rectangle RadiusX="10" RadiusY="10">
+                <Rectangle.Fill>
+                    <SolidColorBrush Color="Black" Opacity="0.9"/>
+                </Rectangle.Fill>
+            </Rectangle>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+            </Grid>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"></RowDefinition>
+                    <RowDefinition Height="60"></RowDefinition>
+                    <RowDefinition Height="80"></RowDefinition>
+                    <RowDefinition Height="30"></RowDefinition>
+                    <RowDefinition Height="30"></RowDefinition>
+                    <RowDefinition Height="*"></RowDefinition>
+                </Grid.RowDefinitions>
+                <Label Name="ErrorTitle" Foreground="White" Content="Confirm Forget" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
+                <TextBlock TextWrapping="WrapWithOverflow" Foreground="LightGray" Padding="10" Text="If you delete this identity you will no longer have access to the resources that it grants you." Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
+                <Grid Grid.Row="4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="160"></ColumnDefinition>
+                        <ColumnDefinition Width="*"></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+                    <Label Name="CancelConfirmButton" Grid.Column="0" Foreground="#CCCCCC" FontWeight="SemiBold" Content="Close" Cursor="Hand" MouseUp="CancelConfirm" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Center"></Label>
+                    <Label Name="ConfirmButton" Grid.Column="1" Foreground="#F4044D" FontWeight="SemiBold" Content="Confirm" Cursor="Hand" MouseUp="ConfirmForget" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Center"></Label>
+                </Grid>
+            </Grid>
+        </Grid>
     </Grid>
 </UserControl>
