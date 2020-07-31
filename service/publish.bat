@@ -70,7 +70,7 @@ CALL :FAIL %ERRORLEVEL% "git add failed"
 @echo git add service/ziti-tunnel/version.go complete: %ERRORLEVEL%
 
 @echo issuing ssh -vT -i github_deploy_key git@github.com
-ssh -vT -i github_deploy_key git@github.com
+ssh -vT -i github_deploy_key git@github.com 2>&1
 
 @echo issuing commit
 git commit -m "[ci skip] committing updated version information" 2>&1
