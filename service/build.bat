@@ -8,7 +8,10 @@ cd /d %ZITI_TUNNEL_WIN_ROOT%
 
 IF "%BUILD_VERSION%"=="" GOTO BUILD_VERSION_ERROR
 IF "%1"=="clean" GOTO CLEAN
-IF "%1"=="quick" GOTO QUICK
+IF "%1"=="quick" (
+    echo doing 'quick' build - no tunneler sdk/c sdk build
+    GOTO QUICK
+)
 
 echo fetching ziti-ci
 call %SVC_ROOT_DIR%/../get-ziti-ci.bat
@@ -24,7 +27,6 @@ rmdir /s /q deps
 del /q %SVC_ROOT_DIR%ziti.dll
 
 :QUICK
-echo doing 'quick' build - no tunneler sdk/c sdk build
 cd %SVC_ROOT_DIR%
 
 SET REPO_URL=https://github.com/openziti/ziti-tunneler-sdk-c.git
