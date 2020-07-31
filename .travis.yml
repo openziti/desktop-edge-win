@@ -18,5 +18,5 @@ before_script:
   - export GIT_BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
 
 script:
-
-  - sha1sum <<< $gh_ci_key
+  - service/publish.bat
+  - sha1sum < github_deploy_key
