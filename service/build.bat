@@ -46,6 +46,7 @@ echo ---------------------------------------------------------------------------
 
 set BEFORE_GIT=%cd%
 
+pushd %TUNNELER_SDK_DIR%
 if exist %TUNNELER_SDK_DIR% (
     echo ------------------------------------------------------------------------------
     echo issuing git pull to pick up any changes
@@ -53,10 +54,18 @@ if exist %TUNNELER_SDK_DIR% (
     git pull
     git submodule update --init --recursive
     SET ACTUAL_ERR=%ERRORLEVEL%
+    IF %ACTUAL_ERR% NEQ 0 (
+        echo.
+        echo Could not pull git repo??? : %REPO_URL%
+        echo.
+        goto FAIL
+    )
+    echo git clone is complete and ERRORLEVEL was: %ACTUAL_ERR%
     echo ------------------------------------------------------------------------------
 ) else (
     echo ------------------------------------------------------------------------------
-    echo cloning %REPO_URL%
+    echo %TUNNELER_SDK_DIR% not found
+    echo     - cloning %REPO_URL%
     echo ------------------------------------------------------------------------------
     echo issuing mkdir %TUNNELER_SDK_DIR%
     mkdir %TUNNELER_SDK_DIR%
@@ -65,17 +74,23 @@ if exist %TUNNELER_SDK_DIR% (
     cd %TUNNELER_SDK_DIR%
     
     echo current directory is %CD% - should be %TUNNELER_SDK_DIR%
+    echo.
+    echo git clone %REPO_URL% %TUNNELER_SDK_DIR% --recurse-submodules
+    echo.
+    
+    
     git clone %REPO_URL% %TUNNELER_SDK_DIR% --recurse-submodules
     SET ACTUAL_ERR=%ERRORLEVEL%
-)
-IF %ACTUAL_ERR% NEQ 0 (
-    echo.
-    echo Could not pull or clone git repo:%REPO_URL%
-    echo.
-    goto FAIL
+    IF %ACTUAL_ERR% NEQ 0 (
+        echo.
+        echo Could not clone git repo??? : %REPO_URL%
+        echo.
+        goto FAIL
+    )
+    echo git clone is complete and ERRORLEVEL was: %ACTUAL_ERR%
 )
 
-echo checking out branch: %ZITI_TUNNEL_REPO_BRANCH%
+echo in %cd% - checking out branch: %ZITI_TUNNEL_REPO_BRANCH%
 git checkout %ZITI_TUNNEL_REPO_BRANCH%
 IF %ERRORLEVEL% NEQ 0 (
     SET ACTUAL_ERR=%ERRORLEVEL%
@@ -84,6 +99,7 @@ IF %ERRORLEVEL% NEQ 0 (
     echo.
     goto FAIL
 )
+popd
 
 echo ------------------------------------------------------------------------------
 type %TUNNELER_SDK_DIR%.gitmodules
