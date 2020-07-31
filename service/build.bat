@@ -49,7 +49,7 @@ echo BUILDING ziti.dll begins
 echo ------------------------------------------------------------------------------
 
 set BEFORE_GIT=%cd%
-echo about to enter the 'if exist %TUNNELER_SDK_DIR%'' block:
+echo about to enter the 'if exist %TUNNELER_SDK_DIR%' block:
 if exist %TUNNELER_SDK_DIR% (
     echo %TUNNELER_SDK_DIR% supposedly exists?
     cd %TUNNELER_SDK_DIR%
@@ -87,7 +87,7 @@ if exist %TUNNELER_SDK_DIR% (
     SET ACTUAL_ERR=%ERRORLEVEL%
     IF %ACTUAL_ERR% NEQ 0 (
         echo.
-        echo Could not clone git repo??? : %REPO_URL%
+        echo Could not clone git repo??? : %ACTUAL_ERR% %REPO_URL%
         echo.
         goto FAIL
     )
