@@ -53,6 +53,10 @@ ziti-ci configure-git 2>&1
 git checkout %GIT_BRANCH% 2>&1
 CALL :FAIL %ERRORLEVEL% "checkout failed"
 
+@echo converting shallow clone so travis can co: %GIT_BRANCH%
+git remote set-branches origin %GIT_BRANCH% 2>&1
+git fetch --depth 1 origin %GIT_BRANCH% 2>&1
+git checkout %GIT_BRANCH% 2>&1
 @echo git checkout %GIT_BRANCH% complete: %ERRORLEVEL%
 
 git add service/ziti-tunnel/version.go 2>&1
