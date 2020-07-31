@@ -78,6 +78,7 @@ CALL :FAIL %ERRORLEVEL% "git commit failed"
 @echo ========================================================
 @echo setting git config remote.url git@github.com:openziti/desktop-edge-win.git
 git config remote.url git@github.com:openziti/desktop-edge-win.git
+git config --list
 git push 2>&1
 CALL :FAIL %ERRORLEVEL% "git push failed"
 @echo git push complete: %ERRORLEVEL%
