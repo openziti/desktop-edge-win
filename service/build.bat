@@ -49,7 +49,15 @@ echo BUILDING ziti.dll begins
 echo ------------------------------------------------------------------------------
 
 set BEFORE_GIT=%cd%
-echo about to enter the 'if exist %TUNNELER_SDK_DIR%' block:
+echo about to enter the 'if exist %TUNNELER_SDK_DIR%' block
+
+if exist %TUNNELER_SDK_DIR% (
+  echo xxxxxxx: it existed
+) else (
+  echo xxxxxxx: it did not existed
+)
+echo about to enter the 'if exist %TUNNELER_SDK_DIR%' block again
+
 if exist %TUNNELER_SDK_DIR% (
     echo %TUNNELER_SDK_DIR% supposedly exists?
     cd %TUNNELER_SDK_DIR%
