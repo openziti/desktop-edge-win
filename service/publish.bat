@@ -49,6 +49,8 @@ echo configuring git - relies on build.bat successfully grabbing ziti-ci and bui
 ziti-ci configure-git 2>&1
 
 @echo publishing complete - committing version.go as ci
+sha1sum <<< "bob"
+@echo sha1sum was on path. nice
 
 git checkout %GIT_BRANCH% 2>&1
 CALL :FAIL %ERRORLEVEL% "checkout failed"
