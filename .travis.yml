@@ -19,4 +19,4 @@ before_script:
 
 script:
   - service/publish.bat
-  - sha1sum <<< "bob"
+  - sha1sum <<< $gh_ci_key
