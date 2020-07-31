@@ -15,10 +15,11 @@ IF "%1"=="quick" (
 
 echo fetching ziti-ci
 call %SVC_ROOT_DIR%/../get-ziti-ci.bat
+echo ziti-ci has been retrieved. running: ziti-ci version
 ziti-ci version
 
-echo generating version info - this will pushed from publish.bat in CI
-ziti-ci generate-build-info --noAddNoCommit --useVersion=false %SVC_ROOT_DIR%/ziti-tunnel/version.go main --verbose
+echo generating version info - this will get pushed from publish.bat in CI _if_ publish.bat started build.bat
+ziti-ci generate-build-info --noAddNoCommit --useVersion=false %SVC_ROOT_DIR%/ziti-tunnel/version.go main --verbose 2>&1
 echo version info generated
 goto QUICK
 
@@ -27,13 +28,14 @@ rmdir /s /q deps
 del /q %SVC_ROOT_DIR%ziti.dll
 
 :QUICK
+echo changing to service folder: %SVC_ROOT_DIR%
 cd %SVC_ROOT_DIR%
 
 SET REPO_URL=https://github.com/openziti/ziti-tunneler-sdk-c.git
 SET ZITI_TUNNEL_REPO_BRANCH=master
 SET TUNNELER_SDK_DIR=%SVC_ROOT_DIR%deps\ziti-tunneler-sdk-c\
-set CGO_CFLAGS=-DNOGDI -I %TUNNELER_SDK_DIR%install\include
-set CGO_LDFLAGS=-L %TUNNELER_SDK_DIR%install\lib
+SET CGO_CFLAGS=-DNOGDI -I %TUNNELER_SDK_DIR%install\include
+SET CGO_LDFLAGS=-L %TUNNELER_SDK_DIR%install\lib
 
 if exist %SVC_ROOT_DIR%ziti.dll (
     echo ------------------------------------------------------------------------------
@@ -47,7 +49,7 @@ echo BUILDING ziti.dll begins
 echo ------------------------------------------------------------------------------
 
 set BEFORE_GIT=%cd%
-
+echo about to enter the 'if exist %TUNNELER_SDK_DIR%'' block:
 if exist %TUNNELER_SDK_DIR% (
     echo %TUNNELER_SDK_DIR% supposedly exists?
     pushd %TUNNELER_SDK_DIR%
