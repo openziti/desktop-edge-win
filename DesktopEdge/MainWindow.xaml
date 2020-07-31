@@ -93,7 +93,7 @@
         <EventTrigger RoutedEvent="Window.Unloaded">
             <BeginStoryboard>
                 <Storyboard Name="FormFadeOut" Completed="FormFadeOut_Completed">
-                    <DoubleAnimation  Name="FormFadeOutAnimation" Storyboard.TargetName="MainUI" Storyboard.TargetProperty="(Window.Opacity)" From="1.0" To="0.0" Duration="0:0:0.5" AutoReverse="False"  RepeatBehavior="1x" />
+                    <DoubleAnimation Name="FormFadeOutAnimation" Storyboard.TargetName="MainUI" Storyboard.TargetProperty="(Window.Opacity)" From="1.0" To="0.0" Duration="0:0:0.5" AutoReverse="False"  RepeatBehavior="1x" />
                 </Storyboard>
             </BeginStoryboard>
         </EventTrigger>

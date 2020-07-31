@@ -57,8 +57,13 @@ namespace ZitiDesktopEdge {
 			}
 			set {
 				_isAttached = value;
-				if (_isAttached) Arrow.Visibility = Visibility.Visible;
-				else Arrow.Visibility = Visibility.Collapsed;
+				if (_isAttached) {
+					Arrow.Visibility = Visibility.Visible;
+					ConfirmArrow.Visibility = Visibility.Visible;
+				} else {
+					Arrow.Visibility = Visibility.Collapsed;
+					ConfirmArrow.Visibility = Visibility.Collapsed;
+				}
 			}
 		}
 
@@ -99,11 +104,15 @@ namespace ZitiDesktopEdge {
 			MainDetailScroll.Height = height;
 		}
 
-		private void CancelConfirm(object sender, MouseButtonEventArgs e) {
+		private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
+			ConfirmView.Visibility = Visibility.Visible;
+		}
+
+		private void CancelConfirmButton_Click(object sender, RoutedEventArgs e) {
 			ConfirmView.Visibility = Visibility.Collapsed;
 		}
 
-		private void ConfirmForget(object sender, MouseButtonEventArgs e) {
+		private void ConfirmButton_Click(object sender, RoutedEventArgs e) {
 			this.Visibility = Visibility.Collapsed;
 			ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
 			try {
@@ -126,10 +135,6 @@ namespace ZitiDesktopEdge {
 			} catch (Exception ex) {
 				OnError(ex.Message);
 			}
-		}
-
-		private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
-			ConfirmView.Visibility = Visibility.Visible;
 		}
 	}
 }
