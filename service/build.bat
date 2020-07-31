@@ -51,7 +51,7 @@ echo ---------------------------------------------------------------------------
 set BEFORE_GIT=%cd%
 
 if exist %TUNNELER_SDK_DIR% (
-    echo %TUNNELER_SDK_DIR% supposedly exists?
+    echo %TUNNELER_SDK_DIR% exists
     cd %TUNNELER_SDK_DIR%
     echo ------------------------------------------------------------------------------
     echo issuing git pull to pick up any changes
