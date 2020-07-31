@@ -49,14 +49,6 @@ echo BUILDING ziti.dll begins
 echo ------------------------------------------------------------------------------
 
 set BEFORE_GIT=%cd%
-echo about to enter the 'if exist %TUNNELER_SDK_DIR%' block
-
-if exist %TUNNELER_SDK_DIR% (
-  echo xxxxxxx: it existed
-) else (
-  echo xxxxxxx: it did not existed
-)
-echo about to enter the 'if exist %TUNNELER_SDK_DIR%' block again
 
 if exist %TUNNELER_SDK_DIR% (
     echo %TUNNELER_SDK_DIR% supposedly exists?
@@ -67,13 +59,6 @@ if exist %TUNNELER_SDK_DIR% (
     git pull
     git submodule update --init --recursive
     SET ACTUAL_ERR=%ERRORLEVEL%
-    IF %ACTUAL_ERR% NEQ 0 (
-        echo.
-        echo Could not pull git repo??? : %REPO_URL%
-        echo.
-        goto FAIL
-    )
-    echo git clone is complete and ERRORLEVEL was: %ACTUAL_ERR%
     echo ------------------------------------------------------------------------------
 ) else (
     echo ------------------------------------------------------------------------------
@@ -93,14 +78,15 @@ if exist %TUNNELER_SDK_DIR% (
 
     git clone %REPO_URL% %TUNNELER_SDK_DIR% --recurse-submodules
     SET ACTUAL_ERR=%ERRORLEVEL%
-    IF %ACTUAL_ERR% NEQ 0 (
-        echo.
-        echo Could not clone git repo??? : %ACTUAL_ERR% %REPO_URL%
-        echo.
-        goto FAIL
-    )
-    echo git clone is complete and ERRORLEVEL was: %ACTUAL_ERR%
 )
+IF %ACTUAL_ERR% NEQ 0 (
+    echo.
+    echo Could not pull or clone git repo:%REPO_URL%
+    echo.
+    goto FAIL
+)
+
+echo checking out branch: %ZITI_TUNNEL_REPO_BRANCH%
 
 echo in %cd% - checking out branch: %ZITI_TUNNEL_REPO_BRANCH%
 git checkout %ZITI_TUNNEL_REPO_BRANCH%
