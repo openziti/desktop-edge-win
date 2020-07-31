@@ -45,12 +45,15 @@ IF %~1 NEQ 0 (
 exit /b 0
 
 :END
-@echo configuring git - relies on build.bat successfully grabbing ziti-ci and build.bat updating service/ziti-tunnel/version.go
-ziti-ci configure-git 2>&1
 
 @echo publishing complete - committing version.go as ci
+@echo changing back to: %CURDIR%
 cd %CURDIR%
-@echo back at: %CURDIR%
+@echo current dir: %CD%
+
+@echo configuring git - relies on build.bat successfully grabbing ziti-ci and build.bat updating service/ziti-tunnel/version.go
+ziti-ci configure-git 2>&1
+dir *github_*
 
 @echo converting shallow clone so travis can co: %GIT_BRANCH%
 git remote set-branches origin %GIT_BRANCH% 2>&1
@@ -59,22 +62,27 @@ git checkout %GIT_BRANCH% 2>&1
 CALL :FAIL %ERRORLEVEL% "checkout failed"
 @echo git checkout %GIT_BRANCH% complete: %ERRORLEVEL%
 
+@echo issuing status, diff
+@echo ========================================================
+git status 2>&1
+git diff 2>&1
+
 git add service/ziti-tunnel/version.go 2>&1
 CALL :FAIL %ERRORLEVEL% "git add failed"
 @echo git add service/ziti-tunnel/version.go complete: %ERRORLEVEL%
 
-@echo issuing status, diff, commit
-@echo ========================================================
-git status 2>&1
-git diff 2>&1
+@echo issuing commit
 git commit -m "[ci skip] committing updated version information" 2>&1
 CALL :FAIL %ERRORLEVEL% "git commit failed"
 @echo git commit -m "[ci skip] committing updated version information" complete: %ERRORLEVEL%
+@echo ========================================================
 
-@echo issuing git status and push now
+
+
+
+@echo issuing git status and push
 @echo ========================================================
 git status 2>&1
-
 git push 2>&1
 CALL :FAIL %ERRORLEVEL% "git push failed"
 @echo git push complete: %ERRORLEVEL%
