@@ -52,7 +52,7 @@ set BEFORE_GIT=%cd%
 echo about to enter the 'if exist %TUNNELER_SDK_DIR%'' block:
 if exist %TUNNELER_SDK_DIR% (
     echo %TUNNELER_SDK_DIR% supposedly exists?
-    pushd %TUNNELER_SDK_DIR%
+    cd %TUNNELER_SDK_DIR%
     echo ------------------------------------------------------------------------------
     echo issuing git pull to pick up any changes
     echo ------------------------------------------------------------------------------
@@ -74,7 +74,6 @@ if exist %TUNNELER_SDK_DIR% (
     echo ------------------------------------------------------------------------------
     echo issuing mkdir %TUNNELER_SDK_DIR%
     mkdir %TUNNELER_SDK_DIR%
-    pushd %TUNNELER_SDK_DIR%
 
     echo changing to %TUNNELER_SDK_DIR%
     cd %TUNNELER_SDK_DIR%
@@ -83,8 +82,7 @@ if exist %TUNNELER_SDK_DIR% (
     echo.
     echo git clone %REPO_URL% %TUNNELER_SDK_DIR% --recurse-submodules
     echo.
-    
-    
+
     git clone %REPO_URL% %TUNNELER_SDK_DIR% --recurse-submodules
     SET ACTUAL_ERR=%ERRORLEVEL%
     IF %ACTUAL_ERR% NEQ 0 (
@@ -105,7 +103,8 @@ IF %ERRORLEVEL% NEQ 0 (
     echo.
     goto FAIL
 )
-popd
+
+echo "clone or checkout complete."
 
 echo ------------------------------------------------------------------------------
 type %TUNNELER_SDK_DIR%.gitmodules
