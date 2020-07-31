@@ -49,6 +49,8 @@ exit /b 0
 ziti-ci configure-git 2>&1
 
 @echo publishing complete - committing version.go as ci
+cd %CURDIR%
+@echo back at: %CURDIR%
 
 @echo converting shallow clone so travis can co: %GIT_BRANCH%
 git remote set-branches origin %GIT_BRANCH% 2>&1
@@ -72,9 +74,6 @@ CALL :FAIL %ERRORLEVEL% "git commit failed"
 @echo issuing git status and push now
 @echo ========================================================
 git status 2>&1
-
-cd %CURDIR%
-@echo back at: %CURDIR%
 
 git push 2>&1
 CALL :FAIL %ERRORLEVEL% "git push failed"
