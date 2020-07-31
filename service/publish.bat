@@ -8,13 +8,13 @@ IF "%BUILD_VERSION%"=="" GOTO BUILD_VERSION_ERROR
 call %SVC_ROOT_DIR%\build.bat
 SET ACTUAL_ERR=%ERRORLEVEL%
 if %ACTUAL_ERR% NEQ 0 (
-    echo.
-    echo call to build.bat failed with %ACTUAL_ERR%
-    echo.
+    @echo.
+    @echo call to build.bat failed with %ACTUAL_ERR%
+    @echo.
     exit /b 1
 ) else (
-    echo.
-    echo result of ninja build: %ACTUAL_ERR%
+    @echo.
+    @echo result of ninja build: %ACTUAL_ERR%
 )
 
 IF "%GIT_BRANCH%"=="master" GOTO RELEASE
@@ -34,18 +34,18 @@ exit /b 1
 
 :FAIL
 IF %~1 NEQ 0 (
-    echo ================================================================
-    echo.
-    echo FAILURE:
-    echo     %~2
-    echo.
-    echo ================================================================
+    @echo ================================================================
+    @echo.
+    @echo FAILURE:
+    @echo     %~2
+    @echo.
+    @echo ================================================================
     exit /b %~1
 )
 exit /b 0
 
 :END
-echo configuring git - relies on build.bat successfully grabbing ziti-ci and build.bat updating service/ziti-tunnel/version.go
+@echo configuring git - relies on build.bat successfully grabbing ziti-ci and build.bat updating service/ziti-tunnel/version.go
 ziti-ci configure-git 2>&1
 
 @echo publishing complete - committing version.go as ci
@@ -70,9 +70,11 @@ CALL :FAIL %ERRORLEVEL% "git commit failed"
 @echo issuing git status and push now
 @echo ========================================================
 git status 2>&1
+
+cd %CURDIR%
+@echo back at: %CURDIR%
+
 git push 2>&1
 CALL :FAIL %ERRORLEVEL% "git push failed"
 @echo git push complete: %ERRORLEVEL%
-
-cd %CURDIR%
 @echo publish script has completed
