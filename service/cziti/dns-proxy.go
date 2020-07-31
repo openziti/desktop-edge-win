@@ -23,6 +23,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"strings"
 	"time"
 	"github.com/openziti/desktop-edge-win/service/cziti/windns"
 )
@@ -174,7 +175,13 @@ func runDNSproxy(dnsServers []string) {
 	for _, s := range dnsServers {
 		sAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:53", s))
 		if err != nil {
-			log.Debugf("skipping upstream: %s, %v", s, err.Error())
+			// fec0:0:0:ffff:: is 'legacy' from windows apparently...
+			// see: https://en.wikipedia.org/wiki/IPv6_address#Deprecated_and_obsolete_addresses_2
+			if ! strings.HasPrefix(s, "fec0:0:0:ffff::") {
+				log.Debugf("skipping upstream: %s, %v", s, err.Error())
+			} else {
+				// just ignore for now - don't even log it...
+			}
 		} else {
 			log.Debugf("adding upstream dns server: %s", s)
 			conn, err := net.DialUDP("udp", nil, sAddr)
