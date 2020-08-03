@@ -22,6 +22,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
+	"strings"
 	"sync"
 	"sync/atomic"
 )
@@ -65,12 +66,21 @@ type ctxService struct {
 	count     int
 }
 
+func normalizeDnsName(dnsName string) string {
+	if strings.HasSuffix(dnsName, ".") {
+		return dnsName
+	} else {
+		// append a period to the dnsName - forcing it to be a FQDN
+		return dnsName + "."
+	}
+}
+
 // RegisterService will return the next ip address in the configured range. If the ip address is not
 // assigned to a hostname an error will also be returned indicating why.
 func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint16, ctx *CZitiCtx, name string) (net.IP, error) {
 	log.Infof("adding DNS entry for service name %s@%s:%d", name, dnsNameToReg, port)
 	DnsInit(defaultCidr, defaultMaskBits)
-	dnsName := dnsNameToReg + "."
+	dnsName := normalizeDnsName(dnsNameToReg)
 	key := fmt.Sprint(dnsName, ':', port)
 
 	var ip net.IP
@@ -126,7 +136,8 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 	return ip, nil
 }
 
-func (dns *dnsImpl) Resolve(dnsName string) net.IP {
+func (dns *dnsImpl) Resolve(toResolve string) net.IP {
+	dnsName := normalizeDnsName(toResolve)
 	return dns.hostnameMap[dnsName].ip
 }
 
