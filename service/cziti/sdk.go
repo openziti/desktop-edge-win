@@ -200,6 +200,8 @@ func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, data uns
 				Service: &added,
 				ZitiContext: ctx,
 			}
+		} else {
+			log.Debugf("service named %s is not enabled for 'tunneling'", name)
 		}
 	}
 }

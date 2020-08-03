@@ -259,12 +259,12 @@ func setTunInfo(s *dto.TunnelStatus, ipv4 string, ipv4mask int) {
 		log.Errorf("error reading MTU - using 0 for MTU: (%v)", err)
 		mtu = 0
 	}
-
+	umtu := uint16(mtu)
 	//set the tun info into the state
 	s.IpInfo = &dto.TunIpInfo{
 		Ip:     ipv4,
 		DNS:    Ipv4dns,
-		MTU:    uint16(mtu),
+		MTU:    umtu,
 		Subnet: ipv4MaskString(ipnet.Mask),
 	}
 }
