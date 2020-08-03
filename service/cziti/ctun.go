@@ -150,13 +150,13 @@ func netifSetup(h C.netif_handle, l *C.uv_loop_t, packetCb C.packet_cb, ctx unsa
 	t.read = (*C.uv_async_t)(C.calloc(1, C.sizeof_uv_async_t))
 	C.uv_async_init(l, t.read, C.uv_async_cb(C.readAsync))
 	t.read.data = unsafe.Pointer(h)
-	log.Debugf("in netifSetup netif[%s] handle[%p]", C.GoString(h.id), h)
+	log.Debugf("in netifSetup netif[%s] handle[%p] before", C.GoString(h.id), h)
 
 	t.idleR = (*C.uv_prepare_t)(C.calloc(1, C.sizeof_uv_prepare_t))
 	C.uv_prepare_init(l, t.idleR)
 	t.idleR.data = unsafe.Pointer(h)
 	C.uv_prepare_start(t.idleR, C.uv_prepare_cb(C.readIdle))
-	log.Debugf("in netifSetup netif[%s] handle[%p]", C.GoString(h.id), h)
+	log.Debugf("in netifSetup netif[%s] handle[%p] after", C.GoString(h.id), h)
 
 	t.onPacket = packetCb
 	t.onPacketCtx = ctx

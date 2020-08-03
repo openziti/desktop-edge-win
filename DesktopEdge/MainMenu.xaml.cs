@@ -140,12 +140,13 @@ namespace ZitiDesktopEdge
 			mailMessage.IsBodyHtml = true;
 			mailMessage.Body = "";
 
-			string serviceLogTempFile = Path.Combine(Path.GetTempPath(), "Ziti-Service.log");
+			string timestamp = DateTime.Now.ToFileTime().ToString();
+			string serviceLogTempFile = Path.Combine(Path.GetTempPath(), timestamp+"-Ziti-Service.log");
 			using (StreamWriter sw = new StreamWriter(serviceLogTempFile)) {
 				sw.WriteLine(client.GetLogs());
 			}
 
-			string uiLogTempFile = Path.Combine(Path.GetTempPath(), "Ziti-Application.log");
+			string uiLogTempFile = Path.Combine(Path.GetTempPath(), timestamp+"-Ziti-Application.log");
 			using (StreamWriter sw = new StreamWriter(uiLogTempFile)) {
 				sw.WriteLine(UILog.GetLogs());
 			}
@@ -153,7 +154,7 @@ namespace ZitiDesktopEdge
 			mailMessage.Attachments.Add(new Attachment(serviceLogTempFile));
 			mailMessage.Attachments.Add(new Attachment(uiLogTempFile));
 
-			string emlFile = Path.Combine(Path.GetTempPath(), "ziti.eml");
+			string emlFile = Path.Combine(Path.GetTempPath(), timestamp+"-ziti.eml");
 
 			using (var filestream = File.Open(emlFile, FileMode.Create)) {
 				var binaryWriter = new BinaryWriter(filestream);
