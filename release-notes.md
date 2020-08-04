@@ -1,3 +1,13 @@
+# Release 0.0.20
+
+* What's New
+
+  * Nothing yet
+
+* Bug fixes
+
+  * [#85](https://github.com/openziti/desktop-edge-win/issues/85) - buffer DNS messages and panic/recover properly when network changes happen
+
 # Release 0.0.19
 
 * What's New

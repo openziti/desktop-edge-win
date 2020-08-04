@@ -42,6 +42,8 @@ func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn) {
 	msg.Rcode = dns.RcodeRefused
 
 	query := q.Question[0]
+	log.Tracef("processing a dns query. type:%s, for:%s on %v. id:%v", dns.Type(query.Qtype), query.Name, p, q.Id)
+
 	var ip net.IP
 	// fmt.Printf("query: Type(%d) name(%s)\n", query.Qtype, query.Name)
 
@@ -94,7 +96,7 @@ func runDNSserver(dnsBind []net.IP) {
 	dnsServers := windns.GetUpstreamDNS()
 	go runDNSproxy(dnsServers)
 
-	reqch := make(chan dnsreq)
+	reqch := make(chan dnsreq, 16) //allow dns requests to be buffered
 
 	for _, bindAddr := range dnsBind {
 		go runListener(bindAddr, 53, reqch)
@@ -108,9 +110,10 @@ func runDNSserver(dnsBind []net.IP) {
 }
 
 func runListener(ip net.IP, port int, reqch chan dnsreq) {
+	log.Infof("Running DNS listener on %v", ip)
 	laddr := &net.UDPAddr{
 		IP:   ip,
-		Port: 53,
+		Port: port,
 		Zone: "",
 	}
 
@@ -165,8 +168,8 @@ func dnsPanicRecover() {
 
 func runDNSproxy(dnsServers []string) {
 	defer func() {
-		if r := recover(); r != nil {
-			log.Errorf("Recovered in f. %v", r)
+		if err := recover(); err != nil {
+			log.Errorf("Recovered in f. %v", err)
 			dnsPanicRecover()
 		}
 	}()
@@ -203,10 +206,11 @@ func runDNSproxy(dnsServers []string) {
 				n, err := proxy.Read(resp)
 				if err != nil {
 					// something is wrong with the DNS connection panic and let DNS recovery kick in
-					if err == io.EOF || err == os.ErrClosed || err.Error() == "use of closed network connection" {
-						log.Panicf("error receiving from ", proxy.RemoteAddr(), err)
+					if err == io.EOF || err == os.ErrClosed || strings.HasSuffix(err.Error(), "use of closed network connection") {
+						log.Errorf("error receiving from ip: %v. error %v", proxy.RemoteAddr(), err)
+						return
 					} else {
-						log.Panicf("UNEXPECTED error receiving from ", proxy.RemoteAddr(), err)
+						log.Warnf("odd error: %v", err)
 					}
 				} else {
 					respChan <- resp[:n]
