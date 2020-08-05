@@ -1,3 +1,13 @@
+# Release 0.0.21
+
+* What's New
+
+  * [#94](https://github.com/openziti/desktop-edge-win/issues/94) - Added support for 'hosted' services
+
+* Bug fixes
+
+  * [#xxx](https://github.com/openziti/desktop-edge-win/issues/xxxx) - xxx
+
 # Release 0.0.20
 
 * What's New
