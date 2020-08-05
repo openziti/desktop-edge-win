@@ -75,13 +75,24 @@ namespace ZitiDesktopEdge {
 			IdentityEnrollment.Value = _identity.Status;
 			IdentityStatus.Value = _identity.IsEnabled ? "active" : "disabled";
 			ServiceList.Children.Clear();
-			for (int i=0; i<_identity.Services.Count; i++) {
-				ServiceInfo editor = new ServiceInfo();
-				editor.Label = _identity.Services[i].Name;
-				editor.Value = _identity.Services[i].Url;
-				editor.Warning = _identity.Services[i].Warning;
-				editor.IsLocked = true;
-				ServiceList.Children.Add(editor);
+			if (_identity.Services.Count>0) {
+				for (int i = 0; i < _identity.Services.Count; i++) {
+					ServiceInfo editor = new ServiceInfo();
+					editor.Label = _identity.Services[i].Name;
+					editor.Value = _identity.Services[i].Url;
+					editor.Warning = _identity.Services[i].Warning;
+					editor.IsLocked = true;
+					ServiceList.Children.Add(editor);
+				}
+				ServiceRow.Height = new GridLength((double)0.0);
+				MainDetailScroll.Visibility = Visibility.Visible;
+				ServiceTitle.Content = _identity.Services.Count + " SERVICES";
+			} else {
+				int sHeight = 36 * _identity.Services.Count;
+				if (sHeight > 240) sHeight = 240;
+				ServiceRow.Height = new GridLength((double)sHeight);
+				MainDetailScroll.Visibility = Visibility.Collapsed;
+				ServiceTitle.Content = "NO SERVICES AVAILABLE";
 			}
 		}
 

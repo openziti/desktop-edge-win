@@ -7,7 +7,7 @@
              mc:Ignorable="d" 
              x:Name="IdentityArea"
              d:DesignHeight="500" d:DesignWidth="350">
-    <Grid>
+    <Grid MaxWidth="350">
         <Canvas>
             <Rectangle Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="White" Width="20" Canvas.Left="165" ClipToBounds="True" Canvas.Bottom="-10">
                 <Rectangle.LayoutTransform>
@@ -44,8 +44,8 @@
                         <RowDefinition Height="39"></RowDefinition>
                         <RowDefinition Height="39"></RowDefinition>
                         <RowDefinition Height="39"></RowDefinition>
-                        <RowDefinition Height="30"></RowDefinition>
-                        <RowDefinition Height="*"></RowDefinition>
+                        <RowDefinition Height="40"></RowDefinition>
+                        <RowDefinition x:Name="ServiceRow" Height="240"></RowDefinition>
                         <RowDefinition Height="40"></RowDefinition>
                         <RowDefinition Height="100"></RowDefinition>
                     </Grid.RowDefinitions>
@@ -53,11 +53,11 @@
                     <local:MenuEditItem x:Name="IdentityNetwork" Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" Label="Network" IsLocked="True"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="IdentityStatus" Grid.Column="0" Grid.Row="2" HorizontalAlignment="Stretch" Label="Status" IsLocked="True"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="IdentityEnrollment" Grid.Column="0" Grid.Row="3" HorizontalAlignment="Stretch" Label="Enrollment Status" IsLocked="True"></local:MenuEditItem>
-                    <Label Content="SERVICES" Grid.Column="0" Grid.Row="4" Foreground="Gray" FontWeight="SemiBold" />
-                    <ScrollViewer Name="MainDetailScroll" Grid.Column="0" Grid.Row="5" VerticalScrollBarVisibility="Auto" CanContentScroll="True">
+                    <Label Name="ServiceTitle" Content="SERVICES" Grid.Column="0" Grid.Row="4" Foreground="Gray" Padding="0,10,0,10" FontWeight="SemiBold" />
+                    <ScrollViewer Name="MainDetailScroll" Grid.Column="0" MaxHeight="240" Grid.Row="5" VerticalScrollBarVisibility="Auto" CanContentScroll="True">
                         <StackPanel Name="ServiceList" Orientation="Vertical"></StackPanel>
                     </ScrollViewer>
-                    <Label Name="ForgetIdentityButton" Grid.Column="0" Grid.Row="6" Margin="0,10,0,10" Content="Forget This Identity" Cursor="Hand" Foreground="#F4044D" HorizontalAlignment="Center" Mouse.MouseUp="ForgetIdentity"></Label>
+                    <Label Name="ForgetIdentityButton" Grid.Column="0" Grid.Row="6" Padding="0,10,0,10" Margin="0,0,0,0" Content="Forget This Identity" Cursor="Hand" Foreground="#F4044D" HorizontalAlignment="Center" Mouse.MouseUp="ForgetIdentity"></Label>
                     <Image Source="/Assets/Images/identity.png" Grid.Column="0" Grid.Row="7" Height="100" Width="100" Opacity="0.3" HorizontalAlignment="Stretch"></Image>
                 </Grid>
             </StackPanel>
@@ -78,7 +78,7 @@
             </Canvas>
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="1*"></ColumnDefinition>
+                    <ColumnDefinition Width="200"></ColumnDefinition>
                 </Grid.ColumnDefinitions>
             </Grid>
             <Grid>
