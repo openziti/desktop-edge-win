@@ -73,6 +73,10 @@ CALL :FAIL %ERRORLEVEL% "git add failed"
 ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 ssh -vT -i github_deploy_key git@github.com 2>&1
 
+@echo issuing ssh-keyscan -t rsa github.com 2>&1 >> /root/.ssh/known_hosts
+ssh-keyscan -t rsa github.com 2>&1 >> /root/.ssh/known_hosts
+ssh -vT -i github_deploy_key git@github.com 2>&1
+
 @echo issuing commit
 git commit -m "[ci skip] committing updated version information" 2>&1
 CALL :FAIL %ERRORLEVEL% "git commit failed"
