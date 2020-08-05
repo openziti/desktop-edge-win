@@ -69,8 +69,14 @@ git add service/ziti-tunnel/version.go 2>&1
 CALL :FAIL %ERRORLEVEL% "git add failed"
 @echo git add service/ziti-tunnel/version.go complete: %ERRORLEVEL%
 
-@echo issuing ssh-keyscan
+@echo trying to output ${TRAVIS_HOME}/.ssh/known_hosts to stdout
+type ${TRAVIS_HOME}/.ssh/known_hosts
+
+@echo issuing ssh-keyscan"zit
 ssh-keyscan -t rsa github.com 2>&1 >> /root/.ssh/known_hosts
+
+@echo trying to output ${TRAVIS_HOME}/.ssh/known_hosts to stdout
+
 ssh -vT -i github_deploy_key git@github.com 2>&1
 
 @echo issuing commit
