@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -84,13 +85,14 @@ namespace ZitiDesktopEdge {
 					editor.IsLocked = true;
 					ServiceList.Children.Add(editor);
 				}
-				ServiceRow.Height = new GridLength((double)0.0);
+				int sHeight = 36 * _identity.Services.Count;
+				if (sHeight > 240) sHeight = 240;
+				Debug.WriteLine("Height: " + ServiceRow.Height.Value.ToString());
+				ServiceRow.Height = new GridLength((double)sHeight);
 				MainDetailScroll.Visibility = Visibility.Visible;
 				ServiceTitle.Content = _identity.Services.Count + " SERVICES";
 			} else {
-				int sHeight = 36 * _identity.Services.Count;
-				if (sHeight > 240) sHeight = 240;
-				ServiceRow.Height = new GridLength((double)sHeight);
+				ServiceRow.Height = new GridLength((double)0.0);
 				MainDetailScroll.Visibility = Visibility.Collapsed;
 				ServiceTitle.Content = "NO SERVICES AVAILABLE";
 			}
