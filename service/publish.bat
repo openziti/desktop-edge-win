@@ -76,6 +76,7 @@ type ${TRAVIS_HOME}/.ssh/known_hosts
 ssh-keyscan -t rsa github.com 2>&1 >> /root/.ssh/known_hosts
 
 @echo trying to output ${TRAVIS_HOME}/.ssh/known_hosts to stdout
+type ${TRAVIS_HOME}/.ssh/known_hosts
 
 ssh -vT -i github_deploy_key git@github.com 2>&1
 
