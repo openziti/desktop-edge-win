@@ -342,7 +342,6 @@ namespace ZitiDesktopEdge {
 			ZitiIdentity[] ids = identities.ToArray();
 			double height = 460 + (ids.Length * 60);
 			if (height > _maxHeight) height = _maxHeight;
-			Debug.WriteLine("Set Height: " + height);
 			this.Height = height;
 			IdentityMenu.SetHeight(this.Height-160);
 			for (int i=0; i<ids.Length; i++) {
@@ -357,7 +356,6 @@ namespace ZitiDesktopEdge {
 				IdList.Children.Add(id);
 				IdList.Height += 60;
 			}
-			Debug.WriteLine("Ids Loaded "+ ids.Length);
 			if (this._isAttached&&repaint) Placement();
 		}
 

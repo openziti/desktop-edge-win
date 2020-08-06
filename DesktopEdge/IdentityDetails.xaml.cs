@@ -86,7 +86,7 @@ namespace ZitiDesktopEdge {
 					ServiceList.Children.Add(editor);
 				}
 				int sHeight = 36 * _identity.Services.Count;
-				if (sHeight > 240) sHeight = 240;
+				if (sHeight > 200) sHeight = 200;
 				Debug.WriteLine("Height: " + ServiceRow.Height.Value.ToString());
 				ServiceRow.Height = new GridLength((double)sHeight);
 				MainDetailScroll.Visibility = Visibility.Visible;

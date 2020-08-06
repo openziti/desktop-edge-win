@@ -45,7 +45,7 @@
                         <RowDefinition Height="39"></RowDefinition>
                         <RowDefinition Height="39"></RowDefinition>
                         <RowDefinition Height="40"></RowDefinition>
-                        <RowDefinition x:Name="ServiceRow" Height="240"></RowDefinition>
+                        <RowDefinition x:Name="ServiceRow" Height="200"></RowDefinition>
                         <RowDefinition Height="40"></RowDefinition>
                         <RowDefinition Height="100"></RowDefinition>
                     </Grid.RowDefinitions>
