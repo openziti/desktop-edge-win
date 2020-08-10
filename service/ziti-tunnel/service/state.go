@@ -120,7 +120,7 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 	}
 
 	log.Infof("creating TUN device: %s", TunName)
-	tunDevice, err := tun.CreateTUN(TunName, 64*1024)
+	tunDevice, err := tun.CreateTUN(TunName, 64*1024 - 1)
 	if err == nil {
 		t.tun = &tunDevice
 		tunName, err2 := tunDevice.Name()

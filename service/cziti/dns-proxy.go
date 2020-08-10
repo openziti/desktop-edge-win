@@ -20,7 +20,10 @@ package cziti
 import (
 	"fmt"
 	"github.com/miekg/dns"
+	"io"
 	"net"
+	"os"
+	"strings"
 	"time"
 	"github.com/openziti/desktop-edge-win/service/cziti/windns"
 )
@@ -39,6 +42,8 @@ func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn) {
 	msg.Rcode = dns.RcodeRefused
 
 	query := q.Question[0]
+	log.Tracef("processing a dns query. type:%s, for:%s on %v. id:%v", dns.Type(query.Qtype), query.Name, p, q.Id)
+
 	var ip net.IP
 	// fmt.Printf("query: Type(%d) name(%s)\n", query.Qtype, query.Name)
 
@@ -91,7 +96,7 @@ func runDNSserver(dnsBind []net.IP) {
 	dnsServers := windns.GetUpstreamDNS()
 	go runDNSproxy(dnsServers)
 
-	reqch := make(chan dnsreq)
+	reqch := make(chan dnsreq, 16) //allow dns requests to be buffered
 
 	for _, bindAddr := range dnsBind {
 		go runListener(bindAddr, 53, reqch)
@@ -105,9 +110,10 @@ func runDNSserver(dnsBind []net.IP) {
 }
 
 func runListener(ip net.IP, port int, reqch chan dnsreq) {
+	log.Infof("Running DNS listener on %v", ip)
 	laddr := &net.UDPAddr{
 		IP:   ip,
-		Port: 53,
+		Port: port,
 		Zone: "",
 	}
 
@@ -155,16 +161,16 @@ func proxyDNS(req *dns.Msg, peer *net.UDPAddr, serv *net.UDPConn) {
 	}
 }
 
-func dnsPanicRecover(dnsServers []string) {
-	//just rerun the dns proxy function
-	go runDNSproxy(dnsServers)
+func dnsPanicRecover() {
+	// get dns again and reconfigure
+	go runDNSproxy(windns.GetUpstreamDNS())
 }
 
 func runDNSproxy(dnsServers []string) {
 	defer func() {
-		if r := recover(); r != nil {
-			log.Errorf("Recovered in f. %v", r)
-			dnsPanicRecover(dnsServers)
+		if err := recover(); err != nil {
+			log.Errorf("Recovered in f. %v", err)
+			dnsPanicRecover()
 		}
 	}()
 
@@ -172,7 +178,13 @@ func runDNSproxy(dnsServers []string) {
 	for _, s := range dnsServers {
 		sAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:53", s))
 		if err != nil {
-			log.Debugf("skipping upstream: %s, %v", s, err.Error())
+			// fec0:0:0:ffff:: is 'legacy' from windows apparently...
+			// see: https://en.wikipedia.org/wiki/IPv6_address#Deprecated_and_obsolete_addresses_2
+			if ! strings.HasPrefix(s, "fec0:0:0:ffff::") {
+				log.Debugf("skipping upstream: %s, %v", s, err.Error())
+			} else {
+				// just ignore for now - don't even log it...
+			}
 		} else {
 			log.Debugf("adding upstream dns server: %s", s)
 			conn, err := net.DialUDP("udp", nil, sAddr)
@@ -193,7 +205,13 @@ func runDNSproxy(dnsServers []string) {
 			for {
 				n, err := proxy.Read(resp)
 				if err != nil {
-					log.Debug("error receiving from ", proxy.RemoteAddr(), err)
+					// something is wrong with the DNS connection panic and let DNS recovery kick in
+					if err == io.EOF || err == os.ErrClosed || strings.HasSuffix(err.Error(), "use of closed network connection") {
+						log.Errorf("error receiving from ip: %v. error %v", proxy.RemoteAddr(), err)
+						return
+					} else {
+						log.Warnf("odd error: %v", err)
+					}
 				} else {
 					respChan <- resp[:n]
 				}

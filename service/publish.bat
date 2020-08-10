@@ -8,24 +8,24 @@ IF "%BUILD_VERSION%"=="" GOTO BUILD_VERSION_ERROR
 call %SVC_ROOT_DIR%\build.bat
 SET ACTUAL_ERR=%ERRORLEVEL%
 if %ACTUAL_ERR% NEQ 0 (
-    echo.
-    echo call to build.bat failed with %ACTUAL_ERR%
-    echo.
+    @echo.
+    @echo call to build.bat failed with %ACTUAL_ERR%
+    @echo.
     exit /b 1
 ) else (
-    echo.
-    echo result of ninja build: %ACTUAL_ERR%
+    @echo.
+    @echo result of ninja build: %ACTUAL_ERR%
 )
 
 IF "%GIT_BRANCH%"=="master" GOTO RELEASE
 @echo Publishing to snapshot repo
-ziti-ci publish artifactory --groupId=ziti-tunnel-win.amd64.windows --artifactId=ziti-tunnel-win --version=%BUILD_VERSION%-SNAPSHOT --target=service/ziti-tunnel-win.zip
-REM ziti-ci publish artifactory --groupId=ziti-tunnel-win.amd64.windows --artifactId=ziti-tunnel-win --version=%BUILD_VERSION%-SNAPSHOT --target=service/ziti-tunnel-win.zip --classifier=%GIT_BRANCH%
+ziti-ci publish artifactory --groupId=ziti-tunnel-win.amd64.windows --artifactId=ziti-tunnel-win --version=%BUILD_VERSION%-SNAPSHOT --target=service/ziti-tunnel-win.zip 2>&1
+REM ziti-ci publish artifactory --groupId=ziti-tunnel-win.amd64.windows --artifactId=ziti-tunnel-win --version=%BUILD_VERSION%-SNAPSHOT --target=service/ziti-tunnel-win.zip --classifier=%GIT_BRANCH% 2>&1
 GOTO END
 
 :RELEASE
 @echo Publishing release
-ziti-ci publish artifactory --groupId=ziti-tunnel-win.amd64.windows --artifactId=ziti-tunnel-win --version=%BUILD_VERSION% --target=service/ziti-tunnel-win.zip
+ziti-ci publish artifactory --groupId=ziti-tunnel-win.amd64.windows --artifactId=ziti-tunnel-win --version=%BUILD_VERSION% --target=service/ziti-tunnel-win.zip 2>&1
 GOTO END
 
 :BUILD_VERSION_ERROR
@@ -34,41 +34,64 @@ exit /b 1
 
 :FAIL
 IF %~1 NEQ 0 (
-    echo ================================================================
-    echo.
-    echo FAILURE:
-    echo     %~2
-    echo.
-    echo ================================================================
+    @echo ================================================================
+    @echo.
+    @echo FAILURE:
+    @echo     %~2
+    @echo.
+    @echo ================================================================
     exit /b %~1
 )
 exit /b 0
 
 :END
-echo configuring git - relies on build.bat successfully grabbing ziti-ci
-ziti-ci configure-git 2>1
 
 @echo publishing complete - committing version.go as ci
+@echo changing back to: %CURDIR%
+cd %CURDIR%
+@echo current dir: %CD%
 
-git stash 2>1
-CALL :FAIL %ERRORLEVEL% "git stash failed"
-git checkout %GIT_BRANCH% 2>1
+@echo configuring git - relies on build.bat successfully grabbing ziti-ci and build.bat updating service/ziti-tunnel/version.go
+ziti-ci configure-git 2>&1
+
+@echo converting shallow clone so travis can co: %GIT_BRANCH%
+git remote set-branches origin %GIT_BRANCH% 2>&1
+git fetch --depth 1 origin %GIT_BRANCH% 2>&1
+git checkout %GIT_BRANCH% 2>&1
 CALL :FAIL %ERRORLEVEL% "checkout failed"
-git stash pop 2>1
-CALL :FAIL %ERRORLEVEL% "git stash pop failed"
 @echo git checkout %GIT_BRANCH% complete: %ERRORLEVEL%
 
-git add service/ziti-tunnel/version.go 2>1
+@echo issuing status
+@echo ========================================================
+git status 2>&1
+
+git add service/ziti-tunnel/version.go 2>&1
 CALL :FAIL %ERRORLEVEL% "git add failed"
 @echo git add service/ziti-tunnel/version.go complete: %ERRORLEVEL%
 
-git commit -m "[ci skip] committing updated version information" 2>1
+@echo trying to output ${TRAVIS_HOME}/.ssh/known_hosts to stdout
+type ${TRAVIS_HOME}/.ssh/known_hosts
+
+@echo issuing ssh-keyscan"zit
+ssh-keyscan -t rsa github.com 2>&1 >> /root/.ssh/known_hosts
+
+@echo trying to output ${TRAVIS_HOME}/.ssh/known_hosts to stdout
+type ${TRAVIS_HOME}/.ssh/known_hosts
+
+ssh -vT -i github_deploy_key git@github.com 2>&1
+
+@echo issuing commit
+git commit -m "[ci skip] committing updated version information" 2>&1
 CALL :FAIL %ERRORLEVEL% "git commit failed"
 @echo git commit -m "[ci skip] committing updated version information" complete: %ERRORLEVEL%
-
-git push 2>1
+@echo ========================================================
+@echo issuing git push
+@echo ========================================================
+@echo setting git config remote.url git@github.com:openziti/desktop-edge-win.git
+git config remote.url git@github.com:openziti/desktop-edge-win.git 2>&1
+git config --list 2>&1
+dir github_deploy_key
+git push --verbose 2>&1
 CALL :FAIL %ERRORLEVEL% "git push failed"
 @echo git push complete: %ERRORLEVEL%
-
-cd %CURDIR%
 @echo publish script has completed

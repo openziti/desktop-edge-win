@@ -1,3 +1,25 @@
+# Release 0.0.20
+
+* What's New
+
+  * Nothing yet
+
+* Bug fixes
+
+  * [#85](https://github.com/openziti/desktop-edge-win/issues/85) - buffer DNS messages and panic/recover properly when network changes happen
+
+# Release 0.0.19
+
+* What's New
+
+  * Nothing yet
+
+* Bug fixes
+
+  * [#82](https://github.com/openziti/desktop-edge-win/issues/82) - MTU was no longer sent to UI correctly
+  * [#86](https://github.com/openziti/desktop-edge-win/issues/86) - Inconsistent treatment of DNS requests - all requests will be treated as absolute going forward
+  * [#90](https://github.com/openziti/desktop-edge-win/issues/90) - UI will not reconnect to service if started before service
+
 # Release 0.0.18
 
 * What's New

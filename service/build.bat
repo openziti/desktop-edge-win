@@ -8,14 +8,18 @@ cd /d %ZITI_TUNNEL_WIN_ROOT%
 
 IF "%BUILD_VERSION%"=="" GOTO BUILD_VERSION_ERROR
 IF "%1"=="clean" GOTO CLEAN
-IF "%1"=="quick" GOTO QUICK
+IF "%1"=="quick" (
+    echo doing 'quick' build - no tunneler sdk/c sdk build
+    GOTO QUICK
+)
 
 echo fetching ziti-ci
 call %SVC_ROOT_DIR%/../get-ziti-ci.bat
+echo ziti-ci has been retrieved. running: ziti-ci version
 ziti-ci version
 
-echo generating version info - this will pushed from publish.bat in CI
-ziti-ci generate-build-info --useVersion=false %SVC_ROOT_DIR%/ziti-tunnel/version.go main --verbose
+echo generating version info - this will get pushed from publish.bat in CI _if_ publish.bat started build.bat
+ziti-ci generate-build-info --noAddNoCommit --useVersion=false %SVC_ROOT_DIR%/ziti-tunnel/version.go main --verbose 2>&1
 echo version info generated
 goto QUICK
 
@@ -24,13 +28,14 @@ rmdir /s /q deps
 del /q %SVC_ROOT_DIR%ziti.dll
 
 :QUICK
+echo changing to service folder: %SVC_ROOT_DIR%
 cd %SVC_ROOT_DIR%
 
 SET REPO_URL=https://github.com/openziti/ziti-tunneler-sdk-c.git
 SET ZITI_TUNNEL_REPO_BRANCH=master
 SET TUNNELER_SDK_DIR=%SVC_ROOT_DIR%deps\ziti-tunneler-sdk-c\
-set CGO_CFLAGS=-DNOGDI -I %TUNNELER_SDK_DIR%install\include
-set CGO_LDFLAGS=-L %TUNNELER_SDK_DIR%install\lib
+SET CGO_CFLAGS=-DNOGDI -I %TUNNELER_SDK_DIR%install\include
+SET CGO_LDFLAGS=-L %TUNNELER_SDK_DIR%install\lib
 
 if exist %SVC_ROOT_DIR%ziti.dll (
     echo ------------------------------------------------------------------------------
@@ -46,6 +51,8 @@ echo ---------------------------------------------------------------------------
 set BEFORE_GIT=%cd%
 
 if exist %TUNNELER_SDK_DIR% (
+    echo %TUNNELER_SDK_DIR% exists
+    cd %TUNNELER_SDK_DIR%
     echo ------------------------------------------------------------------------------
     echo issuing git pull to pick up any changes
     echo ------------------------------------------------------------------------------
@@ -55,7 +62,8 @@ if exist %TUNNELER_SDK_DIR% (
     echo ------------------------------------------------------------------------------
 ) else (
     echo ------------------------------------------------------------------------------
-    echo cloning %REPO_URL%
+    echo %TUNNELER_SDK_DIR% not found
+    echo     - cloning %REPO_URL%
     echo ------------------------------------------------------------------------------
     echo issuing mkdir %TUNNELER_SDK_DIR%
     mkdir %TUNNELER_SDK_DIR%
@@ -64,6 +72,10 @@ if exist %TUNNELER_SDK_DIR% (
     cd %TUNNELER_SDK_DIR%
     
     echo current directory is %CD% - should be %TUNNELER_SDK_DIR%
+    echo.
+    echo git clone %REPO_URL% %TUNNELER_SDK_DIR% --recurse-submodules
+    echo.
+
     git clone %REPO_URL% %TUNNELER_SDK_DIR% --recurse-submodules
     SET ACTUAL_ERR=%ERRORLEVEL%
 )
@@ -75,6 +87,8 @@ IF %ACTUAL_ERR% NEQ 0 (
 )
 
 echo checking out branch: %ZITI_TUNNEL_REPO_BRANCH%
+
+echo in %cd% - checking out branch: %ZITI_TUNNEL_REPO_BRANCH%
 git checkout %ZITI_TUNNEL_REPO_BRANCH%
 IF %ERRORLEVEL% NEQ 0 (
     SET ACTUAL_ERR=%ERRORLEVEL%
@@ -83,6 +97,8 @@ IF %ERRORLEVEL% NEQ 0 (
     echo.
     goto FAIL
 )
+
+echo "clone or checkout complete."
 
 echo ------------------------------------------------------------------------------
 type %TUNNELER_SDK_DIR%.gitmodules

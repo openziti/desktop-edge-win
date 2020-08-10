@@ -139,6 +139,7 @@ namespace ZitiDesktopEdge {
 				//LoadStatusFromService(s.Status);
 			} catch /*ignored for now (Exception ex) */{
 				SetCantDisplay();
+				serviceClient.Reconnect();
 			}
 			Debug.WriteLine("App Loaded");
 			IdentityMenu.OnForgot += IdentityForgotten;
