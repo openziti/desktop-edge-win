@@ -430,11 +430,9 @@ namespace ZitiDesktopEdge {
 			_timer.Enabled = true;
 			_timer.Start();
 		}
-		private void Connect(object sender, RoutedEventArgs e)
-		{
-			this.Dispatcher.Invoke(() =>
-			{
-				ShowLoad();
+		private void Connect(object sender, RoutedEventArgs e) {
+			ShowLoad();
+			this.Dispatcher.Invoke(() => {
 				//Dispatcher.Invoke(new Action(() => { }), System.Windows.Threading.DispatcherPriority.ContextIdle);
 				DoConnect();
 				HideLoad();
