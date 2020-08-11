@@ -52,7 +52,7 @@ namespace ZitiUpdateService {
 			} catch (Exception e) {
 				Log(e.ToString());
 			}
-			_rootDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "NetFoundry");
+			_rootDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "OpenZiti");
 			if (!Directory.Exists(_rootDirectory)) Directory.CreateDirectory(_rootDirectory);
 			_logDirectory = Path.Combine(_rootDirectory, "Logs");
 			if (!Directory.Exists(_logDirectory)) Directory.CreateDirectory(_logDirectory);

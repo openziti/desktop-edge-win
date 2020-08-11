@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -57,8 +58,13 @@ namespace ZitiDesktopEdge {
 			}
 			set {
 				_isAttached = value;
-				if (_isAttached) Arrow.Visibility = Visibility.Visible;
-				else Arrow.Visibility = Visibility.Collapsed;
+				if (_isAttached) {
+					Arrow.Visibility = Visibility.Visible;
+					ConfirmArrow.Visibility = Visibility.Visible;
+				} else {
+					Arrow.Visibility = Visibility.Collapsed;
+					ConfirmArrow.Visibility = Visibility.Collapsed;
+				}
 			}
 		}
 
@@ -70,13 +76,25 @@ namespace ZitiDesktopEdge {
 			IdentityEnrollment.Value = _identity.Status;
 			IdentityStatus.Value = _identity.IsEnabled ? "active" : "disabled";
 			ServiceList.Children.Clear();
-			for (int i=0; i<_identity.Services.Count; i++) {
-				ServiceInfo editor = new ServiceInfo();
-				editor.Label = _identity.Services[i].Name;
-				editor.Value = _identity.Services[i].Url;
-				editor.Warning = _identity.Services[i].Warning;
-				editor.IsLocked = true;
-				ServiceList.Children.Add(editor);
+			if (_identity.Services.Count>0) {
+				for (int i = 0; i < _identity.Services.Count; i++) {
+					ServiceInfo editor = new ServiceInfo();
+					editor.Label = _identity.Services[i].Name;
+					editor.Value = _identity.Services[i].Url;
+					editor.Warning = _identity.Services[i].Warning;
+					editor.IsLocked = true;
+					ServiceList.Children.Add(editor);
+				}
+				int sHeight = 36 * _identity.Services.Count;
+				if (sHeight > 200) sHeight = 200;
+				Debug.WriteLine("Height: " + ServiceRow.Height.Value.ToString());
+				ServiceRow.Height = new GridLength((double)sHeight);
+				MainDetailScroll.Visibility = Visibility.Visible;
+				ServiceTitle.Content = _identity.Services.Count + " SERVICES";
+			} else {
+				ServiceRow.Height = new GridLength((double)0.0);
+				MainDetailScroll.Visibility = Visibility.Collapsed;
+				ServiceTitle.Content = "NO SERVICES AVAILABLE";
 			}
 		}
 
@@ -99,11 +117,15 @@ namespace ZitiDesktopEdge {
 			MainDetailScroll.Height = height;
 		}
 
-		private void CancelConfirm(object sender, MouseButtonEventArgs e) {
+		private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
+			ConfirmView.Visibility = Visibility.Visible;
+		}
+
+		private void CancelConfirmButton_Click(object sender, RoutedEventArgs e) {
 			ConfirmView.Visibility = Visibility.Collapsed;
 		}
 
-		private void ConfirmForget(object sender, MouseButtonEventArgs e) {
+		private void ConfirmButton_Click(object sender, RoutedEventArgs e) {
 			this.Visibility = Visibility.Collapsed;
 			ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
 			try {
@@ -126,10 +148,6 @@ namespace ZitiDesktopEdge {
 			} catch (Exception ex) {
 				OnError(ex.Message);
 			}
-		}
-
-		private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
-			ConfirmView.Visibility = Visibility.Visible;
 		}
 	}
 }

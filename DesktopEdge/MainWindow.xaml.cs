@@ -35,7 +35,6 @@ namespace ZitiDesktopEdge {
 		private int _right = 75;
 		private int _bottom = 0;
 		private double _maxHeight = 800d;
-		private string _serviceVersion = "0.0.8";
 		private string[] suffixes = { "bps", "kbps", "mbps", "gbps", "tbps", "pbps" };
 
 		private List<ZitiIdentity> identities {
@@ -75,7 +74,6 @@ namespace ZitiDesktopEdge {
 
 			LaunchOrInstall();
 
-			MainMenu.ServiceVersion.Content = _serviceVersion;
 			SetNotifyIcon("white");
 			InitializeComponent();
 		}
@@ -345,7 +343,6 @@ namespace ZitiDesktopEdge {
 			ZitiIdentity[] ids = identities.ToArray();
 			double height = 460 + (ids.Length * 60);
 			if (height > _maxHeight) height = _maxHeight;
-			Debug.WriteLine("Set Height: " + height);
 			this.Height = height;
 			IdentityMenu.SetHeight(this.Height-160);
 			for (int i=0; i<ids.Length; i++) {
@@ -360,7 +357,6 @@ namespace ZitiDesktopEdge {
 				IdList.Children.Add(id);
 				IdList.Height += 60;
 			}
-			Debug.WriteLine("Ids Loaded "+ ids.Length);
 			if (this._isAttached&&repaint) Placement();
 		}
 
@@ -434,11 +430,9 @@ namespace ZitiDesktopEdge {
 			_timer.Enabled = true;
 			_timer.Start();
 		}
-		private void Connect(object sender, RoutedEventArgs e)
-		{
-			this.Dispatcher.Invoke(() =>
-			{
-				ShowLoad();
+		private void Connect(object sender, RoutedEventArgs e) {
+			ShowLoad();
+			this.Dispatcher.Invoke(() => {
 				//Dispatcher.Invoke(new Action(() => { }), System.Windows.Threading.DispatcherPriority.ContextIdle);
 				DoConnect();
 				HideLoad();

@@ -93,7 +93,7 @@
         <EventTrigger RoutedEvent="Window.Unloaded">
             <BeginStoryboard>
                 <Storyboard Name="FormFadeOut" Completed="FormFadeOut_Completed">
-                    <DoubleAnimation  Name="FormFadeOutAnimation" Storyboard.TargetName="MainUI" Storyboard.TargetProperty="(Window.Opacity)" From="1.0" To="0.0" Duration="0:0:0.5" AutoReverse="False"  RepeatBehavior="1x" />
+                    <DoubleAnimation Name="FormFadeOutAnimation" Storyboard.TargetName="MainUI" Storyboard.TargetProperty="(Window.Opacity)" From="1.0" To="0.0" Duration="0:0:0.5" AutoReverse="False"  RepeatBehavior="1x" />
                 </Storyboard>
             </BeginStoryboard>
         </EventTrigger>
@@ -194,7 +194,7 @@
                     <Label Name="UploadSpeedLabel" Foreground="White" Margin="0,-20,0,30" Content="KBps" FontSize="11" HorizontalAlignment="Center" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" />
                 </StackPanel>
             </Grid>
-            <ScrollViewer ScrollViewer.HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" CanContentScroll="True">
+            <ScrollViewer Name="IdListScroller" ScrollViewer.HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" CanContentScroll="True">
                 <StackPanel Name="IdList" Orientation="Vertical"></StackPanel>
             </ScrollViewer>
             <Grid HorizontalAlignment="Stretch" Margin="0,20,0,10" Width="Auto">
