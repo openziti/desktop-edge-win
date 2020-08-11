@@ -1,4 +1,4 @@
-# Release 0.0.21
+# Release 1.0.4
 
 * What's New
 
@@ -6,7 +6,7 @@
 
 * Bug fixes
 
-  * [#xxx](https://github.com/openziti/desktop-edge-win/issues/xxxx) - xxx
+  * [#102](https://github.com/openziti/desktop-edge-win/pull/102) - DNS requests with "connection-specific local domain" would not resolve
 
 # Release 0.0.20
 
