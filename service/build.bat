@@ -24,7 +24,9 @@ echo version info generated
 goto QUICK
 
 :CLEAN
-rmdir /s /q deps
+echo REMOVING old build folder if it exists at %SVC_ROOT_DIR%deps\ziti-tunneler-sdk-c\build
+rmdir /s /q %SVC_ROOT_DIR%deps\ziti-tunneler-sdk-c\build
+echo REMOVING ziti.dll at %SVC_ROOT_DIR%ziti.dll
 del /q %SVC_ROOT_DIR%ziti.dll
 
 :QUICK
@@ -32,7 +34,7 @@ echo changing to service folder: %SVC_ROOT_DIR%
 cd %SVC_ROOT_DIR%
 
 SET REPO_URL=https://github.com/openziti/ziti-tunneler-sdk-c.git
-SET ZITI_TUNNEL_REPO_BRANCH=master
+SET ZITI_TUNNEL_REPO_BRANCH=hosted-services
 SET TUNNELER_SDK_DIR=%SVC_ROOT_DIR%deps\ziti-tunneler-sdk-c\
 SET CGO_CFLAGS=-DNOGDI -I %TUNNELER_SDK_DIR%install\include
 SET CGO_LDFLAGS=-L %TUNNELER_SDK_DIR%install\lib
@@ -137,8 +139,8 @@ if %ACTUAL_ERR% NEQ 0 (
     echo result of ninja build: %ACTUAL_ERR%
 )
 
-cp %TUNNELER_SDK_DIR%install\lib\ziti.dll %SVC_ROOT_DIR%
-cp %TUNNELER_SDK_DIR%install\lib\libuv.dll %SVC_ROOT_DIR%
+copy /y %TUNNELER_SDK_DIR%install\lib\ziti.dll %SVC_ROOT_DIR%
+copy /y TUNNELER_SDK_DIR%install\lib\libuv.dll %SVC_ROOT_DIR%
 
 echo COPIED dlls to %SVC_ROOT_DIR%
 cd %SVC_ROOT_DIR%

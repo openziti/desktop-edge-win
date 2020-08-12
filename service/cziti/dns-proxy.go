@@ -28,6 +28,8 @@ import (
 	"github.com/openziti/desktop-edge-win/service/cziti/windns"
 )
 
+var domains []string // get any connection-specific local domains
+
 func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn) {
 	q := &dns.Msg{}
 	if err := q.Unpack(packet); err != nil {
@@ -46,8 +48,24 @@ func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn) {
 
 	var ip net.IP
 	// fmt.Printf("query: Type(%d) name(%s)\n", query.Qtype, query.Name)
+	dnsName := strings.TrimSpace(query.Name)
+	ip = DNS.Resolve(dnsName)
 
-	ip = DNS.Resolve(query.Name)
+	// never proxy hostnames that we know about regardless of type
+	if ip == nil {
+		// no direct hit. need to now check to see if the dns query used a connection-specific local domain
+		for _, d := range domains {			
+			if strings.HasSuffix(dnsName, d) {
+				dnsNameTrimmed := strings.Trim(dnsName, d)
+				// dns request has domain appended - removing and resolving
+				ip = DNS.Resolve(dnsNameTrimmed)
+				if ip != nil {
+					log.Debugf("DNS %s failed at first but succeeded by looking up %s", dnsName, dnsNameTrimmed)
+					break
+				}
+			}
+		}
+	}
 
 	// never proxy hostnames that we know about regardless of type
 	if ip != nil {
@@ -167,6 +185,7 @@ func dnsPanicRecover() {
 }
 
 func runDNSproxy(dnsServers []string) {
+	domains = windns.GetConnectionSpecificDomains()
 	defer func() {
 		if err := recover(); err != nil {
 			log.Errorf("Recovered in f. %v", err)

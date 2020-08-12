@@ -43,7 +43,7 @@ var DNS = &dnsImpl{}
 
 type dnsImpl struct {
 	cidr    uint32
-	counter uint32
+	ipCount uint32
 
 	serviceMap map[string]ctxService
 
@@ -67,12 +67,13 @@ type ctxService struct {
 }
 
 func normalizeDnsName(dnsName string) string {
-	if strings.HasSuffix(dnsName, ".") {
-		return dnsName
-	} else {
+	dnsName = strings.TrimSpace(dnsName)
+	if !strings.HasSuffix(dnsName, ".") {
 		// append a period to the dnsName - forcing it to be a FQDN
-		return dnsName + "."
+		dnsName += "."
 	}
+
+	return strings.ToLower(dnsName) //normalize the casing
 }
 
 // RegisterService will return the next ip address in the configured range. If the ip address is not
@@ -115,7 +116,7 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 		}
 	} else {
 		// if not used at all - map it
-		nextAddr := dns.cidr | atomic.AddUint32(&dns.counter, 1)
+		nextAddr := dns.cidr | atomic.AddUint32(&dns.ipCount, 1)
 		ip = make(net.IP, 4)
 		binary.BigEndian.PutUint32(ip, nextAddr)
 
@@ -145,7 +146,7 @@ func (dns *dnsImpl) DeregisterService(ctx *CZitiCtx, name string) {
 	for k, sc := range dns.serviceMap {
 		if sc.ctx == ctx && sc.name == name {
 			if sc.count < 1 {
-				log.Infof("removing %s from DNS mapping", name)
+				log.Infof("removing service named %s from DNS mapping known as %s", name, k)
 				delete(dns.serviceMap, k)
 			} else {
 				// another service is using the mapping - can't remove it yet so decrement
@@ -182,6 +183,6 @@ func DnsInit(ip string, maskBits int) {
 		i := net.ParseIP(ip).To4()
 		mask := net.CIDRMask(maskBits, 32)
 		DNS.cidr = binary.BigEndian.Uint32(i) & binary.BigEndian.Uint32(mask)
-		DNS.counter = 2
+		DNS.ipCount = 2
 	})
 }
