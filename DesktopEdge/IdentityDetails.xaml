@@ -45,20 +45,20 @@
                         <RowDefinition Height="39"></RowDefinition>
                         <RowDefinition Height="39"></RowDefinition>
                         <RowDefinition Height="40"></RowDefinition>
-                        <RowDefinition x:Name="ServiceRow" Height="200"></RowDefinition>
+                        <RowDefinition x:Name="ServiceRow" Height="160"></RowDefinition>
                         <RowDefinition Height="40"></RowDefinition>
-                        <RowDefinition Height="100"></RowDefinition>
+                        <RowDefinition Height="0"></RowDefinition>
                     </Grid.RowDefinitions>
                     <local:MenuEditItem x:Name="IdentityName" Grid.Column="0" Grid.Row="0" HorizontalAlignment="Stretch" Label="Name" IsLocked="True"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="IdentityNetwork" Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" Label="Network" IsLocked="True"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="IdentityStatus" Grid.Column="0" Grid.Row="2" HorizontalAlignment="Stretch" Label="Status" IsLocked="True"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="IdentityEnrollment" Grid.Column="0" Grid.Row="3" HorizontalAlignment="Stretch" Label="Enrollment Status" IsLocked="True"></local:MenuEditItem>
                     <Label Name="ServiceTitle" Content="SERVICES" Grid.Column="0" Grid.Row="4" Foreground="Gray" Padding="0,10,0,10" FontWeight="SemiBold" />
-                    <ScrollViewer Name="MainDetailScroll" Grid.Column="0" MaxHeight="240" Grid.Row="5" VerticalScrollBarVisibility="Auto" CanContentScroll="True">
+                    <ScrollViewer Name="MainDetailScroll" Grid.Column="0" MaxHeight="160" Grid.Row="5" VerticalScrollBarVisibility="Auto" CanContentScroll="True">
                         <StackPanel Name="ServiceList" Orientation="Vertical"></StackPanel>
                     </ScrollViewer>
                     <Label Name="ForgetIdentityButton" Grid.Column="0" Grid.Row="6" Padding="0,10,0,10" Margin="0,0,0,0" Content="Forget This Identity" Cursor="Hand" Foreground="#F4044D" HorizontalAlignment="Center" Mouse.MouseUp="ForgetIdentity"></Label>
-                    <Image Source="/Assets/Images/identity.png" Grid.Column="0" Grid.Row="7" Height="100" Width="100" Opacity="0.3" HorizontalAlignment="Stretch"></Image>
+                    <Image Name="ForgetIdentityImage" Visibility="Collapsed" Source="/Assets/Images/identity.png" Grid.Column="0" Grid.Row="7" Height="80" Width="80" Opacity="0.3" HorizontalAlignment="Stretch"></Image>
                 </Grid>
             </StackPanel>
         </Grid>

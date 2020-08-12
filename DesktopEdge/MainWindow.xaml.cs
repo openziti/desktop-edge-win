@@ -109,7 +109,11 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
-			if (!_isAttached&&e.ChangedButton == MouseButton.Left) this.DragMove();
+			if (e.ChangedButton == MouseButton.Left) {
+				AttachmentChanged(false);
+				MainMenu.Detach();
+				this.DragMove();
+			}
 		}
 
 		private void TargetNotifyIcon_Click(object sender, EventArgs e) {
@@ -364,9 +368,11 @@ namespace ZitiDesktopEdge {
 			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
 			if (_isAttached) {
 				Arrow.Visibility = Visibility.Visible;
+				IdentityMenu.Arrow.Visibility = Visibility.Visible;
 				this.Left = desktopWorkingArea.Right - this.Width - _right;
 				this.Top = desktopWorkingArea.Bottom - this.Height - _bottom;
 			} else {
+				IdentityMenu.Arrow.Visibility = Visibility.Collapsed;
 				Arrow.Visibility = Visibility.Collapsed;
 			}
 			Debug.WriteLine("Placement: " + this.Left + " " + desktopWorkingArea.Right + " " + this.Width + " " + _right);
@@ -488,6 +494,7 @@ namespace ZitiDesktopEdge {
 		private void ShowLoad() {
 			LoadProgress.IsIndeterminate = true;
 			LoadingScreen.Visibility = Visibility.Visible;
+			((MainWindow)System.Windows.Application.Current.MainWindow).UpdateLayout();
 		}
 
 		private void HideLoad() {

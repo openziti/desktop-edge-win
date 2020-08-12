@@ -223,7 +223,7 @@ namespace ZitiUpdateService {
 
 		private void StartZiti() {
 			controller = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == "ziti");
-			if (controller != null && controller.Status != ServiceControllerStatus.Running) {
+			if (controller != null && controller.Status != ServiceControllerStatus.Running && controller.Status != ServiceControllerStatus.StartPending && controller.Status != ServiceControllerStatus.ContinuePending) {
 				try {
 					Log("Starting Service");
 					controller.Start();

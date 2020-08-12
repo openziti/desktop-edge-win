@@ -83,7 +83,7 @@ namespace ZitiDesktopEdge
 				BackArrow.Visibility = Visibility.Visible;
 
 				// Service Version - Lose the snapshot
-				string version = File.ReadAllText(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "NetFoundry", "Service", "Version.txt"));
+				string version = File.ReadAllText(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "OpenZiti", "Service", "Version.txt"));
 				if (version.IndexOf("-") > 0) version = version.Split('-')[0];
 
 				// Interface Version
@@ -197,6 +197,13 @@ namespace ZitiDesktopEdge
 				OnAttachmentChange(false);
 			}
 			MainMenuArea.Visibility = Visibility.Collapsed;
+		}
+
+		public void Detach() {
+			Application.Current.MainWindow.ShowInTaskbar = true;
+			DetachButton.Visibility = Visibility.Collapsed;
+			AttachButton.Visibility = Visibility.Visible;
+			Arrow.Visibility = Visibility.Collapsed;
 		}
 		private void RetachWindow(object sender, MouseButtonEventArgs e) {
 			Application.Current.MainWindow.ShowInTaskbar = false;
