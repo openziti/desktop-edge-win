@@ -110,7 +110,9 @@ namespace ZitiDesktopEdge {
 
 		private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
 			if (e.ChangedButton == MouseButton.Left) {
-				AttachmentChanged(false);
+				_isAttached = false;
+				IdentityMenu.Arrow.Visibility = Visibility.Collapsed;
+				Arrow.Visibility = Visibility.Collapsed;
 				MainMenu.Detach();
 				this.DragMove();
 			}
