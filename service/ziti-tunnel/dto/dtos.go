@@ -48,6 +48,7 @@ type Identity struct {
 	Status      string
 	Services    []*Service `json:",omitempty"`
 	Metrics     *Metrics   `json:",omitempty"`
+	Tags        []string   `json:",omitempty"`
 
 	Connected   bool            `json:"-"`
 	ZitiContext *cziti.CZitiCtx `json:"-"`

@@ -20,6 +20,7 @@ package cziti
 import (
 	"fmt"
 	"github.com/miekg/dns"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/ipchanges"
 	"io"
 	"net"
 	"os"
@@ -145,18 +146,32 @@ func runListener(ip net.IP, port int, reqch chan dnsreq) {
 		panic(err)
 	}
 
+	go ipchanges.OnIPChange(func(){
+		server.Close()
+		runListener(ip, port, reqch)
+	})
+
 	// oob := make([]byte, 1024)
 	for {
 		b := make([]byte, 1024)
+		log.Warnf("before read msg udp")
 		nb, _, _, peer, err := server.ReadMsgUDP(b, nil)
+		log.Warnf("after read msg udp")
 		if err != nil {
-			panic(err)
+			if err == io.EOF || err == os.ErrClosed || strings.HasSuffix(err.Error(), "use of closed network connection") {
+				log.Warnf("DNS listener closing.")
+				break
+			} else {
+				panic(err)
+			}
 		}
+		log.Warnf("before channel send")
 		reqch <- dnsreq{
 			q: b[:nb],
 			s: server,
 			p: peer,
 		}
+		log.Warnf("after channel send")
 	}
 }
 
@@ -186,6 +201,8 @@ func dnsPanicRecover() {
 
 func runDNSproxy(dnsServers []string) {
 	domains = windns.GetConnectionSpecificDomains()
+	log.Warnf("DOMAINS: %v", domains)
+	log.Warnf("dnsServers: %v", dnsServers)
 	defer func() {
 		if err := recover(); err != nil {
 			log.Errorf("Recovered in f. %v", err)
@@ -282,7 +299,7 @@ func runDNSproxy(dnsServers []string) {
 			now := time.Now()
 			for k, r := range reqs {
 				if now.After(r.exp) {
-					log.Debugf("req expired %s %s", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
+					log.Tracef("req expired %s %s", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
 					delete(reqs, k)
 				}
 			}

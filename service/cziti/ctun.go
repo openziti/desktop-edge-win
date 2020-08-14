@@ -24,6 +24,7 @@ package cziti
 #include <ziti/netif_driver.h>
 #include <ziti/ziti_tunneler.h>
 #include <ziti/ziti_tunneler_cbs.h>
+#include <ziti/ziti_log.h>
 
 #include <uv.h>
 
@@ -42,6 +43,9 @@ extern void readAsync(struct uv_async_s *a);
 extern void readIdle(uv_prepare_t *idler);
 
 extern void call_on_packet(void *packet, ssize_t len, packet_cb cb, void *ctx);
+extern void remove_intercepts(uv_async_t *handle);
+extern void free_async(uv_handle_t* timer);
+extern void ZLOG(int level, char* msg);
 
 */
 import "C"
@@ -51,6 +55,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"sync"
 	"unsafe"
 )
 
@@ -253,11 +258,32 @@ func (t *tunnel) AddIntercept(svcId string, service string, host string, port in
 	log.Debugf("intercept added: %v", res)
 }
 
-func RemoveIntercept(svcvId string) {
+type RemoveWG struct {
+	Wg    *sync.WaitGroup
+	SvcId string
+}
+
+func RemoveIntercept(rwg *RemoveWG) {
+	async := (*C.uv_async_t)(C.malloc(C.sizeof_uv_async_t))
+	async.data = unsafe.Pointer(rwg)
+	C.uv_async_init(_impl.libuvCtx.l, async, C.uv_async_cb(C.remove_intercepts))
+	C.uv_async_send((*C.uv_async_t)(unsafe.Pointer(async)))
+}
+
+//export remove_intercepts
+func remove_intercepts(async *C.uv_async_t) {
+	//C.ZLOG(C.INFO, C.CString(fmt.Sprint("aaaa on uv thread - inside remove_intercepts: %d", &async.loop)))
+	//c := (*C.char)(async.data)
+	rwg := (*RemoveWG)(async.data)
+
 	for _, t := range devMap {
-		log.Infof("issuing stop intercepting for service id: %s", svcvId)
-		C.ziti_tunneler_stop_intercepting(t.tunCtx, C.CString(svcvId))
+		//C.ZLOG(C.INFO, C.CString("bbb on uv thread - inside remove_intercepts"))
+		C.ziti_tunneler_stop_intercepting(t.tunCtx, C.CString(rwg.SvcId))
 	}
+	//C.ZLOG(C.INFO, C.CString("ccc on uv thread - inside remove_intercepts"))
+	C.uv_close((*C.uv_handle_t)(unsafe.Pointer(async)), C.uv_close_cb(C.free_async))
+	C.ZLOG(C.INFO, C.CString("on uv thread - completed remove_intercepts"))
+	rwg.Wg.Done()
 }
 
 func AddIntercept(svcId string, service string, host string, port uint16, ctx *CZitiCtx) {

@@ -30,6 +30,7 @@ extern void cron_callback(uv_async_t *handle);
 extern void shutdown_callback(uv_async_t *handle);
 extern void free_async(uv_handle_t* timer);
 
+extern void c_mapiter(model_map *map);
 */
 import "C"
 import (
@@ -107,6 +108,7 @@ type Service struct {
 type CZitiCtx struct {
 	options   C.ziti_options
 	zctx      C.ziti_context
+	zid		  *C.ziti_identity
 	status    int
 	statusErr error
 
@@ -118,13 +120,30 @@ func (c *CZitiCtx) Status() (int, error) {
 }
 
 func (c *CZitiCtx) Name() string {
-	if c.zctx != nil {
-		id := C.ziti_get_identity(c.zctx)
-		if id != nil {
-			return C.GoString(id.name)
-		}
+	if c.zctx != nil && c.zid != nil {
+		return C.GoString(c.zid.name)
 	}
 	return "<unknown>"
+}
+
+func (c *CZitiCtx) Tags() []string {
+	if c.zctx != nil && c.zid != nil {
+		C.c_mapiter(&c.zid.tags)
+		/*
+		it := C.model_map_iterator(&c.zid.tags)
+		for {
+			if it != nil {
+				k := C.model_map_it_value(it)
+				v := C.model_map_it_value(it)
+				log.Infof("key: %s. value: %s", k, v)
+			} else {
+				break
+			}
+			it = C.model_map_it_next(it) //get the next entry
+		}
+		return nil*/
+	}
+	return nil
 }
 
 func (c *CZitiCtx) Controller() string {
@@ -228,6 +247,9 @@ func initCB(nf C.ziti_context, status C.int, data unsafe.Pointer) {
 	ctx := (*CZitiCtx)(data)
 
 	ctx.zctx = nf
+	if nf != nil {
+		ctx.zid = C.ziti_get_identity(nf)
+	}
 	ctx.options.ctx = data
 	ctx.status = int(status)
 	ctx.statusErr = zitiError(status)

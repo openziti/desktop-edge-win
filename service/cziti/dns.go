@@ -143,19 +143,25 @@ func (dns *dnsImpl) Resolve(toResolve string) net.IP {
 }
 
 func (dns *dnsImpl) DeregisterService(ctx *CZitiCtx, name string) {
+	log.Warnf("DEREG SERVICE: before for loop")
 	for k, sc := range dns.serviceMap {
+		log.Warnf("DEREG SERVICE: iterating sc.ctx:%v, sc.name:%v", sc.ctx, sc.name)
 		if sc.ctx == ctx && sc.name == name {
+			log.Warnf("DEREG SERVICE: if was true")
 			if sc.count < 1 {
 				log.Infof("removing service named %s from DNS mapping known as %s", name, k)
 				delete(dns.serviceMap, k)
 			} else {
 				// another service is using the mapping - can't remove it yet so decrement
-				sc.count --
 				log.Debugf("cannot remove dns mapping for %s yet - %d other services still use this hostname", name, sc.count)
+				sc.count --
 			}
 			return
+		} else {
+			log.Warnf("DEREG SERVICE: if was false")
 		}
 	}
+	log.Warnf("DEREG SERVICE: for loop completed")
 }
 
 func (this *dnsImpl) GetService(ip net.IP, port uint16) (*CZitiCtx, string, error) {
