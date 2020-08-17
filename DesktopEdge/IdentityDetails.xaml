@@ -7,7 +7,7 @@
              mc:Ignorable="d" 
              x:Name="IdentityArea"
              d:DesignHeight="500" d:DesignWidth="350">
-    <Grid>
+    <Grid MaxWidth="350">
         <Canvas>
             <Rectangle Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="White" Width="20" Canvas.Left="165" ClipToBounds="True" Canvas.Bottom="-10">
                 <Rectangle.LayoutTransform>
@@ -22,7 +22,7 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="10,10,10,10">
-                <Grid Margin="0,0,0,20">
+                <Grid Margin="0,0,0,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="70"/>
                         <ColumnDefinition Width="*"/>
@@ -36,18 +36,29 @@
                 </Grid>
                 <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
                 <Grid>
-                    <ScrollViewer Name="MainDetailScroll" VerticalScrollBarVisibility="Auto" CanContentScroll="True">
-                        <StackPanel>
-                            <local:MenuEditItem x:Name="IdentityName" HorizontalAlignment="Stretch" Label="Name" IsLocked="True"></local:MenuEditItem>
-                            <local:MenuEditItem x:Name="IdentityNetwork" HorizontalAlignment="Stretch" Label="Network" IsLocked="True"></local:MenuEditItem>
-                            <local:MenuEditItem x:Name="IdentityStatus" HorizontalAlignment="Stretch" Label="Status" IsLocked="True"></local:MenuEditItem>
-                            <local:MenuEditItem x:Name="IdentityEnrollment" HorizontalAlignment="Stretch" Label="Enrollment Status" IsLocked="True"></local:MenuEditItem>
-                            <Label Content="SERVICES" Foreground="Gray" FontWeight="SemiBold" />
-                            <StackPanel Name="ServiceList" Orientation="Vertical"></StackPanel>
-                            <Label Name="ForgetIdentityButton" Margin="0,10,0,10" Content="Forget This Identity" Cursor="Hand" Foreground="#F4044D" HorizontalAlignment="Center" Mouse.MouseUp="ForgetIdentity"></Label>
-                            <Image Source="/Assets/Images/identity.png" Height="100" Width="100" Opacity="0.3" HorizontalAlignment="Stretch"></Image>
-                        </StackPanel>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="39"></RowDefinition>
+                        <RowDefinition Height="39"></RowDefinition>
+                        <RowDefinition Height="39"></RowDefinition>
+                        <RowDefinition Height="39"></RowDefinition>
+                        <RowDefinition Height="40"></RowDefinition>
+                        <RowDefinition x:Name="ServiceRow" Height="160"></RowDefinition>
+                        <RowDefinition Height="40"></RowDefinition>
+                        <RowDefinition Height="0"></RowDefinition>
+                    </Grid.RowDefinitions>
+                    <local:MenuEditItem x:Name="IdentityName" Grid.Column="0" Grid.Row="0" HorizontalAlignment="Stretch" Label="Name" IsLocked="True"></local:MenuEditItem>
+                    <local:MenuEditItem x:Name="IdentityNetwork" Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" Label="Network" IsLocked="True"></local:MenuEditItem>
+                    <local:MenuEditItem x:Name="IdentityStatus" Grid.Column="0" Grid.Row="2" HorizontalAlignment="Stretch" Label="Status" IsLocked="True"></local:MenuEditItem>
+                    <local:MenuEditItem x:Name="IdentityEnrollment" Grid.Column="0" Grid.Row="3" HorizontalAlignment="Stretch" Label="Enrollment Status" IsLocked="True"></local:MenuEditItem>
+                    <Label Name="ServiceTitle" Content="SERVICES" Grid.Column="0" Grid.Row="4" Foreground="Gray" Padding="0,10,0,10" FontWeight="SemiBold" />
+                    <ScrollViewer Name="MainDetailScroll" Grid.Column="0" MaxHeight="160" Grid.Row="5" VerticalScrollBarVisibility="Auto" CanContentScroll="True">
+                        <StackPanel Name="ServiceList" Orientation="Vertical"></StackPanel>
                     </ScrollViewer>
+                    <Label Name="ForgetIdentityButton" Grid.Column="0" Grid.Row="6" Padding="0,10,0,10" Margin="0,0,0,0" Content="Forget This Identity" Cursor="Hand" Foreground="#F4044D" HorizontalAlignment="Center" Mouse.MouseUp="ForgetIdentity"></Label>
+                    <Image Name="ForgetIdentityImage" Visibility="Collapsed" Source="/Assets/Images/identity.png" Grid.Column="0" Grid.Row="7" Height="80" Width="80" Opacity="0.3" HorizontalAlignment="Stretch"></Image>
                 </Grid>
             </StackPanel>
         </Grid>
@@ -55,12 +66,19 @@
         <Grid x:Name="ConfirmView" Visibility="Collapsed" Width="350">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
-                    <SolidColorBrush Color="Black" Opacity="0.9"/>
+                    <SolidColorBrush Color="Black"/>
                 </Rectangle.Fill>
             </Rectangle>
+            <Canvas>
+                <Rectangle Name="ConfirmArrow" HorizontalAlignment="Center" Height="20" Fill="Black" Width="20" Canvas.Left="165" ClipToBounds="True" Canvas.Bottom="-10">
+                    <Rectangle.LayoutTransform>
+                        <RotateTransform Angle="-45"/>
+                    </Rectangle.LayoutTransform>
+                </Rectangle>
+            </Canvas>
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="1*"></ColumnDefinition>
+                    <ColumnDefinition Width="200"></ColumnDefinition>
                 </Grid.ColumnDefinitions>
             </Grid>
             <Grid>
@@ -79,8 +97,20 @@
                         <ColumnDefinition Width="160"></ColumnDefinition>
                         <ColumnDefinition Width="*"></ColumnDefinition>
                     </Grid.ColumnDefinitions>
-                    <Label Name="CancelConfirmButton" Grid.Column="0" Foreground="#CCCCCC" FontWeight="SemiBold" Content="Close" Cursor="Hand" MouseUp="CancelConfirm" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Center"></Label>
-                    <Label Name="ConfirmButton" Grid.Column="1" Foreground="#F4044D" FontWeight="SemiBold" Content="Confirm" Cursor="Hand" MouseUp="ConfirmForget" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Center"></Label>
+                    <Button x:Name="CancelConfirmButton" Grid.Column="0" Margin="40,0,20,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#0068F9" Content="Close" Click="CancelConfirmButton_Click" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="5"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    <Button x:Name="ConfirmButton" Grid.Column="1" Margin="20,0,40,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#F4044D" Content="Confirm" Click="ConfirmButton_Click" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="5"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
                 </Grid>
             </Grid>
         </Grid>

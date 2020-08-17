@@ -43,6 +43,34 @@ func ResetDNS() {
 	}
 }
 
+func GetConnectionSpecificDomains() []string {
+	script := `Get-DnsClient | Select-Object ConnectionSpecificSuffix | Get-Unique | ForEach-Object { $_.ConnectionSpecificSuffix }`
+
+	cmd := exec.Command("powershell", "-Command", script)
+	cmd.Stderr = os.Stdout
+	output := new(bytes.Buffer)
+	cmd.Stdout = output
+
+	err := cmd.Run()
+
+	if err != nil {
+		panic(err)
+	}
+
+	var names []string
+	for {
+		domain, err := output.ReadString('\n')
+		if err != nil {
+			break
+		}
+		domain = strings.TrimSpace(domain)
+		if !strings.HasSuffix(domain, ".") {
+			names = append(names, domain + ".")
+		}
+	}
+	return names
+}
+
 func GetUpstreamDNS() []string {
 	script := `Get-DnsClientServerAddress | ForEach-Object { $_.ServerAddresses } | Sort-Object | Get-Unique`
 

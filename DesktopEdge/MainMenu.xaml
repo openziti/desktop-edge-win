@@ -68,8 +68,8 @@
                 <TextBox Name="LicensesItems" Height="400" Width="{Binding ActualWidth, ElementName=MainStack}" TextWrapping="Wrap" Visibility="Collapsed"></TextBox>
                 <TextBox Name="LogsItems" Height="400" Width="{Binding ActualWidth, ElementName=MainStack}" TextWrapping="Wrap" Visibility="Collapsed" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"></TextBox>
 
-                <StackPanel Name="AboutItemsButton" Orientation="Vertical" HorizontalAlignment="Stretch" Visibility="Collapsed">
-                    <Label Name="ServiceVersion" HorizontalAlignment="Center" FontSize="10" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
+                <StackPanel Name="AboutItemsArea" Orientation="Vertical" HorizontalAlignment="Stretch" Visibility="Collapsed">
+                    <Label Name="VersionInfo" HorizontalAlignment="Center" FontSize="10" Height="50" Padding="0,30,0,0" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                 </StackPanel>
                 <Label Name="MainItemsButton" Margin="0,30,0,0" Foreground="#F4044D" FontWeight="SemiBold" Content="Quit Ziti Desktop Edge" Cursor="Hand" MouseUp="CloseApp" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Center"></Label>
             </StackPanel>
