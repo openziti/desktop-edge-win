@@ -140,7 +140,7 @@ if %ACTUAL_ERR% NEQ 0 (
 )
 
 copy /y %TUNNELER_SDK_DIR%install\lib\ziti.dll %SVC_ROOT_DIR%
-copy /y TUNNELER_SDK_DIR%install\lib\libuv.dll %SVC_ROOT_DIR%
+copy /y %TUNNELER_SDK_DIR%install\lib\libuv.dll %SVC_ROOT_DIR%
 
 echo COPIED dlls to %SVC_ROOT_DIR%
 cd %SVC_ROOT_DIR%
