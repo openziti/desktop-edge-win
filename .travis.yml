@@ -19,7 +19,7 @@ before_script:
 
 script:
   - service/publish.bat
-  runListener
+  
 stages:
   - name: deploy
     if: branch = master
