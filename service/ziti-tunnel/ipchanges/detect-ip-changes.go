@@ -38,7 +38,7 @@ func OnIPChange(callback func()) {
 		log.Debugf("Got handle at: %#v\n", overlap.HEvent)
 	}
 
-event_loop:
+eventLoop:
 	for {
 		log.Debugf("Invoking NotifyAddrChange()")
 		notifyHandle := windows.Handle(0)
@@ -53,11 +53,11 @@ event_loop:
 			callback()
 		default:
 			log.Error(err)
-			break event_loop
+			break eventLoop
 		}
 	}
 
-	windows.Close(overlap.HEvent)
+	_ = windows.Close(overlap.HEvent)
 }
 
 func WSACreateEvent() (windows.Handle, error) {

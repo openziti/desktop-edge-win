@@ -20,13 +20,12 @@ package cziti
 import (
 	"fmt"
 	"github.com/miekg/dns"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/ipchanges"
+	"github.com/openziti/desktop-edge-win/service/cziti/windns"
 	"io"
 	"net"
 	"os"
 	"strings"
 	"time"
-	"github.com/openziti/desktop-edge-win/service/cziti/windns"
 )
 
 var domains []string // get any connection-specific local domains
@@ -97,7 +96,7 @@ func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn) {
 			_, _, err = s.WriteMsgUDP(repB, nil, p)
 		}
 		if err != nil {
-			log.Debug("dns error", err)
+			log.Error("dns error", err)
 		}
 	} else {
 		// log.Debug("proxying ", dns.Type(query.Qtype), query.Name, q.Id, " for ", p)
@@ -146,17 +145,10 @@ func runListener(ip net.IP, port int, reqch chan dnsreq) {
 		panic(err)
 	}
 
-	go ipchanges.OnIPChange(func(){
-		server.Close()
-		runListener(ip, port, reqch)
-	})
-
 	// oob := make([]byte, 1024)
 	for {
 		b := make([]byte, 1024)
-		log.Warnf("before read msg udp")
 		nb, _, _, peer, err := server.ReadMsgUDP(b, nil)
-		log.Warnf("after read msg udp")
 		if err != nil {
 			if err == io.EOF || err == os.ErrClosed || strings.HasSuffix(err.Error(), "use of closed network connection") {
 				log.Warnf("DNS listener closing.")
@@ -165,13 +157,11 @@ func runListener(ip net.IP, port int, reqch chan dnsreq) {
 				panic(err)
 			}
 		}
-		log.Warnf("before channel send")
 		reqch <- dnsreq{
 			q: b[:nb],
 			s: server,
 			p: peer,
 		}
-		log.Warnf("after channel send")
 	}
 }
 
@@ -205,7 +195,7 @@ func runDNSproxy(dnsServers []string) {
 	log.Warnf("dnsServers: %v", dnsServers)
 	defer func() {
 		if err := recover(); err != nil {
-			log.Errorf("Recovered in f. %v", err)
+			log.Errorf("Recovering from panic due to DNS-related issue. %v", err)
 			dnsPanicRecover()
 		}
 	}()
