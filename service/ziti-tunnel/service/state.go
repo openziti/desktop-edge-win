@@ -212,6 +212,7 @@ func (t *RuntimeState) LoadIdentity(id *dto.Identity) {
 		} else {
 			log.Debugf("name changed from %s to %s", id.Name, ctx.Name())
 			id.Name = ctx.Name()
+			id.Tags = ctx.Tags()
 		}
 
 		id.Services = make([]*dto.Service, 0)

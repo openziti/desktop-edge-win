@@ -41,6 +41,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -743,8 +744,17 @@ func disconnectIdentity(id *dto.Identity) error {
 		if len(id.Services) < 1 {
 			log.Errorf("identity with fingerprint %s has no services?", id.FingerPrint)
 		}
-		for _, s := range id.Services {
-			cziti.RemoveIntercept(s.Id)
+
+
+		for _, s := range id.Services { //xxxxxxxxxxxxx
+			var wg sync.WaitGroup
+			wg.Add(1)
+			rwg := &cziti.RemoveWG{
+				SvcId: s.Id,
+				Wg:    &wg,
+			}
+			cziti.RemoveIntercept(rwg)
+			wg.Wait()
 			cziti.DNS.DeregisterService(id.ZitiContext, s.Name)
 		}
 		id.Connected = false

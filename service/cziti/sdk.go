@@ -21,6 +21,7 @@ package cziti
 #cgo windows LDFLAGS: -l libziti.imp -luv -lws2_32 -lpsapi
 
 #include <ziti/ziti.h>
+#include "ziti/ziti_tunneler.h"
 
 #include "sdk.h"
 extern void initCB(ziti_context nf, int status, void *ctx);
@@ -29,6 +30,7 @@ extern void cron_callback(uv_async_t *handle);
 extern void shutdown_callback(uv_async_t *handle);
 extern void free_async(uv_handle_t* timer);
 
+extern void c_mapiter(model_map *map);
 */
 import "C"
 import (
@@ -106,6 +108,7 @@ type Service struct {
 type CZitiCtx struct {
 	options   C.ziti_options
 	zctx      C.ziti_context
+	zid		  *C.ziti_identity
 	status    int
 	statusErr error
 
@@ -117,13 +120,30 @@ func (c *CZitiCtx) Status() (int, error) {
 }
 
 func (c *CZitiCtx) Name() string {
-	if c.zctx != nil {
-		id := C.ziti_get_identity(c.zctx)
-		if id != nil {
-			return C.GoString(id.name)
-		}
+	if c.zctx != nil && c.zid != nil {
+		return C.GoString(c.zid.name)
 	}
 	return "<unknown>"
+}
+
+func (c *CZitiCtx) Tags() []string {
+	if c.zctx != nil && c.zid != nil {
+		C.c_mapiter(&c.zid.tags)
+		/*
+		it := C.model_map_iterator(&c.zid.tags)
+		for {
+			if it != nil {
+				k := C.model_map_it_value(it)
+				v := C.model_map_it_value(it)
+				log.Infof("key: %s. value: %s", k, v)
+			} else {
+				break
+			}
+			it = C.model_map_it_next(it) //get the next entry
+		}
+		return nil*/
+	}
+	return nil
 }
 
 func (c *CZitiCtx) Controller() string {
@@ -136,8 +156,8 @@ func (c *CZitiCtx) Controller() string {
 var tunCfgName = C.CString("ziti-tunneler-client.v1")
 
 //export serviceCB
-func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, data unsafe.Pointer) {
-	ctx := (*CZitiCtx)(data)
+func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx unsafe.Pointer) {
+	ctx := (*CZitiCtx)(tnlr_ctx)
 
 	if ctx.Services == nil {
 		m := sync.Map{} //make(map[string]Service)
@@ -162,6 +182,22 @@ func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, data uns
 			log.Warnf("could not find a service with id: %s, name: %s", service.id, service.name)
 		}
 	} else if status == C.ZITI_OK {
+
+		if C.ZITI_CAN_BIND == ( service.perm_flags & C.ZITI_CAN_BIND ) {
+			var v1Config C.ziti_server_cfg_v1
+			// get_config_rc = ziti_service_get_config(service, "ziti-tunneler-server.v1", &v1_config, parse_ziti_server_cfg_v1);
+			// int ziti_service_get_config(ziti_service *service, const char *cfg_type, void *cfg,  int (*parser)(void *, const char *, size_t))
+			r := C.ziti_service_get_config(service, C.CString("ziti-tunneler-server.v1"), unsafe.Pointer(&v1Config), (*[0]byte)(C.parse_ziti_server_cfg_v1))
+			if (r == 0) {
+				for _, t := range devMap {
+					C.ziti_tunneler_host_v1(C.tunneler_context(t.tunCtx), unsafe.Pointer(ctx.zctx), service.name, v1Config.protocol, v1Config.hostname, v1Config.port)
+				}
+				C.free_ziti_server_cfg_v1(&v1Config)
+			} else {
+				log.Infof("service is bindable but doesn't have config? %s. flags: %v.", name, service.perm_flags)
+			}
+		}
+
 		cfg := C.ziti_service_get_raw_config(service, tunCfgName)
 
 		host := ""
@@ -211,6 +247,9 @@ func initCB(nf C.ziti_context, status C.int, data unsafe.Pointer) {
 	ctx := (*CZitiCtx)(data)
 
 	ctx.zctx = nf
+	if nf != nil {
+		ctx.zid = C.ziti_get_identity(nf)
+	}
 	ctx.options.ctx = data
 	ctx.status = int(status)
 	ctx.statusErr = zitiError(status)

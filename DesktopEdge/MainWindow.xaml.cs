@@ -35,7 +35,6 @@ namespace ZitiDesktopEdge {
 		private int _right = 75;
 		private int _bottom = 0;
 		private double _maxHeight = 800d;
-		private string _serviceVersion = "0.0.8";
 		private string[] suffixes = { "bps", "kbps", "mbps", "gbps", "tbps", "pbps" };
 
 		private List<ZitiIdentity> identities {
@@ -75,7 +74,6 @@ namespace ZitiDesktopEdge {
 
 			LaunchOrInstall();
 
-			MainMenu.ServiceVersion.Content = _serviceVersion;
 			SetNotifyIcon("white");
 			InitializeComponent();
 		}
@@ -111,7 +109,13 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
-			if (!_isAttached&&e.ChangedButton == MouseButton.Left) this.DragMove();
+			if (e.ChangedButton == MouseButton.Left) {
+				_isAttached = false;
+				IdentityMenu.Arrow.Visibility = Visibility.Collapsed;
+				Arrow.Visibility = Visibility.Collapsed;
+				MainMenu.Detach();
+				this.DragMove();
+			}
 		}
 
 		private void TargetNotifyIcon_Click(object sender, EventArgs e) {
@@ -345,7 +349,6 @@ namespace ZitiDesktopEdge {
 			ZitiIdentity[] ids = identities.ToArray();
 			double height = 460 + (ids.Length * 60);
 			if (height > _maxHeight) height = _maxHeight;
-			Debug.WriteLine("Set Height: " + height);
 			this.Height = height;
 			IdentityMenu.SetHeight(this.Height-160);
 			for (int i=0; i<ids.Length; i++) {
@@ -360,7 +363,6 @@ namespace ZitiDesktopEdge {
 				IdList.Children.Add(id);
 				IdList.Height += 60;
 			}
-			Debug.WriteLine("Ids Loaded "+ ids.Length);
 			if (this._isAttached&&repaint) Placement();
 		}
 
@@ -368,9 +370,11 @@ namespace ZitiDesktopEdge {
 			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
 			if (_isAttached) {
 				Arrow.Visibility = Visibility.Visible;
+				IdentityMenu.Arrow.Visibility = Visibility.Visible;
 				this.Left = desktopWorkingArea.Right - this.Width - _right;
 				this.Top = desktopWorkingArea.Bottom - this.Height - _bottom;
 			} else {
+				IdentityMenu.Arrow.Visibility = Visibility.Collapsed;
 				Arrow.Visibility = Visibility.Collapsed;
 			}
 			Debug.WriteLine("Placement: " + this.Left + " " + desktopWorkingArea.Right + " " + this.Width + " " + _right);
@@ -434,11 +438,9 @@ namespace ZitiDesktopEdge {
 			_timer.Enabled = true;
 			_timer.Start();
 		}
-		private void Connect(object sender, RoutedEventArgs e)
-		{
-			this.Dispatcher.Invoke(() =>
-			{
-				ShowLoad();
+		private void Connect(object sender, RoutedEventArgs e) {
+			ShowLoad();
+			this.Dispatcher.Invoke(() => {
 				//Dispatcher.Invoke(new Action(() => { }), System.Windows.Threading.DispatcherPriority.ContextIdle);
 				DoConnect();
 				HideLoad();
@@ -494,6 +496,7 @@ namespace ZitiDesktopEdge {
 		private void ShowLoad() {
 			LoadProgress.IsIndeterminate = true;
 			LoadingScreen.Visibility = Visibility.Visible;
+			((MainWindow)System.Windows.Application.Current.MainWindow).UpdateLayout();
 		}
 
 		private void HideLoad() {

@@ -14,7 +14,11 @@ namespace ZitiDesktopEdge.Models {
 		}
 
 		public static string GetLogs() {
-			return File.ReadAllText(_logDirectory);
+			string logs = "";
+			if (File.Exists(_logDirectory)) {
+				logs = File.ReadAllText(_logDirectory);
+			}
+			return logs;
 		}
 	}
 }
