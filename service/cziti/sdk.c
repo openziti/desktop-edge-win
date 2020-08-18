@@ -80,3 +80,18 @@ const char** all_configs = _all;
 extern void call_on_packet(const char *packet, ssize_t len, packet_cb cb, void *ctx) {
      cb(packet, len, ctx);
 }
+
+extern void c_mapiter(model_map *map) {
+    int rc = 0;
+	model_map_iter it = model_map_iterator(map);
+	while (it != NULL && rc == 0) {
+		char *v = model_map_it_value(it);
+		const char *k = model_map_it_key(it);
+		printf("k: %s, v: %s", k, v);
+		it = model_map_it_next(it);
+	}
+}
+
+void ZLOG(int level, char* msg) {
+    ZITI_LOG(level, "%s", msg);
+}

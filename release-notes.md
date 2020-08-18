@@ -1,3 +1,13 @@
+# Release 1.0.4
+
+* What's New
+
+  * [#94](https://github.com/openziti/desktop-edge-win/issues/94) - Added support for 'hosted' services
+
+* Bug fixes
+
+  * [#102](https://github.com/openziti/desktop-edge-win/pull/102) - DNS requests with "connection-specific local domain" would not resolve
+
 # Release 0.0.20
 
 * What's New

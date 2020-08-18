@@ -20,13 +20,15 @@ package cziti
 import (
 	"fmt"
 	"github.com/miekg/dns"
+	"github.com/openziti/desktop-edge-win/service/cziti/windns"
 	"io"
 	"net"
 	"os"
 	"strings"
 	"time"
-	"github.com/openziti/desktop-edge-win/service/cziti/windns"
 )
+
+var domains []string // get any connection-specific local domains
 
 func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn) {
 	q := &dns.Msg{}
@@ -46,8 +48,24 @@ func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn) {
 
 	var ip net.IP
 	// fmt.Printf("query: Type(%d) name(%s)\n", query.Qtype, query.Name)
+	dnsName := strings.TrimSpace(query.Name)
+	ip = DNS.Resolve(dnsName)
 
-	ip = DNS.Resolve(query.Name)
+	// never proxy hostnames that we know about regardless of type
+	if ip == nil {
+		// no direct hit. need to now check to see if the dns query used a connection-specific local domain
+		for _, d := range domains {			
+			if strings.HasSuffix(dnsName, d) {
+				dnsNameTrimmed := strings.Trim(dnsName, d)
+				// dns request has domain appended - removing and resolving
+				ip = DNS.Resolve(dnsNameTrimmed)
+				if ip != nil {
+					log.Debugf("DNS %s failed at first but succeeded by looking up %s", dnsName, dnsNameTrimmed)
+					break
+				}
+			}
+		}
+	}
 
 	// never proxy hostnames that we know about regardless of type
 	if ip != nil {
@@ -78,7 +96,7 @@ func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn) {
 			_, _, err = s.WriteMsgUDP(repB, nil, p)
 		}
 		if err != nil {
-			log.Debug("dns error", err)
+			log.Error("dns error", err)
 		}
 	} else {
 		// log.Debug("proxying ", dns.Type(query.Qtype), query.Name, q.Id, " for ", p)
@@ -132,7 +150,12 @@ func runListener(ip net.IP, port int, reqch chan dnsreq) {
 		b := make([]byte, 1024)
 		nb, _, _, peer, err := server.ReadMsgUDP(b, nil)
 		if err != nil {
-			panic(err)
+			if err == io.EOF || err == os.ErrClosed || strings.HasSuffix(err.Error(), "use of closed network connection") {
+				log.Warnf("DNS listener closing.")
+				break
+			} else {
+				panic(err)
+			}
 		}
 		reqch <- dnsreq{
 			q: b[:nb],
@@ -167,9 +190,12 @@ func dnsPanicRecover() {
 }
 
 func runDNSproxy(dnsServers []string) {
+	domains = windns.GetConnectionSpecificDomains()
+	log.Warnf("DOMAINS: %v", domains)
+	log.Warnf("dnsServers: %v", dnsServers)
 	defer func() {
 		if err := recover(); err != nil {
-			log.Errorf("Recovered in f. %v", err)
+			log.Errorf("Recovering from panic due to DNS-related issue. %v", err)
 			dnsPanicRecover()
 		}
 	}()
@@ -263,7 +289,7 @@ func runDNSproxy(dnsServers []string) {
 			now := time.Now()
 			for k, r := range reqs {
 				if now.After(r.exp) {
-					log.Debugf("req expired %s %s", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
+					log.Tracef("req expired %s %s", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
 					delete(reqs, k)
 				}
 			}

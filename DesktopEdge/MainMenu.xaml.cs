@@ -69,7 +69,7 @@ namespace ZitiDesktopEdge
 			MainItems.Visibility = Visibility.Collapsed;
 			AboutItems.Visibility = Visibility.Collapsed;
 			MainItemsButton.Visibility = Visibility.Collapsed;
-			AboutItemsButton.Visibility = Visibility.Collapsed;
+			AboutItemsArea.Visibility = Visibility.Collapsed;
 			BackArrow.Visibility = Visibility.Collapsed;
 			AdvancedItems.Visibility = Visibility.Collapsed;
 			LicensesItems.Visibility = Visibility.Collapsed;
@@ -78,9 +78,17 @@ namespace ZitiDesktopEdge
 
 			if (menuState=="About") {
 				MenuTitle.Content = "About";
-				AboutItemsButton.Visibility = Visibility.Visible;
+				AboutItemsArea.Visibility = Visibility.Visible;
 				AboutItems.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
+
+				// Service Version - Lose the snapshot
+				string version = File.ReadAllText(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "OpenZiti", "Service", "Version.txt"));
+				if (version.IndexOf("-") > 0) version = version.Split('-')[0];
+
+				// Interface Version
+				VersionInfo.Content = "App: " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString()+" Service: "+ version;
+
 			} else if (menuState=="Advanced") {
 				MenuTitle.Content = "Advanced Settings";
 				AdvancedItems.Visibility = Visibility.Visible;
@@ -189,6 +197,13 @@ namespace ZitiDesktopEdge
 				OnAttachmentChange(false);
 			}
 			MainMenuArea.Visibility = Visibility.Collapsed;
+		}
+
+		public void Detach() {
+			Application.Current.MainWindow.ShowInTaskbar = true;
+			DetachButton.Visibility = Visibility.Collapsed;
+			AttachButton.Visibility = Visibility.Visible;
+			Arrow.Visibility = Visibility.Collapsed;
 		}
 		private void RetachWindow(object sender, MouseButtonEventArgs e) {
 			Application.Current.MainWindow.ShowInTaskbar = false;
