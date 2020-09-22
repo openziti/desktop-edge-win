@@ -40,6 +40,7 @@ func (m *zitiService) Execute(args []string, r <-chan svc.ChangeRequest, changes
 			log.Errorf("the main loop exited with an unexpected error: %v", err)
 		}
 		mainLoop <- struct{}{}
+		control <- "shutting down"
 	}()
 loop:
 	for {
