@@ -21,7 +21,7 @@ package cziti
 #cgo windows LDFLAGS: -l libziti.imp -luv -lws2_32 -lpsapi
 
 #include <ziti/ziti.h>
-#include "ziti/ziti_tunneler.h"
+#include "ziti/ziti_tunnel.h"
 
 #include "sdk.h"
 extern void initCB(ziti_context nf, int status, void *ctx);

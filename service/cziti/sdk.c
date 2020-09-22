@@ -16,7 +16,7 @@
  */
 
 #include "sdk.h"
-#include <ziti/ziti_tunneler.h>
+#include <ziti/ziti_tunnel.h>
 #include <ziti/ziti_log.h>
 
 void libuv_stopper(uv_async_t *a) {
