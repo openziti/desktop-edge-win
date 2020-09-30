@@ -23,11 +23,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Microsoft/go-winio"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/windns"
 	"github.com/openziti/foundation/identity/identity"
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"github.com/openziti/sdk-golang/ziti/enroll"
 	"github.com/openziti/desktop-edge-win/service/cziti"
-	"github.com/openziti/desktop-edge-win/service/cziti/windns"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/globals"
@@ -82,7 +82,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	err := initialize(rts.state.TunIpv4, rts.state.TunIpv4Mask)
 
 	if err != nil {
-		log.Errorf("unexpected err: %v", err)
+		log.Panicf("unexpected err from initialize: %v", err)
 		return err
 	}
 
@@ -105,8 +105,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 
 	waitForStopRequest(ops)
 
-	shutdown <- true // stop the metrics ticker
-	shutdown <- true // stop the service change listener
+	requestShutdown("service shutdown")
 
 	log.Infof("shutting down connections...")
 	pipes.shutdownConnections()
@@ -134,6 +133,12 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 
 	ops <- "done"
 	return nil
+}
+
+func requestShutdown(requester string) {
+	log.Info("shutdown requested by %v", requester)
+	shutdown <- true // stops the metrics ticker
+	shutdown <- true // stops the service change listener
 }
 
 func waitForStopRequest(ops <-chan string) {
@@ -746,7 +751,7 @@ func disconnectIdentity(id *dto.Identity) error {
 		}
 
 
-		for _, s := range id.Services { //xxxxxxxxxxxxx
+		for _, s := range id.Services { //wait for uv loop to finish before continuing
 			var wg sync.WaitGroup
 			wg.Add(1)
 			rwg := &cziti.RemoveWG{
@@ -755,7 +760,7 @@ func disconnectIdentity(id *dto.Identity) error {
 			}
 			cziti.RemoveIntercept(rwg)
 			wg.Wait()
-			cziti.DNS.DeregisterService(id.ZitiContext, s.Name)
+			windns.DNS.DeregisterService(id.ZitiContext, s.Name)
 		}
 		id.Connected = false
 	} else {

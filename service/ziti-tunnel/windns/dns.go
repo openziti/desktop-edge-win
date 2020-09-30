@@ -15,12 +15,13 @@
  *
  */
 
-package cziti
+package windns
 
 import "C"
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/openziti/desktop-edge-win/service/cziti"
 	"net"
 	"strings"
 	"sync"
@@ -30,9 +31,9 @@ import (
 type DnsManager interface {
 	Resolve(dnsName string) net.IP
 
-	RegisterService(dnsName string, port uint16, ctx *CZitiCtx, name string) (net.IP, error)
-	DeregisterService(ctx *CZitiCtx, name string)
-	GetService(ip net.IP, port uint16) (*CZitiCtx, string, error)
+	RegisterService(dnsName string, port uint16, ctx *cziti.CZitiCtx, name string) (net.IP, error)
+	DeregisterService(ctx *cziti.CZitiCtx, name string)
+	GetService(ip net.IP, port uint16) (*cziti.CZitiCtx, string, error)
 }
 
 const defaultCidr = "169.254.0.0"
@@ -54,13 +55,13 @@ type dnsImpl struct {
 }
 
 type ctxIp struct {
-	ctx     *CZitiCtx
+	ctx     *cziti.CZitiCtx
 	ip      net.IP
 	network string
 }
 
 type ctxService struct {
-	ctx       *CZitiCtx
+	ctx       *cziti.CZitiCtx
 	name      string
 	serviceId string
 	count     int
@@ -78,7 +79,7 @@ func normalizeDnsName(dnsName string) string {
 
 // RegisterService will return the next ip address in the configured range. If the ip address is not
 // assigned to a hostname an error will also be returned indicating why.
-func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint16, ctx *CZitiCtx, name string) (net.IP, error) {
+func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint16, ctx *cziti.CZitiCtx, name string) (net.IP, error) {
 	log.Infof("adding DNS entry for service name %s@%s:%d", name, dnsNameToReg, port)
 	DnsInit(defaultCidr, defaultMaskBits)
 	dnsName := normalizeDnsName(dnsNameToReg)
@@ -86,7 +87,7 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 
 	var ip net.IP
 
-	currentNetwork := C.GoString(ctx.options.controller)
+	currentNetwork := C.GoString(ctx.Options.controller)
 
 	// check to see if the hostname is mapped...
 	if foundIp, found := dns.hostnameMap[dnsName]; found {
@@ -142,7 +143,7 @@ func (dns *dnsImpl) Resolve(toResolve string) net.IP {
 	return dns.hostnameMap[dnsName].ip
 }
 
-func (dns *dnsImpl) DeregisterService(ctx *CZitiCtx, name string) {
+func (dns *dnsImpl) DeregisterService(ctx *cziti.CZitiCtx, name string) {
 	log.Warnf("DEREG SERVICE: before for loop")
 	for k, sc := range dns.serviceMap {
 		log.Warnf("DEREG SERVICE: iterating sc.ctx:%v, sc.name:%v", sc.ctx, sc.name)
@@ -164,7 +165,7 @@ func (dns *dnsImpl) DeregisterService(ctx *CZitiCtx, name string) {
 	log.Warnf("DEREG SERVICE: for loop completed")
 }
 
-func (this *dnsImpl) GetService(ip net.IP, port uint16) (*CZitiCtx, string, error) {
+func (this *dnsImpl) GetService(ip net.IP, port uint16) (*cziti.CZitiCtx, string, error) {
 	return nil, "", nil //not used yet
 	/*ipv4 := binary.BigEndian.Uint32(ip)
 	dns, found := this.ipMap[ipv4]

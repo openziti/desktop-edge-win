@@ -15,12 +15,11 @@
  *
  */
 
-package cziti
+package windns
 
 import (
 	"fmt"
 	"github.com/miekg/dns"
-	"github.com/openziti/desktop-edge-win/service/cziti/windns"
 	"io"
 	"net"
 	"os"
@@ -54,7 +53,7 @@ func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn) {
 	// never proxy hostnames that we know about regardless of type
 	if ip == nil {
 		// no direct hit. need to now check to see if the dns query used a connection-specific local domain
-		for _, d := range domains {			
+		for _, d := range domains {
 			if strings.HasSuffix(dnsName, d) {
 				dnsNameTrimmed := strings.Trim(dnsName, d)
 				// dns request has domain appended - removing and resolving
@@ -96,10 +95,12 @@ func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn) {
 			_, _, err = s.WriteMsgUDP(repB, nil, p)
 		}
 		if err != nil {
-			log.Error("dns error", err)
+			log.Debug("dns error", err)
 		}
 	} else {
-		// log.Debug("proxying ", dns.Type(query.Qtype), query.Name, q.Id, " for ", p)
+		if strings.Contains(query.Name, "eth0") {
+			log.Warn("proxying ", dns.Type(query.Qtype), query.Name, q.Id, " for ", p)
+		}
 		proxyDNS(q, p, s)
 	}
 }
@@ -110,8 +111,8 @@ type dnsreq struct {
 	p *net.UDPAddr
 }
 
-func runDNSserver(dnsBind []net.IP) {
-	dnsServers := windns.GetUpstreamDNS()
+func runDNSserver(dnsBind []net.IP, ready chan bool) {
+	dnsServers := GetUpstreamDNS()
 	go runDNSproxy(dnsServers)
 
 	reqch := make(chan dnsreq, 16) //allow dns requests to be buffered
@@ -120,8 +121,9 @@ func runDNSserver(dnsBind []net.IP) {
 		go runListener(bindAddr, 53, reqch)
 	}
 
-	windns.ReplaceDNS(dnsBind)
+	ReplaceDNS(dnsBind)
 
+	ready <- true
 	for req := range reqch {
 		processDNSquery(req.q, req.p, req.s)
 	}
@@ -186,11 +188,11 @@ func proxyDNS(req *dns.Msg, peer *net.UDPAddr, serv *net.UDPConn) {
 
 func dnsPanicRecover() {
 	// get dns again and reconfigure
-	go runDNSproxy(windns.GetUpstreamDNS())
+	go runDNSproxy(GetUpstreamDNS())
 }
 
 func runDNSproxy(dnsServers []string) {
-	domains = windns.GetConnectionSpecificDomains()
+	domains = GetConnectionSpecificDomains()
 	log.Warnf("DOMAINS: %v", domains)
 	log.Warnf("dnsServers: %v", dnsServers)
 	defer func() {
@@ -267,6 +269,8 @@ func runDNSproxy(dnsServers []string) {
 						pr.req.Question[0].Name,
 						proxy.RemoteAddr(),
 						err)
+				} else {
+					log.Warnf("Proxied request sent to %v from %v", proxy.RemoteAddr(), proxy.LocalAddr())
 				}
 			}
 
@@ -277,10 +281,10 @@ func runDNSproxy(dnsServers []string) {
 				req, found := reqs[id]
 				if found {
 					delete(reqs, id)
-					// fmt.Printf("proxy resolved %+v for %v\n\n", reply, req.peer)
+					log.Warnf("proxy resolved %v from %v", reply.Question[0].Name, req.s.RemoteAddr())
 					req.s.WriteMsgUDP(rep, nil, req.peer)
 				} else {
-					log.Trace("matching request was not found for ",
+					log.Warnf("matching request was not found for %v %v",
 						dns.Type(reply.Question[0].Qtype), reply.Question[0].Name)
 				}
 			}
@@ -289,7 +293,7 @@ func runDNSproxy(dnsServers []string) {
 			now := time.Now()
 			for k, r := range reqs {
 				if now.After(r.exp) {
-					log.Tracef("req expired %s %s", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
+					log.Warnf("req expired %s %s", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
 					delete(reqs, k)
 				}
 			}

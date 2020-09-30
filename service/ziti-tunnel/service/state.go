@@ -25,6 +25,7 @@ import (
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/idutil"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/windns"
 	"golang.zx2c4.com/wireguard/tun"
 	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
 	"net"
@@ -175,11 +176,11 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 	log.Infof("routing destination [%s] through [%s]", *ipnet, ipnet.IP)
 	err = luid.SetRoutes([]*winipcfg.RouteData{{*ipnet, ipnet.IP, 0}})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to SetRoutes: (%v)", err)
 	}
 	log.Info("routing applied")
 
-	cziti.DnsInit(ipv4, ipv4mask)
+	windns.DnsInit(ipv4, ipv4mask)
 	cziti.Start()
 	_, err = cziti.HookupTun(tunDevice, dns)
 	if err != nil {

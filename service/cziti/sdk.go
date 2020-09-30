@@ -21,7 +21,7 @@ package cziti
 #cgo windows LDFLAGS: -l libziti.imp -luv -lws2_32 -lpsapi
 
 #include <ziti/ziti.h>
-#include "ziti/ziti_tunneler.h"
+#include "ziti/ziti_tunnel.h"
 
 #include "sdk.h"
 extern void initCB(ziti_context nf, int status, void *ctx);
@@ -38,6 +38,7 @@ import (
 	"errors"
 	"github.com/michaelquigley/pfxlog"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/windns"
 	"github.com/robfig/cron/v3"
 	"io/ioutil"
 	"os"
@@ -106,9 +107,9 @@ type Service struct {
 }
 
 type CZitiCtx struct {
-	options   C.ziti_options
+	Options   C.ziti_options
 	zctx      C.ziti_context
-	zid		  *C.ziti_identity
+	zid       *C.ziti_identity
 	status    int
 	statusErr error
 
@@ -150,7 +151,7 @@ func (c *CZitiCtx) Controller() string {
 	if c.zctx != nil {
 		return C.GoString(C.ziti_get_controller(c.zctx))
 	}
-	return C.GoString(c.options.controller)
+	return C.GoString(c.Options.controller)
 }
 
 var tunCfgName = C.CString("ziti-tunneler-client.v1")
@@ -171,7 +172,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, t
 		found, ok := ctx.Services.Load(svcId)
 		fs := found.(Service)
 		if ok {
-			DNS.DeregisterService(ctx, name)
+			windns.DNS.DeregisterService(ctx, name)
 			ctx.Services.Delete(svcId)
 			ServiceChanges <- ServiceChange{
 				Operation: REMOVED,
@@ -212,7 +213,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, t
 		}
 		if host != "" && port != -1 {
 			ownsIntercept := true
-			ip, err := DNS.RegisterService(svcId, host, uint16(port), ctx, name)
+			ip, err := windns.DNS.RegisterService(svcId, host, uint16(port), ctx, name)
 			if err != nil {
 				log.Warn(err)
 				ownsIntercept = false
@@ -250,11 +251,11 @@ func initCB(nf C.ziti_context, status C.int, data unsafe.Pointer) {
 	if nf != nil {
 		ctx.zid = C.ziti_get_identity(nf)
 	}
-	ctx.options.ctx = data
+	ctx.Options.ctx = data
 	ctx.status = int(status)
 	ctx.statusErr = zitiError(status)
 
-	cfg := C.GoString(ctx.options.config)
+	cfg := C.GoString(ctx.Options.config)
 	if ch, ok := initMap[cfg]; ok {
 		ch <- ctx
 	} else {
@@ -273,16 +274,16 @@ func zitiError(code C.int) error {
 
 func LoadZiti(cfg string) *CZitiCtx {
 	ctx := &CZitiCtx{}
-	ctx.options.config = C.CString(cfg)
-	ctx.options.init_cb = C.ziti_init_cb(C.initCB)
-	ctx.options.service_cb = C.ziti_service_cb(C.serviceCB)
-	ctx.options.refresh_interval = C.long(15)
-	ctx.options.metrics_type = C.INSTANT
-	ctx.options.config_types = C.all_configs
+	ctx.Options.config = C.CString(cfg)
+	ctx.Options.init_cb = C.ziti_init_cb(C.initCB)
+	ctx.Options.service_cb = C.ziti_service_cb(C.serviceCB)
+	ctx.Options.refresh_interval = C.long(15)
+	ctx.Options.metrics_type = C.INSTANT
+	ctx.Options.config_types = C.all_configs
 
 	ch := make(chan *CZitiCtx)
 	initMap[cfg] = ch
-	rc := C.ziti_init_opts(&ctx.options, _impl.libuvCtx.l, unsafe.Pointer(ctx))
+	rc := C.ziti_init_opts(&ctx.Options, _impl.libuvCtx.l, unsafe.Pointer(ctx))
 	if rc != C.ZITI_OK {
 		ctx.status, ctx.statusErr = int(rc), zitiError(rc)
 		go func() {

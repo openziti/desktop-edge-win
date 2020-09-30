@@ -22,7 +22,7 @@ package cziti
 #cgo LDFLAGS: -l ziti_tunneler -l lwipcore -l lwipwin32arch -l ziti_tunneler -l ziti_tunneler_cbs
 
 #include <ziti/netif_driver.h>
-#include <ziti/ziti_tunneler.h>
+#include <ziti/ziti_tunnel.h>
 #include <ziti/ziti_tunneler_cbs.h>
 #include <ziti/ziti_log.h>
 
@@ -109,7 +109,9 @@ func HookupTun(dev tun.Device, dns []net.IP) (Tunnel, error) {
 
 	t.tunCtx = C.ziti_tunneler_init(opts, _impl.libuvCtx.l)
 
-	go runDNSserver(dns)
+	ready := make(chan bool)
+	go runDNSserver(dns, ready)
+	<- ready //wait for runDNSserver to indicate it's ready
 
 	return t, nil
 }

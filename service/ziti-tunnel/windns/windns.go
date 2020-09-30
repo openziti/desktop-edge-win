@@ -31,7 +31,7 @@ var log = pfxlog.Logger()
 func ResetDNS() {
 	log.Info("resetting dns to original-ish state")
 
-	script := `Get-NetIPInterface | ForEach-Object { Set-DnsClientServerAddress -InterfaceIndex $_.ifIndex -ResetServerAddresses }`
+	script := `e`
 
 	cmd := exec.Command("powershell", "-Command", script)
 	cmd.Stderr = os.Stdout
@@ -98,6 +98,7 @@ func GetUpstreamDNS() []string {
 	}
 	return names
 }
+
 
 func ReplaceDNS(ips []net.IP) {
 	script := `$dnsinfo=Get-DnsClientServerAddress
