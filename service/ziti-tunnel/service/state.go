@@ -19,16 +19,21 @@ package service
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/openziti/desktop-edge-win/service/cziti"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/idutil"
+	"golang.org/x/sys/windows"
 	"golang.zx2c4.com/wireguard/tun"
 	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
+	"io"
 	"net"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -133,6 +138,8 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 
 	if name, err := tunDevice.Name(); err == nil {
 		log.Debugf("created TUN device [%s]", name)
+	} else {
+		return fmt.Errorf("error getting TUN name: (%v)", err)
 	}
 
 	nativeTunDevice := tunDevice.(*tun.NativeTun)
@@ -163,16 +170,17 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 		net.ParseIP(Ipv6dns),
 	}
 	log.Infof("adding DNS servers to TUN: %s", dnsServers)
-	err = luid.AddDNS(dnsServers)
+	//err = luid.AddDNS(dnsServers)
+	err = AddDNS(luid, dnsServers)
 	if err != nil {
 		return fmt.Errorf("failed to add DNS addresses: (%v)", err)
 	}
-	log.Infof("checking dns servers")
+	log.Infof("checking TUN dns servers")
 	dns, err := luid.DNS()
 	if err != nil {
 		return fmt.Errorf("failed to fetch DNS address: (%v)", err)
 	}
-	log.Infof("dns servers set to: %s", dns)
+	log.Infof("TUN dns servers set to: %s", dns)
 
 	log.Infof("routing destination [%s] through [%s]", *ipnet, ipnet.IP)
 	err = luid.SetRoutes([]*winipcfg.RouteData{{*ipnet, ipnet.IP, 0}})
@@ -271,4 +279,76 @@ func (t *RuntimeState) UpdateIpv4Mask(ipv4mask int){
 func (t *RuntimeState) UpdateIpv4(ipv4 string){
 	rts.state.TunIpv4 = ipv4
 	rts.SaveState()
+}
+
+
+// copied from golang.zx2c4.com\wireguard\windows@v0.1.0\tunnel\winipcfg\luid.go for now to debug issue
+func AddDNS(luid winipcfg.LUID, dnses []net.IP) error {
+	var ipif4, ipif6 *winipcfg.MibIPInterfaceRow
+	var err error
+	cmds := make([]string, 0, len(dnses))
+	for i := 0; i < len(dnses); i++ {
+		if v4 := dnses[i].To4(); v4 != nil {
+			if ipif4 == nil {
+				ipif4, err = luid.IPInterface(windows.AF_INET)
+				if err != nil {
+					return fmt.Errorf("error at luid.IPInterface(windows.AF_INET)", err)
+				}
+			}
+			cmd := fmt.Sprintf(netshCmdTemplateAdd4, ipif4.InterfaceIndex, v4.String())
+			log.Infof("Appending v4 command: %s", cmd)
+			cmds = append(cmds, cmd)
+		} else if v6 := dnses[i].To16(); v6 != nil {
+			if ipif6 == nil {
+				ipif6, err = luid.IPInterface(windows.AF_INET6)
+				if err != nil {
+					return fmt.Errorf("error at luid.IPInterface(windows.AF_INET6)", err)
+				}
+			}
+			cmd := fmt.Sprintf(netshCmdTemplateAdd6, ipif6.InterfaceIndex, v6.String())
+			log.Infof("Appending v6 command: %s", cmd)
+			cmds = append(cmds, cmd)
+		}
+	}
+
+	if len(cmds) == 0 {
+		return nil
+	}
+	return runNetsh(cmds)
+}
+const (
+	netshCmdTemplateFlush4 = "interface ipv4 set dnsservers name=%d source=static address=none validate=no register=both"
+	netshCmdTemplateFlush6 = "interface ipv6 set dnsservers name=%d source=static address=none validate=no register=both"
+	netshCmdTemplateAdd4   = "interface ipv4 add dnsservers name=%d address=%s validate=no"
+	netshCmdTemplateAdd6   = "interface ipv6 add dnsservers name=%d address=%s validate=no"
+)
+
+// copied from golang.zx2c4.com\wireguard\windows@v0.1.0\tunnel\winipcfg\netsh.go for now to debug issue
+func runNetsh(cmds []string) error {
+	system32, err := windows.GetSystemDirectory()
+	if err != nil {
+		return fmt.Errorf("could not find system32?", err)
+	}
+	cmd := exec.Command(filepath.Join(system32, "netsh.exe")) // I wish we could append (, "-f", "CONIN$") but Go sets up the process context wrong.
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return fmt.Errorf("runNetsh stdin pipe - %v", err)
+	}
+	go func() {
+		defer stdin.Close()
+		io.WriteString(stdin, strings.Join(append(cmds, "exit\r\n"), "\r\n"))
+	}()
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("runNetsh run - %v", err)
+	}
+	// Horrible kludges, sorry.
+	cleaned := bytes.ReplaceAll(output, []byte("netsh>"), []byte{})
+	cleaned = bytes.ReplaceAll(cleaned, []byte("There are no Domain Name Servers (DNS) configured on this computer."), []byte{})
+	cleaned = bytes.TrimSpace(cleaned)
+	if len(cleaned) != 0 {
+		return fmt.Errorf("runNetsh returned error strings.\ninput:\n%s\noutput\n:%s",
+			strings.Join(cmds, "\n"), bytes.ReplaceAll(output, []byte{'\r', '\n'}, []byte{'\n'}))
+	}
+	return nil
 }

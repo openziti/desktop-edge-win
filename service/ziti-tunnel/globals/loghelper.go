@@ -73,7 +73,7 @@ func ParseLevel(lvl string) (logrus.Level, int) {
 	case "trace":
 		return logrus.TraceLevel, 5
 	default:
-		logrus.Warnf("level not recognized: %s. Using Info", lvl)
+		logrus.Warnf("level not recognized: [%s]. Using Info", lvl)
 		return logrus.InfoLevel, 3
 	}
 }
