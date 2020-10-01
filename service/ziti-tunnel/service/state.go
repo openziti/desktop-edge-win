@@ -162,15 +162,17 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 		net.ParseIP(Ipv4dns).To4(),
 		net.ParseIP(Ipv6dns),
 	}
+	log.Infof("adding DNS servers to TUN: %s", dnsServers)
 	err = luid.AddDNS(dnsServers)
 	if err != nil {
-		return fmt.Errorf("failed to add DNS address: (%v)", err)
+		return fmt.Errorf("failed to add DNS addresses: (%v)", err)
 	}
+	log.Infof("checking dns servers")
 	dns, err := luid.DNS()
 	if err != nil {
 		return fmt.Errorf("failed to fetch DNS address: (%v)", err)
 	}
-	log.Debugf("dns servers set to = %s", dns)
+	log.Infof("dns servers set to: %s", dns)
 
 	log.Infof("routing destination [%s] through [%s]", *ipnet, ipnet.IP)
 	err = luid.SetRoutes([]*winipcfg.RouteData{{*ipnet, ipnet.IP, 0}})
