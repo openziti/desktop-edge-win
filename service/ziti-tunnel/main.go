@@ -58,7 +58,7 @@ func main() {
 		if err != nil {
 			return
 		}
-		log.Info("running as service. version: %s", version())
+		log.Infof("running as service. version: %s", version())
 		service.RunService(false)
 		log.Info("service has completed")
 		return
