@@ -165,6 +165,7 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 		net.ParseIP(Ipv4dns).To4(),
 	}
 	if iPv6Enabled() {
+		log.Infof("IPv6 enabled. Adding IPv6 DNS ::1")
 		dnsServers = append(dnsServers, net.ParseIP(Ipv6dns))
 	} else {
 		log.Infof("IPv6 is disabled. Ignoring IPv6 DNS ::1")
