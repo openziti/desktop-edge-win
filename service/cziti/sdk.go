@@ -166,7 +166,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, t
 
 	name := C.GoString(service.name)
 	svcId := C.GoString(service.id)
-	log.Debugf("============ INSIDE serviceCB - status: %s:%s - %v, %v, %v ============", name, svcId, status, C.ZITI_SERVICE_UNAVAILABLE, C.ZITI_OK)
+	log.Debugf("============ INSIDE serviceCB - status: %s:%s - %v, %v ============", name, svcId, status, service.perm_flags)
 	if status == C.ZITI_SERVICE_UNAVAILABLE {
 		found, ok := ctx.Services.Load(svcId)
 		fs := found.(Service)
@@ -190,6 +190,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, t
 			r := C.ziti_service_get_config(service, C.CString("ziti-tunneler-server.v1"), unsafe.Pointer(&v1Config), (*[0]byte)(C.parse_ziti_server_cfg_v1))
 			if (r == 0) {
 				for _, t := range devMap {
+					log.Debugf("setting up hosted service for service %s on %v:%v", service.name, v1Config.hostname, v1Config.port)
 					C.ziti_tunneler_host_v1(C.tunneler_context(t.tunCtx), unsafe.Pointer(ctx.zctx), service.name, v1Config.protocol, v1Config.hostname, v1Config.port)
 				}
 				C.free_ziti_server_cfg_v1(&v1Config)
