@@ -19,11 +19,11 @@ package cziti
 
 //
 /*
-#cgo LDFLAGS: -l ziti_tunneler -l lwipcore -l lwipwin32arch -l ziti_tunneler -l ziti_tunneler_cbs
+#cgo LDFLAGS: -l ziti-tunnel-sdk-c -l lwipcore -l lwipwin32arch -l ziti-tunnel-sdk-c -l ziti-tunnel-cbs-c
 
 #include <ziti/netif_driver.h>
 #include <ziti/ziti_tunnel.h>
-#include <ziti/ziti_tunneler_cbs.h>
+#include <ziti/ziti_tunnel_cbs.h>
 #include <ziti/ziti_log.h>
 
 #include <uv.h>
@@ -110,9 +110,11 @@ func HookupTun(dev tun.Device, dns []net.IP) (Tunnel, error) {
 	t.tunCtx = C.ziti_tunneler_init(opts, _impl.libuvCtx.l)
 
 	ready := make(chan bool)
-	go runDNSserver(dns, ready)
-	<- ready //wait for runDNSserver to indicate it's ready
-
+	log.Infof("DNS server - launching")
+	go RunDNSserver(dns, ready)
+	log.Infof("DNS server - waiting for startup")
+	<-ready
+	log.Infof("DNS server - ready")
 	return t, nil
 }
 

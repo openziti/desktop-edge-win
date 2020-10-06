@@ -15,7 +15,7 @@
  *
  */
 
-package windns
+package cziti
 
 import (
 	"bytes"
@@ -31,7 +31,7 @@ var log = pfxlog.Logger()
 func ResetDNS() {
 	log.Info("resetting dns to original-ish state")
 
-	script := `e`
+	script := `Get-NetIPInterface | ForEach-Object { Set-DnsClientServerAddress -InterfaceIndex $_.ifIndex -ResetServerAddresses }`
 
 	cmd := exec.Command("powershell", "-Command", script)
 	cmd.Stderr = os.Stdout

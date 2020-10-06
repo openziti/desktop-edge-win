@@ -25,7 +25,7 @@ import (
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/idutil"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/windns"
+	"golang.org/x/sys/windows/registry"
 	"golang.zx2c4.com/wireguard/tun"
 	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
 	"net"
@@ -134,6 +134,8 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 
 	if name, err := tunDevice.Name(); err == nil {
 		log.Debugf("created TUN device [%s]", name)
+	} else {
+		return fmt.Errorf("error getting TUN name: (%v)", err)
 	}
 
 	nativeTunDevice := tunDevice.(*tun.NativeTun)
@@ -161,17 +163,25 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 
 	dnsServers := []net.IP{
 		net.ParseIP(Ipv4dns).To4(),
-		net.ParseIP(Ipv6dns),
 	}
+	if iPv6Disabled() {
+		log.Infof("IPv6 is disabled. Ignoring IPv6 DNS ::1")
+	} else {
+		log.Infof("IPv6 enabled. Adding IPv6 DNS ::1")
+		dnsServers = append(dnsServers, net.ParseIP(Ipv6dns))
+	}
+
+	log.Infof("adding DNS servers to TUN: %s", dnsServers)
 	err = luid.AddDNS(dnsServers)
 	if err != nil {
-		return fmt.Errorf("failed to add DNS address: (%v)", err)
+		return fmt.Errorf("failed to add DNS addresses: (%v)", err)
 	}
+	log.Infof("checking TUN dns servers")
 	dns, err := luid.DNS()
 	if err != nil {
 		return fmt.Errorf("failed to fetch DNS address: (%v)", err)
 	}
-	log.Debugf("dns servers set to = %s", dns)
+	log.Infof("TUN dns servers set to: %s", dns)
 
 	log.Infof("routing destination [%s] through [%s]", *ipnet, ipnet.IP)
 	err = luid.SetRoutes([]*winipcfg.RouteData{{*ipnet, ipnet.IP, 0}})
@@ -180,7 +190,7 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 	}
 	log.Info("routing applied")
 
-	windns.DnsInit(ipv4, ipv4mask)
+	cziti.DnsInit(ipv4, ipv4mask)
 	cziti.Start()
 	_, err = cziti.HookupTun(tunDevice, dns)
 	if err != nil {
@@ -270,4 +280,28 @@ func (t *RuntimeState) UpdateIpv4Mask(ipv4mask int){
 func (t *RuntimeState) UpdateIpv4(ipv4 string){
 	rts.state.TunIpv4 = ipv4
 	rts.SaveState()
+}
+
+// uses the registry to determine if IPv6 is enabled or disabled on this machine. If it is disabled an IPv6 DNS entry
+// will end up causing a fatal error on startup of the service. For this registry key and values see the MS documentation
+// at https://docs.microsoft.com/en-us/troubleshoot/windows-server/networking/configure-ipv6-in-windows
+func iPv6Disabled() bool {
+	k, err := registry.OpenKey(registry.LOCAL_MACHINE, `SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters`, registry.QUERY_VALUE)
+	if err != nil {
+		log.Warnf("could not read registry to detect IPv6 - assuming IPv6 enabled. If IPv6 is not enabled the service may fail to start")
+		return false
+	}
+	defer k.Close()
+
+	val, _, err := k.GetIntegerValue("DisabledComponents")
+	if err != nil {
+		log.Debugf("registry key HKLM\\SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters\\DisabledComponents not present. IPv6 is enabled")
+		return false
+	}
+	if val == 255 {
+		return true
+	} else {
+		log.Infof("IPv6 has DisabledComponents set to %d. If the service fails to start please report this message", val)
+		return false
+	}
 }

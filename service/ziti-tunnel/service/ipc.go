@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Microsoft/go-winio"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/windns"
 	"github.com/openziti/foundation/identity/identity"
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"github.com/openziti/sdk-golang/ziti/enroll"
@@ -113,7 +112,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	log.Infof("shutting down events...")
 	events.shutdown()
 
-	windns.ResetDNS()
+	cziti.ResetDNS()
 
 	log.Infof("Removing existing interface: %s", TunName)
 	wt, err := tun.WintunPool.GetInterface(TunName)
@@ -760,7 +759,7 @@ func disconnectIdentity(id *dto.Identity) error {
 			}
 			cziti.RemoveIntercept(rwg)
 			wg.Wait()
-			windns.DNS.DeregisterService(id.ZitiContext, s.Name)
+			cziti.DNS.DeregisterService(id.ZitiContext, s.Name)
 		}
 		id.Connected = false
 	} else {

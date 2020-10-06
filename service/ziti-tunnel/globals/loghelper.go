@@ -53,7 +53,11 @@ func InitLogger(logLevel logrus.Level) {
 
 	logrus.SetOutput(multiWriter)
 	logrus.SetFormatter(pfxlog.NewFormatter())
-	logger.Infof("Logger initialized. Log file located at: %s", config.LogFile())
+	logger.Infof("============================================================================")
+	logger.Infof("Logger initialization")
+	logger.Infof("	- initialized at   : %v", time.Now())
+	logger.Infof("	- log file location: %s", config.LogFile()) 
+	logger.Infof("============================================================================")
 }
 
 func ParseLevel(lvl string) (logrus.Level, int) {
@@ -73,7 +77,7 @@ func ParseLevel(lvl string) (logrus.Level, int) {
 	case "trace":
 		return logrus.TraceLevel, 5
 	default:
-		logrus.Warnf("level not recognized: %s. Using Info", lvl)
+		logrus.Warnf("level not recognized: [%s]. Using Info", lvl)
 		return logrus.InfoLevel, 3
 	}
 }

@@ -81,7 +81,7 @@ loop:
 
 	log.Infof("waiting for shutdown to complete")
 	<- control
-	log.Infof("shutdown complete")
+	log.Infof("normal shutdown complete")
 	return
 }
 
