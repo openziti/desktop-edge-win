@@ -77,7 +77,7 @@ func (t *RuntimeState) SaveState() {
 	w := bufio.NewWriter(bufio.NewWriter(cfg))
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
-	_ = enc.Encode(t.state)
+	_ = enc.Encode(t.ToStatus())
 	_ = w.Flush()
 
 	err = cfg.Close()
@@ -100,10 +100,13 @@ func (t *RuntimeState) ToStatus() dto.TunnelStatus {
 	}
 
 	clean := dto.TunnelStatus{
-		Active:     t.state.Active,
-		Duration:   uptime,
-		Identities: make([]*dto.Identity, idCount),
-		IpInfo:     t.state.IpInfo,
+		Active:      t.state.Active,
+		Duration:    uptime,
+		Identities:  make([]*dto.Identity, idCount),
+		IpInfo:      t.state.IpInfo,
+		LogLevel:    t.state.LogLevel,
+		TunIpv4:     t.state.TunIpv4,
+		TunIpv4Mask: t.state.TunIpv4Mask,
 	}
 
 	for i, id := range t.state.Identities {
