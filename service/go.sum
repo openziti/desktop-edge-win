@@ -125,6 +125,7 @@ github.com/oklog/ulid v1.3.1/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.7.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/gomega v1.4.3/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1CpauHY=
+github.com/openziti/desktop-edge-win v0.0.1 h1:K0LEnA7bdQ1M/ckyGvJzDDKobVfjb6oGvkvxAL7g8hE=
 github.com/openziti/foundation v0.11.11 h1:GPASO0aTtzuzwQbfvu1OMOPdAKzi/DTkxKJ0y2NTzXU=
 github.com/openziti/foundation v0.11.11/go.mod h1:Qdd7eCuTrpRwEeDbvYy89sFbEY4+J7OuX8UygxNBsvY=
 github.com/openziti/sdk-golang v0.13.20 h1:vnpGvaS/TBz2zd8lUO4cGVYmRWcnAX0v8k/P9+q36BI=

@@ -40,7 +40,7 @@ func (m *zitiService) Execute(args []string, r <-chan svc.ChangeRequest, changes
 			log.Errorf("the main loop exited with an unexpected error: %v", err)
 		}
 		mainLoop <- struct{}{}
-		control <- "shutting down"
+		requestShutdown("mainloop")
 	}()
 loop:
 	for {
@@ -81,7 +81,7 @@ loop:
 
 	log.Infof("waiting for shutdown to complete")
 	<- control
-	log.Infof("shutdown to complete")
+	log.Infof("normal shutdown complete")
 	return
 }
 

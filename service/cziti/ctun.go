@@ -109,8 +109,12 @@ func HookupTun(dev tun.Device, dns []net.IP) (Tunnel, error) {
 
 	t.tunCtx = C.ziti_tunneler_init(opts, _impl.libuvCtx.l)
 
-	go runDNSserver(dns)
-
+	ready := make(chan bool)
+	log.Infof("DNS server - launching")
+	go RunDNSserver(dns, ready)
+	log.Infof("DNS server - waiting for startup")
+	<-ready
+	log.Infof("DNS server - ready")
 	return t, nil
 }
 
