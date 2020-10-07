@@ -1,6 +1,18 @@
 These release notes will catalog the changes in the Windows service. 
 For UI changes or installer changes see [release-notes.md]()
 
+# Release 0.0.29
+
+* What's New
+    
+    * Continually improved logging
+    * Add support for 'verbose' logging along with error, warn, info, debug, trace
+
+* Bug fixes
+
+  * [#123](https://github.com/openziti/desktop-edge-win/issues/123) - ConnectionSpecificDomains cause DNS lookup failures
+  * [#117](https://github.com/openziti/desktop-edge-win/issues/117) - TLD were not resolving properly - fixed in 0.0.28 but marking resolved in 0.0.29
+
 # Release 0.0.28
 
 * What's New
