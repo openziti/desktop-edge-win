@@ -24,8 +24,20 @@ using System.Windows.Documents;
 /// </summary>
 namespace ZitiDesktopEdge.ServiceClient
 {
+    public enum LogLevelEnum
+    {
+        FATAL = 0,
+        ERROR = 1,
+        WARN = 2,
+        INFO = 3,
+        DEBUG = 4,
+        TRACE = 5,
+        VERBOSE = 6,
+    }
+
     internal class Client
     {
+
         public const int EXPECTED_API_VERSION = 1;
 
         public event EventHandler<TunnelStatusEvent> OnTunnelStatusEvent;
@@ -375,6 +387,22 @@ namespace ZitiDesktopEdge.ServiceClient
             {
                 //almost certainly a problem with the pipe - probably means the service is NOT running
                 return "Error fetching logs from service. Is it running?";
+            }
+        }
+
+        public void SetLogLevel(LogLevelEnum level)
+        {
+            try
+            {
+                send(new SetLogLevelFunction(Enum.GetName(level.GetType(), level)));
+                SvcResponse resp = read<SvcResponse>(ipcReader);
+                return;
+            }
+            catch (IOException ioe)
+            {
+                //almost certainly a problem with the pipe - recreate the pipe...
+                //setupPipe();
+                throw ioe;
             }
         }
 

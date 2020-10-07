@@ -73,6 +73,10 @@ namespace ZitiDesktopEdge.ServiceClient
         public bool OnOff { get; set; }
         public string Fingerprint { get; set; }
     }
+    public class SetLogLevelPayload
+    {
+        public string Level { get; set; }
+    }
 
     public class IdentityToggleFunction : ServiceFunction
     {
@@ -86,6 +90,19 @@ namespace ZitiDesktopEdge.ServiceClient
             };
         }
         public IdentityTogglePayload Payload { get; set; }
+    }
+
+    public class SetLogLevelFunction : ServiceFunction
+    {
+        public SetLogLevelFunction(string level)
+        {
+            this.Function = "SetLogLevel";
+            this.Payload = new SetLogLevelPayload()
+            {
+                Level = level
+            };
+        }
+        public SetLogLevelPayload Payload { get; set; }
     }
 
     public class FingerprintPayload
