@@ -749,7 +749,6 @@ func disconnectIdentity(id *dto.Identity) error {
 			log.Errorf("identity with fingerprint %s has no services?", id.FingerPrint)
 		}
 
-
 		for _, s := range id.Services { //wait for uv loop to finish before continuing
 			var wg sync.WaitGroup
 			wg.Add(1)
