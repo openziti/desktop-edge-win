@@ -58,14 +58,12 @@ func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn) {
 	if ip == nil {
 		// no direct hit. need to now check to see if the dns query used a connection-specific local domain
 		for _, d := range domains {
-			if strings.HasSuffix(dnsName, d) {
-				dnsNameTrimmed := strings.Trim(dnsName, d)
+			domain := d
+			if strings.HasSuffix(dnsName, domain) {
+				dnsNameTrimmed := strings.TrimRight(dnsName, domain)
 				// dns request has domain appended - removing and resolving
 				ip = DNS.Resolve(dnsNameTrimmed)
-				if ip != nil {
-					log.Debugf("DNS %s failed at first but succeeded by looking up %s", dnsName, dnsNameTrimmed)
-					break
-				}
+				break
 			}
 		}
 	}
@@ -282,7 +280,7 @@ func runDNSproxy(dnsServers []string) {
 					log.Tracef("proxy resolved %v from %v", reply.Question[0].Name, req.s.RemoteAddr())
 					req.s.WriteMsgUDP(rep, nil, req.peer)
 				} else {
-					log.Tracef("matching request was not found for ",
+					log.Tracef("matching request was not found for %s %s",
 						dns.Type(reply.Question[0].Qtype), reply.Question[0].Name)
 				}
 			}

@@ -44,13 +44,14 @@ func ResetDNS() {
 }
 
 func GetConnectionSpecificDomains() []string {
-	script := `Get-DnsClient | Select-Object ConnectionSpecificSuffix | Get-Unique | ForEach-Object { $_.ConnectionSpecificSuffix }`
+	script := `Get-DnsClient | Select-Object ConnectionSpecificSuffix -Unique | ForEach-Object { $_.ConnectionSpecificSuffix }`
 
 	cmd := exec.Command("powershell", "-Command", script)
 	cmd.Stderr = os.Stdout
 	output := new(bytes.Buffer)
 	cmd.Stdout = output
 
+	log.Tracef("running powershell command to get ConnectionSpecificSuffixes: %s", script)
 	err := cmd.Run()
 
 	if err != nil {
@@ -64,8 +65,10 @@ func GetConnectionSpecificDomains() []string {
 			break
 		}
 		domain = strings.TrimSpace(domain)
-		if !strings.HasSuffix(domain, ".") {
-			names = append(names, domain + ".")
+		if "" != domain {
+			if !strings.HasSuffix(domain, ".") {
+				names = append(names, domain+".")
+			}
 		}
 	}
 	return names
