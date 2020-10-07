@@ -194,8 +194,8 @@ func dnsPanicRecover() {
 
 func runDNSproxy(dnsServers []string) {
 	domains = GetConnectionSpecificDomains()
-	log.Warnf("DOMAINS: %v", domains)
-	log.Warnf("dnsServers: %v", dnsServers)
+	log.Infof("ConnectionSpecificDomains: %v", domains)
+	log.Infof("dnsServers: %v", dnsServers)
 	defer func() {
 		if err := recover(); err != nil {
 			log.Errorf("Recovering from panic due to DNS-related issue. %v", err)
