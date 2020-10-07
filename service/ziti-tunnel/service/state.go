@@ -164,11 +164,11 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 	dnsServers := []net.IP{
 		net.ParseIP(Ipv4dns).To4(),
 	}
-	if iPv6Enabled() {
+	if iPv6Disabled() {
+		log.Infof("IPv6 is disabled. Ignoring IPv6 DNS ::1")
+	} else {
 		log.Infof("IPv6 enabled. Adding IPv6 DNS ::1")
 		dnsServers = append(dnsServers, net.ParseIP(Ipv6dns))
-	} else {
-		log.Infof("IPv6 is disabled. Ignoring IPv6 DNS ::1")
 	}
 
 	log.Infof("adding DNS servers to TUN: %s", dnsServers)
@@ -186,7 +186,7 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 	log.Infof("routing destination [%s] through [%s]", *ipnet, ipnet.IP)
 	err = luid.SetRoutes([]*winipcfg.RouteData{{*ipnet, ipnet.IP, 0}})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to SetRoutes: (%v)", err)
 	}
 	log.Info("routing applied")
 
@@ -282,26 +282,26 @@ func (t *RuntimeState) UpdateIpv4(ipv4 string){
 	rts.SaveState()
 }
 
-// uses the registry to determin if IPv6 is enabled or disabled on this machine. If it is disabled an IPv6 DNS entry
+// uses the registry to determine if IPv6 is enabled or disabled on this machine. If it is disabled an IPv6 DNS entry
 // will end up causing a fatal error on startup of the service. For this registry key and values see the MS documentation
 // at https://docs.microsoft.com/en-us/troubleshoot/windows-server/networking/configure-ipv6-in-windows
-func iPv6Enabled() bool {
+func iPv6Disabled() bool {
 	k, err := registry.OpenKey(registry.LOCAL_MACHINE, `SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters`, registry.QUERY_VALUE)
 	if err != nil {
 		log.Warnf("could not read registry to detect IPv6 - assuming IPv6 enabled. If IPv6 is not enabled the service may fail to start")
-		return true
+		return false
 	}
 	defer k.Close()
 
 	val, _, err := k.GetIntegerValue("DisabledComponents")
 	if err != nil {
 		log.Debugf("registry key HKLM\\SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters\\DisabledComponents not present. IPv6 is enabled")
-		return true
+		return false
 	}
 	if val == 255 {
-		return false
+		return true
 	} else {
 		log.Infof("IPv6 has DisabledComponents set to %d. If the service fails to start please report this message", val)
-		return true
+		return false
 	}
 }

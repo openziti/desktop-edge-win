@@ -15,7 +15,7 @@
  *
  */
 
-package windns
+package cziti
 
 import (
 	"bytes"
@@ -98,6 +98,7 @@ func GetUpstreamDNS() []string {
 	}
 	return names
 }
+
 
 func ReplaceDNS(ips []net.IP) {
 	script := `$dnsinfo=Get-DnsClientServerAddress
