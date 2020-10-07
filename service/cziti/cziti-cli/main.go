@@ -82,9 +82,10 @@ func showServices(args []string) error {
 	ctx := contexts[idx]
 
 	fmt.Printf("services available to %s@%s\n", ctx.Name(), ctx.Controller())
-	for _, s := range *ctx.Services {
-		fmt.Printf("\t%+v\n", s)
-	}
+	ctx.Services.Range(func(key interface{}, value interface{}) bool {
+		fmt.Printf("\t%v=%v\n", key, value)
+		return true
+	})
 	return nil
 }
 
