@@ -5,7 +5,7 @@ For UI changes or installer changes see [release-notes.md]()
 
 * What's New
     
-    * [#120](https://github.com/openziti/desktop-edge-win/issues/120) - Allow UI/client to set log level dynamically via ipc
+  * [#120](https://github.com/openziti/desktop-edge-win/issues/120) - Allow UI/client to set log level dynamically via ipc
 
 * Bug fixes
 
@@ -15,8 +15,8 @@ For UI changes or installer changes see [release-notes.md]()
 
 * What's New
     
-    * Continually improved logging
-    * Add support for 'verbose' logging along with error, warn, info, debug, trace
+  * Continually improved logging
+  * Add support for 'verbose' logging along with error, warn, info, debug, trace
 
 * Bug fixes
 
@@ -27,8 +27,8 @@ For UI changes or installer changes see [release-notes.md]()
 
 * What's New
     
-    * Continually improved logging
-    * Better DNS removal when services are no longer available or when an identity is removed
+  * Continually improved logging
+   * Better DNS removal when services are no longer available or when an identity is removed
 
 * Bug fixes
 
