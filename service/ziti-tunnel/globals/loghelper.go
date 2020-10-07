@@ -17,12 +17,13 @@
 
 package globals
 
+import "C"
 import (
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/michaelquigley/pfxlog"
+	"github.com/openziti/desktop-edge-win/service/cziti"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/windows/svc/debug"
-	"golang.org/x/sys/windows/svc/eventlog"
 	"io"
 	"os"
 	"strings"
@@ -43,8 +44,9 @@ func Logger() *logrus.Entry {
 
 var loggerInitialized = false
 
-func InitLogger(logLevel logrus.Level) {
-	logrus.SetLevel(logLevel)
+func InitLogger(level string) {
+	l, _ := ParseLevel(level)
+	logrus.SetLevel(l)
 
 	rl, _ := rotatelogs.New(config.LogFile() + ".%Y%m%d%H%M.log",
 		rotatelogs.WithRotationTime(24 * time.Hour),
@@ -63,6 +65,13 @@ func InitLogger(logLevel logrus.Level) {
 		logger.Infof("============================================================================")
 		loggerInitialized = true
 	}
+}
+
+func SetLogLevel(level string){
+	logrus.Infof("Setting logger levels to %s", level)
+	l, cLevel := ParseLevel(level)
+	logrus.SetLevel(l)
+	cziti.SetLogLevel(cLevel)
 }
 
 func ParseLevel(lvl string) (logrus.Level, int) {
@@ -86,17 +95,5 @@ func ParseLevel(lvl string) (logrus.Level, int) {
 	default:
 		logrus.Warnf("level not recognized: [%s]. Using Info", lvl)
 		return logrus.InfoLevel, 3
-	}
-}
-
-func InitEventLog(svcName string, interactive bool) {
-	var err error
-	if !interactive {
-		Elog = debug.New(svcName)
-	} else {
-		Elog, err = eventlog.Open(svcName)
-		if err != nil {
-			return
-		}
 	}
 }

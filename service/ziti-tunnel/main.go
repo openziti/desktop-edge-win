@@ -33,8 +33,7 @@ import (
 var log = globals.Logger()
 
 func main() {
-	l, _ := globals.ParseLevel("info")
-	globals.InitLogger(l)
+	globals.InitLogger("info")
 
 	//if len(os.Args) < 2 {
 	//	// if no args supplied - expect to run as service

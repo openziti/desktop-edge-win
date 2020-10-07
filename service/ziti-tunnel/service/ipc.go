@@ -63,8 +63,8 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 
 	rts.LoadConfig()
 	l := rts.state.LogLevel
-	logLevel, czitiLevel := globals.ParseLevel(l)
-	globals.InitLogger(logLevel)
+	_, czitiLevel := globals.ParseLevel(l)
+	globals.InitLogger(l)
 
 	_ = globals.Elog.Info(InformationEvent, SvcName+" starting. log file located at "+config.LogFile())
 
@@ -406,6 +406,8 @@ func serveIpc(conn net.Conn) {
 			onOff := cmd.Payload["OnOff"].(bool)
 			fingerprint := cmd.Payload["Fingerprint"].(string)
 			toggleIdentity(enc, fingerprint, onOff)
+		case "SetLogLevel":
+			setLogLevel(enc, cmd.Payload["Level"].(string))
 		case "Debug":
 			dbg()
 			respond(enc, dto.Response{
@@ -424,6 +426,11 @@ func serveIpc(conn net.Conn) {
 
 		_ = rw.Flush()
 	}
+}
+
+func setLogLevel(out *json.Encoder, level string) {
+	globals.SetLogLevel(level)
+	respond(out, dto.Response{Message: "log level set", Code: SUCCESS, Error: "", Payload: nil})
 }
 
 func serveLogs(conn net.Conn) {
