@@ -11,6 +11,7 @@ For UI changes or installer changes see [release-notes.md]()
 * Bug fixes
 
   * [#106](https://github.com/openziti/desktop-edge-win/issues/106) - DNS stops responding when changing wireless networks
+  * [#121](https://github.com/openziti/desktop-edge-win/issues/121) - DNS queries take a long time after a computer wakes from sleep
 
 # Release 0.0.27
 
