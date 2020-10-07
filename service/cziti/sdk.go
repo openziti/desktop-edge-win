@@ -168,8 +168,8 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, t
 	log.Debugf("============ INSIDE serviceCB - status: %s:%s - %v, %v ============", name, svcId, status, service.perm_flags)
 	if status == C.ZITI_SERVICE_UNAVAILABLE {
 		found, ok := ctx.Services.Load(svcId)
-		fs := found.(Service)
 		if ok {
+			fs := found.(Service)
 			DNS.DeregisterService(ctx, name)
 			ctx.Services.Delete(svcId)
 			ServiceChanges <- ServiceChange{

@@ -78,8 +78,8 @@ func normalizeDnsName(dnsName string) string {
 
 // RegisterService will return the next ip address in the configured range. If the ip address is not
 // assigned to a hostname an error will also be returned indicating why.
-func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint16, ctx *CZitiCtx, name string) (net.IP, error) {
-	log.Infof("adding DNS entry for service name %s@%s:%d", name, dnsNameToReg, port)
+func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint16, ctx *CZitiCtx, svcName string) (net.IP, error) {
+	log.Infof("adding DNS entry for service name %s@%s:%d", svcName, dnsNameToReg, port)
 	DnsInit(defaultCidr, defaultMaskBits)
 	dnsName := normalizeDnsName(dnsNameToReg)
 	key := fmt.Sprint(dnsName, ':', port)
@@ -95,11 +95,11 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 		if foundContext, found := dns.serviceMap[key]; found {
 			if foundIp.network != currentNetwork {
 				// means the host:port are mapped to some other *identity* already. that's an invalid state
-				return ip, fmt.Errorf("service mapping conflict: %s:%d in %s is already mapped for another identity in %s", dnsNameToReg, port, currentNetwork, foundIp.network)
+				return ip, fmt.Errorf("service mapping conflict for service name %s. %s:%d in %s is already mapped by another identity in %s", svcName, dnsNameToReg, port, currentNetwork, foundIp.network)
 			}
 			if foundContext.serviceId != svcId {
 				// means the host:port are mapped to some other service already. that's an invalid state
-				return ip, fmt.Errorf("service mapping conflict: %s:%d is already mapped for another service", dnsNameToReg, port)
+				return ip, fmt.Errorf("service mapping conflict for service name %s. %s:%d is already mapped by service id %s", svcName, dnsNameToReg, port, foundContext.serviceId)
 			}
 			// while the host *AND* port are not used - the hostname is.
 			// need to increment the refcounter of how many service use this hostname
@@ -108,10 +108,10 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 		} else {
 			// good - means the service can be mapped
 			dns.serviceMap[key] = ctxService{
-				ctx:  ctx,
-				name: name,
+				ctx:       ctx,
+				name:      svcName,
 				serviceId: svcId,
-				count: 1,
+				count:     1,
 			}
 		}
 	} else {
@@ -127,10 +127,10 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 			network: currentNetwork,
 		}
 		dns.serviceMap[key] = ctxService{
-			ctx:  ctx,
-			name: name,
+			ctx:       ctx,
+			name:      svcName,
 			serviceId: svcId,
-			count: 1,
+			count:     1,
 		}
 	}
 
@@ -143,25 +143,24 @@ func (dns *dnsImpl) Resolve(toResolve string) net.IP {
 }
 
 func (dns *dnsImpl) DeregisterService(ctx *CZitiCtx, name string) {
-	log.Warnf("DEREG SERVICE: before for loop")
+	log.Debugf("DEREG SERVICE: before for loop")
 	for k, sc := range dns.serviceMap {
-		log.Warnf("DEREG SERVICE: iterating sc.ctx:%v, sc.name:%v", sc.ctx, sc.name)
+		log.Debugf("DEREG SERVICE: iterating sc.ctx=ctx %p=%p, sc.name=name %s=%s", sc.ctx, ctx, sc.name, name)
 		if sc.ctx == ctx && sc.name == name {
-			log.Warnf("DEREG SERVICE: if was true")
+			sc.count --
 			if sc.count < 1 {
 				log.Infof("removing service named %s from DNS mapping known as %s", name, k)
 				delete(dns.serviceMap, k)
 			} else {
 				// another service is using the mapping - can't remove it yet so decrement
 				log.Debugf("cannot remove dns mapping for %s yet - %d other services still use this hostname", name, sc.count)
-				sc.count --
 			}
-			return
+			return //short return this is the context and the service name no need to continue
 		} else {
-			log.Warnf("DEREG SERVICE: if was false")
+			log.Debugf("service context %p does not match event context address %p", sc.ctx, ctx)
 		}
 	}
-	log.Warnf("DEREG SERVICE: for loop completed")
+	log.Warnf("DEREG SERVICE: for loop completed. Match was not found for context %p and name %s", ctx, name)
 }
 
 func (this *dnsImpl) GetService(ip net.IP, port uint16) (*CZitiCtx, string, error) {
