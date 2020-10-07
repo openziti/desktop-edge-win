@@ -1,6 +1,16 @@
 These release notes will catalog the changes in the Windows service. 
 For UI changes or installer changes see [release-notes.md]()
 
+# Release 0.0.30
+
+* What's New
+    
+    * Nothing new
+
+* Bug fixes
+
+  * [#116](https://github.com/openziti/desktop-edge-win/issues/116) - Removes information from the config that wasn't needed in config.json
+  
 # Release 0.0.29
 
 * What's New
