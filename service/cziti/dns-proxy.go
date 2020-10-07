@@ -291,7 +291,9 @@ func runDNSproxy(dnsServers []string) {
 			now := time.Now()
 			for k, r := range reqs {
 				if now.After(r.exp) {
-					log.Warnf("req expired %s %s", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
+					log.Warn("a DNS request has expired - enable trace logging and reproduce this issue for more information")
+					log.Tracef("         expired DNS req: %s %s", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
+
 					delete(reqs, k)
 				}
 			}
