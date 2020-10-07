@@ -121,6 +121,6 @@ func usage(errmsg string) {
 }
 
 func version() string {
-	return fmt.Sprintf("%v version: %v, revision: %v, branch: %v, build-by: %v, built-on: %v\n",
+	return fmt.Sprintf("%v version: %v, revision: %v, branch: %v, build-by: %v, built-on: %v",
 		os.Args[0], Version, Revision, Branch, BuildUser, BuildDate)
 }

@@ -41,6 +41,8 @@ func Logger() *logrus.Entry {
 	return logger
 }
 
+var loggerInitialized = false
+
 func InitLogger(logLevel logrus.Level) {
 	logrus.SetLevel(logLevel)
 
@@ -53,11 +55,14 @@ func InitLogger(logLevel logrus.Level) {
 
 	logrus.SetOutput(multiWriter)
 	logrus.SetFormatter(pfxlog.NewFormatter())
-	logger.Infof("============================================================================")
-	logger.Infof("Logger initialization")
-	logger.Infof("	- initialized at   : %v", time.Now())
-	logger.Infof("	- log file location: %s", config.LogFile()) 
-	logger.Infof("============================================================================")
+	if !loggerInitialized {
+		logger.Infof("============================================================================")
+		logger.Infof("Logger initialization")
+		logger.Infof("	- initialized at   : %v", time.Now())
+		logger.Infof("	- log file location: %s", config.LogFile())
+		logger.Infof("============================================================================")
+		loggerInitialized = true
+	}
 }
 
 func ParseLevel(lvl string) (logrus.Level, int) {
