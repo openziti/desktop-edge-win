@@ -5,7 +5,7 @@ For UI changes or installer changes see [release-notes.md]()
 
 * What's New
     
-    * Nothing new
+    * [#120](https://github.com/openziti/desktop-edge-win/issues/120) - Allow UI/client to set log level dynamically via ipc
 
 * Bug fixes
 
