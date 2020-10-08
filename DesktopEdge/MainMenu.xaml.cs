@@ -142,8 +142,7 @@ namespace ZitiDesktopEdge
 		}
 		private void ShowFeedback(object sender, MouseButtonEventArgs e) {
 			ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
-			var mailMessage = new MailMessage();
-			mailMessage.From = new MailAddress("ziti-support@netfoundry.io");
+			var mailMessage = new MailMessage("", "ziti-support@netfoundry.io");
 			mailMessage.Subject = "Ziti Support";
 			mailMessage.IsBodyHtml = true;
 			mailMessage.Body = "";
@@ -193,6 +192,7 @@ namespace ZitiDesktopEdge
 			DetachButton.Visibility = Visibility.Collapsed;
 			AttachButton.Visibility = Visibility.Visible;
 			Arrow.Visibility = Visibility.Collapsed;
+			UIModel.HideOnLostFocus = false;
 			if (OnAttachmentChange != null) {
 				OnAttachmentChange(false);
 			}
@@ -210,6 +210,7 @@ namespace ZitiDesktopEdge
 			DetachButton.Visibility = Visibility.Visible;
 			AttachButton.Visibility = Visibility.Collapsed;
 			Arrow.Visibility = Visibility.Visible;
+			UIModel.HideOnLostFocus = true;
 			if (OnAttachmentChange != null) {
 				OnAttachmentChange(true);
 			}
