@@ -17,7 +17,6 @@
 
 package globals
 
-import "C"
 import (
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/michaelquigley/pfxlog"
@@ -67,10 +66,9 @@ func InitLogger(level string) {
 	}
 }
 
-func SetLogLevel(level string){
-	logrus.Infof("Setting logger levels to %s", level)
-	l, cLevel := ParseLevel(level)
-	logrus.SetLevel(l)
+func SetLogLevel(goLevel logrus.Level, cLevel int) {
+	logrus.Infof("Setting logger levels to %s", goLevel)
+	logrus.SetLevel(goLevel)
 	cziti.SetLogLevel(cLevel)
 }
 

@@ -64,6 +64,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	rts.LoadConfig()
 	l := rts.state.LogLevel
 	_, czitiLevel := globals.ParseLevel(l)
+
 	globals.InitLogger(l)
 
 	_ = globals.Elog.Info(InformationEvent, SvcName+" starting. log file located at "+config.LogFile())
@@ -429,7 +430,9 @@ func serveIpc(conn net.Conn) {
 }
 
 func setLogLevel(out *json.Encoder, level string) {
-	globals.SetLogLevel(level)
+	goLevel, cLevel := globals.ParseLevel(level)
+	globals.SetLogLevel(goLevel, cLevel)
+	rts.state.LogLevel = goLevel.String()
 	respond(out, dto.Response{Message: "log level set", Code: SUCCESS, Error: "", Payload: nil})
 }
 
