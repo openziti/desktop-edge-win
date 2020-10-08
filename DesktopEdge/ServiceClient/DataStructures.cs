@@ -180,21 +180,39 @@ namespace ZitiDesktopEdge.ServiceClient
 
         public IpInfo IpInfo { get; set; }
 
+        public string LogLevel { get; set; }
+
         public void Dump(System.IO.TextWriter writer)
         {
             writer.WriteLine($"Tunnel Active: {Active}");
+            writer.WriteLine($"     LogLevel         : {LogLevel}");
+            writer.WriteLine($"     EvaluatedLogLevel: {EvaluateLogLevel()}");
             foreach (Identity id in Identities)
             {
                 writer.WriteLine($"  FingerPrint: {id.FingerPrint}");
-                writer.WriteLine($"    Name: {id.Name}");
-                writer.WriteLine($"    Active: {id.Active}");
-                writer.WriteLine($"    Status: {id.Status}");
+                writer.WriteLine($"    Name    : {id.Name}");
+                writer.WriteLine($"    Active  : {id.Active}");
+                writer.WriteLine($"    Status  : {id.Status}");
                 writer.WriteLine($"    Services:");
                 foreach (Service s in id.Services)
                 {
                     writer.WriteLine($"      Name: {s.Name} HostName: {s.InterceptHost} Port: {s.InterceptPort}");
                 }
                 writer.WriteLine("=============================================");
+            }
+        }
+
+        public LogLevelEnum EvaluateLogLevel()
+        {
+            try
+            {
+                LogLevelEnum l = (LogLevelEnum) Enum.Parse(typeof(LogLevelEnum), LogLevel.ToUpper());
+                return l;
+            }
+            catch
+            {
+                System.Diagnostics.Debug.WriteLine("Could not parse response LogLevel from sevice - guessing INFO? " + LogLevel);
+                return LogLevelEnum.INFO;
             }
         }
     }
