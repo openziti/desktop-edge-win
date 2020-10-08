@@ -190,7 +190,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, t
 			DNS.DeregisterService(ctx, name)
 			ctx.Services.Delete(svcId)
 		} else {
-			log.Debugf("service not found with id: %s, name: %s in context %d", service.id, service.name, &ctx)
+			log.Debugf("service not found with id: %s, name: %s in context %d", svcId, name, &ctx)
 		}
 
 		if C.ZITI_CAN_BIND == ( service.perm_flags & C.ZITI_CAN_BIND ) {
