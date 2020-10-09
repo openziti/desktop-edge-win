@@ -90,8 +90,13 @@ namespace ZitiDesktopEdge
 				AboutItems.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
 
-				ZitiDesktopEdge.ServiceClient.TunnelStatus s = (ZitiDesktopEdge.ServiceClient.TunnelStatus)Application.Current.Properties["CurrentTunnelStatus"];
-				string version = $"{s.ServiceVersion.Version}@{s.ServiceVersion.Revision}";
+				string version = "";
+				try {
+					ZitiDesktopEdge.ServiceClient.TunnelStatus s = (ZitiDesktopEdge.ServiceClient.TunnelStatus)Application.Current.Properties["CurrentTunnelStatus"];
+					version = $"{s.ServiceVersion.Version}@{s.ServiceVersion.Revision}";
+				} catch (Exception e) {
+
+				}
 
 				// Interface Version
 				VersionInfo.Content = "App: " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString()+" Service: "+ version;

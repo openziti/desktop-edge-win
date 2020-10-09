@@ -198,7 +198,6 @@ namespace ZitiDesktopEdge.ServiceClient
 
         public void Dump(System.IO.TextWriter writer)
         {
-<<<<<<< HEAD
             try {
                 writer.WriteLine($"Tunnel Active: {Active}");
                 writer.WriteLine($"     LogLevel         : {LogLevel}");
@@ -213,24 +212,7 @@ namespace ZitiDesktopEdge.ServiceClient
                         writer.WriteLine($"      Name: {s.Name} HostName: {s.InterceptHost} Port: {s.InterceptPort}");
                     }
                     writer.WriteLine("=============================================");
-=======
-            writer.WriteLine($"Tunnel Active: {Active}");
-            writer.WriteLine($"     ServiceVersion   : {ServiceVersion}");
-            writer.WriteLine($"     LogLevel         : {LogLevel}");
-            writer.WriteLine($"     EvaluatedLogLevel: {EvaluateLogLevel()}");
-            foreach (Identity id in Identities)
-            {
-                writer.WriteLine($"  FingerPrint: {id.FingerPrint}");
-                writer.WriteLine($"    Name    : {id.Name}");
-                writer.WriteLine($"    Active  : {id.Active}");
-                writer.WriteLine($"    Status  : {id.Status}");
-                writer.WriteLine($"    Services:");
-                foreach (Service s in id?.Services)
-                {
-                    writer.WriteLine($"      Name: {s.Name} HostName: {s.InterceptHost} Port: {s.InterceptPort}");
->>>>>>> b73d8c5563fcb51ed0c170b6da19f6e3d29d0e55
                 }
-
             } catch (Exception e) {
 
             }   
