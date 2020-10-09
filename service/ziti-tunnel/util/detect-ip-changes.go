@@ -1,4 +1,4 @@
-package ipchanges
+package util
 
 import (
 	"github.com/michaelquigley/pfxlog"

@@ -6,6 +6,7 @@ For UI changes or installer changes see [release-notes.md]()
 * What's New
 
   * Continually improved logging
+  * changed ip from 169.254.0.0/16 to 100.64.0.0/10
   * [#120](https://github.com/openziti/desktop-edge-win/issues/120) - Allow UI/client to get and set log level dynamically via ipc
 
 * Bug fixes

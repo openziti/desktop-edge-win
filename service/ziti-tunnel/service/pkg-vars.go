@@ -18,13 +18,13 @@
 package service
 
 import (
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/logging"
 	"golang.org/x/sys/windows/svc"
 	"sync"
 	"time"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/globals"
 )
-
+var Version dto.ServiceVersion
 var pipeBase = `\\.\pipe\NetFoundry\tunneler\`
 
 var activeIds = make(map[string]*dto.Identity)
@@ -39,7 +39,7 @@ var eventsConnections int
 var Debug bool
 
 var TunStarted time.Time
-var log = globals.Logger()
+var log = logging.Logger()
 
 var	events = newTopic()
 
@@ -87,8 +87,6 @@ const (
 	NF_GROUP_NAME = "NetFoundry Tunneler Users"
 	TunName = "ZitiTUN"
 
-	Ipv4ip = "169.254.1.1"
-	Ipv4mask = 24
 	Ipv4dns = "127.0.0.1" // use lo -- don't pass DNS queries through tunneler SDK
 
 	// IPv6 CIDR fe80:6e66:7a69:7469::/64
