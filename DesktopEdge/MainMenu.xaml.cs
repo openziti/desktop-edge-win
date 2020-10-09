@@ -76,15 +76,14 @@ namespace ZitiDesktopEdge
 			LogsItems.Visibility = Visibility.Collapsed;
 			ConfigItems.Visibility = Visibility.Collapsed;
 
-			if (menuState=="About") {
+			if (menuState == "About") {
 				MenuTitle.Content = "About";
 				AboutItemsArea.Visibility = Visibility.Visible;
 				AboutItems.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
 
-				// Service Version - Lose the snapshot
-				string version = File.ReadAllText(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "OpenZiti", "Service", "Version.txt"));
-				if (version.IndexOf("-") > 0) version = version.Split('-')[0];
+				ZitiDesktopEdge.ServiceClient.TunnelStatus s = (ZitiDesktopEdge.ServiceClient.TunnelStatus)Application.Current.Properties["CurrentTunnelStatus"];
+				string version = $"{s.ServiceVersion.Version}@{s.ServiceVersion.Revision}";
 
 				// Interface Version
 				VersionInfo.Content = "App: " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString()+" Service: "+ version;

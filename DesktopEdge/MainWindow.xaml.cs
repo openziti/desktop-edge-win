@@ -240,6 +240,7 @@ namespace ZitiDesktopEdge {
 		private void ServiceClient_OnTunnelStatusEvent(object sender, TunnelStatusEvent e) {
 			if (e == null) return; //just skip it for now...
 			Debug.WriteLine($"==== TunnelStatusEvent: ");
+			Application.Current.Properties.Add("CurrentTunnelStatus", e.Status);
 			e.Status.Dump(Console.Out);
 			this.Dispatcher.Invoke(() => {
 				if(e.ApiVersion != Client.EXPECTED_API_VERSION) {
