@@ -23,14 +23,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Microsoft/go-winio"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/constants"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/idutil"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/logging"
 	"github.com/openziti/foundation/identity/identity"
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"github.com/openziti/sdk-golang/ziti/enroll"
 	"github.com/openziti/desktop-edge-win/service/cziti"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/globals"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/idutil"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/windows/svc"
 	"golang.zx2c4.com/wireguard/tun"
 	"io"
@@ -63,11 +65,11 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 
 	rts.LoadConfig()
 	l := rts.state.LogLevel
-	_, czitiLevel := globals.ParseLevel(l)
+	_, czitiLevel := logging.ParseLevel(l)
 
-	globals.InitLogger(l)
+	logging.InitLogger(l	)
 
-	_ = globals.Elog.Info(InformationEvent, SvcName+" starting. log file located at "+config.LogFile())
+	_ = logging.Elog.Info(InformationEvent, SvcName+" starting. log file located at "+config.LogFile())
 
 	// create a channel for notifying any connections that they are to be interrupted
 	interrupt = make(chan struct{}, 8)
@@ -100,7 +102,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 
 	// notify the service is running
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
-	_ = globals.Elog.Info(InformationEvent, SvcName+" status set to running")
+	_ = logging.Elog.Info(InformationEvent, SvcName+" status set to running")
 	log.Info(SvcName + " status set to running. starting cancel loop")
 
 	waitForStopRequest(ops)
@@ -245,12 +247,12 @@ func initialize(ipv4 string, ipv4mask int) error {
 func setTunInfo(s *dto.TunnelStatus, ipv4 string, ipv4mask int) {
 	if strings.TrimSpace(ipv4) == "" {
 		log.Infof("ip not provided using default: %v", ipv4)
-		ipv4 = Ipv4ip
+		ipv4 = constants.Ipv4ip
 		rts.UpdateIpv4(ipv4)
 	}
-	if ipv4mask < 8 || ipv4mask > 24 {
-		log.Warnf("provided mask is invalid: %d. using default value: %d", ipv4mask, Ipv4mask)
-		ipv4mask = Ipv4mask
+	if ipv4mask < 8 || ipv4mask > constants.Ipv4MaxMask {
+		log.Warnf("provided mask is invalid: %d. using default value: %d", ipv4mask, constants.Ipv4DefaultMask)
+		ipv4mask = constants.Ipv4DefaultMask
 		rts.UpdateIpv4Mask(ipv4mask)
 	}
 	_, ipnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", ipv4, ipv4mask))
@@ -295,7 +297,7 @@ func accept(p net.Listener, serveFunction func(net.Conn), debug string) {
 		c, err := p.Accept()
 		if err != nil {
 			if err != winio.ErrPipeListenerClosed {
-				log.Errorf("unexpected error while accepting a connection. exiting loop. %v", err)
+				log.Errorf("%v unexpected error while accepting a connection. exiting loop. %v", debug, err)
 			}
 			return
 		}
@@ -332,7 +334,7 @@ func serveIpc(conn net.Conn) {
 		select {
 		case <-interrupt:
 			log.Info("request to interrupt read loop received")
-			conn.Close()
+			_ = conn.Close()
 			log.Info("read loop interrupted")
 		case <-done:
 			log.Debug("loop finished normally")
@@ -430,8 +432,10 @@ func serveIpc(conn net.Conn) {
 }
 
 func setLogLevel(out *json.Encoder, level string) {
-	goLevel, cLevel := globals.ParseLevel(level)
-	globals.SetLogLevel(goLevel, cLevel)
+	goLevel, cLevel := logging.ParseLevel(level)
+	logrus.Infof("Setting logger levels to %s", goLevel)
+	logrus.SetLevel(goLevel)
+	cziti.SetLogLevel(cLevel)
 	rts.state.LogLevel = goLevel.String()
 	respond(out, dto.Response{Message: "log level set", Code: SUCCESS, Error: "", Payload: nil})
 }
@@ -600,7 +604,7 @@ func toggleIdentity(out *json.Encoder, fingerprint string, onOff bool) {
 	if onOff {
 		connectIdentity(id)
 	} else {
-		disconnectIdentity(id)
+		_ = disconnectIdentity(id)
 	}
 
 	respond(out, dto.Response{Message: "identity toggled", Code: SUCCESS, Error: "", Payload: idutil.Clean(*id)})
@@ -846,7 +850,7 @@ func acceptServices() {
 					switch c.Operation {
 					case cziti.ADDED:
 						//add the service to the identity
-						svc := dto.Service{
+						s := dto.Service{
 							Name:          c.Service.Name,
 							InterceptHost: c.Service.InterceptHost,
 							InterceptPort: c.Service.InterceptPort,
@@ -854,22 +858,22 @@ func acceptServices() {
 							AssignedIP:    c.Service.AssignedIP,
 							OwnsIntercept: c.Service.OwnsIntercept,
 						}
-						id.Services = append(id.Services, &svc)
+						id.Services = append(id.Services, &s)
 
 						events.broadcast <- dto.ServiceEvent{
 							ActionEvent: SERVICE_ADDED,
 							Fingerprint: id.FingerPrint,
-							Service:     svc,
+							Service:     s,
 						}
 						log.Debug("dispatched added service change event")
 					case cziti.REMOVED:
-						for idx, svc := range id.Services {
-							if svc.Name == c.Service.Name {
+						for idx, s := range id.Services {
+							if s.Name == c.Service.Name {
 								id.Services = append(id.Services[:idx], id.Services[idx+1:]...)
 								events.broadcast <- dto.ServiceEvent{
 									ActionEvent: SERVICE_REMOVED,
 									Fingerprint: id.FingerPrint,
-									Service:     *svc,
+									Service:     *s,
 								}
 								log.Debug(" dispatched remove service change event")
 							}

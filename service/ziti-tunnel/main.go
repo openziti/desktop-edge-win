@@ -21,17 +21,17 @@ package main
 import (
 	"fmt"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/logging"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
 	"os"
 	"strings"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/globals"
 
-	"golang.org/x/sys/windows/svc"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/service"
+	"golang.org/x/sys/windows/svc"
 )
 
-var log = globals.Logger()
+var log = logging.Logger()
 
 func main() {
 	service.Version = dto.ServiceVersion{
@@ -39,7 +39,7 @@ func main() {
 		Revision:  Revision,
 		BuildDate: BuildDate,
 	}
-	globals.InitLogger("info")
+	logging.InitLogger("info")
 
 	//if len(os.Args) < 2 {
 	//	// if no args supplied - expect to run as service
@@ -57,9 +57,9 @@ func main() {
 
 	var err error
 	if hasArgs {
-		globals.Elog = debug.New(service.SvcName)
+		logging.Elog = debug.New(service.SvcName)
 	} else {
-		globals.Elog, err = eventlog.Open(service.SvcName)
+		logging.Elog, err = eventlog.Open(service.SvcName)
 		if err != nil {
 			return
 		}
@@ -74,9 +74,9 @@ func main() {
 		usage("no command specified")
 	}
 
-	defer globals.Elog.Close()
+	defer logging.Elog.Close()
 
-	elog := globals.Elog
+	elog := logging.Elog
 
 	cmd := strings.ToLower(os.Args[1])
 	switch cmd {

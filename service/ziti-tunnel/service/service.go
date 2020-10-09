@@ -21,9 +21,9 @@ package service
 
 import (
 	"fmt"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/logging"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/globals"
 )
 
 type zitiService struct{}
@@ -51,26 +51,26 @@ loop:
 			switch c.Cmd {
 			case svc.Interrogate:
 				changes <- c.CurrentStatus
-				_ = globals.Elog.Info(InterrogateEvent, "interrogate request received")
+				_ = logging.Elog.Info(InterrogateEvent, "interrogate request received")
 				changes <- c.CurrentStatus
 			case svc.Stop:
-				_ = globals.Elog.Info(StopEvent, "issuing stop")
+				_ = logging.Elog.Info(StopEvent, "issuing stop")
 				control <- "stop"
-				_ = globals.Elog.Info(StopEvent, "stop issued")
+				_ = logging.Elog.Info(StopEvent, "stop issued")
 				break loop
 			case svc.Shutdown:
-				_ = globals.Elog.Info(ShutdownEvent, "issuing shutdown")
+				_ = logging.Elog.Info(ShutdownEvent, "issuing shutdown")
 				control <- "stop"
-				_ = globals.Elog.Info(ShutdownEvent, "shutdown issued")
+				_ = logging.Elog.Info(ShutdownEvent, "shutdown issued")
 				break loop
 			case svc.Pause:
 				changes <- svc.Status{State: svc.Paused, Accepts: cmdsAccepted}
-				_ = globals.Elog.Info(PauseEvent, "request to pause service received. todo - unimplemented")
+				_ = logging.Elog.Info(PauseEvent, "request to pause service received. todo - unimplemented")
 			case svc.Continue:
 				changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
-				_ = globals.Elog.Info(ContinueEvent, "request to continue service received. todo - unimplemented")
+				_ = logging.Elog.Info(ContinueEvent, "request to continue service received. todo - unimplemented")
 			default:
-				_ = globals.Elog.Error(1, fmt.Sprintf("unexpected control request #%d", c))
+				_ = logging.Elog.Error(1, fmt.Sprintf("unexpected control request #%d", c))
 			}
 		}
 	}
@@ -85,7 +85,7 @@ loop:
 }
 
 func RunService(isDebug bool) {
-	_ = globals.Elog.Info(InformationEvent, fmt.Sprintf("starting %s service", SvcStartName))
+	_ = logging.Elog.Info(InformationEvent, fmt.Sprintf("starting %s service", SvcStartName))
 	run := svc.Run
 	if isDebug {
 		log.Info("debug specified. using debug.run")
@@ -94,8 +94,8 @@ func RunService(isDebug bool) {
 	err := run(SvcStartName, &zitiService{})
 
 	if err != nil {
-		_ = globals.Elog.Error(ErrorEvent, fmt.Sprintf("%s service failed: %v", SvcStartName, err))
+		_ = logging.Elog.Error(ErrorEvent, fmt.Sprintf("%s service failed: %v", SvcStartName, err))
 		return
 	}
-	_ = globals.Elog.Info(StopEvent, fmt.Sprintf("%s service stopped", SvcStartName))
+	_ = logging.Elog.Info(StopEvent, fmt.Sprintf("%s service stopped", SvcStartName))
 }
