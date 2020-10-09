@@ -26,7 +26,6 @@ import (
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/globals"
 )
 
-
 type zitiService struct{}
 
 func (m *zitiService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {

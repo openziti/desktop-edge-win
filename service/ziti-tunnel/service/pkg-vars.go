@@ -24,7 +24,7 @@ import (
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/globals"
 )
-
+var Version dto.ServiceVersion
 var pipeBase = `\\.\pipe\NetFoundry\tunneler\`
 
 var activeIds = make(map[string]*dto.Identity)

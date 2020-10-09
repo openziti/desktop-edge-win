@@ -20,6 +20,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
 	"os"
@@ -33,6 +34,11 @@ import (
 var log = globals.Logger()
 
 func main() {
+	service.Version = dto.ServiceVersion{
+		Version:   Version,
+		Revision:  Revision,
+		BuildDate: BuildDate,
+	}
 	globals.InitLogger("info")
 
 	//if len(os.Args) < 2 {
