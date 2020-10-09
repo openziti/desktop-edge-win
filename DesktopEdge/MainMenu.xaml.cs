@@ -21,8 +21,11 @@ namespace ZitiDesktopEdge
 
 		public delegate void AttachementChanged(bool attached);
 		public event AttachementChanged OnAttachmentChange;
+		public delegate void LogLevelChanged(string level);
+		public event LogLevelChanged OnLogLevelChanged;
 		public string menuState = "Main";
 		public string licenseData = "it's open source.";
+		public string LogLevel = "";
 
 		public MainMenu() {
             InitializeComponent();
@@ -64,6 +67,10 @@ namespace ZitiDesktopEdge
 			menuState = "UILogs";
 			UpdateState();
 		}
+		private void SetLogLevel(object sender, MouseButtonEventArgs e) {
+			menuState = "LogLevel";
+			UpdateState();
+		}
 
 		private void UpdateState() {
 			MainItems.Visibility = Visibility.Collapsed;
@@ -75,6 +82,7 @@ namespace ZitiDesktopEdge
 			LicensesItems.Visibility = Visibility.Collapsed;
 			LogsItems.Visibility = Visibility.Collapsed;
 			ConfigItems.Visibility = Visibility.Collapsed;
+			LogLevelItems.Visibility = Visibility.Collapsed;
 
 			if (menuState=="About") {
 				MenuTitle.Content = "About";
@@ -107,6 +115,12 @@ namespace ZitiDesktopEdge
 				MenuTitle.Content = "Application Logs";
 				LogsItems.Text = UILog.GetLogs();
 				LogsItems.Visibility = Visibility.Visible;
+				BackArrow.Visibility = Visibility.Visible;
+			} else if (menuState == "LogLevel") {
+				ResetLevels();
+
+				MenuTitle.Content = "Set Log Level";
+				LogLevelItems.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
 			} else if (menuState=="Config") {
 				MenuTitle.Content = "Tunnel Configuration";
@@ -213,6 +227,33 @@ namespace ZitiDesktopEdge
 			if (OnAttachmentChange != null) {
 				OnAttachmentChange(true);
 			}
+		}
+
+		private void ResetLevels() {
+			if (this.LogLevel == "") this.LogLevel = "error";
+			LogVerbose.IsSelected = false;
+			LogDebug.IsSelected = false;
+			LogInfo.IsSelected = false;
+			LogError.IsSelected = false;
+			LogFatal.IsSelected = false;
+			LogWarn.IsSelected = false;
+			LogTrace.IsSelected = false;
+			if (this.LogLevel == "verbose") LogVerbose.IsSelected = true;
+			else if (this.LogLevel == "debug") LogDebug.IsSelected = true;
+			else if (this.LogLevel == "info") LogInfo.IsSelected = true;
+			else if (this.LogLevel == "error") LogError.IsSelected = true;
+			else if (this.LogLevel == "fatal") LogFatal.IsSelected = true;
+			else if (this.LogLevel == "warn") LogWarn.IsSelected = true;
+			else if (this.LogLevel == "trace") LogTrace.IsSelected = true;
+		}
+
+		private void SetLevel(object sender, MouseButtonEventArgs e) {
+			SubOptionItem item = (SubOptionItem)sender;
+			this.LogLevel = item.Label.ToLower();
+			if (OnLogLevelChanged != null) {
+				OnLogLevelChanged(this.LogLevel);
+			}
+			ResetLevels();
 		}
 	}
 }
