@@ -65,7 +65,6 @@ namespace ZitiDesktopEdge {
 			LaunchOrInstall();
 
 			SetNotifyIcon("white");
-			InitializeComponent();
 		}
 
 		private void MainWindow_Activated(object sender, EventArgs e) {

@@ -214,7 +214,7 @@ namespace ZitiDesktopEdge.ServiceClient
                     writer.WriteLine("=============================================");
                 }
             } catch (Exception e) {
-
+                if (writer!=null) writer.WriteLine(e.ToString());
             }   
         
         }
