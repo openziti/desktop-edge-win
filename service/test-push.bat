@@ -20,9 +20,11 @@ type version
 @echo ========================================================
 @echo trying git add and commit
 @echo ========================================================
+git diff
 git add version
+git diff
 git commit -m "updating version"
-
+git diff
 
 @echo ========================================================
 @echo trying git push
