@@ -20,8 +20,7 @@ type version
 @echo ========================================================
 @echo trying git add and commit
 @echo ========================================================
-git diff
-git add version
+git add service/ziti-tunnel/version.go
 git diff
 git commit -m "updating version"
 git diff
