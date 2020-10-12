@@ -390,6 +390,18 @@ namespace ZitiDesktopEdge.ServiceClient
             }
         }
 
+        public void SetLogLevel(string level) {
+            try {
+                send(new SetLogLevelFunction(level));
+                SvcResponse resp = read<SvcResponse>(ipcReader);
+                return;
+            } catch (IOException ioe) {
+                //almost certainly a problem with the pipe - recreate the pipe...
+                //setupPipe();
+                throw ioe;
+            }
+        }
+
         public void SetLogLevel(LogLevelEnum level)
         {
             try

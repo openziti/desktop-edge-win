@@ -65,7 +65,6 @@ namespace ZitiDesktopEdge {
 			LaunchOrInstall();
 
 			SetNotifyIcon("white");
-			InitializeComponent();
 		}
 
 		private void MainWindow_Activated(object sender, EventArgs e) {
@@ -127,6 +126,7 @@ namespace ZitiDesktopEdge {
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
 			Application.Current.Properties.Add("Identities", new List<ZitiIdentity>());
 			MainMenu.OnAttachmentChange += AttachmentChanged;
+			MainMenu.OnLogLevelChanged += LogLevelChanged;
 			IdentityMenu.OnError += IdentityMenu_OnError;
 
 			try {
@@ -139,6 +139,10 @@ namespace ZitiDesktopEdge {
 			}
 			Debug.WriteLine("App Loaded");
 			IdentityMenu.OnForgot += IdentityForgotten;
+		}
+
+		private void LogLevelChanged(string level) {
+			serviceClient.SetLogLevel(level);
 		}
 
 		private void IdentityMenu_OnError(string message) {
@@ -247,7 +251,7 @@ namespace ZitiDesktopEdge {
 					SetCantDisplay("Version mismatch!", "The version of the Service is not compatible");
 					return;
                 }
-				
+				this.MainMenu.LogLevel = e.Status.LogLevel;
 				InitializeTimer((int)e.Status.Duration);
 				LoadStatusFromService(e.Status);
 				LoadIdentities(false);
@@ -395,6 +399,7 @@ namespace ZitiDesktopEdge {
 				try {
 					Identity createdId = serviceClient.AddIdentity(System.IO.Path.GetFileName(jwtDialog.FileName), false, fileContent);
 					ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
+
 					client.IdentityOnOff(createdId.FingerPrint, true);
 					if (createdId != null) {
 						identities.Add(ZitiIdentity.FromClient(createdId));
