@@ -34,12 +34,12 @@ git diff 2>&1
 git commit -m "updating version" 2>&1
 git diff 2>&1
 
-@echo ======================================================== 2>&1
-@echo trying git push 2>&1
-@echo ======================================================== 2>&1
 @echo converting shallow clone so travis can co: %GIT_BRANCH%
 git remote set-branches origin %GIT_BRANCH% 2>&1
 git fetch --depth 1 origin %GIT_BRANCH% 2>&1
+@echo ======================================================== 2>&1
+@echo trying git push 2>&1
+@echo ======================================================== 2>&1
 git checkout %GIT_BRANCH% 2>&1
 git status 2>&1
 git push 2>&1
