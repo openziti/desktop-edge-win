@@ -6,40 +6,41 @@ set /p BUILD_VERSION=<%ZITI_TUNNEL_WIN_ROOT%version
 set GO111MODULE=on
 cd /d %ZITI_TUNNEL_WIN_ROOT%
 
-echo fetching ziti-ci
+echo fetching ziti-ci 2>&1
 call %SVC_ROOT_DIR%/../get-ziti-ci.bat
-echo ziti-ci has been retrieved. running: ziti-ci version
-ziti-ci version
+echo ziti-ci has been retrieved. running: ziti-ci version 2>&1
+ziti-ci version 2>&1
 
-@echo generating version info - this will get pushed from publish.bat in CI _if_ publish.bat started build.bat
+@echo generating version info - this will get pushed from publish.bat in CI _if_ publish.bat started build.bat 2>&1
 ziti-ci generate-build-info --noAddNoCommit --useVersion=false %SVC_ROOT_DIR%/ziti-tunnel/version.go main --verbose 2>&1
-@echo version info generated
-@echo ---------------------------
-type version
-@echo ---------------------------
+@echo version info generated 2>&1
+@echo --------------------------- 2>&1
+type version 2>&1
+@echo --------------------------- 2>&1
 
-@echo ========================================================
-@echo trying git add and commit
-@echo ========================================================
-git diff
-git add service/ziti-tunnel/version.go
-@echo ---------------------------
-type service/ziti-tunnel/version.go
-@echo ---------------------------
-@echo ---------------------------
-type %SVC_ROOT_DIR%/ziti-tunnel/version.go
-@echo ---------------------------
-git diff
-git commit -m "updating version"
-git diff
+@echo ======================================================== 2>&1
+@echo trying git add and commit 2>&1
+@echo ======================================================== 2>&1
+git diff 2>&1
+git add service/ziti-tunnel/version.go 2>&1
+@echo --------------------------- 2>&1
+type service/ziti-tunnel/version.go 2>&1
+@echo --------------------------- 2>&1
+@echo --------------------------- 2>&1
+type %SVC_ROOT_DIR%/ziti-tunnel/version.go 2>&1
+@echo --------------------------- 2>&1
+git diff 2>&1
+git commit -m "updating version" 2>&1
+git diff 2>&1
 
-@echo ========================================================
-@echo trying git push
-@echo ========================================================
-git push
-git diff
+@echo ======================================================== 2>&1
+@echo trying git push 2>&1
+@echo ======================================================== 2>&1
+git status 2>&1
+git push 2>&1
+git diff 2>&1
 
 
-@echo ========================================================
-@echo all done
-@echo ========================================================
+@echo ======================================================== 2>&1
+@echo all done 2>&1
+@echo ======================================================== 2>&1
