@@ -15,7 +15,7 @@ echo fetching ziti-ci 2>&1
 call %SVC_ROOT_DIR%/../get-ziti-ci.bat
 echo ziti-ci has been retrieved. running: ziti-ci version 2>&1
 ziti-ci version 2>&1
-ziti-ci configure-git
+ziti-ci configure-git 2>&1
 
 
 set KEY=github_deploy_key

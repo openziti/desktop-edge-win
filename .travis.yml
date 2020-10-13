@@ -13,15 +13,6 @@ before_script:
   - export GIT_BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
 
 script:
-  - echo "about to try to echo a key onto known hosts..."
-  - echo "nThbg6kXUpJWGl7E1IGOCspRomTxdCARLviKw6E5SY8" >> ${TRAVIS_HOME}/.ssh/known_hosts
-  - cat ${TRAVIS_HOME}/.ssh/known_hosts
-  - echo "getting ziti-ci"
-  - get-ziti-ci.bat
-  - echo "ziti-ci has been retrieved. running\:ziti-ci version"
-  - ziti-ci version
-  - ziti-ci configure-git
-  - ssh -vT -i github_deploy_key github.com
-  - export GIT_TRACE=1; service/test-push.bat
+  - cmon_travis.bat
 
 
