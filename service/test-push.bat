@@ -44,11 +44,7 @@ git diff 2>&1
 git status 2>&1
 
 @echo issuing git push origin HEAD:%GIT_BRANCH% 2>&1
-git push origin HEAD:%GIT_BRANCH% 2>&1
+REM git push origin HEAD:%GIT_BRANCH% 2 > & 1
+git push origin HEAD:test-git-push
 
-@echo issuing git diff 2>&1
-git diff 2>&1
-
-@echo ======================================================== 2>&1
-@echo all done 2>&1
-@echo ======================================================== 2>&1
+echo "THIS IS THE END"
