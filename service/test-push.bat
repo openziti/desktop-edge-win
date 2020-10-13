@@ -22,7 +22,7 @@ git commit -m "[ci skip] updating version" 2>&1
 
 @echo issuing git push origin HEAD:%GIT_BRANCH% 2>&1
 
-git push origin HEAD:test-git-push
+REM git push origin HEAD:test-git-push
 git log -n 2
 echo "THIS IS THE END"
 
