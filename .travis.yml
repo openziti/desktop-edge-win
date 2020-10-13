@@ -19,6 +19,7 @@ before_script:
 
 script:
   - service/test-push.bat
+  - git status
   
 stages:
   - name: deploy

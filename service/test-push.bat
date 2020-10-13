@@ -28,12 +28,12 @@ type version 2>&1
 @echo ======================================================== 2>&1
 
 git add service/ziti-tunnel/version.go 2>&1
-git commit -m "[skip ci] updating version" 2>&1
+REM git commit -m "[skip ci] updating version" 2>&1
 
 @echo ======================================================== 2>&1
 @echo trying git push 2>&1
 @echo ======================================================== 2>&1
-git push
+REM git push
 
 @echo ======================================================== 2>&1
 @echo all done 2>&1
