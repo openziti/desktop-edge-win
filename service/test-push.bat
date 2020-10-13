@@ -31,7 +31,7 @@ type %SVC_ROOT_DIR%/ziti-tunnel/version.go
 @echo %SVC_ROOT_DIR%/ziti-tunnel/version.go
 @echo -b------------------------- 2>&1
 git diff 2>&1
-git commit -m "updating version" 2>&1
+git commit -m "[ci skip] updating version" 2>&1
 git diff 2>&1
 
 @echo converting shallow clone so travis can co: %GIT_BRANCH%
@@ -44,8 +44,8 @@ git checkout %GIT_BRANCH% 2>&1
 git diff 2>&1
 @echo trying git status 2>&1
 git status 2>&1
-@echo trying git push 2>&1
-git push 2>&1
+@echo trying git push origin HEAD:%GIT_BRANCH% 2>&1
+git push origin HEAD:%GIT_BRANCH% 2>&1
 git diff 2>&1
 
 
