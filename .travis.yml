@@ -12,6 +12,8 @@ os:
   - windows
 
 install:
+  - echo 'nThbg6kXUpJWGl7E1IGOCspRomTxdCARLviKw6E5SY8' >> $HOME/.ssh/known_hosts
+  - cat $HOME/.ssh/known_hosts
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then choco install -y zip ninja; fi
 
 before_script:
