@@ -7,7 +7,7 @@ os:
   - windows
 
 install:
-  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then choco install -y zip ninja openssh; echo "echo from install"; refreshenv; fi
+  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then choco install -y zip ninja openssh; echo "echo from install"; fi
 
 before_script:
   - export GIT_BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
