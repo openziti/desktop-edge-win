@@ -19,8 +19,12 @@ before_script:
 
 script:
   - service/test-push.bat
+
+after_success:
   - git status
-  
+  - git commit -m "[skip ci] committing from travis"
+  - git push
+
 stages:
   - name: deploy
     if: branch = master
