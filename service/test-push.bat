@@ -15,6 +15,7 @@ echo fetching ziti-ci 2>&1
 call %SVC_ROOT_DIR%/../get-ziti-ci.bat
 echo ziti-ci has been retrieved. running: ziti-ci version 2>&1
 ziti-ci version 2>&1
+ziti-ci configure-git
 
 @echo generating version info - this will get pushed from publish.bat in CI _if_ publish.bat started build.bat 2>&1
 ziti-ci generate-build-info --noAddNoCommit --useVersion=false %SVC_ROOT_DIR%/ziti-tunnel/version.go main --verbose 2>&1
