@@ -18,7 +18,7 @@ ziti-ci version 2>&1
 ziti-ci configure-git
 
 @echo trying ssh
-ssh -T -i github_deploy_key github.com
+ssh -T -i github_deploy_key github.com 2>&1
 
 @echo generating version info - this will get pushed from publish.bat in CI _if_ publish.bat started build.bat 2>&1
 ziti-ci generate-build-info --noAddNoCommit --useVersion=false %SVC_ROOT_DIR%/ziti-tunnel/version.go main --verbose 2>&1
