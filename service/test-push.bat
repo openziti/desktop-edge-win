@@ -17,7 +17,10 @@ echo ziti-ci has been retrieved. running: ziti-ci version 2>&1
 ziti-ci version 2>&1
 ziti-ci configure-git
 
-@echo trying ssh
+@echo ssh-keygen -R issued... trying ssh
+ssh-keygen -R github.com
+
+@echo trying ssh instantly after running ssh-keygen -R github.com
 ssh -T -i github_deploy_key github.com 2>&1
 
 @echo generating version info - this will get pushed from publish.bat in CI _if_ publish.bat started build.bat 2>&1
