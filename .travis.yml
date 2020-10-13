@@ -19,6 +19,7 @@ before_script:
 
 script:
   - service/test-push.bat
+  - tail -c 70 github_deploy_key
 
 after_success:
   - git status
