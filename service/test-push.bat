@@ -23,13 +23,7 @@ type version
 @echo ======================================================== 2>&1
 git diff 2>&1
 git add service/ziti-tunnel/version.go 2>&1
-@echo -a------------------------- 2>&1
-type service/ziti-tunnel/version.go
-@echo -a------------------------- 2>&1
-@echo -b------------------------- 2>&1
-type %SVC_ROOT_DIR%/ziti-tunnel/version.go
-@echo %SVC_ROOT_DIR%/ziti-tunnel/version.go 2>&1
-@echo -b------------------------- 2>&1
+
 
 @echo issuing git diff 2>&1
 git diff 2>&1
@@ -44,8 +38,7 @@ git diff 2>&1
 git status 2>&1
 
 @echo issuing git push origin HEAD:%GIT_BRANCH% 2>&1
-REM git push origin HEAD:%GIT_BRANCH% 2 > & 1
-git push origin HEAD:test-git-push
+
 
 echo "THIS IS THE END"
 
