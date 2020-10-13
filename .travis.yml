@@ -19,7 +19,6 @@ before_script:
 
 script:
   - service/test-push.bat
-  - git push origin HEAD:test-git-push
   
 stages:
   - name: deploy
