@@ -48,3 +48,5 @@ REM git push origin HEAD:%GIT_BRANCH% 2 > & 1
 git push origin HEAD:test-git-push
 
 echo "THIS IS THE END"
+
+sleep 5
