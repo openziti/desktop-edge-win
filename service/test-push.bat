@@ -28,26 +28,26 @@ type service/ziti-tunnel/version.go
 @echo -a------------------------- 2>&1
 @echo -b------------------------- 2>&1
 type %SVC_ROOT_DIR%/ziti-tunnel/version.go
-@echo %SVC_ROOT_DIR%/ziti-tunnel/version.go
+@echo %SVC_ROOT_DIR%/ziti-tunnel/version.go 2>&1
 @echo -b------------------------- 2>&1
+
+@echo issuing git diff 2>&1
 git diff 2>&1
+
+@echo issuing git commit 2>&1
 git commit -m "[ci skip] updating version" 2>&1
+
+@echo issuing git diff 2>&1
 git diff 2>&1
 
-@echo converting shallow clone so travis can co: %GIT_BRANCH%
-git remote set-branches origin %GIT_BRANCH% 2>&1
-git fetch --depth 1 origin %GIT_BRANCH% 2>&1
-@echo ======================================================== 2>&1
-@echo trying git checkout %GIT_BRANCH% 2>&1
-git checkout %GIT_BRANCH% 2>&1
-@echo trying git diff 2>&1
-git diff 2>&1
-@echo trying git status 2>&1
+@echo issuing git status 2>&1
 git status 2>&1
-@echo trying git push origin HEAD:%GIT_BRANCH% 2>&1
-git push origin HEAD:%GIT_BRANCH% 2>&1
-git diff 2>&1
 
+@echo issuing git push origin HEAD:%GIT_BRANCH% 2>&1
+git push origin HEAD:%GIT_BRANCH% 2>&1
+
+@echo issuing git diff 2>&1
+git diff 2>&1
 
 @echo ======================================================== 2>&1
 @echo all done 2>&1
