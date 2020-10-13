@@ -20,7 +20,6 @@ before_script:
 script:
   - export GIT_TRACE=1; service/test-push.bat
   - chmod 600 github_deploy_key
-  - ssh -T git@github.com -i github_deploy_key
 
 after_success:
   - git status
