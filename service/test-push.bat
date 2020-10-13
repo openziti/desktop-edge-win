@@ -32,13 +32,11 @@ Icacls %KEY% /c /t /Remove Administrator "Authenticated Users" BUILTIN\Administr
 Icacls %KEY%
 
 
-
-
 @echo ssh-keygen -R issued... trying ssh
 ssh-keygen -R github.com
 
 @echo trying ssh instantly after running ssh-keygen -R github.com
-ssh -T -i github_deploy_key github.com 2>&1
+ssh -vT -i github_deploy_key github.com 2>&1
 
 @echo generating version info - this will get pushed from publish.bat in CI _if_ publish.bat started build.bat 2>&1
 ziti-ci generate-build-info --noAddNoCommit --useVersion=false %SVC_ROOT_DIR%/ziti-tunnel/version.go main --verbose 2>&1
