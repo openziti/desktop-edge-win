@@ -37,10 +37,12 @@ git diff 2>&1
 @echo trying git push 2>&1
 @echo ======================================================== 2>&1
 git status 2>&1
-git push 2>&1
-git diff 2>&1
+git push origin HEAD:%GIT_BRANCH% 2>&1
+REM git push origin HEAD:<name-of-remote-branch> 2>&1
+REM git diff 2>&1
 
 
 @echo ======================================================== 2>&1
 @echo all done 2>&1
 @echo ======================================================== 2>&1
+sleep 5
