@@ -14,16 +14,33 @@ ziti-ci version 2>&1
 @echo generating version info - this will get pushed from publish.bat in CI _if_ publish.bat started build.bat 2>&1
 ziti-ci generate-build-info --noAddNoCommit --useVersion=false %SVC_ROOT_DIR%/ziti-tunnel/version.go main --verbose 2>&1
 @echo version info generated 2>&1
+@echo --------------------------- 2>&1
+type version 2>&1
+@echo --------------------------- 2>&1
 
+@echo ======================================================== 2>&1
+@echo trying git add and commit 2>&1
+@echo ======================================================== 2>&1
+git diff 2>&1
 git add service/ziti-tunnel/version.go 2>&1
+@echo --------------------------- 2>&1
+type service/ziti-tunnel/version.go 2>&1
+@echo --------------------------- 2>&1
+@echo --------------------------- 2>&1
+type %SVC_ROOT_DIR%/ziti-tunnel/version.go 2>&1
+@echo --------------------------- 2>&1
+git diff 2>&1
+git commit -m "updating version" 2>&1
+git diff 2>&1
 
-@echo issuing git commit 2>&1
-git commit -m "[ci skip] updating version" 2>&1
+@echo ======================================================== 2>&1
+@echo trying git push 2>&1
+@echo ======================================================== 2>&1
+git status 2>&1
+git push 2>&1
+git diff 2>&1
 
-@echo issuing git push origin HEAD:%GIT_BRANCH% 2>&1
 
-REM git push origin HEAD:test-git-push
-git log -n 2
-echo "THIS IS THE END"
-
-sleep 5
+@echo ======================================================== 2>&1
+@echo all done 2>&1
+@echo ======================================================== 2>&1
