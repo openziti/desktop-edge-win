@@ -17,6 +17,23 @@ echo ziti-ci has been retrieved. running: ziti-ci version 2>&1
 ziti-ci version 2>&1
 ziti-ci configure-git
 
+
+set KEY=github_deploy_key
+@echo :: # Remove Inheritance ::
+Icacls %KEY% /c /t /Inheritance:d
+
+@echo :: # Set Ownership to Owner ::
+Icacls %KEY% /c /t /Grant %UserName%:F
+
+@echo :: # Remove All Users, except for Owner ::
+Icacls %KEY% /c /t /Remove Administrator "Authenticated Users" BUILTIN\Administrators BUILTIN Everyone System Users
+
+@echo :: # Verify ::
+Icacls %KEY%
+
+
+
+
 @echo ssh-keygen -R issued... trying ssh
 ssh-keygen -R github.com
 
