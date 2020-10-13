@@ -24,6 +24,7 @@ after_success:
   - git status
   - git add service/ziti-tunnel/version.go
   - git commit -m "[skip ci] committing from travis"
+  - git config -l
   - git push
 
 stages:
