@@ -21,8 +21,8 @@ package main
 
 const (
 	Version   = "0.0.30"
-	Revision  = "b02a4e24e74c"
+	Revision  = "04d607f64343"
 	Branch    = "test-git-push"
 	BuildUser = "travis"
-	BuildDate = "2020-10-14 12:14:09"
+	BuildDate = "2020-10-14 12:33:27"
 )
