@@ -1,8 +1,3 @@
-addons:
-  ssh_known_hosts:
-    - git.savannah.nongnu.org
-    - github.com
-
 language: go
 
 go:
@@ -10,6 +5,10 @@ go:
 
 os:
   - windows
+
+branches:
+  except:
+    - test-git-push
 
 install:
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then choco install -y zip ninja; fi
@@ -19,17 +18,3 @@ before_script:
 
 script:
   - service/publish.bat
-  
-stages:
-  - name: deploy
-    if: branch = master
-
-deploy:
-  provider: releases
-  skip_cleanup: true
-  api_key:
-    secure: Tvlr3Z6iHlFs+FigBa2ukBpGU67+AaFwxjltlhzouiIFMUTsiMAvmYY1HLvOySTjh3uOxanu/yO80BCa5tFr4RHTpmKfz6Jc3TJFiXestuaPgzcIvCC3iT95YSbPgYzkTczeUsrvn0RB9pq8vyYh2a9Wn+AqIA9r5sbWuKwyPnbSVFQBSgXLHiAc9MWVYX5C0n4E/0yiY3tZgH6s5t6/27A8YE2O3DVnSTXYHiS3vKx6STrFwkn+vejJnm+5add5FVpcBfaZ1PJIRL7Jzu6OiQHKM0kZ9RBNSV3KHjHxtdhp8K5frsIT856SxzfNkVRPRuaJVrsBs1hYr2F7xYGs7XGq/2oTp8qzdAodTtjPWP3gT3eSiI8kwFtXvvDAHvTjtxmc1BTIGK+z5X/qRue9swNKeiqo4/Fj2902xYdT3Ifw8nyxn/U0IeZEJMakwADX+S9YAR7BYGxdhhBCCpfAifWuLCQniJsiuS/w15cfJ6RcsjBnNvxb1aLkcvJoAj8v6Sahdu4ngL7ck0/UDsfd3pRehVCkbZePrtQTVd62VxbqmWz9PnZRNI2A+VzUcStRPbgl6fZcxnVnbympj6QuDCCM6wmcd3II/UjcaqudIbtDwZxXtjqYhip3L222JB8SmDc8vV9W9su/07oCUuuQRCrKyukaBoF4qYV+dcLyODA=
-  file: "service/ziti-tunnel-win.zip"
-  on:
-    repo: openziti/desktop-edge-win
-    branch: master

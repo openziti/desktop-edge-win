@@ -5,6 +5,15 @@ set SVC_ROOT_DIR=%~dp0
 set /p BUILD_VERSION=<%SVC_ROOT_DIR%..\version
 IF "%BUILD_VERSION%"=="" GOTO BUILD_VERSION_ERROR
 
+@echo mkdir %USERPROFILE%\.ssh and add github.com to known_hosts... 2>&1
+mkdir %USERPROFILE%\.ssh 2>&1
+
+@echo adding github key: ssh-keyscan -t rsa github.com 2>&1
+ssh-keyscan -t rsa github.com >> %USERPROFILE%\.ssh\known_hosts 2>&1
+
+@echo looking for key using: ssh-keygen -F github.com - expect to find it now! 2>&1
+ssh-keygen -F github.com 2>&1
+
 call %SVC_ROOT_DIR%\build.bat
 SET ACTUAL_ERR=%ERRORLEVEL%
 if %ACTUAL_ERR% NEQ 0 (
@@ -69,19 +78,9 @@ git add service/ziti-tunnel/version.go 2>&1
 CALL :FAIL %ERRORLEVEL% "git add failed"
 @echo git add service/ziti-tunnel/version.go complete: %ERRORLEVEL%
 
-@echo trying to output ${TRAVIS_HOME}/.ssh/known_hosts to stdout
-type ${TRAVIS_HOME}/.ssh/known_hosts
-
-@echo issuing ssh-keyscan"zit
-ssh-keyscan -t rsa github.com 2>&1 >> /root/.ssh/known_hosts
-
-@echo trying to output ${TRAVIS_HOME}/.ssh/known_hosts to stdout
-type ${TRAVIS_HOME}/.ssh/known_hosts
-
-ssh -vT -i github_deploy_key git@github.com 2>&1
-
 @echo issuing commit
 git commit -m "[ci skip] committing updated version information" 2>&1
+
 CALL :FAIL %ERRORLEVEL% "git commit failed"
 @echo git commit -m "[ci skip] committing updated version information" complete: %ERRORLEVEL%
 @echo ========================================================
