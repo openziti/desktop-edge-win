@@ -21,6 +21,8 @@ import "C"
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/constants"
+
 	"net"
 	"strings"
 	"sync"
@@ -34,9 +36,6 @@ type DnsManager interface {
 	DeregisterService(ctx *CZitiCtx, name string)
 	GetService(ip net.IP, port uint16) (*CZitiCtx, string, error)
 }
-
-const defaultCidr = "169.254.0.0"
-const defaultMaskBits = 16
 
 var initOnce = sync.Once{}
 var DNS = &dnsImpl{}
@@ -80,7 +79,7 @@ func normalizeDnsName(dnsName string) string {
 // assigned to a hostname an error will also be returned indicating why.
 func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint16, ctx *CZitiCtx, svcName string) (net.IP, error) {
 	log.Infof("adding DNS entry for service name %s@%s:%d", svcName, dnsNameToReg, port)
-	DnsInit(defaultCidr, defaultMaskBits)
+	DnsInit(constants.Ipv4ip, constants.Ipv4DefaultMask)
 	dnsName := normalizeDnsName(dnsNameToReg)
 	key := fmt.Sprint(dnsName, ':', port)
 

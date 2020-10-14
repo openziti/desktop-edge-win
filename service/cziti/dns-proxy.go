@@ -28,12 +28,12 @@ import (
 )
 
 var domains []string // get any connection-specific local domains
+const MaxDnsRequests = 64
+var reqch = make(chan dnsreq, MaxDnsRequests)
+var proxiedRequests = make(chan *proxiedReq, MaxDnsRequests)
+var respChan = make(chan []byte, MaxDnsRequests)
 
-var reqch = make(chan dnsreq, 64)
-var proxiedRequests = make(chan *proxiedReq, 64)
-var respChan = make(chan []byte, 64)
-
-func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn) {
+func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn, ipVer int) {
 	q := &dns.Msg{}
 	if err := q.Unpack(packet); err != nil {
 		log.Errorf("ERROR", err)
@@ -101,14 +101,15 @@ func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn) {
 		}
 	} else {
 		// log.Debug("proxying ", dns.Type(query.Qtype), query.Name, q.Id, " for ", p)
-		proxyDNS(q, p, s)
+		proxyDNS(q, p, s, ipVer)
 	}
 }
 
 type dnsreq struct {
-	q []byte
-	s *net.UDPConn
-	p *net.UDPAddr
+	q    []byte
+	s    *net.UDPConn
+	p    *net.UDPAddr
+	ifId int
 }
 
 func RunDNSserver(dnsBind []net.IP, ready chan bool) {
@@ -124,7 +125,7 @@ func RunDNSserver(dnsBind []net.IP, ready chan bool) {
 	ready <- true
 
 	for req := range reqch {
-		processDNSquery(req.q, req.p, req.s)
+		processDNSquery(req.q, req.p, req.s, req.ifId)
 	}
 }
 
@@ -136,8 +137,10 @@ func runListener(ip net.IP, port int, reqch chan dnsreq) {
 		Zone: "",
 	}
 
+	id := 6
 	network := "udp6"
 	if len(ip.To4()) == net.IPv4len {
+		id = 4
 		network = "udp4"
 	}
 
@@ -152,36 +155,39 @@ func runListener(ip net.IP, port int, reqch chan dnsreq) {
 		if err != nil {
 			if err == io.EOF || err == os.ErrClosed || strings.HasSuffix(err.Error(), "use of closed network connection") {
 				log.Warnf("DNS listener closing.")
-				server.Close()
+				_ = server.Close()
 				break
 			} else {
-				server.Close()
+				_ = server.Close()
 				panic(err)
 			}
 		}
 
 		reqch <- dnsreq{
-			q: b[:nb],
-			s: server,
-			p: peer,
+			q:    b[:nb],
+			s:    server,
+			p:    peer,
+			ifId: id,
 		}
 	}
 }
 
 /*******************************************************************/
 type proxiedReq struct {
-	req  *dns.Msg
-	peer *net.UDPAddr
-	s    *net.UDPConn
-	exp  time.Time
+	req   *dns.Msg
+	peer  *net.UDPAddr
+	s     *net.UDPConn
+	exp   time.Time
+	ipVer int
 }
 
-func proxyDNS(req *dns.Msg, peer *net.UDPAddr, serv *net.UDPConn) {
+func proxyDNS(req *dns.Msg, peer *net.UDPAddr, serv *net.UDPConn, ipVer int) {
 	proxiedRequests <- &proxiedReq{
-		req:  req,
-		peer: peer,
-		s:    serv,
-		exp:  time.Now().Add(30 * time.Second),
+		req:   req,
+		peer:  peer,
+		s:     serv,
+		exp:   time.Now().Add(30 * time.Second),
+		ipVer: ipVer,
 	}
 }
 
@@ -224,14 +230,14 @@ func runDNSproxy(dnsServers []string) {
 	}
 
 	for _, proxy := range dnsUpstreams {
-		go func() {
+		go func(p *net.UDPConn) {
 			resp := make([]byte, 1024) //make a buffer which is reused
 			for {
-				n, err := proxy.Read(resp)
+				n, err := p.Read(resp)
 				if err != nil {
 					// something is wrong with the DNS connection panic and let DNS recovery kick in
 					if err == io.EOF || err == os.ErrClosed || strings.HasSuffix(err.Error(), "use of closed network connection") {
-						log.Errorf("error receiving from ip: %v. error %v", proxy.RemoteAddr(), err)
+						log.Errorf("error receiving from ip: %v. error %v", p.RemoteAddr(), err)
 						return
 					} else {
 						log.Warnf("odd error: %v", err)
@@ -240,7 +246,7 @@ func runDNSproxy(dnsServers []string) {
 					respChan <- resp[:n]
 				}
 			}
-		}()
+		}(proxy)
 	}
 
 	reqs := make(map[uint32]*proxiedReq)
@@ -255,7 +261,7 @@ func runDNSproxy(dnsServers []string) {
 				if _, err := proxy.Write(b); err != nil {
 					//TODO: if this happens -does this mean the next dns server is not available?
 
-					proxy.Close() //first thing - close the proxy connection
+					_ = proxy.Close() //first thing - close the proxy connection
 
 					// when this hits - it never seems to recover. throw a panic which will get recovered
 					// via the defer specified above and try to recreate the connections. this is a heavy
@@ -266,7 +272,7 @@ func runDNSproxy(dnsServers []string) {
 						proxy.RemoteAddr(),
 						err)
 				} else {
-					log.Tracef("Proxied request sent to %v from %v", proxy.RemoteAddr(), proxy.LocalAddr())
+					log.Tracef("Proxied request sent to %v from ipv%d listener", proxy.RemoteAddr(), pr.ipVer)
 				}
 			}
 
@@ -277,11 +283,15 @@ func runDNSproxy(dnsServers []string) {
 				req, found := reqs[id]
 				if found {
 					delete(reqs, id)
-					log.Tracef("proxy resolved %v from %v", reply.Question[0].Name, req.s.RemoteAddr())
-					req.s.WriteMsgUDP(rep, nil, req.peer)
+					log.Tracef("proxy resolved request for %v id:%d", reply.Question[0].Name, reply.Id)
+					n, oobn, err := req.s.WriteMsgUDP(rep, nil, req.peer)
+					if err != nil {
+						log.Errorf("an error has occurred while trying to write a udp message. n:%d, oobn:%d, err:%v", n, oobn, err)
+					}
 				} else {
-					log.Tracef("matching request was not found for %s %s",
-						dns.Type(reply.Question[0].Qtype), reply.Question[0].Name)
+					// keep this log but leave commented out. When two listeners are enabled (ipv4/v6) this msg will
+					// just mean some other request was processed successfully and removed the entry from the map
+					//log.Tracef("matching request was not found for id:%d. %s %s", reply.Id, dns.Type(reply.Question[0].Qtype), reply.Question[0].Name)
 				}
 			}
 		case <-time.After(time.Minute):

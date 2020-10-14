@@ -73,6 +73,10 @@ namespace ZitiDesktopEdge.ServiceClient
         public bool OnOff { get; set; }
         public string Fingerprint { get; set; }
     }
+    public class SetLogLevelPayload
+    {
+        public string Level { get; set; }
+    }
 
     public class IdentityToggleFunction : ServiceFunction
     {
@@ -86,6 +90,19 @@ namespace ZitiDesktopEdge.ServiceClient
             };
         }
         public IdentityTogglePayload Payload { get; set; }
+    }
+
+    public class SetLogLevelFunction : ServiceFunction
+    {
+        public SetLogLevelFunction(string level)
+        {
+            this.Function = "SetLogLevel";
+            this.Payload = new SetLogLevelPayload()
+            {
+                Level = level
+            };
+        }
+        public SetLogLevelPayload Payload { get; set; }
     }
 
     public class FingerprintPayload
@@ -148,6 +165,18 @@ namespace ZitiDesktopEdge.ServiceClient
         public string DNS { get; set; }
     }
 
+    class ServiceVersion
+    {
+        public string Version { get; set; }
+        public string Revision { get; set; }
+        public string BuildDate { get; set; }
+
+        public override string ToString()
+        {
+            return $"Version: {Version}, Revision: {Revision}, BuildDate: {BuildDate}";
+        }
+    }
+
     class ZitiTunnelStatus : SvcResponse
     {
         public TunnelStatus Status { get; set; }
@@ -163,21 +192,44 @@ namespace ZitiDesktopEdge.ServiceClient
 
         public IpInfo IpInfo { get; set; }
 
+        public string LogLevel { get; set; }
+
+        public ServiceVersion ServiceVersion { get; set; }
+
         public void Dump(System.IO.TextWriter writer)
         {
-            writer.WriteLine($"Tunnel Active: {Active}");
-            foreach (Identity id in Identities)
-            {
-                writer.WriteLine($"  FingerPrint: {id.FingerPrint}");
-                writer.WriteLine($"    Name: {id.Name}");
-                writer.WriteLine($"    Active: {id.Active}");
-                writer.WriteLine($"    Status: {id.Status}");
-                writer.WriteLine($"    Services:");
-                foreach (Service s in id.Services)
-                {
-                    writer.WriteLine($"      Name: {s.Name} HostName: {s.InterceptHost} Port: {s.InterceptPort}");
+            try {
+                writer.WriteLine($"Tunnel Active: {Active}");
+                writer.WriteLine($"     LogLevel         : {LogLevel}");
+                writer.WriteLine($"     EvaluatedLogLevel: {EvaluateLogLevel()}");
+                foreach (Identity id in Identities) {
+                    writer.WriteLine($"  FingerPrint: {id.FingerPrint}");
+                    writer.WriteLine($"    Name    : {id.Name}");
+                    writer.WriteLine($"    Active  : {id.Active}");
+                    writer.WriteLine($"    Status  : {id.Status}");
+                    writer.WriteLine($"    Services:");
+                    foreach (Service s in id.Services) {
+                        writer.WriteLine($"      Name: {s.Name} HostName: {s.InterceptHost} Port: {s.InterceptPort}");
+                    }
+                    writer.WriteLine("=============================================");
                 }
-                writer.WriteLine("=============================================");
+            } catch (Exception e) {
+                if (writer!=null) writer.WriteLine(e.ToString());
+            }   
+        
+        }
+
+        public LogLevelEnum EvaluateLogLevel()
+        {
+            try
+            {
+                LogLevelEnum l = (LogLevelEnum) Enum.Parse(typeof(LogLevelEnum), LogLevel.ToUpper());
+                return l;
+            }
+            catch
+            {
+                System.Diagnostics.Debug.WriteLine("Could not parse response LogLevel from sevice - guessing INFO? " + LogLevel);
+                return LogLevelEnum.INFO;
             }
         }
     }

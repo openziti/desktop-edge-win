@@ -178,9 +178,20 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, t
 				ZitiContext: ctx,
 			}
 		} else {
-			log.Warnf("could not find a service with id: %s, name: %s", service.id, service.name)
+			log.Warnf("could not remove service? service not found with id: %s, name: %s in context %d", service.id, service.name, &ctx)
 		}
 	} else if status == C.ZITI_OK {
+		//first thing's first - determine if the service is already in this runtime
+		//if it is that means this is 'probably' a config change. to make it easy
+		//just dereg/disconnect the service and then let the rest of this code execute
+		found, ok := ctx.Services.Load(svcId)
+		if ok && found != nil {
+			log.Infof("service with id: %s, name: %s exists. updating service.", service.id, service.name)
+			DNS.DeregisterService(ctx, name)
+			ctx.Services.Delete(svcId)
+		} else {
+			log.Debugf("service not found with id: %s, name: %s in context %d", svcId, name, &ctx)
+		}
 
 		if C.ZITI_CAN_BIND == ( service.perm_flags & C.ZITI_CAN_BIND ) {
 			var v1Config C.ziti_server_cfg_v1
