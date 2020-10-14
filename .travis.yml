@@ -7,8 +7,8 @@ os:
   - windows
 
 branches:
-  except:
-    - test-git-push
+  only:
+    - "master"
 
 install:
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then choco install -y zip ninja; fi
