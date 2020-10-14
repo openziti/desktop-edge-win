@@ -30,6 +30,9 @@ jobs:
       
     - name: setup go
       uses: actions/setup-go@v2
+      
+    - name: Setup Ninja
+      uses: ashutoshvarma/setup-ninja@master
 
     - name: Build
       shell: cmd
