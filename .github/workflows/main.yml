@@ -27,6 +27,9 @@ jobs:
     
     - name: Setup NuGet.exe
       uses: NuGet/setup-nuget@v1.0.2
+      
+    - name: setup go
+      uses: actions/setup-go@v2
 
     - name: Build
       shell: cmd
