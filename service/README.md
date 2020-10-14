@@ -25,4 +25,4 @@ $ ./build.sh
 Running
 =======
 `ziti-wintun.exe` requires `ziti.dll` and `uv.dll`. Build script copies them to the same directory as executable.
-If you copy/move executable don't forget to copy/move those DLLs.    
+If you copy/move executable don't forget to copy/move those DLLs.
