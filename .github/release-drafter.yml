@@ -10,7 +10,7 @@ categories:
       - 'fix'
       - 'bugfix'
       - 'bug'
-  - title: 'í·°Maintenance'
+  - title: 'Maintenance'
     label: 'chore'
   - title: 'Dependencies'
     label: 'dependencies'
