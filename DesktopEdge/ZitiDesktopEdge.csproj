@@ -34,7 +34,7 @@
     <SuiteName>Ziti</SuiteName>
     <AutorunEnabled>true</AutorunEnabled>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.2.1.%2a</ApplicationVersion>
+    <ApplicationVersion>1.2.8.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -147,6 +147,9 @@
     <Compile Include="RegistrationScreen.xaml.cs">
       <DependentUpon>RegistrationScreen.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\ItemRenderers\SubOptionItem.xaml.cs">
+      <DependentUpon>SubOptionItem.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\ItemRenderers\SubMenuItem.xaml.cs">
       <DependentUpon>SubMenuItem.xaml</DependentUpon>
     </Compile>
@@ -200,6 +203,10 @@
     <Page Include="RegistrationScreen.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\ItemRenderers\SubOptionItem.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
     <Page Include="Views\ItemRenderers\SubMenuItem.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -352,6 +359,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Assets\Images\No_Services.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Images\Success.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

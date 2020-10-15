@@ -83,13 +83,20 @@ func (id *Identity) Path() string {
 }
 
 type TunnelStatus struct {
-	Active      bool
-	Duration    int64
-	Identities  []*Identity
-	IpInfo      *TunIpInfo `json:"IpInfo,omitempty"`
-	LogLevel    string
-	TunIpv4     string
-	TunIpv4Mask int
+	Active         bool
+	Duration       int64
+	Identities     []*Identity
+	IpInfo         *TunIpInfo `json:"IpInfo,omitempty"`
+	LogLevel       string
+	ServiceVersion ServiceVersion
+	TunIpv4        string
+	TunIpv4Mask    int
+}
+
+type ServiceVersion struct {
+	Version string
+	Revision string
+	BuildDate string
 }
 
 type ZitiTunnelStatus struct {

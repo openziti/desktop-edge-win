@@ -4,21 +4,11 @@ using System.Windows;
 using System.Windows.Input;
 using System.IO;
 using ZitiDesktopEdge.Models;
-using System.IO.Compression;
-
 using ZitiDesktopEdge.ServiceClient;
 using System.ServiceProcess;
 using System.Linq;
-using System.Runtime.Remoting.Messaging;
 using System.Diagnostics;
-using System.Security.Principal;
-using System.Net;
 using System.Windows.Controls;
-using System.Threading.Tasks;
-using System.Threading;
-using System.Text;
-using System.Runtime.InteropServices;
-using System.Windows.Interop;
 
 namespace ZitiDesktopEdge {
 
@@ -75,7 +65,6 @@ namespace ZitiDesktopEdge {
 			LaunchOrInstall();
 
 			SetNotifyIcon("white");
-			InitializeComponent();
 		}
 
 		private void MainWindow_Activated(object sender, EventArgs e) {
@@ -85,13 +74,11 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void MainWindow_Deactivated(object sender, EventArgs e) {
-			if (UIModel.HideOnLostFocus) {
 #if DEBUG
 				Debug.WriteLine("debug is enabled - windows pinned");
 #else
 				this.Visibility = Visibility.Collapsed;
 #endif
-			}
 		}
 
 		private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
@@ -115,7 +102,6 @@ namespace ZitiDesktopEdge {
 				_isAttached = false;
 				IdentityMenu.Arrow.Visibility = Visibility.Collapsed;
 				Arrow.Visibility = Visibility.Collapsed;
-				UIModel.HideOnLostFocus = false;
 				MainMenu.Detach();
 				this.DragMove();
 			}
@@ -140,6 +126,7 @@ namespace ZitiDesktopEdge {
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
 			Application.Current.Properties.Add("Identities", new List<ZitiIdentity>());
 			MainMenu.OnAttachmentChange += AttachmentChanged;
+			MainMenu.OnLogLevelChanged += LogLevelChanged;
 			IdentityMenu.OnError += IdentityMenu_OnError;
 
 			try {
@@ -152,6 +139,10 @@ namespace ZitiDesktopEdge {
 			}
 			Debug.WriteLine("App Loaded");
 			IdentityMenu.OnForgot += IdentityForgotten;
+		}
+
+		private void LogLevelChanged(string level) {
+			serviceClient.SetLogLevel(level);
 		}
 
 		private void IdentityMenu_OnError(string message) {
@@ -253,12 +244,14 @@ namespace ZitiDesktopEdge {
 		private void ServiceClient_OnTunnelStatusEvent(object sender, TunnelStatusEvent e) {
 			if (e == null) return; //just skip it for now...
 			Debug.WriteLine($"==== TunnelStatusEvent: ");
+			Application.Current.Properties.Add("CurrentTunnelStatus", e.Status);
+			e.Status.Dump(Console.Out);
 			this.Dispatcher.Invoke(() => {
 				if(e.ApiVersion != Client.EXPECTED_API_VERSION) {
 					SetCantDisplay("Version mismatch!", "The version of the Service is not compatible");
 					return;
                 }
-				
+				this.MainMenu.LogLevel = e.Status.LogLevel;
 				InitializeTimer((int)e.Status.Duration);
 				LoadStatusFromService(e.Status);
 				LoadIdentities(false);
@@ -406,6 +399,7 @@ namespace ZitiDesktopEdge {
 				try {
 					Identity createdId = serviceClient.AddIdentity(System.IO.Path.GetFileName(jwtDialog.FileName), false, fileContent);
 					ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
+
 					client.IdentityOnOff(createdId.FingerPrint, true);
 					if (createdId != null) {
 						identities.Add(ZitiIdentity.FromClient(createdId));
@@ -545,6 +539,23 @@ namespace ZitiDesktopEdge {
 
 		private void Label_MouseDoubleClick(object sender, MouseButtonEventArgs e) {
 			Placement();
+		}
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+			serviceClient.SetLogLevel(NextLevel());
+		}
+
+		int cur = 0;
+		LogLevelEnum[] levels = new LogLevelEnum[] { LogLevelEnum.FATAL, LogLevelEnum.ERROR, LogLevelEnum.WARN, LogLevelEnum.INFO, LogLevelEnum.DEBUG, LogLevelEnum.TRACE, LogLevelEnum.VERBOSE };
+		public LogLevelEnum NextLevel()
+		{
+			cur++;
+			if (cur > 6)
+			{
+				cur = 0;
+			}
+			return levels[cur];
 		}
 	}
 }

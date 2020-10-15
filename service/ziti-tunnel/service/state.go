@@ -23,8 +23,9 @@ import (
 	"fmt"
 	"github.com/openziti/desktop-edge-win/service/cziti"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/constants"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/idutil"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/idutil"
 	"golang.org/x/sys/windows/registry"
 	"golang.zx2c4.com/wireguard/tun"
 	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
@@ -77,7 +78,7 @@ func (t *RuntimeState) SaveState() {
 	w := bufio.NewWriter(bufio.NewWriter(cfg))
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
-	_ = enc.Encode(t.state)
+	_ = enc.Encode(t.ToStatus())
 	_ = w.Flush()
 
 	err = cfg.Close()
@@ -100,10 +101,14 @@ func (t *RuntimeState) ToStatus() dto.TunnelStatus {
 	}
 
 	clean := dto.TunnelStatus{
-		Active:     t.state.Active,
-		Duration:   uptime,
-		Identities: make([]*dto.Identity, idCount),
-		IpInfo:     t.state.IpInfo,
+		Active:         t.state.Active,
+		Duration:       uptime,
+		Identities:     make([]*dto.Identity, idCount),
+		IpInfo:         t.state.IpInfo,
+		LogLevel:       t.state.LogLevel,
+		ServiceVersion: Version,
+		TunIpv4:        t.state.TunIpv4,
+		TunIpv4Mask:    t.state.TunIpv4Mask,
 	}
 
 	for i, id := range t.state.Identities {
@@ -143,11 +148,11 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 
 	if strings.TrimSpace(ipv4) == "" {
 		log.Infof("ip not provided using default: %v", ipv4)
-		ipv4 = Ipv4ip
+		ipv4 = constants.Ipv4ip
 	}
-	if ipv4mask < 8 || ipv4mask > 24 {
-		log.Warnf("provided mask is invalid: %d. using default value: %d", ipv4mask, Ipv4mask)
-		ipv4mask = Ipv4mask
+	if ipv4mask < 8 || ipv4mask > constants.Ipv4MaxMask {
+		log.Warnf("provided mask is invalid: %d. using default value: %d", ipv4mask, constants.Ipv4DefaultMask)
+		ipv4mask = constants.Ipv4DefaultMask
 		rts.UpdateIpv4Mask(ipv4mask)
 	}
 	ip, ipnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", ipv4, ipv4mask))
