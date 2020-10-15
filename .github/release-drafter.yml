@@ -14,7 +14,7 @@ categories:
     label: 'chore'
   - title: 'Dependencies'
     label: 'dependencies'
-change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
+change-template: '- $TITLE [#$NUMBER]'
 change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
 version-resolver:
   major:
@@ -27,6 +27,8 @@ version-resolver:
     labels:
       - 'patch'
   default: patch
+exclude-labels:
+  - 'changelog-ignore'
 template: |
   ## Changes
   $CHANGES
