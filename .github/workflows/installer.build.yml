@@ -20,5 +20,5 @@ jobs:
       - name: Setup NuGet.exe
         uses: NuGet/setup-nuget@v1.0.2
       - name: Build UI and Assemble Installer
-        run: powershell -File ${{ env.GITHUB_WORKSPACE }}\Install\build
+        run: powershell -File ${{ env.GITHUB_WORKSPACE }}\Install\build.ps1
         shell: powershell
