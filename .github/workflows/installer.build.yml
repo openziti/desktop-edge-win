@@ -12,7 +12,7 @@ env:
 
 defaults:
   run:
-    working-direcotry: ${env:GITHUB_WORKSPACE}
+    working-directory: ${env:GITHUB_WORKSPACE}
     
 jobs:
   Build:
