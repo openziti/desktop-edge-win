@@ -19,6 +19,6 @@ jobs:
         uses: microsoft/setup-msbuild@v1
       - name: Setup NuGet.exe
         uses: NuGet/setup-nuget@v1.0.2
-      - name: Run a one-line script
-        run: .\Install\build.ps1
+      - name: Build UI and Assemble Installer
+        run: .\Install\build
         shell: powershell
