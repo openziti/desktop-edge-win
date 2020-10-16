@@ -4,7 +4,7 @@ on:
   push:
     branches: 
       - installer
-      - *issue-130*
+      - '*issue-130*'
 
 env:
   BUILD_CONFIG: "Release"
