@@ -55,7 +55,7 @@ func GetConnectionSpecificDomains() []string {
 	err := cmd.Run()
 
 	if err != nil {
-		panic(err)
+		log.Panicf("An unexpected and unrecoverable error has occurred while running the command: %s %v", script, err)
 	}
 
 	var names []string
@@ -85,7 +85,7 @@ func GetUpstreamDNS() []string {
 	err := cmd.Run()
 
 	if err != nil {
-		panic(err)
+		log.Panicf("An unexpected and unrecoverable error has occurred while running the command: %s %v", script, err)
 	}
 
 	var names []string

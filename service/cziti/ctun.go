@@ -50,7 +50,6 @@ extern void ZLOG(int level, char* msg);
 */
 import "C"
 import (
-	"errors"
 	"golang.zx2c4.com/wireguard/tun"
 	"io"
 	"net"
@@ -78,15 +77,16 @@ type tunnel struct {
 	tunCtx C.tunneler_context
 }
 
-var devMap = make(map[string]*tunnel)
+//var devMap = make(map[string]*tunnel)
+var theTun *tunnel
 
-func HookupTun(dev tun.Device, dns []net.IP) (Tunnel, error) {
+func HookupTun(dev tun.Device, dns []net.IP) error {
 	log.Debug("in HookupTun ")
 	defer log.Debug("exiting HookupTun")
 	name, err := dev.Name()
 	if err != nil {
 		log.Error(err)
-		return nil, err
+		return err
 	}
 	drv := makeDriver(name)
 
@@ -98,7 +98,8 @@ func HookupTun(dev tun.Device, dns []net.IP) (Tunnel, error) {
 		writeQ: make(chan []byte, 64),
 		readQ:  make(chan []byte, 64),
 	}
-	devMap[name] = t
+	//devMap[name] = t
+	theTun = t
 
 	opts := (*C.tunneler_sdk_options)(C.calloc(1, C.sizeof_tunneler_sdk_options))
 	opts.netif_driver = drv
@@ -115,7 +116,7 @@ func HookupTun(dev tun.Device, dns []net.IP) (Tunnel, error) {
 	log.Infof("DNS server - waiting for startup")
 	<-ready
 	log.Infof("DNS server - ready")
-	return t, nil
+	return nil
 }
 
 func makeDriver(name string) C.netif_driver {
@@ -130,15 +131,14 @@ func makeDriver(name string) C.netif_driver {
 
 //export netifWrite
 func netifWrite(h C.netif_handle, buf unsafe.Pointer, length C.size_t) C.ssize_t {
-	t, found := devMap[C.GoString(h.id)]
+	/*t, found := devMap[C.GoString(h.id)]
 	if !found {
-		panic("should not be here")
-		return -1
-	}
+		log.Panicf("An unexpected and unrecoverable error has occurred while calling netifWrite")
+	}*/
 
 	b := C.GoBytes(buf, C.int(length))
 
-	t.writeQ <- b
+	theTun.writeQ <- b
 
 	return C.ssize_t(len(b))
 }
@@ -151,29 +151,29 @@ func netifClose(h C.netif_handle) C.int {
 
 //export netifSetup
 func netifSetup(h C.netif_handle, l *C.uv_loop_t, packetCb C.packet_cb, ctx unsafe.Pointer) C.int {
-	t, found := devMap[C.GoString(h.id)]
+	/*t, found := devMap[C.GoString(h.id)]
 	if !found {
 		log.Error("should not be here")
 		return -1
-	}
+	}*/
 
-	t.read = (*C.uv_async_t)(C.calloc(1, C.sizeof_uv_async_t))
-	C.uv_async_init(l, t.read, C.uv_async_cb(C.readAsync))
-	t.read.data = unsafe.Pointer(h)
+	theTun.read = (*C.uv_async_t)(C.calloc(1, C.sizeof_uv_async_t))
+	C.uv_async_init(l, theTun.read, C.uv_async_cb(C.readAsync))
+	theTun.read.data = unsafe.Pointer(h)
 	log.Debugf("in netifSetup netif[%s] handle[%p] before", C.GoString(h.id), h)
 
-	t.idleR = (*C.uv_prepare_t)(C.calloc(1, C.sizeof_uv_prepare_t))
-	C.uv_prepare_init(l, t.idleR)
-	t.idleR.data = unsafe.Pointer(h)
-	C.uv_prepare_start(t.idleR, C.uv_prepare_cb(C.readIdle))
+	theTun.idleR = (*C.uv_prepare_t)(C.calloc(1, C.sizeof_uv_prepare_t))
+	C.uv_prepare_init(l, theTun.idleR)
+	theTun.idleR.data = unsafe.Pointer(h)
+	C.uv_prepare_start(theTun.idleR, C.uv_prepare_cb(C.readIdle))
 	log.Debugf("in netifSetup netif[%s] handle[%p] after", C.GoString(h.id), h)
 
-	t.onPacket = packetCb
-	t.onPacketCtx = ctx
-	t.loop = l
+	theTun.onPacket = packetCb
+	theTun.onPacketCtx = ctx
+	theTun.loop = l
 
-	go t.runWriteLoop()
-	go t.runReadLoop()
+	go theTun.runWriteLoop()
+	go theTun.runReadLoop()
 
 	return C.int(0)
 }
@@ -181,7 +181,7 @@ func netifSetup(h C.netif_handle, l *C.uv_loop_t, packetCb C.packet_cb, ctx unsa
 func (t *tunnel) runReadLoop() {
 	mtu, err := t.dev.MTU()
 	if err != nil {
-		panic(err)
+		log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "getting the MTU", err)
 	}
 	log.Debugf("starting tun read loop mtu=%d", mtu)
 	defer log.Debug("tun read loop is done")
@@ -193,7 +193,7 @@ func (t *tunnel) runReadLoop() {
 				//that's fine...
 				return
 			}
-			panic(err)
+			log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "reading from the tun device", err)
 		}
 
 		if len(t.readQ) == cap(t.readQ) {
@@ -209,21 +209,20 @@ func (t *tunnel) runReadLoop() {
 
 //export readIdle
 func readIdle(idler *C.uv_prepare_t) {
-	dev := (*C.netif_handle_t)(idler.data)
+	/*dev := (*C.netif_handle_t)(idler.data)
 
 	id := C.GoString(dev.id)
 	t, found := devMap[id]
 	if !found {
-		log.Debug("should not be here id = [%s]", id)
-		panic(errors.New("where is my tunnel?"))
-	}
+		log.Panicf("An unexpected and unrecoverable error has occurred while looking for tun in devMap")
+	}*/
 
-	np := len(t.readQ)
+	np := len(theTun.readQ)
 	for i := np; i > 0; i-- {
-		b := <-t.readQ
+		b := <-theTun.readQ
 		buf := C.CBytes(b)
 
-		C.call_on_packet(buf, C.ssize_t(len(b)), t.onPacket, t.onPacketCtx)
+		C.call_on_packet(buf, C.ssize_t(len(b)), theTun.onPacket, theTun.onPacketCtx)
 		C.free(buf)
 	}
 
@@ -246,7 +245,7 @@ func (t *tunnel) runWriteLoop() {
 
 			n, err := t.dev.Write(p, 0)
 			if err != nil {
-				panic(err)
+				log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "writing to tun device", err)
 			}
 
 			if n < len(p) {
@@ -255,11 +254,21 @@ func (t *tunnel) runWriteLoop() {
 		}
 	}
 }
-
+/*
 func (t *tunnel) AddIntercept(svcId string, service string, host string, port int, ctx unsafe.Pointer) {
 	log.Debugf("about to add intercept for: %s, %s, %d", service, host, port)
 	res := C.ziti_tunneler_intercept_v1(t.tunCtx, ctx, C.CString(svcId), C.CString(service), C.CString(host), C.int(port))
 	log.Debugf("intercept added: %v", res)
+}*/
+
+func AddIntercept(svcId string, service string, host string, port int, ctx unsafe.Pointer) {
+	/*for _, t := range devMap {
+		log.Debug("adding intercept for: %s, %s, %d", service, host, port)
+		t.AddIntercept(svcId, service, host, int(port), unsafe.Pointer(ctx))
+	}
+	*/
+	log.Debugf("about to add intercept for: %s[] at %s:%d", service, svcId, host, port)
+	_ = C.ziti_tunneler_intercept_v1(theTun.tunCtx, ctx, C.CString(svcId), C.CString(service), C.CString(host), C.int(port))
 }
 
 type RemoveWG struct {
@@ -280,20 +289,13 @@ func remove_intercepts(async *C.uv_async_t) {
 	//c := (*C.char)(async.data)
 	rwg := (*RemoveWG)(async.data)
 
-	for _, t := range devMap {
+	/*for _, t := range devMap {
 		//C.ZLOG(C.INFO, C.CString("bbb on uv thread - inside remove_intercepts"))
 		C.ziti_tunneler_stop_intercepting(t.tunCtx, C.CString(rwg.SvcId))
-	}
+	}*/
+	C.ziti_tunneler_stop_intercepting(theTun.tunCtx, C.CString(rwg.SvcId))
 	//C.ZLOG(C.INFO, C.CString("ccc on uv thread - inside remove_intercepts"))
 	C.uv_close((*C.uv_handle_t)(unsafe.Pointer(async)), C.uv_close_cb(C.free_async))
 	C.ZLOG(C.INFO, C.CString("on uv thread - completed remove_intercepts"))
 	rwg.Wg.Done()
-}
-
-func AddIntercept(svcId string, service string, host string, port uint16, ctx *CZitiCtx) {
-	for _, t := range devMap {
-		log.Debug("adding intercept for: %s, %s, %d", service, host, port)
-		res := C.ziti_tunneler_intercept_v1(t.tunCtx, unsafe.Pointer(ctx.zctx), C.CString(svcId), C.CString(service), C.CString(host), C.int(port))
-		log.Debugf("intercept added: %v", res)
-	}
 }

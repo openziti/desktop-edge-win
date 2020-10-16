@@ -65,7 +65,7 @@ func (t *RuntimeState) SaveState() {
 
 	cfg, err := os.OpenFile(config.File(), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		panic(err)
+		log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "opening the config file", err)
 	}
 	w := bufio.NewWriter(bufio.NewWriter(cfg))
 	enc := json.NewEncoder(w)
@@ -75,7 +75,7 @@ func (t *RuntimeState) SaveState() {
 
 	err = cfg.Close()
 	if err != nil {
-		panic(err)
+		log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "closing the config file", err)
 	}
 	log.Debug("state saved")
 }
@@ -189,9 +189,9 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 
 	cziti.DnsInit(&rts, ipv4, ipv4mask)
 	cziti.Start()
-	_, err = cziti.HookupTun(tunDevice, dns)
+	err = cziti.HookupTun(tunDevice, dns)
 	if err != nil {
-		panic(err)
+		log.Panicf("An unrecoverable error has occurred! %v", err)
 	}
 	return nil
 }
@@ -318,17 +318,17 @@ func (t *RuntimeState) Close() {
 
 
 func (t *RuntimeState) InterceptDNS() {
-	panic("implement me")
+	log.Panicf("implement me")
 }
 
 func (t *RuntimeState) ReleaseDNS() {
-	panic("implement me")
+	log.Panicf("implement me")
 }
 
 func (t *RuntimeState) InterceptIP() {
-	panic("implement me")
+	log.Panicf("implement me")
 }
 
 func (t *RuntimeState) ReleaseIP() {
-	panic("implement me")
+	log.Panicf("implement me")
 }
