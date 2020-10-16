@@ -259,7 +259,6 @@ func runDNSproxy(dnsServers []string) {
 			b, _ := pr.req.Pack()
 			for _, proxy := range dnsUpstreams {
 				if _, err := proxy.Write(b); err != nil {
-					//TODO: if this happens -does this mean the next dns server is not available?
 
 					_ = proxy.Close() //first thing - close the proxy connection
 

@@ -1,3 +1,5 @@
+// +build windows
+
 /*
  * Copyright NetFoundry, Inc.
  *
@@ -14,8 +16,6 @@
  * limitations under the License.
  *
  */
-
-// +build windows
 package main
 
 import (
