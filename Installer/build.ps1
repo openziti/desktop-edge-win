@@ -1,5 +1,5 @@
 echo "Cleaning previous build folder if it exists"
-rm .\build -r -fo
+rm .\build -r -fo -ErrorAction Ignore
 
 $x=[xml] @"
 $((Invoke-WebRequest https://netfoundry.jfrog.io/artifactory/ziti-maven-snapshot/ziti-tunnel-win/amd64/windows/ziti-tunnel-win/maven-metadata.xml).Content)
@@ -30,10 +30,10 @@ echo "Updating the version for UI and Installer"
 Pop-Location
 
 echo "Building the UI"
-#msbuild ..\DesktopEdge\ZitiDesktopEdge.csproj /property:Configuration=Release
+msbuild ..\DesktopEdge\ZitiDesktopEdge.csproj /property:Configuration=Release
 
 echo "Building the Wintun installer"
-#msbuild ..\ZitiWintunInstaller.sln /p:configuration=Release
+msbuild ..\ZitiWintunInstaller.sln /p:configuration=Release
 
 $CMD = "$ENV:ADVINST_EXE"
 $arg1 = '/build'
