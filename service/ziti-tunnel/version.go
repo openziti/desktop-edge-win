@@ -21,8 +21,8 @@ package main
 
 const (
 	Version   = "1.2.10"
-	Revision  = "9287c581deab"
+	Revision  = "2cc1a23f1ca8"
 	Branch    = "fix-ips-treated-as-dns"
 	BuildUser = "travis"
-	BuildDate = "2020-10-16 17:29:36"
+	BuildDate = "2020-10-16 18:39:17"
 )
