@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: 
+      - installer
+
+env:
+  BUILD_CONFIG: "Release"
+  BUILDNUMBER: ${{github.run_number}}
+
+jobs:
+  Build:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v1
+    
+    - name: Setup NuGet.exe
+      uses: NuGet/setup-nuget@v1.0.2
