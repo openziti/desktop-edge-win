@@ -13,6 +13,8 @@ env:
 jobs:
   Build:
     runs-on: windows-latest
+    env:
+      working-direcotry: ${env:GITHUB_WORKSPACE}
     steps:
       - uses: actions/checkout@v2    
       - name: Setup MSBuild
@@ -20,5 +22,5 @@ jobs:
       - name: Setup NuGet.exe
         uses: NuGet/setup-nuget@v1.0.2
       - name: Build UI and Assemble Installer
-        run: powershell -File ${env:GITHUB_WORKSPACE}\Installer\build.ps1
+        run: powershell -File .\Installer\build.ps1
         
