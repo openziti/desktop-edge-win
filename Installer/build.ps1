@@ -20,13 +20,13 @@ $timeTaken = Measure-Command -Expression {
 $milliseconds = $timeTaken.TotalMilliseconds
 echo "      time to download: $milliseconds"
 echo ""
-echo "unzipping service"
+echo "unzipping ziti-tunnel-service.zip to build\service\"
 
 Expand-Archive -Force -LiteralPath ziti-tunnel-service.zip build\service\
 
 Push-Location ..
 echo "Updating the version for UI and Installer"
-.\update-versions.ps1
+&".\update-versions.ps1"
 Pop-Location
 
 echo "Building the UI"
