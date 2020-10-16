@@ -21,8 +21,8 @@ package main
 
 const (
 	Version   = "1.2.10"
-	Revision  = "685f5cb076f5"
-	Branch    = "master"
+	Revision  = "e1a679368bf7"
+	Branch    = "issue-135-add-ip-intercept"
 	BuildUser = "travis"
-	BuildDate = "2020-10-15 21:03:33"
+	BuildDate = "2020-10-16 04:02:47"
 )
