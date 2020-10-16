@@ -21,4 +21,4 @@ jobs:
         uses: NuGet/setup-nuget@v1.0.2
       - name: Run a one-line script
         run: .\Install\build.ps1
-          shell: powershell
+        shell: powershell
