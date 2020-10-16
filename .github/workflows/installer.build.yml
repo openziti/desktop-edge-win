@@ -23,5 +23,5 @@ jobs:
         uses: NuGet/setup-nuget@v1.0.2
       - name: Build UI and Assemble Installer
         run: powershell -File .\Installer\build.ps1
-        working-direcotry: ${env:GITHUB_WORKSPACE}
+        working-direcotry: ${{env.working-direcotry}
         
