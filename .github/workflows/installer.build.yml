@@ -10,11 +10,13 @@ env:
   BUILD_CONFIG: "Release"
   BUILDNUMBER: ${{github.run_number}}
 
+defaults:
+  run:
+    working-direcotry: ${env:GITHUB_WORKSPACE}
+    
 jobs:
   Build:
     runs-on: windows-latest
-    env:
-      working-direcotry: ${env:GITHUB_WORKSPACE}
     steps:
       - uses: actions/checkout@v2    
       - name: Setup MSBuild
@@ -23,5 +25,4 @@ jobs:
         uses: NuGet/setup-nuget@v1.0.2
       - name: Build UI and Assemble Installer
         run: powershell -File .\Installer\build.ps1
-        working-direcotry: ${{env.working-direcotry}
         
