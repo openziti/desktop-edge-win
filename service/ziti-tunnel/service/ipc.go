@@ -229,7 +229,7 @@ func (p *Pipes) shutdownConnections() {
 }
 
 func initialize(ipv4 string, ipv4mask int) error {
-	err := rts.CreateTun(ipv4, 32)
+	err := rts.CreateTun(ipv4, ipv4mask)
 	if err != nil {
 		return err
 	}

@@ -57,6 +57,9 @@ type intercept struct {
 	port uint16
 	isIp bool
 }
+func (i intercept) String() string {
+	return fmt.Sprintf("%s:%d", i.host, i.port)
+}
 
 type ctxIp struct {
 	ctx     *CZitiCtx
@@ -84,28 +87,27 @@ func normalizeDnsName(dnsName string) string {
 // RegisterService will return the next ip address in the configured range. If the ip address is not
 // assigned to a hostname an error will also be returned indicating why.
 func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint16, ctx *CZitiCtx, svcName string) (net.IP, error) {
-	var ipOrDnsName string
-
 	//check to see if host is an ip address - if so we want to intercept the ip. otherwise treat host as a host
 	//name and register it in dns, obtain an ip and all that...
 	ip := net.ParseIP(dnsNameToReg)
 
-	int := intercept{isIp: false}
+	icept := intercept{isIp: false}
 	if ip == nil {
-		int.host = normalizeDnsName(dnsNameToReg)
+		icept.host = normalizeDnsName(dnsNameToReg)
 	} else {
-		int.host = ip.String()
+		icept.host = ip.String()
+		icept.isIp = true
 	}
 
-	log.Infof("adding DNS for %s. service name %s@%s.", dnsNameToReg, svcName, int)
+	log.Infof("adding DNS for %s. service name %s@%s", dnsNameToReg, svcName, icept.String())
 
 	currentNetwork := C.GoString(ctx.Options.controller)
 
 	// check to see if the hostname is mapped...
-	if foundIp, found := dns.hostnameMap[ipOrDnsName]; found {
+	if foundIp, found := dns.hostnameMap[icept.host]; found {
 		ip = foundIp.ip
 		// now check to see if the host *and* port are mapped...
-		if foundContext, found := dns.serviceMap[int]; found {
+		if foundContext, found := dns.serviceMap[icept]; found {
 			if foundIp.network != currentNetwork {
 				// means the host:port are mapped to some other *identity* already. that's an invalid state
 				return ip, fmt.Errorf("service mapping conflict for service name %s. %s:%d in %s is already mapped by another identity in %s", svcName, dnsNameToReg, port, currentNetwork, foundIp.network)
@@ -120,7 +122,7 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 			log.Debugf("DNS mapping used by another service. total services using %s = %d", dnsNameToReg, foundContext.count)
 		} else {
 			// good - means the service can be mapped
-			dns.serviceMap[int] = ctxService{
+			dns.serviceMap[icept] = ctxService{
 				ctx:       ctx,
 				name:      svcName,
 				serviceId: svcId,
@@ -129,15 +131,15 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 		}
 	} else {
 		// if not used at all - map it
-		if int.isIp {
+		if icept.isIp {
 			err := dns.tun.AddRoute(
 				net.IPNet{IP: ip, Mask: net.IPMask{255, 255, 255, 255}},
 				net.IP{0,0,0,0},
 				1)
 			if err != nil {
-				log.Errorf("Unexpected error adding a route to %s: %v", ipOrDnsName, err)
+				log.Errorf("Unexpected error adding a route to %s: %v", icept.host, err)
 			} else {
-				log.Infof("adding route for ip:%s", ipOrDnsName)
+				log.Infof("adding route for ip:%s", icept.host)
 			}
 		} else {
 			nextAddr := dns.cidr | atomic.AddUint32(&dns.ipCount, 1)
@@ -145,14 +147,14 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 			binary.BigEndian.PutUint32(ip, nextAddr)
 
 			log.Infof("mapping hostname %s to ip %s", dnsNameToReg, ip.String())
-			dns.hostnameMap[ipOrDnsName] = ctxIp {
+			dns.hostnameMap[icept.host] = ctxIp {
 				ip: ip,
 				ctx: ctx,
 				network: currentNetwork,
 			}
 		}
 
-		dns.serviceMap[int] = ctxService{
+		dns.serviceMap[icept] = ctxService{
 			ctx:       ctx,
 			name:      svcName,
 			serviceId: svcId,
