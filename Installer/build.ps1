@@ -24,9 +24,14 @@ echo "unzipping ziti-tunnel-service.zip to build\service\"
 
 Expand-Archive -Force -LiteralPath ziti-tunnel-service.zip build\service\
 
+echo "---------------------"
+pwd
+pwd
+echo "---------------------"
+
 Push-Location ..
 echo "Updating the version for UI and Installer"
-&".\update-versions.ps1"
+.\update-versions.ps1
 Pop-Location
 
 echo "Building the UI"
