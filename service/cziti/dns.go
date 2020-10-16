@@ -179,6 +179,8 @@ func (dns *dnsImpl) UnregisterService(ctx *CZitiCtx, name string) {
 					if err != nil {
 						log.Warnf("Unexpected error removing route for %s", icept.host)
 					}
+				} else {
+					delete(dns.hostnameMap, icept.host)
 				}
 				delete(dns.serviceMap, key)
 			} else {
