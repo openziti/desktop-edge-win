@@ -1,3 +1,8 @@
+echo "---------------------"
+pwd
+pwd
+echo "---------------------"
+
 echo "Cleaning previous build folder if it exists"
 rm .\build -r -fo -ErrorAction Ignore
 
@@ -24,10 +29,6 @@ echo "unzipping ziti-tunnel-service.zip to build\service\"
 
 Expand-Archive -Force -LiteralPath ziti-tunnel-service.zip build\service\
 
-echo "---------------------"
-pwd
-pwd
-echo "---------------------"
 
 Push-Location ..
 echo "Updating the version for UI and Installer"
