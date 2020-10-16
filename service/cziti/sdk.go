@@ -178,7 +178,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, t
 				ZitiContext: ctx,
 			}
 		} else {
-			log.Warnf("could not remove service? service not found with id: %s, name: %s in context %d", service.id, service.name, &ctx)
+			log.Warnf("could not remove service? service not found with id: %s, name: %s in context %d", svcId, name, &ctx)
 		}
 	} else if status == C.ZITI_OK {
 		//first thing's first - determine if the service is already in this runtime

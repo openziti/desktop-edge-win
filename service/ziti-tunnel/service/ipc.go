@@ -229,7 +229,7 @@ func (p *Pipes) shutdownConnections() {
 }
 
 func initialize(ipv4 string, ipv4mask int) error {
-	err := rts.CreateTun(ipv4, ipv4mask)
+	err := rts.CreateTun(ipv4, 32)
 	if err != nil {
 		return err
 	}
@@ -314,7 +314,7 @@ func serveIpc(conn net.Conn) {
 	events.broadcast <- dto.TunnelStatusEvent{
 		StatusEvent: dto.StatusEvent{Op: "status"},
 		Status:      rts.ToStatus(),
-		ApiVersion: API_VERSION,
+		ApiVersion:  API_VERSION,
 	}
 
 	done := make(chan struct{}, 8)
@@ -523,7 +523,7 @@ func serveEvents(conn net.Conn) {
 	err := o.Encode(	dto.TunnelStatusEvent{
 		StatusEvent: dto.StatusEvent{Op: "status"},
 		Status:      rts.ToStatus(),
-		ApiVersion: API_VERSION,
+		ApiVersion:  API_VERSION,
 	})
 
 	if err != nil {
@@ -795,7 +795,7 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 		return
 	}
 
-	rts.RemoveByIdentity(*id)
+	rts.RemoveByFingerprint(fingerprint)
 
 	//remove the file from the filesystem - first verify it's the proper file
 	log.Debug("removing identity file for fingerprint %s at %s", id.FingerPrint, id.Path())

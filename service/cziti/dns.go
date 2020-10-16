@@ -21,8 +21,7 @@ import "C"
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/constants"
-
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/api"
 	"net"
 	"strings"
 	"sync"
@@ -44,12 +43,19 @@ type dnsImpl struct {
 	cidr    uint32
 	ipCount uint32
 
-	serviceMap map[string]ctxService
+	serviceMap map[intercept]ctxService
 
 	// dnsName -> ip address
 	hostnameMap map[string]ctxIp
 	// ipv4 -> dnsName
 	//ipMap map[uint32]string
+	tun api.DesktopEdgeIface
+}
+
+type intercept struct {
+	host string
+	port uint16
+	isIp bool
 }
 
 type ctxIp struct {
@@ -78,20 +84,28 @@ func normalizeDnsName(dnsName string) string {
 // RegisterService will return the next ip address in the configured range. If the ip address is not
 // assigned to a hostname an error will also be returned indicating why.
 func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint16, ctx *CZitiCtx, svcName string) (net.IP, error) {
-	log.Infof("adding DNS entry for service name %s@%s:%d", svcName, dnsNameToReg, port)
-	DnsInit(constants.Ipv4ip, constants.Ipv4DefaultMask)
-	dnsName := normalizeDnsName(dnsNameToReg)
-	key := fmt.Sprint(dnsName, ':', port)
+	var ipOrDnsName string
 
-	var ip net.IP
+	//check to see if host is an ip address - if so we want to intercept the ip. otherwise treat host as a host
+	//name and register it in dns, obtain an ip and all that...
+	ip := net.ParseIP(dnsNameToReg)
+
+	int := intercept{isIp: false}
+	if ip == nil {
+		int.host = normalizeDnsName(dnsNameToReg)
+	} else {
+		int.host = ip.String()
+	}
+
+	log.Infof("adding DNS for %s. service name %s@%s.", dnsNameToReg, svcName, int)
 
 	currentNetwork := C.GoString(ctx.Options.controller)
 
 	// check to see if the hostname is mapped...
-	if foundIp, found := dns.hostnameMap[dnsName]; found {
+	if foundIp, found := dns.hostnameMap[ipOrDnsName]; found {
 		ip = foundIp.ip
 		// now check to see if the host *and* port are mapped...
-		if foundContext, found := dns.serviceMap[key]; found {
+		if foundContext, found := dns.serviceMap[int]; found {
 			if foundIp.network != currentNetwork {
 				// means the host:port are mapped to some other *identity* already. that's an invalid state
 				return ip, fmt.Errorf("service mapping conflict for service name %s. %s:%d in %s is already mapped by another identity in %s", svcName, dnsNameToReg, port, currentNetwork, foundIp.network)
@@ -103,10 +117,10 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 			// while the host *AND* port are not used - the hostname is.
 			// need to increment the refcounter of how many service use this hostname
 			foundContext.count ++
-			log.Debugf("DNS mapping for %s used by another service. total services using %s = %d", dnsNameToReg, dnsNameToReg, foundContext.count)
+			log.Debugf("DNS mapping used by another service. total services using %s = %d", dnsNameToReg, foundContext.count)
 		} else {
 			// good - means the service can be mapped
-			dns.serviceMap[key] = ctxService{
+			dns.serviceMap[int] = ctxService{
 				ctx:       ctx,
 				name:      svcName,
 				serviceId: svcId,
@@ -115,17 +129,30 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 		}
 	} else {
 		// if not used at all - map it
-		nextAddr := dns.cidr | atomic.AddUint32(&dns.ipCount, 1)
-		ip = make(net.IP, 4)
-		binary.BigEndian.PutUint32(ip, nextAddr)
+		if int.isIp {
+			err := dns.tun.AddRoute(
+				net.IPNet{IP: ip, Mask: net.IPMask{255, 255, 255, 255}},
+				net.IP{0,0,0,0},
+				1)
+			if err != nil {
+				log.Errorf("Unexpected error adding a route to %s: %v", ipOrDnsName, err)
+			} else {
+				log.Infof("adding route for ip:%s", ipOrDnsName)
+			}
+		} else {
+			nextAddr := dns.cidr | atomic.AddUint32(&dns.ipCount, 1)
+			ip = make(net.IP, 4)
+			binary.BigEndian.PutUint32(ip, nextAddr)
 
-		log.Infof("mapping hostname %s to ip %s", dnsNameToReg, ip.String())
-		dns.hostnameMap[dnsName] = ctxIp {
-			ip: ip,
-			ctx: ctx,
-			network: currentNetwork,
+			log.Infof("mapping hostname %s to ip %s", dnsNameToReg, ip.String())
+			dns.hostnameMap[ipOrDnsName] = ctxIp {
+				ip: ip,
+				ctx: ctx,
+				network: currentNetwork,
+			}
 		}
-		dns.serviceMap[key] = ctxService{
+
+		dns.serviceMap[int] = ctxService{
 			ctx:       ctx,
 			name:      svcName,
 			serviceId: svcId,
@@ -143,13 +170,19 @@ func (dns *dnsImpl) Resolve(toResolve string) net.IP {
 
 func (dns *dnsImpl) DeregisterService(ctx *CZitiCtx, name string) {
 	log.Debugf("DEREG SERVICE: before for loop")
-	for k, sc := range dns.serviceMap {
+	for int, sc := range dns.serviceMap {
 		log.Debugf("DEREG SERVICE: iterating sc.ctx=ctx %p=%p, sc.name=name %s=%s", sc.ctx, ctx, sc.name, name)
 		if sc.ctx == ctx && sc.name == name {
 			sc.count --
 			if sc.count < 1 {
-				log.Infof("removing service named %s from DNS mapping known as %s", name, k)
-				delete(dns.serviceMap, k)
+				log.Infof("removing service named %s from DNS mapping known as %s", name, int)
+				if int.isIp {
+					err := dns.tun.RemoveRoute(net.IPNet{IP: net.ParseIP(int.host)}, net.IP{0, 0, 0, 0})
+					if err != nil {
+						log.Warnf("Unexpected error removing route for %s", int.host)
+					}
+				}
+				delete(dns.serviceMap, int)
 			} else {
 				// another service is using the mapping - can't remove it yet so decrement
 				log.Debugf("cannot remove dns mapping for %s yet - %d other services still use this hostname", name, sc.count)
@@ -179,14 +212,15 @@ func (this *dnsImpl) GetService(ip net.IP, port uint16) (*CZitiCtx, string, erro
 	*/
 }
 
-func DnsInit(ip string, maskBits int) {
+func DnsInit(tun api.DesktopEdgeIface, ip string, maskBits int) {
 	initOnce.Do(func() {
-		DNS.serviceMap = make(map[string]ctxService)
+		DNS.serviceMap = make(map[intercept]ctxService)
 		//DNS.ipMap = make(map[uint32]string)
 		DNS.hostnameMap = make(map[string]ctxIp)
 		i := net.ParseIP(ip).To4()
 		mask := net.CIDRMask(maskBits, 32)
 		DNS.cidr = binary.BigEndian.Uint32(i) & binary.BigEndian.Uint32(mask)
 		DNS.ipCount = 2
+		DNS.tun = tun
 	})
 }
