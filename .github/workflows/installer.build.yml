@@ -18,7 +18,14 @@ jobs:
   Build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v2    
+      - name: Checkout the code
+        uses: actions/checkout@v2
+      - name: Set env
+        run: echo ::set-env name=workspace::$GITHUB_WORKSPACE
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(env) }}
+        run: echo "$GITHUB_CONTEXT"
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v1
       - name: Setup NuGet.exe
