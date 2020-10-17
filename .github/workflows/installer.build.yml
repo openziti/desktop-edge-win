@@ -50,4 +50,6 @@ jobs:
         run: cmd -k set
 
       - name: try an echo
-        run: cmd -k echo "hi %CURDIR% - %CURDIR2%"
+        run: |
+          echo "a hi %CURDIR% - b %CURDIR2%"
+        shell: powershell
