@@ -9,7 +9,7 @@ on:
 env:
   BUILD_CONFIG: "Release"
   BUILDNUMBER: ${{github.run_number}}
-  CURDIR: ${{env.workspace}}
+  CURDIR: ${{github.workspace}}
 
     
 jobs:
