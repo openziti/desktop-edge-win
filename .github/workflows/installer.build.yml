@@ -44,7 +44,10 @@ jobs:
           MATRIX_CONTEXT: ${{ toJson(matrix) }}
         run: echo "$MATRIX_CONTEXT"
 
-      - name: Set env
+      - name: echo env
         env:
           $CURDIR2: ${{ github.workspace }}
-        run: set
+        run: cmd -k set
+
+      - name: try an echo
+        run: cmd -k echo "hi %CURDIR% - %CURDIR2%"
