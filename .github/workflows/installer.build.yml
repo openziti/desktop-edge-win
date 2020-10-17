@@ -45,4 +45,6 @@ jobs:
         run: echo "$MATRIX_CONTEXT"
 
       - name: Set env
-        run: echo "CURDIR ; %CURDIR%"
+        env:
+          CURDIR: ${{ $CURDIR }}
+        run: echo "CURDIR ---- %CURDIR%" && echo "this is annoying ---- $CURDIR"
