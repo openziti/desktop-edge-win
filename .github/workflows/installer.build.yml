@@ -15,6 +15,9 @@ env:
 jobs:
   one:
     runs-on: windows-latest
+    env:
+      FIRST_NAME: Mona
+      CURDIR: ${{ github.workspace }}
     steps:
       - name: Dump GitHub context
         env:
@@ -42,8 +45,4 @@ jobs:
         run: echo "$MATRIX_CONTEXT"
 
       - name: Set env
-        run: echo ::set-env name=workspace::$CURDIR
-      - name: try using an environment variable 1
-        run: echo "This is an environment variable workspace=%workspace%"
-      - name: try using an environment variable 2
-        run: echo "This is an environment variable workspace=workspace"
+        run: echo "CURDIR: $CURDIR"
