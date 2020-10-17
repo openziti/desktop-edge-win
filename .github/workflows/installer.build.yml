@@ -46,5 +46,5 @@ jobs:
 
       - name: Set env
         env:
-          CURDIR: ${{ $CURDIR }}
-        run: echo "CURDIR ---- %CURDIR%" && echo "this is annoying ---- $CURDIR"
+          $CURDIR2: ${{ github.workspace }}
+        run: echo "CURDIR ---- %CURDIR%" && echo "this is annoying ---- $CURDIR2"
