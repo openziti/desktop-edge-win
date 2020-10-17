@@ -51,5 +51,5 @@ jobs:
 
       - name: try an echo
         run: |
-          echo "a hi %CURDIR% - b %CURDIR2%"
+          echo "a hi $CURDIR - b $CURDIR2 - c {{ $CURDIR }} - d {{ $CURDIR2 }} - e {{ CURDIR }} - f {{ CURDIR2 }} "
         shell: powershell
