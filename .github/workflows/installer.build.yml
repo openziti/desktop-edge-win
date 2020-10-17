@@ -9,6 +9,7 @@ on:
 env:
   BUILD_CONFIG: "Release"
   BUILDNUMBER: ${{github.run_number}}
+  CURDIR: ${{env.workspace}}
 
     
 jobs:
@@ -39,3 +40,7 @@ jobs:
         env:
           MATRIX_CONTEXT: ${{ toJson(matrix) }}
         run: echo "$MATRIX_CONTEXT"
+      - name: try using an environment variable 1
+        run: echo "This is an environment variable workspace=%workspace%"
+      - name: try using an environment variable 2
+        run: echo "This is an environment variable workspace=%workspace%"
