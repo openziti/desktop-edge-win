@@ -46,7 +46,7 @@ jobs:
 
       - name: echo env
         env:
-          $CURDIR2: ${{ github.workspace }}
+          CURDIR2: ${{ github.workspace }}
         run: cmd -k set
 
       - name: try an echo
