@@ -10,9 +10,6 @@ env:
   BUILD_CONFIG: "Release"
   BUILDNUMBER: ${{github.run_number}}
 
-defaults:
-  run:
-    working-directory: ${env:GITHUB_WORKSPACE}
     
 jobs:
   Build:
