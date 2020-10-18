@@ -28,7 +28,7 @@ jobs:
           BUILD_NUMBER: "Please Work"
 
       - run: |
-          echo "${env:$CURDIR} - ${env:SOME_KEY}"
+          echo "${env:CODE} - ${env:SOME_KEY}"
           echo "${env:SOME_KEY}" > some_file.txt
           type some_file.txt
         env:
