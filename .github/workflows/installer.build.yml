@@ -15,7 +15,6 @@ jobs:
   one:
     runs-on: windows-latest
     env:
-      FIRST_NAME: Mona
       CURDIR: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@master
