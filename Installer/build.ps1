@@ -8,7 +8,7 @@ echo "-----------------------------------------"
 
 $invocation = (Get-Variable MyInvocation).Value
 $scriptPath = Split-Path $invocation.MyCommand.Path 
-$scriptPath
+${scriptPath}
 
 echo "-----------------------------------------"
 echo "-----------------------------------------"
@@ -39,7 +39,7 @@ echo "unzipping ziti-tunnel-service.zip to build\service\"
 Expand-Archive -Force -LiteralPath ziti-tunnel-service.zip build\service\
 
 
-Push-Location ..
+Push-Location ${scriptPath}\..
 echo "Updating the version for UI and Installer"
 .\update-versions.ps1
 Pop-Location
