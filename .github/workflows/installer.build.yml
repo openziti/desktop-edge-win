@@ -19,8 +19,8 @@ jobs:
     steps:
       - run: echo "%CURDIR% - $CURDIR %SOME_KEY% - $SOME_KEY"
         env:
-          CURDIR: ${{github.workspace}}
-          SOME_KEY: ${{secrets.SOME_KEY}}
+          CURDIR: ${{ github.workspace }}
+          SOME_KEY: ${{ secrets.SOME_KEY }}
 #      - uses: actions/checkout@master
 #      - uses: NuGet/setup-nuget@v1.0.2
 #      - uses: microsoft/setup-msbuild@v1
