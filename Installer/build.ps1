@@ -26,19 +26,23 @@ echo "      time to download: $milliseconds"
 echo ""
 echo "unzipping ziti-tunnel-service.zip to build\service\"
 
-Expand-Archive -Force -LiteralPath ziti-tunnel-service.zip build\service\
+Expand-Archive -Verbose -Force -LiteralPath ziti-tunnel-service.zip build\service\
 
 Push-Location ${scriptPath}\..
 echo "Updating the version for UI and Installer"
 .\update-versions.ps1
 
 echo "Building the UI"
-msbuild DesktopEdge\ZitiDesktopEdge.csproj /property:Configuration=Release
+#msbuild DesktopEdge\ZitiDesktopEdge.csproj /property:Configuration=Release
+msbuild ZitiDesktopEdge.sln /property:Configuration=Release
+
 
 echo "Building the Wintun installer"
 msbuild ZitiWintunInstaller.sln /p:configuration=Release
 
 Pop-Location
+
+tree
 
 $CMD = "$ENV:ADVINST_EXE"
 $CMD = "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com"
