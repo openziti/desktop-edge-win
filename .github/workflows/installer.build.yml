@@ -18,7 +18,7 @@ jobs:
     env:
       CURDIR: ${{ github.workspace }}
       CODE: ${{ github.workspace }}/go/src/github.com/${{ github.repository }}
-
+      SOME_KEY: ${{ secrets.SOME_KEY }}
     steps:
       - name: Print new build number
         run: |
@@ -33,7 +33,6 @@ jobs:
           type some_file.txt
         env:
           CURDIR: ${{ github.workspace }}
-          SOME_KEY: ${{ secrets.SOME_KEY }}
 #      - uses: actions/checkout@master
 #      - uses: NuGet/setup-nuget@v1.0.2
 #      - uses: microsoft/setup-msbuild@v1
