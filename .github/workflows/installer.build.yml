@@ -11,7 +11,6 @@ env:
   BUILDNUMBER: ${{github.run_number}}
   CURDIR: ${{github.workspace}}
 
-    
 jobs:
   one:
     runs-on: windows-latest
@@ -19,49 +18,9 @@ jobs:
       FIRST_NAME: Mona
       CURDIR: ${{ github.workspace }}
     steps:
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
-      - name: Dump job context
-        env:
-          JOB_CONTEXT: ${{ toJson(job) }}
-        run: echo "$JOB_CONTEXT"
-      - name: Dump steps context
-        env:
-          STEPS_CONTEXT: ${{ toJson(steps) }}
-        run: echo "$STEPS_CONTEXT"
-      - name: Dump runner context
-        env:
-          RUNNER_CONTEXT: ${{ toJson(runner) }}
-        run: echo "$RUNNER_CONTEXT"
-      - name: Dump strategy context
-        env:
-          STRATEGY_CONTEXT: ${{ toJson(strategy) }}
-        run: echo "$STRATEGY_CONTEXT"
-      - name: Dump matrix context
-        env:
-          MATRIX_CONTEXT: ${{ toJson(matrix) }}
-        run: echo "$MATRIX_CONTEXT"
-
-      - name: echo env
-        env:
-          CURDIR2: ${{ github.workspace }}
-        run: cmd -k set
-
-      - name: try an echo
-        run: |
-          echo "a hi $CURDIR - b $CURDIR2 - c {{ $CURDIR }} - d {{ $CURDIR2 }} - e {{ CURDIR }} - f {{ CURDIR2 }} "
-        shell: powershell
-
-      - name: Checkout the code
-        uses: actions/checkout@v2
-
-      - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v1
-
-      - name: Setup NuGet.exe
-        uses: NuGet/setup-nuget@v1.0.2
-      
+      - uses: actions/checkout@master
+      - uses: NuGet/setup-nuget@v1.0.2
+      - name: Restore nuget packages
+        run: nuget restore ZitiDesktopEdge.sln
       - name: Build UI and Assemble Installer
         run: powershell -File .\Installer\build.ps1
