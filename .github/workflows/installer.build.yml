@@ -26,8 +26,8 @@ jobs:
           echo "Build number is ${env:BUILD_NUMBER}"
         env:
           BUILD_NUMBER: "Please Work"
-          
-      - run: echo "%CURDIR% - $CURDIR %SOME_KEY% - $SOME_KEY"
+
+      - run: echo "${env:$CURDIR} - ${env:SOME_KEY}"
         env:
           CURDIR: ${{ github.workspace }}
           SOME_KEY: ${{ secrets.SOME_KEY }}
