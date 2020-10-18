@@ -27,7 +27,10 @@ jobs:
         env:
           BUILD_NUMBER: "Please Work"
 
-      - run: echo "${env:$CURDIR} - ${env:SOME_KEY}"
+      - run: |
+          echo "${env:$CURDIR} - ${env:SOME_KEY}"
+          echo "${env:SOME_KEY}" > some_file.txt
+          type some_file.txt
         env:
           CURDIR: ${{ github.workspace }}
           SOME_KEY: ${{ secrets.SOME_KEY }}
