@@ -43,6 +43,9 @@ Push-Location ${scriptPath}\..
 echo "Updating the version for UI and Installer"
 .\update-versions.ps1
 
+echo "Running nuget install"
+nuget install
+
 echo "Building the UI"
 msbuild DesktopEdge\ZitiDesktopEdge.csproj /property:Configuration=Release
 
