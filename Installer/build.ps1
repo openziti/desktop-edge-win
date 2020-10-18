@@ -42,13 +42,14 @@ Expand-Archive -Force -LiteralPath ziti-tunnel-service.zip build\service\
 Push-Location ${scriptPath}\..
 echo "Updating the version for UI and Installer"
 .\update-versions.ps1
-Pop-Location
 
 echo "Building the UI"
-msbuild ..\DesktopEdge\ZitiDesktopEdge.csproj /property:Configuration=Release
+msbuild DesktopEdge\ZitiDesktopEdge.csproj /property:Configuration=Release
 
 echo "Building the Wintun installer"
-msbuild ..\ZitiWintunInstaller.sln /p:configuration=Release
+msbuild ZitiWintunInstaller.sln /p:configuration=Release
+
+Pop-Location
 
 $CMD = "$ENV:ADVINST_EXE"
 $arg1 = '/build'
