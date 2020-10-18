@@ -1,10 +1,19 @@
-echo "---------------------"
-pwd
-pwd
-echo "---------------------"
-
 echo "Cleaning previous build folder if it exists"
 rm .\build -r -fo -ErrorAction Ignore
+
+echo "-----------------------------------------"
+echo "-----------------------------------------"
+echo "-----------------------------------------"
+echo "-----------------------------------------"
+
+$invocation = (Get-Variable MyInvocation).Value
+$scriptPath = Split-Path $invocation.MyCommand.Path 
+$scriptPath
+
+echo "-----------------------------------------"
+echo "-----------------------------------------"
+echo "-----------------------------------------"
+echo "-----------------------------------------"
 
 $x=[xml] @"
 $((Invoke-WebRequest https://netfoundry.jfrog.io/artifactory/ziti-maven-snapshot/ziti-tunnel-win/amd64/windows/ziti-tunnel-win/maven-metadata.xml).Content)
