@@ -43,7 +43,7 @@ Pop-Location
 $CMD = "$ENV:ADVINST_EXE"
 $CMD = "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com"
 $arg1 = '/build'
-$arg2 = '.\ZitiDesktopEdge.aip'
+$arg2 = "${scriptPath}\ZitiDesktopEdge.aip"
 
 echo "Assembling installer using AdvancedInstaller at: $CMD $arg1 $arg2"
 & $CMD $arg1 $arg2
