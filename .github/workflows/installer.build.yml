@@ -19,10 +19,10 @@ jobs:
       CURDIR: ${{ github.workspace }}
       CODE: ${{ github.workspace }}/go/src/github.com/${{ github.repository }}
 
-    - name: Print Code
-      run: echo ${CODE}
-      
     steps:
+      - name: Print Code
+        run: echo ${CODE}
+        
       - run: echo "%CURDIR% - $CURDIR %SOME_KEY% - $SOME_KEY"
         env:
           CURDIR: ${{ github.workspace }}
