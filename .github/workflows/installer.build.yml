@@ -24,7 +24,9 @@ jobs:
         run: |
           echo "Build number is ${{ steps.buildnumber.outputs.build_number }}"
           echo "Build number is ${env:BUILD_NUMBER}"
-
+        env:
+          BUILD_NUMBER: "Please Work"
+          
       - run: echo "%CURDIR% - $CURDIR %SOME_KEY% - $SOME_KEY"
         env:
           CURDIR: ${{ github.workspace }}
