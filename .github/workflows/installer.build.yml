@@ -20,6 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - uses: NuGet/setup-nuget@v1.0.2
+      - uses: microsoft/setup-msbuild@v1
       - name: Restore nuget packages
         run: nuget restore ZitiDesktopEdge.sln
       - name: Build UI and Assemble Installer
