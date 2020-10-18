@@ -1,19 +1,9 @@
 echo "Cleaning previous build folder if it exists"
 rm .\build -r -fo -ErrorAction Ignore
 
-echo "-----------------------------------------"
-echo "-----------------------------------------"
-echo "-----------------------------------------"
-echo "-----------------------------------------"
-
 $invocation = (Get-Variable MyInvocation).Value
 $scriptPath = Split-Path $invocation.MyCommand.Path 
 ${scriptPath}
-
-echo "-----------------------------------------"
-echo "-----------------------------------------"
-echo "-----------------------------------------"
-echo "-----------------------------------------"
 
 $x=[xml] @"
 $((Invoke-WebRequest https://netfoundry.jfrog.io/artifactory/ziti-maven-snapshot/ziti-tunnel-win/amd64/windows/ziti-tunnel-win/maven-metadata.xml).Content)
@@ -38,13 +28,9 @@ echo "unzipping ziti-tunnel-service.zip to build\service\"
 
 Expand-Archive -Force -LiteralPath ziti-tunnel-service.zip build\service\
 
-
 Push-Location ${scriptPath}\..
 echo "Updating the version for UI and Installer"
 .\update-versions.ps1
-
-echo "Running nuget install"
-nuget install
 
 echo "Building the UI"
 msbuild DesktopEdge\ZitiDesktopEdge.csproj /property:Configuration=Release
@@ -55,6 +41,7 @@ msbuild ZitiWintunInstaller.sln /p:configuration=Release
 Pop-Location
 
 $CMD = "$ENV:ADVINST_EXE"
+$CMD = "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86> pwd .\AdvancedInstaller.com"
 $arg1 = '/build'
 $arg2 = '.\ZitiDesktopEdge.aip'
 
