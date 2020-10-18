@@ -53,3 +53,9 @@ jobs:
         run: |
           echo "a hi $CURDIR - b $CURDIR2 - c {{ $CURDIR }} - d {{ $CURDIR2 }} - e {{ CURDIR }} - f {{ CURDIR2 }} "
         shell: powershell
+
+      - name: Checkout the code
+        uses: actions/checkout@v2
+
+      - name: Build UI and Assemble Installer
+        run: powershell -File .\Installer\build.ps1
