@@ -38,8 +38,13 @@ jobs:
 #        env:
 #          BUILD_NUMBER: "Please Work"
 #
-      - name: example env var?
-        run: echo "action_state=yellow" >> $GITHUB_ENV
+      - name: example env vars?
+        run: |
+          echo "action_state=yellow" >> $GITHUB_ENV
+          echo "TEST_KEY=$TEST_KEY" >> $GITHUB_ENV
+      - name: echo env vars...
+        shell: cmd
+        run: echo "%TEST_KEY%"
       - name: try adding a path to PATH?
         run: echo "C:\\Program Files (x86)\\Caphyon\\Advanced Installer 17.5" >> $GITHUB_PATH
       - name: output 'path' - cmd shell
@@ -50,6 +55,7 @@ jobs:
           echo "${env:SOME_KEY}" > WinSign.b64
           echo "${env:ADV_INST_LICENSEKEY}" > registration.b64
           echo "${env:TEST_KEY}" > test.key
+          echo "${env:ADV_INST_KEY}" > ADV_INST_KEY.key
           C:\Windows\System32\certutil.exe -decode registration.b64 registration.key
           C:\Windows\System32\certutil.exe -decode WinSign.b64 Installer/WinSign.p12
       - name: Cache Chocolatey Dependencies
@@ -75,8 +81,8 @@ jobs:
       - shell: pwsh
         name: Register Advanced Installer
         run: |
-          $key=(Get-Content .\test.key)
-          .\Installer\reg.bat $ADV_INST_KEY
+          $key=(Get-Content .\ADV_INST_KEY.key)
+          .\Installer\reg.bat $key
 #          cmd /c "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com" /register $key
 #          "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com" "/register" "$key"
 #          set /p ADV_REG_KEY=<registration.key
