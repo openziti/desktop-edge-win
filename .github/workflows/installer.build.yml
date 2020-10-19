@@ -20,6 +20,7 @@ jobs:
       CODE: ${{ github.workspace }}/go/src/github.com/${{ github.repository }}
       SOME_KEY: ${{ secrets.SOME_KEY }}
       ADV_INST_LICENSEKEY: ${{ secrets.ADV_INST_LICENSEKEY }}
+      ADV_INST_KEY: ${{ ADV_INST_KEY }}
       TEST_KEY: ${{ secrets.TEST_KEY }}
 
     steps:
@@ -75,7 +76,7 @@ jobs:
         name: Register Advanced Installer
         run: |
           $key=(Get-Content .\test.key)
-          .\Installer\reg.bat $key
+          .\Installer\reg.bat $ADV_INST_KEY
 #          cmd /c "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com" /register $key
 #          "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com" "/register" "$key"
 #          set /p ADV_REG_KEY=<registration.key
