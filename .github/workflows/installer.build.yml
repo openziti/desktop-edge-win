@@ -59,12 +59,10 @@ jobs:
           .\Installer\reg.bat $key
       - name: Build UI and Assemble Installer
         run: powershell -File .\Installer\build.ps1
-      - name: Set an output param for the version in the checkout
-        run: echo "::set-output name=version::$(Get-Content version)"
       - name: Upload installer onto job
         uses: actions/upload-artifact@v2
         with:
-          name: ZitiDesktopEdgeClient-${version}
+          name: ZitiDesktopEdgeClient
           path: "Installer/Output/Ziti Desktop Edge Client-1.2.10.exe"
         env:
           version: Get-Content .\version
