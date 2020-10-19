@@ -46,27 +46,28 @@ jobs:
           tail -c 4 registration.key
           (Get-FileHash .\registration.key).Hash
           ls -r registration.key
-#     - name: Cache Chocolatey Dependencies
-#       uses: actions/cache@v1
-#       with:
-#         path: C:\ProgramData\chocolatey\lib
-#         key: choco-cache-v1
-#         restore-keys: |
-#           choco-cache-v1
-#     - name: Trying to run choco install.
-#       run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-#     - name: Install advanced installer
-#       run: choco install advanced-installer wixtoolset --yes
-#     - name: Restore nuget packages
-#       run: nuget restore ZitiDesktopEdge.sln
-#     - shell: cmd
-#       name: Register Advanced Installer
-#       run: |
-#         "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com" /register "${env:ADV_INST_LICENSEKEY}" 2>&1
-#     - name: Build UI and Assemble Installer
-#       run: powershell -File .\Installer\build.ps1
-#     - name: Upload installer onto job
-#       uses: actions/upload-artifact@v2
-#       with:
-#         name: ZitiDesktopEdgeClient
-#         path: "Installer/Output/Ziti Desktop Edge Client-1.2.10.exe"
+      - name: Cache Chocolatey Dependencies
+        uses: actions/cache@v1
+        with:
+          path: C:\ProgramData\chocolatey\lib
+          key: choco-cache-v1
+          restore-keys: |
+            choco-cache-v1
+      - name: Trying to run choco install.
+        run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+      - name: Install advanced installer
+        run: choco install advanced-installer wixtoolset --yes
+      - name: Restore nuget packages
+        run: nuget restore ZitiDesktopEdge.sln
+      - shell: cmd
+        name: Register Advanced Installer
+        run: |
+          set /p ADV_REG_KEY=<registration.key
+          "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com" /register "%ADV_REG_KEY%" 2>&1
+      - name: Build UI and Assemble Installer
+        run: powershell -File .\Installer\build.ps1
+      - name: Upload installer onto job
+        uses: actions/upload-artifact@v2
+        with:
+          name: ZitiDesktopEdgeClient
+          path: "Installer/Output/Ziti Desktop Edge Client-1.2.10.exe"
