@@ -63,7 +63,8 @@ jobs:
         name: Register Advanced Installer
         run: |
           $key=(Get-Content .\registration.key)
-          "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com" "/register" "$key"
+          .\Installer\reg.bat testing
+#          "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com" "/register" "$key"
 #          set /p ADV_REG_KEY=<registration.key
 #          "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com" /register "%ADV_REG_KEY%" 2>&1
 #      - name: Build UI and Assemble Installer
