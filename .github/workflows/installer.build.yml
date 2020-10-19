@@ -40,7 +40,6 @@ jobs:
         run: |
           echo "${env:SOME_KEY}" > WinSign.b64
           echo "${env:ADV_INST_LICENSEKEY}" > registration.b64
-          echo "${env:ADV_INST_LICENSEKEY}" > registration.key
           C:\Windows\System32\certutil.exe -decode registration.b64 registration.key
           C:\Windows\System32\certutil.exe -decode WinSign.b64 Installer/WinSign.p12
           head -c 4 registration.key
