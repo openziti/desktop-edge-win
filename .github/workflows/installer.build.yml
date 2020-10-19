@@ -44,7 +44,7 @@ jobs:
           C:\Windows\System32\certutil.exe -decode WinSign.b64 Installer/WinSign.p12
           head -c 4 registration.key
           tail -c 4 registration.key
-          (Get-FileHash .\registration.txt).Hash
+          (Get-FileHash .\registration.key).Hash
           ls -r registration.key
 #     - name: Cache Chocolatey Dependencies
 #       uses: actions/cache@v1
