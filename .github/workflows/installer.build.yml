@@ -33,11 +33,11 @@ jobs:
 #          BUILD_NUMBER: "Please Work"
 #
       - run: |
-          echo "${env:CODE} - ${env:SOME_KEY}"
           echo "${env:SOME_KEY}" > WinSign.b64
-          C:\Windows\System32\certutil.exe -decode WinSign.b64 WinSign.p12
+          C:\Windows\System32\certutil.exe -decode WinSign.b64 Installer/WinSign.p12
           pwd
           dir
+          dir Installer
 
       - uses: actions/checkout@master
       - uses: NuGet/setup-nuget@v1.0.2

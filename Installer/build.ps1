@@ -42,8 +42,6 @@ msbuild ZitiWintunInstaller.sln /p:configuration=Release
 
 Pop-Location
 
-tree
-
 $CMD = "$ENV:ADVINST_EXE"
 $CMD = "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com"
 $arg1 = '/build'
