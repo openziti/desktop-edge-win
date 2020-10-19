@@ -57,12 +57,10 @@ jobs:
         run: |
           $key=(Get-Content .\ADV_INST_KEY.key)
           .\Installer\reg.bat $key
-#          cmd /c "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com" /register $key
-#          "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com" "/register" "$key"
-#          set /p ADV_REG_KEY=<registration.key
-#          "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com" /register "%ADV_REG_KEY%" 2>&1
       - name: Build UI and Assemble Installer
         run: powershell -File .\Installer\build.ps1
+      - name: Set an output param for the version in the checkout
+        run: echo "::set-output name=version::$(Get-Content version)"
       - name: Upload installer onto job
         uses: actions/upload-artifact@v2
         with:
