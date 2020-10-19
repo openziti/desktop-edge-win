@@ -20,6 +20,9 @@ jobs:
       CODE: ${{ github.workspace }}/go/src/github.com/${{ github.repository }}
       SOME_KEY: ${{ secrets.SOME_KEY }}
     steps:
+      - uses: actions/checkout@master
+      - uses: NuGet/setup-nuget@v1.0.2
+      - uses: microsoft/setup-msbuild@v1
 #      - shell: pwsh
 #        env:
 #          SUPER_SECRET: ${{ secrets.SOME_KEY }}
@@ -38,10 +41,6 @@ jobs:
           pwd
           dir
           dir Installer
-
-      - uses: actions/checkout@master
-      - uses: NuGet/setup-nuget@v1.0.2
-      - uses: microsoft/setup-msbuild@v1
       - name: Trying to run choco install.
         run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
       - name: Install advanced installer
