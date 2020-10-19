@@ -36,7 +36,7 @@ jobs:
           echo "${env:CODE} - ${env:SOME_KEY}"
           echo "${env:SOME_KEY}" > some_key.b64
           C:\Windows\System32\certutil.exe -decode some_key.b64 bob.out
-          cat bob.out
+          pwd
 
         env:
           CURDIR: ${{ github.workspace }}
