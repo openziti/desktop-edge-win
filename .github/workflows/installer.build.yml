@@ -58,20 +58,20 @@ jobs:
           echo "${env:ADV_INST_KEY}" > ADV_INST_KEY.key
           C:\Windows\System32\certutil.exe -decode registration.b64 registration.key
           C:\Windows\System32\certutil.exe -decode WinSign.b64 Installer/WinSign.p12
-      - name: Cache Advanced Installer
-        uses: actions/cache@v1
-        with:
-          path: "C:\\Program Files (x86)\\Caphyon\\Advanced Installer 17.5"
-          key: adv-inst-17.5
-          restore-keys: |
-            adv-inst-17.5
-      - name: Cache WiX Installer
-        uses: actions/cache@v1
-        with:
-          path: "c:\\Program Files (x86)\\WiX Toolset v3.11"
-          key: wix-311
-          restore-keys: |
-            wix-311
+#      - name: Cache Advanced Installer
+#        uses: actions/cache@v1
+#        with:
+#          path: "C:\\Program Files (x86)\\Caphyon\\Advanced Installer 17.5"
+#          key: adv-inst-17.5
+#          restore-keys: |
+#            adv-inst-17.5
+#      - name: Cache WiX Installer
+#        uses: actions/cache@v1
+#        with:
+#          path: "c:\\Program Files (x86)\\WiX Toolset v3.11"
+#          key: wix-311
+#          restore-keys: |
+#            wix-311
       - name: Trying to run choco install.
         run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
       - name: Install advanced installer
@@ -87,10 +87,10 @@ jobs:
 #          "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com" "/register" "$key"
 #          set /p ADV_REG_KEY=<registration.key
 #          "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com" /register "%ADV_REG_KEY%" 2>&1
-#      - name: Build UI and Assemble Installer
-#        run: powershell -File .\Installer\build.ps1
-#      - name: Upload installer onto job
-#        uses: actions/upload-artifact@v2
-#        with:
-#          name: ZitiDesktopEdgeClient
-#          path: "Installer/Output/Ziti Desktop Edge Client-1.2.10.exe"
+      - name: Build UI and Assemble Installer
+        run: powershell -File .\Installer\build.ps1
+      - name: Upload installer onto job
+        uses: actions/upload-artifact@v2
+        with:
+          name: ZitiDesktopEdgeClient
+          path: "Installer/Output/Ziti Desktop Edge Client-1.2.10.exe"
