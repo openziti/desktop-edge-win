@@ -58,13 +58,6 @@ jobs:
           echo "${env:ADV_INST_KEY}" > ADV_INST_KEY.key
           C:\Windows\System32\certutil.exe -decode registration.b64 registration.key
           C:\Windows\System32\certutil.exe -decode WinSign.b64 Installer/WinSign.p12
-      - name: Cache Chocolatey Dependencies
-        uses: actions/cache@v1
-        with:
-          path: C:\ProgramData\chocolatey
-          key: choco-cache-${{ hashFiles('**/dependencies.config') }}
-          restore-keys: |
-            choco-cache-
       - name: Cache Advanced Installer
         uses: actions/cache@v1
         with:
@@ -72,6 +65,13 @@ jobs:
           key: adv-inst-17.5
           restore-keys: |
             adv-inst-17.5
+      - name: Cache WiX Installer
+        uses: actions/cache@v1
+        with:
+          path: "c:\\Program Files (x86)\\WiX Toolset v3.11"
+          key: wix-311
+          restore-keys: |
+            wix-311
       - name: Trying to run choco install.
         run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
       - name: Install advanced installer
