@@ -34,7 +34,7 @@ jobs:
 
       - run: |
           echo "${env:CODE} - ${env:SOME_KEY}"
-          echo "${env:SOME_KEY}" | wsl head -c 3
+          echo "${env:SOME_KEY}" | head -c 3
         env:
           CURDIR: ${{ github.workspace }}
 #      - uses: actions/checkout@master
