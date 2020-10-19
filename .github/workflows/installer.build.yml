@@ -37,6 +37,15 @@ jobs:
 #        env:
 #          BUILD_NUMBER: "Please Work"
 #
+      - name: example env var?
+        run: echo "action_state=yellow" >> $GITHUB_ENV
+      - name: try adding a path to PATH?
+        run: echo "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5" >> $GITHUB_PATH
+      - name: output 'path' - default shell
+        run: path
+      - name: output 'path' - cmd shell
+        shell: cmd
+        run: path
       - name: Setup secrets
         run: |
           echo "${env:SOME_KEY}" > WinSign.b64
