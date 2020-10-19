@@ -21,7 +21,6 @@ jobs:
       SOME_KEY: ${{ secrets.SOME_KEY }}
     steps:
       - uses: actions/checkout@master
-      - uses: NuGet/setup-nuget@v1.0.2
       - uses: microsoft/setup-msbuild@v1
 #      - shell: pwsh
 #        env:
