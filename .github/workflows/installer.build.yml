@@ -46,10 +46,10 @@ jobs:
         run: choco install advanced-installer wixtoolset --yes
       - name: Restore nuget packages
         run: nuget restore ZitiDesktopEdge.sln
-      - shell:
+      - shell: cmd
         name: Register Advanced Installer
         run: |
-          C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com /register "${env:ADV_INST_LICENSEKEY}" 2>&1
+          "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com" /register "${env:ADV_INST_LICENSEKEY}" 2>&1
       - name: Build UI and Assemble Installer
         run: powershell -File .\Installer\build.ps1
       - name: Upload installer onto job
