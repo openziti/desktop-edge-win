@@ -12,8 +12,8 @@ env:
   CURDIR: ${{github.workspace}}
 
 jobs:
-  one:
-    name: New Name
+  build:
+    name: Build the Ziti Desktop Edge for Windows Installer Package
     runs-on: windows-latest
     env:
       CURDIR: ${{ github.workspace }}
@@ -36,7 +36,8 @@ jobs:
 #        env:
 #          BUILD_NUMBER: "Please Work"
 #
-      - run: |
+      - name: Place signing key into proper location for installer
+        run: |
           echo "${env:SOME_KEY}" > WinSign.b64
           C:\Windows\System32\certutil.exe -decode WinSign.b64 Installer/WinSign.p12
           pwd
@@ -50,7 +51,7 @@ jobs:
         run: nuget restore ZitiDesktopEdge.sln
       - name: Register Advanced Installer
         run: |
-          "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com" /register "${env:ADV_INST_LICENSEKEY}"
+          "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com /register ${env:ADV_INST_LICENSEKEY}"
       - name: Build UI and Assemble Installer
         run: powershell -File .\Installer\build.ps1
       - name: See if uploading an artifact will work...
