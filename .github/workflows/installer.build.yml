@@ -44,18 +44,24 @@ jobs:
           echo "${env:TEST_KEY}" > test.key
           C:\Windows\System32\certutil.exe -decode registration.b64 registration.key
           C:\Windows\System32\certutil.exe -decode WinSign.b64 Installer/WinSign.p12
-
-#      - name: Cache Chocolatey Dependencies
-#        uses: actions/cache@v1
-#        with:
-#          path: C:\ProgramData\chocolatey\lib
-#          key: choco-cache-${{ hashFiles('**/dependencies.config') }}
-#          restore-keys: |
-#            choco-cache-
-#      - name: Trying to run choco install.
-#        run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-#      - name: Install advanced installer
-#        run: choco install advanced-installer wixtoolset --yes
+      - name: Cache Chocolatey Dependencies
+        uses: actions/cache@v1
+        with:
+          path: C:\ProgramData\chocolatey
+          key: choco-cache-${{ hashFiles('**/dependencies.config') }}
+          restore-keys: |
+            choco-cache-
+      - name: Cache Advanced Installer
+        uses: actions/cache@v1
+        with:
+          path: "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5"
+          key: adv-inst-17.5
+          restore-keys: |
+            adv-inst-17.5
+      - name: Trying to run choco install.
+        run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+      - name: Install advanced installer
+        run: choco install advanced-installer wixtoolset --yes
 #      - name: Restore nuget packages
 #        run: nuget restore ZitiDesktopEdge.sln
       - shell: pwsh
