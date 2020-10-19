@@ -50,3 +50,9 @@ jobs:
 
       - name: Build UI and Assemble Installer
         run: powershell -File .\Installer\build.ps1
+
+      - name: See if uploading an artifact will work...
+        uses: actions/upload-artifact@v2
+        with:
+          name: Installer
+          path: "Installer\Output\Ziti Desktop Edge Client-1.2.10.exe"
