@@ -48,7 +48,7 @@ jobs:
         run: nuget restore ZitiDesktopEdge.sln
       - name: Register Advanced Installer
         run: |
-          "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com /register ${env:ADV_INST_LICENSEKEY}"
+          '"C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com" "/register" "${env:ADV_INST_LICENSEKEY}"'
       - name: Build UI and Assemble Installer
         run: powershell -File .\Installer\build.ps1
       - name: Upload installer onto job
