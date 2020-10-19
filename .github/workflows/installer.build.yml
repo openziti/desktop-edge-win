@@ -20,7 +20,7 @@ jobs:
       CODE: ${{ github.workspace }}/go/src/github.com/${{ github.repository }}
       SOME_KEY: ${{ secrets.SOME_KEY }}
       ADV_INST_LICENSEKEY: ${{ secrets.ADV_INST_LICENSEKEY }}
-      ADV_INST_KEY: ${{ ADV_INST_KEY }}
+      ADV_INST_KEY: ${{ secrets.ADV_INST_KEY }}
       TEST_KEY: ${{ secrets.TEST_KEY }}
 
     steps:
