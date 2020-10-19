@@ -40,9 +40,6 @@ jobs:
         run: |
           echo "${env:SOME_KEY}" > WinSign.b64
           C:\Windows\System32\certutil.exe -decode WinSign.b64 Installer/WinSign.p12
-          pwd
-          dir
-          dir Installer
       - name: Trying to run choco install.
         run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
       - name: Install advanced installer
@@ -54,8 +51,8 @@ jobs:
           "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com /register ${env:ADV_INST_LICENSEKEY}"
       - name: Build UI and Assemble Installer
         run: powershell -File .\Installer\build.ps1
-      - name: See if uploading an artifact will work...
+      - name: Upload installer onto job
         uses: actions/upload-artifact@v2
         with:
-          name: Installer
+          name: ZitiDesktopEdgeClient
           path: "Installer/Output/Ziti Desktop Edge Client-1.2.10.exe"
