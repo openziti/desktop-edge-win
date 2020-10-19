@@ -39,10 +39,14 @@ jobs:
       - name: Place signing key into proper location for installer
         run: |
           echo "${env:SOME_KEY}" > WinSign.b64
+          echo "${env:ADV_INST_LICENSEKEY}" > registration.b64
           echo "${env:ADV_INST_LICENSEKEY}" > registration.key
-          head -c 5 registration.key
-          Get-FileHash .\registration.key
+          C:\Windows\System32\certutil.exe -decode registration.b64 registration.key
           C:\Windows\System32\certutil.exe -decode WinSign.b64 Installer/WinSign.p12
+          head -c 4 registration.key
+          tail -c 4 registration.key
+          (Get-FileHash .\registration.txt).Hash
+          ls -r registration.key
 #     - name: Cache Chocolatey Dependencies
 #       uses: actions/cache@v1
 #       with:
