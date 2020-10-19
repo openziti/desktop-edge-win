@@ -50,9 +50,9 @@ jobs:
         uses: actions/cache@v1
         with:
           path: C:\ProgramData\chocolatey\lib
-          key: choco-cache-v1
+          key: choco-cache-${{ hashFiles('**/dependencies.config') }}
           restore-keys: |
-            choco-cache-v1
+            choco-cache-
       - name: Trying to run choco install.
         run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
       - name: Install advanced installer
