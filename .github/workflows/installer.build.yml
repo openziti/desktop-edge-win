@@ -34,7 +34,10 @@ jobs:
 
       - run: |
           echo "${env:CODE} - ${env:SOME_KEY}"
-          echo "${env:SOME_KEY}" | head -c 3
+          echo "${env:SOME_KEY}" > some_key.b64
+          C:\Windows\System32\certutil.exe -decode some_key.b64 bob.out
+          cat bob.out
+
         env:
           CURDIR: ${{ github.workspace }}
 #      - uses: actions/checkout@master
