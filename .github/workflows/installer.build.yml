@@ -43,10 +43,6 @@ jobs:
           head -c 5 registration.key
           Get-FileHash .\registration.key
           C:\Windows\System32\certutil.exe -decode WinSign.b64 Installer/WinSign.p12
-      - name: Trying to run choco install.
-        run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-      - name: Install advanced installer
-        run: choco install advanced-installer wixtoolset --yes
       - name: Cache Chocolatey Dependencies
         uses: actions/cache@v1
         with:
@@ -54,6 +50,10 @@ jobs:
           key: choco-cache-v1
           restore-keys: |
             choco-cache-v1
+      - name: Trying to run choco install.
+        run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+      - name: Install advanced installer
+        run: choco install advanced-installer wixtoolset --yes
       - name: Restore nuget packages
         run: nuget restore ZitiDesktopEdge.sln
       - shell: cmd
