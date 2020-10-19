@@ -63,7 +63,7 @@ jobs:
       - name: Cache Advanced Installer
         uses: actions/cache@v1
         with:
-          path: "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5"
+          path: "C:\\Program Files (x86)\\Caphyon\\Advanced Installer 17.5"
           key: adv-inst-17.5
           restore-keys: |
             adv-inst-17.5
