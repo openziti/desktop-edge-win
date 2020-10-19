@@ -26,18 +26,6 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - uses: microsoft/setup-msbuild@v1
-#      - shell: pwsh
-#        env:
-#          SUPER_SECRET: ${{ secrets.SOME_KEY }}
-#        run: |
-#          echo "$env:SUPER_SECRET"
-#      - name: Print new build number
-#        run: |
-#          echo "Build number is ${{ steps.buildnumber.outputs.build_number }}"
-#          echo "Build number is ${env:BUILD_NUMBER}"
-#        env:
-#          BUILD_NUMBER: "Please Work"
-#
       - name: example env vars?
         run: |
           echo "action_state=yellow" >> $GITHUB_ENV
@@ -58,26 +46,12 @@ jobs:
           echo "${env:ADV_INST_KEY}" > ADV_INST_KEY.key
           C:\Windows\System32\certutil.exe -decode registration.b64 registration.key
           C:\Windows\System32\certutil.exe -decode WinSign.b64 Installer/WinSign.p12
-#      - name: Cache Advanced Installer
-#        uses: actions/cache@v1
-#        with:
-#          path: "C:\\Program Files (x86)\\Caphyon\\Advanced Installer 17.5"
-#          key: adv-inst-17.5
-#          restore-keys: |
-#            adv-inst-17.5
-#      - name: Cache WiX Installer
-#        uses: actions/cache@v1
-#        with:
-#          path: "c:\\Program Files (x86)\\WiX Toolset v3.11"
-#          key: wix-311
-#          restore-keys: |
-#            wix-311
       - name: Trying to run choco install.
         run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
       - name: Install advanced installer
         run: choco install advanced-installer wixtoolset --yes
-#      - name: Restore nuget packages
-#        run: nuget restore ZitiDesktopEdge.sln
+      - name: Restore nuget packages
+        run: nuget restore ZitiDesktopEdge.sln
       - shell: pwsh
         name: Register Advanced Installer
         run: |
