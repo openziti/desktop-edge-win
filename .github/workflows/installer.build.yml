@@ -21,7 +21,6 @@ jobs:
       SOME_KEY: ${{ secrets.SOME_KEY }}
       ADV_INST_LICENSEKEY: ${{ secrets.ADV_INST_LICENSEKEY }}
       ADV_INST_KEY: ${{ secrets.ADV_INST_KEY }}
-      TEST_KEY: ${{ secrets.TEST_KEY }}
 
     steps:
       - uses: actions/checkout@master
@@ -29,20 +28,12 @@ jobs:
       - name: example env vars?
         run: |
           echo "action_state=yellow" >> $GITHUB_ENV
-          echo "TEST_KEY=$TEST_KEY" >> $GITHUB_ENV
-      - name: echo env vars...
-        shell: cmd
-        run: echo "%TEST_KEY%"
       - name: try adding a path to PATH?
         run: echo "C:\\Program Files (x86)\\Caphyon\\Advanced Installer 17.5" >> $GITHUB_PATH
-      - name: output 'path' - cmd shell
-        shell: cmd
-        run: path
       - name: Setup secrets
         run: |
           echo "${env:SOME_KEY}" > WinSign.b64
           echo "${env:ADV_INST_LICENSEKEY}" > registration.b64
-          echo "${env:TEST_KEY}" > test.key
           echo "${env:ADV_INST_KEY}" > ADV_INST_KEY.key
           C:\Windows\System32\certutil.exe -decode registration.b64 registration.key
           C:\Windows\System32\certutil.exe -decode WinSign.b64 Installer/WinSign.p12

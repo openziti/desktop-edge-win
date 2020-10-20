@@ -28,6 +28,8 @@ echo "      time to download: $milliseconds"
 echo ""
 echo "unzipping ziti-tunnel-service.zip to build\service\"
 
+$ProgressPreference = 'Continue'
+
 Expand-Archive -Verbose -Force -LiteralPath ziti-tunnel-service.zip "${scriptPath}\build\service\"
 
 Push-Location ${scriptPath}\..
@@ -52,7 +54,6 @@ echo "issuing $ADVINST /edit $ADVPROJECT $action $installerVersion (service vers
 
 $action = '/build'
 echo "Assembling installer using AdvancedInstaller at: $ADVINST $action $ADVPROJECT"
-& $ADVINST $arg1 $ADVPROJECT
+& $ADVINST $action $ADVPROJECT
 
-$ProgressPreference = 'Continue'
 echo "========================== build.ps1 competed =========================="
