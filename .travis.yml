@@ -18,10 +18,10 @@ branches:
 
 install:
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then choco install -y zip ninja --no-progress; fi
+  - PowerShell -Command 'Set-ExecutionPolicy -ExecutionPolicy RemoteSigned'
 
 before_script:
   - export GIT_BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
 
 script:
-  - pwsh ./update-versions.ps1
   - service/publish.bat
