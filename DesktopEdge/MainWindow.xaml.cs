@@ -74,11 +74,13 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void MainWindow_Deactivated(object sender, EventArgs e) {
+			if (this._isAttached) {
 #if DEBUG
 				Debug.WriteLine("debug is enabled - windows pinned");
 #else
 				this.Visibility = Visibility.Collapsed;
 #endif
+			}
 		}
 
 		private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
@@ -528,7 +530,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void MainUI_Deactivated(object sender, EventArgs e) {
-			if (UIModel.HideOnLostFocus) {
+			if (this._isAttached) {
 #if DEBUG
 				Debug.WriteLine("debug is enabled - windows pinned");
 #else
