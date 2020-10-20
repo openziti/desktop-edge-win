@@ -17,7 +17,7 @@ rm $assemblyInfo
 mv $assemblyInfoReplaced $assemblyInfo
 
 echo "Replacing version in $installer into $installerReplaced"
-(Get-Content -Encoding UTF8 -path $installer -Raw) -replace '"ProductVersion" Value="[0-9]\.[0-9]\.[0-9]"', """ProductVersion"" Value=""${v}""" | Set-Content -Path "${installer}.replaced" -Encoding UTF8 -NoNewline
+(Get-Content -Encoding UTF8 -path $installer -Raw) -replace '"ProductVersion" Value="[0-9]*\.[0-9]*\.[0-9]*"', """ProductVersion"" Value=""${v}""" | Set-Content -Path "${installer}.replaced" -Encoding UTF8 -NoNewline
 rm $installer
 mv $installerReplaced $installer
 

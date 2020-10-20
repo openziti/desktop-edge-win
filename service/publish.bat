@@ -76,7 +76,7 @@ git status 2>&1
 
 git add service/ziti-tunnel/version.go 2>&1
 CALL :FAIL %ERRORLEVEL% "git add failed"
-@echo git add service/ziti-tunnel/version.go complete: %ERRORLEVEL%
+@echo git add service/ziti-tunnel/version.go DesktopEdge/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip complete: %ERRORLEVEL%
 
 @echo issuing commit
 git commit -m "[ci skip] committing updated version information" 2>&1
