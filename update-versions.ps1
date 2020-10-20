@@ -13,7 +13,7 @@ $installer="./Installer/ZitiDesktopEdge.aip"
 $installerReplaced="${installer}.replaced"
 
 echo "Replacing version in $assemblyInfo into $assemblyInfoReplaced"
-(Get-Content -Encoding UTF8 -path $assemblyInfo -Raw) -replace 'Version\("[0-9]*.[0-9]*.[0-9]*.0', "Version\(""${v}.0" | Set-Content -Encoding UTF8 -Path "$assemblyInfoReplaced" -NoNewline
+(Get-Content -Encoding UTF8 -path $assemblyInfo -Raw) -replace 'Version\("[0-9]*.[0-9]*.[0-9]*.0', "Version(""${v}.0" | Set-Content -Encoding UTF8 -Path "$assemblyInfoReplaced" -NoNewline
 rm $assemblyInfo
 mv $assemblyInfoReplaced $assemblyInfo
 
