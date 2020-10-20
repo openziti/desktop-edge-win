@@ -63,6 +63,6 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: ZitiDesktopEdgeClient
-          path: "Installer/Output/Ziti Desktop Edge Client-1.2.10.exe"
+          path: "Installer/Output/Ziti Desktop Edge Client-*.exe"
         env:
           version: Get-Content .\version
