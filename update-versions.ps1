@@ -22,6 +22,4 @@ echo "Replacing version in $installer into $installerReplaced"
 rm $installer
 mv $installerReplaced $installer
 
-git status
-
 echo "==================================== update-versions.ps1 complete ===================================="
