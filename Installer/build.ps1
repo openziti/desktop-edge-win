@@ -9,9 +9,10 @@ $x=[xml] @"
 $((Invoke-WebRequest https://netfoundry.jfrog.io/artifactory/ziti-maven-snapshot/ziti-tunnel-win/amd64/windows/ziti-tunnel-win/maven-metadata.xml).Content)
 "@
 
-$v = $x.metadata.versioning.release
+$serviceVersion = $x.metadata.versioning.release
+$installerVersion=(Get-Content -Path .\version)
 
-$zipUrl = "https://netfoundry.jfrog.io/artifactory/ziti-maven-snapshot/ziti-tunnel-win/amd64/windows/ziti-tunnel-win/${v}/ziti-tunnel-win-${v}.zip"
+$zipUrl = "https://netfoundry.jfrog.io/artifactory/ziti-maven-snapshot/ziti-tunnel-win/amd64/windows/ziti-tunnel-win/${serviceVersion}/ziti-tunnel-win-${serviceVersion}.zip"
 
 echo "Downloading zip file "
 echo "      from: $zipUrl"
@@ -45,8 +46,8 @@ $ADVINST = "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\Advan
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
 
 $action = '/SetVersion'
-echo "issuing $ADVINST /edit $ADVPROJECT $action $v - see https://www.advancedinstaller.com/user-guide/set-version.html"
-& $ADVINST /edit $ADVPROJECT $action $v
+echo "issuing $ADVINST /edit $ADVPROJECT $action $installerVersion (service version: $serviceVersion) - see https://www.advancedinstaller.com/user-guide/set-version.html"
+& $ADVINST /edit $ADVPROJECT $action $installerVersion
 
 $action = '/build'
 echo "Assembling installer using AdvancedInstaller at: $ADVINST $action $ADVPROJECT"
