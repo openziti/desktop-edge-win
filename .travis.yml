@@ -8,7 +8,10 @@ go:
 os:
   - windows
 
-#branches: //first try at only building PR or branch push - updated to the first if on line 1 above
+branches: //first try at only building PR or branch push - updated to the first if on line 1 above
+  except:
+  - installer
+
 #  only:
 #    - "master"
 
