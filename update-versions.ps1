@@ -7,25 +7,17 @@ rm temp.cs -ErrorAction Ignore
 rm temp.aip -ErrorAction Ignore
 
 $assemblyInfo="./DesktopEdge/Properties/AssemblyInfo.cs"
-echo "Replacing version in $assemblyInfo"
-foreach($line in Get-Content $assemblyInfo) {
-  $l = $line -replace '\d*.\d*.\d*.0', "${v}.0"
-  echo $l >> temp.cs
-}
-
-echo "copying temp.cs into $assemblyInfo"
-rm $assemblyInfo
-mv temp.cs $assemblyInfo
-#(Get-Content -Encoding UTF8 -path $assemblyInfo -Raw) -replace '\d*.\d*.\d*.0', "${v}.0" | Set-Content -Path $assemblyInfo -Encoding UTF8 -NoNewline
-
+$assemblyInfoReplaced="${assemblyInfo}.replaced"
 $installer="./Installer/ZitiDesktopEdge.aip"
-echo "Replacing version in $installer into temp.aip"
-foreach($line in Get-Content $installer) {
-  $l = $line -replace '"ProductVersion" Value="\d*\.\d*\.\d*"', """ProductVersion"" Value=""${v}"""
-  echo $l >> temp.aip
-}
+$installerReplaced="${installer}.replaced"
 
-echo "copying temp.aip into $installer"
+echo "Replacing version in $assemblyInfo into $assemblyInfoReplaced"
+(Get-Content -Encoding UTF8 -path $assemblyInfo -Raw) -replace 'Version\("[0-9]*.[0-9]*.[0-9]*.0', "Version\(""${v}.0" | Set-Content -Encoding UTF8 -Path "$assemblyInfoReplaced" -NoNewline
+rm $assemblyInfo
+mv $assemblyInfoReplaced $assemblyInfo
+
+echo "Replacing version in $installer into $installerReplaced"
+(Get-Content -Encoding UTF8 -path $installer -Raw) -replace '"ProductVersion" Value="[0-9]\.[0-9]\.[0-9]"', """ProductVersion"" Value=""${v}""" | Set-Content -Path "${installer}.replaced" -Encoding UTF8 -NoNewline
 rm $installer
-mv temp.aip $installer
-#(Get-Content -Encoding UTF8 -path $installer -Raw) -replace '"ProductVersion" Value="\d\.\d\.\d"', """ProductVersion"" Value=""${v}""" | Set-Content -Path $installer -Encoding UTF8 -NoNewline
+mv $installerReplaced $installer
+
