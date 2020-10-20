@@ -799,7 +799,7 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 	rts.RemoveByFingerprint(fingerprint)
 
 	//remove the file from the filesystem - first verify it's the proper file
-	log.Debug("removing identity file for fingerprint %s at %s", id.FingerPrint, id.Path())
+	log.Debugf("removing identity file for fingerprint %s at %s", id.FingerPrint, id.Path())
 	err = os.Remove(id.Path())
 	if err != nil {
 		log.Warn("could not remove file: %s", config.Path()+id.FingerPrint+".json")
