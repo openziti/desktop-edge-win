@@ -1,3 +1,4 @@
+echo "========================== build.ps1 begins =========================="
 echo "Cleaning previous build folder if it exists"
 rm .\build -r -fo -ErrorAction Ignore
 
@@ -54,3 +55,4 @@ echo "Assembling installer using AdvancedInstaller at: $ADVINST $action $ADVPROJ
 & $ADVINST $arg1 $ADVPROJECT
 
 $ProgressPreference = 'Continue'
+echo "========================== build.ps1 competed =========================="
