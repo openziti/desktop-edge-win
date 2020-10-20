@@ -36,18 +36,16 @@ echo "Building the UI"
 #msbuild DesktopEdge\ZitiDesktopEdge.csproj /property:Configuration=Release
 msbuild ZitiDesktopEdge.sln /property:Configuration=Release
 
-
 echo "Building the Wintun installer"
 msbuild ZitiWintunInstaller.sln /p:configuration=Release
 
 Pop-Location
 
-$CMD = "$ENV:ADVINST_EXE"
-$CMD = "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com"
-$arg1 = '/build'
-$arg2 = "${scriptPath}\ZitiDesktopEdge.aip"
+$ADVINST = "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com"
+$ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
 
-echo "Assembling installer using AdvancedInstaller at: $CMD $arg1 $arg2"
-& $CMD $arg1 $arg2
+$action = '/build'
+echo "Assembling installer using AdvancedInstaller at: $ADVINST $action $ADVPROJECT"
+& $ADVINST $arg1 $ADVPROJECT
 
 $ProgressPreference = 'Continue'
