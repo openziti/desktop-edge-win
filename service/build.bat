@@ -20,6 +20,9 @@ ziti-ci version
 
 echo generating version info - this will get pushed from publish.bat in CI _if_ publish.bat started build.bat
 ziti-ci generate-build-info --noAddNoCommit --useVersion=false %SVC_ROOT_DIR%/ziti-tunnel/version.go main --verbose 2>&1
+
+echo calling powershell script to update versions in UI and Installer
+powershell -file ..\update-versions.ps1
 echo version info generated
 goto QUICK
 
@@ -72,7 +75,7 @@ if exist %TUNNELER_SDK_DIR% (
 
     echo changing to %TUNNELER_SDK_DIR%
     cd %TUNNELER_SDK_DIR%
-    
+
     echo current directory is %CD% - should be %TUNNELER_SDK_DIR%
     echo.
     echo git clone %REPO_URL% %TUNNELER_SDK_DIR% --recurse-submodules
