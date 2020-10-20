@@ -23,7 +23,7 @@ ziti-ci generate-build-info --noAddNoCommit --useVersion=false %SVC_ROOT_DIR%/zi
 
 echo calling powershell script to update versions in UI and Installer 2>&1
 powershell -file %ZITI_TUNNEL_WIN_ROOT%update-versions.ps1 2>&1
-echo version info generate 2>&1d
+echo version info generate 2>&1
 goto QUICK
 
 :CLEAN
