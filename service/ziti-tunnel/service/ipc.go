@@ -44,6 +44,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unsafe"
 )
 
 type Pipes struct {
@@ -229,7 +230,7 @@ func (p *Pipes) shutdownConnections() {
 }
 
 func initialize(ipv4 string, ipv4mask int) error {
-	err := rts.CreateTun(ipv4, 32)
+	err := rts.CreateTun(ipv4, ipv4mask)
 	if err != nil {
 		return err
 	}
@@ -279,7 +280,7 @@ func setTunInfo(s *dto.TunnelStatus, ipv4 string, ipv4mask int) {
 
 func ipv4MaskString(m []byte) string {
 	if len(m) != 4 {
-		panic("ipv4Mask: len must be 4 bytes")
+		log.Panicf("An unexpected and unrecoverable error has occurred. ipv4Mask: len must be 4 bytes")
 	}
 
 	return fmt.Sprintf("%d.%d.%d.%d", m[0], m[1], m[2], m[3])
@@ -686,7 +687,7 @@ func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
 
 	err = enrolled.Close()
 	if err != nil {
-		panic(err)
+		log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "enrolling an identity", err)
 	}
 	newPath := newId.Id.Path()
 
@@ -733,7 +734,7 @@ func connectIdentity(id *dto.Identity) {
 	} else {
 		log.Debugf("id [%s] is already connected - not reconnecting", id.Name)
 		for _, s := range id.Services {
-			cziti.AddIntercept(s.Id, s.Name, s.InterceptHost, s.InterceptPort, id.ZitiContext)
+			cziti.AddIntercept(s.Id, s.Name, s.InterceptHost, int(s.InterceptPort), unsafe.Pointer(id.ZitiContext))
 		}
 		id.Connected = true
 	}
@@ -772,7 +773,7 @@ func disconnectIdentity(id *dto.Identity) error {
 			}
 			cziti.RemoveIntercept(rwg)
 			wg.Wait()
-			cziti.DNS.DeregisterService(id.ZitiContext, s.Name)
+			cziti.DNS.UnregisterService(id.ZitiContext, s.Name)
 		}
 		id.Connected = false
 	} else {
