@@ -23,5 +23,5 @@ before_script:
   - export GIT_BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
 
 script:
-  - powershell update-versions.ps1
+  - pwsh ./update-versions.ps1
   - service/publish.bat
