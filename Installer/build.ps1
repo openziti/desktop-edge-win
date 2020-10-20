@@ -44,6 +44,10 @@ Pop-Location
 $ADVINST = "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
 
+$action = '/SetVersion'
+echo "issuing $ADVINST /edit $ADVPROJECT $action $v - see https://www.advancedinstaller.com/user-guide/set-version.html"
+& $ADVINST /edit $ADVPROJECT $action $v
+
 $action = '/build'
 echo "Assembling installer using AdvancedInstaller at: $ADVINST $action $ADVPROJECT"
 & $ADVINST $arg1 $ADVPROJECT
