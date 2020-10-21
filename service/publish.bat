@@ -80,10 +80,10 @@ CALL :FAIL %ERRORLEVEL% "git add failed"
 echo git add service/ziti-tunnel/version.go DesktopEdge/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip complete: %ERRORLEVEL%
 
 echo issuing commit
-git commit -m "[ci skip] - [***NO_CI***] [skip ci] committing updated version information" 2>&1
+git commit -m "[ci skip] committing updated version information" 2>&1
 
 CALL :FAIL %ERRORLEVEL% "git commit failed"
-echo git commit -m "[ci skip] - [***NO_CI***] [skip ci] committing updated version information"" complete: %ERRORLEVEL%
+echo git commit -m "[ci skip] committing updated version information" complete: %ERRORLEVEL%
 echo ========================================================
 echo issuing git push
 echo ========================================================

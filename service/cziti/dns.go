@@ -100,7 +100,7 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 		icept.isIp = true
 	}
 	key := icept.String()
-	log.Infof("adding DNS for %s. service name %s@%s", dnsNameToReg, svcName, key)
+	log.Infof("adding DNS for %s. service name %s@%s. is ip: %t", dnsNameToReg, svcName, key, icept.isIp)
 
 	currentNetwork := C.GoString(ctx.Options.controller)
 
@@ -123,6 +123,12 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 			log.Debugf("DNS mapping used by another service. total services using %s = %d", dnsNameToReg, foundContext.count)
 		} else {
 			// good - means the service can be mapped
+			dns.serviceMap[key] = ctxService{
+				ctx:       ctx,
+				name:      svcName,
+				serviceId: svcId,
+				count:     1,
+			}
 		}
 	} else {
 		// if not used at all - map it
