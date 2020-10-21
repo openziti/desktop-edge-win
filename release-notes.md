@@ -1,19 +1,30 @@
+# Release 1.2.12
+
+* What's New
+
+  * [#147](https://github.com/openziti/desktop-edge-win/issues/147) - Added "collect-logs.ps1" to the installer. This script
+    can be run to collect the logs files from the service. Must be run as administrator.
+
+* Bug Fixes
+
+  * 
+
 # Release 1.2.11
 
 * What's New
 
-  * [#135](https://github.com/openziti/desktop-edge-win/pull/135) - Support added for IPv4 intercepting. 
+  * [#135](https://github.com/openziti/desktop-edge-win/issues/135) - Support added for IPv4 intercepting. 
     Services can now be created for any IPv4 address.
-  * [#123](https://github.com/openziti/desktop-edge-win/pull/123) - Windows can add ConnectionSpecificDomains 
+  * [#123](https://github.com/openziti/desktop-edge-win/issues/123) - Windows can add ConnectionSpecificDomains 
     to DNS requests where no period (.) is in the DNS request such as "web-page" or "my-service". 
     These requests would not resolve properly because they would be received as "web-page.myConnectionSpecificDomain". 
     This now works correctly.
-  * [#131](https://github.com/openziti/desktop-edge-win/pull/131) - Installer added to GitHub Actions build.
+  * [#131](https://github.com/openziti/desktop-edge-win/issues/131) - Installer added to GitHub Actions build.
 
 * Bug Fixes
 
-  * [#130](https://github.com/openziti/desktop-edge-win/pull/130) - Detection of new release was inconsistent.
-  * [#129](https://github.com/openziti/desktop-edge-win/pull/129) - DNS entry was not removed when service was deleted.
+  * [#130](https://github.com/openziti/desktop-edge-win/issues/130) - Detection of new release was inconsistent.
+  * [#129](https://github.com/openziti/desktop-edge-win/issues/129) - DNS entry was not removed when service was deleted.
   
 # Release 1.2.9
 
@@ -36,7 +47,7 @@
 
 * Bug fixes
 
-  * [#102](https://github.com/openziti/desktop-edge-win/pull/102) - DNS requests with "connection-specific local domain" would not resolve
+  * [#102](https://github.com/openziti/desktop-edge-win/issues/102) - DNS requests with "connection-specific local domain" would not resolve
 
 # Release 1.0.4
 
@@ -46,7 +57,7 @@
 
 * Bug fixes
 
-  * [#102](https://github.com/openziti/desktop-edge-win/pull/102) - DNS requests with "connection-specific local domain" would not resolve
+  * [#102](https://github.com/openziti/desktop-edge-win/issues/102) - DNS requests with "connection-specific local domain" would not resolve
 
 # Release 0.0.30
 
@@ -98,7 +109,7 @@
 
 * Bug fixes
 
-  * [#102](https://github.com/openziti/desktop-edge-win/pull/102) - DNS requests with "connection-specific local domain" would not resolve
+  * [#102](https://github.com/openziti/desktop-edge-win/issues/102) - DNS requests with "connection-specific local domain" would not resolve
 
 # Release 0.0.21-23 - nothing captured
 

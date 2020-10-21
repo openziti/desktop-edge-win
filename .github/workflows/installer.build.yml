@@ -36,6 +36,8 @@ jobs:
           echo "${env:SOME_KEY}" > WinSign.b64
           echo "${env:ADV_INST_KEY}" > ADV_INST_KEY.key
           C:\Windows\System32\certutil.exe -decode WinSign.b64 Installer/WinSign.p12
+      - name: Dump Env (debug step)
+        run: env
       - name: Trying to run choco install.
         run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
       - name: "Install Choco needs: advanced-installer wixtoolset zip ninja"

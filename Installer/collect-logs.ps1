@@ -7,7 +7,7 @@ function ExitWithCode($exitcode) {
   exit $exitcode
 }
 
-$now=(Get-Date).ToString('yyyy-MM-dd_HHMMss')
+$now=(Get-Date).ToString('yyyy-MM-dd_HHmmss')
 $logroot="${env:ProgramFiles(x86)}\NetFoundry, Inc\Ziti Desktop Edge\logs"
 
 $logdest="$logroot\$now"
