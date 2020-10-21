@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <DOCUMENT Type="Advanced Installer" CreateVersion="17.4.1" version="17.5" Modules="professional" RootPath="." Language="en" Id="{7315FE7B-0418-4F38-8B12-6C0594276D30}">
   <COMPONENT cid="caphyon.advinst.msicomp.MsiPropsComponent">
     <ROW Property="AI_BITMAP_DISPLAY_MODE" Value="0"/>
@@ -77,6 +77,7 @@
     <ROW File="zititunnel.exe" Component_="zititunnel.exe" FileName="ZITI-T~1.EXE|ziti-tunnel.exe" Attributes="0" SourcePath="build\service\ziti-tunnel.exe" SelfReg="false" DigSign="true"/>
     <ROW File="ziti.ico" Component_="App.config" FileName="ziti.ico" Attributes="0" SourcePath="ziti.ico" SelfReg="false"/>
     <ROW File="Newtonsoft.Json.dll" Component_="Newtonsoft.Json.dll" FileName="NEWTON~1.DLL|Newtonsoft.Json.dll" Attributes="0" SourcePath="..\DesktopEdge\bin\Release\Newtonsoft.Json.dll" SelfReg="false"/>
+    <ROW File="collectlogs.ps1" Component_="App.config" FileName="COLLEC~1.PS1|collect-logs.ps1" Attributes="0" SourcePath="collect-logs.ps1" SelfReg="false"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.AppPathsComponent">
     <ROW Name="AI_APPPATH_PERBUILD_App.config" Path="[|AI_PROPPATH_PERBUILD_App.config]" Type="2" Content="0"/>
@@ -292,14 +293,3 @@
     <ROW SearchKey="UpgradeCode" Prereq="OpenZitiWintunInstal" SearchType="4" SearchString="{1ABDBE15-0F36-4633-BA6F-8A32D8CF4838}" VerMin="1.0.0.0" Order="1" Property="PreReqSearch"/>
   </COMPONENT>
 </DOCUMENT>
-
-
-
-
-
-
-
-
-
-
-
