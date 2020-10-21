@@ -34,8 +34,10 @@ jobs:
           C:\Windows\System32\certutil.exe -decode WinSign.b64 Installer/WinSign.p12
       - name: Trying to run choco install.
         run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-      - name: Install advanced installer
-        run: choco install advanced-installer wixtoolset --yes
+      - name: "Install Choco needs: advanced-installer wixtoolset zip ninja"
+        run: choco install advanced-installer wixtoolset zip ninja --yes
+      - name: Build the Service
+        run: service/publish.bat
       - name: Restore nuget packages
         run: nuget restore ZitiDesktopEdge.sln
       - shell: pwsh
