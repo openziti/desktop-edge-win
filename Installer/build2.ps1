@@ -1,1 +1,1 @@
-echo "the branch is $env:branch"
+echo "the branch is $env:GIT_BRANCH"

@@ -28,9 +28,7 @@ jobs:
       - name: example env vars?
         run: |
           echo "action_state=yellow" >> $GITHUB_ENV
-          echo ("::set-env name=BRANCH_NAME1::" + $env:GITHUB_REF.replace('refs/heads/', ''))
-          $branchName = "${{github.ref}}".Split("/")["${{github.ref}}".Split("/").Length -1]
-          echo "::set-env name=CURRENT_BRANCH2::$(echo $branchName)"
+          echo ("::set-env name=GIT_BRANCH::" + $env:GITHUB_REF.replace('refs/heads/', ''))
 #      - name: Setup secrets
 #        run: |
 #          echo "${env:SOME_KEY}" > WinSign.b64
