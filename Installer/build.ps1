@@ -14,7 +14,7 @@ echo "the branch is $env:GIT_BRANCH"
 
 $branch = git rev-parse --abbrev-ref HEAD
 
-if ($branch != 'master') {
+if ("$branch" -ne 'master') {
     #if the git command to get the branch fails - this is 'not master' use the 'latest' - else fetch the 'release'
     $serviceVersion = $x.metadata.versioning.latest
 }
