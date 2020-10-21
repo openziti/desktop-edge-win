@@ -265,4 +265,6 @@ ziti-tunnel-win.zip
 service/deps
 service/ziti.dll
 service/libuv.dll
+Installer/build/
+Installer/ziti-tunnel-service.zip
 ziti-tunnel-service.zip
