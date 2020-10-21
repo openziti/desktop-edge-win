@@ -83,7 +83,7 @@ echo issuing commit
 git commit -m "[ci skip] - [***NO_CI***] [skip ci] committing updated version information" 2>&1
 
 CALL :FAIL %ERRORLEVEL% "git commit failed"
-echo git commit -m "[ci skip] committing updated version information" complete: %ERRORLEVEL%
+echo git commit -m "[ci skip] - [***NO_CI***] [skip ci] committing updated version information"" complete: %ERRORLEVEL%
 echo ========================================================
 echo issuing git push
 echo ========================================================
