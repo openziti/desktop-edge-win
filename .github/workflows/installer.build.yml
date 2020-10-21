@@ -9,15 +9,12 @@ on:
 env:
   BUILD_CONFIG: "Release"
   BUILDNUMBER: ${{github.run_number}}
-  CURDIR: ${{github.workspace}}
 
 jobs:
   build:
     name: Build the Ziti Desktop Edge for Windows Installer Package
     runs-on: windows-latest
     env:
-      CURDIR: ${{ github.workspace }}
-      CODE: ${{ github.workspace }}/go/src/github.com/${{ github.repository }}
       SOME_KEY: ${{ secrets.SOME_KEY }}
       ADV_INST_LICENSEKEY: ${{ secrets.ADV_INST_LICENSEKEY }}
       ADV_INST_KEY: ${{ secrets.ADV_INST_KEY }}
@@ -25,34 +22,33 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - uses: microsoft/setup-msbuild@v1
-      - name: example env vars?
+      - name: Set the GIT_BRANCH environment variable
         run: |
-          echo "action_state=yellow" >> $GITHUB_ENV
           echo ("::set-env name=GIT_BRANCH::" + $env:GITHUB_REF.replace('refs/heads/', ''))
-#      - name: Setup secrets
-#        run: |
-#          echo "${env:SOME_KEY}" > WinSign.b64
-#          echo "${env:ADV_INST_LICENSEKEY}" > registration.b64
-#          echo "${env:ADV_INST_KEY}" > ADV_INST_KEY.key
-#          C:\Windows\System32\certutil.exe -decode registration.b64 registration.key
-#          C:\Windows\System32\certutil.exe -decode WinSign.b64 Installer/WinSign.p12
-#      - name: Trying to run choco install.
-#        run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-#      - name: Install advanced installer
-#        run: choco install advanced-installer wixtoolset --yes
-#      - name: Restore nuget packages
-#        run: nuget restore ZitiDesktopEdge.sln
-#      - shell: pwsh
-#        name: Register Advanced Installer
-#        run: |
-#          $key=(Get-Content .\ADV_INST_KEY.key)
-#          .\Installer\reg.bat $key
-      - name: Build UI and Assemble Installer
-        run: powershell -File .\Installer\build2.ps1
-#      - name: Upload installer onto job
-#        uses: actions/upload-artifact@v2
-#        with:
-#          name: ZitiDesktopEdgeClient
-#          path: "Installer/Output/Ziti Desktop Edge Client-*.exe"
-#        env:
-#          version: Get-Content .\version
+      - name: Setup secrets
+        run: |
+          echo "${env:SOME_KEY}" > WinSign.b64
+          echo "${env:ADV_INST_LICENSEKEY}" > registration.b64
+          echo "${env:ADV_INST_KEY}" > ADV_INST_KEY.key
+          C:\Windows\System32\certutil.exe -decode registration.b64 registration.key
+          C:\Windows\System32\certutil.exe -decode WinSign.b64 Installer/WinSign.p12
+      - name: Trying to run choco install.
+        run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+      - name: Install advanced installer
+        run: choco install advanced-installer wixtoolset --yes
+      - name: Restore nuget packages
+        run: nuget restore ZitiDesktopEdge.sln
+      - shell: pwsh
+        name: Register Advanced Installer
+        run: |
+          $key=(Get-Content .\ADV_INST_KEY.key)
+          .\Installer\reg.bat $key
+     - name: Build UI and Assemble Installer
+       run: powershell -File .\Installer\build.ps1
+      - name: Upload installer onto job
+        uses: actions/upload-artifact@v2
+        with:
+          name: ZitiDesktopEdgeClient
+          path: "Installer/Output/Ziti Desktop Edge Client-*.exe"
+        env:
+          version: Get-Content .\version

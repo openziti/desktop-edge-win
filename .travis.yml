@@ -9,12 +9,10 @@ os:
   - windows
 
 # first try at only building PR or branch push - updated to the first if on line 1 above
-branches:
-  except:
-  - installer
-  - release-*
-
-#  only:
+#branches:
+#  except:
+#  - installer
+##  only:
 #    - "master"
 
 install:

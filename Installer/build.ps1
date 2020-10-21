@@ -3,14 +3,25 @@ echo "Cleaning previous build folder if it exists"
 rm .\build -r -fo -ErrorAction Ignore
 
 $invocation = (Get-Variable MyInvocation).Value
-$scriptPath = Split-Path $invocation.MyCommand.Path 
+$scriptPath = Split-Path $invocation.MyCommand.Path
 ${scriptPath}
 
 $x=[xml] @"
 $((Invoke-WebRequest https://netfoundry.jfrog.io/artifactory/ziti-maven-snapshot/ziti-tunnel-win/amd64/windows/ziti-tunnel-win/maven-metadata.xml).Content)
 "@
 
-$serviceVersion = $x.metadata.versioning.release
+echo "the branch is $env:GIT_BRANCH"
+
+$branch = git rev-parse --abbrev-ref HEAD
+
+if ($branch != 'master') {
+    #if the git command to get the branch fails - this is 'not master' use the 'latest' - else fetch the 'release'
+    $serviceVersion = $x.metadata.versioning.latest
+}
+else {
+    $serviceVersion = $x.metadata.versioning.release
+}
+echo "service version is: $serviceVersion"
 $installerVersion=(Get-Content -Path .\version)
 
 $zipUrl = "https://netfoundry.jfrog.io/artifactory/ziti-maven-snapshot/ziti-tunnel-win/amd64/windows/ziti-tunnel-win/${serviceVersion}/ziti-tunnel-win-${serviceVersion}.zip"
