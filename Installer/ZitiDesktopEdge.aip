@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <DOCUMENT Type="Advanced Installer" CreateVersion="17.4.1" version="17.5" Modules="professional" RootPath="." Language="en" Id="{7315FE7B-0418-4F38-8B12-6C0594276D30}">
   <COMPONENT cid="caphyon.advinst.msicomp.MsiPropsComponent">
     <ROW Property="AI_BITMAP_DISPLAY_MODE" Value="0"/>
@@ -25,7 +25,7 @@
     <ROW Property="ProductCode" Value="1033:{56EED0BB-F24E-45B6-BA55-F7CE249C92AB} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="Ziti Desktop Edge"/>
-    <ROW Property="ProductVersion" Value="1.2.10" Type="32"/>
+    <ROW Property="ProductVersion" Value="1.2.11" Type="32"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{CB7E173A-663D-4A23-BB22-D1E8D885C2F3}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="DefaultBuild:Windows 9x/ME#AnyCPU_Release:Windows 9x/ME" ValueLocId="-"/>
@@ -70,11 +70,11 @@
     <ROW File="ZitiDesktopEdge.exe.config" Component_="App.config" FileName="ZITIDE~1.CON|ZitiDesktopEdge.exe.config" Attributes="0" SourcePath="&lt;AI_APPPATH_PERBUILD_ZitiDesktopEdge.exe.config&gt;" SelfReg="false"/>
     <ROW File="ZitiUpdateService.exe" Component_="ZitiUpdateService.exe" FileName="ZITIUP~1.EXE|ZitiUpdateService.exe" Attributes="0" SourcePath="&lt;AI_APPPATH_PERBUILD_ZitiUpdateService.exe&gt;" SelfReg="false" DigSign="true"/>
     <ROW File="ZitiUpdateService.exe.config" Component_="App.config" FileName="ZITIUP~1.CON|ZitiUpdateService.exe.config" Attributes="0" SourcePath="&lt;AI_APPPATH_PERBUILD_ZitiUpdateService.exe.config&gt;" SelfReg="false"/>
-    <ROW File="libgcc_s_seh1.dll" Component_="libgcc_s_seh1.dll" FileName="LIBGCC~1.DLL|libgcc_s_seh-1.dll" Attributes="0" SourcePath="..\service\libgcc_s_seh-1.dll" SelfReg="false"/>
-    <ROW File="libuv.dll" Component_="libuv.dll" FileName="libuv.dll" Attributes="0" SourcePath="..\service\libuv.dll" SelfReg="false"/>
-    <ROW File="libwinpthread1.dll" Component_="libwinpthread1.dll" FileName="LIBWIN~1.DLL|libwinpthread-1.dll" Attributes="0" SourcePath="..\service\libwinpthread-1.dll" SelfReg="false"/>
-    <ROW File="ziti.dll" Component_="ziti.dll" FileName="ziti.dll" Attributes="0" SourcePath="..\service\ziti.dll" SelfReg="false"/>
-    <ROW File="zititunnel.exe" Component_="zititunnel.exe" FileName="ZITI-T~1.EXE|ziti-tunnel.exe" Attributes="0" SourcePath="..\service\ziti-tunnel.exe" SelfReg="false" DigSign="true"/>
+    <ROW File="libgcc_s_seh1.dll" Component_="libgcc_s_seh1.dll" FileName="LIBGCC~1.DLL|libgcc_s_seh-1.dll" Attributes="0" SourcePath="build\service\libgcc_s_seh-1.dll" SelfReg="false"/>
+    <ROW File="libuv.dll" Component_="libuv.dll" FileName="libuv.dll" Attributes="0" SourcePath="build\service\libuv.dll" SelfReg="false"/>
+    <ROW File="libwinpthread1.dll" Component_="libwinpthread1.dll" FileName="LIBWIN~1.DLL|libwinpthread-1.dll" Attributes="0" SourcePath="build\service\libwinpthread-1.dll" SelfReg="false"/>
+    <ROW File="ziti.dll" Component_="ziti.dll" FileName="ziti.dll" Attributes="0" SourcePath="build\service\ziti.dll" SelfReg="false"/>
+    <ROW File="zititunnel.exe" Component_="zititunnel.exe" FileName="ZITI-T~1.EXE|ziti-tunnel.exe" Attributes="0" SourcePath="build\service\ziti-tunnel.exe" SelfReg="false" DigSign="true"/>
     <ROW File="ziti.ico" Component_="App.config" FileName="ziti.ico" Attributes="0" SourcePath="ziti.ico" SelfReg="false"/>
     <ROW File="Newtonsoft.Json.dll" Component_="Newtonsoft.Json.dll" FileName="NEWTON~1.DLL|Newtonsoft.Json.dll" Attributes="0" SourcePath="..\DesktopEdge\bin\Release\Newtonsoft.Json.dll" SelfReg="false"/>
   </COMPONENT>
@@ -100,7 +100,7 @@
     <ROW Path="&lt;AI_DICTS&gt;ui_en.ail"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.DigCertStoreComponent">
-    <ROW DigitalCertificate="..\..\WinSign.p12" TimeStampUrl="http://timestamp.digicert.com" SignerDescription="[|ProductName]" SignOptions="7" SignTool="0" UseSha256="1" Password="7699ECA4D093C4035580B953B142A311C9FB727A"/>
+    <ROW DigitalCertificate="WinSign.p12" TimeStampUrl="http://timestamp.digicert.com" SignerDescription="[|ProductName]" SignOptions="7" SignTool="0" UseSha256="1" Password="7699ECA4D093C4035580B953B142A311C9FB727A"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.FragmentComponent">
     <ROW Fragment="CommonUI.aip" Path="&lt;AI_FRAGS&gt;CommonUI.aip"/>
@@ -292,3 +292,14 @@
     <ROW SearchKey="UpgradeCode" Prereq="OpenZitiWintunInstal" SearchType="4" SearchString="{1ABDBE15-0F36-4633-BA6F-8A32D8CF4838}" VerMin="1.0.0.0" Order="1" Property="PreReqSearch"/>
   </COMPONENT>
 </DOCUMENT>
+
+
+
+
+
+
+
+
+
+
+

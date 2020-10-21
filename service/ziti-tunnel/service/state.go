@@ -59,21 +59,13 @@ func (t *RuntimeState) Find(fingerprint string) (int, *dto.Identity) {
 	return len(t.state.Identities), nil
 }
 
-func (t *RuntimeState) RemoveByIdentity(id dto.Identity) {
-	t.RemoveByFingerprint(id.FingerPrint)
-}
-
-func (t *RuntimeState) FindByIdentity(id dto.Identity) (int, *dto.Identity) {
-	return t.Find(id.FingerPrint)
-}
-
 func (t *RuntimeState) SaveState() {
 	// overwrite file if it exists
 	_ = os.MkdirAll(config.Path(), 0644)
 
 	cfg, err := os.OpenFile(config.File(), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		panic(err)
+		log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "opening the config file", err)
 	}
 	w := bufio.NewWriter(bufio.NewWriter(cfg))
 	enc := json.NewEncoder(w)
@@ -83,7 +75,7 @@ func (t *RuntimeState) SaveState() {
 
 	err = cfg.Close()
 	if err != nil {
-		panic(err)
+		log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "closing the config file", err)
 	}
 	log.Debug("state saved")
 }
@@ -195,11 +187,11 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 	}
 	log.Info("routing applied")
 
-	cziti.DnsInit(ipv4, ipv4mask)
+	cziti.DnsInit(&rts, ipv4, ipv4mask)
 	cziti.Start()
-	_, err = cziti.HookupTun(tunDevice, dns)
+	err = cziti.HookupTun(tunDevice, dns)
 	if err != nil {
-		panic(err)
+		log.Panicf("An unrecoverable error has occurred! %v", err)
 	}
 	return nil
 }
@@ -240,18 +232,6 @@ func (t *RuntimeState) LoadIdentity(id *dto.Identity) {
 func noZiti() bool {
 	v, _ := strconv.ParseBool(os.Getenv("NOZITI"))
 	return v
-}
-
-func (t *RuntimeState) Close() {
-	if t.tun != nil {
-		tu := *t.tun
-		err := tu.Close()
-		if err != nil {
-			log.Fatalf("problem closing tunnel!")
-		}
-	} else {
-		log.Warn("unexpected situation. the TUN was null? ")
-	}
 }
 
 func (t *RuntimeState) LoadConfig() {
@@ -309,4 +289,46 @@ func iPv6Disabled() bool {
 		log.Infof("IPv6 has DisabledComponents set to %d. If the service fails to start please report this message", val)
 		return false
 	}
+}
+
+func (r *RuntimeState) AddRoute(destination net.IPNet, nextHop net.IP, metric uint32) error {
+	nativeTunDevice := (*r.tun).(*tun.NativeTun)
+	luid := winipcfg.LUID(nativeTunDevice.LUID())
+	return luid.AddRoute(destination, nextHop, metric)
+}
+
+func (r *RuntimeState) RemoveRoute(destination net.IPNet, nextHop net.IP) error {
+	nativeTunDevice := (*r.tun).(*tun.NativeTun)
+	luid := winipcfg.LUID(nativeTunDevice.LUID())
+	return luid.DeleteRoute(destination, nextHop)
+}
+
+
+func (t *RuntimeState) Close() {
+	if t.tun != nil {
+		tu := *t.tun
+		err := tu.Close()
+		if err != nil {
+			log.Fatalf("problem closing tunnel!")
+		}
+	} else {
+		log.Warn("unexpected situation. the TUN was null? ")
+	}
+}
+
+
+func (t *RuntimeState) InterceptDNS() {
+	log.Panicf("implement me")
+}
+
+func (t *RuntimeState) ReleaseDNS() {
+	log.Panicf("implement me")
+}
+
+func (t *RuntimeState) InterceptIP() {
+	log.Panicf("implement me")
+}
+
+func (t *RuntimeState) ReleaseIP() {
+	log.Panicf("implement me")
 }

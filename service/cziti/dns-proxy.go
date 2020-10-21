@@ -146,7 +146,7 @@ func runListener(ip net.IP, port int, reqch chan dnsreq) {
 
 	server, err := net.ListenUDP(network, laddr)
 	if err != nil {
-		panic(err)
+		log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "udp listening on network", err)
 	}
 
 	for {
@@ -159,7 +159,7 @@ func runListener(ip net.IP, port int, reqch chan dnsreq) {
 				break
 			} else {
 				_ = server.Close()
-				panic(err)
+				log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "reading a udp message", err)
 			}
 		}
 
@@ -259,7 +259,6 @@ func runDNSproxy(dnsServers []string) {
 			b, _ := pr.req.Pack()
 			for _, proxy := range dnsUpstreams {
 				if _, err := proxy.Write(b); err != nil {
-					//TODO: if this happens -does this mean the next dns server is not available?
 
 					_ = proxy.Close() //first thing - close the proxy connection
 
@@ -299,7 +298,7 @@ func runDNSproxy(dnsServers []string) {
 			now := time.Now()
 			for k, r := range reqs {
 				if now.After(r.exp) {
-					log.Warn("a DNS request has expired - enable trace logging and reproduce this issue for more information")
+					log.Debugf("a DNS request has expired - enable trace logging and reproduce this issue for more information")
 					log.Tracef("         expired DNS req: %s %s", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
 
 					delete(reqs, k)

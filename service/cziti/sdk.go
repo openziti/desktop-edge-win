@@ -170,7 +170,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, t
 		found, ok := ctx.Services.Load(svcId)
 		if ok {
 			fs := found.(Service)
-			DNS.DeregisterService(ctx, name)
+			DNS.UnregisterService(ctx, name)
 			ctx.Services.Delete(svcId)
 			ServiceChanges <- ServiceChange{
 				Operation: REMOVED,
@@ -178,7 +178,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, t
 				ZitiContext: ctx,
 			}
 		} else {
-			log.Warnf("could not remove service? service not found with id: %s, name: %s in context %d", service.id, service.name, &ctx)
+			log.Warnf("could not remove service? service not found with id: %s, name: %s in context %d", svcId, name, &ctx)
 		}
 	} else if status == C.ZITI_OK {
 		//first thing's first - determine if the service is already in this runtime
@@ -187,7 +187,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, t
 		found, ok := ctx.Services.Load(svcId)
 		if ok && found != nil {
 			log.Infof("service with id: %s, name: %s exists. updating service.", service.id, service.name)
-			DNS.DeregisterService(ctx, name)
+			DNS.UnregisterService(ctx, name)
 			ctx.Services.Delete(svcId)
 		} else {
 			log.Debugf("service not found with id: %s, name: %s in context %d", svcId, name, &ctx)
@@ -199,10 +199,11 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, t
 			// int ziti_service_get_config(ziti_service *service, const char *cfg_type, void *cfg,  int (*parser)(void *, const char *, size_t))
 			r := C.ziti_service_get_config(service, C.CString("ziti-tunneler-server.v1"), unsafe.Pointer(&v1Config), (*[0]byte)(C.parse_ziti_server_cfg_v1))
 			if (r == 0) {
-				for _, t := range devMap {
+				/*for _, t := range devMap {
 					log.Debugf("setting up hosted service for service %s on %v:%v", service.name, v1Config.hostname, v1Config.port)
 					C.ziti_tunneler_host_v1(C.tunneler_context(t.tunCtx), unsafe.Pointer(ctx.zctx), service.name, v1Config.protocol, v1Config.hostname, v1Config.port)
-				}
+				}*/
+				C.ziti_tunneler_host_v1(C.tunneler_context(theTun.tunCtx), unsafe.Pointer(ctx.zctx), service.name, v1Config.protocol, v1Config.hostname, v1Config.port)
 				C.free_ziti_server_cfg_v1(&v1Config)
 			} else {
 				log.Infof("service is bindable but doesn't have config? %s. flags: %v.", name, service.perm_flags)
@@ -229,9 +230,10 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, t
 				ownsIntercept = false
 			} else {
 				log.Infof("service intercept beginning for service: %s@%s:%d on ip %s", name, host, port, ip.String())
-				for _, t := range devMap {
+				/*for _, t := range devMap {
 					t.AddIntercept(svcId, name, ip.String(), port, unsafe.Pointer(ctx.zctx))
-				}
+				}*/
+				AddIntercept(svcId, name, ip.String(), port, unsafe.Pointer(ctx.zctx))
 			}
 			added := Service{
 				Name:          name,

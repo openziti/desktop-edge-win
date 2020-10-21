@@ -1,4 +1,5 @@
 @echo off
+
 set CURDIR=%CD%
 set SVC_ROOT_DIR=%~dp0
 set ZITI_TUNNEL_WIN_ROOT=%SVC_ROOT_DIR%..\
@@ -13,14 +14,18 @@ IF "%1"=="quick" (
     GOTO QUICK
 )
 
-echo fetching ziti-ci
-call %SVC_ROOT_DIR%/../get-ziti-ci.bat
-echo ziti-ci has been retrieved. running: ziti-ci version
-ziti-ci version
+echo fetching ziti-ci 2>&1
+call %SVC_ROOT_DIR%/../get-ziti-ci.bat 2>&1
+echo ziti-ci has been retrieved. running: ziti-ci version 2>&1
+ziti-ci version 2>&1
+echo ""
 
-echo generating version info - this will get pushed from publish.bat in CI _if_ publish.bat started build.bat
+echo generating version info - this will get pushed from publish.bat in CI _if_ publish.bat started build.bat 2>&1
 ziti-ci generate-build-info --noAddNoCommit --useVersion=false %SVC_ROOT_DIR%/ziti-tunnel/version.go main --verbose 2>&1
-echo version info generated
+
+echo calling powershell script to update versions in UI and Installer 2>&1
+powershell -file %ZITI_TUNNEL_WIN_ROOT%update-versions.ps1 2>&1
+echo version info generated 2>&1
 goto QUICK
 
 :CLEAN
@@ -72,7 +77,7 @@ if exist %TUNNELER_SDK_DIR% (
 
     echo changing to %TUNNELER_SDK_DIR%
     cd %TUNNELER_SDK_DIR%
-    
+
     echo current directory is %CD% - should be %TUNNELER_SDK_DIR%
     echo.
     echo git clone %REPO_URL% %TUNNELER_SDK_DIR% --recurse-submodules

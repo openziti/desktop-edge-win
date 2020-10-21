@@ -85,10 +85,10 @@ namespace ZitiDesktopEdge {
 					editor.IsLocked = true;
 					ServiceList.Children.Add(editor);
 				}
-				int sHeight = 36 * _identity.Services.Count;
-				if (sHeight > 200) sHeight = 200;
-				Debug.WriteLine("Height: " + ServiceRow.Height.Value.ToString());
-				ServiceRow.Height = new GridLength((double)sHeight);
+				double newHeight = Application.Current.MainWindow.ActualHeight - 360;
+				ServiceRow.Height = new GridLength((double)newHeight);
+				MainDetailScroll.MaxHeight = newHeight;
+				MainDetailScroll.Height = newHeight;
 				MainDetailScroll.Visibility = Visibility.Visible;
 				ServiceTitle.Content = _identity.Services.Count + " SERVICES";
 			} else {
