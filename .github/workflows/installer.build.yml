@@ -22,9 +22,11 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - uses: microsoft/setup-msbuild@v1
-      - name: Set the GIT_BRANCH environment variable
+      - name: Set GIT_BRANCH and add GOPATH/bin to PATH
         run: |
           echo ("::set-env name=GIT_BRANCH::" + $env:GITHUB_REF.replace('refs/heads/', ''))
+          echo "::set-env name=GOPATH::$(go env GOPATH)"
+          echo "::add-path::$(go env GOPATH)/bin"
       - name: Setup secrets
         run: |
           echo "${env:SOME_KEY}" > WinSign.b64
