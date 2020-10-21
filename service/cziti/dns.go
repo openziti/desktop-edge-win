@@ -123,12 +123,6 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 			log.Debugf("DNS mapping used by another service. total services using %s = %d", dnsNameToReg, foundContext.count)
 		} else {
 			// good - means the service can be mapped
-			dns.serviceMap[key] = ctxService{
-				ctx:       ctx,
-				name:      svcName,
-				serviceId: svcId,
-				count:     1,
-			}
 		}
 	} else {
 		// if not used at all - map it
