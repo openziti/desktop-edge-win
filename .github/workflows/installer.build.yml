@@ -44,6 +44,13 @@ jobs:
         run: choco install advanced-installer wixtoolset zip ninja --yes
       - name: Build the Service
         run: service/publish.bat
+      - name: Upload service zip onto job
+        uses: actions/upload-artifact@v2
+        with:
+          name: ziti-tunnel-win.zip
+          path: "service/ziti-tunnel-win.zip"
+        env:
+          version: Get-Content .\version
       - name: Restore nuget packages
         run: nuget restore ZitiDesktopEdge.sln
       - shell: pwsh
@@ -52,6 +59,10 @@ jobs:
           $key=(Get-Content .\ADV_INST_KEY.key)
           .\Installer\reg.bat $key
       - name: Build UI and Assemble Installer
+      - uses: actions/download-artifact@v2
+        with:
+          name: ziti-tunnel-win.zip
+          path: Installer/ziti-tunnel-service.zip
         run: powershell -File .\Installer\build.ps1
       - name: Upload installer onto job
         uses: actions/upload-artifact@v2
