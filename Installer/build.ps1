@@ -25,24 +25,28 @@ echo "service version is: $serviceVersion"
 $installerVersion=(Get-Content -Path .\version)
 
 $zipUrl = "https://netfoundry.jfrog.io/artifactory/ziti-maven-snapshot/ziti-tunnel-win/amd64/windows/ziti-tunnel-win/${serviceVersion}/ziti-tunnel-win-${serviceVersion}.zip"
-$zipUrl = "../service/ziti-tunnel-win.zip"
 
 echo "Downloading zip file "
 echo "      from: $zipUrl"
+
+tree ${scriptPath}..
 
 $ProgressPreference = 'SilentlyContinue'
 $timeTaken = Measure-Command -Expression {
     Invoke-WebRequest $zipUrl -OutFile ziti-tunnel-service.zip
 }
 
+$zipLocal = "ziti-tunnel-service.zip"
+$zipLocal = "${scriptPath}/../service/ziti-tunnel-win.zip"
+
 $milliseconds = $timeTaken.TotalMilliseconds
 echo "      time to download: $milliseconds"
 echo ""
-echo "unzipping ziti-tunnel-service.zip to build\service\"
+echo "unzipping $zipLocal to ${scriptPath}\build\service\"
 
 $ProgressPreference = 'Continue'
 
-Expand-Archive -Verbose -Force -LiteralPath ziti-tunnel-service.zip "${scriptPath}\build\service\"
+Expand-Archive -Verbose -Force -LiteralPath $zipLocal "${scriptPath}\build\service\"
 
 Push-Location ${scriptPath}\..
 echo "Updating the version for UI and Installer"
