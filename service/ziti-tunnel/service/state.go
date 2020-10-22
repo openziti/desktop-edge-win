@@ -281,7 +281,9 @@ func iPv6Disabled() bool {
 		log.Debugf("registry key HKLM\\SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters\\DisabledComponents not present. IPv6 is enabled")
 		return false
 	}
-	if val == 255 {
+	actual := val & 255
+	log.Debugf("read value from registry: %d. using actual: %d", val, actual)
+	if actual == 255 {
 		return true
 	} else {
 		log.Infof("IPv6 has DisabledComponents set to %d. If the service fails to start please report this message", val)
