@@ -25,6 +25,7 @@ echo "service version is: $serviceVersion"
 $installerVersion=(Get-Content -Path .\version)
 
 $zipUrl = "https://netfoundry.jfrog.io/artifactory/ziti-maven-snapshot/ziti-tunnel-win/amd64/windows/ziti-tunnel-win/${serviceVersion}/ziti-tunnel-win-${serviceVersion}.zip"
+$zipUrl = "../service/ziti-tunnel-win.zip"
 
 echo "Downloading zip file "
 echo "      from: $zipUrl"
