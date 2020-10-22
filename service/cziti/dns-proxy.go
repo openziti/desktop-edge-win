@@ -28,7 +28,10 @@ import (
 )
 
 var domains []string // get any connection-specific local domains
-const MaxDnsRequests = 64
+const (
+	MaxDnsRequests = 64
+	DnsMsgBufferSize = 1024
+)
 var reqch = make(chan dnsreq, MaxDnsRequests)
 var proxiedRequests = make(chan *proxiedReq, MaxDnsRequests)
 var respChan = make(chan []byte, MaxDnsRequests)
@@ -46,8 +49,14 @@ func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn, ipVer int) {
 	msg.Authoritative = false
 	msg.Rcode = dns.RcodeRefused
 
-	query := q.Question[0]
-	log.Tracef("processing a dns query. type:%s, for:%s on %v. id:%v", dns.Type(query.Qtype), query.Name, p, q.Id)
+	var query dns.Question
+	if len(q.Question) > 0 {
+		query = q.Question[0]
+		log.Tracef("processing a dns query. type:%s, for:%s on %v. id:%v", dns.Type(query.Qtype), query.Name, p, q.Id)
+	} else {
+		log.Warnf("DNS MSG had no question! %v", msg.String())
+		return
+	}
 
 	var ip net.IP
 	// fmt.Printf("query: Type(%d) name(%s)\n", query.Qtype, query.Name)
@@ -150,7 +159,7 @@ func runListener(ip net.IP, port int, reqch chan dnsreq) {
 	}
 
 	for {
-		b := make([]byte, 1024)
+		b := *(nextBuffer())
 		nb, _, _, peer, err := server.ReadMsgUDP(b, nil)
 		if err != nil {
 			if err == io.EOF || err == os.ErrClosed || strings.HasSuffix(err.Error(), "use of closed network connection") {
