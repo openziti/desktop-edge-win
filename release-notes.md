@@ -7,7 +7,10 @@
 
 * Bug Fixes
 
-  * 
+  * [#155](https://github.com/openziti/desktop-edge-win/issues/155) - When the registry key is set incorrectly (over 255) the 
+    detection would fail. Changed the logic to accomodate incorrectly set values
+  * [#145](https://github.com/openziti/desktop-edge-win/issues/145) - DNS Mask was erroneously overidden to 24 if anything other 
+    than 24 was supplied
 
 # Release 1.2.11
 
