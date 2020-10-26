@@ -590,6 +590,19 @@ func toggleIdentity(out *json.Encoder, fingerprint string, onOff bool) {
 	log.Debugf("toggle ziti on/off for %s: %t", fingerprint, onOff)
 
 	_, id := rts.Find(fingerprint)
+
+	if id == nil {
+		msg := fmt.Sprintf("identity with fingerprint %s not found", fingerprint)
+		log.Warn(msg)
+		respond(out, dto.Response{
+			Code:    SUCCESS,
+			Message: fmt.Sprintf("no update performed. %s", msg),
+			Error:   "",
+			Payload: nil,
+		})
+		return
+	}
+
 	if id.Active == onOff {
 		log.Debugf("nothing to do - the provided identity %s is already set to active=%t", id.Name, id.Active)
 		//nothing to do...
