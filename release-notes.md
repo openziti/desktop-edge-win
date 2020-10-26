@@ -1,3 +1,17 @@
+# Release 1.2.13
+
+* What's New
+
+  * Nothing
+
+* Bug Fixes
+
+  * [#158](https://github.com/openziti/desktop-edge-win/issues/158) - Toggling an identity off that was not found crashes the service
+
+* Dependency Updates
+
+  * None
+
 # Release 1.2.12
 
 * What's New
