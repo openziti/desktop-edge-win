@@ -8,16 +8,12 @@ go:
 os:
   - windows
 
-# first try at only building PR or branch push - updated to the first if on line 1 above
-#branches:
-#  except:
-#  - installer
-##  only:
+#branches: //first try at only building PR or branch push - updated to the first if on line 1 above
+#  only:
 #    - "master"
 
 install:
-  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then choco install -y zip ninja --no-progress; fi
-  - PowerShell -Command 'Set-ExecutionPolicy -ExecutionPolicy RemoteSigned'
+  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then choco install -y zip ninja; fi
 
 before_script:
   - export GIT_BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)

@@ -29,19 +29,24 @@ $zipUrl = "https://netfoundry.jfrog.io/artifactory/ziti-maven-snapshot/ziti-tunn
 echo "Downloading zip file "
 echo "      from: $zipUrl"
 
+tree ${scriptPath}..
+
 $ProgressPreference = 'SilentlyContinue'
 $timeTaken = Measure-Command -Expression {
     Invoke-WebRequest $zipUrl -OutFile ziti-tunnel-service.zip
 }
 
+$zipLocal = "ziti-tunnel-service.zip"
+$zipLocal = "${scriptPath}/../service/ziti-tunnel-win.zip"
+
 $milliseconds = $timeTaken.TotalMilliseconds
 echo "      time to download: $milliseconds"
 echo ""
-echo "unzipping ziti-tunnel-service.zip to build\service\"
+echo "unzipping $zipLocal to ${scriptPath}\build\service\"
 
 $ProgressPreference = 'Continue'
 
-Expand-Archive -Verbose -Force -LiteralPath ziti-tunnel-service.zip "${scriptPath}\build\service\"
+Expand-Archive -Verbose -Force -LiteralPath $zipLocal "${scriptPath}\build\service\"
 
 Push-Location ${scriptPath}\..
 echo "Updating the version for UI and Installer"
@@ -56,7 +61,7 @@ msbuild ZitiWintunInstaller.sln /p:configuration=Release
 
 Pop-Location
 
-$ADVINST = "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com"
+$ADVINST = "C:\Program Files (x86)\Caphyon\Advanced Installer 17.6\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
 
 $action = '/SetVersion'

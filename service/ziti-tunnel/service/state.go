@@ -142,10 +142,8 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 		log.Infof("ip not provided using default: %v", ipv4)
 		ipv4 = constants.Ipv4ip
 	}
-	if ipv4mask < 8 || ipv4mask > constants.Ipv4MaxMask {
-		log.Warnf("provided mask is invalid: %d. using default value: %d", ipv4mask, constants.Ipv4DefaultMask)
-		ipv4mask = constants.Ipv4DefaultMask
-		rts.UpdateIpv4Mask(ipv4mask)
+	if ipv4mask < 16 || ipv4mask < constants.Ipv4MaxMask {
+		log.Warnf("provided mask is very large: %d.")
 	}
 	ip, ipnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", ipv4, ipv4mask))
 	if err != nil {
@@ -283,7 +281,9 @@ func iPv6Disabled() bool {
 		log.Debugf("registry key HKLM\\SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters\\DisabledComponents not present. IPv6 is enabled")
 		return false
 	}
-	if val == 255 {
+	actual := val & 255
+	log.Debugf("read value from registry: %d. using actual: %d", val, actual)
+	if actual == 255 {
 		return true
 	} else {
 		log.Infof("IPv6 has DisabledComponents set to %d. If the service fails to start please report this message", val)

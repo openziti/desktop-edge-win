@@ -100,7 +100,7 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 		icept.isIp = true
 	}
 	key := icept.String()
-	log.Infof("adding DNS for %s. service name %s@%s", dnsNameToReg, svcName, key)
+	log.Infof("adding DNS for %s. service name %s@%s. is ip: %t", dnsNameToReg, svcName, key, icept.isIp)
 
 	currentNetwork := C.GoString(ctx.Options.controller)
 

@@ -39,7 +39,7 @@ echo changing to service folder: %SVC_ROOT_DIR%
 cd %SVC_ROOT_DIR%
 
 SET REPO_URL=https://github.com/openziti/ziti-tunneler-sdk-c.git
-SET ZITI_TUNNEL_REPO_BRANCH=v0.6.9
+SET ZITI_TUNNEL_REPO_BRANCH=v0.6.11
 SET TUNNELER_SDK_DIR=%SVC_ROOT_DIR%deps\ziti-tunneler-sdk-c\
 SET CGO_CFLAGS=-DNOGDI -I %TUNNELER_SDK_DIR%install\include
 SET CGO_LDFLAGS=-L %TUNNELER_SDK_DIR%install\lib
