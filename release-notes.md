@@ -12,6 +12,10 @@
   * [#145](https://github.com/openziti/desktop-edge-win/issues/145) - DNS Mask was erroneously overidden to 24 if anything other 
     than 24 was supplied
 
+* Dependency Updates
+
+  * Updated to v0.6.11
+  
 # Release 1.2.11
 
 * What's New
