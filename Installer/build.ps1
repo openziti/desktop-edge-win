@@ -61,7 +61,7 @@ msbuild ZitiWintunInstaller.sln /p:configuration=Release
 
 Pop-Location
 
-$ADVINST = "C:\Program Files (x86)\Caphyon\Advanced Installer 17.5\bin\x86\AdvancedInstaller.com"
+$ADVINST = "C:\Program Files (x86)\Caphyon\Advanced Installer 17.6\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
 
 $action = '/SetVersion'
