@@ -157,11 +157,7 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 		return fmt.Errorf("failed to set IP address to %v: (%v)", ip, err)
 	}
 
-	dnsStr := fmt.Sprintf("%s/%d", rts.state.DnsConfig.Ipv4, rts.state.DnsConfig.Ipv4Mask)
-	dnsip, _, err := net.ParseCIDR(dnsStr)
-	if err != nil {
-		return fmt.Errorf("error parsing DNS: %s. (%v)", dnsStr, err)
-	}
+	dnsip := net.ParseIP(rts.state.DnsConfig.Ipv4)
 	dnsServers := []net.IP{
 		dnsip,
 	}
@@ -169,20 +165,8 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 		log.Infof("IPv6 is disabled. Ignoring IPv6")
 	} else {
 		log.Infof("IPv6 enabled. Adding IPv6 DNS %s", rts.state.DnsConfig.Ipv6)
-		dns6Str := fmt.Sprintf("%s/%d", rts.state.DnsConfig.Ipv6, rts.state.DnsConfig.Ipv6Mask)
-		dns6ip, _, err := net.ParseCIDR(dnsStr)
-		if err != nil {
-			return fmt.Errorf("error parsing DNS: %s. (%v)", dns6Str, err)
-		}
-		dnsServers = append(dnsServers, dns6ip)
+		dnsServers = append(dnsServers, net.ParseIP(rts.state.DnsConfig.Ipv6))
 	}
-
-
-
-
-
-
-
 
 	log.Infof("adding DNS servers to TUN: %s", dnsServers)
 	err = luid.AddDNS(dnsServers)
@@ -283,18 +267,10 @@ func (t *RuntimeState) LoadConfig() {
 		log.Warnf("Dns Ipv4 not supplied. Using %s", constants.DnsIpv4Default)
 		t.state.DnsConfig.Ipv4 = constants.DnsIpv4Default
 	}
-	if t.state.DnsConfig.Ipv4Mask < 1 {
-		log.Warnf("Dns Ipv4Mask not supplied. Using %d", constants.DnsIpv4MaskDefault)
-		t.state.DnsConfig.Ipv4Mask = constants.DnsIpv4MaskDefault
-	}
 
 	if len(strings.TrimSpace(t.state.DnsConfig.Ipv6)) < 1 {
 		log.Warnf("Dns Ipv4 not supplied. Using %s", constants.DnsIpv6Default)
 		t.state.DnsConfig.Ipv6 = constants.DnsIpv6Default
-	}
-	if t.state.DnsConfig.Ipv6Mask < 1 {
-		log.Warnf("Dns Ipv6Mask not supplied. Using %d", constants.DnsIpv6MaskDefault)
-		t.state.DnsConfig.Ipv6Mask = constants.DnsIpv6MaskDefault
 	}
 
 	if t.state.TunIpv4Mask > constants.Ipv4MinMask {
