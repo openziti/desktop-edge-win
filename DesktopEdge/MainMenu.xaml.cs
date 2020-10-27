@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Diagnostics;
@@ -83,31 +83,42 @@ namespace ZitiDesktopEdge
 		}
 
 		private void CheckUpdates() {
-			HttpWebRequest httpWebRequest = WebRequest.CreateHttp(_updateUrl);
-			httpWebRequest.Method = "GET";
-			httpWebRequest.ContentType = "application/json";
-			httpWebRequest.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36";
-			HttpWebResponse httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
-			StreamReader streamReader = new StreamReader(httpResponse.GetResponseStream());
-			string result = streamReader.ReadToEnd();
-			JObject json = JObject.Parse(result);
-			string currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
-			string serverVersion = json.Property("tag_name").Value.ToString() + ".0";
+			try
+			{
+				HttpWebRequest httpWebRequest = WebRequest.CreateHttp(_updateUrl);
+				httpWebRequest.Method = "GET";
+				httpWebRequest.ContentType = "application/json";
+				httpWebRequest.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36";
+				HttpWebResponse httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
+				StreamReader streamReader = new StreamReader(httpResponse.GetResponseStream());
+				string result = streamReader.ReadToEnd();
+				JObject json = JObject.Parse(result);
+				string currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+				string serverVersion = json.Property("tag_name").Value.ToString() + ".0";
 
-			Version installed = new Version(currentVersion);
-			Version published = new Version(serverVersion);
-			int compare = installed.CompareTo(published);
-			if (compare<0) {
-				UpdateAvailable.Content = "An Upgrade is available, click to download";
+				Version installed = new Version(currentVersion);
+				Version published = new Version(serverVersion);
+				int compare = installed.CompareTo(published);
+				if (compare < 0)
+				{
+					UpdateAvailable.Content = "An Upgrade is available, click to download";
+					UpdateAvailable.Visibility = Visibility.Visible;
+				}
+				else if (compare > 0)
+				{
+					UpdateAvailable.Content = "Your version is newer than the released version";
+					UpdateAvailable.Visibility = Visibility.Visible;
+				}
+				JArray assets = JArray.Parse(json.Property("assets").Value.ToString());
+				foreach (JObject asset in assets.Children<JObject>())
+				{
+					_downloadUrl = asset.Property("browser_download_url").Value.ToString();
+					break;
+				}
+			} catch
+			{
+				UpdateAvailable.Content = "An exception occurred while performing upgrade check";
 				UpdateAvailable.Visibility = Visibility.Visible;
-			} else if (compare>0) {
-				UpdateAvailable.Content = "Your version is newer than the released version";
-				UpdateAvailable.Visibility = Visibility.Visible;
-			}
-			JArray assets = JArray.Parse(json.Property("assets").Value.ToString());
-			foreach (JObject asset in assets.Children<JObject>()) {
-				_downloadUrl = asset.Property("browser_download_url").Value.ToString();
-				break;
 			}
 		}
 
