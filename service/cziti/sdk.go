@@ -119,8 +119,18 @@ func (c *CZitiCtx) Status() (int, error) {
 }
 
 func (c *CZitiCtx) Name() string {
-	if c.zctx != nil && c.zid != nil {
-		return C.GoString(c.zid.name)
+	if c != nil {
+		if c.zid != nil {
+			if c.zid.name != nil {
+				return C.GoString(c.zid.name)
+			} else {
+				log.Debug("in Name - c.zid.name was nil")
+			}
+		} else {
+			log.Debug("in Name - c.zid was nil")
+		}
+	} else {
+		log.Debug("in Name - c was nil")
 	}
 	return "<unknown>"
 }
