@@ -166,7 +166,7 @@ func (dns *dnsImpl) Resolve(toResolve string) net.IP {
 	return dns.hostnameMap[dnsName].ip
 }
 
-func (dns *dnsImpl) UnregisterService(ctx *CZitiCtx, name string) {
+func (dns *dnsImpl) UnregisterService(ctx api.Connection, name string) {
 	log.Debugf("UnregisterService named %s called for controller %s and identity: %s.", name, ctx.Controller(), ctx.Name())
 	for key, sc := range dns.serviceMap {
 		if sc.ctx == ctx && sc.name == name {

@@ -18,11 +18,11 @@
 package dto
 
 import (
-	"github.com/openziti/desktop-edge-win/service/cziti"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/api"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"github.com/openziti/sdk-golang/ziti/enroll"
 	"log"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 )
 
 type AddIdentity struct {
@@ -50,8 +50,8 @@ type Identity struct {
 	Metrics     *Metrics   `json:",omitempty"`
 	Tags        []string   `json:",omitempty"`
 
-	Connected   bool            `json:"-"`
-	ZitiContext *cziti.CZitiCtx `json:"-"`
+	Connected   bool           `json:"-"`
+	ZitiContext api.Connection `json:"-"`
 }
 type Metrics struct {
 	Up   int64
@@ -75,6 +75,13 @@ type TunIpInfo struct {
 	DNS    string
 }
 
+type DnsConfig struct {
+	Ipv4     string
+	Ipv4Mask int
+	Ipv6     string
+	Ipv6Mask int
+}
+
 func (id *Identity) Path() string {
 	if id.FingerPrint == "" {
 		log.Fatalf("fingerprint is invalid for id %s", id.Name)
@@ -91,6 +98,7 @@ type TunnelStatus struct {
 	ServiceVersion ServiceVersion
 	TunIpv4        string
 	TunIpv4Mask    int
+	DnsConfig      DnsConfig
 }
 
 type ServiceVersion struct {

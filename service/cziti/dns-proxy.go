@@ -39,7 +39,7 @@ var respChan = make(chan []byte, MaxDnsRequests)
 func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn, ipVer int) {
 	q := &dns.Msg{}
 	if err := q.Unpack(packet); err != nil {
-		log.Errorf("ERROR", err)
+		log.Errorf("ERROR: %v", err)
 		return
 	}
 
@@ -122,11 +122,10 @@ type dnsreq struct {
 }
 
 func RunDNSserver(dnsBind []net.IP, ready chan bool) {
-	dnsServers := GetUpstreamDNS()
-	go runDNSproxy(dnsServers)
+	go runDNSproxy(GetUpstreamDNS())
 
 	for _, bindAddr := range dnsBind {
-		go runListener(bindAddr, 53, reqch)
+		go runListener(&bindAddr, 53, reqch)
 	}
 
 	ReplaceDNS(dnsBind)
@@ -138,10 +137,9 @@ func RunDNSserver(dnsBind []net.IP, ready chan bool) {
 	}
 }
 
-func runListener(ip net.IP, port int, reqch chan dnsreq) {
-	log.Infof("Running DNS listener on %v", ip)
+func runListener(ip *net.IP, port int, reqch chan dnsreq) {
 	laddr := &net.UDPAddr{
-		IP:   ip,
+		IP:   *ip,
 		Port: port,
 		Zone: "",
 	}
@@ -153,9 +151,18 @@ func runListener(ip net.IP, port int, reqch chan dnsreq) {
 		network = "udp4"
 	}
 
-	server, err := net.ListenUDP(network, laddr)
-	if err != nil {
-		log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "udp listening on network", err)
+	listening := false
+
+	var server *net.UDPConn
+	var err error
+	for !listening {
+		log.Infof("Trying to run a DNS listener on %v", ip)
+		server, err = net.ListenUDP(network, laddr)
+		if err != nil {
+			log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "udp listening on network", err)
+		} else {
+			listening = true
+		}
 	}
 
 	for {

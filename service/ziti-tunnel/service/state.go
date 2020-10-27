@@ -101,6 +101,7 @@ func (t *RuntimeState) ToStatus() dto.TunnelStatus {
 		ServiceVersion: Version,
 		TunIpv4:        t.state.TunIpv4,
 		TunIpv4Mask:    t.state.TunIpv4Mask,
+		DnsConfig:      t.state.DnsConfig,
 	}
 
 	for i, id := range t.state.Identities {
@@ -143,28 +144,45 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 		ipv4 = constants.Ipv4ip
 	}
 	if ipv4mask < 16 || ipv4mask < constants.Ipv4MaxMask {
-		log.Warnf("provided mask is very large: %d.")
+		log.Warnf("provided mask is very large: %d.", ipv4mask)
 	}
 	ip, ipnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", ipv4, ipv4mask))
 	if err != nil {
 		return fmt.Errorf("error parsing CIDR block: (%v)", err)
 	}
-
 	log.Infof("setting TUN interface address to [%s]", ip)
-	err = luid.SetIPAddresses([]net.IPNet{{ip, ipnet.Mask}})
+
+	err = luid.SetIPAddresses([]net.IPNet{ *ipnet })
 	if err != nil {
-		return fmt.Errorf("failed to set IP address: (%v)", err)
+		return fmt.Errorf("failed to set IP address to %v: (%v)", ip, err)
 	}
 
+	dnsStr := fmt.Sprintf("%s/%d", rts.state.DnsConfig.Ipv4, rts.state.DnsConfig.Ipv4Mask)
+	dnsip, _, err := net.ParseCIDR(dnsStr)
+	if err != nil {
+		return fmt.Errorf("error parsing DNS: %s. (%v)", dnsStr, err)
+	}
 	dnsServers := []net.IP{
-		net.ParseIP(Ipv4dns).To4(),
+		dnsip,
 	}
 	if iPv6Disabled() {
-		log.Infof("IPv6 is disabled. Ignoring IPv6 DNS ::1")
+		log.Infof("IPv6 is disabled. Ignoring IPv6")
 	} else {
-		log.Infof("IPv6 enabled. Adding IPv6 DNS ::1")
-		dnsServers = append(dnsServers, net.ParseIP(Ipv6dns))
+		log.Infof("IPv6 enabled. Adding IPv6 DNS %s", rts.state.DnsConfig.Ipv6)
+		dns6Str := fmt.Sprintf("%s/%d", rts.state.DnsConfig.Ipv6, rts.state.DnsConfig.Ipv6Mask)
+		dns6ip, _, err := net.ParseCIDR(dnsStr)
+		if err != nil {
+			return fmt.Errorf("error parsing DNS: %s. (%v)", dns6Str, err)
+		}
+		dnsServers = append(dnsServers, dns6ip)
 	}
+
+
+
+
+
+
+
 
 	log.Infof("adding DNS servers to TUN: %s", dnsServers)
 	err = luid.AddDNS(dnsServers)
@@ -186,11 +204,19 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 	log.Info("routing applied")
 
 	cziti.DnsInit(&rts, ipv4, ipv4mask)
-	cziti.Start()
-	err = cziti.HookupTun(tunDevice, dns)
+	ready := make(chan bool)
+	log.Infof("DNS server - launching: %v", dns)
+	go cziti.RunDNSserver(dns, ready)
+	log.Infof("DNS server - waiting for startup")
+	<-ready
+	log.Infof("DNS server - ready")
+
+	err = cziti.HookupTun(tunDevice/*, dns*/)
 	if err != nil {
 		log.Panicf("An unrecoverable error has occurred! %v", err)
 	}
+
+	cziti.Start()
 	return nil
 }
 
@@ -245,15 +271,40 @@ func (t *RuntimeState) LoadConfig() {
 
 	err = dec.Decode(&rts.state)
 	if err != nil {
-		log.Warnf("unexpected error reading config file. %v", err)
-		t.state = &dto.TunnelStatus{}
-		return
+		log.Panicf("unexpected error reading config file. %v", err)
 	}
 
 	err = file.Close()
 	if err != nil {
 		log.Errorf("could not close configuration file. this is not normal! %v", err)
 	}
+
+	if len(strings.TrimSpace(t.state.DnsConfig.Ipv4)) < 1 {
+		log.Warnf("Dns Ipv4 not supplied. Using %s", constants.DnsIpv4Default)
+		t.state.DnsConfig.Ipv4 = constants.DnsIpv4Default
+	}
+	if t.state.DnsConfig.Ipv4Mask < 1 {
+		log.Warnf("Dns Ipv4Mask not supplied. Using %d", constants.DnsIpv4MaskDefault)
+		t.state.DnsConfig.Ipv4Mask = constants.DnsIpv4MaskDefault
+	}
+
+	if len(strings.TrimSpace(t.state.DnsConfig.Ipv6)) < 1 {
+		log.Warnf("Dns Ipv4 not supplied. Using %s", constants.DnsIpv6Default)
+		t.state.DnsConfig.Ipv6 = constants.DnsIpv6Default
+	}
+	if t.state.DnsConfig.Ipv6Mask < 1 {
+		log.Warnf("Dns Ipv6Mask not supplied. Using %d", constants.DnsIpv6MaskDefault)
+		t.state.DnsConfig.Ipv6Mask = constants.DnsIpv6MaskDefault
+	}
+
+	if t.state.TunIpv4Mask > constants.Ipv4MinMask {
+		log.Warnf("TunMask is too small: %d. Setting to minimum: %d", t.state.TunIpv4Mask, constants.Ipv4MinMask)
+		t.state.TunIpv4Mask = constants.Ipv4MinMask
+	} else if t.state.TunIpv4Mask < constants.Ipv4MaxMask {
+		log.Warnf("TunMask is too large: %d. Setting to maximum: %d", t.state.TunIpv4Mask, constants.Ipv4MaxMask)
+		t.state.TunIpv4Mask = constants.Ipv4MaxMask
+	}
+	log.Warnf("TunMask set to: %d.", t.state.TunIpv4Mask)
 }
 
 func (t *RuntimeState) UpdateIpv4Mask(ipv4mask int){

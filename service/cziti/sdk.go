@@ -114,6 +114,20 @@ type CZitiCtx struct {
 	Services *sync.Map
 }
 
+func (c *CZitiCtx) GetMetrics() (int64, int64, bool) {
+	if c == nil {
+		return 0, 0, false
+	}
+	var up, down C.double
+	C.ziti_get_transfer_rates(c.zctx, &up, &down)
+
+	return int64(up), int64(down), true
+}
+
+func (c *CZitiCtx) UnsafePointer() unsafe.Pointer {
+	return unsafe.Pointer(c)
+}
+
 func (c *CZitiCtx) Status() (int, error) {
 	return c.status, c.statusErr
 }
