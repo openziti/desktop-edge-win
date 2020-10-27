@@ -77,9 +77,7 @@ type TunIpInfo struct {
 
 type DnsConfig struct {
 	Ipv4     string
-	Ipv4Mask int
 	Ipv6     string
-	Ipv6Mask int
 }
 
 func (id *Identity) Path() string {
