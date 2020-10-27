@@ -122,19 +122,21 @@ $dnsPerInterface = @{}
 
 foreach ($dns in $dnsinfo)
 {
-    if($dnsPerInterface[$dns.InterfaceIndex] -eq $null) { $dnsPerInterface[$dns.InterfaceIndex]=[System.Collections.ArrayList]@() }
-    
-    $dnsServers=$dns.ServerAddresses
-    $ArrList=[System.Collections.ArrayList]@($dnsServers)
-    foreach ($dnsIp in $dnsIps)
-    {
-        if(($dnsServers -ne $null) -and ($ArrList.Contains($dnsIp)) ) {
-            # uncomment when debugging echo ($dns.InterfaceAlias + " IPv4 already contains ${dnsIp}")
-        } else {
-            $ArrList.Insert(0, $dnsIp)
+    if($dnsPerInterface[$dns.InterfaceIndex] -eq $null) {
+        $dnsPerInterface[$dns.InterfaceIndex]=[System.Collections.ArrayList]@()
+    } else {
+        $dnsServers=$dns.ServerAddresses
+        $ArrList=[System.Collections.ArrayList]@($dnsServers)
+        foreach ($dnsIp in $dnsIps)
+        {
+            if(($dnsServers -ne $null) -and ($ArrList.Contains($dnsIp)) ) {
+                # uncomment when debugging echo ($dns.InterfaceAlias + " IPv4 already contains ${dnsIp}")
+            } else {
+                $ArrList.Insert(0, $dnsIp)
+            }
         }
+        $dnsPerInterface[$dns.InterfaceIndex].AddRange($ArrList)
     }
-    $dnsPerInterface[$dns.InterfaceIndex].AddRange($ArrList)
 }
 
 foreach ($key in $dnsPerInterface.Keys)
