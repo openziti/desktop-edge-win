@@ -7,9 +7,9 @@
              mc:Ignorable="d" 
              x:Name="IdentityArea"
              d:DesignHeight="500" d:DesignWidth="350">
-    <Grid MaxWidth="350">
+    <Grid MaxWidth="400">
         <Canvas>
-            <Rectangle Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="White" Width="20" Canvas.Left="165" ClipToBounds="True" Canvas.Bottom="-10">
+            <Rectangle Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="White" Width="20" Canvas.Left="185" ClipToBounds="True" Canvas.Bottom="-10">
                 <Rectangle.LayoutTransform>
                     <RotateTransform Angle="-45"/>
                 </Rectangle.LayoutTransform>

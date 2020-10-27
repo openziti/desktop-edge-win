@@ -8,7 +8,7 @@
              d:DesignHeight="64" d:DesignWidth="375" Height="64">
     <Canvas MouseEnter="Canvas_MouseEnter" MouseLeave="Canvas_MouseLeave">
         <Rectangle Fill="#0F0C28" HorizontalAlignment="Left" Stroke="Black" VerticalAlignment="Top" ClipToBounds="True"></Rectangle>
-        <Rectangle Name="OverState" Fill="#FFFFFF" Height="64" Width="375" Opacity="0" ClipToBounds="True" Cursor="Hand"></Rectangle> 
+        <Rectangle Name="OverState" Fill="#FFFFFF" Height="64" Width="400" Opacity="0" ClipToBounds="True" Cursor="Hand"></Rectangle> 
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>

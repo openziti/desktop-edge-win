@@ -22,6 +22,7 @@ namespace ZitiDesktopEdge {
 		private System.Windows.Forms.Timer _timer;
 		private Client serviceClient = null;
 		private bool _isAttached = true;
+		private bool _isServiceInError = false;
 		private int _right = 75;
 		private int _bottom = 0;
 		private double _maxHeight = 800d;
@@ -94,6 +95,8 @@ namespace ZitiDesktopEdge {
 			ErrorMsg.Content = msg;
 			ErrorMsgDetail.Content = detailMessage;
 			SetNotifyIcon("red");
+			_isServiceInError = true;
+			UpdateServiceView();
 		}
 		private void SetCantDisplay() {
 			SetCantDisplay("Service Not Started", "Start the Ziti Tunnel Service to get started");
@@ -112,6 +115,27 @@ namespace ZitiDesktopEdge {
 		private void TargetNotifyIcon_Click(object sender, EventArgs e) {
 			this.Show();
 			this.Activate();
+		}
+
+		private void UpdateServiceView() {
+			if (_isServiceInError) {
+				AddIdAreaButton.Opacity = 0.1;
+				AddIdAreaButton.IsEnabled = false;
+				AddIdButton.Opacity = 0.1;
+				AddIdButton.IsEnabled = false;
+				DisconnectButton.Visibility = Visibility.Collapsed;
+				ConnectButton.Visibility = Visibility.Visible;
+				ConnectButton.Opacity = 0.1;
+				StatArea.Opacity = 0.1;
+			} else {
+				AddIdAreaButton.Opacity = 1.0;
+				AddIdAreaButton.IsEnabled = true;
+				AddIdButton.Opacity = 1.0;
+				AddIdButton.IsEnabled = true;
+				ConnectButton.Visibility = Visibility.Collapsed;
+				DisconnectButton.Visibility = Visibility.Visible;
+				StatArea.Opacity = 1.0;
+			}
 		}
 
 		private void MainWindow_Loaded(object sender, RoutedEventArgs e) {
@@ -155,6 +179,8 @@ namespace ZitiDesktopEdge {
 			this.Dispatcher.Invoke(() => {
 				//e is _ALWAYS_ null at this time use this to display something if you want
 				NoServiceView.Visibility = Visibility.Collapsed;
+				_isServiceInError = false;
+				UpdateServiceView();
 				SetNotifyIcon("white");
 				LoadIdentities(true);
 			});
@@ -288,6 +314,8 @@ namespace ZitiDesktopEdge {
 			this.identities.Clear();
 
 			if (status != null) {
+				_isServiceInError = false;
+				UpdateServiceView();
 				NoServiceView.Visibility = Visibility.Collapsed;
 				SetNotifyIcon("white");
 				if (status.Active) {
@@ -438,12 +466,14 @@ namespace ZitiDesktopEdge {
 			_timer.Start();
 		}
 		private void Connect(object sender, RoutedEventArgs e) {
-			ShowLoad();
-			this.Dispatcher.Invoke(() => {
-				//Dispatcher.Invoke(new Action(() => { }), System.Windows.Threading.DispatcherPriority.ContextIdle);
-				DoConnect();
-				HideLoad();
-			});
+			if (!_isServiceInError) {
+				ShowLoad();
+				this.Dispatcher.Invoke(() => {
+					//Dispatcher.Invoke(new Action(() => { }), System.Windows.Threading.DispatcherPriority.ContextIdle);
+					DoConnect();
+					HideLoad();
+				});
+			}
 		}
 
 		private void DoConnect() {
@@ -468,28 +498,30 @@ namespace ZitiDesktopEdge {
 			}
 		}
 		private void Disconnect(object sender, RoutedEventArgs e) {
-			ShowLoad();
-			try {
-				ConnectedTime.Content =  "00:00:00";
-				_timer.Stop();
-				serviceClient.SetTunnelState(false);
-				SetNotifyIcon("white");
-				ConnectButton.Visibility = Visibility.Visible;
-				DisconnectButton.Visibility = Visibility.Collapsed;
-				for (int i = 0; i < identities.Count; i++) {
-					serviceClient.IdentityOnOff(identities[i].Fingerprint, false);
+			if (!_isServiceInError) {
+				ShowLoad();
+				try {
+					ConnectedTime.Content = "00:00:00";
+					_timer.Stop();
+					serviceClient.SetTunnelState(false);
+					SetNotifyIcon("white");
+					ConnectButton.Visibility = Visibility.Visible;
+					DisconnectButton.Visibility = Visibility.Collapsed;
+					for (int i = 0; i < identities.Count; i++) {
+						serviceClient.IdentityOnOff(identities[i].Fingerprint, false);
+					}
+					for (int i = 0; i < IdList.Children.Count; i++) {
+						IdentityItem item = IdList.Children[i] as IdentityItem;
+						item._identity.IsEnabled = false;
+						item.RefreshUI();
+					}
+				} catch (ServiceException se) {
+					ShowError(se.AdditionalInfo, se.Message);
+				} catch (Exception ex) {
+					ShowError("Unexpected Error", "Code 4:" + ex.Message);
 				}
-				for (int i = 0; i < IdList.Children.Count; i++) {
-					IdentityItem item = IdList.Children[i] as IdentityItem;
-					item._identity.IsEnabled = false;
-					item.RefreshUI();
-				}
-			} catch (ServiceException se) {
-				ShowError(se.AdditionalInfo, se.Message);
-			} catch (Exception ex) {
-				ShowError("Unexpected Error", "Code 4:"+ex.Message);
+				HideLoad();
 			}
-			HideLoad();
 		}
 
 		private void ShowLoad() {
@@ -523,6 +555,7 @@ namespace ZitiDesktopEdge {
 
 		private void CloseError(object sender, MouseButtonEventArgs e) {
 			ErrorView.Visibility = Visibility.Collapsed;
+			NoServiceView.Visibility = Visibility.Collapsed;
 		}
 
 		private void CloseApp(object sender, MouseButtonEventArgs e) {
