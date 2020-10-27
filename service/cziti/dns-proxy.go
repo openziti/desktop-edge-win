@@ -39,7 +39,7 @@ var respChan = make(chan []byte, MaxDnsRequests)
 func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn, ipVer int) {
 	q := &dns.Msg{}
 	if err := q.Unpack(packet); err != nil {
-		log.Errorf("ERROR: %v", err)
+		log.Errorf("unexpected processDNSquery. [len(packet):] [ipVer:%v] [error: %v]", len(packet), ipVer, err)
 		return
 	}
 
@@ -122,7 +122,7 @@ type dnsreq struct {
 }
 
 func RunDNSserver(dnsBind []net.IP, ready chan bool) {
-	go runDNSproxy(GetUpstreamDNS())
+	go runDNSproxy(GetUpstreamDNS(), dnsBind)
 
 	for _, bindAddr := range dnsBind {
 		go runListener(&bindAddr, 53, reqch)
@@ -137,6 +137,9 @@ func RunDNSserver(dnsBind []net.IP, ready chan bool) {
 	}
 }
 
+func XxxrunListener(ip *net.IP, port int) {
+	runListener(ip, port, reqch)
+}
 func runListener(ip *net.IP, port int, reqch chan dnsreq) {
 	laddr := &net.UDPAddr{
 		IP:   *ip,
@@ -207,24 +210,31 @@ func proxyDNS(req *dns.Msg, peer *net.UDPAddr, serv *net.UDPConn, ipVer int) {
 	}
 }
 
-func dnsPanicRecover() {
+func dnsPanicRecover(localDnsServers []net.IP) {
+	//reset all network interfaces...
+	ResetDNS()
+
 	// get dns again and reconfigure
-	go runDNSproxy(GetUpstreamDNS())
+	go runDNSproxy(GetUpstreamDNS(), localDnsServers)
+
+	// reconfigure DNS
+	ReplaceDNS(localDnsServers)
 }
 
-func runDNSproxy(dnsServers []string) {
+func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
+	log.Infof("restarting DNS proxy")
 	domains = GetConnectionSpecificDomains()
 	log.Infof("ConnectionSpecificDomains: %v", domains)
-	log.Infof("dnsServers: %v", dnsServers)
+	log.Infof("dnsServers: %v", upstreamDnsServers)
 	defer func() {
 		if err := recover(); err != nil {
 			log.Errorf("Recovering from panic due to DNS-related issue. %v", err)
-			dnsPanicRecover()
+			dnsPanicRecover(localDnsServers)
 		}
 	}()
 
 	var dnsUpstreams []*net.UDPConn
-	for _, s := range dnsServers {
+	for _, s := range upstreamDnsServers {
 		sAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:53", s))
 		if err != nil {
 			// fec0:0:0:ffff:: is 'legacy' from windows apparently...

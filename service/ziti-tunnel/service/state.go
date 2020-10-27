@@ -112,10 +112,10 @@ func (t *RuntimeState) ToStatus() dto.TunnelStatus {
  	return clean
 }
 
-func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
+func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, error) {
 	if noZiti() {
 		log.Warnf("NOZITI set to true. this should be only used for debugging")
-		return nil
+		return nil, nil
 	}
 
 	log.Infof("creating TUN device: %s", TunName)
@@ -127,13 +127,13 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 			t.tunName = tunName
 		}
 	} else {
-		return fmt.Errorf("error creating TUN device: (%v)", err)
+		return nil, fmt.Errorf("error creating TUN device: (%v)", err)
 	}
 
 	if name, err := tunDevice.Name(); err == nil {
 		log.Debugf("created TUN device [%s]", name)
 	} else {
-		return fmt.Errorf("error getting TUN name: (%v)", err)
+		return nil, fmt.Errorf("error getting TUN name: (%v)", err)
 	}
 
 	nativeTunDevice := tunDevice.(*tun.NativeTun)
@@ -148,60 +148,60 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 	}
 	ip, ipnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", ipv4, ipv4mask))
 	if err != nil {
-		return fmt.Errorf("error parsing CIDR block: (%v)", err)
+		return nil, fmt.Errorf("error parsing CIDR block: (%v)", err)
 	}
-	log.Infof("setting TUN interface address to [%s]", ip)
+	log.Infof("setting TUN interface address to [%v]", ipnet)
 
-	err = luid.SetIPAddresses([]net.IPNet{ *ipnet })
+	//err = luid.SetIPAddresses([]net.IPNet{{IP:ip, Mask: []byte{255,255,255,0}}})
+	err = luid.SetIPAddresses([]net.IPNet{{IP:ip, Mask: []byte{255,255,255,255}}})
 	if err != nil {
-		return fmt.Errorf("failed to set IP address to %v: (%v)", ip, err)
+		return nil, fmt.Errorf("failed to set IP address to %v: (%v)", ip, err)
 	}
 
-	dnsip := net.ParseIP(rts.state.DnsConfig.Ipv4)
-	dnsServers := []net.IP{
-		dnsip,
-	}
-	if iPv6Disabled() {
-		log.Infof("IPv6 is disabled. Ignoring IPv6")
-	} else {
-		log.Infof("IPv6 enabled. Adding IPv6 DNS %s", rts.state.DnsConfig.Ipv6)
-		dnsServers = append(dnsServers, net.ParseIP(rts.state.DnsConfig.Ipv6))
-	}
+	//dnsip := net.ParseIP("100.64.0.1")
+	dnsip := ip //net.ParseIP("127.21.71.53")
+	//ipnet2 := net.IPNet{IP: dnsip, Mask: []byte{255,255,255,255}}
+	//log.Infof("meh: %v", ipnet2)
+	//err = luid.SetIPAddresses([]net.IPNet{ *ipnet })
+	dnsServers := []net.IP{ dnsip }
 
 	log.Infof("adding DNS servers to TUN: %s", dnsServers)
 	err = luid.AddDNS(dnsServers)
 	if err != nil {
-		return fmt.Errorf("failed to add DNS addresses: (%v)", err)
+		return nil, fmt.Errorf("failed to add DNS addresses: (%v)", err)
 	}
 	log.Infof("checking TUN dns servers")
 	dns, err := luid.DNS()
 	if err != nil {
-		return fmt.Errorf("failed to fetch DNS address: (%v)", err)
+		return nil, fmt.Errorf("failed to fetch DNS address: (%v)", err)
 	}
 	log.Infof("TUN dns servers set to: %s", dns)
 
 	log.Infof("routing destination [%s] through [%s]", *ipnet, ipnet.IP)
 	err = luid.SetRoutes([]*winipcfg.RouteData{{*ipnet, ipnet.IP, 0}})
 	if err != nil {
-		return fmt.Errorf("failed to SetRoutes: (%v)", err)
+		return nil, fmt.Errorf("failed to SetRoutes: (%v)", err)
 	}
 	log.Info("routing applied")
-
-	cziti.DnsInit(&rts, ipv4, ipv4mask)
-	ready := make(chan bool)
-	log.Infof("DNS server - launching: %v", dns)
-	go cziti.RunDNSserver(dns, ready)
-	log.Infof("DNS server - waiting for startup")
-	<-ready
-	log.Infof("DNS server - ready")
 
 	err = cziti.HookupTun(tunDevice/*, dns*/)
 	if err != nil {
 		log.Panicf("An unrecoverable error has occurred! %v", err)
 	}
 
-	cziti.Start()
-	return nil
+	return ip, nil
+}
+
+func testdns() {
+	ip := net.ParseIP("100.64.0.1")
+
+	ready := make(chan bool)
+	cziti.XxxrunListener(&ip, 53)
+
+	<-ready
+	log.Infof("DNS server - ready")
+	<-ready
+	log.Infof("DNS server - ready")
 }
 
 func (t *RuntimeState) LoadIdentity(id *dto.Identity) {
@@ -262,7 +262,7 @@ func (t *RuntimeState) LoadConfig() {
 	if err != nil {
 		log.Errorf("could not close configuration file. this is not normal! %v", err)
 	}
-
+/*
 	if len(strings.TrimSpace(t.state.DnsConfig.Ipv4)) < 1 {
 		log.Warnf("Dns Ipv4 not supplied. Using %s", constants.DnsIpv4Default)
 		t.state.DnsConfig.Ipv4 = constants.DnsIpv4Default
@@ -271,7 +271,7 @@ func (t *RuntimeState) LoadConfig() {
 	if len(strings.TrimSpace(t.state.DnsConfig.Ipv6)) < 1 {
 		log.Warnf("Dns Ipv4 not supplied. Using %s", constants.DnsIpv6Default)
 		t.state.DnsConfig.Ipv6 = constants.DnsIpv6Default
-	}
+	}*/
 
 	if t.state.TunIpv4Mask > constants.Ipv4MinMask {
 		log.Warnf("TunMask is too small: %d. Setting to minimum: %d", t.state.TunIpv4Mask, constants.Ipv4MinMask)

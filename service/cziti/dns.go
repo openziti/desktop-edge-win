@@ -102,7 +102,13 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 	key := icept.String()
 	log.Infof("adding DNS for %s. service name %s@%s. is ip: %t", dnsNameToReg, svcName, key, icept.isIp)
 
-	currentNetwork := C.GoString(ctx.Options.controller)
+	var currentNetwork string
+	if ctx != nil {
+		currentNetwork = C.GoString(ctx.Options.controller)
+	}
+	if len(currentNetwork) < 1 {
+		currentNetwork = "who gives a fuck"
+	}
 
 	// check to see if the hostname is mapped...
 	if foundIp, found := dns.hostnameMap[icept.host]; found {

@@ -7,7 +7,4 @@ const(
 	Ipv4DefaultMask = 24
 
 	DnsIpv4Default = "127.0.0.1"
-	DnsIpv4MaskDefault = 8
-	DnsIpv6Default = "::1"
-	DnsIpv6MaskDefault = 128
 )

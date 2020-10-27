@@ -106,6 +106,8 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	log.Info(SvcName + " status set to running. starting cancel loop")
 
 	rts.SaveState()
+
+	//go testdns()
 	waitForStopRequest(ops)
 
 	requestShutdown("service shutdown")
@@ -230,19 +232,33 @@ func (p *Pipes) shutdownConnections() {
 }
 
 func initialize() error {
-	err := rts.CreateTun(rts.state.TunIpv4, rts.state.TunIpv4Mask)
+	assignedIp, err := rts.CreateTun(rts.state.TunIpv4, rts.state.TunIpv4Mask)
 	if err != nil {
 		return err
 	}
 	setTunInfo(rts.state)
 
+	go assignDns(assignedIp, rts.state.TunIpv4, rts.state.TunIpv4Mask)
 	// connect any identities that are enabled
 	for _, id := range rts.state.Identities {
 		connectIdentity(id)
 	}
-
 	log.Debugf("initial state loaded from configuration file")
 	return nil
+}
+
+func assignDns(tunIp net.IP, ipv4 string, ipv4mask int) {
+	log.Info("Assigning dns")
+	time.Sleep(5 * time.Second)
+	cziti.DnsInit(&rts, tunIp.String(), ipv4mask)
+	ready := make(chan bool)
+	dns := []net.IP{ tunIp }
+	log.Infof("DNS server - launching: %v", dns)
+	go cziti.RunDNSserver(dns, ready)
+	log.Infof("DNS server - waiting for startup")
+	<-ready
+	log.Infof("DNS server - ready")
+	cziti.Start()
 }
 
 func setTunInfo(s *dto.TunnelStatus) {
@@ -275,7 +291,7 @@ func setTunInfo(s *dto.TunnelStatus) {
 	//set the tun info into the state
 	s.IpInfo = &dto.TunIpInfo{
 		Ip:     ipv4,
-		DNS:    rts.state.DnsConfig.Ipv4,
+		DNS:    rts.state.TunIpv4,
 		MTU:    umtu,
 		Subnet: ipv4MaskString(ipnet.Mask),
 	}
