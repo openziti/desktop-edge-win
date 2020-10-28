@@ -237,7 +237,6 @@ func initialize() error {
 	}
 	setTunInfo(rts.state)
 
-	fmt.Println("assignedip: %s", assignedIp)
 	//
 	//ready := make(chan bool)
 	//go assignDns(assignedIp, ready)

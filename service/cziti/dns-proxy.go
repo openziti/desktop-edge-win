@@ -154,11 +154,24 @@ func runListener(ip *net.IP, port int, reqch chan dnsreq) {
 		network = "udp4"
 	}
 
-	server, err := net.ListenUDP(network, laddr)
-	if err != nil {
-		log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "udp listening on network", err)
+	attempts := 0
+	var server *net.UDPConn
+	var err error
+	maxAttempts := 40
+	for attempts < maxAttempts {
+		attempts++
+		server, err = net.ListenUDP(network, laddr)
+		if err == nil {
+			break
+		} else if attempts > maxAttempts{
+			log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "udp listening on network", err)
+		} else {
+			log.Warnf("An unexpected error has occurred while trying to listen on %v. This has happened %d times", laddr, attempts)
+		}
+		time.Sleep(250 * time.Millisecond)
 	}
-	log.Infof("DNS listening at %v", laddr)
+
+	log.Infof("DNS listening at: %v", laddr)
 
 	for {
 		b := *(nextBuffer())
