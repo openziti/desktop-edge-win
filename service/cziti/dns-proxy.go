@@ -326,7 +326,7 @@ func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
 				} else {
 					// keep this log but leave commented out. When two listeners are enabled (ipv4/v6) this msg will
 					// just mean some other request was processed successfully and removed the entry from the map
-					log.Tracef("matching request was not found for id:%d. %s %s", reply.Id, dns.Type(reply.Question[0].Qtype), reply.Question[0].Name)
+					// log.Tracef("matching request was not found for id:%d. %s %s", reply.Id, dns.Type(reply.Question[0].Qtype), reply.Question[0].Name)
 				}
 			}
 		case <-time.After(time.Minute):
