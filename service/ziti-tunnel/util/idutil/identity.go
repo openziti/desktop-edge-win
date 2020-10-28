@@ -20,7 +20,6 @@ package idutil
 import (
 	"github.com/michaelquigley/pfxlog"
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
-	"github.com/openziti/desktop-edge-win/service/cziti"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 )
 
@@ -42,7 +41,10 @@ func Clean(id dto.Identity) dto.Identity {
 }
 
 func AddMetrics(id *dto.Identity) {
-	up, down, _ := cziti.GetTransferRates(id.ZitiContext)
+	if id == nil || id.ZitiContext == nil {
+		return
+	}
+	up, down, _ := id.ZitiContext.GetMetrics()
 
 	id.Metrics = &dto.Metrics{
 		Up:   up,
