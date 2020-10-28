@@ -104,10 +104,8 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 
 	currentNetwork := "<unknown-network>"
 	if ctx != nil {
-		if ctx.Options != nil {
-			if ctx.Options.controller != nil {
-				currentNetwork = C.GoString(ctx.Options.controller)
-			}
+		if ctx.Options.controller != nil {
+			currentNetwork = C.GoString(ctx.Options.controller)
 		}
 	}
 
