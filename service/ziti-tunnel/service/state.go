@@ -155,7 +155,7 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to set IP address to %v: (%v)", ip, err)
 	}
-	
+
 	dnsServers := []net.IP{ ip }
 
 	log.Infof("adding DNS servers to TUN: %s", dnsServers)
