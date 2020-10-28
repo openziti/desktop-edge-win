@@ -52,7 +52,6 @@ import "C"
 import (
 	"golang.zx2c4.com/wireguard/tun"
 	"io"
-	"net"
 	"os"
 	"sync"
 	"unsafe"
@@ -80,7 +79,7 @@ type tunnel struct {
 //var devMap = make(map[string]*tunnel)
 var theTun *tunnel
 
-func HookupTun(dev tun.Device, dns []net.IP) error {
+func HookupTun(dev tun.Device/*, dns []net.IP*/) error {
 	log.Debug("in HookupTun ")
 	defer log.Debug("exiting HookupTun")
 	name, err := dev.Name()
@@ -109,13 +108,6 @@ func HookupTun(dev tun.Device, dns []net.IP) error {
 	opts.ziti_host_v1 = C.ziti_sdk_host_v1_cb(C.ziti_sdk_c_host_v1)
 
 	t.tunCtx = C.ziti_tunneler_init(opts, _impl.libuvCtx.l)
-
-	ready := make(chan bool)
-	log.Infof("DNS server - launching")
-	go RunDNSserver(dns, ready)
-	log.Infof("DNS server - waiting for startup")
-	<-ready
-	log.Infof("DNS server - ready")
 	return nil
 }
 
@@ -256,11 +248,6 @@ func (t *tunnel) runWriteLoop() {
 }
 
 func AddIntercept(svcId string, service string, host string, port int, ctx unsafe.Pointer) {
-	/*for _, t := range devMap {
-		log.Debug("adding intercept for: %s, %s, %d", service, host, port)
-		t.AddIntercept(svcId, service, host, int(port), unsafe.Pointer(ctx))
-	}
-	*/
 	log.Debugf("about to add intercept for: %s[%s] at %s:%d", service, svcId, host, port)
 	_ = C.ziti_tunneler_intercept_v1(theTun.tunCtx, ctx, C.CString(svcId), C.CString(service), C.CString(host), C.int(port))
 }
