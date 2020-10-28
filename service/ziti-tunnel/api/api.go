@@ -1,6 +1,9 @@
 package api
 
-import "net"
+import (
+	"net"
+	"unsafe"
+)
 
 type DesktopEdgeIface interface {
 	AddRoute(destination net.IPNet, nextHop net.IP, metric uint32) error
@@ -26,4 +29,13 @@ type DesktopEdgeManager interface {
 	SaveState()
 	CreateTun()
 	FindIdentity()
+}
+
+type Connection interface {
+	Shutdown()
+	GetMetrics() (int64, int64, bool)
+	UnsafePointer() unsafe.Pointer
+
+	Controller() string
+	Name() string
 }
