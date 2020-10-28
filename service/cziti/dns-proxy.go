@@ -39,7 +39,7 @@ var respChan = make(chan []byte, MaxDnsRequests)
 func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn, ipVer int) {
 	q := &dns.Msg{}
 	if err := q.Unpack(packet); err != nil {
-		log.Errorf("ERROR", err)
+		log.Errorf("unexpected error in processDNSquery. [len(packet):] [ipVer:%v] [error: %v]", len(packet), ipVer, err)
 		return
 	}
 
@@ -126,7 +126,7 @@ func RunDNSserver(dnsBind []net.IP, ready chan bool) {
 	go runDNSproxy(dnsServers)
 
 	for _, bindAddr := range dnsBind {
-		go runListener(bindAddr, 53, reqch)
+		go runListener(&bindAddr, 53, reqch)
 	}
 
 	ReplaceDNS(dnsBind)
@@ -138,10 +138,12 @@ func RunDNSserver(dnsBind []net.IP, ready chan bool) {
 	}
 }
 
-func runListener(ip net.IP, port int, reqch chan dnsreq) {
-	log.Infof("Running DNS listener on %v", ip)
+func XxxrunListener(ip *net.IP, port int) {
+	runListener(ip, port, reqch)
+}
+func runListener(ip *net.IP, port int, reqch chan dnsreq) {
 	laddr := &net.UDPAddr{
-		IP:   ip,
+		IP:   *ip,
 		Port: port,
 		Zone: "",
 	}
