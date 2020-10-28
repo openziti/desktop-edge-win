@@ -250,7 +250,7 @@ func setTunInfo(s *dto.TunnelStatus, ipv4 string, ipv4mask int) {
 		ipv4 = constants.Ipv4ip
 		rts.UpdateIpv4(ipv4)
 	}
-	if ipv4mask < 8 || ipv4mask > constants.Ipv4MaxMask {
+	if ipv4mask < constants.Ipv4MaxMask || ipv4mask > constants.Ipv4MinMask {
 		log.Warnf("provided mask is invalid: %d. using default value: %d", ipv4mask, constants.Ipv4DefaultMask)
 		ipv4mask = constants.Ipv4DefaultMask
 		rts.UpdateIpv4Mask(ipv4mask)

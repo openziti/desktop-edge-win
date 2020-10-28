@@ -142,7 +142,7 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 		log.Infof("ip not provided using default: %v", ipv4)
 		ipv4 = constants.Ipv4ip
 	}
-	if ipv4mask < 16 || ipv4mask < constants.Ipv4MaxMask {
+	if ipv4mask < constants.Ipv4MaxMask {
 		log.Warnf("provided mask is very large: %d.")
 	}
 	ip, ipnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", ipv4, ipv4mask))
