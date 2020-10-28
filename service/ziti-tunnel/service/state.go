@@ -157,7 +157,7 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 	}
 
 	dnsServers := []net.IP{
-		net.ParseIP(Ipv4dns),
+		ip,
 	}
 
 	log.Infof("adding DNS servers to TUN: %s", dnsServers)
@@ -181,7 +181,7 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 
 	cziti.DnsInit(&rts, ipv4, ipv4mask)
 	cziti.Start()
-	err = cziti.HookupTun(tunDevice, dns)
+	err = cziti.HookupTun(tunDevice)
 	if err != nil {
 		log.Panicf("An unrecoverable error has occurred! %v", err)
 	}

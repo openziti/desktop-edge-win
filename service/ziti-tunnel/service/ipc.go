@@ -23,15 +23,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Microsoft/go-winio"
+	"github.com/openziti/desktop-edge-win/service/cziti"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/constants"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/idutil"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/logging"
 	"github.com/openziti/foundation/identity/identity"
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"github.com/openziti/sdk-golang/ziti/enroll"
-	"github.com/openziti/desktop-edge-win/service/cziti"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/windows/svc"
 	"golang.zx2c4.com/wireguard/tun"
@@ -44,7 +44,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"unsafe"
 )
 
 type Pipes struct {
@@ -272,7 +271,7 @@ func setTunInfo(s *dto.TunnelStatus, ipv4 string, ipv4mask int) {
 	//set the tun info into the state
 	s.IpInfo = &dto.TunIpInfo{
 		Ip:     ipv4,
-		DNS:    Ipv4dns,
+		DNS:    ipv4,
 		MTU:    umtu,
 		Subnet: ipv4MaskString(ipnet.Mask),
 	}
@@ -747,7 +746,7 @@ func connectIdentity(id *dto.Identity) {
 	} else {
 		log.Debugf("id [%s] is already connected - not reconnecting", id.Name)
 		for _, s := range id.Services {
-			cziti.AddIntercept(s.Id, s.Name, s.InterceptHost, int(s.InterceptPort), unsafe.Pointer(id.ZitiContext))
+			cziti.AddIntercept(s.Id, s.Name, s.InterceptHost, int(s.InterceptPort), id.ZitiContext.UnsafePointer())
 		}
 		id.Connected = true
 	}
