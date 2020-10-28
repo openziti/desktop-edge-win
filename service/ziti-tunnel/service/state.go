@@ -111,10 +111,10 @@ func (t *RuntimeState) ToStatus() dto.TunnelStatus {
  	return clean
 }
 
-func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
+func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, error) {
 	if noZiti() {
 		log.Warnf("NOZITI set to true. this should be only used for debugging")
-		return nil
+		return nil, nil
 	}
 
 	log.Infof("creating TUN device: %s", TunName)
@@ -126,13 +126,13 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 			t.tunName = tunName
 		}
 	} else {
-		return fmt.Errorf("error creating TUN device: (%v)", err)
+		return nil, fmt.Errorf("error creating TUN device: (%v)", err)
 	}
 
 	if name, err := tunDevice.Name(); err == nil {
 		log.Debugf("created TUN device [%s]", name)
 	} else {
-		return fmt.Errorf("error getting TUN name: (%v)", err)
+		return nil, fmt.Errorf("error getting TUN name: (%v)", err)
 	}
 
 	nativeTunDevice := tunDevice.(*tun.NativeTun)
@@ -142,56 +142,68 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 		log.Infof("ip not provided using default: %v", ipv4)
 		ipv4 = constants.Ipv4ip
 	}
-	if ipv4mask < 16 || ipv4mask < constants.Ipv4MaxMask {
+	if ipv4mask < constants.Ipv4MaxMask {
 		log.Warnf("provided mask is very large: %d.")
 	}
 	ip, ipnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", ipv4, ipv4mask))
 	if err != nil {
-		return fmt.Errorf("error parsing CIDR block: (%v)", err)
+		return nil, fmt.Errorf("error parsing CIDR block: (%v)", err)
 	}
 
 	log.Infof("setting TUN interface address to [%s]", ip)
 	err = luid.SetIPAddresses([]net.IPNet{{ip, ipnet.Mask}})
+        //err = luid.SetIPAddresses([]net.IPNet{{IP:ip, Mask: []byte{255,255,255,0}}})
+	//err = luid.SetIPAddresses([]net.IPNet{{IP:ip, Mask: []byte{255,255,255,255}}})	
 	if err != nil {
-		return fmt.Errorf("failed to set IP address: (%v)", err)
+		return nil, fmt.Errorf("failed to set IP address to %v: (%v)", ip, err)
 	}
 
-	dnsServers := []net.IP{
-		net.ParseIP(Ipv4dns).To4(),
-	}
-	if iPv6Disabled() {
-		log.Infof("IPv6 is disabled. Ignoring IPv6 DNS ::1")
-	} else {
-		log.Infof("IPv6 enabled. Adding IPv6 DNS ::1")
-		dnsServers = append(dnsServers, net.ParseIP(Ipv6dns))
-	}
+	//dnsip := net.ParseIP("100.64.0.1")
+	//dnsip := ip //net.ParseIP("127.21.71.53")
+	//ipnet2 := net.IPNet{IP: dnsip, Mask: []byte{255,255,255,255}}
+	//log.Infof("meh: %v", ipnet2)
+	//err = luid.SetIPAddresses([]net.IPNet{ *ipnet })
+	dnsServers := []net.IP{ ip }
 
 	log.Infof("adding DNS servers to TUN: %s", dnsServers)
 	err = luid.AddDNS(dnsServers)
 	if err != nil {
-		return fmt.Errorf("failed to add DNS addresses: (%v)", err)
+		return nil, fmt.Errorf("failed to add DNS addresses: (%v)", err)
 	}
 	log.Infof("checking TUN dns servers")
 	dns, err := luid.DNS()
 	if err != nil {
-		return fmt.Errorf("failed to fetch DNS address: (%v)", err)
+		return nil, fmt.Errorf("failed to fetch DNS address: (%v)", err)
 	}
 	log.Infof("TUN dns servers set to: %s", dns)
 
 	log.Infof("routing destination [%s] through [%s]", *ipnet, ipnet.IP)
 	err = luid.SetRoutes([]*winipcfg.RouteData{{*ipnet, ipnet.IP, 0}})
 	if err != nil {
-		return fmt.Errorf("failed to SetRoutes: (%v)", err)
+		return nil, fmt.Errorf("failed to SetRoutes: (%v)", err)
 	}
 	log.Info("routing applied")
 
 	cziti.DnsInit(&rts, ipv4, ipv4mask)
 	cziti.Start()
-	err = cziti.HookupTun(tunDevice, dns)
+	err = cziti.HookupTun(tunDevice)
 	if err != nil {
 		log.Panicf("An unrecoverable error has occurred! %v", err)
 	}
-	return nil
+
+	return ip, nil
+}
+
+func testdns() {
+	ip := net.ParseIP("100.64.0.1")
+
+	ready := make(chan bool)
+	cziti.XxxrunListener(&ip, 53)
+
+	<-ready
+	log.Infof("DNS server - ready")
+	<-ready
+	log.Infof("DNS server - ready")
 }
 
 func (t *RuntimeState) LoadIdentity(id *dto.Identity) {
@@ -245,9 +257,7 @@ func (t *RuntimeState) LoadConfig() {
 
 	err = dec.Decode(&rts.state)
 	if err != nil {
-		log.Warnf("unexpected error reading config file. %v", err)
-		t.state = &dto.TunnelStatus{}
-		return
+		log.Panicf("unexpected error reading config file. %v", err)
 	}
 
 	err = file.Close()

@@ -23,15 +23,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Microsoft/go-winio"
+	"github.com/openziti/desktop-edge-win/service/cziti"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/constants"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/idutil"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/logging"
 	"github.com/openziti/foundation/identity/identity"
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"github.com/openziti/sdk-golang/ziti/enroll"
-	"github.com/openziti/desktop-edge-win/service/cziti"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/windows/svc"
 	"golang.zx2c4.com/wireguard/tun"
@@ -44,7 +44,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"unsafe"
 )
 
 type Pipes struct {
@@ -68,7 +67,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	l := rts.state.LogLevel
 	_, czitiLevel := logging.ParseLevel(l)
 
-	logging.InitLogger(l	)
+	logging.InitLogger(l)
 
 	_ = logging.Elog.Info(InformationEvent, SvcName+" starting. log file located at "+config.LogFile())
 
@@ -82,7 +81,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	go handleEvents()
 
 	// initialize the network interface
-	err := initialize(rts.state.TunIpv4, rts.state.TunIpv4Mask)
+	err := initialize()
 
 	if err != nil {
 		log.Panicf("unexpected err from initialize: %v", err)
@@ -105,6 +104,8 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 	_ = logging.Elog.Info(InformationEvent, SvcName+" status set to running")
 	log.Info(SvcName + " status set to running. starting cancel loop")
+
+	rts.SaveState()
 
 	waitForStopRequest(ops)
 
@@ -229,29 +230,63 @@ func (p *Pipes) shutdownConnections() {
 	log.Info("all events connections closed")
 }
 
-func initialize(ipv4 string, ipv4mask int) error {
-	err := rts.CreateTun(ipv4, ipv4mask)
+func initialize() error {
+	assignedIp, err := rts.CreateTun(rts.state.TunIpv4, rts.state.TunIpv4Mask)
 	if err != nil {
 		return err
 	}
-	setTunInfo(rts.state, ipv4, ipv4mask)
+	setTunInfo(rts.state)
 
+	//
+	//ready := make(chan bool)
+	//go assignDns(assignedIp, ready)
+	//<-ready
 	// connect any identities that are enabled
 	for _, id := range rts.state.Identities {
 		connectIdentity(id)
 	}
-
+	dnsReady := make(chan bool)
+	go cziti.RunDNSserver([]net.IP{assignedIp}, dnsReady)
+	<-dnsReady
 	log.Debugf("initial state loaded from configuration file")
 	return nil
 }
 
-func setTunInfo(s *dto.TunnelStatus, ipv4 string, ipv4mask int) {
+func assignDns(tunIp net.IP, ready chan bool) {
+	log.Info("Assigning dns")
+
+	c1 := make(chan string, 1)
+	go func() {
+		time.Sleep(5 * time.Second)
+		c1 <- "result 1"
+	}()
+	select {
+	case res := <-c1:
+		fmt.Println(res)
+	case <-time.After(5 * time.Second):
+		fmt.Println("timeout 5")
+	}
+	cziti.DnsInit(&rts, tunIp.String(), rts.state.TunIpv4Mask)
+	dns := []net.IP{ tunIp }
+	log.Infof("DNS server - launching: %v", dns)
+	go cziti.RunDNSserver(dns, ready)
+	log.Infof("DNS server - waiting for startup")
+	<-ready
+	ready <- true
+	log.Infof("DNS server - ready")
+	cziti.Start()
+}
+
+func setTunInfo(s *dto.TunnelStatus) {
+	ipv4 := rts.state.TunIpv4
+	ipv4mask := rts.state.TunIpv4Mask
+
 	if strings.TrimSpace(ipv4) == "" {
-		log.Infof("ip not provided using default: %v", ipv4)
 		ipv4 = constants.Ipv4ip
+		log.Infof("ip not provided using default: %v", ipv4)
 		rts.UpdateIpv4(ipv4)
 	}
-	if ipv4mask < 8 || ipv4mask > constants.Ipv4MaxMask {
+	if ipv4mask < constants.Ipv4MaxMask || ipv4mask > constants.Ipv4MinMask {
 		log.Warnf("provided mask is invalid: %d. using default value: %d", ipv4mask, constants.Ipv4DefaultMask)
 		ipv4mask = constants.Ipv4DefaultMask
 		rts.UpdateIpv4Mask(ipv4mask)
@@ -272,7 +307,7 @@ func setTunInfo(s *dto.TunnelStatus, ipv4 string, ipv4mask int) {
 	//set the tun info into the state
 	s.IpInfo = &dto.TunIpInfo{
 		Ip:     ipv4,
-		DNS:    Ipv4dns,
+		DNS:    ipv4,
 		MTU:    umtu,
 		Subnet: ipv4MaskString(ipnet.Mask),
 	}
@@ -747,7 +782,7 @@ func connectIdentity(id *dto.Identity) {
 	} else {
 		log.Debugf("id [%s] is already connected - not reconnecting", id.Name)
 		for _, s := range id.Services {
-			cziti.AddIntercept(s.Id, s.Name, s.InterceptHost, int(s.InterceptPort), unsafe.Pointer(id.ZitiContext))
+			cziti.AddIntercept(s.Id, s.Name, s.InterceptHost, int(s.InterceptPort), id.ZitiContext.UnsafePointer())
 		}
 		id.Connected = true
 	}
