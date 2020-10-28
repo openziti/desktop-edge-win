@@ -157,13 +157,7 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) error {
 	}
 
 	dnsServers := []net.IP{
-		net.ParseIP(Ipv4dns).To4(),
-	}
-	if iPv6Disabled() {
-		log.Infof("IPv6 is disabled. Ignoring IPv6 DNS ::1")
-	} else {
-		log.Infof("IPv6 enabled. Adding IPv6 DNS ::1")
-		dnsServers = append(dnsServers, net.ParseIP(Ipv6dns))
+		net.ParseIP(Ipv4dns),
 	}
 
 	log.Infof("adding DNS servers to TUN: %s", dnsServers)

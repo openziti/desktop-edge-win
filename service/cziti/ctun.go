@@ -254,12 +254,6 @@ func (t *tunnel) runWriteLoop() {
 		}
 	}
 }
-/*
-func (t *tunnel) AddIntercept(svcId string, service string, host string, port int, ctx unsafe.Pointer) {
-	log.Debugf("about to add intercept for: %s, %s, %d", service, host, port)
-	res := C.ziti_tunneler_intercept_v1(t.tunCtx, ctx, C.CString(svcId), C.CString(service), C.CString(host), C.int(port))
-	log.Debugf("intercept added: %v", res)
-}*/
 
 func AddIntercept(svcId string, service string, host string, port int, ctx unsafe.Pointer) {
 	/*for _, t := range devMap {
@@ -267,7 +261,7 @@ func AddIntercept(svcId string, service string, host string, port int, ctx unsaf
 		t.AddIntercept(svcId, service, host, int(port), unsafe.Pointer(ctx))
 	}
 	*/
-	log.Debugf("about to add intercept for: %s[] at %s:%d", service, svcId, host, port)
+	log.Debugf("about to add intercept for: %s[%s] at %s:%d", service, svcId, host, port)
 	_ = C.ziti_tunneler_intercept_v1(theTun.tunCtx, ctx, C.CString(svcId), C.CString(service), C.CString(host), C.int(port))
 }
 
