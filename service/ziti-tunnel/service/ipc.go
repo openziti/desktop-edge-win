@@ -107,7 +107,6 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 
 	rts.SaveState()
 
-	//go testdns()
 	waitForStopRequest(ops)
 
 	requestShutdown("service shutdown")
@@ -247,6 +246,9 @@ func initialize() error {
 	for _, id := range rts.state.Identities {
 		connectIdentity(id)
 	}
+	dnsReady := make(chan bool)
+	go cziti.RunDNSserver([]net.IP{assignedIp}, dnsReady)
+	<-dnsReady
 	log.Debugf("initial state loaded from configuration file")
 	return nil
 }

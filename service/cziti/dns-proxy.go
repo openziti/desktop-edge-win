@@ -122,8 +122,7 @@ type dnsreq struct {
 }
 
 func RunDNSserver(dnsBind []net.IP, ready chan bool) {
-	dnsServers := GetUpstreamDNS()
-	go runDNSproxy(dnsServers)
+	go runDNSproxy(GetUpstreamDNS(), dnsBind)
 
 	for _, bindAddr := range dnsBind {
 		go runListener(&bindAddr, 53, reqch)
@@ -159,6 +158,7 @@ func runListener(ip *net.IP, port int, reqch chan dnsreq) {
 	if err != nil {
 		log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "udp listening on network", err)
 	}
+	log.Infof("DNS listening at %v", laddr)
 
 	for {
 		b := *(nextBuffer())
@@ -202,29 +202,44 @@ func proxyDNS(req *dns.Msg, peer *net.UDPAddr, serv *net.UDPConn, ipVer int) {
 	}
 }
 
-func dnsPanicRecover() {
+func dnsPanicRecover(localDnsServers []net.IP) {
+	//reset all network interfaces...
+	ResetDNS()
+
 	// get dns again and reconfigure
-	go runDNSproxy(GetUpstreamDNS())
+	go runDNSproxy(GetUpstreamDNS(), localDnsServers)
+
+	// reconfigure DNS
+	ReplaceDNS(localDnsServers)
 }
 
-func runDNSproxy(dnsServers []string) {
+func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
+	log.Infof("restarting DNS proxy")
 	domains = GetConnectionSpecificDomains()
 	log.Infof("ConnectionSpecificDomains: %v", domains)
-	log.Infof("dnsServers: %v", dnsServers)
+	log.Infof("dnsServers: %v", upstreamDnsServers)
 	defer func() {
 		if err := recover(); err != nil {
 			log.Errorf("Recovering from panic due to DNS-related issue. %v", err)
-			dnsPanicRecover()
+			dnsPanicRecover(localDnsServers)
 		}
 	}()
 
 	var dnsUpstreams []*net.UDPConn
-	for _, s := range dnsServers {
+
+	outer:
+	for _, s := range upstreamDnsServers {
+		for _, ldns := range localDnsServers {
+			if s == ldns.String() {
+				//skipping upstream that's the same as a local
+				continue outer
+			}
+		}
 		sAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:53", s))
 		if err != nil {
 			// fec0:0:0:ffff:: is 'legacy' from windows apparently...
 			// see: https://en.wikipedia.org/wiki/IPv6_address#Deprecated_and_obsolete_addresses_2
-			if ! strings.HasPrefix(s, "fec0:0:0:ffff::") {
+			if !strings.HasPrefix(s, "fec0:0:0:ffff::") {
 				log.Errorf("skipping upstream due to error: %s, %v", s, err.Error())
 			} else {
 				// just ignore for now - don't even log it...
@@ -301,7 +316,7 @@ func runDNSproxy(dnsServers []string) {
 				} else {
 					// keep this log but leave commented out. When two listeners are enabled (ipv4/v6) this msg will
 					// just mean some other request was processed successfully and removed the entry from the map
-					//log.Tracef("matching request was not found for id:%d. %s %s", reply.Id, dns.Type(reply.Question[0].Qtype), reply.Question[0].Name)
+					log.Tracef("matching request was not found for id:%d. %s %s", reply.Id, dns.Type(reply.Question[0].Qtype), reply.Question[0].Name)
 				}
 			}
 		case <-time.After(time.Minute):
