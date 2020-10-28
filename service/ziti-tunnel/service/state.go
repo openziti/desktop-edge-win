@@ -152,17 +152,10 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, error) {
 
 	log.Infof("setting TUN interface address to [%s]", ip)
 	err = luid.SetIPAddresses([]net.IPNet{{ip, ipnet.Mask}})
-        //err = luid.SetIPAddresses([]net.IPNet{{IP:ip, Mask: []byte{255,255,255,0}}})
-	//err = luid.SetIPAddresses([]net.IPNet{{IP:ip, Mask: []byte{255,255,255,255}}})	
 	if err != nil {
 		return nil, fmt.Errorf("failed to set IP address to %v: (%v)", ip, err)
 	}
-
-	//dnsip := net.ParseIP("100.64.0.1")
-	//dnsip := ip //net.ParseIP("127.21.71.53")
-	//ipnet2 := net.IPNet{IP: dnsip, Mask: []byte{255,255,255,255}}
-	//log.Infof("meh: %v", ipnet2)
-	//err = luid.SetIPAddresses([]net.IPNet{ *ipnet })
+	
 	dnsServers := []net.IP{ ip }
 
 	log.Infof("adding DNS servers to TUN: %s", dnsServers)

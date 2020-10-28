@@ -75,11 +75,6 @@ type TunIpInfo struct {
 	DNS    string
 }
 
-type DnsConfig struct {
-	aIpv4     string
-	aIpv6     string
-}
-
 func (id *Identity) Path() string {
 	if id.FingerPrint == "" {
 		log.Fatalf("fingerprint is invalid for id %s", id.Name)
@@ -96,7 +91,6 @@ type TunnelStatus struct {
 	ServiceVersion ServiceVersion
 	TunIpv4        string
 	TunIpv4Mask    int
-	DnsConfig      DnsConfig
 }
 
 type ServiceVersion struct {

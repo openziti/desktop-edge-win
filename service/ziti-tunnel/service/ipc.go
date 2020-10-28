@@ -235,13 +235,9 @@ func initialize() error {
 	if err != nil {
 		return err
 	}
+
 	setTunInfo(rts.state)
 
-	//
-	//ready := make(chan bool)
-	//go assignDns(assignedIp, ready)
-	//<-ready
-	// connect any identities that are enabled
 	for _, id := range rts.state.Identities {
 		connectIdentity(id)
 	}
@@ -250,31 +246,6 @@ func initialize() error {
 	<-dnsReady
 	log.Debugf("initial state loaded from configuration file")
 	return nil
-}
-
-func assignDns(tunIp net.IP, ready chan bool) {
-	log.Info("Assigning dns")
-
-	c1 := make(chan string, 1)
-	go func() {
-		time.Sleep(5 * time.Second)
-		c1 <- "result 1"
-	}()
-	select {
-	case res := <-c1:
-		fmt.Println(res)
-	case <-time.After(5 * time.Second):
-		fmt.Println("timeout 5")
-	}
-	cziti.DnsInit(&rts, tunIp.String(), rts.state.TunIpv4Mask)
-	dns := []net.IP{ tunIp }
-	log.Infof("DNS server - launching: %v", dns)
-	go cziti.RunDNSserver(dns, ready)
-	log.Infof("DNS server - waiting for startup")
-	<-ready
-	ready <- true
-	log.Infof("DNS server - ready")
-	cziti.Start()
 }
 
 func setTunInfo(s *dto.TunnelStatus) {
