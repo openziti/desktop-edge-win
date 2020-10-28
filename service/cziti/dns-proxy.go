@@ -137,9 +137,6 @@ func RunDNSserver(dnsBind []net.IP, ready chan bool) {
 	}
 }
 
-func XxxrunListener(ip *net.IP, port int) {
-	runListener(ip, port, reqch)
-}
 func runListener(ip *net.IP, port int, reqch chan dnsreq) {
 	laddr := &net.UDPAddr{
 		IP:   *ip,

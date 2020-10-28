@@ -194,18 +194,6 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, error) {
 	return ip, nil
 }
 
-func testdns() {
-	ip := net.ParseIP("100.64.0.1")
-
-	ready := make(chan bool)
-	cziti.XxxrunListener(&ip, 53)
-
-	<-ready
-	log.Infof("DNS server - ready")
-	<-ready
-	log.Infof("DNS server - ready")
-}
-
 func (t *RuntimeState) LoadIdentity(id *dto.Identity) {
 	if !noZiti() {
 		if id.Connected {
