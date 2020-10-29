@@ -42,6 +42,7 @@ namespace ZitiDesktopEdge {
 			}
 			set {
 				this._label = value;
+				MainLabel.ToolTip = this._label;
 				MainLabel.Text = this._label;
 			}
 		}
@@ -50,6 +51,7 @@ namespace ZitiDesktopEdge {
 				return MainEdit.Text; 
 			}
 			set {
+				MainEdit.ToolTip = value;
 				MainEdit.Text = value;
 			}
 		}
