@@ -183,7 +183,9 @@ func runListener(ip *net.IP, port int, reqch chan dnsreq) {
 				log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "reading a udp message", err)
 			}
 		}
-
+		if len(reqch) == cap(reqch) {
+			log.Warn("DNS req will be blocked. If this warning is continuously displayed please report")
+		}
 		reqch <- dnsreq{
 			q:    b[:nb],
 			s:    server,
@@ -203,6 +205,9 @@ type proxiedReq struct {
 }
 
 func proxyDNS(req *dns.Msg, peer *net.UDPAddr, serv *net.UDPConn, ipVer int) {
+	if len(proxiedRequests) == cap(proxiedRequests) {
+		log.Warn("proxiedRequests will be blocked. If this warning is continuously displayed please report")
+	}
 	proxiedRequests <- &proxiedReq{
 		req:   req,
 		peer:  peer,
@@ -224,10 +229,9 @@ func dnsPanicRecover(localDnsServers []net.IP) {
 }
 
 func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
-	log.Infof("restarting DNS proxy")
+	log.Infof("starting DNS proxy upstream: %v, local: %v", upstreamDnsServers, localDnsServers)
 	domains = GetConnectionSpecificDomains()
 	log.Infof("ConnectionSpecificDomains: %v", domains)
-	log.Infof("dnsServers: %v", upstreamDnsServers)
 	defer func() {
 		if err := recover(); err != nil {
 			log.Errorf("Recovering from panic due to DNS-related issue. %v", err)
@@ -279,6 +283,9 @@ func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
 						log.Warnf("odd error: %v", err)
 					}
 				} else {
+					if len(respChan) == cap(respChan) {
+						log.Warn("respChan will be blocked. If this warning is continuously displayed please report")
+					}
 					respChan <- resp[:n]
 				}
 			}
