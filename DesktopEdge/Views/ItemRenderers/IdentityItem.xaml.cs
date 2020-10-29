@@ -49,23 +49,19 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void ToggleIdentity(bool on) {
-			// Jeremy - make the messagebox pretty or something
-			try
-			{
+			try {
 				ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
 				ServiceClient.Identity id = client.IdentityOnOff(_identity.Fingerprint, on);
+				this.Identity.IsEnabled = on;
 				if (on) {
 					ToggleStatus.Content = "ENABLED";
-					// MessageBox.Show("jeremy - update the identity and services here. When disabled there will be services returned. service count: " + id?.Services?.Count());
 				} else {
 					ToggleStatus.Content = "DISABLED";
-					// MessageBox.Show("jeremy - update the identity and services here. When disabled there will be no services, service count: " + id?.Services?.Count());
 				}
-			} catch(ServiceClient.ServiceException se) {
-				MessageBox.Show("Unexpected error 5 the toggle needs to be rolled back!!! jeremy!", se.Message);
+			} catch (ServiceClient.ServiceException se) {
 				MessageBox.Show(se.AdditionalInfo, se.Message);
 			} catch (Exception ex) {
-				MessageBox.Show("Unexpected error 5 the toggle needs to be rolled back!!! jeremy!", ex.Message);
+				MessageBox.Show("Error", ex.Message);
 			}
 		}
 
@@ -80,8 +76,8 @@ namespace ZitiDesktopEdge {
 		private void OpenDetails(object sender, MouseButtonEventArgs e) {
 			IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
 			deets.SelectedIdentity = this;
+			deets.IdDetailToggle.Enabled = this.Identity.IsEnabled;
 			deets.Identity = this.Identity;
-			this.ToggleSwitch.IsEnabled = this.Identity.IsEnabled;
 		}
 	}
 }

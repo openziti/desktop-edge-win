@@ -387,8 +387,8 @@ namespace ZitiDesktopEdge {
 				id.Identity = ids[i];
 				//id.OnClick += OpenIdentity;
 				IdList.Children.Add(id);
-				IdList.Height += 60;
 			}
+			IdList.Height = (double)(ids.Length * 60);
 			if (this._isAttached&&repaint) Placement();
 		}
 

@@ -99,6 +99,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void IdToggle(bool on) {
+			MessageBox.Show("Swicthing to " + on);
 			ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
 			client.IdentityOnOff(_identity.Fingerprint, on);
 			SelectedIdentity.ToggleSwitch.Enabled = on;
