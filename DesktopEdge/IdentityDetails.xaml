@@ -40,10 +40,10 @@
                         <ColumnDefinition Width="*"></ColumnDefinition>
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="39"></RowDefinition>
-                        <RowDefinition Height="39"></RowDefinition>
-                        <RowDefinition Height="39"></RowDefinition>
-                        <RowDefinition Height="39"></RowDefinition>
+                        <RowDefinition Height="30"></RowDefinition>
+                        <RowDefinition Height="30"></RowDefinition>
+                        <RowDefinition Height="30"></RowDefinition>
+                        <RowDefinition Height="30"></RowDefinition>
                         <RowDefinition Height="40"></RowDefinition>
                         <RowDefinition x:Name="ServiceRow" Height="160"></RowDefinition>
                         <RowDefinition Height="40"></RowDefinition>

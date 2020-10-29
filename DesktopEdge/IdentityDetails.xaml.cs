@@ -85,7 +85,7 @@ namespace ZitiDesktopEdge {
 					editor.IsLocked = true;
 					ServiceList.Children.Add(editor);
 				}
-				double newHeight = Application.Current.MainWindow.ActualHeight - 360;
+				double newHeight = Application.Current.MainWindow.ActualHeight - 300;
 				ServiceRow.Height = new GridLength((double)newHeight);
 				MainDetailScroll.MaxHeight = newHeight;
 				MainDetailScroll.Height = newHeight;
