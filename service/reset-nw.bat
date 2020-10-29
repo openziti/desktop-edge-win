@@ -1,1 +1,0 @@
-get-netipinterface | ForEach-Object { Set-DnsClientServerAddress -InterfaceIndex $_.ifIndex -ResetServerAddresses}

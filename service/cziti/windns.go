@@ -110,7 +110,7 @@ func ReplaceDNS(ips []net.IP) {
 	}
 	ipsAsString := strings.Join(ipsStrArr, ",")
 
-	log.Infof("Injecting DNS servers [%s] onto interfaces", ipsAsString)
+	log.Infof("injecting DNS servers [%s] onto interfaces", ipsAsString)
 
 	script := fmt.Sprintf(`$dnsinfo=Get-DnsClientServerAddress
 $dnsIps=@(%s)
@@ -119,31 +119,33 @@ $dnsIps=@(%s)
 $IPv4=2
 $IPv6=23
 
-$dnsPerInterface = @{}
+$dnsUpdates = @{}
 
 foreach ($dns in $dnsinfo)
 {
-    if($dnsPerInterface[$dns.InterfaceIndex] -eq $null) {
-        $dnsPerInterface[$dns.InterfaceIndex]=[System.Collections.ArrayList]@()
-    } else {
+    if($dnsUpdates[$dns.InterfaceIndex] -eq $null) { $dnsUpdates[$dns.InterfaceIndex]=[System.Collections.ArrayList]@() }
+    if($dns.AddressFamily -eq $IPv6) {
         $dnsServers=$dns.ServerAddresses
         $ArrList=[System.Collections.ArrayList]@($dnsServers)
-        foreach ($dnsIp in $dnsIps)
-        {
-            if(($dnsServers -ne $null) -and ($ArrList.Contains($dnsIp)) ) {
-                # uncomment when debugging echo ($dns.InterfaceAlias + " IPv4 already contains ${dnsIp}")
+        $dnsUpdates[$dns.InterfaceIndex].AddRange($ArrList)
+    }
+    elseif($dns.AddressFamily -eq $IPv4){
+        $dnsServers=$dns.ServerAddresses
+        $ArrList=[System.Collections.ArrayList]@($dnsServers)
+        foreach($d in $dnsIps) {
+            if(($dnsServers -ne $null) -and ($dnsServers.Contains($d)) ) {
+                # uncomment when debugging echo ($dns.InterfaceAlias + " IPv4 already contains 127.0.0.1")
             } else {
-                $ArrList.Insert(0, $dnsIp)
+                $ArrList.Insert(0,$d)
             }
         }
-        $dnsPerInterface[$dns.InterfaceIndex].AddRange($ArrList)
+        $dnsUpdates[$dns.InterfaceIndex].AddRange($ArrList)
     }
 }
 
-foreach ($key in $dnsPerInterface.Keys)
+foreach ($key in $dnsUpdates.Keys)
 {
-    $dnsServers=$dnsPerInterface[$key]
-    Set-DnsClientServerAddress -InterfaceIndex $key -ServerAddresses ($dnsServers)
+    Set-DnsClientServerAddress -InterfaceIndex $key -ServerAddresses ($dnsUpdates[$key])
 }`, ipsAsString)
 
 	cmd := exec.Command("powershell", "-Command", script)

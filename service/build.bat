@@ -1,4 +1,18 @@
 @echo off
+REM Copyright NetFoundry, Inc.
+REM
+REM Licensed under the Apache License, Version 2.0 (the "License");
+REM you may not use this file except in compliance with the License.
+REM You may obtain a copy of the License at
+REM
+REM https://www.apache.org/licenses/LICENSE-2.0
+REM
+REM Unless required by applicable law or agreed to in writing, software
+REM distributed under the License is distributed on an "AS IS" BASIS,
+REM WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+REM See the License for the specific language governing permissions and
+REM limitations under the License.
+REM
 
 set CURDIR=%CD%
 set SVC_ROOT_DIR=%~dp0
@@ -41,7 +55,7 @@ cd %SVC_ROOT_DIR%
 SET REPO_URL=https://github.com/openziti/ziti-tunneler-sdk-c.git
 SET ZITI_TUNNEL_REPO_BRANCH=v0.6.11
 SET TUNNELER_SDK_DIR=%SVC_ROOT_DIR%deps\ziti-tunneler-sdk-c\
-SET CGO_CFLAGS=-DNOGDI -O3 -g3 -I %TUNNELER_SDK_DIR%install\include
+SET CGO_CFLAGS=-DNOGDI -I %TUNNELER_SDK_DIR%install\include
 SET CGO_LDFLAGS=-L %TUNNELER_SDK_DIR%install\lib
 
 if exist %SVC_ROOT_DIR%ziti.dll (
