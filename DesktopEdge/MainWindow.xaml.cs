@@ -9,6 +9,8 @@ using System.ServiceProcess;
 using System.Linq;
 using System.Diagnostics;
 using System.Windows.Controls;
+using System.Drawing;
+
 
 namespace ZitiDesktopEdge {
 
@@ -18,13 +20,16 @@ namespace ZitiDesktopEdge {
 	public partial class MainWindow:Window {
 
 		public System.Windows.Forms.NotifyIcon notifyIcon;
+		public string Position = "Bottom";
 		private DateTime _startDate;
 		private System.Windows.Forms.Timer _timer;
 		private Client serviceClient = null;
 		private bool _isAttached = true;
 		private bool _isServiceInError = false;
 		private int _right = 75;
+		private int _left = 75;
 		private int _bottom = 0;
+		private int _top = 30;
 		private double _maxHeight = 800d;
 		private string[] suffixes = { "bps", "kbps", "mbps", "gbps", "tbps", "pbps" };
 
@@ -70,7 +75,6 @@ namespace ZitiDesktopEdge {
 
 		private void MainWindow_Activated(object sender, EventArgs e) {
 			this.Visibility = Visibility.Visible;
-			Debug.WriteLine("Activation");
 			Placement();
 		}
 
@@ -135,6 +139,7 @@ namespace ZitiDesktopEdge {
 				ConnectButton.Visibility = Visibility.Collapsed;
 				DisconnectButton.Visibility = Visibility.Visible;
 				StatArea.Opacity = 1.0;
+				ConnectButton.Opacity = 1.0;
 			}
 		}
 
@@ -163,7 +168,6 @@ namespace ZitiDesktopEdge {
 				SetCantDisplay();
 				serviceClient.Reconnect();
 			}
-			Debug.WriteLine("App Loaded");
 			IdentityMenu.OnForgot += IdentityForgotten;
 		}
 
@@ -301,9 +305,7 @@ namespace ZitiDesktopEdge {
 		private void AttachmentChanged(bool attached) {
 			_isAttached = attached;
 			if (!_isAttached) {
-				var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-				this.Left = desktopWorkingArea.Right - this.Width - 75;
-				this.Top = desktopWorkingArea.Bottom - this.Height - 75;
+				SetLocation();
 			}
 			Placement();
 			MainMenu.Visibility = Visibility.Collapsed;
@@ -373,7 +375,7 @@ namespace ZitiDesktopEdge {
 			IdList.Height = 0;
 			IdList.MaxHeight = _maxHeight-520;
 			ZitiIdentity[] ids = identities.ToArray();
-			double height = 460 + (ids.Length * 60);
+			double height = 490 + (ids.Length * 60);
 			if (height > _maxHeight) height = _maxHeight;
 			this.Height = height;
 			IdentityMenu.SetHeight(this.Height-160);
@@ -398,6 +400,7 @@ namespace ZitiDesktopEdge {
 				DisconnectButton.Visibility = Visibility.Collapsed;
 			}
 			IdList.Height = (double)(ids.Length * 64);
+			Placement();
 			if (this._isAttached&&repaint) Placement();
 		}
 
@@ -418,13 +421,59 @@ namespace ZitiDesktopEdge {
 				DisconnectButton.Visibility = Visibility.Collapsed;
 			}
 		}
+
+		private void SetLocation() {
+			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
+
+			Rectangle trayRectangle = WinAPI.GetTrayRectangle();
+			if (trayRectangle.Top < 20) {
+				this.Position = "Top";
+				this.Top = desktopWorkingArea.Top + _top;
+				this.Left = desktopWorkingArea.Right - this.Width - _right;
+				Arrow.SetValue(Canvas.TopProperty, (double)0);
+				Arrow.SetValue(Canvas.LeftProperty, (double)185);
+				MainMenu.Arrow.SetValue(Canvas.TopProperty, (double)0);
+				MainMenu.Arrow.SetValue(Canvas.LeftProperty, (double)185);
+				IdentityMenu.Arrow.SetValue(Canvas.TopProperty, (double)0);
+				IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, (double)185);
+			} else if (trayRectangle.Left < 20) {
+				this.Position = "Left";
+				this.Left = _left;
+				this.Top = desktopWorkingArea.Bottom - this.Height - 75;
+				Arrow.SetValue(Canvas.TopProperty, this.Height-200);
+				Arrow.SetValue(Canvas.LeftProperty, (double)0);
+				MainMenu.Arrow.SetValue(Canvas.TopProperty, this.Height - 200);
+				MainMenu.Arrow.SetValue(Canvas.LeftProperty, (double)0);
+				IdentityMenu.Arrow.SetValue(Canvas.TopProperty, this.Height - 200);
+				IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, (double)0);
+			} else if (desktopWorkingArea.Right == (double)trayRectangle.Left) {
+				this.Position = "Right";
+				this.Left = desktopWorkingArea.Right - this.Width - 20;
+				this.Top = desktopWorkingArea.Bottom - this.Height - 75;
+				Arrow.SetValue(Canvas.TopProperty, this.Height - 100);
+				Arrow.SetValue(Canvas.LeftProperty, this.Width- 30);
+				MainMenu.Arrow.SetValue(Canvas.TopProperty, this.Height - 100);
+				MainMenu.Arrow.SetValue(Canvas.LeftProperty, this.Width - 30);
+				IdentityMenu.Arrow.SetValue(Canvas.TopProperty, this.Height - 100);
+				IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, this.Width - 30);
+			} else {
+				this.Position = "Left";
+				this.Left = desktopWorkingArea.Right - this.Width - 75;
+				this.Top = desktopWorkingArea.Bottom - this.Height;
+				Arrow.SetValue(Canvas.TopProperty, this.Height - 40);
+				Arrow.SetValue(Canvas.LeftProperty, (double)185);
+				MainMenu.Arrow.SetValue(Canvas.TopProperty, this.Height - 40);
+				MainMenu.Arrow.SetValue(Canvas.LeftProperty, (double)185);
+				IdentityMenu.Arrow.SetValue(Canvas.TopProperty, this.Height - 40);
+				IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, (double)185);
+			}
+		}
 		public void Placement() {
 			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
 			if (_isAttached) {
 				Arrow.Visibility = Visibility.Visible;
 				IdentityMenu.Arrow.Visibility = Visibility.Visible;
-				this.Left = desktopWorkingArea.Right - this.Width - _right;
-				this.Top = desktopWorkingArea.Bottom - this.Height - _bottom;
+				SetLocation();
 			} else {
 				IdentityMenu.Arrow.Visibility = Visibility.Collapsed;
 				Arrow.Visibility = Visibility.Collapsed;

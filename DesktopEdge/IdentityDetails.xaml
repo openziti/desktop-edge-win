@@ -7,7 +7,7 @@
              mc:Ignorable="d" 
              x:Name="IdentityArea"
              d:DesignHeight="500" d:DesignWidth="350">
-    <Grid MaxWidth="400">
+    <Grid>
         <Canvas>
             <Rectangle Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="White" Width="20" Canvas.Left="185" ClipToBounds="True" Canvas.Bottom="-10">
                 <Rectangle.LayoutTransform>
@@ -15,9 +15,9 @@
                 </Rectangle.LayoutTransform>
             </Rectangle>
         </Canvas>
-        <Rectangle Fill="White" RadiusY="10" RadiusX="10"></Rectangle>
+        <Rectangle Margin="10,10,10,10" Fill="White" RadiusY="10" RadiusX="10"></Rectangle>
 
-        <Grid Margin="10,10,10,10">
+        <Grid Margin="20,20,20,-20">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>

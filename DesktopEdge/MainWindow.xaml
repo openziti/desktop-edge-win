@@ -8,7 +8,7 @@
         ShowInTaskbar="False"
         x:Name="MainUI"
         Title="Ziti Desktop Edge" Height="520" 
-        Width="400" ResizeMode="NoResize" 
+        Width="420" ResizeMode="NoResize" 
         ClipToBounds="False"
         Icon="Assets/Images/icon.png" AllowsTransparency="True" 
         Closing="Window_Closing"
@@ -104,24 +104,24 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Canvas ClipToBounds="False">
-            <Rectangle Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="#070826" Width="20" ClipToBounds="True" Canvas.Left="185" Canvas.Bottom="-10">
+        <Canvas x:Name="ArrowCanvas" ClipToBounds="False">
+            <Rectangle x:Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="#070826" Width="20" ClipToBounds="True" Canvas.Left="185" Canvas.Bottom="-10">
                 <Rectangle.LayoutTransform>
                     <RotateTransform Angle="-45"/>
                 </Rectangle.LayoutTransform>
             </Rectangle>
         </Canvas>
-        <Border Name="UIBorder" BorderBrush="Black" BorderThickness="3" CornerRadius="10">
+        <Border Margin="10,10,10,10" Name="UIBorder" BorderBrush="Black" BorderThickness="8" CornerRadius="10">
             <Border.Effect>
-                <DropShadowEffect BlurRadius="1" Direction="1" RenderingBias="Quality" ShadowDepth="1" Opacity="1"/>
+                <DropShadowEffect BlurRadius="20" Direction="1" RenderingBias="Quality" ShadowDepth="1" Opacity="1"/>
             </Border.Effect>
         </Border>
-        <Rectangle Name="BgColor" Stroke="Black" RadiusY="10" RadiusX="10" ClipToBounds="True">
+        <Rectangle Margin="10,10,10,10" Name="BgColor" Stroke="Black" RadiusY="10" RadiusX="10" ClipToBounds="True">
             <Rectangle.Fill>
                 <ImageBrush ImageSource="/Assets/Images/background.png" />
             </Rectangle.Fill>
         </Rectangle>
-        <StackPanel x:Name="MainView" Margin="0,0,0,-40">
+        <StackPanel x:Name="MainView" Margin="10,10,10,-20">
             <Grid HorizontalAlignment="Stretch">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="100"/>
@@ -206,7 +206,7 @@
         <local:MainMenu x:Name="MainMenu" Visibility="Collapsed"></local:MainMenu>
         <local:IdentityDetails x:Name="IdentityMenu" Visibility="Collapsed"></local:IdentityDetails>
         
-        <Grid x:Name="NoServiceView" Visibility="Collapsed" >
+        <Grid x:Name="NoServiceView" Visibility="Collapsed" Margin="10,10,10,10">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="Black" Opacity="0.9"/>
@@ -246,7 +246,8 @@
                 </Grid>
             </Grid>
         </Grid>
-        <Grid x:Name="LoadingScreen" Visibility="Collapsed" Width="400">
+        
+        <Grid x:Name="LoadingScreen" Visibility="Collapsed" Margin="10,10,10,10">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="Black" Opacity="0.9"/>
@@ -270,7 +271,8 @@
                 <ProgressBar x:Name="LoadProgress" Width="100" Grid.Row="3" IsEnabled="True" />
             </Grid>
         </Grid>
-        <Grid x:Name="ErrorView" Visibility="Collapsed" Width="400">
+
+        <Grid x:Name="ErrorView" Visibility="Collapsed" Margin="10,10,10,10">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="Black" Opacity="0.9"/>

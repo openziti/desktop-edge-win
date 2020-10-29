@@ -161,6 +161,7 @@
     <Compile Include="Toggler.xaml.cs">
       <DependentUpon>Toggler.xaml</DependentUpon>
     </Compile>
+    <Compile Include="WinAPI.cs" />
     <Page Include="ControllerScreen.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
