@@ -20,6 +20,9 @@ namespace ZitiDesktopEdge {
 	/// </summary>
 	public partial class IdentityItem:UserControl {
 
+		public delegate void StatusChanged(bool attached);
+		public event StatusChanged OnStatusChanged;
+
 		public ZitiIdentity _identity;
 		public ZitiIdentity Identity {
 			get {
@@ -50,6 +53,9 @@ namespace ZitiDesktopEdge {
 
 		private void ToggleIdentity(bool on) {
 			try {
+				if (OnStatusChanged != null) {
+					OnStatusChanged(on);
+				}
 				ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
 				ServiceClient.Identity id = client.IdentityOnOff(_identity.Fingerprint, on);
 				this.Identity.IsEnabled = on;

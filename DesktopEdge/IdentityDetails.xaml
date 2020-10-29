@@ -63,14 +63,14 @@
             </StackPanel>
         </Grid>
 
-        <Grid x:Name="ConfirmView" Visibility="Collapsed" Width="350">
+        <Grid x:Name="ConfirmView" Visibility="Collapsed" Width="400">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="Black"/>
                 </Rectangle.Fill>
             </Rectangle>
             <Canvas>
-                <Rectangle Name="ConfirmArrow" HorizontalAlignment="Center" Height="20" Fill="Black" Width="20" Canvas.Left="165" ClipToBounds="True" Canvas.Bottom="-10">
+                <Rectangle Name="ConfirmArrow" HorizontalAlignment="Center" Height="20" Fill="Black" Width="20" Canvas.Left="185" ClipToBounds="True" Canvas.Bottom="-10">
                     <Rectangle.LayoutTransform>
                         <RotateTransform Angle="-45"/>
                     </Rectangle.LayoutTransform>
@@ -91,11 +91,11 @@
                     <RowDefinition Height="*"></RowDefinition>
                 </Grid.RowDefinitions>
                 <Label Name="ErrorTitle" Foreground="White" Content="Confirm Forget" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
-                <TextBlock TextWrapping="WrapWithOverflow" Foreground="LightGray" Padding="10" Text="If you delete this identity you will no longer have access to the resources that it grants you." Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
+                <TextBlock TextWrapping="WrapWithOverflow" Foreground="LightGray" Padding="30" Text="If you delete this identity you will no longer have access to the resources that it grants you." Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
                 <Grid Grid.Row="4">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="160"></ColumnDefinition>
-                        <ColumnDefinition Width="*"></ColumnDefinition>
+                        <ColumnDefinition Width="1*"></ColumnDefinition>
+                        <ColumnDefinition Width="1*"></ColumnDefinition>
                     </Grid.ColumnDefinitions>
                     <Button x:Name="CancelConfirmButton" Grid.Column="0" Margin="40,0,20,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#0068F9" Content="Close" Click="CancelConfirmButton_Click" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
                         <Button.Resources>

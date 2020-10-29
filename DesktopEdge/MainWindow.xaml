@@ -205,6 +205,7 @@
         </StackPanel>
         <local:MainMenu x:Name="MainMenu" Visibility="Collapsed"></local:MainMenu>
         <local:IdentityDetails x:Name="IdentityMenu" Visibility="Collapsed"></local:IdentityDetails>
+        
         <Grid x:Name="NoServiceView" Visibility="Collapsed" >
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
@@ -222,8 +223,27 @@
                 </Grid.RowDefinitions>
                 <Label x:Name="ErrorMsg" Foreground="White" Content="Service Not Started" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
                 <Label x:Name="ErrorMsgDetail" Foreground="LightGray" Content="Start the Ziti Tunnel Service to get started" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
-                <Label Name="CloseServiceErrorButton" Grid.Row="3" Foreground="#F4044D" FontWeight="SemiBold" Content="Close" Cursor="Hand" MouseDown="CloseError" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Center"></Label>
-                <Label Name="QuitButton" Grid.Row="4" Foreground="#F4044D" FontWeight="SemiBold" Content="Quit Ziti Desktop Edge" Cursor="Hand" MouseDown="CloseApp" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Center"></Label>
+
+                <Grid Grid.Row="4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1*"></ColumnDefinition>
+                        <ColumnDefinition Width="1*"></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="CloseErrorButton" Grid.Column="0" Margin="40,0,20,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#0068F9" Content="Close Error" Click="CloseError" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="5"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    <Button x:Name="QuitButton" Grid.Column="1" Margin="20,0,40,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#F4044D" Content="Quit App" Click="CloseApp" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="5"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                </Grid>
             </Grid>
         </Grid>
         <Grid x:Name="LoadingScreen" Visibility="Collapsed" Width="400">

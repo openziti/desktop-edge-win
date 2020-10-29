@@ -119,7 +119,9 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
-			ConfirmView.Visibility = Visibility.Visible;
+			if (this.Visibility==Visibility.Visible) {
+				ConfirmView.Visibility = Visibility.Visible;
+			}
 		}
 
 		private void CancelConfirmButton_Click(object sender, RoutedEventArgs e) {

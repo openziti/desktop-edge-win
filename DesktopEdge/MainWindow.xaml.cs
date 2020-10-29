@@ -377,21 +377,48 @@ namespace ZitiDesktopEdge {
 			if (height > _maxHeight) height = _maxHeight;
 			this.Height = height;
 			IdentityMenu.SetHeight(this.Height-160);
+			bool isActive = false;
 			for (int i=0; i<ids.Length; i++) {
 				IdentityItem id = new IdentityItem();
 				if (ids[i].IsEnabled) {
+					isActive = true;
 					SetNotifyIcon("green");
 					ConnectButton.Visibility = Visibility.Collapsed;
 					DisconnectButton.Visibility = Visibility.Visible;
 				}
+				id.OnStatusChanged += Id_OnStatusChanged;
 				id.Identity = ids[i];
-				//id.OnClick += OpenIdentity;
 				IdList.Children.Add(id);
 			}
-			IdList.Height = (double)(ids.Length * 60);
+			if (isActive) {
+				ConnectButton.Visibility = Visibility.Collapsed;
+				DisconnectButton.Visibility = Visibility.Visible;
+			} else {
+				ConnectButton.Visibility = Visibility.Visible;
+				DisconnectButton.Visibility = Visibility.Collapsed;
+			}
+			IdList.Height = (double)(ids.Length * 64);
+			MessageBox.Show(IdList.Height + " " + IdListScroller.Height + " " + ids.Length);
 			if (this._isAttached&&repaint) Placement();
 		}
 
+		private void Id_OnStatusChanged(bool attached) {
+			bool isActive = false;
+			for (int i = 0; i < IdList.Children.Count; i++) {
+				IdentityItem item = IdList.Children[i] as IdentityItem;
+				if (item.ToggleSwitch.Enabled) {
+					isActive = true;
+					break;
+				}
+			}
+			if (isActive) {
+				ConnectButton.Visibility = Visibility.Collapsed;
+				DisconnectButton.Visibility = Visibility.Visible;
+			} else {
+				ConnectButton.Visibility = Visibility.Visible;
+				DisconnectButton.Visibility = Visibility.Collapsed;
+			}
+		}
 		public void Placement() {
 			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
 			if (_isAttached) {
@@ -403,8 +430,6 @@ namespace ZitiDesktopEdge {
 				IdentityMenu.Arrow.Visibility = Visibility.Collapsed;
 				Arrow.Visibility = Visibility.Collapsed;
 			}
-			Debug.WriteLine("Placement: " + this.Left + " " + desktopWorkingArea.Right + " " + this.Width + " " + _right);
-			Debug.WriteLine("Place: " + this.Top + " " + desktopWorkingArea.Bottom + " " + this.Height + " " + _bottom);
 		}
 
 		private void OpenIdentity(ZitiIdentity identity) {
@@ -553,12 +578,12 @@ namespace ZitiDesktopEdge {
 			ErrorView.Visibility = Visibility.Visible;
 		}
 
-		private void CloseError(object sender, MouseButtonEventArgs e) {
+		private void CloseError(object sender, RoutedEventArgs e) {
 			ErrorView.Visibility = Visibility.Collapsed;
 			NoServiceView.Visibility = Visibility.Collapsed;
 		}
 
-		private void CloseApp(object sender, MouseButtonEventArgs e) {
+		private void CloseApp(object sender, RoutedEventArgs e) {
 			Application.Current.Shutdown();
 		}
 
