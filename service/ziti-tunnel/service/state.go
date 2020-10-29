@@ -197,7 +197,7 @@ func (t *RuntimeState) LoadIdentity(id *dto.Identity) {
 		ctx := cziti.LoadZiti(id.Path())
 		id.ZitiContext = ctx
 
-		id.Connected = true
+		id.ControllerVersion = ctx.Version()
 		id.Active = true
 		if ctx == nil {
 			log.Warnf("connecting to identity with fingerprint [%s] did not error but no context was returned", id.FingerPrint)

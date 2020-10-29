@@ -32,6 +32,7 @@ func Clean(id dto.Identity) dto.Identity {
 	nid.Config = idcfg.Config{}
 	nid.Config.ZtAPI = id.Config.ZtAPI
 	nid.Services = make([]*dto.Service, len(id.Services))
+	nid.ControllerVersion = id.ControllerVersion
 	for i, svc := range id.Services{
 		nid.Services[i] = svc
 	}

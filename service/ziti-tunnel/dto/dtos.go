@@ -41,14 +41,15 @@ type Service struct {
 }
 
 type Identity struct {
-	Name        string
-	FingerPrint string
-	Active      bool
-	Config      idcfg.Config
-	Status      string
-	Services    []*Service `json:",omitempty"`
-	Metrics     *Metrics   `json:",omitempty"`
-	Tags        []string   `json:",omitempty"`
+	Name              string
+	FingerPrint       string
+	Active            bool
+	Config            idcfg.Config
+	ControllerVersion string
+	Status            string
+	Services          []*Service `json:",omitempty"`
+	Metrics           *Metrics   `json:",omitempty"`
+	Tags              []string   `json:",omitempty"`
 
 	Connected   bool           `json:"-"`
 	ZitiContext api.Connection `json:"-"`

@@ -139,6 +139,7 @@ namespace ZitiDesktopEdge.ServiceClient
         public string Status { get; set; }
         public List<Service> Services { get; set; }
         public Metrics Metrics { get; set; }
+        public string ControllerVersion { get; set; }
     }
     public class Service
     {

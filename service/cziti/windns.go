@@ -134,7 +134,7 @@ foreach ($dns in $dnsinfo)
         $ArrList=[System.Collections.ArrayList]@($dnsServers)
         foreach($d in $dnsIps) {
             if(($dnsServers -ne $null) -and ($dnsServers.Contains($d)) ) {
-                # uncomment when debugging echo ($dns.InterfaceAlias + " IPv4 already contains 127.0.0.1")
+                # uncomment when debugging echo ($dns.InterfaceAlias + " IPv4 already contains $d")
             } else {
                 $ArrList.Insert(0,$d)
             }
