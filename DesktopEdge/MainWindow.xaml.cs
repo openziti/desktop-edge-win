@@ -398,7 +398,6 @@ namespace ZitiDesktopEdge {
 				DisconnectButton.Visibility = Visibility.Collapsed;
 			}
 			IdList.Height = (double)(ids.Length * 64);
-			MessageBox.Show(IdList.Height + " " + IdListScroller.Height + " " + ids.Length);
 			if (this._isAttached&&repaint) Placement();
 		}
 
