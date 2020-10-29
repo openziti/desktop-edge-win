@@ -87,14 +87,5 @@ const (
 	NF_GROUP_NAME = "NetFoundry Tunneler Users"
 	TunName = "ZitiTUN"
 
-	Ipv4dns = "127.0.0.1" // use lo -- don't pass DNS queries through tunneler SDK
-
-	// IPv6 CIDR fe80:6e66:7a69:7469::/64
-	//   <link-local>: nf : zi : ti ::
-	ipv6pfx = "fe80:6e66:7a69:7469"
-	ipv6ip = "1"
-	ipv6mask = 64
-	Ipv6dns = "::1" // must be in "ipv6ip/ipv6mask" CIDR block
-
 	STATUS_ENROLLED = "enrolled"
 )

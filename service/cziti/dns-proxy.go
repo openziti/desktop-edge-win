@@ -39,7 +39,7 @@ var respChan = make(chan []byte, MaxDnsRequests)
 func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn, ipVer int) {
 	q := &dns.Msg{}
 	if err := q.Unpack(packet); err != nil {
-		log.Errorf("ERROR", err)
+		log.Errorf("unexpected error in processDNSquery. [len(packet):] [ipVer:%v] [error: %v]", len(packet), ipVer, err)
 		return
 	}
 
@@ -122,11 +122,10 @@ type dnsreq struct {
 }
 
 func RunDNSserver(dnsBind []net.IP, ready chan bool) {
-	dnsServers := GetUpstreamDNS()
-	go runDNSproxy(dnsServers)
+	go runDNSproxy(GetUpstreamDNS(), dnsBind)
 
 	for _, bindAddr := range dnsBind {
-		go runListener(bindAddr, 53, reqch)
+		go runListener(&bindAddr, 53, reqch)
 	}
 
 	ReplaceDNS(dnsBind)
@@ -138,10 +137,9 @@ func RunDNSserver(dnsBind []net.IP, ready chan bool) {
 	}
 }
 
-func runListener(ip net.IP, port int, reqch chan dnsreq) {
-	log.Infof("Running DNS listener on %v", ip)
+func runListener(ip *net.IP, port int, reqch chan dnsreq) {
 	laddr := &net.UDPAddr{
-		IP:   ip,
+		IP:   *ip,
 		Port: port,
 		Zone: "",
 	}
@@ -153,10 +151,24 @@ func runListener(ip net.IP, port int, reqch chan dnsreq) {
 		network = "udp4"
 	}
 
-	server, err := net.ListenUDP(network, laddr)
-	if err != nil {
-		log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "udp listening on network", err)
+	attempts := 0
+	var server *net.UDPConn
+	var err error
+	maxAttempts := 40
+	for attempts < maxAttempts {
+		attempts++
+		server, err = net.ListenUDP(network, laddr)
+		if err == nil {
+			break
+		} else if attempts > maxAttempts{
+			log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "udp listening on network", err)
+		} else {
+			log.Warnf("An unexpected error has occurred while trying to listen on %v. This has happened %d times", laddr, attempts)
+		}
+		time.Sleep(250 * time.Millisecond)
 	}
+
+	log.Infof("DNS listening at: %v", laddr)
 
 	for {
 		b := *(nextBuffer())
@@ -171,7 +183,9 @@ func runListener(ip net.IP, port int, reqch chan dnsreq) {
 				log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "reading a udp message", err)
 			}
 		}
-
+		if len(reqch) == cap(reqch) {
+			log.Warn("DNS req will be blocked. If this warning is continuously displayed please report")
+		}
 		reqch <- dnsreq{
 			q:    b[:nb],
 			s:    server,
@@ -191,6 +205,9 @@ type proxiedReq struct {
 }
 
 func proxyDNS(req *dns.Msg, peer *net.UDPAddr, serv *net.UDPConn, ipVer int) {
+	if len(proxiedRequests) == cap(proxiedRequests) {
+		log.Warn("proxiedRequests will be blocked. If this warning is continuously displayed please report")
+	}
 	proxiedRequests <- &proxiedReq{
 		req:   req,
 		peer:  peer,
@@ -200,29 +217,43 @@ func proxyDNS(req *dns.Msg, peer *net.UDPAddr, serv *net.UDPConn, ipVer int) {
 	}
 }
 
-func dnsPanicRecover() {
+func dnsPanicRecover(localDnsServers []net.IP) {
+	//reset all network interfaces...
+	ResetDNS()
+
 	// get dns again and reconfigure
-	go runDNSproxy(GetUpstreamDNS())
+	go runDNSproxy(GetUpstreamDNS(), localDnsServers)
+
+	// reconfigure DNS
+	ReplaceDNS(localDnsServers)
 }
 
-func runDNSproxy(dnsServers []string) {
+func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
+	log.Infof("starting DNS proxy upstream: %v, local: %v", upstreamDnsServers, localDnsServers)
 	domains = GetConnectionSpecificDomains()
 	log.Infof("ConnectionSpecificDomains: %v", domains)
-	log.Infof("dnsServers: %v", dnsServers)
 	defer func() {
 		if err := recover(); err != nil {
 			log.Errorf("Recovering from panic due to DNS-related issue. %v", err)
-			dnsPanicRecover()
+			dnsPanicRecover(localDnsServers)
 		}
 	}()
 
 	var dnsUpstreams []*net.UDPConn
-	for _, s := range dnsServers {
+
+	outer:
+	for _, s := range upstreamDnsServers {
+		for _, ldns := range localDnsServers {
+			if s == ldns.String() {
+				//skipping upstream that's the same as a local
+				continue outer
+			}
+		}
 		sAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:53", s))
 		if err != nil {
 			// fec0:0:0:ffff:: is 'legacy' from windows apparently...
 			// see: https://en.wikipedia.org/wiki/IPv6_address#Deprecated_and_obsolete_addresses_2
-			if ! strings.HasPrefix(s, "fec0:0:0:ffff::") {
+			if !strings.HasPrefix(s, "fec0:0:0:ffff::") {
 				log.Errorf("skipping upstream due to error: %s, %v", s, err.Error())
 			} else {
 				// just ignore for now - don't even log it...
@@ -252,6 +283,9 @@ func runDNSproxy(dnsServers []string) {
 						log.Warnf("odd error: %v", err)
 					}
 				} else {
+					if len(respChan) == cap(respChan) {
+						log.Warn("respChan will be blocked. If this warning is continuously displayed please report")
+					}
 					respChan <- resp[:n]
 				}
 			}
@@ -299,7 +333,7 @@ func runDNSproxy(dnsServers []string) {
 				} else {
 					// keep this log but leave commented out. When two listeners are enabled (ipv4/v6) this msg will
 					// just mean some other request was processed successfully and removed the entry from the map
-					//log.Tracef("matching request was not found for id:%d. %s %s", reply.Id, dns.Type(reply.Question[0].Qtype), reply.Question[0].Name)
+					// log.Tracef("matching request was not found for id:%d. %s %s", reply.Id, dns.Type(reply.Question[0].Qtype), reply.Question[0].Name)
 				}
 			}
 		case <-time.After(time.Minute):

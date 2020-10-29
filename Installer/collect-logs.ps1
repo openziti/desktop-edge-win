@@ -43,6 +43,11 @@ echo ""
 echo "    removing log folder: $logdest"
 rm -r $logdest
 
+$Acl = Get-ACL $logroot
+$AccessRule= New-Object System.Security.AccessControl.FileSystemAccessRule("everyone","FullControl","ContainerInherit,Objectinherit","none","Allow")
+$Acl.AddAccessRule($AccessRule)
+Set-Acl $logroot $Acl
+
 echo ""
 echo "    Logs collected successfully"
 echo "    Log location: ${logdest}.zip"

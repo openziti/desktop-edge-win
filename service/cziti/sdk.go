@@ -110,19 +110,53 @@ type CZitiCtx struct {
 	zid       *C.ziti_identity
 	status    int
 	statusErr error
+	name     string
+	version  string
 
 	Services *sync.Map
+}
+
+func (c *CZitiCtx) GetMetrics() (int64, int64, bool) {
+	if c == nil {
+		return 0, 0, false
+	}
+	var up, down C.double
+	C.ziti_get_transfer_rates(c.zctx, &up, &down)
+
+	return int64(up), int64(down), true
+}
+
+func (c *CZitiCtx) UnsafePointer() unsafe.Pointer {
+	return unsafe.Pointer(c)
 }
 
 func (c *CZitiCtx) Status() (int, error) {
 	return c.status, c.statusErr
 }
 
+func (c *CZitiCtx) Version() string {
+	if len(c.version) > 0 {
+		return c.version
+	}
+	c.version = "<unknown version>"
+	if c != nil {
+		if c.zctx != nil {
+			v1 := C.ziti_get_controller_version(c.zctx)
+			return C.GoString(v1.version)
+		}
+	}
+	return c.version
+}
+
 func (c *CZitiCtx) Name() string {
+	if len(c.name) > 0 {
+		return c.name
+	}
+	c.name = "<unknown>"
 	if c != nil {
 		if c.zid != nil {
 			if c.zid.name != nil {
-				return C.GoString(c.zid.name)
+				c.name = C.GoString(c.zid.name)
 			} else {
 				log.Debug("in Name - c.zid.name was nil")
 			}
@@ -132,7 +166,7 @@ func (c *CZitiCtx) Name() string {
 	} else {
 		log.Debug("in Name - c was nil")
 	}
-	return "<unknown>"
+	return c.name
 }
 
 func (c *CZitiCtx) Tags() []string {
@@ -277,6 +311,10 @@ func initCB(nf C.ziti_context, status C.int, data unsafe.Pointer) {
 	ctx.status = int(status)
 	ctx.statusErr = zitiError(status)
 
+	ctx.name = ctx.Name()
+	ctx.version = ctx.Version()
+
+	log.Infof("connected to controller %s running %v", ctx.name, ctx.version)
 	cfg := C.GoString(ctx.Options.config)
 	if ch, ok := initMap[cfg]; ok {
 		ch <- ctx

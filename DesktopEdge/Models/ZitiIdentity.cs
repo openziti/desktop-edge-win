@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -34,7 +34,7 @@ namespace ZitiDesktopEdge.Models {
 		{
 			ZitiIdentity zid = new ZitiIdentity()
 			{
-				ControllerUrl = id.Config.ztAPI,
+				ControllerUrl = id.Config.ztAPI + " at " + id.ControllerVersion,
 				EnrollmentStatus = "status",
 				Fingerprint = id.FingerPrint,
 				IsEnabled = id.Active,
