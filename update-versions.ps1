@@ -11,11 +11,4 @@ echo "Replacing version in $assemblyInfo into $assemblyInfoReplaced"
 rm $assemblyInfo
 mv $assemblyInfoReplaced $assemblyInfo
 
-#$installer="./Installer/ZitiDesktopEdge.aip"
-#$installerReplaced="${installer}.replaced"
-#echo "Replacing version in $installer into $installerReplaced"
-#(Get-Content -Encoding UTF8 -path $installer -Raw) -replace '"ProductVersion" Value="[0-9]*\.[0-9]*\.[0-9]*"', """ProductVersion"" Value=""${v}""" | Set-Content -Path "${installer}.replaced" -Encoding UTF8 -NoNewline
-#rm $installer
-#mv $installerReplaced $installer
-
 echo "==================================== update-versions.ps1 complete ===================================="

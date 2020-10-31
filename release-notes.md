@@ -1,3 +1,17 @@
+# Release 1.3.0
+
+* What's New
+
+  * Ziti Desktop Edge for Windows will now montior and install updates
+
+* Bug Fixes
+
+  * [#000](https://github.com/openziti/desktop-edge-win/issues/000) - Bug fix
+
+* Dependency Updates
+
+  * None
+
 # Release 1.2.13
 
 * What's New
