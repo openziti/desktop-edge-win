@@ -85,7 +85,7 @@ namespace ZitiDesktopEdge {
 					editor.IsLocked = true;
 					ServiceList.Children.Add(editor);
 				}
-				double newHeight = Application.Current.MainWindow.ActualHeight - 360;
+				double newHeight = Application.Current.MainWindow.ActualHeight - 300;
 				ServiceRow.Height = new GridLength((double)newHeight);
 				MainDetailScroll.MaxHeight = newHeight;
 				MainDetailScroll.Height = newHeight;
@@ -118,7 +118,9 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
-			ConfirmView.Visibility = Visibility.Visible;
+			if (this.Visibility==Visibility.Visible) {
+				ConfirmView.Visibility = Visibility.Visible;
+			}
 		}
 
 		private void CancelConfirmButton_Click(object sender, RoutedEventArgs e) {

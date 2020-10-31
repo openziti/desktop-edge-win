@@ -18,7 +18,6 @@
 package dto
 
 import (
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/api"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"github.com/openziti/sdk-golang/ziti/enroll"
@@ -41,17 +40,15 @@ type Service struct {
 }
 
 type Identity struct {
-	Name        string
-	FingerPrint string
-	Active      bool
-	Config      idcfg.Config
-	Status      string
-	Services    []*Service `json:",omitempty"`
-	Metrics     *Metrics   `json:",omitempty"`
-	Tags        []string   `json:",omitempty"`
-
-	Connected   bool           `json:"-"`
-	ZitiContext api.Connection `json:"-"`
+	Name              string
+	FingerPrint       string
+	Active            bool
+	Config            idcfg.Config
+	ControllerVersion string
+	Status            string
+	Services          []*Service `json:",omitempty"`
+	Metrics           *Metrics   `json:",omitempty"`
+	Tags              []string   `json:",omitempty"`
 }
 type Metrics struct {
 	Up   int64
