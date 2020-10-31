@@ -13,7 +13,7 @@
 
 * Dependency Updates
 
-  * Updated to v0.7.2
+  * Updated to v0.7.2 of ziti-tunneller-sdk-c
 
 # Release 1.2.12
 
