@@ -1,5 +1,5 @@
-﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<DOCUMENT Type="Advanced Installer" CreateVersion="17.4.1" version="17.5" Modules="professional" RootPath="." Language="en" Id="{7315FE7B-0418-4F38-8B12-6C0594276D30}">
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<DOCUMENT Type="Advanced Installer" CreateVersion="17.4.1" version="17.6" Modules="professional" RootPath="." Language="en" Id="{7315FE7B-0418-4F38-8B12-6C0594276D30}">
   <COMPONENT cid="caphyon.advinst.msicomp.MsiPropsComponent">
     <ROW Property="AI_BITMAP_DISPLAY_MODE" Value="0"/>
     <ROW Property="AI_BackgroundColor" Value="lightblue" MsiKey="AI_BackgroundColor"/>
@@ -266,7 +266,7 @@
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiServCtrlComponent">
     <ROW ServiceControl="ZitiUpdateService.exe" Name="Ziti Desktop Monitor Service" Event="160" Wait="0" Component_="ZitiUpdateService.exe"/>
-    <ROW ServiceControl="zititunnel.exe" Name="ziti" Event="161" Wait="1" Component_="zititunnel.exe"/>
+    <ROW ServiceControl="zititunnel.exe" Name="ziti" Event="161" Wait="0" Component_="zititunnel.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiServInstComponent">
     <ROW ServiceInstall="ZitiUpdateService.exe" Name="Ziti Desktop Monitor Service" DisplayName="Ziti Desktop Monitor Service" ServiceType="16" StartType="2" ErrorControl="1" Component_="ZitiUpdateService.exe" Description="Monitor and update your Ziti Access Services"/>
