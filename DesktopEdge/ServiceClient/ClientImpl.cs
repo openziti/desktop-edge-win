@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.IO;
@@ -120,7 +120,11 @@ namespace ZitiDesktopEdge.ServiceClient
         StreamReader ipcReader = null;
 
         NamedPipeClientStream eventClient = null;
-        bool _extendedDebug = false; //set this to true if you need to diagnose issues with the service comms
+#if DEBUG
+        bool _extendedDebug = true; //set this to true if you need to diagnose issues with the service comms
+#else
+        bool _extendedDebug = false;
+#endif
 
         public Client()
         {

@@ -25,13 +25,11 @@ import (
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/constants"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/idutil"
 	"golang.org/x/sys/windows/registry"
 	"golang.zx2c4.com/wireguard/tun"
 	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
 	"net"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -40,23 +38,15 @@ type RuntimeState struct {
 	state   *dto.TunnelStatus
 	tun     *tun.Device
 	tunName string
+	ids     map[string]*Id
 }
 
 func (t *RuntimeState) RemoveByFingerprint(fingerprint string) {
-	log.Debugf("removing fingerprint: %s", fingerprint)
-	if index, removed := t.Find(fingerprint); index < len(t.state.Identities) {
-		removed.ZitiContext.Shutdown()
-		t.state.Identities = append(t.state.Identities[:index], t.state.Identities[index+1:]...)
-	}
+	delete(t.ids, fingerprint)
 }
 
-func (t *RuntimeState) Find(fingerprint string) (int, *dto.Identity) {
-	for i, n := range t.state.Identities {
-		if n.FingerPrint == fingerprint {
-			return i, n
-		}
-	}
-	return len(t.state.Identities), nil
+func (t *RuntimeState) Find(fingerprint string) *Id {
+	return t.ids[fingerprint]
 }
 
 func (t *RuntimeState) SaveState() {
@@ -87,15 +77,10 @@ func (t *RuntimeState) ToStatus() dto.TunnelStatus {
 	tunStart := now.Sub(TunStarted)
 	uptime = tunStart.Milliseconds()
 
-	var idCount int
-	if t.state != nil && t.state.Identities != nil {
-		idCount = len(t.state.Identities)
-	}
-
 	clean := dto.TunnelStatus{
 		Active:         t.state.Active,
 		Duration:       uptime,
-		Identities:     make([]*dto.Identity, idCount),
+		Identities:     make([]*dto.Identity, len(t.ids)),
 		IpInfo:         t.state.IpInfo,
 		LogLevel:       t.state.LogLevel,
 		ServiceVersion: Version,
@@ -103,20 +88,36 @@ func (t *RuntimeState) ToStatus() dto.TunnelStatus {
 		TunIpv4Mask:    t.state.TunIpv4Mask,
 	}
 
-	for i, id := range t.state.Identities {
-		cid := idutil.Clean(*id)
+	i := 0
+	for _, id := range t.ids {
+		cid := Clean(id)
 		clean.Identities[i] = &cid
+		i++
 	}
 
- 	return clean
+	return clean
+}
+
+func (t *RuntimeState) ToMetrics() dto.TunnelStatus {
+	clean := dto.TunnelStatus{
+		Identities:     make([]*dto.Identity, len(t.ids)),
+	}
+
+	i := 0
+	for _, id := range t.ids {
+		AddMetrics(id)
+		clean.Identities[i] = &dto.Identity{
+			Name:              id.Name,
+			FingerPrint:       id.FingerPrint,
+			Metrics:           id.Metrics,
+		}
+		i++
+	}
+
+	return clean
 }
 
 func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, error) {
-	if noZiti() {
-		log.Warnf("NOZITI set to true. this should be only used for debugging")
-		return nil, nil
-	}
-
 	log.Infof("creating TUN device: %s", TunName)
 	tunDevice, err := tun.CreateTUN(TunName, 64*1024 - 1)
 	if err == nil {
@@ -143,7 +144,7 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, error) {
 		ipv4 = constants.Ipv4ip
 	}
 	if ipv4mask < constants.Ipv4MaxMask {
-		log.Warnf("provided mask is very large: %d.")
+		log.Warnf("provided mask is very large: %d.", ipv4mask)
 	}
 	ip, ipnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", ipv4, ipv4mask))
 	if err != nil {
@@ -151,7 +152,7 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, error) {
 	}
 
 	log.Infof("setting TUN interface address to [%s]", ip)
-	err = luid.SetIPAddresses([]net.IPNet{{ip, ipnet.Mask}})
+	err = luid.SetIPAddresses([]net.IPNet{{IP: ip, Mask: ipnet.Mask}})
 	if err != nil {
 		return nil, fmt.Errorf("failed to set IP address to %v: (%v)", ip, err)
 	}
@@ -163,15 +164,16 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to add DNS addresses: (%v)", err)
 	}
-	log.Infof("checking TUN dns servers")
+
+	log.Info("checking TUN dns servers")
 	dns, err := luid.DNS()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch DNS address: (%v)", err)
 	}
 	log.Infof("TUN dns servers set to: %s", dns)
 
-	log.Infof("routing destination [%s] through [%s]", *ipnet, ipnet.IP)
-	err = luid.SetRoutes([]*winipcfg.RouteData{{*ipnet, ipnet.IP, 0}})
+	log.Infof("setting routes for cidr: %s. Next Hop: %s", ipnet.String(), ipnet.IP.String())
+	err = luid.SetRoutes([]*winipcfg.RouteData{{ Destination: *ipnet, NextHop: ipnet.IP, Metric: 0}})
 	if err != nil {
 		return nil, fmt.Errorf("failed to SetRoutes: (%v)", err)
 	}
@@ -187,42 +189,33 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, error) {
 	return ip, nil
 }
 
-func (t *RuntimeState) LoadIdentity(id *dto.Identity) {
-	if !noZiti() {
-		if id.Connected {
-			log.Warnf("id [%s] already connected", id.FingerPrint)
-			return
-		}
-		log.Infof("loading identity %s with fingerprint %s", id.Name, id.FingerPrint)
-		ctx := cziti.LoadZiti(id.Path())
-		id.ZitiContext = ctx
-
-		id.ControllerVersion = ctx.Version()
-		id.Active = true
-		if ctx == nil {
-			log.Warnf("connecting to identity with fingerprint [%s] did not error but no context was returned", id.FingerPrint)
-			return
-		}
-		log.Infof("successfully loaded %s@%s", ctx.Name(), ctx.Controller())
-
-		// hack for now - if the identity name is '<unknown>' don't set it... :(
-		if ctx.Name() == "<unknown>" {
-			log.Debugf("name is set to <unknown> which probably indicates the controller is down - not changing the name")
-		} else {
-			log.Debugf("name changed from %s to %s", id.Name, ctx.Name())
-			id.Name = ctx.Name()
-			id.Tags = ctx.Tags()
-		}
-
-		id.Services = make([]*dto.Service, 0)
-	} else {
-		log.Warnf("NOZITI set to true. this should be only used for debugging")
+func (t *RuntimeState) LoadIdentity(id *Id) {
+	log.Infof("loading identity %s[%s]", id.Name, id.FingerPrint)
+	if id.CId != nil && id.CId.Loaded {
+		log.Warnf("id %s[%s] already connected", id.Name, id.FingerPrint)
+		return
 	}
-}
 
-func noZiti() bool {
-	v, _ := strconv.ParseBool(os.Getenv("NOZITI"))
-	return v
+	id.CId = cziti.LoadZiti(id.Path())
+	if id.CId == nil {
+		log.Warnf("connecting to identity with fingerprint [%s] did not error but no context was returned", id.FingerPrint)
+		return
+	}
+
+	id.CId.Fingerprint = id.FingerPrint
+
+	// hack for now - if the identity name is '<unknown>' don't set it... :(
+	if id.CId.Name == "<unknown>" {
+		log.Debugf("name is set to <unknown> which probably indicates the controller is down - not changing the name")
+	} else if id.Name != id.CId.Name {
+		log.Debugf("name changed from %s to %s", id.Name, id.CId.Name)
+		id.Name = id.CId.Name
+	}
+	log.Infof("successfully loaded %s@%s", id.CId.Name, id.CId.Controller())
+	_, found := t.ids[id.FingerPrint]
+	if !found {
+		t.ids[id.FingerPrint] = id //add this identity to the list of known ids
+	}
 }
 
 func (t *RuntimeState) LoadConfig() {
@@ -244,6 +237,10 @@ func (t *RuntimeState) LoadConfig() {
 	err = file.Close()
 	if err != nil {
 		log.Errorf("could not close configuration file. this is not normal! %v", err)
+	}
+
+	for _, id := range t.ids {
+		id.Active = false
 	}
 }
 
