@@ -1,5 +1,5 @@
-﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<DOCUMENT Type="Advanced Installer" CreateVersion="17.4.1" version="17.5" Modules="professional" RootPath="." Language="en" Id="{7315FE7B-0418-4F38-8B12-6C0594276D30}">
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<DOCUMENT Type="Advanced Installer" CreateVersion="17.4.1" version="17.6" Modules="professional" RootPath="." Language="en" Id="{7315FE7B-0418-4F38-8B12-6C0594276D30}">
   <COMPONENT cid="caphyon.advinst.msicomp.MsiPropsComponent">
     <ROW Property="AI_BITMAP_DISPLAY_MODE" Value="0"/>
     <ROW Property="AI_BackgroundColor" Value="lightblue" MsiKey="AI_BackgroundColor"/>
@@ -265,12 +265,12 @@
     <ROW Registry="Version" Root="-1" Key="Software\[Manufacturer]\[ProductName]" Name="Version" Value="[ProductVersion]" Component_="ProductInformation"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiServCtrlComponent">
-    <ROW ServiceControl="ZitiUpdateService.exe" Name="Ziti Desktop Monitor Service" Event="160" Wait="0" Component_="ZitiUpdateService.exe"/>
-    <ROW ServiceControl="zititunnel.exe" Name="ziti" Event="161" Wait="1" Component_="zititunnel.exe"/>
+    <ROW ServiceControl="ZitiUpdateService.exe" Name="ziti-monitor" Event="160" Wait="0" Component_="ZitiUpdateService.exe"/>
+    <ROW ServiceControl="zititunnel.exe" Name="ziti" Event="161" Wait="0" Component_="zititunnel.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiServInstComponent">
-    <ROW ServiceInstall="ZitiUpdateService.exe" Name="Ziti Desktop Monitor Service" DisplayName="Ziti Desktop Monitor Service" ServiceType="16" StartType="2" ErrorControl="1" Component_="ZitiUpdateService.exe" Description="Monitor and update your Ziti Access Services"/>
-    <ROW ServiceInstall="zititunnel.exe" Name="ziti" DisplayName="Ziti Desktop Edge Service" ServiceType="16" StartType="2" ErrorControl="32769" Component_="zititunnel.exe" Description="Access your Ziti Secured Assets"/>
+    <ROW ServiceInstall="ZitiUpdateService.exe" Name="ziti-monitor" DisplayName="Ziti Desktop Monitor Service" ServiceType="16" StartType="2" ErrorControl="1" Component_="ZitiUpdateService.exe" Description="Monitors and updates the Ziti Access Service"/>
+    <ROW ServiceInstall="zititunnel.exe" Name="ziti" DisplayName="Ziti Desktop Edge Service" ServiceType="16" StartType="2" ErrorControl="32769" Component_="zititunnel.exe" Description="Access your Networks Secured by Ziti"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiShortsComponent">
     <ROW Shortcut="ZitiDesktopEdge.exe" Directory_="SHORTCUTDIR" Name="ZITIDE~1|Ziti Desktop Edge" Component_="ZitiDesktopEdge.exe" Target="[#ZitiDesktopEdge.exe]" Description="Ziti Desktop Edge configuration interface" Hotkey="0" Icon_="ziti.exe" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
