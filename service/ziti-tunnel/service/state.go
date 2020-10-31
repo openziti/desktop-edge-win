@@ -202,6 +202,7 @@ func (t *RuntimeState) LoadIdentity(id *Id) {
 		return
 	}
 
+	id.ControllerVersion = id.CId.Version
 	id.CId.Fingerprint = id.FingerPrint
 
 	// hack for now - if the identity name is '<unknown>' don't set it... :(
