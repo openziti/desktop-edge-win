@@ -457,14 +457,14 @@ namespace ZitiDesktopEdge {
 				IdentityMenu.Arrow.SetValue(Canvas.TopProperty, this.Height - 100);
 				IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, this.Width - 30);
 			} else {
-				this.Position = "Left";
+				this.Position = "Bottom";
 				this.Left = desktopWorkingArea.Right - this.Width - 75;
 				this.Top = desktopWorkingArea.Bottom - this.Height;
-				Arrow.SetValue(Canvas.TopProperty, this.Height - 40);
+				Arrow.SetValue(Canvas.TopProperty, this.Height - 35);
 				Arrow.SetValue(Canvas.LeftProperty, (double)185);
-				MainMenu.Arrow.SetValue(Canvas.TopProperty, this.Height - 40);
+				MainMenu.Arrow.SetValue(Canvas.TopProperty, this.Height - 35);
 				MainMenu.Arrow.SetValue(Canvas.LeftProperty, (double)185);
-				IdentityMenu.Arrow.SetValue(Canvas.TopProperty, this.Height - 40);
+				IdentityMenu.Arrow.SetValue(Canvas.TopProperty, this.Height - 35);
 				IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, (double)185);
 			}
 		}
