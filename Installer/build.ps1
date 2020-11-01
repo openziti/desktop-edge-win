@@ -40,14 +40,19 @@ echo "Assembling installer using AdvancedInstaller at: $ADVINST $action $ADVPROJ
 & $ADVINST $action $ADVPROJECT
 
 $gituser=$(git config user.name)
+$ghkey=$(ls github_deploy_key)
 if($gituser -eq "ziti-ci") {
   echo "yes ziti-ci"
   git add service/ziti-tunnel/version.go
   git add DesktopEdge/Properties/AssemblyInfo.cs
   git add ZitiUpdateService/Properties/AssemblyInfo.cs
   git add Installer/ZitiDesktopEdge.aip
-  git commit -m "[ci skip] committing updated installer file" 2>&1
-  git push
+  if(Test-Path .\github_deploy_key) {
+    git commit -m "[ci skip] committing updated installer file" 2>&1
+    git push
+  } else {
+    echo "detected ziti-zi - but no gh_deploy_key so no commit and no push"
+  }
 } else {
   echo "detected user [${gituser}] which is not ziti-ci - skipping installer commit"
 }
