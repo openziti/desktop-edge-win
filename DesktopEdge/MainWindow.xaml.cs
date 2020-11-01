@@ -425,6 +425,7 @@ namespace ZitiDesktopEdge {
 
 
 			var height = MainView.ActualHeight;
+			IdentityMenu.MainHeight = MainView.ActualHeight;
 
 			Rectangle trayRectangle = WinAPI.GetTrayRectangle();
 			if (trayRectangle.Top < 20) {
