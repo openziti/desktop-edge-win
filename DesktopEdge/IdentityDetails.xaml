@@ -15,7 +15,7 @@
                 </Rectangle.LayoutTransform>
             </Rectangle>
         </Canvas>
-        <Rectangle Margin="10,10,10,10" Fill="White" RadiusY="10" RadiusX="10"></Rectangle>
+        <Rectangle x:Name="MainCanvas" Margin="10,10,10,10" Fill="White" RadiusY="10" RadiusX="10"></Rectangle>
 
         <Grid Margin="20,20,20,-20" MaxWidth="350">
             <Grid.ColumnDefinitions>

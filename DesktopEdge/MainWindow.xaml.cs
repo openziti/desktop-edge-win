@@ -144,7 +144,6 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void MainWindow_Loaded(object sender, RoutedEventArgs e) {
-			Placement();
 			// add a new service client
 			serviceClient = new Client();
 			serviceClient.OnClientConnected += ServiceClient_OnClientConnected;
@@ -169,6 +168,7 @@ namespace ZitiDesktopEdge {
 				serviceClient.Reconnect();
 			}
 			IdentityMenu.OnForgot += IdentityForgotten;
+			Placement();
 		}
 
 		private void LogLevelChanged(string level) {
@@ -345,7 +345,6 @@ namespace ZitiDesktopEdge {
 				foreach (var id in status.Identities) {
 					updateViewWithIdentity(id);
 				}
-				Debug.WriteLine("Load From Service");
 				LoadIdentities(true);
 			} else {
 				SetCantDisplay();
@@ -401,7 +400,6 @@ namespace ZitiDesktopEdge {
 			}
 			IdList.Height = (double)(ids.Length * 64);
 			Placement();
-			if (this._isAttached&&repaint) Placement();
 		}
 
 		private void Id_OnStatusChanged(bool attached) {
@@ -425,6 +423,10 @@ namespace ZitiDesktopEdge {
 		private void SetLocation() {
 			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
 
+
+			var height = MainView.ActualHeight;
+			IdentityMenu.MainHeight = MainView.ActualHeight;
+
 			Rectangle trayRectangle = WinAPI.GetTrayRectangle();
 			if (trayRectangle.Top < 20) {
 				this.Position = "Top";
@@ -439,32 +441,32 @@ namespace ZitiDesktopEdge {
 			} else if (trayRectangle.Left < 20) {
 				this.Position = "Left";
 				this.Left = _left;
-				this.Top = desktopWorkingArea.Bottom - this.Height - 75;
-				Arrow.SetValue(Canvas.TopProperty, this.Height-200);
+				this.Top = desktopWorkingArea.Bottom - this.ActualHeight - 75;
+				Arrow.SetValue(Canvas.TopProperty, height - 200);
 				Arrow.SetValue(Canvas.LeftProperty, (double)0);
-				MainMenu.Arrow.SetValue(Canvas.TopProperty, this.Height - 200);
+				MainMenu.Arrow.SetValue(Canvas.TopProperty, height - 200);
 				MainMenu.Arrow.SetValue(Canvas.LeftProperty, (double)0);
-				IdentityMenu.Arrow.SetValue(Canvas.TopProperty, this.Height - 200);
+				IdentityMenu.Arrow.SetValue(Canvas.TopProperty, height - 200);
 				IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, (double)0);
 			} else if (desktopWorkingArea.Right == (double)trayRectangle.Left) {
 				this.Position = "Right";
 				this.Left = desktopWorkingArea.Right - this.Width - 20;
-				this.Top = desktopWorkingArea.Bottom - this.Height - 75;
-				Arrow.SetValue(Canvas.TopProperty, this.Height - 100);
+				this.Top = desktopWorkingArea.Bottom - height - 75;
+				Arrow.SetValue(Canvas.TopProperty, height - 100);
 				Arrow.SetValue(Canvas.LeftProperty, this.Width- 30);
-				MainMenu.Arrow.SetValue(Canvas.TopProperty, this.Height - 100);
+				MainMenu.Arrow.SetValue(Canvas.TopProperty, height - 100);
 				MainMenu.Arrow.SetValue(Canvas.LeftProperty, this.Width - 30);
-				IdentityMenu.Arrow.SetValue(Canvas.TopProperty, this.Height - 100);
+				IdentityMenu.Arrow.SetValue(Canvas.TopProperty, height - 100);
 				IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, this.Width - 30);
 			} else {
-				this.Position = "Left";
+				this.Position = "Bottom";
 				this.Left = desktopWorkingArea.Right - this.Width - 75;
-				this.Top = desktopWorkingArea.Bottom - this.Height;
-				Arrow.SetValue(Canvas.TopProperty, this.Height - 40);
+				this.Top = desktopWorkingArea.Bottom - height;
+				Arrow.SetValue(Canvas.TopProperty, height - 35);
 				Arrow.SetValue(Canvas.LeftProperty, (double)185);
-				MainMenu.Arrow.SetValue(Canvas.TopProperty, this.Height - 40);
+				MainMenu.Arrow.SetValue(Canvas.TopProperty, height - 35);
 				MainMenu.Arrow.SetValue(Canvas.LeftProperty, (double)185);
-				IdentityMenu.Arrow.SetValue(Canvas.TopProperty, this.Height - 40);
+				IdentityMenu.Arrow.SetValue(Canvas.TopProperty, height - 35);
 				IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, (double)185);
 			}
 		}
@@ -664,6 +666,10 @@ namespace ZitiDesktopEdge {
 				cur = 0;
 			}
 			return levels[cur];
+		}
+
+		private void IdList_LayoutUpdated(object sender, EventArgs e) {
+			Placement();
 		}
 	}
 }
