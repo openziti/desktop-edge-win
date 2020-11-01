@@ -39,7 +39,7 @@ var respChan = make(chan []byte, MaxDnsRequests)
 func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn, ipVer int) {
 	q := &dns.Msg{}
 	if err := q.Unpack(packet); err != nil {
-		log.Errorf("unexpected error in processDNSquery. [len(packet):] [ipVer:%v] [error: %v]", len(packet), ipVer, err)
+		log.Errorf("unexpected error in processDNSquery. [len(packet):%d] [ipVer:%v] [error: %v]", len(packet), ipVer, err)
 		return
 	}
 
@@ -59,9 +59,8 @@ func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn, ipVer int) {
 	}
 
 	var ip net.IP
-	// fmt.Printf("query: Type(%d) name(%s)\n", query.Qtype, query.Name)
 	dnsName := strings.TrimSpace(query.Name)
-	ip = DNS.Resolve(dnsName)
+	ip = dnsi.Resolve(dnsName)
 
 	// never proxy hostnames that we know about regardless of type
 	if ip == nil {
@@ -71,7 +70,7 @@ func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn, ipVer int) {
 			if strings.HasSuffix(dnsName, domain) {
 				dnsNameTrimmed := strings.TrimRight(dnsName, domain)
 				// dns request has domain appended - removing and resolving
-				ip = DNS.Resolve(dnsNameTrimmed)
+				ip = dnsi.Resolve(dnsNameTrimmed)
 				break
 			}
 		}
@@ -154,7 +153,7 @@ func runListener(ip *net.IP, port int, reqch chan dnsreq) {
 	attempts := 0
 	var server *net.UDPConn
 	var err error
-	maxAttempts := 40
+	maxAttempts := 20
 	for attempts < maxAttempts {
 		attempts++
 		server, err = net.ListenUDP(network, laddr)
@@ -163,9 +162,9 @@ func runListener(ip *net.IP, port int, reqch chan dnsreq) {
 		} else if attempts > maxAttempts{
 			log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "udp listening on network", err)
 		} else {
-			log.Warnf("An unexpected error has occurred while trying to listen on %v. This has happened %d times", laddr, attempts)
+			log.Warnf("System not ready to listen on %v yet. Retrying after 500ms. This has happened %d times.", laddr, attempts)
 		}
-		time.Sleep(250 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 	}
 
 	log.Infof("DNS listening at: %v", laddr)

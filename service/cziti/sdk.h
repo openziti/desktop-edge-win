@@ -41,7 +41,7 @@ void libuv_runner(void *arg);
 void libuv_run(libuv_ctx *lctx);
 void libuv_stop(libuv_ctx *lctx);
 
-void setLogOut(intptr_t h);
-void setLogLevel(int level);
+void set_log_out(intptr_t h);
+void set_log_level(int level);
 
 extern const char** all_configs;

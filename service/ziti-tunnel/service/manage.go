@@ -1,3 +1,5 @@
+// +build windows
+
 /*
  * Copyright NetFoundry, Inc.
  *
@@ -15,7 +17,6 @@
  *
  */
 
-// +build windows
 package service
 
 import (

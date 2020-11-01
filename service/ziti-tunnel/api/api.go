@@ -19,6 +19,7 @@ package api
 
 import (
 	"net"
+	"sync"
 	"unsafe"
 )
 
@@ -44,15 +45,58 @@ type DesktopEdgeManager interface {
 	SetLogLevel()
 	Debug()
 	SaveState()
-	CreateTun()
+	Tun() DesktopEdgeIface
 	FindIdentity()
 }
 
-type Connection interface {
+type ZitiContext interface {
 	Shutdown()
 	GetMetrics() (int64, int64, bool)
 	UnsafePointer() unsafe.Pointer
 
 	Controller() string
 	Name() string
+	Version() string
+	AsKey() string
+}
+
+type ZitiIdentity interface {
+	Namec() string
+	Fingerprint() string
+	ControllerUrl() string
+	Active() bool
+	Services() sync.Map
+	Status() string
+
+	Activate()
+	Deactivate()
+}
+
+type ZitiService interface {
+	Nameb()
+	Host()
+	WantedHost()
+	Port()
+	WantedPort()
+	IsIp()
+	OwnsIntercept()
+}
+
+type ZitiId struct {
+	IdName        string
+	Fingerprint   string
+	ControllerUrl string
+	Active        bool
+	IdVersion     string
+	Services      sync.Map //string, ZService
+	CZitiId 	  interface{}
+}
+type Intercept struct {
+	Host string
+	Ip   string
+}
+type ZitiSvc struct {
+	ActualIntercept Intercept
+	WantedIntercept Intercept
+	OwnsIntercept	bool
 }

@@ -27,8 +27,9 @@ import (
 var Version dto.ServiceVersion
 var pipeBase = `\\.\pipe\NetFoundry\tunneler\`
 
-var activeIds = make(map[string]*dto.Identity)
-var rts = RuntimeState{}
+var rts = RuntimeState{
+	ids: make(map[string]*Id),
+}
 var interrupt chan struct{}
 
 var ipcWg sync.WaitGroup
@@ -41,7 +42,7 @@ var Debug bool
 var TunStarted time.Time
 var log = logging.Logger()
 
-var	events = newTopic()
+var	events = newTopic(32)
 
 const (
 	API_VERSION = 1
