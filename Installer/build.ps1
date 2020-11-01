@@ -42,11 +42,13 @@ echo "Assembling installer using AdvancedInstaller at: $ADVINST $action $ADVPROJ
 $gituser=$(git config user.name)
 if($gituser -eq "ziti-ci") {
   echo "yes ziti-ci"
+  git add service/ziti-tunnel/version.go
+  git add DesktopEdge/Properties/AssemblyInfo.cs
+  git add ZitiUpdateService/Properties/AssemblyInfo.cs
+  git add Installer/ZitiDesktopEdge.aip
   git commit -m "[ci skip] committing updated installer file" 2>&1
 } else {
   echo "detected user [${gituser}] which is not ziti-ci - skipping installer commit"
 }
-
-git add service/ziti-tunnel/version.go DesktopEdge/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip
 
 echo "========================== build.ps1 competed =========================="
