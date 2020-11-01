@@ -7,32 +7,30 @@
              mc:Ignorable="d" 
              x:Name="IdentityArea"
              d:DesignHeight="500" d:DesignWidth="350">
-    <Grid MaxWidth="350">
+    <Grid>
         <Canvas>
-            <Rectangle Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="White" Width="20" Canvas.Left="165" ClipToBounds="True" Canvas.Bottom="-10">
+            <Rectangle Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="White" Width="20" Canvas.Left="185" ClipToBounds="True" Canvas.Bottom="-10">
                 <Rectangle.LayoutTransform>
                     <RotateTransform Angle="-45"/>
                 </Rectangle.LayoutTransform>
             </Rectangle>
         </Canvas>
-        <Rectangle Fill="White" RadiusY="10" RadiusX="10"></Rectangle>
+        <Rectangle x:Name="MainCanvas" Margin="10,10,10,10" Fill="White" RadiusY="10" RadiusX="10"></Rectangle>
 
-        <Grid Margin="10,10,10,10">
+        <Grid Margin="20,20,20,-20" MaxWidth="350">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="10,10,10,10">
                 <Grid Margin="0,0,0,10">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="70"/>
+                        <ColumnDefinition Width="40"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="70"/>
+                        <ColumnDefinition Width="40"/>
                     </Grid.ColumnDefinitions>
                     <local:Toggler x:Name="IdDetailToggle" Grid.Column="0" HorizontalAlignment="Left" OnToggled="IdToggle"></local:Toggler>
-                    <Label Name="IdDetailName" Grid.Column="1" HorizontalAlignment="Center" MaxWidth="160" FontSize="14" FontWeight="SemiBold" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="#0F0F23">
-                        <TextBlock TextTrimming="CharacterEllipsis">Identity Name</TextBlock>
-                    </Label>
-                    <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/x.png" Width="20" Height="20" Margin="0,0,0,0" HorizontalAlignment="Right" MouseUp="HideMenu"></Image>
+                    <TextBlock x:Name="IdDetailName" MaxWidth="220" Grid.Column="1" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" FontSize="14" FontWeight="Bold" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="#0F0F23" VerticalAlignment="Center" TextWrapping="NoWrap" />
+                        <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/x.png" Width="20" Height="20" Margin="0,0,0,0" HorizontalAlignment="Right" MouseUp="HideMenu"></Image>
                 </Grid>
                 <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
                 <Grid>
@@ -40,10 +38,10 @@
                         <ColumnDefinition Width="*"></ColumnDefinition>
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="39"></RowDefinition>
-                        <RowDefinition Height="39"></RowDefinition>
-                        <RowDefinition Height="39"></RowDefinition>
-                        <RowDefinition Height="39"></RowDefinition>
+                        <RowDefinition Height="30"></RowDefinition>
+                        <RowDefinition Height="30"></RowDefinition>
+                        <RowDefinition Height="30"></RowDefinition>
+                        <RowDefinition Height="30"></RowDefinition>
                         <RowDefinition Height="40"></RowDefinition>
                         <RowDefinition x:Name="ServiceRow" Height="160"></RowDefinition>
                         <RowDefinition Height="40"></RowDefinition>
@@ -63,14 +61,14 @@
             </StackPanel>
         </Grid>
 
-        <Grid x:Name="ConfirmView" Visibility="Collapsed" Width="350">
+        <Grid x:Name="ConfirmView" Visibility="Collapsed" Width="400">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="Black"/>
                 </Rectangle.Fill>
             </Rectangle>
             <Canvas>
-                <Rectangle Name="ConfirmArrow" HorizontalAlignment="Center" Height="20" Fill="Black" Width="20" Canvas.Left="165" ClipToBounds="True" Canvas.Bottom="-10">
+                <Rectangle Name="ConfirmArrow" HorizontalAlignment="Center" Height="20" Fill="Black" Width="20" Canvas.Left="185" ClipToBounds="True" Canvas.Bottom="-10">
                     <Rectangle.LayoutTransform>
                         <RotateTransform Angle="-45"/>
                     </Rectangle.LayoutTransform>
@@ -91,11 +89,11 @@
                     <RowDefinition Height="*"></RowDefinition>
                 </Grid.RowDefinitions>
                 <Label Name="ErrorTitle" Foreground="White" Content="Confirm Forget" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
-                <TextBlock TextWrapping="WrapWithOverflow" Foreground="LightGray" Padding="10" Text="If you delete this identity you will no longer have access to the resources that it grants you." Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
+                <TextBlock TextWrapping="WrapWithOverflow" Foreground="LightGray" Padding="30" Text="If you delete this identity you will no longer have access to the resources that it grants you." Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
                 <Grid Grid.Row="4">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="160"></ColumnDefinition>
-                        <ColumnDefinition Width="*"></ColumnDefinition>
+                        <ColumnDefinition Width="1*"></ColumnDefinition>
+                        <ColumnDefinition Width="1*"></ColumnDefinition>
                     </Grid.ColumnDefinitions>
                     <Button x:Name="CancelConfirmButton" Grid.Column="0" Margin="40,0,20,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#0068F9" Content="Close" Click="CancelConfirmButton_Click" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
                         <Button.Resources>

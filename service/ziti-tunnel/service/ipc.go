@@ -23,15 +23,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Microsoft/go-winio"
+	"github.com/openziti/desktop-edge-win/service/cziti"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/constants"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/idutil"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/logging"
 	"github.com/openziti/foundation/identity/identity"
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"github.com/openziti/sdk-golang/ziti/enroll"
-	"github.com/openziti/desktop-edge-win/service/cziti"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/windows/svc"
 	"golang.zx2c4.com/wireguard/tun"
@@ -44,7 +43,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"unsafe"
 )
 
 type Pipes struct {
@@ -63,12 +61,13 @@ var shutdown = make(chan bool, 8) //a channel informing go routines to exit
 
 func SubMain(ops chan string, changes chan<- svc.Status) error {
 	log.Info("============================== service begins ==============================")
+	cziti.ResetDNS()
 
 	rts.LoadConfig()
 	l := rts.state.LogLevel
 	_, czitiLevel := logging.ParseLevel(l)
 
-	logging.InitLogger(l	)
+	logging.InitLogger(l)
 
 	_ = logging.Elog.Info(InformationEvent, SvcName+" starting. log file located at "+config.LogFile())
 
@@ -82,8 +81,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	go handleEvents()
 
 	// initialize the network interface
-	err := initialize(rts.state.TunIpv4, rts.state.TunIpv4Mask)
-
+	err := initialize()
 	if err != nil {
 		log.Panicf("unexpected err from initialize: %v", err)
 		return err
@@ -105,6 +103,8 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 	_ = logging.Elog.Info(InformationEvent, SvcName+" status set to running")
 	log.Info(SvcName + " status set to running. starting cancel loop")
+
+	rts.SaveState()
 
 	waitForStopRequest(ops)
 
@@ -139,7 +139,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 }
 
 func requestShutdown(requester string) {
-	log.Info("shutdown requested by %v", requester)
+	log.Infof("shutdown requested by %v", requester)
 	shutdown <- true // stops the metrics ticker
 	shutdown <- true // stops the service change listener
 }
@@ -229,29 +229,44 @@ func (p *Pipes) shutdownConnections() {
 	log.Info("all events connections closed")
 }
 
-func initialize(ipv4 string, ipv4mask int) error {
-	err := rts.CreateTun(ipv4, ipv4mask)
+func initialize() error {
+	assignedIp, err := rts.CreateTun(rts.state.TunIpv4, rts.state.TunIpv4Mask)
 	if err != nil {
 		return err
 	}
-	setTunInfo(rts.state, ipv4, ipv4mask)
 
-	// connect any identities that are enabled
+	setTunInfo(rts.state)
+
+	rts.state.Active = true
 	for _, id := range rts.state.Identities {
-		connectIdentity(id)
+		if id != nil {
+			i := &Id{
+				Identity: *id,
+				CId:      nil,
+			}
+			i.Identity.Active = false
+			rts.ids[id.FingerPrint] = i
+		} else {
+			log.Warnf("identity was nil?")
+		}
 	}
-
+	dnsReady := make(chan bool)
+	go cziti.RunDNSserver([]net.IP{assignedIp}, dnsReady)
+	<-dnsReady
 	log.Debugf("initial state loaded from configuration file")
 	return nil
 }
 
-func setTunInfo(s *dto.TunnelStatus, ipv4 string, ipv4mask int) {
+func setTunInfo(s *dto.TunnelStatus) {
+	ipv4 := rts.state.TunIpv4
+	ipv4mask := rts.state.TunIpv4Mask
+
 	if strings.TrimSpace(ipv4) == "" {
-		log.Infof("ip not provided using default: %v", ipv4)
 		ipv4 = constants.Ipv4ip
+		log.Infof("ip not provided using default: %v", ipv4)
 		rts.UpdateIpv4(ipv4)
 	}
-	if ipv4mask < 8 || ipv4mask > constants.Ipv4MaxMask {
+	if ipv4mask < constants.Ipv4MaxMask || ipv4mask > constants.Ipv4MinMask {
 		log.Warnf("provided mask is invalid: %d. using default value: %d", ipv4mask, constants.Ipv4DefaultMask)
 		ipv4mask = constants.Ipv4DefaultMask
 		rts.UpdateIpv4Mask(ipv4mask)
@@ -272,7 +287,7 @@ func setTunInfo(s *dto.TunnelStatus, ipv4 string, ipv4mask int) {
 	//set the tun info into the state
 	s.IpInfo = &dto.TunIpInfo{
 		Ip:     ipv4,
-		DNS:    Ipv4dns,
+		DNS:    ipv4,
 		MTU:    umtu,
 		Subnet: ipv4MaskString(ipnet.Mask),
 	}
@@ -312,6 +327,9 @@ func serveIpc(conn net.Conn) {
 	defer log.Info("A connected IPC client has disconnected")
 	defer closeConn(conn) //close the connection after this function invoked as go routine exits
 
+	if len(events.broadcast) == cap(events.broadcast) {
+		log.Warn("TunnelStatusEvent will be blocked. If this warning is continuously displayed please report")
+	}
 	events.broadcast <- dto.TunnelStatusEvent{
 		StatusEvent: dto.StatusEvent{Op: "status"},
 		Status:      rts.ToStatus(),
@@ -563,7 +581,7 @@ func tunnelState(onOff bool, out *json.Encoder) {
 	log.Debugf("toggle ziti on/off: %t", onOff)
 	state := rts.state
 	if onOff == state.Active {
-		log.Debug("nothing to do. the state of the tunnel already matches the requested state: %t", onOff)
+		log.Debugf("nothing to do. the state of the tunnel already matches the requested state: %t", onOff)
 		respond(out, dto.Response{Message: fmt.Sprintf("noop: tunnel state already set to %t", onOff), Code: SUCCESS, Error: "", Payload: nil})
 		return
 	}
@@ -578,7 +596,7 @@ func setTunnelState(onOff bool) {
 	if onOff {
 		TunStarted = time.Now()
 
-		for _, id := range rts.state.Identities {
+		for _, id := range rts.ids {
 			connectIdentity(id)
 		}
 	} else {
@@ -589,8 +607,18 @@ func setTunnelState(onOff bool) {
 func toggleIdentity(out *json.Encoder, fingerprint string, onOff bool) {
 	log.Debugf("toggle ziti on/off for %s: %t", fingerprint, onOff)
 
-	_, id := rts.Find(fingerprint)
-	if id.Active == onOff {
+	id := rts.Find(fingerprint)
+
+	if id == nil {
+		msg := fmt.Sprintf("identity with fingerprint %s not found", fingerprint)
+		log.Warn(msg)
+		respond(out, dto.Response{
+			Code:    SUCCESS,
+			Message: fmt.Sprintf("no update performed. %s", msg),
+			Error:   "",
+			Payload: nil,
+		})
+	} else if id.Active == onOff {
 		log.Debugf("nothing to do - the provided identity %s is already set to active=%t", id.Name, id.Active)
 		//nothing to do...
 		respond(out, dto.Response{
@@ -599,16 +627,15 @@ func toggleIdentity(out *json.Encoder, fingerprint string, onOff bool) {
 			Error:   "",
 			Payload: nil,
 		})
-		return
-	}
-
-	if onOff {
-		connectIdentity(id)
 	} else {
-		_ = disconnectIdentity(id)
+		if onOff {
+			connectIdentity(id)
+		} else {
+			_ = disconnectIdentity(id)
+		}
+		respond(out, dto.Response{Message: "identity toggled", Code: SUCCESS, Error: "", Payload: Clean(id)})
 	}
 
-	respond(out, dto.Response{Message: "identity toggled", Code: SUCCESS, Error: "", Payload: idutil.Clean(*id)})
 	log.Debugf("toggle ziti on/off for %s: %t responded to", fingerprint, onOff)
 }
 
@@ -670,7 +697,7 @@ func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
 		return
 	}
 
-	id, err := identity.LoadIdentity(conf.ID)
+	sdkId, err := identity.LoadIdentity(conf.ID)
 	if err != nil {
 		respondWithError(out, "unable to load identity which was just created. this is abnormal", COULD_NOT_ENROLL, err)
 		return
@@ -679,7 +706,7 @@ func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
 	//map fields onto new identity
 	newId.Id.Config.ZtAPI = conf.ZtAPI
 	newId.Id.Config.ID = conf.ID
-	newId.Id.FingerPrint = fmt.Sprintf("%x", sha1.Sum(id.Cert().Leaf.Raw)) //generate fingerprint
+	newId.Id.FingerPrint = fmt.Sprintf("%x", sha1.Sum(sdkId.Cert().Leaf.Raw)) //generate fingerprint
 	if newId.Id.Name == "" {
 		newId.Id.Name = newId.Id.FingerPrint
 	}
@@ -702,14 +729,20 @@ func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
 	//newId.Id.Active = false //set to false by default - enable the id after persisting
 	log.Infof("enrolled successfully. identity file written to: %s", newPath)
 
-	connectIdentity(&newId.Id)
+	id := &Id{
+		Identity: dto.Identity{
+			FingerPrint: newId.Id.FingerPrint,
+		},
+	}
+
+	connectIdentity(id)
 
 	state := rts.state
 	//if successful parse the output and add the config to the identity
 	state.Identities = append(state.Identities, &newId.Id)
 
 	//return successful message
-	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: idutil.Clean(newId.Id)}
+	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: Clean(id)}
 
 	respond(out, resp)
 	log.Debugf("new identity for %s responded to", newId.Id.Name)
@@ -724,67 +757,72 @@ func respondWithError(out *json.Encoder, msg string, code int, err error) {
 	log.Debugf("responded with error: %s, %d, %v", msg, code, err)
 }
 
-func connectIdentity(id *dto.Identity) {
-	log.Infof("connecting identity: %s", id.Name)
+func connectIdentity(id *Id) {
+	log.Infof("connecting identity: %s[%s]", id.Name, id.FingerPrint)
 
-	if !id.Connected {
-		//tell the c sdk to use the file from the id and connect
-		rts.LoadIdentity(id)
-		activeIds[id.FingerPrint] = id
+	if id.Active {
+		log.Debugf("%s[%s] is active - not connecting", id.Name, id.FingerPrint)
 	} else {
-		log.Debugf("id [%s] is already connected - not reconnecting", id.Name)
-		for _, s := range id.Services {
-			cziti.AddIntercept(s.Id, s.Name, s.InterceptHost, int(s.InterceptPort), unsafe.Pointer(id.ZitiContext))
+		if id.CId == nil || !id.CId.Loaded {
+			rts.LoadIdentity(id)
+			//activeIds[id.FingerPrint] = id
+		} else {
+			log.Debugf("%s[%s] is already loaded", id.Name, id.FingerPrint)
 		}
-		id.Connected = true
+
+		if id.CId.Services != nil {
+			id.CId.Services.Range(func(key interface{}, value interface{}) bool {
+				//string, ZService
+				log.Warnf("ranging over services. key: %s", key)
+				val := value.(cziti.ZService)
+				cziti.DNSMgr.ReturnToDns(val.InterceptHost)
+				cziti.AddIntercept(val.Id, val.Name, val.InterceptHost, int(val.InterceptPort), id.CId.UnsafePointer())
+				id.Services = append(id.Services, nil)
+				return true
+			})
+		}
+		id.Active = true
 	}
-	id.Active = true
-	log.Infof("identity [%s] connected [%t] and set to active [%t]", id.Name, id.Connected, id.Active)
 
 	events.broadcast <- dto.IdentityEvent{
 		ActionEvent: IDENTITY_ADDED,
-		Id: dto.Identity{
-			Name:        id.Name,
-			FingerPrint: id.FingerPrint,
-			Active:      id.Active,
-			Config:      idcfg.Config{},
-			Status:      "enrolled",
-			Services:    id.Services,
-		},
+		Id: id.Identity,
 	}
 }
 
-func disconnectIdentity(id *dto.Identity) error {
+func disconnectIdentity(id *Id) error {
 	log.Infof("disconnecting identity: %s", id.Name)
 
-	id.Active = false
-	if id.Connected {
+	if id.Active {
 		log.Debugf("ranging over services all services to remove intercept and deregister the service")
-		if len(id.Services) < 1 {
-			log.Errorf("identity with fingerprint %s has no services?", id.FingerPrint)
-		}
+		//if len(id.Services) < 1 {
+		//	log.Errorf("identity with fingerprint %s has no services?", id.Fingerprint)
+		//}
 
-		for _, s := range id.Services { //wait for uv loop to finish before continuing
+		id.CId.Services.Range(func(key interface{}, value interface{}) bool {
+		//for _, s := range id.Services { //wait for uv loop to finish before continuing
+			val := value.(cziti.ZService)
 			var wg sync.WaitGroup
 			wg.Add(1)
 			rwg := &cziti.RemoveWG{
-				SvcId: s.Id,
+				SvcId: val.Id,
 				Wg:    &wg,
 			}
 			cziti.RemoveIntercept(rwg)
 			wg.Wait()
-			cziti.DNS.UnregisterService(id.ZitiContext, s.Name)
-		}
-		id.Connected = false
+			cziti.DNSMgr.UnregisterService(val.InterceptHost, val.InterceptPort)
+			return true
+		})
 	} else {
 		log.Debugf("id: %s is already disconnected - not attempting to disconnected again fingerprint:%s", id.Name, id.FingerPrint)
 	}
+	id.Active = false
 	return nil
 }
 
 func removeIdentity(out *json.Encoder, fingerprint string) {
 	log.Infof("request to remove identity by fingerprint: %s", fingerprint)
-	_, id := rts.Find(fingerprint)
+	id := rts.Find(fingerprint)
 	if id == nil {
 		respondWithError(out, fmt.Sprintf("Could not find identity by fingerprint: %s", fingerprint), IDENTITY_NOT_FOUND, nil)
 		return
@@ -802,7 +840,7 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 	log.Debugf("removing identity file for fingerprint %s at %s", id.FingerPrint, id.Path())
 	err = os.Remove(id.Path())
 	if err != nil {
-		log.Warn("could not remove file: %s", config.Path()+id.FingerPrint+".json")
+		log.Warnf("could not remove file: %s", id.Path())
 	}
 
 	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: nil}
@@ -843,49 +881,31 @@ func acceptServices() {
 			return
 		case c := <-cziti.ServiceChanges:
 			log.Debugf("processing service change event. id:%s name:%s", c.Service.Id, c.Service.Name)
-			matched := false
-			//find the id using the context
-			for _, id := range activeIds {
-				if id.ZitiContext == c.ZitiContext {
-					matched = true
-					switch c.Operation {
-					case cziti.ADDED:
-						//add the service to the identity
-						s := dto.Service{
-							Name:          c.Service.Name,
-							InterceptHost: c.Service.InterceptHost,
-							InterceptPort: c.Service.InterceptPort,
-							Id:            c.Service.Id,
-							AssignedIP:    c.Service.AssignedIP,
-							OwnsIntercept: c.Service.OwnsIntercept,
-						}
-						id.Services = append(id.Services, &s)
-
-						events.broadcast <- dto.ServiceEvent{
-							ActionEvent: SERVICE_ADDED,
-							Fingerprint: id.FingerPrint,
-							Service:     s,
-						}
-						log.Debug("dispatched added service change event")
-					case cziti.REMOVED:
-						for idx, s := range id.Services {
-							if s.Name == c.Service.Name {
-								id.Services = append(id.Services[:idx], id.Services[idx+1:]...)
-								events.broadcast <- dto.ServiceEvent{
-									ActionEvent: SERVICE_REMOVED,
-									Fingerprint: id.FingerPrint,
-									Service:     *s,
-								}
-								log.Debug(" dispatched remove service change event")
-							}
-						}
-					}
-				}
+			s := dto.Service{
+				Name:          c.Service.Name,
+				InterceptHost: c.Service.InterceptHost,
+				InterceptPort: c.Service.InterceptPort,
+				Id:            c.Service.Id,
+				AssignedIP:    c.Service.AssignedIP,
+				OwnsIntercept: c.Service.OwnsIntercept,
+			}
+			var action dto.ActionEvent
+			switch c.Operation {
+			case cziti.ADDED:
+				action = SERVICE_ADDED
+			case cziti.REMOVED:
+				action = SERVICE_REMOVED
+			default:
+				log.Warnf("service event was processed but unknown operation: %s", c.Operation)
+				continue
 			}
 
-			if !matched {
-				log.Warnf("service update received but matched no context. this is unexpected. service name: %s", c.Service.Name)
+			events.broadcast <- dto.ServiceEvent{
+				ActionEvent: action,
+				Fingerprint: c.ZitiContext.Fingerprint,
+				Service:     s,
 			}
+			log.Debugf("dispatched %s service change event", c.Operation)
 		}
 	}
 }
@@ -901,7 +921,7 @@ func handleEvents(){
 		case <-shutdown:
 			return
 		case <-every5s.C:
-			s := rts.ToStatus()
+			s := rts.ToMetrics()
 
 			events.broadcast <- dto.MetricsEvent{
 				StatusEvent: dto.StatusEvent{Op: "metrics"},
@@ -909,4 +929,59 @@ func handleEvents(){
 			}
 		}
 	}
+}
+
+
+//Removes the Config from the provided identity and returns a 'cleaned' id
+func Clean(src *Id) dto.Identity {
+	log.Tracef("cleaning identity: %s", src.Name)
+	AddMetrics(src)
+	nid := dto.Identity{
+		Name:              src.Name,
+		FingerPrint:       src.FingerPrint,
+		Active:            src.Active,
+		Config:            idcfg.Config{},
+		ControllerVersion: src.ControllerVersion,
+		Status:            "",
+		Services:          make([]*dto.Service, 0),
+		Metrics:           src.Metrics,
+		Tags:              nil,
+	}
+
+	if src.CId != nil && src.CId.Services != nil {
+		src.CId.Services.Range(func(key interface{}, value interface{}) bool {
+			//string, ZService
+			val := value.(cziti.ZService)
+			nid.Services = append(nid.Services, svcToDto(val))
+			return true
+		})
+	}
+
+	nid.Config.ZtAPI = src.Config.ZtAPI
+	log.Tracef("Up: %v Down %v", nid.Metrics.Up, nid.Metrics.Down)
+	return nid
+}
+
+func AddMetrics(id *Id) {
+	if id == nil || id.CId == nil {
+		return
+	}
+	id.Metrics = &dto.Metrics{}
+	up, down, _ := id.CId.GetMetrics()
+
+	id.Metrics.Up = up
+	id.Metrics.Down = down
+}
+
+func svcToDto(src cziti.ZService) *dto.Service {
+	dest := &dto.Service{
+		Name:          src.Name,
+		AssignedIP:    src.AssignedIP,
+		InterceptHost: src.InterceptHost,
+		InterceptPort: src.InterceptPort,
+		Id:            src.Id,
+		OwnsIntercept: src.OwnsIntercept,
+	}
+
+	return dest
 }

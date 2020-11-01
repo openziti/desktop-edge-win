@@ -23,11 +23,11 @@ type topic struct {
 	done chan bool
 }
 
-func newTopic() topic {
+func newTopic(cap int16) topic {
 	return topic{
-		broadcast: make(chan interface{}, 8),
-		channels:  make(map[int]chan interface{}, 8),
-		done:      make(chan bool, 8),
+		broadcast: make(chan interface{}, cap),
+		channels:  make(map[int]chan interface{}, cap),
+		done:      make(chan bool, cap),
 	}
 }
 

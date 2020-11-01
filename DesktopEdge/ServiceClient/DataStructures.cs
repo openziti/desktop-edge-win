@@ -139,6 +139,7 @@ namespace ZitiDesktopEdge.ServiceClient
         public string Status { get; set; }
         public List<Service> Services { get; set; }
         public Metrics Metrics { get; set; }
+        public string ControllerVersion { get; set; }
     }
     public class Service
     {
@@ -208,8 +209,12 @@ namespace ZitiDesktopEdge.ServiceClient
                     writer.WriteLine($"    Active  : {id.Active}");
                     writer.WriteLine($"    Status  : {id.Status}");
                     writer.WriteLine($"    Services:");
-                    foreach (Service s in id.Services) {
-                        writer.WriteLine($"      Name: {s.Name} HostName: {s.InterceptHost} Port: {s.InterceptPort}");
+                    if (id.Services != null)
+                    {
+                        foreach (Service s in id?.Services)
+                        {
+                            writer.WriteLine($"      Name: {s.Name} HostName: {s.InterceptHost} Port: {s.InterceptPort}");
+                        }
                     }
                     writer.WriteLine("=============================================");
                 }

@@ -26,6 +26,7 @@ namespace ZitiDesktopEdge {
 		public event Forgot OnForgot;
 		public delegate void ErrorOccurred(string message);
 		public event ErrorOccurred OnError;
+		public double MainHeight = 500;
 
 		private List<ZitiIdentity> identities {
 			get {
@@ -69,7 +70,8 @@ namespace ZitiDesktopEdge {
 		}
 
 		public void UpdateView() {
-			IdDetailName.Content = _identity.Name;
+			IdDetailName.Text = _identity.Name;
+			IdDetailName.ToolTip = _identity.Name;
 			IdDetailToggle.Enabled = _identity.IsEnabled;
 			IdentityName.Value = _identity.Name;
 			IdentityNetwork.Value = _identity.ControllerUrl;
@@ -85,7 +87,7 @@ namespace ZitiDesktopEdge {
 					editor.IsLocked = true;
 					ServiceList.Children.Add(editor);
 				}
-				double newHeight = Application.Current.MainWindow.ActualHeight - 360;
+				double newHeight = MainHeight - 300;
 				ServiceRow.Height = new GridLength((double)newHeight);
 				MainDetailScroll.MaxHeight = newHeight;
 				MainDetailScroll.Height = newHeight;
@@ -118,7 +120,9 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
-			ConfirmView.Visibility = Visibility.Visible;
+			if (this.Visibility==Visibility.Visible) {
+				ConfirmView.Visibility = Visibility.Visible;
+			}
 		}
 
 		private void CancelConfirmButton_Click(object sender, RoutedEventArgs e) {

@@ -37,7 +37,7 @@ func EnsurePermissions(group string) string {
 
 	u, err := user.Current()
 	if err != nil || u == nil {
-		log.Fatal("could not acquire current user! user: %v %v", u, err)
+		log.Fatalf("could not acquire current user! user: %v %v", u, err)
 		return "" //quiets the nil warning below even though this code won't get hit
 	}
 

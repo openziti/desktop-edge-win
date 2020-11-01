@@ -9,6 +9,8 @@ using System.ServiceProcess;
 using System.Linq;
 using System.Diagnostics;
 using System.Windows.Controls;
+using System.Drawing;
+
 
 namespace ZitiDesktopEdge {
 
@@ -18,12 +20,16 @@ namespace ZitiDesktopEdge {
 	public partial class MainWindow:Window {
 
 		public System.Windows.Forms.NotifyIcon notifyIcon;
+		public string Position = "Bottom";
 		private DateTime _startDate;
 		private System.Windows.Forms.Timer _timer;
 		private Client serviceClient = null;
 		private bool _isAttached = true;
+		private bool _isServiceInError = false;
 		private int _right = 75;
+		private int _left = 75;
 		private int _bottom = 0;
+		private int _top = 30;
 		private double _maxHeight = 800d;
 		private string[] suffixes = { "bps", "kbps", "mbps", "gbps", "tbps", "pbps" };
 
@@ -69,7 +75,6 @@ namespace ZitiDesktopEdge {
 
 		private void MainWindow_Activated(object sender, EventArgs e) {
 			this.Visibility = Visibility.Visible;
-			Debug.WriteLine("Activation");
 			Placement();
 		}
 
@@ -94,6 +99,8 @@ namespace ZitiDesktopEdge {
 			ErrorMsg.Content = msg;
 			ErrorMsgDetail.Content = detailMessage;
 			SetNotifyIcon("red");
+			_isServiceInError = true;
+			UpdateServiceView();
 		}
 		private void SetCantDisplay() {
 			SetCantDisplay("Service Not Started", "Start the Ziti Tunnel Service to get started");
@@ -114,8 +121,29 @@ namespace ZitiDesktopEdge {
 			this.Activate();
 		}
 
+		private void UpdateServiceView() {
+			if (_isServiceInError) {
+				AddIdAreaButton.Opacity = 0.1;
+				AddIdAreaButton.IsEnabled = false;
+				AddIdButton.Opacity = 0.1;
+				AddIdButton.IsEnabled = false;
+				DisconnectButton.Visibility = Visibility.Collapsed;
+				ConnectButton.Visibility = Visibility.Visible;
+				ConnectButton.Opacity = 0.1;
+				StatArea.Opacity = 0.1;
+			} else {
+				AddIdAreaButton.Opacity = 1.0;
+				AddIdAreaButton.IsEnabled = true;
+				AddIdButton.Opacity = 1.0;
+				AddIdButton.IsEnabled = true;
+				ConnectButton.Visibility = Visibility.Collapsed;
+				DisconnectButton.Visibility = Visibility.Visible;
+				StatArea.Opacity = 1.0;
+				ConnectButton.Opacity = 1.0;
+			}
+		}
+
 		private void MainWindow_Loaded(object sender, RoutedEventArgs e) {
-			Placement();
 			// add a new service client
 			serviceClient = new Client();
 			serviceClient.OnClientConnected += ServiceClient_OnClientConnected;
@@ -139,8 +167,8 @@ namespace ZitiDesktopEdge {
 				SetCantDisplay();
 				serviceClient.Reconnect();
 			}
-			Debug.WriteLine("App Loaded");
 			IdentityMenu.OnForgot += IdentityForgotten;
+			Placement();
 		}
 
 		private void LogLevelChanged(string level) {
@@ -155,6 +183,8 @@ namespace ZitiDesktopEdge {
 			this.Dispatcher.Invoke(() => {
 				//e is _ALWAYS_ null at this time use this to display something if you want
 				NoServiceView.Visibility = Visibility.Collapsed;
+				_isServiceInError = false;
+				UpdateServiceView();
 				SetNotifyIcon("white");
 				LoadIdentities(true);
 			});
@@ -275,9 +305,7 @@ namespace ZitiDesktopEdge {
 		private void AttachmentChanged(bool attached) {
 			_isAttached = attached;
 			if (!_isAttached) {
-				var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-				this.Left = desktopWorkingArea.Right - this.Width - 75;
-				this.Top = desktopWorkingArea.Bottom - this.Height - 75;
+				SetLocation();
 			}
 			Placement();
 			MainMenu.Visibility = Visibility.Collapsed;
@@ -288,6 +316,8 @@ namespace ZitiDesktopEdge {
 			this.identities.Clear();
 
 			if (status != null) {
+				_isServiceInError = false;
+				UpdateServiceView();
 				NoServiceView.Visibility = Visibility.Collapsed;
 				SetNotifyIcon("white");
 				if (status.Active) {
@@ -315,7 +345,6 @@ namespace ZitiDesktopEdge {
 				foreach (var id in status.Identities) {
 					updateViewWithIdentity(id);
 				}
-				Debug.WriteLine("Load From Service");
 				LoadIdentities(true);
 			} else {
 				SetCantDisplay();
@@ -345,38 +374,112 @@ namespace ZitiDesktopEdge {
 			IdList.Height = 0;
 			IdList.MaxHeight = _maxHeight-520;
 			ZitiIdentity[] ids = identities.ToArray();
-			double height = 460 + (ids.Length * 60);
+			double height = 490 + (ids.Length * 60);
 			if (height > _maxHeight) height = _maxHeight;
 			this.Height = height;
 			IdentityMenu.SetHeight(this.Height-160);
+			bool isActive = false;
 			for (int i=0; i<ids.Length; i++) {
 				IdentityItem id = new IdentityItem();
 				if (ids[i].IsEnabled) {
+					isActive = true;
 					SetNotifyIcon("green");
 					ConnectButton.Visibility = Visibility.Collapsed;
 					DisconnectButton.Visibility = Visibility.Visible;
 				}
+				id.OnStatusChanged += Id_OnStatusChanged;
 				id.Identity = ids[i];
-				//id.OnClick += OpenIdentity;
 				IdList.Children.Add(id);
-				IdList.Height += 60;
 			}
-			if (this._isAttached&&repaint) Placement();
+			if (isActive) {
+				ConnectButton.Visibility = Visibility.Collapsed;
+				DisconnectButton.Visibility = Visibility.Visible;
+			} else {
+				ConnectButton.Visibility = Visibility.Visible;
+				DisconnectButton.Visibility = Visibility.Collapsed;
+			}
+			IdList.Height = (double)(ids.Length * 64);
+			Placement();
 		}
 
+		private void Id_OnStatusChanged(bool attached) {
+			bool isActive = false;
+			for (int i = 0; i < IdList.Children.Count; i++) {
+				IdentityItem item = IdList.Children[i] as IdentityItem;
+				if (item.ToggleSwitch.Enabled) {
+					isActive = true;
+					break;
+				}
+			}
+			if (isActive) {
+				ConnectButton.Visibility = Visibility.Collapsed;
+				DisconnectButton.Visibility = Visibility.Visible;
+			} else {
+				ConnectButton.Visibility = Visibility.Visible;
+				DisconnectButton.Visibility = Visibility.Collapsed;
+			}
+		}
+
+		private void SetLocation() {
+			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
+
+
+			var height = MainView.ActualHeight;
+			IdentityMenu.MainHeight = MainView.ActualHeight;
+
+			Rectangle trayRectangle = WinAPI.GetTrayRectangle();
+			if (trayRectangle.Top < 20) {
+				this.Position = "Top";
+				this.Top = desktopWorkingArea.Top + _top;
+				this.Left = desktopWorkingArea.Right - this.Width - _right;
+				Arrow.SetValue(Canvas.TopProperty, (double)0);
+				Arrow.SetValue(Canvas.LeftProperty, (double)185);
+				MainMenu.Arrow.SetValue(Canvas.TopProperty, (double)0);
+				MainMenu.Arrow.SetValue(Canvas.LeftProperty, (double)185);
+				IdentityMenu.Arrow.SetValue(Canvas.TopProperty, (double)0);
+				IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, (double)185);
+			} else if (trayRectangle.Left < 20) {
+				this.Position = "Left";
+				this.Left = _left;
+				this.Top = desktopWorkingArea.Bottom - this.ActualHeight - 75;
+				Arrow.SetValue(Canvas.TopProperty, height - 200);
+				Arrow.SetValue(Canvas.LeftProperty, (double)0);
+				MainMenu.Arrow.SetValue(Canvas.TopProperty, height - 200);
+				MainMenu.Arrow.SetValue(Canvas.LeftProperty, (double)0);
+				IdentityMenu.Arrow.SetValue(Canvas.TopProperty, height - 200);
+				IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, (double)0);
+			} else if (desktopWorkingArea.Right == (double)trayRectangle.Left) {
+				this.Position = "Right";
+				this.Left = desktopWorkingArea.Right - this.Width - 20;
+				this.Top = desktopWorkingArea.Bottom - height - 75;
+				Arrow.SetValue(Canvas.TopProperty, height - 100);
+				Arrow.SetValue(Canvas.LeftProperty, this.Width- 30);
+				MainMenu.Arrow.SetValue(Canvas.TopProperty, height - 100);
+				MainMenu.Arrow.SetValue(Canvas.LeftProperty, this.Width - 30);
+				IdentityMenu.Arrow.SetValue(Canvas.TopProperty, height - 100);
+				IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, this.Width - 30);
+			} else {
+				this.Position = "Bottom";
+				this.Left = desktopWorkingArea.Right - this.Width - 75;
+				this.Top = desktopWorkingArea.Bottom - height;
+				Arrow.SetValue(Canvas.TopProperty, height - 35);
+				Arrow.SetValue(Canvas.LeftProperty, (double)185);
+				MainMenu.Arrow.SetValue(Canvas.TopProperty, height - 35);
+				MainMenu.Arrow.SetValue(Canvas.LeftProperty, (double)185);
+				IdentityMenu.Arrow.SetValue(Canvas.TopProperty, height - 35);
+				IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, (double)185);
+			}
+		}
 		public void Placement() {
 			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
 			if (_isAttached) {
 				Arrow.Visibility = Visibility.Visible;
 				IdentityMenu.Arrow.Visibility = Visibility.Visible;
-				this.Left = desktopWorkingArea.Right - this.Width - _right;
-				this.Top = desktopWorkingArea.Bottom - this.Height - _bottom;
+				SetLocation();
 			} else {
 				IdentityMenu.Arrow.Visibility = Visibility.Collapsed;
 				Arrow.Visibility = Visibility.Collapsed;
 			}
-			Debug.WriteLine("Placement: " + this.Left + " " + desktopWorkingArea.Right + " " + this.Width + " " + _right);
-			Debug.WriteLine("Place: " + this.Top + " " + desktopWorkingArea.Bottom + " " + this.Height + " " + _bottom);
 		}
 
 		private void OpenIdentity(ZitiIdentity identity) {
@@ -438,12 +541,14 @@ namespace ZitiDesktopEdge {
 			_timer.Start();
 		}
 		private void Connect(object sender, RoutedEventArgs e) {
-			ShowLoad();
-			this.Dispatcher.Invoke(() => {
-				//Dispatcher.Invoke(new Action(() => { }), System.Windows.Threading.DispatcherPriority.ContextIdle);
-				DoConnect();
-				HideLoad();
-			});
+			if (!_isServiceInError) {
+				ShowLoad();
+				this.Dispatcher.Invoke(() => {
+					//Dispatcher.Invoke(new Action(() => { }), System.Windows.Threading.DispatcherPriority.ContextIdle);
+					DoConnect();
+					HideLoad();
+				});
+			}
 		}
 
 		private void DoConnect() {
@@ -468,28 +573,30 @@ namespace ZitiDesktopEdge {
 			}
 		}
 		private void Disconnect(object sender, RoutedEventArgs e) {
-			ShowLoad();
-			try {
-				ConnectedTime.Content =  "00:00:00";
-				_timer.Stop();
-				serviceClient.SetTunnelState(false);
-				SetNotifyIcon("white");
-				ConnectButton.Visibility = Visibility.Visible;
-				DisconnectButton.Visibility = Visibility.Collapsed;
-				for (int i = 0; i < identities.Count; i++) {
-					serviceClient.IdentityOnOff(identities[i].Fingerprint, false);
+			if (!_isServiceInError) {
+				ShowLoad();
+				try {
+					ConnectedTime.Content = "00:00:00";
+					_timer.Stop();
+					serviceClient.SetTunnelState(false);
+					SetNotifyIcon("white");
+					ConnectButton.Visibility = Visibility.Visible;
+					DisconnectButton.Visibility = Visibility.Collapsed;
+					for (int i = 0; i < identities.Count; i++) {
+						serviceClient.IdentityOnOff(identities[i].Fingerprint, false);
+					}
+					for (int i = 0; i < IdList.Children.Count; i++) {
+						IdentityItem item = IdList.Children[i] as IdentityItem;
+						item._identity.IsEnabled = false;
+						item.RefreshUI();
+					}
+				} catch (ServiceException se) {
+					ShowError(se.AdditionalInfo, se.Message);
+				} catch (Exception ex) {
+					ShowError("Unexpected Error", "Code 4:" + ex.Message);
 				}
-				for (int i = 0; i < IdList.Children.Count; i++) {
-					IdentityItem item = IdList.Children[i] as IdentityItem;
-					item._identity.IsEnabled = false;
-					item.RefreshUI();
-				}
-			} catch (ServiceException se) {
-				ShowError(se.AdditionalInfo, se.Message);
-			} catch (Exception ex) {
-				ShowError("Unexpected Error", "Code 4:"+ex.Message);
+				HideLoad();
 			}
-			HideLoad();
 		}
 
 		private void ShowLoad() {
@@ -521,11 +628,12 @@ namespace ZitiDesktopEdge {
 			ErrorView.Visibility = Visibility.Visible;
 		}
 
-		private void CloseError(object sender, MouseButtonEventArgs e) {
+		private void CloseError(object sender, RoutedEventArgs e) {
 			ErrorView.Visibility = Visibility.Collapsed;
+			NoServiceView.Visibility = Visibility.Collapsed;
 		}
 
-		private void CloseApp(object sender, MouseButtonEventArgs e) {
+		private void CloseApp(object sender, RoutedEventArgs e) {
 			Application.Current.Shutdown();
 		}
 
@@ -558,6 +666,10 @@ namespace ZitiDesktopEdge {
 				cur = 0;
 			}
 			return levels[cur];
+		}
+
+		private void IdList_LayoutUpdated(object sender, EventArgs e) {
+			Placement();
 		}
 	}
 }

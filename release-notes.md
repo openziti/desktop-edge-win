@@ -1,3 +1,20 @@
+# Release 1.2.13
+
+* What's New
+
+  * [#138](https://github.com/openziti/desktop-edge-win/issues/138) - DNS now listens on the same IP as the configured TUN
+  * [#165](https://github.com/openziti/desktop-edge-win/issues/165) - The UI has been widened and the services now are stacked making it easier to read
+  * [#167](https://github.com/openziti/desktop-edge-win/issues/167) - Change the logs folder to be available to all users not just administrators
+
+* Bug Fixes
+
+  * [#158](https://github.com/openziti/desktop-edge-win/issues/158) - Toggling an identity off that was not found crashes the service
+  * [#96](https://github.com/openziti/desktop-edge-win/issues/96) - Toggling all identities off with multiple identities in the same network causes crash
+
+* Dependency Updates
+
+  * Updated to v0.7.2 of ziti-tunneller-sdk-c
+
 # Release 1.2.12
 
 * What's New

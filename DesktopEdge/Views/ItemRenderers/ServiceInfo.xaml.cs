@@ -42,6 +42,7 @@ namespace ZitiDesktopEdge {
 			}
 			set {
 				this._label = value;
+				MainLabel.ToolTip = this._label;
 				MainLabel.Text = this._label;
 			}
 		}
@@ -50,6 +51,7 @@ namespace ZitiDesktopEdge {
 				return MainEdit.Text; 
 			}
 			set {
+				MainEdit.ToolTip = value;
 				MainEdit.Text = value;
 			}
 		}
@@ -66,7 +68,7 @@ namespace ZitiDesktopEdge {
             InitializeComponent();
         }
 
-		private void MainEdit_GotFocus(object sender, RoutedEventArgs e) {
+		private void MainEdit_PreviewMouseUp(object sender, MouseButtonEventArgs e) {
 			var textbox = (sender as TextBox);
 			textbox.SelectAll();
 		}

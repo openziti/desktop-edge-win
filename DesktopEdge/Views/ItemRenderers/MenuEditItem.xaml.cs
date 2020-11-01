@@ -51,9 +51,10 @@ namespace ZitiDesktopEdge {
             InitializeComponent();
         }
 
-		private void MainEdit_GotFocus(object sender, RoutedEventArgs e) {
+		private void MainEdit_PreviewMouseUp(object sender, MouseButtonEventArgs e) {
 			var textbox = (sender as TextBox);
 			textbox.SelectAll();
+
 		}
 	}
 }

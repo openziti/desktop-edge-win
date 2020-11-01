@@ -60,8 +60,8 @@ type sdk struct {
 }
 type ServiceChange struct {
 	Operation   string
-	Service		*Service
-	ZitiContext   *CZitiCtx
+	Service     *ZService
+	ZitiContext *ZIdentity
 }
 
 var _impl sdk
@@ -72,12 +72,12 @@ func init() {
 }
 
 func SetLog(f *os.File) {
-	C.setLogOut(C.intptr_t(f.Fd()))
+	C.set_log_out(C.intptr_t(f.Fd()))
 }
 
 func SetLogLevel(level int) {
 	log.Infof("Setting cziti log level to: %d", level)
-	C.setLogLevel(C.int(level))
+	C.set_log_level(C.int(level))
 }
 
 func Start() {
@@ -95,7 +95,7 @@ func Stop() {
 	C.libuv_stop(_impl.libuvCtx)
 }
 
-type Service struct {
+type ZService struct {
 	Name          string
 	Id            string
 	InterceptHost string
@@ -104,28 +104,76 @@ type Service struct {
 	OwnsIntercept bool
 }
 
-type CZitiCtx struct {
-	Options   C.ziti_options
-	zctx      C.ziti_context
-	zid       *C.ziti_identity
-	status    int
-	statusErr error
-
-	Services *sync.Map
+type ZIdentity struct {
+	Options     C.ziti_options
+	zctx        C.ziti_context
+	zid         *C.ziti_identity
+	status      int
+	statusErr   error
+	Loaded      bool
+	Name        string
+	Version     string
+	Services    *sync.Map
+	Fingerprint string
 }
 
-func (c *CZitiCtx) Status() (int, error) {
+func (c *ZIdentity) GetMetrics() (int64, int64, bool) {
+	if c == nil {
+		return 0, 0, false
+	}
+	var up, down C.double
+	C.ziti_get_transfer_rates(c.zctx, &up, &down)
+
+	return int64(up), int64(down), true
+}
+
+func (c *ZIdentity) UnsafePointer() unsafe.Pointer {
+	return unsafe.Pointer(c.zctx)
+}
+func (c *ZIdentity) AsKey() string {
+	return "marker askey"
+}
+
+func (c *ZIdentity) Status() (int, error) {
 	return c.status, c.statusErr
 }
 
-func (c *CZitiCtx) Name() string {
-	if c.zctx != nil && c.zid != nil {
-		return C.GoString(c.zid.name)
+func (c *ZIdentity) setVersionFromId() string {
+	if len(c.Version) > 0 {
+		return c.Version
 	}
-	return "<unknown>"
+	c.Version = "<unknown version>"
+	if c != nil {
+		if c.zctx != nil {
+			v1 := C.ziti_get_controller_version(c.zctx)
+			return C.GoString(v1.version)
+		}
+	}
+	return c.Version
 }
 
-func (c *CZitiCtx) Tags() []string {
+func (c *ZIdentity) setNameFromId() string {
+	if len(c.Name) > 0 {
+		return c.Name
+	}
+	c.Name = "<unknown>"
+	if c != nil {
+		if c.zid != nil {
+			if c.zid.name != nil {
+				c.Name = C.GoString(c.zid.name)
+			} else {
+				log.Debug("in Name - c.zid.name was nil")
+			}
+		} else {
+			log.Debug("in Name - c.zid was nil")
+		}
+	} else {
+		log.Debug("in Name - c was nil")
+	}
+	return c.Name
+}
+
+func (c *ZIdentity) Tags() []string {
 	if c.zctx != nil && c.zid != nil {
 		C.c_mapiter(&c.zid.tags)
 		/*
@@ -145,7 +193,7 @@ func (c *CZitiCtx) Tags() []string {
 	return nil
 }
 
-func (c *CZitiCtx) Controller() string {
+func (c *ZIdentity) Controller() string {
 	if c.zctx != nil {
 		return C.GoString(C.ziti_get_controller(c.zctx))
 	}
@@ -155,55 +203,38 @@ func (c *CZitiCtx) Controller() string {
 var tunCfgName = C.CString("ziti-tunneler-client.v1")
 
 //export serviceCB
-func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx unsafe.Pointer) {
-	ctx := (*CZitiCtx)(tnlr_ctx)
+func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx unsafe.Pointer) {
+	zid := (*ZIdentity)(tnlr_ctx)
 
-	if ctx.Services == nil {
-		m := sync.Map{} //make(map[string]Service)
-		ctx.Services = &m
+	if zid.Services == nil {
+		m := sync.Map{}
+		zid.Services = &m
 	}
 
 	name := C.GoString(service.name)
 	svcId := C.GoString(service.id)
 	log.Debugf("============ INSIDE serviceCB - status: %s:%s - %v, %v ============", name, svcId, status, service.perm_flags)
 	if status == C.ZITI_SERVICE_UNAVAILABLE {
-		found, ok := ctx.Services.Load(svcId)
-		if ok {
-			fs := found.(Service)
-			DNS.UnregisterService(ctx, name)
-			ctx.Services.Delete(svcId)
-			ServiceChanges <- ServiceChange{
-				Operation: REMOVED,
-				Service:   &fs,
-				ZitiContext: ctx,
-			}
-		} else {
-			log.Warnf("could not remove service? service not found with id: %s, name: %s in context %d", svcId, name, &ctx)
-		}
+		serviceUnavailable(zid, svcId, name)
 	} else if status == C.ZITI_OK {
 		//first thing's first - determine if the service is already in this runtime
 		//if it is that means this is 'probably' a config change. to make it easy
 		//just dereg/disconnect the service and then let the rest of this code execute
-		found, ok := ctx.Services.Load(svcId)
+		found, ok := zid.Services.Load(svcId)
 		if ok && found != nil {
-			log.Infof("service with id: %s, name: %s exists. updating service.", service.id, service.name)
-			DNS.UnregisterService(ctx, name)
-			ctx.Services.Delete(svcId)
+			log.Infof("service with id: %s, name: %s exists. updating service.", svcId, name)
+			fs := found.(ZService)
+			dnsi.UnregisterService(fs.InterceptHost, fs.InterceptPort)
+			zid.Services.Delete(svcId)
 		} else {
-			log.Debugf("service not found with id: %s, name: %s in context %d", svcId, name, &ctx)
+			log.Debugf("new service with id: %s, name: %s in context %d", svcId, name, &zid)
 		}
 
 		if C.ZITI_CAN_BIND == ( service.perm_flags & C.ZITI_CAN_BIND ) {
 			var v1Config C.ziti_server_cfg_v1
-			// get_config_rc = ziti_service_get_config(service, "ziti-tunneler-server.v1", &v1_config, parse_ziti_server_cfg_v1);
-			// int ziti_service_get_config(ziti_service *service, const char *cfg_type, void *cfg,  int (*parser)(void *, const char *, size_t))
 			r := C.ziti_service_get_config(service, C.CString("ziti-tunneler-server.v1"), unsafe.Pointer(&v1Config), (*[0]byte)(C.parse_ziti_server_cfg_v1))
 			if (r == 0) {
-				/*for _, t := range devMap {
-					log.Debugf("setting up hosted service for service %s on %v:%v", service.name, v1Config.hostname, v1Config.port)
-					C.ziti_tunneler_host_v1(C.tunneler_context(t.tunCtx), unsafe.Pointer(ctx.zctx), service.name, v1Config.protocol, v1Config.hostname, v1Config.port)
-				}*/
-				C.ziti_tunneler_host_v1(C.tunneler_context(theTun.tunCtx), unsafe.Pointer(ctx.zctx), service.name, v1Config.protocol, v1Config.hostname, v1Config.port)
+				C.ziti_tunneler_host_v1(C.tunneler_context(theTun.tunCtx), unsafe.Pointer(zid.zctx), service.name, v1Config.protocol, v1Config.hostname, v1Config.port)
 				C.free_ziti_server_cfg_v1(&v1Config)
 			} else {
 				log.Infof("service is bindable but doesn't have config? %s. flags: %v.", name, service.perm_flags)
@@ -224,18 +255,15 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, t
 		}
 		if host != "" && port != -1 {
 			ownsIntercept := true
-			ip, err := DNS.RegisterService(svcId, host, uint16(port), ctx, name)
+			ip, err := dnsi.RegisterService(svcId, host, uint16(port), zid, name)
 			if err != nil {
 				log.Warn(err)
 				ownsIntercept = false
 			} else {
 				log.Infof("service intercept beginning for service: %s@%s:%d on ip %s", name, host, port, ip.String())
-				/*for _, t := range devMap {
-					t.AddIntercept(svcId, name, ip.String(), port, unsafe.Pointer(ctx.zctx))
-				}*/
-				AddIntercept(svcId, name, ip.String(), port, unsafe.Pointer(ctx.zctx))
+				AddIntercept(svcId, name, ip.String(), port, unsafe.Pointer(zid.zctx))
 			}
-			added := Service{
+			added := ZService{
 				Name:          name,
 				Id:            svcId,
 				InterceptHost: host,
@@ -243,11 +271,11 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, t
 				AssignedIP:    ip.String(),
 				OwnsIntercept: ownsIntercept,
 			}
-			ctx.Services.Store(svcId, added)
+			zid.Services.Store(svcId, added)
 			ServiceChanges <- ServiceChange{
 				Operation:   ADDED,
-				Service: &added,
-				ZitiContext: ctx,
+				Service:     &added,
+				ZitiContext: zid,
 			}
 		} else {
 			log.Debugf("service named %s is not enabled for 'tunneling'", name)
@@ -255,9 +283,25 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, t
 	}
 }
 
+func serviceUnavailable(ctx *ZIdentity, svcId string, name string) {
+	found, ok := ctx.Services.Load(svcId)
+	if ok {
+		fs := found.(ZService)
+		dnsi.UnregisterService(fs.InterceptHost, fs.InterceptPort)
+		ctx.Services.Delete(svcId)
+		ServiceChanges <- ServiceChange{
+			Operation: REMOVED,
+			Service:   &fs,
+			ZitiContext: ctx,
+		}
+	} else {
+		log.Warnf("could not remove service? service not found with id: %s, name: %s in context %d", svcId, name, &ctx)
+	}
+}
+
 //export initCB
 func initCB(nf C.ziti_context, status C.int, data unsafe.Pointer) {
-	ctx := (*CZitiCtx)(data)
+	ctx := (*ZIdentity)(data)
 
 	ctx.zctx = nf
 	if nf != nil {
@@ -267,6 +311,10 @@ func initCB(nf C.ziti_context, status C.int, data unsafe.Pointer) {
 	ctx.status = int(status)
 	ctx.statusErr = zitiError(status)
 
+	ctx.Name = ctx.setNameFromId()
+	ctx.Version = ctx.setVersionFromId()
+
+	log.Infof("connected to controller %s running %v", ctx.Name, ctx.Version)
 	cfg := C.GoString(ctx.Options.config)
 	if ch, ok := initMap[cfg]; ok {
 		ch <- ctx
@@ -275,7 +323,7 @@ func initCB(nf C.ziti_context, status C.int, data unsafe.Pointer) {
 	}
 }
 
-var initMap = make(map[string]chan *CZitiCtx)
+var initMap = make(map[string]chan *ZIdentity)
 
 func zitiError(code C.int) error {
 	if int(code) != 0 {
@@ -284,8 +332,8 @@ func zitiError(code C.int) error {
 	return nil
 }
 
-func LoadZiti(cfg string) *CZitiCtx {
-	ctx := &CZitiCtx{}
+func LoadZiti(cfg string) *ZIdentity {
+	ctx := &ZIdentity{}
 	ctx.Options.config = C.CString(cfg)
 	ctx.Options.init_cb = C.ziti_init_cb(C.initCB)
 	ctx.Options.service_cb = C.ziti_service_cb(C.serviceCB)
@@ -293,7 +341,7 @@ func LoadZiti(cfg string) *CZitiCtx {
 	ctx.Options.metrics_type = C.INSTANT
 	ctx.Options.config_types = C.all_configs
 
-	ch := make(chan *CZitiCtx)
+	ch := make(chan *ZIdentity)
 	initMap[cfg] = ch
 	rc := C.ziti_init_opts(&ctx.Options, _impl.libuvCtx.l, unsafe.Pointer(ctx))
 	if rc != C.ZITI_OK {
@@ -309,7 +357,7 @@ func LoadZiti(cfg string) *CZitiCtx {
 	return res
 }
 
-func GetTransferRates(ctx *CZitiCtx) (int64, int64, bool) { //extern void NF_get_transfer_rates(ziti_context nf, double* up, double* down);
+func GetTransferRates(ctx *ZIdentity) (int64, int64, bool) { //extern void NF_get_transfer_rates(ziti_context nf, double* up, double* down);
 	if ctx == nil {
 		return 0, 0, false
 	}
@@ -319,7 +367,7 @@ func GetTransferRates(ctx *CZitiCtx) (int64, int64, bool) { //extern void NF_get
 	return int64(up), int64(down), true
 }
 
-func(c *CZitiCtx) Shutdown() {
+func(c *ZIdentity) Shutdown() {
 	if c != nil && c.zctx != nil {
 		async := (*C.uv_async_t)(C.malloc(C.sizeof_uv_async_t))
 		async.data = unsafe.Pointer(c.zctx)

@@ -8,7 +8,7 @@
         ShowInTaskbar="False"
         x:Name="MainUI"
         Title="Ziti Desktop Edge" Height="520" 
-        Width="350" ResizeMode="NoResize" 
+        Width="420" ResizeMode="NoResize" 
         ClipToBounds="False"
         Icon="Assets/Images/icon.png" AllowsTransparency="True" 
         Closing="Window_Closing"
@@ -97,31 +97,31 @@
             </BeginStoryboard>
         </EventTrigger>
     </Window.Triggers>
-    <Grid Margin="0,0,0,0">
+    <Grid x:Name="MainGrid" Margin="0,0,0,0">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Canvas ClipToBounds="False">
-            <Rectangle Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="#070826" Width="20" ClipToBounds="True" Canvas.Left="165" Canvas.Bottom="-10">
+        <Canvas x:Name="ArrowCanvas" ClipToBounds="False">
+            <Rectangle x:Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="#070826" Width="20" ClipToBounds="True" Canvas.Left="185" Canvas.Bottom="-10">
                 <Rectangle.LayoutTransform>
                     <RotateTransform Angle="-45"/>
                 </Rectangle.LayoutTransform>
             </Rectangle>
         </Canvas>
-        <Border Name="UIBorder" BorderBrush="Black" BorderThickness="3" CornerRadius="10">
+        <Border Margin="10,10,10,10" Name="UIBorder" BorderBrush="Black" BorderThickness="8" CornerRadius="10">
             <Border.Effect>
-                <DropShadowEffect BlurRadius="1" Direction="1" RenderingBias="Quality" ShadowDepth="1" Opacity="1"/>
+                <DropShadowEffect BlurRadius="20" Direction="1" RenderingBias="Quality" ShadowDepth="1" Opacity="1"/>
             </Border.Effect>
         </Border>
-        <Rectangle Name="BgColor" Stroke="Black" RadiusY="10" RadiusX="10" ClipToBounds="True">
+        <Rectangle Margin="10,10,10,10" Name="BgColor" Stroke="Black" RadiusY="10" RadiusX="10" ClipToBounds="True">
             <Rectangle.Fill>
                 <ImageBrush ImageSource="/Assets/Images/background.png" />
             </Rectangle.Fill>
         </Rectangle>
-        <StackPanel x:Name="MainView" Margin="0,0,0,-40">
+        <StackPanel x:Name="MainView" Margin="10,10,10,-20">
             <Grid HorizontalAlignment="Stretch">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="100"/>
@@ -137,13 +137,13 @@
                     <Image Source="/Assets/Images/z.png" Height="40" RenderOptions.BitmapScalingMode="Fant"></Image>
                     <Label Content="Tap to Connect" MouseDoubleClick="Label_MouseDoubleClick" Margin="0,-3,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Russo One" FontSize="14" Foreground="White" HorizontalAlignment="Center"></Label>
                 </StackPanel>
-                <StackPanel Grid.Column="2" Cursor="Hand" Orientation="Vertical" Margin="14,16,14,14" MouseLeftButtonDown="AddIdentity">
+                <StackPanel x:Name="AddIdAreaButton" Grid.Column="2" Cursor="Hand" Orientation="Vertical" Margin="14,16,14,14" MouseLeftButtonDown="AddIdentity">
                     <Image Source="/Assets/Images/identity.png" Margin="0,0,5,-4" Width="26" Height="26" HorizontalAlignment="Right"></Image>
                     <Label Content="ADD" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" FontSize="10" HorizontalAlignment="Right"></Label>
                     <Label Content="IDENTITY" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" Margin="0,-14,0,0" FontSize="10" HorizontalAlignment="Right"></Label>
                 </StackPanel>
             </Grid>
-            <Canvas Name="ConnectButton" Width="350" Height="160" MouseDown="Connect" Visibility="Visible">
+            <Canvas Name="ConnectButton" Width="400" Height="160" MouseDown="Connect" Visibility="Visible">
                 <Grid Width="{Binding ActualWidth, ElementName=ConnectButton}" Height="140">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="221*"/>
@@ -152,7 +152,7 @@
                     <Image Source="/Assets/Images/connect.png" Height="140" HorizontalAlignment="Center" Grid.ColumnSpan="2" Margin="105,0" />
                 </Grid>
             </Canvas>
-            <Canvas Name="DisconnectButton" Width="350" Height="160" MouseDown="Disconnect" Visibility="Collapsed">
+            <Canvas Name="DisconnectButton" Width="400" Height="160" MouseDown="Disconnect" Visibility="Collapsed">
                 <Grid Width="{Binding ActualWidth, ElementName=DisconnectButton}" Height="140">
                     <Image Source="/Assets/Images/connected.png" Height="140" HorizontalAlignment="Center" />
                 </Grid>
@@ -163,7 +163,7 @@
                     <Label HorizontalAlignment="Center"  Content="STOP" Foreground="White" Padding="0,105,0,0"/>
                 </Grid>
             </Canvas>
-            <Grid HorizontalAlignment="Stretch" Width="Auto" Margin="0,30,0,0">
+            <Grid x:Name="StatArea" HorizontalAlignment="Stretch" Width="Auto" Margin="0,30,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
@@ -193,8 +193,8 @@
                     <Label Name="UploadSpeedLabel" Foreground="White" Margin="0,-20,0,30" Content="KBps" FontSize="11" HorizontalAlignment="Center" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" />
                 </StackPanel>
             </Grid>
-            <ScrollViewer Name="IdListScroller" ScrollViewer.HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" CanContentScroll="True">
-                <StackPanel Name="IdList" Orientation="Vertical"></StackPanel>
+            <ScrollViewer Name="IdListScroller" ScrollViewer.HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" CanContentScroll="True" ClipToBounds="True">
+                <StackPanel Name="IdList" Orientation="Vertical" LayoutUpdated="IdList_LayoutUpdated"></StackPanel>
             </ScrollViewer>
             <Grid HorizontalAlignment="Stretch" Margin="0,20,0,10" Width="Auto">
                 <Grid.ColumnDefinitions>
@@ -203,9 +203,11 @@
                 <Label Name="AddIdButton" Padding="0,0,0,20" Grid.Column="0" Margin="0,0,0,20" Content="Add Identity" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="#0069FF" FontSize="16" Cursor="Hand" HorizontalAlignment="Center" VerticalAlignment="Center" MouseDown="AddIdentity"></Label>
             </Grid>
         </StackPanel>
+        
         <local:MainMenu x:Name="MainMenu" Visibility="Collapsed"></local:MainMenu>
         <local:IdentityDetails x:Name="IdentityMenu" Visibility="Collapsed"></local:IdentityDetails>
-        <Grid x:Name="NoServiceView" Visibility="Collapsed" >
+        
+        <Grid x:Name="NoServiceView" Visibility="Collapsed" Margin="10,10,10,10">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="Black" Opacity="0.9"/>
@@ -217,14 +219,36 @@
                     <RowDefinition Height="60"></RowDefinition>
                     <RowDefinition Height="30"></RowDefinition>
                     <RowDefinition Height="30"></RowDefinition>
+                    <RowDefinition Height="30"></RowDefinition>
                     <RowDefinition Height="*"></RowDefinition>
                 </Grid.RowDefinitions>
                 <Label x:Name="ErrorMsg" Foreground="White" Content="Service Not Started" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
                 <Label x:Name="ErrorMsgDetail" Foreground="LightGray" Content="Start the Ziti Tunnel Service to get started" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
-                <Label Name="QuitButton" Grid.Row="3" Foreground="#F4044D" FontWeight="SemiBold" Content="Quit Ziti Desktop Edge" Cursor="Hand" MouseDown="CloseApp" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Center"></Label>
+
+                <Grid Grid.Row="4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1*"></ColumnDefinition>
+                        <ColumnDefinition Width="1*"></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="CloseErrorButton" Grid.Column="0" Margin="40,0,20,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#0068F9" Content="Close Error" Click="CloseError" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="5"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    <Button x:Name="QuitButton" Grid.Column="1" Margin="20,0,40,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#F4044D" Content="Quit App" Click="CloseApp" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="5"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                </Grid>
             </Grid>
         </Grid>
-        <Grid x:Name="LoadingScreen" Visibility="Collapsed" Width="350">
+        
+        <Grid x:Name="LoadingScreen" Visibility="Collapsed" Margin="10,10,10,10">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="Black" Opacity="0.9"/>
@@ -248,7 +272,8 @@
                 <ProgressBar x:Name="LoadProgress" Width="100" Grid.Row="3" IsEnabled="True" />
             </Grid>
         </Grid>
-        <Grid x:Name="ErrorView" Visibility="Collapsed" Width="350">
+
+        <Grid x:Name="ErrorView" Visibility="Collapsed" Margin="10,10,10,10">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="Black" Opacity="0.9"/>

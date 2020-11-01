@@ -14,7 +14,6 @@
  * limitations under the License.
  *
  */
-
 package service
 
 import "github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
