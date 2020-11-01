@@ -16,26 +16,20 @@ using System.Threading.Tasks;
 
 using ZitiDesktopEdge.ServiceClient;
 using NLog;
+using Newtonsoft.Json.Linq;
+using System.Reflection;
 
 namespace ZitiUpdateService {
 	public partial class UpdateService : ServiceBase {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-		private int checkTimerDefault = 60000;
-		private int updateTimerDefault = 600000;
-
 		private string _version = "";
 		private bool _isNew = true;
-		/// private int _majorVersion = 1;
-		private string _versionUrl = "https://netfoundry.jfrog.io/netfoundry/ziti-maven-snapshot/ziti-tunnel-win/amd64/windows/ziti-tunnel-win/maven-metadata.xml";
-		private string _serviceUrl = "https://netfoundry.jfrog.io/netfoundry/ziti-maven-snapshot/ziti-tunnel-win/amd64/windows/ziti-tunnel-win/${version}/ziti-tunnel-win-${version}.zip";
-		private System.Timers.Timer _checkTimer = new System.Timers.Timer();
+	
 		private System.Timers.Timer _updateTimer = new System.Timers.Timer();
 		private bool inUpdateCheck = false;
-		private bool inServiceCheck = false;
 		private string _rootDirectory = "";
 		private string _logDirectory = "";
-		private bool _isJustStopped = true;
 		private string _versionType = "latest";
 
 		ServiceController controller;
@@ -43,7 +37,6 @@ namespace ZitiUpdateService {
 			InitializeComponent();
 
 			Client svc = new Client();
-			//svc.OnMetricsEvent += Svc_OnMetricsEvent;
 			svc.OnClientConnected += Svc_OnClientConnected;
 			svc.OnTunnelStatusEvent += Svc_OnTunnelStatusEvent;
 			svc.OnClientDisconnected += Svc_OnClientDisconnected;
@@ -63,7 +56,6 @@ namespace ZitiUpdateService {
 
 		protected override void OnStart(string[] args) {
 			try {
-				if (ConfigurationManager.AppSettings.Get("UpdateUrl") != null) _versionUrl = ConfigurationManager.AppSettings.Get("UpdateUrl");
 				if (ConfigurationManager.AppSettings.Get("Version") != null) _versionType = ConfigurationManager.AppSettings.Get("Version");
 			} catch (Exception e) {
 				Logger.Info(e.ToString());
@@ -83,12 +75,6 @@ namespace ZitiUpdateService {
 		private void SetupServiceWatchers() {
 			Logger.Info("Setting Up Watchers");
 
-			var serviceTimerInterval = ConfigurationManager.AppSettings.Get("ServiceTimer");
-			var serviceInt = TimeSpan.Zero;
-			if (!TimeSpan.TryParse(serviceTimerInterval, out serviceInt)) {
-				serviceInt = new TimeSpan(0, 1, 0);
-			}
-
 			var updateTimerInterval = ConfigurationManager.AppSettings.Get("UpdateTimer");
 			var upInt = TimeSpan.Zero;
 			if (!TimeSpan.TryParse(updateTimerInterval, out upInt)) {
@@ -96,13 +82,6 @@ namespace ZitiUpdateService {
 			}
 
 			Logger.Info("Ziti Update Setting Up Watchers");
-
-			_checkTimer = new System.Timers.Timer();
-			_checkTimer.Elapsed += CheckService;
-			_checkTimer.Interval = serviceInt.TotalMilliseconds;
-			_checkTimer.Enabled = true;
-			_checkTimer.Start();
-			Logger.Info("Service Checker is running");
 
 			_updateTimer = new System.Timers.Timer();
 			_updateTimer.Elapsed += CheckUpdate;
@@ -116,52 +95,79 @@ namespace ZitiUpdateService {
 		private void CheckUpdate(object sender, ElapsedEventArgs e) {
 			if (inUpdateCheck) return;
 			inUpdateCheck = true; //simple semaphone
-			try {
-				var request = WebRequest.Create(_versionUrl) as HttpWebRequest;
-				var response = request.GetResponse();
-				Stream receiveStream = response.GetResponseStream();
-				StreamReader readStream = new StreamReader(receiveStream, Encoding.UTF8);
-				var result = readStream.ReadToEnd();
-				XmlDocument xmlDoc = new XmlDocument();
-				xmlDoc.LoadXml(result);
-				XmlNode node = xmlDoc.SelectSingleNode("metadata/versioning/" + _versionType);
-				string version = node.InnerText;
-				if (version != _version) {
-					Logger.Info("Version Checked: " + version + " on " + _version + " from " + _versionType);
-					UpdateServiceFiles(version);
-				}
-			} catch {
 
+			var updateUrl = ConfigurationManager.AppSettings.Get("UpdateUrl");
+			if (string.IsNullOrEmpty(updateUrl)) {
+				updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win/releases/latest";
+			}
+
+			try {/*
+				HttpWebRequest httpWebRequest = WebRequest.CreateHttp(updateUrl);
+				httpWebRequest.Method = "GET";
+				httpWebRequest.ContentType = "application/json";
+				httpWebRequest.UserAgent = "OpenZiti UpdateService";
+				HttpWebResponse httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
+				StreamReader streamReader = new StreamReader(httpResponse.GetResponseStream());
+				string result = streamReader.ReadToEnd();
+				JObject json = JObject.Parse(result);
+				string currentVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+				string serverVersion = json.Property("tag_name").Value.ToString() + ".0";
+
+				Version installed = new Version(currentVersion);
+				Version published = new Version(serverVersion);
+				int compare = installed.CompareTo(published);
+				if (compare < 0) {
+					Logger.Info("an upgrade is available. starting update process.");
+				} else if (compare > 0) {
+					Logger.Info("the version installed is newer than the released version");
+					return;
+				}
+				JArray assets = JArray.Parse(json.Property("assets").Value.ToString());
+				string downloadUrl = null;
+				foreach (JObject asset in assets.Children<JObject>()) {
+					downloadUrl = asset.Property("browser_download_url").Value.ToString();
+					break;
+				}
+
+				if(downloadUrl == null) {
+					Logger.Error("DOWNLOAD URL not found at: {0}", updateUrl);
+					return;
+				}
+				*/
+				var curdir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
+				var updateFolder = $"{curdir}{Path.DirectorySeparatorChar}updates";
+				Directory.CreateDirectory(updateFolder);
+
+				var downloadUrl = "https://github.com/openziti/desktop-edge-win/releases/download/1.2.12/Ziti.Desktop.Edge.Client-1.2.13.exe";
+				string filename = downloadUrl.Substring(downloadUrl.LastIndexOf('/') + 1);
+
+				if (string.IsNullOrEmpty(filename)) {
+					Logger.Warn("filename not found from web request. using generic filename {0}", "Ziti.Desktop.Edge.Client.exe");
+				}
+
+				string fileDestination = Path.Combine(updateFolder, filename);
+				Logger.Info("Checking to see if the file has been downloaded previously");
+                if (File.Exists(fileDestination)) {
+					Logger.Info("file already exists at {0}. not downloading again", fileDestination);
+                } else {
+					Logger.Info("update found. downloading update from {0} to {1}", downloadUrl, fileDestination);
+					WebClient myWebClient = new WebClient();
+					myWebClient.DownloadFile(downloadUrl, fileDestination);
+					Logger.Info("update downloaded");
+				}
+
+				StopZiti();
+
+				// shell out to a new process and run the uninstall, reinstall steps which SHOULD stop this current process as well
+				
+			} catch (Exception ex) {
+				Logger.Error(ex, "Unexpected error has occurred");
             }
 			inUpdateCheck = false;
 		}
 
-		private void CheckService(object sender, ElapsedEventArgs e) {
-			if (inServiceCheck || inUpdateCheck) return;
-			inServiceCheck = true; //simple semaphone
-			try {
-				controller = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == "ziti");
-				if (controller == null) return; //means it's not installed or the user doesn't have privs
-
-				if (controller.Status == ServiceControllerStatus.Stopped || controller.Status == ServiceControllerStatus.StopPending) {
-					if (_isJustStopped) {
-						_isJustStopped = false;
-						Logger.Info("Ziti Service has been stopped, update Network");
-						//should not be necessary in v0.0.10+ RunScript();
-						StartZiti();
-					}
-				} else {
-					if (controller.Status == ServiceControllerStatus.Running) {
-						_isJustStopped = true;
-					}
-				}
-			} catch {
-
-			}
-			inServiceCheck = false;
-		}
-
-		private void UpdateServiceFiles(string currentVersion) {
+		private void UpdateServiceFiles(string currentVersion, string _versionUrl, string _serviceUrl) {
 			var request = WebRequest.Create(_versionUrl) as HttpWebRequest;
 			var response = request.GetResponse();
 			Stream receiveStream = response.GetResponseStream();
@@ -225,18 +231,6 @@ namespace ZitiUpdateService {
 			StartZiti();
 		}
 
-		private void RunScript() {
-			string scriptText = "get-netipinterface|ForEach-Object { Set-DnsClientServerAddress-InterfaceIndex $_.ifIndex-ResetServerAddresses}";
-			Logger.Info("Executing: " + scriptText);
-			using (PowerShell PowerShellInstance = PowerShell.Create()) {
-				PowerShellInstance.AddScript(scriptText);
-				IAsyncResult result = PowerShellInstance.BeginInvoke();
-				while (result.IsCompleted == false) {
-					Thread.Sleep(1000);
-				}
-			}
-		}
-
 		private void StartZiti() {
 			controller = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == "ziti");
 			if (controller != null && controller.Status != ServiceControllerStatus.Running && controller.Status != ServiceControllerStatus.StartPending && controller.Status != ServiceControllerStatus.ContinuePending) {
@@ -252,13 +246,14 @@ namespace ZitiUpdateService {
 		}
 
 		private void StopZiti() {
+			Logger.Info("Stopping the ziti service...");
 			controller = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == "ziti");
 			if (controller != null && controller.Status != ServiceControllerStatus.Stopped) {
 				try {
 					controller.Stop();
 					controller.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
 				} catch (Exception e) {
-					Logger.Info("Cannot Stop Service - " + e.ToString());
+					Logger.Error(e, "Timout while trying to stop service!");
 				}
 			}
 		}
@@ -310,12 +305,6 @@ namespace ZitiUpdateService {
 					sw.WriteLine($"Interface: {name}. DNS: {string.Join(",", dnses)}");
 				}
 				Logger.Info("DNS RESULTS:\n{0}", sw.ToString());
-			}
-		}
-
-		private static void Svc_OnMetricsEvent(object sender, List<Identity> e) {
-			foreach (Identity i in e) {
-				Logger.Info("metrics!: " + i.Name);
 			}
 		}
 	}

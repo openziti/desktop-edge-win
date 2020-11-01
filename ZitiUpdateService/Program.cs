@@ -11,7 +11,7 @@ namespace ZitiUpdateService {
 		/// The main entry point for the application.
 		/// </summary>
 		static void Main() {
-			Environment.SetEnvironmentVariable("ZITI_EXTENDED_DEBUG", "true");
+			//Environment.SetEnvironmentVariable("ZITI_EXTENDED_DEBUG", "true");
 
 			var config = new LoggingConfiguration();
 			var logname = "ziti-montior";
@@ -21,7 +21,7 @@ namespace ZitiUpdateService {
 				ArchiveEvery = FileArchivePeriod.Day,
 				ArchiveNumbering = ArchiveNumberingMode.Rolling,
 				MaxArchiveFiles = 7,
-				ArchiveAboveSize = 10000,
+				//ArchiveAboveSize = 10000,
 			};
 			var logconsole = new ConsoleTarget("logconsole");
 
