@@ -9,9 +9,6 @@ using System.Security.AccessControl;
 using Newtonsoft.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.Remoting.Contexts;
-using System.Windows.Interop;
-using System.Windows.Documents;
 
 /// <summary>
 /// The implementation will abstract away the setup of the communication to
@@ -35,7 +32,7 @@ namespace ZitiDesktopEdge.ServiceClient
         VERBOSE = 6,
     }
 
-    internal class Client
+    public class Client
     {
 
         public const int EXPECTED_API_VERSION = 1;
@@ -46,63 +43,48 @@ namespace ZitiDesktopEdge.ServiceClient
         public event EventHandler<ServiceEvent> OnServiceEvent;
         public event EventHandler<object> OnClientConnected;
         public event EventHandler<object> OnClientDisconnected;
+        public event EventHandler<StatusEvent> OnShutdownEvent;
+
+        public bool CleanShutdown { get; set; }
+
+        protected virtual void ShutdownEvent(StatusEvent e) {
+            CleanShutdown = true;
+            OnShutdownEvent?.Invoke(this, e);
+        }
 
         protected virtual void TunnelStatusEvent(TunnelStatusEvent e)
         {
-            EventHandler<TunnelStatusEvent> handler = OnTunnelStatusEvent;
-            if (handler != null)
-            {
-                handler(this, e);
-            }
+            OnTunnelStatusEvent?.Invoke(this, e);
         }
 
         protected virtual void MetricsEvent(List<Identity> e)
         {
-            EventHandler<List<Identity>> handler = OnMetricsEvent;
-            if (handler != null)
-            {
-                handler(this, e);
-            }
+            OnMetricsEvent?.Invoke(this, e);
         }
 
         protected virtual void IdentityEvent(IdentityEvent e)
         {
-            EventHandler<IdentityEvent> handler = OnIdentityEvent;
-            if (handler != null)
-            {
-                handler(this, e);
-            }
+            OnIdentityEvent?.Invoke(this, e);
         }
 
         protected virtual void ServiceEvent(ServiceEvent e)
         {
-            EventHandler<ServiceEvent> handler = OnServiceEvent;
-            if (handler != null)
-            {
-                handler(this, e);
-            }
+            OnServiceEvent?.Invoke(this, e);
         }
 
         protected virtual void ClientConnected(object e)
         {
             Connected = true;
-            this.Reconnecting = false;
-            EventHandler<object> handler = OnClientConnected;
-            if (handler != null)
-            {
-                handler(this, e);
-            }
+            Reconnecting = false;
+            CleanShutdown = true;
+            OnClientConnected?.Invoke(this, e);
         }
 
         protected virtual void ClientDisconnected(object e)
         {
             Reconnect();
             Connected = false;
-            EventHandler<object> handler = OnClientDisconnected;
-            if (handler != null)
-            {
-                handler(this, e);
-            }
+            OnClientDisconnected?.Invoke(this, e);
         }
 
         JsonSerializer serializer = new JsonSerializer();
@@ -121,7 +103,7 @@ namespace ZitiDesktopEdge.ServiceClient
 
         NamedPipeClientStream eventClient = null;
 #if DEBUG
-        bool _extendedDebug = true; //set this to true if you need to diagnose issues with the service comms
+        bool _extendedDebug = false; //set ZITI_EXTENDED_DEBUG env var to true if you want to diagnose issues with the service comms
 #else
         bool _extendedDebug = false;
 #endif
@@ -156,6 +138,12 @@ namespace ZitiDesktopEdge.ServiceClient
             setupPipe();
         }
 
+        public void WaitForConnection() {
+            while(Reconnecting || !Connected) {
+                Task.Delay(100).Wait();
+            }
+        }
+
         public void Reconnect()
         {
             if (Reconnecting)
@@ -183,7 +171,7 @@ namespace ZitiDesktopEdge.ServiceClient
                         if (Connected)
                         {
                             Debug.WriteLine("Connected to the service - exiting reconect loop");
-                            this.Connected = true;
+                            Connected = true;
                             Reconnecting = false;
                             return;
                         }
@@ -192,10 +180,8 @@ namespace ZitiDesktopEdge.ServiceClient
                             //ClientDisconnected(null);
                         }
                     }
-                    catch
-                    {
-                        //fire the event and just try it all over....
-                        //ClientDisconnected(null);
+                    catch (Exception ex) {
+                        Debug.WriteLine("Service error: " + ex.Message);
                     }
                     Debug.WriteLine("Reconnect failed. Trying again...");
                 }
@@ -344,11 +330,11 @@ namespace ZitiDesktopEdge.ServiceClient
 
         private void checkConnected()
         {
-            if (this.Reconnecting)
+            if (Reconnecting)
             {
                 throw new ServiceException("Client is not connected", 2, "Cannot use the client at this time, it is reconnecting");
             }
-            if (!this.Connected)
+            if (!Connected)
             {
                 throw new ServiceException("Client is not connected", 2, "Cannot use the client at this time, it is not connected");
             }
@@ -500,9 +486,6 @@ namespace ZitiDesktopEdge.ServiceClient
             try
             {
                 string respAsString = readMessage(reader);
-                debugServiceCommunication("----------------------------------------------------------------------");
-                debugServiceCommunication(respAsString);
-                debugServiceCommunication("----------------------------------------------------------------------");
                 StatusEvent evt = (StatusEvent)serializer.Deserialize(new StringReader(respAsString), typeof(StatusEvent));
 
                 switch (evt.Op)
@@ -512,7 +495,7 @@ namespace ZitiDesktopEdge.ServiceClient
 
                         if (m != null)
                         {
-                            this.MetricsEvent(m.Identities);
+                            MetricsEvent(m.Identities);
                         }
                         break;
                     case "status":
@@ -520,7 +503,7 @@ namespace ZitiDesktopEdge.ServiceClient
 
                         if (se != null)
                         {
-                            this.TunnelStatusEvent(se);
+                            TunnelStatusEvent(se);
                         }
                         break;
                     case "identity":
@@ -528,7 +511,7 @@ namespace ZitiDesktopEdge.ServiceClient
 
                         if (id != null)
                         {
-                            this.IdentityEvent(id);
+                            IdentityEvent(id);
                         }
                         break;
                     case "service":
@@ -536,8 +519,11 @@ namespace ZitiDesktopEdge.ServiceClient
 
                         if (svc != null)
                         {
-                            this.ServiceEvent(svc);
+                            ServiceEvent(svc);
                         }
+                        break;
+                    case "shutdown":
+
                         break;
                     default:
                         Debug.WriteLine("unexpected operation! " + evt.Op);
