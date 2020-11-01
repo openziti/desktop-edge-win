@@ -47,11 +47,11 @@ if($gituser -eq "ziti-ci") {
   git add DesktopEdge/Properties/AssemblyInfo.cs
   git add ZitiUpdateService/Properties/AssemblyInfo.cs
   git add Installer/ZitiDesktopEdge.aip
-  if(Test-Path .\github_deploy_key) {
+  if(Test-Path ${scriptPath}\..\github_deploy_key) {
     git commit -m "[ci skip] committing updated installer file" 2>&1
     git push
   } else {
-    echo "detected ziti-zi - but no gh_deploy_key so no commit and no push"
+    echo "detected ziti-ci - but no gh_deploy_key so no commit and no push"
   }
 } else {
   echo "detected user [${gituser}] which is not ziti-ci - skipping installer commit"
