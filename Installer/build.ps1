@@ -47,6 +47,6 @@ if($gituser -eq "ziti-ci") {
   echo "detected user [${gituser}] which is not ziti-ci - skipping installer commit"
 }
 
-git add Installer/ZitiDesktopEdge.aip
+git add service/ziti-tunnel/version.go DesktopEdge/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip
 
 echo "========================== build.ps1 competed =========================="

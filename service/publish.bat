@@ -89,9 +89,9 @@ echo issuing status
 echo ========================================================
 git status 2>&1
 
-git add service/ziti-tunnel/version.go DesktopEdge/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip 2>&1
-CALL :FAIL %ERRORLEVEL% "git add failed"
-echo git add service/ziti-tunnel/version.go DesktopEdge/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip complete: %ERRORLEVEL%
+REM git add service/ziti-tunnel/version.go DesktopEdge/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip 2>&1
+REM CALL :FAIL %ERRORLEVEL% "git add failed"
+REM echo git add service/ziti-tunnel/version.go DesktopEdge/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip complete: %ERRORLEVEL%
 
 REM echo issuing commit
 REM git commit -m "[ci skip] committing updated version information" 2>&1
