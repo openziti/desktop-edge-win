@@ -15,7 +15,7 @@
                 </Rectangle.LayoutTransform>
             </Rectangle>
         </Canvas>
-        <Rectangle Margin="10,10,10,10" Fill="White" RadiusY="10" RadiusX="10"></Rectangle>
+        <Rectangle x:Name="MainCanvas" Margin="10,10,10,10" Fill="White" RadiusY="10" RadiusX="10"></Rectangle>
 
         <Grid Margin="20,20,20,-20" MaxWidth="350">
             <Grid.ColumnDefinitions>
@@ -29,13 +29,8 @@
                         <ColumnDefinition Width="40"/>
                     </Grid.ColumnDefinitions>
                     <local:Toggler x:Name="IdDetailToggle" Grid.Column="0" HorizontalAlignment="Left" OnToggled="IdToggle"></local:Toggler>
-                    <TextBlock Name="IdDetailName" Grid.Column="1" HorizontalAlignment="Center" 
-                           FontSize="14" FontWeight="SemiBold" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" 
-                           Foreground="#0F0F23" VerticalAlignment="Center" TextWrapping="Wrap"
-                           Text="Identity Name Here"
-                           >
-                    </TextBlock>
-                    <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/x.png" Width="20" Height="20" Margin="0,0,0,0" HorizontalAlignment="Right" MouseUp="HideMenu"></Image>
+                    <TextBlock x:Name="IdDetailName" MaxWidth="220" Grid.Column="1" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" FontSize="14" FontWeight="Bold" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="#0F0F23" VerticalAlignment="Center" TextWrapping="NoWrap" />
+                        <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/x.png" Width="20" Height="20" Margin="0,0,0,0" HorizontalAlignment="Right" MouseUp="HideMenu"></Image>
                 </Grid>
                 <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
                 <Grid>
