@@ -21,8 +21,8 @@ package main
 
 const (
 	Version   = "1.2.13"
-	Revision  = "977c2420a39d"
+	Revision  = "9a50a507e59a"
 	Branch    = "release-1.2.13-ui-tweaks"
 	BuildUser = ""
-	BuildDate = "2020-11-01 18:07:44"
+	BuildDate = "2020-11-01 19:25:09"
 )
