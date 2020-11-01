@@ -39,11 +39,12 @@ $action = '/build'
 echo "Assembling installer using AdvancedInstaller at: $ADVINST $action $ADVPROJECT"
 & $ADVINST $action $ADVPROJECT
 
+$gituser=$(git config user.name)
 if($gituser -eq "ziti-ci") {
   echo "yes ziti-ci"
   git commit -m "[ci skip] committing updated installer file" 2>&1
 } else {
-  echo "not ziti-ci - skipping installer commit"
+  echo "detected user [${gituser}] which is not ziti-ci - skipping installer commit"
 }
 
 git add Installer/ZitiDesktopEdge.aip

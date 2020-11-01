@@ -93,11 +93,11 @@ git add service/ziti-tunnel/version.go DesktopEdge/Properties/AssemblyInfo.cs In
 CALL :FAIL %ERRORLEVEL% "git add failed"
 echo git add service/ziti-tunnel/version.go DesktopEdge/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip complete: %ERRORLEVEL%
 
-echo issuing commit
-git commit -m "[ci skip] committing updated version information" 2>&1
+REM echo issuing commit
+REM git commit -m "[ci skip] committing updated version information" 2>&1
 
 CALL :FAIL %ERRORLEVEL% "git commit failed"
-echo git commit -m "[ci skip] committing updated version information" complete: %ERRORLEVEL%
+REM echo git commit -m "[ci skip] committing updated version information" complete: %ERRORLEVEL%
 echo ========================================================
 echo issuing git push
 echo ========================================================
