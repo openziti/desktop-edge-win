@@ -13,8 +13,8 @@
                 <ColumnDefinition x:Name="WarningColumn" Width="0"/>
             </Grid.ColumnDefinitions>
             <StackPanel Orientation="Vertical" Height="30" Grid.Column="0">
-                <TextBox Name="MainLabel" Padding="12,0,12,0" Height="15" BorderThickness="0" FontWeight="Bold" Background="White" ClipToBounds="True" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" FontSize="11" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBox>
-                <TextBox Name="MainEdit" Mouse.PreviewMouseUp="MainEdit_PreviewMouseUp" Height="14" Padding="12,0,12,0" TextAlignment="Left" BorderThickness="0" Background="White" ClipToBounds="True" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Stretch" FontSize="10" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="DarkGray"></TextBox>
+                <TextBox Name="MainLabel" Padding="12,0,12,0" Height="15" IsReadOnly="True" BorderThickness="0" FontWeight="Bold" Background="White" ClipToBounds="True" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" FontSize="11" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBox>
+                <TextBox Name="MainEdit" IsReadOnly="True" Height="14" Padding="12,0,12,0" TextAlignment="Left" BorderThickness="0" Background="White" ClipToBounds="True" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Stretch" FontSize="10" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="DarkGray"></TextBox>
             </StackPanel>
             <Image x:Name="WarnIcon" Visibility="Collapsed" Source="/Assets/Images/Warning.png" Grid.Column="1" Width="20" Height="20"/>
         </Grid>
