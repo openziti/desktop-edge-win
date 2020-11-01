@@ -8,12 +8,6 @@
              x:Name="MainMenuArea"
              d:DesignHeight="400" d:DesignWidth="400" Margin="1,1,1,1">
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
         <Canvas>
             <Rectangle Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="White" VerticalAlignment="Bottom" Width="20" Canvas.Bottom="-10" Canvas.Left="185">
                 <Rectangle.LayoutTransform>
@@ -23,12 +17,12 @@
         </Canvas>
         <Rectangle Margin="10,10,10,10" Fill="White" RadiusY="10" RadiusX="10" ClipToBounds="True"></Rectangle>
 
-        <Grid Margin="10,10,10,-20">
+        <Grid Margin="20,20,20,-20">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <StackPanel Name="MainStack" Grid.Column="0" Grid.Row="0" Orientation="Vertical" Margin="20,20,20,20">
-                <Grid Margin="0,0,0,20">
+                <Grid Margin="0,0,0,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="70"/>
                         <ColumnDefinition Width="*"/>

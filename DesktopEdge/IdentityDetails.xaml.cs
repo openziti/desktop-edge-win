@@ -26,6 +26,7 @@ namespace ZitiDesktopEdge {
 		public event Forgot OnForgot;
 		public delegate void ErrorOccurred(string message);
 		public event ErrorOccurred OnError;
+		public double MainHeight = 500;
 
 		private List<ZitiIdentity> identities {
 			get {
@@ -70,6 +71,7 @@ namespace ZitiDesktopEdge {
 
 		public void UpdateView() {
 			IdDetailName.Text = _identity.Name;
+			IdDetailName.ToolTip = _identity.Name;
 			IdDetailToggle.Enabled = _identity.IsEnabled;
 			IdentityName.Value = _identity.Name;
 			IdentityNetwork.Value = _identity.ControllerUrl;
@@ -85,7 +87,7 @@ namespace ZitiDesktopEdge {
 					editor.IsLocked = true;
 					ServiceList.Children.Add(editor);
 				}
-				double newHeight = Application.Current.MainWindow.ActualHeight - 300;
+				double newHeight = MainHeight - 300;
 				ServiceRow.Height = new GridLength((double)newHeight);
 				MainDetailScroll.MaxHeight = newHeight;
 				MainDetailScroll.Height = newHeight;
