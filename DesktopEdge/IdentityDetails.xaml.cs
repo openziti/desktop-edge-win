@@ -69,7 +69,8 @@ namespace ZitiDesktopEdge {
 		}
 
 		public void UpdateView() {
-			IdDetailName.Content = _identity.Name;
+			IdDetailName.Text = _identity.Name;
+			IdDetailName.ToolTip = _identity.Name;
 			IdDetailToggle.Enabled = _identity.IsEnabled;
 			IdentityName.Value = _identity.Name;
 			IdentityNetwork.Value = _identity.ControllerUrl;
