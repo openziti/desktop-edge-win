@@ -47,6 +47,7 @@ if($gituser -eq "ziti-ci") {
   git add ZitiUpdateService/Properties/AssemblyInfo.cs
   git add Installer/ZitiDesktopEdge.aip
   git commit -m "[ci skip] committing updated installer file" 2>&1
+  git push
 } else {
   echo "detected user [${gituser}] which is not ziti-ci - skipping installer commit"
 }
