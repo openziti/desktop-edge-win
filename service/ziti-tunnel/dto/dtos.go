@@ -88,6 +88,7 @@ type TunnelStatus struct {
 	ServiceVersion ServiceVersion
 	TunIpv4        string
 	TunIpv4Mask    int
+	Status         string
 }
 
 type ServiceVersion struct {
