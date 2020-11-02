@@ -76,23 +76,12 @@ namespace ZitiUpdateService {
 		}
 
 		private void SetupServiceWatchers() {
-			Logger.Info("setting up watches");
-
-			try {
-				svc.Connect();
-			} catch {
-				//svc.Reconnect();
-			}
-
-			//svc.WaitForConnection();
 
 			var updateTimerInterval = ConfigurationManager.AppSettings.Get("UpdateTimer");
 			var upInt = TimeSpan.Zero;
 			if (!TimeSpan.TryParse(updateTimerInterval, out upInt)) {
 				upInt = new TimeSpan(0, 1, 0);
 			}
-
-			Logger.Info("Ziti Update Setting Up Watchers");
 
 			_updateTimer = new System.Timers.Timer();
 			_updateTimer.Elapsed += CheckUpdate;
@@ -101,13 +90,21 @@ namespace ZitiUpdateService {
 			_updateTimer.Start();
 			Logger.Info("Version Checker is running");
 			CheckUpdate(null, null); //check immediately
+
+			try {
+				svc.Connect();
+			} catch {
+				svc.Reconnect();
+			}
+
+			svc.WaitForConnection();
 		}
 
 		private void CheckUpdate(object sender, ElapsedEventArgs e) {
 			if (inUpdateCheck) return;
 			inUpdateCheck = true; //simple semaphone
 			try {
-				Logger.Info("checking for update");
+				Logger.Debug("checking for update");
 				var updateUrl = ConfigurationManager.AppSettings.Get("UpdateUrl");
 				if (string.IsNullOrEmpty(updateUrl)) {
 					updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win/releases/latest";
