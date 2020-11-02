@@ -97,7 +97,7 @@ func HookupTun(dev tun.Device/*, dns []net.IP*/) error {
 		writeQ: make(chan []byte, 64),
 		readQ:  make(chan []byte, 64),
 	}
-	//devMap[name] = t
+
 	theTun = t
 
 	opts := (*C.tunneler_sdk_options)(C.calloc(1, C.sizeof_tunneler_sdk_options))
@@ -143,11 +143,6 @@ func netifClose(h C.netif_handle) C.int {
 
 //export netifSetup
 func netifSetup(h C.netif_handle, l *C.uv_loop_t, packetCb C.packet_cb, ctx unsafe.Pointer) C.int {
-	/*t, found := devMap[C.GoString(h.id)]
-	if !found {
-		log.Error("should not be here")
-		return -1
-	}*/
 
 	theTun.read = (*C.uv_async_t)(C.calloc(1, C.sizeof_uv_async_t))
 	C.uv_async_init(l, theTun.read, C.uv_async_cb(C.readAsync))
@@ -201,13 +196,6 @@ func (t *tunnel) runReadLoop() {
 
 //export readIdle
 func readIdle(idler *C.uv_prepare_t) {
-	/*dev := (*C.netif_handle_t)(idler.data)
-
-	id := C.GoString(dev.id)
-	t, found := devMap[id]
-	if !found {
-		log.Panicf("An unexpected and unrecoverable error has occurred while looking for tun in devMap")
-	}*/
 
 	np := len(theTun.readQ)
 	for i := np; i > 0; i-- {
@@ -266,17 +254,8 @@ func RemoveIntercept(rwg *RemoveWG) {
 
 //export remove_intercepts
 func remove_intercepts(async *C.uv_async_t) {
-	//C.ZLOG(C.INFO, C.CString(fmt.Sprint("aaaa on uv thread - inside remove_intercepts: %d", &async.loop)))
-	//c := (*C.char)(async.data)
 	rwg := (*RemoveWG)(async.data)
-
-	/*for _, t := range devMap {
-		//C.ZLOG(C.INFO, C.CString("bbb on uv thread - inside remove_intercepts"))
-		C.ziti_tunneler_stop_intercepting(t.tunCtx, C.CString(rwg.SvcId))
-	}*/
 	C.ziti_tunneler_stop_intercepting(theTun.tunCtx, C.CString(rwg.SvcId))
-	//C.ZLOG(C.INFO, C.CString("ccc on uv thread - inside remove_intercepts"))
 	C.uv_close((*C.uv_handle_t)(unsafe.Pointer(async)), C.uv_close_cb(C.free_async))
-	C.ZLOG(C.INFO, C.CString("on uv thread - completed remove_intercepts"))
 	rwg.Wg.Done()
 }

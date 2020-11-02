@@ -54,7 +54,12 @@ type intercept struct {
 	isIp bool
 }
 func (i intercept) String() string {
-	return fmt.Sprintf("%s:%d", i.host, i.port)
+	if i.isIp {
+		//an ip does not need the host normalized
+		return fmt.Sprintf("%s:%d", i.host, i.port)
+	} else {
+		return fmt.Sprintf("%s:%d", normalizeDnsName(i.host), i.port)
+	}
 }
 
 type ctxIp struct {
@@ -89,10 +94,8 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 	//name and register it in dns, obtain an ip and all that...
 	ip := net.ParseIP(dnsNameToReg)
 
-	icept := intercept{isIp: false, port: port}
-	if ip == nil {
-		icept.host = normalizeDnsName(dnsNameToReg)
-	} else {
+	icept := intercept{isIp: false, host:dnsNameToReg, port: port}
+	if ip != nil {
 		icept.host = ip.String()
 		icept.isIp = true
 	}
@@ -190,7 +193,6 @@ func (dns *dnsImpl) UnregisterService(host string, port uint16) {
 					log.Warnf("Unexpected error removing route for %s", icept.host)
 				}
 			} else {
-				//delete(dns.hostnameMap, icept.host)
 				dns.hostnameMap[icept.host].dnsEnabled = false
 			}
 			delete(dns.serviceMap, key)
