@@ -49,11 +49,11 @@ if($gituser -eq "ziti-ci") {
 
   if(Test-Path ${scriptPath}\..\service\github_deploy_key) {
     copy $scriptPath\..\service\github_deploy_key .
-    git commit -m "[ci skip] committing updated installer file" 2>&1
-    git push
   } else {
-    echo "detected ziti-ci - but no gh_deploy_key so no commit and no push"
+    echo "detected ziti-ci - but no gh_deploy_key. push may fail"
   }
+  git commit -m "[ci skip] committing updated installer file" 2>&1
+  git push 2>&1
 } else {
   echo "detected user [${gituser}] which is not ziti-ci - skipping installer commit"
 }
