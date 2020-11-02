@@ -52,8 +52,15 @@ if($gituser -eq "ziti-ci") {
   } else {
     echo "detected ziti-ci - but no gh_deploy_key. push may fail"
   }
-  git commit -m "[ci skip] committing updated installer file" 2>&1
-  git push 2>&1
+
+  $b="$env:GIT_BRANCH"
+  if( $b -match '(^master$|^release-[0-9]*\.[0-9]*\.[0-9]*)' ) {
+    echo "branch $b matches the required regex - committing and pushing"
+    git commit -m "[ci skip] committing updated installer file" 2>&1
+    git push 2>&1
+  } else {
+    echo "branch $b does not match the regex. no commit/no push"
+  }
 } else {
   echo "detected user [${gituser}] which is not ziti-ci - skipping installer commit"
 }
