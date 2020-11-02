@@ -1,3 +1,29 @@
+# Release 1.3.3
+
+## What's New
+
+    * nothing
+
+## Bug Fixes
+
+    * [#186](https://github.com/openziti/desktop-edge-win/issues/186) - All intercepts marked as already mapped
+
+# Release 1.3.2
+
+## What's New
+
+    * [#184](https://github.com/openziti/desktop-edge-win/issues/184) - Better logging. ziti-monitor logging can now be configured via file.
+
+## Bug Fixes
+
+    * [#184](https://github.com/openziti/desktop-edge-win/issues/184) - Auto update no longer tries to update when the versions are the same
+
+# Release 1.3.1
+
+* What's New
+
+    * This release exists only for testing the auto-upgrade capability
+
 # Release 1.3.0
 
 * What's New
@@ -6,7 +32,7 @@
 
 * Bug Fixes
 
-  * [#000](https://github.com/openziti/desktop-edge-win/issues/000) - Bug fix
+  * none
 
 * Dependency Updates
 
