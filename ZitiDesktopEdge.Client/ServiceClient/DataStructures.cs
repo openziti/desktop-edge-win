@@ -7,7 +7,7 @@ using System.Collections.Generic;
 /// </summary>
 namespace ZitiDesktopEdge.ServiceClient
 {
-    class SvcResponse
+    public class SvcResponse
     {
         public int Code { get; set; }
         public string Message { get; set; }
@@ -19,12 +19,12 @@ namespace ZitiDesktopEdge.ServiceClient
         }
     }
 
-    class StatusUpdateResponse : SvcResponse
+    public class StatusUpdateResponse : SvcResponse
     {
         public StatusUpdate Payload { get; set; }
     }
 
-    class StatusUpdate
+    public class StatusUpdate
     {
         public string Operation { get; set; }
         public TunnelStatus Status { get; set; }
@@ -38,7 +38,7 @@ namespace ZitiDesktopEdge.ServiceClient
         public Identity Id { get; set; }
     }
 
-    class IdentityResponse : SvcResponse
+    public class IdentityResponse : SvcResponse
     {
         public Identity Payload { get; set; }
     }
@@ -158,7 +158,7 @@ namespace ZitiDesktopEdge.ServiceClient
         public string AdditionalCAs { get; set; }
     }
 
-    class IpInfo
+    public class IpInfo
     {
         public string Ip { get; set; }
         public string Subnet { get; set; }
@@ -166,7 +166,7 @@ namespace ZitiDesktopEdge.ServiceClient
         public string DNS { get; set; }
     }
 
-    class ServiceVersion
+    public class ServiceVersion
     {
         public string Version { get; set; }
         public string Revision { get; set; }
@@ -178,12 +178,12 @@ namespace ZitiDesktopEdge.ServiceClient
         }
     }
 
-    class ZitiTunnelStatus : SvcResponse
+    public class ZitiTunnelStatus : SvcResponse
     {
         public TunnelStatus Status { get; set; }
     }
 
-    class TunnelStatus
+    public class TunnelStatus
     {
         public bool Active { get; set; }
 
@@ -251,34 +251,34 @@ namespace ZitiDesktopEdge.ServiceClient
         public string AdditionalInfo { get; }
     }
 
-    class StatusEvent
+    public class StatusEvent
     {
         public string Op { get; set; }
     }
 
-    class ActionEvent : StatusEvent
+    public class ActionEvent : StatusEvent
     {
         public string Action { get; set; }
     }
 
-    class TunnelStatusEvent : StatusEvent
+    public class TunnelStatusEvent : StatusEvent
     {
         public TunnelStatus Status { get; set; }
         public int ApiVersion { get; set; }
     }
 
-    class MetricsEvent : StatusEvent
+    public class MetricsEvent : StatusEvent
     {
         public List<Identity> Identities { get; set; }
     }
 
-    class ServiceEvent : ActionEvent
+    public class ServiceEvent : ActionEvent
     {
         public string Fingerprint { get; set; }
         public Service Service { get; set; }
     }
 
-    class IdentityEvent : ActionEvent
+    public class IdentityEvent : ActionEvent
     {
         public Identity Id { get; set; }
     }

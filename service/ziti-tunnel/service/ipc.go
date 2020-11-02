@@ -110,6 +110,19 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 
 	requestShutdown("service shutdown")
 
+	// signal to any connected consumers that the service is shutting down normally
+	events.broadcast <- dto.StatusEvent {
+		Op: "shutdown",
+	}
+
+	// wait 1 second for the shutdown to send to clients
+	shutdownDelay := make(chan bool)
+	go func() {
+		time.Sleep(1*time.Second)
+		shutdownDelay <- true
+	}()
+	<-shutdownDelay
+
 	log.Infof("shutting down connections...")
 	pipes.shutdownConnections()
 
@@ -327,15 +340,6 @@ func serveIpc(conn net.Conn) {
 	defer log.Info("A connected IPC client has disconnected")
 	defer closeConn(conn) //close the connection after this function invoked as go routine exits
 
-	if len(events.broadcast) == cap(events.broadcast) {
-		log.Warn("TunnelStatusEvent will be blocked. If this warning is continuously displayed please report")
-	}
-	events.broadcast <- dto.TunnelStatusEvent{
-		StatusEvent: dto.StatusEvent{Op: "status"},
-		Status:      rts.ToStatus(),
-		ApiVersion:  API_VERSION,
-	}
-
 	done := make(chan struct{}, 8)
 	defer close(done) // ensure that goroutine exits
 
@@ -366,8 +370,9 @@ func serveIpc(conn net.Conn) {
 	enc := json.NewEncoder(writer)
 
 	for {
-		log.Debug("beginning read")
+		log.Debug("ipc read begins")
 		msg, err := reader.ReadString('\n')
+		log.Debug("ipc read ends")
 		if err != nil {
 			if err != winio.ErrFileClosed {
 				if err == io.EOF {

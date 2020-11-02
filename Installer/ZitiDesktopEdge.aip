@@ -8,7 +8,6 @@
     <ROW Property="AI_FrameColor" Value="powderblue" MultiBuildValue="AnyCPU_Release:deepskyblue" MsiKey="AI_FrameColor"/>
     <ROW Property="AI_ImagesColor" Value="powderblue" MsiKey="AI_ImagesColor"/>
     <ROW Property="AI_PREDEF_LCONDS_PROPS" Value="AI_DETECTED_INTERNET_CONNECTION"/>
-    <ROW Property="AI_PROPPATH_PERBUILD_App.config" Value="..\ZitiUpdateService\bin\Release\App.config"/>
     <ROW Property="AI_PROPPATH_PERBUILD_ZitiDesktopEdge.exe" Value="..\DesktopEdge\bin\Release\ZitiDesktopEdge.exe"/>
     <ROW Property="AI_PROPPATH_PERBUILD_ZitiDesktopEdge.exe.config" Value="..\DesktopEdge\bin\Release\ZitiDesktopEdge.exe.config"/>
     <ROW Property="AI_PROPPATH_PERBUILD_ZitiUpdateService.exe" Value="..\ZitiUpdateService\bin\Release\ZitiUpdateService.exe"/>
@@ -22,10 +21,12 @@
     <ROW Property="ARPURLINFOABOUT" Value="https://ziti.dev"/>
     <ROW Property="CTRLS" Value="2"/>
     <ROW Property="Manufacturer" Value="NetFoundry, Inc."/>
+    <ROW Property="MsiLogging" MultiBuildValue="AnyCPU_Release:vp"/>
     <ROW Property="ProductCode" Value="1033:{FEC3D10A-3B99-47A8-8C7C-753CD26D6377} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="Ziti Desktop Edge"/>
     <ROW Property="ProductVersion" Value="1.3.0" Type="32"/>
+    <ROW Property="REBOOT" MultiBuildValue="AnyCPU_Release:Suppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{CB7E173A-663D-4A23-BB22-D1E8D885C2F3}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="DefaultBuild:Windows 9x/ME#AnyCPU_Release:Windows 9x/ME" ValueLocId="-"/>
@@ -48,10 +49,12 @@
   <COMPONENT cid="caphyon.advinst.msicomp.MsiCompsComponent">
     <ROW Component="AI_ExePath" ComponentId="{F9B15650-F37D-424A-B159-B54B9F36EC2C}" Directory_="APPDIR" Attributes="260" KeyPath="AI_ExePath"/>
     <ROW Component="APPDIR" ComponentId="{B3881A25-6890-4920-9F69-CACA0C9ABA63}" Directory_="APPDIR" Attributes="0"/>
-    <ROW Component="App.config" ComponentId="{27FAD46C-8379-4680-8506-4BCBA5A012E8}" Directory_="APPDIR" Attributes="0" KeyPath="App.config" Type="0"/>
+    <ROW Component="App.config" ComponentId="{27FAD46C-8379-4680-8506-4BCBA5A012E8}" Directory_="APPDIR" Attributes="0" KeyPath="ZitiDesktopEdge.exe.config" Type="0"/>
+    <ROW Component="NLog.dll" ComponentId="{384D38B5-A4A0-4BC6-886A-82153E2687ED}" Directory_="APPDIR" Attributes="0" KeyPath="NLog.dll"/>
     <ROW Component="Newtonsoft.Json.dll" ComponentId="{5D7B59CE-A1B5-4EE9-842E-0206408F8674}" Directory_="APPDIR" Attributes="0" KeyPath="Newtonsoft.Json.dll"/>
     <ROW Component="ProductInformation" ComponentId="{4FC3A7CB-D334-466A-A919-E6A237EF4443}" Directory_="APPDIR" Attributes="260" KeyPath="Version"/>
     <ROW Component="SHORTCUTDIR" ComponentId="{3A88A759-A3FE-443F-A6D9-0D97BA424B2E}" Directory_="SHORTCUTDIR" Attributes="0"/>
+    <ROW Component="ZitiDesktopEdge.Client.dll" ComponentId="{7834CBFB-BA9A-4337-9603-507C71135B01}" Directory_="APPDIR" Attributes="0" KeyPath="ZitiDesktopEdge.Client.dll"/>
     <ROW Component="ZitiDesktopEdge.exe" ComponentId="{FDDCF14B-4FAF-469F-810E-0877A0DD5F3B}" Directory_="APPDIR" Attributes="0" KeyPath="ZitiDesktopEdge.exe"/>
     <ROW Component="ZitiUpdateService.exe" ComponentId="{01B4F535-D4A3-44CD-BB2D-A3A905A095D6}" Directory_="APPDIR" Attributes="0" KeyPath="ZitiUpdateService.exe"/>
     <ROW Component="libgcc_s_seh1.dll" ComponentId="{B97B6447-8941-4F04-AA22-50D34E0A0F1A}" Directory_="APPDIR" Attributes="256" KeyPath="libgcc_s_seh1.dll"/>
@@ -66,7 +69,6 @@
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiFilesComponent">
     <ROW File="ZitiDesktopEdge.exe" Component_="ZitiDesktopEdge.exe" FileName="ZITIDE~1.EXE|ZitiDesktopEdge.exe" Attributes="0" SourcePath="&lt;AI_APPPATH_PERBUILD_ZitiDesktopEdge.exe&gt;" SelfReg="false" DigSign="true"/>
-    <ROW File="App.config" Component_="App.config" FileName="APP~1.CON|App.config" Attributes="0" SourcePath="&lt;AI_APPPATH_PERBUILD_App.config&gt;" SelfReg="false"/>
     <ROW File="ZitiDesktopEdge.exe.config" Component_="App.config" FileName="ZITIDE~1.CON|ZitiDesktopEdge.exe.config" Attributes="0" SourcePath="&lt;AI_APPPATH_PERBUILD_ZitiDesktopEdge.exe.config&gt;" SelfReg="false"/>
     <ROW File="ZitiUpdateService.exe" Component_="ZitiUpdateService.exe" FileName="ZITIUP~1.EXE|ZitiUpdateService.exe" Attributes="0" SourcePath="&lt;AI_APPPATH_PERBUILD_ZitiUpdateService.exe&gt;" SelfReg="false" DigSign="true"/>
     <ROW File="ZitiUpdateService.exe.config" Component_="App.config" FileName="ZITIUP~1.CON|ZitiUpdateService.exe.config" Attributes="0" SourcePath="&lt;AI_APPPATH_PERBUILD_ZitiUpdateService.exe.config&gt;" SelfReg="false"/>
@@ -78,9 +80,10 @@
     <ROW File="ziti.ico" Component_="App.config" FileName="ziti.ico" Attributes="0" SourcePath="ziti.ico" SelfReg="false"/>
     <ROW File="Newtonsoft.Json.dll" Component_="Newtonsoft.Json.dll" FileName="NEWTON~1.DLL|Newtonsoft.Json.dll" Attributes="0" SourcePath="..\DesktopEdge\bin\Release\Newtonsoft.Json.dll" SelfReg="false"/>
     <ROW File="collectlogs.ps1" Component_="App.config" FileName="COLLEC~1.PS1|collect-logs.ps1" Attributes="0" SourcePath="collect-logs.ps1" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.Client.dll" Component_="ZitiDesktopEdge.Client.dll" FileName="ZITIDE~1.DLL|ZitiDesktopEdge.Client.dll" Attributes="0" SourcePath="..\ZitiDesktopEdge.Client\bin\Release\ZitiDesktopEdge.Client.dll" SelfReg="false"/>
+    <ROW File="NLog.dll" Component_="NLog.dll" FileName="NLog.dll" Attributes="0" SourcePath="..\ZitiUpdateService\bin\Release\NLog.dll" SelfReg="false"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.AppPathsComponent">
-    <ROW Name="AI_APPPATH_PERBUILD_App.config" Path="[|AI_PROPPATH_PERBUILD_App.config]" Type="2" Content="0"/>
     <ROW Name="AI_APPPATH_PERBUILD_ZitiDesktopEdge.exe" Path="[|AI_PROPPATH_PERBUILD_ZitiDesktopEdge.exe]" Type="2" Content="0"/>
     <ROW Name="AI_APPPATH_PERBUILD_ZitiDesktopEdge.exe.config" Path="[|AI_PROPPATH_PERBUILD_ZitiDesktopEdge.exe.config]" Type="2" Content="0"/>
     <ROW Name="AI_APPPATH_PERBUILD_ZitiUpdateService.exe" Path="[|AI_PROPPATH_PERBUILD_ZitiUpdateService.exe]" Type="2" Content="0"/>
@@ -211,6 +214,8 @@
     <ROW Feature_="MainFeature" Component_="ziti.dll"/>
     <ROW Feature_="MainFeature" Component_="zititunnel.exe"/>
     <ROW Feature_="MainFeature" Component_="Newtonsoft.Json.dll"/>
+    <ROW Feature_="MainFeature" Component_="ZitiDesktopEdge.Client.dll"/>
+    <ROW Feature_="MainFeature" Component_="NLog.dll"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiIconsComponent">
     <ROW Name="ziti.exe" SourcePath="ziti.ico" Index="0"/>
@@ -265,11 +270,11 @@
     <ROW Registry="Version" Root="-1" Key="Software\[Manufacturer]\[ProductName]" Name="Version" Value="[ProductVersion]" Component_="ProductInformation"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiServCtrlComponent">
-    <ROW ServiceControl="ZitiUpdateService.exe" Name="ziti-monitor" Event="160" Wait="0" Component_="ZitiUpdateService.exe"/>
+    <ROW ServiceControl="ZitiUpdateService.exe" Name="ziti-monitor" Event="161" Wait="0" Component_="ZitiUpdateService.exe"/>
     <ROW ServiceControl="zititunnel.exe" Name="ziti" Event="161" Wait="0" Component_="zititunnel.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiServInstComponent">
-    <ROW ServiceInstall="ZitiUpdateService.exe" Name="ziti-monitor" DisplayName="Ziti Desktop Monitor Service" ServiceType="16" StartType="2" ErrorControl="1" Component_="ZitiUpdateService.exe" Description="Monitors and updates the Ziti Access Service"/>
+    <ROW ServiceInstall="ZitiUpdateService.exe" Name="ziti-monitor" DisplayName="Ziti Desktop Monitor Service" ServiceType="16" StartType="2" ErrorControl="32769" Component_="ZitiUpdateService.exe" Description="Monitors and updates the Ziti Access Service"/>
     <ROW ServiceInstall="zititunnel.exe" Name="ziti" DisplayName="Ziti Desktop Edge Service" ServiceType="16" StartType="2" ErrorControl="32769" Component_="zititunnel.exe" Description="Access your Networks Secured by Ziti"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiShortsComponent">
