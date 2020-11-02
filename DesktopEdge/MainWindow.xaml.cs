@@ -66,10 +66,26 @@ namespace ZitiDesktopEdge {
 			notifyIcon.Visible = true;
 			notifyIcon.Click += TargetNotifyIcon_Click;
 			notifyIcon.Visible = true;
+			IdentityMenu.OnDetach += OnDetach;
+			MainMenu.OnDetach += OnDetach;
 
 			LaunchOrInstall();
 
 			SetNotifyIcon("white");
+		}
+
+		private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
+			OnDetach(e);
+		}
+
+		private void OnDetach(MouseButtonEventArgs e) {
+			if (e.ChangedButton == MouseButton.Left) {
+				_isAttached = false;
+				IdentityMenu.Arrow.Visibility = Visibility.Collapsed;
+				Arrow.Visibility = Visibility.Collapsed;
+				MainMenu.Detach();
+				this.DragMove();
+			}
 		}
 
 		private void MainWindow_Activated(object sender, EventArgs e) {
@@ -103,16 +119,6 @@ namespace ZitiDesktopEdge {
 		}
 		private void SetCantDisplay() {
 			SetCantDisplay("Service Not Started", "Start the Ziti Tunnel Service to get started");
-		}
-
-		private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
-			if (e.ChangedButton == MouseButton.Left) {
-				_isAttached = false;
-				IdentityMenu.Arrow.Visibility = Visibility.Collapsed;
-				Arrow.Visibility = Visibility.Collapsed;
-				MainMenu.Detach();
-				this.DragMove();
-			}
 		}
 
 		private void TargetNotifyIcon_Click(object sender, EventArgs e) {

@@ -26,6 +26,8 @@ namespace ZitiDesktopEdge
 		public event AttachementChanged OnAttachmentChange;
 		public delegate void LogLevelChanged(string level);
 		public event LogLevelChanged OnLogLevelChanged;
+		public delegate void Detched(MouseButtonEventArgs e);
+		public event Detched OnDetach;
 		public string menuState = "Main";
 		public string licenseData = "it's open source.";
 		public string LogLevel = "";
@@ -42,6 +44,11 @@ namespace ZitiDesktopEdge
 			menuState = "Menu";
 			UpdateState();
 			MainMenuArea.Visibility = Visibility.Collapsed;
+		}
+		private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
+			if (e.ChangedButton == MouseButton.Left) {
+				OnDetach(e);
+			}
 		}
 
 		private void CloseApp(object sender, MouseButtonEventArgs e) {
