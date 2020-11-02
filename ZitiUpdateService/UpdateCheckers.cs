@@ -69,20 +69,22 @@ namespace ZitiUpdateService {
 
 	internal class FilesystemCheck : IUpdateCheck {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+		string dest = null;
 		public bool AlreadyDownloaded(string destinationFolder, string destinationName) {
 			return File.Exists(Path.Combine(destinationFolder, destinationName));
 		}
 
 		public void CopyUpdatePackage(string destinationFolder, string destinationName) {
-			throw new NotImplementedException();
+			dest = Path.Combine(destinationFolder, destinationName);
+			File.Copy(@"C:\git\github\openziti\desktop-edge-win\Installer\Output\" + FileName(), dest);
 		}
 
 		public string FileName() {
-			return downloadFileName;
+			return "Ziti Desktop Edge Client-1.3.0.exe";
 		}
 
 		public bool IsUpdateAvailable(Version current) {
-			throw new NotImplementedException();
+			return true;
 		}
 	}
 }

@@ -113,6 +113,7 @@ namespace ZitiUpdateService {
 					updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win/releases/latest";
 				}
 				IUpdateCheck check = new GithubCheck(updateUrl);
+				//IUpdateCheck check = new FilesystemCheck();
 
 				string currentVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString(); //fetch from ziti?
 				Version installed = new Version(currentVersion);
