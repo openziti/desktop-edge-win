@@ -4,47 +4,14 @@ rm .\build -r -fo -ErrorAction Ignore
 
 $invocation = (Get-Variable MyInvocation).Value
 $scriptPath = Split-Path $invocation.MyCommand.Path
-${scriptPath}
-
-$x=[xml] @"
-$((Invoke-WebRequest https://netfoundry.jfrog.io/artifactory/ziti-maven-snapshot/ziti-tunnel-win/amd64/windows/ziti-tunnel-win/maven-metadata.xml).Content)
-"@
 
 echo "the branch is $env:GIT_BRANCH"
-
-$branch = git rev-parse --abbrev-ref HEAD
-
-if ("$branch" -ne 'master') {
-    #if the git command to get the branch fails - this is 'not master' use the 'latest' - else fetch the 'release'
-    $serviceVersion = $x.metadata.versioning.latest
-}
-else {
-    $serviceVersion = $x.metadata.versioning.release
-}
-echo "service version is: $serviceVersion"
-$installerVersion=(Get-Content -Path .\version)
-
-$zipUrl = "https://netfoundry.jfrog.io/artifactory/ziti-maven-snapshot/ziti-tunnel-win/amd64/windows/ziti-tunnel-win/${serviceVersion}/ziti-tunnel-win-${serviceVersion}.zip"
-
-echo "Downloading zip file "
-echo "      from: $zipUrl"
-
-tree ${scriptPath}..
-
-$ProgressPreference = 'SilentlyContinue'
-$timeTaken = Measure-Command -Expression {
-    Invoke-WebRequest $zipUrl -OutFile ziti-tunnel-service.zip
-}
 
 $zipLocal = "ziti-tunnel-service.zip"
 $zipLocal = "${scriptPath}/../service/ziti-tunnel-win.zip"
 
-$milliseconds = $timeTaken.TotalMilliseconds
-echo "      time to download: $milliseconds"
 echo ""
 echo "unzipping $zipLocal to ${scriptPath}\build\service\"
-
-$ProgressPreference = 'Continue'
 
 Expand-Archive -Verbose -Force -LiteralPath $zipLocal "${scriptPath}\build\service\"
 
@@ -53,7 +20,6 @@ echo "Updating the version for UI and Installer"
 .\update-versions.ps1
 
 echo "Building the UI"
-#msbuild DesktopEdge\ZitiDesktopEdge.csproj /property:Configuration=Release
 msbuild ZitiDesktopEdge.sln /property:Configuration=Release
 
 echo "Building the Wintun installer"
@@ -63,13 +29,33 @@ Pop-Location
 
 $ADVINST = "C:\Program Files (x86)\Caphyon\Advanced Installer 17.6\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
-
+$installerVersion=(Get-Content -Path ${scriptPath}\..\version)
 $action = '/SetVersion'
+
 echo "issuing $ADVINST /edit $ADVPROJECT $action $installerVersion (service version: $serviceVersion) - see https://www.advancedinstaller.com/user-guide/set-version.html"
 & $ADVINST /edit $ADVPROJECT $action $installerVersion
 
 $action = '/build'
 echo "Assembling installer using AdvancedInstaller at: $ADVINST $action $ADVPROJECT"
 & $ADVINST $action $ADVPROJECT
+
+$gituser=$(git config user.name)
+if($gituser -eq "ziti-ci") {
+  echo "yes ziti-ci"
+  git add service/ziti-tunnel/version.go
+  git add DesktopEdge/Properties/AssemblyInfo.cs
+  git add ZitiUpdateService/Properties/AssemblyInfo.cs
+  git add Installer/ZitiDesktopEdge.aip
+
+  if(Test-Path ${scriptPath}\..\service\github_deploy_key) {
+    copy $scriptPath\..\service\github_deploy_key .
+  } else {
+    echo "detected ziti-ci - but no gh_deploy_key. push may fail"
+  }
+  git commit -m "[ci skip] committing updated installer file" 2>&1
+  git push 2>&1
+} else {
+  echo "detected user [${gituser}] which is not ziti-ci - skipping installer commit"
+}
 
 echo "========================== build.ps1 competed =========================="
