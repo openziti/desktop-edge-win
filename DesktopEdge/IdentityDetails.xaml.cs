@@ -26,6 +26,8 @@ namespace ZitiDesktopEdge {
 		public event Forgot OnForgot;
 		public delegate void ErrorOccurred(string message);
 		public event ErrorOccurred OnError;
+		public delegate void Detched(MouseButtonEventArgs e);
+		public event Detched OnDetach;
 		public double MainHeight = 500;
 
 		private List<ZitiIdentity> identities {
@@ -51,6 +53,13 @@ namespace ZitiDesktopEdge {
 		}
 
 		public IdentityItem SelectedIdentity { get; set; }
+
+		private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
+			if (e.ChangedButton == MouseButton.Left) {
+				_isAttached = false;
+				OnDetach(e);
+			}
+		}
 
 
 		public bool IsAttached {
