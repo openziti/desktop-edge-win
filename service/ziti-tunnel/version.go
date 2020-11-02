@@ -20,9 +20,9 @@
 package main
 
 const (
-	Version   = "1.2.13"
-	Revision  = "9a50a507e59a"
-	Branch    = "release-1.2.13-ui-tweaks"
+	Version   = "1.2.15"
+	Revision  = "fc4a0594546a"
+	Branch    = "release-1.3.4-dragger"
 	BuildUser = ""
-	BuildDate = "2020-11-01 19:25:09"
+	BuildDate = "2020-11-02 13:37:49"
 )
