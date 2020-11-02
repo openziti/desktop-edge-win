@@ -636,7 +636,10 @@ func toggleIdentity(out *json.Encoder, fingerprint string, onOff bool) {
 		if onOff {
 			connectIdentity(id)
 		} else {
-			_ = disconnectIdentity(id)
+			err := disconnectIdentity(id)
+			if err != nil {
+				log.Warnf("could not disconnect identity: %v", err)
+			}
 		}
 		respond(out, dto.Response{Message: "identity toggled", Code: SUCCESS, Error: "", Payload: Clean(id)})
 	}
@@ -673,6 +676,7 @@ func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
 	flags := enroll.EnrollmentFlags{
 		CertFile:      certPath,
 		KeyFile:       keyPath,
+		KeyAlg:        "EC",
 		Token:         tkn,
 		IDName:        newId.Id.Name,
 		AdditionalCAs: caOverride,
@@ -797,13 +801,15 @@ func disconnectIdentity(id *Id) error {
 	log.Infof("disconnecting identity: %s", id.Name)
 
 	if id.Active {
+		if id.CId == nil {
+			return fmt.Errorf("identity has not been initialized properly. please consult the logs for details")
+		} else if id.CId.Services == nil {
+			return fmt.Errorf("identity has no services yet. wait for services to be initialized properly")
+		}
+
 		log.Debugf("ranging over services all services to remove intercept and deregister the service")
-		//if len(id.Services) < 1 {
-		//	log.Errorf("identity with fingerprint %s has no services?", id.Fingerprint)
-		//}
 
 		id.CId.Services.Range(func(key interface{}, value interface{}) bool {
-		//for _, s := range id.Services { //wait for uv loop to finish before continuing
 			val := value.(cziti.ZService)
 			var wg sync.WaitGroup
 			wg.Add(1)
