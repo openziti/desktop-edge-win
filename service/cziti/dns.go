@@ -146,7 +146,7 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 			binary.BigEndian.PutUint32(ip, nextAddr)
 
 			log.Infof("mapping hostname %s to ip %s", dnsNameToReg, ip.String())
-			dns.hostnameMap[icept.host] = &ctxIp {
+			dns.hostnameMap[normalizeDnsName(icept.host)] = &ctxIp {
 				ip:         ip,
 				ctx:        ctx,
 				network:    currentNetwork,
