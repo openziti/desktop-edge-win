@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using System.Reflection;
 using System.ServiceProcess;
 using NLog;
 using NLog.Config;
@@ -13,26 +15,33 @@ namespace ZitiUpdateService {
 		/// </summary>
 		static void Main() {
 			//Environment.SetEnvironmentVariable("ZITI_EXTENDED_DEBUG", "true");
+			var curdir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+			string nlogFile = Path.Combine(curdir, "ziti-monitor-log.config");
 
-			var config = new LoggingConfiguration();
-			var logname = "ziti-montior";
-			// Targets where to log to: File and Console
-			var logfile = new FileTarget("logfile") { 
-				FileName = $"{logname}.log",
-				ArchiveEvery = FileArchivePeriod.Day,
-				ArchiveNumbering = ArchiveNumberingMode.Rolling,
-				MaxArchiveFiles = 7,
-				//ArchiveAboveSize = 10000,
+			if (File.Exists(nlogFile)) {
+				LogManager.Configuration = new XmlLoggingConfiguration(nlogFile);
+			} else {
+				var config = new LoggingConfiguration();
+				var logname = "ziti-montior";
+				// Targets where to log to: File and Console
+				var logfile = new FileTarget("logfile") {
+					FileName = $"{logname}.log",
+					ArchiveEvery = FileArchivePeriod.Day,
+					ArchiveNumbering = ArchiveNumberingMode.Rolling,
+					MaxArchiveFiles = 7,
+					Layout = "${longdate}|${level:uppercase=true:padding=5}|${logger}|${message}",
+					//ArchiveAboveSize = 10000,
 			};
-			var logconsole = new ConsoleTarget("logconsole");
+				var logconsole = new ConsoleTarget("logconsole");
 
-			// Rules for mapping loggers to targets            
-			config.AddRule(LogLevel.Info, LogLevel.Fatal, logconsole);
-			config.AddRule(LogLevel.Debug, LogLevel.Fatal, logfile);
+				// Rules for mapping loggers to targets            
+				config.AddRule(LogLevel.Info, LogLevel.Fatal, logconsole);
+				config.AddRule(LogLevel.Debug, LogLevel.Fatal, logfile);
 
-			// Apply config           
-			LogManager.Configuration = config;
-
+				// Apply config           
+				LogManager.Configuration = config;
+			}
+			Logger.Info("service started - logger initialized");
 			UpdateService updateSvc = new UpdateService();
 #if DEBUG
 

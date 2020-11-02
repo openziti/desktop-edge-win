@@ -50,6 +50,9 @@ namespace ZitiUpdateService {
 			} else if (compare > 0) {
 				Logger.Info("the version installed is newer than the released version");
 				return false;
+			} else {
+				Logger.Debug("current version {0} is the same as the latest release {0}", current, published);
+				return false;
 			}
 			JArray assets = JArray.Parse(json.Property("assets").Value.ToString());
 			foreach (JObject asset in assets.Children<JObject>()) {
