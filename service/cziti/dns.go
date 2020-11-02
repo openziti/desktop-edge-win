@@ -33,7 +33,7 @@ type DnsManager interface {
 
 	RegisterService(svcId string, dnsNameToReg string, port uint16, ctx *ZIdentity, svcName string) (net.IP, error)
 	UnregisterService(host string, port uint16)
-	ReturnToDns(hostname string)
+	ReturnToDns(hostname string) net.IP
 }
 
 var initOnce = sync.Once{}
@@ -166,12 +166,12 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 	return ip, nil
 }
 
-func (dns *dnsImpl) Resolve(toResolve string) net.IP {
+func (dns *dnsImpl) Resolve(toResolve string) *net.IP {
 	dnsName := normalizeDnsName(toResolve)
 	found := dns.hostnameMap[dnsName]
 	if found != nil {
 		if found.dnsEnabled {
-			return found.ip
+			return &found.ip
 		}
 	}
 	return nil
@@ -193,7 +193,10 @@ func (dns *dnsImpl) UnregisterService(host string, port uint16) {
 					log.Warnf("Unexpected error removing route for %s", icept.host)
 				}
 			} else {
-				dns.hostnameMap[icept.host].dnsEnabled = false
+				found := dns.hostnameMap[normalizeDnsName(icept.host)]
+				if found != nil {
+					found.dnsEnabled = false
+				}
 			}
 			delete(dns.serviceMap, key)
 		} else {
@@ -222,11 +225,12 @@ func (dns *dnsImpl) GetService(ip net.IP, port uint16) (*ZIdentity, string, erro
 	*/
 }
 
-func (dns *dnsImpl) ReturnToDns(hostname string) {
+func (dns *dnsImpl) ReturnToDns(hostname string) *net.IP {
 	dnsEntry := dns.hostnameMap[normalizeDnsName(hostname)]
 	if dnsEntry != nil {
 		dnsEntry.dnsEnabled = true
 	}
+	return &dnsEntry.ip
 }
 
 func DnsInit(tun api.DesktopEdgeIface, ip string, maskBits int) {
