@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ServiceProcess;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
