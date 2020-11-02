@@ -94,7 +94,11 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 	//name and register it in dns, obtain an ip and all that...
 	ip := net.ParseIP(dnsNameToReg)
 
-	icept := intercept{isIp: false, port: port}
+	icept := intercept{isIp: false, host:dnsNameToReg, port: port}
+	if ip != nil {
+		icept.host = ip.String()
+		icept.isIp = true
+	}
 	key := icept.String()
 	log.Infof("adding DNS for %s. service name %s@%s. is ip: %t", dnsNameToReg, svcName, key, icept.isIp)
 
