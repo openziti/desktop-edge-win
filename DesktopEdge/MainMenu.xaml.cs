@@ -115,9 +115,10 @@ namespace ZitiDesktopEdge
 					_downloadUrl = asset.Property("browser_download_url").Value.ToString();
 					break;
 				}
-			} catch
+			} catch(Exception ex)
 			{
 				UpdateAvailable.Content = "An exception occurred while performing upgrade check";
+				Debug.WriteLine("Error when checking for version: " + ex.Message);
 				UpdateAvailable.Visibility = Visibility.Visible;
 			}
 		}

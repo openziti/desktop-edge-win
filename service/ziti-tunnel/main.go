@@ -41,15 +41,6 @@ func main() {
 	}
 	logging.InitLogger("info")
 
-	//if len(os.Args) < 2 {
-	//	// if no args supplied - expect to run as service
-	//	os.Args = append(os.Args, "service")
-	//}
-	//cmd.Execute()
-	//if true {
-	//	os.Exit(0)
-	//}
-
 	// passing no arguments is an indicator that this is expecting to be run 'as a service'.
 	// using arg count instead of svc.IsAnInteractiveSession() as svc.IsAnInteractiveSession()
 	// seems to return false even when run in an interactive shell as via `psexec -i -s cmd.exe`

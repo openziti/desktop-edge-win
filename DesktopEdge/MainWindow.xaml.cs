@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
 using System.IO;
-using ZitiDesktopEdge.Models;
-using ZitiDesktopEdge.ServiceClient;
 using System.ServiceProcess;
 using System.Linq;
 using System.Diagnostics;
 using System.Windows.Controls;
 using System.Drawing;
 
+using ZitiDesktopEdge.Models;
+using ZitiDesktopEdge.ServiceClient;
 
 namespace ZitiDesktopEdge {
 
@@ -28,10 +28,9 @@ namespace ZitiDesktopEdge {
 		private bool _isServiceInError = false;
 		private int _right = 75;
 		private int _left = 75;
-		private int _bottom = 0;
 		private int _top = 30;
 		private double _maxHeight = 800d;
-		private string[] suffixes = { "bps", "kbps", "mbps", "gbps", "tbps", "pbps" };
+		private string[] suffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };
 
 		private List<ZitiIdentity> identities {
 			get {

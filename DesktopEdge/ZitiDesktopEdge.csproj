@@ -142,8 +142,6 @@
     <Compile Include="Views\ItemRenderers\MenuEditItem.xaml.cs">
       <DependentUpon>MenuEditItem.xaml</DependentUpon>
     </Compile>
-    <Compile Include="ServiceClient\DataStructures.cs" />
-    <Compile Include="ServiceClient\ClientImpl.cs" />
     <Compile Include="RegistrationScreen.xaml.cs">
       <DependentUpon>RegistrationScreen.xaml</DependentUpon>
     </Compile>
@@ -363,6 +361,12 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Assets\Images\Success.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ZitiDesktopEdge.Client\ZitiDesktopEdge.Client.csproj">
+      <Project>{26b30979-99b5-4102-bd0b-129bedff0057}</Project>
+      <Name>ZitiDesktopEdge.Client</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
