@@ -777,8 +777,6 @@ func connectIdentity(id *Id) {
 
 		if id.CId.Services != nil {
 			id.CId.Services.Range(func(key interface{}, value interface{}) bool {
-				//string, ZService
-				log.Warnf("ranging over services. key: %s", key)
 				val := value.(cziti.ZService)
 				ip := cziti.DNSMgr.ReturnToDns(val.InterceptHost)
 				cziti.AddIntercept(val.Id, val.Name, ip.String(), int(val.InterceptPort), id.CId.UnsafePointer())
