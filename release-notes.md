@@ -2,15 +2,15 @@
 
 ## What's New
 
-    * When/if the service stops - all identities are removed from view and returned after the UI reconnects to the service
+* When/if the service stops - all identities are removed from view and returned after the UI reconnects to the service
 
 ## Bug Fixes
 
-    * [#159](https://github.com/openziti/desktop-edge-win/issues/159) - Update UI if the detail page is open
+* [#159](https://github.com/openziti/desktop-edge-win/issues/159) - Update UI if the detail page is open
 
 ## Dependency Updates
 
-* none
+* update ziti-tunneler-sdk-c to 0.7.2
 
 # Release 1.3.7
 
