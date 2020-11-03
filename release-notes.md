@@ -10,7 +10,7 @@
 
 ## Dependency Updates
 
-* update ziti-tunneler-sdk-c to 0.7.2
+* update ziti-tunneler-sdk-c to 0.7.4
 
 # Release 1.3.7
 
