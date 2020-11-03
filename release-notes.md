@@ -2,7 +2,7 @@
 
 ## What's New
 
-    * nothing
+    * When/if the service stops - all identities are removed from view and returned after the UI reconnects to the service
 
 ## Bug Fixes
 
