@@ -276,6 +276,10 @@ namespace ZitiDesktopEdge {
 					found.Services.RemoveAll(s => s.Name == e.Service.Name);
 				}
 				LoadIdentities(false);
+				IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
+				if (deets.IsVisible) {
+					deets.UpdateView();
+				}
 			});
 		}
 
@@ -293,6 +297,11 @@ namespace ZitiDesktopEdge {
 				InitializeTimer((int)e.Status.Duration);
 				LoadStatusFromService(e.Status);
 				LoadIdentities(true);
+
+				IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
+				if (deets.IsVisible) {
+					deets.UpdateView();
+                }
 			});
 		}
 
