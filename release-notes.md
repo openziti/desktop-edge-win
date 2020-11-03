@@ -1,3 +1,67 @@
+# Release 1.3.8
+
+## What's New
+
+    * When/if the service stops - all identities are removed from view and returned after the UI reconnects to the service
+
+## Bug Fixes
+
+    * [#159](https://github.com/openziti/desktop-edge-win/issues/159) - Update UI if the detail page is open
+
+## Dependency Updates
+
+* none
+
+# Release 1.3.7
+
+# What's New
+
+* none
+
+# Bug Fixes
+
+* [#191](https://github.com/openziti/desktop-edge-win/issues/191) - Fix crash when controller is unavailable
+
+# Dependency Updates
+
+* none
+
+# Release 1.3.6
+
+# What's New
+
+(Note 1.3.5 was not released due to 1.3.6 coming so quickly on the heels of 1.3.5)
+
+* Automatic updates moved to 10 minutes by default (1.3.5)
+
+# Bug Fixes
+
+* Toggling an identity on/off would crash the service (1.3.5)
+* Toggling an identity on/off/on/off after fixing the issue above would intercept and point to the wrong ip
+
+# Dependency Updates
+
+* none
+
+# Release 1.3.5
+
+skipped - 1.3.6 superseded this release
+
+# Release 1.3.4
+
+# What's New
+
+* UI: When identity detail card is open you can now drag the window similar to the main window
+* `ziti-monitor` log level changed to info by default
+
+# Bug Fixes
+
+* A bug with DNS resolution is fixed (no issue filed)
+
+# Dependency Updates
+
+* none
+
 # Release 1.3.3
 
 ## What's New

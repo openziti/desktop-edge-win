@@ -197,6 +197,7 @@ namespace ZitiDesktopEdge {
 
 		private void ServiceClient_OnClientDisconnected(object sender, object e) {
 			this.Dispatcher.Invoke(() => {
+				IdList.Children.Clear();
 				SetCantDisplay();
 			});
 		}
@@ -275,6 +276,10 @@ namespace ZitiDesktopEdge {
 					found.Services.RemoveAll(s => s.Name == e.Service.Name);
 				}
 				LoadIdentities(false);
+				IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
+				if (deets.IsVisible) {
+					deets.UpdateView();
+				}
 			});
 		}
 
@@ -291,7 +296,12 @@ namespace ZitiDesktopEdge {
 				this.MainMenu.LogLevel = e.Status.LogLevel;
 				InitializeTimer((int)e.Status.Duration);
 				LoadStatusFromService(e.Status);
-				LoadIdentities(false);
+				LoadIdentities(true);
+
+				IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
+				if (deets.IsVisible) {
+					deets.UpdateView();
+                }
 			});
 		}
 
