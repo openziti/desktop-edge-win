@@ -1,33 +1,21 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.ServiceProcess;
-using System.Text;
-using System.Threading;
 using System.IO;
-using System.IO.Compression;
-using System.Net;
 using System.Timers;
-using System.Management.Automation;
-using System.Xml;
 using System.Configuration;
 using System.Threading.Tasks;
 
 using ZitiDesktopEdge.ServiceClient;
 using NLog;
-using Newtonsoft.Json.Linq;
 using System.Reflection;
-using NLog.Config;
 
 namespace ZitiUpdateService {
 	public partial class UpdateService : ServiceBase {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-		private string _version = "";
-		private bool _isNew = true;
-
-		private System.Timers.Timer _updateTimer = new System.Timers.Timer();
+		private Timer _updateTimer = new Timer();
 		private bool inUpdateCheck = false;
 		private string _rootDirectory = "";
 		private string _logDirectory = "";
@@ -52,7 +40,7 @@ namespace ZitiUpdateService {
 		}
 
 		protected override void OnStart(string[] args) {
-
+			Logger.Info("ziti-monitor service is starting");
 			try {
 				if (ConfigurationManager.AppSettings.Get("Version") != null) _versionType = ConfigurationManager.AppSettings.Get("Version");
 			} catch (Exception e) {
@@ -68,11 +56,11 @@ namespace ZitiUpdateService {
 					SetupServiceWatchers();
 				});
 			}
-			Logger.Info("initialized and running");
+			Logger.Info("ziti-monitor service is initialized and running");
 		}
 
 		protected override void OnStop() {
-			Logger.Info("stopping update service");
+			Logger.Info("ziti-monitor service is stopping");
 		}
 
 		private void SetupServiceWatchers() {
@@ -83,7 +71,7 @@ namespace ZitiUpdateService {
 				upInt = new TimeSpan(0, 1, 0);
 			}
 
-			_updateTimer = new System.Timers.Timer();
+			_updateTimer = new Timer();
 			_updateTimer.Elapsed += CheckUpdate;
 			_updateTimer.Interval = upInt.TotalMilliseconds;
 			_updateTimer.Enabled = true;
@@ -192,7 +180,6 @@ namespace ZitiUpdateService {
 		}
 
 		private static void Svc_OnClientDisconnected(object sender, object e) {
-
 			Client svc = (Client)sender;
 			if (svc.CleanShutdown) {
 				//then this is fine and expected - the service is shutting down
