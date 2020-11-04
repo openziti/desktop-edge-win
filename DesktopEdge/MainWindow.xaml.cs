@@ -297,12 +297,12 @@ namespace ZitiDesktopEdge {
 				this.MainMenu.LogLevel = e.Status.LogLevel;
 				InitializeTimer((int)e.Status.Duration);
 				LoadStatusFromService(e.Status);
-				LoadIdentities(false);
+				LoadIdentities(true);
 
                 IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
-                if (deets.IsVisible) {
-                    deets.UpdateView();
-                }
+				if (deets.IsVisible) {
+					deets.UpdateView();
+				}
 			});
 		}
 
