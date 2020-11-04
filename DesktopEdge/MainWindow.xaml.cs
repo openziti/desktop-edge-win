@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
 using System.IO;
+using ZitiDesktopEdge.Models;
+using ZitiDesktopEdge.ServiceClient;
 using System.ServiceProcess;
 using System.Linq;
 using System.Diagnostics;
 using System.Windows.Controls;
 using System.Drawing;
 
-using ZitiDesktopEdge.Models;
-using ZitiDesktopEdge.ServiceClient;
 
 namespace ZitiDesktopEdge {
 
@@ -28,6 +28,7 @@ namespace ZitiDesktopEdge {
 		private bool _isServiceInError = false;
 		private int _right = 75;
 		private int _left = 75;
+		private int _bottom = 0;
 		private int _top = 30;
 		private double _maxHeight = 800d;
 		private string[] suffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };
@@ -301,7 +302,7 @@ namespace ZitiDesktopEdge {
 				IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
 				if (deets.IsVisible) {
 					deets.UpdateView();
-                }
+				}
 			});
 		}
 
@@ -528,7 +529,7 @@ namespace ZitiDesktopEdge {
 						ShowError("Identity Error", "Identity Id was null, please try again");
 					}
 				} catch (ServiceException se) {
-					ShowError(se.AdditionalInfo, se.Message);
+					ShowError("Error Occurred", se.Message+" "+se.AdditionalInfo);
 				} catch (Exception ex) {
 					ShowError("Unexpected Error", "Code 2:" + ex.Message);
 				}
@@ -582,7 +583,7 @@ namespace ZitiDesktopEdge {
 					item.RefreshUI();
 				}
 			} catch (ServiceException se) {
-				ShowError(se.AdditionalInfo, se.Message);
+				ShowError("Error Occurred", se.Message+" "+se.AdditionalInfo);
 			} catch (Exception ex) {
 				ShowError("Unexpected Error", "Code 3:" + ex.Message);
 			}

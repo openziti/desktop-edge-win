@@ -229,8 +229,12 @@ func (dns *dnsImpl) ReturnToDns(hostname string) net.IP {
 	dnsEntry := dns.hostnameMap[normalizeDnsName(hostname)]
 	if dnsEntry != nil {
 		dnsEntry.dnsEnabled = true
+		return dnsEntry.ip
+	} else {
+		// probably is an ip - pasee as ip and try to return that
+		ip := net.ParseIP(hostname)
+		return ip
 	}
-	return dnsEntry.ip
 }
 
 func DnsInit(tun api.DesktopEdgeIface, ip string, maskBits int) {
