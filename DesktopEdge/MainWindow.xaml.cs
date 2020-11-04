@@ -28,7 +28,6 @@ namespace ZitiDesktopEdge {
 		private bool _isServiceInError = false;
 		private int _right = 75;
 		private int _left = 75;
-		private int _bottom = 0;
 		private int _top = 30;
 		private double _maxHeight = 800d;
 		private string[] suffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };

@@ -10,6 +10,8 @@ using Newtonsoft.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
+using NLog;
+
 /// <summary>
 /// The implementation will abstract away the setup of the communication to
 /// the service. This implementation will communicate to the service over a
@@ -32,8 +34,8 @@ namespace ZitiDesktopEdge.ServiceClient
         VERBOSE = 6,
     }
 
-    public class Client
-    {
+    public class Client {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         public const int EXPECTED_API_VERSION = 1;
 
@@ -48,6 +50,7 @@ namespace ZitiDesktopEdge.ServiceClient
         public bool CleanShutdown { get; set; }
 
         protected virtual void ShutdownEvent(StatusEvent e) {
+            Logger.Debug("Clean shutdown detected from ziti");
             CleanShutdown = true;
             OnShutdownEvent?.Invoke(this, e);
         }
@@ -76,7 +79,8 @@ namespace ZitiDesktopEdge.ServiceClient
         {
             Connected = true;
             Reconnecting = false;
-            CleanShutdown = true;
+            CleanShutdown = false;
+            Logger.Debug("CleanShutdown set to false");
             OnClientConnected?.Invoke(this, e);
         }
 
@@ -123,7 +127,7 @@ namespace ZitiDesktopEdge.ServiceClient
             }
             catch(Exception ex)
             {
-                Debug.WriteLine("EXCEPTION IN CLIENT CONNECT: " + ex.Message);
+                Logger.Debug("EXCEPTION IN CLIENT CONNECT: " + ex.Message);
                 //if this happens - enter retry mode...
                 Reconnect();
             }
@@ -148,7 +152,7 @@ namespace ZitiDesktopEdge.ServiceClient
         {
             if (Reconnecting)
             {
-                Debug.WriteLine("Already in reconnect mode.");
+                Logger.Debug("Already in reconnect mode.");
                 return;
             }
             else
@@ -156,34 +160,43 @@ namespace ZitiDesktopEdge.ServiceClient
                 Reconnecting = true;
             }
 
-            Task.Run(() =>
-            {
-                while (true)
-                {
-                    try
-                    {
-                        Thread.Sleep(2500); //wait 500ms and try to reconnect...
-                        Debug.WriteLine("Attempting to connect to service...");
+            Task.Run(() => {
+                Logger.Info("service is down. attempting to connect to service...");
+
+                DateTime reconnectStart = DateTime.Now;
+                DateTime logAgainAfter = reconnectStart + TimeSpan.FromSeconds(1);
+
+                while (true) {
+                    try {
+                        Thread.Sleep(2500);
                         pipeClient?.Close();
                         eventClient?.Close();
                         setupPipe();
 
-                        if (Connected)
-                        {
-                            Debug.WriteLine("Connected to the service - exiting reconect loop");
+                        if (Connected) {
+                            Logger.Debug("Connected to the service - exiting reconect loop");
                             Connected = true;
                             Reconnecting = false;
                             return;
-                        }
-                        else
-                        {
+                        } else {
                             //ClientDisconnected(null);
                         }
+                    } catch {
+                        var now = DateTime.Now;
+                        if (now > logAgainAfter) {
+                            Logger.Debug("Reconnect failed. Trying again...");
+                            var duration = now - reconnectStart;
+                            if (duration > TimeSpan.FromHours(1)) {
+                                Logger.Info("reconnect has not completed and has been running for {0} hours", duration.TotalHours);
+                                logAgainAfter += TimeSpan.FromHours(1);
+                            } else if (duration > TimeSpan.FromMinutes(1)) {
+                                Logger.Info("reconnect has not completed and has been running for {0} minutes", duration.TotalMinutes);
+                                logAgainAfter += TimeSpan.FromMinutes(1);
+                            } else {
+                                logAgainAfter += TimeSpan.FromSeconds(1);
+                            }
+                        }
                     }
-                    catch (Exception ex) {
-                        Debug.WriteLine("Service error: " + ex.Message);
-                    }
-                    Debug.WriteLine("Reconnect failed. Trying again...");
                 }
             });
         }
@@ -236,7 +249,7 @@ namespace ZitiDesktopEdge.ServiceClient
                     }
                     catch(Exception ex)
                     {
-                        Debug.WriteLine("unepxected error: " + ex.ToString());
+                        Logger.Debug("unepxected error: " + ex.ToString());
                     }
                     
                     // since this thread is always sitting waiting to read
@@ -286,7 +299,7 @@ namespace ZitiDesktopEdge.ServiceClient
                 send(AddIdentityFunction);
                 send(newId);
                 var resp = read<IdentityResponse>(ipcReader);
-                Debug.WriteLine(resp.ToString());
+                Logger.Debug(resp.ToString());
                 if(resp.Code != 0)
                 {
                     throw new ServiceException(resp.Message, resp.Code, resp.Error);
@@ -447,7 +460,7 @@ namespace ZitiDesktopEdge.ServiceClient
                     }
                     else
                     {
-                        Debug.WriteLine("NOT sending empty object??? " + objToSend?.ToString());
+                        Logger.Debug("NOT sending empty object??? " + objToSend?.ToString());
                     }
                     break;
                 }
@@ -526,12 +539,12 @@ namespace ZitiDesktopEdge.ServiceClient
 
                         break;
                     default:
-                        Debug.WriteLine("unexpected operation! " + evt.Op);
+                        Logger.Debug("unexpected operation! " + evt.Op);
                         break;
                 }
             } catch (Exception e)
             {
-                Debug.WriteLine(e.Message);
+                Logger.Debug(e.Message);
             }
         }
 
@@ -564,7 +577,7 @@ namespace ZitiDesktopEdge.ServiceClient
                     emptyCount++;
                     if (emptyCount > 5)
                     {
-                        Debug.WriteLine("are we there yet? " + reader.EndOfStream);
+                        Logger.Debug("are we there yet? " + reader.EndOfStream);
                         //that's just too many...
                         //setupPipe();
                         return null;
@@ -577,14 +590,14 @@ namespace ZitiDesktopEdge.ServiceClient
             catch (IOException ioe)
             {
                 //almost certainly a problem with the pipe
-                Debug.WriteLine("io error in read: " + ioe.Message);
+                Logger.Debug("io error in read: " + ioe.Message);
                 ClientDisconnected(null);
                 throw ioe;
             }
             catch (Exception ee)
             {
                 //almost certainly a problem with the pipe
-                Debug.WriteLine("unexpected error in read: " + ee.Message);
+                Logger.Debug("unexpected error in read: " + ee.Message);
                 ClientDisconnected(null);
                 throw ee;
             }
@@ -594,7 +607,7 @@ namespace ZitiDesktopEdge.ServiceClient
         {
             if (_extendedDebug)
             {
-                Debug.WriteLine(msg);
+                Logger.Debug(msg);
             }
         }
         public ZitiTunnelStatus debug()
