@@ -1,3 +1,33 @@
+# Release 1.3.10
+
+## What's New
+
+* Better logging in ziti-monitor. More logs at debug, a couple important ones at info
+* clean up a warning or two
+
+## Bug Fixes
+
+* none
+
+## Dependency Updates
+
+* none
+
+# Release 1.3.9
+
+## What's New
+
+* none
+
+## Bug Fixes
+
+* Disabling an identity with an IP intercept and re-enabling the identity would cause a crash
+* Adding an identity when the controller was offline resulted in a UI error preventing the app from closing/continuing
+
+## Dependency Updates
+
+* none
+
 # Release 1.3.8
 
 ## What's New
