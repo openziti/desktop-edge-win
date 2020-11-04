@@ -299,7 +299,7 @@ namespace ZitiDesktopEdge {
 				LoadStatusFromService(e.Status);
 				LoadIdentities(true);
 
-                IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
+				IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
 				if (deets.IsVisible) {
 					deets.UpdateView();
 				}
