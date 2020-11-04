@@ -31,7 +31,7 @@ namespace ZitiDesktopEdge {
 		private int _bottom = 0;
 		private int _top = 30;
 		private double _maxHeight = 800d;
-        private string[] suffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };
+		private string[] suffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };
 
 		private List<ZitiIdentity> identities {
 			get {
@@ -312,10 +312,10 @@ namespace ZitiDesktopEdge {
 			identities.Remove(idToRemove);
 			LoadIdentities(false);
 
-            IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
-            if (deets.IsVisible) {
-                deets.UpdateView();
-            }
+			IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
+			if (deets.IsVisible) {
+				deets.UpdateView();
+			}
 		}
 
 		private void AttachmentChanged(bool attached) {
