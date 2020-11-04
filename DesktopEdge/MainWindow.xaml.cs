@@ -519,7 +519,7 @@ namespace ZitiDesktopEdge {
 						ShowError("Identity Error", "Identity Id was null, please try again");
 					}
 				} catch (ServiceException se) {
-					ShowError(se.AdditionalInfo, se.Message);
+					ShowError("Error Occurred", se.Message+" "+se.AdditionalInfo);
 				} catch (Exception ex) {
 					ShowError("Unexpected Error", "Code 2:" + ex.Message);
 				}
@@ -573,7 +573,7 @@ namespace ZitiDesktopEdge {
 					item.RefreshUI();
 				}
 			} catch (ServiceException se) {
-				ShowError(se.AdditionalInfo, se.Message);
+				ShowError("Error Occurred", se.Message+" "+se.AdditionalInfo);
 			} catch (Exception ex) {
 				ShowError("Unexpected Error", "Code 3:" + ex.Message);
 			}
