@@ -31,7 +31,7 @@ namespace ZitiDesktopEdge {
 		private int _bottom = 0;
 		private int _top = 30;
 		private double _maxHeight = 800d;
-		private string[] suffixes = { "bps", "kbps", "mbps", "gbps", "tbps", "pbps" };
+        private string[] suffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };
 
 		private List<ZitiIdentity> identities {
 			get {
@@ -198,6 +198,7 @@ namespace ZitiDesktopEdge {
 
 		private void ServiceClient_OnClientDisconnected(object sender, object e) {
 			this.Dispatcher.Invoke(() => {
+				IdList.Children.Clear();
 				SetCantDisplay();
 			});
 		}
@@ -276,6 +277,10 @@ namespace ZitiDesktopEdge {
 					found.Services.RemoveAll(s => s.Name == e.Service.Name);
 				}
 				LoadIdentities(false);
+				IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
+				if (deets.IsVisible) {
+					deets.UpdateView();
+				}
 			});
 		}
 
@@ -306,6 +311,11 @@ namespace ZitiDesktopEdge {
 			}
 			identities.Remove(idToRemove);
 			LoadIdentities(false);
+
+            IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
+            if (deets.IsVisible) {
+                deets.UpdateView();
+            }
 		}
 
 		private void AttachmentChanged(bool attached) {
