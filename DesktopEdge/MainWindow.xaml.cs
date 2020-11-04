@@ -298,6 +298,11 @@ namespace ZitiDesktopEdge {
 				InitializeTimer((int)e.Status.Duration);
 				LoadStatusFromService(e.Status);
 				LoadIdentities(false);
+
+                IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
+                if (deets.IsVisible) {
+                    deets.UpdateView();
+                }
 			});
 		}
 
@@ -311,11 +316,6 @@ namespace ZitiDesktopEdge {
 			}
 			identities.Remove(idToRemove);
 			LoadIdentities(false);
-
-			IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
-			if (deets.IsVisible) {
-				deets.UpdateView();
-			}
 		}
 
 		private void AttachmentChanged(bool attached) {
