@@ -13,7 +13,7 @@ REM WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 REM See the License for the specific language governing permissions and
 REM limitations under the License.
 REM
-SET ZITI_TUNNEL_REPO_BRANCH=v0.7.4
+SET ZITI_TUNNEL_REPO_BRANCH=surface.connection.limit
 
 set CURDIR=%CD%
 set SVC_ROOT_DIR=%~dp0
