@@ -774,7 +774,6 @@ func connectIdentity(id *Id) {
 	} else {
 		if id.CId == nil || !id.CId.Loaded {
 			rts.LoadIdentity(id)
-			//activeIds[id.FingerPrint] = id
 		} else {
 			log.Debugf("%s[%s] is already loaded", id.Name, id.FingerPrint)
 		}
@@ -788,6 +787,7 @@ func connectIdentity(id *Id) {
 				return true
 			})
 		}
+
 		id.Active = true
 	}
 

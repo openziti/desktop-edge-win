@@ -237,7 +237,13 @@ func (t *tunnel) runWriteLoop() {
 
 func AddIntercept(svcId string, service string, host string, port int, ctx unsafe.Pointer) {
 	log.Debugf("about to add intercept for: %s[%s] at %s:%d", service, svcId, host, port)
-	_ = C.ziti_tunneler_intercept_v1(theTun.tunCtx, ctx, C.CString(svcId), C.CString(service), C.CString(host), C.int(port))
+	cSvcId := C.CString(svcId)
+	defer C.free(unsafe.Pointer(cSvcId))
+	cSvc := C.CString(service)
+	defer C.free(unsafe.Pointer(cSvc))
+	cHost := C.CString(host)
+	defer C.free(unsafe.Pointer(cHost))
+	_ = C.ziti_tunneler_intercept_v1(theTun.tunCtx, ctx, cSvcId, cSvc, cHost, C.int(port))
 }
 
 type RemoveWG struct {
@@ -255,7 +261,9 @@ func RemoveIntercept(rwg *RemoveWG) {
 //export remove_intercepts
 func remove_intercepts(async *C.uv_async_t) {
 	rwg := (*RemoveWG)(async.data)
-	C.ziti_tunneler_stop_intercepting(theTun.tunCtx, C.CString(rwg.SvcId))
+	cSvcId := C.CString(rwg.SvcId)
+	defer C.free(unsafe.Pointer(cSvcId))
+	C.ziti_tunneler_stop_intercepting(theTun.tunCtx, cSvcId)
 	C.uv_close((*C.uv_handle_t)(unsafe.Pointer(async)), C.uv_close_cb(C.free_async))
 	rwg.Wg.Done()
 }
