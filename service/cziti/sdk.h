@@ -45,3 +45,9 @@ void set_log_out(intptr_t h);
 void set_log_level(int level);
 
 extern const char** all_configs;
+
+//posture check functions
+extern void ziti_pq_domain_go(ziti_context ztx, char *id, ziti_pr_domain_cb response_cb);
+extern void ziti_pq_process_go(ziti_context ztx, char *id, char *path, ziti_pr_process_cb response_cb);
+extern void ziti_pq_os_go(ziti_context ztx, char *id, ziti_pr_os_cb response_cb);
+extern void ziti_pq_mac_go(ziti_context ztx, char *id, ziti_pr_mac_cb response_cb);
