@@ -23,10 +23,10 @@ package cziti
 #include <ziti/ziti.h>
 #include "ziti/ziti_tunnel.h"
 
-void rreturnDomain(ziti_context ztx, char* id, ziti_pr_domain_cb response_cb, char* domain);
-void rreturnMacs(ziti_context ztx, char* id, ziti_pr_mac_cb response_cb, char** mac_addresses, int num_mac);
-void rreturnOsInfo(ziti_context ztx, char* id, ziti_pr_os_cb response_cb, char* os_type, char* os_version, char* os_build);
-void rreturnProcInfo(ziti_context ztx, char* id, char* path, ziti_pr_process_cb response_cb, bool is_running, char* sha, char** signers, int num_signers);
+void return_domain_info_c(ziti_context ztx, char* id, ziti_pr_domain_cb response_cb, char* domain);
+void return_mac_info_c(ziti_context ztx, char* id, ziti_pr_mac_cb response_cb, char** mac_addresses, int num_mac);
+void return_os_info_c(ziti_context ztx, char* id, ziti_pr_os_cb response_cb, char* os_type, char* os_version, char* os_build);
+void return_proc_info_c(ziti_context ztx, char* id, char* path, ziti_pr_process_cb response_cb, bool is_running, char* sha, char** signers, int num_signers);
 char** makeCharArray(int size);
 void setArrayString(char **a, char *s, int n);
 void freeCharArray(char **a, int size);
@@ -43,7 +43,7 @@ func ziti_pq_domain_go(ctx C.ziti_context, id *C.char, response_cb C.ziti_pr_dom
 	defer C.free(unsafe.Pointer(domain))
 
 	log.Debugf("submitting domain posture check info. domain: %v", posture.Domain())
-	C.rreturnDomain(ctx, id, response_cb, domain)
+	C.return_domain_info_c(ctx, id, response_cb, domain)
 }
 
 //export ziti_pq_process_go
@@ -63,7 +63,7 @@ func ziti_pq_process_go(ztx C.ziti_context, id *C.char, path *C.char, response_c
 	}
 
 	log.Debugf("submitting proc posture check info for %s. running:%t, hash:%s, signers:%v", gopath, pi.IsRunning, pi.Hash, signers)
-	C.rreturnProcInfo(ztx, id, path, response_cb, C.bool(pi.IsRunning), sha, cargs, numSigners)
+	C.return_proc_info_c(ztx, id, path, response_cb, C.bool(pi.IsRunning), sha, cargs, numSigners)
 }
 //export ziti_pq_os_go
 func ziti_pq_os_go(ztx C.ziti_context, id *C.char, response_cb C.ziti_pr_os_cb) {
@@ -76,7 +76,7 @@ func ziti_pq_os_go(ztx C.ziti_context, id *C.char, response_cb C.ziti_pr_os_cb) 
 	defer C.free(unsafe.Pointer(osbuild))
 
 	log.Debugf("submitting os posture check info: ostype:%s, osvers:%s, osbuild%s", oi.Type, oi.Version, oi.Build)
-	C.rreturnOsInfo(ztx, id, response_cb, ostype, osvers, osbuild)
+	C.return_os_info_c(ztx, id, response_cb, ostype, osvers, osbuild)
 }
 //export ziti_pq_mac_go
 func ziti_pq_mac_go(ztx C.ziti_context, id *C.char, response_cb C.ziti_pr_mac_cb) {
@@ -87,5 +87,5 @@ func ziti_pq_mac_go(ztx C.ziti_context, id *C.char, response_cb C.ziti_pr_mac_cb
 	defer C.freeCharArray(cargs, nummacs)
 
 	log.Debugf("submitting mac posture check info. macs: %v", macs)
-	C.rreturnMacs(ztx, id, response_cb, cargs, nummacs)
+	C.return_mac_info_c(ztx, id, response_cb, cargs, nummacs)
 }
