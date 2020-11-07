@@ -75,7 +75,7 @@ func ziti_pq_os_go(ztx C.ziti_context, id *C.char, response_cb C.ziti_pr_os_cb) 
 	osbuild := C.CString(oi.Build)
 	defer C.free(unsafe.Pointer(osbuild))
 
-	log.Debugf("submitting os posture check info: ostype:%s, osvers:%s, osbuild%s", oi.Type, oi.Version, oi.Build)
+	log.Debugf("submitting os posture check info: ostype:%s, osvers:%s, osbuild:%s", oi.Type, oi.Version, oi.Build)
 	C.return_os_info_c(ztx, id, response_cb, ostype, osvers, osbuild)
 }
 //export ziti_pq_mac_go
