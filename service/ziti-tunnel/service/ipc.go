@@ -850,6 +850,8 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 	err = os.Remove(id.Path())
 	if err != nil {
 		log.Warnf("could not remove file: %s", id.Path())
+	} else {
+		log.Debugf("identity file removed: %s", id.Path())
 	}
 
 	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: nil}

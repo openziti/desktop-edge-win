@@ -28,6 +28,7 @@ import (
 	"golang.org/x/sys/windows/registry"
 	"golang.zx2c4.com/wireguard/tun"
 	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
+	"io"
 	"net"
 	"os"
 	"strings"
@@ -53,10 +54,19 @@ func (t *RuntimeState) SaveState() {
 	// overwrite file if it exists
 	_ = os.MkdirAll(config.Path(), 0644)
 
+	log.Debugf("copying original config onto config.json.backup")
+	backup,err := backupConfig()
+	if err != nil {
+		log.Warnf("could not backup config file! %v", err)
+	} else {
+		log.Debugf("config file backed up to: %s", backup)
+	}
+
 	cfg, err := os.OpenFile(config.File(), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "opening the config file", err)
 	}
+
 	w := bufio.NewWriter(bufio.NewWriter(cfg))
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
@@ -68,6 +78,26 @@ func (t *RuntimeState) SaveState() {
 		log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "closing the config file", err)
 	}
 	log.Debug("state saved")
+}
+
+func backupConfig() (string, error) {
+	original, err := os.Open(config.File())
+	if err != nil {
+		return "", err
+	}
+	defer original.Close()
+	backup := config.File() + ".backup"
+	new, err := os.Create(backup)
+	if err != nil {
+		return "", err
+	}
+	defer new.Close()
+
+	_, err = io.Copy(new, original)
+	if err != nil {
+		return "", err
+	}
+	return backup, err
 }
 
 func (t *RuntimeState) ToStatus() dto.TunnelStatus {
