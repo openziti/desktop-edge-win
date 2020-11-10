@@ -804,27 +804,28 @@ func disconnectIdentity(id *Id) error {
 		if id.CId == nil {
 			return fmt.Errorf("identity has not been initialized properly. please consult the logs for details")
 		} else if id.CId.Services == nil {
-			return fmt.Errorf("identity has no services yet. wait for services to be initialized properly")
+			return fmt.Errorf("identity has no services. nothing to deregister")
+		} else {
+			log.Debugf("ranging over services all services to remove intercept and deregister the service")
+
+			id.CId.Services.Range(func(key interface{}, value interface{}) bool {
+				val := value.(cziti.ZService)
+				var wg sync.WaitGroup
+				wg.Add(1)
+				rwg := &cziti.RemoveWG{
+					SvcId: val.Id,
+					Wg:    &wg,
+				}
+				cziti.RemoveIntercept(rwg)
+				wg.Wait()
+				cziti.DNSMgr.UnregisterService(val.InterceptHost, val.InterceptPort)
+				return true
+			})
 		}
-
-		log.Debugf("ranging over services all services to remove intercept and deregister the service")
-
-		id.CId.Services.Range(func(key interface{}, value interface{}) bool {
-			val := value.(cziti.ZService)
-			var wg sync.WaitGroup
-			wg.Add(1)
-			rwg := &cziti.RemoveWG{
-				SvcId: val.Id,
-				Wg:    &wg,
-			}
-			cziti.RemoveIntercept(rwg)
-			wg.Wait()
-			cziti.DNSMgr.UnregisterService(val.InterceptHost, val.InterceptPort)
-			return true
-		})
 	} else {
 		log.Debugf("id: %s is already disconnected - not attempting to disconnected again fingerprint:%s", id.Name, id.FingerPrint)
 	}
+
 	id.Active = false
 	return nil
 }
@@ -837,10 +838,10 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 		return
 	}
 
+	anyErrs := ""
 	err := disconnectIdentity(id)
 	if err != nil {
-		respondWithError(out, "Error when disconnecting identity", ERROR_DISCONNECTING_ID, err)
-		return
+		anyErrs = err.Error()
 	}
 
 	rts.RemoveByFingerprint(fingerprint)
@@ -850,9 +851,11 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 	err = os.Remove(id.Path())
 	if err != nil {
 		log.Warnf("could not remove file: %s", id.Path())
+	} else {
+		log.Debugf("identity file removed: %s", id.Path())
 	}
 
-	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: nil}
+	resp := dto.Response{Message: "success", Code: SUCCESS, Error: anyErrs, Payload: nil}
 	respond(out, resp)
 	log.Infof("request to remove identity by fingerprint: %s responded to", fingerprint)
 }

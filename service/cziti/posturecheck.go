@@ -39,18 +39,23 @@ import (
 
 //export ziti_pq_domain_go
 func ziti_pq_domain_go(ctx C.ziti_context, id *C.char, response_cb C.ziti_pr_domain_cb ) {
+	svcId := C.GoString(id)
+	log.Debugf("domain posture check request [%s]", svcId)
+
 	domain := C.CString(posture.Domain())
 	defer C.free(unsafe.Pointer(domain))
 
-	log.Debugf("submitting domain posture check info. domain: %v", posture.Domain())
+	log.Debugf("domain posture check response [%s]. domain: %v", svcId, posture.Domain())
 	C.return_domain_info_c(ctx, id, response_cb, domain)
 }
 
 //export ziti_pq_process_go
 func ziti_pq_process_go(ztx C.ziti_context, id *C.char, path *C.char, response_cb C.ziti_pr_process_cb) {
+	svcId := C.GoString(id)
 	gopath := C.GoString(path)
-	pi := posture.Process(gopath)
+	log.Debugf("proc posture check request [%s, %s]", svcId, gopath)
 
+	pi := posture.Process(gopath)
 	sha := C.CString(pi.Hash)
 	defer C.free(unsafe.Pointer(sha))
 
@@ -62,11 +67,14 @@ func ziti_pq_process_go(ztx C.ziti_context, id *C.char, path *C.char, response_c
 		C.setArrayString(cargs, C.CString(s), C.int(i))
 	}
 
-	log.Debugf("submitting proc posture check info for %s. running:%t, hash:%s, signers:%v", gopath, pi.IsRunning, pi.Hash, signers)
+	log.Debugf("proc posture check response [%s, %s]. running:%t, hash:%s, signers:%v", svcId, gopath, pi.IsRunning, pi.Hash, signers)
 	C.return_proc_info_c(ztx, id, path, response_cb, C.bool(pi.IsRunning), sha, cargs, numSigners)
 }
 //export ziti_pq_os_go
 func ziti_pq_os_go(ztx C.ziti_context, id *C.char, response_cb C.ziti_pr_os_cb) {
+	svcId := C.GoString(id)
+	log.Debugf("os posture check request [%s]", svcId)
+
 	oi := posture.Os()
 	ostype := C.CString(oi.Type)
 	defer C.free(unsafe.Pointer(ostype))
@@ -75,17 +83,20 @@ func ziti_pq_os_go(ztx C.ziti_context, id *C.char, response_cb C.ziti_pr_os_cb) 
 	osbuild := C.CString(oi.Build)
 	defer C.free(unsafe.Pointer(osbuild))
 
-	log.Debugf("submitting os posture check info: ostype:%s, osvers:%s, osbuild%s", oi.Type, oi.Version, oi.Build)
+	log.Debugf("os posture check response [%s]. ostype:%s, osvers:%s, osbuild:%s", svcId, oi.Type, oi.Version, oi.Build)
 	C.return_os_info_c(ztx, id, response_cb, ostype, osvers, osbuild)
 }
 //export ziti_pq_mac_go
 func ziti_pq_mac_go(ztx C.ziti_context, id *C.char, response_cb C.ziti_pr_mac_cb) {
+	svcId := C.GoString(id)
+	log.Debugf("mac posture check request [%s]", svcId)
+
 	macs := posture.MacAddresses()
 	nummacs := C.int(len(macs))
 
 	cargs := C.makeCharArray(C.int(nummacs))
 	defer C.freeCharArray(cargs, nummacs)
 
-	log.Debugf("submitting mac posture check info. macs: %v", macs)
+	log.Debugf("mac posture check response [%s]. macs: %v", svcId, macs)
 	C.return_mac_info_c(ztx, id, response_cb, cargs, nummacs)
 }
