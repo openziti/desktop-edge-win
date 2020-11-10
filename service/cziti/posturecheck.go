@@ -61,14 +61,14 @@ func ziti_pq_process_go(ztx C.ziti_context, id *C.char, path *C.char, response_c
 
 	signers := pi.SignerFingerprints
 	numSigners := C.int(len(signers))
-	cargs := C.makeCharArray(numSigners)
-	defer C.freeCharArray(cargs, numSigners)
+	csigners := C.makeCharArray(numSigners)
+	defer C.freeCharArray(csigners, numSigners)
 	for i, s := range signers {
-		C.setArrayString(cargs, C.CString(s), C.int(i))
+		C.setArrayString(csigners, C.CString(s), C.int(i))
 	}
 
 	log.Debugf("proc posture check response [%s, %s]. running:%t, hash:%s, signers:%v", svcId, gopath, pi.IsRunning, pi.Hash, signers)
-	C.return_proc_info_c(ztx, id, path, response_cb, C.bool(pi.IsRunning), sha, cargs, numSigners)
+	C.return_proc_info_c(ztx, id, path, response_cb, C.bool(pi.IsRunning), sha, csigners, numSigners)
 }
 //export ziti_pq_os_go
 func ziti_pq_os_go(ztx C.ziti_context, id *C.char, response_cb C.ziti_pr_os_cb) {
@@ -94,9 +94,12 @@ func ziti_pq_mac_go(ztx C.ziti_context, id *C.char, response_cb C.ziti_pr_mac_cb
 	macs := posture.MacAddresses()
 	nummacs := C.int(len(macs))
 
-	cargs := C.makeCharArray(C.int(nummacs))
-	defer C.freeCharArray(cargs, nummacs)
+	cmacs := C.makeCharArray(C.int(nummacs))
+	defer C.freeCharArray(cmacs, nummacs)
+	for i, s := range macs {
+		C.setArrayString(cmacs, C.CString(s), C.int(i))
+	}
 
 	log.Debugf("mac posture check response [%s]. macs: %v", svcId, macs)
-	C.return_mac_info_c(ztx, id, response_cb, cargs, nummacs)
+	C.return_mac_info_c(ztx, id, response_cb, cmacs, nummacs)
 }
