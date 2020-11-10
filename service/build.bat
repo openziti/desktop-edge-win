@@ -13,22 +13,50 @@ REM WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 REM See the License for the specific language governing permissions and
 REM limitations under the License.
 REM
-SET ZITI_TUNNEL_REPO_BRANCH=v0.7.4
+SET REPO_URL=https://github.com/openziti/ziti-tunnel-sdk-c.git
+SET ZITI_TUNNEL_REPO_BRANCH=v0.7.8
+REM override the c sdk used in the build - leave blank for the same as specified in the tunneler sdk
+SET ZITI_SDK_C_BRANCH=
+REM the number of TCP connections the tunneler sdk can have at any one time
+SET TCP_MAX_CONNECTIONS=256
 
-set CURDIR=%CD%
 set SVC_ROOT_DIR=%~dp0
-set ZITI_TUNNEL_WIN_ROOT=%SVC_ROOT_DIR%..\
-set /p BUILD_VERSION=<%ZITI_TUNNEL_WIN_ROOT%version
-set GO111MODULE=on
+set CURDIR=%CD%
+
+call %SVC_ROOT_DIR%\set-env.bat
+
 cd /d %ZITI_TUNNEL_WIN_ROOT%
 
-IF "%BUILD_VERSION%"=="" GOTO BUILD_VERSION_ERROR
-IF "%1"=="clean" GOTO CLEAN
+IF "%1"=="" (
+    GOTO NO_ACTION_SUPPLIED
+)
+
+IF "%BUILD_VERSION%"=="" (
+    GOTO BUILD_VERSION_ERROR
+) else (
+    echo Version file found. detected version: %BUILD_VERSION%
+)
+
+IF "%1"=="clean" (
+    echo doing 'clean' build
+    GOTO CLEAN
+)
 IF "%1"=="quick" (
     echo doing 'quick' build - no tunneler sdk/c sdk build
     GOTO QUICK
 )
+IF "%1"=="CI" (
+    echo doing 'CI' build
+    GOTO CI
+)
 
+GOTO UNKNOWN_OPTION
+
+echo You should not be here. This is a bug. Please report
+cd /d %CURDIR%
+exit /b 1
+
+:CI
 echo fetching ziti-ci 2>&1
 call %SVC_ROOT_DIR%/../get-ziti-ci.bat 2>&1
 echo ziti-ci has been retrieved. running: ziti-ci version 2>&1
@@ -53,11 +81,6 @@ del /q %SVC_ROOT_DIR%ziti.dll
 echo changing to service folder: %SVC_ROOT_DIR%
 cd %SVC_ROOT_DIR%
 
-SET REPO_URL=https://github.com/openziti/ziti-tunneler-sdk-c.git
-SET TUNNELER_SDK_DIR=%SVC_ROOT_DIR%deps\ziti-tunneler-sdk-c\
-SET CGO_CFLAGS=-DNOGDI -I %TUNNELER_SDK_DIR%install\include
-SET CGO_LDFLAGS=-L %TUNNELER_SDK_DIR%install\lib
-
 if exist %SVC_ROOT_DIR%ziti.dll (
     echo ------------------------------------------------------------------------------
     echo SKIPPED BUILDING ziti.dll because ziti.dll was found at %SVC_ROOT_DIR%ziti.dll
@@ -68,8 +91,6 @@ if exist %SVC_ROOT_DIR%ziti.dll (
 echo ------------------------------------------------------------------------------
 echo BUILDING ziti.dll begins
 echo ------------------------------------------------------------------------------
-
-set BEFORE_GIT=%cd%
 
 if exist %TUNNELER_SDK_DIR% (
     echo %TUNNELER_SDK_DIR% exists
@@ -107,9 +128,7 @@ IF %ACTUAL_ERR% NEQ 0 (
     goto FAIL
 )
 
-echo checking out branch: %ZITI_TUNNEL_REPO_BRANCH%
-
-echo in %cd% - checking out branch: %ZITI_TUNNEL_REPO_BRANCH%
+echo in %cd% - checking out %ZITI_TUNNEL_REPO_BRANCH% branch: %ZITI_TUNNEL_REPO_BRANCH%
 git checkout %ZITI_TUNNEL_REPO_BRANCH%
 IF %ERRORLEVEL% NEQ 0 (
     SET ACTUAL_ERR=%ERRORLEVEL%
@@ -119,20 +138,20 @@ IF %ERRORLEVEL% NEQ 0 (
     goto FAIL
 )
 
-echo "clone or checkout complete."
+echo clone or checkout complete.
 
-echo ------------------------------------------------------------------------------
-type %TUNNELER_SDK_DIR%.gitmodules
-echo.
-echo updating any ssh submodules to https using:
-echo     powershell "(get-content -path %TUNNELER_SDK_DIR%.gitmodules) -replace 'git@(.*)\:(.*)\.git', 'https://$1/$2.git' | Set-Content -Path %TUNNELER_SDK_DIR%.gitmodules"
-echo.
-powershell "(get-content -path %TUNNELER_SDK_DIR%.gitmodules) -replace 'git@(.*)\:(.*)\.git', 'https://$1/$2.git' | Set-Content -Path %TUNNELER_SDK_DIR%.gitmodules"
-type %TUNNELER_SDK_DIR%.gitmodules
-echo ------------------------------------------------------------------------------
+REM echo ------------------------------------------------------------------------------
+REM type %TUNNELER_SDK_DIR%.gitmodules
+REM echo.
+REM echo updating any ssh submodules to https using:
+REM echo     powershell "(get-content -path %TUNNELER_SDK_DIR%.gitmodules) -replace 'git@(.*)\:(.*)\.git', 'https://$1/$2.git' | Set-Content -Path %TUNNELER_SDK_DIR%.gitmodules"
+REM echo.
+REM powershell "(get-content -path %TUNNELER_SDK_DIR%.gitmodules) -replace 'git@(.*)\:(.*)\.git', 'https://$1/$2.git' | Set-Content -Path %TUNNELER_SDK_DIR%.gitmodules"
+REM type %TUNNELER_SDK_DIR%.gitmodules
+REM echo ------------------------------------------------------------------------------
 
-echo Updating submodules...
-git config --get remote.origin.url
+echo Updating submodules... if needed...
+REM git config --get remote.origin.url
 git submodule update --init --recursive
 IF %ERRORLEVEL% NEQ 0 (
     SET ACTUAL_ERR=%ERRORLEVEL%
@@ -145,8 +164,18 @@ IF %ERRORLEVEL% NEQ 0 (
 if not exist %TUNNELER_SDK_DIR%build mkdir %TUNNELER_SDK_DIR%build
 if not exist %TUNNELER_SDK_DIR%install mkdir %TUNNELER_SDK_DIR%install
 
-cmake -G Ninja -S %TUNNELER_SDK_DIR% -B %TUNNELER_SDK_DIR%build -DCMAKE_INSTALL_PREFIX=%TUNNELER_SDK_DIR%install
+echo Generating project files for tunneler sdk
+if "%ZITI_SDK_C_BRANCH%"=="" (
+    echo ZITI_SDK_C_BRANCH is not set - ZITI_SDK_C_BRANCH_CMD will be empty
+    SET ZITI_SDK_C_BRANCH_CMD=
+) else (
+    echo SETTING ZITI_SDK_C_BRANCH_CMD to: -DZITI_SDK_C_BRANCH^=%ZITI_SDK_C_BRANCH%
+    SET ZITI_SDK_C_BRANCH_CMD=-DZITI_SDK_C_BRANCH=%ZITI_SDK_C_BRANCH%
+)
+
+cmake -G Ninja -S %TUNNELER_SDK_DIR% -B %TUNNELER_SDK_DIR%build -DCMAKE_INSTALL_PREFIX=%TUNNELER_SDK_DIR%install %ZITI_SDK_C_BRANCH_CMD% -DTCP_MAX_CONNECTIONS=%TCP_MAX_CONNECTIONS%
 cmake --build %TUNNELER_SDK_DIR%build --target install
+
 SET ACTUAL_ERR=%ERRORLEVEL%
 if %ACTUAL_ERR% NEQ 0 (
     echo.
@@ -157,6 +186,15 @@ if %ACTUAL_ERR% NEQ 0 (
     echo.
     echo result of ninja build: %ACTUAL_ERR%
 )
+
+echo checking the CSDK
+pushd %TUNNELER_SDK_DIR%\build\_deps\ziti-sdk-c-src
+git rev-parse --short HEAD > hash.txt
+git rev-parse --abbrev-ref HEAD > branch.txt
+set /p CSDK_BRANCH=<branch.txt
+set /p CSDK_HASH=<hash.txt
+del /q branch.txt
+del /q hash.txt
 
 copy /y %TUNNELER_SDK_DIR%install\lib\ziti.dll %SVC_ROOT_DIR%
 copy /y %TUNNELER_SDK_DIR%install\lib\libuv.dll %SVC_ROOT_DIR%
@@ -182,7 +220,6 @@ IF "%1"=="quick" GOTO END
 echo creating the distribution zip file
 zip ziti-tunnel-win.zip *.dll ziti*exe
 
-dir
 GOTO END
 
 :BUILD_VERSION_ERROR
@@ -190,11 +227,31 @@ echo The build version environment variable was not set - cannot proceed
 cd %CURDIR%
 exit /b 1
 
+:UNKNOWN_OPTION
+echo.
+echo ERROR: The action supplied is not known: %1
+
+:NO_ACTION_SUPPLIED
+echo.
+echo        Supply a build action: CI^|clean^|quick
+echo.
+cd /d %CURDIR%
+exit /b 1
+
 :FAIL
 echo.
 echo ACTUAL_ERR: %ACTUAL_ERR%
-cd %CURDIR%
+cd /d %CURDIR%
 EXIT /B %ACTUAL_ERR%
 
 :END
 cd /d %CURDIR%
+echo.
+echo.
+echo =====================================================
+echo -- BUILD COMPLETE                                  --
+echo --     tunneler sdk: %ZITI_TUNNEL_REPO_BRANCH%
+echo --     c sdk       : %CSDK_BRANCH%
+echo --                 : %ZITI_SDK_C_BRANCH%
+echo --                 : %ZITI_SDK_C_BRANCH_CMD%
+echo =====================================================

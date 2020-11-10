@@ -22,10 +22,10 @@
     <ROW Property="CTRLS" Value="2"/>
     <ROW Property="Manufacturer" Value="NetFoundry, Inc."/>
     <ROW Property="MsiLogging" MultiBuildValue="AnyCPU_Release:vp"/>
-    <ROW Property="ProductCode" Value="1033:{13FC493E-F0BA-4AAD-A104-EB099A959A0E} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{FCAA9942-4379-480E-B6C6-88139C59AE5B} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="Ziti Desktop Edge"/>
-    <ROW Property="ProductVersion" Value="1.3.10" Type="32"/>
+    <ROW Property="ProductVersion" Value="1.3.11" Type="32"/>
     <ROW Property="REBOOT" MultiBuildValue="AnyCPU_Release:Suppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{CB7E173A-663D-4A23-BB22-D1E8D885C2F3}"/>

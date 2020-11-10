@@ -36,7 +36,7 @@ git checkout %GIT_BRANCH% 2>&1
 CALL :FAIL %ERRORLEVEL% "checkout failed"
 echo git checkout %GIT_BRANCH% complete: %ERRORLEVEL%
 
-call %SVC_ROOT_DIR%\build.bat
+call %SVC_ROOT_DIR%\build.bat CI
 SET ACTUAL_ERR=%ERRORLEVEL%
 if %ACTUAL_ERR% NEQ 0 (
     @echo.
@@ -88,13 +88,6 @@ ziti-ci configure-git 2>&1
 echo issuing status
 echo ========================================================
 git status 2>&1
-
-REM git add service/ziti-tunnel/version.go DesktopEdge/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip 2>&1
-REM CALL :FAIL %ERRORLEVEL% "git add failed"
-REM echo git add service/ziti-tunnel/version.go DesktopEdge/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip complete: %ERRORLEVEL%
-
-REM echo issuing commit
-REM git commit -m "[ci skip] committing updated version information" 2>&1
 
 CALL :FAIL %ERRORLEVEL% "git commit failed"
 REM echo git commit -m "[ci skip] committing updated version information" complete: %ERRORLEVEL%

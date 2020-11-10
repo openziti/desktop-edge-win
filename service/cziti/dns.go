@@ -23,10 +23,13 @@ import (
 	"fmt"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/api"
 	"net"
+	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
 )
+
+var dnsip net.IP
 
 type DnsManager interface {
 	Resolve(dnsName string) net.IP
@@ -58,8 +61,11 @@ func (i intercept) String() string {
 		//an ip does not need the host normalized
 		return fmt.Sprintf("%s:%d", i.host, i.port)
 	} else {
-		return fmt.Sprintf("%s:%d", normalizeDnsName(i.host), i.port)
+		return i.AsKey()
 	}
+}
+func (i intercept) AsKey() string {
+	return fmt.Sprintf("%s:%d", normalizeDnsName(i.host), i.port)
 }
 
 type ctxIp struct {
@@ -99,14 +105,14 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 		icept.host = ip.String()
 		icept.isIp = true
 	}
-	key := icept.String()
-	log.Infof("adding DNS for %s. service name %s@%s. is ip: %t", dnsNameToReg, svcName, key, icept.isIp)
+	log.Infof("adding DNS for %s. service name %s@%s. is ip: %t", dnsNameToReg, svcName, icept.String(), icept.isIp)
 
 	currentNetwork := "<unknown-network>"
 	if ctx != nil {
 		currentNetwork = ctx.Controller()
 	}
 
+	key := icept.AsKey()
 	// check to see if the hostname is mapped...
 	if foundIp, found := dns.hostnameMap[icept.host]; found {
 		foundIp.dnsEnabled = true
@@ -133,10 +139,14 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 		if icept.isIp {
 			err := dns.tun.AddRoute(
 				net.IPNet{IP: ip, Mask: net.IPMask{255, 255, 255, 255}},
-				net.IP{0,0,0,0},
+				dnsip,
 				1)
 			if err != nil {
-				log.Errorf("Unexpected error adding a route to %s: %v", icept.host, err)
+				if err == os.ErrExist {
+					log.Debugf("route to %s already exists.", icept.host)
+				} else {
+					log.Errorf("Unexpected error adding a route to %s: %v", icept.host, err)
+				}
 			} else {
 				log.Infof("adding route for ip:%s", icept.host)
 			}
@@ -188,17 +198,18 @@ func (dns *dnsImpl) UnregisterService(host string, port uint16) {
 			icept := sc.icept
 			log.Infof("removing service named %s from DNS mapping known as %s", host, icept)
 			if icept.isIp {
-				err := dns.tun.RemoveRoute(net.IPNet{IP: net.ParseIP(icept.host)}, net.IP{0, 0, 0, 0})
+				err := dns.tun.RemoveRoute(net.IPNet{IP: net.ParseIP(icept.host)}, dnsip)
 				if err != nil {
-					log.Warnf("Unexpected error removing route for %s", icept.host)
+					log.Warnf("Unexpected error removing route for %s. %v", icept.host, err)
 				}
 			} else {
 				found := dns.hostnameMap[normalizeDnsName(icept.host)]
 				if found != nil {
 					found.dnsEnabled = false
+				} else {
+					log.Warnf("could not disable hostname %s as it was not in the map", icept.host)
 				}
 			}
-			delete(dns.serviceMap, key)
 		} else {
 			// another service is using the mapping - can't remove it yet so decrement
 			log.Debugf("cannot remove dns mapping for %s yet - %d other services still use this hostname", host, sc.count)
@@ -210,19 +221,6 @@ func (dns *dnsImpl) UnregisterService(host string, port uint16) {
 
 func (dns *dnsImpl) GetService(ip net.IP, port uint16) (*ZIdentity, string, error) {
 	return nil, "", nil //not used yet
-	/*ipv4 := binary.BigEndian.Uint32(ip)
-	dns, found := this.ipMap[ipv4]
-	if !found {
-		return nil, "", errors.New("service not available")
-	}
-
-	key := fmt.Sprint(dns, ':', port)
-	sc, found := this.serviceMap[key]
-	if !found {
-		return nil, "", errors.New("service not available")
-	}
-	return sc.ctx, sc.name, nil
-	*/
 }
 
 func (dns *dnsImpl) ReturnToDns(hostname string) net.IP {
@@ -242,9 +240,9 @@ func DnsInit(tun api.DesktopEdgeIface, ip string, maskBits int) {
 		dnsi.serviceMap = make(map[string]ctxService)
 		//DNS.ipMap = make(map[uint32]string)
 		dnsi.hostnameMap = make(map[string]*ctxIp)
-		i := net.ParseIP(ip).To4()
+		dnsip = net.ParseIP(ip).To4()
 		mask := net.CIDRMask(maskBits, 32)
-		dnsi.cidr = binary.BigEndian.Uint32(i) & binary.BigEndian.Uint32(mask)
+		dnsi.cidr = binary.BigEndian.Uint32(dnsip) & binary.BigEndian.Uint32(mask)
 		dnsi.ipCount = 2
 		dnsi.tun = tun
 	})

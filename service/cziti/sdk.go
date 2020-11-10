@@ -31,6 +31,7 @@ extern void shutdown_callback(uv_async_t *handle);
 extern void free_async(uv_handle_t* timer);
 
 extern void c_mapiter(model_map *map);
+
 */
 import "C"
 import (
@@ -200,7 +201,8 @@ func (c *ZIdentity) Controller() string {
 	return C.GoString(c.Options.controller)
 }
 
-var tunCfgName = C.CString("ziti-tunneler-client.v1")
+var cTunClientCfgName = C.CString("ziti-tunneler-client.v1")
+var cTunServerCfgName = C.CString("ziti-tunneler-server.v1")
 
 //export serviceCB
 func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx unsafe.Pointer) {
@@ -232,8 +234,8 @@ func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx
 
 		if C.ZITI_CAN_BIND == ( service.perm_flags & C.ZITI_CAN_BIND ) {
 			var v1Config C.ziti_server_cfg_v1
-			r := C.ziti_service_get_config(service, C.CString("ziti-tunneler-server.v1"), unsafe.Pointer(&v1Config), (*[0]byte)(C.parse_ziti_server_cfg_v1))
-			if (r == 0) {
+			r := C.ziti_service_get_config(service, cTunServerCfgName, unsafe.Pointer(&v1Config), (*[0]byte)(C.parse_ziti_server_cfg_v1))
+			if r == 0 {
 				C.ziti_tunneler_host_v1(C.tunneler_context(theTun.tunCtx), unsafe.Pointer(zid.zctx), service.name, v1Config.protocol, v1Config.hostname, v1Config.port)
 				C.free_ziti_server_cfg_v1(&v1Config)
 			} else {
@@ -241,7 +243,7 @@ func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx
 			}
 		}
 
-		cfg := C.ziti_service_get_raw_config(service, tunCfgName)
+		cfg := C.ziti_service_get_raw_config(service, cTunClientCfgName)
 
 		host := ""
 		port := -1
@@ -340,6 +342,11 @@ func LoadZiti(cfg string) *ZIdentity {
 	ctx.Options.refresh_interval = C.long(15)
 	ctx.Options.metrics_type = C.INSTANT
 	ctx.Options.config_types = C.all_configs
+
+	ctx.Options.pq_domain_cb = C.ziti_pq_domain_cb(C.ziti_pq_domain_go)
+	ctx.Options.pq_mac_cb = C.ziti_pq_mac_cb(C.ziti_pq_mac_go)
+	ctx.Options.pq_os_cb = C.ziti_pq_os_cb(C.ziti_pq_os_go)
+	ctx.Options.pq_process_cb = C.ziti_pq_process_cb(C.ziti_pq_process_go)
 
 	ch := make(chan *ZIdentity)
 	initMap[cfg] = ch
