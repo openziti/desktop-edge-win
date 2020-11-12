@@ -10,8 +10,8 @@ require (
 	github.com/lestrrat-go/strftime v1.0.1 // indirect
 	github.com/michaelquigley/pfxlog v0.0.0-20190813191113-2be43bd0dccc
 	github.com/miekg/dns v1.1.29
-	github.com/openziti/foundation v0.14.15
-	github.com/openziti/sdk-golang v0.14.5
+	github.com/openziti/foundation v0.14.16
+	github.com/openziti/sdk-golang v0.14.9
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sirupsen/logrus v1.7.0
 	github.com/tebeka/strftime v0.1.4 // indirect
