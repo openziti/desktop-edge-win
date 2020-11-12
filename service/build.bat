@@ -26,7 +26,8 @@ set CURDIR=%CD%
 call %SVC_ROOT_DIR%\set-env.bat
 
 IF "%ZITI_DEBUG%"=="" (
-    REM nothing needed
+    REM clear out if debug was run in the past
+    SET ZITI_DEBUG_CMAKE=
 ) else (
     SET ZITI_DEBUG_CMAKE=-DCMAKE_BUILD_TYPE=Debug
     echo ZITI_DEBUG detected. will run cmake with: %ZITI_DEBUG_CMAKE%
