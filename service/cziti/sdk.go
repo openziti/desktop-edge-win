@@ -280,7 +280,7 @@ func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx
 				ZitiContext: zid,
 			}
 		} else {
-			log.Debugf("service named %s is not enabled for 'tunneling'", name)
+			log.Debugf("service named %s is not enabled for 'tunneling'. host:%s port:%d", name, host, port)
 		}
 	}
 }

@@ -14,7 +14,7 @@ REM See the License for the specific language governing permissions and
 REM limitations under the License.
 REM
 SET REPO_URL=https://github.com/openziti/ziti-tunnel-sdk-c.git
-SET ZITI_TUNNEL_REPO_BRANCH=v0.7.8
+SET ZITI_TUNNEL_REPO_BRANCH=v0.7.10
 REM override the c sdk used in the build - leave blank for the same as specified in the tunneler sdk
 SET ZITI_SDK_C_BRANCH=
 REM the number of TCP connections the tunneler sdk can have at any one time
@@ -24,6 +24,15 @@ set SVC_ROOT_DIR=%~dp0
 set CURDIR=%CD%
 
 call %SVC_ROOT_DIR%\set-env.bat
+
+IF "%ZITI_DEBUG%"=="" (
+    REM clear out if debug was run in the past
+    SET ZITI_DEBUG_CMAKE=
+) else (
+    SET ZITI_DEBUG_CMAKE=-DCMAKE_BUILD_TYPE=Debug
+    echo ZITI_DEBUG detected. will run cmake with: %ZITI_DEBUG_CMAKE%
+    echo     copy /y %TUNNELER_SDK_DIR%install\lib\Debug\libuv.dll %TUNNELER_SDK_DIR%install\lib\libuv.dll
+)
 
 cd /d %ZITI_TUNNEL_WIN_ROOT%
 
@@ -173,7 +182,7 @@ if "%ZITI_SDK_C_BRANCH%"=="" (
     SET ZITI_SDK_C_BRANCH_CMD=-DZITI_SDK_C_BRANCH=%ZITI_SDK_C_BRANCH%
 )
 
-cmake -G Ninja -S %TUNNELER_SDK_DIR% -B %TUNNELER_SDK_DIR%build -DCMAKE_INSTALL_PREFIX=%TUNNELER_SDK_DIR%install %ZITI_SDK_C_BRANCH_CMD% -DTCP_MAX_CONNECTIONS=%TCP_MAX_CONNECTIONS%
+cmake -G Ninja -S %TUNNELER_SDK_DIR% -B %TUNNELER_SDK_DIR%build -DCMAKE_INSTALL_PREFIX=%TUNNELER_SDK_DIR%install %ZITI_SDK_C_BRANCH_CMD% -DTCP_MAX_CONNECTIONS=%TCP_MAX_CONNECTIONS% %ZITI_DEBUG_CMAKE%
 cmake --build %TUNNELER_SDK_DIR%build --target install
 
 SET ACTUAL_ERR=%ERRORLEVEL%
@@ -203,6 +212,14 @@ echo COPIED dlls to %SVC_ROOT_DIR%
 cd %SVC_ROOT_DIR%
 
 :GOBUILD
+IF "%ZITI_DEBUG%"=="" (
+    REM no action needed
+) else (
+    echo ZITI_DEBUG detected. Copying debug lib into install...
+    echo     copy /y %TUNNELER_SDK_DIR%install/lib/Debug/libuv.dll %TUNNELER_SDK_DIR%install/lib/libuv.dll
+    copy /y %TUNNELER_SDK_DIR%install/lib/Debug/libuv.dll %TUNNELER_SDK_DIR%install/lib/libuv.dll
+)
+
 echo building the go program
 go build -a ./ziti-tunnel
 SET ACTUAL_ERR=%ERRORLEVEL%
