@@ -1,3 +1,48 @@
+# Release 1.4.1
+
+## What's New
+
+* nothing
+
+## Bug Fixes
+
+* fixes a crash when services became unavailable
+
+## Dependency Updates
+
+* update ziti-tunneler-sdk-c to 0.7.10
+
+# Release 1.4.0
+
+## What's New
+
+* Version bump to 1.4.0 to signify the inclusion of policy checks
+
+## Bug Fixes
+
+* none
+
+## Dependency Updates
+
+* update ziti-tunneler-sdk-c to 0.7.8
+
+# Release 1.3.12
+
+## What's New
+
+(1.3.11 was released only as a dev/test release)
+
+* Posture checks have been added
+* config file is now backed before each save
+
+## Bug Fixes
+
+* cgo string leaks patched
+
+## Dependency Updates
+
+* Tunneler SDK updated to v0.7.8
+
 # Release 1.3.10
 
 ## What's New
