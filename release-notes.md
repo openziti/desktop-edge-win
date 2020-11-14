@@ -1,3 +1,17 @@
+# Release 1.4.2
+
+## What's New
+
+* Changed the default mask to /16 from /24 to allow 65k services by default
+
+## Bug Fixes
+
+* Windows server reporting the wrong version for posture checks
+
+## Dependency Updates
+
+* update to github.com/openziti/sdk-golang v0.14.12
+
 # Release 1.4.1
 
 ## What's New
