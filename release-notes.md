@@ -1,3 +1,17 @@
+# Release 1.4.3
+
+## What's New
+
+* none
+
+## Bug Fixes
+
+* Crash related to [ziti-sdk-c #171](https://github.com/openziti/ziti-sdk-c/issues/171)
+
+## Dependency Updates
+
+* update to ziti-tunnel-sdk-c v0.7.12
+
 # Release 1.4.2
 
 ## What's New
