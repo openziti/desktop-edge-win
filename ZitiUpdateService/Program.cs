@@ -8,6 +8,8 @@ using NLog.Targets;
 
 namespace ZitiUpdateService {
 	static class Program {
+		private static string PipeName = @"OpenZiti\tunneler\ipc";
+
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		/// <summary>
@@ -42,19 +44,22 @@ namespace ZitiUpdateService {
 				LogManager.Configuration = config;
 			}
 			Logger.Info("service started - logger initialized");
-			UpdateService updateSvc = new UpdateService();
-#if DEBUG
 
+			IPC.IPCServer svr = new IPC.IPCServer(PipeName);
+			svr.acceptAsync().Wait();
+
+			UpdateService updateSvc = new UpdateService();
+			updateSvc.AutoLog = true;
+#if DEBUG
 			updateSvc.Debug();
 			System.Threading.Thread.Sleep(System.Threading.Timeout.Infinite);
 #else
-			ServiceBase[] ServicesToRun;
-			ServicesToRun = new ServiceBase[]
+			ServiceBase[] ServicesToRun = new ServiceBase[]
 			{
 				updateSvc
 			};
 			ServiceBase.Run(ServicesToRun);
 #endif
 		}
-    }
+	}
 }
