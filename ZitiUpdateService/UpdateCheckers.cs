@@ -1,9 +1,9 @@
 ﻿using System;
 using System.IO;
 using System.Net;
+using System.Text.Json;
 
 using NLog;
-using Newtonsoft.Json.Linq;
 
 namespace ZitiUpdateService {
 	internal class GithubCheck : IUpdateCheck {
@@ -40,8 +40,8 @@ namespace ZitiUpdateService {
 			HttpWebResponse httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
 			StreamReader streamReader = new StreamReader(httpResponse.GetResponseStream());
 			string result = streamReader.ReadToEnd();
-			JObject json = JObject.Parse(result);
-			string serverVersion = json.Property("tag_name").Value.ToString() + ".0";
+			JsonDocument json = JsonDocument.Parse(result);
+			string serverVersion = json.RootElement.GetProperty("tag_name").GetString() + ".0";
 
 			Version published = new Version(serverVersion);
 			int compare = current.CompareTo(published);
@@ -54,10 +54,12 @@ namespace ZitiUpdateService {
 				Logger.Debug("current version {0} is the same as the latest release {0}", current, published);
 				return false;
 			}
-			JArray assets = JArray.Parse(json.Property("assets").Value.ToString());
-			foreach (JObject asset in assets.Children<JObject>()) {
-				downloadUrl = asset.Property("browser_download_url").Value.ToString();
-				break;
+			
+			foreach (JsonElement asset in json.RootElement.GetProperty("assets").EnumerateArray()) {
+				downloadUrl = asset.GetProperty("browser_download_url").GetString();
+				if (downloadUrl != null) {
+					break;
+				}
 			}
 
 			if (downloadUrl == null) {

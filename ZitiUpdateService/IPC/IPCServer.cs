@@ -2,10 +2,13 @@
 using System.Threading.Tasks;
 using System.IO;
 using System.IO.Pipes;
-using Newtonsoft.Json;
+using NLog;
+using System.Text.Json;
 
 namespace ZitiUpdateService.IPC {
     public class IPCServer {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         /*
             InteractivelyLoggedInUser = "(A;;GRGW;;;IU)" //generic read/write. We will want to tune this to a specific group but that is not working with Windows 10 home at the moment
             System                    = "(A;;FA;;;SY)"
@@ -32,34 +35,35 @@ namespace ZitiUpdateService.IPC {
 
         async public Task handleClientAsync(NamedPipeServerStream ss, int clientIndex) {
             using (ss) {
-                try { 
-                    var streamReader = new StreamReader(ss);
-                    var line = await streamReader.ReadLineAsync();
+                try {
+                    //var streamReader = new StreamReader(ss);
+                    //var line = await streamReader.ReadLineAsync();
 
+                    /*
                     var writer = new StreamWriter(ss);
                     for (int i = 0; i < 10; i++) {
                         writer.Write($"Hello from c# : {clientIndex}:{i} - Thread:{System.Threading.Thread.CurrentThread.ManagedThreadId}" );
                         writer.Write("\n");
                         writer.Flush();
                     }
+                    */
+                    JsonDocument d;
+                    while((d = await DeserializeFromStream(ss)) != null) {
+                        Logger.Info("json object received: " + d.ToString());
+                    }
+
                     ss.WaitForPipeDrain();
 
-                    Console.WriteLine($"read from pipe client: {streamReader.ReadLine()}");
-                    ss.Dispose();
+                    //Logger.Debug($"read from pipe client: {streamReader.ReadLine()}");
                 } catch(Exception e) {
-                    Console.WriteLine("meh - error: " + e.Message);
+                    Logger.Error(e, "Unexpected erorr when reading from or writing to a client pipe.");
                 }
             }
         }
 
-        public static object DeserializeFromStream(Stream stream) {
-            var serializer = new JsonSerializer();
-
-            using (var sr = new StreamReader(stream))
-            using (var jsonTextReader = new JsonTextReader(sr)) {
-                
-                return serializer.Deserialize(jsonTextReader);
-            }
+        public async static Task<JsonDocument> DeserializeFromStream(Stream stream) {
+            JsonDocument jd = await JsonSerializer.DeserializeAsync<JsonDocument>(stream);
+            return jd;
         }
     }
 }
