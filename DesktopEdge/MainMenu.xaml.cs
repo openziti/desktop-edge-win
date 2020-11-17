@@ -4,7 +4,6 @@ using System.Windows.Input;
 using System.Diagnostics;
 using System;
 using System.Threading;
-using System.Management.Automation;
 using ZitiDesktopEdge.Models;
 using System.Reflection;
 using System.Web;
