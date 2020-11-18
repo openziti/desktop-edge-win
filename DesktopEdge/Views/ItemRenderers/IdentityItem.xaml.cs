@@ -13,6 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using ZitiDesktopEdge.Models;
+using ZitiDesktopEdge.ServiceClient;
 
 namespace ZitiDesktopEdge {
 	/// <summary>
@@ -56,15 +57,15 @@ namespace ZitiDesktopEdge {
 				if (OnStatusChanged != null) {
 					OnStatusChanged(on);
 				}
-				ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
-				ServiceClient.Identity id = client.IdentityOnOff(_identity.Fingerprint, on);
+				DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+				DataStructures.Identity id = client.IdentityOnOff(_identity.Fingerprint, on);
 				this.Identity.IsEnabled = on;
 				if (on) {
 					ToggleStatus.Content = "ENABLED";
 				} else {
 					ToggleStatus.Content = "DISABLED";
 				}
-			} catch (ServiceClient.ServiceException se) {
+			} catch (DataStructures.ServiceException se) {
 				MessageBox.Show(se.AdditionalInfo, se.Message);
 			} catch (Exception ex) {
 				MessageBox.Show("Error", ex.Message);

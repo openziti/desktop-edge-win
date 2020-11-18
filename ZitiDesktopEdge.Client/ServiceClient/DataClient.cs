@@ -1,16 +1,16 @@
 using System;
-using System.Diagnostics;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipes;
 using System.Security.Principal;
 using System.Security.AccessControl;
-
-using Newtonsoft.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Newtonsoft.Json;
 using NLog;
+
+using ZitiDesktopEdge.DataStructures;
 
 /// <summary>
 /// The implementation will abstract away the setup of the communication to
@@ -23,18 +23,7 @@ using NLog;
 /// </summary>
 namespace ZitiDesktopEdge.ServiceClient
 {
-    public enum LogLevelEnum
-    {
-        FATAL = 0,
-        ERROR = 1,
-        WARN = 2,
-        INFO = 3,
-        DEBUG = 4,
-        TRACE = 5,
-        VERBOSE = 6,
-    }
-
-    public class Client {
+    public class DataClient {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         public const int EXPECTED_API_VERSION = 1;
@@ -46,6 +35,8 @@ namespace ZitiDesktopEdge.ServiceClient
         public event EventHandler<object> OnClientConnected;
         public event EventHandler<object> OnClientDisconnected;
         public event EventHandler<StatusEvent> OnShutdownEvent;
+
+        private JsonSerializer serializer = new JsonSerializer() { Formatting=Formatting.None};
 
         public bool CleanShutdown { get; set; }
 
@@ -91,12 +82,10 @@ namespace ZitiDesktopEdge.ServiceClient
             OnClientDisconnected?.Invoke(this, e);
         }
 
-        JsonSerializer serializer = new JsonSerializer();
-
         private object namedPipeSyncLock = new object();
-        const string ipcPipe = @"NetFoundry\tunneler\ipc";
-        const string logPipe = @"NetFoundry\tunneler\logs";
-        const string eventPipe = @"NetFoundry\tunneler\events";
+        const string ipcPipe = @"OpenZiti\ziti\ipc";
+        const string logPipe = @"OpenZiti\ziti\logs";
+        const string eventPipe = @"OpenZiti\ziti\events";
         const string localPipeServer = ".";
         const PipeDirection inOut = PipeDirection.InOut;
         const int ServiceConnectTimeout = 500;
@@ -112,7 +101,7 @@ namespace ZitiDesktopEdge.ServiceClient
         bool _extendedDebug = false;
 #endif
 
-        public Client()
+        public DataClient()
         {
             try
             {
@@ -490,6 +479,7 @@ namespace ZitiDesktopEdge.ServiceClient
         private T read<T>(StreamReader reader) where T : SvcResponse
         {
             string respAsString = readMessage(reader);
+//            T resp = JsonSerializer.Deserialize<T>(new JsonStr(respAsString));
             T resp = (T)serializer.Deserialize(new StringReader(respAsString), typeof(T));
             return resp;
         }
@@ -499,12 +489,13 @@ namespace ZitiDesktopEdge.ServiceClient
             try
             {
                 string respAsString = readMessage(reader);
-                StatusEvent evt = (StatusEvent)serializer.Deserialize(new StringReader(respAsString), typeof(StatusEvent));
+                var jsonReader = new JsonTextReader(new StringReader(respAsString)); 
+                StatusEvent evt = serializer.Deserialize<StatusEvent>(jsonReader);
 
                 switch (evt.Op)
                 {
                     case "metrics":
-                        MetricsEvent m = (MetricsEvent)serializer.Deserialize(new StringReader(respAsString), typeof(MetricsEvent));
+                        MetricsEvent m = serializer.Deserialize<MetricsEvent>(jsonReader);
 
                         if (m != null)
                         {
@@ -512,7 +503,7 @@ namespace ZitiDesktopEdge.ServiceClient
                         }
                         break;
                     case "status":
-                        TunnelStatusEvent se = (TunnelStatusEvent)serializer.Deserialize(new StringReader(respAsString), typeof(TunnelStatusEvent));
+                        TunnelStatusEvent se = serializer.Deserialize<TunnelStatusEvent>(jsonReader);
 
                         if (se != null)
                         {
@@ -520,7 +511,7 @@ namespace ZitiDesktopEdge.ServiceClient
                         }
                         break;
                     case "identity":
-                        IdentityEvent id = (IdentityEvent)serializer.Deserialize(new StringReader(respAsString), typeof(IdentityEvent));
+                        IdentityEvent id = serializer.Deserialize<IdentityEvent>(jsonReader);
 
                         if (id != null)
                         {
@@ -528,7 +519,7 @@ namespace ZitiDesktopEdge.ServiceClient
                         }
                         break;
                     case "service":
-                        ServiceEvent svc = (ServiceEvent)serializer.Deserialize(new StringReader(respAsString), typeof(ServiceEvent));
+                        ServiceEvent svc = serializer.Deserialize<ServiceEvent>(jsonReader);
 
                         if (svc != null)
                         {

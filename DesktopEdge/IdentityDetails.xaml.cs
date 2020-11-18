@@ -14,6 +14,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using ZitiDesktopEdge.Models;
+using ZitiDesktopEdge.ServiceClient;
 
 namespace ZitiDesktopEdge {
 	/// <summary>
@@ -110,7 +111,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void IdToggle(bool on) {
-			ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
+			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
 			client.IdentityOnOff(_identity.Fingerprint, on);
 			SelectedIdentity.ToggleSwitch.Enabled = on;
 			_identity.IsEnabled = on;
@@ -140,7 +141,7 @@ namespace ZitiDesktopEdge {
 
 		private void ConfirmButton_Click(object sender, RoutedEventArgs e) {
 			this.Visibility = Visibility.Collapsed;
-			ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
+			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
 			try {
 				client.RemoveIdentity(_identity.Fingerprint);
 
@@ -156,7 +157,7 @@ namespace ZitiDesktopEdge {
 				if (OnForgot != null) {
 					OnForgot(forgotten);
 				}
-			} catch (ServiceClient.ServiceException se) {
+			} catch (DataStructures.ServiceException se) {
 				OnError(se.Message);
 			} catch (Exception ex) {
 				OnError(ex.Message);

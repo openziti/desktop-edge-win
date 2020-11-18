@@ -42,7 +42,7 @@ namespace ZitiDesktopEdge.Models {
 		public ZitiService() {
 		}
 
-		public ZitiService(ZitiDesktopEdge.ServiceClient.Service svc)
+		public ZitiService(ZitiDesktopEdge.DataStructures.Service svc)
 		{
 			this.Name = svc.Name;
 			this.AssignedIP = svc.AssignedIP;

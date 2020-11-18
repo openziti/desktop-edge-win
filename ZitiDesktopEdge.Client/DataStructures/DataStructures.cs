@@ -5,8 +5,17 @@ using System.Collections.Generic;
 /// These classes represent the data structures that are passed back and forth
 /// between the service and the client.
 /// </summary>
-namespace ZitiDesktopEdge.ServiceClient
-{
+namespace ZitiDesktopEdge.DataStructures {
+    public enum LogLevelEnum {
+        FATAL = 0,
+        ERROR = 1,
+        WARN = 2,
+        INFO = 3,
+        DEBUG = 4,
+        TRACE = 5,
+        VERBOSE = 6,
+    }
+
     public class SvcResponse
     {
         public int Code { get; set; }

@@ -4,13 +4,13 @@ using System.Windows;
 using System.Windows.Input;
 using System.IO;
 using ZitiDesktopEdge.Models;
-using ZitiDesktopEdge.ServiceClient;
+using ZitiDesktopEdge.DataStructures;
 using System.ServiceProcess;
 using System.Linq;
 using System.Diagnostics;
 using System.Windows.Controls;
 using System.Drawing;
-
+using ZitiDesktopEdge.ServiceClient;
 
 namespace ZitiDesktopEdge {
 
@@ -23,7 +23,7 @@ namespace ZitiDesktopEdge {
 		public string Position = "Bottom";
 		private DateTime _startDate;
 		private System.Windows.Forms.Timer _timer;
-		private Client serviceClient = null;
+		private DataClient serviceClient = null;
 		private bool _isAttached = true;
 		private bool _isServiceInError = false;
 		private int _right = 75;
@@ -150,7 +150,7 @@ namespace ZitiDesktopEdge {
 
 		private void MainWindow_Loaded(object sender, RoutedEventArgs e) {
 			// add a new service client
-			serviceClient = new Client();
+			serviceClient = new DataClient();
 			serviceClient.OnClientConnected += ServiceClient_OnClientConnected;
 			serviceClient.OnClientDisconnected += ServiceClient_OnClientDisconnected;
 			serviceClient.OnIdentityEvent += ServiceClient_OnIdentityEvent;
@@ -289,7 +289,7 @@ namespace ZitiDesktopEdge {
 			Application.Current.Properties.Add("CurrentTunnelStatus", e.Status);
 			e.Status.Dump(Console.Out);
 			this.Dispatcher.Invoke(() => {
-				if(e.ApiVersion != Client.EXPECTED_API_VERSION) {
+				if(e.ApiVersion != DataClient.EXPECTED_API_VERSION) {
 					SetCantDisplay("Version mismatch!", "The version of the Service is not compatible");
 					return;
                 }
@@ -518,7 +518,7 @@ namespace ZitiDesktopEdge {
 				
 				try {
 					Identity createdId = serviceClient.AddIdentity(System.IO.Path.GetFileName(jwtDialog.FileName), false, fileContent);
-					ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
+					DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
 
 					client.IdentityOnOff(createdId.FingerPrint, true);
 					if (createdId != null) {

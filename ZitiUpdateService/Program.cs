@@ -1,14 +1,16 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
+using System.Linq;
 using System.Reflection;
-using System.ServiceProcess;
+using System.Security.Cryptography.X509Certificates;
+
 using NLog;
 using NLog.Config;
 using NLog.Targets;
 
+using ZitiDesktopEdge.Server;
+
 namespace ZitiUpdateService {
 	static class Program {
-		private static string PipeName = @"OpenZiti\tunneler\ipc";
 
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -45,7 +47,7 @@ namespace ZitiUpdateService {
 			}
 			Logger.Info("service started - logger initialized");
 
-			IPC.IPCServer svr = new IPC.IPCServer(PipeName);
+			IPCServer svr = new IPCServer();
 			svr.acceptAsync().Wait();
 
 			UpdateService updateSvc = new UpdateService();

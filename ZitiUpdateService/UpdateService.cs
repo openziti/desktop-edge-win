@@ -7,12 +7,17 @@ using System.Timers;
 using System.Configuration;
 using System.Threading.Tasks;
 
-using ZitiDesktopEdge.ServiceClient;
+using ZitiDesktopEdge.DataStructures;
 using NLog;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
+using ZitiDesktopEdge.ServiceClient;
 
 namespace ZitiUpdateService {
 	public partial class UpdateService : ServiceBase {
+		private static string[] expected_hashes = new string[] { "39636E9F5E80308DE370C914CE8112876ECF4E0C" };
+		private static string[] expected_subject = new string[] { @"CN=""NetFoundry, Inc."", O=""NetFoundry, Inc."", L=Herndon, S=Virginia, C=US" };
+
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		private Timer _updateTimer = new Timer();
@@ -21,7 +26,7 @@ namespace ZitiUpdateService {
 		private string _logDirectory = "";
 		private string _versionType = "latest";
 
-		private Client svc = new Client();
+		private DataClient svc = new DataClient();
 		private bool running = false;
 
 		ServiceController controller;
@@ -93,10 +98,7 @@ namespace ZitiUpdateService {
 			inUpdateCheck = true; //simple semaphone
 			try {
 				Logger.Debug("checking for update");
-				var updateUrl = ConfigurationManager.AppSettings.Get("UpdateUrl");
-				if (string.IsNullOrEmpty(updateUrl)) {
-					updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win/releases/latest";
-				}
+				string updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win/releases/latest"; //hardcoded on purpose
 				IUpdateCheck check = new GithubCheck(updateUrl);
 				//IUpdateCheck check = new FilesystemCheck();
 
@@ -126,10 +128,36 @@ namespace ZitiUpdateService {
 					Logger.Info("copying update package complete");
 				}
 
+				string fileDestination = Path.Combine(updateFolder, filename);
+
+				// check digital signature
+				var signer = X509Certificate.CreateFromSignedFile(fileDestination);
+				/* keep these commented out lines - just in case we need all the certs from the file use this
+				var coll = new X509Certificate2Collection();
+				coll.Import(filePath);
+				*/
+
+				var subject = signer.Subject;
+				if (!expected_subject.Contains(subject)) {
+					Logger.Error("the file downloaded uses a subject that is unknown! the installation will not proceed. [subject:{0}]", subject);
+					return;
+
+				} else {
+					Logger.Info("the file downloaded uses a known subject. installation and can proceed. [subject:{0}]", subject);
+				}
+
+				var hash = signer.GetCertHashString();
+				if (!expected_hashes.Contains(hash)) {
+					Logger.Error("the file downloaded is signed by an unknown certificate! the installation will not proceed. [hash:{0}]", hash);
+					return;
+
+				} else {
+					Logger.Info("the file downloaded is signed by a known certificate. installation and can proceed. [subject:{0}]", subject);
+				}
+
 				StopZiti();
 
 				// shell out to a new process and run the uninstall, reinstall steps which SHOULD stop this current process as well
-				string fileDestination = Path.Combine(updateFolder, filename);
 				Process.Start(fileDestination, "/passive");
 			} catch (Exception ex) {
 				Logger.Error(ex, "Unexpected error has occurred");
@@ -180,7 +208,7 @@ namespace ZitiUpdateService {
 		}
 
 		private static void Svc_OnClientDisconnected(object sender, object e) {
-			Client svc = (Client)sender;
+			DataClient svc = (DataClient)sender;
 			if (svc.CleanShutdown) {
 				//then this is fine and expected - the service is shutting down
 				Logger.Info("client disconnected due to clean service shutdown");

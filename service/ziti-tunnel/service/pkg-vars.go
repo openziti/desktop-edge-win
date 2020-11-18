@@ -25,7 +25,7 @@ import (
 	"time"
 )
 var Version dto.ServiceVersion
-var pipeBase = `\\.\pipe\NetFoundry\tunneler\`
+var pipeBase = `\\.\pipe\OpenZiti\ziti\`
 
 var rts = RuntimeState{
 	ids: make(map[string]*Id),

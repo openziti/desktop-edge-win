@@ -30,7 +30,7 @@ namespace ZitiDesktopEdge.Models {
 
 		public string Fingerprint { get; set; }
 
-		public static ZitiIdentity FromClient(ServiceClient.Identity id)
+		public static ZitiIdentity FromClient(DataStructures.Identity id)
 		{
 			ZitiIdentity zid = new ZitiIdentity()
 			{
