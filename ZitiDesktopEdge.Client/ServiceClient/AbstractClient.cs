@@ -15,7 +15,6 @@ using ZitiDesktopEdge.DataStructures;
 
 namespace ZitiDesktopEdge.ServiceClient {
     public abstract class AbstractClient {
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private bool _extendedDebug = false; //set ZITI_EXTENDED_DEBUG env var to true if you want to diagnose issues with the service comms
 
@@ -23,13 +22,15 @@ namespace ZitiDesktopEdge.ServiceClient {
         protected NamedPipeClientStream eventClient = null;
         protected StreamWriter ipcWriter = null;
         protected StreamReader ipcReader = null;
-        protected abstract void ConnectPipes();
+        protected abstract Task ConnectPipesAsync();
         protected abstract void ProcessLine(string line);
+        protected abstract Logger Logger { get; }
 
         protected const string localPipeServer = ".";
         protected const int ServiceConnectTimeout = 500;
 
-        protected object namedPipeSyncLock = new object();
+        //protected object namedPipeSyncLock = new object();
+        protected static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
         protected JsonSerializer serializer = new JsonSerializer() { Formatting = Formatting.None };
 
@@ -143,9 +144,9 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
         }
 
-        public void Connect() {
+        async public Task ConnectAsync() {
             //establish the named pipe to the service
-            ConnectPipes();
+            await ConnectPipesAsync();
         }
 
         public void Reconnect() {
@@ -156,7 +157,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 Reconnecting = true;
             }
 
-            Task.Run(() => {
+            Task.Run(async () => {
                 Logger.Info("service is down. attempting to connect to service...");
 
                 DateTime reconnectStart = DateTime.Now;
@@ -164,8 +165,8 @@ namespace ZitiDesktopEdge.ServiceClient {
 
                 while (true) {
                     try {
-                        Thread.Sleep(2500);
-                        ConnectPipes();
+                        await Task.Delay(2500);
+                        await ConnectPipesAsync();
 
                         if (Connected) {
                             Logger.Debug("Connected to the service - exiting reconect loop");
@@ -198,16 +199,15 @@ namespace ZitiDesktopEdge.ServiceClient {
         private void debugServiceCommunication(string msg) {
             if (_extendedDebug) {
                 Logger.Debug(msg);
-                System.Diagnostics.Debug.WriteLine(msg);
             }
         }
 
 
         async public Task<string> readMessageAsync(StreamReader reader) {
-            try {
+            try {/*
                 if (reader.EndOfStream) {
                     throw new ServiceException("the pipe has closed", 0, "end of stream reached");
-                }
+                }*/
                 int emptyCount = 1; //just a stop gap in case something crazy happens in the communication
 
                 debugServiceCommunication("===============  reading message =============== " + emptyCount);
@@ -215,9 +215,9 @@ namespace ZitiDesktopEdge.ServiceClient {
                 debugServiceCommunication(respAsString);
                 debugServiceCommunication("===============     read message =============== " + emptyCount);
                 while (string.IsNullOrEmpty(respAsString?.Trim())) {
-                    if (reader.EndOfStream) {
+                    /*if (reader.EndOfStream) {
                         throw new Exception("the pipe has closed");
-                    }
+                    }*/
                     debugServiceCommunication("Received empty payload - continuing to read until a payload is received");
                     //now how'd that happen...
                     debugServiceCommunication("===============  reading message =============== " + emptyCount);

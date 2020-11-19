@@ -24,7 +24,8 @@ using ZitiDesktopEdge.Server;
 /// </summary>
 namespace ZitiDesktopEdge.ServiceClient {
     public class MonitorClient : AbstractClient {
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
+        protected override Logger Logger { get { return _logger; } }
 
         public const int EXPECTED_API_VERSION = 1;
 
@@ -39,19 +40,19 @@ namespace ZitiDesktopEdge.ServiceClient {
         public MonitorClient() {
         }
 
-        protected override void ConnectPipes() {
-            lock (namedPipeSyncLock) {
+        async protected override Task ConnectPipesAsync() {
+            await semaphoreSlim.WaitAsync();
+            try {
                 pipeClient = new NamedPipeClientStream(localPipeServer, IPCServer.PipeName, inOut);
                 eventClient = new NamedPipeClientStream(localPipeServer, IPCServer.EventPipeName, PipeDirection.In);
-
-                try {
-                    eventClient.Connect(ServiceConnectTimeout);
-                    pipeClient.Connect(ServiceConnectTimeout);
-                    ClientConnected(null);
-                } catch (Exception ex) {
-                    throw new ServiceException("Could not connect to the service.", 1, ex.Message);
-                }
+                await eventClient.ConnectAsync(ServiceConnectTimeout);
+                await pipeClient.ConnectAsync(ServiceConnectTimeout);
+                ClientConnected(null);
+            } catch (Exception ex) {
+                semaphoreSlim.Release();
+                throw new ServiceException("Could not connect to the service.", 1, ex.Message);
             }
+            semaphoreSlim.Release();
         }
 
         protected override void ProcessLine(string line) {

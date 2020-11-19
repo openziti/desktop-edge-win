@@ -110,9 +110,9 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-		private void IdToggle(bool on) {
+		async private void IdToggle(bool on) {
 			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-			client.IdentityOnOff(_identity.Fingerprint, on);
+			await client.IdentityOnOffAsync(_identity.Fingerprint, on);
 			SelectedIdentity.ToggleSwitch.Enabled = on;
 			_identity.IsEnabled = on;
 			IdentityStatus.Value = _identity.IsEnabled ? "active" : "disabled";
@@ -139,11 +139,11 @@ namespace ZitiDesktopEdge {
 			ConfirmView.Visibility = Visibility.Collapsed;
 		}
 
-		private void ConfirmButton_Click(object sender, RoutedEventArgs e) {
+		async private void ConfirmButton_Click(object sender, RoutedEventArgs e) {
 			this.Visibility = Visibility.Collapsed;
 			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
 			try {
-				client.RemoveIdentity(_identity.Fingerprint);
+				await client.RemoveIdentityAsync(_identity.Fingerprint);
 
 				ZitiIdentity forgotten = new ZitiIdentity();
 				foreach (var id in identities) {

@@ -13,6 +13,12 @@ using System.Net;
 using Newtonsoft.Json.Linq;
 using ZitiDesktopEdge.ServiceClient;
 
+using NLog;
+using NLog.Config;
+using NLog.Targets;
+
+using ZitiDesktopEdge.Server;
+
 namespace ZitiDesktopEdge
 {	
     /// <summary>

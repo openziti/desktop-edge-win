@@ -85,7 +85,7 @@ namespace ZitiUpdateService {
 			CheckUpdate(null, null); //check immediately
 
 			try {
-				svc.Connect();
+				svc.ConnectAsync().Wait();
 			} catch {
 				svc.Reconnect();
 			}

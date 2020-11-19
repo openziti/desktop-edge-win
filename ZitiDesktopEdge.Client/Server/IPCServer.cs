@@ -21,6 +21,7 @@ namespace ZitiDesktopEdge.Server {
         private JsonSerializer serializer = new JsonSerializer() { Formatting = Formatting.None };
         private string ipcPipeName;
         private string eventPipeName;
+
         public IPCServer() {
             this.ipcPipeName = IPCServer.PipeName;
             this.eventPipeName = IPCServer.EventPipeName;

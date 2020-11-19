@@ -14,12 +14,17 @@ using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.ServiceClient;
 
+using NLog;
+using NLog.Config;
+using NLog.Targets;
+
 namespace ZitiDesktopEdge {
 
 	/// <summary>
 	/// Interaction logic for MainWindow.xaml
 	/// </summary>
 	public partial class MainWindow : Window {
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		public System.Windows.Forms.NotifyIcon notifyIcon;
 		public string Position = "Bottom";
@@ -41,15 +46,42 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-		private List<ZitiService> services = new List<ZitiService>();
 		public MainWindow() {
 			InitializeComponent();
 
 			#if DEBUG
 			System.Environment.SetEnvironmentVariable("ZITI_EXTENDED_DEBUG", "true");
-			#endif
+#endif
+			var asm = System.Reflection.Assembly.GetExecutingAssembly();
+			var curdir = Path.GetDirectoryName(asm.Location);
+			string nlogFile = Path.Combine(curdir, asm.ManifestModule.Name + ".log.config");
 
-		App.Current.MainWindow.WindowState = WindowState.Normal;
+			if (File.Exists(nlogFile)) {
+				LogManager.Configuration = new XmlLoggingConfiguration(nlogFile);
+			} else {
+				var config = new LoggingConfiguration();
+				var logname = "ziti-montior";
+				// Targets where to log to: File and Console
+				var logfile = new FileTarget("logfile") {
+					FileName = $"{logname}.log",
+					ArchiveEvery = FileArchivePeriod.Day,
+					ArchiveNumbering = ArchiveNumberingMode.Rolling,
+					MaxArchiveFiles = 7,
+					Layout = "${longdate}|${level:uppercase=true:padding=5}|${logger}|${message}",
+					//ArchiveAboveSize = 10000,
+				};
+				var logconsole = new ConsoleTarget("logconsole");
+
+				// Rules for mapping loggers to targets            
+				config.AddRule(LogLevel.Debug, LogLevel.Fatal, logconsole);
+				config.AddRule(LogLevel.Debug, LogLevel.Fatal, logfile);
+
+				// Apply config           
+				LogManager.Configuration = config;
+			}
+			Logger.Info("service started - logger initialized");
+
+			App.Current.MainWindow.WindowState = WindowState.Normal;
 			App.Current.MainWindow.Closing += MainWindow_Closing;
 			App.Current.MainWindow.Deactivated += MainWindow_Deactivated;
 			App.Current.MainWindow.Activated += MainWindow_Activated;
@@ -137,7 +169,7 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-		private void MainWindow_Loaded(object sender, RoutedEventArgs e) {
+		async private void MainWindow_Loaded(object sender, RoutedEventArgs e) {
 			// add a new service client
 			serviceClient = new DataClient();
 			serviceClient.OnClientConnected += ServiceClient_OnClientConnected;
@@ -158,16 +190,16 @@ namespace ZitiDesktopEdge {
 			IdentityMenu.OnError += IdentityMenu_OnError;
 
 			try {
-				serviceClient.Connect();
-				serviceClient.WaitForConnectionAsync().Wait();
+				await serviceClient.ConnectAsync();
+				await serviceClient.WaitForConnectionAsync();
 			} catch /*ignored for now (Exception ex) */{
 				SetCantDisplay("Start the Ziti Tunnel Service to continue");
 				serviceClient.Reconnect();
 			}
 
 			try {
-				monitorClient.Connect();
-				monitorClient.WaitForConnectionAsync().Wait();
+				await monitorClient.ConnectAsync();
+				await monitorClient.WaitForConnectionAsync();
 			} catch /*ignored for now (Exception ex) */{
 				monitorClient.Reconnect();
 			}
@@ -185,7 +217,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void LogLevelChanged(string level) {
-			serviceClient.SetLogLevel(level);
+			serviceClient.SetLogLevelAsync(level).Wait();
 		}
 
 		private void IdentityMenu_OnError(string message) {
@@ -514,7 +546,7 @@ namespace ZitiDesktopEdge {
 			MainMenu.Visibility = Visibility.Visible;
 		}
 
-		private void AddIdentity(object sender, MouseButtonEventArgs e) {
+		async private void AddIdentity(object sender, MouseButtonEventArgs e) {
 			UIModel.HideOnLostFocus = false;
 			Microsoft.Win32.OpenFileDialog jwtDialog = new Microsoft.Win32.OpenFileDialog();
 			UIModel.HideOnLostFocus = true;
@@ -525,9 +557,9 @@ namespace ZitiDesktopEdge {
 				string fileContent = File.ReadAllText(jwtDialog.FileName);
 
 				try {
-					Identity createdId = serviceClient.AddIdentity(System.IO.Path.GetFileName(jwtDialog.FileName), false, fileContent);
+					Identity createdId = await serviceClient.AddIdentityAsync(System.IO.Path.GetFileName(jwtDialog.FileName), false, fileContent);
 
-					serviceClient.IdentityOnOff(createdId.FingerPrint, true);
+					await serviceClient.IdentityOnOffAsync(createdId.FingerPrint, true);
 					if (createdId != null) {
 						identities.Add(ZitiIdentity.FromClient(createdId));
 						LoadIdentities(true);
@@ -565,15 +597,15 @@ namespace ZitiDesktopEdge {
 		private void Connect(object sender, RoutedEventArgs e) {
 			if (!_isServiceInError) {
 				ShowLoad();
-				this.Dispatcher.Invoke(() => {
+				this.Dispatcher.Invoke(async () => {
 					//Dispatcher.Invoke(new Action(() => { }), System.Windows.Threading.DispatcherPriority.ContextIdle);
-					DoConnect();
+					await DoConnectAsync();
 					HideLoad();
 				});
 			}
 		}
 
-		private void DoConnect() {
+		async private Task DoConnectAsync() {
 			try {
 				serviceClient.SetTunnelState(true);
 				SetNotifyIcon("green");
@@ -581,7 +613,7 @@ namespace ZitiDesktopEdge {
 				DisconnectButton.Visibility = Visibility.Visible;
 
 				for (int i = 0; i < identities.Count; i++) {
-					serviceClient.IdentityOnOff(identities[i].Fingerprint, true);
+					await serviceClient.IdentityOnOffAsync(identities[i].Fingerprint, true);
 				}
 				for (int i = 0; i < IdList.Children.Count; i++) {
 					IdentityItem item = IdList.Children[i] as IdentityItem;
@@ -594,7 +626,7 @@ namespace ZitiDesktopEdge {
 				ShowError("Unexpected Error", "Code 3:" + ex.Message);
 			}
 		}
-		private void Disconnect(object sender, RoutedEventArgs e) {
+		async private void Disconnect(object sender, RoutedEventArgs e) {
 			if (!_isServiceInError) {
 				ShowLoad();
 				try {
@@ -605,7 +637,7 @@ namespace ZitiDesktopEdge {
 					ConnectButton.Visibility = Visibility.Visible;
 					DisconnectButton.Visibility = Visibility.Collapsed;
 					for (int i = 0; i < identities.Count; i++) {
-						serviceClient.IdentityOnOff(identities[i].Fingerprint, false);
+						await serviceClient.IdentityOnOffAsync(identities[i].Fingerprint, false);
 					}
 					for (int i = 0; i < IdList.Children.Count; i++) {
 						IdentityItem item = IdList.Children[i] as IdentityItem;
@@ -673,8 +705,8 @@ namespace ZitiDesktopEdge {
 			Placement();
 		}
 
-		private void Button_Click(object sender, RoutedEventArgs e) {
-			serviceClient.SetLogLevel(NextLevel());
+		async private void Button_Click(object sender, RoutedEventArgs e) {
+			await serviceClient.SetLogLevelAsync(NextLevel());
 		}
 
 		int cur = 0;
@@ -700,10 +732,10 @@ namespace ZitiDesktopEdge {
 				action = "stop";
 				await monitorClient.StopServicAsync();
 			}
-			Debug.WriteLine("button 1 1 1 1!");
+			Logger.Info("button 1 1 1 1!");
 		}
 		async private void Button_Click_2(object sender, RoutedEventArgs e) {
-			Debug.WriteLine("button 2!");
+			Logger.Info("button 2!");
 			await Task.Delay(10);
 		}
     }

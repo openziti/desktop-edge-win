@@ -23,7 +23,8 @@ using ZitiDesktopEdge.DataStructures;
 /// </summary>
 namespace ZitiDesktopEdge.ServiceClient {
     public class DataClient : AbstractClient {
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
+        protected override Logger Logger { get { return _logger; } }
 
         public const int EXPECTED_API_VERSION = 1;
 
@@ -97,24 +98,24 @@ namespace ZitiDesktopEdge.ServiceClient {
             return pipeSecurity;
         }
 
-        protected override void ConnectPipes() {//private void setupPipe()
-            lock (namedPipeSyncLock) {
+        async protected override Task ConnectPipesAsync() {
+            await semaphoreSlim.WaitAsync();
+            try {
                 pipeClient = new NamedPipeClientStream(localPipeServer, ipcPipe, inOut);
                 eventClient = new NamedPipeClientStream(localPipeServer, eventPipe, PipeDirection.In);
-
-                try {
-                    eventClient.Connect(ServiceConnectTimeout);
-                    pipeClient.Connect(ServiceConnectTimeout);
-                    ClientConnected(null);
-                } catch (Exception ex) {
-                    throw new ServiceException("Could not connect to the service.", 1, ex.Message);
-                }
+                await eventClient.ConnectAsync(ServiceConnectTimeout);
+                await pipeClient.ConnectAsync(ServiceConnectTimeout);
+                ClientConnected(null);
+            } catch (Exception ex) {
+                semaphoreSlim.Release();
+                throw new ServiceException("Could not connect to the service.", 1, ex.Message);
             }
+            semaphoreSlim.Release();
         }
 
-        public ZitiTunnelStatus GetStatus() {
+        async public Task<ZitiTunnelStatus> GetStatusAsync() {
             try {
-                send(new ServiceFunction() { Function = "Status" });
+                await sendAsync(new ServiceFunction() { Function = "Status" });
                 var rtn = read<ZitiTunnelStatus>(ipcReader);
                 return rtn;
             } catch (IOException ioe) {
@@ -126,7 +127,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         ServiceFunction AddIdentityFunction = new ServiceFunction() { Function = "AddIdentity" };
 
-        public Identity AddIdentity(string identityName, bool activate, string jwt) {
+        async public Task<Identity> AddIdentityAsync(string identityName, bool activate, string jwt) {
             try {
                 Identity id = new Identity {
                     Active = activate,
@@ -140,8 +141,8 @@ namespace ZitiDesktopEdge.ServiceClient {
                     }
                 };
 
-                send(AddIdentityFunction);
-                send(newId);
+                await sendAsync(AddIdentityFunction);
+                await sendAsync(newId);
                 var resp = read<IdentityResponse>(ipcReader);
                 Logger.Debug(resp.ToString());
                 if (resp.Code != 0) {
@@ -156,7 +157,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
 
-        public void RemoveIdentity(string fingerPrint) {
+        async public Task RemoveIdentityAsync(string fingerPrint) {
             if (string.IsNullOrEmpty(fingerPrint)) {
                 //nothing to do...
                 return;
@@ -167,7 +168,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                     Function = "RemoveIdentity",
                     Payload = new FingerprintPayload() { Fingerprint = fingerPrint }
                 };
-                send(removeFunction);
+                await sendAsync(removeFunction);
                 var r = read<SvcResponse>(ipcReader);
             } catch (IOException ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
@@ -220,9 +221,9 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
         }
 
-        public void SetLogLevel(string level) {
+        async public Task SetLogLevelAsync(string level) {
             try {
-                send(new SetLogLevelFunction(level));
+                await sendAsync(new SetLogLevelFunction(level));
                 SvcResponse resp = read<SvcResponse>(ipcReader);
                 return;
             } catch (IOException ioe) {
@@ -232,9 +233,9 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
         }
 
-        public void SetLogLevel(LogLevelEnum level) {
+        async public Task SetLogLevelAsync(LogLevelEnum level) {
             try {
-                send(new SetLogLevelFunction(Enum.GetName(level.GetType(), level)));
+                await sendAsync(new SetLogLevelFunction(Enum.GetName(level.GetType(), level)));
                 SvcResponse resp = read<SvcResponse>(ipcReader);
                 return;
             } catch (IOException ioe) {
@@ -244,9 +245,9 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
         }
 
-        public Identity IdentityOnOff(string fingerprint, bool onOff) {
+        async public Task<Identity> IdentityOnOffAsync(string fingerprint, bool onOff) {
             try {
-                send(new IdentityToggleFunction(fingerprint, onOff));
+                await sendAsync(new IdentityToggleFunction(fingerprint, onOff));
                 IdentityResponse idr = read<IdentityResponse>(ipcReader);
                 return idr.Payload;
             } catch (IOException ioe) {
@@ -256,51 +257,13 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
         }
 
-        private void send(object objToSend) {
-            bool retried = false;
-            while (true) {
-                try {
-                    string toSend = JsonConvert.SerializeObject(objToSend, Formatting.None);
-
-                    if (toSend?.Trim() != null) {
-                        debugServiceCommunication("===============  sending message =============== ");
-                        debugServiceCommunication(toSend);
-                        ipcWriter.Write(toSend);
-                        ipcWriter.Write('\n');
-                        debugServiceCommunication("=============== flushing message =============== ");
-                        ipcWriter.Flush();
-                        debugServiceCommunication("===============     sent message =============== ");
-                        debugServiceCommunication("");
-                        debugServiceCommunication("");
-                    } else {
-                        Logger.Debug("NOT sending empty object??? " + objToSend?.ToString());
-                    }
-                    break;
-                } catch (IOException ioe) {
-                    //almost certainly a problem with the pipe - recreate the pipe... try one more time.
-                    //setupPipe();
-                    if (retried) {
-                        //we tried - throw the error...
-                        throw ioe;
-                    } else {
-                        retried = true; //fall back through to the while and try again
-                    }
-                } catch (Exception ex) {
-                    //if this fails it's usually because the writer is null/invalid. throwing IOException
-                    //will trigger the pipe to rebuild
-                    throw new IOException("Unexpected error when sending data to service. " + ex.Message);
-                }
-            }
-        }
-
         private T read<T>(StreamReader reader) where T : SvcResponse {
             string respAsString = readMessageAsync(reader).Result;
-            //            T resp = JsonSerializer.Deserialize<T>(new JsonStr(respAsString));
             T resp = (T)serializer.Deserialize(new StringReader(respAsString), typeof(T));
             return resp;
         }
 
-        protected override void ProcessLine(string line) {//private void processEvent(StreamReader reader)
+        protected override void ProcessLine(string line) {
             try {
                 string respAsString = line;
                 var jsonReaderEvt = new JsonTextReader(new StringReader(respAsString));
@@ -348,59 +311,14 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
         }
 
-        public string readMessage(StreamReader reader) {
-            try {
-                if (reader.EndOfStream) {
-                    throw new ServiceException("the pipe has closed", 0, "end of stream reached");
-                }
-                int emptyCount = 1; //just a stop gap in case something crazy happens in the communication
-
-                debugServiceCommunication("===============  reading message =============== " + emptyCount);
-                string respAsString = reader.ReadLine();
-                debugServiceCommunication(respAsString);
-                debugServiceCommunication("===============     read message =============== " + emptyCount);
-                while (string.IsNullOrEmpty(respAsString?.Trim())) {
-                    if (reader.EndOfStream) {
-                        throw new Exception("the pipe has closed");
-                    }
-                    debugServiceCommunication("Received empty payload - continuing to read until a payload is received");
-                    //now how'd that happen...
-                    debugServiceCommunication("===============  reading message =============== " + emptyCount);
-                    respAsString = reader.ReadLine();
-                    debugServiceCommunication(respAsString);
-                    debugServiceCommunication("===============     read message =============== " + emptyCount);
-                    emptyCount++;
-                    if (emptyCount > 5) {
-                        Logger.Debug("are we there yet? " + reader.EndOfStream);
-                        //that's just too many...
-                        //setupPipe();
-                        return null;
-                    }
-                }
-                debugServiceCommunication("");
-                debugServiceCommunication("");
-                return respAsString;
-            } catch (IOException ioe) {
-                //almost certainly a problem with the pipe
-                Logger.Debug("io error in read: " + ioe.Message);
-                ClientDisconnected(null);
-                throw ioe;
-            } catch (Exception ee) {
-                //almost certainly a problem with the pipe
-                Logger.Debug("unexpected error in read: " + ee.Message);
-                ClientDisconnected(null);
-                throw ee;
-            }
-        }
-
         private void debugServiceCommunication(string msg) {
             if (_extendedDebug) {
                 Logger.Debug(msg);
             }
         }
-        public ZitiTunnelStatus debug() {
+        async public Task<ZitiTunnelStatus> debugAsync() {
             try {
-                send(new ServiceFunction() { Function = "Debug" });
+                await sendAsync(new ServiceFunction() { Function = "Debug" });
                 var rtn = read<ZitiTunnelStatus>(ipcReader);
                 return rtn;
             } catch (IOException ioe) {
