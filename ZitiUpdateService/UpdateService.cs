@@ -90,7 +90,7 @@ namespace ZitiUpdateService {
 				svc.Reconnect();
 			}
 
-			svc.WaitForConnection();
+			svc.WaitForConnectionAsync().Wait();
 		}
 
 		private void CheckUpdate(object sender, ElapsedEventArgs e) {

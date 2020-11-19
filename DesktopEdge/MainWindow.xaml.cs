@@ -3,13 +3,15 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
 using System.IO;
-using ZitiDesktopEdge.Models;
-using ZitiDesktopEdge.DataStructures;
 using System.ServiceProcess;
 using System.Linq;
 using System.Diagnostics;
 using System.Windows.Controls;
 using System.Drawing;
+using System.Threading.Tasks;
+
+using ZitiDesktopEdge.Models;
+using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.ServiceClient;
 
 namespace ZitiDesktopEdge {
@@ -17,13 +19,14 @@ namespace ZitiDesktopEdge {
 	/// <summary>
 	/// Interaction logic for MainWindow.xaml
 	/// </summary>
-	public partial class MainWindow:Window {
+	public partial class MainWindow : Window {
 
 		public System.Windows.Forms.NotifyIcon notifyIcon;
 		public string Position = "Bottom";
 		private DateTime _startDate;
-		private System.Windows.Forms.Timer _timer;
+		private System.Windows.Forms.Timer _tunnelUptimeTimer;
 		private DataClient serviceClient = null;
+		MonitorClient monitorClient = null;
 		private bool _isAttached = true;
 		private bool _isServiceInError = false;
 		private int _right = 75;
@@ -38,27 +41,15 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-		private void LaunchOrInstall() {
-			ServiceController ctl = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName=="ziti");
-			if (ctl==null) {
-				SetCantDisplay();
-			} else {
-				if (ctl.Status!=ServiceControllerStatus.Running) {
-					try {
-						ctl.Start();
-					} catch (Exception e) {
-						UILog.Log(e.Message);
-						SetCantDisplay();
-					}
-				}
-			}
-		}
-
 		private List<ZitiService> services = new List<ZitiService>();
 		public MainWindow() {
 			InitializeComponent();
 
-			App.Current.MainWindow.WindowState = WindowState.Normal;
+			#if DEBUG
+			System.Environment.SetEnvironmentVariable("ZITI_EXTENDED_DEBUG", "true");
+			#endif
+
+		App.Current.MainWindow.WindowState = WindowState.Normal;
 			App.Current.MainWindow.Closing += MainWindow_Closing;
 			App.Current.MainWindow.Deactivated += MainWindow_Deactivated;
 			App.Current.MainWindow.Activated += MainWindow_Activated;
@@ -68,8 +59,6 @@ namespace ZitiDesktopEdge {
 			notifyIcon.Visible = true;
 			IdentityMenu.OnDetach += OnDetach;
 			MainMenu.OnDetach += OnDetach;
-
-			LaunchOrInstall();
 
 			SetNotifyIcon("white");
 		}
@@ -108,7 +97,7 @@ namespace ZitiDesktopEdge {
 			notifyIcon.Icon.Dispose();
 			notifyIcon.Dispose();
 		}
-		
+
 		private void SetCantDisplay(string msg, string detailMessage) {
 			NoServiceView.Visibility = Visibility.Visible;
 			ErrorMsg.Content = msg;
@@ -117,8 +106,8 @@ namespace ZitiDesktopEdge {
 			_isServiceInError = true;
 			UpdateServiceView();
 		}
-		private void SetCantDisplay() {
-			SetCantDisplay("Service Not Started", "Start the Ziti Tunnel Service to get started");
+		private void SetCantDisplay(string msg) {
+			SetCantDisplay("Service Not Started", msg);
 		}
 
 		private void TargetNotifyIcon_Click(object sender, EventArgs e) {
@@ -158,6 +147,10 @@ namespace ZitiDesktopEdge {
 			serviceClient.OnServiceEvent += ServiceClient_OnServiceEvent;
 			serviceClient.OnTunnelStatusEvent += ServiceClient_OnTunnelStatusEvent;
 
+			monitorClient = new MonitorClient();
+			monitorClient.OnClientConnected += MonitorClient_OnClientConnected;
+			monitorClient.OnTunnelStatusEvent += MonitorClient_OnTunnelStatusEvent;
+
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
 			Application.Current.Properties.Add("Identities", new List<ZitiIdentity>());
 			MainMenu.OnAttachmentChange += AttachmentChanged;
@@ -166,14 +159,29 @@ namespace ZitiDesktopEdge {
 
 			try {
 				serviceClient.Connect();
-				//var s = serviceClient.GetStatus();
-				//LoadStatusFromService(s.Status);
+				serviceClient.WaitForConnectionAsync().Wait();
 			} catch /*ignored for now (Exception ex) */{
-				SetCantDisplay();
+				SetCantDisplay("Start the Ziti Tunnel Service to continue");
 				serviceClient.Reconnect();
 			}
+
+			try {
+				monitorClient.Connect();
+				monitorClient.WaitForConnectionAsync().Wait();
+			} catch /*ignored for now (Exception ex) */{
+				monitorClient.Reconnect();
+			}
+
 			IdentityMenu.OnForgot += IdentityForgotten;
 			Placement();
+		}
+
+		private void MonitorClient_OnTunnelStatusEvent(object sender, TunnelStatusEvent e) {
+			Debug.WriteLine("MonitorClient_OnTunnelStatusEvent");
+		}
+
+		private void MonitorClient_OnClientConnected(object sender, object e) {
+			Debug.WriteLine("MonitorClient_OnClientConnected");
 		}
 
 		private void LogLevelChanged(string level) {
@@ -198,7 +206,7 @@ namespace ZitiDesktopEdge {
 		private void ServiceClient_OnClientDisconnected(object sender, object e) {
 			this.Dispatcher.Invoke(() => {
 				IdList.Children.Clear();
-				SetCantDisplay();
+				SetCantDisplay("Start the Ziti Tunnel Service to continue");
 			});
 		}
 
@@ -256,7 +264,7 @@ namespace ZitiDesktopEdge {
 
 		private void ServiceClient_OnServiceEvent(object sender, ServiceEvent e) {
 			if (e == null) return;
-			
+
 			Debug.WriteLine($"==== ServiceEvent     : action:{e.Action} fingerprint:{e.Fingerprint} name:{e.Service.Name} ");
 			this.Dispatcher.Invoke(() => {
 				var found = identities.Find(id => id.Fingerprint == e.Fingerprint);
@@ -289,10 +297,10 @@ namespace ZitiDesktopEdge {
 			Application.Current.Properties.Add("CurrentTunnelStatus", e.Status);
 			e.Status.Dump(Console.Out);
 			this.Dispatcher.Invoke(() => {
-				if(e.ApiVersion != DataClient.EXPECTED_API_VERSION) {
+				if (e.ApiVersion != DataClient.EXPECTED_API_VERSION) {
 					SetCantDisplay("Version mismatch!", "The version of the Service is not compatible");
 					return;
-                }
+				}
 				this.MainMenu.LogLevel = e.Status.LogLevel;
 				InitializeTimer((int)e.Status.Duration);
 				LoadStatusFromService(e.Status);
@@ -362,7 +370,7 @@ namespace ZitiDesktopEdge {
 				}
 				LoadIdentities(true);
 			} else {
-				SetCantDisplay();
+				SetCantDisplay("Start the Ziti Tunnel Service to continue");
 			}
 		}
 
@@ -387,14 +395,14 @@ namespace ZitiDesktopEdge {
 		private void LoadIdentities(Boolean repaint) {
 			IdList.Children.Clear();
 			IdList.Height = 0;
-			IdList.MaxHeight = _maxHeight-520;
+			IdList.MaxHeight = _maxHeight - 520;
 			ZitiIdentity[] ids = identities.ToArray();
 			double height = 490 + (ids.Length * 60);
 			if (height > _maxHeight) height = _maxHeight;
 			this.Height = height;
-			IdentityMenu.SetHeight(this.Height-160);
+			IdentityMenu.SetHeight(this.Height - 160);
 			bool isActive = false;
-			for (int i=0; i<ids.Length; i++) {
+			for (int i = 0; i < ids.Length; i++) {
 				IdentityItem id = new IdentityItem();
 				if (ids[i].IsEnabled) {
 					isActive = true;
@@ -468,7 +476,7 @@ namespace ZitiDesktopEdge {
 				this.Left = desktopWorkingArea.Right - this.Width - 20;
 				this.Top = desktopWorkingArea.Bottom - height - 75;
 				Arrow.SetValue(Canvas.TopProperty, height - 100);
-				Arrow.SetValue(Canvas.LeftProperty, this.Width- 30);
+				Arrow.SetValue(Canvas.LeftProperty, this.Width - 30);
 				MainMenu.Arrow.SetValue(Canvas.TopProperty, height - 100);
 				MainMenu.Arrow.SetValue(Canvas.LeftProperty, this.Width - 30);
 				IdentityMenu.Arrow.SetValue(Canvas.TopProperty, height - 100);
@@ -499,7 +507,7 @@ namespace ZitiDesktopEdge {
 
 		private void OpenIdentity(ZitiIdentity identity) {
 			IdentityMenu.Identity = identity;
-			
+
 		}
 
 		private void ShowMenu(object sender, MouseButtonEventArgs e) {
@@ -515,12 +523,11 @@ namespace ZitiDesktopEdge {
 			if (jwtDialog.ShowDialog() == true) {
 				ShowLoad();
 				string fileContent = File.ReadAllText(jwtDialog.FileName);
-				
+
 				try {
 					Identity createdId = serviceClient.AddIdentity(System.IO.Path.GetFileName(jwtDialog.FileName), false, fileContent);
-					DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
 
-					client.IdentityOnOff(createdId.FingerPrint, true);
+					serviceClient.IdentityOnOff(createdId.FingerPrint, true);
 					if (createdId != null) {
 						identities.Add(ZitiIdentity.FromClient(createdId));
 						LoadIdentities(true);
@@ -528,7 +535,7 @@ namespace ZitiDesktopEdge {
 						ShowError("Identity Error", "Identity Id was null, please try again");
 					}
 				} catch (ServiceException se) {
-					ShowError("Error Occurred", se.Message+" "+se.AdditionalInfo);
+					ShowError("Error Occurred", se.Message + " " + se.AdditionalInfo);
 				} catch (Exception ex) {
 					ShowError("Unexpected Error", "Code 2:" + ex.Message);
 				}
@@ -541,19 +548,19 @@ namespace ZitiDesktopEdge {
 			int hours = span.Hours;
 			int minutes = span.Minutes;
 			int seconds = span.Seconds;
-			var hoursString = (hours>9)?hours.ToString():"0"+hours;
-			var minutesString = (minutes>9)? minutes.ToString():"0"+minutes;
-			var secondsString = (seconds>9) ? seconds.ToString() : "0"+seconds;
-			ConnectedTime.Content = hoursString+":"+minutesString+":"+secondsString;
+			var hoursString = (hours > 9) ? hours.ToString() : "0" + hours;
+			var minutesString = (minutes > 9) ? minutes.ToString() : "0" + minutes;
+			var secondsString = (seconds > 9) ? seconds.ToString() : "0" + seconds;
+			ConnectedTime.Content = hoursString + ":" + minutesString + ":" + secondsString;
 		}
 
 		private void InitializeTimer(int millisAgoStarted) {
-			_startDate = DateTime.Now.Subtract(new TimeSpan(0,0,0,0, millisAgoStarted));
-			_timer = new System.Windows.Forms.Timer();
-			_timer.Interval = 100;
-			_timer.Tick += OnTimedEvent;
-			_timer.Enabled = true;
-			_timer.Start();
+			_startDate = DateTime.Now.Subtract(new TimeSpan(0, 0, 0, 0, millisAgoStarted));
+			_tunnelUptimeTimer = new System.Windows.Forms.Timer();
+			_tunnelUptimeTimer.Interval = 100;
+			_tunnelUptimeTimer.Tick += OnTimedEvent;
+			_tunnelUptimeTimer.Enabled = true;
+			_tunnelUptimeTimer.Start();
 		}
 		private void Connect(object sender, RoutedEventArgs e) {
 			if (!_isServiceInError) {
@@ -582,7 +589,7 @@ namespace ZitiDesktopEdge {
 					item.RefreshUI();
 				}
 			} catch (ServiceException se) {
-				ShowError("Error Occurred", se.Message+" "+se.AdditionalInfo);
+				ShowError("Error Occurred", se.Message + " " + se.AdditionalInfo);
 			} catch (Exception ex) {
 				ShowError("Unexpected Error", "Code 3:" + ex.Message);
 			}
@@ -592,7 +599,7 @@ namespace ZitiDesktopEdge {
 				ShowLoad();
 				try {
 					ConnectedTime.Content = "00:00:00";
-					_timer.Stop();
+					_tunnelUptimeTimer.Stop();
 					serviceClient.SetTunnelState(false);
 					SetNotifyIcon("white");
 					ConnectButton.Visibility = Visibility.Visible;
@@ -666,18 +673,15 @@ namespace ZitiDesktopEdge {
 			Placement();
 		}
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
+		private void Button_Click(object sender, RoutedEventArgs e) {
 			serviceClient.SetLogLevel(NextLevel());
 		}
 
 		int cur = 0;
 		LogLevelEnum[] levels = new LogLevelEnum[] { LogLevelEnum.FATAL, LogLevelEnum.ERROR, LogLevelEnum.WARN, LogLevelEnum.INFO, LogLevelEnum.DEBUG, LogLevelEnum.TRACE, LogLevelEnum.VERBOSE };
-		public LogLevelEnum NextLevel()
-		{
+		public LogLevelEnum NextLevel() {
 			cur++;
-			if (cur > 6)
-			{
+			if (cur > 6) {
 				cur = 0;
 			}
 			return levels[cur];
@@ -686,5 +690,21 @@ namespace ZitiDesktopEdge {
 		private void IdList_LayoutUpdated(object sender, EventArgs e) {
 			Placement();
 		}
-	}
+
+		string action = "stop";
+		async private void Button_Click_1(object sender, RoutedEventArgs e) {
+			if (action == "stop") {
+				action = "start";
+				await monitorClient.StartServicAsync();
+			} else {
+				action = "stop";
+				await monitorClient.StopServicAsync();
+			}
+			Debug.WriteLine("button 1 1 1 1!");
+		}
+		async private void Button_Click_2(object sender, RoutedEventArgs e) {
+			Debug.WriteLine("button 2!");
+			await Task.Delay(10);
+		}
+    }
 }

@@ -319,5 +319,7 @@
                 </Grid>
             </Grid>
         </Grid>
+        <Button Content="Button" HorizontalAlignment="Left" Margin="307,149,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click_1"/>
+        <Button Content="Button2" HorizontalAlignment="Left" Margin="307,181,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click_2"/>
     </Grid>
 </Window>

@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 
 using NLog;
 using NLog.Config;
@@ -18,7 +19,7 @@ namespace ZitiUpdateService {
 		/// The main entry point for the application.
 		/// </summary>
 		static void Main() {
-			//Environment.SetEnvironmentVariable("ZITI_EXTENDED_DEBUG", "true");
+			System.Environment.SetEnvironmentVariable("ZITI_EXTENDED_DEBUG", "true");
 			var curdir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 			string nlogFile = Path.Combine(curdir, "ziti-monitor-log.config");
 
@@ -48,11 +49,14 @@ namespace ZitiUpdateService {
 			Logger.Info("service started - logger initialized");
 
 			IPCServer svr = new IPCServer();
-			svr.acceptAsync().Wait();
+			Task ipcServer = svr.startIpcServer();
+			Task eventServer = svr.startEventsServer();
 
+			Task.WaitAll(ipcServer, eventServer);
 			UpdateService updateSvc = new UpdateService();
 			updateSvc.AutoLog = true;
 #if DEBUG
+			Logger.Error("================================");
 			updateSvc.Debug();
 			System.Threading.Thread.Sleep(System.Threading.Timeout.Infinite);
 #else
