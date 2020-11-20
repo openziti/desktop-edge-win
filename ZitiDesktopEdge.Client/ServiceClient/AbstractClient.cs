@@ -51,7 +51,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                         }
 
                         try {
-                            string respAsString = await readMessageAsync(eventReader);
+                            string respAsString = await readMessageAsync(eventReader, "ClientConnected");
                             ProcessLine(respAsString);
                         } catch (Exception ex) {
                             Logger.Warn(ex, "ERROR caught");
@@ -198,28 +198,33 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
         }
 
+        async protected Task<T> read<T>(StreamReader reader, string where) where T : SvcResponse {
+            string respAsString = await readMessageAsync(reader, where);
+            T resp = (T)serializer.Deserialize(new StringReader(respAsString), typeof(T));
+            return resp;
+        }
 
-        async public Task<string> readMessageAsync(StreamReader reader) {
+        async public Task<string> readMessageAsync(StreamReader reader, string where) {
             try {/*
                 if (reader.EndOfStream) {
                     throw new ServiceException("the pipe has closed", 0, "end of stream reached");
                 }*/
                 int emptyCount = 1; //just a stop gap in case something crazy happens in the communication
 
-                debugServiceCommunication("===============  reading message =============== " + emptyCount);
+                debugServiceCommunication("==============a  reading message =============== " + where);
                 string respAsString = await reader.ReadLineAsync();
                 debugServiceCommunication(respAsString);
-                debugServiceCommunication("===============     read message =============== " + emptyCount);
+                debugServiceCommunication("===============     read message =============== " + where);
                 while (string.IsNullOrEmpty(respAsString?.Trim())) {
                     /*if (reader.EndOfStream) {
                         throw new Exception("the pipe has closed");
                     }*/
                     debugServiceCommunication("Received empty payload - continuing to read until a payload is received");
                     //now how'd that happen...
-                    debugServiceCommunication("===============  reading message =============== " + emptyCount);
+                    debugServiceCommunication("==============b  reading message =============== " + where);
                     respAsString = await reader.ReadLineAsync();
                     debugServiceCommunication(respAsString);
-                    debugServiceCommunication("===============     read message =============== " + emptyCount);
+                    debugServiceCommunication("===============     read message =============== " + where);
                     emptyCount++;
                     if (emptyCount > 5) {
                         Logger.Debug("are we there yet? " + reader.EndOfStream);

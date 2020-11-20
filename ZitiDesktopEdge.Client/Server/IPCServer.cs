@@ -129,7 +129,13 @@ namespace ZitiDesktopEdge.Server {
                     await writer.FlushAsync();
                 };
 
-                MonitorStatusEvent status = new MonitorStatusEvent() { Op="status", Status = ServiceActions.ServiceStatus() };
+                ServiceStatusEvent status = new ServiceStatusEvent() {
+                    //Op="status", Status = ServiceActions.ServiceStatus() 
+                    Code = 0,
+                    Error = null,
+                    Message = "Success",
+                    Status = ServiceActions.ServiceStatus()
+                };
                 await writer.WriteLineAsync(JsonConvert.SerializeObject(status));
                 await writer.FlushAsync();
 
@@ -153,22 +159,45 @@ namespace ZitiDesktopEdge.Server {
 
         async public Task processMessage(string msg, StreamWriter writer) {
             Logger.Debug("message received: {0}", msg);
-            SvcResponse r = new SvcResponse();
+            var r = new SvcResponse();
+            var rr = new ServiceStatusEvent();
             try {
-                ServiceFunction func = serializer.Deserialize<ServiceFunction>(new JsonTextReader(new StringReader(msg)));
-                Logger.Info("function: {0}", func.Function);
-                switch (func.Function) {
+                ActionEvent ae = serializer.Deserialize<ActionEvent>(new JsonTextReader(new StringReader(msg)));
+                Logger.Info("Op: {0}", ae.Op);
+                switch (ae.Op.ToLower()) {
                     case "stop":
-                        r.Message = ServiceActions.StopService();
+                        if (ae.Action == "Force") {
+                            // attempt to forcefully find the process and terminate it...
+                            Logger.Warn("User has requested a FORCEFUL termination of the service. It must be stuck. Current status: {0}", ServiceActions.ServiceStatus());
+                            var procs = System.Diagnostics.Process.GetProcessesByName("ziti-tunnel");
+                            if (procs == null || procs.Length == 0) {
+                                Logger.Error("Process not found! Cannot terminate!");
+                                rr.Code = -20;
+                                rr.Error = "Process not found! Cannot terminate!";
+                                rr.Message = "Could not terminate the service forcefully";
+                                break;
+                            }
+
+                            foreach(var p in procs) {
+                                Logger.Warn("Forcefully terminating process: {0}", p.Id);
+                                p.Kill();
+                            }
+                            rr.Message = "Service has been terminated";
+                            rr.Status = ServiceActions.ServiceStatus();
+                            r = rr;
+                        } else {
+                            r.Message = ServiceActions.StopService();
+                        }
                         break;
                     case "start":
                         r.Message = ServiceActions.StartService();
                         break;
                     case "status":
-                        r.Message = ServiceActions.ServiceStatus();
+                        rr.Status = ServiceActions.ServiceStatus();
+                        r = rr;
                         break;
                     default:
-                        msg = string.Format("UNKNOWN ACTION received: {0}", func.Function);
+                        msg = string.Format("UNKNOWN ACTION received: {0}", ae.Op);
                         Logger.Error(msg);
                         r.Code = -3;
                         r.Error = msg;

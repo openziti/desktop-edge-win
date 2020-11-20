@@ -219,7 +219,12 @@ namespace ZitiUpdateService {
 			} else {
 				Logger.Error("SERVICE IS DOWN and did not exit cleanly. initiating DNS cleanup");
 
-				MonitorStatusEvent status = new MonitorStatusEvent() { Op = "status", Status = ServiceActions.ServiceStatus() };
+				ServiceStatusEvent status = new ServiceStatusEvent() {
+					Code = 10,
+					Error = "SERVICE DOWN",
+					Message = "SERVICE DOWN",
+					Status = ServiceActions.ServiceStatus()
+				};
 				EventRegistry.SendEventToConsumers(status);
 
 				//EnumerateDNS();

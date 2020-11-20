@@ -29,13 +29,13 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         public const int EXPECTED_API_VERSION = 1;
 
-        public event EventHandler<MonitorStatusEvent> OnMonitorStatusEvent;
+        public event EventHandler<ServiceStatusEvent> OnServiceStatusEvent;
 
-        protected virtual void MonitorStatusEvent(MonitorStatusEvent e) {
-            OnMonitorStatusEvent?.Invoke(this, e);
+        protected virtual void ServiceStatusEvent(ServiceStatusEvent e) {
+            OnServiceStatusEvent?.Invoke(this, e);
         }
 
-        public MonitorClient() {
+        public MonitorClient() : base() {
         }
 
         async protected override Task ConnectPipesAsync() {
@@ -55,22 +55,41 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         protected override void ProcessLine(string line) {
             var jsonReader = new JsonTextReader(new StringReader(line));
-            MonitorStatusEvent evt = serializer.Deserialize<MonitorStatusEvent>(jsonReader);
-            MonitorStatusEvent(evt);
+            ServiceStatusEvent evt = serializer.Deserialize<ServiceStatusEvent>(jsonReader);
+            ServiceStatusEvent(evt);
         }
 
-        async public Task SendServiceFunctionAsync(ServiceFunction f) {
-            await sendAsync(f);
+        async internal Task<string> SendServiceFunctionAsync(object toSend) {
+            await sendAsync(toSend);
             
-            var resp = await readMessageAsync(ipcReader);
+            var resp = await readMessageAsync(ipcReader, "SendServiceFunctionAsync");
             Logger.Info("RESPONSE: {0}", resp);
+            return resp;
         }
 
-        async public Task StopServicAsync() {
-            await SendServiceFunctionAsync(new ServiceFunction() { Function = "stop" });
+        async public Task<ServiceStatusEvent> StopServiceAsync() {
+            ActionEvent action = new ActionEvent() { Action = "Normal", Op = "Stop" };
+            //string result = await SendServiceFunctionAsync(action);
+            await sendAsync(action);
+            return await read<ServiceStatusEvent>(ipcReader, "StopServiceAsync");
         }
-        async public Task StartServicAsync() {
-            await SendServiceFunctionAsync(new ServiceFunction() { Function = "start" });
+        async public Task<ServiceStatusEvent> StartServiceAsync() {
+            ActionEvent action = new ActionEvent() { Action = "Normal", Op = "Start" };
+            //string result = await SendServiceFunctionAsync(action);
+            await sendAsync(action);
+            return await read<ServiceStatusEvent>(ipcReader, "StartServiceAsync");
+        }
+
+        async public Task<ServiceStatusEvent> ForceTerminate() {
+            ActionEvent action = new ActionEvent() { Action = "Force", Op = "Stop" };
+            await sendAsync(action);
+            return await read<ServiceStatusEvent>(ipcReader, "ForceTerminate");
+        }
+
+        async public Task<ServiceStatusEvent> Status() {
+            ActionEvent action = new ActionEvent() { Action = "", Op = "Status" };
+            await sendAsync(action);
+            return await read<ServiceStatusEvent>(ipcReader, "Status");
         }
     }
 }

@@ -8,6 +8,7 @@ using System.Linq;
 using System.Diagnostics;
 using System.Windows.Controls;
 using System.Drawing;
+using System.Threading;
 using System.Threading.Tasks;
 
 using ZitiDesktopEdge.Models;
@@ -40,6 +41,8 @@ namespace ZitiDesktopEdge {
 		private double _maxHeight = 800d;
 		private string[] suffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };
 
+		private static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
+
 		private List<ZitiIdentity> identities {
 			get {
 				return (List<ZitiIdentity>)Application.Current.Properties["Identities"];
@@ -51,16 +54,17 @@ namespace ZitiDesktopEdge {
 
 			#if DEBUG
 			System.Environment.SetEnvironmentVariable("ZITI_EXTENDED_DEBUG", "true");
-#endif
+			#endif
+
 			var asm = System.Reflection.Assembly.GetExecutingAssembly();
+			var logname = asm.GetName().Name;
 			var curdir = Path.GetDirectoryName(asm.Location);
-			string nlogFile = Path.Combine(curdir, asm.ManifestModule.Name + ".log.config");
+			string nlogFile = Path.Combine(curdir, logname + ".log.config");
 
 			if (File.Exists(nlogFile)) {
 				LogManager.Configuration = new XmlLoggingConfiguration(nlogFile);
 			} else {
 				var config = new LoggingConfiguration();
-				var logname = asm.GetName().Name;
 				// Targets where to log to: File and Console
 				var logfile = new FileTarget("logfile") {
 					FileName = $"{logname}.log",
@@ -130,17 +134,20 @@ namespace ZitiDesktopEdge {
 			notifyIcon.Dispose();
 		}
 
-		private void SetCantDisplay(string msg, string detailMessage) {
+		private void SetCantDisplay(string title, string detailMessage, Visibility closeButtonVisibility) {
 			NoServiceView.Visibility = Visibility.Visible;
-			ErrorMsg.Content = msg;
+			CloseErrorButton.Visibility = closeButtonVisibility;
+			ErrorMsg.Content = title;
 			ErrorMsgDetail.Content = detailMessage;
 			SetNotifyIcon("red");
 			_isServiceInError = true;
 			UpdateServiceView();
 		}
-		private void SetCantDisplay(string msg) {
-			SetCantDisplay("Service Not Started", msg);
-		}
+
+//		private void SetCantDisplay(string msg) {
+//			//SetCantDisplay("Service Not Started", msg, Visibility.Visible);
+//			ShowServiceNotStarted();
+//		}
 
 		private void TargetNotifyIcon_Click(object sender, EventArgs e) {
 			this.Show();
@@ -181,7 +188,7 @@ namespace ZitiDesktopEdge {
 
 			monitorClient = new MonitorClient();
 			monitorClient.OnClientConnected += MonitorClient_OnClientConnected;
-			monitorClient.OnMonitorStatusEvent += MonitorClient_OnMonitorStatusEvent;
+			monitorClient.OnServiceStatusEvent += MonitorClient_OnServiceStatusEvent;
 
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
 			Application.Current.Properties.Add("Identities", new List<ZitiIdentity>());
@@ -193,7 +200,7 @@ namespace ZitiDesktopEdge {
 				await serviceClient.ConnectAsync();
 				await serviceClient.WaitForConnectionAsync();
 			} catch /*ignored for now (Exception ex) */{
-				SetCantDisplay("Start the Ziti Tunnel Service to continue");
+				ShowServiceNotStarted();
 				serviceClient.Reconnect();
 			}
 
@@ -208,21 +215,24 @@ namespace ZitiDesktopEdge {
 			Placement();
 		}
 
-		private void MonitorClient_OnMonitorStatusEvent(object sender, MonitorStatusEvent evt) {
-			Debug.WriteLine("MonitorClient_OnMonitorStatusEvent");
+		private void MonitorClient_OnServiceStatusEvent(object sender, ServiceStatusEvent evt) {
+			Debug.WriteLine("MonitorClient_OnServiceStatusEvent");
 			ServiceControllerStatus status = (ServiceControllerStatus)Enum.Parse(typeof(ServiceControllerStatus), evt.Status);
-			action = evt.Status;
+			
 			switch (status) {
 				case ServiceControllerStatus.Running:
 					Logger.Info("Service is started");
-					action = "stop";
 					break;
 				case ServiceControllerStatus.Stopped:
 					Logger.Info("Service is stopped");
-					action = "start";
+					ShowServiceNotStarted();
 					break;
 				case ServiceControllerStatus.StopPending:
 					Logger.Info("Service is stopping...");
+					this.Dispatcher.Invoke(async () => {
+						SetCantDisplay("The Service is Stopping", "Please wait while the service stops", Visibility.Hidden);
+						await WaitForServiceToStop(DateTime.Now + TimeSpan.FromSeconds(3));
+					});
 					break;
 				case ServiceControllerStatus.StartPending:
 					Logger.Info("Service is starting...");
@@ -237,12 +247,75 @@ namespace ZitiDesktopEdge {
 					Logger.Warn("UNEXPECTED STATUS: {0}", evt.Status);
 					break;
 			}
-			this.Dispatcher.Invoke(() => {
-				this.serviceStatus.Content = "Service is :" + evt.Status;
-			});
 		}
 
-		private void MonitorClient_OnClientConnected(object sender, object e) {
+        async private Task WaitForServiceToStop(DateTime until) {
+			//continually poll for the service to stop. If it is stuck - ask the user if they want to try to force
+			//close the service
+			while (DateTime.Now < until) {
+				await Task.Delay(2000);
+				ServiceStatusEvent resp = await monitorClient.Status();
+				if (resp.IsStopped()) {
+					// good - that's what we are waiting for...
+					return;
+				} else {
+					// bad - not stopped yet...
+					Logger.Debug("Waiting for service to stop... Still not stopped yet");
+				}
+			}
+			// real bad - means it's stuck probably. Ask the user if they want to try to force it...
+			Logger.Warn("Waiting for service to stop... Service did not reach stopped state in the expected amount of time.");
+			SetCantDisplay("The Service Appears Stuck", "Would you like to try to force close the service?", Visibility.Visible);
+			CloseErrorButton.Content = "Force Quit";
+			CloseErrorButton.Click -= CloseError;
+			CloseErrorButton.Click += ForceQuitButtonClick;
+		}
+
+        async private void ForceQuitButtonClick(object sender, RoutedEventArgs e) {
+			ServiceStatusEvent status = await monitorClient.ForceTerminate();
+			if(status.IsStopped()) {
+				//good
+				CloseErrorButton.Click += CloseError; //reset the close button...
+				CloseErrorButton.Click -= ForceQuitButtonClick;
+			} else {
+				//bad...
+				SetCantDisplay("The Service Is Still Running", "Current status is: " + status.Status, Visibility.Visible);
+			}
+		}
+
+		async private void StartZitiService(object sender, RoutedEventArgs e) {
+			try {
+				startZitiButtonVisible = false;
+				CloseErrorButton.Click -= StartZitiService;
+				CloseErrorButton.IsEnabled = false;
+				Logger.Info("StartZitiService");
+				var r = await monitorClient.StartServiceAsync();
+				if (r.Error != null && int.Parse(r.Error) != 0) {
+					Logger.Debug("ERROR: {0}", r.Message);
+				} else {
+					Logger.Info("Service started!");
+				}
+				CloseErrorButton.IsEnabled = true;
+			} catch(Exception ex){
+				Logger.Info(ex, "UNEXPECTED ERROR!");
+			}
+		}
+
+		bool startZitiButtonVisible = false;
+		private void ShowServiceNotStarted() {
+			semaphoreSlim.Wait(); //make sure the event is only added to the button once
+			CloseErrorButton.Click -= CloseError;
+			if (!startZitiButtonVisible) {
+				CloseErrorButton.Content = "Start Service";
+				startZitiButtonVisible = true;
+				CloseErrorButton.Click += StartZitiService;
+			}
+			semaphoreSlim.Release();
+			SetCantDisplay("Service Not Started", "Do you want to start the data service now?", Visibility.Visible);
+		}
+
+
+        private void MonitorClient_OnClientConnected(object sender, object e) {
 			Debug.WriteLine("MonitorClient_OnClientConnected");
 		}
 
@@ -268,7 +341,8 @@ namespace ZitiDesktopEdge {
 		private void ServiceClient_OnClientDisconnected(object sender, object e) {
 			this.Dispatcher.Invoke(() => {
 				IdList.Children.Clear();
-				SetCantDisplay("Start the Ziti Tunnel Service to continue");
+				//SetCantDisplay("Start the Ziti Tunnel Service to continue");
+				ShowServiceNotStarted();
 			});
 		}
 
@@ -360,7 +434,7 @@ namespace ZitiDesktopEdge {
 			e.Status.Dump(Console.Out);
 			this.Dispatcher.Invoke(() => {
 				if (e.ApiVersion != DataClient.EXPECTED_API_VERSION) {
-					SetCantDisplay("Version mismatch!", "The version of the Service is not compatible");
+					SetCantDisplay("Version mismatch!", "The version of the Service is not compatible", Visibility.Visible);
 					return;
 				}
 				this.MainMenu.LogLevel = e.Status.LogLevel;
@@ -432,7 +506,8 @@ namespace ZitiDesktopEdge {
 				}
 				LoadIdentities(true);
 			} else {
-				SetCantDisplay("Start the Ziti Tunnel Service to continue");
+				//SetCantDisplay("Start the Ziti Tunnel Service to continue");
+				ShowServiceNotStarted();
 			}
 		}
 
@@ -657,6 +732,14 @@ namespace ZitiDesktopEdge {
 			}
 		}
 		async private void Disconnect(object sender, RoutedEventArgs e) {
+
+			var r = await monitorClient.StopServiceAsync();
+			if (r.Error != null && int.Parse(r.Error) != 0) {
+				Logger.Debug("ERROR: {0}", r.Message);
+			} else {
+				Logger.Info("Service started!");
+			}
+			/*
 			if (!_isServiceInError) {
 				ShowLoad();
 				try {
@@ -680,7 +763,7 @@ namespace ZitiDesktopEdge {
 					ShowError("Unexpected Error", "Code 4:" + ex.Message);
 				}
 				HideLoad();
-			}
+			}*/
 		}
 
 		private void ShowLoad() {
@@ -752,21 +835,20 @@ namespace ZitiDesktopEdge {
 		private void IdList_LayoutUpdated(object sender, EventArgs e) {
 			Placement();
 		}
-
-		string action = "stop";
+		/*
+		string sstatus = "stop";
 		async private void Button_Click_1(object sender, RoutedEventArgs e) {
-			if (action == "Stopped") {
-				action = "start";
-				await monitorClient.StartServicAsync();
+			ServiceStatusEvent r = null;
+			if (sstatus == "Stopped") {
+				r = await monitorClient.StartServiceAsync();
 			} else {
-				action = "Running";
-				await monitorClient.StopServicAsync();
+				r = await monitorClient.StopServiceAsync();
 			}
-			Logger.Info("button 1 1 1 1!");
+			sstatus = r.Status;
 		}
 		async private void Button_Click_2(object sender, RoutedEventArgs e) {
 			Logger.Info("button 2!");
 			await Task.Delay(10);
-		}
-    }
+		}*/
+	}
 }

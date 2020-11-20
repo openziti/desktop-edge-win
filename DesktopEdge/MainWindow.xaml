@@ -143,7 +143,7 @@
                     <Label Content="IDENTITY" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" Margin="0,-14,0,0" FontSize="10" HorizontalAlignment="Right"></Label>
                 </StackPanel>
             </Grid>
-            <Canvas Name="ConnectButton" Width="400" Height="160" MouseDown="Connect" Visibility="Visible">
+            <Canvas Name="ConnectButton" Width="400" Height="160" MouseUp="Connect" Visibility="Visible">
                 <Grid Width="{Binding ActualWidth, ElementName=ConnectButton}" Height="140">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="221*"/>
@@ -319,7 +319,5 @@
                 </Grid>
             </Grid>
         </Grid>
-        <Button x:Name="serviceStatus" Content="Button" HorizontalAlignment="Left" Margin="307,149,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click_1"/>
-        <Button x:Name="btn2" Content="Button2" HorizontalAlignment="Left" Margin="307,181,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click_2"/>
     </Grid>
 </Window>

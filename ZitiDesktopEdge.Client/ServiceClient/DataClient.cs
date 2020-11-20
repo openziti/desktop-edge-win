@@ -70,21 +70,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         const string logPipe = @"OpenZiti\ziti\logs";
         const string eventPipe = @"OpenZiti\ziti\events";
 
-        bool _extendedDebug = false; //set ZITI_EXTENDED_DEBUG env var to true if you want to diagnose issues with the service comms
-
-        public DataClient() {
-            try {
-                string extDebugEnv = Environment.GetEnvironmentVariable("ZITI_EXTENDED_DEBUG");
-                if (extDebugEnv != null) {
-                    if (bool.Parse(extDebugEnv)) {
-                        _extendedDebug = true;
-                    }
-                }
-            } catch (Exception ex) {
-                Logger.Debug("EXCEPTION IN CLIENT CONNECT: " + ex.Message);
-                //if this happens - enter retry mode...
-                Reconnect();
-            }
+        public DataClient() : base() {
         }
 
         PipeSecurity CreateSystemIOPipeSecurity() {
@@ -116,7 +102,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task<ZitiTunnelStatus> GetStatusAsync() {
             try {
                 await sendAsync(new ServiceFunction() { Function = "Status" });
-                var rtn = read<ZitiTunnelStatus>(ipcReader);
+                var rtn = await read<ZitiTunnelStatus>(ipcReader, "GetStatusAsync");
                 return rtn;
             } catch (IOException ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
@@ -143,7 +129,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
                 await sendAsync(AddIdentityFunction);
                 await sendAsync(newId);
-                var resp = read<IdentityResponse>(ipcReader);
+                var resp = await read<IdentityResponse>(ipcReader, "AddIdentityAsync");
                 Logger.Debug(resp.ToString());
                 if (resp.Code != 0) {
                     throw new ServiceException(resp.Message, resp.Code, resp.Error);
@@ -169,7 +155,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                     Payload = new FingerprintPayload() { Fingerprint = fingerPrint }
                 };
                 await sendAsync(removeFunction);
-                var r = read<SvcResponse>(ipcReader);
+                var r = read<SvcResponse>(ipcReader, "RemoveIdentityAsync");
             } catch (IOException ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //setupPipe();
@@ -224,7 +210,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task SetLogLevelAsync(string level) {
             try {
                 await sendAsync(new SetLogLevelFunction(level));
-                SvcResponse resp = read<SvcResponse>(ipcReader);
+                SvcResponse resp = await read<SvcResponse>(ipcReader, "SetLogLevelAsync");
                 return;
             } catch (IOException ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
@@ -236,7 +222,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task SetLogLevelAsync(LogLevelEnum level) {
             try {
                 await sendAsync(new SetLogLevelFunction(Enum.GetName(level.GetType(), level)));
-                SvcResponse resp = read<SvcResponse>(ipcReader);
+                SvcResponse resp = await read<SvcResponse>(ipcReader, "SetLogLevelAsync");
                 return;
             } catch (IOException ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
@@ -248,19 +234,13 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task<Identity> IdentityOnOffAsync(string fingerprint, bool onOff) {
             try {
                 await sendAsync(new IdentityToggleFunction(fingerprint, onOff));
-                IdentityResponse idr = read<IdentityResponse>(ipcReader);
+                IdentityResponse idr = await read<IdentityResponse>(ipcReader, "IdentityOnOffAsync");
                 return idr.Payload;
             } catch (IOException ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //setupPipe();
                 throw ioe;
             }
-        }
-
-        private T read<T>(StreamReader reader) where T : SvcResponse {
-            string respAsString = readMessageAsync(reader).Result;
-            T resp = (T)serializer.Deserialize(new StringReader(respAsString), typeof(T));
-            return resp;
         }
 
         protected override void ProcessLine(string line) {
@@ -314,7 +294,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task<ZitiTunnelStatus> debugAsync() {
             try {
                 await sendAsync(new ServiceFunction() { Function = "Debug" });
-                var rtn = read<ZitiTunnelStatus>(ipcReader);
+                var rtn = await read<ZitiTunnelStatus>(ipcReader, "debugAsync");
                 return rtn;
             } catch (IOException ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
