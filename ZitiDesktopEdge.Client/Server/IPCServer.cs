@@ -122,12 +122,22 @@ namespace ZitiDesktopEdge.Server {
 
         async public Task handleEventClientAsync(NamedPipeServerStream ss) {
             using (ss) {
+
+                StreamWriter writer = new StreamWriter(ss);
+                EventHandler eh = async (object sender, EventArgs e) => {
+                    await writer.WriteLineAsync(sender.ToString());
+                    await writer.FlushAsync();
+                };
+
+                MonitorStatusEvent status = new MonitorStatusEvent() { Op="status", Status = ServiceActions.ServiceStatus() };
+                await writer.WriteLineAsync(JsonConvert.SerializeObject(status));
+                await writer.FlushAsync();
+
+                EventRegistry.MyEvent += eh;
                 try {
                     StreamReader reader = new StreamReader(ss);
-                    StreamWriter writer = new StreamWriter(ss);
-
+                    
                     string line = await reader.ReadLineAsync();
-
                     while (line != null) {
                         await processMessage(line, writer);
                         line = await reader.ReadLineAsync();
@@ -137,6 +147,7 @@ namespace ZitiDesktopEdge.Server {
                 } catch (Exception e) {
                     Logger.Error(e, "Unexpected erorr when reading from or writing to a client pipe.");
                 }
+                EventRegistry.MyEvent -= eh;
             }
         }
 

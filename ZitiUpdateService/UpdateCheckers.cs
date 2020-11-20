@@ -74,6 +74,13 @@ namespace ZitiUpdateService {
 	internal class FilesystemCheck : IUpdateCheck {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 		string dest = null;
+
+		bool isUpdateAvailable = false;
+		public FilesystemCheck(bool updateAvailable) {
+			this.isUpdateAvailable = updateAvailable;
+
+		}
+
 		public bool AlreadyDownloaded(string destinationFolder, string destinationName) {
 			return File.Exists(Path.Combine(destinationFolder, destinationName));
 		}
@@ -88,7 +95,7 @@ namespace ZitiUpdateService {
 		}
 
 		public bool IsUpdateAvailable(Version current) {
-			return true;
+			return isUpdateAvailable;
 		}
 	}
 }

@@ -12,6 +12,7 @@ using NLog;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using ZitiDesktopEdge.ServiceClient;
+using ZitiDesktopEdge.Server;
 
 namespace ZitiUpdateService {
 	public partial class UpdateService : ServiceBase {
@@ -30,6 +31,10 @@ namespace ZitiUpdateService {
 		private bool running = false;
 
 		ServiceController controller;
+		ZitiDesktopEdge.Server.IPCServer svr = new ZitiDesktopEdge.Server.IPCServer();
+		Task ipcServer = null;
+		Task eventServer = null;
+
 		public UpdateService() {
 			InitializeComponent();
 
@@ -41,7 +46,7 @@ namespace ZitiUpdateService {
 		}
 
 		public void Debug() {
-			OnStart(null);
+			OnStart(new string[] { "FilesystemCheck" });
 		}
 
 		protected override void OnStart(string[] args) {
@@ -58,17 +63,25 @@ namespace ZitiUpdateService {
 			if (!running) {
 				running = true;
 				Task.Run(() => {
-					SetupServiceWatchers();
+					SetupServiceWatchers(args);
 				});
 			}
+
+			ipcServer = svr.startIpcServer();
+			eventServer = svr.startEventsServer();
+
 			Logger.Info("ziti-monitor service is initialized and running");
+		}
+
+		public void WaitForCompletion() {
+			Task.WaitAll(ipcServer, eventServer);
 		}
 
 		protected override void OnStop() {
 			Logger.Info("ziti-monitor service is stopping");
 		}
 
-		private void SetupServiceWatchers() {
+		private void SetupServiceWatchers(string[] args) {
 
 			var updateTimerInterval = ConfigurationManager.AppSettings.Get("UpdateTimer");
 			var upInt = TimeSpan.Zero;
@@ -82,7 +95,7 @@ namespace ZitiUpdateService {
 			_updateTimer.Enabled = true;
 			_updateTimer.Start();
 			Logger.Info("Version Checker is running");
-			CheckUpdate(null, null); //check immediately
+			CheckUpdate(args, null); //check immediately
 
 			try {
 				svc.ConnectAsync().Wait();
@@ -99,8 +112,13 @@ namespace ZitiUpdateService {
 			try {
 				Logger.Debug("checking for update");
 				string updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win/releases/latest"; //hardcoded on purpose
-				IUpdateCheck check = new GithubCheck(updateUrl);
-				//IUpdateCheck check = new FilesystemCheck();
+				string[] senderAsArgs = (string[])sender;
+				IUpdateCheck check = null;
+				if (sender == null || senderAsArgs.Length < 1 || !senderAsArgs[0].Equals("FilesystemCheck")) {
+					check = new GithubCheck(updateUrl);
+				} else {
+					check = new FilesystemCheck(false);
+				}
 
 				string currentVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString(); //fetch from ziti?
 				Version installed = new Version(currentVersion);
@@ -165,20 +183,6 @@ namespace ZitiUpdateService {
 			inUpdateCheck = false;
 		}
 
-		private void StartZiti() {
-			controller = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == "ziti");
-			if (controller != null && controller.Status != ServiceControllerStatus.Running && controller.Status != ServiceControllerStatus.StartPending && controller.Status != ServiceControllerStatus.ContinuePending) {
-				try {
-					Logger.Info("Starting Service");
-					controller.Start();
-					controller.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
-					SetupServiceWatchers();
-				} catch (Exception e) {
-					Logger.Info("Cannot Start Service - " + e.ToString());
-				}
-			}
-		}
-
 		private void StopZiti() {
 			Logger.Info("Stopping the ziti service...");
 			controller = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == "ziti");
@@ -214,6 +218,10 @@ namespace ZitiUpdateService {
 				Logger.Info("client disconnected due to clean service shutdown");
 			} else {
 				Logger.Error("SERVICE IS DOWN and did not exit cleanly. initiating DNS cleanup");
+
+				MonitorStatusEvent status = new MonitorStatusEvent() { Op = "status", Status = ServiceActions.ServiceStatus() };
+				EventRegistry.SendEventToConsumers(status);
+
 				//EnumerateDNS();
 				var ps = System.Management.Automation.PowerShell.Create();
 				string script = "Get-NetIPInterface | ForEach-Object { Set-DnsClientServerAddress -InterfaceIndex $_.ifIndex -ResetServerAddresses }";

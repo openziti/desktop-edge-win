@@ -60,7 +60,7 @@ namespace ZitiDesktopEdge {
 				LogManager.Configuration = new XmlLoggingConfiguration(nlogFile);
 			} else {
 				var config = new LoggingConfiguration();
-				var logname = "ziti-montior";
+				var logname = asm.GetName().Name;
 				// Targets where to log to: File and Console
 				var logfile = new FileTarget("logfile") {
 					FileName = $"{logname}.log",
@@ -181,7 +181,7 @@ namespace ZitiDesktopEdge {
 
 			monitorClient = new MonitorClient();
 			monitorClient.OnClientConnected += MonitorClient_OnClientConnected;
-			monitorClient.OnTunnelStatusEvent += MonitorClient_OnTunnelStatusEvent;
+			monitorClient.OnMonitorStatusEvent += MonitorClient_OnMonitorStatusEvent;
 
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
 			Application.Current.Properties.Add("Identities", new List<ZitiIdentity>());
@@ -208,8 +208,38 @@ namespace ZitiDesktopEdge {
 			Placement();
 		}
 
-		private void MonitorClient_OnTunnelStatusEvent(object sender, TunnelStatusEvent e) {
-			Debug.WriteLine("MonitorClient_OnTunnelStatusEvent");
+		private void MonitorClient_OnMonitorStatusEvent(object sender, MonitorStatusEvent evt) {
+			Debug.WriteLine("MonitorClient_OnMonitorStatusEvent");
+			ServiceControllerStatus status = (ServiceControllerStatus)Enum.Parse(typeof(ServiceControllerStatus), evt.Status);
+			action = evt.Status;
+			switch (status) {
+				case ServiceControllerStatus.Running:
+					Logger.Info("Service is started");
+					action = "stop";
+					break;
+				case ServiceControllerStatus.Stopped:
+					Logger.Info("Service is stopped");
+					action = "start";
+					break;
+				case ServiceControllerStatus.StopPending:
+					Logger.Info("Service is stopping...");
+					break;
+				case ServiceControllerStatus.StartPending:
+					Logger.Info("Service is starting...");
+					break;
+				case ServiceControllerStatus.PausePending:
+					Logger.Warn("UNEXPECTED STATUS: PausePending");
+					break;
+				case ServiceControllerStatus.Paused:
+					Logger.Warn("UNEXPECTED STATUS: Paused");
+					break;
+				default:
+					Logger.Warn("UNEXPECTED STATUS: {0}", evt.Status);
+					break;
+			}
+			this.Dispatcher.Invoke(() => {
+				this.serviceStatus.Content = "Service is :" + evt.Status;
+			});
 		}
 
 		private void MonitorClient_OnClientConnected(object sender, object e) {
@@ -725,11 +755,11 @@ namespace ZitiDesktopEdge {
 
 		string action = "stop";
 		async private void Button_Click_1(object sender, RoutedEventArgs e) {
-			if (action == "stop") {
+			if (action == "Stopped") {
 				action = "start";
 				await monitorClient.StartServicAsync();
 			} else {
-				action = "stop";
+				action = "Running";
 				await monitorClient.StopServicAsync();
 			}
 			Logger.Info("button 1 1 1 1!");

@@ -48,17 +48,11 @@ namespace ZitiUpdateService {
 			}
 			Logger.Info("service started - logger initialized");
 
-			IPCServer svr = new IPCServer();
-			Task ipcServer = svr.startIpcServer();
-			Task eventServer = svr.startEventsServer();
-
-			Task.WaitAll(ipcServer, eventServer);
 			UpdateService updateSvc = new UpdateService();
 			updateSvc.AutoLog = true;
 #if DEBUG
-			Logger.Error("================================");
 			updateSvc.Debug();
-			System.Threading.Thread.Sleep(System.Threading.Timeout.Infinite);
+			updateSvc.WaitForCompletion();
 #else
 			ServiceBase[] ServicesToRun = new ServiceBase[]
 			{

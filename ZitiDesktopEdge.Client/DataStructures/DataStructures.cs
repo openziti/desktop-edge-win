@@ -291,4 +291,8 @@ namespace ZitiDesktopEdge.DataStructures {
     {
         public Identity Id { get; set; }
     }
+
+    public class MonitorStatusEvent : StatusEvent {
+        public string Status { get; set; }
+    }
 }

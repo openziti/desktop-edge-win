@@ -3,7 +3,7 @@
 using NLog;
 
 namespace ZitiDesktopEdge.Server {
-    internal static class ServiceActions {
+    public static class ServiceActions {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         
         private static ServiceController sc = new ServiceController("ziti");

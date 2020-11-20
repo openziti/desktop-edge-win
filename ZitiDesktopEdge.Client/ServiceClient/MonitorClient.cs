@@ -29,13 +29,11 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         public const int EXPECTED_API_VERSION = 1;
 
-        public event EventHandler<TunnelStatusEvent> OnTunnelStatusEvent;
+        public event EventHandler<MonitorStatusEvent> OnMonitorStatusEvent;
 
-        protected virtual void TunnelStatusEvent(TunnelStatusEvent e) {
-            OnTunnelStatusEvent?.Invoke(this, e);
+        protected virtual void MonitorStatusEvent(MonitorStatusEvent e) {
+            OnMonitorStatusEvent?.Invoke(this, e);
         }
-
-        const PipeDirection inOut = PipeDirection.InOut;
 
         public MonitorClient() {
         }
@@ -43,7 +41,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         async protected override Task ConnectPipesAsync() {
             await semaphoreSlim.WaitAsync();
             try {
-                pipeClient = new NamedPipeClientStream(localPipeServer, IPCServer.PipeName, inOut);
+                pipeClient = new NamedPipeClientStream(localPipeServer, IPCServer.PipeName, PipeDirection.InOut);
                 eventClient = new NamedPipeClientStream(localPipeServer, IPCServer.EventPipeName, PipeDirection.In);
                 await eventClient.ConnectAsync(ServiceConnectTimeout);
                 await pipeClient.ConnectAsync(ServiceConnectTimeout);
@@ -57,22 +55,8 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         protected override void ProcessLine(string line) {
             var jsonReader = new JsonTextReader(new StringReader(line));
-            StatusEvent evt = serializer.Deserialize<StatusEvent>(jsonReader);
-            switch (evt.Op) {
-                case "status":
-                    TunnelStatusEvent se = serializer.Deserialize<TunnelStatusEvent>(jsonReader);
-
-                    if (se != null) {
-                        TunnelStatusEvent(se);
-                    }
-                    break;
-                case "shutdown":
-
-                    break;
-                default:
-                    Logger.Debug("unexpected operation! " + evt.Op);
-                    break;
-            }
+            MonitorStatusEvent evt = serializer.Deserialize<MonitorStatusEvent>(jsonReader);
+            MonitorStatusEvent(evt);
         }
 
         async public Task SendServiceFunctionAsync(ServiceFunction f) {

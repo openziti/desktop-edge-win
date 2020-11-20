@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using NLog;
 
 using ZitiDesktopEdge.DataStructures;
+using ZitiDesktopEdge.Server;
 
 /// <summary>
 /// The implementation will abstract away the setup of the communication to
@@ -68,7 +69,6 @@ namespace ZitiDesktopEdge.ServiceClient {
         const string ipcPipe = @"OpenZiti\ziti\ipc";
         const string logPipe = @"OpenZiti\ziti\logs";
         const string eventPipe = @"OpenZiti\ziti\events";
-        const PipeDirection inOut = PipeDirection.InOut;
 
         bool _extendedDebug = false; //set ZITI_EXTENDED_DEBUG env var to true if you want to diagnose issues with the service comms
 
@@ -101,7 +101,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         async protected override Task ConnectPipesAsync() {
             await semaphoreSlim.WaitAsync();
             try {
-                pipeClient = new NamedPipeClientStream(localPipeServer, ipcPipe, inOut);
+                pipeClient = new NamedPipeClientStream(localPipeServer, ipcPipe, PipeDirection.InOut);
                 eventClient = new NamedPipeClientStream(localPipeServer, eventPipe, PipeDirection.In);
                 await eventClient.ConnectAsync(ServiceConnectTimeout);
                 await pipeClient.ConnectAsync(ServiceConnectTimeout);
@@ -311,11 +311,6 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
         }
 
-        private void debugServiceCommunication(string msg) {
-            if (_extendedDebug) {
-                Logger.Debug(msg);
-            }
-        }
         async public Task<ZitiTunnelStatus> debugAsync() {
             try {
                 await sendAsync(new ServiceFunction() { Function = "Debug" });

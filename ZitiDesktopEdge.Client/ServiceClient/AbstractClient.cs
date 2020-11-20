@@ -42,7 +42,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
             ipcWriter = new StreamWriter(pipeClient);
             ipcReader = new StreamReader(pipeClient);
-            Task.Run(() => { //hack for now until it's async...
+            Task.Run(async () => { //hack for now until it's async...
                 try {
                     StreamReader eventReader = new StreamReader(eventClient);
                     while (true) {
@@ -50,7 +50,12 @@ namespace ZitiDesktopEdge.ServiceClient {
                             break;
                         }
 
-                        waitForLine(eventReader);
+                        try {
+                            string respAsString = await readMessageAsync(eventReader);
+                            ProcessLine(respAsString);
+                        } catch (Exception ex) {
+                            Logger.Warn(ex, "ERROR caught");
+                        }
                     }
                 } catch (Exception ex) {
                     Logger.Debug("unepxected error: " + ex.ToString());
@@ -109,15 +114,6 @@ namespace ZitiDesktopEdge.ServiceClient {
                     //will trigger the pipe to rebuild
                     throw new IOException("Unexpected error when sending data to service. " + ex.Message);
                 }
-            }
-        }
-        protected void waitForLine(StreamReader reader) {
-            try {
-                string respAsString = readMessageAsync(reader).Result;
-                ProcessLine(respAsString);
-
-            } catch (Exception e) {
-                Logger.Debug(e.Message);
             }
         }
 
@@ -196,7 +192,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             });
         }
 
-        private void debugServiceCommunication(string msg) {
+        protected void debugServiceCommunication(string msg) {
             if (_extendedDebug) {
                 Logger.Debug(msg);
             }
