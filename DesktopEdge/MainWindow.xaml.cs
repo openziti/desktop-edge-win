@@ -40,6 +40,7 @@ namespace ZitiDesktopEdge {
 		private int _top = 30;
 		private double _maxHeight = 800d;
 		private string[] suffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };
+		private string DefaultLoadText = "Operation pending, please wait...";
 
 		private static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
@@ -136,6 +137,7 @@ namespace ZitiDesktopEdge {
 
 		private void SetCantDisplay(string title, string detailMessage, Visibility closeButtonVisibility) {
 			NoServiceView.Visibility = Visibility.Visible;
+			CloseErrorButton.IsEnabled = true;
 			CloseErrorButton.Visibility = closeButtonVisibility;
 			ErrorMsg.Content = title;
 			ErrorMsgDetail.Content = detailMessage;
@@ -285,21 +287,25 @@ namespace ZitiDesktopEdge {
 
 		async private void StartZitiService(object sender, RoutedEventArgs e) {
 			try {
-				startZitiButtonVisible = false;
-				CloseErrorButton.Click -= StartZitiService;
-				CloseErrorButton.IsEnabled = false;
+				ShowLoad("Staring the data service");
 				Logger.Info("StartZitiService");
 				var r = await monitorClient.StartServiceAsync();
-				if (r.Error != null && int.Parse(r.Error) != 0) {
-					Logger.Debug("ERROR: {0}", r.Message);
+				if (r.Code != 0) {
+					Logger.Debug("ERROR: {0} : {1}", r.Message, r.Error);
 				} else {
 					Logger.Info("Service started!");
+					startZitiButtonVisible = false;
+					CloseErrorButton.Click -= StartZitiService;
 					CloseError(null, null);
 				}
-				CloseErrorButton.IsEnabled = true;
 			} catch(Exception ex){
 				Logger.Info(ex, "UNEXPECTED ERROR!");
+				startZitiButtonVisible = false;
+				CloseErrorButton.Click += StartZitiService;
+				CloseErrorButton.IsEnabled = true;
 			}
+			CloseErrorButton.IsEnabled = true;
+			HideLoad();
 		}
 
 		bool startZitiButtonVisible = false;
@@ -662,7 +668,7 @@ namespace ZitiDesktopEdge {
 			jwtDialog.DefaultExt = ".jwt";
 			jwtDialog.Filter = "Ziti Identities (*.jwt)|*.jwt";
 			if (jwtDialog.ShowDialog() == true) {
-				ShowLoad();
+				ShowLoad("Adding Identity");
 				string fileContent = File.ReadAllText(jwtDialog.FileName);
 
 				try {
@@ -705,7 +711,7 @@ namespace ZitiDesktopEdge {
 		}
 		private void Connect(object sender, RoutedEventArgs e) {
 			if (!_isServiceInError) {
-				ShowLoad();
+				ShowLoad("Connecting...");
 				this.Dispatcher.Invoke(async () => {
 					//Dispatcher.Invoke(new Action(() => { }), System.Windows.Threading.DispatcherPriority.ContextIdle);
 					await DoConnectAsync();
@@ -737,6 +743,7 @@ namespace ZitiDesktopEdge {
 		}
 		async private void Disconnect(object sender, RoutedEventArgs e) {
 
+			ShowLoad("Disabling service...");
 			var r = await monitorClient.StopServiceAsync();
 			if (r.Error != null && int.Parse(r.Error) != 0) {
 				Logger.Debug("ERROR: {0}", r.Message);
@@ -768,9 +775,11 @@ namespace ZitiDesktopEdge {
 				}
 				HideLoad();
 			}*/
+			HideLoad();
 		}
 
-		private void ShowLoad() {
+		private void ShowLoad(string msg) {
+			LoadingDetails.Text = msg;
 			LoadProgress.IsIndeterminate = true;
 			LoadingScreen.Visibility = Visibility.Visible;
 			((MainWindow)System.Windows.Application.Current.MainWindow).UpdateLayout();
@@ -802,6 +811,7 @@ namespace ZitiDesktopEdge {
 		private void CloseError(object sender, RoutedEventArgs e) {
 			ErrorView.Visibility = Visibility.Collapsed;
 			NoServiceView.Visibility = Visibility.Collapsed;
+			CloseErrorButton.IsEnabled = true;
 		}
 
 		private void CloseApp(object sender, RoutedEventArgs e) {
