@@ -280,7 +280,8 @@ namespace ZitiDesktopEdge.ServiceClient {
                         }
                         break;
                     case "shutdown":
-
+                        Logger.Debug("Service shutdown has been requested! " + evt.Op);
+                        ClientDisconnected("true");
                         break;
                     default:
                         Logger.Debug("unexpected operation! " + evt.Op);

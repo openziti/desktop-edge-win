@@ -38,7 +38,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             Connected = true;
             Reconnecting = false;
             CleanShutdown = false;
-            Logger.Debug("CleanShutdown set to false");
+            Logger.Debug("Client connected successfully. Setting CleanShutdown set to false.");
 
             ipcWriter = new StreamWriter(pipeClient);
             ipcReader = new StreamReader(pipeClient);

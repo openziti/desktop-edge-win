@@ -52,13 +52,13 @@ namespace ZitiDesktopEdge {
 			ToggleSwitch.OnToggled += ToggleIdentity;
 		}
 
-		private void ToggleIdentity(bool on) {
+		async private void ToggleIdentity(bool on) {
 			try {
 				if (OnStatusChanged != null) {
 					OnStatusChanged(on);
 				}
 				DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-				DataStructures.Identity id = client.IdentityOnOffAsync(_identity.Fingerprint, on).Result;
+				DataStructures.Identity id = await client.IdentityOnOffAsync(_identity.Fingerprint, on);
 				this.Identity.IsEnabled = on;
 				if (on) {
 					ToggleStatus.Content = "ENABLED";

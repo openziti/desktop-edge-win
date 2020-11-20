@@ -294,6 +294,7 @@ namespace ZitiDesktopEdge {
 					Logger.Debug("ERROR: {0}", r.Message);
 				} else {
 					Logger.Info("Service started!");
+					CloseError(null, null);
 				}
 				CloseErrorButton.IsEnabled = true;
 			} catch(Exception ex){
@@ -341,6 +342,9 @@ namespace ZitiDesktopEdge {
 		private void ServiceClient_OnClientDisconnected(object sender, object e) {
 			this.Dispatcher.Invoke(() => {
 				IdList.Children.Clear();
+                if (e != null) {
+					Logger.Debug(e.ToString());
+                }
 				//SetCantDisplay("Start the Ziti Tunnel Service to continue");
 				ShowServiceNotStarted();
 			});
@@ -737,7 +741,7 @@ namespace ZitiDesktopEdge {
 			if (r.Error != null && int.Parse(r.Error) != 0) {
 				Logger.Debug("ERROR: {0}", r.Message);
 			} else {
-				Logger.Info("Service started!");
+				Logger.Info("Service stopped!");
 			}
 			/*
 			if (!_isServiceInError) {
