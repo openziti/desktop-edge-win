@@ -1,26 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.ServiceClient;
+
+using NLog;
 
 namespace ZitiDesktopEdge {
 	/// <summary>
 	/// Interaction logic for IdentityDetails.xaml
 	/// </summary> 
 	public partial class IdentityDetails:UserControl {
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		private bool _isAttached = true;
 		public delegate void Forgot(ZitiIdentity forgotten);
@@ -89,11 +83,12 @@ namespace ZitiDesktopEdge {
 			IdentityStatus.Value = _identity.IsEnabled ? "active" : "disabled";
 			ServiceList.Children.Clear();
 			if (_identity.Services.Count>0) {
-				for (int i = 0; i < _identity.Services.Count; i++) {
+				foreach(var zitiSvc in _identity.Services.OrderBy(s => s.Name.ToLower())) {
+					Logger.Debug("painting: " + zitiSvc.Name);
 					ServiceInfo editor = new ServiceInfo();
-					editor.Label = _identity.Services[i].Name;
-					editor.Value = _identity.Services[i].Url;
-					editor.Warning = _identity.Services[i].Warning;
+					editor.Label = zitiSvc.Name;
+					editor.Value = zitiSvc.Url;
+					editor.Warning = zitiSvc.Warning;
 					editor.IsLocked = true;
 					ServiceList.Children.Add(editor);
 				}

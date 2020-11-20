@@ -423,8 +423,11 @@ namespace ZitiDesktopEdge {
 				if (e.Action == "added") {
 					ZitiService zs = new ZitiService(e.Service);
 					var svc = found.Services.Find(s => s.Name == zs.Name);
-					if (svc == null) found.Services.Add(zs);
-					else Debug.WriteLine("the service named " + zs.Name + " is already accounted for on this identity.");
+					if (svc == null) {
+						found.Services.Add(zs);
+					} else {
+						Debug.WriteLine("the service named " + zs.Name + " is already accounted for on this identity.");
+					}
 				} else {
 					Debug.WriteLine("removing the service named: " + e.Service.Name);
 					found.Services.RemoveAll(s => s.Name == e.Service.Name);
@@ -539,11 +542,11 @@ namespace ZitiDesktopEdge {
 			Application.Current.MainWindow.Icon = System.Windows.Media.Imaging.BitmapFrame.Create(iconUri);
 		}
 
-		private void LoadIdentities(Boolean repaint) {
+	private void LoadIdentities(Boolean repaint) {
 			IdList.Children.Clear();
 			IdList.Height = 0;
 			IdList.MaxHeight = _maxHeight - 520;
-			ZitiIdentity[] ids = identities.ToArray();
+			ZitiIdentity[] ids = identities.OrderBy(i => i.Name.ToLower()).ToArray();
 			double height = 490 + (ids.Length * 60);
 			if (height > _maxHeight) height = _maxHeight;
 			this.Height = height;
