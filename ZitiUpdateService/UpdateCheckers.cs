@@ -78,7 +78,6 @@ namespace ZitiUpdateService {
 		bool isUpdateAvailable = false;
 		public FilesystemCheck(bool updateAvailable) {
 			this.isUpdateAvailable = updateAvailable;
-
 		}
 
 		public bool AlreadyDownloaded(string destinationFolder, string destinationName) {
