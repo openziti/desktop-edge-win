@@ -1,4 +1,4 @@
-# Release 1.4.5
+# Release 1.5.0
 
 ## What's New
 * closes #216 - The big change is that the big button now will send a message to the monitor service which will have the proper rights to stop and start the data service (`ziti`).
