@@ -1,6 +1,6 @@
 ﻿using System.IO;
 using System.Reflection;
-
+using System.ServiceProcess;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
