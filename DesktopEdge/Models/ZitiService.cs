@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Management.Automation.Language;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -43,7 +42,7 @@ namespace ZitiDesktopEdge.Models {
 		public ZitiService() {
 		}
 
-		public ZitiService(ZitiDesktopEdge.ServiceClient.Service svc)
+		public ZitiService(ZitiDesktopEdge.DataStructures.Service svc)
 		{
 			this.Name = svc.Name;
 			this.AssignedIP = svc.AssignedIP;

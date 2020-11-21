@@ -1,4 +1,24 @@
-# Release 1.4.3
+# Release 1.4.5
+
+## What's New
+* closes #216 - The big change is that the big button now will send a message to the monitor service which will have the proper rights to stop and start the data service (`ziti`).
+
+## Other changes:
+* Changed the default mask to /10 as to not be different
+* Changed the minimum allowable mask to be /16
+* Migrate any masks > /16 to /16
+* fixes #220 - Alphabetize the service list
+
+## Bugs fixed:
+* fixes #221 - Cleanup previous update files
+* fixes #218 - 0 length config cause panic
+* fixes #211 - segv on hosted service
+
+## Dependency Updates
+* update to github.com/openziti/sdk-golang v0.14.12
+
+# Release 1.4.4
+(skipped 1.4.3 by mistake)
 
 ## What's New
 

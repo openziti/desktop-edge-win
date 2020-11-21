@@ -31,3 +31,7 @@ func Path() string {
 func LogFile() string {
 	return Path() + "ziti-tunneler.log"
 }
+
+func BackupFile() string {
+	return File() + ".backup"
+}

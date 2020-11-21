@@ -54,7 +54,7 @@ func (t *RuntimeState) SaveState() {
 	// overwrite file if it exists
 	_ = os.MkdirAll(config.Path(), 0644)
 
-	log.Debugf("copying original config onto config.json.backup")
+	log.Debugf("backing up config")
 	backup,err := backupConfig()
 	if err != nil {
 		log.Warnf("could not backup config file! %v", err)
@@ -252,29 +252,50 @@ func (t *RuntimeState) LoadIdentity(id *Id) {
 }
 
 func (t *RuntimeState) LoadConfig() {
-	log.Infof("reading config file located at: %s", config.File())
-	file, err := os.OpenFile(config.File(), os.O_RDONLY, 0644)
+	err := readConfig(t, config.File())
 	if err != nil {
-		t.state = &dto.TunnelStatus{}
-		return
+		err = readConfig(t, config.BackupFile())
+		if err != nil {
+			log.Panicf("config file is not valid nor is backup file!")
+		}
+	}
+
+	//any specific code needed when starting the process. some values need to be cleared
+	TunStarted = time.Now() //reset the time on startup
+
+	if rts.state.TunIpv4Mask > constants.Ipv4MinMask {
+		log.Warnf("provided mask: [%d] is smaller than the minimum permitted: [%d] and will be changed", rts.state.TunIpv4Mask, constants.Ipv4MinMask)
+		rts.UpdateIpv4Mask(constants.Ipv4MinMask)
+	}
+}
+
+func readConfig(t *RuntimeState, filename string) error {
+	log.Infof("reading config file located at: %s", filename)
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		log.Infof("the config file does not exist. this is normal if this is a new install or if the config file was removed manually")
+		return nil
+	}
+
+	if info.Size() == 0 {
+		return fmt.Errorf("the config file at contains no bytes and is considered invalid: %s", filename)
+	}
+
+	file, err := os.OpenFile(filename, os.O_RDONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("unexpected error opening config file: %v", err)
 	}
 
 	r := bufio.NewReader(file)
 	dec := json.NewDecoder(r)
 
-	err = dec.Decode(&rts.state)
-	if err != nil {
-		log.Panicf("unexpected error reading config file. %v", err)
-	}
+	err = dec.Decode(&t.state)
+	defer file.Close()
 
-	err = file.Close()
 	if err != nil {
-		log.Errorf("could not close configuration file. this is not normal! %v", err)
+		return fmt.Errorf("unexpected error reading config file: %v", err)
 	}
-
-	for _, id := range t.ids {
-		id.Active = false
-	}
+	return nil
 }
 
 func (t *RuntimeState) UpdateIpv4Mask(ipv4mask int){
@@ -312,14 +333,14 @@ func iPv6Disabled() bool {
 	}
 }
 
-func (r *RuntimeState) AddRoute(destination net.IPNet, nextHop net.IP, metric uint32) error {
-	nativeTunDevice := (*r.tun).(*tun.NativeTun)
+func (t *RuntimeState) AddRoute(destination net.IPNet, nextHop net.IP, metric uint32) error {
+	nativeTunDevice := (*t.tun).(*tun.NativeTun)
 	luid := winipcfg.LUID(nativeTunDevice.LUID())
 	return luid.AddRoute(destination, nextHop, metric)
 }
 
-func (r *RuntimeState) RemoveRoute(destination net.IPNet, nextHop net.IP) error {
-	nativeTunDevice := (*r.tun).(*tun.NativeTun)
+func (t *RuntimeState) RemoveRoute(destination net.IPNet, nextHop net.IP) error {
+	nativeTunDevice := (*t.tun).(*tun.NativeTun)
 	luid := winipcfg.LUID(nativeTunDevice.LUID())
 	return luid.DeleteRoute(destination, nextHop)
 }
