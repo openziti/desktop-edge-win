@@ -40,7 +40,7 @@ namespace ZitiUpdateService {
 				var logconsole = new ConsoleTarget("logconsole");
 
 				// Rules for mapping loggers to targets            
-				config.AddRule(LogLevel.Info, LogLevel.Fatal, logconsole);
+				config.AddRule(LogLevel.Debug, LogLevel.Fatal, logconsole);
 				config.AddRule(LogLevel.Debug, LogLevel.Fatal, logfile);
 
 				// Apply config           

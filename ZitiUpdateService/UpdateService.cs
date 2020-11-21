@@ -29,6 +29,10 @@ namespace ZitiUpdateService {
 
 		private DataClient svc = new DataClient();
 		private bool running = false;
+		private string asmDir = null;
+		private string updateFolder = null;
+		private string filePrefix = "Ziti.Desktop.Edge.Client-";
+		Version assemblyVersion = null;
 
 		ServiceController controller;
 		ZitiDesktopEdge.Server.IPCServer svr = new ZitiDesktopEdge.Server.IPCServer();
@@ -95,6 +99,13 @@ namespace ZitiUpdateService {
 			_updateTimer.Enabled = true;
 			_updateTimer.Start();
 			Logger.Info("Version Checker is running");
+
+
+			string assemblyVersionStr = Assembly.GetExecutingAssembly().GetName().Version.ToString(); //fetch from ziti?
+			assemblyVersion = new Version(assemblyVersionStr);
+			asmDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+			updateFolder = $"{asmDir}{Path.DirectorySeparatorChar}updates";
+			scanForStaleDownloads(updateFolder);
 			CheckUpdate(args, null); //check immediately
 
 			try {
@@ -120,19 +131,13 @@ namespace ZitiUpdateService {
 					check = new FilesystemCheck(false);
 				}
 
-				string currentVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString(); //fetch from ziti?
-				Version installed = new Version(currentVersion);
-				if (!check.IsUpdateAvailable(installed)) {
+				if (!check.IsUpdateAvailable(assemblyVersion)) {
 					Logger.Debug("update check complete. no update available");
 					inUpdateCheck = false;
 					return;
 				}
 
 				Logger.Info("update is available.");
-
-				var curdir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-
-				var updateFolder = $"{curdir}{Path.DirectorySeparatorChar}updates";
 				Directory.CreateDirectory(updateFolder);
 
 				Logger.Info("copying update package");
@@ -183,7 +188,46 @@ namespace ZitiUpdateService {
 			inUpdateCheck = false;
 		}
 
-		private void StopZiti() {
+		private bool isOlder(Version current) {
+			int compare = current.CompareTo(assemblyVersion);
+			if (compare < 0) {
+				return true;
+			} else if (compare > 0) {
+				return false;
+			} else {
+				return false;
+			}
+		}
+
+        private void scanForStaleDownloads(string folder) {
+			try {
+				Logger.Info("Scanning for stale downloads");
+				foreach (var f in Directory.EnumerateFiles(folder)) {
+					FileInfo fi = new FileInfo(f);
+					if (fi.Exists) {
+						if (fi.Name.StartsWith(filePrefix)) {
+							Logger.Debug("scanning for staleness: " + f);
+							string ver = Path.GetFileNameWithoutExtension(f).Substring(filePrefix.Length);
+							Version fileVersion = new Version(ver);
+							if (isOlder(fileVersion)) {
+								Logger.Info("Removing old download: " + fi.Name);
+								fi.Delete();
+							} else {
+								Logger.Debug("Retaining file. {1} is the same or newer than {1}", fi.Name, assemblyVersion);
+							}
+						} else {
+							Logger.Debug("skipping file named {0}", f);
+						}
+					} else {
+						Logger.Debug("file named {0} did not exist?", f);
+                    }
+				}
+			} catch(Exception ex) {
+				Logger.Error(ex, "Unexpected exception");
+            }
+		}
+
+        private void StopZiti() {
 			Logger.Info("Stopping the ziti service...");
 			controller = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == "ziti");
 			if (controller != null && controller.Status != ServiceControllerStatus.Stopped) {
