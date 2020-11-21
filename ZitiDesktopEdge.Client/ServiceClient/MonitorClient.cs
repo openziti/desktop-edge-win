@@ -71,25 +71,25 @@ namespace ZitiDesktopEdge.ServiceClient {
             ActionEvent action = new ActionEvent() { Action = "Normal", Op = "Stop" };
             //string result = await SendServiceFunctionAsync(action);
             await sendAsync(action);
-            return await read<ServiceStatusEvent>(ipcReader, "StopServiceAsync");
+            return await readAsync<ServiceStatusEvent>(ipcReader, "StopServiceAsync");
         }
         async public Task<ServiceStatusEvent> StartServiceAsync() {
             ActionEvent action = new ActionEvent() { Action = "Normal", Op = "Start" };
             //string result = await SendServiceFunctionAsync(action);
             await sendAsync(action);
-            return await read<ServiceStatusEvent>(ipcReader, "StartServiceAsync");
+            return await readAsync<ServiceStatusEvent>(ipcReader, "StartServiceAsync");
         }
 
         async public Task<ServiceStatusEvent> ForceTerminate() {
             ActionEvent action = new ActionEvent() { Action = "Force", Op = "Stop" };
             await sendAsync(action);
-            return await read<ServiceStatusEvent>(ipcReader, "ForceTerminate");
+            return await readAsync<ServiceStatusEvent>(ipcReader, "ForceTerminate");
         }
 
         async public Task<ServiceStatusEvent> Status() {
             ActionEvent action = new ActionEvent() { Action = "", Op = "Status" };
             await sendAsync(action);
-            return await read<ServiceStatusEvent>(ipcReader, "Status");
+            return await readAsync<ServiceStatusEvent>(ipcReader, "Status");
         }
     }
 }

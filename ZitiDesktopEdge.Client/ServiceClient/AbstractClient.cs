@@ -198,7 +198,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
         }
 
-        async protected Task<T> read<T>(StreamReader reader, string where) where T : SvcResponse {
+        async protected Task<T> readAsync<T>(StreamReader reader, string where) where T : SvcResponse {
             string respAsString = await readMessageAsync(reader, where);
             T resp = (T)serializer.Deserialize(new StringReader(respAsString), typeof(T));
             return resp;
