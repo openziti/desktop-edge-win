@@ -199,6 +199,7 @@ namespace ZitiUpdateService {
 
 				StopZiti();
 
+				Logger.Info("Running update package: " + fileDestination);
 				// shell out to a new process and run the uninstall, reinstall steps which SHOULD stop this current process as well
 				Process.Start(fileDestination, "/passive");
 			} catch (Exception ex) {
@@ -209,6 +210,7 @@ namespace ZitiUpdateService {
 
 		private bool isOlder(Version current) {
 			int compare = current.CompareTo(assemblyVersion);
+			Logger.Info("comparing current[{0}] to compare[{1}]: {2}", current.ToString(), assemblyVersion.ToString(), compare);
 			if (compare < 0) {
 				return true;
 			} else if (compare > 0) {
@@ -227,7 +229,7 @@ namespace ZitiUpdateService {
 						if (fi.Name.StartsWith(filePrefix)) {
 							Logger.Debug("scanning for staleness: " + f);
 							string ver = Path.GetFileNameWithoutExtension(f).Substring(filePrefix.Length);
-							Version fileVersion = new Version(ver);
+							Version fileVersion = new Version(ver + ".0");
 							if (isOlder(fileVersion)) {
 								Logger.Info("Removing old download: " + fi.Name);
 								fi.Delete();

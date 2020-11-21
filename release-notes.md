@@ -1,3 +1,28 @@
+# Release 1.5.2
+
+## What's New
+* nothing
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+# Release 1.5.1
+
+## What's New
+* nothing
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* fixes #226 - update check fails on second run due to NRE
+
+## Dependency Updates
+* none
+
 # Release 1.5.0
 
 ## What's New
