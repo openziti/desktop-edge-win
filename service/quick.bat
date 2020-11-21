@@ -1,4 +1,4 @@
-@echo off
+echo off
 REM Copyright NetFoundry, Inc.
 REM
 REM Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,4 +13,5 @@ REM WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 REM See the License for the specific language governing permissions and
 REM limitations under the License.
 REM
+SET ZITI_DEBUG=true
 call build quick

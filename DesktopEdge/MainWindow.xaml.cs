@@ -49,6 +49,14 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
+		private void AddIdentity(ZitiIdentity id) {
+			semaphoreSlim.Wait();
+			if (!identities.Any(i => id.Fingerprint == i.Fingerprint)) {
+				identities.Add(id);
+			}
+			semaphoreSlim.Release();
+        }
+
 		public MainWindow() {
 			InitializeComponent();
 
@@ -323,7 +331,6 @@ namespace ZitiDesktopEdge {
 
 		async private void LogLevelChanged(string level) {
 			await serviceClient.SetLogLevelAsync(level);
-			Logger.Info("shouldhave read here");
 		}
 
 		private void IdentityMenu_OnError(string message) {
@@ -362,7 +369,7 @@ namespace ZitiDesktopEdge {
 				if (e.Action == "added") {
 					var found = identities.Find(i => i.Fingerprint == e.Id.FingerPrint);
 					if (found == null) {
-						identities.Add(zid);
+						AddIdentity(zid);
 						LoadIdentities(true);
 					} else {
 						//if we get here exit out so that LoadIdentities() doesn't get called
@@ -428,7 +435,6 @@ namespace ZitiDesktopEdge {
 					Debug.WriteLine("removing the service named: " + e.Service.Name);
 					found.Services.RemoveAll(s => s.Name == e.Service.Name);
 				}
-				LoadIdentities(false);
 				IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
 				if (deets.IsVisible) {
 					deets.UpdateView();
@@ -675,7 +681,8 @@ namespace ZitiDesktopEdge {
 
 					await serviceClient.IdentityOnOffAsync(createdId.FingerPrint, true);
 					if (createdId != null) {
-						identities.Add(ZitiIdentity.FromClient(createdId));
+						var zid = ZitiIdentity.FromClient(createdId);
+						AddIdentity(zid);
 						LoadIdentities(true);
 					} else {
 						ShowError("Identity Error", "Identity Id was null, please try again");
