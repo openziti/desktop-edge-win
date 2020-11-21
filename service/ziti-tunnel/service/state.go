@@ -260,9 +260,8 @@ func (t *RuntimeState) LoadConfig() {
 		}
 	}
 
-	for _, id := range t.ids {
-		id.Active = false
-	}
+	//any specific code needed when starting the process. some values need to be cleared
+	TunStarted = time.Now() //reset the time on startup
 }
 
 func readConfig(t *RuntimeState, filename string) error {
