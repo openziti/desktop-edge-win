@@ -47,12 +47,16 @@ namespace ZitiDesktopEdge.ServiceClient {
                         if (eventReader.EndOfStream) {
                             break;
                         }
-
+                        string respAsString = null;
                         try {
-                            string respAsString = await readMessageAsync(eventReader, "ClientConnected");
-                            ProcessLine(respAsString);
+                            respAsString = await readMessageAsync(eventReader, "ClientConnected");
+                            try {
+                                ProcessLine(respAsString);
+                            } catch (Exception ex) {
+                                Logger.Warn(ex, "ERROR caught in ProcessLine: {0}", respAsString);
+                            }
                         } catch (Exception ex) {
-                            Logger.Warn(ex, "ERROR caught");
+                            Logger.Warn(ex, "ERROR caught in readMessageAsync: {0}", respAsString);
                         }
                     }
                 } catch (Exception ex) {

@@ -69,7 +69,6 @@ namespace ZitiDesktopEdge {
 					ArchiveNumbering = ArchiveNumberingMode.Rolling,
 					MaxArchiveFiles = 7,
 					Layout = "${longdate}|${level:uppercase=true:padding=5}|${logger}|${message}",
-					//ArchiveAboveSize = 10000,
 				};
 				var logconsole = new ConsoleTarget("logconsole");
 
@@ -322,8 +321,9 @@ namespace ZitiDesktopEdge {
 			Debug.WriteLine("MonitorClient_OnClientConnected");
 		}
 
-		private void LogLevelChanged(string level) {
-			serviceClient.SetLogLevelAsync(level).Wait();
+		async private void LogLevelChanged(string level) {
+			await serviceClient.SetLogLevelAsync(level);
+			Logger.Info("shouldhave read here");
 		}
 
 		private void IdentityMenu_OnError(string message) {
@@ -804,10 +804,6 @@ namespace ZitiDesktopEdge {
 
 		private void Label_MouseDoubleClick(object sender, MouseButtonEventArgs e) {
 			Placement();
-		}
-
-		async private void Button_Click(object sender, RoutedEventArgs e) {
-			await serviceClient.SetLogLevelAsync(NextLevel());
 		}
 
 		int cur = 0;

@@ -338,7 +338,7 @@ func accept(p net.Listener, serveFunction func(net.Conn), debug string) {
 
 func serveIpc(conn net.Conn) {
 	log.Debug("beginning ipc receive loop")
-	defer log.Info("A connected IPC client has disconnected")
+	defer log.Info("a connected IPC client has disconnected")
 	defer closeConn(conn) //close the connection after this function invoked as go routine exits
 
 	done := make(chan struct{}, 8)
