@@ -130,7 +130,6 @@ namespace ZitiDesktopEdge.Server {
                 };
 
                 ServiceStatusEvent status = new ServiceStatusEvent() {
-                    //Op="status", Status = ServiceActions.ServiceStatus() 
                     Code = 0,
                     Error = null,
                     Message = "Success",

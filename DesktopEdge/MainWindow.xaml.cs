@@ -142,11 +142,6 @@ namespace ZitiDesktopEdge {
 			UpdateServiceView();
 		}
 
-//		private void SetCantDisplay(string msg) {
-//			//SetCantDisplay("Service Not Started", msg, Visibility.Visible);
-//			ShowServiceNotStarted();
-//		}
-
 		private void TargetNotifyIcon_Click(object sender, EventArgs e) {
 			this.Show();
 			System.Windows.Forms.MouseEventArgs mea = (System.Windows.Forms.MouseEventArgs)e;
@@ -221,7 +216,7 @@ namespace ZitiDesktopEdge {
 		private void MonitorClient_OnServiceStatusEvent(object sender, ServiceStatusEvent evt) {
 			Debug.WriteLine("MonitorClient_OnServiceStatusEvent");
 			ServiceControllerStatus status = (ServiceControllerStatus)Enum.Parse(typeof(ServiceControllerStatus), evt.Status);
-			
+
 			switch (status) {
 				case ServiceControllerStatus.Running:
 					Logger.Info("Service is started");
@@ -234,7 +229,7 @@ namespace ZitiDesktopEdge {
 					Logger.Info("Service is stopping...");
 					this.Dispatcher.Invoke(async () => {
 						SetCantDisplay("The Service is Stopping", "Please wait while the service stops", Visibility.Hidden);
-						await WaitForServiceToStop(DateTime.Now + TimeSpan.FromSeconds(3));
+						await WaitForServiceToStop(DateTime.Now + TimeSpan.FromSeconds(30));
 					});
 					break;
 				case ServiceControllerStatus.StartPending:
@@ -252,7 +247,7 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-        async private Task WaitForServiceToStop(DateTime until) {
+		async private Task WaitForServiceToStop(DateTime until) {
 			//continually poll for the service to stop. If it is stuck - ask the user if they want to try to force
 			//close the service
 			while (DateTime.Now < until) {
@@ -274,9 +269,9 @@ namespace ZitiDesktopEdge {
 			CloseErrorButton.Click += ForceQuitButtonClick;
 		}
 
-        async private void ForceQuitButtonClick(object sender, RoutedEventArgs e) {
+		async private void ForceQuitButtonClick(object sender, RoutedEventArgs e) {
 			ServiceStatusEvent status = await monitorClient.ForceTerminate();
-			if(status.IsStopped()) {
+			if (status.IsStopped()) {
 				//good
 				CloseErrorButton.Click += CloseError; //reset the close button...
 				CloseErrorButton.Click -= ForceQuitButtonClick;
@@ -299,7 +294,7 @@ namespace ZitiDesktopEdge {
 					CloseErrorButton.Click -= StartZitiService;
 					CloseError(null, null);
 				}
-			} catch(Exception ex){
+			} catch (Exception ex) {
 				Logger.Info(ex, "UNEXPECTED ERROR!");
 				startZitiButtonVisible = false;
 				CloseErrorButton.Click += StartZitiService;
@@ -323,7 +318,7 @@ namespace ZitiDesktopEdge {
 		}
 
 
-        private void MonitorClient_OnClientConnected(object sender, object e) {
+		private void MonitorClient_OnClientConnected(object sender, object e) {
 			Debug.WriteLine("MonitorClient_OnClientConnected");
 		}
 
@@ -349,9 +344,9 @@ namespace ZitiDesktopEdge {
 		private void ServiceClient_OnClientDisconnected(object sender, object e) {
 			this.Dispatcher.Invoke(() => {
 				IdList.Children.Clear();
-                if (e != null) {
+				if (e != null) {
 					Logger.Debug(e.ToString());
-                }
+				}
 				//SetCantDisplay("Start the Ziti Tunnel Service to continue");
 				ShowServiceNotStarted();
 			});
@@ -521,7 +516,6 @@ namespace ZitiDesktopEdge {
 				}
 				LoadIdentities(true);
 			} else {
-				//SetCantDisplay("Start the Ziti Tunnel Service to continue");
 				ShowServiceNotStarted();
 			}
 		}
@@ -544,7 +538,7 @@ namespace ZitiDesktopEdge {
 			Application.Current.MainWindow.Icon = System.Windows.Media.Imaging.BitmapFrame.Create(iconUri);
 		}
 
-	private void LoadIdentities(Boolean repaint) {
+		private void LoadIdentities(Boolean repaint) {
 			IdList.Children.Clear();
 			IdList.Height = 0;
 			IdList.MaxHeight = _maxHeight - 520;
@@ -727,7 +721,6 @@ namespace ZitiDesktopEdge {
 
 		async private Task DoConnectAsync() {
 			try {
-				serviceClient.SetTunnelState(true);
 				SetNotifyIcon("green");
 				ConnectButton.Visibility = Visibility.Collapsed;
 				DisconnectButton.Visibility = Visibility.Visible;
@@ -746,6 +739,7 @@ namespace ZitiDesktopEdge {
 				ShowError("Unexpected Error", "Code 3:" + ex.Message);
 			}
 		}
+
 		async private void Disconnect(object sender, RoutedEventArgs e) {
 
 			ShowLoad("Disabling Service", "Please wait for the service to stop.");
@@ -755,32 +749,6 @@ namespace ZitiDesktopEdge {
 			} else {
 				Logger.Info("Service stopped!");
 			}
-
-			/*
-		 if (!_isServiceInError) {
-				 try {
-					ShowLoad();
-						 ConnectedTime.Content = "00:00:00";
-						 _tunnelUptimeTimer.Stop();
-						 serviceClient.SetTunnelState(false);
-						 SetNotifyIcon("white");
-						 ConnectButton.Visibility = Visibility.Visible;
-						 DisconnectButton.Visibility = Visibility.Collapsed;
-						 for (int i = 0; i < identities.Count; i++) {
-								 await serviceClient.IdentityOnOffAsync(identities[i].Fingerprint, false);
-						 }
-						 for (int i = 0; i < IdList.Children.Count; i++) {
-								 IdentityItem item = IdList.Children[i] as IdentityItem;
-								 item._identity.IsEnabled = false;
-								 item.RefreshUI();
-						 }
-				 } catch (ServiceException se) {
-						 ShowError(se.AdditionalInfo, se.Message);
-				 } catch (Exception ex) {
-						 ShowError("Unexpected Error", "Code 4:" + ex.Message);
-				 }
-				 HideLoad();
-		 }*/
 			HideLoad();
 		}
 
@@ -799,7 +767,6 @@ namespace ZitiDesktopEdge {
 
 		private void FormFadeOut_Completed(object sender, EventArgs e) {
 			closeCompleted = true;
-			//this.Close();
 		}
 		private bool closeCompleted = false;
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
@@ -856,20 +823,5 @@ namespace ZitiDesktopEdge {
 		private void IdList_LayoutUpdated(object sender, EventArgs e) {
 			Placement();
 		}
-		/*
-		string sstatus = "stop";
-		async private void Button_Click_1(object sender, RoutedEventArgs e) {
-			ServiceStatusEvent r = null;
-			if (sstatus == "Stopped") {
-				r = await monitorClient.StartServiceAsync();
-			} else {
-				r = await monitorClient.StopServiceAsync();
-			}
-			sstatus = r.Status;
-		}
-		async private void Button_Click_2(object sender, RoutedEventArgs e) {
-			Logger.Info("button 2!");
-			await Task.Delay(10);
-		}*/
 	}
 }

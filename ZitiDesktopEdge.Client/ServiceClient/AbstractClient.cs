@@ -16,8 +16,6 @@ using ZitiDesktopEdge.DataStructures;
 namespace ZitiDesktopEdge.ServiceClient {
     public abstract class AbstractClient {
 
-        private bool _extendedDebug = false; //set ZITI_EXTENDED_DEBUG env var to true if you want to diagnose issues with the service comms
-
         protected NamedPipeClientStream pipeClient = null;
         protected NamedPipeClientStream eventClient = null;
         protected StreamWriter ipcWriter = null;
@@ -126,18 +124,6 @@ namespace ZitiDesktopEdge.ServiceClient {
         public bool CleanShutdown { get; set; }
 
         public AbstractClient() {
-            try {
-                string extDebugEnv = Environment.GetEnvironmentVariable("ZITI_EXTENDED_DEBUG");
-                if (extDebugEnv != null) {
-                    if (bool.Parse(extDebugEnv)) {
-                        _extendedDebug = true;
-                    }
-                }
-            } catch (Exception ex) {
-                Logger.Debug("EXCEPTION IN CLIENT CONNECT: " + ex.Message);
-                //if this happens - enter retry mode...
-                Reconnect();
-            }
         }
 
         async public Task ConnectAsync() {
@@ -193,9 +179,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         protected void debugServiceCommunication(string msg) {
-            if (_extendedDebug) {
-                Logger.Debug(msg);
-            }
+            Logger.Trace(msg);
         }
 
         async protected Task<T> readAsync<T>(StreamReader reader, string where) where T : SvcResponse {
@@ -205,10 +189,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         async public Task<string> readMessageAsync(StreamReader reader, string where) {
-            try {/*
-                if (reader.EndOfStream) {
-                    throw new ServiceException("the pipe has closed", 0, "end of stream reached");
-                }*/
+            try {
                 int emptyCount = 1; //just a stop gap in case something crazy happens in the communication
 
                 debugServiceCommunication("==============a  reading message =============== " + where);
@@ -216,9 +197,6 @@ namespace ZitiDesktopEdge.ServiceClient {
                 debugServiceCommunication(respAsString);
                 debugServiceCommunication("===============     read message =============== " + where);
                 while (string.IsNullOrEmpty(respAsString?.Trim())) {
-                    /*if (reader.EndOfStream) {
-                        throw new Exception("the pipe has closed");
-                    }*/
                     debugServiceCommunication("Received empty payload - continuing to read until a payload is received");
                     //now how'd that happen...
                     debugServiceCommunication("==============b  reading message =============== " + where);
@@ -229,7 +207,6 @@ namespace ZitiDesktopEdge.ServiceClient {
                     if (emptyCount > 5) {
                         Logger.Debug("are we there yet? " + reader.EndOfStream);
                         //that's just too many...
-                        //setupPipe();
                         return null;
                     }
                 }

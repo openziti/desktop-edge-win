@@ -163,32 +163,6 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
         }
 
-        private void checkConnected() {
-            if (Reconnecting) {
-                throw new ServiceException("Client is not connected", 2, "Cannot use the client at this time, it is reconnecting");
-            }
-            if (!Connected) {
-                throw new ServiceException("Client is not connected", 2, "Cannot use the client at this time, it is not connected");
-            }
-        }
-
-        public void SetTunnelState(bool onOff) {
-            /*
-            checkConnected();
-            try
-            {
-                send(new BooleanFunction("TunnelState", onOff));
-                read<SvcResponse>(ipcReader);
-            }
-            catch (IOException ioe)
-            {
-                //almost certainly a problem with the pipe - recreate the pipe...
-                //setupPipe();
-                throw ioe;
-            }
-            */
-        }
-
         public string GetLogs() {
             try {
                 NamedPipeClientStream logClient = new NamedPipeClientStream(localPipeServer, logPipe, PipeDirection.In);
