@@ -262,6 +262,11 @@ func (t *RuntimeState) LoadConfig() {
 
 	//any specific code needed when starting the process. some values need to be cleared
 	TunStarted = time.Now() //reset the time on startup
+
+	if rts.state.TunIpv4Mask > constants.Ipv4MinMask {
+		log.Warnf("provided mask: [%d] is smaller than the minimum permitted: [%d] and will be changed", rts.state.TunIpv4Mask, constants.Ipv4MinMask)
+		rts.UpdateIpv4Mask(constants.Ipv4MinMask)
+	}
 }
 
 func readConfig(t *RuntimeState, filename string) error {

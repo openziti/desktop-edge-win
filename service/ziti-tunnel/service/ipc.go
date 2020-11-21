@@ -104,7 +104,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	_ = logging.Elog.Info(InformationEvent, SvcName+" status set to running")
 	log.Info(SvcName + " status set to running. starting cancel loop")
 
-	rts.SaveState()
+	rts.SaveState() //if we get this far it means things seem to be working. backup the config
 
 	waitForStopRequest(ops)
 

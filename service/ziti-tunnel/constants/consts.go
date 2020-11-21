@@ -20,6 +20,6 @@ package constants
 const(
 	Ipv4ip          = "100.64.0.1"
 	Ipv4MaxMask 	= 8
-	Ipv4MinMask 	= 24
+	Ipv4MinMask 	= 16
 	Ipv4DefaultMask = 10
 )
