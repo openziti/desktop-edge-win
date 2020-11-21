@@ -52,12 +52,9 @@ namespace ZitiDesktopEdge {
 		public MainWindow() {
 			InitializeComponent();
 
-			#if DEBUG
-			System.Environment.SetEnvironmentVariable("ZITI_EXTENDED_DEBUG", "true");
-			#endif
-
 			var asm = System.Reflection.Assembly.GetExecutingAssembly();
 			var logname = asm.GetName().Name;
+
 			var curdir = Path.GetDirectoryName(asm.Location);
 			string nlogFile = Path.Combine(curdir, logname + ".log.config");
 
@@ -67,7 +64,7 @@ namespace ZitiDesktopEdge {
 				var config = new LoggingConfiguration();
 				// Targets where to log to: File and Console
 				var logfile = new FileTarget("logfile") {
-					FileName = $"{logname}.log",
+					FileName = $"logs\\UI\\{logname}.log",
 					ArchiveEvery = FileArchivePeriod.Day,
 					ArchiveNumbering = ArchiveNumberingMode.Rolling,
 					MaxArchiveFiles = 7,

@@ -1,58 +1,53 @@
-﻿using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
-using System.Threading.Tasks;
-
-using NLog;
+﻿using NLog;
 using NLog.Config;
 using NLog.Targets;
+using System.IO;
+using System.Reflection;
 
-using ZitiDesktopEdge.Server;
 
 namespace ZitiUpdateService {
-	static class Program {
+    static class Program {
 
-		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-		/// <summary>
-		/// The main entry point for the application.
-		/// </summary>
-		static void Main() {
-			System.Environment.SetEnvironmentVariable("ZITI_EXTENDED_DEBUG", "true");
-			var curdir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-			string nlogFile = Path.Combine(curdir, "ziti-monitor-log.config");
+        /// <summary>
+        /// The main entry point for the application.
+        /// </summary>
+        static void Main() {
+            var asm = System.Reflection.Assembly.GetExecutingAssembly();
+            var logname = asm.GetName().Name;
 
-			if (File.Exists(nlogFile)) {
-				LogManager.Configuration = new XmlLoggingConfiguration(nlogFile);
-			} else {
-				var config = new LoggingConfiguration();
-				var logname = "ziti-montior";
-				// Targets where to log to: File and Console
-				var logfile = new FileTarget("logfile") {
-					FileName = $"{logname}.log",
-					ArchiveEvery = FileArchivePeriod.Day,
-					ArchiveNumbering = ArchiveNumberingMode.Rolling,
-					MaxArchiveFiles = 7,
-					Layout = "${longdate}|${level:uppercase=true:padding=5}|${logger}|${message}",
-					//ArchiveAboveSize = 10000,
-			};
-				var logconsole = new ConsoleTarget("logconsole");
+            var curdir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string nlogFile = Path.Combine(curdir, "ziti-monitor-log.config");
 
-				// Rules for mapping loggers to targets            
-				config.AddRule(LogLevel.Debug, LogLevel.Fatal, logconsole);
-				config.AddRule(LogLevel.Debug, LogLevel.Fatal, logfile);
+            if (File.Exists(nlogFile)) {
+                LogManager.Configuration = new XmlLoggingConfiguration(nlogFile);
+            } else {
+                var config = new LoggingConfiguration();
+                // Targets where to log to: File and Console
+                var logfile = new FileTarget("logfile") {
+                    FileName = $"logs\\ZitiMonitorService\\{logname}.log",
+                    ArchiveEvery = FileArchivePeriod.Day,
+                    ArchiveNumbering = ArchiveNumberingMode.Rolling,
+                    MaxArchiveFiles = 7,
+                    Layout = "${longdate}|${level:uppercase=true:padding=5}|${logger}|${message}",
+                };
+                var logconsole = new ConsoleTarget("logconsole");
 
-				// Apply config           
-				LogManager.Configuration = config;
-			}
-			Logger.Info("service started - logger initialized");
+                // Rules for mapping loggers to targets            
+                config.AddRule(LogLevel.Debug, LogLevel.Fatal, logconsole);
+                config.AddRule(LogLevel.Debug, LogLevel.Fatal, logfile);
 
-			UpdateService updateSvc = new UpdateService();
-			updateSvc.AutoLog = true;
+                // Apply config           
+                LogManager.Configuration = config;
+            }
+            Logger.Info("service started - logger initialized");
+
+            UpdateService updateSvc = new UpdateService();
+            updateSvc.AutoLog = true;
 #if DEBUG
-			updateSvc.Debug();
-			updateSvc.WaitForCompletion();
+            updateSvc.Debug();
+            updateSvc.WaitForCompletion();
 #else
 			ServiceBase[] ServicesToRun = new ServiceBase[]
 			{
@@ -60,6 +55,6 @@ namespace ZitiUpdateService {
 			};
 			ServiceBase.Run(ServicesToRun);
 #endif
-		}
-	}
+        }
+    }
 }
