@@ -85,6 +85,11 @@ echo current dir: %CD%
 echo configuring git - relies on build.bat successfully grabbing ziti-ci and build.bat updating service/ziti-tunnel/version.go
 ziti-ci configure-git 2>&1
 
+git add service/ziti-tunnel/version.go
+git add DesktopEdge/Properties/AssemblyInfo.cs
+git add ZitiUpdateService/Properties/AssemblyInfo.cs
+git add Installer/ZitiDesktopEdge.aip
+
 echo issuing status
 echo ========================================================
 git status 2>&1
