@@ -242,7 +242,6 @@ namespace ZitiDesktopEdge.DataStructures {
             }
             catch
             {
-                System.Diagnostics.Debug.WriteLine("Could not parse response LogLevel from sevice - guessing INFO? " + LogLevel);
                 return LogLevelEnum.INFO;
             }
         }

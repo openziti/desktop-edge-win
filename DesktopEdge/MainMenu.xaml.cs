@@ -25,7 +25,7 @@ namespace ZitiDesktopEdge
     /// Interaction logic for MainMenu.xaml
     /// </summary>
     public partial class MainMenu : UserControl {
-
+		private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
 		public delegate void AttachementChanged(bool attached);
 		public event AttachementChanged OnAttachmentChange;
@@ -130,7 +130,7 @@ namespace ZitiDesktopEdge
 			} catch(Exception ex)
 			{
 				UpdateAvailable.Content = "An exception occurred while performing upgrade check";
-				Debug.WriteLine("Error when checking for version: " + ex.Message);
+				logger.Error(ex, "Error when checking for version: " + ex.Message);
 				UpdateAvailable.Visibility = Visibility.Visible;
 			}
 		}
@@ -159,7 +159,7 @@ namespace ZitiDesktopEdge
 					version = $"{s.ServiceVersion.Version}@{s.ServiceVersion.Revision}";
 				} catch (Exception e) {
 #if DEBUG
-					Debug.WriteLine(e.ToString());
+					logger.Debug("Updating state:" + e.ToString());
 #endif
 				}
 

@@ -25,7 +25,7 @@ namespace ZitiDesktopEdge {
 	/// Interaction logic for MainWindow.xaml
 	/// </summary>
 	public partial class MainWindow : Window {
-		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+		private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
 		public System.Windows.Forms.NotifyIcon notifyIcon;
 		public string Position = "Bottom";
@@ -87,7 +87,7 @@ namespace ZitiDesktopEdge {
 				// Apply config           
 				LogManager.Configuration = config;
 			}
-			Logger.Info("service started - logger initialized");
+			logger.Info("service started - logger initialized");
 
 			App.Current.MainWindow.WindowState = WindowState.Normal;
 			App.Current.MainWindow.Closing += MainWindow_Closing;
@@ -125,7 +125,7 @@ namespace ZitiDesktopEdge {
 		private void MainWindow_Deactivated(object sender, EventArgs e) {
 			if (this._isAttached) {
 #if DEBUG
-				Debug.WriteLine("debug is enabled - windows pinned");
+				logger.Debug("debug is enabled - windows pinned");
 #else
 				this.Visibility = Visibility.Collapsed;
 #endif
@@ -221,35 +221,35 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void MonitorClient_OnServiceStatusEvent(object sender, ServiceStatusEvent evt) {
-			Debug.WriteLine("MonitorClient_OnServiceStatusEvent");
+			logger.Debug("MonitorClient_OnServiceStatusEvent");
 			ServiceControllerStatus status = (ServiceControllerStatus)Enum.Parse(typeof(ServiceControllerStatus), evt.Status);
 
 			switch (status) {
 				case ServiceControllerStatus.Running:
-					Logger.Info("Service is started");
+					logger.Info("Service is started");
 					break;
 				case ServiceControllerStatus.Stopped:
-					Logger.Info("Service is stopped");
+					logger.Info("Service is stopped");
 					ShowServiceNotStarted();
 					break;
 				case ServiceControllerStatus.StopPending:
-					Logger.Info("Service is stopping...");
+					logger.Info("Service is stopping...");
 					this.Dispatcher.Invoke(async () => {
 						SetCantDisplay("The Service is Stopping", "Please wait while the service stops", Visibility.Hidden);
 						await WaitForServiceToStop(DateTime.Now + TimeSpan.FromSeconds(30));
 					});
 					break;
 				case ServiceControllerStatus.StartPending:
-					Logger.Info("Service is starting...");
+					logger.Info("Service is starting...");
 					break;
 				case ServiceControllerStatus.PausePending:
-					Logger.Warn("UNEXPECTED STATUS: PausePending");
+					logger.Warn("UNEXPECTED STATUS: PausePending");
 					break;
 				case ServiceControllerStatus.Paused:
-					Logger.Warn("UNEXPECTED STATUS: Paused");
+					logger.Warn("UNEXPECTED STATUS: Paused");
 					break;
 				default:
-					Logger.Warn("UNEXPECTED STATUS: {0}", evt.Status);
+					logger.Warn("UNEXPECTED STATUS: {0}", evt.Status);
 					break;
 			}
 		}
@@ -265,11 +265,11 @@ namespace ZitiDesktopEdge {
 					return;
 				} else {
 					// bad - not stopped yet...
-					Logger.Debug("Waiting for service to stop... Still not stopped yet");
+					logger.Debug("Waiting for service to stop... Still not stopped yet");
 				}
 			}
 			// real bad - means it's stuck probably. Ask the user if they want to try to force it...
-			Logger.Warn("Waiting for service to stop... Service did not reach stopped state in the expected amount of time.");
+			logger.Warn("Waiting for service to stop... Service did not reach stopped state in the expected amount of time.");
 			SetCantDisplay("The Service Appears Stuck", "Would you like to try to force close the service?", Visibility.Visible);
 			CloseErrorButton.Content = "Force Quit";
 			CloseErrorButton.Click -= CloseError;
@@ -291,18 +291,18 @@ namespace ZitiDesktopEdge {
 		async private void StartZitiService(object sender, RoutedEventArgs e) {
 			try {
 				ShowLoad("Starting", "Staring the data service");
-				Logger.Info("StartZitiService");
+				logger.Info("StartZitiService");
 				var r = await monitorClient.StartServiceAsync();
 				if (r.Code != 0) {
-					Logger.Debug("ERROR: {0} : {1}", r.Message, r.Error);
+					logger.Debug("ERROR: {0} : {1}", r.Message, r.Error);
 				} else {
-					Logger.Info("Service started!");
+					logger.Info("Service started!");
 					startZitiButtonVisible = false;
 					CloseErrorButton.Click -= StartZitiService;
 					CloseError(null, null);
 				}
 			} catch (Exception ex) {
-				Logger.Info(ex, "UNEXPECTED ERROR!");
+				logger.Info(ex, "UNEXPECTED ERROR!");
 				startZitiButtonVisible = false;
 				CloseErrorButton.Click += StartZitiService;
 				CloseErrorButton.IsEnabled = true;
@@ -326,7 +326,7 @@ namespace ZitiDesktopEdge {
 
 
 		private void MonitorClient_OnClientConnected(object sender, object e) {
-			Debug.WriteLine("MonitorClient_OnClientConnected");
+			logger.Debug("MonitorClient_OnClientConnected");
 		}
 
 		async private void LogLevelChanged(string level) {
@@ -352,7 +352,7 @@ namespace ZitiDesktopEdge {
 			this.Dispatcher.Invoke(() => {
 				IdList.Children.Clear();
 				if (e != null) {
-					Logger.Debug(e.ToString());
+					logger.Debug(e.ToString());
 				}
 				//SetCantDisplay("Start the Ziti Tunnel Service to continue");
 				ShowServiceNotStarted();
@@ -363,7 +363,7 @@ namespace ZitiDesktopEdge {
 			if (e == null) return;
 
 			ZitiIdentity zid = ZitiIdentity.FromClient(e.Id);
-			Debug.WriteLine($"==== IdentityEvent    : action:{e.Action} fingerprint:{e.Id.FingerPrint} name:{e.Id.Name} ");
+			logger.Debug($"==== IdentityEvent    : action:{e.Action} fingerprint:{e.Id.FingerPrint} name:{e.Id.Name} ");
 
 			this.Dispatcher.Invoke(() => {
 				if (e.Action == "added") {
@@ -380,7 +380,7 @@ namespace ZitiDesktopEdge {
 					IdentityForgotten(ZitiIdentity.FromClient(e.Id));
 				}
 			});
-			Debug.WriteLine($"IDENTITY EVENT. Action: {e.Action} fingerprint: {zid.Fingerprint}");
+			logger.Debug($"IDENTITY EVENT. Action: {e.Action} fingerprint: {zid.Fingerprint}");
 		}
 
 		private void ServiceClient_OnMetricsEvent(object sender, List<Identity> ids) {
@@ -388,7 +388,7 @@ namespace ZitiDesktopEdge {
 				long totalUp = 0;
 				long totalDown = 0;
 				foreach (var id in ids) {
-					//Debug.WriteLine($"==== MetricsEvent     : id {id.Name} down: {id.Metrics.Down} up:{id.Metrics.Up}");
+					//logger.Debug($"==== MetricsEvent     : id {id.Name} down: {id.Metrics.Down} up:{id.Metrics.Up}");
 					if (id?.Metrics != null) {
 						totalDown += id.Metrics.Down;
 						totalUp += id.Metrics.Up;
@@ -429,12 +429,13 @@ namespace ZitiDesktopEdge {
 					if (svc == null) {
 						found.Services.Add(zs);
 					} else {
-						Debug.WriteLine("the service named " + zs.Name + " is already accounted for on this identity.");
+						logger.Debug("the service named " + zs.Name + " is already accounted for on this identity.");
 					}
 				} else {
-					Debug.WriteLine("removing the service named: " + e.Service.Name);
+					logger.Debug("removing the service named: " + e.Service.Name);
 					found.Services.RemoveAll(s => s.Name == e.Service.Name);
 				}
+				LoadIdentities(false);
 				IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
 				if (deets.IsVisible) {
 					deets.UpdateView();
@@ -444,7 +445,7 @@ namespace ZitiDesktopEdge {
 
 		private void ServiceClient_OnTunnelStatusEvent(object sender, TunnelStatusEvent e) {
 			if (e == null) return; //just skip it for now...
-			Debug.WriteLine($"==== TunnelStatusEvent: ");
+			logger.Debug($"==== TunnelStatusEvent: ");
 			Application.Current.Properties.Remove("CurrentTunnelStatus");
 			Application.Current.Properties.Add("CurrentTunnelStatus", e.Status);
 			e.Status.Dump(Console.Out);
@@ -752,9 +753,9 @@ namespace ZitiDesktopEdge {
 			ShowLoad("Disabling Service", "Please wait for the service to stop.");
 			var r = await monitorClient.StopServiceAsync();
 			if (r.Error != null && int.Parse(r.Error) != 0) {
-				Logger.Debug("ERROR: {0}", r.Message);
+				logger.Debug("ERROR: {0}", r.Message);
 			} else {
-				Logger.Info("Service stopped!");
+				logger.Info("Service stopped!");
 			}
 			HideLoad();
 		}
@@ -802,7 +803,7 @@ namespace ZitiDesktopEdge {
 		private void MainUI_Deactivated(object sender, EventArgs e) {
 			if (this._isAttached) {
 #if DEBUG
-				Debug.WriteLine("debug is enabled - windows pinned");
+				logger.Debug("debug is enabled - windows pinned");
 #else
 				this.Visibility = Visibility.Collapsed;
 #endif
