@@ -31,7 +31,7 @@ namespace ZitiUpdateService {
 					ArchiveEvery = FileArchivePeriod.Day,
 					ArchiveNumbering = ArchiveNumberingMode.Rolling,
 					MaxArchiveFiles = 7,
-					Layout = "${longdate}|${level:uppercase=true:padding=5}|${logger}|${message}",
+					Layout = "${longdate}|${level:uppercase=true:padding=5}|${logger}|${message} ${exception:format=tostring}",
 			};
 				var logconsole = new ConsoleTarget("logconsole");
 

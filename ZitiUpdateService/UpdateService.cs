@@ -38,6 +38,7 @@ namespace ZitiUpdateService {
 		ZitiDesktopEdge.Server.IPCServer svr = new ZitiDesktopEdge.Server.IPCServer();
 		Task ipcServer = null;
 		Task eventServer = null;
+		IUpdateCheck check = null;
 
 		public UpdateService() {
 			InitializeComponent();
@@ -104,9 +105,18 @@ namespace ZitiUpdateService {
 			string assemblyVersionStr = Assembly.GetExecutingAssembly().GetName().Version.ToString(); //fetch from ziti?
 			assemblyVersion = new Version(assemblyVersionStr);
 			asmDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-			updateFolder = $"{asmDir}{Path.DirectorySeparatorChar}updates";
+			string updateFolder = Path.Combine(asmDir, "updates");
+			cleanOldLogs(asmDir);
 			scanForStaleDownloads(updateFolder);
-			CheckUpdate(args, null); //check immediately
+
+			string updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win/releases/latest"; //hardcoded on purpose
+			if (args == null || args.Length < 1 || !args[0].Equals("FilesystemCheck")) {
+				check = new GithubCheck(updateUrl);
+			} else {
+				check = new FilesystemCheck(false);
+			}
+
+			CheckUpdate(null, null); //check immediately
 
 			try {
 				svc.ConnectAsync().Wait();
@@ -117,19 +127,28 @@ namespace ZitiUpdateService {
 			svc.WaitForConnectionAsync().Wait();
 		}
 
+		private void cleanOldLogs(string whereToScan) {
+			//this function will be removed in the future. it's here to clean out the old ziti-monitor*log files that
+			//were there before the 1.5.0 release
+			try {
+				Logger.Info("Scanning for stale downloads");
+				foreach (var f in Directory.EnumerateFiles(whereToScan)) {
+					FileInfo logFile = new FileInfo(f);
+					if (logFile.Name.StartsWith("ziti-monitor.") && logFile.Name.EndsWith(".log")) {
+						Logger.Info("removing old log file: " + logFile.Name);
+						logFile.Delete();
+                    }
+				}
+			} catch (Exception ex) {
+				Logger.Error(ex, "Unexpected error has occurred");
+			}
+		}
+
 		private void CheckUpdate(object sender, ElapsedEventArgs e) {
-			if (inUpdateCheck) return;
+			if (inUpdateCheck || check == null) return;
 			inUpdateCheck = true; //simple semaphone
 			try {
-				Logger.Debug("checking for update");
-				string updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win/releases/latest"; //hardcoded on purpose
-				string[] senderAsArgs = (string[])sender;
-				IUpdateCheck check = null;
-				if (sender == null || senderAsArgs.Length < 1 || !senderAsArgs[0].Equals("FilesystemCheck")) {
-					check = new GithubCheck(updateUrl);
-				} else {
-					check = new FilesystemCheck(false);
-				}
+				Logger.Debug("checking for update");				
 
 				if (!check.IsUpdateAvailable(assemblyVersion)) {
 					Logger.Debug("update check complete. no update available");
