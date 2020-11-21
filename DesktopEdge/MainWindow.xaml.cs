@@ -40,7 +40,6 @@ namespace ZitiDesktopEdge {
 		private int _top = 30;
 		private double _maxHeight = 800d;
 		private string[] suffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };
-		private string DefaultLoadText = "Operation pending, please wait...";
 
 		private static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
@@ -131,8 +130,8 @@ namespace ZitiDesktopEdge {
 
 		private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
 			notifyIcon.Visible = false;
-			notifyIcon.Icon.Dispose();
-			notifyIcon.Dispose();
+			//notifyIcon.Icon.Dispose();
+			//notifyIcon.Dispose();
 		}
 
 		private void SetCantDisplay(string title, string detailMessage, Visibility closeButtonVisibility) {
@@ -153,6 +152,11 @@ namespace ZitiDesktopEdge {
 
 		private void TargetNotifyIcon_Click(object sender, EventArgs e) {
 			this.Show();
+			System.Windows.Forms.MouseEventArgs mea = (System.Windows.Forms.MouseEventArgs)e;
+			/*if (mea.cli mea.RightButton) {
+			} else {
+				
+			}*/
 			this.Activate();
 		}
 
@@ -287,7 +291,7 @@ namespace ZitiDesktopEdge {
 
 		async private void StartZitiService(object sender, RoutedEventArgs e) {
 			try {
-				ShowLoad("Staring the data service");
+				ShowLoad("Starting", "Staring the data service");
 				Logger.Info("StartZitiService");
 				var r = await monitorClient.StartServiceAsync();
 				if (r.Code != 0) {
@@ -443,6 +447,7 @@ namespace ZitiDesktopEdge {
 		private void ServiceClient_OnTunnelStatusEvent(object sender, TunnelStatusEvent e) {
 			if (e == null) return; //just skip it for now...
 			Debug.WriteLine($"==== TunnelStatusEvent: ");
+			Application.Current.Properties.Remove("CurrentTunnelStatus");
 			Application.Current.Properties.Add("CurrentTunnelStatus", e.Status);
 			e.Status.Dump(Console.Out);
 			this.Dispatcher.Invoke(() => {
@@ -671,7 +676,7 @@ namespace ZitiDesktopEdge {
 			jwtDialog.DefaultExt = ".jwt";
 			jwtDialog.Filter = "Ziti Identities (*.jwt)|*.jwt";
 			if (jwtDialog.ShowDialog() == true) {
-				ShowLoad("Adding Identity");
+				ShowLoad("Adding Identity", "Please wait while the identity is added");
 				string fileContent = File.ReadAllText(jwtDialog.FileName);
 
 				try {
@@ -712,9 +717,9 @@ namespace ZitiDesktopEdge {
 			_tunnelUptimeTimer.Enabled = true;
 			_tunnelUptimeTimer.Start();
 		}
-		private void Connect(object sender, RoutedEventArgs e) {
+		private void ConnectButtonClick(object sender, RoutedEventArgs e) {
 			if (!_isServiceInError) {
-				ShowLoad("Connecting...");
+				ShowLoad("Starting Service", "Please wait while the service is started...");
 				this.Dispatcher.Invoke(async () => {
 					//Dispatcher.Invoke(new Action(() => { }), System.Windows.Threading.DispatcherPriority.ContextIdle);
 					await DoConnectAsync();
@@ -746,43 +751,45 @@ namespace ZitiDesktopEdge {
 		}
 		async private void Disconnect(object sender, RoutedEventArgs e) {
 
-			ShowLoad("Disabling service...");
+			ShowLoad("Disabling Service", "Please wait for the service to stop.");
 			var r = await monitorClient.StopServiceAsync();
 			if (r.Error != null && int.Parse(r.Error) != 0) {
 				Logger.Debug("ERROR: {0}", r.Message);
 			} else {
 				Logger.Info("Service stopped!");
 			}
+
 			/*
-			if (!_isServiceInError) {
-				ShowLoad();
-				try {
-					ConnectedTime.Content = "00:00:00";
-					_tunnelUptimeTimer.Stop();
-					serviceClient.SetTunnelState(false);
-					SetNotifyIcon("white");
-					ConnectButton.Visibility = Visibility.Visible;
-					DisconnectButton.Visibility = Visibility.Collapsed;
-					for (int i = 0; i < identities.Count; i++) {
-						await serviceClient.IdentityOnOffAsync(identities[i].Fingerprint, false);
-					}
-					for (int i = 0; i < IdList.Children.Count; i++) {
-						IdentityItem item = IdList.Children[i] as IdentityItem;
-						item._identity.IsEnabled = false;
-						item.RefreshUI();
-					}
-				} catch (ServiceException se) {
-					ShowError(se.AdditionalInfo, se.Message);
-				} catch (Exception ex) {
-					ShowError("Unexpected Error", "Code 4:" + ex.Message);
-				}
-				HideLoad();
-			}*/
+		 if (!_isServiceInError) {
+				 try {
+					ShowLoad();
+						 ConnectedTime.Content = "00:00:00";
+						 _tunnelUptimeTimer.Stop();
+						 serviceClient.SetTunnelState(false);
+						 SetNotifyIcon("white");
+						 ConnectButton.Visibility = Visibility.Visible;
+						 DisconnectButton.Visibility = Visibility.Collapsed;
+						 for (int i = 0; i < identities.Count; i++) {
+								 await serviceClient.IdentityOnOffAsync(identities[i].Fingerprint, false);
+						 }
+						 for (int i = 0; i < IdList.Children.Count; i++) {
+								 IdentityItem item = IdList.Children[i] as IdentityItem;
+								 item._identity.IsEnabled = false;
+								 item.RefreshUI();
+						 }
+				 } catch (ServiceException se) {
+						 ShowError(se.AdditionalInfo, se.Message);
+				 } catch (Exception ex) {
+						 ShowError("Unexpected Error", "Code 4:" + ex.Message);
+				 }
+				 HideLoad();
+		 }*/
 			HideLoad();
 		}
 
-		private void ShowLoad(string msg) {
+		private void ShowLoad(string title, string msg) {
 			LoadingDetails.Text = msg;
+			LoadingTitle.Content = title;
 			LoadProgress.IsIndeterminate = true;
 			LoadingScreen.Visibility = Visibility.Visible;
 			((MainWindow)System.Windows.Application.Current.MainWindow).UpdateLayout();
