@@ -41,12 +41,6 @@ echo "Assembling installer using AdvancedInstaller at: $ADVINST $action $ADVPROJ
 
 $gituser=$(git config user.name)
 if($gituser -eq "ziti-ci") {
-  echo "yes ziti-ci"
-  git add service/ziti-tunnel/version.go
-  git add DesktopEdge/Properties/AssemblyInfo.cs
-  git add ZitiUpdateService/Properties/AssemblyInfo.cs
-  git add Installer/ZitiDesktopEdge.aip
-
   if(Test-Path ${scriptPath}\..\service\github_deploy_key) {
     copy $scriptPath\..\service\github_deploy_key .
   } else {
@@ -54,8 +48,17 @@ if($gituser -eq "ziti-ci") {
   }
 
   $b="$env:GIT_BRANCH"
-  if( $b -match '(^master$|^release-[0-9]*\.[0-9]*\.[0-9]*)' ) {
-    echo "branch $b matches the required regex - committing and pushing"
+  if( $b -match '(^master$|^release-next|^release-[0-9]*\.[0-9]*\.[0-9]*)' ) {
+    echo "branch $b matches the required regex - adding committing and pushing"
+    git add service/ziti-tunnel/version.go
+    git add DesktopEdge/Properties/AssemblyInfo.cs
+    git add ZitiUpdateService/Properties/AssemblyInfo.cs
+    git add Installer/ZitiDesktopEdge.aip
+
+    echo issuing status
+    echo ========================================================
+    git status 2>&1
+
     git commit -m "[ci skip] committing updated installer file" 2>&1
     git push 2>&1
   } else {

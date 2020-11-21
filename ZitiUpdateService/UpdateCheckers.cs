@@ -54,6 +54,7 @@ namespace ZitiUpdateService {
 				Logger.Debug("current version {0} is the same as the latest release {0}", current, published);
 				return false;
 			}
+
 			JArray assets = JArray.Parse(json.Property("assets").Value.ToString());
 			foreach (JObject asset in assets.Children<JObject>()) {
 				downloadUrl = asset.Property("browser_download_url").Value.ToString();
@@ -73,6 +74,13 @@ namespace ZitiUpdateService {
 	internal class FilesystemCheck : IUpdateCheck {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 		string dest = null;
+
+		bool isUpdateAvailable = false;
+		public FilesystemCheck(bool updateAvailable) {
+			this.isUpdateAvailable = updateAvailable;
+
+		}
+
 		public bool AlreadyDownloaded(string destinationFolder, string destinationName) {
 			return File.Exists(Path.Combine(destinationFolder, destinationName));
 		}
@@ -87,7 +95,7 @@ namespace ZitiUpdateService {
 		}
 
 		public bool IsUpdateAvailable(Version current) {
-			return true;
+			return isUpdateAvailable;
 		}
 	}
 }

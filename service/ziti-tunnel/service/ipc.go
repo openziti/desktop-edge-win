@@ -65,8 +65,9 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 
 	rts.LoadConfig()
 	l := rts.state.LogLevel
-	_, czitiLevel := logging.ParseLevel(l)
+	parsedLevel, czitiLevel := logging.ParseLevel(l)
 
+	rts.state.LogLevel = parsedLevel.String()
 	logging.InitLogger(l)
 
 	_ = logging.Elog.Info(InformationEvent, SvcName+" starting. log file located at "+config.LogFile())
@@ -104,7 +105,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	_ = logging.Elog.Info(InformationEvent, SvcName+" status set to running")
 	log.Info(SvcName + " status set to running. starting cancel loop")
 
-	rts.SaveState()
+	rts.SaveState() //if we get this far it means things seem to be working. backup the config
 
 	waitForStopRequest(ops)
 
@@ -337,7 +338,7 @@ func accept(p net.Listener, serveFunction func(net.Conn), debug string) {
 
 func serveIpc(conn net.Conn) {
 	log.Debug("beginning ipc receive loop")
-	defer log.Info("A connected IPC client has disconnected")
+	defer log.Info("a connected IPC client has disconnected")
 	defer closeConn(conn) //close the connection after this function invoked as go routine exits
 
 	done := make(chan struct{}, 8)

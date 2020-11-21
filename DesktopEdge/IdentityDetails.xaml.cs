@@ -1,25 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using ZitiDesktopEdge.Models;
+using ZitiDesktopEdge.ServiceClient;
+
+using NLog;
 
 namespace ZitiDesktopEdge {
 	/// <summary>
 	/// Interaction logic for IdentityDetails.xaml
 	/// </summary> 
 	public partial class IdentityDetails:UserControl {
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		private bool _isAttached = true;
 		public delegate void Forgot(ZitiIdentity forgotten);
@@ -88,11 +83,12 @@ namespace ZitiDesktopEdge {
 			IdentityStatus.Value = _identity.IsEnabled ? "active" : "disabled";
 			ServiceList.Children.Clear();
 			if (_identity.Services.Count>0) {
-				for (int i = 0; i < _identity.Services.Count; i++) {
+				foreach(var zitiSvc in _identity.Services.OrderBy(s => s.Name.ToLower())) {
+					Logger.Debug("painting: " + zitiSvc.Name);
 					ServiceInfo editor = new ServiceInfo();
-					editor.Label = _identity.Services[i].Name;
-					editor.Value = _identity.Services[i].Url;
-					editor.Warning = _identity.Services[i].Warning;
+					editor.Label = zitiSvc.Name;
+					editor.Value = zitiSvc.Url;
+					editor.Warning = zitiSvc.Warning;
 					editor.IsLocked = true;
 					ServiceList.Children.Add(editor);
 				}
@@ -109,9 +105,9 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-		private void IdToggle(bool on) {
-			ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
-			client.IdentityOnOff(_identity.Fingerprint, on);
+		async private void IdToggle(bool on) {
+			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+			await client.IdentityOnOffAsync(_identity.Fingerprint, on);
 			SelectedIdentity.ToggleSwitch.Enabled = on;
 			_identity.IsEnabled = on;
 			IdentityStatus.Value = _identity.IsEnabled ? "active" : "disabled";
@@ -138,11 +134,11 @@ namespace ZitiDesktopEdge {
 			ConfirmView.Visibility = Visibility.Collapsed;
 		}
 
-		private void ConfirmButton_Click(object sender, RoutedEventArgs e) {
+		async private void ConfirmButton_Click(object sender, RoutedEventArgs e) {
 			this.Visibility = Visibility.Collapsed;
-			ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
+			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
 			try {
-				client.RemoveIdentity(_identity.Fingerprint);
+				await client.RemoveIdentityAsync(_identity.Fingerprint);
 
 				ZitiIdentity forgotten = new ZitiIdentity();
 				foreach (var id in identities) {
@@ -156,7 +152,7 @@ namespace ZitiDesktopEdge {
 				if (OnForgot != null) {
 					OnForgot(forgotten);
 				}
-			} catch (ServiceClient.ServiceException se) {
+			} catch (DataStructures.ServiceException se) {
 				OnError(se.Message);
 			} catch (Exception ex) {
 				OnError(ex.Message);

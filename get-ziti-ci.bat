@@ -1,6 +1,7 @@
 @echo off
 
 IF "x%ZITI_CI_VERSION%"=="x" GOTO DEFAULT
+SET GO111MODULE=on
 
 echo Fetching ziti-ci@%ZITI_CI_VERSION%
 go get github.com/netfoundry/ziti-ci@%ZITI_CI_VERSION% 2> NUL

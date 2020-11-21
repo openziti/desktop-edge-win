@@ -4,7 +4,6 @@ using System.Windows.Input;
 using System.Diagnostics;
 using System;
 using System.Threading;
-using System.Management.Automation;
 using ZitiDesktopEdge.Models;
 using System.Reflection;
 using System.Web;
@@ -12,7 +11,13 @@ using System.Net.Mail;
 using System.IO;
 using System.Net;
 using Newtonsoft.Json.Linq;
-using System.Threading.Tasks;
+using ZitiDesktopEdge.ServiceClient;
+
+using NLog;
+using NLog.Config;
+using NLog.Targets;
+
+using ZitiDesktopEdge.Server;
 
 namespace ZitiDesktopEdge
 {	
@@ -20,7 +25,7 @@ namespace ZitiDesktopEdge
     /// Interaction logic for MainMenu.xaml
     /// </summary>
     public partial class MainMenu : UserControl {
-
+		private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
 		public delegate void AttachementChanged(bool attached);
 		public event AttachementChanged OnAttachmentChange;
@@ -125,7 +130,7 @@ namespace ZitiDesktopEdge
 			} catch(Exception ex)
 			{
 				UpdateAvailable.Content = "An exception occurred while performing upgrade check";
-				Debug.WriteLine("Error when checking for version: " + ex.Message);
+				logger.Error(ex, "Error when checking for version: " + ex.Message);
 				UpdateAvailable.Visibility = Visibility.Visible;
 			}
 		}
@@ -150,11 +155,11 @@ namespace ZitiDesktopEdge
 
 				string version = "";
 				try {
-					ServiceClient.TunnelStatus s = (ServiceClient.TunnelStatus)Application.Current.Properties["CurrentTunnelStatus"];
+					DataStructures.TunnelStatus s = (DataStructures.TunnelStatus)Application.Current.Properties["CurrentTunnelStatus"];
 					version = $"{s.ServiceVersion.Version}@{s.ServiceVersion.Revision}";
 				} catch (Exception e) {
 #if DEBUG
-					Debug.WriteLine(e.ToString());
+					logger.Debug("Updating state:" + e.ToString());
 #endif
 				}
 
@@ -170,7 +175,7 @@ namespace ZitiDesktopEdge
 				LicensesItems.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
 			} else if (menuState=="Logs") {
-				ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
+				DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
 				MenuTitle.Content = "Service Logs";
 				LogsItems.Text = client.GetLogs();
 				LogsItems.Visibility = Visibility.Visible;
@@ -219,7 +224,7 @@ namespace ZitiDesktopEdge
 			Process.Start(new ProcessStartInfo("https://netfoundry.io/terms") { UseShellExecute = true });
 		}
 		private void ShowFeedback(object sender, MouseButtonEventArgs e) {
-			ServiceClient.Client client = (ServiceClient.Client)Application.Current.Properties["ServiceClient"];
+			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
 			var mailMessage = new MailMessage();
 			mailMessage.From = new MailAddress("ziti-support@netfoundry.io");
 			mailMessage.Subject = "Ziti Support";

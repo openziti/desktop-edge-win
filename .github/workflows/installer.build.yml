@@ -19,6 +19,7 @@ jobs:
       SOME_KEY: ${{ secrets.SOME_KEY }}
       ADV_INST_KEY: ${{ secrets.ADV_INST_KEY }}
       JFROG_ACCESS_TOKEN: ${{ secrets.JFROG_ACCESS_TOKEN }}
+      gh_ci_key: ${{ secrets.GH_CI_KEY }}
 
     steps:
       - uses: actions/checkout@master
@@ -27,7 +28,7 @@ jobs:
         run: echo "GIT_BRANCH=$($env:GITHUB_REF.replace('refs/heads/', ''))" >> $env:GITHUB_ENV
       - if: github.event_name == 'pull_request'
         run: echo "GIT_BRANCH=$env:GITHUB_HEAD_REF" >> $env:GITHUB_ENV
-      - run: echo "$(go env GOPATH)/binbin" >> $GITHUB_PATH
+      - run: echo "$(go env GOPATH)\bin" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
       - name: Setup secrets
         run: |
           echo "${env:SOME_KEY}" > WinSign.b64

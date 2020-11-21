@@ -30,7 +30,7 @@ namespace ZitiDesktopEdge.Models {
 
 		public string Fingerprint { get; set; }
 
-		public static ZitiIdentity FromClient(ServiceClient.Identity id)
+		public static ZitiIdentity FromClient(DataStructures.Identity id)
 		{
 			ZitiIdentity zid = new ZitiIdentity()
 			{
@@ -44,8 +44,10 @@ namespace ZitiDesktopEdge.Models {
 
 			if (id.Services != null) {
 				foreach (var svc in id.Services) {
-					var zsvc = new ZitiService(svc);
-					zid.Services.Add(zsvc);
+					if (svc != null) {
+						var zsvc = new ZitiService(svc);
+						zid.Services.Add(zsvc);
+					}
 				}
 			}
 			return zid;
