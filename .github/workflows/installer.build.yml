@@ -19,6 +19,7 @@ jobs:
       SOME_KEY: ${{ secrets.SOME_KEY }}
       ADV_INST_KEY: ${{ secrets.ADV_INST_KEY }}
       JFROG_ACCESS_TOKEN: ${{ secrets.JFROG_ACCESS_TOKEN }}
+      gh_ci_key: ${{ secrets.GH_CI_KEY }}
 
     steps:
       - uses: actions/checkout@master
@@ -32,7 +33,6 @@ jobs:
         run: |
           echo "${env:SOME_KEY}" > WinSign.b64
           echo "${env:ADV_INST_KEY}" > ADV_INST_KEY.key
-          echo "${env:gh_ci_key}" > gh_deploy_key
           C:\Windows\System32\certutil.exe -decode WinSign.b64 Installer/WinSign.p12
       - name: Trying to run choco install.
         run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
