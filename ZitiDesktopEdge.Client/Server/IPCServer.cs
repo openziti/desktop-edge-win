@@ -109,7 +109,7 @@ namespace ZitiDesktopEdge.Server {
                     string line = await reader.ReadLineAsync();
 
                     while (line != null) {
-                        await processMessage(line, writer);
+                        await processMessageAsync(line, writer);
                         line = await reader.ReadLineAsync();
                     }
 
@@ -145,7 +145,7 @@ namespace ZitiDesktopEdge.Server {
                     
                     string line = await reader.ReadLineAsync();
                     while (line != null) {
-                        await processMessage(line, writer);
+                        await processMessageAsync(line, writer);
                         line = await reader.ReadLineAsync();
                     }
 
@@ -157,7 +157,7 @@ namespace ZitiDesktopEdge.Server {
             }
         }
 
-        async public Task processMessage(string msg, StreamWriter writer) {
+        async public Task processMessageAsync(string msg, StreamWriter writer) {
             Logger.Debug("message received: {0}", msg);
             var r = new SvcResponse();
             var rr = new ServiceStatusEvent();
