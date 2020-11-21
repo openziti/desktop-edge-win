@@ -274,6 +274,7 @@ func readConfig(t *RuntimeState, filename string) error {
 	info, err := os.Stat(filename)
 	if os.IsNotExist(err) {
 		log.Infof("the config file does not exist. this is normal if this is a new install or if the config file was removed manually")
+		rts.state = &dto.TunnelStatus{}
 		return nil
 	}
 
