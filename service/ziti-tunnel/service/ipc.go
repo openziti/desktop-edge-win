@@ -642,6 +642,8 @@ func toggleIdentity(out *json.Encoder, fingerprint string, onOff bool) {
 				log.Warnf("could not disconnect identity: %v", err)
 			}
 		}
+		id.Active = onOff
+		rts.SaveState()
 		respond(out, dto.Response{Message: "identity toggled", Code: SUCCESS, Error: "", Payload: Clean(id)})
 	}
 
@@ -770,14 +772,10 @@ func respondWithError(out *json.Encoder, msg string, code int, err error) {
 func connectIdentity(id *Id) {
 	log.Infof("connecting identity: %s[%s]", id.Name, id.FingerPrint)
 
-	if id.Active {
-		log.Debugf("%s[%s] is active - not connecting", id.Name, id.FingerPrint)
+	if id.CId == nil || !id.CId.Loaded {
+		rts.LoadIdentity(id)
 	} else {
-		if id.CId == nil || !id.CId.Loaded {
-			rts.LoadIdentity(id)
-		} else {
-			log.Debugf("%s[%s] is already loaded", id.Name, id.FingerPrint)
-		}
+		log.Debugf("%s[%s] is already loaded", id.Name, id.FingerPrint)
 
 		if id.CId.Services != nil {
 			id.CId.Services.Range(func(key interface{}, value interface{}) bool {
@@ -788,8 +786,6 @@ func connectIdentity(id *Id) {
 				return true
 			})
 		}
-
-		id.Active = true
 	}
 
 	events.broadcast <- dto.IdentityEvent{
@@ -843,6 +839,7 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 	err := disconnectIdentity(id)
 	if err != nil {
 		anyErrs = err.Error()
+		log.Errorf("error when disconnecting identity: %s, %v", id, err)
 	}
 
 	rts.RemoveByFingerprint(fingerprint)

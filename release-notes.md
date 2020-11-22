@@ -7,7 +7,7 @@
 * none
 
 ## Bugs fixed:
-* none
+* bug found when comparing versions. e.g.: 1.5.0 was considered newer than 1.5.0.0
 
 # Release 1.5.1
 
@@ -18,7 +18,7 @@
 * none
 
 ## Bugs fixed:
-* fixes #226 - update check fails on second run due to NRE
+* fixes [#226](https://github.com/openziti/desktop-edge-win/issues/226) - update check fails on second run due to NRE
 
 ## Dependency Updates
 * none
@@ -26,18 +26,18 @@
 # Release 1.5.0
 
 ## What's New
-* closes #216 - The big change is that the big button now will send a message to the monitor service which will have the proper rights to stop and start the data service (`ziti`).
+* closes [#216](https://github.com/openziti/desktop-edge-win/issues/216) - The big change is that the big button now will send a message to the monitor service which will have the proper rights to stop and start the data service (`ziti`).
 
 ## Other changes:
 * Changed the default mask to /10 as to not be different
 * Changed the minimum allowable mask to be /16
 * Migrate any masks > /16 to /16
-* fixes #220 - Alphabetize the service list
+* fixes [#220](https://github.com/openziti/desktop-edge-win/issues/220) - Alphabetize the service list
 
 ## Bugs fixed:
-* fixes #221 - Cleanup previous update files
-* fixes #218 - 0 length config cause panic
-* fixes #211 - segv on hosted service
+* fixes [#221](https://github.com/openziti/desktop-edge-win/issues/221) - Cleanup previous update files
+* fixes [#218](https://github.com/openziti/desktop-edge-win/issues/218) - 0 length config cause panic
+* fixes [#211](https://github.com/openziti/desktop-edge-win/issues/211) - segv on hosted service
 
 ## Dependency Updates
 * update to github.com/openziti/sdk-golang v0.14.12

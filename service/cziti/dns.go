@@ -40,8 +40,8 @@ type DnsManager interface {
 }
 
 var initOnce = sync.Once{}
-var dnsi = &dnsImpl{}
-var DNSMgr DnsManager = dnsi
+var dnsMgrPrivate = &dnsImpl{}
+var DNSMgr DnsManager = dnsMgrPrivate
 
 type dnsImpl struct {
 	cidr    uint32
@@ -95,7 +95,7 @@ func normalizeDnsName(dnsName string) string {
 
 // RegisterService will return the next ip address in the configured range. If the ip address is not
 // assigned to a hostname an error will also be returned indicating why.
-func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint16, ctx *ZIdentity, svcName string) (net.IP, error) {
+func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint16, zid *ZIdentity, svcName string) (net.IP, error) {
 	//check to see if host is an ip address - if so we want to intercept the ip. otherwise treat host as a host
 	//name and register it in dns, obtain an ip and all that...
 	ip := net.ParseIP(dnsNameToReg)
@@ -108,8 +108,8 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 	log.Infof("adding DNS for %s. service name %s@%s. is ip: %t", dnsNameToReg, svcName, icept.String(), icept.isIp)
 
 	currentNetwork := "<unknown-network>"
-	if ctx != nil {
-		currentNetwork = ctx.Controller()
+	if zid != nil {
+		currentNetwork = zid.Controller()
 	}
 
 	key := icept.AsKey()
@@ -137,6 +137,8 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 	} else {
 		// if not used at all - map it
 		if icept.isIp {
+			log.Infof("adding route for ip:%s", icept.host)
+
 			err := dns.tun.AddRoute(
 				net.IPNet{IP: ip, Mask: net.IPMask{255, 255, 255, 255}},
 				dnsip,
@@ -147,8 +149,6 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 				} else {
 					log.Errorf("Unexpected error adding a route to %s: %v", icept.host, err)
 				}
-			} else {
-				log.Infof("adding route for ip:%s", icept.host)
 			}
 		} else {
 			nextAddr := dns.cidr | atomic.AddUint32(&dns.ipCount, 1)
@@ -158,19 +158,19 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 			log.Infof("mapping hostname %s to ip %s", dnsNameToReg, ip.String())
 			dns.hostnameMap[normalizeDnsName(icept.host)] = &ctxIp {
 				ip:         ip,
-				ctx:        ctx,
+				ctx:        zid,
 				network:    currentNetwork,
-				dnsEnabled: true,
+				dnsEnabled: zid.Active,
 			}
 		}
 	}
 
 	dns.serviceMap[key] = ctxService{
-		ctx:       ctx,
+		ctx:       zid,
 		name:      svcName,
 		serviceId: svcId,
 		count:     1,
-		icept:	   icept,
+		icept:     icept,
 	}
 
 	return ip, nil
@@ -182,6 +182,8 @@ func (dns *dnsImpl) Resolve(toResolve string) net.IP {
 	if found != nil {
 		if found.dnsEnabled {
 			return found.ip
+		} else {
+			log.Debugf("resolved %s as %v but service is not active", toResolve, found.ip)
 		}
 	}
 	return nil
@@ -229,7 +231,7 @@ func (dns *dnsImpl) ReturnToDns(hostname string) net.IP {
 		dnsEntry.dnsEnabled = true
 		return dnsEntry.ip
 	} else {
-		// probably is an ip - pasee as ip and try to return that
+		// must be an ip - pass as ip and try to return that
 		ip := net.ParseIP(hostname)
 		return ip
 	}
@@ -237,13 +239,13 @@ func (dns *dnsImpl) ReturnToDns(hostname string) net.IP {
 
 func DnsInit(tun api.DesktopEdgeIface, ip string, maskBits int) {
 	initOnce.Do(func() {
-		dnsi.serviceMap = make(map[string]ctxService)
+		dnsMgrPrivate.serviceMap = make(map[string]ctxService)
 		//DNS.ipMap = make(map[uint32]string)
-		dnsi.hostnameMap = make(map[string]*ctxIp)
+		dnsMgrPrivate.hostnameMap = make(map[string]*ctxIp)
 		dnsip = net.ParseIP(ip).To4()
 		mask := net.CIDRMask(maskBits, 32)
-		dnsi.cidr = binary.BigEndian.Uint32(dnsip) & binary.BigEndian.Uint32(mask)
-		dnsi.ipCount = 2
-		dnsi.tun = tun
+		dnsMgrPrivate.cidr = binary.BigEndian.Uint32(dnsip) & binary.BigEndian.Uint32(mask)
+		dnsMgrPrivate.ipCount = 2
+		dnsMgrPrivate.tun = tun
 	})
 }

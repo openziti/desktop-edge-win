@@ -116,6 +116,7 @@ type ZIdentity struct {
 	Version     string
 	Services    *sync.Map
 	Fingerprint string
+	Active      bool
 }
 
 func (c *ZIdentity) GetMetrics() (int64, int64, bool) {
@@ -226,7 +227,7 @@ func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx
 		if ok && found != nil {
 			log.Infof("service with id: %s, name: %s exists. updating service.", svcId, name)
 			fs := found.(ZService)
-			dnsi.UnregisterService(fs.InterceptHost, fs.InterceptPort)
+			DNSMgr.UnregisterService(fs.InterceptHost, fs.InterceptPort)
 			zid.Services.Delete(svcId)
 		} else {
 			log.Debugf("new service with id: %s, name: %s in context %d", svcId, name, &zid)
@@ -255,9 +256,10 @@ func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx
 				port = int(c["port"].(float64))
 			}
 		}
+
 		if host != "" && port != -1 {
 			ownsIntercept := true
-			ip, err := dnsi.RegisterService(svcId, host, uint16(port), zid, name)
+			ip, err := DNSMgr.RegisterService(svcId, host, uint16(port), zid, name)
 			if err != nil {
 				log.Warn(err)
 				ownsIntercept = false
@@ -289,7 +291,7 @@ func serviceUnavailable(ctx *ZIdentity, svcId string, name string) {
 	found, ok := ctx.Services.Load(svcId)
 	if ok {
 		fs := found.(ZService)
-		dnsi.UnregisterService(fs.InterceptHost, fs.InterceptPort)
+		DNSMgr.UnregisterService(fs.InterceptHost, fs.InterceptPort)
 		ctx.Services.Delete(svcId)
 		ServiceChanges <- ServiceChange{
 			Operation: REMOVED,
@@ -334,8 +336,9 @@ func zitiError(code C.int) error {
 	return nil
 }
 
-func LoadZiti(cfg string) *ZIdentity {
+func LoadZiti(cfg string, isActive bool) *ZIdentity {
 	ctx := &ZIdentity{}
+	ctx.Active = isActive
 	ctx.Options.config = C.CString(cfg)
 	ctx.Options.init_cb = C.ziti_init_cb(C.initCB)
 	ctx.Options.service_cb = C.ziti_service_cb(C.serviceCB)
@@ -362,16 +365,6 @@ func LoadZiti(cfg string) *ZIdentity {
 	delete(initMap, cfg)
 
 	return res
-}
-
-func GetTransferRates(ctx *ZIdentity) (int64, int64, bool) { //extern void NF_get_transfer_rates(ziti_context nf, double* up, double* down);
-	if ctx == nil {
-		return 0, 0, false
-	}
-	var up, down C.double
-	C.ziti_get_transfer_rates(ctx.zctx, &up, &down)
-
-	return int64(up), int64(down), true
 }
 
 func(c *ZIdentity) Shutdown() {

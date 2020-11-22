@@ -60,7 +60,7 @@ func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn, ipVer int) {
 
 	var ip net.IP
 	dnsName := strings.TrimSpace(query.Name)
-	ip = dnsi.Resolve(dnsName)
+	ip = DNSMgr.Resolve(dnsName)
 
 	// never proxy hostnames that we know about regardless of type
 	if ip == nil {
@@ -70,7 +70,7 @@ func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn, ipVer int) {
 			if strings.HasSuffix(dnsName, domain) {
 				dnsNameTrimmed := strings.TrimRight(dnsName, domain)
 				// dns request has domain appended - removing and resolving
-				ip = dnsi.Resolve(dnsNameTrimmed)
+				ip = DNSMgr.Resolve(dnsNameTrimmed)
 				break
 			}
 		}
