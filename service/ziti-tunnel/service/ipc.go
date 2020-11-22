@@ -258,7 +258,6 @@ func initialize() error {
 				Identity: *id,
 				CId:      nil,
 			}
-			i.Identity.Active = false
 			rts.ids[id.FingerPrint] = i
 		} else {
 			log.Warnf("identity was nil?")

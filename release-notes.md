@@ -1,3 +1,14 @@
+# Release 1.5.3
+
+## What's New
+* identities disabled are now remembered when starting/stopping the service. the client can still see identities if id is disabled 
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* NRE in ziti-monitor if no subscriptions exist
+
 # Release 1.5.2
 
 ## What's New
