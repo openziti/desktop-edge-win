@@ -61,7 +61,7 @@ namespace ZitiDesktopEdge
 		}
 
 		private void DoUpdate(object sender, MouseButtonEventArgs e) {
-			System.Diagnostics.Process.Start(_downloadUrl);
+			Process.Start(_downloadUrl);
 		}
 
 		private void ShowAbout(object sender, MouseButtonEventArgs e) {

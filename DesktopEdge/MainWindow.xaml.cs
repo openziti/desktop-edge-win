@@ -165,8 +165,6 @@ namespace ZitiDesktopEdge {
 				AddIdAreaButton.IsEnabled = false;
 				AddIdButton.Opacity = 0.1;
 				AddIdButton.IsEnabled = false;
-				DisconnectButton.Visibility = Visibility.Collapsed;
-				ConnectButton.Visibility = Visibility.Visible;
 				ConnectButton.Opacity = 0.1;
 				StatArea.Opacity = 0.1;
 			} else {
@@ -174,11 +172,10 @@ namespace ZitiDesktopEdge {
 				AddIdAreaButton.IsEnabled = true;
 				AddIdButton.Opacity = 1.0;
 				AddIdButton.IsEnabled = true;
-				ConnectButton.Visibility = Visibility.Collapsed;
-				DisconnectButton.Visibility = Visibility.Visible;
 				StatArea.Opacity = 1.0;
 				ConnectButton.Opacity = 1.0;
 			}
+			TunnelConnected(!_isServiceInError);
 		}
 
 		async private void MainWindow_Loaded(object sender, RoutedEventArgs e) {
@@ -495,15 +492,10 @@ namespace ZitiDesktopEdge {
 				_isServiceInError = false;
 				UpdateServiceView();
 				NoServiceView.Visibility = Visibility.Collapsed;
-				SetNotifyIcon("white");
 				if (status.Active) {
-					InitializeTimer((int)status.Duration);
-					ConnectButton.Visibility = Visibility.Collapsed;
-					DisconnectButton.Visibility = Visibility.Visible;
 					SetNotifyIcon("green");
 				} else {
-					ConnectButton.Visibility = Visibility.Visible;
-					DisconnectButton.Visibility = Visibility.Collapsed;
+					SetNotifyIcon("white");
 				}
 				if (!Application.Current.Properties.Contains("ip")) {
 					Application.Current.Properties.Add("ip", status?.IpInfo?.Ip);
@@ -560,19 +552,10 @@ namespace ZitiDesktopEdge {
 				if (ids[i].IsEnabled) {
 					isActive = true;
 					SetNotifyIcon("green");
-					ConnectButton.Visibility = Visibility.Collapsed;
-					DisconnectButton.Visibility = Visibility.Visible;
 				}
 				id.OnStatusChanged += Id_OnStatusChanged;
 				id.Identity = ids[i];
 				IdList.Children.Add(id);
-			}
-			if (isActive) {
-				ConnectButton.Visibility = Visibility.Collapsed;
-				DisconnectButton.Visibility = Visibility.Visible;
-			} else {
-				ConnectButton.Visibility = Visibility.Visible;
-				DisconnectButton.Visibility = Visibility.Collapsed;
 			}
 			IdList.Height = (double)(ids.Length * 64);
 			Placement();
@@ -587,7 +570,10 @@ namespace ZitiDesktopEdge {
 					break;
 				}
 			}
-			if (isActive) {
+		}
+
+		private void TunnelConnected(bool isConnected) {
+			if (isConnected) {
 				ConnectButton.Visibility = Visibility.Collapsed;
 				DisconnectButton.Visibility = Visibility.Visible;
 			} else {
@@ -730,8 +716,7 @@ namespace ZitiDesktopEdge {
 		async private Task DoConnectAsync() {
 			try {
 				SetNotifyIcon("green");
-				ConnectButton.Visibility = Visibility.Collapsed;
-				DisconnectButton.Visibility = Visibility.Visible;
+				TunnelConnected(true);
 
 				for (int i = 0; i < identities.Count; i++) {
 					await serviceClient.IdentityOnOffAsync(identities[i].Fingerprint, true);
@@ -752,8 +737,8 @@ namespace ZitiDesktopEdge {
 
 			ShowLoad("Disabling Service", "Please wait for the service to stop.");
 			var r = await monitorClient.StopServiceAsync();
-			if (r.Error != null && int.Parse(r.Error) != 0) {
-				logger.Debug("ERROR: {0}", r.Message);
+			if(r.Code != 0) { 
+				logger.Warn("ERROR: Error:{0}, Message:{1}", r.Error, r.Message);
 			} else {
 				logger.Info("Service stopped!");
 			}
