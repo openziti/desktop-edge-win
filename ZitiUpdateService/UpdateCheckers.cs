@@ -64,7 +64,7 @@ namespace ZitiUpdateService {
 				return false;
 			} else {
 				Logger.Debug("current version {0} is the same as the latest release {0}", current, published);
-				return true;
+				return false;
 			}
 
 			return true;
