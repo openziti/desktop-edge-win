@@ -43,18 +43,6 @@ namespace ZitiUpdateService {
 			JObject json = JObject.Parse(result);
 			string serverVersion = json.Property("tag_name").Value.ToString() + ".0";
 
-			Version published = new Version(serverVersion);
-			int compare = current.CompareTo(published);
-			if (compare < 0) {
-				Logger.Info("an upgrade is available.");
-			} else if (compare > 0) {
-				Logger.Info("the version installed is newer than the released version");
-				return false;
-			} else {
-				Logger.Debug("current version {0} is the same as the latest release {0}", current, published);
-				return false;
-			}
-
 			JArray assets = JArray.Parse(json.Property("assets").Value.ToString());
 			foreach (JObject asset in assets.Children<JObject>()) {
 				downloadUrl = asset.Property("browser_download_url").Value.ToString();
@@ -66,6 +54,18 @@ namespace ZitiUpdateService {
 				return false;
 			}
 			downloadFileName = downloadUrl.Substring(downloadUrl.LastIndexOf('/') + 1);
+
+			Version published = new Version(serverVersion);
+			int compare = current.CompareTo(published);
+			if (compare < 0) {
+				Logger.Info("an upgrade is available.");
+			} else if (compare > 0) {
+				Logger.Info("the version installed is newer than the released version");
+				return false;
+			} else {
+				Logger.Debug("current version {0} is the same as the latest release {0}", current, published);
+				return true;
+			}
 
 			return true;
 		}

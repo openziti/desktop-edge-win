@@ -51,7 +51,7 @@ namespace ZitiUpdateService {
 		}
 
 		public void Debug() {
-			OnStart(new string[] { "FilesystemCheck" });
+			OnStart(null);// new string[] { "FilesystemCheck" });
 		}
 
 		protected override void OnStart(string[] args) {
@@ -105,7 +105,7 @@ namespace ZitiUpdateService {
 			string assemblyVersionStr = Assembly.GetExecutingAssembly().GetName().Version.ToString(); //fetch from ziti?
 			assemblyVersion = new Version(assemblyVersionStr);
 			asmDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-			string updateFolder = Path.Combine(asmDir, "updates");
+			updateFolder = Path.Combine(asmDir, "updates");
 			cleanOldLogs(asmDir);
 			scanForStaleDownloads(updateFolder);
 
