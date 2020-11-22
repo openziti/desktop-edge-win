@@ -226,7 +226,13 @@ func (t *RuntimeState) LoadIdentity(id *Id) {
 		return
 	}
 
-	id.CId = cziti.LoadZiti(id.Path())
+	_, err := os.Stat(id.Path())
+	if err != nil{
+		log.Warnf("refusing to load identity with fingerprint %s:%s due to error %v", id.Name, id.FingerPrint, err)
+		return
+	}
+
+	id.CId = cziti.LoadZiti(id.Path(), id.Active)
 	if id.CId == nil {
 		log.Warnf("connecting to identity with fingerprint [%s] did not error but no context was returned", id.FingerPrint)
 		return

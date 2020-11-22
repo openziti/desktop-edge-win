@@ -8,7 +8,7 @@ namespace ZitiDesktopEdge.Server {
         public static event EventHandler MyEvent;
 
         public static void SendEventToConsumers(object objToSend) {
-            MyEvent(objToSend, null);
+            MyEvent?.Invoke(objToSend, null);
         }
     }
 }

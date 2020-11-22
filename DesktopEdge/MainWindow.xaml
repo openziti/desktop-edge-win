@@ -152,7 +152,7 @@
                     <Image Source="/Assets/Images/connect.png" Height="140" HorizontalAlignment="Center" Grid.ColumnSpan="2" Margin="105,0" />
                 </Grid>
             </Canvas>
-            <Canvas Name="DisconnectButton" Width="400" Height="160" MouseDown="Disconnect" Visibility="Collapsed">
+            <Canvas Name="DisconnectButton" Width="400" Height="160" MouseUp="Disconnect" Visibility="Collapsed">
                 <Grid Width="{Binding ActualWidth, ElementName=DisconnectButton}" Height="140">
                     <Image Source="/Assets/Images/connected.png" Height="140" HorizontalAlignment="Center" />
                 </Grid>
