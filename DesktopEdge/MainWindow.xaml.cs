@@ -546,16 +546,21 @@ namespace ZitiDesktopEdge {
 			if (height > _maxHeight) height = _maxHeight;
 			this.Height = height;
 			IdentityMenu.SetHeight(this.Height - 160);
-			bool isActive = false;
-			for (int i = 0; i < ids.Length; i++) {
-				IdentityItem id = new IdentityItem();
-				if (ids[i].IsEnabled) {
-					isActive = true;
+			foreach (var id in ids) {
+				IdentityItem idItem = new IdentityItem();
+				if (id.IsEnabled) {
 					SetNotifyIcon("green");
 				}
-				id.OnStatusChanged += Id_OnStatusChanged;
-				id.Identity = ids[i];
-				IdList.Children.Add(id);
+
+				idItem.ToggleStatus.IsEnabled = id.IsEnabled;
+				if (id.IsEnabled) {
+					idItem.ToggleStatus.Content = "ENABLED";
+				} else {
+					idItem.ToggleStatus.Content = "DISABLED";
+				}
+				idItem.OnStatusChanged += Id_OnStatusChanged;
+				idItem.Identity = id;
+				IdList.Children.Add(idItem);
 			}
 			IdList.Height = (double)(ids.Length * 64);
 			Placement();
