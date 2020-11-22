@@ -99,7 +99,7 @@ namespace ZitiUpdateService {
 			_updateTimer.Interval = upInt.TotalMilliseconds;
 			_updateTimer.Enabled = true;
 			_updateTimer.Start();
-			Logger.Info("Version Checker is running");
+			Logger.Info("Version Checker is running every {0} minutes", upInt.TotalMinutes);
 
 
 			string assemblyVersionStr = Assembly.GetExecutingAssembly().GetName().Version.ToString(); //fetch from ziti?
