@@ -31,8 +31,8 @@ namespace ZitiUpdateService {
 					ArchiveEvery = FileArchivePeriod.Day,
 					ArchiveNumbering = ArchiveNumberingMode.Rolling,
 					MaxArchiveFiles = 7,
-					Layout = "${longdate}|${level:uppercase=true:padding=5}|${logger}|${message} ${exception:format=tostring}",
-			};
+					Layout = "[${date:format=yyyy-MM-ddTHH:mm:ss.fff}Z] ${level:uppercase=true:padding=5}\t${logger}\t${message}\t${exception:format=tostring}",
+				};
 				var logconsole = new ConsoleTarget("logconsole");
 
 				// Rules for mapping loggers to targets            

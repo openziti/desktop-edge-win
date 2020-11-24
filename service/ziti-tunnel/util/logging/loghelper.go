@@ -34,7 +34,7 @@ import (
 var Elog debug.Log
 var logger = logrus.New()
 var loggerInitialized = false
-var tf = "2006-01-02-030405.999"
+var tf = "2006-01-02T03:04:05.999"
 var tfl = len(tf)
 
 
@@ -127,7 +127,7 @@ func (f *dateFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	}
 
 	now := f.padDateWithZeros(time.Now().UTC())
-	return []byte(fmt.Sprintf("[%sz] %s\t%s\n",
+	return []byte(fmt.Sprintf("[%sZ] %s\t%s\n",
 			now,
 			level,
 			entry.Message),
