@@ -30,7 +30,7 @@ if (!$isAdmin) {
     exit 11
 }
 echo "    ensure folder exists: $logdest"
-mkdir $logdest -ErrorAction SilentlyContinue > null
+mkdir $logdest -ErrorAction SilentlyContinue > $null
 
 echo "    issuing ipconfig /all"
 echo " "

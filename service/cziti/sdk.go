@@ -263,6 +263,8 @@ func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx
 			if err != nil {
 				log.Warn(err)
 				ownsIntercept = false
+				log.Infof("service intercept beginning for service: %s@%s:%d on ip %s", name, host, port, ip.String())
+				AddIntercept(svcId, name, ip.String(), port, unsafe.Pointer(zid.zctx))
 			} else {
 				log.Infof("service intercept beginning for service: %s@%s:%d on ip %s", name, host, port, ip.String())
 				AddIntercept(svcId, name, ip.String(), port, unsafe.Pointer(zid.zctx))

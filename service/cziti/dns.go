@@ -61,11 +61,14 @@ func (i intercept) String() string {
 		//an ip does not need the host normalized
 		return fmt.Sprintf("%s:%d", i.host, i.port)
 	} else {
-		return i.AsKey()
+		return i.AsHostPort()
 	}
 }
-func (i intercept) AsKey() string {
+func (i intercept) AsHostPort() string {
 	return fmt.Sprintf("%s:%d", normalizeDnsName(i.host), i.port)
+}
+func (i intercept) AsDnsName() string {
+	return normalizeDnsName(i.host)
 }
 
 type ctxIp struct {
@@ -112,13 +115,18 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 		currentNetwork = zid.Controller()
 	}
 
-	key := icept.AsKey()
+	key := icept.AsHostPort()
 	// check to see if the hostname is mapped...
-	if foundIp, found := dns.hostnameMap[icept.host]; found {
+	if foundIp, found := dns.hostnameMap[icept.AsDnsName()]; found {
 		foundIp.dnsEnabled = true
 		ip = foundIp.ip
 		// now check to see if the host *and* port are mapped...
 		if foundContext, found := dns.serviceMap[key]; found {
+			//no matter what happens this service needs a new IP address...
+			nextAddr := dns.cidr | atomic.AddUint32(&dns.ipCount, 1)
+			ip = make(net.IP, 4)
+			binary.BigEndian.PutUint32(ip, nextAddr)
+
 			if foundIp.network != currentNetwork {
 				// means the host:port are mapped to some other *identity* already. that's an invalid state
 				return ip, fmt.Errorf("service mapping conflict for service name %s. %s:%d in %s is already mapped by another identity in %s", svcName, dnsNameToReg, port, currentNetwork, foundIp.network)
@@ -135,6 +143,7 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 			// good - means the service can be mapped
 		}
 	} else {
+		log.Debugf("first time seeing host: %s", icept.host)
 		// if not used at all - map it
 		if icept.isIp {
 			log.Infof("adding route for ip:%s", icept.host)
@@ -155,8 +164,8 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 			ip = make(net.IP, 4)
 			binary.BigEndian.PutUint32(ip, nextAddr)
 
-			log.Infof("mapping hostname %s to ip %s", dnsNameToReg, ip.String())
-			dns.hostnameMap[normalizeDnsName(icept.host)] = &ctxIp {
+			log.Infof("mapping hostname %s to ip %s as dns %s", dnsNameToReg, ip.String(), icept.AsDnsName())
+			dns.hostnameMap[icept.AsDnsName()] = &ctxIp {
 				ip:         ip,
 				ctx:        zid,
 				network:    currentNetwork,
