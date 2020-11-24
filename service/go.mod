@@ -8,7 +8,7 @@ require (
 	github.com/jehiah/go-strftime v0.0.0-20171201141054-1d33003b3869 // indirect
 	github.com/lestrrat-go/file-rotatelogs v2.3.0+incompatible
 	github.com/lestrrat-go/strftime v1.0.1 // indirect
-	github.com/michaelquigley/pfxlog v0.0.0-20190813191113-2be43bd0dccc
+	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
 	github.com/miekg/dns v1.1.29
 	github.com/openziti/foundation v0.14.17
 	github.com/openziti/sdk-golang v0.14.12
