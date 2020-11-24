@@ -23,6 +23,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@master
+      - uses: microsoft/setup-msbuild@v1
       - if: github.event_name == 'push'
         run: echo "GIT_BRANCH=$($env:GITHUB_REF.replace('refs/heads/', ''))" >> $env:GITHUB_ENV
       - if: github.event_name == 'pull_request'
