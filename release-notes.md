@@ -1,7 +1,7 @@
 # Release 1.5.8
 
 ## What's New
-* nothing
+* closed [#234](https://github.com/openziti/desktop-edge-win/issues/234) - logs all now produced in UTC and formatted as time not delta from process start
 
 ## Other changes:
 * none
@@ -11,7 +11,7 @@
 
 ## Dependency Updates
 
-* update to ziti-tunnel-sdk-c v0.7.16 / ziti-sdk-c 0.17.15
+* update to ziti-tunnel-sdk-c v0.7.17 / ziti-sdk-c 0.17.18
 
 # Release 1.5.7
 
