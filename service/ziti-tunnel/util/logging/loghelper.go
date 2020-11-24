@@ -20,6 +20,7 @@ package logging
 import (
 	"fmt"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+	"github.com/mgutz/ansi"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/windows/svc/debug"
 	"io"
