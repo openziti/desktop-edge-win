@@ -9,6 +9,10 @@
 ## Bugs fixed:
 * fixes [#222](https://github.com/openziti/desktop-edge-win/issues/222) - strange ipv6 response using nslookup
 
+## Dependency Updates
+
+* update to ziti-tunnel-sdk-c v0.7.16 / ziti-sdk-c 0.17.15
+
 # Release 1.5.7
 
 ## What's New

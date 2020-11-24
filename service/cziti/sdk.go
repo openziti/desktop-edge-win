@@ -73,7 +73,7 @@ func init() {
 }
 
 func SetLog(f *os.File) {
-	C.set_log_out(C.intptr_t(f.Fd()))
+	C.set_log_out(C.intptr_t(f.Fd()), _impl.libuvCtx)
 }
 
 func SetLogLevel(level int) {

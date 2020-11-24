@@ -18,15 +18,17 @@
 #include "sdk.h"
 #include <ziti/ziti_tunnel.h>
 #include <ziti/ziti_log.h>
+#include <uv.h>
 
 void libuv_stopper(uv_async_t *a) {
      uv_stop(a->loop);
 }
 void set_log_level(int level) {
+
     ziti_debug_level = level;
 }
 
-void set_log_out(intptr_t h) {
+void set_log_out(intptr_t h, libuv_ctx *lctx) {
     int fd = _open_osfhandle(h, _O_APPEND | _O_RDONLY);
 
     if (fd == -1) {
@@ -42,12 +44,13 @@ void set_log_out(intptr_t h) {
         return;
     }
 
-    ziti_set_log(f);
+    ziti_set_log(f, lctx->l);
 }
 
 void libuv_init(libuv_ctx *lctx) {
-    init_debug();
     lctx->l = uv_default_loop();
+    uv_os_setenv("ZITI_TIME_FORMAT", "utc");
+    init_debug(lctx->l);
     uv_async_init(lctx->l, &lctx->stopper, libuv_stopper);
 }
 
