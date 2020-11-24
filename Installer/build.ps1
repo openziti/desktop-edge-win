@@ -59,7 +59,7 @@ if($gituser -eq "ziti-ci") {
     echo ========================================================
     git status 2>&1
 
-    git commit -m "[ci skip] committing updated installer file" 2>&1
+    git commit -m "[ci skip] committing updated version related files" 2>&1
     git push 2>&1
   } else {
     echo "branch $b does not match the regex. no commit/no push"

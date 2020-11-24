@@ -20,6 +20,7 @@ package logging
 import (
 	"fmt"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+	"github.com/mgutz/ansi"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/windows/svc/debug"
 	"io"
@@ -34,7 +35,7 @@ import (
 var Elog debug.Log
 var logger = logrus.New()
 var loggerInitialized = false
-var tf = "2006-01-02T03:04:05.999"
+var tf = "2006-01-02T15:04:05.000"
 var tfl = len(tf)
 
 
@@ -126,29 +127,12 @@ func (f *dateFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		level = traceColor
 	}
 
-	now := f.padDateWithZeros(time.Now().UTC())
 	return []byte(fmt.Sprintf("[%sZ] %s\t%s\n",
-			now,
+			time.Now().UTC().Format(f.timeFormat),
 			level,
 			entry.Message),
 		),
 		nil
-}
-
-var zeros = "000"
-func (f *dateFormatter) padDateWithZeros(t time.Time) string {
-	d := t.Format(f.timeFormat)
-	l := len(d)
-	if l == tfl {
-		return d
-	}
-
-	toPad := tfl - l
-	if toPad == 4 {
-		return d + ".000"
-	} else {
-		return d + zeros[:tfl-l]
-	}
 }
 
 var panicColor = ansi.Red + "PANIC" + ansi.DefaultFG
