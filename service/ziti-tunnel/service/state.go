@@ -25,12 +25,15 @@ import (
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/constants"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
+	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"golang.org/x/sys/windows/registry"
 	"golang.zx2c4.com/wireguard/tun"
 	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
 	"io"
+	"io/ioutil"
 	"net"
 	"os"
+	"path"
 	"strings"
 	"time"
 )
@@ -172,9 +175,12 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, error) {
 	if strings.TrimSpace(ipv4) == "" {
 		log.Infof("ip not provided using default: %v", ipv4)
 		ipv4 = constants.Ipv4ip
+		rts.UpdateIpv4(ipv4)
 	}
 	if ipv4mask < constants.Ipv4MaxMask {
-		log.Warnf("provided mask is very large: %d.", ipv4mask)
+		log.Warnf("provided mask is too large: %d using default.", ipv4mask, constants.Ipv4DefaultMask)
+		ipv4mask = constants.Ipv4DefaultMask
+		rts.UpdateIpv4Mask(ipv4mask)
 	}
 	ip, ipnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", ipv4, ipv4mask))
 	if err != nil {
@@ -266,13 +272,62 @@ func (t *RuntimeState) LoadConfig() {
 		}
 	}
 
+	//find/fix orphaned identities
+	t.scanForOrphanedIdentities(config.Path())
+
 	//any specific code needed when starting the process. some values need to be cleared
 	TunStarted = time.Now() //reset the time on startup
 
-	if rts.state.TunIpv4Mask > constants.Ipv4MinMask {
+	if t.state.TunIpv4Mask > constants.Ipv4MinMask {
 		log.Warnf("provided mask: [%d] is smaller than the minimum permitted: [%d] and will be changed", rts.state.TunIpv4Mask, constants.Ipv4MinMask)
 		rts.UpdateIpv4Mask(constants.Ipv4MinMask)
 	}
+}
+
+func (t *RuntimeState) scanForOrphanedIdentities(folder string) {
+	files, err := ioutil.ReadDir(folder)
+	if err != nil {
+		log.Panic(err)
+	}
+	for _, f := range files {
+		if strings.HasSuffix(f.Name(), "json") {
+			cfg := idcfg.Config{}
+			_ = probeIdentityFile(path.Join(folder, f.Name()), &cfg)
+			if strings.TrimSpace(cfg.ID.Key) != "" {
+				log.Debugf("Config file appears to be valid for network: %s", cfg.ZtAPI)
+				fingerprint := strings.Split(f.Name(), ".")[0]
+				found := t.Find(fingerprint)
+				if found == nil {
+					log.Infof("found orphaned identity %s. Adding back to the configuration", fingerprint)
+					newId := dto.Identity{
+						Name:        "recovered identity",
+						FingerPrint: fingerprint,
+						Active:      false,
+						Config:      cfg,
+					}
+
+					t.state.Identities = append(t.state.Identities, &newId)
+				} else {
+					log.Debugf("identity with fingerprint is known: %s", fingerprint)
+				}
+			} else {
+				log.Warnf("found orphaned identity but it is invalid for network: %s", cfg.ZtAPI)
+			}
+		}
+	}
+}
+
+func probeIdentityFile(path string, cfg *idcfg.Config) error {
+	file, err := os.OpenFile(path, os.O_RDONLY, 0644)
+	if err != nil {
+		log.Error("unexpected error opening config file: %v", err)
+	}
+
+	r := bufio.NewReader(file)
+	dec := json.NewDecoder(r)
+	err = dec.Decode(&cfg)
+	defer file.Close()
+	return err
 }
 
 func readConfig(t *RuntimeState, filename string) error {
