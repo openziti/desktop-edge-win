@@ -14,7 +14,7 @@ REM See the License for the specific language governing permissions and
 REM limitations under the License.
 REM
 SET REPO_URL=https://github.com/openziti/ziti-tunnel-sdk-c.git
-SET ZITI_TUNNEL_REPO_BRANCH=v0.7.14
+SET ZITI_TUNNEL_REPO_BRANCH=v0.7.18
 REM override the c sdk used in the build - leave blank for the same as specified in the tunneler sdk
 SET ZITI_SDK_C_BRANCH=
 REM the number of TCP connections the tunneler sdk can have at any one time
@@ -24,15 +24,6 @@ set SVC_ROOT_DIR=%~dp0
 set CURDIR=%CD%
 
 call %SVC_ROOT_DIR%\set-env.bat
-
-IF "%ZITI_DEBUG%"=="" (
-    REM clear out if debug was run in the past
-    SET ZITI_DEBUG_CMAKE=
-) else (
-    SET ZITI_DEBUG_CMAKE=-DCMAKE_BUILD_TYPE=Debug
-    echo ZITI_DEBUG detected. will run cmake with: %ZITI_DEBUG_CMAKE%
-    echo     copy /y %TUNNELER_SDK_DIR%install\lib\Debug\libuv.dll %TUNNELER_SDK_DIR%install\lib\libuv.dll
-)
 
 cd /d %ZITI_TUNNEL_WIN_ROOT%
 
@@ -217,7 +208,7 @@ IF "%ZITI_DEBUG%"=="" (
 ) else (
     echo ZITI_DEBUG detected. Copying debug lib into install...
     echo     copy /y %TUNNELER_SDK_DIR%install/lib/Debug/libuv.dll %TUNNELER_SDK_DIR%install/lib/libuv.dll
-    copy /y %TUNNELER_SDK_DIR%install/lib/Debug/libuv.dll %TUNNELER_SDK_DIR%install/lib/libuv.dll
+    copy /y %TUNNELER_SDK_DIR%install\lib\Debug\libuv.dll %TUNNELER_SDK_DIR%install\lib\libuv.dll
 )
 
 echo building the go program

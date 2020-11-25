@@ -18,7 +18,7 @@
 package util
 
 import (
-	"github.com/michaelquigley/pfxlog"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/logging"
 	"syscall"
 	"unsafe"
 
@@ -32,7 +32,7 @@ var (
 	procWSACreateEvent   = modws2_32.NewProc("WSACreateEvent")
 	procNotifyAddrChange = modiphlpapi.NewProc("NotifyAddrChange")
 	procNotifyRouteChange = modiphlpapi.NewProc("NotifyRouteChange")
-    log = pfxlog.Logger()
+	log = logging.Logger()
 )
 
 func OnIPChange(callback func()) {

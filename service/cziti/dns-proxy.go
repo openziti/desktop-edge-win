@@ -80,24 +80,17 @@ func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn, ipVer int) {
 	if ip != nil {
 		log.Debugf("resolved %s as %v", query.Name, ip)
 
-		var answer *dns.A
 		if query.Qtype == dns.TypeA && len(ip.To4()) == net.IPv4len {
-			answer = &dns.A{
+			answer := &dns.A{
 				Hdr: dns.RR_Header{Name: query.Name, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: 60},
 				A:   ip,
 			}
-		} else if query.Qtype == dns.TypeAAAA {
-			answer = &dns.A{
-				Hdr: dns.RR_Header{Name: query.Name, Rrtype: dns.TypeAAAA, Class: dns.ClassINET, Ttl: 60},
-				A:   ip.To16(),
-			}
-		}
-
-		if answer != nil {
 			msg.Authoritative = true
 			msg.Rcode = dns.RcodeSuccess
-
 			msg.Answer = append(msg.Answer, answer)
+		} else if query.Qtype == dns.TypeAAAA {
+			log.Trace("AAAA request received for a known domain. A successful DNS response will be generated with no answer")
+			msg.Rcode = dns.RcodeSuccess
 		}
 
 		repB, err := msg.Pack()

@@ -1,3 +1,58 @@
+# Release 1.5.8
+
+## What's New
+* closed [#234](https://github.com/openziti/desktop-edge-win/issues/234) - logs all now produced in UTC and formatted as time not delta from process start
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* fixes [#222](https://github.com/openziti/desktop-edge-win/issues/222) - strange ipv6 response using nslookup
+* fixes [#239](https://github.com/openziti/desktop-edge-win/issues/239) - services marked duplicate erroneously
+
+## Dependency Updates
+
+* update to ziti-tunnel-sdk-c v0.7.18 / ziti-sdk-c 0.17.20
+
+# Release 1.5.7
+
+## What's New
+* nothing
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* fixes [#231](https://github.com/openziti/desktop-edge-win/issues/231) - overlapping hostnames do not receive a new ip
+* fixes [#219](https://github.com/openziti/desktop-edge-win/issues/219) - obtain more DNS information to use when resolving DNS requests that do not terminate with a period
+
+# Release 1.5.6
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* Another issue with auto-update resolved. The same version was set to update - same version should not update...
+
+# Release 1.5.5
+
+## What's New
+* nothing - this build exists just to verify the auto update functionality works again. it is exactly the same as version 1.5.4
+
+# Release 1.5.4
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* Another issue with auto-update resolved. 
+
 # Release 1.5.3
 
 ## What's New

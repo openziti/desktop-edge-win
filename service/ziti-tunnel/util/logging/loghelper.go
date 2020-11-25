@@ -18,34 +18,49 @@
 package logging
 
 import (
+	"fmt"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
-	"github.com/michaelquigley/pfxlog"
-	"github.com/openziti/desktop-edge-win/service/cziti"
+	"github.com/mgutz/ansi"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/windows/svc/debug"
 	"io"
 	"os"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 )
 
 var Elog debug.Log
-var logger *logrus.Entry
+var logger = logrus.New()
+var loggerInitialized = false
+var tf = "2006-01-02T15:04:05.000"
+var tfl = len(tf)
 
-func Logger() *logrus.Entry {
-	if logger == nil {
-		logger = pfxlog.Logger()
+
+func init() {
+	/*
+	 * https://github.com/sirupsen/logrus/issues/496
+	 */
+	handle := syscall.Handle(os.Stdout.Fd())
+	kernel32DLL := syscall.NewLazyDLL("kernel32.dll")
+	setConsoleModeProc := kernel32DLL.NewProc("SetConsoleMode")
+	setConsoleModeProc.Call(uintptr(handle), 0x0001|0x0002|0x0004)
+
+	f := &dateFormatter{
+		timeFormat: tf,
 	}
+	logger.SetFormatter(f)
+}
+
+func Logger() *logrus.Logger {
 	return logger
 }
 
-var loggerInitialized = false
-
 func InitLogger(level string) {
 	l, _ := ParseLevel(level)
-	logrus.SetLevel(l)
+	logger.SetLevel(l)
 
 	rl, _ := rotatelogs.New(config.LogFile() + ".%Y%m%d%H%M.log",
 		rotatelogs.WithRotationTime(24 * time.Hour),
@@ -54,8 +69,7 @@ func InitLogger(level string) {
 
 	multiWriter := io.MultiWriter(rl, os.Stdout)
 
-	logrus.SetOutput(multiWriter)
-	logrus.SetFormatter(pfxlog.NewFormatter())
+	logger.SetOutput(multiWriter)
 	if !loggerInitialized {
 		logger.Infof("============================================================================")
 		logger.Infof("Logger initialization")
@@ -64,12 +78,6 @@ func InitLogger(level string) {
 		logger.Infof("============================================================================")
 		loggerInitialized = true
 	}
-}
-
-func SetLogLevel(goLevel logrus.Level, cLevel int) {
-	logrus.Infof("Setting logger levels to %s", goLevel)
-	logrus.SetLevel(goLevel)
-	cziti.SetLogLevel(cLevel)
 }
 
 func ParseLevel(lvl string) (logrus.Level, int) {
@@ -95,3 +103,42 @@ func ParseLevel(lvl string) (logrus.Level, int) {
 		return logrus.InfoLevel, 3
 	}
 }
+
+type dateFormatter struct {
+	timeFormat string
+}
+
+func (f *dateFormatter) Format(entry *logrus.Entry) ([]byte, error) {
+	var level string
+	switch entry.Level {
+	case logrus.PanicLevel:
+		level = panicColor
+	case logrus.FatalLevel:
+		level = fatalColor
+	case logrus.ErrorLevel:
+		level = errorColor
+	case logrus.WarnLevel:
+		level = warnColor
+	case logrus.InfoLevel:
+		level = infoColor
+	case logrus.DebugLevel:
+		level = debugColor
+	case logrus.TraceLevel:
+		level = traceColor
+	}
+
+	return []byte(fmt.Sprintf("[%sZ] %s\t%s\n",
+			time.Now().UTC().Format(f.timeFormat),
+			level,
+			entry.Message),
+		),
+		nil
+}
+
+var panicColor = ansi.Red + "PANIC" + ansi.DefaultFG
+var fatalColor = ansi.Red + "FATAL" + ansi.DefaultFG
+var errorColor = ansi.Red + "ERROR" + ansi.DefaultFG
+var warnColor = ansi.Yellow + " WARN" + ansi.DefaultFG
+var infoColor = ansi.White + " INFO" + ansi.DefaultFG
+var debugColor = ansi.Blue + "DEBUG" + ansi.DefaultFG
+var traceColor = ansi.LightBlack + "TRACE" + ansi.DefaultFG

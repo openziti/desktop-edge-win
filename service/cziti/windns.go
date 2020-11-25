@@ -20,14 +20,14 @@ package cziti
 import (
 	"bytes"
 	"fmt"
-	"github.com/michaelquigley/pfxlog"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/logging"
 	"net"
 	"os"
 	"os/exec"
 	"strings"
 )
 
-var log = pfxlog.Logger()
+var log = logging.Logger()
 
 func ResetDNS() {
 	log.Info("resetting DNS server addresses")
