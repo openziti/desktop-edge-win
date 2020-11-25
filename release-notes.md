@@ -1,3 +1,18 @@
+# Release 1.5.9
+
+## What's New
+* closed [#242](https://github.com/openziti/desktop-edge-win/issues/242) - orphaned identities returned to service/ui on startup
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* fixes [#243](https://github.com/openziti/desktop-edge-win/issues/243) - problem during initial install might cause the whole network to be blocked
+
+## Dependency Updates
+
+* update to ziti-tunnel-sdk-c v0.7.18 / ziti-sdk-c 0.17.20
+
 # Release 1.5.8
 
 ## What's New

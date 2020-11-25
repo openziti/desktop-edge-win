@@ -144,7 +144,7 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 				// means the host:port are mapped to some other service already. that's an invalid state
 				return ip, false, fmt.Errorf("service mapping conflict for service name %s. %s:%d is already mapped by service id %s", svcName, dnsNameToReg, port, foundContext.serviceId)
 			}
-			log.Warnf("UNEXPECTED SITUATION - DNS mapping being processed for the exact same serviceId: %s [%s != %s]", icept.String(), foundContext.serviceId, svcId)
+			log.Debugf("RegisterService called for the exact same serviceId: %s [%s != %s]", icept.String(), foundContext.serviceId, svcId)
 		} else {
 			// good - means the service can be mapped
 			log.Debugf("OK: Another service on this network is using this hostname but on a different port: %s", icept.String())
