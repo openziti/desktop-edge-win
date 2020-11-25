@@ -11,7 +11,7 @@
 
 ## Dependency Updates
 
-* update to ziti-tunnel-sdk-c v0.7.17 / ziti-sdk-c 0.17.18
+* update to ziti-tunnel-sdk-c v0.7.18 / ziti-sdk-c 0.17.20
 
 # Release 1.5.7
 
