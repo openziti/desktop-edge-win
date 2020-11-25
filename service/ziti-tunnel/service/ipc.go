@@ -897,6 +897,10 @@ func acceptServices() {
 				Id:            c.Service.Id,
 				AssignedIP:    c.Service.AssignedIP,
 				OwnsIntercept: c.Service.OwnsIntercept,
+				Owner: dto.ServiceOwner{
+					Network:   "",
+					ServiceId: "",
+				},
 			}
 			var action dto.ActionEvent
 			switch c.Operation {
@@ -990,6 +994,10 @@ func svcToDto(src cziti.ZService) *dto.Service {
 		InterceptPort: src.InterceptPort,
 		Id:            src.Id,
 		OwnsIntercept: src.OwnsIntercept,
+		Owner: dto.ServiceOwner{
+			Network:   "",
+			ServiceId: "",
+		},
 	}
 
 	return dest

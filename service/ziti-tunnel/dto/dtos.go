@@ -35,8 +35,14 @@ type Service struct {
 	InterceptHost string
 	InterceptPort uint16
 	Id            string
-	OwnsIntercept bool 	// a boolean that indicates if this service owns the intercept
-	                  	// since intercept hostname spans identities
+	AssignedHost  string
+	OwnsIntercept bool
+	Owner		  ServiceOwner
+}
+
+type ServiceOwner struct {
+	Network   string
+	ServiceId string
 }
 
 type Identity struct {

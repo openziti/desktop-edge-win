@@ -97,12 +97,14 @@ func Stop() {
 }
 
 type ZService struct {
-	Name          string
-	Id            string
-	InterceptHost string
-	InterceptPort uint16
-	AssignedIP    string
-	OwnsIntercept bool
+	Name           string
+	Id             string
+	InterceptHost  string
+	InterceptPort  uint16
+	AssignedIP     string
+	OwnsIntercept  bool
+	OwnerNetwork   string
+	OwnerServiceId string
 }
 
 type ZIdentity struct {
@@ -258,17 +260,6 @@ func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx
 		}
 
 		if host != "" && port != -1 {
-			ownsIntercept := true
-			ip, err := DNSMgr.RegisterService(svcId, host, uint16(port), zid, name)
-			if err != nil {
-				log.Warn(err)
-				ownsIntercept = false
-				log.Infof("service intercept beginning for service: %s@%s:%d on ip %s", name, host, port, ip.String())
-				AddIntercept(svcId, name, ip.String(), port, unsafe.Pointer(zid.zctx))
-			} else {
-				log.Infof("service intercept beginning for service: %s@%s:%d on ip %s", name, host, port, ip.String())
-				AddIntercept(svcId, name, ip.String(), port, unsafe.Pointer(zid.zctx))
-			}
 			added := ZService{
 				Name:          name,
 				Id:            svcId,
@@ -276,6 +267,15 @@ func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx
 				InterceptPort: uint16(port),
 				AssignedIP:    ip.String(),
 				OwnsIntercept: ownsIntercept,
+			}
+			ip, ownsIntercept, err := DNSMgr.RegisterService(svcId, host, uint16(port), zid, name)
+			if err != nil {
+				log.Warn(err)
+				log.Infof("service intercept beginning for service: %s@%s:%d on ip %s", name, host, port, ip.String())
+				AddIntercept(svcId, name, ip.String(), port, unsafe.Pointer(zid.zctx))
+			} else {
+				log.Infof("service intercept beginning for service: %s@%s:%d on ip %s", name, host, port, ip.String())
+				AddIntercept(svcId, name, ip.String(), port, unsafe.Pointer(zid.zctx))
 			}
 			zid.Services.Store(svcId, added)
 			ServiceChanges <- ServiceChange{
