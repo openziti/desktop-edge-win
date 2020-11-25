@@ -8,6 +8,7 @@
 
 ## Bugs fixed:
 * fixes [#222](https://github.com/openziti/desktop-edge-win/issues/222) - strange ipv6 response using nslookup
+* fixes [#239](https://github.com/openziti/desktop-edge-win/issues/239) - services marked duplicate erroneously
 
 ## Dependency Updates
 
