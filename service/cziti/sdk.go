@@ -260,14 +260,6 @@ func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx
 		}
 
 		if host != "" && port != -1 {
-			added := ZService{
-				Name:          name,
-				Id:            svcId,
-				InterceptHost: host,
-				InterceptPort: uint16(port),
-				AssignedIP:    ip.String(),
-				OwnsIntercept: ownsIntercept,
-			}
 			ip, ownsIntercept, err := DNSMgr.RegisterService(svcId, host, uint16(port), zid, name)
 			if err != nil {
 				log.Warn(err)
@@ -276,6 +268,14 @@ func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx
 			} else {
 				log.Infof("service intercept beginning for service: %s@%s:%d on ip %s", name, host, port, ip.String())
 				AddIntercept(svcId, name, ip.String(), port, unsafe.Pointer(zid.zctx))
+			}
+			added := ZService{
+				Name:          name,
+				Id:            svcId,
+				InterceptHost: host,
+				InterceptPort: uint16(port),
+				AssignedIP:    ip.String(),
+				OwnsIntercept: ownsIntercept,
 			}
 			zid.Services.Store(svcId, added)
 			ServiceChanges <- ServiceChange{
