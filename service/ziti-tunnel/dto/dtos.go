@@ -37,7 +37,7 @@ type Service struct {
 	Id            string
 	AssignedHost  string
 	OwnsIntercept bool
-	Owner		  ServiceOwner
+	Owner         ServiceOwner
 }
 
 type ServiceOwner struct {
