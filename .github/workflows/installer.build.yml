@@ -20,7 +20,8 @@ jobs:
       ADV_INST_KEY: ${{ secrets.ADV_INST_KEY }}
       JFROG_ACCESS_TOKEN: ${{ secrets.JFROG_ACCESS_TOKEN }}
       gh_ci_key: ${{ secrets.GH_CI_KEY }}
-
+      ZITI_DEBUG: "yes_please"
+      
     steps:
       - uses: actions/checkout@master
       - uses: microsoft/setup-msbuild@v1
