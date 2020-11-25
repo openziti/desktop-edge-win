@@ -69,7 +69,7 @@ func InitLogger(level string) {
 
 	multiWriter := io.MultiWriter(rl, os.Stdout)
 
-	logrus.SetOutput(multiWriter)
+	logger.SetOutput(multiWriter)
 	if !loggerInitialized {
 		logger.Infof("============================================================================")
 		logger.Infof("Logger initialization")
