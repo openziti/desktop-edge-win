@@ -37,6 +37,7 @@ import "C"
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	"github.com/robfig/cron/v3"
 	"io/ioutil"
@@ -68,6 +69,10 @@ type ServiceChange struct {
 var _impl sdk
 
 func init() {
+	err := os.Setenv("ZITI_TIME_FORMAT", "utc")
+	if err != nil {
+		fmt.Println("failed to set ZITI_TIME_FORMAT")
+	}
 	_impl.libuvCtx = (*C.libuv_ctx)(C.calloc(1, C.sizeof_libuv_ctx))
 	C.libuv_init(_impl.libuvCtx)
 }
@@ -209,6 +214,12 @@ var cTunServerCfgName = C.CString("ziti-tunneler-server.v1")
 
 //export serviceCB
 func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx unsafe.Pointer) {
+	isCnull := tnlr_ctx == C.NULL
+	isNil := tnlr_ctx == nil
+	if isCnull || isNil {
+		log.Errorf("in serviceCB with null tnlr_ctx??? ")
+		return
+	}
 	zid := (*ZIdentity)(tnlr_ctx)
 
 	if zid.Services == nil {

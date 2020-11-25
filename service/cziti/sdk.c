@@ -48,7 +48,7 @@ void set_log_out(intptr_t h, libuv_ctx *lctx) {
 }
 
 void libuv_init(libuv_ctx *lctx) {
-    uv_os_setenv("ZITI_TIME_FORMAT", "utc");
+    //uv_os_setenv("ZITI_TIME_FORMAT", "utc");
     lctx->l = uv_default_loop();
     init_debug(lctx->l);
     uv_async_init(lctx->l, &lctx->stopper, libuv_stopper);
