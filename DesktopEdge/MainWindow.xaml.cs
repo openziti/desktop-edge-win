@@ -287,7 +287,7 @@ namespace ZitiDesktopEdge {
 
 		async private void StartZitiService(object sender, RoutedEventArgs e) {
 			try {
-				ShowLoad("Starting", "Staring the data service");
+				ShowLoad("Starting", "Starting the data service");
 				logger.Info("StartZitiService");
 				var r = await monitorClient.StartServiceAsync();
 				if (r.Code != 0) {
