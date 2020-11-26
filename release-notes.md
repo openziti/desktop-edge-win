@@ -1,3 +1,22 @@
+# Release 1.5.10
+
+## What's New
+* none - bugfix only
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* fixes [#245](https://github.com/openziti/desktop-edge-win/issues/245) - every identity misidentified as orphaned on startup
+
+## Dependency Updates
+
+* none
+
+## Known Issues
+
+The automatic update functionality works - however the termination of the UI is not functioning properly. Each update restart the UI to get the latest UI code
+
 # Release 1.5.9
 
 ## What's New
