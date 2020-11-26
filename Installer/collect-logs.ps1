@@ -43,6 +43,7 @@ cp $logsrc $logdest
 
 echo " "
 echo "    creating archive: ${destArchive}"
+mkdir "${logroot}\UI" -ErrorAction SilentlyContinue
 compress-archive -Path "${ipinfo}","${logroot}\ziti-service","${logroot}\UI","${logroot}\ZitiMonitorService" -DestinationPath "${destArchive}"
 
 echo " "

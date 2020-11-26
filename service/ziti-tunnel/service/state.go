@@ -292,11 +292,21 @@ func (t *RuntimeState) scanForOrphanedIdentities(folder string) {
 	for _, f := range files {
 		if strings.HasSuffix(f.Name(), "json") {
 			cfg := idcfg.Config{}
-			_ = probeIdentityFile(path.Join(folder, f.Name()), &cfg)
+			err = probeIdentityFile(path.Join(folder, f.Name()), &cfg)
+			if err != nil {
+				log.Tracef("file is not deserializable as a config file. probably config.json etc.%s", f.Name())
+				continue
+			}
 			if strings.TrimSpace(cfg.ID.Key) != "" {
 				log.Debugf("Config file appears to be valid for network: %s", cfg.ZtAPI)
 				fingerprint := strings.Split(f.Name(), ".")[0]
-				found := t.Find(fingerprint)
+				var found *dto.Identity
+				for _, sid := range t.state.Identities {
+					if sid.FingerPrint == fingerprint{
+						found = sid
+						break
+					}
+				}
 				if found == nil {
 					log.Infof("found orphaned identity %s. Adding back to the configuration", fingerprint)
 					newId := dto.Identity{
@@ -311,7 +321,7 @@ func (t *RuntimeState) scanForOrphanedIdentities(folder string) {
 					log.Debugf("identity with fingerprint is known: %s", fingerprint)
 				}
 			} else {
-				log.Warnf("found orphaned identity but it is invalid for network: %s", cfg.ZtAPI)
+				log.Debugf("json file %s does not appear to be an identity", f.Name())
 			}
 		}
 	}
