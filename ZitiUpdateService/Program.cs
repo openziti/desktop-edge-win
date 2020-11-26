@@ -47,8 +47,19 @@ namespace ZitiUpdateService {
 			UpdateService updateSvc = new UpdateService();
 			updateSvc.AutoLog = true;
 #if DEBUG
-			updateSvc.Debug();
-			updateSvc.WaitForCompletion();
+			//bool nosvc = true;
+			bool nosvc = false;
+
+			if (nosvc) {
+				updateSvc.Debug();
+				updateSvc.WaitForCompletion();
+			} else {
+				ServiceBase[] ServicesToRun = new ServiceBase[]
+				{
+				updateSvc
+				};
+				ServiceBase.Run(ServicesToRun);
+			}
 #else
 			ServiceBase[] ServicesToRun = new ServiceBase[]
 			{

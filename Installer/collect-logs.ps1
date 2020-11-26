@@ -13,7 +13,7 @@ $ipinfo="${logroot}\ipconfig.info.txt"
 
 $logdest="$logroot\ziti-service\"
 $logdest
-$logsrc="C:\Windows\System32\config\systemprofile\AppData\Roaming\NetFoundry\*.log"
+$logsrc="${env:WINDIR}\System32\config\systemprofile\AppData\Roaming\NetFoundry\*.log"
 $destArchive="${logroot}\logs-${now}.zip"
 
 echo ""

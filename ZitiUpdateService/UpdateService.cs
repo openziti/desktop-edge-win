@@ -15,6 +15,7 @@ using ZitiDesktopEdge.ServiceClient;
 using ZitiDesktopEdge.Server;
 using System.Security.AccessControl;
 using System.Security.Principal;
+using System.IO.Compression;
 
 namespace ZitiUpdateService {
 	public partial class UpdateService : ServiceBase {
@@ -56,17 +57,16 @@ namespace ZitiUpdateService {
 		}
 
 		private string GetLogs() {
-
-			/*
+			
 			string logLocation = Path.Combine(exeLocation, "logs");
 			string destinationLocation = Path.Combine(exeLocation, "temp");
 			string serviceLogsLocation = Path.Combine(Environment.GetEnvironmentVariable("APPDATA"), "NetFoundry");
-			string serviceLogsDest = Path.Combine(destinationLocation, "services");
+			string serviceLogsDest = Path.Combine(destinationLocation, "service");
 
-			Logger.Debug("removing temp folder: {0}", destinationLocation);
+			Logger.Debug("removing leftover temp folder: {0}", destinationLocation);
 			try {
 				Directory.Delete(destinationLocation, true);
-			} catch(Exception ex) {
+			} catch {
 				//means it doesn't exist
             }
 
@@ -86,13 +86,41 @@ namespace ZitiUpdateService {
 
 			Logger.Debug("copying service files from: {0} to {1}", serviceLogsLocation, serviceLogsDest);
 			Directory.CreateDirectory(serviceLogsDest);
-			foreach (string newPath in Directory.GetFiles(serviceLogsLocation, "ziti-tunnel.*", SearchOption.AllDirectories)) {
-				File.Copy(newPath, newPath.Replace(serviceLogsLocation, serviceLogsDest), true);
-			}*/
+			foreach (string newPath in Directory.GetFiles(serviceLogsLocation, "*.*", SearchOption.TopDirectoryOnly)) {
+				if (newPath.EndsWith(".log") || newPath.Contains("config.json")) { 
+					Logger.Debug("copying service log: {0}", newPath);
+					File.Copy(newPath, newPath.Replace(serviceLogsLocation, serviceLogsDest), true);
+				}
+			}
 
+			System.Diagnostics.Process process = new System.Diagnostics.Process();
+			System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
+			startInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
+			startInfo.FileName = "cmd.exe";
+			var ipconfigOut = Path.Combine(destinationLocation, "ipconfig.all.txt");
+			Logger.Info("copying ipconfig /all to {0}", ipconfigOut);
+			startInfo.Arguments = $"/C ipconfig /all > \"{ipconfigOut}\"";
+			process.StartInfo = startInfo;
+			process.Start();
+
+
+			Task.Delay(500).Wait();
+
+			string zipName = Path.Combine(logLocation, DateTime.Now.ToString("yyyy-MM-dd_HHmmss") + ".zip");
+			ZipFile.CreateFromDirectory(destinationLocation, zipName);
+
+			Logger.Debug("cleaning up temp folder: {0}", destinationLocation);
+			try {
+				Directory.Delete(destinationLocation, true);
+			} catch {
+				//means it doesn't exist
+			}
+			return zipName;
+			/*
 			Logger.Info("Request to collect logs received");
-			var ps = System.Management.Automation.PowerShell.Create();
+			var ps = System.Management.Automation.PowerShell.Create(runspace:System.Management.Automation.RunspaceMode.NewRunspace);
 			string script = Path.Combine(exeLocation, "collect-logs.ps1");
+			System.Diagnostics.Debug.WriteLine("=============== : " + script);
 			ps.Commands.AddScript(script);
 			var results = ps.Invoke();
 			Logger.Info("Collected logs.");
@@ -104,6 +132,7 @@ namespace ZitiUpdateService {
 				}
             }
 			return "success but log location not found.";
+			*/
 		}
 
         public void Debug() {
