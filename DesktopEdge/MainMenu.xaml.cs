@@ -18,6 +18,8 @@ using NLog.Config;
 using NLog.Targets;
 
 using ZitiDesktopEdge.Server;
+using System.Threading.Tasks;
+using ZitiDesktopEdge.DataStructures;
 
 namespace ZitiDesktopEdge
 {	
@@ -223,7 +225,8 @@ namespace ZitiDesktopEdge
 		private void ShowTerms(object sender, MouseButtonEventArgs e) {
 			Process.Start(new ProcessStartInfo("https://netfoundry.io/terms") { UseShellExecute = true });
 		}
-		private void ShowFeedback(object sender, MouseButtonEventArgs e) {
+
+		async private void ShowFeedback(object sender, MouseButtonEventArgs e) {
 			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
 			var mailMessage = new MailMessage();
 			mailMessage.From = new MailAddress("ziti-support@netfoundry.io");
@@ -232,18 +235,11 @@ namespace ZitiDesktopEdge
 			mailMessage.Body = "";
 
 			string timestamp = DateTime.Now.ToFileTime().ToString();
-			string serviceLogTempFile = Path.Combine(Path.GetTempPath(), timestamp+"-Ziti-Service.log");
-			using (StreamWriter sw = new StreamWriter(serviceLogTempFile)) {
-				sw.WriteLine(client.GetLogs());
-			}
-
-			string uiLogTempFile = Path.Combine(Path.GetTempPath(), timestamp+"-Ziti-Application.log");
-			using (StreamWriter sw = new StreamWriter(uiLogTempFile)) {
-				sw.WriteLine(UILog.GetLogs());
-			}
-
-			mailMessage.Attachments.Add(new Attachment(serviceLogTempFile));
-			mailMessage.Attachments.Add(new Attachment(uiLogTempFile));
+			var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
+			ServiceStatusEvent resp = await monitorClient.CaptureLogsAsync();
+			string pathToLogs = resp.Message;
+			logger.Info("Log files found at : {0}", resp.Message);
+			mailMessage.Attachments.Add(new Attachment(pathToLogs));
 
 			string emlFile = Path.Combine(Path.GetTempPath(), timestamp+"-ziti.eml");
 
@@ -260,12 +256,14 @@ namespace ZitiDesktopEdge
 				closeMethod.Invoke(mailWriter, BindingFlags.Instance | BindingFlags.NonPublic, null, new object[] { }, null);
 			}
 
-			Process.Start(emlFile);
-
-
-
-			//string body = HttpUtility.UrlEncode("\n\nService Logs\n\n" + client.GetLogs());// + "\n\nApplication Logs\n\n" + UILog.GetLogs());
-			//Process.Start(new ProcessStartInfo("mailto:ziti-support@netfoundry.io?subject=Ziti%20Support&body="+body) { UseShellExecute = true });
+			var p = Process.Start(emlFile);
+			Task.Run(async () => {
+				logger.Info("Waiting to send email...");
+				p.WaitForExit();
+				logger.Info("Email sent or cancelled... removing file: {0}", emlFile);
+				File.Delete(emlFile);
+				logger.Info("file removed: {0}", emlFile);
+			});
 		}
 		private void ShowSupport(object sender, MouseButtonEventArgs e) {
 			Process.Start(new ProcessStartInfo("https://openziti.discourse.group/") { UseShellExecute = true });

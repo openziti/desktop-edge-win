@@ -22,6 +22,9 @@ namespace ZitiDesktopEdge.Server {
         private string ipcPipeName;
         private string eventPipeName;
 
+        public delegate string CaptureLogsDelegate();
+        public CaptureLogsDelegate CaptureLogs { get; set; }
+
         public IPCServer() {
             this.ipcPipeName = IPCServer.PipeName;
             this.eventPipeName = IPCServer.EventPipeName;
@@ -156,12 +159,12 @@ namespace ZitiDesktopEdge.Server {
             }
         }
 
-        async public Task processMessageAsync(string msg, StreamWriter writer) {
-            Logger.Debug("message received: {0}", msg);
+        async public Task processMessageAsync(string json, StreamWriter writer) {
+            Logger.Debug("message received: {0}", json);
             var r = new SvcResponse();
             var rr = new ServiceStatusEvent();
             try {
-                ActionEvent ae = serializer.Deserialize<ActionEvent>(new JsonTextReader(new StringReader(msg)));
+                ActionEvent ae = serializer.Deserialize<ActionEvent>(new JsonTextReader(new StringReader(json)));
                 Logger.Info("Op: {0}", ae.Op);
                 switch (ae.Op.ToLower()) {
                     case "stop":
@@ -195,15 +198,28 @@ namespace ZitiDesktopEdge.Server {
                         rr.Status = ServiceActions.ServiceStatus();
                         r = rr;
                         break;
+                    case "capturelogs":
+                        try {
+                            string results = CaptureLogs();
+                            r.Message = results;
+                        } catch(Exception ex) {
+                            string err = string.Format("UNKNOWN ERROR : {0}", ex.Message);
+                            Logger.Error(ex, err);
+                            r.Code = -5;
+                            r.Message = "FAILURE";
+                            r.Error = err;
+                        }
+                        break;
                     default:
-                        msg = string.Format("UNKNOWN ACTION received: {0}", ae.Op);
-                        Logger.Error(msg);
+                        r.Message = "FAILURE";
                         r.Code = -3;
-                        r.Error = msg;
+                        r.Error = string.Format("UNKNOWN ACTION received: {0}", ae.Op);
+                        Logger.Error(r.Message);
                         break;
                 }
             } catch (Exception e) {
                 Logger.Error(e, "Unexpected erorr in processMessage!");
+                r.Message = "FAILURE";
                 r.Code = -2;
                 r.Error = e.Message + ":" + e?.InnerException?.Message;
             }

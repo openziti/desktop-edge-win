@@ -91,5 +91,11 @@ namespace ZitiDesktopEdge.ServiceClient {
             await sendAsync(action);
             return await readAsync<ServiceStatusEvent>(ipcReader, "Status");
         }
+        async public Task<ServiceStatusEvent> CaptureLogsAsync() {
+            ActionEvent action = new ActionEvent() { Action = "Normal", Op = "captureLogs" };
+            //string result = await SendServiceFunctionAsync(action);
+            await sendAsync(action);
+            return await readAsync<ServiceStatusEvent>(ipcReader, "CaptureLogsAsync");
+        }
     }
 }

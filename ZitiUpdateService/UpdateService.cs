@@ -27,6 +27,7 @@ namespace ZitiUpdateService {
 		private bool inUpdateCheck = false;
 
 		private string _versionType = "latest";
+		private string exeLocation = null;
 
 		private DataClient svc = new DataClient();
 		private bool running = false;
@@ -36,22 +37,42 @@ namespace ZitiUpdateService {
 		Version assemblyVersion = null;
 
 		ServiceController controller;
-		ZitiDesktopEdge.Server.IPCServer svr = new ZitiDesktopEdge.Server.IPCServer();
+		IPCServer svr = new IPCServer();
 		Task ipcServer = null;
 		Task eventServer = null;
 		IUpdateCheck check = null;
 
 		public UpdateService() {
 			InitializeComponent();
+			exeLocation = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
 			Logger.Info("Initializing");
 			svc.OnClientConnected += Svc_OnClientConnected;
 			svc.OnTunnelStatusEvent += Svc_OnTunnelStatusEvent;
 			svc.OnClientDisconnected += Svc_OnClientDisconnected;
 			svc.OnShutdownEvent += Svc_OnShutdownEvent;
+
+			svr.CaptureLogs = GetLogs;
 		}
 
-		public void Debug() {
+		private string GetLogs() {
+			Logger.Info("Request to collect logs received");
+			var ps = System.Management.Automation.PowerShell.Create();
+			string script = Path.Combine(exeLocation, "collect-logs.ps1");
+			ps.Commands.AddScript(script);
+			var results = ps.Invoke();
+			Logger.Info("Collected logs.");
+			for(int i=0; i<results.Count; i++) {
+				string r = results[i].ToString();
+				Logger.Info(r);
+				if (r.Contains("Log location")) {
+					return r.Trim().Substring("Log location: ".Length);
+				}
+            }
+			return "success but log location not found.";
+		}
+
+        public void Debug() {
 			OnStart(null);// new string[] { "FilesystemCheck" });
 		}
 
@@ -63,8 +84,7 @@ namespace ZitiUpdateService {
 				Logger.Info(e.ToString());
 			}
 
-			var root = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-			var logs = Path.Combine(root, "logs");
+			var logs = Path.Combine(exeLocation, "logs");
 			addLogsFolder(logs);
 			addLogsFolder(Path.Combine(logs, "UI"));
 			addLogsFolder(Path.Combine(logs, "ZitiMonitorService"));
