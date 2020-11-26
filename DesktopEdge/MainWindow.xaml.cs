@@ -187,12 +187,13 @@ namespace ZitiDesktopEdge {
 			serviceClient.OnMetricsEvent += ServiceClient_OnMetricsEvent;
 			serviceClient.OnServiceEvent += ServiceClient_OnServiceEvent;
 			serviceClient.OnTunnelStatusEvent += ServiceClient_OnTunnelStatusEvent;
+			Application.Current.Properties.Add("ServiceClient", serviceClient);
 
 			monitorClient = new MonitorClient();
 			monitorClient.OnClientConnected += MonitorClient_OnClientConnected;
 			monitorClient.OnServiceStatusEvent += MonitorClient_OnServiceStatusEvent;
+			Application.Current.Properties.Add("MonitorClient", monitorClient);
 
-			Application.Current.Properties.Add("ServiceClient", serviceClient);
 			Application.Current.Properties.Add("Identities", new List<ZitiIdentity>());
 			MainMenu.OnAttachmentChange += AttachmentChanged;
 			MainMenu.OnLogLevelChanged += LogLevelChanged;
@@ -567,11 +568,9 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void Id_OnStatusChanged(bool attached) {
-			bool isActive = false;
 			for (int i = 0; i < IdList.Children.Count; i++) {
 				IdentityItem item = IdList.Children[i] as IdentityItem;
 				if (item.ToggleSwitch.Enabled) {
-					isActive = true;
 					break;
 				}
 			}
@@ -817,5 +816,17 @@ namespace ZitiDesktopEdge {
 		private void IdList_LayoutUpdated(object sender, EventArgs e) {
 			Placement();
 		}
-	}
+
+		async private void CollectLogFileClick(object sender, RoutedEventArgs e) {
+			await CollectLogFiles();
+		}
+		async private Task CollectLogFiles() {
+			ServiceStatusEvent resp = await monitorClient.CaptureLogsAsync();
+			logger.Info("response: {0}", resp.Message);
+		}
+
+        private void Button_Click(object sender, RoutedEventArgs e) {
+
+        }
+    }
 }
