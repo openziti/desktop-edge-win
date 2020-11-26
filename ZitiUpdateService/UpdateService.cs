@@ -13,6 +13,8 @@ using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using ZitiDesktopEdge.ServiceClient;
 using ZitiDesktopEdge.Server;
+using System.Security.AccessControl;
+using System.Security.Principal;
 
 namespace ZitiUpdateService {
 	public partial class UpdateService : ServiceBase {
@@ -23,8 +25,7 @@ namespace ZitiUpdateService {
 
 		private Timer _updateTimer = new Timer();
 		private bool inUpdateCheck = false;
-		private string _rootDirectory = "";
-		private string _logDirectory = "";
+
 		private string _versionType = "latest";
 
 		private DataClient svc = new DataClient();
@@ -61,21 +62,37 @@ namespace ZitiUpdateService {
 			} catch (Exception e) {
 				Logger.Info(e.ToString());
 			}
-			_rootDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "OpenZiti");
-			if (!Directory.Exists(_rootDirectory)) Directory.CreateDirectory(_rootDirectory);
-			_logDirectory = Path.Combine(_rootDirectory, "Logs");
-			if (!Directory.Exists(_logDirectory)) Directory.CreateDirectory(_logDirectory);
+
+			var root = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+			var logs = Path.Combine(root, "logs");
+			addLogsFolder(logs);
+			addLogsFolder(Path.Combine(logs, "UI"));
+			addLogsFolder(Path.Combine(logs, "ZitiMonitorService"));
+			addLogsFolder(Path.Combine(logs, "service"));
+
+			ipcServer = svr.startIpcServer();
+			eventServer = svr.startEventsServer();
+
 			if (!running) {
 				running = true;
 				Task.Run(() => {
 					SetupServiceWatchers(args);
 				});
 			}
-
-			ipcServer = svr.startIpcServer();
-			eventServer = svr.startEventsServer();
-
 			Logger.Info("ziti-monitor service is initialized and running");
+		}
+
+		private void addLogsFolder(string path) {
+			if (!Directory.Exists(path)) {
+				Logger.Info($"creating folder: {path}");
+				Directory.CreateDirectory(path);
+			}
+			Logger.Debug($"setting permissions on {path}");
+			DirectorySecurity sec = Directory.GetAccessControl(path);
+			// Using this instead of the "Everyone" string means we work on non-English systems.
+			SecurityIdentifier everyone = new SecurityIdentifier(WellKnownSidType.WorldSid, null);
+			sec.AddAccessRule(new FileSystemAccessRule(everyone, FileSystemRights.Modify | FileSystemRights.Synchronize, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
+			Directory.SetAccessControl(path, sec);
 		}
 
 		public void WaitForCompletion() {

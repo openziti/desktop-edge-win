@@ -4,6 +4,7 @@ using System.Net;
 
 using NLog;
 using Newtonsoft.Json.Linq;
+using System.Configuration;
 
 namespace ZitiUpdateService {
 	internal class GithubCheck : IUpdateCheck {
@@ -64,6 +65,16 @@ namespace ZitiUpdateService {
 				return false;
 			} else {
 				Logger.Debug("current version {0} is the same as the latest release {0}", current, published);
+				string useBetaReleases = ConfigurationManager.AppSettings.Get("UseBetaReleases");
+				if(useBetaReleases != null) {
+					Logger.Debug("BETA RELEASE DETECTED!");
+					if (useBetaReleases == "yes") {
+						Logger.Debug("BETA RELEASE == yes - returning true");
+						return true;
+					} else {
+						Logger.Debug("BETA RELEASE value is not correct: {0}", useBetaReleases);
+					}
+                }
 				return false;
 			}
 
