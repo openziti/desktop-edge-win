@@ -824,9 +824,5 @@ namespace ZitiDesktopEdge {
 			ServiceStatusEvent resp = await monitorClient.CaptureLogsAsync();
 			logger.Info("response: {0}", resp.Message);
 		}
-
-        private void Button_Click(object sender, RoutedEventArgs e) {
-
-        }
     }
 }

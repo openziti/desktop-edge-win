@@ -1,7 +1,7 @@
 # Release 1.5.10
 
 ## What's New
-* none - bugfix only
+* fixes [#201](https://github.com/openziti/desktop-edge-win/issues/201) - Feedback menu item will collect all logs
 
 ## Other changes:
 * none

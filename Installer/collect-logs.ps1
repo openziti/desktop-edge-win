@@ -11,7 +11,7 @@ $now=(Get-Date).ToString('yyyy-MM-dd_HHmmss')
 $logroot="${env:ProgramFiles(x86)}\NetFoundry, Inc\Ziti Desktop Edge\logs"
 $ipinfo="${logroot}\ipconfig.info.txt"
 
-$logdest="$logroot\ziti-service\$now"
+$logdest="$logroot\ziti-service\"
 $logdest
 $logsrc="C:\Windows\System32\config\systemprofile\AppData\Roaming\NetFoundry\*.log"
 $destArchive="${logroot}\logs-${now}.zip"

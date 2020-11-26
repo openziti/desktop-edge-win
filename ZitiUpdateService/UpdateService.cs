@@ -56,6 +56,40 @@ namespace ZitiUpdateService {
 		}
 
 		private string GetLogs() {
+
+			/*
+			string logLocation = Path.Combine(exeLocation, "logs");
+			string destinationLocation = Path.Combine(exeLocation, "temp");
+			string serviceLogsLocation = Path.Combine(Environment.GetEnvironmentVariable("APPDATA"), "NetFoundry");
+			string serviceLogsDest = Path.Combine(destinationLocation, "services");
+
+			Logger.Debug("removing temp folder: {0}", destinationLocation);
+			try {
+				Directory.Delete(destinationLocation, true);
+			} catch(Exception ex) {
+				//means it doesn't exist
+            }
+
+			Directory.CreateDirectory(destinationLocation);
+
+			Logger.Debug("copying all directories from: {0}", logLocation);
+			foreach (string dirPath in Directory.GetDirectories(logLocation, "*", SearchOption.AllDirectories)) {
+				Directory.CreateDirectory(dirPath.Replace(logLocation, destinationLocation));
+			}
+
+			Logger.Debug("copying all non-zip files from: {0}", logLocation);
+			foreach (string newPath in Directory.GetFiles(logLocation, "*.*", SearchOption.AllDirectories)) {
+				if (!newPath.EndsWith(".zip")) {
+					File.Copy(newPath, newPath.Replace(logLocation, destinationLocation), true);
+				}
+			}
+
+			Logger.Debug("copying service files from: {0} to {1}", serviceLogsLocation, serviceLogsDest);
+			Directory.CreateDirectory(serviceLogsDest);
+			foreach (string newPath in Directory.GetFiles(serviceLogsLocation, "ziti-tunnel.*", SearchOption.AllDirectories)) {
+				File.Copy(newPath, newPath.Replace(serviceLogsLocation, serviceLogsDest), true);
+			}*/
+
 			Logger.Info("Request to collect logs received");
 			var ps = System.Management.Automation.PowerShell.Create();
 			string script = Path.Combine(exeLocation, "collect-logs.ps1");
@@ -90,9 +124,12 @@ namespace ZitiUpdateService {
 			addLogsFolder(Path.Combine(logs, "ZitiMonitorService"));
 			addLogsFolder(Path.Combine(logs, "service"));
 
+			Logger.Info("starting ipc server");
 			ipcServer = svr.startIpcServer();
+			Logger.Info("starting events server");
 			eventServer = svr.startEventsServer();
 
+			Logger.Info("starting service watchers");
 			if (!running) {
 				running = true;
 				Task.Run(() => {
