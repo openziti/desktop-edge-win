@@ -31,7 +31,6 @@ import (
 	"github.com/openziti/foundation/identity/identity"
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"github.com/openziti/sdk-golang/ziti/enroll"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/windows/svc"
 	"golang.zx2c4.com/wireguard/tun"
 	"io"
@@ -457,8 +456,8 @@ func serveIpc(conn net.Conn) {
 
 func setLogLevel(out *json.Encoder, level string) {
 	goLevel, cLevel := logging.ParseLevel(level)
-	logrus.Infof("Setting logger levels to %s", goLevel)
-	logrus.SetLevel(goLevel)
+	log.Infof("Setting logger levels to %s", goLevel)
+	log.SetLevel(goLevel)
 	cziti.SetLogLevel(cLevel)
 	rts.state.LogLevel = goLevel.String()
 	respond(out, dto.Response{Message: "log level set", Code: SUCCESS, Error: "", Payload: nil})
