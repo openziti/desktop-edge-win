@@ -141,7 +141,6 @@
     <Compile Include="MainMenu.xaml.cs">
       <DependentUpon>MainMenu.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Models\UILog.cs" />
     <Compile Include="Models\UIModel.cs" />
     <Compile Include="Views\ItemRenderers\ServiceInfo.xaml.cs">
       <DependentUpon>ServiceInfo.xaml</DependentUpon>

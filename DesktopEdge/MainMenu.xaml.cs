@@ -3,10 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Diagnostics;
 using System;
-using System.Threading;
-using ZitiDesktopEdge.Models;
 using System.Reflection;
-using System.Web;
 using System.Net.Mail;
 using System.IO;
 using System.Net;
@@ -14,11 +11,6 @@ using Newtonsoft.Json.Linq;
 using ZitiDesktopEdge.ServiceClient;
 
 using NLog;
-using NLog.Config;
-using NLog.Targets;
-
-using ZitiDesktopEdge.Server;
-using System.Threading.Tasks;
 using ZitiDesktopEdge.DataStructures;
 
 namespace ZitiDesktopEdge
@@ -177,15 +169,14 @@ namespace ZitiDesktopEdge
 				LicensesItems.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
 			} else if (menuState=="Logs") {
-				DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-				MenuTitle.Content = "Service Logs";
-				LogsItems.Text = client.GetLogs();
-				LogsItems.Visibility = Visibility.Visible;
+				MenuTitle.Content = "Advanced Settings";
+				AdvancedItems.Visibility = Visibility.Visible;
+				Process.Start(MainWindow.ExpectedLogPathServices);
 				BackArrow.Visibility = Visibility.Visible;
 			} else if (menuState == "UILogs") {
-				MenuTitle.Content = "Application Logs";
-				LogsItems.Text = UILog.GetLogs();
-				LogsItems.Visibility = Visibility.Visible;
+				MenuTitle.Content = "Advanced Settings";
+				AdvancedItems.Visibility = Visibility.Visible;
+				Process.Start(MainWindow.ExpectedLogPathUI);
 				BackArrow.Visibility = Visibility.Visible;
 			} else if (menuState == "LogLevel") {
 				ResetLevels();
@@ -210,7 +201,7 @@ namespace ZitiDesktopEdge
 		}
 
 		private void GoBack(object sender, MouseButtonEventArgs e) {
-			if (menuState=="Config"||menuState=="Logs"||menuState=="UILogs") {
+			if (menuState=="Config"||menuState== "LogLevel" || menuState=="UILogs") {
 				menuState = "Advanced";
 			} else if (menuState=="Licenses") {
 				menuState = "About";
