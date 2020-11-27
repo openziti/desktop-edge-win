@@ -64,7 +64,7 @@ namespace ZitiDesktopEdge {
 			var logname = asm.GetName().Name;
 
 			var curdir = Path.GetDirectoryName(asm.Location);
-			string nlogFile = Path.Combine(curdir, logname + ".log.config");
+			string nlogFile = Path.Combine(curdir, logname + "-log.config");
 
 			if (File.Exists(nlogFile)) {
 				LogManager.Configuration = new XmlLoggingConfiguration(nlogFile);

@@ -19,7 +19,7 @@ namespace ZitiUpdateService {
 			var logname = asm.GetName().Name;
 
 			var curdir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-			string nlogFile = Path.Combine(curdir, "ziti-monitor-log.config");
+			string nlogFile = Path.Combine(curdir, $"{logname}-log.config");
 
 			if (File.Exists(nlogFile)) {
 				LogManager.Configuration = new XmlLoggingConfiguration(nlogFile);

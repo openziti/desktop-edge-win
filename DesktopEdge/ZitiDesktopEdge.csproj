@@ -250,7 +250,7 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Include="app.manifest" />
-    <None Include="ZitiDesktopEdge.log.config">
+    <None Include="ZitiDesktopEdge-log.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="ZitiDesktopEdge_TemporaryKey.pfx" />
