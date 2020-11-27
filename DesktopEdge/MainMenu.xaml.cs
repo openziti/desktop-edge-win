@@ -228,8 +228,7 @@ namespace ZitiDesktopEdge
 
 		async private void ShowFeedback(object sender, MouseButtonEventArgs e) {
 			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-			var mailMessage = new MailMessage("ziti-support@netfoundry.io", "clint@netfoundry.io");
-			//var mailMessage = new MailMessage("ziti-support@netfoundry.io", "ziti-support@netfoundry.io");
+			var mailMessage = new MailMessage("ziti-support@netfoundry.io", "ziti-support@netfoundry.io");
 			mailMessage.Subject = "Ziti Support";
 			mailMessage.IsBodyHtml = false;
 			System.Text.StringBuilder sb = new System.Text.StringBuilder();
