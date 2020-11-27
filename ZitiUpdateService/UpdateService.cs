@@ -60,7 +60,7 @@ namespace ZitiUpdateService {
 			
 			string logLocation = Path.Combine(exeLocation, "logs");
 			string destinationLocation = Path.Combine(exeLocation, "temp");
-			string serviceLogsLocation = Path.Combine(Environment.GetEnvironmentVariable("APPDATA"), "NetFoundry");
+			string serviceLogsLocation = Path.Combine(logLocation, "service");
 			string serviceLogsDest = Path.Combine(destinationLocation, "service");
 
 			Logger.Debug("removing leftover temp folder: {0}", destinationLocation);
