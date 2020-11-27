@@ -157,12 +157,10 @@ namespace ZitiDesktopEdge
 
 				string version = "";
 				try {
-					DataStructures.TunnelStatus s = (DataStructures.TunnelStatus)Application.Current.Properties["CurrentTunnelStatus"];
+					TunnelStatus s = (TunnelStatus)Application.Current.Properties["CurrentTunnelStatus"];
 					version = $"{s.ServiceVersion.Version}@{s.ServiceVersion.Revision}";
 				} catch (Exception e) {
-#if DEBUG
-					logger.Debug("Updating state:" + e.ToString());
-#endif
+					logger.Warn(e, "Could not get service version/revision?");
 				}
 
 				// Interface Version
