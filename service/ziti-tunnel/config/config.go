@@ -18,9 +18,19 @@
 package config
 
 import (
+	"log"
 	"os"
+	"path/filepath"
 )
 
+func ExecutablePath() string {
+	fi, err := os.Executable()
+	if err != nil {
+		log.Panic("COULD NOT STAT os.executable! %v", err)
+	}
+	dir := filepath.Dir(fi)
+	return dir
+}
 func File() string {
 	return Path() + "config.json"
 }
@@ -29,9 +39,11 @@ func Path() string {
 	return path + string(os.PathSeparator) + "NetFoundry" + string(os.PathSeparator)
 }
 func LogFile() string {
-	return Path() + "ziti-tunneler.log"
+	return filepath.Join(LogsPath(), "ziti-tunneler.log")
 }
-
+func LogsPath() string {
+	return filepath.Join(ExecutablePath(), "logs", "service")
+}
 func BackupFile() string {
 	return File() + ".backup"
 }

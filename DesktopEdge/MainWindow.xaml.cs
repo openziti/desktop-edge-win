@@ -66,8 +66,10 @@ namespace ZitiDesktopEdge {
 			var curdir = Path.GetDirectoryName(asm.Location);
 			string nlogFile = Path.Combine(curdir, logname + "-log.config");
 
+			bool byFile = false;
 			if (File.Exists(nlogFile)) {
 				LogManager.Configuration = new XmlLoggingConfiguration(nlogFile);
+				byFile = true;
 			} else {
 				var config = new LoggingConfiguration();
 				// Targets where to log to: File and Console
@@ -87,7 +89,8 @@ namespace ZitiDesktopEdge {
 				// Apply config           
 				LogManager.Configuration = config;
 			}
-			logger.Info("service started - logger initialized");
+			logger.Info("============================== UI started ==============================");
+			logger.Info("logger initialized using file? {0}", byFile);
 
 			App.Current.MainWindow.WindowState = WindowState.Normal;
 			App.Current.MainWindow.Closing += MainWindow_Closing;
