@@ -41,8 +41,11 @@ namespace ZitiDesktopEdge
 		private string _updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win/releases/latest";
 		private string _downloadUrl = "";
 
+		private string appVersion = null;
 		public MainMenu() {
             InitializeComponent();
+
+			appVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 			LicensesItems.Text = licenseData;
 			CheckUpdates();
 		}
@@ -107,10 +110,9 @@ namespace ZitiDesktopEdge
 				StreamReader streamReader = new StreamReader(httpResponse.GetResponseStream());
 				string result = streamReader.ReadToEnd();
 				JObject json = JObject.Parse(result);
-				string currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
 				string serverVersion = json.Property("tag_name").Value.ToString() + ".0";
 
-				Version installed = new Version(currentVersion);
+				Version installed = new Version(appVersion);
 				Version published = new Version(serverVersion);
 				int compare = installed.CompareTo(published);
 				if (compare < 0)
@@ -164,7 +166,7 @@ namespace ZitiDesktopEdge
 				}
 
 				// Interface Version
-				VersionInfo.Content = "App: " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString()+" Service: "+ version;
+				VersionInfo.Content = $"App: {appVersion} Service: {version}";
 
 			} else if (menuState=="Advanced") {
 				MenuTitle.Content = "Advanced Settings";
@@ -226,11 +228,15 @@ namespace ZitiDesktopEdge
 
 		async private void ShowFeedback(object sender, MouseButtonEventArgs e) {
 			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-			var mailMessage = new MailMessage();
-			mailMessage.From = new MailAddress("ziti-support@netfoundry.io");
+			var mailMessage = new MailMessage("ziti-support@netfoundry.io", "clint@netfoundry.io");
+			//var mailMessage = new MailMessage("ziti-support@netfoundry.io", "ziti-support@netfoundry.io");
 			mailMessage.Subject = "Ziti Support";
-			mailMessage.IsBodyHtml = true;
-			mailMessage.Body = "";
+			mailMessage.IsBodyHtml = false;
+			System.Text.StringBuilder sb = new System.Text.StringBuilder();
+			sb.Append("Logs collected at : " + DateTime.Now.ToString());
+			sb.Append(". client version : " + appVersion);
+
+			mailMessage.Body = sb.ToString();
 
 			string timestamp = DateTime.Now.ToFileTime().ToString();
 			var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
@@ -255,15 +261,14 @@ namespace ZitiDesktopEdge
 			}
 
 			var p = Process.Start(emlFile);
-			Task.Run(async () => {
-				logger.Info("Waiting to send email...");
-				p.WaitForExit();
-				logger.Info("Email sent or cancelled... removing file: {0}", emlFile);
+            p.Exited += (object lambdaSender, EventArgs lambdaEventArgs) => {
+				logger.Info("Removing temp file: {0}", emlFile);
 				File.Delete(emlFile);
-				logger.Info("file removed: {0}", emlFile);
-			});
+			};
+			p.EnableRaisingEvents = true;
 		}
-		private void ShowSupport(object sender, MouseButtonEventArgs e) {
+
+        private void ShowSupport(object sender, MouseButtonEventArgs e) {
 			Process.Start(new ProcessStartInfo("https://openziti.discourse.group/") { UseShellExecute = true });
 		}
 
