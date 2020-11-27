@@ -53,10 +53,10 @@ namespace ZitiUpdateService {
 			svc.OnClientDisconnected += Svc_OnClientDisconnected;
 			svc.OnShutdownEvent += Svc_OnShutdownEvent;
 
-			svr.CaptureLogs = GetLogs;
+			svr.CaptureLogs = CaptureLogs;
 		}
 
-		private string GetLogs() {
+		private string CaptureLogs() {
 			
 			string logLocation = Path.Combine(exeLocation, "logs");
 			string destinationLocation = Path.Combine(exeLocation, "temp");
@@ -93,9 +93,9 @@ namespace ZitiUpdateService {
 				}
 			}
 
-			System.Diagnostics.Process process = new System.Diagnostics.Process();
-			System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
-			startInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
+			Process process = new Process();
+			ProcessStartInfo startInfo = new ProcessStartInfo();
+			startInfo.WindowStyle = ProcessWindowStyle.Hidden;
 			startInfo.FileName = "cmd.exe";
 			var ipconfigOut = Path.Combine(destinationLocation, "ipconfig.all.txt");
 			Logger.Info("copying ipconfig /all to {0}", ipconfigOut);
@@ -120,7 +120,7 @@ namespace ZitiUpdateService {
 			Logger.Info("Request to collect logs received");
 			var ps = System.Management.Automation.PowerShell.Create(runspace:System.Management.Automation.RunspaceMode.NewRunspace);
 			string script = Path.Combine(exeLocation, "collect-logs.ps1");
-			System.Diagnostics.Debug.WriteLine("=============== : " + script);
+			Debug.WriteLine("=============== : " + script);
 			ps.Commands.AddScript(script);
 			var results = ps.Invoke();
 			Logger.Info("Collected logs.");
