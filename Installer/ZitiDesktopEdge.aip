@@ -79,7 +79,6 @@
     <ROW File="zititunnel.exe" Component_="zititunnel.exe" FileName="ZITI-T~1.EXE|ziti-tunnel.exe" Attributes="0" SourcePath="build\service\ziti-tunnel.exe" SelfReg="false" DigSign="true"/>
     <ROW File="ziti.ico" Component_="App.config" FileName="ziti.ico" Attributes="0" SourcePath="ziti.ico" SelfReg="false"/>
     <ROW File="Newtonsoft.Json.dll" Component_="Newtonsoft.Json.dll" FileName="NEWTON~1.DLL|Newtonsoft.Json.dll" Attributes="0" SourcePath="..\DesktopEdge\bin\Release\Newtonsoft.Json.dll" SelfReg="false"/>
-    <ROW File="collectlogs.ps1" Component_="App.config" FileName="COLLEC~1.PS1|collect-logs.ps1" Attributes="0" SourcePath="collect-logs.ps1" SelfReg="false"/>
     <ROW File="ZitiDesktopEdge.Client.dll" Component_="ZitiDesktopEdge.Client.dll" FileName="ZITIDE~1.DLL|ZitiDesktopEdge.Client.dll" Attributes="0" SourcePath="..\ZitiDesktopEdge.Client\bin\Release\ZitiDesktopEdge.Client.dll" SelfReg="false"/>
     <ROW File="NLog.dll" Component_="NLog.dll" FileName="NLog.dll" Attributes="0" SourcePath="..\ZitiUpdateService\bin\Release\NLog.dll" SelfReg="false"/>
     <ROW File="ZitiUpdateServicelog.config" Component_="App.config" FileName="ZITIUP~2.CON|ZitiUpdateService-log.config" Attributes="0" SourcePath="..\ZitiUpdateService\bin\Release\ZitiUpdateService-log.config" SelfReg="false"/>
