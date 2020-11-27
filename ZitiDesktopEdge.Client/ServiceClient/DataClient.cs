@@ -163,24 +163,6 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
         }
 
-        public string GetLogs() {
-            try {
-                NamedPipeClientStream logClient = new NamedPipeClientStream(localPipeServer, logPipe, PipeDirection.In);
-                StreamReader logReader = new StreamReader(logClient);
-                logClient.Connect(ServiceConnectTimeout);
-
-                string content = logReader.ReadToEnd();
-
-                //ugly hack to turn ansi escaping to not... _bleck_
-                //todo: fix this :point_up:
-                content = new System.Text.RegularExpressions.Regex(@"\x1B\[[^@-~]*[@-~]").Replace(content, "");
-                return content;
-            } catch {
-                //almost certainly a problem with the pipe - probably means the service is NOT running
-                return "Error fetching logs from service. Is it running?";
-            }
-        }
-
         async public Task SetLogLevelAsync(string level) {
             try {
                 await sendAsync(new SetLogLevelFunction(level));

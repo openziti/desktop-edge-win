@@ -43,6 +43,25 @@ namespace ZitiDesktopEdge {
 
 		private static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
+		public static string ThisAssemblyName;
+		public static string ExecutionDirectory;
+		public static string ExpectedLogPathRoot;
+		public static string ExpectedLogPathUI;
+		public static string ExpectedLogPathServices;
+
+		static MainWindow() {
+			var asm = System.Reflection.Assembly.GetExecutingAssembly();
+			ThisAssemblyName = asm.GetName().Name;
+#if DEBUG
+			ExecutionDirectory = @"C:\Program Files (x86)\NetFoundry, Inc\Ziti Desktop Edge";
+#else
+			ExecutionDirectory = Path.GetDirectoryName(asm.Location);
+#endif
+			ExpectedLogPathRoot = Path.Combine(ExecutionDirectory, "logs");
+			ExpectedLogPathUI = Path.Combine(ExpectedLogPathRoot, "UI", $"{ThisAssemblyName}.log");
+			ExpectedLogPathServices = Path.Combine(ExpectedLogPathRoot, "service", $"ziti-tunneler.log");
+		}
+
 		private List<ZitiIdentity> identities {
 			get {
 				return (List<ZitiIdentity>)Application.Current.Properties["Identities"];
@@ -60,11 +79,7 @@ namespace ZitiDesktopEdge {
 		public MainWindow() {
 			InitializeComponent();
 
-			var asm = System.Reflection.Assembly.GetExecutingAssembly();
-			var logname = asm.GetName().Name;
-
-			var curdir = Path.GetDirectoryName(asm.Location);
-			string nlogFile = Path.Combine(curdir, logname + "-log.config");
+			string nlogFile = Path.Combine(ExecutionDirectory, ThisAssemblyName + "-log.config");
 
 			bool byFile = false;
 			if (File.Exists(nlogFile)) {
@@ -74,7 +89,7 @@ namespace ZitiDesktopEdge {
 				var config = new LoggingConfiguration();
 				// Targets where to log to: File and Console
 				var logfile = new FileTarget("logfile") {
-					FileName = $"logs\\UI\\{logname}.log",
+					FileName = ExpectedLogPathUI,
 					ArchiveEvery = FileArchivePeriod.Day,
 					ArchiveNumbering = ArchiveNumberingMode.Rolling,
 					MaxArchiveFiles = 7,

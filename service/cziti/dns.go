@@ -135,18 +135,18 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 			binary.BigEndian.PutUint32(ip, nextAddr)
 
 			if foundIp.network != currentNetwork {
-				log.Debugf("Register FAIL: Mapped on different network: %s [%s != %s]", icept.String(), foundIp.network, currentNetwork)
+				log.Warnf("Register FAIL: Exact same intercept specified spanning networks: %s. Valid for: %s Invalid for: %s]", icept.String(), foundIp.network, currentNetwork)
 				// means the host:port are mapped to some other *identity* already. that's an invalid state
 				return ip, false, fmt.Errorf("service mapping conflict for service name %s. %s:%d in %s is already mapped by another identity in %s", svcName, dnsNameToReg, port, currentNetwork, foundIp.network)
 			}
 			if foundContext.serviceId != svcId {
-				log.Debugf("Register FAIL: Totally different service id: %s [%s != %s]", icept.String(), foundContext.serviceId, svcId)
+				log.Warnf("Register FAIL: Two services with the same intercept specified: %s [%s != %s]", icept.String(), foundContext.serviceId, svcId)
 				// means the host:port are mapped to some other service already. that's an invalid state
 				return ip, false, fmt.Errorf("service mapping conflict for service name %s. %s:%d is already mapped by service id %s", svcName, dnsNameToReg, port, foundContext.serviceId)
 			}
 			log.Debugf("RegisterService called for the exact same serviceId: %s [%s != %s]", icept.String(), foundContext.serviceId, svcId)
 		} else {
-			// good - means the service can be mapped
+			// good - probably means the service was updated
 			log.Debugf("OK: Another service on this network is using this hostname but on a different port: %s", icept.String())
 
 			foundIp.refCount++
@@ -224,6 +224,8 @@ func (dns *dnsImpl) UnregisterService(host string, port uint16) {
 	//find the dns entry...
 	if sc, found := dns.serviceMap[key]; found {
 		sc.ctxIp.refCount--
+		// log.Debugf("removing service from internal map using key:%s", key)
+		// delete(dns.serviceMap, key)
 		if sc.ctxIp.refCount < 1 {
 			icept := sc.icept
 			log.Infof("removing service named %s from DNS mapping known as %s", host, icept)
@@ -233,7 +235,7 @@ func (dns *dnsImpl) UnregisterService(host string, port uint16) {
 					log.Warnf("Unexpected error removing route for %s. %v", icept.host, err)
 				}
 			} else {
-				found := dns.hostnameMap[normalizeDnsName(icept.host)]
+				found := dns.hostnameMap[icept.AsDnsName()]
 				if found != nil {
 					found.dnsEnabled = false
 				} else {
@@ -245,7 +247,7 @@ func (dns *dnsImpl) UnregisterService(host string, port uint16) {
 			log.Debugf("cannot remove dns mapping for %s yet - %d other services still use this hostname", host, sc.ctxIp.refCount)
 		}
 	} else {
-		log.Warnf("key not found. could not remove dns entry for %s", key)
+		log.Warnf("key not found. could not remove dns entry for:%s", key)
 	}
 }
 

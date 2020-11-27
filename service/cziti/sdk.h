@@ -14,7 +14,8 @@
  * limitations under the License.
  *
  */
-
+#ifndef GOLANG_SDK_H
+#define GOLANG_SDK_H
 #include <stdio.h>
 #include <stdlib.h>
 #define USING_ZITI_SHARED
@@ -51,3 +52,10 @@ extern void ziti_pq_domain_go(ziti_context ztx, char *id, ziti_pr_domain_cb resp
 extern void ziti_pq_process_go(ziti_context ztx, char *id, char *path, ziti_pr_process_cb response_cb);
 extern void ziti_pq_os_go(ziti_context ztx, char *id, ziti_pr_os_cb response_cb);
 extern void ziti_pq_mac_go(ziti_context ztx, char *id, ziti_pr_mac_cb response_cb);
+
+//logging callback
+extern void log_writer_shim_go(int level, const char *loc, const char *msg, size_t msglen);
+
+void log_writer_cb(int level, char *loc, char *msg, size_t msglen);
+
+#endif /* GOLANG_SDK_H */

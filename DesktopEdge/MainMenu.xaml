@@ -28,7 +28,7 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="70"/>
                     </Grid.ColumnDefinitions>
-                    <StackPanel Name="BackArrow" Cursor="Hand" Grid.Column="0" Orientation="Horizontal" Visibility="Collapsed" MouseLeftButtonDown="GoBack">
+                    <StackPanel Name="BackArrow" Cursor="Hand" Grid.Column="0" Orientation="Horizontal" Visibility="Collapsed" MouseLeftButtonUp="GoBack">
                         <Image Source="/Assets/Images/lastArrow.png" Width="20" Height="20"></Image>
                         <Label FontSize="12" FontWeight="SemiBold" Content="Back" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                     </StackPanel>
