@@ -21,8 +21,10 @@ namespace ZitiUpdateService {
 			var curdir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 			string nlogFile = Path.Combine(curdir, $"{logname}-log.config");
 
+			bool byFile = false;
 			if (File.Exists(nlogFile)) {
 				LogManager.Configuration = new XmlLoggingConfiguration(nlogFile);
+				byFile = true;
 			} else {
 				var config = new LoggingConfiguration();
 				// Targets where to log to: File and Console
@@ -42,7 +44,8 @@ namespace ZitiUpdateService {
 				// Apply config           
 				LogManager.Configuration = config;
 			}
-			Logger.Info("service started - logger initialized");
+			Logger.Info("============================== ziti-monitor started ==============================");
+			Logger.Info("logger initialized using file? {0}", byFile);
 
 			UpdateService updateSvc = new UpdateService();
 			updateSvc.AutoLog = true;
