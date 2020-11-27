@@ -26,7 +26,6 @@ package cziti
 #include "sdk.h"
 extern void initCB(ziti_context nf, int status, void *ctx);
 extern void serviceCB(ziti_context nf, ziti_service*, int status, void *ctx);
-extern void cron_callback(uv_async_t *handle);
 extern void shutdown_callback(uv_async_t *handle);
 extern void free_async(uv_handle_t* timer);
 
@@ -38,13 +37,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
-	"github.com/robfig/cron/v3"
-	"io/ioutil"
 	"os"
-	"strings"
 	"sync"
-	"time"
 	"unsafe"
 )
 
@@ -54,8 +48,6 @@ const (
 )
 
 var ServiceChanges = make(chan ServiceChange, 256)
-
-var c = cron.New()
 
 type sdk struct {
 	libuvCtx *C.libuv_ctx
@@ -77,10 +69,6 @@ func init() {
 	C.libuv_init(_impl.libuvCtx)
 }
 
-func SetLog(f *os.File) {
-	C.set_log_out(C.intptr_t(f.Fd()), _impl.libuvCtx)
-}
-
 func SetLogLevel(level int) {
 	log.Infof("Setting cziti log level to: %d", level)
 	C.set_log_level(C.int(level))
@@ -95,10 +83,6 @@ func Start() {
 
 func (inst *sdk) run() {
 	C.libuv_run(inst.libuvCtx)
-}
-
-func Stop() {
-	C.libuv_stop(_impl.libuvCtx)
 }
 
 type ZService struct {
@@ -380,100 +364,39 @@ func LoadZiti(cfg string, isActive bool) *ZIdentity {
 	return res
 }
 
-func(c *ZIdentity) Shutdown() {
-	if c != nil && c.zctx != nil {
-		async := (*C.uv_async_t)(C.malloc(C.sizeof_uv_async_t))
-		async.data = unsafe.Pointer(c.zctx)
-		C.uv_async_init(_impl.libuvCtx.l, async, C.uv_async_cb(C.cron_callback))
-		C.uv_async_send((*C.uv_async_t)(unsafe.Pointer(async)))
-	} else {
-		log.Info("shutdown called for identity but it has no context")
-	}
-}
-
-var logFile *os.File //the current, active log file
-var logLevel int //set in InitializeCLogger
-
-func InitializeCLogger(level int) {
-	logLevel = level
-	SetLogLevel(logLevel)
-	initializeLogForToday()
-
-	c.AddFunc("@midnight", initiateRollLog)
-	c.Start()
-}
-
-func initiateRollLog() {
-	async := (*C.uv_async_t)(C.malloc(C.sizeof_uv_async_t))
-	C.uv_async_init(_impl.libuvCtx.l, async, C.uv_async_cb(C.cron_callback))
-	C.uv_async_send((*C.uv_async_t)(unsafe.Pointer(async)))
-}
-
 //export free_async
 func free_async(handle *C.uv_handle_t){
 	C.free(unsafe.Pointer(handle))
 }
 
-//export shutdown_callback
-func shutdown_callback(async *C.uv_async_t) {
-	log.Debug("shutting down c-sdk ziti context")
-	C.ziti_shutdown((C.ziti_context)(async.data))
-	C.uv_close((*C.uv_handle_t)(unsafe.Pointer(async)), C.uv_close_cb(C.free_async))
-}
-
-//export cron_callback
-func cron_callback(async *C.uv_async_t) {
-	// roll the log while on the uv loop
-	if logFile == nil {
-		log.Warn("log file is nil. this is unexpected. log rolling aborted")
+//export log_writer_cb
+func log_writer_cb(level C.int, _ /*loc*/ C.string, msg C.string, _ /*msglen*/ C.size_t) {
+	gomsg := C.GoString(msg)
+	lvl := level
+	switch lvl {
+	case 0:
+		log.Warnf("level 0 should not be logged, please report: %s", gomsg)
+		break
+	case 1:
+		log.Error(gomsg)
+		break
+	case 2:
+		log.Warn(gomsg)
+		break
+	case 3:
+		log.Info(gomsg)
+		break
+	case 4:
+		log.Debug(gomsg)
+		break
+	case 5:
+	case 6:
+		//VERBOSE:5
+		//TRACE:6
+		log.Trace(gomsg)
+		break
+	default:
+		log.Warnf("level [%s] NOT recognized:", level, gomsg)
+		break
 	}
-
-	_ = logFile.Close() //close the log file
-
-	//rename the log file to 'now'
-	nowFormatted := time.Now().Format("2006-01-02-030405")
-	_ = os.Rename(config.Path()+"cziti.log", config.Path()+"cziti-" + nowFormatted + ".log")
-
-	// set the log file in the c sdk
-	initializeLogForToday()
-
-	// find any logs older than 7 days and remove them
-	removeFilesOlderThanRetentionPolicy()
-
-	C.uv_close((*C.uv_handle_t)(unsafe.Pointer(async)), C.uv_close_cb(C.free_async))
-}
-
-func initializeLogForToday() {
-	var err error
-	logFile, err = os.OpenFile(config.Path()+"cziti.log", os.O_WRONLY|os.O_TRUNC|os.O_APPEND|os.O_CREATE, 0644)
-	if err != nil {
-		log.Warnf("could not open cziti.log for writing. no debug information will be captured.")
-	} else {
-		SetLog(logFile)
-	}
-}
-
-func removeFilesOlderThanRetentionPolicy() {
-	logFiles, err := ioutil.ReadDir(config.Path())
-	if err != nil {
-		return
-	}
-	now := time.Now()
-	for _, file := range logFiles {
-		if !strings.HasPrefix(file.Name(), "cziti-") {
-			continue
-		}
-		if file.Mode().IsRegular() {
-			if isOlderThanRetentionPolicy(now, file.ModTime()) {
-				log.Infof("removing file %s because it is older than the retention policy.", file.Name())
-				os.Remove(config.Path() + file.Name())
-			}
-		}
-	}
-	return
-}
-
-func isOlderThanRetentionPolicy(asOf time.Time, t time.Time) bool {
-	oneWeek := 7 * 24 * time.Hour
-	return asOf.Sub(t) > oneWeek
 }

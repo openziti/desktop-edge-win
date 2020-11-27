@@ -28,29 +28,15 @@ void set_log_level(int level) {
     ziti_debug_level = level;
 }
 
-void set_log_out(intptr_t h, libuv_ctx *lctx) {
-    int fd = _open_osfhandle(h, _O_APPEND | _O_RDONLY);
-
-    if (fd == -1) {
-       fprintf(stderr, "failed to get fd from handle: %d\n", errno);
-       fflush(stderr);
-       return;
-    }
-
-    FILE *f = _fdopen(fd, "a+");
-    if (f == NULL) {
-        fprintf(stderr, "setLogOut: %d\n", errno);
-        fflush(stderr);
-        return;
-    }
-
-    ziti_set_log(f, lctx->l);
+void log_writer_shim_go(int level, const char *loc, const char *msg, size_t msglen) {
+  log_writer_cb(level, (char*)loc, (char*)msg, msglen);
 }
 
 void libuv_init(libuv_ctx *lctx) {
-    //uv_os_setenv("ZITI_TIME_FORMAT", "utc");
     lctx->l = uv_default_loop();
+    ziti_set_log(log_writer_shim_go, lctx->l);
     init_debug(lctx->l);
+
     uv_async_init(lctx->l, &lctx->stopper, libuv_stopper);
 }
 

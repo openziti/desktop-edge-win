@@ -64,7 +64,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 
 	rts.LoadConfig()
 	l := rts.state.LogLevel
-	parsedLevel, czitiLevel := logging.ParseLevel(l)
+	parsedLevel, _ := logging.ParseLevel(l)
 
 	rts.state.LogLevel = parsedLevel.String()
 	logging.InitLogger(l)
@@ -73,9 +73,6 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 
 	// create a channel for notifying any connections that they are to be interrupted
 	interrupt = make(chan struct{}, 8)
-
-	// wire in a log file for csdk troubleshooting
-	cziti.InitializeCLogger(czitiLevel)
 
 	// setup events handler - needs to be before initialization
 	go handleEvents()
@@ -468,22 +465,6 @@ func serveLogs(conn net.Conn) {
 	w := bufio.NewWriter(conn)
 
 	file, err := os.OpenFile(config.LogFile(), os.O_RDONLY, 0644)
-	if err != nil {
-		log.Errorf("could not open log file at %s", config.LogFile())
-		_, _ = w.WriteString("an unexpected error occurred while retrieving logs. look at the actual log file.")
-		return
-	}
-	writeLogToStream(file, w)
-
-	file, err = os.OpenFile(config.LogFile(), os.O_RDONLY, 0644)
-	if err != nil {
-		log.Errorf("could not open log file at %s", config.LogFile())
-		_, _ = w.WriteString("an unexpected error occurred while retrieving logs. look at the actual log file.")
-		return
-	}
-	writeLogToStream(file, w)
-
-	file, err = os.OpenFile(config.Path()+"cziti.log", os.O_RDONLY, 0644)
 	if err != nil {
 		log.Errorf("could not open log file at %s", config.LogFile())
 		_, _ = w.WriteString("an unexpected error occurred while retrieving logs. look at the actual log file.")
