@@ -1,3 +1,33 @@
+# Release 1.5.12
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* fixes [#251](https://github.com/openziti/desktop-edge-win/issues/251) - timestamp in UI and service logs has incorrect format
+
+## Dependency Updates
+
+* none
+
+# Release 1.5.11
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* fixes [#250](https://github.com/openziti/desktop-edge-win/issues/250) - setting the log level for the data service would not work
+
+## Dependency Updates
+
+* none
+
 # Release 1.5.10
 
 ## What's New
