@@ -55,8 +55,9 @@ REM ziti-ci publish artifactory --groupId=ziti-tunnel-win.amd64.windows --artifa
 GOTO END
 
 :RELEASE
-echo Publishing release
-ziti-ci publish artifactory --groupId=ziti-tunnel-win.amd64.windows --artifactId=ziti-tunnel-win --version=%BUILD_VERSION% --target=service/ziti-tunnel-win.zip 2>&1
+echo NO LONGER PUBLISHING TO ARTIFACTORY.
+REM echo Publishing release
+REM ziti-ci publish artifactory --groupId=ziti-tunnel-win.amd64.windows --artifactId=ziti-tunnel-win --version=%BUILD_VERSION% --target=service/ziti-tunnel-win.zip 2>&1
 GOTO END
 
 :BUILD_VERSION_ERROR
