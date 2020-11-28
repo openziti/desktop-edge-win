@@ -1,17 +1,20 @@
 # Release 1.5.12
 
 ## What's New
-* none
+* logs condensed into a single log file - only ziti-tunneler.log files remain (cziti.logs are removed)
+* clicking "Service Logs" will open the latest service log file. if ".log" is not mapped to a program the `${installFolder}\logs\service` folder will be opened
+* clicking "Application Logs" will open the latest UI log file. if ".log" is not mapped to a program the `${installFolder}\logs\UI` folder will be opened
+* closes [#254](https://github.com/openziti/desktop-edge-win/issues/254) - logs relocated to easier accessed location: "%ProgramFiles(x86)%\NetFoundry, Inc\Ziti Desktop Edge\logs"
 
 ## Other changes:
-* none
+* collect-logs.ps1 has been removed in favor of logs being at a more accessible location and the 'feedback' button collecting logs anyway
 
 ## Bugs fixed:
+* all logs now have valid timestamps
 * fixes [#251](https://github.com/openziti/desktop-edge-win/issues/251) - timestamp in UI and service logs has incorrect format
 
 ## Dependency Updates
-
-* none
+* C SDK updated to pick up log callback. unifies logs into one, fixes timestamp issue
 
 # Release 1.5.11
 
