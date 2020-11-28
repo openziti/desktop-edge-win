@@ -171,12 +171,12 @@ namespace ZitiDesktopEdge
 			} else if (menuState=="Logs") {
 				MenuTitle.Content = "Advanced Settings";
 				AdvancedItems.Visibility = Visibility.Visible;
-				Process.Start(MainWindow.ExpectedLogPathServices);
+				OpenLogFile("service", MainWindow.ExpectedLogPathServices);
 				BackArrow.Visibility = Visibility.Visible;
 			} else if (menuState == "UILogs") {
 				MenuTitle.Content = "Advanced Settings";
 				AdvancedItems.Visibility = Visibility.Visible;
-				Process.Start(MainWindow.ExpectedLogPathUI);
+				OpenLogFile("service", MainWindow.ExpectedLogPathUI);
 				BackArrow.Visibility = Visibility.Visible;
 			} else if (menuState == "LogLevel") {
 				ResetLevels();
@@ -197,6 +197,19 @@ namespace ZitiDesktopEdge
 				MenuTitle.Content = "Main Menu";
 				MainItems.Visibility = Visibility.Visible;
 				MainItemsButton.Visibility = Visibility.Visible;
+			}
+		}
+
+		private void OpenLogFile(string which, string logFile) {
+			if (File.Exists(logFile)) {
+				try {
+					Process.Start(logFile);
+					logger.Info("showing {0} logs. file: {1}", which, logFile);
+				} catch (Exception e) {
+					logger.Error(e, "error while attempting to show {0} logs. file: {1}", which, logFile);
+				}
+			} else {
+				logger.Warn("could not show {0} logs. file not found: {1}", which, logFile);
 			}
 		}
 
