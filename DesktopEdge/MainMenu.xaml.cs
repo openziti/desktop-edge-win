@@ -12,6 +12,7 @@ using ZitiDesktopEdge.ServiceClient;
 
 using NLog;
 using ZitiDesktopEdge.DataStructures;
+using ZitiDesktopEdge.Native;
 
 namespace ZitiDesktopEdge
 {	
@@ -171,12 +172,15 @@ namespace ZitiDesktopEdge
 			} else if (menuState=="Logs") {
 				MenuTitle.Content = "Advanced Settings";
 				AdvancedItems.Visibility = Visibility.Visible;
-				OpenLogFile("service", MainWindow.ExpectedLogPathServices);
+				//string targetFile = NativeMethods.GetFinalPathName(MainWindow.ExpectedLogPathServices);
+				string targetFile = MainWindow.ExpectedLogPathServices;
+
+				OpenLogFile("service", targetFile);
 				BackArrow.Visibility = Visibility.Visible;
 			} else if (menuState == "UILogs") {
 				MenuTitle.Content = "Advanced Settings";
 				AdvancedItems.Visibility = Visibility.Visible;
-				OpenLogFile("service", MainWindow.ExpectedLogPathUI);
+				OpenLogFile("UI", MainWindow.ExpectedLogPathUI);
 				BackArrow.Visibility = Visibility.Visible;
 			} else if (menuState == "LogLevel") {
 				ResetLevels();
@@ -201,16 +205,24 @@ namespace ZitiDesktopEdge
 		}
 
 		private void OpenLogFile(string which, string logFile) {
-			if (File.Exists(logFile)) {
-				try {
-					Process.Start(logFile);
-					logger.Info("showing {0} logs. file: {1}", which, logFile);
-				} catch (Exception e) {
-					logger.Error(e, "error while attempting to show {0} logs. file: {1}", which, logFile);
+			var whichRoot = Path.Combine(MainWindow.ExpectedLogPathRoot, which);
+			try {
+				string target = NativeMethods.GetFinalPathName(logFile);
+				if (File.Exists(target)) {
+					logger.Info("opening {0} logs at: {1}", which, target);
+					var p = Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
+					if (p != null) {
+						logger.Info("showing {0} logs. file: {1}", which, target);
+					} else {
+						Process.Start(whichRoot);
+					}
+					return;
+				} else {
+					logger.Warn("could not show {0} logs. file not found: {1}", which, target);
 				}
-			} else {
-				logger.Warn("could not show {0} logs. file not found: {1}", which, logFile);
+			} catch {
 			}
+			Process.Start(whichRoot);
 		}
 
 		private void GoBack(object sender, MouseButtonEventArgs e) {

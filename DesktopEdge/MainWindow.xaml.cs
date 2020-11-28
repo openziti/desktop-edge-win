@@ -21,9 +21,6 @@ using NLog.Targets;
 
 namespace ZitiDesktopEdge {
 
-	/// <summary>
-	/// Interaction logic for MainWindow.xaml
-	/// </summary>
 	public partial class MainWindow : Window {
 		private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
