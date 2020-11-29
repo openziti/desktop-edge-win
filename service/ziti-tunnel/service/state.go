@@ -178,7 +178,7 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, error) {
 		rts.UpdateIpv4(ipv4)
 	}
 	if ipv4mask < constants.Ipv4MaxMask {
-		log.Warnf("provided mask is too large: %d using default.", ipv4mask, constants.Ipv4DefaultMask)
+		log.Warnf("provided mask is too large: %d using default: %d", ipv4mask, constants.Ipv4DefaultMask)
 		ipv4mask = constants.Ipv4DefaultMask
 		rts.UpdateIpv4Mask(ipv4mask)
 	}
@@ -330,7 +330,7 @@ func (t *RuntimeState) scanForOrphanedIdentities(folder string) {
 func probeIdentityFile(path string, cfg *idcfg.Config) error {
 	file, err := os.OpenFile(path, os.O_RDONLY, 0644)
 	if err != nil {
-		log.Error("unexpected error opening config file: %v", err)
+		log.Errorf("unexpected error opening config file: %v", err)
 	}
 
 	r := bufio.NewReader(file)

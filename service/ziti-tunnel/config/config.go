@@ -26,7 +26,7 @@ import (
 func ExecutablePath() string {
 	fi, err := os.Executable()
 	if err != nil {
-		log.Panic("COULD NOT STAT os.executable! %v", err)
+		log.Panicf("COULD NOT STAT os.executable! %v", err)
 	}
 	dir := filepath.Dir(fi)
 	return dir

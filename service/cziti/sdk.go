@@ -396,7 +396,7 @@ func log_writer_cb(level C.int, _ /*loc*/ C.string, msg C.string, _ /*msglen*/ C
 		log.Trace(gomsg)
 		break
 	default:
-		log.Warnf("level [%s] NOT recognized:", level, gomsg)
+		log.Warnf("level [%d] NOT recognized: %s", level, gomsg)
 		break
 	}
 }

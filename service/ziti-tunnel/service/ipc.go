@@ -818,7 +818,7 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 	err := disconnectIdentity(id)
 	if err != nil {
 		anyErrs = err.Error()
-		log.Errorf("error when disconnecting identity: %s, %v", id, err)
+		log.Errorf("error when disconnecting identity: %s, %v", fingerprint, err)
 	}
 
 	rts.RemoveByFingerprint(fingerprint)
