@@ -47,3 +47,18 @@ func LogsPath() string {
 func BackupFile() string {
 	return File() + ".backup"
 }
+func EnsureConfigFolder() error {
+	return ensureFolder(Path())
+}
+func EnsureLogsFolder() error {
+	return ensureFolder(LogsPath())
+}
+func ensureFolder(path string) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		mkdirerr := os.Mkdir(path, 0644)
+		if mkdirerr != nil {
+			return mkdirerr
+		}
+	}
+	return nil
+}

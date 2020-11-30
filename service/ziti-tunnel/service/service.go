@@ -21,6 +21,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/logging"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
@@ -30,7 +31,14 @@ type zitiService struct{}
 
 func (m *zitiService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
 	changes <- svc.Status{State: svc.StartPending}
-
+	err := config.EnsureConfigFolder()
+	if err != nil {
+		log.Panic("config folder not found and was not created by process!")
+	}
+	err = config.EnsureLogsFolder()
+	if err != nil {
+		log.Panic("log folder not found and was not created by process!")
+	}
 	control := make(chan string)
 	mainLoop := make(chan struct{})
 	go func() {
