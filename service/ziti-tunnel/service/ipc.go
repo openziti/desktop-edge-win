@@ -64,7 +64,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 
 	rts.LoadConfig()
 	l := rts.state.LogLevel
-	parsedLevel, _ := logging.ParseLevel(l)
+	parsedLevel, cLogLevel := logging.ParseLevel(l)
 
 	rts.state.LogLevel = parsedLevel.String()
 	logging.InitLogger(l)
@@ -78,7 +78,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	go handleEvents()
 
 	// initialize the network interface
-	err := initialize()
+	err := initialize(cLogLevel)
 	if err != nil {
 		log.Panicf("unexpected err from initialize: %v", err)
 		return err
@@ -239,10 +239,17 @@ func (p *Pipes) shutdownConnections() {
 	log.Info("all events connections closed")
 }
 
-func initialize() error {
-	assignedIp, err := rts.CreateTun(rts.state.TunIpv4, rts.state.TunIpv4Mask)
+func initialize(cLogLevel int) error {
+	assignedIp, tun, err := rts.CreateTun(rts.state.TunIpv4, rts.state.TunIpv4Mask)
 	if err != nil {
 		return err
+	}
+
+	cziti.DnsInit(&rts, rts.state.TunIpv4, rts.state.TunIpv4Mask)
+	cziti.Start(cLogLevel)
+	err = cziti.HookupTun(*tun)
+	if err != nil {
+		log.Panicf("An unrecoverable error has occurred! %v", err)
 	}
 
 	setTunInfo(rts.state)

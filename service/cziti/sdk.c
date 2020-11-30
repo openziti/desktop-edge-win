@@ -23,9 +23,9 @@
 void libuv_stopper(uv_async_t *a) {
      uv_stop(a->loop);
 }
-void set_log_level(int level) {
-
+void set_log_level(int level, libuv_ctx *lctx) {
     ziti_debug_level = level;
+    ziti_set_log(log_writer_shim_go, lctx->l);
 }
 
 void log_writer_shim_go(int level, const char *loc, const char *msg, size_t msglen) {

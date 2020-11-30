@@ -12,7 +12,6 @@ require (
 	github.com/miekg/dns v1.1.29
 	github.com/openziti/foundation v0.14.17
 	github.com/openziti/sdk-golang v0.14.12
-	github.com/robfig/cron/v3 v3.0.1
 	github.com/sirupsen/logrus v1.7.0
 	github.com/tebeka/strftime v0.1.4 // indirect
 	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae

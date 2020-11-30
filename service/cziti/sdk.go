@@ -36,8 +36,6 @@ import "C"
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"os"
 	"sync"
 	"unsafe"
 )
@@ -61,27 +59,24 @@ type ServiceChange struct {
 var _impl sdk
 
 func init() {
-	err := os.Setenv("ZITI_TIME_FORMAT", "utc")
-	if err != nil {
-		fmt.Println("failed to set ZITI_TIME_FORMAT")
-	}
 	_impl.libuvCtx = (*C.libuv_ctx)(C.calloc(1, C.sizeof_libuv_ctx))
 	C.libuv_init(_impl.libuvCtx)
 }
 
 func SetLogLevel(level int) {
 	log.Infof("Setting cziti log level to: %d", level)
-	C.set_log_level(C.int(level))
+	C.set_log_level(C.int(level), _impl.libuvCtx)
 }
 
-func Start() {
+func Start(loglevel int) {
 	v := C.ziti_get_version()
 	log.Infof("starting ziti-sdk-c %s(%s)[%s]", C.GoString(v.version), C.GoString(v.revision), C.GoString(v.build_date))
 
-	_impl.run()
+	_impl.run(loglevel)
 }
 
-func (inst *sdk) run() {
+func (inst *sdk) run(loglevel int) {
+	SetLogLevel(loglevel)
 	C.libuv_run(inst.libuvCtx)
 }
 
@@ -370,30 +365,31 @@ func free_async(handle *C.uv_handle_t){
 }
 
 //export log_writer_cb
-func log_writer_cb(level C.int, _ /*loc*/ C.string, msg C.string, _ /*msglen*/ C.size_t) {
+func log_writer_cb(level C.int, loc C.string, msg C.string, _ /*msglen*/ C.size_t) {
 	gomsg := C.GoString(msg)
+	goline := C.GoString(loc)
 	lvl := level
 	switch lvl {
 	case 0:
 		log.Warnf("level 0 should not be logged, please report: %s", gomsg)
 		break
 	case 1:
-		log.Error(gomsg)
+		log.Errorf("SDK: %s\t%s", goline, gomsg)
 		break
 	case 2:
-		log.Warn(gomsg)
+		log.Warnf("SDK: %s\t%s", goline, gomsg)
 		break
 	case 3:
-		log.Info(gomsg)
+		log.Infof("SDK: %s\t%s", goline, gomsg)
 		break
 	case 4:
-		log.Debug(gomsg)
+		log.Debugf("SDK: %s\t%s", goline, gomsg)
 		break
 	case 5:
 	case 6:
 		//VERBOSE:5
 		//TRACE:6
-		log.Trace(gomsg)
+		log.Tracef("SDK: %s\t%s", goline, gomsg)
 		break
 	default:
 		log.Warnf("level [%d] NOT recognized: %s", level, gomsg)
