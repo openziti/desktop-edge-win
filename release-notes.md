@@ -1,3 +1,33 @@
+# Release 1.6.1
+
+## What's New
+* 
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* first time install bug - the NetFoundry folder would not exist after the logs were moved
+
+## Dependency Updates
+* none
+
+# Release 1.6.0
+
+## What's New
+* upped version to 1.6.0 to represent log changes from 1.5.12
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* walked back some changes trying to fix stability that seemed to decrease stability
+
+## Dependency Updates
+* C SDK-> 0.18.0
+* Tunneler SDK C -> v0.7.18
+
+
 # Release 1.5.12
 
 ## What's New
