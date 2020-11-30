@@ -150,7 +150,7 @@ func (t *RuntimeState) ToMetrics() dto.TunnelStatus {
 	return clean
 }
 
-func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, error) {
+func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, *tun.Device, error) {
 	log.Infof("creating TUN device: %s", TunName)
 	tunDevice, err := tun.CreateTUN(TunName, 64*1024 - 1)
 	if err == nil {
@@ -160,13 +160,13 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, error) {
 			t.tunName = tunName
 		}
 	} else {
-		return nil, fmt.Errorf("error creating TUN device: (%v)", err)
+		return nil, nil, fmt.Errorf("error creating TUN device: (%v)", err)
 	}
 
 	if name, err := tunDevice.Name(); err == nil {
 		log.Debugf("created TUN device [%s]", name)
 	} else {
-		return nil, fmt.Errorf("error getting TUN name: (%v)", err)
+		return nil, nil, fmt.Errorf("error getting TUN name: (%v)", err)
 	}
 
 	nativeTunDevice := tunDevice.(*tun.NativeTun)
@@ -184,13 +184,13 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, error) {
 	}
 	ip, ipnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", ipv4, ipv4mask))
 	if err != nil {
-		return nil, fmt.Errorf("error parsing CIDR block: (%v)", err)
+		return nil, nil, fmt.Errorf("error parsing CIDR block: (%v)", err)
 	}
 
 	log.Infof("setting TUN interface address to [%s]", ip)
 	err = luid.SetIPAddresses([]net.IPNet{{IP: ip, Mask: ipnet.Mask}})
 	if err != nil {
-		return nil, fmt.Errorf("failed to set IP address to %v: (%v)", ip, err)
+		return nil, nil, fmt.Errorf("failed to set IP address to %v: (%v)", ip, err)
 	}
 
 	dnsServers := []net.IP{ ip }
@@ -198,31 +198,24 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, error) {
 	log.Infof("adding DNS servers to TUN: %s", dnsServers)
 	err = luid.AddDNS(dnsServers)
 	if err != nil {
-		return nil, fmt.Errorf("failed to add DNS addresses: (%v)", err)
+		return nil, nil, fmt.Errorf("failed to add DNS addresses: (%v)", err)
 	}
 
 	log.Info("checking TUN dns servers")
 	dns, err := luid.DNS()
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch DNS address: (%v)", err)
+		return nil, nil, fmt.Errorf("failed to fetch DNS address: (%v)", err)
 	}
 	log.Infof("TUN dns servers set to: %s", dns)
 
 	log.Infof("setting routes for cidr: %s. Next Hop: %s", ipnet.String(), ipnet.IP.String())
 	err = luid.SetRoutes([]*winipcfg.RouteData{{ Destination: *ipnet, NextHop: ipnet.IP, Metric: 0}})
 	if err != nil {
-		return nil, fmt.Errorf("failed to SetRoutes: (%v)", err)
+		return nil, nil, fmt.Errorf("failed to SetRoutes: (%v)", err)
 	}
 	log.Info("routing applied")
 
-	cziti.DnsInit(&rts, ipv4, ipv4mask)
-	cziti.Start()
-	err = cziti.HookupTun(tunDevice)
-	if err != nil {
-		log.Panicf("An unrecoverable error has occurred! %v", err)
-	}
-
-	return ip, nil
+	return ip, t.tun, nil
 }
 
 func (t *RuntimeState) LoadIdentity(id *Id) {
