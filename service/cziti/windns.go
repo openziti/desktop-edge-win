@@ -28,6 +28,7 @@ import (
 )
 
 var log = logging.Logger()
+var noFileLog = logging.NoFilenameLogger()
 
 func ResetDNS() {
 	log.Info("resetting DNS server addresses")

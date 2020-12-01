@@ -219,7 +219,6 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, *tun.Device
 }
 
 func (t *RuntimeState) LoadIdentity(id *Id) {
-	log.Infof("loading identity %s[%s]", id.Name, id.FingerPrint)
 	if id.CId != nil && id.CId.Loaded {
 		log.Warnf("id %s[%s] already connected", id.Name, id.FingerPrint)
 		return
@@ -231,11 +230,14 @@ func (t *RuntimeState) LoadIdentity(id *Id) {
 		return
 	}
 
+	log.Infof("loading identity %s[%s]", id.Name, id.FingerPrint)
+	now := time.Now()
 	id.CId = cziti.LoadZiti(id.Path(), id.Active)
-	if id.CId == nil {
+	/*if id.CId == nil {
 		log.Warnf("connecting to identity with fingerprint [%s] did not error but no context was returned", id.FingerPrint)
 		return
-	}
+	}*/
+	log.Infof("loading identity for %s[%s] completed taking %f seconds", id.Name, id.FingerPrint, time.Now().Sub(now).Seconds())
 
 	id.ControllerVersion = id.CId.Version
 	id.CId.Fingerprint = id.FingerPrint

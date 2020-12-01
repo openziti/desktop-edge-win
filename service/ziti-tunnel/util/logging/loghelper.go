@@ -33,11 +33,11 @@ import (
 )
 
 var Elog debug.Log
-var logger = logrus.New()
+var withFilenameLogger = logrus.New()
+var noFilenamelogger = logrus.New()
 var loggerInitialized = false
-var tf = "2006-01-02T15:04:05.000"
-var tfl = len(tf)
-
+var baseImportPath = "github.com/openziti/desktop-edge-win/service/"
+var baseFilePath = config.ExecutablePath()
 
 func init() {
 	/*
@@ -48,19 +48,36 @@ func init() {
 	setConsoleModeProc := kernel32DLL.NewProc("SetConsoleMode")
 	setConsoleModeProc.Call(uintptr(handle), 0x0001|0x0002|0x0004)
 
-	f := &dateFormatter{
-		timeFormat: tf,
+
+	with := &dateFormatterNoFilename{
 	}
-	logger.SetFormatter(f)
+	/*with := &dateFormatterWithFilename{
+	}*/
+	with.dateFormatter.timeFormat = UTCFormat()
+	withFilenameLogger.SetFormatter(with)
+
+	without := &dateFormatterNoFilename{
+	}
+	without.dateFormatter.timeFormat = UTCFormat()
+	noFilenamelogger.SetFormatter(without)
 }
 
 func Logger() *logrus.Logger {
-	return logger
+	return withFilenameLogger
 }
 
-func InitLogger(level string) {
-	l, _ := ParseLevel(level)
-	logger.SetLevel(l)
+func NoFilenameLogger() *logrus.Logger {
+	return noFilenamelogger
+}
+
+func InitLogger(level logrus.Level) {
+	initLogger(withFilenameLogger, level)
+	initLogger(noFilenamelogger, level)
+}
+func initLogger(logger *logrus.Logger, level logrus.Level) {
+	logger.SetLevel(level)
+
+	logger.SetReportCaller(true)
 
 	rl, _ := rotatelogs.New(config.LogFile() + ".%Y%m%d%H%M.log",
 		rotatelogs.WithRotationTime(24 * time.Hour),
@@ -99,7 +116,7 @@ func ParseLevel(lvl string) (logrus.Level, int) {
 	case "verbose":
 		return logrus.TraceLevel, 6
 	default:
-		logger.Warnf("level not recognized: [%s]. Using Info", lvl)
+		noFilenamelogger.Warnf("level not recognized: [%s]. Using Info", lvl)
 		return logrus.InfoLevel, 3
 	}
 }
@@ -107,25 +124,67 @@ func ParseLevel(lvl string) (logrus.Level, int) {
 type dateFormatter struct {
 	timeFormat string
 }
+type dateFormatterWithFunction struct {
+	dateFormatter
+}
+type dateFormatterWithFilename struct {
+	dateFormatter
+}
+type dateFormatterNoFilename struct {
+	dateFormatter
+}
 
-func (f *dateFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	var level string
+func UTCFormat() string {
+	return "2006-01-02T15:04:05.000"
+}
+
+func toLevel(entry *logrus.Entry) string {
 	switch entry.Level {
 	case logrus.PanicLevel:
-		level = panicColor
+		return panicColor
 	case logrus.FatalLevel:
-		level = fatalColor
+		return fatalColor
 	case logrus.ErrorLevel:
-		level = errorColor
+		return errorColor
 	case logrus.WarnLevel:
-		level = warnColor
+		return warnColor
 	case logrus.InfoLevel:
-		level = infoColor
+		return infoColor
 	case logrus.DebugLevel:
-		level = debugColor
+		return debugColor
 	case logrus.TraceLevel:
-		level = traceColor
+		return traceColor
+	default:
+		return infoColor
 	}
+}
+
+func (f *dateFormatterWithFunction) Format(entry *logrus.Entry) ([]byte, error) {
+	level := toLevel(entry)
+
+	return []byte(fmt.Sprintf("[%sZ] %s\t%s:%d\t%s\n",
+			time.Now().UTC().Format(f.timeFormat),
+			level,
+			strings.ReplaceAll(entry.Caller.Function, baseImportPath, ""),
+			entry.Caller.Line,
+			entry.Message),
+		),
+		nil
+}
+func (f *dateFormatterWithFilename) Format(entry *logrus.Entry) ([]byte, error) {
+	level := toLevel(entry)
+
+	return []byte(fmt.Sprintf("[%sZ] %s\t%s:%d\t%s\n",
+			time.Now().UTC().Format(f.timeFormat),
+			level,
+			strings.ReplaceAll(entry.Caller.File, baseFilePath, ""),
+			entry.Caller.Line,
+			entry.Message),
+		),
+		nil
+}
+func (f *dateFormatterNoFilename) Format(entry *logrus.Entry) ([]byte, error) {
+	level := toLevel(entry)
 
 	return []byte(fmt.Sprintf("[%sZ] %s\t%s\n",
 			time.Now().UTC().Format(f.timeFormat),

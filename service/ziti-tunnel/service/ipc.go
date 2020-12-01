@@ -67,7 +67,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	parsedLevel, cLogLevel := logging.ParseLevel(l)
 
 	rts.state.LogLevel = parsedLevel.String()
-	logging.InitLogger(l)
+	logging.InitLogger(parsedLevel)
 
 	_ = logging.Elog.Info(InformationEvent, SvcName+" starting. log file located at "+config.LogFile())
 

@@ -57,5 +57,5 @@ extern void ziti_pq_mac_go(ziti_context ztx, char *id, ziti_pr_mac_cb response_c
 extern void log_writer_shim_go(int level, const char *loc, const char *msg, size_t msglen);
 
 void log_writer_cb(int level, char *loc, char *msg, size_t msglen);
-
+bool is_null(void* anything);
 #endif /* GOLANG_SDK_H */
