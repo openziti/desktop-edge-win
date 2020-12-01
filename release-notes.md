@@ -1,3 +1,17 @@
+# Release 1.6.2
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* stability updates via updated Tunneler SDK C
+
+## Dependency Updates
+* Tunneler SDK C: v0.7.18
+
 # Release 1.6.1
 
 ## What's New
