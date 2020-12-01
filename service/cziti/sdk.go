@@ -109,6 +109,10 @@ func (c *ZIdentity) GetMetrics() (int64, int64, bool) {
 	if c == nil {
 		return 0, 0, false
 	}
+	if C.is_null(unsafe.Pointer(&c.zctx)) {
+		log.Warnf("ziti context is C.NULL! %s", c.Fingerprint)
+		return 0, 0, false
+	}
 	var up, down C.double
 	C.ziti_get_transfer_rates(c.zctx, &up, &down)
 
@@ -371,28 +375,28 @@ func log_writer_cb(level C.int, loc C.string, msg C.string, _ /*msglen*/ C.size_
 	lvl := level
 	switch lvl {
 	case 0:
-		log.Warnf("level 0 should not be logged, please report: %s", gomsg)
+		noFileLog.Warnf("level 0 should not be logged, please report: %s", gomsg)
 		break
 	case 1:
-		log.Errorf("SDK: %s\t%s", goline, gomsg)
+		noFileLog.Errorf("SDK: %s\t%s", goline, gomsg)
 		break
 	case 2:
-		log.Warnf("SDK: %s\t%s", goline, gomsg)
+		noFileLog.Warnf("SDK: %s\t%s", goline, gomsg)
 		break
 	case 3:
-		log.Infof("SDK: %s\t%s", goline, gomsg)
+		noFileLog.Infof("SDK: %s\t%s", goline, gomsg)
 		break
 	case 4:
-		log.Debugf("SDK: %s\t%s", goline, gomsg)
+		noFileLog.Debugf("SDK: %s\t%s", goline, gomsg)
 		break
 	case 5:
 	case 6:
 		//VERBOSE:5
 		//TRACE:6
-		log.Tracef("SDK: %s\t%s", goline, gomsg)
+		noFileLog.Tracef("SDK: %s\t%s", goline, gomsg)
 		break
 	default:
-		log.Warnf("level [%d] NOT recognized: %s", level, gomsg)
+		noFileLog.Warnf("level [%d] NOT recognized: %s", level, gomsg)
 		break
 	}
 }

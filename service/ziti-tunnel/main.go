@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/logging"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
 	"os"
@@ -39,7 +40,8 @@ func main() {
 		Revision:  Revision,
 		BuildDate: BuildDate,
 	}
-	logging.InitLogger("info")
+
+	logging.InitLogger(logrus.InfoLevel)
 
 	// passing no arguments is an indicator that this is expecting to be run 'as a service'.
 	// using arg count instead of svc.IsAnInteractiveSession() as svc.IsAnInteractiveSession()

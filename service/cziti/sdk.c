@@ -84,3 +84,7 @@ extern void c_mapiter(model_map *map) {
 void ZLOG(int level, char* msg) {
     ZITI_LOG(level, "%s", msg);
 }
+
+bool is_null(void* anything){
+    return anything == NULL;
+}
