@@ -10,7 +10,7 @@
 * stability updates via updated Tunneler SDK C
 
 ## Dependency Updates
-* Tunneler SDK C: v0.7.18
+* Tunneler SDK C: v0.7.20
 
 # Release 1.6.1
 
