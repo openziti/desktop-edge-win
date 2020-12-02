@@ -5,6 +5,7 @@ on:
     branches: 
       - master
       - 'release-*'
+      - 'beta-release-*'
 
 env:
   BUILD_CONFIG: "Release"
@@ -16,7 +17,7 @@ jobs:
     runs-on: windows-latest
     if: "!contains(github.event.head_commit.message, 'ci skip')"
     env:
-      SOME_KEY: ${{ secrets.SOME_KEY }}
+      SIGNING_CERT: ${{ secrets.SIGNING_CERT }}
       ADV_INST_KEY: ${{ secrets.ADV_INST_KEY }}
       JFROG_ACCESS_TOKEN: ${{ secrets.JFROG_ACCESS_TOKEN }}
       gh_ci_key: ${{ secrets.GH_CI_KEY }}
@@ -35,7 +36,7 @@ jobs:
       - run: echo "$(go env GOPATH)\bin" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
       - name: Setup secrets
         run: |
-          echo "${env:SOME_KEY}" > WinSign.b64
+          echo "${env:SIGNING_CERT}" > WinSign.b64
           echo "${env:ADV_INST_KEY}" > ADV_INST_KEY.key
           C:\Windows\System32\certutil.exe -decode WinSign.b64 Installer/WinSign.p12
       - name: Trying to run choco install.
