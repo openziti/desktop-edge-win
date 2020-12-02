@@ -148,16 +148,6 @@ IF %ERRORLEVEL% NEQ 0 (
 
 echo clone or checkout complete.
 
-REM echo ------------------------------------------------------------------------------
-REM type %TUNNELER_SDK_DIR%.gitmodules
-REM echo.
-REM echo updating any ssh submodules to https using:
-REM echo     powershell "(get-content -path %TUNNELER_SDK_DIR%.gitmodules) -replace 'git@(.*)\:(.*)\.git', 'https://$1/$2.git' | Set-Content -Path %TUNNELER_SDK_DIR%.gitmodules"
-REM echo.
-REM powershell "(get-content -path %TUNNELER_SDK_DIR%.gitmodules) -replace 'git@(.*)\:(.*)\.git', 'https://$1/$2.git' | Set-Content -Path %TUNNELER_SDK_DIR%.gitmodules"
-REM type %TUNNELER_SDK_DIR%.gitmodules
-REM echo ------------------------------------------------------------------------------
-
 echo Updating submodules... if needed...
 REM git config --get remote.origin.url
 git submodule update --init --recursive
@@ -206,7 +196,6 @@ del /q hash.txt
 
 cd %SVC_ROOT_DIR%
 
-:GOBUILD
 IF "%ZITI_DEBUG%"=="" (
     SET ZITI_LIB_UV_DLL=%TUNNELER_SDK_DIR%install\lib\libuv.dll
 ) else (
@@ -215,12 +204,18 @@ IF "%ZITI_DEBUG%"=="" (
     SET ZITI_LIB_UV_DLL=%TUNNELER_SDK_DIR%install\lib\Debug\libuv.dll
 )
 
-echo     copy /y %ZITI_LIB_UV_DLL% to %SVC_ROOT_DIR%
+echo    copying libuv.dll to install folder (for go build) and to service root (for zip creation)
+echo    copy /y %ZITI_LIB_UV_DLL% to %SVC_ROOT_DIR%
 copy /y %ZITI_LIB_UV_DLL% %TUNNELER_SDK_DIR%install\lib\libuv.dll
 copy /y %ZITI_LIB_UV_DLL% %SVC_ROOT_DIR%
 
-echo COPIED dlls to %SVC_ROOT_DIR%
+echo    copying ziti.dll to service root (for zip creation)
+echo copy /y %TUNNELER_SDK_DIR%install\lib\ziti.dll %SVC_ROOT_DIR%
+copy /y %TUNNELER_SDK_DIR%install\lib\ziti.dll %SVC_ROOT_DIR%
 
+echo COPIED libuv and ziti dlls to %SVC_ROOT_DIR%
+
+:GOBUILD
 echo building the go program
 go build -a ./ziti-tunnel
 SET ACTUAL_ERR=%ERRORLEVEL%
