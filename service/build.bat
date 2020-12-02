@@ -31,7 +31,6 @@ IF "%ZITI_DEBUG%"=="" (
 ) else (
     SET ZITI_DEBUG_CMAKE=-DCMAKE_BUILD_TYPE=Debug
     echo ZITI_DEBUG detected. will run cmake with: %ZITI_DEBUG_CMAKE%
-    echo     copy /y %TUNNELER_SDK_DIR%install\lib\Debug\libuv.dll %TUNNELER_SDK_DIR%install\lib\libuv.dll
 )
 
 cd /d %ZITI_TUNNEL_WIN_ROOT%
@@ -81,8 +80,8 @@ echo version info generated 2>&1
 goto QUICK
 
 :CLEAN
-echo REMOVING old build folder if it exists at %SVC_ROOT_DIR%deps\ziti-tunneler-sdk-c\build
-rmdir /s /q %SVC_ROOT_DIR%deps\ziti-tunneler-sdk-c\build
+echo REMOVING old build folder if it exists at %TUNNELER_SDK_DIR%build
+rmdir /s /q %TUNNELER_SDK_DIR%build
 echo REMOVING ziti.dll at %SVC_ROOT_DIR%ziti.dll
 del /q %SVC_ROOT_DIR%ziti.dll
 
@@ -205,21 +204,22 @@ set /p CSDK_HASH=<hash.txt
 del /q branch.txt
 del /q hash.txt
 
-copy /y %TUNNELER_SDK_DIR%install\lib\ziti.dll %SVC_ROOT_DIR%
-copy /y %TUNNELER_SDK_DIR%install\lib\libuv.dll %SVC_ROOT_DIR%
-
-echo COPIED dlls to %SVC_ROOT_DIR%
 cd %SVC_ROOT_DIR%
 
 :GOBUILD
 IF "%ZITI_DEBUG%"=="" (
-    REM no action needed
+    SET ZITI_LIB_UV_DLL=%TUNNELER_SDK_DIR%install\lib\libuv.dll
 ) else (
     SET ZITI_DEBUG_CMAKE=-DCMAKE_BUILD_TYPE=Debug
     echo ZITI_DEBUG detected. Copying debug lib into install...
-    echo     copy /y %TUNNELER_SDK_DIR%install\lib\Debug\libuv.dll %TUNNELER_SDK_DIR%install\lib\libuv.dll
-    copy /y %TUNNELER_SDK_DIR%install\lib\Debug\libuv.dll %TUNNELER_SDK_DIR%install\lib\libuv.dll
+    SET ZITI_LIB_UV_DLL=%TUNNELER_SDK_DIR%install\lib\Debug\libuv.dll
 )
+
+echo     copy /y %ZITI_LIB_UV_DLL% to %SVC_ROOT_DIR%
+copy /y %ZITI_LIB_UV_DLL% %TUNNELER_SDK_DIR%install\lib\libuv.dll
+copy /y %ZITI_LIB_UV_DLL% %SVC_ROOT_DIR%
+
+echo COPIED dlls to %SVC_ROOT_DIR%
 
 echo building the go program
 go build -a ./ziti-tunnel
