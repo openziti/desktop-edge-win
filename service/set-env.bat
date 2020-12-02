@@ -21,3 +21,6 @@ set ZITI_TUNNEL_WIN_ROOT=%SVC_ROOT_DIR%..\
 set GO111MODULE=on
 
 set /p BUILD_VERSION=<%ZITI_TUNNEL_WIN_ROOT%version
+
+REM a stupid env var JUST to allow a space to be set into an environment variable using substring...
+set ZITI_SPACES=:   :

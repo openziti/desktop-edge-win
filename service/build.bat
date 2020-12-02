@@ -25,6 +25,15 @@ set CURDIR=%CD%
 
 call %SVC_ROOT_DIR%\set-env.bat
 
+IF "%ZITI_DEBUG%"=="" (
+    REM clear out if debug was run in the past
+    SET ZITI_DEBUG_CMAKE=
+) else (
+    SET ZITI_DEBUG_CMAKE=-DCMAKE_BUILD_TYPE=Debug
+    echo ZITI_DEBUG detected. will run cmake with: %ZITI_DEBUG_CMAKE%
+    echo     copy /y %TUNNELER_SDK_DIR%install\lib\Debug\libuv.dll %TUNNELER_SDK_DIR%install\lib\libuv.dll
+)
+
 cd /d %ZITI_TUNNEL_WIN_ROOT%
 
 IF "%1"=="" (
@@ -167,7 +176,7 @@ if not exist %TUNNELER_SDK_DIR%install mkdir %TUNNELER_SDK_DIR%install
 echo Generating project files for tunneler sdk
 if "%ZITI_SDK_C_BRANCH%"=="" (
     echo ZITI_SDK_C_BRANCH is not set - ZITI_SDK_C_BRANCH_CMD will be empty
-    SET ZITI_SDK_C_BRANCH_CMD=
+    SET ZITI_SDK_C_BRANCH_CMD=%ZITI_SPACES:~2,1%
 ) else (
     echo SETTING ZITI_SDK_C_BRANCH_CMD to: -DZITI_SDK_C_BRANCH^=%ZITI_SDK_C_BRANCH%
     SET ZITI_SDK_C_BRANCH_CMD=-DZITI_SDK_C_BRANCH=%ZITI_SDK_C_BRANCH%
@@ -206,8 +215,9 @@ cd %SVC_ROOT_DIR%
 IF "%ZITI_DEBUG%"=="" (
     REM no action needed
 ) else (
+    SET ZITI_DEBUG_CMAKE=-DCMAKE_BUILD_TYPE=Debug
     echo ZITI_DEBUG detected. Copying debug lib into install...
-    echo     copy /y %TUNNELER_SDK_DIR%install/lib/Debug/libuv.dll %TUNNELER_SDK_DIR%install/lib/libuv.dll
+    echo     copy /y %TUNNELER_SDK_DIR%install\lib\Debug\libuv.dll %TUNNELER_SDK_DIR%install\lib\libuv.dll
     copy /y %TUNNELER_SDK_DIR%install\lib\Debug\libuv.dll %TUNNELER_SDK_DIR%install\lib\libuv.dll
 )
 
