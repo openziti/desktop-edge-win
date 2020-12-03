@@ -291,8 +291,9 @@ namespace ZitiDesktopEdge.DataStructures {
         public Identity Id { get; set; }
     }
 
-    public class ServiceStatusEvent : SvcResponse {
+    public class MonitorServiceStatusEvent : SvcResponse {
         public string Status { get; set; }
+        public string ReleaseStream { get; set; }
 
         public bool IsStopped() {
             return "Stopped" == this.Status;

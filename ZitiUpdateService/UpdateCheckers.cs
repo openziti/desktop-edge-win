@@ -12,6 +12,7 @@ namespace ZitiUpdateService {
 		string url;
 		string downloadUrl = null;
 		string downloadFileName = null;
+		string currentResponse = null;
 
 		public GithubCheck(string url) {
 			this.url = url;
@@ -33,20 +34,28 @@ namespace ZitiUpdateService {
 			return downloadFileName;
 		}
 
-		public bool IsUpdateAvailable(Version current) {
+		public bool IsUpdateAvailable(Version currentVersion) {
+			Logger.Debug("checking for update begins. current version detected as {0}", currentVersion);
+			Logger.Debug("issuing http get to url: {0}", url);
 			HttpWebRequest httpWebRequest = WebRequest.CreateHttp(url);
 			httpWebRequest.Method = "GET";
 			httpWebRequest.ContentType = "application/json";
 			httpWebRequest.UserAgent = "OpenZiti UpdateService";
 			HttpWebResponse httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
 			StreamReader streamReader = new StreamReader(httpResponse.GetResponseStream());
-			string result = streamReader.ReadToEnd();
-			JObject json = JObject.Parse(result);
-			string serverVersion = json.Property("tag_name").Value.ToString() + ".0";
+			currentResponse = streamReader.ReadToEnd();
+			Logger.Trace("response received: {0}", currentResponse);
+			JObject json = JObject.Parse(currentResponse);
 
 			JArray assets = JArray.Parse(json.Property("assets").Value.ToString());
 			foreach (JObject asset in assets.Children<JObject>()) {
-				downloadUrl = asset.Property("browser_download_url").Value.ToString();
+				string assetName = asset.Property("name").Value.ToString();
+
+				if (assetName.StartsWith("Ziti.Desktop.Edge.Client-")) {
+					downloadUrl = asset.Property("browser_download_url").Value.ToString();
+				} else {
+					Logger.Debug("skipping asset with name: {assetName}", assetName);
+                }
 				break;
 			}
 
@@ -54,31 +63,30 @@ namespace ZitiUpdateService {
 				Logger.Error("DOWNLOAD URL not found at: {0}", url);
 				return false;
 			}
+			Logger.Debug("download url detected: {0}", downloadUrl);
 			downloadFileName = downloadUrl.Substring(downloadUrl.LastIndexOf('/') + 1);
+			Logger.Debug("download file name: {0}", downloadFileName);
 
-			Version published = new Version(serverVersion);
-			int compare = current.CompareTo(published);
+			string releaseVersion = json.Property("tag_name").Value.ToString();
+			string releaseName = json.Property("name").Value.ToString();
+			Version publishedVersion = NormalizeVersion(new Version(releaseVersion));
+			int compare = currentVersion.CompareTo(publishedVersion);
 			if (compare < 0) {
-				Logger.Info("an upgrade is available.");
+				Logger.Info("upgrade {} is available. Published version: {} is newer than the current version: {}", releaseName, publishedVersion, currentVersion);
+				return true;
 			} else if (compare > 0) {
-				Logger.Info("the version installed is newer than the released version");
+				Logger.Info("the version installed: {0} is newer than the released version: {1}", currentVersion, publishedVersion);
 				return false;
 			} else {
-				Logger.Debug("current version {0} is the same as the latest release {0}", current, published);
-				string useBetaReleases = ConfigurationManager.AppSettings.Get("UseBetaReleases");
-				if(useBetaReleases != null) {
-					Logger.Debug("BETA RELEASE DETECTED!");
-					if (useBetaReleases == "yes") {
-						Logger.Debug("BETA RELEASE == yes - returning true");
-						return true;
-					} else {
-						Logger.Debug("BETA RELEASE value is not correct: {0}", useBetaReleases);
-					}
-                }
 				return false;
 			}
+		}
 
-			return true;
+		private Version NormalizeVersion(Version v) {
+			if (v.Minor < 1) return new Version(v.Major, 0, 0, 0);
+			if (v.Build < 1) return new Version(v.Major, v.Minor, 0, 0);
+			if (v.Revision < 1) return new Version(v.Major, v.Minor, v.Build, 0);
+			return v;
 		}
 	}
 

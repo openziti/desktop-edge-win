@@ -65,7 +65,9 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-		private void AddIdentity(ZitiIdentity id) {
+        public string ReleaseStream { get; private set; }
+
+        private void AddIdentity(ZitiIdentity id) {
 			semaphoreSlim.Wait();
 			if (!identities.Any(i => id.Fingerprint == i.Fingerprint)) {
 				identities.Add(id);
@@ -233,8 +235,9 @@ namespace ZitiDesktopEdge {
 			Placement();
 		}
 
-		private void MonitorClient_OnServiceStatusEvent(object sender, ServiceStatusEvent evt) {
+		private void MonitorClient_OnServiceStatusEvent(object sender, MonitorServiceStatusEvent evt) {
 			logger.Debug("MonitorClient_OnServiceStatusEvent");
+			this.ReleaseStream = evt.ReleaseStream;
 			ServiceControllerStatus status = (ServiceControllerStatus)Enum.Parse(typeof(ServiceControllerStatus), evt.Status);
 
 			switch (status) {
@@ -272,7 +275,7 @@ namespace ZitiDesktopEdge {
 			//close the service
 			while (DateTime.Now < until) {
 				await Task.Delay(2000);
-				ServiceStatusEvent resp = await monitorClient.Status();
+				MonitorServiceStatusEvent resp = await monitorClient.Status();
 				if (resp.IsStopped()) {
 					// good - that's what we are waiting for...
 					return;
@@ -290,7 +293,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		async private void ForceQuitButtonClick(object sender, RoutedEventArgs e) {
-			ServiceStatusEvent status = await monitorClient.ForceTerminate();
+			MonitorServiceStatusEvent status = await monitorClient.ForceTerminate();
 			if (status.IsStopped()) {
 				//good
 				CloseErrorButton.Click += CloseError; //reset the close button...
@@ -836,7 +839,7 @@ namespace ZitiDesktopEdge {
 			await CollectLogFiles();
 		}
 		async private Task CollectLogFiles() {
-			ServiceStatusEvent resp = await monitorClient.CaptureLogsAsync();
+			MonitorServiceStatusEvent resp = await monitorClient.CaptureLogsAsync();
 			logger.Info("response: {0}", resp.Message);
 		}
     }

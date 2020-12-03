@@ -53,6 +53,7 @@
                     <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/logs.png" Width="Auto" Label="Service Logs" MouseUp="ShowLogs"></local:MenuItem>
                     <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/logs.png" Width="Auto" Label="Application Logs" MouseUp="ShowUILogs"></local:MenuItem>
                     <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/advanced.png" Width="Auto" Label="Set Logging Level" MouseUp="SetLogLevel"></local:MenuItem>
+                    <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/advanced.png" Width="Auto" Label="Set Release Stream" MouseUp="SetReleaseStreamMenuAction"></local:MenuItem>
                 </StackPanel>
                 <StackPanel Name="LogLevelItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <local:SubOptionItem x:Name="LogFatal" HorizontalAlignment="Stretch" Width="Auto" Label="Fatal" MouseUp="SetLevel"></local:SubOptionItem>
@@ -62,6 +63,10 @@
                     <local:SubOptionItem x:Name="LogDebug" HorizontalAlignment="Stretch" Width="Auto" Label="Debug" MouseUp="SetLevel"></local:SubOptionItem>
                     <local:SubOptionItem x:Name="LogTrace" HorizontalAlignment="Stretch" Width="Auto" Label="Trace" MouseUp="SetLevel"></local:SubOptionItem>
                     <local:SubOptionItem x:Name="LogVerbose" HorizontalAlignment="Stretch" Width="Auto" Label="Verbose" MouseUp="SetLevel"></local:SubOptionItem>
+                </StackPanel>
+                <StackPanel Name="ReleaseStreamItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
+                    <local:SubOptionItem x:Name="ReleaseStreamItemStable" HorizontalAlignment="Stretch" Width="Auto" Label="Stable" MouseUp="SetReleaseStreamMenuAction"></local:SubOptionItem>
+                    <local:SubOptionItem x:Name="ReleaseStreamItemBeta" HorizontalAlignment="Stretch" Width="Auto" Label="Error" MouseUp="SetReleaseStreamMenuAction"></local:SubOptionItem>
                 </StackPanel>
                 <StackPanel Name="ConfigItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <local:MenuEditItem x:Name="ConfigIp" HorizontalAlignment="Stretch" Width="Auto" Label="IPv4 Address:"></local:MenuEditItem>

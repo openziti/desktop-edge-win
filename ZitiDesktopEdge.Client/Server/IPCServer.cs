@@ -23,6 +23,8 @@ namespace ZitiDesktopEdge.Server {
         private string eventPipeName;
 
         public delegate string CaptureLogsDelegate();
+        public delegate Task OnClientAsync(StreamWriter writer);
+
         public CaptureLogsDelegate CaptureLogs { get; set; }
 
         public IPCServer() {
@@ -30,7 +32,7 @@ namespace ZitiDesktopEdge.Server {
             this.eventPipeName = IPCServer.EventPipeName;
         }
 
-        async public Task startIpcServer() {
+        async public Task startIpcServer(OnClientAsync onClient) {
             int idx = 0;
 
             // Allow AuthenticatedUserSid read and write access to the pipe. 
@@ -54,7 +56,7 @@ namespace ZitiDesktopEdge.Server {
                     Logger.Debug("Total ipc clients now at: {0}", ++idx);
                     _ = Task.Run(async () => {
                         try {
-                            await handleIpcClientAsync(ipcPipeServer);
+                            await handleIpcClientAsync(ipcPipeServer, onClient);
                         } catch(Exception icpe) {
                             Logger.Error(icpe, "Unexpected erorr in handleIpcClientAsync");
                         }
@@ -66,7 +68,11 @@ namespace ZitiDesktopEdge.Server {
                 }
             }
         }
-        async public Task startEventsServer() {
+
+
+        //public event EventHandler<StatusEvent> OnShutdownEvent;
+
+        async public Task startEventsServer(OnClientAsync onClient) {
             int idx = 0;
 
             // Allow AuthenticatedUserSid read and write access to the pipe. 
@@ -90,7 +96,7 @@ namespace ZitiDesktopEdge.Server {
                     Logger.Debug("Total event clients now at: {0}", ++idx);
                     _ = Task.Run(async () => {
                         try {
-                            await handleEventClientAsync(eventPipeServer);
+                            await handleEventClientAsync(eventPipeServer, onClient);
                         } catch (Exception icpe) {
                             Logger.Error(icpe, "Unexpected erorr in handleEventClientAsync");
                         }
@@ -103,7 +109,7 @@ namespace ZitiDesktopEdge.Server {
             }
         }
 
-        async public Task handleIpcClientAsync(NamedPipeServerStream ss) {
+        async public Task handleIpcClientAsync(NamedPipeServerStream ss, OnClientAsync onClient) {
             using (ss) {
                 try {
                     StreamReader reader = new StreamReader(ss);
@@ -123,7 +129,7 @@ namespace ZitiDesktopEdge.Server {
             }
         }
 
-        async public Task handleEventClientAsync(NamedPipeServerStream ss) {
+        async public Task handleEventClientAsync(NamedPipeServerStream ss, OnClientAsync onClient) {
             using (ss) {
 
                 StreamWriter writer = new StreamWriter(ss);
@@ -132,14 +138,7 @@ namespace ZitiDesktopEdge.Server {
                     await writer.FlushAsync();
                 };
 
-                ServiceStatusEvent status = new ServiceStatusEvent() {
-                    Code = 0,
-                    Error = null,
-                    Message = "Success",
-                    Status = ServiceActions.ServiceStatus()
-                };
-                await writer.WriteLineAsync(JsonConvert.SerializeObject(status));
-                await writer.FlushAsync();
+                await onClient(writer);
 
                 EventRegistry.MyEvent += eh;
                 try {
@@ -162,7 +161,7 @@ namespace ZitiDesktopEdge.Server {
         async public Task processMessageAsync(string json, StreamWriter writer) {
             Logger.Debug("message received: {0}", json);
             var r = new SvcResponse();
-            var rr = new ServiceStatusEvent();
+            var rr = new MonitorServiceStatusEvent();
             try {
                 ActionEvent ae = serializer.Deserialize<ActionEvent>(new JsonTextReader(new StringReader(json)));
                 Logger.Info("Op: {0}", ae.Op);

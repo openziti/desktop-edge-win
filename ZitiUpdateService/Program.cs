@@ -50,8 +50,8 @@ namespace ZitiUpdateService {
 			UpdateService updateSvc = new UpdateService();
 			updateSvc.AutoLog = true;
 #if DEBUG
-			//bool nosvc = true;
-			bool nosvc = false;
+			bool nosvc = true;
+			//bool nosvc = false;
 
 			if (nosvc) {
 				updateSvc.Debug();
