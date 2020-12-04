@@ -128,9 +128,10 @@ namespace ZitiUpdateService {
 					Logger.Debug("already using beta stream. No action taken");
 				} else {
 					Logger.Info("Setting update service to use beta stream!");
-					using (File.Create(Path.Combine(exeLocation, betaStreamMarkerFile))) {
+					using (File.Create(markerFile)) {
 
-                    }
+					}
+					AccessUtils.GrantAccessToFile(markerFile); //allow anyone to delete this manually if need be...
 					Logger.Debug("added marker file: {0}", markerFile);
 					ConfigureCheck();
 				}
@@ -224,6 +225,9 @@ namespace ZitiUpdateService {
 			addLogsFolder(Path.Combine(logs, "ZitiMonitorService"));
 			addLogsFolder(Path.Combine(logs, "service"));
 
+			AccessUtils.GrantAccessToFile(Path.Combine(exeLocation, "ZitiUpdateService-log.config")); //allow anyone to change the log file config
+			AccessUtils.GrantAccessToFile(Path.Combine(exeLocation, "ZitiDesktopEdge-log.config")); //allow anyone to change the log file config
+
 			Logger.Info("starting ipc server");
 			ipcServer = svr.startIpcServer(onIpcClient);
 			Logger.Info("starting events server");
@@ -262,13 +266,8 @@ namespace ZitiUpdateService {
 			if (!Directory.Exists(path)) {
 				Logger.Info($"creating folder: {path}");
 				Directory.CreateDirectory(path);
+				AccessUtils.GrantAccessToDirectory(path);
 			}
-			Logger.Debug($"setting permissions on {path}");
-			DirectorySecurity sec = Directory.GetAccessControl(path);
-			// Using this instead of the "Everyone" string means we work on non-English systems.
-			SecurityIdentifier everyone = new SecurityIdentifier(WellKnownSidType.WorldSid, null);
-			sec.AddAccessRule(new FileSystemAccessRule(everyone, FileSystemRights.Modify | FileSystemRights.Synchronize, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
-			Directory.SetAccessControl(path, sec);
 		}
 
 		public void WaitForCompletion() {
