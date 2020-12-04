@@ -102,7 +102,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task<ZitiTunnelStatus> GetStatusAsync() {
             try {
                 await sendAsync(new ServiceFunction() { Function = "Status" });
-                var rtn = await readAsync<ZitiTunnelStatus>(ipcReader, "GetStatusAsync");
+                var rtn = await readAsync<ZitiTunnelStatus>(ipcReader);
                 return rtn;
             } catch (IOException ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
@@ -129,7 +129,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
                 await sendAsync(AddIdentityFunction);
                 await sendAsync(newId);
-                var resp = await readAsync<IdentityResponse>(ipcReader, "AddIdentityAsync");
+                var resp = await readAsync<IdentityResponse>(ipcReader);
                 Logger.Debug(resp.ToString());
                 if (resp.Code != 0) {
                     throw new ServiceException(resp.Message, resp.Code, resp.Error);
@@ -155,7 +155,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                     Payload = new FingerprintPayload() { Fingerprint = fingerPrint }
                 };
                 await sendAsync(removeFunction);
-                var r = await readAsync<SvcResponse>(ipcReader, "RemoveIdentityAsync");
+                var r = await readAsync<SvcResponse>(ipcReader);
             } catch (IOException ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //setupPipe();
@@ -166,7 +166,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task SetLogLevelAsync(string level) {
             try {
                 await sendAsync(new SetLogLevelFunction(level));
-                SvcResponse resp = await readAsync<SvcResponse>(ipcReader, "SetLogLevelAsync");
+                SvcResponse resp = await readAsync<SvcResponse>(ipcReader);
                 return;
             } catch (IOException ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
@@ -178,7 +178,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task SetLogLevelAsync(LogLevelEnum level) {
             try {
                 await sendAsync(new SetLogLevelFunction(Enum.GetName(level.GetType(), level)));
-                SvcResponse resp = await readAsync<SvcResponse>(ipcReader, "SetLogLevelAsync");
+                SvcResponse resp = await readAsync<SvcResponse>(ipcReader);
                 return;
             } catch (IOException ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
@@ -190,7 +190,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task<Identity> IdentityOnOffAsync(string fingerprint, bool onOff) {
             try {
                 await sendAsync(new IdentityToggleFunction(fingerprint, onOff));
-                IdentityResponse idr = await readAsync<IdentityResponse>(ipcReader, "IdentityOnOffAsync");
+                IdentityResponse idr = await readAsync<IdentityResponse>(ipcReader);
                 return idr.Payload;
             } catch (IOException ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
@@ -251,7 +251,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task<ZitiTunnelStatus> debugAsync() {
             try {
                 await sendAsync(new ServiceFunction() { Function = "Debug" });
-                var rtn = await readAsync<ZitiTunnelStatus>(ipcReader, "debugAsync");
+                var rtn = await readAsync<ZitiTunnelStatus>(ipcReader);
                 return rtn;
             } catch (IOException ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...

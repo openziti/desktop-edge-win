@@ -20,14 +20,18 @@ using Newtonsoft.Json;
 
 namespace ZitiUpdateService {
 	public partial class UpdateService : ServiceBase {
+		private string betaStreamMarkerFile = "use-beta-stream.txt";
+
 		public bool IsBeta {
             get {
-				return File.Exists(Path.Combine(exeLocation, "use-beta-stream.txt"));
+				return File.Exists(Path.Combine(exeLocation, betaStreamMarkerFile));
 			}
 			private set { }
         }
 
-		private static string[] expected_hashes = new string[] { "39636E9F5E80308DE370C914CE8112876ECF4E0C" };
+        public bool useGithubCheck { get; private set; }
+
+        private static string[] expected_hashes = new string[] { "39636E9F5E80308DE370C914CE8112876ECF4E0C" };
 		private static string[] expected_subject = new string[] { @"CN=""NetFoundry, Inc."", O=""NetFoundry, Inc."", L=Herndon, S=Virginia, C=US" };
 
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
@@ -35,10 +39,9 @@ namespace ZitiUpdateService {
 		private Timer _updateTimer = new Timer();
 		private bool inUpdateCheck = false;
 
-		private string _versionType = "latest";
 		private string exeLocation = null;
 
-		private DataClient svc = new DataClient();
+		private DataClient dataClient = new DataClient();
 		private bool running = false;
 		private string asmDir = null;
 		private string updateFolder = null;
@@ -53,18 +56,100 @@ namespace ZitiUpdateService {
 
 		public UpdateService() {
 			InitializeComponent();
+
+			useGithubCheck = true; //set this to false if you want to use the FileCheck test class instead of Github
+
 			exeLocation = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
 			Logger.Info("Initializing");
-			svc.OnClientConnected += Svc_OnClientConnected;
-			svc.OnTunnelStatusEvent += Svc_OnTunnelStatusEvent;
-			svc.OnClientDisconnected += Svc_OnClientDisconnected;
-			svc.OnShutdownEvent += Svc_OnShutdownEvent;
+			dataClient.OnClientConnected += Svc_OnClientConnected;
+			dataClient.OnTunnelStatusEvent += Svc_OnTunnelStatusEvent;
+			dataClient.OnClientDisconnected += Svc_OnClientDisconnected;
+			dataClient.OnShutdownEvent += Svc_OnShutdownEvent;
 
 			svr.CaptureLogs = CaptureLogs;
+			svr.SetLogLevel = SetLogLevel;
+			svr.SetReleaseStream = SetReleaseStream;
+			svr.DoUpdateCheck = DoUpdateCheck;
+			svr.TriggerUpdate = TriggerUpdate;
 		}
 
-		private string CaptureLogs() {
+        private SvcResponse TriggerUpdate() {
+			SvcResponse r = new SvcResponse();
+			try {
+				CheckUpdate(null, null);
+            } catch(Exception e) {
+				Logger.Error(e, "Unexpected error in TriggerUpdate");
+            }
+			return r;
+        }
+
+        private StatusCheck DoUpdateCheck() {
+			StatusCheck r = new StatusCheck();
+			r.Code = check.IsUpdateAvailable(assemblyVersion);
+			r.ReleaseStream = IsBeta ? "beta" : "stable";
+			switch (r.Code) {
+				case -1:
+					r.Message = $"An update is available: {check.GetNextVersion()}";
+					r.UpdateAvailable = true;
+					break;
+				case 0:
+					r.Message = $"The current version [{assemblyVersion}] is the latest";
+					break;
+				case 1:
+					r.Message = $"Your version [{assemblyVersion}] is newer than the latest release";
+					break;
+				default:
+					r.Message = "Update check failed";
+					break;
+			}
+			return r;
+		}
+
+        private void SetLogLevel(string level) {
+            try {
+				Logger.Info("request to change log level received: {0}", level);
+				var l = LogLevel.FromString(level);
+				foreach (var rule in LogManager.Configuration.LoggingRules) {
+					rule.EnableLoggingForLevel(l);
+				}
+
+				LogManager.ReconfigExistingLoggers();
+				Logger.Info("logger reconfigured to log at level: {0}", l);
+			} catch(Exception e) {
+				Logger.Error(e, "Could NOT set the log level for loggers??? {0}", e.Message);
+            }
+        }
+
+        private void SetReleaseStream(string stream) {
+			string markerFile = Path.Combine(exeLocation, betaStreamMarkerFile);
+			if (stream == "beta") {
+				if (IsBeta) {
+					Logger.Debug("already using beta stream. No action taken");
+				} else {
+					Logger.Info("Setting update service to use beta stream!");
+					using (File.Create(markerFile)) {
+
+					}
+					AccessUtils.GrantAccessToFile(markerFile); //allow anyone to delete this manually if need be...
+					Logger.Debug("added marker file: {0}", markerFile);
+					ConfigureCheck();
+				}
+            } else {
+				if (!IsBeta) {
+					Logger.Debug("already using release stream. No action taken");
+				} else {
+					Logger.Info("Setting update service to use release stream!");
+					if (File.Exists(markerFile)) {
+						File.Delete(markerFile);
+						Logger.Debug("removed marker file: {0}", markerFile);
+					}
+					ConfigureCheck();
+				}
+            }
+        }
+
+        private string CaptureLogs() {
 			
 			string logLocation = Path.Combine(exeLocation, "logs");
 			string destinationLocation = Path.Combine(exeLocation, "temp");
@@ -124,23 +209,6 @@ namespace ZitiUpdateService {
 				//means it doesn't exist
 			}
 			return zipName;
-			/*
-			Logger.Info("Request to collect logs received");
-			var ps = System.Management.Automation.PowerShell.Create(runspace:System.Management.Automation.RunspaceMode.NewRunspace);
-			string script = Path.Combine(exeLocation, "collect-logs.ps1");
-			Debug.WriteLine("=============== : " + script);
-			ps.Commands.AddScript(script);
-			var results = ps.Invoke();
-			Logger.Info("Collected logs.");
-			for(int i=0; i<results.Count; i++) {
-				string r = results[i].ToString();
-				Logger.Info(r);
-				if (r.Contains("Log location")) {
-					return r.Trim().Substring("Log location: ".Length);
-				}
-            }
-			return "success but log location not found.";
-			*/
 		}
 
         public void Debug() {
@@ -148,18 +216,17 @@ namespace ZitiUpdateService {
 		}
 
 		protected override void OnStart(string[] args) {
+			Logger.Debug("args: {0}", args);
 			Logger.Info("ziti-monitor service is starting");
-			try {
-				if (ConfigurationManager.AppSettings.Get("Version") != null) _versionType = ConfigurationManager.AppSettings.Get("Version");
-			} catch (Exception e) {
-				Logger.Info(e.ToString());
-			}
 
 			var logs = Path.Combine(exeLocation, "logs");
 			addLogsFolder(logs);
 			addLogsFolder(Path.Combine(logs, "UI"));
 			addLogsFolder(Path.Combine(logs, "ZitiMonitorService"));
 			addLogsFolder(Path.Combine(logs, "service"));
+
+			AccessUtils.GrantAccessToFile(Path.Combine(exeLocation, "ZitiUpdateService-log.config")); //allow anyone to change the log file config
+			AccessUtils.GrantAccessToFile(Path.Combine(exeLocation, "ZitiDesktopEdge-log.config")); //allow anyone to change the log file config
 
 			Logger.Info("starting ipc server");
 			ipcServer = svr.startIpcServer(onIpcClient);
@@ -170,7 +237,7 @@ namespace ZitiUpdateService {
 			if (!running) {
 				running = true;
 				Task.Run(() => {
-					SetupServiceWatchers(args);
+					SetupServiceWatchers();
 				});
 			}
 			Logger.Info("ziti-monitor service is initialized and running");
@@ -199,13 +266,8 @@ namespace ZitiUpdateService {
 			if (!Directory.Exists(path)) {
 				Logger.Info($"creating folder: {path}");
 				Directory.CreateDirectory(path);
+				AccessUtils.GrantAccessToDirectory(path);
 			}
-			Logger.Debug($"setting permissions on {path}");
-			DirectorySecurity sec = Directory.GetAccessControl(path);
-			// Using this instead of the "Everyone" string means we work on non-English systems.
-			SecurityIdentifier everyone = new SecurityIdentifier(WellKnownSidType.WorldSid, null);
-			sec.AddAccessRule(new FileSystemAccessRule(everyone, FileSystemRights.Modify | FileSystemRights.Synchronize, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
-			Directory.SetAccessControl(path, sec);
 		}
 
 		public void WaitForCompletion() {
@@ -216,8 +278,7 @@ namespace ZitiUpdateService {
 			Logger.Info("ziti-monitor service is stopping");
 		}
 
-		private void SetupServiceWatchers(string[] args) {
-
+		private void SetupServiceWatchers() {
 			var updateTimerInterval = ConfigurationManager.AppSettings.Get("UpdateTimer");
 			var upInt = TimeSpan.Zero;
 			if (!TimeSpan.TryParse(updateTimerInterval, out upInt)) {
@@ -238,34 +299,38 @@ namespace ZitiUpdateService {
 			cleanOldLogs(asmDir);
 			scanForStaleDownloads(updateFolder);
 
+			ConfigureCheck();
+
+			CheckUpdate(null, null); //check immediately
+
+			try {
+				dataClient.ConnectAsync().Wait();
+			} catch {
+				dataClient.Reconnect();
+			}
+
+			dataClient.WaitForConnectionAsync().Wait();
+		}
+
+        private void ConfigureCheck() {
 			string updateUrl = null;
 			if (!IsBeta) {
 				updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win/releases/latest"; //hardcoded on purpose
 			} else {
 				updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win-beta/releases/latest";
 			}
-			if (args == null || args.Length < 1 || !args[0].Equals("FilesystemCheck")) {
+			if (useGithubCheck) {
 				check = new GithubCheck(updateUrl);
 			} else {
-				check = new FilesystemCheck(false);
+				check = new FilesystemCheck(1);
 			}
-
-			CheckUpdate(null, null); //check immediately
-
-			try {
-				svc.ConnectAsync().Wait();
-			} catch {
-				svc.Reconnect();
-			}
-
-			svc.WaitForConnectionAsync().Wait();
 		}
 
-		private void cleanOldLogs(string whereToScan) {
+        private void cleanOldLogs(string whereToScan) {
 			//this function will be removed in the future. it's here to clean out the old ziti-monitor*log files that
 			//were there before the 1.5.0 release
 			try {
-				Logger.Info("Scanning for stale downloads");
+				Logger.Info("Scanning for stale logs");
 				foreach (var f in Directory.EnumerateFiles(whereToScan)) {
 					FileInfo logFile = new FileInfo(f);
 					if (logFile.Name.StartsWith("ziti-monitor.") && logFile.Name.EndsWith(".log")) {
@@ -287,7 +352,8 @@ namespace ZitiUpdateService {
 			try {
 				Logger.Debug("checking for update");
 
-				if (!check.IsUpdateAvailable(assemblyVersion)) {
+				int avail = check.IsUpdateAvailable(assemblyVersion);
+				if (avail >= 0) {
 					Logger.Debug("update check complete. no update available");
 					inUpdateCheck = false;
 					return;
@@ -373,7 +439,7 @@ namespace ZitiUpdateService {
 						if (fi.Name.StartsWith(filePrefix)) {
 							Logger.Debug("scanning for staleness: " + f);
 							string ver = Path.GetFileNameWithoutExtension(f).Substring(filePrefix.Length);
-							Version fileVersion = new Version(ver + ".0");
+							Version fileVersion = VersionUtil.NormalizeVersion(new Version(ver));
 							if (isOlder(fileVersion)) {
 								Logger.Info("Removing old download: " + fi.Name);
 								fi.Delete();
@@ -461,20 +527,20 @@ namespace ZitiUpdateService {
 			Logger.Info("successfully connected to service");
 		}
 
-		private static void Svc_OnClientDisconnected(object sender, object e) {
+		private void Svc_OnClientDisconnected(object sender, object e) {
 			DataClient svc = (DataClient)sender;
 			if (svc.CleanShutdown) {
 				//then this is fine and expected - the service is shutting down
 				Logger.Info("client disconnected due to clean service shutdown");
 			} else {
 				Logger.Error("SERVICE IS DOWN and did not exit cleanly. initiating DNS cleanup");
-
+				
 				MonitorServiceStatusEvent status = new MonitorServiceStatusEvent() {
 					Code = 10,
 					Error = "SERVICE DOWN",
 					Message = "SERVICE DOWN",
 					Status = ServiceActions.ServiceStatus(),
-					ReleaseStream = "stable"
+					ReleaseStream = IsBeta ? "beta" : "stable"
 				};
 				EventRegistry.SendEventToConsumers(status);
 

@@ -49,7 +49,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                         }
                         string respAsString = null;
                         try {
-                            respAsString = await readMessageAsync(eventReader, "ClientConnected");
+                            respAsString = await readMessageAsync(eventReader);
                             try {
                                 ProcessLine(respAsString);
                             } catch (Exception ex) {
@@ -186,27 +186,27 @@ namespace ZitiDesktopEdge.ServiceClient {
             Logger.Trace(msg);
         }
 
-        async protected Task<T> readAsync<T>(StreamReader reader, string where) where T : SvcResponse {
-            string respAsString = await readMessageAsync(reader, where);
+        async protected Task<T> readAsync<T>(StreamReader reader) where T : SvcResponse {
+            string respAsString = await readMessageAsync(reader);
             T resp = (T)serializer.Deserialize(new StringReader(respAsString), typeof(T));
             return resp;
         }
 
-        async public Task<string> readMessageAsync(StreamReader reader, string where) {
+        async public Task<string> readMessageAsync(StreamReader reader) {
             try {
                 int emptyCount = 1; //just a stop gap in case something crazy happens in the communication
 
-                debugServiceCommunication("==============a  reading message =============== " + where);
+                debugServiceCommunication("==============a  reading message =============== ");
                 string respAsString = await reader.ReadLineAsync();
                 debugServiceCommunication(respAsString);
-                debugServiceCommunication("===============     read message =============== " + where);
+                debugServiceCommunication("===============     read message =============== ");
                 while (string.IsNullOrEmpty(respAsString?.Trim())) {
                     debugServiceCommunication("Received empty payload - continuing to read until a payload is received");
                     //now how'd that happen...
-                    debugServiceCommunication("==============b  reading message =============== " + where);
+                    debugServiceCommunication("==============b  reading message =============== ");
                     respAsString = await reader.ReadLineAsync();
                     debugServiceCommunication(respAsString);
-                    debugServiceCommunication("===============     read message =============== " + where);
+                    debugServiceCommunication("===============     read message =============== ");
                     emptyCount++;
                     if (emptyCount > 5) {
                         Logger.Debug("are we there yet? " + reader.EndOfStream);

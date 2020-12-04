@@ -65,8 +65,6 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-        public string ReleaseStream { get; private set; }
-
         private void AddIdentity(ZitiIdentity id) {
 			semaphoreSlim.Wait();
 			if (!identities.Any(i => id.Fingerprint == i.Fingerprint)) {
@@ -237,7 +235,7 @@ namespace ZitiDesktopEdge {
 
 		private void MonitorClient_OnServiceStatusEvent(object sender, MonitorServiceStatusEvent evt) {
 			logger.Debug("MonitorClient_OnServiceStatusEvent");
-			this.ReleaseStream = evt.ReleaseStream;
+			Application.Current.Properties["ReleaseStream"] = evt.ReleaseStream;
 			ServiceControllerStatus status = (ServiceControllerStatus)Enum.Parse(typeof(ServiceControllerStatus), evt.Status);
 
 			switch (status) {
@@ -275,7 +273,7 @@ namespace ZitiDesktopEdge {
 			//close the service
 			while (DateTime.Now < until) {
 				await Task.Delay(2000);
-				MonitorServiceStatusEvent resp = await monitorClient.Status();
+				MonitorServiceStatusEvent resp = await monitorClient.StatusAsync();
 				if (resp.IsStopped()) {
 					// good - that's what we are waiting for...
 					return;
@@ -293,7 +291,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		async private void ForceQuitButtonClick(object sender, RoutedEventArgs e) {
-			MonitorServiceStatusEvent status = await monitorClient.ForceTerminate();
+			MonitorServiceStatusEvent status = await monitorClient.ForceTerminateAsync();
 			if (status.IsStopped()) {
 				//good
 				CloseErrorButton.Click += CloseError; //reset the close button...
@@ -346,7 +344,21 @@ namespace ZitiDesktopEdge {
 		}
 
 		async private void LogLevelChanged(string level) {
-			await serviceClient.SetLogLevelAsync(level);
+			try {
+				await serviceClient.SetLogLevelAsync(level);
+				await monitorClient.SetLogLevelAsync(level);
+
+				logger.Info("request to change log level received: {0}", level);
+				var l = LogLevel.FromString(level);
+				foreach (var rule in LogManager.Configuration.LoggingRules) {
+					rule.EnableLoggingForLevel(l);
+				}
+
+				LogManager.ReconfigExistingLoggers();
+				logger.Info("logger reconfigured to log at level: {0}", l);
+			} catch(Exception e) {
+				logger.Error(e, "Failed to set log level: {0}", e.Message);
+            }
 		}
 
 		private void IdentityMenu_OnError(string message) {

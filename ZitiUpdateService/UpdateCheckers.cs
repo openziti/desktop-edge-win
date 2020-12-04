@@ -8,12 +8,21 @@ using NLog;
 using Newtonsoft.Json.Linq;
 
 namespace ZitiUpdateService {
+	internal static class VersionUtil {
+		public static Version NormalizeVersion(Version v) {
+			if (v.Minor < 1) return new Version(v.Major, 0, 0, 0);
+			if (v.Build < 1) return new Version(v.Major, v.Minor, 0, 0);
+			if (v.Revision < 1) return new Version(v.Major, v.Minor, v.Build, 0);
+			return v;
+		}
+	}
 	internal class GithubCheck : IUpdateCheck {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 		string url;
 		string downloadUrl = null;
 		string downloadFileName = null;
 		string currentResponse = null;
+		Version nextVersion = null;
 
 		public GithubCheck(string url) {
 			this.url = url;
@@ -35,7 +44,7 @@ namespace ZitiUpdateService {
 			return downloadFileName;
 		}
 
-		public bool IsUpdateAvailable(Version currentVersion) {
+		public int IsUpdateAvailable(Version currentVersion) {
 			Logger.Debug("checking for update begins. current version detected as {0}", currentVersion);
 			Logger.Debug("issuing http get to url: {0}", url);
 			HttpWebRequest httpWebRequest = WebRequest.CreateHttp(url);
@@ -62,7 +71,7 @@ namespace ZitiUpdateService {
 
 			if (downloadUrl == null) {
 				Logger.Error("DOWNLOAD URL not found at: {0}", url);
-				return false;
+				return 0;
 			}
 			Logger.Debug("download url detected: {0}", downloadUrl);
 			downloadFileName = downloadUrl.Substring(downloadUrl.LastIndexOf('/') + 1);
@@ -70,24 +79,17 @@ namespace ZitiUpdateService {
 
 			string releaseVersion = json.Property("tag_name").Value.ToString();
 			string releaseName = json.Property("name").Value.ToString();
-			Version publishedVersion = NormalizeVersion(new Version(releaseVersion));
-			int compare = currentVersion.CompareTo(publishedVersion);
+			nextVersion = VersionUtil.NormalizeVersion(new Version(releaseVersion));
+			int compare = currentVersion.CompareTo(nextVersion);
 			if (compare < 0) {
-				Logger.Info("upgrade {} is available. Published version: {} is newer than the current version: {}", releaseName, publishedVersion, currentVersion);
-				return true;
+				Logger.Info("upgrade {} is available. Published version: {} is newer than the current version: {}", releaseName, nextVersion, currentVersion);
+				return compare;
 			} else if (compare > 0) {
-				Logger.Info("the version installed: {0} is newer than the released version: {1}", currentVersion, publishedVersion);
-				return false;
+				Logger.Info("the version installed: {0} is newer than the released version: {1}", currentVersion, nextVersion);
+				return compare;
 			} else {
-				return false;
+				return compare;
 			}
-		}
-
-		private Version NormalizeVersion(Version v) {
-			if (v.Minor < 1) return new Version(v.Major, 0, 0, 0);
-			if (v.Build < 1) return new Version(v.Major, v.Minor, 0, 0);
-			if (v.Revision < 1) return new Version(v.Major, v.Minor, v.Build, 0);
-			return v;
 		}
 
 		public bool HashIsValid(string destinationFolder, string destinationName) {
@@ -110,14 +112,18 @@ namespace ZitiUpdateService {
 				return computed.ToLower() == hash.ToLower();
 			}
 		}
+
+		public Version GetNextVersion() {
+			return nextVersion;
+		}
 	}
 
 	internal class FilesystemCheck : IUpdateCheck {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 		string dest = null;
 
-		bool isUpdateAvailable = false;
-		public FilesystemCheck(bool updateAvailable) {
+		int isUpdateAvailable = 1;
+		public FilesystemCheck(int updateAvailable) {
 			this.isUpdateAvailable = updateAvailable;
 		}
 
@@ -134,12 +140,16 @@ namespace ZitiUpdateService {
 			return "Ziti Desktop Edge Client-1.3.0.exe";
 		}
 
-		public bool IsUpdateAvailable(Version current) {
+		public int IsUpdateAvailable(Version current) {
 			return isUpdateAvailable;
 		}
 
 		public bool HashIsValid(string destinationFolder, string destinationName) {
 			return true;
 		}
-	}
+
+        public Version GetNextVersion() {
+            throw new NotImplementedException();
+        }
+    }
 }
