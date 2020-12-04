@@ -16,9 +16,17 @@ using ZitiDesktopEdge.Server;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.IO.Compression;
+using Newtonsoft.Json;
 
 namespace ZitiUpdateService {
 	public partial class UpdateService : ServiceBase {
+		public bool IsBeta {
+            get {
+				return File.Exists(Path.Combine(exeLocation, "use-beta-stream.txt"));
+			}
+			private set { }
+        }
+
 		private static string[] expected_hashes = new string[] { "39636E9F5E80308DE370C914CE8112876ECF4E0C" };
 		private static string[] expected_subject = new string[] { @"CN=""NetFoundry, Inc."", O=""NetFoundry, Inc."", L=Herndon, S=Virginia, C=US" };
 
@@ -154,9 +162,9 @@ namespace ZitiUpdateService {
 			addLogsFolder(Path.Combine(logs, "service"));
 
 			Logger.Info("starting ipc server");
-			ipcServer = svr.startIpcServer();
+			ipcServer = svr.startIpcServer(onIpcClient);
 			Logger.Info("starting events server");
-			eventServer = svr.startEventsServer();
+			eventServer = svr.startEventsServer(onEventsClient);
 
 			Logger.Info("starting service watchers");
 			if (!running) {
@@ -168,7 +176,26 @@ namespace ZitiUpdateService {
 			Logger.Info("ziti-monitor service is initialized and running");
 		}
 
-		private void addLogsFolder(string path) {
+		async private Task onEventsClient(StreamWriter writer) {
+			Logger.Info("a new events client was connected");
+			//reset to release stream
+			//initial status when connecting the event stream
+			MonitorServiceStatusEvent status = new MonitorServiceStatusEvent() {
+				Code = 0,
+				Error = null,
+				Message = "Success",
+				Status = ServiceActions.ServiceStatus(),
+				ReleaseStream = IsBeta ? "beta" : "stable"
+			};
+			await writer.WriteLineAsync(JsonConvert.SerializeObject(status));
+			await writer.FlushAsync();
+		}
+
+        async private Task onIpcClient(StreamWriter writer) {
+			Logger.Info("a new ipc client was connected");
+		}
+
+        private void addLogsFolder(string path) {
 			if (!Directory.Exists(path)) {
 				Logger.Info($"creating folder: {path}");
 				Directory.CreateDirectory(path);
@@ -204,7 +231,6 @@ namespace ZitiUpdateService {
 			_updateTimer.Start();
 			Logger.Info("Version Checker is running every {0} minutes", upInt.TotalMinutes);
 
-
 			string assemblyVersionStr = Assembly.GetExecutingAssembly().GetName().Version.ToString(); //fetch from ziti?
 			assemblyVersion = new Version(assemblyVersionStr);
 			asmDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
@@ -212,7 +238,12 @@ namespace ZitiUpdateService {
 			cleanOldLogs(asmDir);
 			scanForStaleDownloads(updateFolder);
 
-			string updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win/releases/latest"; //hardcoded on purpose
+			string updateUrl = null;
+			if (!IsBeta) {
+				updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win/releases/latest"; //hardcoded on purpose
+			} else {
+				updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win-beta/releases/latest";
+			}
 			if (args == null || args.Length < 1 || !args[0].Equals("FilesystemCheck")) {
 				check = new GithubCheck(updateUrl);
 			} else {
@@ -248,10 +279,13 @@ namespace ZitiUpdateService {
 		}
 
 		private void CheckUpdate(object sender, ElapsedEventArgs e) {
-			if (inUpdateCheck || check == null) return;
+			if (inUpdateCheck || check == null) {
+				Logger.Warn("Still in update check. This is very abnormal. Please report if you see this warning");
+				return;
+			}
 			inUpdateCheck = true; //simple semaphone
 			try {
-				Logger.Debug("checking for update");				
+				Logger.Debug("checking for update");
 
 				if (!check.IsUpdateAvailable(assemblyVersion)) {
 					Logger.Debug("update check complete. no update available");
@@ -265,15 +299,21 @@ namespace ZitiUpdateService {
 				Logger.Info("copying update package");
 				string filename = check.FileName();
 
+				string fileDestination = Path.Combine(updateFolder, filename);
+
 				if (check.AlreadyDownloaded(updateFolder, filename)) {
-					Logger.Info("package has already been downloaded - moving to install phase");
+					Logger.Info("package has already been downloaded to {0} - moving to install phase", Path.Combine(updateFolder, filename));
 				} else {
 					Logger.Info("copying update package begins");
 					check.CopyUpdatePackage(updateFolder, filename);
 					Logger.Info("copying update package complete");
-				}
 
-				string fileDestination = Path.Combine(updateFolder, filename);
+					if (!check.HashIsValid(updateFolder, filename)) {
+						Logger.Warn("The file was downloaded but the hash is not valid. The file will be removed: {0}", fileDestination);
+						return;
+					}
+					Logger.Debug("downloaded file hash was correct. update can continue.");
+				}
 
 				// check digital signature
 				var signer = X509Certificate.CreateFromSignedFile(fileDestination);
@@ -301,6 +341,7 @@ namespace ZitiUpdateService {
 				}
 
 				StopZiti();
+				StopUI();
 
 				Logger.Info("Running update package: " + fileDestination);
 				// shell out to a new process and run the uninstall, reinstall steps which SHOULD stop this current process as well
@@ -354,14 +395,55 @@ namespace ZitiUpdateService {
         private void StopZiti() {
 			Logger.Info("Stopping the ziti service...");
 			controller = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == "ziti");
+			bool cleanStop = false;
 			if (controller != null && controller.Status != ServiceControllerStatus.Stopped) {
 				try {
 					controller.Stop();
+					Logger.Debug("Waiting for the ziti service to stop.");
 					controller.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
+					Logger.Debug("The ziti service was stopped successfully.");
+					cleanStop = true;
 				} catch (Exception e) {
 					Logger.Error(e, "Timout while trying to stop service!");
 				}
+			} else {
+				Logger.Debug("The ziti has ALREADY been stopped successfully.");
+            }
+			if (!cleanStop) {
+				Logger.Debug("Stopping ziti-tunnel forcefully.");
+				stopProcessForcefully("ziti-tunnel", "data service [ziti]");
 			}
+		}
+
+		private void stopProcessForcefully(string processName, string description) {
+			try {
+				Logger.Info("Closing the {description} process", description);
+				Process[] workers = Process.GetProcessesByName(processName);
+				if (workers.Length < 1) {
+					Logger.Info("No {description} process found to close.", description);
+					return;
+				}
+				foreach (Process worker in workers) {
+					try {
+						Logger.Info("Kiling: {0}", worker);
+						if (!worker.CloseMainWindow()) {
+							//don't care right now because when called on the UI it just gets 'hidden'
+						}
+						worker.Kill();
+						worker.WaitForExit(5000);
+						Logger.Info("Stopping the {description} process exited cleanly");
+						worker.Dispose();
+					} catch (Exception e) {
+						Logger.Error(e, "Unexpected error when closing the {description}!", description);
+					}
+				}
+			} catch (Exception e) {
+				Logger.Error(e, "Unexpected error when closing the {description}!", description);
+			}
+		}
+
+		private void StopUI() {
+			stopProcessForcefully("ZitiDesktopEdge", "UI");
 		}
 
 		private static void Svc_OnShutdownEvent(object sender, StatusEvent e) {
@@ -387,11 +469,12 @@ namespace ZitiUpdateService {
 			} else {
 				Logger.Error("SERVICE IS DOWN and did not exit cleanly. initiating DNS cleanup");
 
-				ServiceStatusEvent status = new ServiceStatusEvent() {
+				MonitorServiceStatusEvent status = new MonitorServiceStatusEvent() {
 					Code = 10,
 					Error = "SERVICE DOWN",
 					Message = "SERVICE DOWN",
-					Status = ServiceActions.ServiceStatus()
+					Status = ServiceActions.ServiceStatus(),
+					ReleaseStream = "stable"
 				};
 				EventRegistry.SendEventToConsumers(status);
 

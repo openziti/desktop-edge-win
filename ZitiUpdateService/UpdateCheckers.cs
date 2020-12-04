@@ -2,9 +2,10 @@
 using System.IO;
 using System.Net;
 
+using System.Security.Cryptography;
+
 using NLog;
 using Newtonsoft.Json.Linq;
-using System.Configuration;
 
 namespace ZitiUpdateService {
 	internal class GithubCheck : IUpdateCheck {
@@ -12,6 +13,7 @@ namespace ZitiUpdateService {
 		string url;
 		string downloadUrl = null;
 		string downloadFileName = null;
+		string currentResponse = null;
 
 		public GithubCheck(string url) {
 			this.url = url;
@@ -24,61 +26,89 @@ namespace ZitiUpdateService {
         public void CopyUpdatePackage(string destinationFolder, string destinationName) {
 			WebClient webClient = new WebClient();
 			string dest = Path.Combine(destinationFolder, destinationName);
-			Logger.Info("download started: {0}", downloadUrl);
+			Logger.Info("download started for: {0} to {1}", downloadUrl, dest);
 			webClient.DownloadFile(downloadUrl, dest);
-			Logger.Info("download complete. file at {0}", dest);
+			Logger.Info("download complete to: {0}", dest);
 		}
 
 		public string FileName() {
 			return downloadFileName;
 		}
 
-		public bool IsUpdateAvailable(Version current) {
+		public bool IsUpdateAvailable(Version currentVersion) {
+			Logger.Debug("checking for update begins. current version detected as {0}", currentVersion);
+			Logger.Debug("issuing http get to url: {0}", url);
 			HttpWebRequest httpWebRequest = WebRequest.CreateHttp(url);
 			httpWebRequest.Method = "GET";
 			httpWebRequest.ContentType = "application/json";
 			httpWebRequest.UserAgent = "OpenZiti UpdateService";
 			HttpWebResponse httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
 			StreamReader streamReader = new StreamReader(httpResponse.GetResponseStream());
-			string result = streamReader.ReadToEnd();
-			JObject json = JObject.Parse(result);
-			string serverVersion = json.Property("tag_name").Value.ToString() + ".0";
+			currentResponse = streamReader.ReadToEnd();
+			Logger.Trace("response received: {0}", currentResponse);
+			JObject json = JObject.Parse(currentResponse);
 
 			JArray assets = JArray.Parse(json.Property("assets").Value.ToString());
 			foreach (JObject asset in assets.Children<JObject>()) {
-				downloadUrl = asset.Property("browser_download_url").Value.ToString();
-				break;
+				string assetName = asset.Property("name").Value.ToString();
+
+				if (assetName.StartsWith("Ziti.Desktop.Edge.Client-")) {
+					downloadUrl = asset.Property("browser_download_url").Value.ToString();
+					break;
+				} else {
+					Logger.Debug("skipping asset with name: {assetName}", assetName);
+                }
 			}
 
 			if (downloadUrl == null) {
 				Logger.Error("DOWNLOAD URL not found at: {0}", url);
 				return false;
 			}
+			Logger.Debug("download url detected: {0}", downloadUrl);
 			downloadFileName = downloadUrl.Substring(downloadUrl.LastIndexOf('/') + 1);
+			Logger.Debug("download file name: {0}", downloadFileName);
 
-			Version published = new Version(serverVersion);
-			int compare = current.CompareTo(published);
+			string releaseVersion = json.Property("tag_name").Value.ToString();
+			string releaseName = json.Property("name").Value.ToString();
+			Version publishedVersion = NormalizeVersion(new Version(releaseVersion));
+			int compare = currentVersion.CompareTo(publishedVersion);
 			if (compare < 0) {
-				Logger.Info("an upgrade is available.");
+				Logger.Info("upgrade {} is available. Published version: {} is newer than the current version: {}", releaseName, publishedVersion, currentVersion);
+				return true;
 			} else if (compare > 0) {
-				Logger.Info("the version installed is newer than the released version");
+				Logger.Info("the version installed: {0} is newer than the released version: {1}", currentVersion, publishedVersion);
 				return false;
 			} else {
-				Logger.Debug("current version {0} is the same as the latest release {0}", current, published);
-				string useBetaReleases = ConfigurationManager.AppSettings.Get("UseBetaReleases");
-				if(useBetaReleases != null) {
-					Logger.Debug("BETA RELEASE DETECTED!");
-					if (useBetaReleases == "yes") {
-						Logger.Debug("BETA RELEASE == yes - returning true");
-						return true;
-					} else {
-						Logger.Debug("BETA RELEASE value is not correct: {0}", useBetaReleases);
-					}
-                }
 				return false;
 			}
+		}
 
-			return true;
+		private Version NormalizeVersion(Version v) {
+			if (v.Minor < 1) return new Version(v.Major, 0, 0, 0);
+			if (v.Build < 1) return new Version(v.Major, v.Minor, 0, 0);
+			if (v.Revision < 1) return new Version(v.Major, v.Minor, v.Build, 0);
+			return v;
+		}
+
+		public bool HashIsValid(string destinationFolder, string destinationName) {
+			WebClient webClient = new WebClient();
+			string sha256dest = Path.Combine(destinationFolder, destinationName + ".sha256");
+			string downloadUrlsha256 = downloadUrl + ".sha256";
+			Logger.Info("download started for: {0} to {1}", downloadUrlsha256, sha256dest);
+			webClient.DownloadFile(downloadUrlsha256, sha256dest);
+			Logger.Info("download complete to: {0}", sha256dest);
+
+			string dest = Path.Combine(destinationFolder, destinationName);
+			string hash = File.ReadAllText(sha256dest);	
+
+			using (SHA256 hasher = SHA256.Create())
+			using (FileStream stream = File.OpenRead(dest)) {
+				byte[] sha256bytes = hasher.ComputeHash(stream);
+				string computed = BitConverter.ToString(sha256bytes).Replace("-", "");
+
+				File.Delete(sha256dest);
+				return computed.ToLower() == hash.ToLower();
+			}
 		}
 	}
 
@@ -106,6 +136,10 @@ namespace ZitiUpdateService {
 
 		public bool IsUpdateAvailable(Version current) {
 			return isUpdateAvailable;
+		}
+
+		public bool HashIsValid(string destinationFolder, string destinationName) {
+			return true;
 		}
 	}
 }

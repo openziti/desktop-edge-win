@@ -15,11 +15,11 @@ using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.Native;
 
 namespace ZitiDesktopEdge
-{	
-    /// <summary>
-    /// Interaction logic for MainMenu.xaml
-    /// </summary>
-    public partial class MainMenu : UserControl {
+{
+	/// <summary>
+	/// Interaction logic for MainMenu.xaml
+	/// </summary>
+	public partial class MainMenu : UserControl {
 		private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
 		public delegate void AttachementChanged(bool attached);
@@ -31,16 +31,17 @@ namespace ZitiDesktopEdge
 		public string menuState = "Main";
 		public string licenseData = "it's open source.";
 		public string LogLevel = "";
+		public string ReleaseStream = "stable";
 		private string _updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win/releases/latest";
 		private string _downloadUrl = "";
 
 		private string appVersion = null;
 		public MainMenu() {
-            InitializeComponent();
+			InitializeComponent();
 
 			appVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 			LicensesItems.Text = licenseData;
-			CheckUpdates();
+			// don't check from the UI any more... CheckUpdates();
 		}
 
 		private void HideMenu(object sender, MouseButtonEventArgs e) {
@@ -87,14 +88,19 @@ namespace ZitiDesktopEdge
 			menuState = "UILogs";
 			UpdateState();
 		}
+
+		async private void SetReleaseStreamMenuAction(object sender, MouseButtonEventArgs e) {
+			menuState = "SetReleaseStream";
+			UpdateState();
+		}
+
 		private void SetLogLevel(object sender, MouseButtonEventArgs e) {
 			menuState = "LogLevel";
 			UpdateState();
 		}
 
 		private void CheckUpdates() {
-			try
-			{
+			try {
 				HttpWebRequest httpWebRequest = WebRequest.CreateHttp(_updateUrl);
 				httpWebRequest.Method = "GET";
 				httpWebRequest.ContentType = "application/json";
@@ -103,29 +109,24 @@ namespace ZitiDesktopEdge
 				StreamReader streamReader = new StreamReader(httpResponse.GetResponseStream());
 				string result = streamReader.ReadToEnd();
 				JObject json = JObject.Parse(result);
-				string serverVersion = json.Property("tag_name").Value.ToString() + ".0";
+				string serverVersion = json.Property("tag_name").Value.ToString();
 
 				Version installed = new Version(appVersion);
 				Version published = new Version(serverVersion);
 				int compare = installed.CompareTo(published);
-				if (compare < 0)
-				{
+				if (compare < 0) {
 					UpdateAvailable.Content = "An Upgrade is available, click to download";
 					UpdateAvailable.Visibility = Visibility.Visible;
-				}
-				else if (compare > 0)
-				{
+				} else if (compare > 0) {
 					UpdateAvailable.Content = "Your version is newer than the released version";
 					UpdateAvailable.Visibility = Visibility.Visible;
 				}
 				JArray assets = JArray.Parse(json.Property("assets").Value.ToString());
-				foreach (JObject asset in assets.Children<JObject>())
-				{
+				foreach (JObject asset in assets.Children<JObject>()) {
 					_downloadUrl = asset.Property("browser_download_url").Value.ToString();
 					break;
 				}
-			} catch(Exception ex)
-			{
+			} catch (Exception ex) {
 				UpdateAvailable.Content = "An exception occurred while performing upgrade check";
 				logger.Error(ex, "Error when checking for version: " + ex.Message);
 				UpdateAvailable.Visibility = Visibility.Visible;
@@ -161,21 +162,22 @@ namespace ZitiDesktopEdge
 				// Interface Version
 				VersionInfo.Content = $"App: {appVersion} Service: {version}";
 
-			} else if (menuState=="Advanced") {
+			} else if (menuState == "Advanced") {
 				MenuTitle.Content = "Advanced Settings";
 				AdvancedItems.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
-			} else if (menuState=="Licenses") {
+			} else if (menuState == "Licenses") {
 				MenuTitle.Content = "Third Party Licenses";
 				LicensesItems.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
-			} else if (menuState=="Logs") {
+			} else if (menuState == "Logs") {
 				MenuTitle.Content = "Advanced Settings";
 				AdvancedItems.Visibility = Visibility.Visible;
 				//string targetFile = NativeMethods.GetFinalPathName(MainWindow.ExpectedLogPathServices);
 				string targetFile = MainWindow.ExpectedLogPathServices;
 
 				OpenLogFile("service", targetFile);
+				OpenLogFile("UI", MainWindow.ExpectedLogPathUI);
 				BackArrow.Visibility = Visibility.Visible;
 			} else if (menuState == "UILogs") {
 				MenuTitle.Content = "Advanced Settings";
@@ -188,11 +190,18 @@ namespace ZitiDesktopEdge
 				MenuTitle.Content = "Set Log Level";
 				LogLevelItems.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
-			} else if (menuState=="Config") {
+			} else if (menuState == "SetReleaseStream") {
+				SetReleaseStream();
+
+				MenuTitle.Content = "Set Release Stream";
+				ReleaseStreamItems.Visibility = Visibility.Visible;
+				BackArrow.Visibility = Visibility.Visible;
+				//xxxxxxxx
+			} else if (menuState == "Config") {
 				MenuTitle.Content = "Tunnel Configuration";
 				ConfigItems.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
-				
+
 				ConfigIp.Value = Application.Current.Properties["ip"]?.ToString();
 				ConfigSubnet.Value = Application.Current.Properties["subnet"]?.ToString();
 				ConfigMtu.Value = Application.Current.Properties["mtu"]?.ToString();
@@ -226,9 +235,9 @@ namespace ZitiDesktopEdge
 		}
 
 		private void GoBack(object sender, MouseButtonEventArgs e) {
-			if (menuState=="Config"||menuState== "LogLevel" || menuState=="UILogs") {
+			if (menuState == "Config" || menuState == "LogLevel" || menuState == "UILogs") {
 				menuState = "Advanced";
-			} else if (menuState=="Licenses") {
+			} else if (menuState == "Licenses") {
 				menuState = "About";
 			} else {
 				menuState = "Menu";
@@ -255,12 +264,12 @@ namespace ZitiDesktopEdge
 
 			string timestamp = DateTime.Now.ToFileTime().ToString();
 			var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
-			ServiceStatusEvent resp = await monitorClient.CaptureLogsAsync();
+			MonitorServiceStatusEvent resp = await monitorClient.CaptureLogsAsync();
 			string pathToLogs = resp.Message;
 			logger.Info("Log files found at : {0}", resp.Message);
 			mailMessage.Attachments.Add(new Attachment(pathToLogs));
 
-			string emlFile = Path.Combine(Path.GetTempPath(), timestamp+"-ziti.eml");
+			string emlFile = Path.Combine(Path.GetTempPath(), timestamp + "-ziti.eml");
 
 			using (var filestream = File.Open(emlFile, FileMode.Create)) {
 				var binaryWriter = new BinaryWriter(filestream);
@@ -276,14 +285,14 @@ namespace ZitiDesktopEdge
 			}
 
 			var p = Process.Start(emlFile);
-            p.Exited += (object lambdaSender, EventArgs lambdaEventArgs) => {
+			p.Exited += (object lambdaSender, EventArgs lambdaEventArgs) => {
 				logger.Info("Removing temp file: {0}", emlFile);
 				File.Delete(emlFile);
 			};
 			p.EnableRaisingEvents = true;
 		}
 
-        private void ShowSupport(object sender, MouseButtonEventArgs e) {
+		private void ShowSupport(object sender, MouseButtonEventArgs e) {
 			Process.Start(new ProcessStartInfo("https://openziti.discourse.group/") { UseShellExecute = true });
 		}
 
@@ -339,6 +348,18 @@ namespace ZitiDesktopEdge
 				OnLogLevelChanged(this.LogLevel);
 			}
 			ResetLevels();
+		}
+
+		private void SetReleaseStreamMenuItem(object sender, MouseButtonEventArgs e) {
+			///xxxxxx
+		}
+
+		private void SetReleaseStream() {
+			if (this.ReleaseStream == "beta") {
+				this.ReleaseStreamItemBeta.IsSelected = true;
+				return;
+			}
+			this.ReleaseStreamItemStable.IsSelected = true;
 		}
 	}
 }
