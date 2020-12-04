@@ -31,9 +31,6 @@ namespace ZitiDesktopEdge
 		public string menuState = "Main";
 		public string licenseData = "it's open source.";
 		public string LogLevel = "";
-		public string ReleaseStreama = "stable";
-		private string _updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win/releases/latest";
-		private string _downloadUrl = "";
 		private string appVersion = null;
 
 		private bool isBeta {
@@ -63,10 +60,6 @@ namespace ZitiDesktopEdge
 
 		private void CloseApp(object sender, MouseButtonEventArgs e) {
 			Application.Current.Shutdown();
-		}
-
-		private void DoUpdate(object sender, MouseButtonEventArgs e) {
-			Process.Start(_downloadUrl);
 		}
 
 		private void ShowAbout(object sender, MouseButtonEventArgs e) {
@@ -104,10 +97,12 @@ namespace ZitiDesktopEdge
 		}
 
 		async private void SetReleaseStreamMenuAction(object sender, MouseButtonEventArgs e) {
+			CheckForUpdateStatus.Visibility = Visibility.Collapsed;
+			TriggerUpdateButton.Visibility = Visibility.Collapsed;
 			SubOptionItem opt = (SubOptionItem)sender;
 			var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
 			menuState = "SetReleaseStream";
-			
+
 			bool releaseClicked = opt.Label.ToLower() == "stable";
 
 			if (releaseClicked) {
@@ -133,45 +128,11 @@ namespace ZitiDesktopEdge
 
 		private void checkResponse(SvcResponse r) {
 			logger.Info(r.ToString());
-        }
+		}
 
 		private void SetLogLevel(object sender, MouseButtonEventArgs e) {
 			menuState = "LogLevel";
 			UpdateState();
-		}
-
-		private void CheckUpdates() {
-			try {
-				HttpWebRequest httpWebRequest = WebRequest.CreateHttp(_updateUrl);
-				httpWebRequest.Method = "GET";
-				httpWebRequest.ContentType = "application/json";
-				httpWebRequest.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36";
-				HttpWebResponse httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
-				StreamReader streamReader = new StreamReader(httpResponse.GetResponseStream());
-				string result = streamReader.ReadToEnd();
-				JObject json = JObject.Parse(result);
-				string serverVersion = json.Property("tag_name").Value.ToString();
-
-				Version installed = new Version(appVersion);
-				Version published = new Version(serverVersion);
-				int compare = installed.CompareTo(published);
-				if (compare < 0) {
-					UpdateAvailable.Content = "An Upgrade is available, click to download";
-					UpdateAvailable.Visibility = Visibility.Visible;
-				} else if (compare > 0) {
-					UpdateAvailable.Content = "Your version is newer than the released version";
-					UpdateAvailable.Visibility = Visibility.Visible;
-				}
-				JArray assets = JArray.Parse(json.Property("assets").Value.ToString());
-				foreach (JObject asset in assets.Children<JObject>()) {
-					_downloadUrl = asset.Property("browser_download_url").Value.ToString();
-					break;
-				}
-			} catch (Exception ex) {
-				UpdateAvailable.Content = "An exception occurred while performing upgrade check";
-				logger.Error(ex, "Error when checking for version: " + ex.Message);
-				UpdateAvailable.Visibility = Visibility.Visible;
-			}
 		}
 
 		private void UpdateState() {
@@ -396,6 +357,37 @@ namespace ZitiDesktopEdge
 		private void SetReleaseStream() {
 			this.ReleaseStreamItemBeta.IsSelected = isBeta;
 			this.ReleaseStreamItemStable.IsSelected = !isBeta;
+		}
+
+		async private void CheckForUpdate_Click(object sender, RoutedEventArgs e) {
+			logger.Info("checking for update...");
+			try {
+				CheckForUpdate.IsEnabled = false;
+				CheckForUpdateStatus.Content = "Checking for update started...";
+				CheckForUpdateStatus.Visibility = Visibility.Visible;
+				var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
+				var r = await monitorClient.DoUpdateCheck();
+				checkResponse(r);
+				CheckForUpdateStatus.Content = r.Message;
+                if (r.UpdateAvailable) {
+					TriggerUpdateButton.Visibility = Visibility.Visible;
+                } else {
+					TriggerUpdateButton.Visibility = Visibility.Collapsed;
+				}
+			} catch (Exception ex) {
+				logger.Error(ex, "unexpected error in update check: {0}", ex.Message);
+			}
+			CheckForUpdate.IsEnabled = true;
+		}
+
+		async private void TriggerUpdate_Click(object sender, RoutedEventArgs e) {
+			try {
+				var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
+				var r = await monitorClient.TriggerUpdate();
+				checkResponse(r);
+			} catch (Exception ex) {
+				logger.Error(ex, "unexpected error in update check: {0}", ex.Message);
+			}
 		}
 	}
 }

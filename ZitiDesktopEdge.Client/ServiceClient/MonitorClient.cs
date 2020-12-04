@@ -102,5 +102,15 @@ namespace ZitiDesktopEdge.ServiceClient {
             await sendAsync(action);
             return await readAsync<SvcResponse>(ipcReader);
         }
+        async public Task<StatusCheck> DoUpdateCheck() {
+            ActionEvent action = new ActionEvent() { Op = "DoUpdateCheck", Action = "" };
+            await sendAsync(action);
+            return await readAsync<StatusCheck>(ipcReader);
+        }
+        async public Task<SvcResponse> TriggerUpdate() {
+            ActionEvent action = new ActionEvent() { Op = "TriggerUpdate", Action = "" };
+            await sendAsync(action);
+            return await readAsync<SvcResponse>(ipcReader);
+        }
     }
 }

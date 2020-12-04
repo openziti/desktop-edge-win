@@ -70,6 +70,40 @@ namespace ZitiUpdateService {
 			svr.CaptureLogs = CaptureLogs;
 			svr.SetLogLevel = SetLogLevel;
 			svr.SetReleaseStream = SetReleaseStream;
+			svr.DoUpdateCheck = DoUpdateCheck;
+			svr.TriggerUpdate = TriggerUpdate;
+		}
+
+        private SvcResponse TriggerUpdate() {
+			SvcResponse r = new SvcResponse();
+			try {
+				CheckUpdate(null, null);
+            } catch(Exception e) {
+				Logger.Error(e, "Unexpected error in TriggerUpdate");
+            }
+			return r;
+        }
+
+        private StatusCheck DoUpdateCheck() {
+			StatusCheck r = new StatusCheck();
+			r.Code = check.IsUpdateAvailable(assemblyVersion);
+			r.ReleaseStream = IsBeta ? "beta" : "stable";
+			switch (r.Code) {
+				case -1:
+					r.Message = $"An update is available: {check.GetNextVersion()}";
+					r.UpdateAvailable = true;
+					break;
+				case 0:
+					r.Message = $"The current version [{assemblyVersion}] is the latest";
+					break;
+				case 1:
+					r.Message = $"Your version [{assemblyVersion}] is newer than the latest release";
+					break;
+				default:
+					r.Message = "Update check failed";
+					break;
+			}
+			return r;
 		}
 
         private void SetLogLevel(string level) {
@@ -289,7 +323,7 @@ namespace ZitiUpdateService {
 			if (useGithubCheck) {
 				check = new GithubCheck(updateUrl);
 			} else {
-				check = new FilesystemCheck(false);
+				check = new FilesystemCheck(1);
 			}
 		}
 
@@ -319,7 +353,8 @@ namespace ZitiUpdateService {
 			try {
 				Logger.Debug("checking for update");
 
-				if (!check.IsUpdateAvailable(assemblyVersion)) {
+				int avail = check.IsUpdateAvailable(assemblyVersion);
+				if (avail >= 0) {
 					Logger.Debug("update check complete. no update available");
 					inUpdateCheck = false;
 					return;

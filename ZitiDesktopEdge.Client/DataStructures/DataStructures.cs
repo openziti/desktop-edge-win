@@ -299,4 +299,8 @@ namespace ZitiDesktopEdge.DataStructures {
             return "Stopped" == this.Status;
         }
     }
+
+    public class StatusCheck : MonitorServiceStatusEvent {
+        public bool UpdateAvailable { get; set; }
+    }
 }

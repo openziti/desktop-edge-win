@@ -33,6 +33,12 @@ namespace ZitiDesktopEdge.Server {
         public delegate void SetReleaseStreamDelegate(string stream);
         public SetReleaseStreamDelegate SetReleaseStream { get; set; }
 
+        public delegate StatusCheck DoUpdateCheckDelegate();
+        public DoUpdateCheckDelegate DoUpdateCheck { get; set; }
+
+        public delegate SvcResponse TriggerUpdateDelegate();
+        public TriggerUpdateDelegate TriggerUpdate { get; set; }
+
         public IPCServer() {
             ipcPipeName = PipeName;
             eventPipeName = EventPipeName;
@@ -220,6 +226,12 @@ namespace ZitiDesktopEdge.Server {
                         break;
                     case "setloglevel":
                         SetLogLevel(ae.Action);
+                        break;
+                    case "doupdatecheck":
+                        r = DoUpdateCheck();
+                        break;
+                    case "triggerupdate":
+                        r = TriggerUpdate();
                         break;
                     default:
                         r.Message = "FAILURE";
