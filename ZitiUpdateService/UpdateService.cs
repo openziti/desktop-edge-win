@@ -315,9 +315,9 @@ namespace ZitiUpdateService {
 					return;
 				}
 
-				string shaFile = fileDestination + ".sha512";
+				string shaFile = fileDestination + ".sha256";
 				if (File.Exists(shaFile)) {
-					Logger.Debug("hash was valid - removing sha512 file: {0}", shaFile);
+					Logger.Debug("hash was valid - removing sha256 file: {0}", shaFile);
 					File.Delete(shaFile);
 				}
 

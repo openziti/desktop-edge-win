@@ -30,11 +30,11 @@ namespace ZitiUpdateService {
 			webClient.DownloadFile(downloadUrl, dest);
 			Logger.Info("download complete to: {0}", dest);
 
-			string sha512dest = Path.Combine(destinationFolder, destinationName + ".sha512");
-			string downloadUrlsha512 = downloadUrl + ".sha512";
-			Logger.Info("download started for: {0} to {1}", downloadUrlsha512, sha512dest);
-			webClient.DownloadFile(downloadUrlsha512, sha512dest);
-			Logger.Info("download complete to: {0}", sha512dest);
+			string sha256dest = Path.Combine(destinationFolder, destinationName + ".sha256");
+			string downloadUrlsha256 = downloadUrl + ".sha256";
+			Logger.Info("download started for: {0} to {1}", downloadUrlsha256, sha256dest);
+			webClient.DownloadFile(downloadUrlsha256, sha256dest);
+			Logger.Info("download complete to: {0}", sha256dest);
 		}
 
 		public string FileName() {
@@ -98,7 +98,7 @@ namespace ZitiUpdateService {
 
 		public bool HashIsValid(string destinationFolder, string destinationName) {
 			string dest = Path.Combine(destinationFolder, destinationName);
-			string shaFile = dest + ".sha512";
+			string shaFile = dest + ".sha256";
 			string hash = File.ReadAllText(shaFile);	
 
 			using (SHA256 hasher = SHA256.Create())
