@@ -300,7 +300,7 @@ namespace ZitiUpdateService {
 				string filename = check.FileName();
 
 				if (check.AlreadyDownloaded(updateFolder, filename)) {
-					Logger.Info("package has already been downloaded - moving to install phase");
+					Logger.Info("package has already been downloaded to {0} - moving to install phase", Path.Combine(updateFolder, filename));
 				} else {
 					Logger.Info("copying update package begins");
 					check.CopyUpdatePackage(updateFolder, filename);
@@ -308,6 +308,18 @@ namespace ZitiUpdateService {
 				}
 
 				string fileDestination = Path.Combine(updateFolder, filename);
+
+				if (!check.HashIsValid(updateFolder, filename)) {
+					Logger.Warn("The file was downloaded but the hash is not valid. The file will be removed: {0}", fileDestination);
+					File.Delete(fileDestination);
+					return;
+				}
+
+				string shaFile = fileDestination + ".sha512";
+				if (File.Exists(shaFile)) {
+					Logger.Debug("hash was valid - removing sha512 file: {0}", shaFile);
+					File.Delete(shaFile);
+				}
 
 				// check digital signature
 				var signer = X509Certificate.CreateFromSignedFile(fileDestination);
@@ -396,6 +408,7 @@ namespace ZitiUpdateService {
 					Logger.Debug("Waiting for the ziti service to stop.");
 					controller.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
 					Logger.Debug("The ziti service was stopped successfully.");
+					cleanStop = true;
 				} catch (Exception e) {
 					Logger.Error(e, "Timout while trying to stop service!");
 				}
@@ -403,6 +416,7 @@ namespace ZitiUpdateService {
 				Logger.Debug("The ziti has ALREADY been stopped successfully.");
             }
 			if (!cleanStop) {
+				Logger.Debug("Stopping ziti-tunnel forcefully.");
 				stopProcessForcefully("ziti-tunnel", "data service [ziti]");
 			}
 		}

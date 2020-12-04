@@ -2,9 +2,10 @@
 using System.IO;
 using System.Net;
 
+using System.Security.Cryptography;
+
 using NLog;
 using Newtonsoft.Json.Linq;
-using System.Configuration;
 
 namespace ZitiUpdateService {
 	internal class GithubCheck : IUpdateCheck {
@@ -25,9 +26,15 @@ namespace ZitiUpdateService {
         public void CopyUpdatePackage(string destinationFolder, string destinationName) {
 			WebClient webClient = new WebClient();
 			string dest = Path.Combine(destinationFolder, destinationName);
-			Logger.Info("download started: {0}", downloadUrl);
+			Logger.Info("download started for: {0} to {1}", downloadUrl, dest);
 			webClient.DownloadFile(downloadUrl, dest);
-			Logger.Info("download complete. file at {0}", dest);
+			Logger.Info("download complete to: {0}", dest);
+
+			string sha512dest = Path.Combine(destinationFolder, destinationName + ".sha512");
+			string downloadUrlsha512 = downloadUrl + ".sha512";
+			Logger.Info("download started for: {0} to {1}", downloadUrlsha512, sha512dest);
+			webClient.DownloadFile(downloadUrlsha512, sha512dest);
+			Logger.Info("download complete to: {0}", sha512dest);
 		}
 
 		public string FileName() {
@@ -53,10 +60,10 @@ namespace ZitiUpdateService {
 
 				if (assetName.StartsWith("Ziti.Desktop.Edge.Client-")) {
 					downloadUrl = asset.Property("browser_download_url").Value.ToString();
+					break;
 				} else {
 					Logger.Debug("skipping asset with name: {assetName}", assetName);
                 }
-				break;
 			}
 
 			if (downloadUrl == null) {
@@ -88,6 +95,20 @@ namespace ZitiUpdateService {
 			if (v.Revision < 1) return new Version(v.Major, v.Minor, v.Build, 0);
 			return v;
 		}
+
+		public bool HashIsValid(string destinationFolder, string destinationName) {
+			string dest = Path.Combine(destinationFolder, destinationName);
+			string shaFile = dest + ".sha512";
+			string hash = File.ReadAllText(shaFile);	
+
+			using (SHA256 hasher = SHA256.Create())
+			using (FileStream stream = File.OpenRead(dest)) {
+				byte[] sha256bytes = hasher.ComputeHash(stream);
+				string computed = BitConverter.ToString(sha256bytes).Replace("-", "");
+
+				return computed.ToLower() == hash.ToLower();
+			}
+		}
 	}
 
 	internal class FilesystemCheck : IUpdateCheck {
@@ -114,6 +135,10 @@ namespace ZitiUpdateService {
 
 		public bool IsUpdateAvailable(Version current) {
 			return isUpdateAvailable;
+		}
+
+		public bool HashIsValid(string destinationFolder, string destinationName) {
+			return true;
 		}
 	}
 }
