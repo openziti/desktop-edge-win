@@ -62,40 +62,45 @@ namespace ZitiDesktopEdge.ServiceClient {
         async internal Task<string> SendServiceFunctionAsync(object toSend) {
             await sendAsync(toSend);
             
-            var resp = await readMessageAsync(ipcReader, "SendServiceFunctionAsync");
+            var resp = await readMessageAsync(ipcReader);
             Logger.Info("RESPONSE: {0}", resp);
             return resp;
         }
 
         async public Task<MonitorServiceStatusEvent> StopServiceAsync() {
-            ActionEvent action = new ActionEvent() { Action = "Normal", Op = "Stop" };
-            //string result = await SendServiceFunctionAsync(action);
+            ActionEvent action = new ActionEvent() { Op = "Stop", Action = "Normal" };
             await sendAsync(action);
-            return await readAsync<MonitorServiceStatusEvent>(ipcReader, "StopServiceAsync");
+            return await readAsync<MonitorServiceStatusEvent>(ipcReader);
         }
         async public Task<MonitorServiceStatusEvent> StartServiceAsync() {
-            ActionEvent action = new ActionEvent() { Action = "Normal", Op = "Start" };
-            //string result = await SendServiceFunctionAsync(action);
+            ActionEvent action = new ActionEvent() { Op = "Start", Action = "Normal" };
             await sendAsync(action);
-            return await readAsync<MonitorServiceStatusEvent>(ipcReader, "StartServiceAsync");
+            return await readAsync<MonitorServiceStatusEvent>(ipcReader);
         }
-
-        async public Task<MonitorServiceStatusEvent> ForceTerminate() {
-            ActionEvent action = new ActionEvent() { Action = "Force", Op = "Stop" };
+        async public Task<MonitorServiceStatusEvent> ForceTerminateAsync() {
+            ActionEvent action = new ActionEvent() { Op = "Stop", Action = "Force" };
             await sendAsync(action);
-            return await readAsync<MonitorServiceStatusEvent>(ipcReader, "ForceTerminate");
+            return await readAsync<MonitorServiceStatusEvent>(ipcReader);
         }
-
-        async public Task<MonitorServiceStatusEvent> Status() {
-            ActionEvent action = new ActionEvent() { Action = "", Op = "Status" };
+        async public Task<MonitorServiceStatusEvent> StatusAsync() {
+            ActionEvent action = new ActionEvent() { Op = "Status", Action = "" };
             await sendAsync(action);
-            return await readAsync<MonitorServiceStatusEvent>(ipcReader, "Status");
+            return await readAsync<MonitorServiceStatusEvent>(ipcReader);
         }
         async public Task<MonitorServiceStatusEvent> CaptureLogsAsync() {
-            ActionEvent action = new ActionEvent() { Action = "Normal", Op = "captureLogs" };
-            //string result = await SendServiceFunctionAsync(action);
+            ActionEvent action = new ActionEvent() { Op = "CaptureLogs", Action = "Normal" };
             await sendAsync(action);
-            return await readAsync<MonitorServiceStatusEvent>(ipcReader, "CaptureLogsAsync");
+            return await readAsync<MonitorServiceStatusEvent>(ipcReader);
+        }
+        async public Task<SvcResponse> SetReleaseStreamAsync(string stream) {
+            ActionEvent action = new ActionEvent() { Op = "SetReleaseStream", Action = stream };
+            await sendAsync(action);
+            return await readAsync<SvcResponse>(ipcReader);
+        }
+        async public Task<SvcResponse> SetLogLevelAsync(string level) {
+            ActionEvent action = new ActionEvent() { Op = "SetLogLevel", Action = level };
+            await sendAsync(action);
+            return await readAsync<SvcResponse>(ipcReader);
         }
     }
 }

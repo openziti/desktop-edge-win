@@ -8,6 +8,14 @@ using NLog;
 using Newtonsoft.Json.Linq;
 
 namespace ZitiUpdateService {
+	internal static class VersionUtil {
+		public static Version NormalizeVersion(Version v) {
+			if (v.Minor < 1) return new Version(v.Major, 0, 0, 0);
+			if (v.Build < 1) return new Version(v.Major, v.Minor, 0, 0);
+			if (v.Revision < 1) return new Version(v.Major, v.Minor, v.Build, 0);
+			return v;
+		}
+	}
 	internal class GithubCheck : IUpdateCheck {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 		string url;
@@ -70,7 +78,7 @@ namespace ZitiUpdateService {
 
 			string releaseVersion = json.Property("tag_name").Value.ToString();
 			string releaseName = json.Property("name").Value.ToString();
-			Version publishedVersion = NormalizeVersion(new Version(releaseVersion));
+			Version publishedVersion = VersionUtil.NormalizeVersion(new Version(releaseVersion));
 			int compare = currentVersion.CompareTo(publishedVersion);
 			if (compare < 0) {
 				Logger.Info("upgrade {} is available. Published version: {} is newer than the current version: {}", releaseName, publishedVersion, currentVersion);
@@ -81,13 +89,6 @@ namespace ZitiUpdateService {
 			} else {
 				return false;
 			}
-		}
-
-		private Version NormalizeVersion(Version v) {
-			if (v.Minor < 1) return new Version(v.Major, 0, 0, 0);
-			if (v.Build < 1) return new Version(v.Major, v.Minor, 0, 0);
-			if (v.Revision < 1) return new Version(v.Major, v.Minor, v.Build, 0);
-			return v;
 		}
 
 		public bool HashIsValid(string destinationFolder, string destinationName) {

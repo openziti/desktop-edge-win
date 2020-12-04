@@ -22,14 +22,20 @@ namespace ZitiDesktopEdge.Server {
         private string ipcPipeName;
         private string eventPipeName;
 
-        public delegate string CaptureLogsDelegate();
         public delegate Task OnClientAsync(StreamWriter writer);
 
+        public delegate string CaptureLogsDelegate();
         public CaptureLogsDelegate CaptureLogs { get; set; }
 
+        public delegate void SetLogLevelDelegate(string level);
+        public SetLogLevelDelegate SetLogLevel { get; set; }
+
+        public delegate void SetReleaseStreamDelegate(string stream);
+        public SetReleaseStreamDelegate SetReleaseStream { get; set; }
+
         public IPCServer() {
-            this.ipcPipeName = IPCServer.PipeName;
-            this.eventPipeName = IPCServer.EventPipeName;
+            ipcPipeName = PipeName;
+            eventPipeName = EventPipeName;
         }
 
         async public Task startIpcServer(OnClientAsync onClient) {
@@ -201,13 +207,19 @@ namespace ZitiDesktopEdge.Server {
                         try {
                             string results = CaptureLogs();
                             r.Message = results;
-                        } catch(Exception ex) {
+                        } catch (Exception ex) {
                             string err = string.Format("UNKNOWN ERROR : {0}", ex.Message);
                             Logger.Error(ex, err);
                             r.Code = -5;
                             r.Message = "FAILURE";
                             r.Error = err;
                         }
+                        break;
+                    case "setreleasestream":
+                        SetReleaseStream(ae.Action);
+                        break;
+                    case "setloglevel":
+                        SetLogLevel(ae.Action);
                         break;
                     default:
                         r.Message = "FAILURE";

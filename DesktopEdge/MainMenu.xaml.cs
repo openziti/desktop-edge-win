@@ -31,11 +31,17 @@ namespace ZitiDesktopEdge
 		public string menuState = "Main";
 		public string licenseData = "it's open source.";
 		public string LogLevel = "";
-		public string ReleaseStream = "stable";
+		public string ReleaseStreama = "stable";
 		private string _updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win/releases/latest";
 		private string _downloadUrl = "";
-
 		private string appVersion = null;
+
+		private bool isBeta {
+			get {
+				return Application.Current.Properties["ReleaseStream"].ToString() == "beta";
+			}
+		}
+
 		public MainMenu() {
 			InitializeComponent();
 
@@ -88,11 +94,46 @@ namespace ZitiDesktopEdge
 			menuState = "UILogs";
 			UpdateState();
 		}
-
-		async private void SetReleaseStreamMenuAction(object sender, MouseButtonEventArgs e) {
+		async private void ShowReleaseStreamMenuAction(object sender, MouseButtonEventArgs e) {
+			logger.Warn("this is ShowReleaseStreamMenuAction at warn");
+			logger.Info("this is ShowReleaseStreamMenuAction at info");
+			logger.Debug("this is ShowReleaseStreamMenuAction at debug");
+			logger.Trace("this is ShowReleaseStreamMenuAction at trace");
 			menuState = "SetReleaseStream";
 			UpdateState();
 		}
+
+		async private void SetReleaseStreamMenuAction(object sender, MouseButtonEventArgs e) {
+			SubOptionItem opt = (SubOptionItem)sender;
+			var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
+			menuState = "SetReleaseStream";
+			
+			bool releaseClicked = opt.Label.ToLower() == "stable";
+
+			if (releaseClicked) {
+				if (isBeta) {
+					//toggle to stable
+					var r = await monitorClient.SetReleaseStreamAsync("stable");
+					checkResponse(r);
+				} else {
+					logger.Debug("stable clicked but already on stable stream");
+				}
+			} else {
+				if (!isBeta) {
+					//toggle to beta
+					var r = await monitorClient.SetReleaseStreamAsync("beta");
+					checkResponse(r);
+				} else {
+					logger.Debug("beta clicked but already on beta stream");
+				}
+			}
+			Application.Current.Properties["ReleaseStream"] = opt.Label.ToLower();
+			UpdateState();
+		}
+
+		private void checkResponse(SvcResponse r) {
+			logger.Info(r.ToString());
+        }
 
 		private void SetLogLevel(object sender, MouseButtonEventArgs e) {
 			menuState = "LogLevel";
@@ -144,6 +185,7 @@ namespace ZitiDesktopEdge
 			LogsItems.Visibility = Visibility.Collapsed;
 			ConfigItems.Visibility = Visibility.Collapsed;
 			LogLevelItems.Visibility = Visibility.Collapsed;
+			ReleaseStreamItems.Visibility = Visibility.Collapsed;
 
 			if (menuState == "About") {
 				MenuTitle.Content = "About";
@@ -210,6 +252,7 @@ namespace ZitiDesktopEdge
 				MenuTitle.Content = "Main Menu";
 				MainItems.Visibility = Visibility.Visible;
 				MainItemsButton.Visibility = Visibility.Visible;
+				ReleaseStreamItems.Visibility = Visibility.Collapsed;
 			}
 		}
 
@@ -235,7 +278,7 @@ namespace ZitiDesktopEdge
 		}
 
 		private void GoBack(object sender, MouseButtonEventArgs e) {
-			if (menuState == "Config" || menuState == "LogLevel" || menuState == "UILogs") {
+			if (menuState == "Config" || menuState == "LogLevel" || menuState == "UILogs" || menuState == "SetReleaseStream") {
 				menuState = "Advanced";
 			} else if (menuState == "Licenses") {
 				menuState = "About";
@@ -350,16 +393,9 @@ namespace ZitiDesktopEdge
 			ResetLevels();
 		}
 
-		private void SetReleaseStreamMenuItem(object sender, MouseButtonEventArgs e) {
-			///xxxxxx
-		}
-
 		private void SetReleaseStream() {
-			if (this.ReleaseStream == "beta") {
-				this.ReleaseStreamItemBeta.IsSelected = true;
-				return;
-			}
-			this.ReleaseStreamItemStable.IsSelected = true;
+			this.ReleaseStreamItemBeta.IsSelected = isBeta;
+			this.ReleaseStreamItemStable.IsSelected = !isBeta;
 		}
 	}
 }
