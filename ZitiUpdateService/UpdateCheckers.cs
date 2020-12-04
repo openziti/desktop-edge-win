@@ -29,12 +29,6 @@ namespace ZitiUpdateService {
 			Logger.Info("download started for: {0} to {1}", downloadUrl, dest);
 			webClient.DownloadFile(downloadUrl, dest);
 			Logger.Info("download complete to: {0}", dest);
-
-			string sha256dest = Path.Combine(destinationFolder, destinationName + ".sha256");
-			string downloadUrlsha256 = downloadUrl + ".sha256";
-			Logger.Info("download started for: {0} to {1}", downloadUrlsha256, sha256dest);
-			webClient.DownloadFile(downloadUrlsha256, sha256dest);
-			Logger.Info("download complete to: {0}", sha256dest);
 		}
 
 		public string FileName() {
@@ -97,15 +91,22 @@ namespace ZitiUpdateService {
 		}
 
 		public bool HashIsValid(string destinationFolder, string destinationName) {
+			WebClient webClient = new WebClient();
+			string sha256dest = Path.Combine(destinationFolder, destinationName + ".sha256");
+			string downloadUrlsha256 = downloadUrl + ".sha256";
+			Logger.Info("download started for: {0} to {1}", downloadUrlsha256, sha256dest);
+			webClient.DownloadFile(downloadUrlsha256, sha256dest);
+			Logger.Info("download complete to: {0}", sha256dest);
+
 			string dest = Path.Combine(destinationFolder, destinationName);
-			string shaFile = dest + ".sha256";
-			string hash = File.ReadAllText(shaFile);	
+			string hash = File.ReadAllText(sha256dest);	
 
 			using (SHA256 hasher = SHA256.Create())
 			using (FileStream stream = File.OpenRead(dest)) {
 				byte[] sha256bytes = hasher.ComputeHash(stream);
 				string computed = BitConverter.ToString(sha256bytes).Replace("-", "");
 
+				File.Delete(sha256dest);
 				return computed.ToLower() == hash.ToLower();
 			}
 		}

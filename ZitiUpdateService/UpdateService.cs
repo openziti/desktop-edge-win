@@ -299,26 +299,20 @@ namespace ZitiUpdateService {
 				Logger.Info("copying update package");
 				string filename = check.FileName();
 
+				string fileDestination = Path.Combine(updateFolder, filename);
+
 				if (check.AlreadyDownloaded(updateFolder, filename)) {
 					Logger.Info("package has already been downloaded to {0} - moving to install phase", Path.Combine(updateFolder, filename));
 				} else {
 					Logger.Info("copying update package begins");
 					check.CopyUpdatePackage(updateFolder, filename);
 					Logger.Info("copying update package complete");
-				}
 
-				string fileDestination = Path.Combine(updateFolder, filename);
-
-				if (!check.HashIsValid(updateFolder, filename)) {
-					Logger.Warn("The file was downloaded but the hash is not valid. The file will be removed: {0}", fileDestination);
-					File.Delete(fileDestination);
-					return;
-				}
-
-				string shaFile = fileDestination + ".sha256";
-				if (File.Exists(shaFile)) {
-					Logger.Debug("hash was valid - removing sha256 file: {0}", shaFile);
-					File.Delete(shaFile);
+					if (!check.HashIsValid(updateFolder, filename)) {
+						Logger.Warn("The file was downloaded but the hash is not valid. The file will be removed: {0}", fileDestination);
+						return;
+					}
+					Logger.Debug("downloaded file hash was correct. update can continue.");
 				}
 
 				// check digital signature
