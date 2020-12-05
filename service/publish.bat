@@ -48,16 +48,6 @@ if %ACTUAL_ERR% NEQ 0 (
     echo result of ninja build: %ACTUAL_ERR%
 )
 
-IF "%GIT_BRANCH%"=="master" GOTO RELEASE
-echo Publishing to snapshot repo
-ziti-ci publish artifactory --groupId=ziti-tunnel-win.amd64.windows --artifactId=ziti-tunnel-win --version=%BUILD_VERSION%-SNAPSHOT --target=service/ziti-tunnel-win.zip 2>&1
-REM ziti-ci publish artifactory --groupId=ziti-tunnel-win.amd64.windows --artifactId=ziti-tunnel-win --version=%BUILD_VERSION%-SNAPSHOT --target=service/ziti-tunnel-win.zip --classifier=%GIT_BRANCH% 2>&1
-GOTO END
-
-:RELEASE
-echo NO LONGER PUBLISHING TO ARTIFACTORY.
-REM echo Publishing release
-REM ziti-ci publish artifactory --groupId=ziti-tunnel-win.amd64.windows --artifactId=ziti-tunnel-win --version=%BUILD_VERSION% --target=service/ziti-tunnel-win.zip 2>&1
 GOTO END
 
 :BUILD_VERSION_ERROR
@@ -86,7 +76,6 @@ echo current dir: %CD%
 echo configuring git - relies on build.bat successfully grabbing ziti-ci and build.bat updating service/ziti-tunnel/version.go
 ziti-ci configure-git 2>&1
 
-REM echo git commit -m "[ci skip] committing updated version information" complete: %ERRORLEVEL%
 echo ========================================================
 echo issuing git push
 echo ========================================================
