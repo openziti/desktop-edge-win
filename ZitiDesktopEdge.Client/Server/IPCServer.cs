@@ -176,7 +176,7 @@ namespace ZitiDesktopEdge.Server {
             var rr = new MonitorServiceStatusEvent();
             try {
                 ActionEvent ae = serializer.Deserialize<ActionEvent>(new JsonTextReader(new StringReader(json)));
-                Logger.Info("Op: {0}", ae.Op);
+                Logger.Debug("Op: {0}", ae.Op);
                 switch (ae.Op.ToLower()) {
                     case "stop":
                         if (ae.Action == "Force") {
@@ -246,7 +246,7 @@ namespace ZitiDesktopEdge.Server {
                 r.Code = -2;
                 r.Error = e.Message + ":" + e?.InnerException?.Message;
             }
-            Logger.Info("Returning status: {0}", r.Message);
+            Logger.Debug("Returning status: {0}", r.Message);
             await writer.WriteLineAsync(JsonConvert.SerializeObject(r));
             await writer.FlushAsync();
         }
