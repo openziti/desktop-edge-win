@@ -19,18 +19,12 @@
 #include <ziti/ziti_tunnel.h>
 #include <ziti/ziti_log.h>
 #include <uv.h>
-#include <stdio.h>
 
 void libuv_stopper(uv_async_t *a) {
      uv_stop(a->loop);
 }
 void set_log_level(int level, libuv_ctx *lctx) {
-    //ZITI_LOG(ERROR, "SETTING LOG TO %d", level);
     ziti_log_set_level(level);
-    //init_debug(&lctx->l);
-    //ZITI_LOG(INFO, "THIS IS INFO");
-    //ZITI_LOG(DEBUG, "THIS IS DEBUG");
-    //ZITI_LOG(TRACE, "THIS IS TRACE");
 }
 
 void log_writer_shim_go(int level, const char *loc, const char *msg, size_t msglen) {
