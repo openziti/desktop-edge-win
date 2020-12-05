@@ -67,5 +67,3 @@ jobs:
         with:
           name: ZitiDesktopEdgeClient-${{ env.VERSION }}
           path: "Installer/Output/Ziti Desktop Edge Client-*"
-        env:
-          version: Get-Content .\version
