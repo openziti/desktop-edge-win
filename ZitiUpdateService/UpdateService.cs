@@ -344,6 +344,9 @@ namespace ZitiUpdateService {
 		}
 
 		private void CheckUpdate(object sender, ElapsedEventArgs e) {
+			if(e != null) {
+				Logger.Debug("Timer triggered CheckUpdate at {0}", e.SignalTime);
+			}
 			if (inUpdateCheck || check == null) {
 				Logger.Warn("Still in update check. This is abnormal. Please report if you see this warning");
 				return;
