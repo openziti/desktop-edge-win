@@ -1,6 +1,23 @@
+function  NormalizeVersion([System.Version] $v) {
+    $major = $v.Major
+    $minor = $v.Minor
+    $build = $v.Build
+    $rev = $v.Revision
+
+    if ($major -lt 0) { $major = 0}
+    if ($minor -lt 0) { $major = 0}
+    if ($build -lt 0) { $build = 0}
+    if ($rev -lt 0) { $rev = 0}
+
+    $ver = "$major.$minor.$build.$rev"
+
+    return [System.Version]($ver)
+}
+
 echo "==================================== update-versions.ps1 begins ===================================="
 echo "Obtaining version information from .\version"
-$v=(Get-Content -Path .\version)
+$rawVersion=(Get-Content -Path .\version)
+$v=NormalizeVersion($rawVersion)
 echo "          version: $v"
 echo ""
 
