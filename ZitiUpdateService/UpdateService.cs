@@ -377,6 +377,7 @@ namespace ZitiUpdateService {
 
 				if (!check.HashIsValid(updateFolder, filename)) {
 					Logger.Warn("The file was downloaded but the hash is not valid. The file will be removed: {0}", fileDestination);
+					File.Delete(fileDestination);
 					inUpdateCheck = false;
 					return;
 				}

@@ -279,7 +279,7 @@ namespace ZitiDesktopEdge {
 					return;
 				} else {
 					// bad - not stopped yet...
-					logger.Debug("Waiting for service to stop... Still not stopped yet");
+					logger.Debug("Waiting for service to stop... Still not stopped yet. Status: {0}", resp.Status);
 				}
 			}
 			// real bad - means it's stuck probably. Ask the user if they want to try to force it...
