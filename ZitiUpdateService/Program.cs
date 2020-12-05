@@ -45,7 +45,7 @@ namespace ZitiUpdateService {
 				LogManager.Configuration = config;
 			}
 			Logger.Info("============================== ziti-monitor started ==============================");
-			Logger.Info("logger initialized using file? {0}", byFile);
+			Logger.Info("logger initialized using file: {0}", byFile);
 
 			UpdateService updateSvc = new UpdateService();
 			updateSvc.AutoLog = true;

@@ -215,10 +215,10 @@ namespace ZitiDesktopEdge.ServiceClient {
                         }
                         break;
                     case "status":
-                        TunnelStatusEvent se = serializer.Deserialize<TunnelStatusEvent>(jsonReader);
+                        TunnelStatusEvent tse = serializer.Deserialize<TunnelStatusEvent>(jsonReader);
 
-                        if (se != null) {
-                            TunnelStatusEvent(se);
+                        if (tse != null) {
+                            TunnelStatusEvent(tse);
                         }
                         break;
                     case "identity":
@@ -236,8 +236,10 @@ namespace ZitiDesktopEdge.ServiceClient {
                         }
                         break;
                     case "shutdown":
-                        Logger.Debug("Service shutdown has been requested! " + evt.Op);
-                        ClientDisconnected("true");
+                        Logger.Debug("shutdown message received");
+                        var se = new StatusEvent();
+                        se.Op = "clean";
+                        ShutdownEvent(se);
                         break;
                     default:
                         Logger.Debug("unexpected operation! " + evt.Op);

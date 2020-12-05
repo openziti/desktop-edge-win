@@ -102,7 +102,7 @@ namespace ZitiDesktopEdge {
 				LogManager.Configuration = config;
 			}
 			logger.Info("============================== UI started ==============================");
-			logger.Info("logger initialized using file? {0}", byFile);
+			logger.Info("logger initialized using file: {0}", byFile);
 
 			App.Current.MainWindow.WindowState = WindowState.Normal;
 			App.Current.MainWindow.Closing += MainWindow_Closing;

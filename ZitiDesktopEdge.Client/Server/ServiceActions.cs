@@ -9,6 +9,7 @@ namespace ZitiDesktopEdge.Server {
         private static ServiceController sc = new ServiceController("ziti");
         public static string ServiceStatus() {
             var status = sc.Status;
+            Logger.Debug("service status set to: {0}", sc.Status);
             return status.ToString();
         }
 

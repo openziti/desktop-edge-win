@@ -77,7 +77,6 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         protected virtual void ShutdownEvent(StatusEvent e) {
-            Logger.Debug("Clean shutdown detected from ziti");
             CleanShutdown = true;
             OnShutdownEvent?.Invoke(this, e);
         }
