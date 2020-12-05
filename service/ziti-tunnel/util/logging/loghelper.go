@@ -111,9 +111,9 @@ func ParseLevel(lvl string) (logrus.Level, int) {
 		return logrus.InfoLevel, 3
 	case "debug":
 		return logrus.DebugLevel, 4
-	case "trace":
-		return logrus.TraceLevel, 5
 	case "verbose":
+		return logrus.TraceLevel, 5
+	case "trace":
 		return logrus.TraceLevel, 6
 	default:
 		noFilenamelogger.Warnf("level not recognized: [%s]. Using Info", lvl)

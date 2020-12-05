@@ -12,8 +12,8 @@ namespace ZitiDesktopEdge.DataStructures {
         WARN = 2,
         INFO = 3,
         DEBUG = 4,
-        TRACE = 5,
-        VERBOSE = 6,
+        VERBOSE = 5,
+        TRACE = 6,
     }
 
     public class SvcResponse
