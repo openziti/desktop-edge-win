@@ -363,7 +363,7 @@ namespace ZitiDesktopEdge
 			logger.Info("checking for update...");
 			try {
 				CheckForUpdate.IsEnabled = false;
-				CheckForUpdateStatus.Content = "Checking for update started...";
+				CheckForUpdateStatus.Content = "Checking for update...";
 				CheckForUpdateStatus.Visibility = Visibility.Visible;
 				var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
 				var r = await monitorClient.DoUpdateCheck();
@@ -382,12 +382,18 @@ namespace ZitiDesktopEdge
 
 		async private void TriggerUpdate_Click(object sender, RoutedEventArgs e) {
 			try {
+				CheckForUpdate.IsEnabled = false;
+				TriggerUpdateButton.IsEnabled = false;
+				CheckForUpdateStatus.Content = "Requesting automatic update...";
 				var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
 				var r = await monitorClient.TriggerUpdate();
+				CheckForUpdateStatus.Content = "Automatic update requested...";
 				checkResponse(r);
 			} catch (Exception ex) {
 				logger.Error(ex, "unexpected error in update check: {0}", ex.Message);
 			}
+			TriggerUpdateButton.IsEnabled = true;
+			CheckForUpdate.IsEnabled = true;
 		}
 	}
 }

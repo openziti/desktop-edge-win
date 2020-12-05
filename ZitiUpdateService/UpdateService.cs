@@ -345,7 +345,7 @@ namespace ZitiUpdateService {
 
 		private void CheckUpdate(object sender, ElapsedEventArgs e) {
 			if (inUpdateCheck || check == null) {
-				Logger.Warn("Still in update check. This is very abnormal. Please report if you see this warning");
+				Logger.Warn("Still in update check. This is abnormal. Please report if you see this warning");
 				return;
 			}
 			inUpdateCheck = true; //simple semaphone
@@ -373,13 +373,14 @@ namespace ZitiUpdateService {
 					Logger.Info("copying update package begins");
 					check.CopyUpdatePackage(updateFolder, filename);
 					Logger.Info("copying update package complete");
-
-					if (!check.HashIsValid(updateFolder, filename)) {
-						Logger.Warn("The file was downloaded but the hash is not valid. The file will be removed: {0}", fileDestination);
-						return;
-					}
-					Logger.Debug("downloaded file hash was correct. update can continue.");
 				}
+
+				if (!check.HashIsValid(updateFolder, filename)) {
+					Logger.Warn("The file was downloaded but the hash is not valid. The file will be removed: {0}", fileDestination);
+					inUpdateCheck = false;
+					return;
+				}
+				Logger.Debug("downloaded file hash was correct. update can continue.");
 
 				// check digital signature
 				var signer = X509Certificate.CreateFromSignedFile(fileDestination);
@@ -391,6 +392,7 @@ namespace ZitiUpdateService {
 				var subject = signer.Subject;
 				if (!expected_subject.Contains(subject)) {
 					Logger.Error("the file downloaded uses a subject that is unknown! the installation will not proceed. [subject:{0}]", subject);
+					inUpdateCheck = false;
 					return;
 
 				} else {
@@ -400,6 +402,7 @@ namespace ZitiUpdateService {
 				var hash = signer.GetCertHashString();
 				if (!expected_hashes.Contains(hash)) {
 					Logger.Error("the file downloaded is signed by an unknown certificate! the installation will not proceed. [hash:{0}]", hash);
+					inUpdateCheck = false;
 					return;
 
 				} else {

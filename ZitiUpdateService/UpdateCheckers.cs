@@ -109,7 +109,7 @@ namespace ZitiUpdateService {
 				string computed = BitConverter.ToString(sha256bytes).Replace("-", "");
 
 				File.Delete(sha256dest);
-				return computed.ToLower() == hash.ToLower();
+				return computed.ToLower().Trim() == hash.ToLower().Trim();
 			}
 		}
 
