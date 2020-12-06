@@ -526,7 +526,7 @@ namespace ZitiUpdateService {
 			};
 			EventRegistry.SendEventToConsumers(status);
 
-			await Task.Delay(500); //wait for the event to send and give the UI time to close...
+			await Task.Delay(1000); //wait for the event to send and give the UI time to close...
 
 			stopProcessForcefully("ZitiDesktopEdge", "UI");
 		}

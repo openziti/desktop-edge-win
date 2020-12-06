@@ -45,7 +45,7 @@ namespace ZitiDesktopEdge {
 		public static string ExpectedLogPathRoot;
 		public static string ExpectedLogPathUI;
 		public static string ExpectedLogPathServices;
-		
+
 		static MainWindow() {
 			var asm = System.Reflection.Assembly.GetExecutingAssembly();
 			ThisAssemblyName = asm.GetName().Name;
@@ -65,17 +65,19 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-        private void AddIdentity(ZitiIdentity id) {
+		private void AddIdentity(ZitiIdentity id) {
 			semaphoreSlim.Wait();
 			if (!identities.Any(i => id.Fingerprint == i.Fingerprint)) {
 				identities.Add(id);
 			}
 			semaphoreSlim.Release();
-        }
+		}
 
+		private System.Windows.Forms.ContextMenu contextMenu;
+		private System.Windows.Forms.MenuItem contextMenuItem;
+		private System.ComponentModel.IContainer components;
 		public MainWindow() {
 			InitializeComponent();
-
 			string nlogFile = Path.Combine(ExecutionDirectory, ThisAssemblyName + "-log.config");
 
 			bool byFile = false;
@@ -108,17 +110,52 @@ namespace ZitiDesktopEdge {
 			App.Current.MainWindow.Closing += MainWindow_Closing;
 			App.Current.MainWindow.Deactivated += MainWindow_Deactivated;
 			App.Current.MainWindow.Activated += MainWindow_Activated;
+
+
+			this.components = new System.ComponentModel.Container();
+			this.contextMenu = new System.Windows.Forms.ContextMenu();
+			this.contextMenuItem = new System.Windows.Forms.MenuItem();
+			this.contextMenu.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] { this.contextMenuItem });
+
+			this.contextMenuItem.Index = 0;
+			this.contextMenuItem.Text = "&Close UI";
+			this.contextMenuItem.Click += new System.EventHandler(this.contextMenuItem_Click);
+
+
 			notifyIcon = new System.Windows.Forms.NotifyIcon();
 			notifyIcon.Visible = true;
 			notifyIcon.Click += TargetNotifyIcon_Click;
 			notifyIcon.Visible = true;
+			notifyIcon.BalloonTipClosed += NotifyIcon_BalloonTipClosed;
+			notifyIcon.MouseClick += NotifyIcon_MouseClick;
+			notifyIcon.ContextMenu = this.contextMenu;
+
 			IdentityMenu.OnDetach += OnDetach;
 			MainMenu.OnDetach += OnDetach;
 
 			SetNotifyIcon("white");
 		}
+		private void contextMenuItem_Click(object Sender, EventArgs e) {
+			this.Close();
+		}
 
-		private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
+		private void NotifyIcon_MouseClick(object sender, System.Windows.Forms.MouseEventArgs e) {
+			if (e.Button == System.Windows.Forms.MouseButtons.Left) {
+				//Do the awesome left clickness
+			} else if (e.Button == System.Windows.Forms.MouseButtons.Right) {
+				//Do the wickedy right clickness
+			} else {
+				//Some other button from the enum :)
+			}
+		}
+
+        private void NotifyIcon_BalloonTipClosed(object sender, EventArgs e) {
+			var thisIcon = (System.Windows.Forms.NotifyIcon)sender;
+			thisIcon.Visible = false;
+			thisIcon.Dispose();
+		}
+
+        private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
 			OnDetach(e);
 		}
 
@@ -148,9 +185,13 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
-			notifyIcon.Visible = false;
-			//notifyIcon.Icon.Dispose();
-			//notifyIcon.Dispose();
+			if (notifyIcon != null) {
+				notifyIcon.Visible = false;
+				notifyIcon.Icon.Dispose();
+				notifyIcon.Dispose();
+				notifyIcon = null;
+			}
+			Application.Current.Shutdown();
 		}
 
 		private void SetCantDisplay(string title, string detailMessage, Visibility closeButtonVisibility) {
@@ -239,8 +280,11 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void MonitorClient_OnServiceStatusEvent(object sender, MonitorServiceStatusEvent evt) {
-			if (evt.Status == "upgrading") {
+			if (evt.Message?.ToLower() == "upgrading") {
 				logger.Info("The monitor has indicated an upgrade is in progress. Shutting down the UI");
+				notifyIcon.Visible = false;
+				notifyIcon.Icon.Dispose();
+				notifyIcon.Dispose();
 				Application.Current.Shutdown();
 			}
 			logger.Debug("MonitorClient_OnServiceStatusEvent: {0}", evt.Status);
@@ -572,8 +616,8 @@ namespace ZitiDesktopEdge {
 		}
 		private void SetNotifyIcon(string iconPrefix) {
 			var iconUri = new Uri("pack://application:,,/Assets/Images/ziti-" + iconPrefix + ".ico");
-			System.IO.Stream iconStream = System.Windows.Application.GetResourceStream(iconUri).Stream;
-			notifyIcon.Icon = new System.Drawing.Icon(iconStream);
+			Stream iconStream = Application.GetResourceStream(iconUri).Stream;
+			notifyIcon.Icon = new Icon(iconStream);
 
 			Application.Current.MainWindow.Icon = System.Windows.Media.Imaging.BitmapFrame.Create(iconUri);
 		}
