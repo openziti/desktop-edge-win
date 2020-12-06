@@ -37,7 +37,7 @@ namespace ZitiDesktopEdge
 
 		private bool isBeta {
 			get {
-				return Application.Current.Properties["ReleaseStream"].ToString() == "beta";
+				return Application.Current.Properties["ReleaseStream"]?.ToString() == "beta";
 			}
 		}
 
