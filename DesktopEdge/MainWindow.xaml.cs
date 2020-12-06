@@ -45,7 +45,7 @@ namespace ZitiDesktopEdge {
 		public static string ExpectedLogPathRoot;
 		public static string ExpectedLogPathUI;
 		public static string ExpectedLogPathServices;
-
+		
 		static MainWindow() {
 			var asm = System.Reflection.Assembly.GetExecutingAssembly();
 			ThisAssemblyName = asm.GetName().Name;
@@ -206,7 +206,8 @@ namespace ZitiDesktopEdge {
 
 			monitorClient = new MonitorClient();
 			monitorClient.OnClientConnected += MonitorClient_OnClientConnected;
-			monitorClient.OnServiceStatusEvent += MonitorClient_OnServiceStatusEvent;
+            monitorClient.OnServiceStatusEvent += MonitorClient_OnServiceStatusEvent;
+            monitorClient.OnShutdownEvent += MonitorClient_OnShutdownEvent;
 			Application.Current.Properties.Add("MonitorClient", monitorClient);
 
 			Application.Current.Properties.Add("Identities", new List<ZitiIdentity>());
@@ -233,8 +234,16 @@ namespace ZitiDesktopEdge {
 			Placement();
 		}
 
+        private void MonitorClient_OnShutdownEvent(object sender, StatusEvent e) {
+			Application.Current.Shutdown();
+		}
+
 		private void MonitorClient_OnServiceStatusEvent(object sender, MonitorServiceStatusEvent evt) {
-			logger.Debug("MonitorClient_OnServiceStatusEvent");
+			if (evt.Status == "upgrading") {
+				logger.Info("The monitor has indicated an upgrade is in progress. Shutting down the UI");
+				Application.Current.Shutdown();
+			}
+			logger.Debug("MonitorClient_OnServiceStatusEvent: {0}", evt.Status);
 			Application.Current.Properties["ReleaseStream"] = evt.ReleaseStream;
 			ServiceControllerStatus status = (ServiceControllerStatus)Enum.Parse(typeof(ServiceControllerStatus), evt.Status);
 
@@ -248,6 +257,7 @@ namespace ZitiDesktopEdge {
 					break;
 				case ServiceControllerStatus.StopPending:
 					logger.Info("Service is stopping...");
+
 					this.Dispatcher.Invoke(async () => {
 						SetCantDisplay("The Service is Stopping", "Please wait while the service stops", Visibility.Hidden);
 						await WaitForServiceToStop(DateTime.Now + TimeSpan.FromSeconds(30));

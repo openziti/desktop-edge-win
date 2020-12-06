@@ -53,7 +53,7 @@
                     <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/logs.png" Width="Auto" Label="Service Logs" MouseUp="ShowLogs"></local:MenuItem>
                     <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/logs.png" Width="Auto" Label="Application Logs" MouseUp="ShowUILogs"></local:MenuItem>
                     <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/advanced.png" Width="Auto" Label="Set Logging Level" MouseUp="SetLogLevel"></local:MenuItem>
-                    <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/advanced.png" Width="Auto" Label="Set Release Stream" MouseUp="ShowReleaseStreamMenuAction"></local:MenuItem>
+                    <local:MenuItem x:Name="ShowReleaseStreamMenuItem" Visibility="Collapsed" HorizontalAlignment="Stretch" Icon="/Assets/Images/advanced.png" Width="Auto" Label="Set Release Stream" MouseUp="ShowReleaseStreamMenuAction"></local:MenuItem>
                 </StackPanel>
                 <StackPanel Name="LogLevelItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <local:SubOptionItem x:Name="LogFatal" HorizontalAlignment="Stretch" Width="Auto" Label="Fatal" MouseUp="SetLevel"></local:SubOptionItem>

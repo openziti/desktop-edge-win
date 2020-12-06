@@ -13,6 +13,7 @@ using ZitiDesktopEdge.ServiceClient;
 using NLog;
 using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.Native;
+using System.Configuration;
 
 namespace ZitiDesktopEdge
 {
@@ -32,6 +33,7 @@ namespace ZitiDesktopEdge
 		public string licenseData = "it's open source.";
 		public string LogLevel = "";
 		private string appVersion = null;
+		private bool allowReleaseSelect = false;
 
 		private bool isBeta {
 			get {
@@ -42,6 +44,16 @@ namespace ZitiDesktopEdge
 		public MainMenu() {
 			InitializeComponent();
 
+			try {
+				allowReleaseSelect = bool.Parse(ConfigurationManager.AppSettings.Get("ReleaseStreamSelect"));
+			} catch {
+				//if we can't parse the config - leave it as false...
+				allowReleaseSelect = false; //setting it here in case anyone changes the default above
+			}
+#if DEBUG
+			Debug.WriteLine("OVERRIDING allowReleaseSelect to true!");
+			allowReleaseSelect = true;
+#endif
 			appVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 			LicensesItems.Text = licenseData;
 			// don't check from the UI any more... CheckUpdates();
@@ -87,7 +99,7 @@ namespace ZitiDesktopEdge
 			menuState = "UILogs";
 			UpdateState();
 		}
-		async private void ShowReleaseStreamMenuAction(object sender, MouseButtonEventArgs e) {
+		private void ShowReleaseStreamMenuAction(object sender, MouseButtonEventArgs e) {
 			logger.Warn("this is ShowReleaseStreamMenuAction at warn");
 			logger.Info("this is ShowReleaseStreamMenuAction at info");
 			logger.Debug("this is ShowReleaseStreamMenuAction at debug");
@@ -169,6 +181,7 @@ namespace ZitiDesktopEdge
 				MenuTitle.Content = "Advanced Settings";
 				AdvancedItems.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
+				ShowReleaseStreamMenuItem.Visibility = allowReleaseSelect ? Visibility.Visible : Visibility.Collapsed;
 			} else if (menuState == "Licenses") {
 				MenuTitle.Content = "Third Party Licenses";
 				LicensesItems.Visibility = Visibility.Visible;
@@ -197,7 +210,7 @@ namespace ZitiDesktopEdge
 				SetReleaseStream();
 
 				MenuTitle.Content = "Set Release Stream";
-				ReleaseStreamItems.Visibility = Visibility.Visible;
+				ReleaseStreamItems.Visibility = allowReleaseSelect ? Visibility.Visible : Visibility.Collapsed;
 				BackArrow.Visibility = Visibility.Visible;
 				//xxxxxxxx
 			} else if (menuState == "Config") {

@@ -229,9 +229,9 @@ namespace ZitiUpdateService {
 			AccessUtils.GrantAccessToFile(Path.Combine(exeLocation, "ZitiDesktopEdge-log.config")); //allow anyone to change the log file config
 
 			Logger.Info("starting ipc server");
-			ipcServer = svr.startIpcServer(onIpcClient);
+			ipcServer = svr.startIpcServerAsync(onIpcClientAsync);
 			Logger.Info("starting events server");
-			eventServer = svr.startEventsServer(onEventsClient);
+			eventServer = svr.startEventsServerAsync(onEventsClientAsync);
 
 			Logger.Info("starting service watchers");
 			if (!running) {
@@ -243,7 +243,7 @@ namespace ZitiUpdateService {
 			Logger.Info("ziti-monitor service is initialized and running");
 		}
 
-		async private Task onEventsClient(StreamWriter writer) {
+		async private Task onEventsClientAsync(StreamWriter writer) {
 			Logger.Info("a new events client was connected");
 			//reset to release stream
 			//initial status when connecting the event stream
@@ -258,7 +258,7 @@ namespace ZitiUpdateService {
 			await writer.FlushAsync();
 		}
 
-        async private Task onIpcClient(StreamWriter writer) {
+        async private Task onIpcClientAsync(StreamWriter writer) {
 			Logger.Info("a new ipc client was connected");
 		}
 
@@ -359,6 +359,7 @@ namespace ZitiUpdateService {
 				if (avail >= 0) {
 					Logger.Debug("update check complete. no update available");
 					inUpdateCheck = false;
+
 					return;
 				}
 
@@ -414,7 +415,7 @@ namespace ZitiUpdateService {
 				}
 
 				StopZiti();
-				StopUI();
+				StopUI().Wait();
 
 				Logger.Info("Running update package: " + fileDestination);
 				// shell out to a new process and run the uninstall, reinstall steps which SHOULD stop this current process as well
@@ -515,12 +516,31 @@ namespace ZitiUpdateService {
 			}
 		}
 
-		private void StopUI() {
+		async private Task StopUI() {
+			//first try to ask the UI to exit:
+
+			MonitorServiceStatusEvent status = new MonitorServiceStatusEvent() {
+				Code = 0,
+				Error = "",
+				Message = "Upgrading"
+			};
+			EventRegistry.SendEventToConsumers(status);
+
+			await Task.Delay(500); //wait for the event to send and give the UI time to close...
+
 			stopProcessForcefully("ZitiDesktopEdge", "UI");
 		}
 
 		private static void Svc_OnShutdownEvent(object sender, StatusEvent e) {
 			Logger.Info("the service is shutting down normally...");
+
+			MonitorServiceStatusEvent status = new MonitorServiceStatusEvent() {
+				Code = 0,
+				Error = "SERVICE DOWN",
+				Message = "SERVICE DOWN",
+				Status = ServiceActions.ServiceStatus()
+			};
+			EventRegistry.SendEventToConsumers(status);
 		}
 
 		private static void Svc_OnTunnelStatusEvent(object sender, TunnelStatusEvent e) {
@@ -539,6 +559,14 @@ namespace ZitiUpdateService {
 			if (svc.CleanShutdown) {
 				//then this is fine and expected - the service is shutting down
 				Logger.Info("client disconnected due to clean service shutdown");
+
+				MonitorServiceStatusEvent status = new MonitorServiceStatusEvent() {
+					Code = 0,
+					Error = "SERVICE DOWN",
+					Message = "SERVICE DOWN",
+					Status = ServiceActions.ServiceStatus()
+				};
+				EventRegistry.SendEventToConsumers(status);
 			} else {
 				Logger.Error("SERVICE IS DOWN and did not exit cleanly. initiating DNS cleanup");
 				

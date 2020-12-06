@@ -59,9 +59,9 @@
     <Compile Include="ServiceClient\AbstractClient.cs" />
     <Compile Include="Server\IPCServer.cs" />
     <Compile Include="Server\ServiceActions.cs" />
-    <Compile Include="ServiceClient\MonitorClient.cs" />
     <Compile Include="ServiceClient\DataClient.cs" />
     <Compile Include="DataStructures\DataStructures.cs" />
+    <Compile Include="ServiceClient\MonitorClient.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

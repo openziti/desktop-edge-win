@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Threading;
 
 namespace ZitiDesktopEdge.Server {
@@ -8,7 +9,7 @@ namespace ZitiDesktopEdge.Server {
         public static event EventHandler MyEvent;
 
         public static void SendEventToConsumers(object objToSend) {
-            MyEvent?.Invoke(objToSend, null);
+            MyEvent?.Invoke(JsonConvert.SerializeObject(objToSend), null);
         }
     }
 }

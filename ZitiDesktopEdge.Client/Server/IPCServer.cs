@@ -44,7 +44,7 @@ namespace ZitiDesktopEdge.Server {
             eventPipeName = EventPipeName;
         }
 
-        async public Task startIpcServer(OnClientAsync onClient) {
+        async public Task startIpcServerAsync(OnClientAsync onClient) {
             int idx = 0;
 
             // Allow AuthenticatedUserSid read and write access to the pipe. 
@@ -81,10 +81,7 @@ namespace ZitiDesktopEdge.Server {
             }
         }
 
-
-        //public event EventHandler<StatusEvent> OnShutdownEvent;
-
-        async public Task startEventsServer(OnClientAsync onClient) {
+        async public Task startEventsServerAsync(OnClientAsync onClient) {
             int idx = 0;
 
             // Allow AuthenticatedUserSid read and write access to the pipe. 
