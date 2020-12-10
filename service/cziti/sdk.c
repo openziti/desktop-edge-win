@@ -28,7 +28,7 @@ void set_log_level(int level, libuv_ctx *lctx) {
 }
 
 void log_writer_shim_go(int level, const char *loc, const char *msg, size_t msglen) {
-  log_writer_cb(level, (char*)loc, (char*)msg, msglen);
+  log_writer_cb(level, (char*)loc, (char*)msg, (int)msglen);
 }
 
 void libuv_init(libuv_ctx *lctx) {
@@ -38,11 +38,8 @@ void libuv_init(libuv_ctx *lctx) {
 }
 
 void libuv_runner(void *arg) {
-    ZITI_LOG(INFO, "starting event loop");
     uv_loop_t *l = arg;
     uv_run(l, UV_RUN_DEFAULT);
-
-    ZITI_LOG(INFO, "event finished finished\n");
 }
 
 void libuv_run(libuv_ctx *lctx) {
@@ -76,10 +73,6 @@ extern void c_mapiter(model_map *map) {
 		printf("k: %s, v: %s", k, v);
 		it = model_map_it_next(it);
 	}
-}
-
-void ZLOG(int level, char* msg) {
-    ZITI_LOG(level, "%s", msg);
 }
 
 bool is_null(void* anything){

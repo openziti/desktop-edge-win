@@ -22,6 +22,7 @@ package cziti
 
 #include <ziti/ziti.h>
 #include "ziti/ziti_tunnel.h"
+#include "ziti/ziti_log.h"
 
 #include "sdk.h"
 extern void initCB(ziti_context nf, int status, void *ctx);
@@ -369,8 +370,8 @@ func free_async(handle *C.uv_handle_t){
 }
 
 //export log_writer_cb
-func log_writer_cb(level C.int, loc C.string, msg C.string, _ /*msglen*/ C.size_t) {
-	gomsg := C.GoString(msg)
+func log_writer_cb(level C.int, loc C.string, msg C.string, msglen C.int) {
+	gomsg := C.GoStringN(msg, msglen)
 	goline := C.GoString(loc)
 	lvl := level
 	switch lvl {
