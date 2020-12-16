@@ -15,8 +15,7 @@ using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.Native;
 using System.Configuration;
 
-namespace ZitiDesktopEdge
-{
+namespace ZitiDesktopEdge {
 	/// <summary>
 	/// Interaction logic for MainMenu.xaml
 	/// </summary>
@@ -117,29 +116,37 @@ namespace ZitiDesktopEdge
 
 			bool releaseClicked = opt.Label.ToLower() == "stable";
 
+			SvcResponse r = null;
 			if (releaseClicked) {
 				if (isBeta) {
 					//toggle to stable
-					var r = await monitorClient.SetReleaseStreamAsync("stable");
-					checkResponse(r);
+					r = await monitorClient.SetReleaseStreamAsync("stable");
+					checkResponse(r, "Error When Setting Release Stream", "An error occurred while trying to set the release stream.");
 				} else {
 					logger.Debug("stable clicked but already on stable stream");
 				}
 			} else {
 				if (!isBeta) {
 					//toggle to beta
-					var r = await monitorClient.SetReleaseStreamAsync("beta");
-					checkResponse(r);
+					r = await monitorClient.SetReleaseStreamAsync("beta");
+					checkResponse(r, "Error When Setting Release Stream", "An error occurred while trying to set the release stream.");
 				} else {
 					logger.Debug("beta clicked but already on beta stream");
 				}
 			}
-			Application.Current.Properties["ReleaseStream"] = opt.Label.ToLower();
-			UpdateState();
+			if (r != null) {
+				Application.Current.Properties["ReleaseStream"] = opt.Label.ToLower();
+				UpdateState();
+			}
 		}
 
-		private void checkResponse(SvcResponse r) {
-			logger.Info(r.ToString());
+		private void checkResponse(SvcResponse r, string titleOnErr, string msgOnErr) {
+			if (r == null) {
+				MainWindow mw = (MainWindow)Application.Current.MainWindow;
+				mw?.ShowError(titleOnErr, msgOnErr);
+			} else {
+				logger.Info(r?.ToString());
+			}
 		}
 
 		private void SetLogLevel(object sender, MouseButtonEventArgs e) {
@@ -193,7 +200,6 @@ namespace ZitiDesktopEdge
 				string targetFile = MainWindow.ExpectedLogPathServices;
 
 				OpenLogFile("service", targetFile);
-				OpenLogFile("UI", MainWindow.ExpectedLogPathUI);
 				BackArrow.Visibility = Visibility.Visible;
 			} else if (menuState == "UILogs") {
 				MenuTitle.Content = "Advanced Settings";
@@ -282,6 +288,12 @@ namespace ZitiDesktopEdge
 			string timestamp = DateTime.Now.ToFileTime().ToString();
 			var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
 			MonitorServiceStatusEvent resp = await monitorClient.CaptureLogsAsync();
+			if (resp == null) {
+				logger.Error("no response from monitorClient?");
+				MainWindow mw = (MainWindow)Application.Current.MainWindow;
+				mw?.ShowError("Error Collecting Feedback", "An error occurred while trying to gather feedback.\nIs the monitor service running?");
+				return;
+			}
 			string pathToLogs = resp.Message;
 			logger.Info("Log files found at : {0}", resp.Message);
 			mailMessage.Attachments.Add(new Attachment(pathToLogs));
@@ -300,13 +312,20 @@ namespace ZitiDesktopEdge
 				var closeMethod = mailWriter.GetType().GetMethod("Close", BindingFlags.Instance | BindingFlags.NonPublic);
 				closeMethod.Invoke(mailWriter, BindingFlags.Instance | BindingFlags.NonPublic, null, new object[] { }, null);
 			}
-
-			var p = Process.Start(emlFile);
-			p.Exited += (object lambdaSender, EventArgs lambdaEventArgs) => {
-				logger.Info("Removing temp file: {0}", emlFile);
-				File.Delete(emlFile);
-			};
-			p.EnableRaisingEvents = true;
+			try {
+				var p = Process.Start(emlFile);
+				if (p != null) {
+					p.Exited += (object lambdaSender, EventArgs lambdaEventArgs) => {
+						logger.Info("Removing temp file: {0}", emlFile);
+						File.Delete(emlFile);
+					};
+					p.EnableRaisingEvents = true;
+				} else {
+					logger.Debug("process was null. most likely the email file format was not known when the process tried to start");
+				}
+			} catch (Exception ex) {
+				logger.Warn(ex, "An unexpected error has occurred when submitting feedback? {0}", ex.Message);
+			}
 		}
 
 		private void ShowSupport(object sender, MouseButtonEventArgs e) {
@@ -380,11 +399,11 @@ namespace ZitiDesktopEdge
 				CheckForUpdateStatus.Visibility = Visibility.Visible;
 				var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
 				var r = await monitorClient.DoUpdateCheck();
-				checkResponse(r);
+				checkResponse(r, "Error When Checking for Update", "An error occurred while trying check for update.");
 				CheckForUpdateStatus.Content = r.Message;
-                if (r.UpdateAvailable) {
+				if (r.UpdateAvailable) {
 					TriggerUpdateButton.Visibility = Visibility.Visible;
-                } else {
+				} else {
 					TriggerUpdateButton.Visibility = Visibility.Collapsed;
 				}
 			} catch (Exception ex) {
@@ -401,7 +420,7 @@ namespace ZitiDesktopEdge
 				var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
 				var r = await monitorClient.TriggerUpdate();
 				CheckForUpdateStatus.Content = "Automatic update requested...";
-				checkResponse(r);
+				checkResponse(r, "Error When Triggering Update", "An error occurred while trying to trigger the update.");
 			} catch (Exception ex) {
 				logger.Error(ex, "unexpected error in update check: {0}", ex.Message);
 			}
