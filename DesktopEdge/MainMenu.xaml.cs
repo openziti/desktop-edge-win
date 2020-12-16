@@ -15,8 +15,7 @@ using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.Native;
 using System.Configuration;
 
-namespace ZitiDesktopEdge
-{
+namespace ZitiDesktopEdge {
 	/// <summary>
 	/// Interaction logic for MainMenu.xaml
 	/// </summary>
@@ -289,12 +288,12 @@ namespace ZitiDesktopEdge
 			string timestamp = DateTime.Now.ToFileTime().ToString();
 			var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
 			MonitorServiceStatusEvent resp = await monitorClient.CaptureLogsAsync();
-			if(resp == null) {
+			if (resp == null) {
 				logger.Error("no response from monitorClient?");
 				MainWindow mw = (MainWindow)Application.Current.MainWindow;
 				mw?.ShowError("Error Collecting Feedback", "An error occurred while trying to gather feedback.\nIs the monitor service running?");
 				return;
-            }
+			}
 			string pathToLogs = resp.Message;
 			logger.Info("Log files found at : {0}", resp.Message);
 			mailMessage.Attachments.Add(new Attachment(pathToLogs));
@@ -323,10 +322,10 @@ namespace ZitiDesktopEdge
 					p.EnableRaisingEvents = true;
 				} else {
 					logger.Debug("process was null. most likely the email file format was not known when the process tried to start");
-                }
-			} catch(Exception ex) {
+				}
+			} catch (Exception ex) {
 				logger.Warn(ex, "An unexpected error has occurred when submitting feedback? {0}", ex.Message);
-            }
+			}
 		}
 
 		private void ShowSupport(object sender, MouseButtonEventArgs e) {
@@ -402,9 +401,9 @@ namespace ZitiDesktopEdge
 				var r = await monitorClient.DoUpdateCheck();
 				checkResponse(r, "Error When Checking for Update", "An error occurred while trying check for update.");
 				CheckForUpdateStatus.Content = r.Message;
-                if (r.UpdateAvailable) {
+				if (r.UpdateAvailable) {
 					TriggerUpdateButton.Visibility = Visibility.Visible;
-                } else {
+				} else {
 					TriggerUpdateButton.Visibility = Visibility.Collapsed;
 				}
 			} catch (Exception ex) {
