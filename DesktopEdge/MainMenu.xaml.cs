@@ -300,13 +300,20 @@ namespace ZitiDesktopEdge
 				var closeMethod = mailWriter.GetType().GetMethod("Close", BindingFlags.Instance | BindingFlags.NonPublic);
 				closeMethod.Invoke(mailWriter, BindingFlags.Instance | BindingFlags.NonPublic, null, new object[] { }, null);
 			}
-
-			var p = Process.Start(emlFile);
-			p.Exited += (object lambdaSender, EventArgs lambdaEventArgs) => {
-				logger.Info("Removing temp file: {0}", emlFile);
-				File.Delete(emlFile);
-			};
-			p.EnableRaisingEvents = true;
+			try {
+				var p = Process.Start(emlFile);
+				if (p != null) {
+					p.Exited += (object lambdaSender, EventArgs lambdaEventArgs) => {
+						logger.Info("Removing temp file: {0}", emlFile);
+						File.Delete(emlFile);
+					};
+					p.EnableRaisingEvents = true;
+				} else {
+					logger.Debug("process was null. most likely the email file format was not known when the process tried to start");
+                }
+			} catch(Exception ex) {
+				logger.Warn(ex, "An unexpected error has occurred when submitting feedback? {0}", ex.Message);
+            }
 		}
 
 		private void ShowSupport(object sender, MouseButtonEventArgs e) {

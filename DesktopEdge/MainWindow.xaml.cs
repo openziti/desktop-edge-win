@@ -40,6 +40,8 @@ namespace ZitiDesktopEdge {
 
 		private static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
+		static System.Reflection.Assembly asm = System.Reflection.Assembly.GetExecutingAssembly();
+
 		public static string ThisAssemblyName;
 		public static string ExecutionDirectory;
 		public static string ExpectedLogPathRoot;
@@ -47,7 +49,7 @@ namespace ZitiDesktopEdge {
 		public static string ExpectedLogPathServices;
 
 		static MainWindow() {
-			var asm = System.Reflection.Assembly.GetExecutingAssembly();
+			asm = System.Reflection.Assembly.GetExecutingAssembly();
 			ThisAssemblyName = asm.GetName().Name;
 #if DEBUG
 			ExecutionDirectory = @"C:\Program Files (x86)\NetFoundry, Inc\Ziti Desktop Edge";
