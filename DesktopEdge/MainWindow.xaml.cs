@@ -859,7 +859,7 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-		private void ShowError(String title, String message) {
+		public void ShowError(String title, String message) {
 			ErrorTitle.Content = title;
 			ErrorDetails.Text = message;
 			ErrorView.Visibility = Visibility.Visible;
@@ -908,7 +908,12 @@ namespace ZitiDesktopEdge {
 		}
 		async private Task CollectLogFiles() {
 			MonitorServiceStatusEvent resp = await monitorClient.CaptureLogsAsync();
-			logger.Info("response: {0}", resp.Message);
+			if (resp != null) {
+
+				logger.Info("response: {0}", resp.Message);
+			} else {
+				ShowError("Error Collecting Feedback", "An error occurred while trying to gather feedback. Is the monitor service running?");
+            }
 		}
     }
 }
