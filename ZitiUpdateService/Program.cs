@@ -15,7 +15,7 @@ namespace ZitiUpdateService {
 		/// The main entry point for the application.
 		/// </summary>
 		static void Main() {
-			var asm = System.Reflection.Assembly.GetExecutingAssembly();
+			var asm = Assembly.GetExecutingAssembly();
 			var logname = asm.GetName().Name;
 
 			var curdir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);

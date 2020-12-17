@@ -186,15 +186,7 @@ namespace ZitiUpdateService {
 				}
 			}
 
-			Process process = new Process();
-			ProcessStartInfo startInfo = new ProcessStartInfo();
-			startInfo.WindowStyle = ProcessWindowStyle.Hidden;
-			startInfo.FileName = "cmd.exe";
-			var ipconfigOut = Path.Combine(destinationLocation, "ipconfig.all.txt");
-			Logger.Info("copying ipconfig /all to {0}", ipconfigOut);
-			startInfo.Arguments = $"/C ipconfig /all > \"{ipconfigOut}\"";
-			process.StartInfo = startInfo;
-			process.Start();
+			outputIpconfigInfo(destinationLocation);
 
 
 			Task.Delay(500).Wait();
@@ -211,6 +203,18 @@ namespace ZitiUpdateService {
 			return zipName;
 		}
 
+        private void outputIpconfigInfo(string destinationFolder) {
+			Process process = new Process();
+			ProcessStartInfo startInfo = new ProcessStartInfo();
+			startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+			startInfo.FileName = "cmd.exe";
+			var ipconfigOut = Path.Combine(destinationFolder, "ipconfig.all.txt");
+			Logger.Info("copying ipconfig /all to {0}", ipconfigOut);
+			startInfo.Arguments = $"/C ipconfig /all > \"{ipconfigOut}\"";
+			process.StartInfo = startInfo;
+			process.Start();
+		}
+
         public void Debug() {
 			OnStart(null);// new string[] { "FilesystemCheck" });
 		}
@@ -220,12 +224,15 @@ namespace ZitiUpdateService {
 			Logger.Info("ziti-monitor service is starting");
 
 			var logs = Path.Combine(exeLocation, "logs");
+			addLogsFolder(exeLocation);
 			addLogsFolder(logs);
 			addLogsFolder(Path.Combine(logs, "UI"));
 			addLogsFolder(Path.Combine(logs, "ZitiMonitorService"));
 			addLogsFolder(Path.Combine(logs, "service"));
 
+			AccessUtils.GrantAccessToFile(Path.Combine(exeLocation, "ZitiUpdateService.exe.config")); //allow anyone to change the config file
 			AccessUtils.GrantAccessToFile(Path.Combine(exeLocation, "ZitiUpdateService-log.config")); //allow anyone to change the log file config
+			AccessUtils.GrantAccessToFile(Path.Combine(exeLocation, "ZitiDesktopEdge.exe.config")); //allow anyone to change the config file
 			AccessUtils.GrantAccessToFile(Path.Combine(exeLocation, "ZitiDesktopEdge-log.config")); //allow anyone to change the log file config
 
 			Logger.Info("starting ipc server");
@@ -241,9 +248,10 @@ namespace ZitiUpdateService {
 				});
 			}
 			Logger.Info("ziti-monitor service is initialized and running");
+			base.OnStart(args);
 		}
 
-		async private Task onEventsClientAsync(StreamWriter writer) {
+        async private Task onEventsClientAsync(StreamWriter writer) {
 			Logger.Info("a new events client was connected");
 			//reset to release stream
 			//initial status when connecting the event stream
@@ -275,10 +283,41 @@ namespace ZitiUpdateService {
 		}
 
 		protected override void OnStop() {
-			Logger.Info("ziti-monitor service is stopping");
+			Logger.Info("ziti-monitor OnStop was called");
+			base.OnStop();
 		}
 
-		private void SetupServiceWatchers() {
+		protected override void OnPause() {
+			Logger.Info("ziti-monitor OnPause was called");
+			base.OnPause();
+		}
+
+        protected override void OnShutdown() {
+			Logger.Info("ziti-monitor OnShutdown was called");
+			base.OnShutdown();
+		}
+
+        protected override void OnContinue() {
+			Logger.Info("ziti-monitor OnContinue was called");
+			base.OnContinue();
+		}
+
+        protected override void OnCustomCommand(int command) {
+			Logger.Info("ziti-monitor OnCustomCommand was called {0}", command);
+			base.OnCustomCommand(command);
+        }
+
+        protected override void OnSessionChange(SessionChangeDescription changeDescription) {
+			Logger.Info("ziti-monitor OnSessionChange was called {0}", changeDescription);
+			base.OnSessionChange(changeDescription);
+        }
+
+        protected override bool OnPowerEvent(PowerBroadcastStatus powerStatus) {
+			Logger.Info("ziti-monitor OnPowerEvent was called {0}", powerStatus);
+			return base.OnPowerEvent(powerStatus);
+        }
+
+        private void SetupServiceWatchers() {
 			var updateTimerInterval = ConfigurationManager.AppSettings.Get("UpdateTimer");
 			var upInt = TimeSpan.Zero;
 			if (!TimeSpan.TryParse(updateTimerInterval, out upInt)) {
