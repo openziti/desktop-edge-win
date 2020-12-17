@@ -778,6 +778,7 @@ func connectIdentity(id *Id) {
 		ActionEvent: IDENTITY_ADDED,
 		Id: id.Identity,
 	}
+	log.Infof("connecting identity completed: %s[%s]", id.Name, id.FingerPrint)
 }
 
 func disconnectIdentity(id *Id) error {
@@ -804,6 +805,7 @@ func disconnectIdentity(id *Id) error {
 				cziti.DNSMgr.UnregisterService(val.InterceptHost, val.InterceptPort)
 				return true
 			})
+			log.Infof("disconnecting identity complete: %s", id.Name)
 		}
 	} else {
 		log.Debugf("id: %s is already disconnected - not attempting to disconnected again fingerprint:%s", id.Name, id.FingerPrint)
