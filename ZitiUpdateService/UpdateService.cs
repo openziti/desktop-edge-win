@@ -23,15 +23,15 @@ namespace ZitiUpdateService {
 		private string betaStreamMarkerFile = "use-beta-stream.txt";
 
 		public bool IsBeta {
-            get {
+			get {
 				return File.Exists(Path.Combine(exeLocation, betaStreamMarkerFile));
 			}
 			private set { }
-        }
+		}
 
-        public bool useGithubCheck { get; private set; }
+		public bool useGithubCheck { get; private set; }
 
-        private static string[] expected_hashes = new string[] { "39636E9F5E80308DE370C914CE8112876ECF4E0C" };
+		private static string[] expected_hashes = new string[] { "39636E9F5E80308DE370C914CE8112876ECF4E0C" };
 		private static string[] expected_subject = new string[] { @"CN=""NetFoundry, Inc."", O=""NetFoundry, Inc."", L=Herndon, S=Virginia, C=US" };
 
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
@@ -74,17 +74,17 @@ namespace ZitiUpdateService {
 			svr.TriggerUpdate = TriggerUpdate;
 		}
 
-        private SvcResponse TriggerUpdate() {
+		private SvcResponse TriggerUpdate() {
 			SvcResponse r = new SvcResponse();
 			try {
 				CheckUpdate(null, null);
-            } catch(Exception e) {
+			} catch (Exception e) {
 				Logger.Error(e, "Unexpected error in TriggerUpdate");
-            }
+			}
 			return r;
-        }
+		}
 
-        private StatusCheck DoUpdateCheck() {
+		private StatusCheck DoUpdateCheck() {
 			StatusCheck r = new StatusCheck();
 			r.Code = check.IsUpdateAvailable(assemblyVersion);
 			r.ReleaseStream = IsBeta ? "beta" : "stable";
@@ -106,8 +106,8 @@ namespace ZitiUpdateService {
 			return r;
 		}
 
-        private void SetLogLevel(string level) {
-            try {
+		private void SetLogLevel(string level) {
+			try {
 				Logger.Info("request to change log level received: {0}", level);
 				var l = LogLevel.FromString(level);
 				foreach (var rule in LogManager.Configuration.LoggingRules) {
@@ -116,12 +116,12 @@ namespace ZitiUpdateService {
 
 				LogManager.ReconfigExistingLoggers();
 				Logger.Info("logger reconfigured to log at level: {0}", l);
-			} catch(Exception e) {
+			} catch (Exception e) {
 				Logger.Error(e, "Could NOT set the log level for loggers??? {0}", e.Message);
-            }
-        }
+			}
+		}
 
-        private void SetReleaseStream(string stream) {
+		private void SetReleaseStream(string stream) {
 			string markerFile = Path.Combine(exeLocation, betaStreamMarkerFile);
 			if (stream == "beta") {
 				if (IsBeta) {
@@ -135,7 +135,7 @@ namespace ZitiUpdateService {
 					Logger.Debug("added marker file: {0}", markerFile);
 					ConfigureCheck();
 				}
-            } else {
+			} else {
 				if (!IsBeta) {
 					Logger.Debug("already using release stream. No action taken");
 				} else {
@@ -146,76 +146,123 @@ namespace ZitiUpdateService {
 					}
 					ConfigureCheck();
 				}
-            }
-        }
-
-        private string CaptureLogs() {
-			
-			string logLocation = Path.Combine(exeLocation, "logs");
-			string destinationLocation = Path.Combine(exeLocation, "temp");
-			string serviceLogsLocation = Path.Combine(logLocation, "service");
-			string serviceLogsDest = Path.Combine(destinationLocation, "service");
-
-			Logger.Debug("removing leftover temp folder: {0}", destinationLocation);
-			try {
-				Directory.Delete(destinationLocation, true);
-			} catch {
-				//means it doesn't exist
-            }
-
-			Directory.CreateDirectory(destinationLocation);
-
-			Logger.Debug("copying all directories from: {0}", logLocation);
-			foreach (string dirPath in Directory.GetDirectories(logLocation, "*", SearchOption.AllDirectories)) {
-				Directory.CreateDirectory(dirPath.Replace(logLocation, destinationLocation));
 			}
-
-			Logger.Debug("copying all non-zip files from: {0}", logLocation);
-			foreach (string newPath in Directory.GetFiles(logLocation, "*.*", SearchOption.AllDirectories)) {
-				if (!newPath.EndsWith(".zip")) {
-					File.Copy(newPath, newPath.Replace(logLocation, destinationLocation), true);
-				}
-			}
-
-			Logger.Debug("copying service files from: {0} to {1}", serviceLogsLocation, serviceLogsDest);
-			Directory.CreateDirectory(serviceLogsDest);
-			foreach (string newPath in Directory.GetFiles(serviceLogsLocation, "*.*", SearchOption.TopDirectoryOnly)) {
-				if (newPath.EndsWith(".log") || newPath.Contains("config.json")) { 
-					Logger.Debug("copying service log: {0}", newPath);
-					File.Copy(newPath, newPath.Replace(serviceLogsLocation, serviceLogsDest), true);
-				}
-			}
-
-			outputIpconfigInfo(destinationLocation);
-
-
-			Task.Delay(500).Wait();
-
-			string zipName = Path.Combine(logLocation, DateTime.Now.ToString("yyyy-MM-dd_HHmmss") + ".zip");
-			ZipFile.CreateFromDirectory(destinationLocation, zipName);
-
-			Logger.Debug("cleaning up temp folder: {0}", destinationLocation);
-			try {
-				Directory.Delete(destinationLocation, true);
-			} catch {
-				//means it doesn't exist
-			}
-			return zipName;
 		}
 
-        private void outputIpconfigInfo(string destinationFolder) {
-			Process process = new Process();
-			ProcessStartInfo startInfo = new ProcessStartInfo();
-			startInfo.WindowStyle = ProcessWindowStyle.Hidden;
-			startInfo.FileName = "cmd.exe";
-			var ipconfigOut = Path.Combine(destinationFolder, "ipconfig.all.txt");
-			Logger.Info("copying ipconfig /all to {0}", ipconfigOut);
-			startInfo.Arguments = $"/C ipconfig /all > \"{ipconfigOut}\"";
-			process.StartInfo = startInfo;
-			process.Start();
+		private string CaptureLogs() {
+			try {
+				string logLocation = Path.Combine(exeLocation, "logs");
+				string destinationLocation = Path.Combine(exeLocation, "temp");
+				string serviceLogsLocation = Path.Combine(logLocation, "service");
+				string serviceLogsDest = Path.Combine(destinationLocation, "service");
+
+				Logger.Debug("removing leftover temp folder: {0}", destinationLocation);
+				try {
+					Directory.Delete(destinationLocation, true);
+				} catch {
+					//means it doesn't exist
+				}
+
+				Directory.CreateDirectory(destinationLocation);
+
+				Logger.Debug("copying all directories from: {0}", logLocation);
+				foreach (string dirPath in Directory.GetDirectories(logLocation, "*", SearchOption.AllDirectories)) {
+					Directory.CreateDirectory(dirPath.Replace(logLocation, destinationLocation));
+				}
+
+				Logger.Debug("copying all non-zip files from: {0}", logLocation);
+				foreach (string newPath in Directory.GetFiles(logLocation, "*.*", SearchOption.AllDirectories)) {
+					if (!newPath.EndsWith(".zip")) {
+						File.Copy(newPath, newPath.Replace(logLocation, destinationLocation), true);
+					}
+				}
+
+				Logger.Debug("copying service files from: {0} to {1}", serviceLogsLocation, serviceLogsDest);
+				Directory.CreateDirectory(serviceLogsDest);
+				foreach (string newPath in Directory.GetFiles(serviceLogsLocation, "*.*", SearchOption.TopDirectoryOnly)) {
+					if (newPath.EndsWith(".log") || newPath.Contains("config.json")) {
+						Logger.Debug("copying service log: {0}", newPath);
+						File.Copy(newPath, newPath.Replace(serviceLogsLocation, serviceLogsDest), true);
+					}
+				}
+
+				outputIpconfigInfo(destinationLocation);
+				outputSystemInfo(destinationLocation);
+				outputDnsCache(destinationLocation);
+
+				Task.Delay(500).Wait();
+
+				string zipName = Path.Combine(logLocation, DateTime.Now.ToString("yyyy-MM-dd_HHmmss") + ".zip");
+				ZipFile.CreateFromDirectory(destinationLocation, zipName);
+
+				Logger.Debug("cleaning up temp folder: {0}", destinationLocation);
+				try {
+					Directory.Delete(destinationLocation, true);
+				} catch {
+					//means it doesn't exist
+				}
+				return zipName;
+			} catch(Exception ex) {
+				Logger.Error(ex, "Unexpected error {0}", ex.Message);
+				return null;
+            }
 		}
 
-        public void Debug() {
+		private void outputIpconfigInfo(string destinationFolder) {
+			Logger.Info("capturing ipconfig information");
+			try {
+				Process process = new Process();
+				ProcessStartInfo startInfo = new ProcessStartInfo();
+				startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+				startInfo.FileName = "cmd.exe";
+				var ipconfigOut = Path.Combine(destinationFolder, "ipconfig.all.txt");
+				Logger.Info("copying ipconfig /all to {0}", ipconfigOut);
+				startInfo.Arguments = $"/C ipconfig /all > \"{ipconfigOut}\"";
+				process.StartInfo = startInfo;
+				process.Start();
+				process.WaitForExit();
+			} catch (Exception ex) {
+				Logger.Error(ex, "Unexpected error {0}", ex.Message);
+			}
+		}
+
+		private void outputSystemInfo(string destinationFolder) {
+			Logger.Info("capturing systeminfo");
+			try {
+				Process process = new Process();
+				ProcessStartInfo startInfo = new ProcessStartInfo();
+				startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+				startInfo.FileName = "cmd.exe";
+				var sysinfoOut = Path.Combine(destinationFolder, "systeminfo.txt");
+				Logger.Info("running systeminfo to {0}", sysinfoOut);
+				startInfo.Arguments = $"/C systeminfo > \"{sysinfoOut}\"";
+				process.StartInfo = startInfo;
+				process.Start();
+				process.WaitForExit();
+			} catch (Exception ex) {
+				Logger.Error(ex, "Unexpected error {0}", ex.Message);
+			}
+		}
+
+		private void outputDnsCache(string destinationFolder) {
+			Logger.Info("capturing dns cache information");
+			try {
+				Process process = new Process();
+				ProcessStartInfo startInfo = new ProcessStartInfo();
+				startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+				startInfo.FileName = "cmd.exe";
+				var dnsCache = Path.Combine(destinationFolder, "dnsCache.txt");
+				Logger.Info("running ipconfig /displaydns to {0}", dnsCache);
+				startInfo.Arguments = $"/C ipconfig /displaydns > \"{dnsCache}\"";
+				process.StartInfo = startInfo;
+				process.Start();
+				process.WaitForExit();
+			} catch (Exception ex) {
+				Logger.Error(ex, "Unexpected error {0}", ex.Message);
+			}
+		}
+
+		public void Debug() {
 			OnStart(null);// new string[] { "FilesystemCheck" });
 		}
 
@@ -251,7 +298,7 @@ namespace ZitiUpdateService {
 			base.OnStart(args);
 		}
 
-        async private Task onEventsClientAsync(StreamWriter writer) {
+		async private Task onEventsClientAsync(StreamWriter writer) {
 			Logger.Info("a new events client was connected");
 			//reset to release stream
 			//initial status when connecting the event stream
@@ -266,11 +313,11 @@ namespace ZitiUpdateService {
 			await writer.FlushAsync();
 		}
 
-        async private Task onIpcClientAsync(StreamWriter writer) {
+		async private Task onIpcClientAsync(StreamWriter writer) {
 			Logger.Info("a new ipc client was connected");
 		}
 
-        private void addLogsFolder(string path) {
+		private void addLogsFolder(string path) {
 			if (!Directory.Exists(path)) {
 				Logger.Info($"creating folder: {path}");
 				Directory.CreateDirectory(path);
@@ -292,32 +339,32 @@ namespace ZitiUpdateService {
 			base.OnPause();
 		}
 
-        protected override void OnShutdown() {
+		protected override void OnShutdown() {
 			Logger.Info("ziti-monitor OnShutdown was called");
 			base.OnShutdown();
 		}
 
-        protected override void OnContinue() {
+		protected override void OnContinue() {
 			Logger.Info("ziti-monitor OnContinue was called");
 			base.OnContinue();
 		}
 
-        protected override void OnCustomCommand(int command) {
+		protected override void OnCustomCommand(int command) {
 			Logger.Info("ziti-monitor OnCustomCommand was called {0}", command);
 			base.OnCustomCommand(command);
-        }
+		}
 
-        protected override void OnSessionChange(SessionChangeDescription changeDescription) {
+		protected override void OnSessionChange(SessionChangeDescription changeDescription) {
 			Logger.Info("ziti-monitor OnSessionChange was called {0}", changeDescription);
 			base.OnSessionChange(changeDescription);
-        }
+		}
 
-        protected override bool OnPowerEvent(PowerBroadcastStatus powerStatus) {
+		protected override bool OnPowerEvent(PowerBroadcastStatus powerStatus) {
 			Logger.Info("ziti-monitor OnPowerEvent was called {0}", powerStatus);
 			return base.OnPowerEvent(powerStatus);
-        }
+		}
 
-        private void SetupServiceWatchers() {
+		private void SetupServiceWatchers() {
 			var updateTimerInterval = ConfigurationManager.AppSettings.Get("UpdateTimer");
 			var upInt = TimeSpan.Zero;
 			if (!TimeSpan.TryParse(updateTimerInterval, out upInt)) {
@@ -351,7 +398,7 @@ namespace ZitiUpdateService {
 			dataClient.WaitForConnectionAsync().Wait();
 		}
 
-        private void ConfigureCheck() {
+		private void ConfigureCheck() {
 			string updateUrl = null;
 			if (!IsBeta) {
 				updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win/releases/latest"; //hardcoded on purpose
@@ -365,7 +412,7 @@ namespace ZitiUpdateService {
 			}
 		}
 
-        private void cleanOldLogs(string whereToScan) {
+		private void cleanOldLogs(string whereToScan) {
 			//this function will be removed in the future. it's here to clean out the old ziti-monitor*log files that
 			//were there before the 1.5.0 release
 			try {
@@ -375,7 +422,7 @@ namespace ZitiUpdateService {
 					if (logFile.Name.StartsWith("ziti-monitor.") && logFile.Name.EndsWith(".log")) {
 						Logger.Info("removing old log file: " + logFile.Name);
 						logFile.Delete();
-                    }
+					}
 				}
 			} catch (Exception ex) {
 				Logger.Error(ex, "Unexpected error has occurred");
@@ -383,7 +430,7 @@ namespace ZitiUpdateService {
 		}
 
 		private void CheckUpdate(object sender, ElapsedEventArgs e) {
-			if(e != null) {
+			if (e != null) {
 				Logger.Debug("Timer triggered CheckUpdate at {0}", e.SignalTime);
 			}
 			if (inUpdateCheck || check == null) {
@@ -477,7 +524,7 @@ namespace ZitiUpdateService {
 			}
 		}
 
-        private void scanForStaleDownloads(string folder) {
+		private void scanForStaleDownloads(string folder) {
 			try {
 				Logger.Info("Scanning for stale downloads");
 				foreach (var f in Directory.EnumerateFiles(folder)) {
@@ -498,14 +545,14 @@ namespace ZitiUpdateService {
 						}
 					} else {
 						Logger.Debug("file named {0} did not exist?", f);
-                    }
+					}
 				}
-			} catch(Exception ex) {
+			} catch (Exception ex) {
 				Logger.Error(ex, "Unexpected exception");
-            }
+			}
 		}
 
-        private void StopZiti() {
+		private void StopZiti() {
 			Logger.Info("Stopping the ziti service...");
 			controller = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == "ziti");
 			bool cleanStop = false;
@@ -521,7 +568,7 @@ namespace ZitiUpdateService {
 				}
 			} else {
 				Logger.Debug("The ziti has ALREADY been stopped successfully.");
-            }
+			}
 			if (!cleanStop) {
 				Logger.Debug("Stopping ziti-tunnel forcefully.");
 				stopProcessForcefully("ziti-tunnel", "data service [ziti]");
@@ -608,7 +655,7 @@ namespace ZitiUpdateService {
 				EventRegistry.SendEventToConsumers(status);
 			} else {
 				Logger.Error("SERVICE IS DOWN and did not exit cleanly. initiating DNS cleanup");
-				
+
 				MonitorServiceStatusEvent status = new MonitorServiceStatusEvent() {
 					Code = 10,
 					Error = "SERVICE DOWN",

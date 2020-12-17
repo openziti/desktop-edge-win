@@ -1,3 +1,61 @@
+# Release 1.6.20
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* fixes [#274](https://github.com/openziti/desktop-edge-win/issues/274) - Added logging to all SC calls into the monitor service
+
+## Dependency Updates
+* none
+
+# Release 1.6.19
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* fixes [#268](https://github.com/openziti/desktop-edge-win/issues/268) - Fixed UI crash when using Feedback button to collect logs and .eml file type not mapped
+* fixes [#271](https://github.com/openziti/desktop-edge-win/issues/271) - Fixed UI crash when Monitor service was not running
+* Fixed bug when "Service Logs" would also open the "Application Logs"
+
+## Dependency Updates
+* none
+
+# Release 1.6.18
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* fixes [#266](https://github.com/openziti/desktop-edge-win/issues/266) - Fixes a crash on Windows Server 2016
+
+## Dependency Updates
+* Tunneler SDK C: v0.7.24
+
+# Release 1.6.3-1.6.17
+
+## What's New
+* This is a maintenance release. Generally the only changes are around stability changes to the automatic update functionality
+
+## Other changes:
+* for developers a 'beta release' channel has been established allowing pre-releases to enter the release stream
+
+## Bugs fixed:
+* no specific bugs - some automatic updates would fail to shutdown the data service properly
+
+## Dependency Updates
+* none
+
 # Release 1.6.2
 
 ## What's New
