@@ -526,6 +526,10 @@ namespace ZitiUpdateService {
 
 		private void scanForStaleDownloads(string folder) {
 			try {
+                if (!Directory.Exists(folder)) {
+					Logger.Debug("folder {0} does not exist. skipping", folder);
+					return;
+                }
 				Logger.Info("Scanning for stale downloads");
 				foreach (var f in Directory.EnumerateFiles(folder)) {
 					FileInfo fi = new FileInfo(f);

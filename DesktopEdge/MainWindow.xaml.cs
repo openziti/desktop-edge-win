@@ -200,14 +200,16 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void SetCantDisplay(string title, string detailMessage, Visibility closeButtonVisibility) {
-			NoServiceView.Visibility = Visibility.Visible;
-			CloseErrorButton.IsEnabled = true;
-			CloseErrorButton.Visibility = closeButtonVisibility;
-			ErrorMsg.Content = title;
-			ErrorMsgDetail.Content = detailMessage;
-			SetNotifyIcon("red");
-			_isServiceInError = true;
-			UpdateServiceView();
+			this.Dispatcher.Invoke(() => {
+				NoServiceView.Visibility = Visibility.Visible;
+				CloseErrorButton.IsEnabled = true;
+				CloseErrorButton.Visibility = closeButtonVisibility;
+				ErrorMsg.Content = title;
+				ErrorMsgDetail.Content = detailMessage;
+				SetNotifyIcon("red");
+				_isServiceInError = true;
+				UpdateServiceView();
+			});
 		}
 
 		private void TargetNotifyIcon_Click(object sender, EventArgs e) {
