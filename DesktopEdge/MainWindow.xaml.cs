@@ -287,45 +287,49 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void MonitorClient_OnServiceStatusEvent(object sender, MonitorServiceStatusEvent evt) {
-			if (evt.Message?.ToLower() == "upgrading") {
-				logger.Info("The monitor has indicated an upgrade is in progress. Shutting down the UI");
-				notifyIcon.Visible = false;
-				notifyIcon.Icon.Dispose();
-				notifyIcon.Dispose();
-				Application.Current.Shutdown();
-			}
-			logger.Debug("MonitorClient_OnServiceStatusEvent: {0}", evt.Status);
-			Application.Current.Properties["ReleaseStream"] = evt.ReleaseStream;
-			ServiceControllerStatus status = (ServiceControllerStatus)Enum.Parse(typeof(ServiceControllerStatus), evt.Status);
+			try {
+				if (evt.Message?.ToLower() == "upgrading") {
+					logger.Info("The monitor has indicated an upgrade is in progress. Shutting down the UI");
+					notifyIcon.Visible = false;
+					notifyIcon.Icon.Dispose();
+					notifyIcon.Dispose();
+					Application.Current.Shutdown();
+				}
+				logger.Debug("MonitorClient_OnServiceStatusEvent: {0}", evt.Status);
+				Application.Current.Properties["ReleaseStream"] = evt.ReleaseStream;
+				ServiceControllerStatus status = (ServiceControllerStatus)Enum.Parse(typeof(ServiceControllerStatus), evt.Status);
 
-			switch (status) {
-				case ServiceControllerStatus.Running:
-					logger.Info("Service is started");
-					break;
-				case ServiceControllerStatus.Stopped:
-					logger.Info("Service is stopped");
-					ShowServiceNotStarted();
-					break;
-				case ServiceControllerStatus.StopPending:
-					logger.Info("Service is stopping...");
+				switch (status) {
+					case ServiceControllerStatus.Running:
+						logger.Info("Service is started");
+						break;
+					case ServiceControllerStatus.Stopped:
+						logger.Info("Service is stopped");
+						ShowServiceNotStarted();
+						break;
+					case ServiceControllerStatus.StopPending:
+						logger.Info("Service is stopping...");
 
-					this.Dispatcher.Invoke(async () => {
-						SetCantDisplay("The Service is Stopping", "Please wait while the service stops", Visibility.Hidden);
-						await WaitForServiceToStop(DateTime.Now + TimeSpan.FromSeconds(30));
-					});
-					break;
-				case ServiceControllerStatus.StartPending:
-					logger.Info("Service is starting...");
-					break;
-				case ServiceControllerStatus.PausePending:
-					logger.Warn("UNEXPECTED STATUS: PausePending");
-					break;
-				case ServiceControllerStatus.Paused:
-					logger.Warn("UNEXPECTED STATUS: Paused");
-					break;
-				default:
-					logger.Warn("UNEXPECTED STATUS: {0}", evt.Status);
-					break;
+						this.Dispatcher.Invoke(async () => {
+							SetCantDisplay("The Service is Stopping", "Please wait while the service stops", Visibility.Hidden);
+							await WaitForServiceToStop(DateTime.Now + TimeSpan.FromSeconds(30));
+						});
+						break;
+					case ServiceControllerStatus.StartPending:
+						logger.Info("Service is starting...");
+						break;
+					case ServiceControllerStatus.PausePending:
+						logger.Warn("UNEXPECTED STATUS: PausePending");
+						break;
+					case ServiceControllerStatus.Paused:
+						logger.Warn("UNEXPECTED STATUS: Paused");
+						break;
+					default:
+						logger.Warn("UNEXPECTED STATUS: {0}", evt.Status);
+						break;
+				}
+			} catch (Exception ex) {
+				logger.Warn(ex, "unexpected exception in MonitorClient_OnShutdownEvent? {0}", ex.Message);
 			}
 		}
 
@@ -829,13 +833,16 @@ namespace ZitiDesktopEdge {
 		}
 
 		async private void Disconnect(object sender, RoutedEventArgs e) {
-
-			ShowLoad("Disabling Service", "Please wait for the service to stop.");
-			var r = await monitorClient.StopServiceAsync();
-			if(r.Code != 0) { 
-				logger.Warn("ERROR: Error:{0}, Message:{1}", r.Error, r.Message);
-			} else {
-				logger.Info("Service stopped!");
+			try {
+				ShowLoad("Disabling Service", "Please wait for the service to stop.");
+				var r = await monitorClient.StopServiceAsync();
+				if (r.Code != 0) {
+					logger.Warn("ERROR: Error:{0}, Message:{1}", r.Error, r.Message);
+				} else {
+					logger.Info("Service stopped!");
+				}
+			} catch(Exception ex) {
+				ShowError("Erorr Disabling Service", "An error occurred while trying to disable the data service. Is the monitor service running?");
 			}
 			HideLoad();
 		}
