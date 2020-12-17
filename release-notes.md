@@ -1,13 +1,13 @@
 # Release 1.6.20
 
 ## What's New
-* none
+* fixes [#274](https://github.com/openziti/desktop-edge-win/issues/274) - Added logging to all SC calls into the monitor service
 
 ## Other changes:
 * none
 
 ## Bugs fixed:
-* fixes [#274](https://github.com/openziti/desktop-edge-win/issues/274) - Added logging to all SC calls into the monitor service
+* none
 
 ## Dependency Updates
 * none
