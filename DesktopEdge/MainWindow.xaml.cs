@@ -885,9 +885,11 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void CloseError(object sender, RoutedEventArgs e) {
-			ErrorView.Visibility = Visibility.Collapsed;
-			NoServiceView.Visibility = Visibility.Collapsed;
-			CloseErrorButton.IsEnabled = true;
+			this.Dispatcher.Invoke(() => {
+				ErrorView.Visibility = Visibility.Collapsed;
+				NoServiceView.Visibility = Visibility.Collapsed;
+				CloseErrorButton.IsEnabled = true;
+			});
 		}
 
 		private void CloseApp(object sender, RoutedEventArgs e) {
