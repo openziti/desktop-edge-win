@@ -685,7 +685,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void SetLocation() {
-			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
+			var desktopWorkingArea = SystemParameters.WorkArea;
 
 
 			var height = MainView.ActualHeight;
@@ -735,7 +735,7 @@ namespace ZitiDesktopEdge {
 			}
 		}
 		public void Placement() {
-			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
+			var desktopWorkingArea = SystemParameters.WorkArea;
 			if (_isAttached) {
 				Arrow.Visibility = Visibility.Visible;
 				IdentityMenu.Arrow.Visibility = Visibility.Visible;
@@ -845,6 +845,7 @@ namespace ZitiDesktopEdge {
 					logger.Info("Service stopped!");
 				}
 			} catch(Exception ex) {
+				logger.Error(ex, "unexpected error: {0}", ex.Message);
 				ShowError("Erorr Disabling Service", "An error occurred while trying to disable the data service. Is the monitor service running?");
 			}
 			HideLoad();
@@ -856,7 +857,7 @@ namespace ZitiDesktopEdge {
 				LoadingTitle.Content = title;
 				LoadProgress.IsIndeterminate = true;
 				LoadingScreen.Visibility = Visibility.Visible;
-				((MainWindow)System.Windows.Application.Current.MainWindow).UpdateLayout();
+				UpdateLayout();
 			});
 		}
 
