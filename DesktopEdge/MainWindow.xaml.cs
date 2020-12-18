@@ -879,9 +879,11 @@ namespace ZitiDesktopEdge {
 		}
 
 		public void ShowError(String title, String message) {
-			ErrorTitle.Content = title;
-			ErrorDetails.Text = message;
-			ErrorView.Visibility = Visibility.Visible;
+			this.Dispatcher.Invoke(() => {
+				ErrorTitle.Content = title;
+				ErrorDetails.Text = message;
+				ErrorView.Visibility = Visibility.Visible;
+			});
 		}
 
 		private void CloseError(object sender, RoutedEventArgs e) {
