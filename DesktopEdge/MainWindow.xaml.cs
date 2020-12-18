@@ -393,15 +393,17 @@ namespace ZitiDesktopEdge {
 
 		bool startZitiButtonVisible = false;
 		private void ShowServiceNotStarted() {
-			semaphoreSlim.Wait(); //make sure the event is only added to the button once
-			CloseErrorButton.Click -= CloseError;
-			if (!startZitiButtonVisible) {
-				CloseErrorButton.Content = "Start Service";
-				startZitiButtonVisible = true;
-				CloseErrorButton.Click += StartZitiService;
-			}
-			semaphoreSlim.Release();
-			SetCantDisplay("Service Not Started", "Do you want to start the data service now?", Visibility.Visible);
+			this.Dispatcher.Invoke(() => {
+				semaphoreSlim.Wait(); //make sure the event is only added to the button once
+				CloseErrorButton.Click -= CloseError;
+				if (!startZitiButtonVisible) {
+					CloseErrorButton.Content = "Start Service";
+					startZitiButtonVisible = true;
+					CloseErrorButton.Click += StartZitiService;
+				}
+				semaphoreSlim.Release();
+				SetCantDisplay("Service Not Started", "Do you want to start the data service now?", Visibility.Visible);
+			});
 		}
 
 
