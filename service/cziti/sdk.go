@@ -93,7 +93,7 @@ type ZService struct {
 }
 
 type ZIdentity struct {
-	Options     C.ziti_options
+	Options     *C.ziti_options
 	zctx        C.ziti_context
 	zid         *C.ziti_identity
 	status      int
@@ -109,6 +109,7 @@ type ZIdentity struct {
 func NewZid() *ZIdentity {
 	zid := &ZIdentity{}
 	zid.Services = sync.Map{}
+	zid.Options = (*C.ziti_options)(C.calloc(1, C.sizeof_ziti_options))
 	return zid
 }
 
@@ -352,7 +353,7 @@ func LoadZiti(cfg string, isActive bool) *ZIdentity {
 
 	ch := make(chan *ZIdentity)
 	initMap[cfg] = ch
-	rc := C.ziti_init_opts(&ctx.Options, _impl.libuvCtx.l, unsafe.Pointer(ctx))
+	rc := C.ziti_init_opts(ctx.Options, _impl.libuvCtx.l, unsafe.Pointer(ctx))
 	if rc != C.ZITI_OK {
 		ctx.status, ctx.statusErr = int(rc), zitiError(rc)
 		go func() {
