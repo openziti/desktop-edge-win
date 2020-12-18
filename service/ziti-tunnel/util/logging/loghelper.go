@@ -70,6 +70,11 @@ func NoFilenameLogger() *logrus.Logger {
 	return noFilenamelogger
 }
 
+func SetLoggingLevel(goLevel logrus.Level){
+	withFilenameLogger.SetLevel(goLevel)
+	noFilenamelogger.SetLevel(goLevel)
+}
+
 func InitLogger(level logrus.Level) {
 	initLogger(withFilenameLogger, level)
 	initLogger(noFilenamelogger, level)

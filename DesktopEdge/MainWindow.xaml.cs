@@ -138,6 +138,7 @@ namespace ZitiDesktopEdge {
 			IdentityMenu.OnDetach += OnDetach;
 			MainMenu.OnDetach += OnDetach;
 
+			this.MainMenu.MainWindow = this;
 			SetNotifyIcon("white");
 		}
 		private void contextMenuItem_Click(object Sender, EventArgs e) {
@@ -392,15 +393,17 @@ namespace ZitiDesktopEdge {
 
 		bool startZitiButtonVisible = false;
 		private void ShowServiceNotStarted() {
-			semaphoreSlim.Wait(); //make sure the event is only added to the button once
-			CloseErrorButton.Click -= CloseError;
-			if (!startZitiButtonVisible) {
-				CloseErrorButton.Content = "Start Service";
-				startZitiButtonVisible = true;
-				CloseErrorButton.Click += StartZitiService;
-			}
-			semaphoreSlim.Release();
-			SetCantDisplay("Service Not Started", "Do you want to start the data service now?", Visibility.Visible);
+			this.Dispatcher.Invoke(() => {
+				semaphoreSlim.Wait(); //make sure the event is only added to the button once
+				CloseErrorButton.Click -= CloseError;
+				if (!startZitiButtonVisible) {
+					CloseErrorButton.Content = "Start Service";
+					startZitiButtonVisible = true;
+					CloseErrorButton.Click += StartZitiService;
+				}
+				semaphoreSlim.Release();
+				SetCantDisplay("Service Not Started", "Do you want to start the data service now?", Visibility.Visible);
+			});
 		}
 
 
@@ -682,7 +685,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void SetLocation() {
-			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
+			var desktopWorkingArea = SystemParameters.WorkArea;
 
 
 			var height = MainView.ActualHeight;
@@ -732,7 +735,7 @@ namespace ZitiDesktopEdge {
 			}
 		}
 		public void Placement() {
-			var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
+			var desktopWorkingArea = SystemParameters.WorkArea;
 			if (_isAttached) {
 				Arrow.Visibility = Visibility.Visible;
 				IdentityMenu.Arrow.Visibility = Visibility.Visible;
@@ -842,22 +845,27 @@ namespace ZitiDesktopEdge {
 					logger.Info("Service stopped!");
 				}
 			} catch(Exception ex) {
+				logger.Error(ex, "unexpected error: {0}", ex.Message);
 				ShowError("Erorr Disabling Service", "An error occurred while trying to disable the data service. Is the monitor service running?");
 			}
 			HideLoad();
 		}
 
-		private void ShowLoad(string title, string msg) {
-			LoadingDetails.Text = msg;
-			LoadingTitle.Content = title;
-			LoadProgress.IsIndeterminate = true;
-			LoadingScreen.Visibility = Visibility.Visible;
-			((MainWindow)System.Windows.Application.Current.MainWindow).UpdateLayout();
+		internal void ShowLoad(string title, string msg) {
+			this.Dispatcher.Invoke(() => {
+				LoadingDetails.Text = msg;
+				LoadingTitle.Content = title;
+				LoadProgress.IsIndeterminate = true;
+				LoadingScreen.Visibility = Visibility.Visible;
+				UpdateLayout();
+			});
 		}
 
-		private void HideLoad() {
-			LoadingScreen.Visibility = Visibility.Collapsed;
-			LoadProgress.IsIndeterminate = false;
+		internal void HideLoad() {
+			this.Dispatcher.Invoke(() => {
+				LoadingScreen.Visibility = Visibility.Collapsed;
+				LoadProgress.IsIndeterminate = false;
+			});
 		}
 
 		private void FormFadeOut_Completed(object sender, EventArgs e) {
@@ -872,15 +880,19 @@ namespace ZitiDesktopEdge {
 		}
 
 		public void ShowError(String title, String message) {
-			ErrorTitle.Content = title;
-			ErrorDetails.Text = message;
-			ErrorView.Visibility = Visibility.Visible;
+			this.Dispatcher.Invoke(() => {
+				ErrorTitle.Content = title;
+				ErrorDetails.Text = message;
+				ErrorView.Visibility = Visibility.Visible;
+			});
 		}
 
 		private void CloseError(object sender, RoutedEventArgs e) {
-			ErrorView.Visibility = Visibility.Collapsed;
-			NoServiceView.Visibility = Visibility.Collapsed;
-			CloseErrorButton.IsEnabled = true;
+			this.Dispatcher.Invoke(() => {
+				ErrorView.Visibility = Visibility.Collapsed;
+				NoServiceView.Visibility = Visibility.Collapsed;
+				CloseErrorButton.IsEnabled = true;
+			});
 		}
 
 		private void CloseApp(object sender, RoutedEventArgs e) {

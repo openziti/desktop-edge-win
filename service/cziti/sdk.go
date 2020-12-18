@@ -93,7 +93,7 @@ type ZService struct {
 }
 
 type ZIdentity struct {
-	Options     C.ziti_options
+	Options     *C.ziti_options
 	zctx        C.ziti_context
 	zid         *C.ziti_identity
 	status      int
@@ -101,9 +101,16 @@ type ZIdentity struct {
 	Loaded      bool
 	Name        string
 	Version     string
-	Services    *sync.Map
+	Services    sync.Map
 	Fingerprint string
 	Active      bool
+}
+
+func NewZid() *ZIdentity {
+	zid := &ZIdentity{}
+	zid.Services = sync.Map{}
+	zid.Options = (*C.ziti_options)(C.calloc(1, C.sizeof_ziti_options))
+	return zid
 }
 
 func (c *ZIdentity) GetMetrics() (int64, int64, bool) {
@@ -206,11 +213,6 @@ func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx
 	}
 	zid := (*ZIdentity)(tnlr_ctx)
 
-	if zid.Services == nil {
-		m := sync.Map{}
-		zid.Services = &m
-	}
-
 	name := C.GoString(service.name)
 	svcId := C.GoString(service.id)
 	log.Debugf("============ INSIDE serviceCB - status: %s:%s - %v, %v ============", name, svcId, status, service.perm_flags)
@@ -224,8 +226,11 @@ func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx
 		if ok && found != nil {
 			log.Infof("service with id: %s, name: %s exists. updating service.", svcId, name)
 			fs := found.(ZService)
-			DNSMgr.UnregisterService(fs.InterceptHost, fs.InterceptPort)
+			ok := DNSMgr.UnregisterService(fs.InterceptHost, fs.InterceptPort)
 			zid.Services.Delete(svcId)
+			if !ok {
+				log.Warnf("unregister service from serviceCB was not ok? %s:%d", fs.InterceptHost, fs.InterceptPort)
+			}
 		} else {
 			log.Debugf("new service with id: %s, name: %s in context %d", svcId, name, &zid)
 		}
@@ -288,7 +293,10 @@ func serviceUnavailable(ctx *ZIdentity, svcId string, name string) {
 	found, ok := ctx.Services.Load(svcId)
 	if ok {
 		fs := found.(ZService)
-		DNSMgr.UnregisterService(fs.InterceptHost, fs.InterceptPort)
+		ok := DNSMgr.UnregisterService(fs.InterceptHost, fs.InterceptPort)
+		if !ok {
+			log.Warnf("unregister service from serviceUnavailable was not ok? %s:%d", fs.InterceptHost, fs.InterceptPort)
+		}
 		ctx.Services.Delete(svcId)
 		ServiceChanges <- ServiceChange{
 			Operation: REMOVED,
@@ -334,15 +342,16 @@ func zitiError(code C.int) error {
 }
 
 func LoadZiti(cfg string, isActive bool) *ZIdentity {
-	ctx := &ZIdentity{}
+	ctx := NewZid()// &ZIdentity{}
+
 	ctx.Active = isActive
+
 	ctx.Options.config = C.CString(cfg)
 	ctx.Options.init_cb = C.ziti_init_cb(C.initCB)
 	ctx.Options.service_cb = C.ziti_service_cb(C.serviceCB)
 	ctx.Options.refresh_interval = C.long(15)
 	ctx.Options.metrics_type = C.INSTANT
 	ctx.Options.config_types = C.all_configs
-
 	ctx.Options.pq_domain_cb = C.ziti_pq_domain_cb(C.ziti_pq_domain_go)
 	ctx.Options.pq_mac_cb = C.ziti_pq_mac_cb(C.ziti_pq_mac_go)
 	ctx.Options.pq_os_cb = C.ziti_pq_os_cb(C.ziti_pq_os_go)
@@ -350,7 +359,7 @@ func LoadZiti(cfg string, isActive bool) *ZIdentity {
 
 	ch := make(chan *ZIdentity)
 	initMap[cfg] = ch
-	rc := C.ziti_init_opts(&ctx.Options, _impl.libuvCtx.l, unsafe.Pointer(ctx))
+	rc := C.ziti_init_opts(ctx.Options, _impl.libuvCtx.l, unsafe.Pointer(ctx))
 	if rc != C.ZITI_OK {
 		ctx.status, ctx.statusErr = int(rc), zitiError(rc)
 		go func() {

@@ -74,8 +74,11 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	// create a channel for notifying any connections that they are to be interrupted
 	interrupt = make(chan struct{}, 8)
 
+	// a channel to signal the handleEvents that initialization is complete
+	initialized := make(chan struct{})
+
 	// setup events handler - needs to be before initialization
-	go handleEvents()
+	go handleEvents(initialized)
 
 	// initialize the network interface
 	err := initialize(cLogLevel)
@@ -102,6 +105,9 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	log.Info(SvcName + " status set to running. starting cancel loop")
 
 	rts.SaveState() //if we get this far it means things seem to be working. backup the config
+
+	//indicate the metrics handler can begin
+	initialized <- struct{}{}
 
 	waitForStopRequest(ops)
 
@@ -461,7 +467,7 @@ func serveIpc(conn net.Conn) {
 func setLogLevel(out *json.Encoder, level string) {
 	goLevel, cLevel := logging.ParseLevel(level)
 	log.Infof("Setting logger levels to %s", goLevel)
-	log.SetLevel(goLevel)
+	logging.SetLoggingLevel(goLevel)
 	cziti.SetLogLevel(cLevel)
 	rts.state.LogLevel = goLevel.String()
 	respond(out, dto.Response{Message: "log level set", Code: SUCCESS, Error: "", Payload: nil})
@@ -763,15 +769,13 @@ func connectIdentity(id *Id) {
 	} else {
 		log.Debugf("%s[%s] is already loaded", id.Name, id.FingerPrint)
 
-		if id.CId.Services != nil {
-			id.CId.Services.Range(func(key interface{}, value interface{}) bool {
-				val := value.(cziti.ZService)
-				ip := cziti.DNSMgr.ReturnToDns(val.InterceptHost)
-				cziti.AddIntercept(val.Id, val.Name, ip.String(), int(val.InterceptPort), id.CId.UnsafePointer())
-				id.Services = append(id.Services, nil)
-				return true
-			})
-		}
+		id.CId.Services.Range(func(key interface{}, value interface{}) bool {
+			val := value.(cziti.ZService)
+			ip := cziti.DNSMgr.ReturnToDns(val.InterceptHost)
+			cziti.AddIntercept(val.Id, val.Name, ip.String(), int(val.InterceptPort), id.CId.UnsafePointer())
+			id.Services = append(id.Services, nil)
+			return true
+		})
 	}
 
 	events.broadcast <- dto.IdentityEvent{
@@ -787,8 +791,6 @@ func disconnectIdentity(id *Id) error {
 	if id.Active {
 		if id.CId == nil {
 			return fmt.Errorf("identity has not been initialized properly. please consult the logs for details")
-		} else if id.CId.Services == nil {
-			return fmt.Errorf("identity has no services. nothing to deregister")
 		} else {
 			log.Debugf("ranging over services all services to remove intercept and deregister the service")
 
@@ -802,7 +804,10 @@ func disconnectIdentity(id *Id) error {
 				}
 				cziti.RemoveIntercept(rwg)
 				wg.Wait()
-				cziti.DNSMgr.UnregisterService(val.InterceptHost, val.InterceptPort)
+				ok := cziti.DNSMgr.UnregisterService(val.InterceptHost, val.InterceptPort)
+				if !ok {
+					log.Warnf("unregister service from disconnectIdentity was not ok? %s:%d", val.InterceptHost, val.InterceptPort)
+				}
 				return true
 			})
 			log.Infof("disconnecting identity complete: %s", id.Name)
@@ -912,12 +917,14 @@ func acceptServices() {
 	}
 }
 
-func handleEvents(){
+func handleEvents(isInitialized chan struct{}){
 	events.run()
 	d := 5 * time.Second
 	every5s := time.NewTicker(d)
 
 	defer log.Debugf("exiting handleEvents. loops were set for %v", d)
+	<- isInitialized
+	log.Info("beginning metric collection")
 	for {
 		select {
 		case <-shutdown:
@@ -950,7 +957,7 @@ func Clean(src *Id) dto.Identity {
 		Tags:              nil,
 	}
 
-	if src.CId != nil && src.CId.Services != nil {
+	if src.CId != nil {
 		src.CId.Services.Range(func(key interface{}, value interface{}) bool {
 			//string, ZService
 			val := value.(cziti.ZService)
