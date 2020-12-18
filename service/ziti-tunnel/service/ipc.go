@@ -74,8 +74,11 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	// create a channel for notifying any connections that they are to be interrupted
 	interrupt = make(chan struct{}, 8)
 
+	// a channel to signal the handleEvents that initialization is complete
+	initialized := make(chan struct{})
+
 	// setup events handler - needs to be before initialization
-	go handleEvents()
+	go handleEvents(initialized)
 
 	// initialize the network interface
 	err := initialize(cLogLevel)
@@ -102,6 +105,9 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	log.Info(SvcName + " status set to running. starting cancel loop")
 
 	rts.SaveState() //if we get this far it means things seem to be working. backup the config
+
+	//indicate the metrics handler can begin
+	initialized <- struct{}{}
 
 	waitForStopRequest(ops)
 
@@ -800,7 +806,7 @@ func disconnectIdentity(id *Id) error {
 				wg.Wait()
 				ok := cziti.DNSMgr.UnregisterService(val.InterceptHost, val.InterceptPort)
 				if !ok {
-					log.Warn("unregister service from disconnectIdentity was not ok?")
+					log.Warnf("unregister service from disconnectIdentity was not ok? %s:%d", val.InterceptHost, val.InterceptPort)
 				}
 				return true
 			})
@@ -911,12 +917,14 @@ func acceptServices() {
 	}
 }
 
-func handleEvents(){
+func handleEvents(isInitialized chan struct{}){
 	events.run()
 	d := 5 * time.Second
 	every5s := time.NewTicker(d)
 
 	defer log.Debugf("exiting handleEvents. loops were set for %v", d)
+	<- isInitialized
+	log.Info("beginning metric collection")
 	for {
 		select {
 		case <-shutdown:
