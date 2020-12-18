@@ -35,7 +35,7 @@ type DnsManager interface {
 	Resolve(dnsName string) net.IP
 
 	RegisterService(svcId string, dnsNameToReg string, port uint16, ctx *ZIdentity, svcName string) (net.IP, bool, error)
-	UnregisterService(host string, port uint16)
+	UnregisterService(host string, port uint16) bool
 	ReturnToDns(hostname string) net.IP
 }
 
@@ -144,7 +144,7 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 				// means the host:port are mapped to some other service already. that's an invalid state
 				return ip, false, fmt.Errorf("service mapping conflict for service name %s. %s:%d is already mapped by service id %s", svcName, dnsNameToReg, port, foundContext.serviceId)
 			}
-			log.Debugf("RegisterService called for the exact same serviceId: %s [%s != %s]", icept.String(), foundContext.serviceId, svcId)
+			log.Debugf("RegisterService called for the exact same serviceId: %s [%s == %s]", icept.String(), foundContext.serviceId, svcId)
 		} else {
 			// good - probably means the service was updated
 			log.Debugf("OK: Another service on this network is using this hostname but on a different port: %s", icept.String())
@@ -217,7 +217,7 @@ func (dns *dnsImpl) Resolve(toResolve string) net.IP {
 	return nil
 }
 
-func (dns *dnsImpl) UnregisterService(host string, port uint16) {
+func (dns *dnsImpl) UnregisterService(host string, port uint16) bool {
 	key := fmt.Sprintf("%s:%d", normalizeDnsName(host), port)
 	log.Debugf("dns asked to unregister %s", key)
 
@@ -242,6 +242,7 @@ func (dns *dnsImpl) UnregisterService(host string, port uint16) {
 					log.Warnf("could not disable hostname %s as it was not in the map", icept.host)
 				}
 			}
+			return true
 		} else {
 			// another service is using the mapping - can't remove it yet so decrement
 			log.Debugf("cannot remove dns mapping for %s yet - %d other services still use this hostname", host, sc.ctxIp.refCount)
@@ -249,6 +250,7 @@ func (dns *dnsImpl) UnregisterService(host string, port uint16) {
 	} else {
 		log.Warnf("key not found. could not remove dns entry for:%s", key)
 	}
+	return false
 }
 
 func (dns *dnsImpl) GetService(ip net.IP, port uint16) (*ZIdentity, string, error) {

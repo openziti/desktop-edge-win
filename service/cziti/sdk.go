@@ -101,9 +101,15 @@ type ZIdentity struct {
 	Loaded      bool
 	Name        string
 	Version     string
-	Services    *sync.Map
+	Services    sync.Map
 	Fingerprint string
 	Active      bool
+}
+
+func NewZid() *ZIdentity {
+	zid := &ZIdentity{}
+	zid.Services = sync.Map{}
+	return zid
 }
 
 func (c *ZIdentity) GetMetrics() (int64, int64, bool) {
@@ -205,11 +211,6 @@ func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx
 		return
 	}
 	zid := (*ZIdentity)(tnlr_ctx)
-
-	if zid.Services == nil {
-		m := sync.Map{}
-		zid.Services = &m
-	}
 
 	name := C.GoString(service.name)
 	svcId := C.GoString(service.id)
@@ -334,15 +335,16 @@ func zitiError(code C.int) error {
 }
 
 func LoadZiti(cfg string, isActive bool) *ZIdentity {
-	ctx := &ZIdentity{}
+	ctx := NewZid()// &ZIdentity{}
+
 	ctx.Active = isActive
+
 	ctx.Options.config = C.CString(cfg)
 	ctx.Options.init_cb = C.ziti_init_cb(C.initCB)
 	ctx.Options.service_cb = C.ziti_service_cb(C.serviceCB)
 	ctx.Options.refresh_interval = C.long(15)
 	ctx.Options.metrics_type = C.INSTANT
 	ctx.Options.config_types = C.all_configs
-
 	ctx.Options.pq_domain_cb = C.ziti_pq_domain_cb(C.ziti_pq_domain_go)
 	ctx.Options.pq_mac_cb = C.ziti_pq_mac_cb(C.ziti_pq_mac_go)
 	ctx.Options.pq_os_cb = C.ziti_pq_os_cb(C.ziti_pq_os_go)
