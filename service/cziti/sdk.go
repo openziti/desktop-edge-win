@@ -226,8 +226,12 @@ func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx
 		if ok && found != nil {
 			log.Infof("service with id: %s, name: %s exists. updating service.", svcId, name)
 			fs := found.(ZService)
-			DNSMgr.UnregisterService(fs.InterceptHost, fs.InterceptPort)
-			zid.Services.Delete(svcId)
+			ok := DNSMgr.UnregisterService(fs.InterceptHost, fs.InterceptPort)
+			if ok {
+				zid.Services.Delete(svcId)
+			} else {
+				log.Warn("unregister service from serviceCB was not ok?")
+			}
 		} else {
 			log.Debugf("new service with id: %s, name: %s in context %d", svcId, name, &zid)
 		}
@@ -290,7 +294,10 @@ func serviceUnavailable(ctx *ZIdentity, svcId string, name string) {
 	found, ok := ctx.Services.Load(svcId)
 	if ok {
 		fs := found.(ZService)
-		DNSMgr.UnregisterService(fs.InterceptHost, fs.InterceptPort)
+		ok := DNSMgr.UnregisterService(fs.InterceptHost, fs.InterceptPort)
+		if !ok {
+			log.Warn("unregister service from serviceUnavailable was not ok?")
+		}
 		ctx.Services.Delete(svcId)
 		ServiceChanges <- ServiceChange{
 			Operation: REMOVED,
