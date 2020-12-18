@@ -40,6 +40,8 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
+		internal MainWindow MainWindow { get; set; }
+
 		public MainMenu() {
 			InitializeComponent();
 
@@ -142,8 +144,7 @@ namespace ZitiDesktopEdge {
 
 		private void checkResponse(SvcResponse r, string titleOnErr, string msgOnErr) {
 			if (r == null) {
-				MainWindow mw = (MainWindow)Application.Current.MainWindow;
-				mw?.ShowError(titleOnErr, msgOnErr);
+				MainWindow.ShowError(titleOnErr, msgOnErr);
 			} else {
 				logger.Info(r?.ToString());
 			}
@@ -275,44 +276,45 @@ namespace ZitiDesktopEdge {
 		}
 
 		async private void ShowFeedback(object sender, MouseButtonEventArgs e) {
-			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-			var mailMessage = new MailMessage("ziti-support@netfoundry.io", "ziti-support@netfoundry.io");
-			mailMessage.Subject = "Ziti Support";
-			mailMessage.IsBodyHtml = false;
-			System.Text.StringBuilder sb = new System.Text.StringBuilder();
-			sb.Append("Logs collected at : " + DateTime.Now.ToString());
-			sb.Append(". client version : " + appVersion);
-
-			mailMessage.Body = sb.ToString();
-
-			string timestamp = DateTime.Now.ToFileTime().ToString();
-			var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
-			MonitorServiceStatusEvent resp = await monitorClient.CaptureLogsAsync();
-			if (resp == null) {
-				logger.Error("no response from monitorClient?");
-				MainWindow mw = (MainWindow)Application.Current.MainWindow;
-				mw?.ShowError("Error Collecting Feedback", "An error occurred while trying to gather feedback.\nIs the monitor service running?");
-				return;
-			}
-			string pathToLogs = resp.Message;
-			logger.Info("Log files found at : {0}", resp.Message);
-			mailMessage.Attachments.Add(new Attachment(pathToLogs));
-
-			string emlFile = Path.Combine(Path.GetTempPath(), timestamp + "-ziti.eml");
-
-			using (var filestream = File.Open(emlFile, FileMode.Create)) {
-				var binaryWriter = new BinaryWriter(filestream);
-				binaryWriter.Write(System.Text.Encoding.UTF8.GetBytes("X-Unsent: 1" + Environment.NewLine));
-				var assembly = typeof(SmtpClient).Assembly;
-				var mailWriterType = assembly.GetType("System.Net.Mail.MailWriter");
-				var mailWriterContructor = mailWriterType.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null, new[] { typeof(Stream) }, null);
-				var mailWriter = mailWriterContructor.Invoke(new object[] { filestream });
-				var sendMethod = typeof(MailMessage).GetMethod("Send", BindingFlags.Instance | BindingFlags.NonPublic);
-				sendMethod.Invoke(mailMessage, BindingFlags.Instance | BindingFlags.NonPublic, null, new object[] { mailWriter, true, true }, null);
-				var closeMethod = mailWriter.GetType().GetMethod("Close", BindingFlags.Instance | BindingFlags.NonPublic);
-				closeMethod.Invoke(mailWriter, BindingFlags.Instance | BindingFlags.NonPublic, null, new object[] { }, null);
-			}
 			try {
+				MainWindow.ShowLoad("Collecting Information", "Please wait while we run some commands\nand collect some diagnostic information");
+				DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+				var mailMessage = new MailMessage("ziti-support@netfoundry.io", "ziti-support@netfoundry.io");
+				mailMessage.Subject = "Ziti Support";
+				mailMessage.IsBodyHtml = false;
+				System.Text.StringBuilder sb = new System.Text.StringBuilder();
+				sb.Append("Logs collected at : " + DateTime.Now.ToString());
+				sb.Append(". client version : " + appVersion);
+
+				mailMessage.Body = sb.ToString();
+
+				string timestamp = DateTime.Now.ToFileTime().ToString();
+				var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
+				MonitorServiceStatusEvent resp = await monitorClient.CaptureLogsAsync();
+				if (resp == null) {
+					logger.Error("no response from monitorClient?");
+					MainWindow mw = (MainWindow)Application.Current.MainWindow;
+					mw?.ShowError("Error Collecting Feedback", "An error occurred while trying to gather feedback.\nIs the monitor service running?");
+					return;
+				}
+				string pathToLogs = resp.Message;
+				logger.Info("Log files found at : {0}", resp.Message);
+				mailMessage.Attachments.Add(new Attachment(pathToLogs));
+
+				string emlFile = Path.Combine(Path.GetTempPath(), timestamp + "-ziti.eml");
+
+				using (var filestream = File.Open(emlFile, FileMode.Create)) {
+					var binaryWriter = new BinaryWriter(filestream);
+					binaryWriter.Write(System.Text.Encoding.UTF8.GetBytes("X-Unsent: 1" + Environment.NewLine));
+					var assembly = typeof(SmtpClient).Assembly;
+					var mailWriterType = assembly.GetType("System.Net.Mail.MailWriter");
+					var mailWriterContructor = mailWriterType.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null, new[] { typeof(Stream) }, null);
+					var mailWriter = mailWriterContructor.Invoke(new object[] { filestream });
+					var sendMethod = typeof(MailMessage).GetMethod("Send", BindingFlags.Instance | BindingFlags.NonPublic);
+					sendMethod.Invoke(mailMessage, BindingFlags.Instance | BindingFlags.NonPublic, null, new object[] { mailWriter, true, true }, null);
+					var closeMethod = mailWriter.GetType().GetMethod("Close", BindingFlags.Instance | BindingFlags.NonPublic);
+					closeMethod.Invoke(mailWriter, BindingFlags.Instance | BindingFlags.NonPublic, null, new object[] { }, null);
+				}
 				var p = Process.Start(emlFile);
 				if (p != null) {
 					p.Exited += (object lambdaSender, EventArgs lambdaEventArgs) => {
@@ -326,6 +328,7 @@ namespace ZitiDesktopEdge {
 			} catch (Exception ex) {
 				logger.Warn(ex, "An unexpected error has occurred when submitting feedback? {0}", ex.Message);
 			}
+			MainWindow.HideLoad();
 		}
 
 		private void ShowSupport(object sender, MouseButtonEventArgs e) {

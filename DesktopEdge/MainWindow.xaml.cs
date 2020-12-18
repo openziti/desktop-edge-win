@@ -138,6 +138,7 @@ namespace ZitiDesktopEdge {
 			IdentityMenu.OnDetach += OnDetach;
 			MainMenu.OnDetach += OnDetach;
 
+			this.MainMenu.MainWindow = this;
 			SetNotifyIcon("white");
 		}
 		private void contextMenuItem_Click(object Sender, EventArgs e) {
@@ -847,17 +848,21 @@ namespace ZitiDesktopEdge {
 			HideLoad();
 		}
 
-		private void ShowLoad(string title, string msg) {
-			LoadingDetails.Text = msg;
-			LoadingTitle.Content = title;
-			LoadProgress.IsIndeterminate = true;
-			LoadingScreen.Visibility = Visibility.Visible;
-			((MainWindow)System.Windows.Application.Current.MainWindow).UpdateLayout();
+		internal void ShowLoad(string title, string msg) {
+			this.Dispatcher.Invoke(() => {
+				LoadingDetails.Text = msg;
+				LoadingTitle.Content = title;
+				LoadProgress.IsIndeterminate = true;
+				LoadingScreen.Visibility = Visibility.Visible;
+				((MainWindow)System.Windows.Application.Current.MainWindow).UpdateLayout();
+			});
 		}
 
-		private void HideLoad() {
-			LoadingScreen.Visibility = Visibility.Collapsed;
-			LoadProgress.IsIndeterminate = false;
+		internal void HideLoad() {
+			this.Dispatcher.Invoke(() => {
+				LoadingScreen.Visibility = Visibility.Collapsed;
+				LoadProgress.IsIndeterminate = false;
+			});
 		}
 
 		private void FormFadeOut_Completed(object sender, EventArgs e) {
