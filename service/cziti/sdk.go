@@ -385,28 +385,30 @@ func log_writer_cb(level C.int, loc C.string, msg C.string, msglen C.int) {
 	lvl := level
 	switch lvl {
 	case 0:
-		noFileLog.Warnf("level 0 should not be logged, please report: %s", gomsg)
+		noFileLog.Warnf("SDK_: level 0 should not be logged, please report: %s", gomsg)
 		break
 	case 1:
-		noFileLog.Errorf("SDK: %s\t%s", goline, gomsg)
+		noFileLog.Errorf("SDKe: %s\t%s", goline, gomsg)
 		break
 	case 2:
-		noFileLog.Warnf("SDK: %s\t%s", goline, gomsg)
+		noFileLog.Warnf("SDKw: %s\t%s", goline, gomsg)
 		break
 	case 3:
-		noFileLog.Infof("SDK: %s\t%s", goline, gomsg)
+		noFileLog.Infof("SDKi: %s\t%s", goline, gomsg)
 		break
 	case 4:
-		noFileLog.Debugf("SDK: %s\t%s", goline, gomsg)
+		noFileLog.Debugf("SDKd: %s\t%s", goline, gomsg)
 		break
 	case 5:
-	case 6:
 		//VERBOSE:5
+		noFileLog.Tracef("SDKv: %s\t%s", goline, gomsg)
+		break
+	case 6:
 		//TRACE:6
-		noFileLog.Tracef("SDK: %s\t%s", goline, gomsg)
+		noFileLog.Tracef("SDKt: %s\t%s", goline, gomsg)
 		break
 	default:
-		noFileLog.Warnf("level [%d] NOT recognized: %s", level, gomsg)
+		noFileLog.Warnf("SDK_: level [%d] NOT recognized: %s", level, gomsg)
 		break
 	}
 }
