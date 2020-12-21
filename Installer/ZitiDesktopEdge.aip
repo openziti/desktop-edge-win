@@ -87,6 +87,8 @@
   <COMPONENT cid="caphyon.advinst.msicomp.AiPersistentDataComponent">
     <ROW PersistentRow="ZitiUpdateServicelog.config" Type="0" Condition="OLDPRODUCTS"/>
     <ROW PersistentRow="ZitiDesktopEdgelog.config" Type="0" Condition="OLDPRODUCTS"/>
+    <ROW PersistentRow="ZitiDesktopEdge.exe.config" Type="0" Condition="OLDPRODUCTS"/>
+    <ROW PersistentRow="ZitiUpdateService.exe.config" Type="0" Condition="OLDPRODUCTS"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.AppPathsComponent">
     <ROW Name="AI_APPPATH_PERBUILD_ZitiDesktopEdge.exe" Path="[|AI_PROPPATH_PERBUILD_ZitiDesktopEdge.exe]" Type="2" Content="0"/>
