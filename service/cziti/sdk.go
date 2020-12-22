@@ -349,7 +349,7 @@ func LoadZiti(cfg string, isActive bool) *ZIdentity {
 	ctx.Options.config = C.CString(cfg)
 	ctx.Options.init_cb = C.ziti_init_cb(C.initCB)
 	ctx.Options.service_cb = C.ziti_service_cb(C.serviceCB)
-	ctx.Options.refresh_interval = C.long(15)
+	ctx.Options.refresh_interval = C.long(60)
 	ctx.Options.metrics_type = C.INSTANT
 	ctx.Options.config_types = C.all_configs
 	ctx.Options.pq_domain_cb = C.ziti_pq_domain_cb(C.ziti_pq_domain_go)
