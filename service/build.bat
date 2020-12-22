@@ -16,7 +16,7 @@ REM
 SET REPO_URL=https://github.com/openziti/ziti-tunnel-sdk-c.git
 SET ZITI_TUNNEL_REPO_BRANCH=v0.7.25
 REM override the c sdk used in the build - leave blank for the same as specified in the tunneler sdk
-SET ZITI_SDK_C_BRANCH=
+SET ZITI_SDK_C_BRANCH=fixes-0.18.7
 REM the number of TCP connections the tunneler sdk can have at any one time
 SET TCP_MAX_CONNECTIONS=256
 
