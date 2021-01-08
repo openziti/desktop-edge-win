@@ -1,3 +1,63 @@
+# Release 1.6.25
+
+## What's New
+* Filtering is now available on the detail page of identities
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* [#287](https://github.com/openziti/desktop-edge-win/issues/287) - access fileshare via UNC path in Windows explorer very slow
+
+## Dependency Updates
+* updated TSDK/CSDK to v0.7.26.1
+* updated .net logging to NLog 4.7.6
+
+# Release 1.6.24
+
+## What's New
+* fixes to c sdk to better handle when the controller is unavailable at startup
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* updated TSDK/CSDK to v0.7.26/0.18.7
+
+# Release 1.6.23
+
+## What's New
+* fixes to c sdk to better handle when the controller is unavailable at startup
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* updated TSDK/CSDK to v0.7.26/0.18.7
+
+# Release 1.6.22
+
+## What's New
+* fixes [#274](https://github.com/openziti/desktop-edge-win/issues/274) - Added logging to all SC calls into the monitor service
+* feedback now collects systeminfo and dnscache info
+* added a "please wait" to the feedback option
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* stability fixes when the monitor service is down the UI should not crash when trying to access the monitor service
+* stability fixes from tsdk/csdk
+
+## Dependency Updates
+* updated TSDK/CSDK to v0.7.25/0.18.6
+
 # Release 1.6.20
 
 ## What's New

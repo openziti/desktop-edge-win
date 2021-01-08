@@ -6,11 +6,9 @@ using System;
 using System.Reflection;
 using System.Net.Mail;
 using System.IO;
-using System.Net;
-using Newtonsoft.Json.Linq;
 using ZitiDesktopEdge.ServiceClient;
-
 using NLog;
+
 using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.Native;
 using System.Configuration;
@@ -118,11 +116,10 @@ namespace ZitiDesktopEdge {
 
 			bool releaseClicked = opt.Label.ToLower() == "stable";
 
-			SvcResponse r = null;
 			if (releaseClicked) {
 				if (isBeta) {
 					//toggle to stable
-					r = await monitorClient.SetReleaseStreamAsync("stable");
+					var r = await monitorClient.SetReleaseStreamAsync("stable");
 					checkResponse(r, "Error When Setting Release Stream", "An error occurred while trying to set the release stream.");
 				} else {
 					logger.Debug("stable clicked but already on stable stream");
@@ -130,16 +127,14 @@ namespace ZitiDesktopEdge {
 			} else {
 				if (!isBeta) {
 					//toggle to beta
-					r = await monitorClient.SetReleaseStreamAsync("beta");
+					var r = await monitorClient.SetReleaseStreamAsync("beta");
 					checkResponse(r, "Error When Setting Release Stream", "An error occurred while trying to set the release stream.");
 				} else {
 					logger.Debug("beta clicked but already on beta stream");
 				}
 			}
-			if (r != null) {
-				Application.Current.Properties["ReleaseStream"] = opt.Label.ToLower();
-				UpdateState();
-			}
+			Application.Current.Properties["ReleaseStream"] = opt.Label.ToLower();
+			UpdateState();
 		}
 
 		private void checkResponse(SvcResponse r, string titleOnErr, string msgOnErr) {
@@ -279,7 +274,7 @@ namespace ZitiDesktopEdge {
 			try {
 				MainWindow.ShowLoad("Collecting Information", "Please wait while we run some commands\nand collect some diagnostic information");
 				DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-				var mailMessage = new MailMessage("ziti-support@netfoundry.io", "ziti-support@netfoundry.io");
+				var mailMessage = new MailMessage("help@openziti.org", "help@openziti.org");
 				mailMessage.Subject = "Ziti Support";
 				mailMessage.IsBodyHtml = false;
 				System.Text.StringBuilder sb = new System.Text.StringBuilder();

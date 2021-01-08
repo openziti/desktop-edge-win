@@ -24,6 +24,7 @@ namespace ZitiDesktopEdge {
 		public delegate void Detched(MouseButtonEventArgs e);
 		public event Detched OnDetach;
 		public double MainHeight = 500;
+		public string filter = "";
 
 		private List<ZitiIdentity> identities {
 			get {
@@ -83,14 +84,18 @@ namespace ZitiDesktopEdge {
 			IdentityStatus.Value = _identity.IsEnabled ? "active" : "disabled";
 			ServiceList.Children.Clear();
 			if (_identity.Services.Count>0) {
+				Filter.Visibility = Visibility.Visible;
+				FilterLabel.Visibility = Visibility.Visible;
 				foreach(var zitiSvc in _identity.Services.OrderBy(s => s.Name.ToLower())) {
-					Logger.Debug("painting: " + zitiSvc.Name);
-					ServiceInfo editor = new ServiceInfo();
-					editor.Label = zitiSvc.Name;
-					editor.Value = zitiSvc.Url;
-					editor.Warning = zitiSvc.Warning;
-					editor.IsLocked = true;
-					ServiceList.Children.Add(editor);
+					if (zitiSvc.Name.ToLower().IndexOf(filter)>=0||zitiSvc.Url.ToLower().IndexOf(filter)>=0) {
+						Logger.Debug("painting: " + zitiSvc.Name);
+						ServiceInfo editor = new ServiceInfo();
+						editor.Label = zitiSvc.Name;
+						editor.Value = zitiSvc.Url;
+						editor.Warning = zitiSvc.Warning;
+						editor.IsLocked = true;
+						ServiceList.Children.Add(editor);
+					}
 				}
 				double newHeight = MainHeight - 300;
 				ServiceRow.Height = new GridLength((double)newHeight);
@@ -99,6 +104,8 @@ namespace ZitiDesktopEdge {
 				MainDetailScroll.Visibility = Visibility.Visible;
 				ServiceTitle.Content = _identity.Services.Count + " SERVICES";
 			} else {
+				Filter.Visibility = Visibility.Collapsed;
+				FilterLabel.Visibility = Visibility.Collapsed;
 				ServiceRow.Height = new GridLength((double)0.0);
 				MainDetailScroll.Visibility = Visibility.Collapsed;
 				ServiceTitle.Content = "NO SERVICES AVAILABLE";
@@ -157,6 +164,25 @@ namespace ZitiDesktopEdge {
 			} catch (Exception ex) {
 				OnError(ex.Message);
 			}
+		}
+
+		private void FilterServices(object sender, KeyEventArgs e) {
+			if (e.Key == Key.Return) {
+				DoFilter();
+			}
+		}
+
+		private void DoFilter() {
+			filter = Filter.Text.ToLower().Trim();
+			UpdateView();
+		}
+
+		private void FilterClicked(object sender, MouseButtonEventArgs e) {
+			DoFilter();
+		}
+
+		private void FilterBlur(object sender, RoutedEventArgs e) {
+			DoFilter();
 		}
 	}
 }
