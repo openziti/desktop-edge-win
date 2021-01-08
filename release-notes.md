@@ -1,7 +1,7 @@
 # Release 1.6.25
 
 ## What's New
-* none
+* Filtering is now available on the detail page of identities
 
 ## Other changes:
 * none
@@ -11,6 +11,7 @@
 
 ## Dependency Updates
 * updated TSDK/CSDK to v0.7.26.1
+* updated .net logging to NLog 4.7.6
 
 # Release 1.6.24
 
