@@ -1,4 +1,4 @@
-# Release 1.6.25
+# Release 1.6.27 (also: 1.6.25, 1.6.26)
 
 ## What's New
 * Filtering is now available on the detail page of identities
