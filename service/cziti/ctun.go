@@ -104,6 +104,7 @@ func HookupTun(dev tun.Device/*, dns []net.IP*/) error {
 	opts.netif_driver = drv
 	opts.ziti_dial = C.ziti_sdk_dial_cb(C.ziti_sdk_c_dial)
 	opts.ziti_close = C.ziti_sdk_close_cb(C.ziti_sdk_c_close)
+	opts.ziti_close_write = C.ziti_sdk_close_cb(C.ziti_sdk_c_close_write)
 	opts.ziti_write = C.ziti_sdk_write_cb(C.ziti_sdk_c_write)
 	opts.ziti_host_v1 = C.ziti_sdk_host_v1_cb(C.ziti_sdk_c_host_v1)
 
