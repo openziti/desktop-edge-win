@@ -10,7 +10,7 @@
 * [#287](https://github.com/openziti/desktop-edge-win/issues/287) - access fileshare via UNC path in Windows explorer very slow
 
 ## Dependency Updates
-* updated TSDK/CSDK to v0.7.26.1
+* updated TSDK/CSDK to v0.7.26.2
 * updated .net logging to NLog 4.7.6
 
 # Release 1.6.24
