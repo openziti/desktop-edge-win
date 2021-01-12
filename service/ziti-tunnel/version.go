@@ -21,8 +21,8 @@ package main
 
 const (
 	Version   = "1.6.28"
-	Revision  = "848677341846"
-	Branch    = "release-1.6.28"
+	Revision  = "1db18eb5430d"
+	Branch    = "master"
 	BuildUser = ""
-	BuildDate = "2021-01-12 18:58:32"
+	BuildDate = "2021-01-12 19:11:28"
 )
