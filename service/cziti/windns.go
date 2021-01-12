@@ -157,3 +157,17 @@ foreach ($key in $dnsUpdates.Keys)
 		log.Errorf("ERROR resetting DNS (%v)", err)
 	}
 }
+
+func FlushDNS() {
+	log.Info("flushing DNS cache using ipconfig /flushdns")
+	script := `ipconfig /flushdns`
+
+	cmd := exec.Command("cmd", "-Command", script)
+	cmd.Stderr = os.Stdout
+	cmd.Stdout = os.Stdout
+
+	err := cmd.Run()
+	if err != nil {
+		log.Errorf("ERROR flushing DNS: %v", err)
+	}
+}
