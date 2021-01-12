@@ -224,6 +224,7 @@ func dnsPanicRecover(localDnsServers []net.IP) {
 }
 
 func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
+	FlushDNS() //do this in case the services come back in different order and the ip returned is no longer the same
 	log.Infof("starting DNS proxy upstream: %v, local: %v", upstreamDnsServers, localDnsServers)
 	domains = GetConnectionSpecificDomains()
 	log.Infof("ConnectionSpecificDomains: %v", domains)
