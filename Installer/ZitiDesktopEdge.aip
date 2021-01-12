@@ -299,6 +299,9 @@
     <ROW Registry="Path" Root="-1" Key="Software\[Manufacturer]\[ProductName]" Name="Path" Value="[APPDIR]" Component_="ProductInformation"/>
     <ROW Registry="Version" Root="-1" Key="Software\[Manufacturer]\[ProductName]" Name="Version" Value="[ProductVersion]" Component_="ProductInformation"/>
   </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiServConfigComponent">
+    <ROW MsiServiceConfig="ServiceName" Name="op" Event="1" ConfigType="3" Argument="1" Component_="ZitiUpdateService.exe"/>
+  </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiServConfigFailureActionsComponent">
     <ROW MsiServiceConfigFailureActions="ServiceName" Name="ziti" Event="5" ResetPeriod="7" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="zititunnel.exe"/>
     <ROW MsiServiceConfigFailureActions="ServiceName_1" Name="ziti-monitor" Event="5" ResetPeriod="7" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="ZitiUpdateService.exe"/>
