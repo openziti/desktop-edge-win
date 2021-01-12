@@ -1,3 +1,17 @@
+# Release 1.6.28
+
+## What's New
+* ziti-monitor service set to "Automatic (Delayed Start)". Some users have noticed the monitor service does not start 
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* none
+
 # Release 1.6.27 (also: 1.6.25, 1.6.26)
 
 ## What's New
