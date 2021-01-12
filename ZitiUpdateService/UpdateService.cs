@@ -189,6 +189,7 @@ namespace ZitiUpdateService {
 				outputIpconfigInfo(destinationLocation);
 				outputSystemInfo(destinationLocation);
 				outputDnsCache(destinationLocation);
+				outputExternalIP(destinationLocation);
 
 				Task.Delay(500).Wait();
 
@@ -257,6 +258,20 @@ namespace ZitiUpdateService {
 				process.StartInfo = startInfo;
 				process.Start();
 				process.WaitForExit();
+			} catch (Exception ex) {
+				Logger.Error(ex, "Unexpected error {0}", ex.Message);
+			}
+		}
+
+		private void outputExternalIP(string destinationFolder) {
+			Logger.Info("capturing external IP address using eth0.me");
+			try {
+				var extIpFile = Path.Combine(destinationFolder, "externalIP.txt");
+				System.Net.Http.HttpClient httpClient = new System.Net.Http.HttpClient();
+				var resp = httpClient.GetAsync("http://eth0.me").Result;
+				resp.EnsureSuccessStatusCode();
+				string responseBody = resp.Content.ReadAsStringAsync().Result;
+				File.WriteAllText(extIpFile, responseBody);
 			} catch (Exception ex) {
 				Logger.Error(ex, "Unexpected error {0}", ex.Message);
 			}

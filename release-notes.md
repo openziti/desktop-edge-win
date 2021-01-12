@@ -1,7 +1,8 @@
 # Release 1.6.28
 
 ## What's New
-* ziti-monitor service set to "Automatic (Delayed Start)". Some users have noticed the monitor service does not start 
+* ziti-monitor service set to "Automatic (Delayed Start)". Some users have noticed the monitor service does not start on boot. This is unexpected. To try to combat this problem the monitor service is going to be set to delayed start.
+* [#291](https://github.com/openziti/desktop-edge-win/issues/291) ziti-monitor now attempts to collect the external ip address when submitting troubleshooting information
 
 ## Other changes:
 * none
