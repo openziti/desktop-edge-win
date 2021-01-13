@@ -313,7 +313,60 @@ func serviceUnavailable(ctx *ZIdentity, svcId string, name string) {
 
 //export eventCB
 func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
+	appCtx := C.ziti_app_ctx(ztx)
 
+	log.Infof("got %d event for ztx(%p)", event._type, ztx)
+
+	switch(event._type) {
+	case C.ZitiContextEvent:
+		ctxEvent := C.ziti_event_context_event(event)
+		initCB(ztx, ctxEvent.ctrl_status, appCtx)
+
+	case C.ZitiRouterEvent:
+		rtrEvent := C.ziti_event_router_event(event)
+		switch(rtrEvent.status) {
+		case C.EdgeRouterConnected:
+			log.Infof("router[%s]: connected to %s", C.GoString(rtrEvent.name), C.GoString(rtrEvent.version))
+		case C.EdgeRouterDisconnected:
+			log.Infof("router[%s]: Disconnected", C.GoString(rtrEvent.name))
+		case C.EdgeRouterRemoved:
+			log.Infof("router[%s]: Removed", C.GoString(rtrEvent.name))
+		case C.EdgeRouterUnavailable:
+			log.Infof("router[%s]: Unavailable", C.GoString(rtrEvent.name))
+		}
+
+	case C.ZitiServiceEvent:
+		srvEvent := C.ziti_event_service_event(event)
+		for i := 0; true ; i++ {
+			s := C.ziti_service_array_get(srvEvent.added, C.int(i))	
+			if unsafe.Pointer(s) == C.NULL {
+				break
+			}
+			serviceCB(ztx, s, C.ZITI_SERVICE_UNAVAILABLE, appCtx)
+
+			log.Info("service removed ", C.GoString(s.name))
+			break
+		}
+		for i := 0; true ; i++ {
+			s := C.ziti_service_array_get(srvEvent.changed, C.int(i))	
+			if unsafe.Pointer(s) == C.NULL {
+				break
+			}
+			log.Info("service changed ", C.GoString(s.name))
+			serviceCB(ztx, s, C.ZITI_OK, appCtx)
+		}
+		for i := 0; true ; i++ {
+			s := C.ziti_service_array_get(srvEvent.added, C.int(i))	
+			if unsafe.Pointer(s) == C.NULL {
+				break
+			}
+			log.Info("service added ", C.GoString(s.name))
+			serviceCB(ztx, s, C.ZITI_OK, appCtx)
+		}
+
+	default:
+		log.Info("event %d not handled", event._type)
+	}
 }
 
 //export initCB

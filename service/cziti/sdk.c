@@ -18,6 +18,7 @@
 #include "sdk.h"
 #include <ziti/ziti_tunnel.h>
 #include <ziti/ziti_log.h>
+#include <ziti/ziti_events.h>
 #include <uv.h>
 
 void libuv_stopper(uv_async_t *a) {
@@ -77,4 +78,20 @@ extern void c_mapiter(model_map *map) {
 
 bool is_null(void* anything){
     return anything == NULL;
+}
+
+struct ziti_context_event* ziti_event_context_event(ziti_event_t *ev) {
+    return &ev->event.ctx;
+}
+
+struct ziti_router_event* ziti_event_router_event(ziti_event_t *ev) {
+    return &ev->event.router;
+}
+
+struct ziti_service_event* ziti_event_service_event(ziti_event_t *ev) {
+    return &ev->event.service;
+}
+
+ziti_service* ziti_service_array_get(ziti_service_array arr, int idx) {
+    return arr[idx];
 }
