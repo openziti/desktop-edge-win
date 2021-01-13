@@ -21,11 +21,14 @@ package cziti
 #cgo windows LDFLAGS: -l libziti.imp -luv -lws2_32 -lpsapi
 
 #include <ziti/ziti.h>
+#include <ziti/ziti_events.h>
 #include "ziti/ziti_tunnel.h"
 #include "ziti/ziti_log.h"
 
 #include "sdk.h"
 extern void initCB(ziti_context nf, int status, void *ctx);
+extern void eventCB(ziti_context ztx, ziti_event_t *event);
+
 extern void serviceCB(ziti_context nf, ziti_service*, int status, void *ctx);
 extern void shutdown_callback(uv_async_t *handle);
 extern void free_async(uv_handle_t* timer);
@@ -308,6 +311,11 @@ func serviceUnavailable(ctx *ZIdentity, svcId string, name string) {
 	}
 }
 
+//export eventCB
+func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
+
+}
+
 //export initCB
 func initCB(nf C.ziti_context, status C.int, data unsafe.Pointer) {
 	ctx := (*ZIdentity)(data)
@@ -316,7 +324,7 @@ func initCB(nf C.ziti_context, status C.int, data unsafe.Pointer) {
 	if nf != nil {
 		ctx.zid = C.ziti_get_identity(nf)
 	}
-	ctx.Options.ctx = data
+	// ctx.Options.ctx = data
 	ctx.status = int(status)
 	ctx.statusErr = zitiError(status)
 
@@ -347,8 +355,8 @@ func LoadZiti(cfg string, isActive bool) *ZIdentity {
 	ctx.Active = isActive
 
 	ctx.Options.config = C.CString(cfg)
-	ctx.Options.init_cb = C.ziti_init_cb(C.initCB)
-	ctx.Options.service_cb = C.ziti_service_cb(C.serviceCB)
+	// ctx.Options.init_cb = C.ziti_init_cb(C.initCB)
+	// ctx.Options.service_cb = C.ziti_service_cb(C.serviceCB)
 	ctx.Options.refresh_interval = C.long(300)
 	ctx.Options.metrics_type = C.INSTANT
 	ctx.Options.config_types = C.all_configs
@@ -357,9 +365,13 @@ func LoadZiti(cfg string, isActive bool) *ZIdentity {
 	ctx.Options.pq_os_cb = C.ziti_pq_os_cb(C.ziti_pq_os_go)
 	ctx.Options.pq_process_cb = C.ziti_pq_process_cb(C.ziti_pq_process_go)
 
+	ctx.Options.events = C.ZitiContextEvent | C.ZitiServiceEvent | C.ZitiRouterEvent
+	ctx.Options.event_cb = C.ziti_event_cb(C.eventCB)
+	ctx.Options.app_ctx = unsafe.Pointer(ctx)
+
 	ch := make(chan *ZIdentity)
 	initMap[cfg] = ch
-	rc := C.ziti_init_opts(ctx.Options, _impl.libuvCtx.l, unsafe.Pointer(ctx))
+	rc := C.ziti_init_opts(ctx.Options, _impl.libuvCtx.l)
 	if rc != C.ZITI_OK {
 		ctx.status, ctx.statusErr = int(rc), zitiError(rc)
 		go func() {
