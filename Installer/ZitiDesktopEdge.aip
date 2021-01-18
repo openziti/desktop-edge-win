@@ -22,10 +22,10 @@
     <ROW Property="CTRLS" Value="2"/>
     <ROW Property="Manufacturer" Value="NetFoundry, Inc."/>
     <ROW Property="MsiLogging" MultiBuildValue="AnyCPU_Release:vp"/>
-    <ROW Property="ProductCode" Value="1033:{29415CD4-4305-4A2B-B453-D2785AD6619B} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{982188C4-2432-4F8F-B8AD-807B50BCB50B} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="Ziti Desktop Edge"/>
-    <ROW Property="ProductVersion" Value="1.6.30" Type="32"/>
+    <ROW Property="ProductVersion" Value="1.7.0" Type="32"/>
     <ROW Property="REBOOT" MultiBuildValue="AnyCPU_Release:Suppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{CB7E173A-663D-4A23-BB22-D1E8D885C2F3}"/>
@@ -203,7 +203,7 @@
     <ROW Action="AI_ConfigFailActions" Type="11265" Source="aicustact.dll" Target="ConfigureServFailActions" WithoutSeq="true"/>
     <ROW Action="AI_DATA_SETTER" Type="51" Source="CustomActionData" Target="[AI_SETUPEXEPATH]"/>
     <ROW Action="AI_DATA_SETTER_1" Type="51" Source="CustomActionData" Target="[~]"/>
-    <ROW Action="AI_DATA_SETTER_2" Type="51" Source="PowerShellScriptInline" Target="AEQAaQBnAGkAdABhAGwAbAB5AFMAaQBnAG4AUwBjAHIAaQBwAHQAAgABAEYAbABhAGcAcwACADAAAQBQAGEAcgBhAG0AcwACAAEAUwBjAHIAaQBwAHQAAgBHAGUAdAAtAFcAbQBpAE8AYgBqAGUAYwB0ACAALQBDAGwAYQBzAHMAIABXAGkAbgAzADIAXwBQAHIAbwBkAHUAYwB0ACAAfAAgAFcAaABlAHIAZQAtAE8AYgBqAGUAYwB0AFsAXAB7AF0AJABfAC4ATgBhAG0AZQAgAC0AZQBxACAAIgBPAHAAZQBuAFoAaQB0AGkAVwBpAG4AdAB1AG4ASQBuAHMAdABhAGwAbABlAHIAIgBbAFwAfQBdAC4AVQBuAGkAbgBzAHQAYQBsAGwAKAAp"/>
+    <ROW Action="AI_DATA_SETTER_2" Type="51" Source="CustomActionData" Target="AEQAaQBnAGkAdABhAGwAbAB5AFMAaQBnAG4AUwBjAHIAaQBwAHQAAgABAEYAbABhAGcAcwACADYAAQBQAGEAcgBhAG0AcwACAAEAUwBjAHIAaQBwAHQAAgAkAE8AWgBXAEkAPQBHAGUAdAAtAFcAbQBpAE8AYgBqAGUAYwB0ACAALQBDAGwAYQBzAHMAIABXAGkAbgAzADIAXwBQAHIAbwBkAHUAYwB0ACAAfAAgAFcAaABlAHIAZQAtAE8AYgBqAGUAYwB0AFsAXAB7AF0AJABfAC4ATgBhAG0AZQAgAC0AZQBxACAAIgBPAHAAZQBuAFoAaQB0AGkAVwBpAG4AdAB1AG4ASQBuAHMAdABhAGwAbABlAHIAIgBbAFwAfQBdAA0ACgBlAGMAaABvACAAJABPAFoAVwBJACAAPgA+ACAAYwA6AFwAdABlAG0AcABcAHIAYQBuAC4AdAB4AHQADQAKAGkAZgAoACQATwBaAFcASQApACAAWwBcAHsAXQANAAoAIAAgAGUAYwBoAG8AIAAiAHMAdABhAHIAdABpAG4AZwAgAHUAbgBpAG4AcwB0AGEAbABsACIAIAA+AD4AIABjADoAXAB0AGUAbQBwAFwAcgBhAG4ALgB0AHgAdAANAAoAIAAgACQATwBaAFcASQAuAFUAbgBpAG4AcwB0AGEAbABsACgAKQANAAoAIAAgAGUAYwBoAG8AIAAiAGMAbwBtAHAAbABlAHQAZQBkACAAdQBuAGkAbgBzAHQAYQBsAGwAIgAgAD4APgAgAGMAOgBcAHQAZQBtAHAAXAByAGEAbgAuAHQAeAB0AA0ACgBbAFwAfQBdACAAZQBsAHMAZQAgAFsAXAB7AF0AIAANAAoAIAAgAGUAYwBoAG8AIAAiAE8AWgBXAEkAIABuAG8AdAAgAGYAbwB1AG4AZAA/ACIAIAA+AD4AIABjADoAXAB0AGUAbQBwAFwAcgBhAG4ALgB0AHgAdAANAAoAWwBcAH0AXQANAAoAZQBjAGgAbwAgACIAPQA9AD0APQA9AD0APQA9AD0APQA9AD0APQAgAGMAbwBtAHAAbABlAHQAZQAgAD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0AIgAgAD4APgAgAGMAOgBcAHQAZQBtAHAAXAByAGEAbgAuAHQAeAB0"/>
     <ROW Action="AI_DOWNGRADE" Type="19" Target="4010"/>
     <ROW Action="AI_DeleteCadLzma" Type="51" Source="AI_DeleteLzma" Target="[AI_SETUPEXEPATH]"/>
     <ROW Action="AI_DeleteLzma" Type="1025" Source="lzmaextractor.dll" Target="DeleteLZMAFiles"/>
@@ -226,7 +226,7 @@
     <ROW Action="AI_RunFinishActions" Type="1" Source="aicustact.dll" Target="RunFinishActions" WithoutSeq="true"/>
     <ROW Action="AI_SHOW_LOG" Type="65" Source="aicustact.dll" Target="LaunchLogFile" WithoutSeq="true"/>
     <ROW Action="AI_STORE_LOCATION" Type="51" Source="ARPINSTALLLOCATION" Target="[APPDIR]"/>
-    <ROW Action="PowerShellScriptInline" Type="1601" Source="PowerShellScriptLauncher.dll" Target="RunPowerShellScript" Options="1" AdditionalSeq="AI_DATA_SETTER_2"/>
+    <ROW Action="PowerShellScriptInline" Type="65" Source="PowerShellScriptLauncher.dll" Target="RunPowerShellScript" Options="1" AdditionalSeq="AI_DATA_SETTER_2"/>
     <ROW Action="SET_APPDIR" Type="307" Source="APPDIR" Target="[ProgramFilesFolder][Manufacturer]\[ProductName]" MultiBuildTarget="DefaultBuild:[ProgramFiles64Folder][Manufacturer]\[ProductName]#AnyCPU_Release:[ProgramFiles64Folder][Manufacturer]\[ProductName]"/>
     <ROW Action="SET_SHORTCUTDIR" Type="307" Source="SHORTCUTDIR" Target="[ProgramMenuFolder][ProductName]"/>
     <ROW Action="SET_TARGETDIR_TO_APPDIR" Type="51" Source="TARGETDIR" Target="[APPDIR]"/>
@@ -278,8 +278,8 @@
     <ROW Action="AI_AiBackupRollback" Sequence="1501"/>
     <ROW Action="AI_AiRestoreDeferredImpersonate" Sequence="6598"/>
     <ROW Action="AI_AiRestoreDeferred" Sequence="6599"/>
-    <ROW Action="PowerShellScriptInline" Condition="(VersionNT &gt; 501) OR (VersionNT = 501 AND ServicePackLevel &gt;= 2)" Sequence="3602"/>
-    <ROW Action="AI_DATA_SETTER_2" Condition="(VersionNT &gt; 501) OR (VersionNT = 501 AND ServicePackLevel &gt;= 2)" Sequence="3601"/>
+    <ROW Action="PowerShellScriptInline" Sequence="6602"/>
+    <ROW Action="AI_DATA_SETTER_2" Sequence="6601"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiInstallUISequenceComponent">
     <ROW Action="AI_RESTORE_LOCATION" Condition="APPDIR=&quot;&quot;" Sequence="749"/>
@@ -337,11 +337,9 @@
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.PreReqComponent">
     <ROW PrereqKey="BF9259651485FB4F316A40CB01E7B" DisplayName=".NET Framework 4.8 (web installer)" SetupFileUrl="https://download.visualstudio.microsoft.com/download/pr/7afca223-55d2-470a-8edc-6a1739ae3252/c9b8749dd99fc0d4453b2a3e4c37ba16/ndp48-web.exe" Location="1" ExactSize="1486376" WinNTVersions="Windows Vista x86, Windows Server 2008 x86, Windows 7 RTM x86, Windows 8 x86, Windows 10 version 1507 x86, Windows 10 version 1511 x86, Windows 10 version 1903 x86, Windows 10 version 1909 x86, Windows 10 version 2004 x86" WinNT64Versions="Windows Vista x64, Windows Server 2008 x64, Windows 7 RTM x64, Windows Server 2008 R2 RTM x64, Windows 8 x64, Windows 10 version 1507 x64, Windows 10 version 1511 x64, Windows 10 version 1903 x64, Windows 10 version 1909 x64, Windows 10 version 2004 x64" Operator="1" NoUiComLine="/q /norestart" Options="xy" MD5="86482f2f623a52b8344b00968adc7b43" TargetName=".NET Framework 4.8"/>
-    <ROW PrereqKey="OpenZitiWintunInstal" DisplayName="OpenZitiWintunInstaller" VersionMin="1.0.0.0" SetupFileUrl="..\ZitiWintunInstaller\bin\Release\OpenZitiWintunInstaller.msi" Location="0" ExactSize="0" Operator="1" Options="ym" TargetName="OpenZiti\OpenZitiWintunInstaller.msi"/>
-    <ATTRIBUTE name="PrereqsOrder" value="OpenZitiWintunInstal BF9259651485FB4F316A40CB01E7B"/>
+    <ATTRIBUTE name="PrereqsOrder" value="BF9259651485FB4F316A40CB01E7B"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.PreReqSearchComponent">
     <ROW SearchKey="BF9259651485FB4F316A40CB01E7BReleas" Prereq="BF9259651485FB4F316A40CB01E7B" SearchType="9" SearchString="HKLM\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full\Release" RefContent="G528048" Order="1" Property="PreReqSearch_BF9259651485FB4F316A40"/>
-    <ROW SearchKey="UpgradeCode" Prereq="OpenZitiWintunInstal" SearchType="4" SearchString="{1ABDBE15-0F36-4633-BA6F-8A32D8CF4838}" VerMin="1.0.0.0" Order="1" Property="PreReqSearch"/>
   </COMPONENT>
 </DOCUMENT>
