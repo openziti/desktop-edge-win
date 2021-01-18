@@ -228,8 +228,6 @@ if %ACTUAL_ERR% NEQ 0 (
     echo go build complete
 )
 
-IF "%1"=="quick" GOTO END
-
 echo creating the distribution zip file
 zip ziti-tunnel-win.zip *.dll ziti*exe
 
