@@ -135,10 +135,10 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	cziti.ResetDNS()
 
 	log.Infof("Removing existing interface: %s", TunName)
-	wt, err := tun.WintunPool.GetInterface(TunName)
+	wt, err := tun.WintunPool.OpenAdapter(TunName)
 	if err == nil {
 		// If so, we delete it, in case it has weird residual configuration.
-		_, err = wt.DeleteInterface()
+		_, err = wt.Delete(true)
 		if err != nil {
 			log.Errorf("Error deleting already existing interface: %v", err)
 		}

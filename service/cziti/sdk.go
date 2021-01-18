@@ -120,7 +120,7 @@ func (c *ZIdentity) GetMetrics() (int64, int64, bool) {
 	if c == nil {
 		return 0, 0, false
 	}
-	if C.is_null(unsafe.Pointer(&c.zctx)) {
+	if C.is_null(unsafe.Pointer(c.zctx)) {
 		log.Warnf("ziti context is C.NULL! %s", c.Fingerprint)
 		return 0, 0, false
 	}
@@ -315,16 +315,16 @@ func serviceUnavailable(ctx *ZIdentity, svcId string, name string) {
 func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 	appCtx := C.ziti_app_ctx(ztx)
 
-	log.Infof("got %d event for ztx(%p)", event._type, ztx)
+	log.Debugf("events received. type: %d for ztx(%p)", event._type, ztx)
 
-	switch(event._type) {
+	switch event._type {
 	case C.ZitiContextEvent:
 		ctxEvent := C.ziti_event_context_event(event)
 		initCB(ztx, ctxEvent.ctrl_status, appCtx)
 
 	case C.ZitiRouterEvent:
 		rtrEvent := C.ziti_event_router_event(event)
-		switch(rtrEvent.status) {
+		switch rtrEvent.status {
 		case C.EdgeRouterConnected:
 			log.Infof("router[%s]: connected to %s", C.GoString(rtrEvent.name), C.GoString(rtrEvent.version))
 		case C.EdgeRouterDisconnected:
@@ -338,14 +338,13 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 	case C.ZitiServiceEvent:
 		srvEvent := C.ziti_event_service_event(event)
 		for i := 0; true ; i++ {
-			s := C.ziti_service_array_get(srvEvent.added, C.int(i))	
+			s := C.ziti_service_array_get(srvEvent.removed, C.int(i))
 			if unsafe.Pointer(s) == C.NULL {
 				break
 			}
 			serviceCB(ztx, s, C.ZITI_SERVICE_UNAVAILABLE, appCtx)
 
 			log.Info("service removed ", C.GoString(s.name))
-			break
 		}
 		for i := 0; true ; i++ {
 			s := C.ziti_service_array_get(srvEvent.changed, C.int(i))	
@@ -365,7 +364,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 		}
 
 	default:
-		log.Info("event %d not handled", event._type)
+		log.Infof("event %d not handled", event._type)
 	}
 }
 
@@ -377,7 +376,7 @@ func initCB(nf C.ziti_context, status C.int, data unsafe.Pointer) {
 	if nf != nil {
 		ctx.zid = C.ziti_get_identity(nf)
 	}
-	// ctx.Options.ctx = data
+
 	ctx.status = int(status)
 	ctx.statusErr = zitiError(status)
 
@@ -403,13 +402,11 @@ func zitiError(code C.int) error {
 }
 
 func LoadZiti(cfg string, isActive bool) *ZIdentity {
-	ctx := NewZid()// &ZIdentity{}
+	ctx := NewZid()
 
 	ctx.Active = isActive
 
 	ctx.Options.config = C.CString(cfg)
-	// ctx.Options.init_cb = C.ziti_init_cb(C.initCB)
-	// ctx.Options.service_cb = C.ziti_service_cb(C.serviceCB)
 	ctx.Options.refresh_interval = C.long(300)
 	ctx.Options.metrics_type = C.INSTANT
 	ctx.Options.config_types = C.all_configs
