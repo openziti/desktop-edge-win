@@ -14,7 +14,7 @@ REM See the License for the specific language governing permissions and
 REM limitations under the License.
 REM
 SET REPO_URL=https://github.com/openziti/ziti-tunnel-sdk-c.git
-SET ZITI_TUNNEL_REPO_BRANCH=v0.7.33
+SET ZITI_TUNNEL_REPO_BRANCH=free.ioctx.iff.fully.closed
 REM override the c sdk used in the build - leave blank for the same as specified in the tunneler sdk
 SET ZITI_SDK_C_BRANCH=
 REM the number of TCP connections the tunneler sdk can have at any one time
@@ -263,6 +263,7 @@ echo =====================================================
 echo -- BUILD COMPLETE                                  --
 echo --     tunneler sdk: %ZITI_TUNNEL_REPO_BRANCH%
 echo --     c sdk       : %CSDK_BRANCH%
+echo --                 : %CSDK_HASH%
 echo --                 : %ZITI_SDK_C_BRANCH%
 echo --                 : %ZITI_SDK_C_BRANCH_CMD%
 echo =====================================================
