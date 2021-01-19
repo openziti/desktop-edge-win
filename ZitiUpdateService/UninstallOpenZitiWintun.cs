@@ -27,6 +27,7 @@ namespace ZitiUpdateService {
         private static bool UninstallOpenZitiWintunInstaller() {
             ManagementObjectSearcher mos = new ManagementObjectSearcher("SELECT * FROM Win32_Product WHERE Name = 'OpenZitiWintunInstaller'");
             foreach (ManagementObject mo in mos.Get()) {
+                Logger.Info("OpenZitiWintunInstaller is installed. Invoking uninstall");
                 var hr = mo.InvokeMethod("Uninstall", null);
                 return hr != null;
             }
