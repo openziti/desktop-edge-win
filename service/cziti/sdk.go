@@ -372,23 +372,29 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 func initCB(nf C.ziti_context, status C.int, data unsafe.Pointer) {
 	ctx := (*ZIdentity)(data)
 
-	ctx.zctx = nf
-	if nf != nil {
-		ctx.zid = C.ziti_get_identity(nf)
-	}
-
 	ctx.status = int(status)
 	ctx.statusErr = zitiError(status)
+	ctx.zctx = nf
 
-	ctx.Name = ctx.setNameFromId()
-	ctx.Version = ctx.setVersionFromId()
-
-	log.Infof("connected to controller %s running %v", ctx.Name, ctx.Version)
 	cfg := C.GoString(ctx.Options.config)
-	if ch, ok := initMap[cfg]; ok {
-		ch <- ctx
+
+	if status == C.int(0) {
+		if nf != nil {
+			ctx.zid = C.ziti_get_identity(nf)
+		}
+
+		ctx.Name = ctx.setNameFromId()
+		ctx.Version = ctx.setVersionFromId()
+
+		log.Infof("connected to controller %s running %v", ctx.Name, ctx.Version)
 	} else {
-		log.Warn("response channel not found")
+		log.Infof("failed to connect[%s] to controller for %s", ctx.statusErr, cfg)
+	}
+
+	ch, firstTime := initMap[cfg]
+	if firstTime {
+		ch <- ctx
+		delete(initMap, cfg)
 	}
 }
 
