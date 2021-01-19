@@ -22,9 +22,6 @@ echo "Updating the version for UI and Installer"
 echo "Building the UI"
 msbuild ZitiDesktopEdge.sln /property:Configuration=Release
 
-echo "Building the Wintun installer"
-msbuild ZitiWintunInstaller.sln /p:configuration=Release
-
 Pop-Location
 
 $ADVINST = "C:\Program Files (x86)\Caphyon\Advanced Installer 17.8\bin\x86\AdvancedInstaller.com"

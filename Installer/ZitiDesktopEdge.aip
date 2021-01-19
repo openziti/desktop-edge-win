@@ -151,7 +151,6 @@
     <ROW Property="AI_SETUPEXEPATH" Signature_="AI_EXE_PATH_CU" Builds="DefaultBuild;AnyCPU_Release"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiBinaryComponent">
-    <ROW Name="PowerShellScriptLauncher.dll" SourcePath="&lt;AI_CUSTACTS&gt;PowerShellScriptLauncher.dll"/>
     <ROW Name="Prereq.dll" SourcePath="&lt;AI_CUSTACTS&gt;Prereq.dll"/>
     <ROW Name="ResourceCleaner.dll" SourcePath="&lt;AI_CUSTACTS&gt;ResourceCleaner.dll"/>
     <ROW Name="SoftwareDetector.dll" SourcePath="&lt;AI_CUSTACTS&gt;SoftwareDetector.dll"/>
@@ -203,7 +202,6 @@
     <ROW Action="AI_ConfigFailActions" Type="11265" Source="aicustact.dll" Target="ConfigureServFailActions" WithoutSeq="true"/>
     <ROW Action="AI_DATA_SETTER" Type="51" Source="CustomActionData" Target="[AI_SETUPEXEPATH]"/>
     <ROW Action="AI_DATA_SETTER_1" Type="51" Source="CustomActionData" Target="[~]"/>
-    <ROW Action="AI_DATA_SETTER_2" Type="51" Source="CustomActionData" Target="AEQAaQBnAGkAdABhAGwAbAB5AFMAaQBnAG4AUwBjAHIAaQBwAHQAAgABAEYAbABhAGcAcwACADYAAQBQAGEAcgBhAG0AcwACAAEAUwBjAHIAaQBwAHQAAgAkAE8AWgBXAEkAPQBHAGUAdAAtAFcAbQBpAE8AYgBqAGUAYwB0ACAALQBDAGwAYQBzAHMAIABXAGkAbgAzADIAXwBQAHIAbwBkAHUAYwB0ACAAfAAgAFcAaABlAHIAZQAtAE8AYgBqAGUAYwB0AFsAXAB7AF0AJABfAC4ATgBhAG0AZQAgAC0AZQBxACAAIgBPAHAAZQBuAFoAaQB0AGkAVwBpAG4AdAB1AG4ASQBuAHMAdABhAGwAbABlAHIAIgBbAFwAfQBdAA0ACgBlAGMAaABvACAAJABPAFoAVwBJACAAPgA+ACAAYwA6AFwAdABlAG0AcABcAHIAYQBuAC4AdAB4AHQADQAKAGkAZgAoACQATwBaAFcASQApACAAWwBcAHsAXQANAAoAIAAgAGUAYwBoAG8AIAAiAHMAdABhAHIAdABpAG4AZwAgAHUAbgBpAG4AcwB0AGEAbABsACIAIAA+AD4AIABjADoAXAB0AGUAbQBwAFwAcgBhAG4ALgB0AHgAdAANAAoAIAAgACQATwBaAFcASQAuAFUAbgBpAG4AcwB0AGEAbABsACgAKQANAAoAIAAgAGUAYwBoAG8AIAAiAGMAbwBtAHAAbABlAHQAZQBkACAAdQBuAGkAbgBzAHQAYQBsAGwAIgAgAD4APgAgAGMAOgBcAHQAZQBtAHAAXAByAGEAbgAuAHQAeAB0AA0ACgBbAFwAfQBdACAAZQBsAHMAZQAgAFsAXAB7AF0AIAANAAoAIAAgAGUAYwBoAG8AIAAiAE8AWgBXAEkAIABuAG8AdAAgAGYAbwB1AG4AZAA/ACIAIAA+AD4AIABjADoAXAB0AGUAbQBwAFwAcgBhAG4ALgB0AHgAdAANAAoAWwBcAH0AXQANAAoAZQBjAGgAbwAgACIAPQA9AD0APQA9AD0APQA9AD0APQA9AD0APQAgAGMAbwBtAHAAbABlAHQAZQAgAD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0AIgAgAD4APgAgAGMAOgBcAHQAZQBtAHAAXAByAGEAbgAuAHQAeAB0"/>
     <ROW Action="AI_DOWNGRADE" Type="19" Target="4010"/>
     <ROW Action="AI_DeleteCadLzma" Type="51" Source="AI_DeleteLzma" Target="[AI_SETUPEXEPATH]"/>
     <ROW Action="AI_DeleteLzma" Type="1025" Source="lzmaextractor.dll" Target="DeleteLZMAFiles"/>
@@ -226,7 +224,6 @@
     <ROW Action="AI_RunFinishActions" Type="1" Source="aicustact.dll" Target="RunFinishActions" WithoutSeq="true"/>
     <ROW Action="AI_SHOW_LOG" Type="65" Source="aicustact.dll" Target="LaunchLogFile" WithoutSeq="true"/>
     <ROW Action="AI_STORE_LOCATION" Type="51" Source="ARPINSTALLLOCATION" Target="[APPDIR]"/>
-    <ROW Action="PowerShellScriptInline" Type="65" Source="PowerShellScriptLauncher.dll" Target="RunPowerShellScript" Options="1" AdditionalSeq="AI_DATA_SETTER_2"/>
     <ROW Action="SET_APPDIR" Type="307" Source="APPDIR" Target="[ProgramFilesFolder][Manufacturer]\[ProductName]" MultiBuildTarget="DefaultBuild:[ProgramFiles64Folder][Manufacturer]\[ProductName]#AnyCPU_Release:[ProgramFiles64Folder][Manufacturer]\[ProductName]"/>
     <ROW Action="SET_SHORTCUTDIR" Type="307" Source="SHORTCUTDIR" Target="[ProgramMenuFolder][ProductName]"/>
     <ROW Action="SET_TARGETDIR_TO_APPDIR" Type="51" Source="TARGETDIR" Target="[APPDIR]"/>
@@ -278,8 +275,6 @@
     <ROW Action="AI_AiBackupRollback" Sequence="1501"/>
     <ROW Action="AI_AiRestoreDeferredImpersonate" Sequence="6598"/>
     <ROW Action="AI_AiRestoreDeferred" Sequence="6599"/>
-    <ROW Action="PowerShellScriptInline" Sequence="6602"/>
-    <ROW Action="AI_DATA_SETTER_2" Sequence="6601"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiInstallUISequenceComponent">
     <ROW Action="AI_RESTORE_LOCATION" Condition="APPDIR=&quot;&quot;" Sequence="749"/>
