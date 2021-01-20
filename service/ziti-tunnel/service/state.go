@@ -66,6 +66,7 @@ func (t *RuntimeState) SaveState() {
 	}
 
 	cfg, err := os.OpenFile(config.File(), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+	defer cfg.Close()
 	if err != nil {
 		log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "opening the config file", err)
 	}
@@ -73,7 +74,7 @@ func (t *RuntimeState) SaveState() {
 	w := bufio.NewWriter(bufio.NewWriter(cfg))
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
-	_ = enc.Encode(t.ToStatus())
+	_ = enc.Encode(t.ToStatus(false))
 	_ = w.Flush()
 
 	err = cfg.Close()
@@ -103,7 +104,7 @@ func backupConfig() (string, error) {
 	return backup, err
 }
 
-func (t *RuntimeState) ToStatus() dto.TunnelStatus {
+func (t *RuntimeState) ToStatus(onlyInitialized bool) dto.TunnelStatus {
 	var uptime int64
 
 	now := time.Now()
@@ -113,7 +114,7 @@ func (t *RuntimeState) ToStatus() dto.TunnelStatus {
 	clean := dto.TunnelStatus{
 		Active:         t.state.Active,
 		Duration:       uptime,
-		Identities:     make([]*dto.Identity, len(t.ids)),
+		Identities:     make([]*dto.Identity, 0),
 		IpInfo:         t.state.IpInfo,
 		LogLevel:       t.state.LogLevel,
 		ServiceVersion: Version,
@@ -123,8 +124,15 @@ func (t *RuntimeState) ToStatus() dto.TunnelStatus {
 
 	i := 0
 	for _, id := range t.ids {
-		cid := Clean(id)
-		clean.Identities[i] = &cid
+		if onlyInitialized {
+			if id.CId != nil && id.CId.Loaded {
+				cid := Clean(id)
+				clean.Identities = append(clean.Identities, &cid)
+			}
+		} else {
+			cid := Clean(id)
+			clean.Identities = append(clean.Identities, &cid)
+		}
 		i++
 	}
 
@@ -231,31 +239,35 @@ func (t *RuntimeState) LoadIdentity(id *Id) {
 	}
 
 	log.Infof("loading identity %s[%s]", id.Name, id.FingerPrint)
-	now := time.Now()
 	id.CId = cziti.LoadZiti(id.Path(), id.Active)
-	/*if id.CId == nil {
-		log.Warnf("connecting to identity with fingerprint [%s] did not error but no context was returned", id.FingerPrint)
-		return
-	}*/
-	log.Infof("loading identity for %s[%s] completed taking %f seconds", id.Name, id.FingerPrint, time.Now().Sub(now).Seconds())
+	go func(){
+		statusChange := <- id.CId.StatusChanges //wait for the response
+		log.Infof("status change! %d", statusChange)
 
-	id.ControllerVersion = id.CId.Version
-	id.CId.Fingerprint = id.FingerPrint
-	id.CId.Loaded = true
-	id.Config.ZtAPI = id.CId.Controller()
+		id.ControllerVersion = id.CId.Version
+		id.CId.Fingerprint = id.FingerPrint
+		id.CId.Loaded = true
+		id.Config.ZtAPI = id.CId.Controller()
 
-	// hack for now - if the identity name is '<unknown>' don't set it... :(
-	if id.CId.Name == "<unknown>" {
-		log.Debugf("name is set to <unknown> which probably indicates the controller is down - not changing the name")
-	} else if id.Name != id.CId.Name {
-		log.Debugf("name changed from %s to %s", id.Name, id.CId.Name)
-		id.Name = id.CId.Name
-	}
-	log.Infof("successfully loaded %s@%s", id.CId.Name, id.CId.Controller())
-	_, found := t.ids[id.FingerPrint]
-	if !found {
-		t.ids[id.FingerPrint] = id //add this identity to the list of known ids
-	}
+		// hack for now - if the identity name is '<unknown>' don't set it... :(
+		if id.CId.Name == "<unknown>" {
+			log.Debugf("name is set to <unknown> which probably indicates the controller is down - not changing the name")
+		} else if id.Name != id.CId.Name {
+			log.Debugf("name changed from %s to %s", id.Name, id.CId.Name)
+			id.Name = id.CId.Name
+		}
+		log.Infof("successfully loaded %s@%s", id.CId.Name, id.CId.Controller())
+		_, found := t.ids[id.FingerPrint]
+		if !found {
+			t.ids[id.FingerPrint] = id //add this identity to the list of known ids
+		}
+
+		events.broadcast <- dto.IdentityEvent{
+			ActionEvent: IDENTITY_ADDED,
+			Id: id.Identity,
+		}
+		log.Infof("connecting identity completed: %s[%s]", id.Name, id.FingerPrint)
+	}()
 }
 
 func (t *RuntimeState) LoadConfig() {
