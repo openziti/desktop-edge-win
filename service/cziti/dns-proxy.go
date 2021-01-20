@@ -257,6 +257,8 @@ func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
 		}
 	}()
 
+	dnsRetryInterval := 500
+
 	log.Infof("establishing links to all upstream DNS. total detected upstream DNS: %d", len(upstreamDnsServers))
 	outer:
 	for _, s := range upstreamDnsServers {
@@ -291,8 +293,14 @@ func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
 		//this happens when turning wifi off and waiting a moment - then turning wifi back on again
 		//might happen unplugging the ethernet from one port to another - you get the idea... if this
 		//happens - pause for a small amount of time and reinstitute the proxy establishing loop
-		log.Warnf("no upstream DNS dials succeeded. Does this computer have any network connectivity? Pausing for 500ms and trying again")
-		time.Sleep(500 * time.Millisecond)
+		log.Warnf("no upstream DNS dials succeeded. Does this computer have any network connectivity? Pausing for %d ms and trying again", dnsRetryInterval)
+		time.Sleep(time.Duration(dnsRetryInterval) * time.Millisecond)
+
+		//add 500ms each time around up to 10000 (10 seconds) and then just use 10000...
+		dnsRetryInterval = dnsRetryInterval + 500
+		if dnsRetryInterval >= 10000 {
+			dnsRetryInterval = 10000
+		}
 		goto outer
 	}
 

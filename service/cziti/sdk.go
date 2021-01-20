@@ -123,7 +123,7 @@ func (c *ZIdentity) GetMetrics() (int64, int64, bool) {
 		return 0, 0, false
 	}
 	if C.is_null(unsafe.Pointer(c.czctx)) {
-		log.Warnf("ziti context is C.NULL! %s", c.Fingerprint)
+		log.Debugf("ziti context is C.NULL? is the identity initialized? %s", c.Fingerprint)
 		return 0, 0, false
 	}
 	var up, down C.double
