@@ -24,6 +24,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -212,7 +213,27 @@ func proxyDNS(req *dns.Msg, peer *net.UDPAddr, serv *net.UDPConn, ipVer int) {
 	}
 }
 
-func dnsPanicRecover(localDnsServers []net.IP) {
+var dnsUpstreams []*net.UDPConn
+var dnsMutex = sync.Mutex{}
+var lastDnsRecover = time.Now()
+
+func dnsPanicRecover(localDnsServers []net.IP, now time.Time) {
+	dnsMutex.Lock()
+	defer dnsMutex.Unlock()
+	if now.Before(lastDnsRecover) {
+		log.Warnf("not recovering from dnsPanicRecover. panic recovery was initiated before last recovery")
+		return
+	}
+
+	//close any and all existing upstream
+	for _, c := range dnsUpstreams {
+		log.Warnf("recovering from DNS panic. closing DNS proxy to: %s", c.RemoteAddr().String())
+		_ = c.Close()
+		dnsUpstreams = dnsUpstreams[1:]
+	}
+	lastDnsRecover = time.Now()
+	log.Infof("dnsPanicRecovery set time to: %s", lastDnsRecover.String())
+
 	//reset all network interfaces...
 	ResetDNS()
 
@@ -231,12 +252,11 @@ func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Errorf("Recovering from panic due to DNS-related issue. %v", err)
-			dnsPanicRecover(localDnsServers)
+			dnsPanicRecover(localDnsServers, time.Now())
 		}
 	}()
 
-	var dnsUpstreams []*net.UDPConn
-
+	log.Infof("establishing links to all upstream DNS. total detected upstream DNS: %d", len(upstreamDnsServers))
 	outer:
 	for _, s := range upstreamDnsServers {
 		for _, ldns := range localDnsServers {
@@ -252,7 +272,7 @@ func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
 			if !strings.HasPrefix(s, "fec0:0:0:ffff::") {
 				log.Errorf("skipping upstream due to error: %s, %v", s, err.Error())
 			} else {
-				// just ignore for now - don't even log it...
+				log.Tracef("Ignoring legacy server defined as: %s", s)
 			}
 		} else {
 			log.Debugf("adding upstream dns server: %s", s)
@@ -261,10 +281,12 @@ func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
 				log.Debugf("skipping upstream due to dial udp issue to %s. error: %v", s, err.Error())
 			} else {
 				dnsUpstreams = append(dnsUpstreams, conn)
+				log.Debugf("established upstream dns: %s", s)
 			}
 		}
 	}
 
+	log.Infof("starting goroutines for all DNS proxies. Total goroutines to spawn: %d", len(dnsUpstreams))
 	for _, proxy := range dnsUpstreams {
 		go func(p *net.UDPConn) {
 			resp := make([]byte, 1024) //make a buffer which is reused
@@ -290,6 +312,7 @@ func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
 
 	reqs := make(map[uint32]*proxiedReq)
 
+	log.Info("Upstream DNS proxy loop begins")
 	for {
 		select {
 		case pr := <-proxiedRequests:
