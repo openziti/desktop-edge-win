@@ -1,0 +1,45 @@
+﻿using System;
+using System.IO;
+using System.Net;
+
+using System.Security.Cryptography;
+
+using NLog;
+using Newtonsoft.Json.Linq;
+
+namespace ZitiUpdateService.checkers {
+	internal class FilesystemCheck : UpdateCheck {
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+		string dest = null;
+
+		int isUpdateAvailable = 1;
+		public FilesystemCheck(int updateAvailable) {
+			this.isUpdateAvailable = updateAvailable;
+		}
+
+		override public bool AlreadyDownloaded(string destinationFolder, string destinationName) {
+			return File.Exists(Path.Combine(destinationFolder, destinationName));
+		}
+
+		override public void CopyUpdatePackage(string destinationFolder, string destinationName) {
+			dest = Path.Combine(destinationFolder, destinationName);
+			File.Copy(@"C:\git\github\openziti\desktop-edge-win\Installer\Output\" + FileName(), dest);
+		}
+
+		override public string FileName() {
+			return "Ziti Desktop Edge Client-1.3.0.exe";
+		}
+
+		override public int IsUpdateAvailable(Version current) {
+			return isUpdateAvailable;
+		}
+
+		override public bool HashIsValid(string destinationFolder, string destinationName) {
+			return true;
+		}
+
+		override public Version GetNextVersion() {
+			throw new NotImplementedException();
+		}
+	}
+}

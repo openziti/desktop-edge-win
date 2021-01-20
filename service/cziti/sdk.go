@@ -26,7 +26,7 @@ package cziti
 #include "ziti/ziti_log.h"
 
 #include "sdk.h"
-extern void initCB(ziti_context nf, int status, void *ctx);
+extern void zitiContextEvent(ziti_context nf, int status, void *ctx);
 extern void eventCB(ziti_context ztx, ziti_event_t *event);
 
 extern void serviceCB(ziti_context nf, ziti_service*, int status, void *ctx);
@@ -96,23 +96,25 @@ type ZService struct {
 }
 
 type ZIdentity struct {
-	Options     *C.ziti_options
-	zctx        C.ziti_context
-	zid         *C.ziti_identity
-	status      int
-	statusErr   error
-	Loaded      bool
-	Name        string
-	Version     string
-	Services    sync.Map
-	Fingerprint string
-	Active      bool
+	Options       *C.ziti_options
+	czctx         C.ziti_context
+	czid          *C.ziti_identity
+	status        int
+	statusErr     error
+	Loaded        bool
+	Name          string
+	Version       string
+	Services      sync.Map
+	Fingerprint   string
+	Active        bool
+	StatusChanges func(int)
 }
 
-func NewZid() *ZIdentity {
+func NewZid(statusChange func(int)) *ZIdentity {
 	zid := &ZIdentity{}
 	zid.Services = sync.Map{}
 	zid.Options = (*C.ziti_options)(C.calloc(1, C.sizeof_ziti_options))
+	zid.StatusChanges = statusChange
 	return zid
 }
 
@@ -120,18 +122,18 @@ func (c *ZIdentity) GetMetrics() (int64, int64, bool) {
 	if c == nil {
 		return 0, 0, false
 	}
-	if C.is_null(unsafe.Pointer(&c.zctx)) {
-		log.Warnf("ziti context is C.NULL! %s", c.Fingerprint)
+	if C.is_null(unsafe.Pointer(c.czctx)) {
+		log.Debugf("ziti context is C.NULL? is the identity initialized? %s", c.Fingerprint)
 		return 0, 0, false
 	}
 	var up, down C.double
-	C.ziti_get_transfer_rates(c.zctx, &up, &down)
+	C.ziti_get_transfer_rates(c.czctx, &up, &down)
 
 	return int64(up), int64(down), true
 }
 
 func (c *ZIdentity) UnsafePointer() unsafe.Pointer {
-	return unsafe.Pointer(c.zctx)
+	return unsafe.Pointer(c.czctx)
 }
 func (c *ZIdentity) AsKey() string {
 	return "marker askey"
@@ -147,8 +149,8 @@ func (c *ZIdentity) setVersionFromId() string {
 	}
 	c.Version = "<unknown version>"
 	if c != nil {
-		if c.zctx != nil {
-			v1 := C.ziti_get_controller_version(c.zctx)
+		if c.czctx != nil {
+			v1 := C.ziti_get_controller_version(c.czctx)
 			return C.GoString(v1.version)
 		}
 	}
@@ -161,9 +163,9 @@ func (c *ZIdentity) setNameFromId() string {
 	}
 	c.Name = "<unknown>"
 	if c != nil {
-		if c.zid != nil {
-			if c.zid.name != nil {
-				c.Name = C.GoString(c.zid.name)
+		if c.czid != nil {
+			if c.czid.name != nil {
+				c.Name = C.GoString(c.czid.name)
 			} else {
 				log.Debug("in Name - c.zid.name was nil")
 			}
@@ -177,8 +179,8 @@ func (c *ZIdentity) setNameFromId() string {
 }
 
 func (c *ZIdentity) Tags() []string {
-	if c.zctx != nil && c.zid != nil {
-		C.c_mapiter(&c.zid.tags)
+	if c.czctx != nil && c.czid != nil {
+		C.c_mapiter(&c.czid.tags)
 		/*
 		it := C.model_map_iterator(&c.zid.tags)
 		for {
@@ -197,8 +199,8 @@ func (c *ZIdentity) Tags() []string {
 }
 
 func (c *ZIdentity) Controller() string {
-	if c.zctx != nil {
-		return C.GoString(C.ziti_get_controller(c.zctx))
+	if c.czctx != nil {
+		return C.GoString(C.ziti_get_controller(c.czctx))
 	}
 	return C.GoString(c.Options.controller)
 }
@@ -242,7 +244,7 @@ func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx
 			var v1Config C.ziti_server_cfg_v1
 			r := C.ziti_service_get_config(service, cTunServerCfgName, unsafe.Pointer(&v1Config), (*[0]byte)(C.parse_ziti_server_cfg_v1))
 			if r == 0 {
-				C.ziti_tunneler_host_v1(C.tunneler_context(theTun.tunCtx), unsafe.Pointer(zid.zctx), service.name, v1Config.protocol, v1Config.hostname, v1Config.port)
+				C.ziti_tunneler_host_v1(C.tunneler_context(theTun.tunCtx), unsafe.Pointer(zid.czctx), service.name, v1Config.protocol, v1Config.hostname, v1Config.port)
 				C.free_ziti_server_cfg_v1(&v1Config)
 			} else {
 				log.Infof("service is bindable but doesn't have config? %s. flags: %v.", name, service.perm_flags)
@@ -267,10 +269,10 @@ func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx
 			if err != nil {
 				log.Warn(err)
 				log.Infof("service intercept beginning for service: %s@%s:%d on ip %s", name, host, port, ip.String())
-				AddIntercept(svcId, name, ip.String(), port, unsafe.Pointer(zid.zctx))
+				AddIntercept(svcId, name, ip.String(), port, unsafe.Pointer(zid.czctx))
 			} else {
 				log.Infof("service intercept beginning for service: %s@%s:%d on ip %s", name, host, port, ip.String())
-				AddIntercept(svcId, name, ip.String(), port, unsafe.Pointer(zid.zctx))
+				AddIntercept(svcId, name, ip.String(), port, unsafe.Pointer(zid.czctx))
 			}
 			added := ZService{
 				Name:          name,
@@ -314,17 +316,16 @@ func serviceUnavailable(ctx *ZIdentity, svcId string, name string) {
 //export eventCB
 func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 	appCtx := C.ziti_app_ctx(ztx)
+	log.Debugf("events received. type: %d for ztx(%p)", event._type, ztx)
 
-	log.Infof("got %d event for ztx(%p)", event._type, ztx)
-
-	switch(event._type) {
+	switch event._type {
 	case C.ZitiContextEvent:
 		ctxEvent := C.ziti_event_context_event(event)
-		initCB(ztx, ctxEvent.ctrl_status, appCtx)
+		zitiContextEvent(ztx, ctxEvent.ctrl_status, appCtx)
 
 	case C.ZitiRouterEvent:
 		rtrEvent := C.ziti_event_router_event(event)
-		switch(rtrEvent.status) {
+		switch rtrEvent.status {
 		case C.EdgeRouterConnected:
 			log.Infof("router[%s]: connected to %s", C.GoString(rtrEvent.name), C.GoString(rtrEvent.version))
 		case C.EdgeRouterDisconnected:
@@ -338,14 +339,13 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 	case C.ZitiServiceEvent:
 		srvEvent := C.ziti_event_service_event(event)
 		for i := 0; true ; i++ {
-			s := C.ziti_service_array_get(srvEvent.added, C.int(i))	
+			s := C.ziti_service_array_get(srvEvent.removed, C.int(i))
 			if unsafe.Pointer(s) == C.NULL {
 				break
 			}
 			serviceCB(ztx, s, C.ZITI_SERVICE_UNAVAILABLE, appCtx)
 
 			log.Info("service removed ", C.GoString(s.name))
-			break
 		}
 		for i := 0; true ; i++ {
 			s := C.ziti_service_array_get(srvEvent.changed, C.int(i))	
@@ -365,35 +365,33 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 		}
 
 	default:
-		log.Info("event %d not handled", event._type)
+		log.Infof("event %d not handled", event._type)
 	}
 }
 
-//export initCB
-func initCB(nf C.ziti_context, status C.int, data unsafe.Pointer) {
-	ctx := (*ZIdentity)(data)
+//export zitiContextEvent
+func zitiContextEvent(nf C.ziti_context, status C.int, data unsafe.Pointer) {
+	zid := (*ZIdentity)(data)
 
-	ctx.zctx = nf
-	if nf != nil {
-		ctx.zid = C.ziti_get_identity(nf)
-	}
-	// ctx.Options.ctx = data
-	ctx.status = int(status)
-	ctx.statusErr = zitiError(status)
+	zid.status = int(status)
+	zid.statusErr = zitiError(status)
+	zid.czctx = nf
 
-	ctx.Name = ctx.setNameFromId()
-	ctx.Version = ctx.setVersionFromId()
+	cfg := C.GoString(zid.Options.config)
 
-	log.Infof("connected to controller %s running %v", ctx.Name, ctx.Version)
-	cfg := C.GoString(ctx.Options.config)
-	if ch, ok := initMap[cfg]; ok {
-		ch <- ctx
+	if status == C.int(0) {
+		if nf != nil {
+			zid.czid = C.ziti_get_identity(nf)
+		}
+
+		zid.Name = zid.setNameFromId()
+		zid.Version = zid.setVersionFromId()
+		log.Infof("============ controller connected: %s at %v", zid.Name, zid.Version)
 	} else {
-		log.Warn("response channel not found")
+		log.Errorf("zitiContextEvent failed to connect[%s] to controller for %s", zid.statusErr, cfg)
 	}
+	zid.StatusChanges(int(status))
 }
-
-var initMap = make(map[string]chan *ZIdentity)
 
 func zitiError(code C.int) error {
 	if int(code) != 0 {
@@ -402,40 +400,34 @@ func zitiError(code C.int) error {
 	return nil
 }
 
-func LoadZiti(cfg string, isActive bool) *ZIdentity {
-	ctx := NewZid()// &ZIdentity{}
+func LoadZiti(zid *ZIdentity, cfg string, isActive bool) {
+	//zid := NewZid()
 
-	ctx.Active = isActive
+	zid.Active = isActive
 
-	ctx.Options.config = C.CString(cfg)
-	// ctx.Options.init_cb = C.ziti_init_cb(C.initCB)
-	// ctx.Options.service_cb = C.ziti_service_cb(C.serviceCB)
-	ctx.Options.refresh_interval = C.long(300)
-	ctx.Options.metrics_type = C.INSTANT
-	ctx.Options.config_types = C.all_configs
-	ctx.Options.pq_domain_cb = C.ziti_pq_domain_cb(C.ziti_pq_domain_go)
-	ctx.Options.pq_mac_cb = C.ziti_pq_mac_cb(C.ziti_pq_mac_go)
-	ctx.Options.pq_os_cb = C.ziti_pq_os_cb(C.ziti_pq_os_go)
-	ctx.Options.pq_process_cb = C.ziti_pq_process_cb(C.ziti_pq_process_go)
+	zid.Options.config = C.CString(cfg)
+	zid.Options.refresh_interval = C.long(300)
+	zid.Options.metrics_type = C.INSTANT
+	zid.Options.config_types = C.all_configs
+	zid.Options.pq_domain_cb = C.ziti_pq_domain_cb(C.ziti_pq_domain_go)
+	zid.Options.pq_mac_cb = C.ziti_pq_mac_cb(C.ziti_pq_mac_go)
+	zid.Options.pq_os_cb = C.ziti_pq_os_cb(C.ziti_pq_os_go)
+	zid.Options.pq_process_cb = C.ziti_pq_process_cb(C.ziti_pq_process_go)
 
-	ctx.Options.events = C.ZitiContextEvent | C.ZitiServiceEvent | C.ZitiRouterEvent
-	ctx.Options.event_cb = C.ziti_event_cb(C.eventCB)
-	ctx.Options.app_ctx = unsafe.Pointer(ctx)
+	zid.Options.events = C.ZitiContextEvent | C.ZitiServiceEvent | C.ZitiRouterEvent
+	zid.Options.event_cb = C.ziti_event_cb(C.eventCB)
+	ptr := unsafe.Pointer(zid)
+	zid.Options.app_ctx = ptr
 
-	ch := make(chan *ZIdentity)
-	initMap[cfg] = ch
-	rc := C.ziti_init_opts(ctx.Options, _impl.libuvCtx.l)
-	if rc != C.ZITI_OK {
-		ctx.status, ctx.statusErr = int(rc), zitiError(rc)
-		go func() {
-			ch <- ctx
-		}()
-	}
-
-	res := <-ch
-	delete(initMap, cfg)
-
-	return res
+	go func() {
+		rc := C.ziti_init_opts(zid.Options, _impl.libuvCtx.l)
+		if rc != C.ZITI_OK {
+			zid.status, zid.statusErr = int(rc), zitiError(rc)
+			log.Errorf("FAILED to load identity from config file: %s due to: %s", cfg, zid.statusErr)
+		} else {
+			log.Debugf("successfully loaded identity from config file: %s", cfg)
+		}
+	}()
 }
 
 //export free_async

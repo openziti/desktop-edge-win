@@ -24,6 +24,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -201,7 +202,7 @@ type proxiedReq struct {
 
 func proxyDNS(req *dns.Msg, peer *net.UDPAddr, serv *net.UDPConn, ipVer int) {
 	if len(proxiedRequests) == cap(proxiedRequests) {
-		log.Warn("proxiedRequests will be blocked. If this warning is continuously displayed please report")
+		log.Warn("proxied DNS requests will be blocked. If this warning is continuously displayed please report")
 	}
 	proxiedRequests <- &proxiedReq{
 		req:   req,
@@ -212,7 +213,28 @@ func proxyDNS(req *dns.Msg, peer *net.UDPAddr, serv *net.UDPConn, ipVer int) {
 	}
 }
 
-func dnsPanicRecover(localDnsServers []net.IP) {
+var dnsUpstreams []*net.UDPConn
+var dnsMutex = sync.Mutex{}
+var lastDnsRecover = time.Now()
+
+func dnsPanicRecover(localDnsServers []net.IP, now time.Time) {
+	dnsMutex.Lock()
+	defer dnsMutex.Unlock()
+	if now.Before(lastDnsRecover) {
+		log.Warnf("not recovering from dnsPanicRecover. panic recovery was initiated before last recovery")
+		return
+	}
+
+	//close any and all existing upstream
+	log.Warn("recovering from DNS panic initiated")
+	for _, c := range dnsUpstreams {
+		log.Warnf("  - closing DNS proxy to: %s", c.RemoteAddr().String())
+		_ = c.Close()
+		dnsUpstreams = dnsUpstreams[1:]
+	}
+	lastDnsRecover = time.Now()
+	log.Infof("dnsPanicRecovery set time to: %s", lastDnsRecover.String())
+
 	//reset all network interfaces...
 	ResetDNS()
 
@@ -227,16 +249,17 @@ func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
 	FlushDNS() //do this in case the services come back in different order and the ip returned is no longer the same
 	log.Infof("starting DNS proxy upstream: %v, local: %v", upstreamDnsServers, localDnsServers)
 	domains = GetConnectionSpecificDomains()
-	log.Infof("ConnectionSpecificDomains: %v", domains)
+	log.Infof("ConnectionSpecificDomains deteted: %v", domains)
 	defer func() {
 		if err := recover(); err != nil {
 			log.Errorf("Recovering from panic due to DNS-related issue. %v", err)
-			dnsPanicRecover(localDnsServers)
+			dnsPanicRecover(localDnsServers, time.Now())
 		}
 	}()
 
-	var dnsUpstreams []*net.UDPConn
+	dnsRetryInterval := 500
 
+	log.Infof("establishing links to all upstream DNS. total detected upstream DNS: %d", len(upstreamDnsServers))
 	outer:
 	for _, s := range upstreamDnsServers {
 		for _, ldns := range localDnsServers {
@@ -247,25 +270,43 @@ func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
 		}
 		sAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:53", s))
 		if err != nil {
-			// fec0:0:0:ffff:: is 'legacy' from windows apparently...
-			// see: https://en.wikipedia.org/wiki/IPv6_address#Deprecated_and_obsolete_addresses_2
 			if !strings.HasPrefix(s, "fec0:0:0:ffff::") {
+				// fec0:0:0:ffff:: is 'legacy' from windows apparently...
+				// see: https://en.wikipedia.org/wiki/IPv6_address#Deprecated_and_obsolete_addresses_2
+				// log any errors that are NOT due to this
 				log.Errorf("skipping upstream due to error: %s, %v", s, err.Error())
-			} else {
-				// just ignore for now - don't even log it...
 			}
 		} else {
-			log.Debugf("adding upstream dns server: %s", s)
+			log.Infof("adding upstream dns server: %s", s)
 			conn, err := net.DialUDP("udp", nil, sAddr)
 			if err != nil {
-				log.Debugf("skipping upstream due to dial udp issue to %s. error: %v", s, err.Error())
+				log.Warnf("could not add upstream DNS: %s. error: %v", s, err.Error())
 			} else {
 				dnsUpstreams = append(dnsUpstreams, conn)
+				log.Debugf("established upstream dns: %s", s)
 			}
 		}
 	}
 
+	if len(upstreamDnsServers) > 0 && len(dnsUpstreams) == 0 {
+		//this alomst certainly indicates the network has been disconnected for some reason.
+		//this happens when turning wifi off and waiting a moment - then turning wifi back on again
+		//might happen unplugging the ethernet from one port to another - you get the idea... if this
+		//happens - pause for a small amount of time and reinstitute the proxy establishing loop
+		log.Warnf("no upstream DNS dials succeeded. Does this computer have any network connectivity? Pausing for %d ms and trying again", dnsRetryInterval)
+		time.Sleep(time.Duration(dnsRetryInterval) * time.Millisecond)
+
+		//add 500ms each time around up to 10000 (10 seconds) and then just use 10000...
+		dnsRetryInterval = dnsRetryInterval + 500
+		if dnsRetryInterval >= 10000 {
+			dnsRetryInterval = 10000
+		}
+		goto outer
+	}
+
+	log.Infof("starting goroutines for all connected DNS proxies. Total goroutines to spawn: %d of %d detected DNS", len(dnsUpstreams), len(upstreamDnsServers))
 	for _, proxy := range dnsUpstreams {
+		log.Debugf("beginning DNS proxy for: %s", proxy.RemoteAddr().String())
 		go func(p *net.UDPConn) {
 			resp := make([]byte, 1024) //make a buffer which is reused
 			for {
@@ -273,11 +314,11 @@ func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
 				if err != nil {
 					// something is wrong with the DNS connection panic and let DNS recovery kick in
 					if err == io.EOF || err == os.ErrClosed || strings.HasSuffix(err.Error(), "use of closed network connection") {
-						log.Errorf("error receiving from ip: %v. error %v", p.RemoteAddr(), err)
-						return
+						log.Errorf("DNS proxy closed for : %s. error %v", p.RemoteAddr().String(), err)
 					} else {
-						log.Warnf("odd error: %v", err)
+						log.Warnf("unexpected error. DNS proxy closed for %s due to %v", p.RemoteAddr().String(), err)
 					}
+					return
 				} else {
 					if len(respChan) == cap(respChan) {
 						log.Warn("respChan will be blocked. If this warning is continuously displayed please report")
@@ -290,6 +331,7 @@ func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
 
 	reqs := make(map[uint32]*proxiedReq)
 
+	log.Debug("Upstream DNS proxy loop begins")
 	for {
 		select {
 		case pr := <-proxiedRequests:
@@ -338,7 +380,7 @@ func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
 			for k, r := range reqs {
 				if now.After(r.exp) {
 					log.Debugf("a DNS request has expired - enable trace logging and reproduce this issue for more information")
-					log.Tracef("         expired DNS req: %s %s", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
+					log.Tracef("service adde         expired DNS req: %s %s", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
 
 					delete(reqs, k)
 				}

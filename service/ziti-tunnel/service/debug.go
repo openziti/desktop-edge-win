@@ -24,7 +24,7 @@ import (
 
 func dbg() {
 
-	r := rts.ToStatus()
+	r := rts.ToStatus(true)
 	events.broadcast <- dto.TunnelStatusEvent{
 		StatusEvent: dto.StatusEvent{Op: "status"},
 		Status:      r,

@@ -6,15 +6,13 @@ using System.IO;
 using System.Timers;
 using System.Configuration;
 using System.Threading.Tasks;
-
-using ZitiDesktopEdge.DataStructures;
-using NLog;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+
+using NLog;
+using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.ServiceClient;
 using ZitiDesktopEdge.Server;
-using System.Security.AccessControl;
-using System.Security.Principal;
 using System.IO.Compression;
 using Newtonsoft.Json;
 
@@ -37,6 +35,7 @@ namespace ZitiUpdateService {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		private Timer _updateTimer = new Timer();
+		private Timer openzitiRemovalTimer = new Timer();
 		private bool inUpdateCheck = false;
 
 		private string exeLocation = null;
@@ -52,7 +51,7 @@ namespace ZitiUpdateService {
 		IPCServer svr = new IPCServer();
 		Task ipcServer = null;
 		Task eventServer = null;
-		IUpdateCheck check = null;
+		checkers.UpdateCheck check = null;
 
 		public UpdateService() {
 			InitializeComponent();
@@ -203,10 +202,10 @@ namespace ZitiUpdateService {
 					//means it doesn't exist
 				}
 				return zipName;
-			} catch(Exception ex) {
+			} catch (Exception ex) {
 				Logger.Error(ex, "Unexpected error {0}", ex.Message);
 				return null;
-            }
+			}
 		}
 
 		private void outputIpconfigInfo(string destinationFolder) {
@@ -328,9 +327,11 @@ namespace ZitiUpdateService {
 			await writer.FlushAsync();
 		}
 
+#pragma warning disable 1998 //This async method lacks 'await'
 		async private Task onIpcClientAsync(StreamWriter writer) {
 			Logger.Info("a new ipc client was connected");
 		}
+#pragma warning restore 1998 //This async method lacks 'await'
 
 		private void addLogsFolder(string path) {
 			if (!Directory.Exists(path)) {
@@ -393,6 +394,9 @@ namespace ZitiUpdateService {
 			_updateTimer.Start();
 			Logger.Info("Version Checker is running every {0} minutes", upInt.TotalMinutes);
 
+			//on startup - see if the old wintun software was installed and if so ... try to remove it
+			UninstallOpenZitiWintun.DetectAndUninstallOpenZitiWintun();
+
 			string assemblyVersionStr = Assembly.GetExecutingAssembly().GetName().Version.ToString(); //fetch from ziti?
 			assemblyVersion = new Version(assemblyVersionStr);
 			asmDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
@@ -421,9 +425,9 @@ namespace ZitiUpdateService {
 				updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win-beta/releases/latest";
 			}
 			if (useGithubCheck) {
-				check = new GithubCheck(updateUrl);
+				check = new checkers.GithubCheck(updateUrl);
 			} else {
-				check = new FilesystemCheck(1);
+				check = new checkers.FilesystemCheck(1);
 			}
 		}
 
@@ -541,10 +545,10 @@ namespace ZitiUpdateService {
 
 		private void scanForStaleDownloads(string folder) {
 			try {
-                if (!Directory.Exists(folder)) {
+				if (!Directory.Exists(folder)) {
 					Logger.Debug("folder {0} does not exist. skipping", folder);
 					return;
-                }
+				}
 				Logger.Info("Scanning for stale downloads");
 				foreach (var f in Directory.EnumerateFiles(folder)) {
 					FileInfo fi = new FileInfo(f);
@@ -552,7 +556,7 @@ namespace ZitiUpdateService {
 						if (fi.Name.StartsWith(filePrefix)) {
 							Logger.Debug("scanning for staleness: " + f);
 							string ver = Path.GetFileNameWithoutExtension(f).Substring(filePrefix.Length);
-							Version fileVersion = VersionUtil.NormalizeVersion(new Version(ver));
+							Version fileVersion = checkers.UpdateCheck.NormalizeVersion(new Version(ver));
 							if (isOlder(fileVersion)) {
 								Logger.Info("Removing old download: " + fi.Name);
 								fi.Delete();

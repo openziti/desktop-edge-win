@@ -105,7 +105,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="IUpdateCheck.cs" />
+    <Compile Include="checkers\FilesystemCheck.cs" />
+    <Compile Include="checkers\GithubCheck.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ProjectInstaller.cs">
       <SubType>Component</SubType>
@@ -113,7 +114,8 @@
     <Compile Include="ProjectInstaller.Designer.cs">
       <DependentUpon>ProjectInstaller.cs</DependentUpon>
     </Compile>
-    <Compile Include="UpdateCheckers.cs" />
+    <Compile Include="checkers\UpdateCheckers.cs" />
+    <Compile Include="UninstallOpenZitiWintun.cs" />
     <Compile Include="UpdateService.cs">
       <SubType>Component</SubType>
     </Compile>
