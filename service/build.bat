@@ -14,7 +14,7 @@ REM See the License for the specific language governing permissions and
 REM limitations under the License.
 REM
 SET REPO_URL=https://github.com/openziti/ziti-tunnel-sdk-c.git
-SET ZITI_TUNNEL_REPO_BRANCH=free.ioctx.iff.fully.closed
+SET ZITI_TUNNEL_REPO_BRANCH=v0.7.34
 REM override the c sdk used in the build - leave blank for the same as specified in the tunneler sdk
 SET ZITI_SDK_C_BRANCH=
 REM the number of TCP connections the tunneler sdk can have at any one time
@@ -217,6 +217,7 @@ echo COPIED libuv and ziti dlls to %SVC_ROOT_DIR%
 
 :GOBUILD
 echo building the go program
+REM go build -race -a ./ziti-tunnel
 go build -a ./ziti-tunnel
 SET ACTUAL_ERR=%ERRORLEVEL%
 if %ACTUAL_ERR% NEQ 0 (
