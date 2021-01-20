@@ -239,10 +239,9 @@ func (t *RuntimeState) LoadIdentity(id *Id) {
 	}
 
 	log.Infof("loading identity %s[%s]", id.Name, id.FingerPrint)
-	id.CId = cziti.LoadZiti(id.Path(), id.Active)
-	go func(){
-		statusChange := <- id.CId.StatusChanges //wait for the response
-		log.Infof("status change! %d", statusChange)
+
+	sc := func(status int){
+		log.Infof("status change! %d", status)
 
 		id.ControllerVersion = id.CId.Version
 		id.CId.Fingerprint = id.FingerPrint
@@ -267,7 +266,11 @@ func (t *RuntimeState) LoadIdentity(id *Id) {
 			Id: id.Identity,
 		}
 		log.Infof("connecting identity completed: %s[%s]", id.Name, id.FingerPrint)
-	}()
+	}
+
+	id.CId = cziti.NewZid(sc)
+
+	cziti.LoadZiti(id.CId, id.Path(), id.Active)
 }
 
 func (t *RuntimeState) LoadConfig() {

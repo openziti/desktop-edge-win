@@ -107,14 +107,14 @@ type ZIdentity struct {
 	Services      sync.Map
 	Fingerprint   string
 	Active        bool
-	StatusChanges chan int
+	StatusChanges func(int)
 }
 
-func NewZid() *ZIdentity {
+func NewZid(statusChange func(int)) *ZIdentity {
 	zid := &ZIdentity{}
 	zid.Services = sync.Map{}
 	zid.Options = (*C.ziti_options)(C.calloc(1, C.sizeof_ziti_options))
-	zid.StatusChanges = make(chan int)
+	zid.StatusChanges = statusChange
 	return zid
 }
 
@@ -390,7 +390,7 @@ func zitiContextEvent(nf C.ziti_context, status C.int, data unsafe.Pointer) {
 	} else {
 		log.Errorf("zitiContextEvent failed to connect[%s] to controller for %s", zid.statusErr, cfg)
 	}
-	zid.StatusChanges <- int(status)
+	zid.StatusChanges(int(status))
 }
 
 func zitiError(code C.int) error {
@@ -400,8 +400,8 @@ func zitiError(code C.int) error {
 	return nil
 }
 
-func LoadZiti(cfg string, isActive bool) *ZIdentity {
-	zid := NewZid()
+func LoadZiti(zid *ZIdentity, cfg string, isActive bool) {
+	//zid := NewZid()
 
 	zid.Active = isActive
 
@@ -428,8 +428,6 @@ func LoadZiti(cfg string, isActive bool) *ZIdentity {
 			log.Debugf("successfully loaded identity from config file: %s", cfg)
 		}
 	}()
-
-	return zid
 }
 
 //export free_async
