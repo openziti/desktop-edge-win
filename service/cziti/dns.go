@@ -186,7 +186,6 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 			ip:         ip,
 			ctx:        zid,
 			network:    currentNetwork,
-			dnsEnabled: zid.Active,
 			refCount:   1,
 		}
 		log.Infof("mapping hostname %s to ip %s as dns %s", dnsNameToReg, ip.String(), icept.AsDnsName())

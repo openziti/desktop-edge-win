@@ -738,6 +738,8 @@ func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
 		},
 	}
 
+	rts.ids[id.FingerPrint] = id
+
 	connectIdentity(id)
 
 	state := rts.state
@@ -764,7 +766,7 @@ func connectIdentity(id *Id) {
 	log.Infof("connecting identity: %s[%s]", id.Name, id.FingerPrint)
 
 	if id.CId == nil || !id.CId.Loaded {
-		rts.LoadIdentity(id)
+		rts.LoadIdentity(id, DEFAULT_REFRESH_INTERVAL)
 	} else {
 		log.Debugf("%s[%s] is already loaded", id.Name, id.FingerPrint)
 

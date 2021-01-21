@@ -106,7 +106,6 @@ type ZIdentity struct {
 	Version       string
 	Services      sync.Map
 	Fingerprint   string
-	Active        bool
 	StatusChanges func(int)
 }
 
@@ -123,7 +122,7 @@ func (c *ZIdentity) GetMetrics() (int64, int64, bool) {
 		return 0, 0, false
 	}
 	if C.is_null(unsafe.Pointer(c.czctx)) {
-		log.Debugf("ziti context is C.NULL? is the identity initialized? %s", c.Fingerprint)
+		log.Debugf("ziti context is still null. the identity is probably not initialized yet: %s", c.Fingerprint)
 		return 0, 0, false
 	}
 	var up, down C.double
@@ -316,7 +315,7 @@ func serviceUnavailable(ctx *ZIdentity, svcId string, name string) {
 //export eventCB
 func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 	appCtx := C.ziti_app_ctx(ztx)
-	log.Debugf("events received. type: %d for ztx(%p)", event._type, ztx)
+	log.Tracef("events received. type: %d for ztx(%p)", event._type, ztx)
 
 	switch event._type {
 	case C.ZitiContextEvent:
@@ -348,7 +347,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			log.Info("service removed ", C.GoString(s.name))
 		}
 		for i := 0; true ; i++ {
-			s := C.ziti_service_array_get(srvEvent.changed, C.int(i))	
+			s := C.ziti_service_array_get(srvEvent.changed, C.int(i))
 			if unsafe.Pointer(s) == C.NULL {
 				break
 			}
@@ -356,7 +355,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			serviceCB(ztx, s, C.ZITI_OK, appCtx)
 		}
 		for i := 0; true ; i++ {
-			s := C.ziti_service_array_get(srvEvent.added, C.int(i))	
+			s := C.ziti_service_array_get(srvEvent.added, C.int(i))
 			if unsafe.Pointer(s) == C.NULL {
 				break
 			}
@@ -400,13 +399,9 @@ func zitiError(code C.int) error {
 	return nil
 }
 
-func LoadZiti(zid *ZIdentity, cfg string, isActive bool) {
-	//zid := NewZid()
-
-	zid.Active = isActive
-
+func LoadZiti(zid *ZIdentity, cfg string, refreshInterval int) {
 	zid.Options.config = C.CString(cfg)
-	zid.Options.refresh_interval = C.long(300)
+	zid.Options.refresh_interval = C.long(refreshInterval)
 	zid.Options.metrics_type = C.INSTANT
 	zid.Options.config_types = C.all_configs
 	zid.Options.pq_domain_cb = C.ziti_pq_domain_cb(C.ziti_pq_domain_go)
@@ -419,15 +414,13 @@ func LoadZiti(zid *ZIdentity, cfg string, isActive bool) {
 	ptr := unsafe.Pointer(zid)
 	zid.Options.app_ctx = ptr
 
-	go func() {
-		rc := C.ziti_init_opts(zid.Options, _impl.libuvCtx.l)
-		if rc != C.ZITI_OK {
-			zid.status, zid.statusErr = int(rc), zitiError(rc)
-			log.Errorf("FAILED to load identity from config file: %s due to: %s", cfg, zid.statusErr)
-		} else {
-			log.Debugf("successfully loaded identity from config file: %s", cfg)
-		}
-	}()
+	rc := C.ziti_init_opts(zid.Options, _impl.libuvCtx.l)
+	if rc != C.ZITI_OK {
+		zid.status, zid.statusErr = int(rc), zitiError(rc)
+		log.Errorf("FAILED to load identity from config file: %s due to: %s", cfg, zid.statusErr)
+	} else {
+		log.Debugf("successfully loaded identity from config file: %s", cfg)
+	}
 }
 
 //export free_async

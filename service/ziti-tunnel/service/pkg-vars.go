@@ -55,6 +55,8 @@ const (
 	ERROR_DISCONNECTING_ID = 50
 	IDENTITY_NOT_FOUND     = 1000
 
+	DEFAULT_REFRESH_INTERVAL = 300
+
 	cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown | svc.AcceptPauseAndContinue
 
 	InformationEvent = 0 //1

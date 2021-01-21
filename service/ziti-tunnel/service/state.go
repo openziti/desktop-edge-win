@@ -226,7 +226,7 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, *tun.Device
 	return ip, t.tun, nil
 }
 
-func (t *RuntimeState) LoadIdentity(id *Id) {
+func (t *RuntimeState) LoadIdentity(id *Id, refreshInterval int) {
 	if id.CId != nil && id.CId.Loaded {
 		log.Warnf("id %s[%s] already connected", id.Name, id.FingerPrint)
 		return
@@ -270,7 +270,7 @@ func (t *RuntimeState) LoadIdentity(id *Id) {
 
 	id.CId = cziti.NewZid(sc)
 
-	cziti.LoadZiti(id.CId, id.Path(), id.Active)
+	cziti.LoadZiti(id.CId, id.Path(), refreshInterval)
 }
 
 func (t *RuntimeState) LoadConfig() {
@@ -278,7 +278,10 @@ func (t *RuntimeState) LoadConfig() {
 	if err != nil {
 		err = readConfig(t, config.BackupFile())
 		if err != nil {
-			log.Panicf("config file is not valid nor is backup file!")
+			//this means BOTH files are unusable. that's really bad... :( delete both files and then panic...
+			os.Remove(config.File())
+			os.Remove(config.BackupFile())
+			log.Panicf("config file is not valid nor is backup file! both files have been deleted.")
 		}
 	}
 
