@@ -38,7 +38,7 @@ namespace ZitiDesktopEdge.Models {
 				EnrollmentStatus = "status",
 				Fingerprint = id.FingerPrint,
 				IsEnabled = id.Active,
-				Name = id.Name,
+				Name = (string.IsNullOrEmpty(id.Name) ? id.FingerPrint : id.Name),
 				Status = id.Status,
 			};
 
