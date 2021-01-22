@@ -40,6 +40,7 @@ import "C"
 import (
 	"encoding/json"
 	"errors"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"sync"
 	"unsafe"
 )
@@ -49,6 +50,7 @@ const (
 	REMOVED = "removed"
 )
 
+var Version dto.ServiceVersion
 var ServiceChanges = make(chan ServiceChange, 256)
 
 type sdk struct {
@@ -73,6 +75,9 @@ func SetLogLevel(level int) {
 }
 
 func Start(loglevel int) {
+	appInfo := "Ziti Desktop Edge for Windows"
+	log.Debugf("informing c sdk of appinfo: %s at %s", appInfo, Version.Version)
+	C.ziti_set_app_info(C.CString(appInfo), C.CString(Version.Version))
 	v := C.ziti_get_version()
 	log.Infof("starting ziti-sdk-c %s(%s)[%s]", C.GoString(v.version), C.GoString(v.revision), C.GoString(v.build_date))
 

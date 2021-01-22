@@ -6,6 +6,7 @@ This is a substantial update. Some important stability fixes have been applied f
 * [#276](https://github.com/openziti/desktop-edge-win/issues/276) Updates for new CDSK eventing api
 * [#279](https://github.com/openziti/desktop-edge-win/issues/279) DNS is now flushed on starting the `ziti` service to ensure dns cache is not a problem
 * [#264](https://github.com/openziti/desktop-edge-win/issues/264) `ziti` data service no longer blocks waiting for identities to load
+* app now uses the ziti_set_app_info function to report app information to controller
 
 ## Other changes:
 * none
