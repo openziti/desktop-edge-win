@@ -106,6 +106,7 @@ type ZIdentity struct {
 	Version       string
 	Services      sync.Map
 	Fingerprint   string
+	Active        bool
 	StatusChanges func(int)
 }
 
