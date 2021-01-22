@@ -77,9 +77,6 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	// a channel to signal the handleEvents that initialization is complete
 	initialized := make(chan struct{})
 
-	// setup events handler - needs to be before initialization
-	go handleEvents(initialized)
-
 	// initialize the network interface
 	err := initialize(cLogLevel)
 	if err != nil {
@@ -88,6 +85,8 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	}
 
 	setTunnelState(true)
+
+	go handleEvents(initialized)
 
 	//listen for services that show up
 	go acceptServices()
@@ -135,10 +134,10 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	cziti.ResetDNS()
 
 	log.Infof("Removing existing interface: %s", TunName)
-	wt, err := tun.WintunPool.GetInterface(TunName)
+	wt, err := tun.WintunPool.OpenAdapter(TunName)
 	if err == nil {
 		// If so, we delete it, in case it has weird residual configuration.
-		_, err = wt.DeleteInterface()
+		_, err = wt.Delete(true)
 		if err != nil {
 			log.Errorf("Error deleting already existing interface: %v", err)
 		}
@@ -539,7 +538,7 @@ func serveEvents(conn net.Conn) {
 	log.Info("new event client connected - sending current status")
 	err := o.Encode(	dto.TunnelStatusEvent{
 		StatusEvent: dto.StatusEvent{Op: "status"},
-		Status:      rts.ToStatus(),
+		Status:      rts.ToStatus(true),
 		ApiVersion:  API_VERSION,
 	})
 
@@ -567,7 +566,7 @@ loop:
 }
 
 func reportStatus(out *json.Encoder) {
-	s := rts.ToStatus()
+	s := rts.ToStatus(true)
 	respond(out, dto.ZitiTunnelStatus{
 		Status:  &s,
 		Metrics: nil,
@@ -739,6 +738,8 @@ func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
 		},
 	}
 
+	rts.ids[id.FingerPrint] = id
+
 	connectIdentity(id)
 
 	state := rts.state
@@ -765,7 +766,7 @@ func connectIdentity(id *Id) {
 	log.Infof("connecting identity: %s[%s]", id.Name, id.FingerPrint)
 
 	if id.CId == nil || !id.CId.Loaded {
-		rts.LoadIdentity(id)
+		rts.LoadIdentity(id, DEFAULT_REFRESH_INTERVAL)
 	} else {
 		log.Debugf("%s[%s] is already loaded", id.Name, id.FingerPrint)
 
@@ -776,13 +777,13 @@ func connectIdentity(id *Id) {
 			id.Services = append(id.Services, nil)
 			return true
 		})
-	}
 
-	events.broadcast <- dto.IdentityEvent{
-		ActionEvent: IDENTITY_ADDED,
-		Id: id.Identity,
+		events.broadcast <- dto.IdentityEvent{
+			ActionEvent: IDENTITY_ADDED,
+			Id: id.Identity,
+		}
+		log.Infof("connecting identity completed: %s[%s]", id.Name, id.FingerPrint)
 	}
-	log.Infof("connecting identity completed: %s[%s]", id.Name, id.FingerPrint)
 }
 
 func disconnectIdentity(id *Id) error {

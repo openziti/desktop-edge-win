@@ -406,27 +406,14 @@ namespace ZitiDesktopEdge {
 			});
 		}
 
-
 		private void MonitorClient_OnClientConnected(object sender, object e) {
 			logger.Debug("MonitorClient_OnClientConnected");
 		}
 
 		async private void LogLevelChanged(string level) {
-			try {
-				await serviceClient.SetLogLevelAsync(level);
-				await monitorClient.SetLogLevelAsync(level);
-
-				logger.Info("request to change log level received: {0}", level);
-				var l = LogLevel.FromString(level);
-				foreach (var rule in LogManager.Configuration.LoggingRules) {
-					rule.EnableLoggingForLevel(l);
-				}
-
-				LogManager.ReconfigExistingLoggers();
-				logger.Info("logger reconfigured to log at level: {0}", l);
-			} catch(Exception e) {
-				logger.Error(e, "Failed to set log level: {0}", e.Message);
-            }
+			await serviceClient.SetLogLevelAsync(level);
+			await monitorClient.SetLogLevelAsync(level);
+			Ziti.Desktop.Edge.Utils.UIUtils.SetLogLevel(level);
 		}
 
 		private void IdentityMenu_OnError(string message) {
@@ -468,8 +455,10 @@ namespace ZitiDesktopEdge {
 						AddIdentity(zid);
 						LoadIdentities(true);
 					} else {
-						//if we get here exit out so that LoadIdentities() doesn't get called
-						found.IsEnabled = true;
+						// means we likely are getting an update for some reason. compare the identities and use the latest info
+						found.Name = zid.Name;
+						found.ControllerUrl = zid.ControllerUrl;
+						found.IsEnabled = zid.IsEnabled;
 						return;
 					}
 				} else {
@@ -551,6 +540,8 @@ namespace ZitiDesktopEdge {
 					return;
 				}
 				this.MainMenu.LogLevel = e.Status.LogLevel;
+				Ziti.Desktop.Edge.Utils.UIUtils.SetLogLevel(e.Status.LogLevel);
+
 				InitializeTimer((int)e.Status.Duration);
 				LoadStatusFromService(e.Status);
 				LoadIdentities(true);
@@ -647,9 +638,6 @@ namespace ZitiDesktopEdge {
 			IdentityMenu.SetHeight(this.Height - 160);
 			foreach (var id in ids) {
 				IdentityItem idItem = new IdentityItem();
-				if (id.IsEnabled) {
-					SetNotifyIcon("green");
-				}
 
 				idItem.ToggleStatus.IsEnabled = id.IsEnabled;
 				if (id.IsEnabled) {
@@ -768,7 +756,6 @@ namespace ZitiDesktopEdge {
 				try {
 					Identity createdId = await serviceClient.AddIdentityAsync(System.IO.Path.GetFileName(jwtDialog.FileName), false, fileContent);
 
-					await serviceClient.IdentityOnOffAsync(createdId.FingerPrint, true);
 					if (createdId != null) {
 						var zid = ZitiIdentity.FromClient(createdId);
 						AddIdentity(zid);
@@ -776,6 +763,7 @@ namespace ZitiDesktopEdge {
 					} else {
 						ShowError("Identity Error", "Identity Id was null, please try again");
 					}
+					await serviceClient.IdentityOnOffAsync(createdId.FingerPrint, true);
 				} catch (ServiceException se) {
 					ShowError("Error Occurred", se.Message + " " + se.AdditionalInfo);
 				} catch (Exception ex) {

@@ -22,6 +22,7 @@
 #define USING_ZITI_SHARED
 #include <ziti/ziti.h>
 #include <ziti/ziti_log.h>
+#include <ziti/ziti_events.h>
 #include <uv.h>
 
 
@@ -59,4 +60,10 @@ extern void log_writer_shim_go(int level, const char *loc, const char *msg, size
 
 void log_writer_cb(int level, char *loc, char *msg, int msglen);
 bool is_null(void* anything);
+
+struct ziti_context_event* ziti_event_context_event(ziti_event_t *ev);
+struct ziti_router_event* ziti_event_router_event(ziti_event_t *ev);
+struct ziti_service_event* ziti_event_service_event(ziti_event_t *ev);
+
+ziti_service* ziti_service_array_get(ziti_service_array arr, int idx);
 #endif /* GOLANG_SDK_H */

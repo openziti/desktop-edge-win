@@ -143,6 +143,7 @@
     </Compile>
     <Compile Include="Models\UIModel.cs" />
     <Compile Include="Native\NativeMethods.cs" />
+    <Compile Include="Utils\UIUtils.cs" />
     <Compile Include="Views\ItemRenderers\ServiceInfo.xaml.cs">
       <DependentUpon>ServiceInfo.xaml</DependentUpon>
     </Compile>

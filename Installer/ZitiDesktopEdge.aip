@@ -22,10 +22,10 @@
     <ROW Property="CTRLS" Value="2"/>
     <ROW Property="Manufacturer" Value="NetFoundry, Inc."/>
     <ROW Property="MsiLogging" MultiBuildValue="AnyCPU_Release:vp"/>
-    <ROW Property="ProductCode" Value="1033:{29415CD4-4305-4A2B-B453-D2785AD6619B} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{5DE4481D-952D-4F57-833D-F72FB8CD806F} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="Ziti Desktop Edge"/>
-    <ROW Property="ProductVersion" Value="1.6.30" Type="32"/>
+    <ROW Property="ProductVersion" Value="1.7.2" Type="32"/>
     <ROW Property="REBOOT" MultiBuildValue="AnyCPU_Release:Suppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{CB7E173A-663D-4A23-BB22-D1E8D885C2F3}"/>
@@ -60,6 +60,7 @@
     <ROW Component="libgcc_s_seh1.dll" ComponentId="{B97B6447-8941-4F04-AA22-50D34E0A0F1A}" Directory_="APPDIR" Attributes="256" KeyPath="libgcc_s_seh1.dll"/>
     <ROW Component="libuv.dll" ComponentId="{70EA329D-3C8B-4A62-80F2-00126F1DBCEC}" Directory_="APPDIR" Attributes="256" KeyPath="libuv.dll"/>
     <ROW Component="libwinpthread1.dll" ComponentId="{C9800E18-A335-44F5-8D85-9A4155EF9AB1}" Directory_="APPDIR" Attributes="256" KeyPath="libwinpthread1.dll"/>
+    <ROW Component="wintun.dll" ComponentId="{9A0B9D43-D06F-4456-BBCF-C99A90D19D8C}" Directory_="APPDIR" Attributes="256" KeyPath="wintun.dll"/>
     <ROW Component="ziti.dll" ComponentId="{123E1532-3EB0-4B87-AA61-43F950DF7B6F}" Directory_="APPDIR" Attributes="256" KeyPath="ziti.dll"/>
     <ROW Component="zititunnel.exe" ComponentId="{65D4F495-09EF-440F-82E5-46F5889305D5}" Directory_="APPDIR" Attributes="256" KeyPath="zititunnel.exe"/>
   </COMPONENT>
@@ -83,10 +84,13 @@
     <ROW File="NLog.dll" Component_="NLog.dll" FileName="NLog.dll" Attributes="0" SourcePath="..\ZitiUpdateService\bin\Release\NLog.dll" SelfReg="false"/>
     <ROW File="ZitiUpdateServicelog.config" Component_="App.config" FileName="ZITIUP~2.CON|ZitiUpdateService-log.config" Attributes="0" SourcePath="..\ZitiUpdateService\bin\Release\ZitiUpdateService-log.config" SelfReg="false"/>
     <ROW File="ZitiDesktopEdgelog.config" Component_="App.config" FileName="ZITIDE~2.CON|ZitiDesktopEdge-log.config" Attributes="0" SourcePath="..\DesktopEdge\bin\Release\ZitiDesktopEdge-log.config" SelfReg="false"/>
+    <ROW File="wintun.dll" Component_="wintun.dll" FileName="wintun.dll" Attributes="0" SourcePath="..\service\wintun.dll" SelfReg="false"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.AiPersistentDataComponent">
     <ROW PersistentRow="ZitiUpdateServicelog.config" Type="0" Condition="OLDPRODUCTS"/>
     <ROW PersistentRow="ZitiDesktopEdgelog.config" Type="0" Condition="OLDPRODUCTS"/>
+    <ROW PersistentRow="ZitiDesktopEdge.exe.config" Type="0" Condition="OLDPRODUCTS"/>
+    <ROW PersistentRow="ZitiUpdateService.exe.config" Type="0" Condition="OLDPRODUCTS"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.AppPathsComponent">
     <ROW Name="AI_APPPATH_PERBUILD_ZitiDesktopEdge.exe" Path="[|AI_PROPPATH_PERBUILD_ZitiDesktopEdge.exe]" Type="2" Content="0"/>
@@ -240,6 +244,7 @@
     <ROW Feature_="MainFeature" Component_="Newtonsoft.Json.dll"/>
     <ROW Feature_="MainFeature" Component_="ZitiDesktopEdge.Client.dll"/>
     <ROW Feature_="MainFeature" Component_="NLog.dll"/>
+    <ROW Feature_="MainFeature" Component_="wintun.dll"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiIconsComponent">
     <ROW Name="ziti.exe" SourcePath="ziti.ico" Index="0"/>
@@ -327,11 +332,9 @@
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.PreReqComponent">
     <ROW PrereqKey="BF9259651485FB4F316A40CB01E7B" DisplayName=".NET Framework 4.8 (web installer)" SetupFileUrl="https://download.visualstudio.microsoft.com/download/pr/7afca223-55d2-470a-8edc-6a1739ae3252/c9b8749dd99fc0d4453b2a3e4c37ba16/ndp48-web.exe" Location="1" ExactSize="1486376" WinNTVersions="Windows Vista x86, Windows Server 2008 x86, Windows 7 RTM x86, Windows 8 x86, Windows 10 version 1507 x86, Windows 10 version 1511 x86, Windows 10 version 1903 x86, Windows 10 version 1909 x86, Windows 10 version 2004 x86" WinNT64Versions="Windows Vista x64, Windows Server 2008 x64, Windows 7 RTM x64, Windows Server 2008 R2 RTM x64, Windows 8 x64, Windows 10 version 1507 x64, Windows 10 version 1511 x64, Windows 10 version 1903 x64, Windows 10 version 1909 x64, Windows 10 version 2004 x64" Operator="1" NoUiComLine="/q /norestart" Options="xy" MD5="86482f2f623a52b8344b00968adc7b43" TargetName=".NET Framework 4.8"/>
-    <ROW PrereqKey="OpenZitiWintunInstal" DisplayName="OpenZitiWintunInstaller" VersionMin="1.0.0.0" SetupFileUrl="..\ZitiWintunInstaller\bin\Release\OpenZitiWintunInstaller.msi" Location="0" ExactSize="0" Operator="1" Options="ym" TargetName="OpenZiti\OpenZitiWintunInstaller.msi"/>
-    <ATTRIBUTE name="PrereqsOrder" value="OpenZitiWintunInstal BF9259651485FB4F316A40CB01E7B"/>
+    <ATTRIBUTE name="PrereqsOrder" value="BF9259651485FB4F316A40CB01E7B"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.PreReqSearchComponent">
     <ROW SearchKey="BF9259651485FB4F316A40CB01E7BReleas" Prereq="BF9259651485FB4F316A40CB01E7B" SearchType="9" SearchString="HKLM\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full\Release" RefContent="G528048" Order="1" Property="PreReqSearch_BF9259651485FB4F316A40"/>
-    <ROW SearchKey="UpgradeCode" Prereq="OpenZitiWintunInstal" SearchType="4" SearchString="{1ABDBE15-0F36-4633-BA6F-8A32D8CF4838}" VerMin="1.0.0.0" Order="1" Property="PreReqSearch"/>
   </COMPONENT>
 </DOCUMENT>

@@ -107,7 +107,11 @@ namespace ZitiDesktopEdge.Server {
                         try {
                             await handleEventClientAsync(eventPipeServer, onClient);
                         } catch (Exception icpe) {
-                            Logger.Error(icpe, "Unexpected erorr in handleEventClientAsync");
+                            if (icpe.Message.StartsWith("Service ziti was not found on computer")) {
+                                //ignore this for now...
+                            } else {
+                                Logger.Error(icpe, "Unexpected erorr in handleEventClientAsync");
+                            }
                         }
                         idx--;
                         Logger.Debug("Total event clients now at: {0}", idx);

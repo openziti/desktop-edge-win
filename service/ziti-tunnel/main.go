@@ -20,6 +20,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/openziti/desktop-edge-win/service/cziti"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/logging"
 	"github.com/sirupsen/logrus"
@@ -40,6 +41,7 @@ func main() {
 		Revision:  Revision,
 		BuildDate: BuildDate,
 	}
+	cziti.Version = service.Version
 
 	logging.InitLogger(logrus.InfoLevel)
 
