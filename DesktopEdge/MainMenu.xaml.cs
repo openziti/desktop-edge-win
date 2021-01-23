@@ -42,6 +42,7 @@ namespace ZitiDesktopEdge {
 
 		public MainMenu() {
 			InitializeComponent();
+			Application.Current.MainWindow.Title = "Ziti Desktop Edge";
 
 			try {
 				allowReleaseSelect = bool.Parse(ConfigurationManager.AppSettings.Get("ReleaseStreamSelect"));

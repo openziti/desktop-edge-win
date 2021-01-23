@@ -19,6 +19,8 @@ using NLog;
 using NLog.Config;
 using NLog.Targets;
 
+using System.Windows.Interop;
+
 namespace ZitiDesktopEdge {
 
 	public partial class MainWindow : Window {
@@ -147,6 +149,9 @@ namespace ZitiDesktopEdge {
 
 		private void NotifyIcon_MouseClick(object sender, System.Windows.Forms.MouseEventArgs e) {
 			if (e.Button == System.Windows.Forms.MouseButtons.Left) {
+				System.Windows.Forms.MouseEventArgs mea = (System.Windows.Forms.MouseEventArgs)e;
+				this.Show();
+				this.Activate();
 				//Do the awesome left clickness
 			} else if (e.Button == System.Windows.Forms.MouseButtons.Right) {
 				//Do the wickedy right clickness
@@ -184,6 +189,7 @@ namespace ZitiDesktopEdge {
 			if (this._isAttached) {
 #if DEBUG
 				logger.Debug("debug is enabled - windows pinned");
+				this.Visibility = Visibility.Collapsed;
 #else
 				this.Visibility = Visibility.Collapsed;
 #endif
@@ -214,13 +220,13 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void TargetNotifyIcon_Click(object sender, EventArgs e) {
-			this.Show();
-			System.Windows.Forms.MouseEventArgs mea = (System.Windows.Forms.MouseEventArgs)e;
+//			this.Show();
+//			System.Windows.Forms.MouseEventArgs mea = (System.Windows.Forms.MouseEventArgs)e;
 			/*if (mea.cli mea.RightButton) {
 			} else {
 				
 			}*/
-			this.Activate();
+//			this.Activate();
 		}
 
 		private void UpdateServiceView() {
@@ -242,7 +248,18 @@ namespace ZitiDesktopEdge {
 			TunnelConnected(!_isServiceInError);
 		}
 
+		private void App_ReceiveString(string obj) {
+			Console.WriteLine(obj);
+			this.Show();
+			this.Activate();
+		}
+
 		async private void MainWindow_Loaded(object sender, RoutedEventArgs e) {
+
+			Window window = Window.GetWindow(App.Current.MainWindow);
+			ZitiDesktopEdge.App app = (ZitiDesktopEdge.App)App.Current;
+			app.ReceiveString += App_ReceiveString;
+
 			// add a new service client
 			serviceClient = new DataClient();
 			serviceClient.OnClientConnected += ServiceClient_OnClientConnected;
