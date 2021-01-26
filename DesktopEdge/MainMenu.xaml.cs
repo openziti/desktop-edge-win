@@ -6,11 +6,11 @@ using System;
 using System.Reflection;
 using System.Net.Mail;
 using System.IO;
-using ZitiDesktopEdge.ServiceClient;
 using NLog;
 
+using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.DataStructures;
-using ZitiDesktopEdge.Native;
+using ZitiDesktopEdge.ServiceClient;
 using System.Configuration;
 
 namespace ZitiDesktopEdge {
@@ -31,6 +31,7 @@ namespace ZitiDesktopEdge {
 		public string LogLevel = "";
 		private string appVersion = null;
 		private bool allowReleaseSelect = false;
+		public double MainHeight = 500;
 
 		private bool isBeta {
 			get {
@@ -80,6 +81,10 @@ namespace ZitiDesktopEdge {
 
 		private void ShowAdvanced(object sender, MouseButtonEventArgs e) {
 			menuState = "Advanced";
+			UpdateState();
+		}
+		private void ShowIdentities(object sender, MouseButtonEventArgs e) {
+			menuState = "Identities";
 			UpdateState();
 		}
 		private void ShowLicenses(object sender, MouseButtonEventArgs e) {
@@ -151,6 +156,8 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void UpdateState() {
+			IdListScrollView.Height = this.ActualHeight-100.00;
+			IdListScrollView.Visibility = Visibility.Collapsed;
 			MainItems.Visibility = Visibility.Collapsed;
 			AboutItems.Visibility = Visibility.Collapsed;
 			MainItemsButton.Visibility = Visibility.Collapsed;
@@ -224,6 +231,10 @@ namespace ZitiDesktopEdge {
 				ConfigSubnet.Value = Application.Current.Properties["subnet"]?.ToString();
 				ConfigMtu.Value = Application.Current.Properties["mtu"]?.ToString();
 				ConfigDns.Value = Application.Current.Properties["dns"]?.ToString();
+			} else if (menuState == "Identities") {
+				MenuTitle.Content = "Identities";
+				IdListScrollView.Visibility = Visibility.Visible;
+				BackArrow.Visibility = Visibility.Visible;
 			} else {
 				MenuTitle.Content = "Main Menu";
 				MainItems.Visibility = Visibility.Visible;
@@ -235,7 +246,7 @@ namespace ZitiDesktopEdge {
 		private void OpenLogFile(string which, string logFile) {
 			var whichRoot = Path.Combine(MainWindow.ExpectedLogPathRoot, which);
 			try {
-				string target = NativeMethods.GetFinalPathName(logFile);
+				string target = Native.NativeMethods.GetFinalPathName(logFile);
 				if (File.Exists(target)) {
 					logger.Info("opening {0} logs at: {1}", which, target);
 					var p = Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
@@ -424,6 +435,18 @@ namespace ZitiDesktopEdge {
 			}
 			TriggerUpdateButton.IsEnabled = true;
 			CheckForUpdate.IsEnabled = true;
+		}
+
+		public void SetupIdList(ZitiIdentity[] ids) {
+			IdListView.Children.Clear();
+			for (int i=0; i<ids.Length; i++) {
+				MenuIdentityItem item = new MenuIdentityItem();
+				item.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
+				item.Label = ids[i].Name;
+				item.Identity = ids[i];
+				item.ToggleSwitch.Enabled = ids[i].IsEnabled;
+				IdListView.Children.Add(item);
+			}
 		}
 	}
 }

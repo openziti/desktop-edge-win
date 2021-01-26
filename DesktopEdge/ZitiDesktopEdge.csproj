@@ -94,6 +94,7 @@
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Design" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
@@ -113,7 +114,10 @@
     <Reference Include="System.ServiceProcess" />
     <Reference Include="System.Transactions" />
     <Reference Include="System.Web" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Windows" />
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Windows.Presentation" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Core" />
@@ -126,6 +130,9 @@
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
+    <Reference Include="WpfMouseWheelLib">
+      <HintPath>..\WpfMouseWheelLib.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
@@ -152,6 +159,9 @@
     <Compile Include="RegistrationScreen.xaml.cs">
       <DependentUpon>RegistrationScreen.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\ItemRenderers\MenuIdentityItem.xaml.cs">
+      <DependentUpon>MenuIdentityItem.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\ItemRenderers\SubOptionItem.xaml.cs">
       <DependentUpon>SubOptionItem.xaml</DependentUpon>
     </Compile>
@@ -163,7 +173,7 @@
     </Compile>
     <Compile Include="Models\ZitiIdentity.cs" />
     <Compile Include="Models\ZitiService.cs" />
-    <Compile Include="Toggler.xaml.cs">
+    <Compile Include="Views\Controls\Toggler.xaml.cs">
       <DependentUpon>Toggler.xaml</DependentUpon>
     </Compile>
     <Compile Include="WinAPI.cs" />
@@ -210,6 +220,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Views\ItemRenderers\MenuIdentityItem.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Views\ItemRenderers\SubOptionItem.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -226,7 +240,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Toggler.xaml">
+    <Page Include="Views\Controls\Toggler.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -360,7 +374,6 @@
     <Resource Include="Assets\Images\server.png" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Views\Controls\" />
     <Folder Include="Views\Screens\" />
   </ItemGroup>
   <ItemGroup>
@@ -380,6 +393,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Assets\Images\update.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Images\identities.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
