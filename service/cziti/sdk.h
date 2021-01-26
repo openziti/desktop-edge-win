@@ -66,4 +66,6 @@ struct ziti_router_event* ziti_event_router_event(ziti_event_t *ev);
 struct ziti_service_event* ziti_event_service_event(ziti_event_t *ev);
 
 ziti_service* ziti_service_array_get(ziti_service_array arr, int idx);
+
+extern void ziti_dump_go(char* msg);
 #endif /* GOLANG_SDK_H */

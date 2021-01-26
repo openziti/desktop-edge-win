@@ -1,4 +1,18 @@
-# Release 1.7.0
+# Release 1.7.3
+
+## What's New
+* [#299](https://github.com/openziti/desktop-edge-win/issues/299) Open first instance of the app if another instance tries to open
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* 
+
+## Dependency Updates
+* none
+
+# Release 1.7.2
 
 This is a substantial update. Some important stability fixes have been applied from the CSDK and Tunneler SDK. Wintun was upgraded to 0.10 removing the need for the OpenZitiWintunInstaller
 

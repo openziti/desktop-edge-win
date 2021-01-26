@@ -468,3 +468,12 @@ func log_writer_cb(level C.int, loc C.string, msg C.string, msglen C.int) {
 		break
 	}
 }
+
+//export ziti_dump_go
+func ziti_dump_go(msg *C.char){
+	log.Debug(msg)
+}
+
+func ZitiDump(zid *ZIdentity) {
+	C.ziti_dump(zid.czctx)
+}

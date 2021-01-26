@@ -95,3 +95,7 @@ struct ziti_service_event* ziti_event_service_event(ziti_event_t *ev) {
 ziti_service* ziti_service_array_get(ziti_service_array arr, int idx) {
     return arr ? arr[idx] : NULL;
 }
+
+void ziti_dump_print_function(void *ctx, char *fmt, ...) {
+    ziti_dump_go(fmt);
+}

@@ -443,6 +443,10 @@ func serveIpc(conn net.Conn) {
 			toggleIdentity(enc, fingerprint, onOff)
 		case "SetLogLevel":
 			setLogLevel(enc, cmd.Payload["Level"].(string))
+		case "Dump":
+			for _, i := range(rts.ids) {
+				cziti.ZitiDump(i.CId)
+			}
 		case "Debug":
 			dbg()
 			respond(enc, dto.Response{
