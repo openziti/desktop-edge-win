@@ -52,6 +52,7 @@ namespace ZitiDesktopEdge {
 		}
 		
 		private void OnToggle(object sender, RoutedEventArgs e) {
+			e.Handled = true;
 			Enabled = !Enabled;
 			if (OnToggled != null) {
 				OnToggled(Enabled);

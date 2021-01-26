@@ -18,6 +18,7 @@ using ZitiDesktopEdge.ServiceClient;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
+using Microsoft.Win32;
 
 using System.Windows.Interop;
 
@@ -37,6 +38,8 @@ namespace ZitiDesktopEdge {
 		private int _right = 75;
 		private int _left = 75;
 		private int _top = 30;
+		private bool isConnected = false;
+		private double origHeight = 0.0;
 		private double _maxHeight = 800d;
 		private string[] suffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };
 
@@ -63,6 +66,10 @@ namespace ZitiDesktopEdge {
 			ExpectedLogPathServices = Path.Combine(ExpectedLogPathRoot, "service", $"ziti-tunneler.log");
 		}
 
+		private void SystemEvents_DisplaySettingsChanged(object sender, EventArgs e) {
+			LoadIdentities(true);
+		}
+
 		private List<ZitiIdentity> identities {
 			get {
 				return (List<ZitiIdentity>)Application.Current.Properties["Identities"];
@@ -82,6 +89,7 @@ namespace ZitiDesktopEdge {
 		private System.ComponentModel.IContainer components;
 		public MainWindow() {
 			InitializeComponent();
+			SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
 			string nlogFile = Path.Combine(ExecutionDirectory, ThisAssemblyName + "-log.config");
 
 			bool byFile = false;
@@ -647,8 +655,12 @@ namespace ZitiDesktopEdge {
 		private void LoadIdentities(Boolean repaint) {
 			IdList.Children.Clear();
 			IdList.Height = 0;
+			var desktopWorkingArea = SystemParameters.WorkArea;
+			if (_maxHeight > (desktopWorkingArea.Height - 10)) _maxHeight = desktopWorkingArea.Height - 10;
+			if (_maxHeight < 100) _maxHeight = 100;
 			IdList.MaxHeight = _maxHeight - 520;
 			ZitiIdentity[] ids = identities.OrderBy(i => i.Name.ToLower()).ToArray();
+			MainMenu.SetupIdList(ids);
 			double height = 490 + (ids.Length * 60);
 			if (height > _maxHeight) height = _maxHeight;
 			this.Height = height;
@@ -666,6 +678,7 @@ namespace ZitiDesktopEdge {
 				idItem.Identity = id;
 				IdList.Children.Add(idItem);
 			}
+
 			IdList.Height = (double)(ids.Length * 64);
 			Placement();
 		}
@@ -692,9 +705,9 @@ namespace ZitiDesktopEdge {
 		private void SetLocation() {
 			var desktopWorkingArea = SystemParameters.WorkArea;
 
-
 			var height = MainView.ActualHeight;
 			IdentityMenu.MainHeight = MainView.ActualHeight;
+			MainMenu.MainHeight = MainView.ActualHeight;
 
 			Rectangle trayRectangle = WinAPI.GetTrayRectangle();
 			if (trayRectangle.Top < 20) {
@@ -740,7 +753,6 @@ namespace ZitiDesktopEdge {
 			}
 		}
 		public void Placement() {
-			var desktopWorkingArea = SystemParameters.WorkArea;
 			if (_isAttached) {
 				Arrow.Visibility = Visibility.Visible;
 				IdentityMenu.Arrow.Visibility = Visibility.Visible;
@@ -944,5 +956,57 @@ namespace ZitiDesktopEdge {
 				ShowError("Error Collecting Feedback", "An error occurred while trying to gather feedback. Is the monitor service running?");
             }
 		}
-    }
+
+		/*
+
+		private void MainUI_DpiChanged(object sender, DpiChangedEventArgs e) {
+			var desktopWorkingArea = SystemParameters.WorkArea;
+			Console.WriteLine("Old: " + desktopWorkingArea.Width + " New: " + desktopWorkingArea.Height);
+		}
+
+		private void UpButtonClick(object sender, MouseButtonEventArgs e) {
+		}
+
+		private void DownButtonClick(object sender, MouseButtonEventArgs e) {
+		}
+
+		private void UpButton_MouseEnter(object sender, MouseEventArgs e) {
+			UpOver.Opacity = 0.2;
+		}
+
+		private void UpButton_MouseLeave(object sender, MouseEventArgs e) {
+			UpOver.Opacity = 0.0;
+		}
+
+		private void DownButton_MouseEnter(object sender, MouseEventArgs e) {
+			DownOver.Opacity = 0.2;
+		}
+
+		private void DownButton_MouseLeave(object sender, MouseEventArgs e) {
+			DownOver.Opacity = 0.0;
+		}
+
+		private void UpButton_MouseUp(object sender, MouseButtonEventArgs e) {
+			//isConnected = (DisconnectButton.Visibility == Visibility.Visible);
+			origHeight = IdListScroller.Height;
+			IdListScroller.Height = origHeight + 160.0 + StatArea.Height;
+			MessageBox.Show("::" + origHeight + " " + StatArea.Height + " " + IdListScroller.Height);
+			DisconnectButton.Visibility = Visibility.Collapsed;
+			ConnectButton.Visibility = Visibility.Collapsed;
+			StatArea.Visibility = Visibility.Collapsed;
+			UpButton.Visibility = Visibility.Collapsed;
+			DownButton.Visibility = Visibility.Visible;
+		}
+
+		private void DownButton_MouseUp(object sender, MouseButtonEventArgs e) {
+			IdListScroller.Height = origHeight;
+			StatArea.Visibility = Visibility.Visible;
+			if (isConnected) DisconnectButton.Visibility = Visibility.Visible;
+			else ConnectButton.Visibility = Visibility.Visible;
+			DownButton.Visibility = Visibility.Collapsed;
+			UpButton.Visibility = Visibility.Visible;
+		}
+
+		*/
+	}
 }

@@ -37,6 +37,7 @@
                 </Grid>
                 <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
                 <StackPanel Name="MainItems" Orientation="Vertical" HorizontalAlignment="Stretch">
+                    <local:MenuItem Label="Identities" Icon="/Assets/Images/identities.png" MouseUp="ShowIdentities"></local:MenuItem>
                     <local:MenuItem HorizontalAlignment="Stretch" Width="Auto" MouseUp="ShowAdvanced" Label="Advanced Settings" Icon="/Assets/Images/advanced.png"></local:MenuItem>
                     <local:MenuItem Label="About" Icon="/Assets/Images/about.png" MouseUp="ShowAbout"></local:MenuItem>
                     <local:MenuItem Label="Feedback" Icon="/Assets/Images/feedback.png" MouseUp="ShowFeedback"></local:MenuItem>
@@ -93,6 +94,9 @@
                     <local:MenuEditItem x:Name="ConfigMtu" HorizontalAlignment="Stretch" Width="Auto" Label="MTU:"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigDns" HorizontalAlignment="Stretch" Width="Auto" Label="DNS Servers:"></local:MenuEditItem>
                 </StackPanel>
+                <ScrollViewer Name="IdListScrollView" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" CanContentScroll="True" ClipToBounds="True" Visibility="Collapsed">
+                    <StackPanel Name="IdListView" Orientation="Vertical" IsItemsHost="False"></StackPanel>
+                </ScrollViewer>
                 <TextBox Name="LicensesItems" Height="400" Width="{Binding ActualWidth, ElementName=MainStack}" TextWrapping="Wrap" Visibility="Collapsed"></TextBox>
                 <TextBox Name="LogsItems" Height="400" Width="{Binding ActualWidth, ElementName=MainStack}" TextWrapping="Wrap" Visibility="Collapsed" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"></TextBox>
 

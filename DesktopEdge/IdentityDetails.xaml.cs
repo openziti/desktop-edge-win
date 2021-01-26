@@ -49,6 +49,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		public IdentityItem SelectedIdentity { get; set; }
+		public MenuIdentityItem SelectedIdentityMenu { get; set; }
 
 		private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
 			if (e.ChangedButton == MouseButton.Left) {
@@ -115,7 +116,8 @@ namespace ZitiDesktopEdge {
 		async private void IdToggle(bool on) {
 			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
 			await client.IdentityOnOffAsync(_identity.Fingerprint, on);
-			SelectedIdentity.ToggleSwitch.Enabled = on;
+			if (SelectedIdentity!=null) SelectedIdentity.ToggleSwitch.Enabled = on;
+			if (SelectedIdentityMenu != null) SelectedIdentityMenu.ToggleSwitch.Enabled = on;
 			_identity.IsEnabled = on;
 			IdentityStatus.Value = _identity.IsEnabled ? "active" : "disabled";
 		}
