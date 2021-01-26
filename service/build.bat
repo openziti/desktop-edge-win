@@ -19,11 +19,12 @@ REM override the c sdk used in the build - leave blank for the same as specified
 SET ZITI_SDK_C_BRANCH=
 REM the number of TCP connections the tunneler sdk can have at any one time
 SET TCP_MAX_CONNECTIONS=256
+SET WINTUN_DL_URL=https://www.wintun.net/builds/wintun-0.10.zip
 
 set SVC_ROOT_DIR=%~dp0
 set CURDIR=%CD%
 
-call %SVC_ROOT_DIR%\set-env.bat
+call %SVC_ROOT_DIR%set-env.bat
 
 IF "%ZITI_DEBUG%"=="" (
     REM clear out if debug was run in the past
@@ -86,6 +87,23 @@ echo REMOVING ziti.dll at %SVC_ROOT_DIR%ziti.dll
 del /q %SVC_ROOT_DIR%ziti.dll
 
 :QUICK
+
+if not exist %SVC_ROOT_DIR%wintun.dll (
+    echo ------------------------------------------------------------------------------
+    echo DOWNLOADING wintun.dll using powershell
+    echo       from: %WINTUN_DL_URL%
+    echo ------------------------------------------------------------------------------
+    powershell "Invoke-WebRequest %WINTUN_DL_URL% -OutFile %SVC_ROOT_DIR%wintun.zip"
+    powershell "Expand-Archive -Path %SVC_ROOT_DIR%wintun.zip -Force -DestinationPath %SVC_ROOT_DIR%wintun-extracted"
+    echo    copying: %SVC_ROOT_DIR%wintun-extracted\wintun\bin\amd64\wintun.dll %SVC_ROOT_DIR%wintun.dll
+    copy %SVC_ROOT_DIR%wintun-extracted\wintun\bin\amd64\wintun.dll %SVC_ROOT_DIR%wintun.dll
+    echo   removing: %SVC_ROOT_DIR%wintun-extracted
+    del /s /q %SVC_ROOT_DIR%wintun-extracted\
+    rmdir %SVC_ROOT_DIR%wintun-extracted\
+    echo   removing: %SVC_ROOT_DIR%wintun.zip
+    del /s %SVC_ROOT_DIR%wintun.zip
+)
+
 echo changing to service folder: %SVC_ROOT_DIR%
 cd %SVC_ROOT_DIR%
 
@@ -186,7 +204,7 @@ if %ACTUAL_ERR% NEQ 0 (
 )
 
 echo checking the CSDK
-pushd %TUNNELER_SDK_DIR%\build\_deps\ziti-sdk-c-src
+pushd %TUNNELER_SDK_DIR%build\_deps\ziti-sdk-c-src
 git rev-parse --short HEAD > hash.txt
 git rev-parse --abbrev-ref HEAD > branch.txt
 set /p CSDK_BRANCH=<branch.txt
