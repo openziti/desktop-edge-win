@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ZitiDesktopEdge"
+        xmlns:i="clr-namespace:Lada.Windows.Input;assembly=WpfMouseWheelLib"
         mc:Ignorable="d"
         ShowInTaskbar="False"
         x:Name="MainUI"
@@ -12,6 +13,10 @@
         ClipToBounds="False"
         Icon="Assets/Images/icon.png" AllowsTransparency="True" 
         Closing="Window_Closing"
+        i:MouseWheel.Enhanced="True"
+        i:MouseWheel.LogicalScrollDebouncing="Auto"
+        i:MouseWheel.LogicalScrollIncrement="1"
+        i:MouseWheel.ScrollMode="Auto"
         WindowStyle="None" Loaded="MainWindow_Loaded" Background="#000F0F23">
     <Window.Resources>
         <Style TargetType="Image">
@@ -193,8 +198,33 @@
                     <Label Name="UploadSpeedLabel" Foreground="White" Margin="0,-20,0,30" Content="KBps" FontSize="11" HorizontalAlignment="Center" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" />
                 </StackPanel>
             </Grid>
-            <ScrollViewer Name="IdListScroller" ScrollViewer.HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" CanContentScroll="True" ClipToBounds="True">
-                <StackPanel Name="IdList" Orientation="Vertical" LayoutUpdated="IdList_LayoutUpdated"></StackPanel>
+            <!--
+            <Canvas Name="DownButton" Width="400" Height="20" MouseUp="DownButton_MouseUp" Visibility="Collapsed" MouseEnter="DownButton_MouseEnter" MouseLeave="DownButton_MouseLeave" Cursor="Hand">
+                <Rectangle x:Name="DownOver" Width="400" Height="20" Fill="White" Opacity="0"></Rectangle>
+                <Grid Width="{Binding ActualWidth, ElementName=ConnectButton}" Height="20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="40"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Image Source="/Assets/Images/closer.png" Height="20" HorizontalAlignment="Center" Grid.ColumnSpan="2" />
+                </Grid>
+            </Canvas>
+            <Canvas Name="UpButton" Width="400" Height="20" MouseUp="UpButton_MouseUp" Visibility="Visible" MouseEnter="UpButton_MouseEnter" MouseLeave="UpButton_MouseLeave" Cursor="Hand">
+                <Rectangle x:Name="UpOver" Width="400" Height="20" Fill="White" Opacity="0"></Rectangle>
+                <Grid Width="{Binding ActualWidth, ElementName=ConnectButton}" Height="20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="40"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Image Source="/Assets/Images/open.png" Height="20" HorizontalAlignment="Center" Grid.ColumnSpan="2" />
+                </Grid>
+            </Canvas>
+            -->
+            
+            <ScrollViewer Name="IdListScroller" MinHeight="60" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" CanContentScroll="True" ClipToBounds="True" PanningMode="VerticalOnly" PanningRatio=".1">
+                <StackPanel Name="IdList" Orientation="Vertical" IsItemsHost="False" LayoutUpdated="IdList_LayoutUpdated"></StackPanel>
             </ScrollViewer>
             <Grid HorizontalAlignment="Stretch" Margin="0,20,0,10" Width="Auto">
                 <Grid.ColumnDefinitions>
