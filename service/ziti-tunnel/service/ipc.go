@@ -32,7 +32,6 @@ import (
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"github.com/openziti/sdk-golang/ziti/enroll"
 	"golang.org/x/sys/windows/svc"
-	"golang.zx2c4.com/wireguard/tun"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -63,6 +62,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	cziti.ResetDNS()
 
 	rts.LoadConfig()
+	defer rts.Close()
 	l := rts.state.LogLevel
 	parsedLevel, cLogLevel := logging.ParseLevel(l)
 
@@ -132,18 +132,6 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	events.shutdown()
 
 	cziti.ResetDNS()
-
-	log.Infof("Removing existing interface: %s", TunName)
-	wt, err := tun.WintunPool.OpenAdapter(TunName)
-	if err == nil {
-		// If so, we delete it, in case it has weird residual configuration.
-		_, err = wt.Delete(true)
-		if err != nil {
-			log.Errorf("Error deleting already existing interface: %v", err)
-		}
-	} else {
-		log.Errorf("INTERFACE %s was nil? %v", TunName, err)
-	}
 
 	rts.Close()
 
@@ -245,14 +233,14 @@ func (p *Pipes) shutdownConnections() {
 }
 
 func initialize(cLogLevel int) error {
-	assignedIp, tun, err := rts.CreateTun(rts.state.TunIpv4, rts.state.TunIpv4Mask)
+	assignedIp, t, err := rts.CreateTun(rts.state.TunIpv4, rts.state.TunIpv4Mask)
 	if err != nil {
 		return err
 	}
 
 	cziti.DnsInit(&rts, rts.state.TunIpv4, rts.state.TunIpv4Mask)
 	cziti.Start(cLogLevel)
-	err = cziti.HookupTun(*tun)
+	err = cziti.HookupTun(*t)
 	if err != nil {
 		log.Panicf("An unrecoverable error has occurred! %v", err)
 	}
@@ -443,6 +431,10 @@ func serveIpc(conn net.Conn) {
 			toggleIdentity(enc, fingerprint, onOff)
 		case "SetLogLevel":
 			setLogLevel(enc, cmd.Payload["Level"].(string))
+		case "Dump":
+			//for _, i := range(rts.ids) {
+			//	cziti.ZitiDump(i.CId)
+			//}
 		case "Debug":
 			dbg()
 			respond(enc, dto.Response{

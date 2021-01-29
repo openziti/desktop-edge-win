@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Linq;
 using System.ServiceProcess;
@@ -189,6 +189,9 @@ namespace ZitiUpdateService {
 				outputSystemInfo(destinationLocation);
 				outputDnsCache(destinationLocation);
 				outputExternalIP(destinationLocation);
+				outputTasklist(destinationLocation);
+				outputRouteInfo(destinationLocation);
+				outputNetstatInfo(destinationLocation);
 
 				Task.Delay(500).Wait();
 
@@ -216,7 +219,7 @@ namespace ZitiUpdateService {
 				startInfo.WindowStyle = ProcessWindowStyle.Hidden;
 				startInfo.FileName = "cmd.exe";
 				var ipconfigOut = Path.Combine(destinationFolder, "ipconfig.all.txt");
-				Logger.Info("copying ipconfig /all to {0}", ipconfigOut);
+				Logger.Debug("copying ipconfig /all to {0}", ipconfigOut);
 				startInfo.Arguments = $"/C ipconfig /all > \"{ipconfigOut}\"";
 				process.StartInfo = startInfo;
 				process.Start();
@@ -234,7 +237,7 @@ namespace ZitiUpdateService {
 				startInfo.WindowStyle = ProcessWindowStyle.Hidden;
 				startInfo.FileName = "cmd.exe";
 				var sysinfoOut = Path.Combine(destinationFolder, "systeminfo.txt");
-				Logger.Info("running systeminfo to {0}", sysinfoOut);
+				Logger.Debug("running systeminfo to {0}", sysinfoOut);
 				startInfo.Arguments = $"/C systeminfo > \"{sysinfoOut}\"";
 				process.StartInfo = startInfo;
 				process.Start();
@@ -252,7 +255,7 @@ namespace ZitiUpdateService {
 				startInfo.WindowStyle = ProcessWindowStyle.Hidden;
 				startInfo.FileName = "cmd.exe";
 				var dnsCache = Path.Combine(destinationFolder, "dnsCache.txt");
-				Logger.Info("running ipconfig /displaydns to {0}", dnsCache);
+				Logger.Debug("running ipconfig /displaydns to {0}", dnsCache);
 				startInfo.Arguments = $"/C ipconfig /displaydns > \"{dnsCache}\"";
 				process.StartInfo = startInfo;
 				process.Start();
@@ -271,6 +274,60 @@ namespace ZitiUpdateService {
 				resp.EnsureSuccessStatusCode();
 				string responseBody = resp.Content.ReadAsStringAsync().Result;
 				File.WriteAllText(extIpFile, responseBody);
+			} catch (Exception ex) {
+				Logger.Error(ex, "Unexpected error {0}", ex.Message);
+			}
+		}
+
+		private void outputTasklist(string destinationFolder) {
+			Logger.Info("capturing executing tasks");
+			try {
+				Process process = new Process();
+				ProcessStartInfo startInfo = new ProcessStartInfo();
+				startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+				startInfo.FileName = "cmd.exe";
+				var tasklistOutput = Path.Combine(destinationFolder, "tasklist.txt");
+				Logger.Debug("running tasklist to {0}", tasklistOutput);
+				startInfo.Arguments = $"/C tasklist > \"{tasklistOutput}\"";
+				process.StartInfo = startInfo;
+				process.Start();
+				process.WaitForExit();
+			} catch (Exception ex) {
+				Logger.Error(ex, "Unexpected error {0}", ex.Message);
+			}
+		}
+
+		private void outputRouteInfo(string destinationFolder) {
+			Logger.Info("capturing network routes");
+			try {
+				Process process = new Process();
+				ProcessStartInfo startInfo = new ProcessStartInfo();
+				startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+				startInfo.FileName = "cmd.exe";
+				var networkRoutes = Path.Combine(destinationFolder, "network-routes.txt");
+				Logger.Debug("running route print to {0}", networkRoutes);
+				startInfo.Arguments = $"/C route print > \"{networkRoutes}\"";
+				process.StartInfo = startInfo;
+				process.Start();
+				process.WaitForExit();
+			} catch (Exception ex) {
+				Logger.Error(ex, "Unexpected error {0}", ex.Message);
+			}
+		}
+
+		private void outputNetstatInfo(string destinationFolder) {
+			Logger.Info("capturing netstat");
+			try {
+				Process process = new Process();
+				ProcessStartInfo startInfo = new ProcessStartInfo();
+				startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+				startInfo.FileName = "cmd.exe";
+				var netstatOutput = Path.Combine(destinationFolder, "netstat.txt");
+				Logger.Debug("running netstat -ano to {0}", netstatOutput);
+				startInfo.Arguments = $"/C netstat -ano > \"{netstatOutput}\"";
+				process.StartInfo = startInfo;
+				process.Start();
+				process.WaitForExit();
 			} catch (Exception ex) {
 				Logger.Error(ex, "Unexpected error {0}", ex.Message);
 			}
