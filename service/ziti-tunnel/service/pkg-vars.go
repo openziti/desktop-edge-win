@@ -27,7 +27,7 @@ import (
 var Version dto.ServiceVersion
 var pipeBase = `\\.\pipe\OpenZiti\ziti\`
 
-var rts = RuntimeState{
+var rts = &RuntimeState{
 	ids: make(map[string]*Id),
 }
 var interrupt chan struct{}
