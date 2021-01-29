@@ -430,19 +430,33 @@ func (t *RuntimeState) RemoveRoute(destination net.IPNet, nextHop net.IP) error 
 	return luid.DeleteRoute(destination, nextHop)
 }
 
-
 func (t *RuntimeState) Close() {
 	if t.tun != nil {
 		tu := *t.tun
 		err := tu.Close()
 		if err != nil {
-			log.Fatalf("problem closing tunnel!")
+			log.Error("problem closing tunnel!")
 		}
 	} else {
 		log.Warn("unexpected situation. the TUN was null? ")
 	}
+	t.RemoveZitiTun()
 }
 
+func(t *RuntimeState) RemoveZitiTun() {
+	log.Infof("Removing existing interface: %s", TunName)
+	wt, err := tun.WintunPool.OpenAdapter(TunName)
+	if err == nil {
+		// If so, we delete it, in case it has weird residual configuration.
+		_, err = wt.Delete(true)
+		if err != nil {
+			log.Errorf("Error deleting already existing interface: %v", err)
+		}
+	} else {
+		log.Tracef("INTERFACE %s was nil? must have been removed already. %v", TunName, err)
+	}
+	log.Infof("Successfully removed interface: %s", TunName)
+}
 
 func (t *RuntimeState) InterceptDNS() {
 	log.Panicf("implement me")
