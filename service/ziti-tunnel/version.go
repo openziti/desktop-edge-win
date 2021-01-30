@@ -21,8 +21,8 @@ package main
 
 const (
 	Version   = "1.7.3"
-	Revision  = "badffdd358fb"
-	Branch    = "release-1.7.3-add-ziti_dump"
+	Revision  = "57adf39c8217"
+	Branch    = "master"
 	BuildUser = ""
-	BuildDate = "2021-01-30 01:03:19"
+	BuildDate = "2021-01-30 01:27:41"
 )
