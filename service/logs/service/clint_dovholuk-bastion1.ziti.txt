@@ -1,0 +1,90 @@
+
+=================
+Session:
+
+Session Info: id[771RPvaHq] name[clint_dovholuk-bastion1] api_session[2ufSdTAUJ]
+
+
+=================
+Services:
+
+spice-console-5901: id[2ux0XDR0x] perm(dial=true,bind=false)
+
+engine1-web: id[4sc-VSa0x] perm(dial=true,bind=false)
+
+engine1-ssh: id[5g36Vva0x] perm(dial=true,bind=false)
+
+router1-web: id[6otFVvR0q] perm(dial=true,bind=false)
+
+spice-console-5908: id[8d1Hima0q] perm(dial=true,bind=false)
+
+spice-console-5903: id[AZ0HimRHx] perm(dial=true,bind=false)
+
+node1-ssh: id[Aq46VSaHx] perm(dial=true,bind=false)
+
+spice-console-5912: id[BVu0XmR0x] perm(dial=true,bind=false)
+
+spice-console-5915: id[CkLhXmRHq] perm(dial=true,bind=false)
+
+spice-console-5900: id[EYcCimR0x] perm(dial=true,bind=false)
+
+spice-console-5919: id[L-NhiDaHq] perm(dial=true,bind=false)
+
+spice-console-5904: id[Mft0Xma0x] perm(dial=true,bind=false)
+
+spice-console-5905: id[OQEHiDR0q] perm(dial=true,bind=false)
+
+spice-console-5917: id[RRGhiDa0x] perm(dial=true,bind=false)
+
+router1-web-ip: id[RWGFVva0x] perm(dial=true,bind=false)
+
+spice-console-5902: id[RbX0XDaHx] perm(dial=true,bind=false)
+
+spice-console-5918: id[XJshima0x] perm(dial=true,bind=false)
+
+gateway-01-ssh: id[Ya76VSRHq] perm(dial=true,bind=false)
+
+node1-idrac-vnc: id[dPJFsSaHq] perm(dial=true,bind=false)
+
+spice-console-5914: id[eG90XDR0q] perm(dial=true,bind=false)
+
+spice-console-5916: id[enw3XmaHq] perm(dial=true,bind=false)
+
+spice-console-5913: id[ffoHimR0q] perm(dial=true,bind=false)
+
+spice-console-5910: id[fzyHXDa0q] perm(dial=true,bind=false)
+
+engine1-websocket: id[iECFVSR0q] perm(dial=true,bind=false)
+
+spice-console-5907: id[ipNHXma0q] perm(dial=true,bind=false)
+
+spice-console-5911: id[jT60XDa0x] perm(dial=true,bind=false)
+
+engine1-portal: id[kIxFsvRHx] perm(dial=true,bind=false)
+
+node1-idrac-ssh: id[kRD6sSaHx] perm(dial=true,bind=false)
+
+spice-console-5906: id[oXV0iDa0x] perm(dial=true,bind=false)
+
+node1-idrac-web: id[oZaFVvR0q] perm(dial=true,bind=false)
+
+node1-idrac-ip: id[pFSFsvRHq] perm(dial=true,bind=false)
+
+spice-console-5909: id[wG.0ima0q] perm(dial=true,bind=false)
+
+
+==================
+Net Sessions:
+
+
+==================
+Channels:
+
+
+==================
+Connections:
+
+
+==================
+
+

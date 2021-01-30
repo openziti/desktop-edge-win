@@ -432,11 +432,14 @@ func serveIpc(conn net.Conn) {
 		case "SetLogLevel":
 			setLogLevel(enc, cmd.Payload["Level"].(string))
 		case "ZitiDump":
+			log.Debug("request to ZitiDump received")
 			for _, id := range rts.ids {
 				if id.CId != nil {
 					cziti.ZitiDump(id.CId, fmt.Sprintf(`%s\%s.ziti.txt`, config.LogsPath(), id.Name))
 				}
 			}
+			log.Debug("request to ZitiDump complete")
+			respond(enc, dto.Response{Message: "ZitiDump complete", Code: SUCCESS, Error: "", Payload: nil})
 		case "Debug":
 			dbg()
 			respond(enc, dto.Response{

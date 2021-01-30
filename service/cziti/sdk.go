@@ -472,20 +472,29 @@ func log_writer_cb(level C.int, loc C.string, msg C.string, msglen C.int) {
 }
 
 //export ziti_dump_go_callback
-func ziti_dump_go_callback(outputPath *C.char, line *C.char) {
+func ziti_dump_go_callback(outputPath *C.char, charData *C.char) {
 	f, err := os.OpenFile(C.GoString(outputPath),
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Println(err)
+		log.Warnf("unexpect error opening file: %v", err)
+		_ = f.Close()
+		return
 	}
-	defer f.Close()
-	_, _ = f.WriteString(C.GoString(line))
-	_, _ = f.WriteString("\n")
+	_, _ = f.WriteString(C.GoString(charData))
+	_ = f.Close()
 }
 
 func ZitiDump(zid *ZIdentity, path string) {
 	cpath := C.CString(path)
 	defer C.free(unsafe.Pointer(cpath))
+
+	e := os.Remove(path)
+	if e != nil {
+		//probably did not exist
+		log.Debugf("Could not remove file at: %s", cpath)
+	} else {
+		log.Debugf("Removed existing ziti_dump file at: %s", cpath)
+	}
 	C.ziti_dump_go_wrapper(unsafe.Pointer(zid.czctx), cpath)
 	log.Infof("ziti_dump saved to: %s", path)
 }
