@@ -491,9 +491,9 @@ func ZitiDump(zid *ZIdentity, path string) {
 	e := os.Remove(path)
 	if e != nil {
 		//probably did not exist
-		log.Debugf("Could not remove file at: %s", cpath)
+		log.Debugf("Could not remove file at: %s", path)
 	} else {
-		log.Debugf("Removed existing ziti_dump file at: %s", cpath)
+		log.Debugf("Removed existing ziti_dump file at: %s", path)
 	}
 	C.ziti_dump_go_wrapper(unsafe.Pointer(zid.czctx), cpath)
 	log.Infof("ziti_dump saved to: %s", path)
