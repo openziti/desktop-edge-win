@@ -238,7 +238,7 @@ func initialize(cLogLevel int) error {
 		return err
 	}
 
-	cziti.DnsInit(&rts, rts.state.TunIpv4, rts.state.TunIpv4Mask)
+	cziti.DnsInit(rts, rts.state.TunIpv4, rts.state.TunIpv4Mask)
 	cziti.Start(cLogLevel)
 	err = cziti.HookupTun(*t)
 	if err != nil {
@@ -431,10 +431,15 @@ func serveIpc(conn net.Conn) {
 			toggleIdentity(enc, fingerprint, onOff)
 		case "SetLogLevel":
 			setLogLevel(enc, cmd.Payload["Level"].(string))
-		case "Dump":
-			//for _, i := range(rts.ids) {
-			//	cziti.ZitiDump(i.CId)
-			//}
+		case "ZitiDump":
+			log.Debug("request to ZitiDump received")
+			for _, id := range rts.ids {
+				if id.CId != nil {
+					cziti.ZitiDump(id.CId, fmt.Sprintf(`%s\%s.ziti.txt`, config.LogsPath(), id.Name))
+				}
+			}
+			log.Debug("request to ZitiDump complete")
+			respond(enc, dto.Response{Message: "ZitiDump complete", Code: SUCCESS, Error: "", Payload: nil})
 		case "Debug":
 			dbg()
 			respond(enc, dto.Response{

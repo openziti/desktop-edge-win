@@ -101,17 +101,22 @@ namespace ZitiDesktopEdge.DataStructures {
         public IdentityTogglePayload Payload { get; set; }
     }
 
-    public class SetLogLevelFunction : ServiceFunction
-    {
-        public SetLogLevelFunction(string level)
-        {
+    public class SetLogLevelFunction : ServiceFunction {
+        public SetLogLevelFunction(string level) {
             this.Function = "SetLogLevel";
-            this.Payload = new SetLogLevelPayload()
-            {
+            this.Payload = new SetLogLevelPayload() {
                 Level = level
             };
         }
         public SetLogLevelPayload Payload { get; set; }
+    }
+
+    public class ZitiDumpFunction : ServiceFunction {
+        public ZitiDumpFunction(string level) {
+            this.Function = "ZitiDump";
+            //this.Payload = null;//nothing for now
+        }
+        //public SetLogLevelPayload Payload { get; set; }
     }
 
     public class FingerprintPayload

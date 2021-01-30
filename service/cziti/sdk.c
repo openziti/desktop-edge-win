@@ -95,3 +95,22 @@ struct ziti_service_event* ziti_event_service_event(ziti_event_t *ev) {
 ziti_service* ziti_service_array_get(ziti_service_array arr, int idx) {
     return arr ? arr[idx] : NULL;
 }
+
+int ziti_dump_c_callback(void* outputPath, const char *fmt,  ...) {
+    static char line[4096];
+
+    va_list vargs;
+    va_start(vargs, fmt);
+    vsnprintf(line, sizeof(line), fmt, vargs);
+    va_end(vargs);
+
+    //call back into go with the line
+    ziti_dump_go_callback(outputPath, line);
+    return 0;
+}
+
+//a simple C function to work around cgo not understanding varadic args
+void ziti_dump_go_wrapper(void *ctx, char* outputPath) {
+    //actuall invoke ziti_dump here
+    ziti_dump(ctx, ziti_dump_c_callback, outputPath);
+}

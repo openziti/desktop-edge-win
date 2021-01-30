@@ -34,6 +34,7 @@ extern void shutdown_callback(uv_async_t *handle);
 extern void free_async(uv_handle_t* timer);
 
 extern void c_mapiter(model_map *map);
+int ziti_dump_c_callback(void* _unused, const char *fmt,  ...);
 
 */
 import "C"
@@ -41,6 +42,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
+	"os"
 	"sync"
 	"unsafe"
 )
@@ -467,4 +469,32 @@ func log_writer_cb(level C.int, loc C.string, msg C.string, msglen C.int) {
 		noFileLog.Warnf("SDK_: level [%d] NOT recognized: %s", level, gomsg)
 		break
 	}
+}
+
+//export ziti_dump_go_callback
+func ziti_dump_go_callback(outputPath *C.char, charData *C.char) {
+	f, err := os.OpenFile(C.GoString(outputPath),
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Warnf("unexpect error opening file: %v", err)
+		_ = f.Close()
+		return
+	}
+	_, _ = f.WriteString(C.GoString(charData))
+	_ = f.Close()
+}
+
+func ZitiDump(zid *ZIdentity, path string) {
+	cpath := C.CString(path)
+	defer C.free(unsafe.Pointer(cpath))
+
+	e := os.Remove(path)
+	if e != nil {
+		//probably did not exist
+		log.Debugf("Could not remove file at: %s", path)
+	} else {
+		log.Debugf("Removed existing ziti_dump file at: %s", path)
+	}
+	C.ziti_dump_go_wrapper(unsafe.Pointer(zid.czctx), cpath)
+	log.Infof("ziti_dump saved to: %s", path)
 }

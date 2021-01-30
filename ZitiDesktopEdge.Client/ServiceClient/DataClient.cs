@@ -250,6 +250,18 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
         }
 
+        async public Task zitiDump() {
+            try {
+                await sendAsync(new ServiceFunction() { Function = "ZitiDump" });
+                var rtn = await readAsync<SvcResponse>(ipcReader);
+                return; // rtn;
+            } catch (IOException ioe) {
+                //almost certainly a problem with the pipe - recreate the pipe...
+                //setupPipe();
+                throw ioe;
+            }
+        }
+
         async public Task<ZitiTunnelStatus> debugAsync() {
             try {
                 await sendAsync(new ServiceFunction() { Function = "Debug" });

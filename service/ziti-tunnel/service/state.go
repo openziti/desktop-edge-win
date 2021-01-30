@@ -234,7 +234,11 @@ func (t *RuntimeState) LoadIdentity(id *Id, refreshInterval int) {
 
 	_, err := os.Stat(id.Path())
 	if err != nil{
-		log.Warnf("refusing to load identity with fingerprint %s:%s due to error %v", id.Name, id.FingerPrint, err)
+		if os.IsNotExist(err) {
+			//file does not exist. TODO remove this from the list
+		} else {
+			log.Warnf("refusing to load identity with fingerprint %s:%s due to error %v", id.Name, id.FingerPrint, err)
+		}
 		return
 	}
 
