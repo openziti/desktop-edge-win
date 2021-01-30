@@ -1,3 +1,40 @@
+# Release 1.7.3
+
+## What's New
+* Additional card Main Menu -> Identities was added for situations when the UI scrolls off the top of the screen
+* Feedback button continues to collect additional diagnostic data. Also invokes ziti_dump now and puts output into the logs folder
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* Some users were stuck with a TUN already created - rearranged the logic to try to always cleanup the TUN if needed
+
+## Dependency Updates
+* Tunneler SDK to v0.8.9
+* CSDK updated to 0.20.7
+
+# Release 1.7.2
+
+This is a substantial update. Some important stability fixes have been applied from the CSDK and Tunneler SDK. Wintun was upgraded to 0.10 removing the need for the OpenZitiWintunInstaller
+
+## What's New
+* [#276](https://github.com/openziti/desktop-edge-win/issues/276) Updates for new CDSK eventing api
+* [#279](https://github.com/openziti/desktop-edge-win/issues/279) DNS is now flushed on starting the `ziti` service to ensure dns cache is not a problem
+* [#264](https://github.com/openziti/desktop-edge-win/issues/264) `ziti` data service no longer blocks waiting for identities to load
+* app now uses the ziti_set_app_info function to report app information to controller
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* DNS proxying would sometimes break depending on when and how a network outage occurred
+
+## Dependency Updates
+* Wintun updated to 0.10.0
+* Tunneler SDK to v0.8.3
+* CSDK updated to 0.20.3
+
 # Release 1.7.0
 
 This is a substantial update. Some important stability fixes have been applied from the CSDK and Tunneler SDK. Wintun was upgraded to 0.10 removing the need for the OpenZitiWintunInstaller
