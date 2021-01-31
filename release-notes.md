@@ -1,3 +1,17 @@
+# Release 1.7.5
+
+## What's New
+* nothing
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* fixed crash on write when dial failed
+
+## Dependency Updates
+* Tunneler SDK to v0.8.10
+
 # Release 1.7.4
 
 ## What's New
