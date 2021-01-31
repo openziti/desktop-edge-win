@@ -1,3 +1,17 @@
+# Release 1.7.4
+
+## What's New
+* nothing
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* double free in TSDK caused a crash
+
+## Dependency Updates
+* Tunneler SDK to v0.8.10
+
 # Release 1.7.3
 
 ## What's New
