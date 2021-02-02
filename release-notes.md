@@ -1,3 +1,17 @@
+# Release 1.7.6
+
+## What's New
+* nothing
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* fixed crash on failed session
+
+## Dependency Updates
+* Tunneler SDK to v0.8.12
+
 # Release 1.7.5
 
 ## What's New
