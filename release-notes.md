@@ -1,3 +1,16 @@
+# Release 1.7.7
+
+## What's New
+* nothing
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* fixed crash on udp message before dial completes
+
+## Dependency Updates
+* Tunneler SDK to v0.8.15
 # Release 1.7.6
 
 ## What's New

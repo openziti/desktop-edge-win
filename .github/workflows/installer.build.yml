@@ -3,7 +3,7 @@ name: Build Installer
 on:
   push:
     branches: 
-      - master
+      - main
       - 'release-*'
       - 'beta-release-*'
 
