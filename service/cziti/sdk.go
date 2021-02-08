@@ -26,6 +26,7 @@ package cziti
 #include "ziti/ziti_log.h"
 
 #include "sdk.h"
+extern void doZitiShutdown(uv_async_t *handle);
 extern void zitiContextEvent(ziti_context nf, int status, void *ctx);
 extern void eventCB(ziti_context ztx, ziti_event_t *event);
 
@@ -210,6 +211,22 @@ func (c *ZIdentity) Controller() string {
 		return C.GoString(C.ziti_get_controller(c.czctx))
 	}
 	return C.GoString(c.Options.controller)
+}
+
+func (zid *ZIdentity) Shutdown() {
+
+	async := (*C.uv_async_t)(C.malloc(C.sizeof_uv_async_t))
+	async.data = unsafe.Pointer(zid.czctx)
+	log.Debugf("setting up call to ziti_shutdown for context %p using uv_async_t", async.data)
+	C.uv_async_init(_impl.libuvCtx.l, async, C.uv_async_cb(C.doZitiShutdown))
+	C.uv_async_send((*C.uv_async_t)(unsafe.Pointer(async)))
+}
+
+//export doZitiShutdown
+func doZitiShutdown(async *C.uv_async_t) {
+	ctx := C.ziti_context(async.data)
+	log.Infof("invoking ziti_shutdown for context %p", &ctx)
+	C.ziti_shutdown(ctx)
 }
 
 var cTunClientCfgName = C.CString("ziti-tunneler-client.v1")

@@ -846,6 +846,7 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 
 	resp := dto.Response{Message: "success", Code: SUCCESS, Error: anyErrs, Payload: nil}
 	respond(out, resp)
+	// call shutdown some day id.CId.Shutdown()
 	log.Infof("request to remove identity by fingerprint: %s responded to", fingerprint)
 }
 
