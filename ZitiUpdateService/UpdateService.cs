@@ -416,7 +416,7 @@ namespace ZitiUpdateService {
 				logit = true;
 			} else {
 				//else log it every 5 minutes... 
-				logit = (5 * 60 / dnsProbeIntervalInSeconds) % dnsProbeFailCount == 0;
+				logit = dnsProbeFailCount % (5 * 60 / dnsProbeIntervalInSeconds) == 0;
 			}
             if (logit) {
                 if (e != null) {
@@ -777,7 +777,7 @@ namespace ZitiUpdateService {
 				dnsIpAddress = IPAddress.Parse(dns);
 			} catch {
 				//ignore it
-            }
+			}
 		}
 
 		private void Svc_OnClientConnected(object sender, object e) {
