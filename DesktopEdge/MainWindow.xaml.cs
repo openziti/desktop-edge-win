@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.ServiceClient;
+using ZitiDesktopEdge.Utility;
 
 using NLog;
 using NLog.Config;
@@ -282,6 +283,7 @@ namespace ZitiDesktopEdge {
 			monitorClient.OnClientConnected += MonitorClient_OnClientConnected;
             monitorClient.OnServiceStatusEvent += MonitorClient_OnServiceStatusEvent;
             monitorClient.OnShutdownEvent += MonitorClient_OnShutdownEvent;
+            monitorClient.OnReconnectFailure += MonitorClient_OnReconnectFailure;
 			Application.Current.Properties.Add("MonitorClient", monitorClient);
 
 			Application.Current.Properties.Add("Identities", new List<ZitiIdentity>());
@@ -307,6 +309,31 @@ namespace ZitiDesktopEdge {
 			IdentityMenu.OnForgot += IdentityForgotten;
 			Placement();
 		}
+
+		string nextVersionStr  = null;
+        private void MonitorClient_OnReconnectFailure(object sender, object e) {
+            if(nextVersionStr == null) {
+				// check for the current version
+				nextVersionStr = "checking for update";
+				Version nextVersion = VersionUtil.NormalizeVersion(GithubAPI.GetVersion(GithubAPI.GetJson(GithubAPI.ProdUrl)));
+				nextVersionStr = nextVersion.ToString();
+				Version currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version; //fetch from ziti?
+
+				int compare = currentVersion.CompareTo(nextVersion);
+				if (compare < 0) {
+					MainMenu.SetAppUpgradeAvailableText("Upgrade available: " + nextVersionStr);
+					logger.Info("upgrade is available. Published version: {} is newer than the current version: {}", nextVersion, currentVersion);
+					//UpgradeAvailable();
+				} else if (compare > 0) {
+					logger.Info("the version installed: {0} is newer than the released version: {1}", currentVersion, nextVersion);
+					MainMenu.SetAppIsNewer("This version is newer than the latest: " + nextVersionStr);
+				} else {
+					logger.Info("Current version installed: {0} is the same as the latest released version {1}", currentVersion, nextVersion);
+					MainMenu.SetAppUpgradeAvailableText("");
+				}
+
+			}
+        }
 
         private void MonitorClient_OnShutdownEvent(object sender, StatusEvent e) {
 			Application.Current.Shutdown();
@@ -433,6 +460,7 @@ namespace ZitiDesktopEdge {
 
 		private void MonitorClient_OnClientConnected(object sender, object e) {
 			logger.Debug("MonitorClient_OnClientConnected");
+			MainMenu.SetAppUpgradeAvailableText("");
 		}
 
 		async private void LogLevelChanged(string level) {
