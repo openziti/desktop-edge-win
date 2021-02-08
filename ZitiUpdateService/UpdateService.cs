@@ -418,8 +418,8 @@ namespace ZitiUpdateService {
 				//else log it every 5 minutes... 
 				logit = dnsProbeFailCount % (5 * 60 / dnsProbeIntervalInSeconds) == 0;
 			}
-            if (logit) {
-                if (e != null) {
+			if (logit) {
+				if (e != null) {
 					Logger.Warn(e, "dns probe failed due to error. This has happened {0} times", dnsProbeFailCount);
 				} else {
 					Logger.Warn("dns probe failed. This has happened {0} times", dnsProbeFailCount);
