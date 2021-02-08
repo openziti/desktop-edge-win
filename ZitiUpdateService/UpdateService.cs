@@ -8,12 +8,14 @@ using System.Configuration;
 using System.Threading.Tasks;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using System.IO.Compression;
 
-using NLog;
 using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.ServiceClient;
 using ZitiDesktopEdge.Server;
-using System.IO.Compression;
+using ZitiDesktopEdge.Utility;
+
+using NLog;
 using Newtonsoft.Json;
 
 namespace ZitiUpdateService {
@@ -613,7 +615,7 @@ namespace ZitiUpdateService {
 						if (fi.Name.StartsWith(filePrefix)) {
 							Logger.Debug("scanning for staleness: " + f);
 							string ver = Path.GetFileNameWithoutExtension(f).Substring(filePrefix.Length);
-							Version fileVersion = checkers.UpdateCheck.NormalizeVersion(new Version(ver));
+							Version fileVersion = VersionUtil.NormalizeVersion(new Version(ver));
 							if (isOlder(fileVersion)) {
 								Logger.Info("Removing old download: " + fi.Name);
 								fi.Delete();

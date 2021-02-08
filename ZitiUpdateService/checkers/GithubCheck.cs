@@ -1,11 +1,12 @@
 ﻿using System;
 using System.IO;
 using System.Net;
-
 using System.Security.Cryptography;
 
 using NLog;
 using Newtonsoft.Json.Linq;
+
+using ZitiDesktopEdge.Utility;
 
 namespace ZitiUpdateService.checkers {
 
@@ -40,15 +41,7 @@ namespace ZitiUpdateService.checkers {
 		override public int IsUpdateAvailable(Version currentVersion) {
 			Logger.Debug("checking for update begins. current version detected as {0}", currentVersion);
 			Logger.Debug("issuing http get to url: {0}", url);
-			HttpWebRequest httpWebRequest = WebRequest.CreateHttp(url);
-			httpWebRequest.Method = "GET";
-			httpWebRequest.ContentType = "application/json";
-			httpWebRequest.UserAgent = "OpenZiti UpdateService";
-			HttpWebResponse httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
-			StreamReader streamReader = new StreamReader(httpResponse.GetResponseStream());
-			currentResponse = streamReader.ReadToEnd();
-			Logger.Trace("response received: {0}", currentResponse);
-			JObject json = JObject.Parse(currentResponse);
+			JObject json = GithubAPI.GetJson(url);
 
 			JArray assets = JArray.Parse(json.Property("assets").Value.ToString());
 			foreach (JObject asset in assets.Children<JObject>()) {
@@ -72,7 +65,8 @@ namespace ZitiUpdateService.checkers {
 
 			string releaseVersion = json.Property("tag_name").Value.ToString();
 			string releaseName = json.Property("name").Value.ToString();
-			nextVersion = NormalizeVersion(new Version(releaseVersion));
+			nextVersion = VersionUtil.NormalizeVersion(new Version(releaseVersion));
+
 			int compare = currentVersion.CompareTo(nextVersion);
 			if (compare < 0) {
 				Logger.Info("upgrade {} is available. Published version: {} is newer than the current version: {}", releaseName, nextVersion, currentVersion);
