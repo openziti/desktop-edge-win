@@ -452,5 +452,22 @@ namespace ZitiDesktopEdge {
 				IdListView.Children.Add(item);
 			}
 		}
+
+		public void SetAppUpgradeAvailableText(string msg) {
+			this.Dispatcher.Invoke(() => {
+				VersionOlder.Content = msg;
+				VersionNewer.Content = "";
+				VersionOlder.Visibility = Visibility.Visible;
+				VersionNewer.Visibility = Visibility.Collapsed;
+			});
+		}
+		public void SetAppIsNewer(string msg) {
+			this.Dispatcher.Invoke(() => {
+				VersionNewer.Content = msg;
+				VersionOlder.Content = "";
+				VersionNewer.Visibility = Visibility.Visible;
+				VersionOlder.Visibility = Visibility.Collapsed;
+			});
+		}
 	}
 }
