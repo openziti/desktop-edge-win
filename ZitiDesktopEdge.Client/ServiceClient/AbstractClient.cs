@@ -227,12 +227,12 @@ namespace ZitiDesktopEdge.ServiceClient {
                 return respAsString;
             } catch (IOException ioe) {
                 //almost certainly a problem with the pipe
-                Logger.Debug("io error in read: " + ioe.Message);
+                Logger.Error(ioe, "io error in read: " + ioe.Message);
                 ClientDisconnected(null);
                 throw ioe;
             } catch (Exception ee) {
                 //almost certainly a problem with the pipe
-                Logger.Debug("unexpected error in read: " + ee.Message);
+                Logger.Error(ee, "unexpected error in read: " + ee.Message);
                 ClientDisconnected(null);
                 throw ee;
             }
