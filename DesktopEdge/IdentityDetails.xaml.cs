@@ -168,7 +168,7 @@ namespace ZitiDesktopEdge {
 				OnError(se.Message);
 			} catch (Exception ex) {
 				Logger.Error(ex, "Unexpected: "+ ex.Message);
-				OnError(ex.Message);
+				OnError("An unexpected error has occured while removing the identity. Please verify the service is still running and try again.");
 			}
 		}
 
