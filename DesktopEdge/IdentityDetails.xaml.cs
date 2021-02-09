@@ -111,6 +111,7 @@ namespace ZitiDesktopEdge {
 				MainDetailScroll.Visibility = Visibility.Collapsed;
 				ServiceTitle.Content = "NO SERVICES AVAILABLE";
 			}
+			ConfirmView.Visibility = Visibility.Collapsed;
 		}
 
 		async private void IdToggle(bool on) {
@@ -134,7 +135,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
-			if (this.Visibility==Visibility.Visible) {
+			if (this.Visibility==Visibility.Visible&&ConfirmView.Visibility==Visibility.Collapsed) {
 				ConfirmView.Visibility = Visibility.Visible;
 			}
 		}
@@ -147,6 +148,7 @@ namespace ZitiDesktopEdge {
 			this.Visibility = Visibility.Collapsed;
 			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
 			try {
+				ConfirmView.Visibility = Visibility.Collapsed;
 				await client.RemoveIdentityAsync(_identity.Fingerprint);
 
 				ZitiIdentity forgotten = new ZitiIdentity();
@@ -162,8 +164,10 @@ namespace ZitiDesktopEdge {
 					OnForgot(forgotten);
 				}
 			} catch (DataStructures.ServiceException se) {
+				Logger.Error(se, se.Message);
 				OnError(se.Message);
 			} catch (Exception ex) {
+				Logger.Error(ex, "Unexpected: "+ ex.Message);
 				OnError(ex.Message);
 			}
 		}
