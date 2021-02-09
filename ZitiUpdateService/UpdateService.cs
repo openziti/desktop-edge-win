@@ -360,6 +360,9 @@ namespace ZitiUpdateService {
 			AccessUtils.GrantAccessToFile(Path.Combine(exeLocation, "ZitiDesktopEdge.exe.config")); //allow anyone to change the config file
 			AccessUtils.GrantAccessToFile(Path.Combine(exeLocation, "ZitiDesktopEdge-log.config")); //allow anyone to change the log file config
 
+			dnsProbeTimer.Elapsed += DnsProbe_Elapsed;
+			dnsProbeTimer.Interval = dnsProbeIntervalInSeconds * 1000;
+
 			Logger.Info("starting ipc server");
 			ipcServer = svr.startIpcServerAsync(onIpcClientAsync);
 			Logger.Info("starting events server");
@@ -373,8 +376,6 @@ namespace ZitiUpdateService {
 				});
 			}
 			Logger.Info("ziti-monitor service is initialized and running");
-			dnsProbeTimer.Elapsed += DnsProbe_Elapsed;
-			dnsProbeTimer.Interval = dnsProbeIntervalInSeconds * 1000;
 			base.OnStart(args);
 		}
 
@@ -386,6 +387,7 @@ namespace ZitiUpdateService {
         private void DnsProbe_Elapsed(object sender, ElapsedEventArgs e) {
 			if (dnsProbeStarted) return; //skip out if it's already going...
 			dnsProbeStarted = true;
+			Logger.Trace("dns probe started");
 			try {
 				if (dnsIpAddress != null) {
 					DnsQuestion q = new DnsQuestion("dew-dns-probe.openziti.org", QueryType.A);
@@ -395,6 +397,7 @@ namespace ZitiUpdateService {
 					foreach (DnsClient.Protocol.ARecord arec in dnsProbe.Query(q).AllRecords) {
 						if (arec.Address.Equals(lh)) {
 							dnsProbeFailCount = 0;
+							Logger.Debug("dns probe success");
 						} else {
 							dnsProbeFailCount++;
 							logDnsProbeFailure(null);
@@ -782,7 +785,11 @@ namespace ZitiUpdateService {
 
 		private void Svc_OnClientConnected(object sender, object e) {
 			Logger.Info("successfully connected to service");
-			dnsProbeTimer.Start();
+			if (!dnsProbeTimer.Enabled) {
+				dnsProbeTimer.Enabled = true;
+				dnsProbeTimer.Start();
+				Logger.Info("DNS Probe enabled");
+			}
 		}
 
 		private void Svc_OnClientDisconnected(object sender, object e) {
