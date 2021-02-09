@@ -37,7 +37,7 @@
                 </Grid>
                 <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
                 <StackPanel Name="MainItems" Orientation="Vertical" HorizontalAlignment="Stretch">
-                    <local:MenuItem Label="Identities" Icon="/Assets/Images/identities.png" MouseUp="ShowIdentities"></local:MenuItem>
+                    <local:MenuItem x:Name="IdentitiesButton" Label="Identities" Icon="/Assets/Images/identities.png" MouseUp="ShowIdentities"></local:MenuItem>
                     <local:MenuItem HorizontalAlignment="Stretch" Width="Auto" MouseUp="ShowAdvanced" Label="Advanced Settings" Icon="/Assets/Images/advanced.png"></local:MenuItem>
                     <local:MenuItem Label="About" Icon="/Assets/Images/about.png" MouseUp="ShowAbout"></local:MenuItem>
                     <local:MenuItem Label="Feedback" Icon="/Assets/Images/feedback.png" MouseUp="ShowFeedback"></local:MenuItem>
