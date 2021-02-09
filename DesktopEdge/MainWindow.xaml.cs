@@ -691,23 +691,32 @@ namespace ZitiDesktopEdge {
 			MainMenu.SetupIdList(ids);
 			double height = 490 + (ids.Length * 60);
 			if (height > _maxHeight) height = _maxHeight;
+
 			this.Height = height;
 			IdentityMenu.SetHeight(this.Height - 160);
-			foreach (var id in ids) {
-				IdentityItem idItem = new IdentityItem();
 
-				idItem.ToggleStatus.IsEnabled = id.IsEnabled;
-				if (id.IsEnabled) {
-					idItem.ToggleStatus.Content = "ENABLED";
-				} else {
-					idItem.ToggleStatus.Content = "DISABLED";
+			if (ids.Length>0) {
+				MainMenu.IdentitiesButton.Visibility = Visibility.Visible;
+				foreach (var id in ids) {
+					IdentityItem idItem = new IdentityItem();
+
+					idItem.ToggleStatus.IsEnabled = id.IsEnabled;
+					if (id.IsEnabled) {
+						idItem.ToggleStatus.Content = "ENABLED";
+					} else {
+						idItem.ToggleStatus.Content = "DISABLED";
+					}
+					idItem.OnStatusChanged += Id_OnStatusChanged;
+					idItem.Identity = id;
+					IdList.Children.Add(idItem);
 				}
-				idItem.OnStatusChanged += Id_OnStatusChanged;
-				idItem.Identity = id;
-				IdList.Children.Add(idItem);
+				IdList.Height = (double)(ids.Length * 64);
+				IdListScroller.Visibility = Visibility.Visible;
+			} else {
+				MainMenu.IdentitiesButton.Visibility = Visibility.Collapsed;
+				IdListScroller.Visibility = Visibility.Collapsed;
 			}
 
-			IdList.Height = (double)(ids.Length * 64);
 			Placement();
 		}
 
