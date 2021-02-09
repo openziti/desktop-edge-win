@@ -1,3 +1,20 @@
+# Release 1.7.8
+
+## What's New
+* a new DNS probe record was added to the DNS server to allow DNS-related testing
+* ziti-monitor service now probes the DNS server for diagnostic reasons
+* added code to check upgrade status - only useful when the ziti-monitor service is not running
+
+## Other changes:
+* minor logging updates
+
+## Bugs fixed:
+* fixed an issue with hosting connections after channel failure [CSDK #233](https://github.com/openziti/ziti-sdk-c/pull/233)
+* fixed a UI issue when no identites existed
+
+## Dependency Updates
+* Tunneler SDK to v0.8.17/CSDK 0.20.12
+
 # Release 1.7.7
 
 ## What's New
@@ -11,6 +28,7 @@
 
 ## Dependency Updates
 * Tunneler SDK to v0.8.15
+
 # Release 1.7.6
 
 ## What's New

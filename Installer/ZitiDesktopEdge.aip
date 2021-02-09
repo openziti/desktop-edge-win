@@ -50,6 +50,7 @@
     <ROW Component="AI_ExePath" ComponentId="{F9B15650-F37D-424A-B159-B54B9F36EC2C}" Directory_="APPDIR" Attributes="260" KeyPath="AI_ExePath"/>
     <ROW Component="APPDIR" ComponentId="{B3881A25-6890-4920-9F69-CACA0C9ABA63}" Directory_="APPDIR" Attributes="0"/>
     <ROW Component="App.config" ComponentId="{27FAD46C-8379-4680-8506-4BCBA5A012E8}" Directory_="APPDIR" Attributes="0" KeyPath="ZitiDesktopEdge.exe.config" Type="0"/>
+    <ROW Component="DnsClient.dll" ComponentId="{8C789D0B-0EB7-4172-ADB8-11D52C22488C}" Directory_="APPDIR" Attributes="0" KeyPath="DnsClient.dll"/>
     <ROW Component="NLog.dll" ComponentId="{384D38B5-A4A0-4BC6-886A-82153E2687ED}" Directory_="APPDIR" Attributes="0" KeyPath="NLog.dll"/>
     <ROW Component="Newtonsoft.Json.dll" ComponentId="{5D7B59CE-A1B5-4EE9-842E-0206408F8674}" Directory_="APPDIR" Attributes="0" KeyPath="Newtonsoft.Json.dll"/>
     <ROW Component="ProductInformation" ComponentId="{4FC3A7CB-D334-466A-A919-E6A237EF4443}" Directory_="APPDIR" Attributes="260" KeyPath="Version"/>
@@ -87,6 +88,7 @@
     <ROW File="ZitiDesktopEdgelog.config" Component_="App.config" FileName="ZITIDE~2.CON|ZitiDesktopEdge-log.config" Attributes="0" SourcePath="..\DesktopEdge\bin\Release\ZitiDesktopEdge-log.config" SelfReg="false"/>
     <ROW File="wintun.dll" Component_="wintun.dll" FileName="wintun.dll" Attributes="0" SourcePath="..\service\wintun.dll" SelfReg="false"/>
     <ROW File="WpfMouseWheelLib.dll" Component_="WpfMouseWheelLib.dll" FileName="WPFMOU~1.DLL|WpfMouseWheelLib.dll" Attributes="0" SourcePath="..\DesktopEdge\bin\Release\WpfMouseWheelLib.dll" SelfReg="false"/>
+    <ROW File="DnsClient.dll" Component_="DnsClient.dll" FileName="DNSCLI~1.DLL|DnsClient.dll" Attributes="0" SourcePath="..\ZitiUpdateService\bin\Release\DnsClient.dll" SelfReg="false"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.AiPersistentDataComponent">
     <ROW PersistentRow="ZitiUpdateServicelog.config" Type="0" Condition="OLDPRODUCTS"/>
@@ -248,6 +250,7 @@
     <ROW Feature_="MainFeature" Component_="NLog.dll"/>
     <ROW Feature_="MainFeature" Component_="wintun.dll"/>
     <ROW Feature_="MainFeature" Component_="WpfMouseWheelLib.dll"/>
+    <ROW Feature_="MainFeature" Component_="DnsClient.dll"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiIconsComponent">
     <ROW Name="ziti.exe" SourcePath="ziti.ico" Index="0"/>
