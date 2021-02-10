@@ -15,6 +15,10 @@ using ZitiDesktopEdge.DataStructures;
 
 namespace ZitiDesktopEdge.ServiceClient {
     public abstract class AbstractClient {
+        public event EventHandler<object> OnClientConnected = null;
+        public event EventHandler<object> OnClientDisconnected;
+        public event EventHandler<StatusEvent> OnShutdownEvent;
+        public event EventHandler<object> OnReconnectFailure;
 
         protected NamedPipeClientStream pipeClient = null;
         protected NamedPipeClientStream eventClient = null;
@@ -81,6 +85,10 @@ namespace ZitiDesktopEdge.ServiceClient {
             OnShutdownEvent?.Invoke(this, e);
         }
 
+        protected virtual void ReconnectFailureEvent(object e) {
+            OnReconnectFailure?.Invoke(this, e);
+        }
+
         async protected Task sendAsync(object objToSend) {
             bool retried = false;
             while (true) {
@@ -117,10 +125,6 @@ namespace ZitiDesktopEdge.ServiceClient {
                 }
             }
         }
-
-        public event EventHandler<object> OnClientConnected = null;
-        public event EventHandler<object> OnClientDisconnected;
-        public event EventHandler<StatusEvent> OnShutdownEvent;
 
         public bool Reconnecting { get; set; }
         public bool Connected { get; set; }
@@ -162,6 +166,11 @@ namespace ZitiDesktopEdge.ServiceClient {
                             //ClientDisconnected(null);
                         }
                     } catch {
+                        try {
+                            ReconnectFailureEvent("reconnect failure");
+                        } catch {
+
+                        }
                         var now = DateTime.Now;
                         if (now > logAgainAfter) {
                             Logger.Debug("Reconnect failed. Trying again...");
@@ -218,12 +227,12 @@ namespace ZitiDesktopEdge.ServiceClient {
                 return respAsString;
             } catch (IOException ioe) {
                 //almost certainly a problem with the pipe
-                Logger.Debug("io error in read: " + ioe.Message);
+                Logger.Error(ioe, "io error in read: " + ioe.Message);
                 ClientDisconnected(null);
                 throw ioe;
             } catch (Exception ee) {
                 //almost certainly a problem with the pipe
-                Logger.Debug("unexpected error in read: " + ee.Message);
+                Logger.Error(ee, "unexpected error in read: " + ee.Message);
                 ClientDisconnected(null);
                 throw ee;
             }

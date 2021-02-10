@@ -26,6 +26,7 @@ package cziti
 #include "ziti/ziti_log.h"
 
 #include "sdk.h"
+extern void doZitiShutdown(uv_async_t *handle);
 extern void zitiContextEvent(ziti_context nf, int status, void *ctx);
 extern void eventCB(ziti_context ztx, ziti_event_t *event);
 
@@ -34,6 +35,7 @@ extern void shutdown_callback(uv_async_t *handle);
 extern void free_async(uv_handle_t* timer);
 
 extern void c_mapiter(model_map *map);
+int ziti_dump_c_callback(void* _unused, const char *fmt,  ...);
 
 */
 import "C"
@@ -41,6 +43,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
+	"os"
 	"sync"
 	"unsafe"
 )
@@ -208,6 +211,22 @@ func (c *ZIdentity) Controller() string {
 		return C.GoString(C.ziti_get_controller(c.czctx))
 	}
 	return C.GoString(c.Options.controller)
+}
+
+func (zid *ZIdentity) Shutdown() {
+
+	async := (*C.uv_async_t)(C.malloc(C.sizeof_uv_async_t))
+	async.data = unsafe.Pointer(zid.czctx)
+	log.Debugf("setting up call to ziti_shutdown for context %p using uv_async_t", async.data)
+	C.uv_async_init(_impl.libuvCtx.l, async, C.uv_async_cb(C.doZitiShutdown))
+	C.uv_async_send((*C.uv_async_t)(unsafe.Pointer(async)))
+}
+
+//export doZitiShutdown
+func doZitiShutdown(async *C.uv_async_t) {
+	ctx := C.ziti_context(async.data)
+	log.Infof("invoking ziti_shutdown for context %p", &ctx)
+	C.ziti_shutdown(ctx)
 }
 
 var cTunClientCfgName = C.CString("ziti-tunneler-client.v1")
@@ -469,11 +488,30 @@ func log_writer_cb(level C.int, loc C.string, msg C.string, msglen C.int) {
 	}
 }
 
-//export ziti_dump_go
-func ziti_dump_go(msg *C.char){
-	log.Debug(msg)
+//export ziti_dump_go_callback
+func ziti_dump_go_callback(outputPath *C.char, charData *C.char) {
+	f, err := os.OpenFile(C.GoString(outputPath),
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Warnf("unexpect error opening file: %v", err)
+		_ = f.Close()
+		return
+	}
+	_, _ = f.WriteString(C.GoString(charData))
+	_ = f.Close()
 }
 
-func ZitiDump(zid *ZIdentity) {
-	C.ziti_dump(zid.czctx)
+func ZitiDump(zid *ZIdentity, path string) {
+	cpath := C.CString(path)
+	defer C.free(unsafe.Pointer(cpath))
+
+	e := os.Remove(path)
+	if e != nil {
+		//probably did not exist
+		log.Debugf("Could not remove file at: %s", path)
+	} else {
+		log.Debugf("Removed existing ziti_dump file at: %s", path)
+	}
+	C.ziti_dump_go_wrapper(unsafe.Pointer(zid.czctx), cpath)
+	log.Infof("ziti_dump saved to: %s", path)
 }

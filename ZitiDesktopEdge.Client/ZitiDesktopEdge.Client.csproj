@@ -62,6 +62,8 @@
     <Compile Include="ServiceClient\DataClient.cs" />
     <Compile Include="DataStructures\DataStructures.cs" />
     <Compile Include="ServiceClient\MonitorClient.cs" />
+    <Compile Include="Utility\GithubAPI.cs" />
+    <Compile Include="Utility\VersionUtil.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

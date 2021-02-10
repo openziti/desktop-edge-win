@@ -37,7 +37,7 @@
                 </Grid>
                 <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
                 <StackPanel Name="MainItems" Orientation="Vertical" HorizontalAlignment="Stretch">
-                    <local:MenuItem Label="Identities" Icon="/Assets/Images/identities.png" MouseUp="ShowIdentities"></local:MenuItem>
+                    <local:MenuItem x:Name="IdentitiesButton" Label="Identities" Icon="/Assets/Images/identities.png" MouseUp="ShowIdentities"></local:MenuItem>
                     <local:MenuItem HorizontalAlignment="Stretch" Width="Auto" MouseUp="ShowAdvanced" Label="Advanced Settings" Icon="/Assets/Images/advanced.png"></local:MenuItem>
                     <local:MenuItem Label="About" Icon="/Assets/Images/about.png" MouseUp="ShowAbout"></local:MenuItem>
                     <local:MenuItem Label="Feedback" Icon="/Assets/Images/feedback.png" MouseUp="ShowFeedback"></local:MenuItem>
@@ -102,6 +102,9 @@
 
                 <StackPanel Name="AboutItemsArea" Orientation="Vertical" HorizontalAlignment="Stretch" Visibility="Collapsed">
                     <Label Name="VersionInfo" HorizontalAlignment="Center" FontSize="10" Height="50" Padding="0,30,0,0" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
+
+                    <Label Name="VersionOlder" Content=" checking version information " HorizontalAlignment="Center" FontSize="10" Height="50" Padding="0,30,0,0" Foreground="#F4044D" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
+                    <Label Name="VersionNewer" Content="" HorizontalAlignment="Center" FontSize="10" Height="50" Padding="0,30,0,0" Foreground="#0069FF" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                 </StackPanel>
                 <Label Name="MainItemsButton" Margin="0,10,0,0" Foreground="#F4044D" FontWeight="SemiBold" Content="Quit Ziti Desktop Edge" Cursor="Hand" MouseUp="CloseApp" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Center"></Label>
             </StackPanel>

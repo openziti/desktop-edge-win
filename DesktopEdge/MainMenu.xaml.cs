@@ -285,7 +285,6 @@ namespace ZitiDesktopEdge {
 		async private void ShowFeedback(object sender, MouseButtonEventArgs e) {
 			try {
 				MainWindow.ShowLoad("Collecting Information", "Please wait while we run some commands\nand collect some diagnostic information");
-				DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
 				var mailMessage = new MailMessage("help@openziti.org", "help@openziti.org");
 				mailMessage.Subject = "Ziti Support";
 				mailMessage.IsBodyHtml = false;
@@ -296,6 +295,10 @@ namespace ZitiDesktopEdge {
 				mailMessage.Body = sb.ToString();
 
 				string timestamp = DateTime.Now.ToFileTime().ToString();
+
+				var dataClient = (DataClient)Application.Current.Properties["ServiceClient"];
+				await dataClient.zitiDump();
+
 				var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
 				MonitorServiceStatusEvent resp = await monitorClient.CaptureLogsAsync();
 				if (resp == null) {
@@ -448,6 +451,23 @@ namespace ZitiDesktopEdge {
 				item.ToggleSwitch.Enabled = ids[i].IsEnabled;
 				IdListView.Children.Add(item);
 			}
+		}
+
+		public void SetAppUpgradeAvailableText(string msg) {
+			this.Dispatcher.Invoke(() => {
+				VersionOlder.Content = msg;
+				VersionNewer.Content = "";
+				VersionOlder.Visibility = Visibility.Visible;
+				VersionNewer.Visibility = Visibility.Collapsed;
+			});
+		}
+		public void SetAppIsNewer(string msg) {
+			this.Dispatcher.Invoke(() => {
+				VersionNewer.Content = msg;
+				VersionOlder.Content = "";
+				VersionNewer.Visibility = Visibility.Visible;
+				VersionOlder.Visibility = Visibility.Collapsed;
+			});
 		}
 	}
 }

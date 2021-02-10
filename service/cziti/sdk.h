@@ -59,6 +59,8 @@ extern void ziti_pq_mac_go(ziti_context ztx, char *id, ziti_pr_mac_cb response_c
 extern void log_writer_shim_go(int level, const char *loc, const char *msg, size_t msglen);
 
 void log_writer_cb(int level, char *loc, char *msg, int msglen);
+void ziti_dump_go_callback(char *outputPath, char *line);
+void ziti_dump_go_wrapper(void *ctx, char* outputPath);
 bool is_null(void* anything);
 
 struct ziti_context_event* ziti_event_context_event(ziti_event_t *ev);
