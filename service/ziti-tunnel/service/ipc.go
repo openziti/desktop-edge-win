@@ -246,14 +246,14 @@ func (p *Pipes) shutdownConnections() {
 }
 
 func initialize(cLogLevel int) error {
-	assignedIp, tun, err := rts.CreateTun(rts.state.TunIpv4, rts.state.TunIpv4Mask)
+	assignedIp, t, err := rts.CreateTun(rts.state.TunIpv4, rts.state.TunIpv4Mask)
 	if err != nil {
 		return err
 	}
 
 	cziti.DnsInit(rts, rts.state.TunIpv4, rts.state.TunIpv4Mask)
 	cziti.Start(cLogLevel)
-	err = cziti.HookupTun(*tun)
+	err = cziti.HookupTun(*t)
 	if err != nil {
 		log.Panicf("An unrecoverable error has occurred! %v", err)
 	}
@@ -859,6 +859,7 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 
 	resp := dto.Response{Message: "success", Code: SUCCESS, Error: anyErrs, Payload: nil}
 	respond(out, resp)
+	// call shutdown some day id.CId.Shutdown()
 	log.Infof("request to remove identity by fingerprint: %s responded to", fingerprint)
 }
 
