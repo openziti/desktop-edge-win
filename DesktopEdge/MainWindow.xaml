@@ -246,7 +246,7 @@
             </Border>
             <Rectangle Margin="10,10,10,10" RadiusX="10" RadiusY="10" ClipToBounds="True">
                 <Rectangle.Fill>
-                    <SolidColorBrush Color="#fc9814" Opacity="0.97"/>
+                    <SolidColorBrush Color="#FFFFFF" Opacity="0.97"/>
                 </Rectangle.Fill>
             </Rectangle>
             <Grid Margin="30,0,30,0">
@@ -260,7 +260,7 @@
                     <RowDefinition Height="60"></RowDefinition>
                     <RowDefinition Height="*"></RowDefinition>
                 </Grid.RowDefinitions>
-                <Image Source="/Assets/Images/ErrorBlack.png" Grid.Column="0" Width="30" Grid.Row="1" Height="30" Margin="0,0,0,0"></Image>
+                <Image Source="/Assets/Images/WarningRed.png" Grid.Column="0" Width="30" Grid.Row="1" Height="30" Margin="0,0,0,0"></Image>
                 <Label x:Name="Blurb" Content="An Update is available!" MouseUp="BlurbAction" Grid.Column="1" Padding="0,0,0,0" Grid.Row="1" Margin="0,0,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="#000000" FontSize="12" Cursor="Hand" HorizontalAlignment="Center" VerticalAlignment="Center"></Label>
                 <Image Source="/Assets/Images/closeBlack.png" Grid.Column="2" Width="10" Height="10" Grid.Row="1" Margin="0,0,0,0" Cursor="Hand" MouseUp="DoHideBlurb"></Image>
             </Grid> 
