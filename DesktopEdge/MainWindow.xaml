@@ -239,6 +239,11 @@
         <local:IdentityDetails x:Name="IdentityMenu" Visibility="Collapsed"></local:IdentityDetails>
 
         <Grid x:Name="BlurbArea" Visibility="Collapsed" Height="80" Margin="30,100,30,0">
+            <Border Margin="10,10,10,10" BorderBrush="Black" BorderThickness="8" CornerRadius="10">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="20" Direction="1" RenderingBias="Quality" ShadowDepth="1" Opacity="1"/>
+                </Border.Effect>
+            </Border>
             <Rectangle Margin="10,10,10,10" RadiusX="10" RadiusY="10" ClipToBounds="True">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="#FF0047" Opacity="0.9"/>
