@@ -398,5 +398,8 @@
   <ItemGroup>
     <Resource Include="Assets\Images\identities.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Images\Error.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
