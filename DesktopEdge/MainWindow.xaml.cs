@@ -715,7 +715,9 @@ namespace ZitiDesktopEdge {
 					idItem.Identity = id;
 					IdList.Children.Add(idItem);
 				}
-				IdList.Height = (double)(ids.Length * 64);
+				//IdList.Height = ;
+				DoubleAnimation animation = new DoubleAnimation((double)(ids.Length * 64), TimeSpan.FromSeconds(.3));
+				IdList.BeginAnimation(FrameworkElement.HeightProperty, animation);
 				IdListScroller.Visibility = Visibility.Visible;
 				AddIdButton.Visibility = Visibility.Visible;
 				AddIdAreaButton.Visibility = Visibility.Visible;
