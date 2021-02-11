@@ -313,7 +313,7 @@ namespace ZitiDesktopEdge {
 
 		string nextVersionStr  = null;
         private void MonitorClient_OnReconnectFailure(object sender, object e) {
-            if(nextVersionStr == null) {
+            if (nextVersionStr == null) {
 				// check for the current version
 				nextVersionStr = "checking for update";
 				Version nextVersion = VersionUtil.NormalizeVersion(GithubAPI.GetVersion(GithubAPI.GetJson(GithubAPI.ProdUrl)));
@@ -332,7 +332,6 @@ namespace ZitiDesktopEdge {
 					logger.Info("Current version installed: {0} is the same as the latest released version {1}", currentVersion, nextVersion);
 					MainMenu.SetAppUpgradeAvailableText("");
 				}
-
 			}
         }
 
@@ -694,13 +693,12 @@ namespace ZitiDesktopEdge {
 			IdList.MaxHeight = _maxHeight - 520;
 			ZitiIdentity[] ids = identities.OrderBy(i => i.Name.ToLower()).ToArray();
 			MainMenu.SetupIdList(ids);
-			double height = 490 + (ids.Length * 60);
-			if (height > _maxHeight) height = _maxHeight;
-
-			this.Height = height;
-			IdentityMenu.SetHeight(this.Height - 160);
 
 			if (ids.Length>0&&serviceClient.Connected) {
+				double height = 490 + (ids.Length * 60);
+				if (height > _maxHeight) height = _maxHeight;
+				this.Height = height;
+				IdentityMenu.SetHeight(this.Height - 160);
 				MainMenu.IdentitiesButton.Visibility = Visibility.Visible;
 				foreach (var id in ids) {
 					IdentityItem idItem = new IdentityItem();
@@ -722,10 +720,12 @@ namespace ZitiDesktopEdge {
 				AddIdButton.Visibility = Visibility.Visible;
 				AddIdAreaButton.Visibility = Visibility.Visible;
 			} else {
+				this.Height = 490;
 				MainMenu.IdentitiesButton.Visibility = Visibility.Collapsed;
 				IdListScroller.Visibility = Visibility.Collapsed;
 				AddIdButton.Visibility = Visibility.Collapsed;
 				AddIdAreaButton.Visibility = Visibility.Collapsed;
+				Debug.WriteLine("Height: " + this.Height + " " + this.ActualHeight);
 			}
 
 			Placement();
@@ -1002,8 +1002,9 @@ namespace ZitiDesktopEdge {
 			_blurbUrl = url;
 			BlurbArea.Visibility = Visibility.Visible;
 			BlurbArea.Opacity = 0;
+			BlurbArea.Margin = new Thickness(0, 0, 0, 0);
 			DoubleAnimation animation = new DoubleAnimation(1, TimeSpan.FromSeconds(.3));
-			ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(30, 0, 30, 0), TimeSpan.FromSeconds(.3));
+			ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(15, 0, 15, 15), TimeSpan.FromSeconds(.3));
 			BlurbArea.BeginAnimation(Grid.OpacityProperty, animation);
 			BlurbArea.BeginAnimation(Grid.MarginProperty, animateThick);
 		}
@@ -1014,7 +1015,7 @@ namespace ZitiDesktopEdge {
 
 		private void HideBlurb() {
 			DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
-			ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(30, 100, 30, 0), TimeSpan.FromSeconds(.3));
+			ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
 			animation.Completed += HideComplete;
 			BlurbArea.BeginAnimation(Grid.OpacityProperty, animation);
 			BlurbArea.BeginAnimation(Grid.MarginProperty, animateThick);

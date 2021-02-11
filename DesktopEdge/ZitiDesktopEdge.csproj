@@ -401,5 +401,11 @@
   <ItemGroup>
     <Resource Include="Assets\Images\Error.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Images\ErrorBlack.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Images\closeBlack.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
