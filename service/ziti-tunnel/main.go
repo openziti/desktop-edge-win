@@ -20,15 +20,17 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/openziti/desktop-edge-win/service/cziti"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/logging"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
-	"os"
-	"strings"
 
+	commandline "github.com/openziti/desktop-edge-win/service/ziti-tunnel/cmd"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/service"
 	"golang.org/x/sys/windows/svc"
 )
@@ -74,6 +76,7 @@ func main() {
 	elog := logging.Elog
 
 	cmd := strings.ToLower(os.Args[1])
+
 	switch cmd {
 	case "debug":
 		log.Infof("running interactively: %s", version())
@@ -100,6 +103,8 @@ func main() {
 		err = service.ControlService(svc.Continue, svc.Running)
 	case "version":
 		fmt.Println(version())
+	case "list":
+		commandline.Execute()
 	default:
 		usage(fmt.Sprintf("invalid command %s", cmd))
 	}
@@ -115,7 +120,7 @@ func usage(errmsg string) {
 		"%s\n\n"+
 			"usage: %s <command>\n"+
 			"       where <command> is one of\n"+
-			"       install, remove, debug, start, stop, pause or continue.\n",
+			"       install, remove, debug, start, stop, pause, continue or version.\n",
 		errmsg, os.Args[0])
 	os.Exit(2)
 }
