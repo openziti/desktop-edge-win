@@ -30,7 +30,7 @@ var identitiesCmd = &cobra.Command{
 The records will be fetched from ziti-tunnel`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("identities called")
-		service.GetIdentities(true)
+		service.GetIdentities()
 
 	},
 }

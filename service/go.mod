@@ -18,6 +18,7 @@ require (
 	github.com/openziti/sdk-golang v0.15.6
 	github.com/orcaman/concurrent-map v0.0.0-20210106121528-16402b402231 // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
+	github.com/prometheus/common v0.4.0
 	github.com/shirou/gopsutil v3.20.12+incompatible // indirect
 	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/afero v1.5.1 // indirect
