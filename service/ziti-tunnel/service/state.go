@@ -21,6 +21,14 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net"
+	"os"
+	"path"
+	"strings"
+	"time"
+
 	"github.com/openziti/desktop-edge-win/service/cziti"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/constants"
@@ -29,13 +37,6 @@ import (
 	"golang.org/x/sys/windows/registry"
 	"golang.zx2c4.com/wireguard/tun"
 	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
-	"io"
-	"io/ioutil"
-	"net"
-	"os"
-	"path"
-	"strings"
-	"time"
 )
 
 type RuntimeState struct {
@@ -58,7 +59,7 @@ func (t *RuntimeState) SaveState() {
 	_ = os.MkdirAll(config.Path(), 0644)
 
 	log.Debugf("backing up config")
-	backup,err := backupConfig()
+	backup, err := backupConfig()
 	if err != nil {
 		log.Warnf("could not backup config file! %v", err)
 	} else {
@@ -141,16 +142,16 @@ func (t *RuntimeState) ToStatus(onlyInitialized bool) dto.TunnelStatus {
 
 func (t *RuntimeState) ToMetrics() dto.TunnelStatus {
 	clean := dto.TunnelStatus{
-		Identities:     make([]*dto.Identity, len(t.ids)),
+		Identities: make([]*dto.Identity, len(t.ids)),
 	}
 
 	i := 0
 	for _, id := range t.ids {
 		AddMetrics(id)
 		clean.Identities[i] = &dto.Identity{
-			Name:              id.Name,
-			FingerPrint:       id.FingerPrint,
-			Metrics:           id.Metrics,
+			Name:        id.Name,
+			FingerPrint: id.FingerPrint,
+			Metrics:     id.Metrics,
 		}
 		i++
 	}
@@ -160,7 +161,7 @@ func (t *RuntimeState) ToMetrics() dto.TunnelStatus {
 
 func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, *tun.Device, error) {
 	log.Infof("creating TUN device: %s", TunName)
-	tunDevice, err := tun.CreateTUN(TunName, 64*1024 - 1)
+	tunDevice, err := tun.CreateTUN(TunName, 64*1024-1)
 	if err == nil {
 		t.tun = &tunDevice
 		tunName, err2 := tunDevice.Name()
@@ -201,7 +202,7 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, *tun.Device
 		return nil, nil, fmt.Errorf("failed to set IP address to %v: (%v)", ip, err)
 	}
 
-	dnsServers := []net.IP{ ip }
+	dnsServers := []net.IP{ip}
 
 	log.Infof("adding DNS servers to TUN: %s", dnsServers)
 	err = luid.AddDNS(dnsServers)
@@ -217,7 +218,7 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, *tun.Device
 	log.Infof("TUN dns servers set to: %s", dns)
 
 	log.Infof("setting routes for cidr: %s. Next Hop: %s", ipnet.String(), ipnet.IP.String())
-	err = luid.SetRoutes([]*winipcfg.RouteData{{ Destination: *ipnet, NextHop: ipnet.IP, Metric: 0}})
+	err = luid.SetRoutes([]*winipcfg.RouteData{{Destination: *ipnet, NextHop: ipnet.IP, Metric: 0}})
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to SetRoutes: (%v)", err)
 	}
@@ -233,7 +234,7 @@ func (t *RuntimeState) LoadIdentity(id *Id, refreshInterval int) {
 	}
 
 	_, err := os.Stat(id.Path())
-	if err != nil{
+	if err != nil {
 		if os.IsNotExist(err) {
 			//file does not exist. TODO remove this from the list
 		} else {
@@ -244,7 +245,7 @@ func (t *RuntimeState) LoadIdentity(id *Id, refreshInterval int) {
 
 	log.Infof("loading identity %s[%s]", id.Name, id.FingerPrint)
 
-	sc := func(status int){
+	sc := func(status int) {
 		log.Infof("status change! %d", status)
 
 		id.ControllerVersion = id.CId.Version
@@ -267,7 +268,7 @@ func (t *RuntimeState) LoadIdentity(id *Id, refreshInterval int) {
 
 		events.broadcast <- dto.IdentityEvent{
 			ActionEvent: IDENTITY_ADDED,
-			Id: id.Identity,
+			Id:          id.Identity,
 		}
 		log.Infof("connecting identity completed: %s[%s]", id.Name, id.FingerPrint)
 	}
@@ -278,6 +279,7 @@ func (t *RuntimeState) LoadIdentity(id *Id, refreshInterval int) {
 }
 
 func (t *RuntimeState) LoadConfig() {
+	ScanAndCopyFromBackup()
 	err := readConfig(t, config.File())
 	if err != nil {
 		err = readConfig(t, config.BackupFile())
@@ -319,7 +321,7 @@ func (t *RuntimeState) scanForOrphanedIdentities(folder string) {
 				fingerprint := strings.Split(f.Name(), ".")[0]
 				var found *dto.Identity
 				for _, sid := range t.state.Identities {
-					if sid.FingerPrint == fingerprint{
+					if sid.FingerPrint == fingerprint {
 						found = sid
 						break
 					}
@@ -387,11 +389,11 @@ func readConfig(t *RuntimeState, filename string) error {
 	return nil
 }
 
-func (t *RuntimeState) UpdateIpv4Mask(ipv4mask int){
+func (t *RuntimeState) UpdateIpv4Mask(ipv4mask int) {
 	rts.state.TunIpv4Mask = ipv4mask
 	rts.SaveState()
 }
-func (t *RuntimeState) UpdateIpv4(ipv4 string){
+func (t *RuntimeState) UpdateIpv4(ipv4 string) {
 	rts.state.TunIpv4 = ipv4
 	rts.SaveState()
 }
@@ -447,7 +449,7 @@ func (t *RuntimeState) Close() {
 	t.RemoveZitiTun()
 }
 
-func(t *RuntimeState) RemoveZitiTun() {
+func (t *RuntimeState) RemoveZitiTun() {
 	log.Infof("Removing existing interface: %s", TunName)
 	wt, err := tun.WintunPool.OpenAdapter(TunName)
 	if err == nil {
