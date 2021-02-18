@@ -67,7 +67,7 @@ func ensureFolder(path string) error {
 }
 func ScanAndCopyFromBackup() error {
 	srcBackUpPaths := [2]string{"\\Windows.~BT", "\\Windows.old"}
-	sysRoot := os.Getenv("SYSTEMROOT")
+	sysRoot := os.Getenv("SystemDrive")
 	if sysRoot == "" {
 		return nil
 	}
