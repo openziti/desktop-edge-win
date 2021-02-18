@@ -98,20 +98,30 @@ func visit(path string, f os.FileInfo, err error) error {
 	if strings.Contains(path, "config\\systemprofile\\AppData\\Roaming\\NetFoundry") && !f.IsDir() {
 		log.Infof("\nFound: %s\n", path)
 		destinationFile := filepath.Join(Path(), string(os.PathSeparator), f.Name())
+		//check if the file is present in the destination folder
+		_, err := os.Stat(destinationFile)
+		if err == nil && !strings.Contains(f.Name(), "config.json") {
+			fmt.Printf("File %s is already present in the config path and it is not config.json, So not transfering", f.Name())
+			deleteFile(path)
+			return nil
+		}
 		nBytes, err := copy(path, destinationFile)
 		if err != nil {
 			log.Errorf("Error occured while Copying the file %s, %v", f.Name(), err)
 			return err
 		} else {
 			log.Infof("Copied the file %s, %d bytes transfered", f.Name(), nBytes)
-			log.Infof("Removing file %s", path)
-			err := os.Remove(path)
-			if err != nil {
-				log.Warnf("Could not remove file %v", err)
-			}
+			deleteFile(path)
 		}
 	}
 	return nil
+}
+func deleteFile(path string) {
+	fmt.Printf("\nRemoving file %s", path)
+	err := os.Remove(path)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 func copy(src, dst string) (int64, error) {
