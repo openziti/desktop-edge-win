@@ -1,3 +1,8 @@
+# Release 1.7.9
+
+## Bugs fixed:
+* [#310](https://github.com/openziti/desktop-edge-win/pull/310) Restore identities moved by Windows after Windows system update
+
 # Release 1.7.8
 
 ## What's New
