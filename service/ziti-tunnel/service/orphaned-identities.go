@@ -54,10 +54,10 @@ func copyFilesFromBackUp(path string, f os.FileInfo, err error) error {
 			deleteFile(path)
 			return nil
 		}
-		nBytes, err := copy(path, destinationFile)
+		_, err = copy(path, destinationFile)
 		if err != nil {
 			log.Errorf("Error occurred while copying the Windows backup folder %s --> %s %v", f.Name(), destinationFile, err)
-			return err
+			return nil
 		} else {
 			log.Infof("Found backup file at %s. Restored this file to %s", path, destinationFile)
 			deleteFile(path)
