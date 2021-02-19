@@ -49,17 +49,17 @@ func copyFilesFromBackUp(path string, f os.FileInfo, err error) error {
 		destinationFile := filepath.Join(config.Path(), string(os.PathSeparator), f.Name())
 		//check if the file is present in the destination folder
 		_, err := os.Stat(destinationFile)
-		if err == nil && !strings.Contains(f.Name(), ConfigFile) {
-			fmt.Printf("File %s is already present in the config path and it is not config.json, So not transfering", f.Name())
+		if err == nil && !strings.Contains(f.Name(), ConfigFileName) {
+			log.Debugf("File %s is already present in the config path and it is not %s, So not transfering", f.Name(), ConfigFileName)
 			deleteFile(path)
 			return nil
 		}
 		nBytes, err := copy(path, destinationFile)
 		if err != nil {
-			log.Errorf("Error occured while Copying the file %s, %v", f.Name(), err)
+			log.Errorf("Error occurred while copying the Windows backup folder %s --> %s %v", f.Name(), destinationFile, err)
 			return err
 		} else {
-			log.Infof("Copied the file %s, %d bytes transfered", f.Name(), nBytes)
+			log.Infof("Found backup file at %s. Restored this file to %s", path, destinationFile)
 			deleteFile(path)
 		}
 	}
@@ -69,7 +69,7 @@ func deleteFile(path string) {
 	log.Infof("Removing file %s", path)
 	err := os.Remove(path)
 	if err != nil {
-		log.Infof("Error occured while removing the file %s, %v", path, err)
+		log.Errorf("Error occured while removing the file %s, %v", path, err)
 	} else {
 		log.Infof("Removed file %s", path)
 	}

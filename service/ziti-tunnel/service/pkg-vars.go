@@ -94,5 +94,5 @@ const (
 
 	STATUS_ENROLLED = "enrolled"
 
-	ConfigFile = "config.json"
+	ConfigFileName = "config.json"
 )
