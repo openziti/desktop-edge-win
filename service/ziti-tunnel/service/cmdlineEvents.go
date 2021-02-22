@@ -8,5 +8,4 @@ const (
 
 var LIST_IDENTITIES = dto.CommandMsg{
 	Function: IDENTITIES,
-	Payload: map["args"]"all",
 }
