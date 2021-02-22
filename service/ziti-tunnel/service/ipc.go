@@ -450,10 +450,10 @@ func serveIpc(conn net.Conn) {
 				Payload: nil,
 			})
 		case "ListIdentities":
-			log.Debugf("Request received to list identities")
-			payloadStr := cmd.Payload["args"].(string)
-			log.Debugf("Payload %s", payloadStr)
-			respond(enc, GetIdentityFromRTS(payloadStr))
+			log.Debugf("Request to list identities received")
+			cmdArgs := cmd.Payload["args"].(string)
+			log.Debugf("Args %s", cmdArgs)
+			respond(enc, GetIdentityFromRTS(cmdArgs))
 		default:
 			log.Warnf("Unknown operation: %s. Returning error on pipe", cmd.Function)
 			respondWithError(enc, "Something unexpected has happened", UNKNOWN_ERROR, nil)

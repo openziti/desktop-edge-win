@@ -3,14 +3,26 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 )
 
+// GetIdentityFromRTS is to get identities from the RTS
 func GetIdentityFromRTS(args string) dto.Response {
 	message := fmt.Sprintf("Listing Identities - %s", args)
 
-	identities, err := json.Marshal(rts.state.Identities)
+	var filteredIdentities []*dto.Identity
+	if args == "all" {
+		filteredIdentities = rts.state.Identities
+	} else {
+		for _, id := range rts.state.Identities {
+			if strings.Compare(id.Name, args) == 0 {
+				filteredIdentities = append(filteredIdentities, id)
+			}
+		}
+	}
+	identities, err := json.Marshal(filteredIdentities)
 	if err != nil {
 		log.Error(err)
 		return dto.Response{Message: message, Code: ERROR, Error: "Could not fetch Identities from Runtime", Payload: nil}

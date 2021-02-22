@@ -12,20 +12,6 @@ import (
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 )
 
-func connectToIPCPipe() (net.Conn, error) {
-	log.Info("Connecting to pipe")
-	timeout := 2000 * time.Millisecond
-	ipcPipeConn, err := winio.DialPipe(ipcPipeName(), &timeout)
-	defer log.Info("Closing ipc pipe connection")
-	defer closeConn(ipcPipeConn)
-	if err == nil {
-		log.Info("Connected to ipc pipe")
-		return ipcPipeConn, nil
-	}
-	return nil, err
-
-}
-
 func sendMessagetoPipe(ipcPipeConn net.Conn) error {
 	writer := bufio.NewWriter(ipcPipeConn)
 	enc := json.NewEncoder(writer)
@@ -40,7 +26,7 @@ func sendMessagetoPipe(ipcPipeConn net.Conn) error {
 		return err
 	}
 
-	log.Debugf("Message sent to ipc pipe")
+	log.Debug("Message sent to ipc pipe")
 
 	writer.Flush()
 
@@ -67,7 +53,7 @@ func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}) {
 		}
 
 		if responseMsg.Code == SUCCESS {
-			log.Infof("Response message from Command line function : %s", responseMsg.Message)
+			log.Infof(responseMsg.Message)
 			log.Info(responseMsg.Payload)
 		} else {
 			log.Errorf("%s - %s", responseMsg.Message, responseMsg.Error)
@@ -84,10 +70,9 @@ func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}) {
 func GetIdentities() {
 	log.Info("fetching identities through cmdline...")
 
-	log.Info("Connecting to pipe")
+	log.Debug("Connecting to pipe")
 	timeout := 2000 * time.Millisecond
 	ipcPipeConn, err := winio.DialPipe(ipcPipeName(), &timeout)
-	defer log.Info("Closing ipc pipe connection")
 	defer closeConn(ipcPipeConn)
 
 	if err != nil {
@@ -105,7 +90,7 @@ func GetIdentities() {
 		return
 	}
 
-	log.Infof("Connection to ipc pipe is established - %s and remote address %s", ipcPipeConn.LocalAddr().String(), ipcPipeConn.RemoteAddr().String())
+	log.Debugf("Connection to ipc pipe is established - %s and remote address %s", ipcPipeConn.LocalAddr().String(), ipcPipeConn.RemoteAddr().String())
 
 	<-readDone
 	log.Debug("read finished normally")
