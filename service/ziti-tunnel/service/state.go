@@ -279,6 +279,7 @@ func (t *RuntimeState) LoadIdentity(id *Id, refreshInterval int) {
 }
 
 func (t *RuntimeState) LoadConfig() {
+	scanForIdentitiesPostWindowsUpdate()
 	err := readConfig(t, config.File())
 	if err != nil {
 		err = readConfig(t, config.BackupFile())

@@ -18,12 +18,14 @@
 package service
 
 import (
+	"sync"
+	"time"
+
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/logging"
 	"golang.org/x/sys/windows/svc"
-	"sync"
-	"time"
 )
+
 var Version dto.ServiceVersion
 var pipeBase = `\\.\pipe\OpenZiti\ziti\`
 
@@ -42,7 +44,7 @@ var Debug bool
 var TunStarted time.Time
 var log = logging.Logger()
 
-var	events = newTopic(32)
+var events = newTopic(32)
 
 const (
 	API_VERSION = 1
@@ -60,13 +62,13 @@ const (
 	cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown | svc.AcceptPauseAndContinue
 
 	InformationEvent = 0 //1
-	ContinueEvent = 0 //2
-	PauseEvent = 0 //3
-	InstallEvent = 0 //4
+	ContinueEvent    = 0 //2
+	PauseEvent       = 0 //3
+	InstallEvent     = 0 //4
 	InterrogateEvent = 0 //5
-	StopEvent = 0 //6
-	ShutdownEvent = 0 //7
-	ErrorEvent = 0 //1000
+	StopEvent        = 0 //6
+	ShutdownEvent    = 0 //7
+	ErrorEvent       = 0 //1000
 
 	// This is the name you will use for the NET START command
 	SvcStartName = "ziti"
@@ -88,7 +90,9 @@ const (
 	LocalService              = "(A;;FA;;;LS)"
 
 	NF_GROUP_NAME = "NetFoundry Tunneler Users"
-	TunName = "ZitiTUN"
+	TunName       = "ZitiTUN"
 
 	STATUS_ENROLLED = "enrolled"
+
+	ConfigFileName = "config.json"
 )
