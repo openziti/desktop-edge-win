@@ -453,7 +453,8 @@ func serveIpc(conn net.Conn) {
 			log.Debugf("Request received to list identities")
 			payloadStr := cmd.Payload["args"].(string)
 			log.Debugf("Payload %s", payloadStr)
-			respond(enc, dto.Response{Message: "Tunnel received list message from IPC pipe", Code: SUCCESS, Error: "", Payload: rts.state.Identities})
+			message := fmt.Sprintf("Listing Identities - %s", payloadStr)
+			respond(enc, dto.Response{Message: message, Code: SUCCESS, Error: "", Payload: rts.state.Identities})
 		default:
 			log.Warnf("Unknown operation: %s. Returning error on pipe", cmd.Function)
 			respondWithError(enc, "Something unexpected has happened", UNKNOWN_ERROR, nil)
