@@ -16,8 +16,6 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +26,7 @@ var listCmd = &cobra.Command{
 	Long: `View the records that this user has access to.
 For example identities, services etc`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("list called")
+		checkHelp()
 	},
 }
 
@@ -39,7 +37,7 @@ func init() {
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	//listCmd.PersistentFlags().String("help", "", "Supported subcmds are identities and services")
+	// listCmd.PersistentFlags().String("help", "", "Supported subcmds are identities and services")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:

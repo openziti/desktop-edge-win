@@ -16,8 +16,6 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/service"
 	"github.com/spf13/cobra"
 )
@@ -29,8 +27,7 @@ var identitiesCmd = &cobra.Command{
 	Long: `View the identities that this user has access to.
 The records will be fetched from ziti-tunnel`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("identities called")
-		service.GetIdentities()
+		service.GetIdentities(args)
 
 	},
 }

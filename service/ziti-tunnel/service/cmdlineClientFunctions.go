@@ -12,12 +12,15 @@ import (
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 )
 
-func sendMessagetoPipe(ipcPipeConn net.Conn) error {
+func sendMessagetoPipe(ipcPipeConn net.Conn, args []string) error {
 	writer := bufio.NewWriter(ipcPipeConn)
 	enc := json.NewEncoder(writer)
 
+	if len(args) == 0 {
+		args = append(args, "all")
+	}
 	var payload = map[string]interface{}{
-		"args": "all",
+		"args": args,
 	}
 	LIST_IDENTITIES.Payload = payload
 	err := enc.Encode(LIST_IDENTITIES)
@@ -67,8 +70,8 @@ func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}) {
 }
 
 //GetIdentities is to fetch identities through cmdline
-func GetIdentities() {
-	log.Info("fetching identities through cmdline...")
+func GetIdentities(args []string) {
+	log.Infof("fetching identities through cmdline...%s", args)
 
 	log.Debug("Connecting to pipe")
 	timeout := 2000 * time.Millisecond
@@ -84,7 +87,7 @@ func GetIdentities() {
 
 	go readMessageFromPipe(ipcPipeConn, readDone)
 
-	err = sendMessagetoPipe(ipcPipeConn)
+	err = sendMessagetoPipe(ipcPipeConn, args)
 	if err != nil {
 		log.Errorf("Message is not sent to ipc pipe, %v", err)
 		return

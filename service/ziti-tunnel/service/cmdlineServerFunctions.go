@@ -9,18 +9,26 @@ import (
 )
 
 // GetIdentityFromRTS is to get identities from the RTS
-func GetIdentityFromRTS(args string) dto.Response {
+func GetIdentityFromRTS(args []string) dto.Response {
 	message := fmt.Sprintf("Listing Identities - %s", args)
 
-	var filteredIdentities []*dto.Identity
-	if args == "all" {
-		filteredIdentities = rts.state.Identities
-	} else {
-		for _, id := range rts.state.Identities {
-			if strings.Compare(id.Name, args) == 0 {
-				filteredIdentities = append(filteredIdentities, id)
+	filteredIdentities := []*dto.Identity{}
+
+	for _, val := range args {
+		if val == "all" {
+			filteredIdentities = rts.state.Identities
+			break
+		} else {
+			for _, id := range rts.state.Identities {
+				if strings.Compare(id.Name, val) == 0 {
+					filteredIdentities = append(filteredIdentities, id)
+				}
 			}
 		}
+	}
+	if len(filteredIdentities) == 0 {
+		errMsg := fmt.Sprintf("Could not find Identities matching %s", args)
+		return dto.Response{Message: message, Code: ERROR, Error: errMsg, Payload: nil}
 	}
 	identities, err := json.Marshal(filteredIdentities)
 	if err != nil {
