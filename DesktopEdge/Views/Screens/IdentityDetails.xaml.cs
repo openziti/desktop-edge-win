@@ -221,7 +221,7 @@ namespace ZitiDesktopEdge {
 
 		private void DoFilter(string filter) {
 			this.filter = filter;
-			UpdateView();
+			if (this._identity!=null) UpdateView();
 		}
 	}
 }

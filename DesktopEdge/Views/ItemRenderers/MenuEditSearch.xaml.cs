@@ -60,5 +60,11 @@ namespace ZitiDesktopEdge {
 			ClearButton.Content = "search";
 			Filter(MainEdit.Text);
 		}
+
+		public void Clear() {
+			MainEdit.Text = "";
+			ClearButton.Content = "search";
+			Filter(MainEdit.Text);
+		}
 	}
 }

@@ -49,7 +49,7 @@
                         <RowDefinition Height="0"></RowDefinition>
                     </Grid.RowDefinitions>
                     <local:MenuEditItem x:Name="IdentityName" Grid.Column="0" Grid.Row="0" HorizontalAlignment="Stretch" Label="Name" IsLocked="True"></local:MenuEditItem>
-                    <local:MenuEditToggle x:Name="IdentityMFA" Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" Label="Multi Factor Auth"></local:MenuEditToggle>
+                    <local:MenuEditToggle x:Name="IdentityMFA" Visibility="Collapsed" Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" Label="Multi Factor Auth"></local:MenuEditToggle>
                     <local:MenuEditItem x:Name="IdentityNetwork" Grid.Column="0" Grid.Row="2" HorizontalAlignment="Stretch" Label="Network" IsLocked="True"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="IdentityStatus" Grid.Column="0" Grid.Row="3" HorizontalAlignment="Stretch" Label="Status" IsLocked="True"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="IdentityEnrollment" Grid.Column="0" Grid.Row="4" HorizontalAlignment="Stretch" Label="Enrollment Status" IsLocked="True"></local:MenuEditItem>
