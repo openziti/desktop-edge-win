@@ -56,7 +56,7 @@
                     <local:MenuEditSearch x:Name="ServiceTitle" Grid.Column="0" Grid.Row="5" HorizontalAlignment="Stretch" Filter="DoFilter"></local:MenuEditSearch>
                     <Grid Name="MainDetailScroll" Grid.Column="0" MaxHeight="160" Grid.Row="6" Margin="-8,0,-8,0">
                         <Rectangle Margin="10,10,10,10" Fill="#070826" RadiusY="10" RadiusX="10"></Rectangle>
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="True" Margin="16,16,8,16">
+                        <ScrollViewer VerticalScrollBarVisibility="Visible" CanContentScroll="True" Margin="16,16,8,16">
                             <StackPanel Name="ServiceList" Orientation="Vertical"></StackPanel>
                         </ScrollViewer>
                     </Grid>
@@ -83,15 +83,15 @@
             </Rectangle>
             <StackPanel Grid.Column="0" Orientation="Vertical" Margin="30,30,30,30" VerticalAlignment="Center" ClipToBounds="True">
                 <TextBox Height="20" Text="Name" Background="Transparent" FontWeight="Bold" IsReadOnly="True" HorizontalAlignment="Stretch" BorderThickness="0" ClipToBounds="True" VerticalAlignment="Center" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBox>
-                <TextBox x:Name="DetailName" MaxWidth="340" Grid.Row="0" Background="Transparent" IsReadOnly="True" HorizontalAlignment="Stretch" Height="20" BorderThickness="0" TextAlignment="Left" Padding="0,0,0,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
+                <TextBox x:Name="DetailName" MaxWidth="300" Grid.Row="0" Background="Transparent" IsReadOnly="True" HorizontalAlignment="Stretch" Height="20" BorderThickness="0" TextAlignment="Left" Padding="0,0,0,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
                 <TextBox Height="20" Text="Url" Background="Transparent" FontWeight="Bold" IsReadOnly="True" HorizontalAlignment="Stretch" BorderThickness="0" ClipToBounds="True" VerticalAlignment="Center" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBox>
                 <TextBox Grid.Column="0" x:Name="DetailUrl" MaxWidth="300" Background="Transparent" ClipToBounds="True" IsReadOnly="True" HorizontalAlignment="Stretch" Height="20" BorderThickness="0" TextAlignment="Left" Padding="0,0,0,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
                 <TextBox Height="20" Text="Addresses" Background="Transparent" FontWeight="Bold" IsReadOnly="True" HorizontalAlignment="Stretch" BorderThickness="0" ClipToBounds="True" VerticalAlignment="Center" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBox>
-                <TextBox x:Name="DetailAddress" MaxWidth="340" Background="Transparent" IsReadOnly="True" HorizontalAlignment="Stretch" Height="20" BorderThickness="0" TextAlignment="Left" Padding="0,0,0,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
+                <TextBox x:Name="DetailAddress" MaxWidth="300" Background="Transparent" IsReadOnly="True" HorizontalAlignment="Stretch" Height="20" BorderThickness="0" TextAlignment="Left" Padding="0,0,0,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
                 <TextBox Height="20" Text="Ports" Background="Transparent" FontWeight="Bold" IsReadOnly="True" HorizontalAlignment="Stretch" BorderThickness="0" ClipToBounds="True" VerticalAlignment="Center" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBox>
-                <TextBox x:Name="DetailPorts" MaxWidth="340" Background="Transparent" IsReadOnly="True" HorizontalAlignment="Stretch" Height="20" BorderThickness="0" TextAlignment="Left" Padding="0,0,0,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
+                <TextBox x:Name="DetailPorts" MaxWidth="300" Background="Transparent" IsReadOnly="True" HorizontalAlignment="Stretch" Height="20" BorderThickness="0" TextAlignment="Left" Padding="0,0,0,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
                 <TextBox Height="20" Text="Protocols" Background="Transparent" FontWeight="Bold" IsReadOnly="True" HorizontalAlignment="Stretch" BorderThickness="0" ClipToBounds="True" VerticalAlignment="Center" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBox>
-                <TextBox x:Name="DetailProtocols" MaxWidth="340" Background="Transparent" IsReadOnly="True" HorizontalAlignment="Stretch" Height="20" BorderThickness="0" TextAlignment="Left" Padding="0,0,0,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
+                <TextBox x:Name="DetailProtocols" MaxWidth="300" Background="Transparent" IsReadOnly="True" HorizontalAlignment="Stretch" Height="20" BorderThickness="0" TextAlignment="Left" Padding="0,0,0,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
             </StackPanel>
             <Image Source="/Assets/Images/closeBlack.png" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,40,40,0" Width="10" Height="10" Cursor="Hand" MouseUp="Image_MouseUp"></Image>
         </Grid>

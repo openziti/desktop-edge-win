@@ -104,16 +104,13 @@ namespace ZitiDesktopEdge {
 				MainDetailScroll.Height = newHeight;
 				MainDetailScroll.Visibility = Visibility.Visible;
 				ServiceTitle.Label = _identity.Services.Count + " Services";
-				ServiceTitle.MainEdit.Text = "";
 				ServiceTitle.MainEdit.Visibility = Visibility.Visible;
-				ServiceTitle.ClearButton.Visibility = Visibility.Collapsed;
 			} else {
 				ServiceRow.Height = new GridLength((double)0.0);
 				MainDetailScroll.Visibility = Visibility.Collapsed;
 				ServiceTitle.Label = "No Services";
 				ServiceTitle.MainEdit.Text = "";
 				ServiceTitle.MainEdit.Visibility = Visibility.Collapsed;
-				ServiceTitle.ClearButton.Visibility = Visibility.Collapsed;
 			}
 			ConfirmView.Visibility = Visibility.Collapsed;
 		}

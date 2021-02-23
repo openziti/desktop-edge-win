@@ -18,14 +18,14 @@
                 <ColumnDefinition Width="1*"/>
             </Grid.ColumnDefinitions>
             <TextBox Name="MainLabel" Background="White" Height="30" FontWeight="Bold" IsReadOnly="True" HorizontalAlignment="Stretch" BorderThickness="0" ClipToBounds="True" Grid.Column="0" VerticalAlignment="Center" Padding="0,6,3,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBox>
-            <TextBox Name="MainEdit" Background="White" HorizontalAlignment="Stretch" Height="30" Grid.Column="1" BorderThickness="1" TextAlignment="Left" Margin="5,0,0,0" Padding="5,3,3,5" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" VerticalContentAlignment="Center" SpellCheck.IsEnabled="True" MaxLength="100" KeyUp="MainEdit_KeyUp">
+            <TextBox Name="MainEdit" Background="White" HorizontalAlignment="Stretch" Height="30" Grid.Column="1" BorderThickness="1" TextAlignment="Left" Margin="30,0,0,0" Padding="5,3,3,5" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" VerticalContentAlignment="Center" SpellCheck.IsEnabled="True" MaxLength="100" KeyUp="MainEdit_KeyUp">
                 <TextBox.Resources>
                     <Style TargetType="{x:Type Border}">
                         <Setter Property="CornerRadius" Value="10"/>
                     </Style>
                 </TextBox.Resources>
             </TextBox>
-            <Label x:Name="ClearButton" Grid.Column="1" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Visibility="Collapsed" Margin="0,2,2,0" Foreground="LightGray" Content="clear" HorizontalAlignment="Right" Cursor="Hand" MouseUp="Label_MouseUp"></Label>
+            <Label x:Name="ClearButton" Grid.Column="1" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Margin="0,2,2,0" Foreground="LightGray" Content="search" HorizontalAlignment="Right" Cursor="Hand" MouseUp="Label_MouseUp"></Label>
         </Grid>
     </StackPanel>
 </UserControl>

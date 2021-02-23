@@ -48,16 +48,16 @@ namespace ZitiDesktopEdge {
 
 		private void MainEdit_KeyUp(object sender, KeyEventArgs e) {
 			if (MainEdit.Text.Trim().Length>0) {
-				ClearButton.Visibility = Visibility.Visible;
+				ClearButton.Content = "clear";
 			} else {
-				ClearButton.Visibility = Visibility.Collapsed;
+				ClearButton.Content = "search";
 			}
 			Filter(MainEdit.Text);
 		}
 
 		private void Label_MouseUp(object sender, MouseButtonEventArgs e) {
 			MainEdit.Text = "";
-			ClearButton.Visibility = Visibility.Collapsed;
+			ClearButton.Content = "search";
 			Filter(MainEdit.Text);
 		}
 	}
