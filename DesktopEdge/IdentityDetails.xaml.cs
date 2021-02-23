@@ -88,11 +88,11 @@ namespace ZitiDesktopEdge {
 				Filter.Visibility = Visibility.Visible;
 				FilterLabel.Visibility = Visibility.Visible;
 				foreach(var zitiSvc in _identity.Services.OrderBy(s => s.Name.ToLower())) {
-					if (zitiSvc.Name.ToLower().IndexOf(filter)>=0||zitiSvc.Url.ToLower().IndexOf(filter)>=0) {
+					if (zitiSvc.Name.ToLower().IndexOf(filter)>=0||zitiSvc.ToString().ToLower().IndexOf(filter)>=0) {
 						Logger.Debug("painting: " + zitiSvc.Name);
 						ServiceInfo editor = new ServiceInfo();
 						editor.Label = zitiSvc.Name;
-						editor.Value = zitiSvc.Url;
+						editor.Value = zitiSvc.ToString();
 						editor.Warning = zitiSvc.Warning;
 						editor.IsLocked = true;
 						ServiceList.Children.Add(editor);

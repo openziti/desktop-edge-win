@@ -63,7 +63,6 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	cziti.ResetDNS()
 
 	rts.LoadConfig()
-	defer rts.Close()
 	l := rts.state.LogLevel
 	parsedLevel, cLogLevel := logging.ParseLevel(l)
 
@@ -110,6 +109,16 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	initialized <- struct{}{}
 
 	waitForStopRequest(ops)
+
+	log.Debug("shutting down. start a ZitiDump")
+	for _, id := range rts.ids {
+		if id.CId != nil {
+			sb := strings.Builder{}
+			cziti.ZitiDumpOnShutdown(id.CId, &sb)
+			log.Infof("working around the c sdk's limitation of embedding newlines on calling ziti_shutdown\n %s", sb.String())
+		}
+	}
+	log.Debug("shutting down. ZitiDump complete")
 
 	requestShutdown("service shutdown")
 
@@ -781,15 +790,12 @@ func connectIdentity(id *Id) {
 		log.Debugf("%s[%s] is already loaded", id.Name, id.FingerPrint)
 
 		id.CId.Services.Range(func(key interface{}, value interface{}) bool {
-			val := value.(cziti.ZService)
-			ip := cziti.DNSMgr.ReturnToDns(val.InterceptHost)
-			cziti.AddIntercept(val.Id, val.Name, ip.String(), int(val.InterceptPort), id.CId.UnsafePointer())
 			id.Services = append(id.Services, nil)
 			return true
 		})
 
 		events.broadcast <- dto.IdentityEvent{
-			ActionEvent: IDENTITY_ADDED,
+			ActionEvent: dto.IDENTITY_ADDED,
 			Id: id.Identity,
 		}
 		log.Infof("connecting identity completed: %s[%s]", id.Name, id.FingerPrint)
@@ -806,19 +812,15 @@ func disconnectIdentity(id *Id) error {
 			log.Debugf("ranging over services all services to remove intercept and deregister the service")
 
 			id.CId.Services.Range(func(key interface{}, value interface{}) bool {
-				val := value.(cziti.ZService)
+				val := value.(*cziti.ZService)
 				var wg sync.WaitGroup
 				wg.Add(1)
 				rwg := &cziti.RemoveWG{
-					SvcId: val.Id,
 					Wg:    &wg,
+					Czsvc: val,
 				}
 				cziti.RemoveIntercept(rwg)
 				wg.Wait()
-				ok := cziti.DNSMgr.UnregisterService(val.InterceptHost, val.InterceptPort)
-				if !ok {
-					log.Warnf("unregister service from disconnectIdentity was not ok? %s:%d", val.InterceptHost, val.InterceptPort)
-				}
 				return true
 			})
 			log.Infof("disconnecting identity complete: %s", id.Name)
@@ -894,37 +896,11 @@ func acceptServices() {
 		select {
 		case <-shutdown:
 			return
-		case c := <-cziti.ServiceChanges:
-			log.Debugf("processing service change event. id:%s name:%s", c.Service.Id, c.Service.Name)
-			s := dto.Service{
-				Name:          c.Service.Name,
-				InterceptHost: c.Service.InterceptHost,
-				InterceptPort: c.Service.InterceptPort,
-				Id:            c.Service.Id,
-				AssignedIP:    c.Service.AssignedIP,
-				OwnsIntercept: c.Service.OwnsIntercept,
-				Owner: dto.ServiceOwner{
-					Network:   "",
-					ServiceId: "",
-				},
-			}
-			var action dto.ActionEvent
-			switch c.Operation {
-			case cziti.ADDED:
-				action = SERVICE_ADDED
-			case cziti.REMOVED:
-				action = SERVICE_REMOVED
-			default:
-				log.Warnf("service event was processed but unknown operation: %s", c.Operation)
-				continue
-			}
-
-			events.broadcast <- dto.ServiceEvent{
-				ActionEvent: action,
-				Fingerprint: c.ZitiContext.Fingerprint,
-				Service:     s,
-			}
-			log.Debugf("dispatched %s service change event", c.Operation)
+		case serviceChange := <-cziti.ServiceChanges:
+			log.Debugf("processing service change event. id:%s name:%s", serviceChange.Service.Id, serviceChange.Service.Name)
+			change := dto.ServiceEvent(serviceChange)
+			events.broadcast <- change
+			log.Debugf("dispatched %s service change event", serviceChange.Op)
 		}
 	}
 }
@@ -952,7 +928,6 @@ func handleEvents(isInitialized chan struct{}){
 	}
 }
 
-
 //Removes the Config from the provided identity and returns a 'cleaned' id
 func Clean(src *Id) dto.Identity {
 	log.Tracef("cleaning identity: %s", src.Name)
@@ -972,8 +947,8 @@ func Clean(src *Id) dto.Identity {
 	if src.CId != nil {
 		src.CId.Services.Range(func(key interface{}, value interface{}) bool {
 			//string, ZService
-			val := value.(cziti.ZService)
-			nid.Services = append(nid.Services, svcToDto(val))
+			val := value.(*cziti.ZService)
+			nid.Services = append(nid.Services, /*svcToDto(val)*/val.Service)
 			return true
 		})
 	}
@@ -997,16 +972,13 @@ func AddMetrics(id *Id) {
 func svcToDto(src cziti.ZService) *dto.Service {
 	dest := &dto.Service{
 		Name:          src.Name,
-		AssignedIP:    src.AssignedIP,
-		InterceptHost: src.InterceptHost,
-		InterceptPort: src.InterceptPort,
 		Id:            src.Id,
-		OwnsIntercept: src.OwnsIntercept,
-		Owner: dto.ServiceOwner{
-			Network:   "",
-			ServiceId: "",
-		},
+		OwnsIntercept: false,
 	}
-
+	if src.Service != nil {
+		dest.Protocols = src.Service.Protocols
+		dest.Addresses = src.Service.Addresses
+		dest.Ports = src.Service.Ports
+	}
 	return dest
 }

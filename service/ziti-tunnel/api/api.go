@@ -81,22 +81,3 @@ type ZitiService interface {
 	IsIp()
 	OwnsIntercept()
 }
-
-type ZitiId struct {
-	IdName        string
-	Fingerprint   string
-	ControllerUrl string
-	Active        bool
-	IdVersion     string
-	Services      sync.Map //string, ZService
-	CZitiId 	  interface{}
-}
-type Intercept struct {
-	Host string
-	Ip   string
-}
-type ZitiSvc struct {
-	ActualIntercept Intercept
-	WantedIntercept Intercept
-	OwnsIntercept	bool
-}

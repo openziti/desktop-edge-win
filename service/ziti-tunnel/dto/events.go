@@ -14,9 +14,7 @@
  * limitations under the License.
  *
  */
-package service
-
-import "github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
+package dto
 
 const (
 	ADDED = "added"
@@ -25,20 +23,20 @@ const (
 	IDENTITY_OP = "identity"
 )
 
-var SERVICE_ADDED = dto.ActionEvent{
-	StatusEvent: dto.StatusEvent{Op: SERVICE_OP},
+var SERVICE_ADDED = ActionEvent{
+	StatusEvent: StatusEvent{Op: SERVICE_OP},
 	Action:      ADDED,
 }
-var SERVICE_REMOVED = dto.ActionEvent{
-	StatusEvent: dto.StatusEvent{Op: SERVICE_OP},
+var SERVICE_REMOVED = ActionEvent{
+	StatusEvent: StatusEvent{Op: SERVICE_OP},
 	Action:      REMOVED,
 }
 
-var IDENTITY_ADDED = dto.ActionEvent{
-	StatusEvent: dto.StatusEvent{Op: IDENTITY_OP},
+var IDENTITY_ADDED = ActionEvent{
+	StatusEvent: StatusEvent{Op: IDENTITY_OP},
 	Action:      ADDED,
 }
-var IDENTITY_REMOVED = dto.ActionEvent{
-	StatusEvent: dto.StatusEvent{Op: IDENTITY_OP},
+var IDENTITY_REMOVED = ActionEvent{
+	StatusEvent: StatusEvent{Op: IDENTITY_OP},
 	Action:      REMOVED,
 }

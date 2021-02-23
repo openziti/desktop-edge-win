@@ -22,7 +22,8 @@ package cziti
 
 #include <ziti/ziti.h>
 #include <ziti/ziti_events.h>
-#include "ziti/ziti_tunnel.h"
+#include <ziti/ziti_tunnel.h>
+#include <ziti/ziti_tunnel_cbs.h>
 #include "ziti/ziti_log.h"
 
 #include "sdk.h"
@@ -30,39 +31,38 @@ extern void doZitiShutdown(uv_async_t *handle);
 extern void zitiContextEvent(ziti_context nf, int status, void *ctx);
 extern void eventCB(ziti_context ztx, ziti_event_t *event);
 
-extern void serviceCB(ziti_context nf, ziti_service*, int status, void *ctx);
 extern void shutdown_callback(uv_async_t *handle);
 extern void free_async(uv_handle_t* timer);
 
 extern void c_mapiter(model_map *map);
-int ziti_dump_c_callback(void* _unused, const char *fmt,  ...);
+extern void ziti_dump_to_file(void *ctx, char* outputPath);
+extern int ziti_dump_to_log(void *ctx, void* stringsBuilder);
+extern void* stailq_first_forgo(void* entries);
+
+extern protocol_t* stailq_first_protocol(tunneled_service_t* ts);
+extern address_t* stailq_first_address(tunneled_service_t* ts);
+extern port_range_t* stailq_first_port_range(tunneled_service_t* ts);
+
+extern protocol_t* stailq_next_protocol(protocol_t* cur);
+extern address_t* stailq_next_address(address_t* cur);
+extern port_range_t* stailq_next_port_range(port_range_t* cur);
 
 */
 import "C"
 import (
-	"encoding/json"
 	"errors"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"os"
+	"strings"
 	"sync"
 	"unsafe"
 )
 
-const (
-	ADDED = "added"
-	REMOVED = "removed"
-)
-
 var Version dto.ServiceVersion
-var ServiceChanges = make(chan ServiceChange, 256)
+var ServiceChanges = make(chan dto.ServiceEvent, 256)
 
 type sdk struct {
 	libuvCtx *C.libuv_ctx
-}
-type ServiceChange struct {
-	Operation   string
-	Service     *ZService
-	ZitiContext *ZIdentity
 }
 
 var _impl sdk
@@ -93,14 +93,10 @@ func (inst *sdk) run(loglevel int) {
 }
 
 type ZService struct {
-	Name           string
-	Id             string
-	InterceptHost  string
-	InterceptPort  uint16
-	AssignedIP     string
-	OwnsIntercept  bool
-	OwnerNetwork   string
-	OwnerServiceId string
+	Name    string
+	Id      string
+	Service *dto.Service
+	Czctx   C.ziti_context
 }
 
 type ZIdentity struct {
@@ -213,10 +209,9 @@ func (c *ZIdentity) Controller() string {
 	return C.GoString(c.Options.controller)
 }
 
-func (zid *ZIdentity) Shutdown() {
-
+func (c *ZIdentity) Shutdown() {
 	async := (*C.uv_async_t)(C.malloc(C.sizeof_uv_async_t))
-	async.data = unsafe.Pointer(zid.czctx)
+	async.data = unsafe.Pointer(c.czctx)
 	log.Debugf("setting up call to ziti_shutdown for context %p using uv_async_t", async.data)
 	C.uv_async_init(_impl.libuvCtx.l, async, C.uv_async_cb(C.doZitiShutdown))
 	C.uv_async_send((*C.uv_async_t)(unsafe.Pointer(async)))
@@ -229,109 +224,68 @@ func doZitiShutdown(async *C.uv_async_t) {
 	C.ziti_shutdown(ctx)
 }
 
-var cTunClientCfgName = C.CString("ziti-tunneler-client.v1")
-var cTunServerCfgName = C.CString("ziti-tunneler-server.v1")
-
-//export serviceCB
-func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx unsafe.Pointer) {
-	isCnull := tnlr_ctx == C.NULL
-	isNil := tnlr_ctx == nil
-	if isCnull || isNil {
-		log.Errorf("in serviceCB with null tnlr_ctx??? ")
-		return
-	}
-	zid := (*ZIdentity)(tnlr_ctx)
-
+func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, zid *ZIdentity) {
 	name := C.GoString(service.name)
 	svcId := C.GoString(service.id)
 	log.Debugf("============ INSIDE serviceCB - status: %s:%s - %v, %v ============", name, svcId, status, service.perm_flags)
 	if status == C.ZITI_SERVICE_UNAVAILABLE {
 		serviceUnavailable(zid, svcId, name)
 	} else if status == C.ZITI_OK {
-		//first thing's first - determine if the service is already in this runtime
-		//if it is that means this is 'probably' a config change. to make it easy
-		//just dereg/disconnect the service and then let the rest of this code execute
-		found, ok := zid.Services.Load(svcId)
-		if ok && found != nil {
-			log.Infof("service with id: %s, name: %s exists. updating service.", svcId, name)
-			fs := found.(ZService)
-			ok := DNSMgr.UnregisterService(fs.InterceptHost, fs.InterceptPort)
-			zid.Services.Delete(svcId)
-			if !ok {
-				log.Warnf("unregister service from serviceCB was not ok? %s:%d", fs.InterceptHost, fs.InterceptPort)
-			}
-		} else {
-			log.Debugf("new service with id: %s, name: %s in context %d", svcId, name, &zid)
+		ts := C.ziti_sdk_c_on_service(ziti_ctx, service, status, unsafe.Pointer(theTun.tunCtx))
+
+		protocols := getTunneledServiceProtocols(ts)
+		addresses := getTunneledServiceAddresses(ts)
+		portRanges := getTunneledServicePortRanges(ts)
+		log.Warnf("service: %s, id: %s, portocols:%s, addresses:%v, portRanges: %v", name, svcId, protocols, addresses, portRanges)
+
+
+		svc := &dto.Service{
+			Name:          name,
+			Id:            svcId,
+			Protocols:     protocols,
+			Addresses:     addresses,
+			Ports:         portRanges,
+			OwnsIntercept: true,
 		}
 
-		if C.ZITI_CAN_BIND == ( service.perm_flags & C.ZITI_CAN_BIND ) {
-			var v1Config C.ziti_server_cfg_v1
-			r := C.ziti_service_get_config(service, cTunServerCfgName, unsafe.Pointer(&v1Config), (*[0]byte)(C.parse_ziti_server_cfg_v1))
-			if r == 0 {
-				C.ziti_tunneler_host_v1(C.tunneler_context(theTun.tunCtx), unsafe.Pointer(zid.czctx), service.name, v1Config.protocol, v1Config.hostname, v1Config.port)
-				C.free_ziti_server_cfg_v1(&v1Config)
-			} else {
-				log.Infof("service is bindable but doesn't have config? %s. flags: %v.", name, service.perm_flags)
-			}
+		added := ZService{
+			Name:    name,
+			Id:      svcId,
+			Service: svc,
+			Czctx: ziti_ctx,
 		}
 
-		cfg := C.ziti_service_get_raw_config(service, cTunClientCfgName)
-
-		host := ""
-		port := -1
-		if cfg != nil {
-			var c map[string]interface{}
-
-			if err := json.Unmarshal([]byte(C.GoString(cfg)), &c); err == nil {
-				host = c["hostname"].(string)
-				port = int(c["port"].(float64))
-			}
+		se := dto.ServiceEvent{
+			ActionEvent: dto.SERVICE_ADDED,
+			Fingerprint: zid.Fingerprint,
+			Service: svc,
 		}
 
-		if host != "" && port != -1 {
-			ip, ownsIntercept, err := DNSMgr.RegisterService(svcId, host, uint16(port), zid, name)
-			if err != nil {
-				log.Warn(err)
-				log.Infof("service intercept beginning for service: %s@%s:%d on ip %s", name, host, port, ip.String())
-				AddIntercept(svcId, name, ip.String(), port, unsafe.Pointer(zid.czctx))
-			} else {
-				log.Infof("service intercept beginning for service: %s@%s:%d on ip %s", name, host, port, ip.String())
-				AddIntercept(svcId, name, ip.String(), port, unsafe.Pointer(zid.czctx))
-			}
-			added := ZService{
-				Name:          name,
-				Id:            svcId,
-				InterceptHost: host,
-				InterceptPort: uint16(port),
-				AssignedIP:    ip.String(),
-				OwnsIntercept: ownsIntercept,
-			}
-			zid.Services.Store(svcId, added)
-			ServiceChanges <- ServiceChange{
-				Operation:   ADDED,
-				Service:     &added,
-				ZitiContext: zid,
-			}
-		} else {
-			log.Debugf("service named %s is not enabled for 'tunneling'. host:%s port:%d", name, host, port)
-		}
+		zid.Services.Store(svcId, &added)
+		ServiceChanges <- se
 	}
 }
 
 func serviceUnavailable(ctx *ZIdentity, svcId string, name string) {
-	found, ok := ctx.Services.Load(svcId)
+	f, ok := ctx.Services.Load(svcId)
 	if ok {
-		fs := found.(ZService)
-		ok := DNSMgr.UnregisterService(fs.InterceptHost, fs.InterceptPort)
-		if !ok {
-			log.Warnf("unregister service from serviceUnavailable was not ok? %s:%d", fs.InterceptHost, fs.InterceptPort)
-		}
+		found := f.(*ZService)
+		found.Service = nil
 		ctx.Services.Delete(svcId)
-		ServiceChanges <- ServiceChange{
-			Operation: REMOVED,
-			Service:   &fs,
-			ZitiContext: ctx,
+		se := dto.ServiceEvent{
+			ActionEvent: dto.SERVICE_ADDED,
+			Fingerprint: ctx.Fingerprint,
+			Service: &dto.Service{
+				Name:          name,
+				Id:            svcId,
+				/* none of these matter to a remove
+				Protocols:     protocols,
+				Addresses:     nil,
+				Ports:         nil,
+				*/
+			},
 		}
+		ServiceChanges <- se
 	} else {
 		log.Warnf("could not remove service? service not found with id: %s, name: %s in context %d", svcId, name, &ctx)
 	}
@@ -362,12 +316,21 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 
 	case C.ZitiServiceEvent:
 		srvEvent := C.ziti_event_service_event(event)
+
+		isCnull := appCtx == C.NULL
+		isNil := appCtx == nil
+		if isCnull || isNil {
+			log.Errorf("in eventCB ZitiServiceEvent with null appCtx??? ")
+			return
+		}
+		zid := (*ZIdentity)(appCtx)
+
 		for i := 0; true ; i++ {
 			s := C.ziti_service_array_get(srvEvent.removed, C.int(i))
 			if unsafe.Pointer(s) == C.NULL {
 				break
 			}
-			serviceCB(ztx, s, C.ZITI_SERVICE_UNAVAILABLE, appCtx)
+			serviceCB(ztx, s, C.ZITI_SERVICE_UNAVAILABLE, zid)
 
 			log.Info("service removed ", C.GoString(s.name))
 		}
@@ -377,7 +340,8 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 				break
 			}
 			log.Info("service changed ", C.GoString(s.name))
-			serviceCB(ztx, s, C.ZITI_OK, appCtx)
+			serviceCB(ztx, s, C.ZITI_SERVICE_UNAVAILABLE, zid)
+			serviceCB(ztx, s, C.ZITI_OK, zid)
 		}
 		for i := 0; true ; i++ {
 			s := C.ziti_service_array_get(srvEvent.added, C.int(i))
@@ -385,9 +349,8 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 				break
 			}
 			log.Info("service added ", C.GoString(s.name))
-			serviceCB(ztx, s, C.ZITI_OK, appCtx)
+			serviceCB(ztx, s, C.ZITI_OK, zid)
 		}
-
 	default:
 		log.Infof("event %d not handled", event._type)
 	}
@@ -488,8 +451,8 @@ func log_writer_cb(level C.int, loc C.string, msg C.string, msglen C.int) {
 	}
 }
 
-//export ziti_dump_go_callback
-func ziti_dump_go_callback(outputPath *C.char, charData *C.char) {
+//export ziti_dump_go_to_file_cb
+func ziti_dump_go_to_file_cb(outputPath *C.char, charData *C.char) {
 	f, err := os.OpenFile(C.GoString(outputPath),
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -512,6 +475,87 @@ func ZitiDump(zid *ZIdentity, path string) {
 	} else {
 		log.Debugf("Removed existing ziti_dump file at: %s", path)
 	}
-	C.ziti_dump_go_wrapper(unsafe.Pointer(zid.czctx), cpath)
+
+	C.ziti_dump_to_file(unsafe.Pointer(zid.czctx), cpath)
 	log.Infof("ziti_dump saved to: %s", path)
+}
+
+//export ziti_dump_go_to_log_cb
+func ziti_dump_go_to_log_cb(stringsBuilder unsafe.Pointer, charData *C.char) {
+	sb := (*strings.Builder)(stringsBuilder)
+	sb.WriteString(C.GoString(charData))
+}
+func ZitiDumpOnShutdown(zid *ZIdentity, sb *strings.Builder){
+	C.ziti_dump_to_log(unsafe.Pointer(zid.czctx), unsafe.Pointer(sb))
+}
+
+func getTunneledServiceProtocols(ts *C.tunneled_service_t) []string {
+	var protocols []string
+	next := C.stailq_first_protocol(ts)
+	if unsafe.Pointer(next) != C.NULL {
+		protocols = append(protocols, C.GoString(next.protocol))
+		for {
+			next = C.stailq_next_protocol(next)
+			if unsafe.Pointer(next) != C.NULL {
+				protocols = append(protocols, C.GoString(next.protocol))
+			} else {
+				break
+			}
+		}
+	}
+	return protocols
+}
+
+func getTunneledServicePortRanges(ts *C.tunneled_service_t) []dto.PortRange {
+	var values []dto.PortRange
+	next := C.stailq_first_port_range(ts)
+	if unsafe.Pointer(next) != C.NULL {
+		p := dto.PortRange{
+			High: int(next.high),
+			Low:  int(next.low),
+		}
+		values = append(values, p)
+		for {
+			next = C.stailq_next_port_range(next)
+			if unsafe.Pointer(next) != C.NULL {
+				p := dto.PortRange{
+					High: int(next.high),
+					Low:  int(next.low),
+				}
+				values = append(values, p)
+			} else {
+				break
+			}
+		}
+	}
+	return values
+}
+
+func getTunneledServiceAddresses(ts *C.tunneled_service_t) []dto.Address {
+	var values []dto.Address
+	next := C.stailq_first_address(ts)
+	if unsafe.Pointer(next) != C.NULL {
+		p := dto.Address{
+			IsHost:   bool(next.is_hostname),
+			HostName: C.GoString(&next.str[0]),
+			IP:       C.GoString(C.ipaddr_ntoa(&next.ip)),
+			Prefix:   int(next.prefix_len),
+		}
+		values = append(values, p)
+		for {
+			next = C.stailq_next_address(next)
+			if unsafe.Pointer(next) != C.NULL {
+				p := dto.Address{
+					IsHost: bool(next.is_hostname),
+					HostName: C.GoString(&next.str[0]),
+					IP:     C.GoString(C.ipaddr_ntoa(&next.ip)),
+					Prefix: int(next.prefix_len),
+				}
+				values = append(values, p)
+			} else {
+				break
+			}
+		}
+	}
+	return values
 }

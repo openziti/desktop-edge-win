@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 
 /// <summary>
@@ -155,13 +156,38 @@ namespace ZitiDesktopEdge.DataStructures {
         public Metrics Metrics { get; set; }
         public string ControllerVersion { get; set; }
     }
-    public class Service
-    {
+
+    public class Service {
         public string Name { get; set; }
-        public string InterceptHost { get; set; }
-        public UInt16 InterceptPort { get; set; }
+        public string[] Protocols { get; set; }
+        public Address[] Addresses { get; set; }
+        public PortRange[] Ports { get; set; }
         public bool OwnsIntercept { get; set; }
         public string AssignedIP { get; set; }
+    }
+
+    public class Address {
+        public bool IsHost { get; set; }
+        public string Hostname { get; set; }
+        public string IP { get; set; }
+        public int Prefix { get; set; }
+
+        public override string ToString() {
+            return Hostname;
+        }
+    }
+
+    public class PortRange {
+        public int High { get; set; }
+        public int Low { get; set; }
+
+        public override string ToString() {
+            if (Low == High) {
+                return Low.ToString();
+            } else {
+                return Low + "-" + High;
+            }
+        }
     }
 
     public class EnrollmentFlags
@@ -227,7 +253,7 @@ namespace ZitiDesktopEdge.DataStructures {
                     {
                         foreach (Service s in id?.Services)
                         {
-                            writer.WriteLine($"      Name: {s.Name} HostName: {s.InterceptHost} Port: {s.InterceptPort}");
+                           //xxfix writer.WriteLine($"      Name: {s.Name} Protocols: {string.Join(",", s.Protocols)} Addresses: {string.Join(",", s.Addresses)} Ports: {string.Join(",", s.Ports)}");
                         }
                     }
                     writer.WriteLine("=============================================");
