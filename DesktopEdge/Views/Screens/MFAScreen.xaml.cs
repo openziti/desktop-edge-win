@@ -13,12 +13,12 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace ZitiDesktopEdge {
+namespace Ziti.Desktop.Edge.Views.Screens {
 	/// <summary>
-	/// Interaction logic for RegistrationScreen.xaml
+	/// Interaction logic for MFA.xaml
 	/// </summary>
-	public partial class RegistrationScreen:UserControl {
-		public RegistrationScreen() {
+	public partial class MFA : UserControl {
+		public MFA() {
 			InitializeComponent();
 		}
 	}

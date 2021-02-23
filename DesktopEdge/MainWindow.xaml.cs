@@ -68,6 +68,10 @@ namespace ZitiDesktopEdge {
 			ExpectedLogPathServices = Path.Combine(ExpectedLogPathRoot, "service", $"ziti-tunneler.log");
 		}
 
+		private void IdentityMenu_OnMessage(string message) {
+			ShowBlurb(message, "");
+		}
+
 		private void SystemEvents_DisplaySettingsChanged(object sender, EventArgs e) {
 			LoadIdentities(true);
 		}
@@ -152,6 +156,8 @@ namespace ZitiDesktopEdge {
 
 			this.MainMenu.MainWindow = this;
 			SetNotifyIcon("white");
+
+			IdentityMenu.OnMessage += IdentityMenu_OnMessage;
 		}
 		private void contextMenuItem_Click(object Sender, EventArgs e) {
 			this.Close();
@@ -725,7 +731,6 @@ namespace ZitiDesktopEdge {
 				IdListScroller.Visibility = Visibility.Collapsed;
 				AddIdButton.Visibility = Visibility.Collapsed;
 				AddIdAreaButton.Visibility = Visibility.Collapsed;
-				Debug.WriteLine("Height: " + this.Height + " " + this.ActualHeight);
 			}
 
 			Placement();
@@ -1037,57 +1042,5 @@ namespace ZitiDesktopEdge {
 		private void UploadSpeedLabel_MouseUp(object sender, MouseButtonEventArgs e) {
 			ShowBlurb("An Update is available!", "https://www.axeda.com?buddy=true");
 		}
-
-		/*
-
-		private void MainUI_DpiChanged(object sender, DpiChangedEventArgs e) {
-			var desktopWorkingArea = SystemParameters.WorkArea;
-			Console.WriteLine("Old: " + desktopWorkingArea.Width + " New: " + desktopWorkingArea.Height);
-		}
-
-		private void UpButtonClick(object sender, MouseButtonEventArgs e) {
-		}
-
-		private void DownButtonClick(object sender, MouseButtonEventArgs e) {
-		}
-
-		private void UpButton_MouseEnter(object sender, MouseEventArgs e) {
-			UpOver.Opacity = 0.2;
-		}
-
-		private void UpButton_MouseLeave(object sender, MouseEventArgs e) {
-			UpOver.Opacity = 0.0;
-		}
-
-		private void DownButton_MouseEnter(object sender, MouseEventArgs e) {
-			DownOver.Opacity = 0.2;
-		}
-
-		private void DownButton_MouseLeave(object sender, MouseEventArgs e) {
-			DownOver.Opacity = 0.0;
-		}
-
-		private void UpButton_MouseUp(object sender, MouseButtonEventArgs e) {
-			//isConnected = (DisconnectButton.Visibility == Visibility.Visible);
-			origHeight = IdListScroller.Height;
-			IdListScroller.Height = origHeight + 160.0 + StatArea.Height;
-			MessageBox.Show("::" + origHeight + " " + StatArea.Height + " " + IdListScroller.Height);
-			DisconnectButton.Visibility = Visibility.Collapsed;
-			ConnectButton.Visibility = Visibility.Collapsed;
-			StatArea.Visibility = Visibility.Collapsed;
-			UpButton.Visibility = Visibility.Collapsed;
-			DownButton.Visibility = Visibility.Visible;
-		}
-
-		private void DownButton_MouseUp(object sender, MouseButtonEventArgs e) {
-			IdListScroller.Height = origHeight;
-			StatArea.Visibility = Visibility.Visible;
-			if (isConnected) DisconnectButton.Visibility = Visibility.Visible;
-			else ConnectButton.Visibility = Visibility.Visible;
-			DownButton.Visibility = Visibility.Collapsed;
-			UpButton.Visibility = Visibility.Visible;
-		}
-
-		*/
 	}
 }
