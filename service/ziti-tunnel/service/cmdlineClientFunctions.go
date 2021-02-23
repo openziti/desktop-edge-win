@@ -12,7 +12,7 @@ import (
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 )
 
-func sendMessagetoPipe(ipcPipeConn net.Conn, args []string) error {
+func sendMessagetoPipe(ipcPipeConn net.Conn, commandMsg *dto.CommandMsg, args []string) error {
 	writer := bufio.NewWriter(ipcPipeConn)
 	enc := json.NewEncoder(writer)
 
@@ -22,8 +22,8 @@ func sendMessagetoPipe(ipcPipeConn net.Conn, args []string) error {
 	var payload = map[string]interface{}{
 		"args": args,
 	}
-	LIST_IDENTITIES.Payload = payload
-	err := enc.Encode(LIST_IDENTITIES)
+	commandMsg.Payload = payload
+	err := enc.Encode(commandMsg)
 	if err != nil {
 		log.Error("could not encode or writer list identities message, %v", err)
 		return err
@@ -71,6 +71,15 @@ func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}) {
 
 //GetIdentities is to fetch identities through cmdline
 func GetIdentities(args []string) {
+	getDataFromIpcPipe(&LIST_IDENTITIES, args)
+}
+
+//GetServices is to fetch services through cmdline
+func GetServices(args []string) {
+	getDataFromIpcPipe(&LIST_SERVICES, args)
+}
+
+func getDataFromIpcPipe(commandMsg *dto.CommandMsg, args []string) {
 	log.Infof("fetching identities through cmdline...%s", args)
 
 	log.Debug("Connecting to pipe")
@@ -87,7 +96,7 @@ func GetIdentities(args []string) {
 
 	go readMessageFromPipe(ipcPipeConn, readDone)
 
-	err = sendMessagetoPipe(ipcPipeConn, args)
+	err = sendMessagetoPipe(ipcPipeConn, commandMsg, args)
 	if err != nil {
 		log.Errorf("Message is not sent to ipc pipe, %v", err)
 		return

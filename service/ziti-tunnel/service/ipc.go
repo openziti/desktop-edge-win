@@ -457,7 +457,16 @@ func serveIpc(conn net.Conn) {
 				argsStringArr[i] = v.(string)
 			}
 			log.Debugf("Args %s", argsStringArr)
-			respond(enc, GetIdentityFromRTS(argsStringArr))
+			respond(enc, GetIdentitiesFromRTS(argsStringArr))
+		case "ListServices":
+			log.Debugf("Request to list services received")
+			argsInterfaceArr := cmd.Payload["args"].([]interface{})
+			argsStringArr := make([]string, len(argsInterfaceArr))
+			for i, v := range argsInterfaceArr {
+				argsStringArr[i] = v.(string)
+			}
+			log.Debugf("Args %s", argsStringArr)
+			respond(enc, GetServicesFromRTS(argsStringArr))
 		default:
 			log.Warnf("Unknown operation: %s. Returning error on pipe", cmd.Function)
 			respondWithError(enc, "Something unexpected has happened", UNKNOWN_ERROR, nil)
