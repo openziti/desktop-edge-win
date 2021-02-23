@@ -125,7 +125,9 @@ namespace ZitiDesktopEdge {
 			DetailsArea.Visibility = Visibility.Visible;
 			DetailsArea.Opacity = 0;
 			DetailsArea.Margin = new Thickness(0, 0, 0, 0);
-			DetailsArea.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
+			DoubleAnimation animation = new DoubleAnimation(1, TimeSpan.FromSeconds(.3));
+			animation.Completed += Animation_Completed;
+			DetailsArea.BeginAnimation(Grid.OpacityProperty, animation);
 			DetailsArea.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
 
 			ModalBg.Visibility = Visibility.Visible;
@@ -133,10 +135,18 @@ namespace ZitiDesktopEdge {
 			ModalBg.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(.8, TimeSpan.FromSeconds(.3)));
 		}
 
+		private void Animation_Completed(object sender, EventArgs e) {
+			DoubleAnimation animation = new DoubleAnimation(DetailPanel.ActualHeight + 60, TimeSpan.FromSeconds(.3));
+			DetailsArea.BeginAnimation(Grid.HeightProperty, animation);
+			//DetailsArea.Height = DetailPanel.ActualHeight + 60;
+		}
+
 		private void Image_MouseUp(object sender, MouseButtonEventArgs e) {
 			DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
 			ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
+			DoubleAnimation animation2 = new DoubleAnimation(DetailPanel.ActualHeight + 100, TimeSpan.FromSeconds(.3));
 			animation.Completed += HideComplete;
+			DetailsArea.BeginAnimation(Grid.HeightProperty, animation2);
 			DetailsArea.BeginAnimation(Grid.OpacityProperty, animation);
 			DetailsArea.BeginAnimation(Grid.MarginProperty, animateThick);
 			ModalBg.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(0, TimeSpan.FromSeconds(.3)));
