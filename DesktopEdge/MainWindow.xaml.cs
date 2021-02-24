@@ -723,8 +723,8 @@ namespace ZitiDesktopEdge {
 				this.Height = 490;
 				MainMenu.IdentitiesButton.Visibility = Visibility.Collapsed;
 				IdListScroller.Visibility = Visibility.Collapsed;
-				AddIdButton.Visibility = Visibility.Collapsed;
-				AddIdAreaButton.Visibility = Visibility.Collapsed;
+				AddIdButton.Visibility = Visibility.Visible;
+				AddIdAreaButton.Visibility = Visibility.Visible;
 				Debug.WriteLine("Height: " + this.Height + " " + this.ActualHeight);
 			}
 
