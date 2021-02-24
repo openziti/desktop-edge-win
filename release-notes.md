@@ -1,7 +1,17 @@
 # Release 1.7.9
 
+## What's New
+* Stopping the data service (`ziti`) using the big button no longer shows the old warning asking to start the service or exit the UI.
+  Now the expected behavior is to see the button "off" which is used to turn the tunnel back "on"
+
+## Other changes:
+* none
+
 ## Bugs fixed:
 * [#310](https://github.com/openziti/desktop-edge-win/pull/310) Restore identities moved by Windows after Windows system update
+
+## Dependency Updates
+* Tunneler SDK to v0.8.21/CSDK 0.20.13
 
 # Release 1.7.8
 
