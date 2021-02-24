@@ -8,20 +8,45 @@ import (
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 )
 
+func convertToIdentityCli(id *dto.Identity) IdentityCli {
+	return IdentityCli{
+		Name:        id.Name,
+		FingerPrint: id.FingerPrint,
+		Active:      id.Active,
+		Config:      id.Config.ZtAPI,
+		Status:      id.Status,
+	}
+}
+
+func convertToServiceCli(svc dto.Service) ServiceCli {
+	return ServiceCli{
+		Name:          svc.Name,
+		AssignedIP:    svc.AssignedIP,
+		Id:            svc.Id,
+		InterceptHost: svc.InterceptHost,
+		InterceptPort: svc.InterceptPort,
+		AssignedHost:  svc.AssignedHost,
+		OwnsIntercept: svc.OwnsIntercept,
+	}
+}
+
 // GetIdentitiesFromRTS is to get identities from the RTS
-func GetIdentitiesFromRTS(args []string, status *dto.TunnelStatus) dto.Response {
+func GetIdentitiesFromRTS(args []string, status *dto.TunnelStatus, flag string) dto.Response {
 	message := fmt.Sprintf("Listing Identities - %s", args)
 
-	filteredIdentities := []*dto.Identity{}
+	var filteredIdentities []IdentityCli
 
 	for _, val := range args {
 		if val == "all" {
-			filteredIdentities = status.Identities
+			for _, id := range status.Identities {
+				filteredIdentities = append(filteredIdentities, convertToIdentityCli(id))
+
+			}
 			break
 		} else {
 			for _, id := range status.Identities {
 				if strings.Compare(id.Name, val) == 0 {
-					filteredIdentities = append(filteredIdentities, id)
+					filteredIdentities = append(filteredIdentities, convertToIdentityCli(id))
 				}
 			}
 		}
@@ -30,26 +55,10 @@ func GetIdentitiesFromRTS(args []string, status *dto.TunnelStatus) dto.Response 
 		errMsg := fmt.Sprintf("Could not find Identities matching %s", args)
 		return dto.Response{Message: message, Code: ERROR, Error: errMsg, Payload: nil}
 	}
-	identities, err := json.Marshal(filteredIdentities)
+	identitiesBytes, err := json.Marshal(filteredIdentities)
 	if err != nil {
 		log.Error(err)
 		return dto.Response{Message: message, Code: ERROR, Error: "Could not fetch Identities from Runtime", Payload: nil}
-	}
-	var identitiesMapList []map[string]interface{}
-	json.Unmarshal(identities, &identitiesMapList)
-
-	for _, identitiesMap := range identitiesMapList {
-		for field, _ := range identitiesMap {
-			if field != "Name" && field != "FingerPrint" && field != "Active" && field != "ControllerVersion" && field != "Status" && field != "Config" {
-				delete(identitiesMap, field)
-			}
-		}
-	}
-
-	identitiesBytes, mapErr := json.Marshal(identitiesMapList)
-	if mapErr != nil {
-		log.Error(mapErr)
-		return dto.Response{Message: message, Code: ERROR, Error: "Could not transform Identities to json", Payload: nil}
 	}
 
 	identitiesStr := string(identitiesBytes)
@@ -57,27 +66,27 @@ func GetIdentitiesFromRTS(args []string, status *dto.TunnelStatus) dto.Response 
 	return dto.Response{Message: message, Code: SUCCESS, Error: "", Payload: identitiesStr}
 }
 
-func GetServicesFromRTS(args []string, status *dto.TunnelStatus) dto.Response {
+func GetServicesFromRTS(args []string, status *dto.TunnelStatus, flag string) dto.Response {
 	message := fmt.Sprintf("Listing Services - %s", args)
 
-	var filteredServices []*dto.Service
+	var filteredServices []ServiceCli
 
 	for _, val := range args {
 		if val == "all" {
-			filteredServices = []*dto.Service{}
-
 			for _, id := range status.Identities {
 				if len(id.Services) > 0 {
-					filteredServices = append(filteredServices, id.Services[0:len(id.Services)]...)
+					for _, svc := range id.Services {
+						filteredServices = append(filteredServices, convertToServiceCli(*svc))
+					}
 				}
 			}
 			break
 		} else {
 			for _, id := range status.Identities {
 				if len(id.Services) > 0 {
-					for index, svc := range id.Services {
+					for _, svc := range id.Services {
 						if strings.Compare(val, svc.Name) == 0 {
-							filteredServices = append(filteredServices, id.Services[index])
+							filteredServices = append(filteredServices, convertToServiceCli(*svc))
 						}
 					}
 				}
@@ -88,18 +97,10 @@ func GetServicesFromRTS(args []string, status *dto.TunnelStatus) dto.Response {
 		errMsg := fmt.Sprintf("Could not find services matching %s", args)
 		return dto.Response{Message: message, Code: ERROR, Error: errMsg, Payload: nil}
 	}
-	services, err := json.Marshal(filteredServices)
+	servicesBytes, err := json.Marshal(filteredServices)
 	if err != nil {
 		log.Error(err)
 		return dto.Response{Message: message, Code: ERROR, Error: "Could not fetch services from Runtime", Payload: nil}
-	}
-	var servicesMapList []map[string]interface{}
-	json.Unmarshal(services, &servicesMapList)
-
-	servicesBytes, mapErr := json.Marshal(servicesMapList)
-	if mapErr != nil {
-		log.Error(mapErr)
-		return dto.Response{Message: message, Code: ERROR, Error: "Could not transform services to json", Payload: nil}
 	}
 
 	servicesStr := string(servicesBytes)

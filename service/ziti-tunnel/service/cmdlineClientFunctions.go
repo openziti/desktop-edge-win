@@ -12,7 +12,7 @@ import (
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 )
 
-type fetchFromRTS func([]string, *dto.TunnelStatus) dto.Response
+type fetchFromRTS func([]string, *dto.TunnelStatus, string) dto.Response
 
 func sendMessagetoPipe(ipcPipeConn net.Conn, commandMsg *dto.CommandMsg, args []string) error {
 	writer := bufio.NewWriter(ipcPipeConn)
@@ -31,7 +31,7 @@ func sendMessagetoPipe(ipcPipeConn net.Conn, commandMsg *dto.CommandMsg, args []
 	return nil
 }
 
-func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}, fn fetchFromRTS, args []string) {
+func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}, fn fetchFromRTS, args []string, flag string) {
 	for {
 
 		reader := bufio.NewReader(ipcPipeConn)
@@ -55,7 +55,7 @@ func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}, fn fetchF
 		}
 
 		if tunnelStatus.Status != nil {
-			responseMsg := fn(args, tunnelStatus.Status)
+			responseMsg := fn(args, tunnelStatus.Status, flag)
 			if responseMsg.Code == SUCCESS {
 				log.Info(responseMsg.Message)
 				log.Info(responseMsg.Payload)
@@ -75,16 +75,16 @@ func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}, fn fetchF
 }
 
 //GetIdentities is to fetch identities through cmdline
-func GetIdentities(args []string) {
-	getDataFromIpcPipe(&GET_STATUS, GetIdentitiesFromRTS, args)
+func GetIdentities(args []string, flag string) {
+	getDataFromIpcPipe(&GET_STATUS, GetIdentitiesFromRTS, args, flag)
 }
 
 //GetServices is to fetch services through cmdline
-func GetServices(args []string) {
-	getDataFromIpcPipe(&GET_STATUS, GetServicesFromRTS, args)
+func GetServices(args []string, flag string) {
+	getDataFromIpcPipe(&GET_STATUS, GetServicesFromRTS, args, flag)
 }
 
-func getDataFromIpcPipe(commandMsg *dto.CommandMsg, fn fetchFromRTS, args []string) {
+func getDataFromIpcPipe(commandMsg *dto.CommandMsg, fn fetchFromRTS, args []string, flag string) {
 	log.Infof("fetching identities through cmdline...%s", args)
 
 	log.Debug("Connecting to pipe")
@@ -99,7 +99,7 @@ func getDataFromIpcPipe(commandMsg *dto.CommandMsg, fn fetchFromRTS, args []stri
 	readDone := make(chan struct{})
 	defer close(readDone) // ensure that goroutine exits
 
-	go readMessageFromPipe(ipcPipeConn, readDone, fn, args)
+	go readMessageFromPipe(ipcPipeConn, readDone, fn, args, flag)
 
 	err = sendMessagetoPipe(ipcPipeConn, commandMsg, args)
 	if err != nil {
