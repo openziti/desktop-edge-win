@@ -9,17 +9,17 @@ import (
 )
 
 // GetIdentitiesFromRTS is to get identities from the RTS
-func GetIdentitiesFromRTS(args []string) dto.Response {
+func GetIdentitiesFromRTS(args []string, status *dto.TunnelStatus) dto.Response {
 	message := fmt.Sprintf("Listing Identities - %s", args)
 
 	filteredIdentities := []*dto.Identity{}
 
 	for _, val := range args {
 		if val == "all" {
-			filteredIdentities = rts.state.Identities
+			filteredIdentities = status.Identities
 			break
 		} else {
-			for _, id := range rts.state.Identities {
+			for _, id := range status.Identities {
 				if strings.Compare(id.Name, val) == 0 {
 					filteredIdentities = append(filteredIdentities, id)
 				}
@@ -53,12 +53,11 @@ func GetIdentitiesFromRTS(args []string) dto.Response {
 	}
 
 	identitiesStr := string(identitiesBytes)
-	log.Infof("RTS %s", identitiesStr)
 
 	return dto.Response{Message: message, Code: SUCCESS, Error: "", Payload: identitiesStr}
 }
 
-func GetServicesFromRTS(args []string) dto.Response {
+func GetServicesFromRTS(args []string, status *dto.TunnelStatus) dto.Response {
 	message := fmt.Sprintf("Listing Services - %s", args)
 
 	var filteredServices []*dto.Service
@@ -67,14 +66,14 @@ func GetServicesFromRTS(args []string) dto.Response {
 		if val == "all" {
 			filteredServices = []*dto.Service{}
 
-			for _, id := range rts.state.Identities {
+			for _, id := range status.Identities {
 				if len(id.Services) > 0 {
 					filteredServices = append(filteredServices, id.Services[0:len(id.Services)]...)
 				}
 			}
 			break
 		} else {
-			for _, id := range rts.state.Identities {
+			for _, id := range status.Identities {
 				if len(id.Services) > 0 {
 					for index, svc := range id.Services {
 						if strings.Compare(val, svc.Name) == 0 {
@@ -97,14 +96,6 @@ func GetServicesFromRTS(args []string) dto.Response {
 	var servicesMapList []map[string]interface{}
 	json.Unmarshal(services, &servicesMapList)
 
-	/*for _, servicesMap := range servicesMapList {
-		for field, _ := range servicesMap {
-			if field != "Name" && field != "FingerPrint" && field != "Active" && field != "ControllerVersion" && field != "Status" && field != "Config" {
-				delete(servicesMap, field)
-			}
-		}
-	} */
-
 	servicesBytes, mapErr := json.Marshal(servicesMapList)
 	if mapErr != nil {
 		log.Error(mapErr)
@@ -112,7 +103,6 @@ func GetServicesFromRTS(args []string) dto.Response {
 	}
 
 	servicesStr := string(servicesBytes)
-	log.Infof("RTS %s", servicesStr)
 
 	return dto.Response{Message: message, Code: SUCCESS, Error: "", Payload: servicesStr}
 }

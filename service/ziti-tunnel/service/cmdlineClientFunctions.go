@@ -12,17 +12,12 @@ import (
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 )
 
+type fetchFromRTS func([]string, *dto.TunnelStatus) dto.Response
+
 func sendMessagetoPipe(ipcPipeConn net.Conn, commandMsg *dto.CommandMsg, args []string) error {
 	writer := bufio.NewWriter(ipcPipeConn)
 	enc := json.NewEncoder(writer)
 
-	if len(args) == 0 {
-		args = append(args, "all")
-	}
-	var payload = map[string]interface{}{
-		"args": args,
-	}
-	commandMsg.Payload = payload
 	err := enc.Encode(commandMsg)
 	if err != nil {
 		log.Error("could not encode or writer list identities message, %v", err)
@@ -36,7 +31,7 @@ func sendMessagetoPipe(ipcPipeConn net.Conn, commandMsg *dto.CommandMsg, args []
 	return nil
 }
 
-func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}) {
+func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}, fn fetchFromRTS, args []string) {
 	for {
 
 		reader := bufio.NewReader(ipcPipeConn)
@@ -47,19 +42,29 @@ func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}) {
 			return
 		}
 
+		if len(args) == 0 {
+			args = append(args, "all")
+		}
+
 		dec := json.NewDecoder(strings.NewReader(msg))
-		var responseMsg dto.Response
-		if err := dec.Decode(&responseMsg); err == io.EOF {
+		var tunnelStatus dto.ZitiTunnelStatus
+		if err := dec.Decode(&tunnelStatus); err == io.EOF {
 			break
 		} else if err != nil {
 			log.Fatal(err)
 		}
 
-		if responseMsg.Code == SUCCESS {
-			log.Infof(responseMsg.Message)
-			log.Info(responseMsg.Payload)
+		if tunnelStatus.Status != nil {
+			responseMsg := fn(args, tunnelStatus.Status)
+			if responseMsg.Code == SUCCESS {
+				log.Info(responseMsg.Message)
+				log.Info(responseMsg.Payload)
+			} else {
+				log.Info(responseMsg.Message)
+				log.Info(responseMsg.Error)
+			}
 		} else {
-			log.Errorf("%s - %s", responseMsg.Message, responseMsg.Error)
+			log.Errorf("Ziti tunnel retuned nil status")
 		}
 
 		readDone <- struct{}{}
@@ -71,15 +76,15 @@ func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}) {
 
 //GetIdentities is to fetch identities through cmdline
 func GetIdentities(args []string) {
-	getDataFromIpcPipe(&LIST_IDENTITIES, args)
+	getDataFromIpcPipe(&GET_STATUS, GetIdentitiesFromRTS, args)
 }
 
 //GetServices is to fetch services through cmdline
 func GetServices(args []string) {
-	getDataFromIpcPipe(&LIST_SERVICES, args)
+	getDataFromIpcPipe(&GET_STATUS, GetServicesFromRTS, args)
 }
 
-func getDataFromIpcPipe(commandMsg *dto.CommandMsg, args []string) {
+func getDataFromIpcPipe(commandMsg *dto.CommandMsg, fn fetchFromRTS, args []string) {
 	log.Infof("fetching identities through cmdline...%s", args)
 
 	log.Debug("Connecting to pipe")
@@ -94,7 +99,7 @@ func getDataFromIpcPipe(commandMsg *dto.CommandMsg, args []string) {
 	readDone := make(chan struct{})
 	defer close(readDone) // ensure that goroutine exits
 
-	go readMessageFromPipe(ipcPipeConn, readDone)
+	go readMessageFromPipe(ipcPipeConn, readDone, fn, args)
 
 	err = sendMessagetoPipe(ipcPipeConn, commandMsg, args)
 	if err != nil {
