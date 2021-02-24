@@ -20,6 +20,7 @@ package cziti
 import (
 	"fmt"
 	"github.com/miekg/dns"
+	"github.com/openziti/desktop-edge-win/service/windns"
 	"io"
 	"net"
 	"os"
@@ -115,13 +116,11 @@ type dnsreq struct {
 }
 
 func RunDNSserver(dnsBind []net.IP, ready chan bool) {
-	go runDNSproxy(GetUpstreamDNS(), dnsBind)
+	go runDNSproxy(windns.GetUpstreamDNS(), dnsBind)
 
 	for _, bindAddr := range dnsBind {
 		go runListener(&bindAddr, 53, reqch)
 	}
-
-	ReplaceDNS(dnsBind)
 
 	ready <- true
 
@@ -235,20 +234,14 @@ func dnsPanicRecover(localDnsServers []net.IP, now time.Time) {
 	lastDnsRecover = time.Now()
 	log.Infof("dnsPanicRecovery set time to: %s", lastDnsRecover.String())
 
-	//reset all network interfaces...
-	ResetDNS()
-
 	// get dns again and reconfigure
-	go runDNSproxy(GetUpstreamDNS(), localDnsServers)
-
-	// reconfigure DNS
-	ReplaceDNS(localDnsServers)
+	go runDNSproxy(windns.GetUpstreamDNS(), localDnsServers)
 }
 
 func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
-	FlushDNS() //do this in case the services come back in different order and the ip returned is no longer the same
+	windns.FlushDNS() //do this in case the services come back in different order and the ip returned is no longer the same
 	log.Infof("starting DNS proxy upstream: %v, local: %v", upstreamDnsServers, localDnsServers)
-	domains = GetConnectionSpecificDomains()
+	domains = windns.GetConnectionSpecificDomains()
 	log.Infof("ConnectionSpecificDomains deteted: %v", domains)
 	defer func() {
 		if err := recover(); err != nil {
