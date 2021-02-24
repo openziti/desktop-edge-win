@@ -274,6 +274,15 @@ func DnsInit(tun api.DesktopEdgeIface, ip string, maskBits int) {
 		dnsMgrPrivate.serviceMap = make(map[string]*ctxService)
 		//DNS.ipMap = make(map[uint32]string)
 		dnsMgrPrivate.hostnameMap = make(map[string]*ctxIp)
+		//register the test dns entry:
+		dnsMgrPrivate.hostnameMap[normalizeDnsName("dew-dns-probe.openziti.org")] = &ctxIp{
+			//ctx:        nil,
+			ip:         net.ParseIP("127.0.0.1"),
+			//network:    "",
+			dnsEnabled: true,
+			refCount:   0,
+		}
+
 		dnsip = net.ParseIP(ip).To4()
 		mask := net.CIDRMask(maskBits, 32)
 		dnsMgrPrivate.cidr = binary.BigEndian.Uint32(dnsip) & binary.BigEndian.Uint32(mask)

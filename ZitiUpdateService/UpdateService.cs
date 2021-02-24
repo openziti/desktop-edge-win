@@ -17,6 +17,8 @@ using ZitiDesktopEdge.Utility;
 
 using NLog;
 using Newtonsoft.Json;
+using DnsClient;
+using System.Net;
 
 namespace ZitiUpdateService {
 	public partial class UpdateService : ServiceBase {
@@ -54,6 +56,9 @@ namespace ZitiUpdateService {
 		Task ipcServer = null;
 		Task eventServer = null;
 		checkers.UpdateCheck check = null;
+
+		private Timer dnsProbeTimer = new Timer();
+		private IPAddress dnsIpAddress = null;
 
 		public UpdateService() {
 			InitializeComponent();
@@ -355,6 +360,9 @@ namespace ZitiUpdateService {
 			AccessUtils.GrantAccessToFile(Path.Combine(exeLocation, "ZitiDesktopEdge.exe.config")); //allow anyone to change the config file
 			AccessUtils.GrantAccessToFile(Path.Combine(exeLocation, "ZitiDesktopEdge-log.config")); //allow anyone to change the log file config
 
+			dnsProbeTimer.Elapsed += DnsProbe_Elapsed;
+			dnsProbeTimer.Interval = dnsProbeIntervalInSeconds * 1000;
+
 			Logger.Info("starting ipc server");
 			ipcServer = svr.startIpcServerAsync(onIpcClientAsync);
 			Logger.Info("starting events server");
@@ -371,7 +379,58 @@ namespace ZitiUpdateService {
 			base.OnStart(args);
 		}
 
-		async private Task onEventsClientAsync(StreamWriter writer) {
+		IPAddress lh = IPAddress.Parse("127.0.0.1"); //expected result
+		int dnsProbeFailCount = 0;
+		int dnsProbeIntervalInSeconds = 15;
+		bool dnsProbeStarted = false;
+
+        private void DnsProbe_Elapsed(object sender, ElapsedEventArgs e) {
+			if (dnsProbeStarted) return; //skip out if it's already going...
+			dnsProbeStarted = true;
+			Logger.Trace("dns probe started");
+			try {
+				if (dnsIpAddress != null) {
+					DnsQuestion q = new DnsQuestion("dew-dns-probe.openziti.org", QueryType.A);
+					var dnsEp = new IPEndPoint(dnsIpAddress, 53);
+					var dnsProbe = new LookupClient(dnsEp);
+
+					foreach (DnsClient.Protocol.ARecord arec in dnsProbe.Query(q).AllRecords) {
+						if (arec.Address.Equals(lh)) {
+							dnsProbeFailCount = 0;
+							Logger.Debug("dns probe success");
+						} else {
+							dnsProbeFailCount++;
+							logDnsProbeFailure(null);
+						}
+					}
+				}
+			} catch(Exception dnse) {
+				//don't really care but it probably means a timeout happened.  but might as well log a trace error anyway...
+				//it's expected that this is due to the service shutting down...
+				dnsProbeFailCount++;
+				logDnsProbeFailure(dnse);
+			}
+			dnsProbeStarted = false;
+		}
+
+		private void logDnsProbeFailure(Exception e) {
+			bool logit = false;
+			if (dnsProbeFailCount <= 4) {
+				logit = true;
+			} else {
+				//else log it every 5 minutes... 
+				logit = dnsProbeFailCount % (5 * 60 / dnsProbeIntervalInSeconds) == 0;
+			}
+			if (logit) {
+				if (e != null) {
+					Logger.Warn(e, "dns probe failed due to error. This has happened {0} times", dnsProbeFailCount);
+				} else {
+					Logger.Warn("dns probe failed. This has happened {0} times", dnsProbeFailCount);
+				}
+			}
+		}
+
+        async private Task onEventsClientAsync(StreamWriter writer) {
 			Logger.Info("a new events client was connected");
 			//reset to release stream
 			//initial status when connecting the event stream
@@ -711,18 +770,30 @@ namespace ZitiUpdateService {
 			EventRegistry.SendEventToConsumers(status);
 		}
 
-		private static void Svc_OnTunnelStatusEvent(object sender, TunnelStatusEvent e) {
+		private void Svc_OnTunnelStatusEvent(object sender, TunnelStatusEvent e) {
 			string dns = e?.Status?.IpInfo?.DNS;
 			string version = e?.Status?.ServiceVersion.Version;
 			string op = e?.Op;
 			Logger.Info($"Operation {op}. running dns: {dns} at version {version}");
+
+			try {
+				dnsIpAddress = IPAddress.Parse(dns);
+			} catch {
+				//ignore it
+			}
 		}
 
-		private static void Svc_OnClientConnected(object sender, object e) {
+		private void Svc_OnClientConnected(object sender, object e) {
 			Logger.Info("successfully connected to service");
+			if (!dnsProbeTimer.Enabled) {
+				dnsProbeTimer.Enabled = true;
+				dnsProbeTimer.Start();
+				Logger.Info("DNS Probe enabled");
+			}
 		}
 
 		private void Svc_OnClientDisconnected(object sender, object e) {
+			//dnsProbeTimer.Stop();
 			DataClient svc = (DataClient)sender;
 			if (svc.CleanShutdown) {
 				//then this is fine and expected - the service is shutting down
