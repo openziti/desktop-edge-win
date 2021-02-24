@@ -195,36 +195,12 @@
                         <Image Grid.Column="1" Source="/Assets/Images/up.png" Width="20" HorizontalAlignment="Left" Height="20"></Image>
                     </Grid>
                     <Label Name="UploadSpeed" Margin="0,-16,0,0" Foreground="#FF0047" Content="0" FontSize="40" HorizontalAlignment="Center" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" />
-                    <Label Name="UploadSpeedLabel" MouseUp="UploadSpeedLabel_MouseUp" Foreground="White" Margin="0,-20,0,30" Content="KBps" FontSize="11" HorizontalAlignment="Center" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" />
+                    <Label Name="UploadSpeedLabel" Foreground="White" Margin="0,-20,0,30" Content="KBps" FontSize="11" HorizontalAlignment="Center" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" />
                 </StackPanel>
             </Grid>
-            <!--
-            <Canvas Name="DownButton" Width="400" Height="20" MouseUp="DownButton_MouseUp" Visibility="Collapsed" MouseEnter="DownButton_MouseEnter" MouseLeave="DownButton_MouseLeave" Cursor="Hand">
-                <Rectangle x:Name="DownOver" Width="400" Height="20" Fill="White" Opacity="0"></Rectangle>
-                <Grid Width="{Binding ActualWidth, ElementName=ConnectButton}" Height="20">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="40"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Image Source="/Assets/Images/closer.png" Height="20" HorizontalAlignment="Center" Grid.ColumnSpan="2" />
-                </Grid>
-            </Canvas>
-            <Canvas Name="UpButton" Width="400" Height="20" MouseUp="UpButton_MouseUp" Visibility="Visible" MouseEnter="UpButton_MouseEnter" MouseLeave="UpButton_MouseLeave" Cursor="Hand">
-                <Rectangle x:Name="UpOver" Width="400" Height="20" Fill="White" Opacity="0"></Rectangle>
-                <Grid Width="{Binding ActualWidth, ElementName=ConnectButton}" Height="20">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="40"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Image Source="/Assets/Images/open.png" Height="20" HorizontalAlignment="Center" Grid.ColumnSpan="2" />
-                </Grid>
-            </Canvas>
-            -->
-            
+
             <ScrollViewer Name="IdListScroller" MinHeight="60" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" CanContentScroll="True" ClipToBounds="True" PanningMode="VerticalOnly" PanningRatio=".1">
-                <StackPanel Name="IdList" Orientation="Vertical" IsItemsHost="False" LayoutUpdated="IdList_LayoutUpdated"></StackPanel>
+                <StackPanel Name="IdList" Orientation="Vertical" IsItemsHost="False" LayoutUpdated="IdList_LayoutUpdated" FocusVisualStyle="{x:Null}"></StackPanel>
             </ScrollViewer>
             <Grid HorizontalAlignment="Stretch" Margin="0,20,0,10" Width="Auto">
                 <Grid.ColumnDefinitions>
