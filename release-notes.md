@@ -1,3 +1,17 @@
+# Release 1.8.0
+
+## What's New
+* MFA - details to follow
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* [#310](https://github.com/openziti/desktop-edge-win/pull/310) Restore identities moved by Windows after Windows system update
+
+## Dependency Updates
+* Tunneler SDK to v0.10.0/CSDK 0.20.13
+
 # Release 1.7.9
 
 ## What's New
