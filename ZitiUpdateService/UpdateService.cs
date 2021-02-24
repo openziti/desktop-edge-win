@@ -17,8 +17,8 @@ using ZitiDesktopEdge.Utility;
 
 using NLog;
 using Newtonsoft.Json;
-using DnsClient;
 using System.Net;
+using DnsClient;
 
 namespace ZitiUpdateService {
 	public partial class UpdateService : ServiceBase {

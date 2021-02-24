@@ -34,8 +34,8 @@ namespace ZitiDesktopEdge {
 			}
 			set {
 				this._info = value;
-				MainEdit.ToolTip = this._info.Url;
-				MainEdit.Text = this._info.Url;
+				MainEdit.ToolTip = this._info.ToString();
+				MainEdit.Text = this._info.ToString();
 				MainLabel.ToolTip = this._info.Name;
 				MainLabel.Text = this._info.Name;
 				if (this._info.Warning.Length > 0) {

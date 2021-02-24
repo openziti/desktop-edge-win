@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.ServiceClient;
+using System.Windows.Media.Animation;
 
 using NLog;
 
@@ -25,6 +26,8 @@ namespace ZitiDesktopEdge {
 		public event Detched OnDetach;
 		public double MainHeight = 500;
 		public string filter = "";
+		public delegate void Mesage(string message);
+		public event Mesage OnMessage;
 
 		private List<ZitiIdentity> identities {
 			get {
@@ -114,9 +117,9 @@ namespace ZitiDesktopEdge {
 
 		private void Info_OnDetails(ZitiService info) {
 			DetailName.Text = info.Name;
-			DetailUrl.Text = info.Url;
-			DetailAddress.Text = info.AssignedIP;
-			DetailPorts.Text = info.Port;
+			DetailUrl.Text = info.ToString();
+			DetailAddress.Text = string.Join(",", info.Addresses.Select(a => a.ToString()));
+			DetailPorts.Text = string.Join(",", info.Ports.Select(p => p.ToString()));
 			// DetailProtocols.Text = info.Protocols;
 
 			DetailsArea.Visibility = Visibility.Visible;
