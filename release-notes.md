@@ -1,7 +1,8 @@
 # Release 1.7.9
 
 ## What's New
-* nothing
+* Stopping the data service (`ziti`) using the big button no longer shows the old warning asking to start the service or exit the UI.
+  Now the expected behavior is to see the button "off" which is used to turn the tunnel back "on"
 
 ## Other changes:
 * none
