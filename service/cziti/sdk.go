@@ -43,6 +43,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/logging"
 	"os"
 	"sync"
 	"unsafe"
@@ -53,6 +54,8 @@ const (
 	REMOVED = "removed"
 )
 
+var log = logging.Logger()
+var noFileLog = logging.NoFilenameLogger()
 var Version dto.ServiceVersion
 var ServiceChanges = make(chan ServiceChange, 256)
 

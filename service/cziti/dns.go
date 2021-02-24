@@ -21,6 +21,7 @@ import "C"
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/openziti/desktop-edge-win/service/windns"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/api"
 	"net"
 	"os"
@@ -108,6 +109,9 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 	if ip != nil {
 		dnsNameToReg = ip.String()
 		isIp = true
+	} else {
+		// register hostname in NRTP
+		go windns.AddNrptRule(dnsNameToReg, dnsip.String())
 	}
 
 	icept := intercept{isIp: isIp, host:dnsNameToReg, port: port}

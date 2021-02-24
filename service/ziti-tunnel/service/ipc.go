@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"github.com/Microsoft/go-winio"
 	"github.com/openziti/desktop-edge-win/service/cziti"
+	"github.com/openziti/desktop-edge-win/service/windns"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/constants"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
@@ -59,7 +60,7 @@ var shutdown = make(chan bool, 8) //a channel informing go routines to exit
 
 func SubMain(ops chan string, changes chan<- svc.Status) error {
 	log.Info("============================== service begins ==============================")
-	cziti.ResetDNS()
+	windns.RemoveAllNrptRules()
 
 	rts.LoadConfig()
 	defer rts.Close()
@@ -131,7 +132,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	log.Infof("shutting down events...")
 	events.shutdown()
 
-	cziti.ResetDNS()
+	windns.RemoveAllNrptRules()
 
 	rts.Close()
 

@@ -15,7 +15,7 @@
  *
  */
 
-package cziti
+package windns
 
 import (
 	"bytes"
@@ -28,9 +28,9 @@ import (
 )
 
 var log = logging.Logger()
-var noFileLog = logging.NoFilenameLogger()
 
 func ResetDNS() {
+	/*
 	log.Info("resetting DNS server addresses")
 	script := `Get-NetIPInterface | ForEach-Object { Set-DnsClientServerAddress -InterfaceIndex $_.ifIndex -ResetServerAddresses }`
 
@@ -42,6 +42,8 @@ func ResetDNS() {
 	if err != nil {
 		log.Errorf("ERROR resetting DNS: %v", err)
 	}
+	*/
+	log.Warnf("SKIPPING DNS RESET")
 }
 
 func GetConnectionSpecificDomains() []string {
@@ -105,6 +107,7 @@ func GetUpstreamDNS() []string {
 
 
 func ReplaceDNS(ips []net.IP) {
+	/*
 	ipsStrArr := make([]string, len(ips))
 	for i, ip := range ips {
 		ipsStrArr[i] = fmt.Sprintf("'%s'", ip.String())
@@ -156,6 +159,8 @@ foreach ($key in $dnsUpdates.Keys)
 	if err := cmd.Run(); err != nil {
 		log.Errorf("ERROR resetting DNS (%v)", err)
 	}
+	*/
+	log.Warnf("SKIPPING DNS INJECT")
 }
 
 func FlushDNS() {
@@ -169,5 +174,48 @@ func FlushDNS() {
 	err := cmd.Run()
 	if err != nil {
 		log.Errorf("ERROR flushing DNS: %v", err)
+	}
+}
+
+func AddNrptRule(hostname string, server string) {
+	RemoveNrptRule(hostname)
+	script := fmt.Sprintf(`Add-DnsClientNrptRule -Namespace "%s" -NameServers "%s" -Comment "Added by ziti-tunnel" -DisplayName "ziti-tunnel:%s"`, hostname, server, hostname)
+	log.Debugf("adding nrpt rule with: %s", script)
+
+	cmd := exec.Command("powershell", "-Command", script)
+	cmd.Stderr = os.Stdout
+	cmd.Stdout = os.Stdout
+
+	err := cmd.Run()
+	if err != nil {
+		log.Errorf("ERROR adding nrpt rule: %v", err)
+	}
+}
+
+func RemoveAllNrptRules() {
+	script := fmt.Sprintf(`Get-DnsClientNrptRule | Where { $_.Comment.StartsWith("Added by ziti-tunnel") } | Remove-DnsClientNrptRule -ErrorAction SilentlyContinue -Force`)
+	log.Debugf("removing all nrpt rules with: %s", script)
+
+	cmd := exec.Command("powershell", "-Command", script)
+	cmd.Stderr = os.Stdout
+	cmd.Stdout = os.Stdout
+
+	err := cmd.Run()
+	if err != nil {
+		log.Errorf("ERROR removing all nrpt rules: %v", err)
+	}
+}
+
+func RemoveNrptRule(hostname string) {
+	script := fmt.Sprintf(`Get-DnsClientNrptRule | Where { $_.Namespace -eq '%s' } | Remove-DnsClientNrptRule -ErrorAction SilentlyContinue`, hostname)
+	log.Debugf("removing nrpt rule with: %s", script)
+
+	cmd := exec.Command("powershell", "-Command", script)
+	cmd.Stderr = os.Stdout
+	cmd.Stdout = os.Stdout
+
+	err := cmd.Run()
+	if err != nil {
+		log.Errorf("ERROR removing nrpt rule: %v", err)
 	}
 }
