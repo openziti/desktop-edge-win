@@ -75,7 +75,7 @@ namespace ZitiDesktopEdge.Models {
 			string addys = "<none>";
 			if (Addresses?.Length > 0) {
 				if (Addresses.Length > 1) {
-					addys = "[" + string.Join(",", Addresses.Select(a => a.ToString())) + "]";
+					addys = "[" + string.Join(",", Addresses.Select(a => a.ToString()).OrderBy(o => o)) + "]";
 				} else {
 					addys = Addresses[0].ToString();
                 }
@@ -83,13 +83,13 @@ namespace ZitiDesktopEdge.Models {
 			string ranges = "<none>";
 			if (Ports?.Length > 0) {
 				if (Ports.Length > 1) {
-					ranges = "[" + string.Join(",", Ports.Select(a => a.ToString())) + "]";
+					ranges = "[" + string.Join(",", Ports.Select(a => a.ToString()).OrderBy(o => o)) + "]";
 				} else {
 					ranges = Ports[0].ToString();
 				}
 			}
 
-			return protos + " " + addys + ":" + ranges;
+			return protos + ":" + addys + ":" + ranges;
 		}
 	}
 
