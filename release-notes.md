@@ -1,3 +1,17 @@
+# Release 1.7.
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* [#313](https://github.com/openziti/desktop-edge-win/pull/313) Add identity button missing
+
+## Dependency Updates
+* none
+
 # Release 1.7.9
 
 ## What's New
