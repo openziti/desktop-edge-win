@@ -20,7 +20,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var servicesOfId string
+var servicesOfID string
 
 // identitiesCmd represents the identities command
 var identitiesCmd = &cobra.Command{
@@ -29,13 +29,15 @@ var identitiesCmd = &cobra.Command{
 	Long: `View the identities that this user has access to.
 The records will be fetched from ziti-tunnel`,
 	Run: func(cmd *cobra.Command, args []string) {
-		service.GetIdentities(args, servicesOfId)
+		flags := map[string]interface{}{}
+		flags["services"] = servicesOfID
+		flags["prettyJSON"] = prettyJSON
+		service.GetIdentities(args, flags)
 	},
 }
 
 func init() {
 	listCmd.AddCommand(identitiesCmd)
-	identitiesCmd.Flags().StringVar(&servicesOfId, "services", "", "Lists all services that belonged to the identity")
 
 	// Here you will define your flags and configuration settings.
 
@@ -45,5 +47,7 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// identitiesCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	//identitiesCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	identitiesCmd.Flags().StringVarP(&servicesOfID, "services", "s", "", "Lists all services that belonged to the identity")
+
 }

@@ -19,6 +19,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var prettyJSON bool
+
 // listCmd represents the list command
 var listCmd = &cobra.Command{
 	Use:   "list",
@@ -37,10 +39,9 @@ func init() {
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// listCmd.PersistentFlags().String("help", "", "Supported subcmds are identities and services")
+	listCmd.PersistentFlags().BoolVarP(&prettyJSON, "json", "j", false, "display data in json format")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	//listCmd.Flags().String("identities", "all", "Lists identities from ziti tunnel")
-	//listCmd.Flags().String("services", "all", "Lists services from ziti tunnel")
 }
