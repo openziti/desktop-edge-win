@@ -21,6 +21,8 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/logging"
+	"github.com/sirupsen/logrus"
+	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
@@ -217,5 +219,64 @@ func RemoveNrptRule(hostname string) {
 	err := cmd.Run()
 	if err != nil {
 		log.Errorf("ERROR removing nrpt rule: %v", err)
+	}
+}
+
+func AddNrptRules(domainsToMap map[string]struct{}, dnsServer string) {
+	tmpFile, err := ioutil.TempFile(os.TempDir(), "ziti-tunnel-nrpt-rules-*.ps1")
+	if err != nil {
+		log.Errorf("Failed to write to temporary file, %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	log.Debugf("Created NRPT File at: " + tmpFile.Name())
+
+	text := []byte(fmt.Sprintf(`$Rules = @(
+`))
+	if _, err = tmpFile.Write(text); err != nil {
+		log.Errorf("Failed to write to temporary file: %v", err)
+		return
+	}
+
+	for hostname,_ := range domainsToMap {
+		text := []byte(fmt.Sprintf(`@{ Namespace ="%s"; NameServers = @("%s"); Comment = "Added by ziti-tunnel"; DisplayName = "ziti-tunnel:%s"; }%s`, hostname, dnsServer, hostname, "\n"))
+		if _, err = tmpFile.Write(text); err != nil {
+			log.Errorf("Failed to write to temporary file, %v", err)
+		}
+	}
+
+	text = []byte(fmt.Sprintf(`)
+
+ForEach ($Rule in $Rules) {
+	Add-DnsClientNrptRule @Rule
+}`))
+
+	if _, err = tmpFile.Write(text); err != nil {
+		log.Errorf("Failed to write to temporary file", err)
+		return
+	}
+
+	// Close the file
+	if err := tmpFile.Close(); err != nil {
+		log.Errorf("Failed to close the temp file? %v", err)
+	}
+
+	log.Debugf("removing nrpt rule with script at: %s", tmpFile.Name())
+
+	cmd := exec.Command("powershell", "-File", tmpFile.Name())
+	cmd.Stderr = os.Stdout
+	cmd.Stdout = os.Stdout
+
+	err = cmd.Run()
+	if err != nil {
+		log.Errorf("ERROR removing nrpt rule: %v", err)
+	}
+
+	if log.Level >= logrus.DebugLevel {
+		scriptBody, terr := ioutil.ReadFile(tmpFile.Name())
+		if terr != nil {
+			log.Warnf("could not read file at %s: %v", tmpFile.Name(), err)
+		}
+		log.Debugf("Executing NRPT script:\n%s", scriptBody)
 	}
 }

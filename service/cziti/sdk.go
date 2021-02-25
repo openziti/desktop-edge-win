@@ -30,7 +30,6 @@ extern void doZitiShutdown(uv_async_t *handle);
 extern void zitiContextEvent(ziti_context nf, int status, void *ctx);
 extern void eventCB(ziti_context ztx, ziti_event_t *event);
 
-extern void serviceCB(ziti_context nf, ziti_service*, int status, void *ctx);
 extern void shutdown_callback(uv_async_t *handle);
 extern void free_async(uv_handle_t* timer);
 
@@ -42,6 +41,7 @@ import "C"
 import (
 	"encoding/json"
 	"errors"
+	"github.com/openziti/desktop-edge-win/service/windns"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/logging"
 	"os"
@@ -235,14 +235,15 @@ func doZitiShutdown(async *C.uv_async_t) {
 var cTunClientCfgName = C.CString("ziti-tunneler-client.v1")
 var cTunServerCfgName = C.CString("ziti-tunneler-server.v1")
 
-//export serviceCB
-func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx unsafe.Pointer) {
+func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx unsafe.Pointer) (string, bool){
+	hostname := ""
 	isCnull := tnlr_ctx == C.NULL
 	isNil := tnlr_ctx == nil
 	if isCnull || isNil {
 		log.Errorf("in serviceCB with null tnlr_ctx??? ")
-		return
+		return hostname, false
 	}
+
 	zid := (*ZIdentity)(tnlr_ctx)
 
 	name := C.GoString(service.name)
@@ -280,31 +281,30 @@ func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx
 
 		cfg := C.ziti_service_get_raw_config(service, cTunClientCfgName)
 
-		host := ""
 		port := -1
 		if cfg != nil {
 			var c map[string]interface{}
 
 			if err := json.Unmarshal([]byte(C.GoString(cfg)), &c); err == nil {
-				host = c["hostname"].(string)
+				hostname = c["hostname"].(string)
 				port = int(c["port"].(float64))
 			}
 		}
 
-		if host != "" && port != -1 {
-			ip, ownsIntercept, err := DNSMgr.RegisterService(svcId, host, uint16(port), zid, name)
+		if hostname != "" && port != -1 {
+			ip, ownsIntercept, err := DNSMgr.RegisterService(svcId, hostname, uint16(port), zid, name)
 			if err != nil {
 				log.Warn(err)
-				log.Infof("service intercept beginning for service: %s@%s:%d on ip %s", name, host, port, ip.String())
+				log.Infof("service intercept beginning for service: %s@%s:%d on ip %s", name, hostname, port, ip.String())
 				AddIntercept(svcId, name, ip.String(), port, unsafe.Pointer(zid.czctx))
 			} else {
-				log.Infof("service intercept beginning for service: %s@%s:%d on ip %s", name, host, port, ip.String())
+				log.Infof("service intercept beginning for service: %s@%s:%d on ip %s", name, hostname, port, ip.String())
 				AddIntercept(svcId, name, ip.String(), port, unsafe.Pointer(zid.czctx))
 			}
 			added := ZService{
 				Name:          name,
 				Id:            svcId,
-				InterceptHost: host,
+				InterceptHost: hostname,
 				InterceptPort: uint16(port),
 				AssignedIP:    ip.String(),
 				OwnsIntercept: ownsIntercept,
@@ -316,9 +316,10 @@ func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx
 				ZitiContext: zid,
 			}
 		} else {
-			log.Debugf("service named %s is not enabled for 'tunneling'. host:%s port:%d", name, host, port)
+			log.Debugf("service named %s is not enabled for 'tunneling'. host:%s port:%d", name, hostname, port)
 		}
 	}
+	return hostname, true
 }
 
 func serviceUnavailable(ctx *ZIdentity, svcId string, name string) {
@@ -339,6 +340,8 @@ func serviceUnavailable(ctx *ZIdentity, svcId string, name string) {
 		log.Warnf("could not remove service? service not found with id: %s, name: %s in context %d", svcId, name, &ctx)
 	}
 }
+type void struct{}
+var nothing void
 
 //export eventCB
 func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
@@ -364,33 +367,51 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 		}
 
 	case C.ZitiServiceEvent:
+		hostnamesToAdd := make(map[string]struct{})
+		hostnamesToRemove := make(map[string]struct{})
 		srvEvent := C.ziti_event_service_event(event)
-		for i := 0; true ; i++ {
+		for i := 0; true; i++ {
 			s := C.ziti_service_array_get(srvEvent.removed, C.int(i))
 			if unsafe.Pointer(s) == C.NULL {
 				break
 			}
-			serviceCB(ztx, s, C.ZITI_SERVICE_UNAVAILABLE, appCtx)
+			hostname, ok := serviceCB(ztx, s, C.ZITI_SERVICE_UNAVAILABLE, appCtx)
 
+			if ok && hostname != "" {
+				hostnamesToRemove[hostname] = nothing
+			}
 			log.Info("service removed ", C.GoString(s.name))
 		}
-		for i := 0; true ; i++ {
+		for i := 0; true; i++ {
 			s := C.ziti_service_array_get(srvEvent.changed, C.int(i))
 			if unsafe.Pointer(s) == C.NULL {
 				break
 			}
-			log.Info("service changed ", C.GoString(s.name))
-			serviceCB(ztx, s, C.ZITI_OK, appCtx)
+			log.Info("service changed remove the service then add it back immediately", C.GoString(s.name))
+			hostname, ok := serviceCB(ztx, s, C.ZITI_SERVICE_UNAVAILABLE, appCtx)
+			if ok && hostname != "" {
+				hostnamesToRemove[hostname] = nothing
+			}
+			hostname, ok = serviceCB(ztx, s, C.ZITI_OK, appCtx)
+			if ok && hostname != "" {
+				hostnamesToAdd[hostname] = nothing
+			}
 		}
-		for i := 0; true ; i++ {
+		for i := 0; true; i++ {
 			s := C.ziti_service_array_get(srvEvent.added, C.int(i))
 			if unsafe.Pointer(s) == C.NULL {
 				break
 			}
 			log.Info("service added ", C.GoString(s.name))
-			serviceCB(ztx, s, C.ZITI_OK, appCtx)
+			hostname, ok := serviceCB(ztx, s, C.ZITI_OK, appCtx)
+			if ok && hostname != "" {
+				hostnamesToAdd[hostname] = nothing
+			}
 		}
 
+		windns.AddNrptRules(hostnamesToAdd, dnsip.String())
+		log.Infof("mapped the following hostnames: %v", hostnamesToAdd)
+		log.Infof("unmapped the following hostnames: %v", hostnamesToRemove)
 	default:
 		log.Infof("event %d not handled", event._type)
 	}

@@ -13,7 +13,7 @@
 * none
 
 ## Bugs fixed:
-* [#313](https://github.com/openziti/desktop-edge-win/issues/313) Initial install could not add identities as the button was hidden
+* none
 
 ## Dependency Updates
 * none
