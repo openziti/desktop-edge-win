@@ -237,11 +237,12 @@ var cTunServerCfgName = C.CString("ziti-tunneler-server.v1")
 
 func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx unsafe.Pointer) (string, bool){
 	hostname := ""
+	mapIt := false
 	isCnull := tnlr_ctx == C.NULL
 	isNil := tnlr_ctx == nil
 	if isCnull || isNil {
 		log.Errorf("in serviceCB with null tnlr_ctx??? ")
-		return hostname, false
+		return hostname, mapIt
 	}
 
 	zid := (*ZIdentity)(tnlr_ctx)
@@ -292,7 +293,8 @@ func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx
 		}
 
 		if hostname != "" && port != -1 {
-			ip, ownsIntercept, err := DNSMgr.RegisterService(svcId, hostname, uint16(port), zid, name)
+			ip, ownsIntercept, err, isIp := DNSMgr.RegisterService(svcId, hostname, uint16(port), zid, name)
+			mapIt = !isIp
 			if err != nil {
 				log.Warn(err)
 				log.Infof("service intercept beginning for service: %s@%s:%d on ip %s", name, hostname, port, ip.String())
@@ -319,7 +321,7 @@ func serviceCB(_ C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx
 			log.Debugf("service named %s is not enabled for 'tunneling'. host:%s port:%d", name, hostname, port)
 		}
 	}
-	return hostname, true
+	return hostname, mapIt
 }
 
 func serviceUnavailable(ctx *ZIdentity, svcId string, name string) {

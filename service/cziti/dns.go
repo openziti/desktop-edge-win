@@ -34,7 +34,7 @@ var dnsip net.IP
 type DnsManager interface {
 	Resolve(dnsName string) net.IP
 
-	RegisterService(svcId string, dnsNameToReg string, port uint16, ctx *ZIdentity, svcName string) (net.IP, bool, error)
+	RegisterService(svcId string, dnsNameToReg string, port uint16, ctx *ZIdentity, svcName string) (net.IP, bool, error, bool)
 	UnregisterService(host string, port uint16) bool
 	ReturnToDns(hostname string) net.IP
 }
@@ -99,7 +99,7 @@ func normalizeDnsName(dnsName string) string {
 
 // RegisterService will return the next ip address in the configured range. If the ip address is not
 // assigned to a hostname an error will also be returned indicating why.
-func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint16, zid *ZIdentity, svcName string) (net.IP, bool, error) {
+func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint16, zid *ZIdentity, svcName string) (net.IP, bool, error, bool) {
 	//check to see if host is an ip address - if so we want to intercept the ip. otherwise treat host as a host
 	//name and register it in dns, obtain an ip and all that...
 	ip := net.ParseIP(dnsNameToReg)
@@ -140,12 +140,12 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 			if foundIp.network != currentNetwork {
 				log.Warnf("Register FAIL: Exact same intercept specified spanning networks: %s. Valid for: %s Invalid for: %s]", icept.String(), foundIp.network, currentNetwork)
 				// means the host:port are mapped to some other *identity* already. that's an invalid state
-				return ip, false, fmt.Errorf("service mapping conflict for service name %s. %s:%d in %s is already mapped by another identity in %s", svcName, dnsNameToReg, port, currentNetwork, foundIp.network)
+				return ip, false, fmt.Errorf("service mapping conflict for service name %s. %s:%d in %s is already mapped by another identity in %s", svcName, dnsNameToReg, port, currentNetwork, foundIp.network), isIp
 			}
 			if foundContext.serviceId != svcId {
 				log.Warnf("Register FAIL: Two services with the same intercept specified: %s [%s != %s]", icept.String(), foundContext.serviceId, svcId)
 				// means the host:port are mapped to some other service already. that's an invalid state
-				return ip, false, fmt.Errorf("service mapping conflict for service name %s. %s:%d is already mapped by service id %s", svcName, dnsNameToReg, port, foundContext.serviceId)
+				return ip, false, fmt.Errorf("service mapping conflict for service name %s. %s:%d is already mapped by service id %s", svcName, dnsNameToReg, port, foundContext.serviceId), isIp
 			}
 			log.Debugf("RegisterService called for the exact same serviceId: %s [%s == %s]", icept.String(), foundContext.serviceId, svcId)
 		} else {
@@ -204,7 +204,7 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 		}
 	}
 
-	return ip, true, nil
+	return ip, true, nil, isIp
 }
 
 func (dns *dnsImpl) Resolve(toResolve string) net.IP {
