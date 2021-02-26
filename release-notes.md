@@ -1,4 +1,4 @@
-# Release 1.8.0
+# Release 1.9.0
 
 ## What's New
 * MFA - details to follow
@@ -11,6 +11,40 @@
 
 ## Dependency Updates
 * Tunneler SDK to v0.10.0/CSDK 0.20.13
+
+# Release 1.8.0
+
+## What's New
+* DNS resolution has *CHANGED*. Users have had issues with the proxied DNS requests at times leading to an
+  experience that was frustrating at time. Restarting the client fixed the problem but is also not what we want.
+  Now the Ziti Desktop Edge for Windows will add NRPT rules and only send intercepted services to the resolver.
+  The resolver will still proxy requests it does not know but fewer requests should need to be made to the internal
+  DNS resolver.
+* The internal DNS resolver no longer needs to be the primary DNS resolver on all interfaces due to the change
+  mentioned above  
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* none
+
+# Release 1.7.10
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* [#313](https://github.com/openziti/desktop-edge-win/pull/313) Add identity button missing
+
+## Dependency Updates
+* none
 
 # Release 1.7.9
 

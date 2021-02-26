@@ -39,11 +39,11 @@ var dnsMgrPrivate = &dnsImpl{}
 var DNSMgr DnsManager = dnsMgrPrivate
 
 type dnsImpl struct {
-	cidr    uint32
-	ipCount uint32
-	serviceMap map[string]*ctxService
+	cidr        uint32
+	ipCount     uint32
+	serviceMap  map[string]*ctxService
 	hostnameMap map[string]*ctxIp
-	tun api.DesktopEdgeIface
+	tun         api.DesktopEdgeIface
 }
 
 func (dns *dnsImpl) ApplyDNS(dnsNameToReg string, ip string) {
@@ -66,6 +66,7 @@ type intercept struct {
 	port uint16
 	isIp bool
 }
+
 func (i intercept) String() string {
 	return i.AsHostPort()
 }
@@ -85,7 +86,7 @@ type ctxIp struct {
 	ip         net.IP
 	network    string
 	dnsEnabled bool
-	refCount  int
+	refCount   int
 }
 
 type ctxService struct {
@@ -127,9 +128,7 @@ func DnsInit(tun api.DesktopEdgeIface, ip string, maskBits int) {
 		dnsMgrPrivate.hostnameMap = make(map[string]*ctxIp)
 		//register the test dns entry:
 		dnsMgrPrivate.hostnameMap[normalizeDnsName("dew-dns-probe.openziti.org")] = &ctxIp{
-			//ctx:        nil,
 			ip:         net.ParseIP("127.0.0.1"),
-			//network:    "",
 			dnsEnabled: true,
 			refCount:   0,
 		}

@@ -222,7 +222,6 @@ namespace ZitiDesktopEdge {
 				MenuTitle.Content = "Set Release Stream";
 				ReleaseStreamItems.Visibility = allowReleaseSelect ? Visibility.Visible : Visibility.Collapsed;
 				BackArrow.Visibility = Visibility.Visible;
-				//xxxxxxxx
 			} else if (menuState == "Config") {
 				MenuTitle.Content = "Tunnel Configuration";
 				ConfigItems.Visibility = Visibility.Visible;
