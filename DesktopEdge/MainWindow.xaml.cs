@@ -10,6 +10,7 @@ using System.Windows.Controls;
 using System.Drawing;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Media.Animation;
 
 using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.DataStructures;
@@ -312,7 +313,7 @@ namespace ZitiDesktopEdge {
 
 		string nextVersionStr  = null;
         private void MonitorClient_OnReconnectFailure(object sender, object e) {
-            if(nextVersionStr == null) {
+            if (nextVersionStr == null) {
 				// check for the current version
 				nextVersionStr = "checking for update";
 				Version nextVersion = VersionUtil.NormalizeVersion(GithubAPI.GetVersion(GithubAPI.GetJson(GithubAPI.ProdUrl)));
@@ -331,7 +332,6 @@ namespace ZitiDesktopEdge {
 					logger.Info("Current version installed: {0} is the same as the latest released version {1}", currentVersion, nextVersion);
 					MainMenu.SetAppUpgradeAvailableText("");
 				}
-
 			}
         }
 
@@ -445,6 +445,9 @@ namespace ZitiDesktopEdge {
 
 		bool startZitiButtonVisible = false;
 		private void ShowServiceNotStarted() {
+			TunnelConnected(false);
+			LoadIdentities(true);
+			/*
 			this.Dispatcher.Invoke(() => {
 				semaphoreSlim.Wait(); //make sure the event is only added to the button once
 				CloseErrorButton.Click -= CloseError;
@@ -456,6 +459,7 @@ namespace ZitiDesktopEdge {
 				semaphoreSlim.Release();
 				SetCantDisplay("Service Not Started", "Do you want to start the data service now?", Visibility.Visible);
 			});
+			*/
 		}
 
 		private void MonitorClient_OnClientConnected(object sender, object e) {
@@ -689,13 +693,12 @@ namespace ZitiDesktopEdge {
 			IdList.MaxHeight = _maxHeight - 520;
 			ZitiIdentity[] ids = identities.OrderBy(i => i.Name.ToLower()).ToArray();
 			MainMenu.SetupIdList(ids);
-			double height = 490 + (ids.Length * 60);
-			if (height > _maxHeight) height = _maxHeight;
 
-			this.Height = height;
-			IdentityMenu.SetHeight(this.Height - 160);
-
-			if (ids.Length>0) {
+			if (ids.Length>0&&serviceClient.Connected) {
+				double height = 490 + (ids.Length * 60);
+				if (height > _maxHeight) height = _maxHeight;
+				this.Height = height;
+				IdentityMenu.SetHeight(this.Height - 160);
 				MainMenu.IdentitiesButton.Visibility = Visibility.Visible;
 				foreach (var id in ids) {
 					IdentityItem idItem = new IdentityItem();
@@ -710,11 +713,19 @@ namespace ZitiDesktopEdge {
 					idItem.Identity = id;
 					IdList.Children.Add(idItem);
 				}
-				IdList.Height = (double)(ids.Length * 64);
+				//IdList.Height = ;
+				DoubleAnimation animation = new DoubleAnimation((double)(ids.Length * 64), TimeSpan.FromSeconds(.3));
+				IdList.BeginAnimation(FrameworkElement.HeightProperty, animation);
 				IdListScroller.Visibility = Visibility.Visible;
+				AddIdButton.Visibility = Visibility.Visible;
+				AddIdAreaButton.Visibility = Visibility.Visible;
 			} else {
+				this.Height = 490;
 				MainMenu.IdentitiesButton.Visibility = Visibility.Collapsed;
 				IdListScroller.Visibility = Visibility.Collapsed;
+				AddIdButton.Visibility = Visibility.Visible;
+				AddIdAreaButton.Visibility = Visibility.Visible;
+				Debug.WriteLine("Height: " + this.Height + " " + this.ActualHeight);
 			}
 
 			Placement();
@@ -858,16 +869,6 @@ namespace ZitiDesktopEdge {
 			_tunnelUptimeTimer.Enabled = true;
 			_tunnelUptimeTimer.Start();
 		}
-		private void ConnectButtonClick(object sender, RoutedEventArgs e) {
-			if (!_isServiceInError) {
-				ShowLoad("Starting Service", "Please wait while the service is started...");
-				this.Dispatcher.Invoke(async () => {
-					//Dispatcher.Invoke(new Action(() => { }), System.Windows.Threading.DispatcherPriority.ContextIdle);
-					await DoConnectAsync();
-					HideLoad();
-				});
-			}
-		}
 
 		async private Task DoConnectAsync() {
 			try {
@@ -992,6 +993,49 @@ namespace ZitiDesktopEdge {
 			} else {
 				ShowError("Error Collecting Feedback", "An error occurred while trying to gather feedback. Is the monitor service running?");
             }
+		}
+
+		private string _blurbUrl = "";
+
+		public void ShowBlurb(string message, string url) {
+			Blurb.Content = message;
+			_blurbUrl = url;
+			BlurbArea.Visibility = Visibility.Visible;
+			BlurbArea.Opacity = 0;
+			BlurbArea.Margin = new Thickness(0, 0, 0, 0);
+			DoubleAnimation animation = new DoubleAnimation(1, TimeSpan.FromSeconds(.3));
+			ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(15, 0, 15, 15), TimeSpan.FromSeconds(.3));
+			BlurbArea.BeginAnimation(Grid.OpacityProperty, animation);
+			BlurbArea.BeginAnimation(Grid.MarginProperty, animateThick);
+		}
+
+		private void DoHideBlurb(object sender, MouseButtonEventArgs e) {
+			HideBlurb();
+		}
+
+		private void HideBlurb() {
+			DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
+			ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
+			animation.Completed += HideComplete;
+			BlurbArea.BeginAnimation(Grid.OpacityProperty, animation);
+			BlurbArea.BeginAnimation(Grid.MarginProperty, animateThick);
+		}
+
+		private void HideComplete(object sender, EventArgs e) {
+			BlurbArea.Visibility = Visibility.Collapsed;
+		}
+
+		private void BlurbAction(object sender, MouseButtonEventArgs e) {
+			if (_blurbUrl.Length>0) {
+				// So this simply execute a url but you could do like if (_blurbUrl=="DoSomethingNifty") CallNifyFunction();
+				Process.Start(new ProcessStartInfo(_blurbUrl) { UseShellExecute = true });
+			} else {
+				HideBlurb();
+			}
+		}
+
+		private void UploadSpeedLabel_MouseUp(object sender, MouseButtonEventArgs e) {
+			ShowBlurb("An Update is available!", "https://www.axeda.com?buddy=true");
 		}
 
 		/*
