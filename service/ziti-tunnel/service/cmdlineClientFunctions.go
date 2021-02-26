@@ -12,7 +12,7 @@ import (
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 )
 
-type fetchFromRTS func([]string, *dto.TunnelStatus, map[string]interface{}) dto.Response
+type fetchFromRTS func([]string, *dto.TunnelStatus, map[string]bool) dto.Response
 
 func sendMessagetoPipe(ipcPipeConn net.Conn, commandMsg *dto.CommandMsg, args []string) error {
 	writer := bufio.NewWriter(ipcPipeConn)
@@ -31,7 +31,7 @@ func sendMessagetoPipe(ipcPipeConn net.Conn, commandMsg *dto.CommandMsg, args []
 	return nil
 }
 
-func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}, fn fetchFromRTS, args []string, flags map[string]interface{}) {
+func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}, fn fetchFromRTS, args []string, flags map[string]bool) {
 	for {
 
 		reader := bufio.NewReader(ipcPipeConn)
@@ -75,16 +75,16 @@ func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}, fn fetchF
 }
 
 //GetIdentities is to fetch identities through cmdline
-func GetIdentities(args []string, flags map[string]interface{}) {
+func GetIdentities(args []string, flags map[string]bool) {
 	getDataFromIpcPipe(&GET_STATUS, GetIdentitiesFromRTS, args, flags)
 }
 
 //GetServices is to fetch services through cmdline
-func GetServices(args []string, flags map[string]interface{}) {
+func GetServices(args []string, flags map[string]bool) {
 	getDataFromIpcPipe(&GET_STATUS, GetServicesFromRTS, args, flags)
 }
 
-func getDataFromIpcPipe(commandMsg *dto.CommandMsg, fn fetchFromRTS, args []string, flags map[string]interface{}) {
+func getDataFromIpcPipe(commandMsg *dto.CommandMsg, fn fetchFromRTS, args []string, flags map[string]bool) {
 	log.Infof("fetching identities through cmdline...%s", args)
 
 	log.Debug("Connecting to pipe")

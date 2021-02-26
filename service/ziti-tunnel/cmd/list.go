@@ -1,3 +1,5 @@
+package cmd
+
 /*
 Copyright © 2021 NAME HERE <EMAIL ADDRESS>
 
@@ -13,7 +15,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package cmd
 
 import (
 	"github.com/spf13/cobra"
@@ -41,7 +42,4 @@ func init() {
 	// and all subcommands, e.g.:
 	listCmd.PersistentFlags().BoolVarP(&prettyJSON, "json", "j", false, "display data in json format")
 
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	//listCmd.Flags().String("identities", "all", "Lists identities from ziti tunnel")
 }

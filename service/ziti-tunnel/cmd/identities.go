@@ -1,3 +1,5 @@
+package cmd
+
 /*
 Copyright © 2021 NAME HERE <EMAIL ADDRESS>
 
@@ -13,14 +15,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package cmd
 
 import (
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/service"
 	"github.com/spf13/cobra"
 )
 
-var servicesOfID string
+var servicesOfID bool
 
 // identitiesCmd represents the identities command
 var identitiesCmd = &cobra.Command{
@@ -29,7 +30,7 @@ var identitiesCmd = &cobra.Command{
 	Long: `View the identities that this user has access to.
 The records will be fetched from ziti-tunnel`,
 	Run: func(cmd *cobra.Command, args []string) {
-		flags := map[string]interface{}{}
+		flags := map[string]bool{}
 		flags["services"] = servicesOfID
 		flags["prettyJSON"] = prettyJSON
 		service.GetIdentities(args, flags)
@@ -41,13 +42,9 @@ func init() {
 
 	// Here you will define your flags and configuration settings.
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// identitiesCmd.PersistentFlags().String("foo", "", "A help for foo")
-
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	//identitiesCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	identitiesCmd.Flags().StringVarP(&servicesOfID, "services", "s", "", "Lists all services that belonged to the identity")
+	identitiesCmd.Flags().BoolVarP(&servicesOfID, "services", "s", false, "Display all services that belonged to the identity")
 
 }

@@ -33,10 +33,13 @@ func convertToServiceCli(svc dto.Service) ServiceCli {
 }
 
 // GetIdentitiesFromRTS is to get identities from the RTS
-func GetIdentitiesFromRTS(args []string, status *dto.TunnelStatus, flags map[string]interface{}) dto.Response {
-	message := fmt.Sprintf("Listing Identities - %s", args)
+func GetIdentitiesFromRTS(args []string, status *dto.TunnelStatus, flags map[string]bool) dto.Response {
 
 	var filteredIdentities []IdentityCli
+
+	if flags["services"] {
+		return filterServicesByIdentity(args, status, flags)
+	}
 
 	for _, val := range args {
 		if val == "all" {
@@ -52,45 +55,41 @@ func GetIdentitiesFromRTS(args []string, status *dto.TunnelStatus, flags map[str
 			}
 		}
 	}
+
 	if len(filteredIdentities) == 0 {
-		errMsg := fmt.Sprintf("Could not find Identities matching %s", args)
-		return dto.Response{Message: message, Code: ERROR, Error: errMsg, Payload: nil}
+		errMsg := fmt.Sprintf("Could not find identities matching %s", args)
+		return dto.Response{Message: "", Code: ERROR, Error: errMsg, Payload: nil}
 	}
-	var identitiesBytes []byte
-	var err error
-
-	if flags["prettyJSON"] == true {
-		identitiesBytes, err = json.MarshalIndent(filteredIdentities, "", "	")
-
-		if err != nil {
-			log.Error(err)
-			return dto.Response{Message: message, Code: ERROR, Error: "Could not fetch Identities from Runtime", Payload: nil}
-		}
-
-	} else {
-		templateStr := "{{printf \"%40s\" \"Name\"}} | {{printf \"%41s\" \"FingerPrint\"}} | {{printf \"%6s\" \"Active\"}} | {{printf \"%30s\" \"Config\"}} | {{\"Status\"}}\n"
-		templateStr += "{{range .}}{{printf \"%40s\" .Name}} | {{printf \"%41s\" .FingerPrint}} | {{printf \"%6s\" .Active}} | {{printf \"%30s\" .Config}} | {{.Status}}\n{{end}}"
-		it, err := template.New("filteredIdentities").Parse(templateStr)
-
-		if err != nil {
-			log.Error(err)
-			return dto.Response{Message: message, Code: ERROR, Error: "Could not parse Identities from Runtime", Payload: nil}
-		}
-
-		err = it.Execute(os.Stdout, filteredIdentities)
-
-		if err != nil {
-			log.Error(err)
-			return dto.Response{Message: message, Code: ERROR, Error: "Could not print Identities from Runtime", Payload: nil}
-		}
-	}
-
-	identitiesStr := string(identitiesBytes)
-	return dto.Response{Message: message, Code: SUCCESS, Error: "", Payload: identitiesStr}
+	message := fmt.Sprintf("Listing %d identities - %s", len(filteredIdentities), args)
+	return generateResponse("identities", message, filteredIdentities, flags, templateIdentity)
 }
 
-func GetServicesFromRTS(args []string, status *dto.TunnelStatus, flags map[string]interface{}) dto.Response {
-	message := fmt.Sprintf("Listing Services - %s", args)
+func filterServicesByIdentity(identity []string, status *dto.TunnelStatus, flags map[string]bool) dto.Response {
+	var filteredServices []ServiceCli
+
+	for _, id := range status.Identities {
+		for _, filterID := range identity {
+			if (filterID == "all" || id.Name == filterID) && len(id.Services) > 0 {
+				for _, svc := range id.Services {
+					filteredServices = append(filteredServices, convertToServiceCli(*svc))
+				}
+				// if the filterId array has all or matching string, then fetch all the services and break from the filter loop
+				break
+			}
+		}
+
+	}
+
+	if len(filteredServices) == 0 {
+		errMsg := fmt.Sprintf("Could not find services for identity %s", identity)
+		return dto.Response{Message: "", Code: ERROR, Error: errMsg, Payload: nil}
+	}
+	message := fmt.Sprintf("Listing %d services for identity - %s", len(filteredServices), identity)
+	return generateResponse("services", message, filteredServices, flags, templateService)
+
+}
+
+func GetServicesFromRTS(args []string, status *dto.TunnelStatus, flags map[string]bool) dto.Response {
 
 	var filteredServices []ServiceCli
 
@@ -116,41 +115,47 @@ func GetServicesFromRTS(args []string, status *dto.TunnelStatus, flags map[strin
 			}
 		}
 	}
+
 	if len(filteredServices) == 0 {
 		errMsg := fmt.Sprintf("Could not find services matching %s", args)
-		return dto.Response{Message: message, Code: ERROR, Error: errMsg, Payload: nil}
+		return dto.Response{Message: "", Code: ERROR, Error: errMsg, Payload: nil}
 	}
+	message := fmt.Sprintf("Listing %d services - %s", len(filteredServices), args)
 
-	var servicesBytes []byte
+	return generateResponse("services", message, filteredServices, flags, templateService)
+
+}
+
+func generateResponse(dataType string, message string, filteredData interface{}, flags map[string]bool, templateStr string) dto.Response {
+
+	var bytesData []byte
 	var err error
 
 	if flags["prettyJSON"] == true {
-		servicesBytes, err = json.MarshalIndent(filteredServices, "", "	")
+		bytesData, err = json.MarshalIndent(filteredData, "", "	")
 
 		if err != nil {
 			log.Error(err)
-			return dto.Response{Message: message, Code: ERROR, Error: "Could not fetch services from Runtime", Payload: nil}
+			return dto.Response{Message: message, Code: ERROR, Error: "Could not fetch " + dataType + " from Runtime", Payload: nil}
 		}
 
 	} else {
-		templateStr := "{{printf \"%30s\" \"Name\"}} | {{printf \"%15s\" \"Id\"}} | {{printf \"%30s\" \"InterceptHost\"}} | {{printf \"%14s\" \"InterceptPort\"}} | {{printf \"%15s\" \"AssignedIP\"}} | {{printf \"%15s\" \"AssignedHost\"}} | {{\"OwnsIntercept\"}}\n"
-		templateStr += "{{range .}}{{printf \"%30s\" .Name}} | {{printf \"%15s\" .Id}} | {{printf \"%30s\" .InterceptHost}} | {{printf \"%14s\" .InterceptPort}} | {{printf \"%15s\" .AssignedIP}} | {{printf \"%15s\" \"AssignedHost\"}} | {{\"OwnsIntercept\"}}\n{{end}}"
-		it, err := template.New("filteredServices").Parse(templateStr)
+		it, err := template.New("filteredData").Parse(templateStr)
 
 		if err != nil {
 			log.Error(err)
-			return dto.Response{Message: message, Code: ERROR, Error: "Could not parse Identities from Runtime", Payload: nil}
+			return dto.Response{Message: message, Code: ERROR, Error: "Could not parse " + dataType + " from Runtime", Payload: nil}
 		}
 
-		err = it.Execute(os.Stdout, filteredServices)
+		err = it.Execute(os.Stdout, filteredData)
 
 		if err != nil {
 			log.Error(err)
-			return dto.Response{Message: message, Code: ERROR, Error: "Could not print Identities from Runtime", Payload: nil}
+			return dto.Response{Message: message, Code: ERROR, Error: "Could not print " + dataType + " from Runtime", Payload: nil}
 		}
 	}
 
-	servicesStr := string(servicesBytes)
+	responseStr := string(bytesData)
 
-	return dto.Response{Message: message, Code: SUCCESS, Error: "", Payload: servicesStr}
+	return dto.Response{Message: message, Code: SUCCESS, Error: "", Payload: responseStr}
 }
