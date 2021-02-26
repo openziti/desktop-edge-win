@@ -4,7 +4,6 @@ go 1.14
 
 require (
 	github.com/Microsoft/go-winio v0.4.16
-	github.com/go-delve/delve v1.6.0 // indirect
 	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lestrrat-go/strftime v1.0.4 // indirect
@@ -18,7 +17,6 @@ require (
 	github.com/openziti/sdk-golang v0.15.6
 	github.com/orcaman/concurrent-map v0.0.0-20210106121528-16402b402231 // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
-	github.com/prometheus/common v0.4.0
 	github.com/shirou/gopsutil v3.20.12+incompatible // indirect
 	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/afero v1.5.1 // indirect
