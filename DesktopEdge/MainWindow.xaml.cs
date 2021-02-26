@@ -717,15 +717,10 @@ namespace ZitiDesktopEdge {
 				DoubleAnimation animation = new DoubleAnimation((double)(ids.Length * 64), TimeSpan.FromSeconds(.3));
 				IdList.BeginAnimation(FrameworkElement.HeightProperty, animation);
 				IdListScroller.Visibility = Visibility.Visible;
-				AddIdButton.Visibility = Visibility.Visible;
-				AddIdAreaButton.Visibility = Visibility.Visible;
 			} else {
 				this.Height = 490;
 				MainMenu.IdentitiesButton.Visibility = Visibility.Collapsed;
 				IdListScroller.Visibility = Visibility.Collapsed;
-				AddIdButton.Visibility = Visibility.Visible;
-				AddIdAreaButton.Visibility = Visibility.Visible;
-				Debug.WriteLine("Height: " + this.Height + " " + this.ActualHeight);
 			}
 
 			Placement();
@@ -744,9 +739,19 @@ namespace ZitiDesktopEdge {
 			if (isConnected) {
 				ConnectButton.Visibility = Visibility.Collapsed;
 				DisconnectButton.Visibility = Visibility.Visible;
+				AddIdButton.Content = "Add Identity";
+				AddIdButton.IsEnabled = true;
+				SetNotifyIcon("green");
 			} else {
 				ConnectButton.Visibility = Visibility.Visible;
 				DisconnectButton.Visibility = Visibility.Collapsed;
+				SetNotifyIcon("white");
+				AddIdButton.Content = "Service is Not Connected";
+				AddIdButton.IsEnabled = false;
+				UploadSpeed.Content = "0.0";
+				UploadSpeedLabel.Content = "bps";
+				DownloadSpeed.Content = "0.0";
+				DownloadSpeedLabel.Content = "bps";
 			}
 		}
 
