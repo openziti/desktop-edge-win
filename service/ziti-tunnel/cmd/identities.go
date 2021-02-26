@@ -17,7 +17,7 @@ limitations under the License.
 */
 
 import (
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/service"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/cli"
 	"github.com/spf13/cobra"
 )
 
@@ -33,7 +33,7 @@ The records will be fetched from ziti-tunnel`,
 		flags := map[string]bool{}
 		flags["services"] = servicesOfID
 		flags["prettyJSON"] = prettyJSON
-		service.GetIdentities(args, flags)
+		cli.GetIdentities(args, flags)
 	},
 }
 

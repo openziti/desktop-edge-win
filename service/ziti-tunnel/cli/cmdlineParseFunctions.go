@@ -1,17 +1,18 @@
-package service
+package cli
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 	"text/template"
 
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/service"
 )
 
-func convertToIdentityCli(id *dto.Identity) IdentityCli {
-	return IdentityCli{
+func convertToIdentityCli(id *dto.Identity) dto.IdentityCli {
+	return dto.IdentityCli{
 		Name:        id.Name,
 		FingerPrint: id.FingerPrint,
 		Active:      id.Active,
@@ -20,8 +21,8 @@ func convertToIdentityCli(id *dto.Identity) IdentityCli {
 	}
 }
 
-func convertToServiceCli(svc dto.Service) ServiceCli {
-	return ServiceCli{
+func convertToServiceCli(svc dto.Service) dto.ServiceCli {
+	return dto.ServiceCli{
 		Name:          svc.Name,
 		Id:            svc.Id,
 		InterceptHost: svc.InterceptHost,
@@ -35,7 +36,7 @@ func convertToServiceCli(svc dto.Service) ServiceCli {
 // GetIdentitiesFromRTS is to get identities from the RTS
 func GetIdentitiesFromRTS(args []string, status *dto.TunnelStatus, flags map[string]bool) dto.Response {
 
-	var filteredIdentities []IdentityCli
+	var filteredIdentities []dto.IdentityCli
 
 	if flags["services"] {
 		return filterServicesByIdentity(args, status, flags)
@@ -58,14 +59,14 @@ func GetIdentitiesFromRTS(args []string, status *dto.TunnelStatus, flags map[str
 
 	if len(filteredIdentities) == 0 {
 		errMsg := fmt.Sprintf("Could not find identities matching %s", args)
-		return dto.Response{Message: "", Code: ERROR, Error: errMsg, Payload: nil}
+		return dto.Response{Message: "", Code: service.ERROR, Error: errMsg, Payload: nil}
 	}
-	message := fmt.Sprintf("Listing %d identities - %s", len(filteredIdentities), args)
+	message := fmt.Sprintf("Got %d identities - %s", len(filteredIdentities), args)
 	return generateResponse("identities", message, filteredIdentities, flags, templateIdentity)
 }
 
 func filterServicesByIdentity(identity []string, status *dto.TunnelStatus, flags map[string]bool) dto.Response {
-	var filteredServices []ServiceCli
+	var filteredServices []dto.ServiceCli
 
 	for _, id := range status.Identities {
 		for _, filterID := range identity {
@@ -82,16 +83,16 @@ func filterServicesByIdentity(identity []string, status *dto.TunnelStatus, flags
 
 	if len(filteredServices) == 0 {
 		errMsg := fmt.Sprintf("Could not find services for identity %s", identity)
-		return dto.Response{Message: "", Code: ERROR, Error: errMsg, Payload: nil}
+		return dto.Response{Message: "", Code: service.ERROR, Error: errMsg, Payload: nil}
 	}
-	message := fmt.Sprintf("Listing %d services for identity - %s", len(filteredServices), identity)
+	message := fmt.Sprintf("Got %d services for identity - %s", len(filteredServices), identity)
 	return generateResponse("services", message, filteredServices, flags, templateService)
 
 }
 
 func GetServicesFromRTS(args []string, status *dto.TunnelStatus, flags map[string]bool) dto.Response {
 
-	var filteredServices []ServiceCli
+	var filteredServices []dto.ServiceCli
 
 	for _, val := range args {
 		if val == "all" {
@@ -118,9 +119,9 @@ func GetServicesFromRTS(args []string, status *dto.TunnelStatus, flags map[strin
 
 	if len(filteredServices) == 0 {
 		errMsg := fmt.Sprintf("Could not find services matching %s", args)
-		return dto.Response{Message: "", Code: ERROR, Error: errMsg, Payload: nil}
+		return dto.Response{Message: "", Code: service.ERROR, Error: errMsg, Payload: nil}
 	}
-	message := fmt.Sprintf("Listing %d services - %s", len(filteredServices), args)
+	message := fmt.Sprintf("Got %d services - %s", len(filteredServices), args)
 
 	return generateResponse("services", message, filteredServices, flags, templateService)
 
@@ -130,32 +131,34 @@ func generateResponse(dataType string, message string, filteredData interface{},
 
 	var bytesData []byte
 	var err error
+	var responseBuffer bytes.Buffer
+	var responseStr string
 
 	if flags["prettyJSON"] == true {
 		bytesData, err = json.MarshalIndent(filteredData, "", "	")
 
 		if err != nil {
 			log.Error(err)
-			return dto.Response{Message: message, Code: ERROR, Error: "Could not fetch " + dataType + " from Runtime", Payload: nil}
+			return dto.Response{Message: message, Code: service.ERROR, Error: "Could not fetch " + dataType + " from Runtime", Payload: nil}
 		}
+		responseStr = string(bytesData)
 
 	} else {
 		it, err := template.New("filteredData").Parse(templateStr)
 
 		if err != nil {
 			log.Error(err)
-			return dto.Response{Message: message, Code: ERROR, Error: "Could not parse " + dataType + " from Runtime", Payload: nil}
+			return dto.Response{Message: message, Code: service.ERROR, Error: "Could not parse " + dataType + " from Runtime", Payload: nil}
 		}
 
-		err = it.Execute(os.Stdout, filteredData)
+		err = it.Execute(&responseBuffer, filteredData)
 
 		if err != nil {
 			log.Error(err)
-			return dto.Response{Message: message, Code: ERROR, Error: "Could not print " + dataType + " from Runtime", Payload: nil}
+			return dto.Response{Message: message, Code: service.ERROR, Error: "Could not print " + dataType + " from Runtime", Payload: nil}
 		}
+		responseStr = responseBuffer.String()
 	}
 
-	responseStr := string(bytesData)
-
-	return dto.Response{Message: message, Code: SUCCESS, Error: "", Payload: responseStr}
+	return dto.Response{Message: message, Code: service.SUCCESS, Error: "", Payload: responseStr}
 }

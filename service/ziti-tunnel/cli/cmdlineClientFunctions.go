@@ -1,4 +1,4 @@
-package service
+package cli
 
 import (
 	"bufio"
@@ -10,6 +10,7 @@ import (
 
 	"github.com/Microsoft/go-winio"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/service"
 )
 
 type fetchFromRTS func([]string, *dto.TunnelStatus, map[string]bool) dto.Response
@@ -56,11 +57,9 @@ func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}, fn fetchF
 
 		if tunnelStatus.Status != nil {
 			responseMsg := fn(args, tunnelStatus.Status, flags)
-			if responseMsg.Code == SUCCESS {
-				log.Info(responseMsg.Message)
-				log.Info(responseMsg.Payload)
+			if responseMsg.Code == service.SUCCESS {
+				log.Info("\n" + responseMsg.Payload.(string) + "\n" + responseMsg.Message)
 			} else {
-				log.Info(responseMsg.Message)
 				log.Info(responseMsg.Error)
 			}
 		} else {
@@ -89,7 +88,7 @@ func getDataFromIpcPipe(commandMsg *dto.CommandMsg, fn fetchFromRTS, args []stri
 
 	log.Debug("Connecting to pipe")
 	timeout := 2000 * time.Millisecond
-	ipcPipeConn, err := winio.DialPipe(ipcPipeName(), &timeout)
+	ipcPipeConn, err := winio.DialPipe(service.IpcPipeName(), &timeout)
 	defer closeConn(ipcPipeConn)
 
 	if err != nil {
@@ -111,4 +110,11 @@ func getDataFromIpcPipe(commandMsg *dto.CommandMsg, fn fetchFromRTS, args []stri
 
 	<-readDone
 	log.Debug("read finished normally")
+}
+
+func closeConn(conn net.Conn) {
+	err := conn.Close()
+	if err != nil {
+		log.Warnf("abnormal error while closing connection. %v", err)
+	}
 }

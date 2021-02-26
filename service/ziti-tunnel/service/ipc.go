@@ -184,7 +184,7 @@ func openPipes() (*Pipes, error) {
 	if err != nil {
 		return nil, err
 	}
-	ipc, err := winio.ListenPipe(ipcPipeName(), &pc)
+	ipc, err := winio.ListenPipe(IpcPipeName(), &pc)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +199,7 @@ func openPipes() (*Pipes, error) {
 
 	// listen for ipc messages
 	go accept(ipc, serveIpc, "   ipc")
-	log.Debugf("ipc listener ready pipe: %s", ipcPipeName())
+	log.Debugf("ipc listener ready pipe: %s", IpcPipeName())
 
 	// listen for events messages
 	go accept(events, serveEvents, "events")
@@ -865,7 +865,7 @@ func pipeName(path string) string {
 	}
 }
 
-func ipcPipeName() string {
+func IpcPipeName() string {
 	return pipeName("ipc")
 }
 

@@ -17,7 +17,7 @@ limitations under the License.
 */
 
 import (
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/service"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/cli"
 	"github.com/spf13/cobra"
 )
 
@@ -34,7 +34,7 @@ to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		flags := map[string]bool{}
 		flags["prettyJSON"] = prettyJSON
-		service.GetServices(args, flags)
+		cli.GetServices(args, flags)
 	},
 }
 
