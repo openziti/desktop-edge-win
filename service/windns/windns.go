@@ -31,23 +31,6 @@ import (
 
 var log = logging.Logger()
 
-func ResetDNS() {
-	/*
-	log.Info("resetting DNS server addresses")
-	script := `Get-NetIPInterface | ForEach-Object { Set-DnsClientServerAddress -InterfaceIndex $_.ifIndex -ResetServerAddresses }`
-
-	cmd := exec.Command("powershell", "-Command", script)
-	cmd.Stderr = os.Stdout
-	cmd.Stdout = os.Stdout
-
-	err := cmd.Run()
-	if err != nil {
-		log.Errorf("ERROR resetting DNS: %v", err)
-	}
-	*/
-	log.Warnf("SKIPPING DNS RESET")
-}
-
 func GetConnectionSpecificDomains() []string {
 	script := `Get-DnsClient | Select-Object ConnectionSpecificSuffix -Unique | ForEach-Object { $_.ConnectionSpecificSuffix }; (Get-DnsClientGlobalSetting).SuffixSearchList`
 
@@ -107,64 +90,6 @@ func GetUpstreamDNS() []string {
 	return names
 }
 
-
-func ReplaceDNS(ips []net.IP) {
-	/*
-	ipsStrArr := make([]string, len(ips))
-	for i, ip := range ips {
-		ipsStrArr[i] = fmt.Sprintf("'%s'", ip.String())
-	}
-	ipsAsString := strings.Join(ipsStrArr, ",")
-
-	log.Infof("injecting DNS servers [%s] onto interfaces", ipsAsString)
-
-	script := fmt.Sprintf(`$dnsinfo=Get-DnsClientServerAddress
-$dnsIps=@(%s)
-
-# see https://docs.microsoft.com/en-us/dotnet/api/system.net.sockets.addressfamily
-$IPv4=2
-$IPv6=23
-
-$dnsUpdates = @{}
-
-foreach ($dns in $dnsinfo)
-{
-    if($dnsUpdates[$dns.InterfaceIndex] -eq $null) { $dnsUpdates[$dns.InterfaceIndex]=[System.Collections.ArrayList]@() }
-    if($dns.AddressFamily -eq $IPv6) {
-        $dnsServers=$dns.ServerAddresses
-        $ArrList=[System.Collections.ArrayList]@($dnsServers)
-        $dnsUpdates[$dns.InterfaceIndex].AddRange($ArrList)
-    }
-    elseif($dns.AddressFamily -eq $IPv4){
-        $dnsServers=$dns.ServerAddresses
-        $ArrList=[System.Collections.ArrayList]@($dnsServers)
-        foreach($d in $dnsIps) {
-            if(($dnsServers -ne $null) -and ($dnsServers.Contains($d)) ) {
-                # uncomment when debugging echo ($dns.InterfaceAlias + " IPv4 already contains $d")
-            } else {
-                $ArrList.Insert(0,$d)
-            }
-        }
-        $dnsUpdates[$dns.InterfaceIndex].AddRange($ArrList)
-    }
-}
-
-foreach ($key in $dnsUpdates.Keys)
-{
-    Set-DnsClientServerAddress -InterfaceIndex $key -ServerAddresses ($dnsUpdates[$key])
-}`, ipsAsString)
-
-	cmd := exec.Command("powershell", "-Command", script)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-
-	if err := cmd.Run(); err != nil {
-		log.Errorf("ERROR resetting DNS (%v)", err)
-	}
-	*/
-	log.Warnf("SKIPPING DNS INJECT")
-}
-
 func FlushDNS() {
 	log.Info("flushing DNS cache using ipconfig /flushdns")
 	script := `ipconfig /flushdns`
@@ -179,21 +104,6 @@ func FlushDNS() {
 	}
 }
 
-func AddNrptRule(hostname string, server string) {
-	RemoveNrptRule(hostname)
-	script := fmt.Sprintf(`Add-DnsClientNrptRule -Namespace "%s" -NameServers "%s" -Comment "Added by ziti-tunnel" -DisplayName "ziti-tunnel:%s"`, hostname, server, hostname)
-	log.Debugf("adding nrpt rule with: %s", script)
-
-	cmd := exec.Command("powershell", "-Command", script)
-	cmd.Stderr = os.Stdout
-	cmd.Stdout = os.Stdout
-
-	err := cmd.Run()
-	if err != nil {
-		log.Errorf("ERROR adding nrpt rule: %v", err)
-	}
-}
-
 func RemoveAllNrptRules() {
 	script := fmt.Sprintf(`Get-DnsClientNrptRule | Where { $_.Comment.StartsWith("Added by ziti-tunnel") } | Remove-DnsClientNrptRule -ErrorAction SilentlyContinue -Force`)
 	log.Debugf("removing all nrpt rules with: %s", script)
@@ -205,20 +115,6 @@ func RemoveAllNrptRules() {
 	err := cmd.Run()
 	if err != nil {
 		log.Errorf("ERROR removing all nrpt rules: %v", err)
-	}
-}
-
-func RemoveNrptRule(hostname string) {
-	script := fmt.Sprintf(`Get-DnsClientNrptRule | Where { $_.Namespace -eq '%s' } | Remove-DnsClientNrptRule -ErrorAction SilentlyContinue`, hostname)
-	log.Debugf("removing nrpt rule with: %s", script)
-
-	cmd := exec.Command("powershell", "-Command", script)
-	cmd.Stderr = os.Stdout
-	cmd.Stdout = os.Stdout
-
-	err := cmd.Run()
-	if err != nil {
-		log.Errorf("ERROR removing nrpt rule: %v", err)
 	}
 }
 
@@ -238,7 +134,7 @@ func AddNrptRules(domainsToMap map[string]struct{}, dnsServer string) {
 		return
 	}
 
-	for hostname,_ := range domainsToMap {
+	for hostname := range domainsToMap {
 		text := []byte(fmt.Sprintf(`@{ Namespace ="%s"; NameServers = @("%s"); Comment = "Added by ziti-tunnel"; DisplayName = "ziti-tunnel:%s"; }%s`, hostname, dnsServer, hostname, "\n"))
 		if _, err = tmpFile.Write(text); err != nil {
 			log.Errorf("Failed to write to temporary file, %v", err)
@@ -252,7 +148,7 @@ ForEach ($Rule in $Rules) {
 }`))
 
 	if _, err = tmpFile.Write(text); err != nil {
-		log.Errorf("Failed to write to temporary file", err)
+		log.Errorf("Failed to write to temporary file: %v", err)
 		return
 	}
 

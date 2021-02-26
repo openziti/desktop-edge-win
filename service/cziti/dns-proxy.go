@@ -122,7 +122,7 @@ func RunDNSserver(dnsBind []net.IP, ready chan bool) {
 		go runListener(&bindAddr, 53, reqch)
 	}
 
-	windns.ReplaceDNS(dnsBind)
+	windns.RemoveAllNrptRules()
 
 	ready <- true
 
@@ -236,14 +236,8 @@ func dnsPanicRecover(localDnsServers []net.IP, now time.Time) {
 	lastDnsRecover = time.Now()
 	log.Infof("dnsPanicRecovery set time to: %s", lastDnsRecover.String())
 
-	//reset all network interfaces...
-	windns.ResetDNS()
-
 	// get dns again and reconfigure
 	go runDNSproxy(windns.GetUpstreamDNS(), localDnsServers)
-
-	// reconfigure DNS
-	windns.ReplaceDNS(localDnsServers)
 }
 
 func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {

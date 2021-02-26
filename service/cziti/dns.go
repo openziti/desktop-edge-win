@@ -108,9 +108,6 @@ func (dns *dnsImpl) RegisterService(svcId string, dnsNameToReg string, port uint
 	if ip != nil {
 		dnsNameToReg = ip.String()
 		isIp = true
-	} else {
-		// register hostname in NRTP
-		//go windns.AddNrptRule(dnsNameToReg, dnsip.String())
 	}
 
 	icept := intercept{isIp: isIp, host:dnsNameToReg, port: port}
