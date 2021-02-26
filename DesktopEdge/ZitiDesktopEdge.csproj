@@ -139,6 +139,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Models\MFA.cs" />
     <Compile Include="Views\ItemRenderers\MenuEditSearch.xaml.cs">
       <DependentUpon>MenuEditSearch.xaml</DependentUpon>
     </Compile>
@@ -176,6 +177,9 @@
     <Compile Include="Models\ZitiService.cs" />
     <Compile Include="Views\Controls\Toggler.xaml.cs">
       <DependentUpon>Toggler.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Screens\MFAAuthScreen.xaml.cs">
+      <DependentUpon>MFAAuthScreen.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\Screens\MFAScreen.xaml.cs">
       <DependentUpon>MFAScreen.xaml</DependentUpon>
@@ -245,6 +249,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Views\Controls\Toggler.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\Screens\MFAAuthScreen.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -416,6 +424,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Assets\Images\WarningRed.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Images\qrcode.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

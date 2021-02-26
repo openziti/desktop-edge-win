@@ -1,11 +1,11 @@
-﻿<UserControl x:Class="Ziti.Desktop.Edge.Views.Screens.MFA"
+﻿<UserControl x:Class="ZitiDesktopEdge.MFAScreen"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:Ziti.Desktop.Edge.Views.Screens"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="420">
+             d:DesignHeight="400" 
+             d:DesignWidth="420">
     <Grid x:Name="MFAArea" Visibility="Visible" Height="400" Margin="0,0,0,0">
         <Border Margin="10,10,10,10" BorderBrush="Black" BorderThickness="8" CornerRadius="10">
             <Border.Effect>
@@ -17,6 +17,107 @@
                 <SolidColorBrush Color="#FFFFFF" Opacity="0.97"/>
             </Rectangle.Fill>
         </Rectangle>
-        <Image Width="300" Height="300" />
+        
+        <!-- MFA Setup Screen -->
+        <Grid x:Name="MFASetupArea" Margin="20,20,20,20" Visibility="Visible">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="30"></RowDefinition>
+                <RowDefinition Height="20"></RowDefinition>
+                <RowDefinition Height="280"></RowDefinition>
+                <RowDefinition Height="30"></RowDefinition>
+            </Grid.RowDefinitions>
+            <Label Content="Setup MFA" Grid.Row="0" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"></Label>
+            <Label x:Name="IdName" Content="" Grid.Row="1" FontSize="12" HorizontalAlignment="Center"></Label>
+            <Image x:Name="MFAImage" Width="280" Height="280" Source="/Assets/Images/qrcode.png" Grid.Row="2" />
+            <Label Grid.Row="3" HorizontalAlignment="Center" Content="Go To Link" Foreground="#0069FF" MouseUp="GoTo"></Label>
+        </Grid>
+
+        <!-- MFA Recovery Codes -->
+        <Grid x:Name="MFARecoveryArea" Margin="20,20,20,20" Visibility="Collapsed">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="30"></RowDefinition>
+                <RowDefinition Height="280"></RowDefinition>
+                <RowDefinition Height="30"></RowDefinition>
+            </Grid.RowDefinitions>
+            <Label Content="MFA Recovery Codes" Grid.Row="0" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"></Label>
+            <StackPanel x:Name="RecoveryList" Orientation="Vertical" Grid.Row="1">
+
+            </StackPanel>
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="190"></ColumnDefinition>
+                    <ColumnDefinition Width="190"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <Label HorizontalAlignment="Center" Content="Save Codes" Foreground="#0069FF" Cursor="Hand" Grid.Column="0" MouseUp="SaveCodes"></Label>
+                <Label HorizontalAlignment="Center" Content="Regenerate" Foreground="#0069FF" Cursor="Hand" Grid.Column="1" MouseUp="RegenerateCodes"></Label>
+            </Grid>
+        </Grid>
+
+        <!-- MFA Authentication Area -->
+        <Grid x:Name="MFAAuthArea" Margin="20,20,20,20" Visibility="Collapsed">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="30"></RowDefinition>
+                <RowDefinition Height="20"></RowDefinition>
+                <RowDefinition Height="70"></RowDefinition>
+                <RowDefinition Height="30"></RowDefinition>
+            </Grid.RowDefinitions>
+            <Label Content="Authorize MFA" Grid.Row="0" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"></Label>
+            <Label x:Name="AuthSubTitle" Content="Enter your authentication code" Grid.Row="1" FontSize="12" HorizontalAlignment="Center"></Label>
+            <Grid x:Name="AuthCodeArea" Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="63"></ColumnDefinition>
+                    <ColumnDefinition Width="63"></ColumnDefinition>
+                    <ColumnDefinition Width="63"></ColumnDefinition>
+                    <ColumnDefinition Width="63"></ColumnDefinition>
+                    <ColumnDefinition Width="63"></ColumnDefinition>
+                    <ColumnDefinition Width="63"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="Auth1" MaxLength="1" Grid.Column="0" KeyUp="GoNext"></TextBox>
+                <TextBox x:Name="Auth2" MaxLength="1" Grid.Column="1" KeyUp="GoNext"></TextBox>
+                <TextBox x:Name="Auth3" MaxLength="1" Grid.Column="2" KeyUp="GoNext"></TextBox>
+                <TextBox x:Name="Auth4" MaxLength="1" Grid.Column="3" KeyUp="GoNext"></TextBox>
+                <TextBox x:Name="Auth5" MaxLength="1" Grid.Column="4" KeyUp="GoNext"></TextBox>
+                <TextBox x:Name="Auth6" MaxLength="1" Grid.Column="5"></TextBox>
+            </Grid>
+            <Grid x:Name="AuthRecoveryArea" Visibility="Collapsed" Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="47.5"></ColumnDefinition>
+                    <ColumnDefinition Width="47.5"></ColumnDefinition>
+                    <ColumnDefinition Width="47.5"></ColumnDefinition>
+                    <ColumnDefinition Width="47.5"></ColumnDefinition>
+                    <ColumnDefinition Width="47.5"></ColumnDefinition>
+                    <ColumnDefinition Width="47.5"></ColumnDefinition>
+                    <ColumnDefinition Width="47.5"></ColumnDefinition>
+                    <ColumnDefinition Width="47.5"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="Rec1" MaxLength="1" Grid.Column="0" KeyUp="GoNextRecovery"></TextBox>
+                <TextBox x:Name="Rec2" MaxLength="1" Grid.Column="1" KeyUp="GoNextRecovery"></TextBox>
+                <TextBox x:Name="Rec3" MaxLength="1" Grid.Column="2" KeyUp="GoNextRecovery"></TextBox>
+                <TextBox x:Name="Rec4" MaxLength="1" Grid.Column="3" KeyUp="GoNextRecovery"></TextBox>
+                <TextBox x:Name="Rec5" MaxLength="1" Grid.Column="4" KeyUp="GoNextRecovery"></TextBox>
+                <TextBox x:Name="Rec6" MaxLength="1" Grid.Column="5" KeyUp="GoNextRecovery"></TextBox>
+                <TextBox x:Name="Rec7" MaxLength="1" Grid.Column="6" KeyUp="GoNextRecovery"></TextBox>
+                <TextBox x:Name="Rec8" MaxLength="1" Grid.Column="7"></TextBox>
+            </Grid>
+            <Grid Grid.Row="3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="200"></ColumnDefinition>
+                    <ColumnDefinition Width="*"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <Label x:Name="ToggleType" HorizontalAlignment="Center" Content="Use Recovery Code" Foreground="#0069FF" Cursor="Hand" Grid.Column="0" MouseUp="ToggleRecovery"></Label>
+                <Label HorizontalAlignment="Center" Content="Authenticate" Foreground="#0069FF" Cursor="Hand" Grid.Column="1" MouseUp="DoAuthenticate"></Label>
+            </Grid>
+        </Grid>
+
+        <Image Source="/Assets/Images/closeBlack.png" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,40,40,0" Width="10" Height="10" Cursor="Hand" MouseUp="ExecuteClose"></Image>
     </Grid>
 </UserControl>

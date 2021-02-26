@@ -94,11 +94,11 @@ namespace ZitiDesktopEdge {
 						ServiceInfo info = new ServiceInfo();
 						info.Info = zitiSvc;
 						info.OnMessage += Info_OnMessage;
-						info.OnDetails += Info_OnDetails;
+						info.OnDetails += ShowDetails;
 						ServiceList.Children.Add(info);
 					}
 				}
-				double newHeight = MainHeight - 310;
+				double newHeight = MainHeight - 360; // Jeremy - Fix this post MFA
 				ServiceRow.Height = new GridLength((double)newHeight);
 				MainDetailScroll.MaxHeight = newHeight;
 				MainDetailScroll.Height = newHeight;
@@ -115,7 +115,7 @@ namespace ZitiDesktopEdge {
 			ConfirmView.Visibility = Visibility.Collapsed;
 		}
 
-		private void Info_OnDetails(ZitiService info) {
+		private void ShowDetails(ZitiService info) {
 			DetailName.Text = info.Name;
 			DetailUrl.Text = info.Url;
 			DetailAddress.Text = info.AssignedIP;
@@ -126,22 +126,20 @@ namespace ZitiDesktopEdge {
 			DetailsArea.Opacity = 0;
 			DetailsArea.Margin = new Thickness(0, 0, 0, 0);
 			DoubleAnimation animation = new DoubleAnimation(1, TimeSpan.FromSeconds(.3));
-			animation.Completed += Animation_Completed;
+			animation.Completed += ShowCompleted;
 			DetailsArea.BeginAnimation(Grid.OpacityProperty, animation);
 			DetailsArea.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
 
-			ModalBg.Visibility = Visibility.Visible;
-			ModalBg.Opacity = 0;
-			ModalBg.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(.8, TimeSpan.FromSeconds(.3)));
+			ShowModal();
 		}
 
-		private void Animation_Completed(object sender, EventArgs e) {
+		private void ShowCompleted(object sender, EventArgs e) {
 			DoubleAnimation animation = new DoubleAnimation(DetailPanel.ActualHeight + 60, TimeSpan.FromSeconds(.3));
 			DetailsArea.BeginAnimation(Grid.HeightProperty, animation);
 			//DetailsArea.Height = DetailPanel.ActualHeight + 60;
 		}
 
-		private void Image_MouseUp(object sender, MouseButtonEventArgs e) {
+		private void CloseDetails(object sender, MouseButtonEventArgs e) {
 			DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
 			ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
 			DoubleAnimation animation2 = new DoubleAnimation(DetailPanel.ActualHeight + 100, TimeSpan.FromSeconds(.3));
@@ -149,7 +147,7 @@ namespace ZitiDesktopEdge {
 			DetailsArea.BeginAnimation(Grid.HeightProperty, animation2);
 			DetailsArea.BeginAnimation(Grid.OpacityProperty, animation);
 			DetailsArea.BeginAnimation(Grid.MarginProperty, animateThick);
-			ModalBg.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(0, TimeSpan.FromSeconds(.3)));
+			HideModal();
 		}
 
 		private void HideComplete(object sender, EventArgs e) {
@@ -222,6 +220,97 @@ namespace ZitiDesktopEdge {
 		private void DoFilter(string filter) {
 			this.filter = filter;
 			if (this._identity!=null) UpdateView();
+		}
+
+		private void ToggleMFA(bool isOn) {
+			if (isOn) {
+				MFASetup.Opacity = 0;
+				MFASetup.Visibility = Visibility.Visible;
+				MFASetup.Margin = new Thickness(0, 0, 0, 0);
+				MFASetup.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
+				MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
+
+				// CLINT - Need real data here
+				MFASetup.ShowSetup(this._identity.Name, "https://www.netfoundry.io", "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/QR_code_for_mobile_English_Wikipedia.svg/1200px-QR_code_for_mobile_English_Wikipedia.svg.png");
+
+				ShowModal();
+			}
+		}
+
+		private void ShowRecovery() {
+			MFASetup.Opacity = 0;
+			MFASetup.Visibility = Visibility.Visible;
+			MFASetup.Margin = new Thickness(0, 0, 0, 0);
+			MFASetup.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
+			MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
+
+			string[] codes = new string[] { "12345678", "897654321", "32324232", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321" };
+			MFASetup.ShowRecovery(codes);
+
+			ShowModal();
+		}
+
+		private void ShowMFA() {
+			MFASetup.Opacity = 0;
+			MFASetup.Visibility = Visibility.Visible;
+			MFASetup.Margin = new Thickness(0, 0, 0, 0);
+			MFASetup.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
+			MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
+
+			MFASetup.ShowMFA();
+
+			ShowModal();
+		}
+
+		private void DoClose(bool isComplete) {
+			IdentityMFA.IsOn = isComplete;
+			DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
+			ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
+			animation.Completed += CloseComplete;
+			MFASetup.BeginAnimation(Grid.OpacityProperty, animation);
+			MFASetup.BeginAnimation(Grid.MarginProperty, animateThick);
+			HideModal();
+		}
+
+		private void CloseComplete(object sender, EventArgs e) {
+			MFASetup.Visibility = Visibility.Collapsed;
+		}
+
+		/* Modal UI Background visibility */
+
+		/// <summary>
+		/// Show the modal, aniimating opacity
+		/// </summary>
+		private void ShowModal() {
+			ModalBg.Visibility = Visibility.Visible;
+			ModalBg.Opacity = 0;
+			ModalBg.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(.8, TimeSpan.FromSeconds(.3)));
+		}
+
+		/// <summary>
+		/// Hide the modal animating the opacity
+		/// </summary>
+		private void HideModal() {
+			DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
+			animation.Completed += ModalHideComplete;
+			ModalBg.BeginAnimation(Grid.OpacityProperty, animation);
+		}
+
+		/// <summary>
+		/// When the animation completes, set the visibility to avoid UI object conflicts
+		/// </summary>
+		/// <param name="sender">The animation</param>
+		/// <param name="e">The event</param>
+		private void ModalHideComplete(object sender, EventArgs e) {
+			ModalBg.Visibility = Visibility.Collapsed;
+		}
+
+		private void DoShowRecovery(object sender, MouseButtonEventArgs e) {
+			ShowRecovery();
+		}
+
+		private void DoShowMFA(object sender, MouseButtonEventArgs e) {
+			ShowMFA();
 		}
 	}
 }

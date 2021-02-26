@@ -19,6 +19,9 @@ namespace ZitiDesktopEdge {
     /// </summary>
     public partial class MenuEditToggle: UserControl {
 
+		public delegate void OnToggle(bool isOn);
+		public event OnToggle Toggle;
+
 		private string _label = "";
 
 		public string Label {
@@ -45,6 +48,7 @@ namespace ZitiDesktopEdge {
 
 		public void Toggled(Boolean isOn) {
 			this.ToggleField.Enabled = isOn;
+			this.Toggle?.Invoke(isOn);
 		}
 	}
 }

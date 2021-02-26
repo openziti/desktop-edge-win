@@ -13,6 +13,9 @@ namespace ZitiDesktopEdge.Models {
 		public string EnrollmentStatus { get; set; }
 		public string Status { get; set; }
 
+		public bool IsMFAEnabled { get; set; }
+		public MFA MFAInfo { get; set; }
+
 		public ZitiIdentity()
 		{
 			//default constructor to support named initialization

@@ -40,5 +40,8 @@
             </Grid>
             <Image Grid.Column="1" Source="/Assets/Images/next.png" Width="12" MouseUp="OpenDetails" Cursor="Hand"></Image>
         </Grid>
+        <Grid x:Name="MFAInline">
+            
+        </Grid>
     </Canvas>
 </UserControl>
