@@ -23,7 +23,7 @@ SET TCP_MAX_CONNECTIONS=256
 set SVC_ROOT_DIR=%~dp0
 set CURDIR=%CD%
 
-call %SVC_ROOT_DIR%\set-env.bat
+call %SVC_ROOT_DIR%set-env.bat
 
 IF "%ZITI_DEBUG%"=="" (
     REM clear out if debug was run in the past
@@ -186,7 +186,7 @@ if %ACTUAL_ERR% NEQ 0 (
 )
 
 echo checking the CSDK
-pushd %TUNNELER_SDK_DIR%\build\_deps\ziti-sdk-c-src
+pushd %TUNNELER_SDK_DIR%build\_deps\ziti-sdk-c-src
 git rev-parse --short HEAD > hash.txt
 git rev-parse --abbrev-ref HEAD > branch.txt
 set /p CSDK_BRANCH=<branch.txt
