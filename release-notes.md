@@ -1,4 +1,4 @@
-# Release 1.7.11
+# Release 1.8.2
 
 ## What's New
 * [#317](https://github.com/openziti/desktop-edge-win/issues/317) command line list function to fetch identities and services
