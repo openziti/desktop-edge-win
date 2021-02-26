@@ -45,8 +45,6 @@ func main() {
 	}
 	cziti.Version = service.Version
 
-	logging.InitLogger(logrus.InfoLevel)
-
 	// passing no arguments is an indicator that this is expecting to be run 'as a service'.
 	// using arg count instead of svc.IsAnInteractiveSession() as svc.IsAnInteractiveSession()
 	// seems to return false even when run in an interactive shell as via `psexec -i -s cmd.exe`
@@ -56,6 +54,7 @@ func main() {
 	if hasArgs {
 		logging.Elog = debug.New(service.SvcName)
 	} else {
+		logging.InitLogger(logrus.InfoLevel)
 		logging.Elog, err = eventlog.Open(service.SvcName)
 		if err != nil {
 			return
@@ -79,6 +78,7 @@ func main() {
 
 	switch cmd {
 	case "debug":
+		logging.InitLogger(logrus.InfoLevel)
 		log.Infof("running interactively: %s", version())
 		service.Debug = true
 		service.RunService(true)

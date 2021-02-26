@@ -17,5 +17,4 @@ type ServiceCli struct {
 	Id            string
 	AssignedHost  string
 	OwnsIntercept bool
-	Identity      string
 }

@@ -33,43 +33,39 @@ func sendMessagetoPipe(ipcPipeConn net.Conn, commandMsg *dto.CommandMsg, args []
 }
 
 func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}, fn fetchFromRTS, args []string, flags map[string]bool) {
-	for {
 
-		reader := bufio.NewReader(ipcPipeConn)
-		msg, err := reader.ReadString('\n')
+	reader := bufio.NewReader(ipcPipeConn)
+	msg, err := reader.ReadString('\n')
 
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		if len(args) == 0 {
-			args = append(args, "all")
-		}
-
-		dec := json.NewDecoder(strings.NewReader(msg))
-		var tunnelStatus dto.ZitiTunnelStatus
-		if err := dec.Decode(&tunnelStatus); err == io.EOF {
-			break
-		} else if err != nil {
-			log.Fatal(err)
-		}
-
-		if tunnelStatus.Status != nil {
-			responseMsg := fn(args, tunnelStatus.Status, flags)
-			if responseMsg.Code == service.SUCCESS {
-				log.Info("\n" + responseMsg.Payload.(string) + "\n" + responseMsg.Message)
-			} else {
-				log.Info(responseMsg.Error)
-			}
-		} else {
-			log.Errorf("Ziti tunnel retuned nil status")
-		}
-
-		readDone <- struct{}{}
-		break
-
+	if err != nil {
+		log.Error(err)
+		return
 	}
+
+	if len(args) == 0 {
+		args = append(args, "all")
+	}
+
+	dec := json.NewDecoder(strings.NewReader(msg))
+	var tunnelStatus dto.ZitiTunnelStatus
+	if err := dec.Decode(&tunnelStatus); err == io.EOF {
+		return
+	} else if err != nil {
+		log.Fatal(err)
+	}
+
+	if tunnelStatus.Status != nil {
+		responseMsg := fn(args, tunnelStatus.Status, flags)
+		if responseMsg.Code == service.SUCCESS {
+			log.Info("\n" + responseMsg.Payload.(string) + "\n" + responseMsg.Message)
+		} else {
+			log.Info(responseMsg.Error)
+		}
+	} else {
+		log.Errorf("Ziti tunnel retuned nil status")
+	}
+
+	readDone <- struct{}{}
 	return
 }
 
