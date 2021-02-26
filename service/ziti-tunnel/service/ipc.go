@@ -22,6 +22,16 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"math/rand"
+	"net"
+	"os"
+	"os/signal"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/Microsoft/go-winio"
 	"github.com/openziti/desktop-edge-win/service/cziti"
 	"github.com/openziti/desktop-edge-win/service/windns"
@@ -33,15 +43,6 @@ import (
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"github.com/openziti/sdk-golang/ziti/enroll"
 	"golang.org/x/sys/windows/svc"
-	"io"
-	"io/ioutil"
-	"math/rand"
-	"net"
-	"os"
-	"os/signal"
-	"strings"
-	"sync"
-	"time"
 )
 
 type Pipes struct {
@@ -114,14 +115,14 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	requestShutdown("service shutdown")
 
 	// signal to any connected consumers that the service is shutting down normally
-	events.broadcast <- dto.StatusEvent {
+	events.broadcast <- dto.StatusEvent{
 		Op: "shutdown",
 	}
 
 	// wait 1 second for the shutdown to send to clients
 	shutdownDelay := make(chan bool)
 	go func() {
-		time.Sleep(1*time.Second)
+		time.Sleep(1 * time.Second)
 		shutdownDelay <- true
 	}()
 	<-shutdownDelay
@@ -184,7 +185,7 @@ func openPipes() (*Pipes, error) {
 	if err != nil {
 		return nil, err
 	}
-	ipc, err := winio.ListenPipe(ipcPipeName(), &pc)
+	ipc, err := winio.ListenPipe(IpcPipeName(), &pc)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +200,7 @@ func openPipes() (*Pipes, error) {
 
 	// listen for ipc messages
 	go accept(ipc, serveIpc, "   ipc")
-	log.Debugf("ipc listener ready pipe: %s", ipcPipeName())
+	log.Debugf("ipc listener ready pipe: %s", IpcPipeName())
 
 	// listen for events messages
 	go accept(events, serveEvents, "events")
@@ -345,9 +346,9 @@ func serveIpc(conn net.Conn) {
 	defer func() {
 		log.Debugf("serveIpc is exiting. total connection count now: %d", ipcConnections)
 		ipcWg.Done()
-		ipcConnections --
+		ipcConnections--
 		log.Debugf("serveIpc is exiting. total connection count now: %d", ipcConnections)
-	}()   // count down whenever the function exits
+	}() // count down whenever the function exits
 	log.Debugf("accepting a new client for serveIpc. total connection count: %d", ipcConnections)
 
 	go func() {
@@ -512,7 +513,7 @@ func writeLogToStream(file *os.File, writer *bufio.Writer) {
 }
 
 func serveEvents(conn net.Conn) {
-	randomInt:= rand.Int()
+	randomInt := rand.Int()
 	log.Debug("accepted an events connection, writing events to pipe")
 	defer closeConn(conn) //close the connection after this function invoked as go routine exits
 
@@ -521,9 +522,9 @@ func serveEvents(conn net.Conn) {
 	defer func() {
 		log.Debugf("serveEvents is exiting. total connection count now: %d", eventsConnections)
 		eventsWg.Done()
-		eventsConnections --
+		eventsConnections--
 		log.Debugf("serveEvents is exiting. total connection count now: %d", eventsConnections)
-	}()   // count down whenever the function exits
+	}() // count down whenever the function exits
 	log.Debugf("accepting a new client for serveEvents. total connection count: %d", eventsConnections)
 
 	consumer := make(chan interface{}, 8)
@@ -534,7 +535,7 @@ func serveEvents(conn net.Conn) {
 	o := json.NewEncoder(w)
 
 	log.Info("new event client connected - sending current status")
-	err := o.Encode(	dto.TunnelStatusEvent{
+	err := o.Encode(dto.TunnelStatusEvent{
 		StatusEvent: dto.StatusEvent{Op: "status"},
 		Status:      rts.ToStatus(true),
 		ApiVersion:  API_VERSION,
@@ -549,15 +550,15 @@ func serveEvents(conn net.Conn) {
 loop:
 	for {
 		select {
-			case msg := <-consumer:
-				err := o.Encode(msg)
-				if err != nil {
-					log.Debugf("exiting from serveEvents - %v", err)
-					break loop
-				}
-				_ = w.Flush()
-			case <-interrupt:
+		case msg := <-consumer:
+			err := o.Encode(msg)
+			if err != nil {
+				log.Debugf("exiting from serveEvents - %v", err)
 				break loop
+			}
+			_ = w.Flush()
+		case <-interrupt:
+			break loop
 		}
 	}
 	log.Info("a connected event client has disconnected")
@@ -778,7 +779,7 @@ func connectIdentity(id *Id) {
 
 		events.broadcast <- dto.IdentityEvent{
 			ActionEvent: IDENTITY_ADDED,
-			Id: id.Identity,
+			Id:          id.Identity,
 		}
 		log.Infof("connecting identity completed: %s[%s]", id.Name, id.FingerPrint)
 	}
@@ -865,7 +866,7 @@ func pipeName(path string) string {
 	}
 }
 
-func ipcPipeName() string {
+func IpcPipeName() string {
 	return pipeName("ipc")
 }
 
@@ -917,13 +918,13 @@ func acceptServices() {
 	}
 }
 
-func handleEvents(isInitialized chan struct{}){
+func handleEvents(isInitialized chan struct{}) {
 	events.run()
 	d := 5 * time.Second
 	every5s := time.NewTicker(d)
 
 	defer log.Debugf("exiting handleEvents. loops were set for %v", d)
-	<- isInitialized
+	<-isInitialized
 	log.Info("beginning metric collection")
 	for {
 		select {
@@ -939,7 +940,6 @@ func handleEvents(isInitialized chan struct{}){
 		}
 	}
 }
-
 
 //Removes the Config from the provided identity and returns a 'cleaned' id
 func Clean(src *Id) dto.Identity {
