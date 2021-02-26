@@ -479,27 +479,3 @@ func (t *RuntimeState) InterceptIP() {
 func (t *RuntimeState) ReleaseIP() {
 	log.Panicf("implement me")
 }
-
-func (t *RuntimeState) IsTunConnected() bool {
-	log.Infof("Checking status of interface: %s", TunName)
-	// wintun adapter has to be closed
-	_, err := tun.WintunPool.OpenAdapter(TunName)
-	log.Infof("Open Adapter for interface: %s", TunName)
-	if err == nil {
-		log.Debugf("INTERFACE %s is running ", TunName)
-		tunDevice, err := tun.CreateTUN(TunName, 64*1024-1)
-		if err == nil {
-			t.tun = &tunDevice
-			tunName, err2 := tunDevice.Name()
-			if err2 == nil {
-				t.tunName = tunName
-			}
-		} else {
-			log.Warnf("Could not find running tun device %s, %v", TunName, err)
-			return false
-		}
-		return true
-	}
-	log.Tracef("INTERFACE %s is not running, %v", TunName, err)
-	return false
-}

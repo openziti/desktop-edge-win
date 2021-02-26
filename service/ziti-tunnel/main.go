@@ -120,7 +120,7 @@ func usage(errmsg string) {
 		"%s\n\n"+
 			"usage: %s <command>\n"+
 			"       where <command> is one of\n"+
-			"       install, remove, debug, start, stop, pause, continue or version.\n",
+			"       install, remove, debug, start, stop, pause, continue, list or version.\n",
 		errmsg, os.Args[0])
 	os.Exit(2)
 }
