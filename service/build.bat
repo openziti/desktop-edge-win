@@ -1,4 +1,4 @@
-REM @echo off
+@echo off
 REM Copyright NetFoundry, Inc.
 REM
 REM Licensed under the Apache License, Version 2.0 (the "License");
