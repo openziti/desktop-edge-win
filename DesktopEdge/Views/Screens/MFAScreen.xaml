@@ -4,9 +4,9 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
-             d:DesignHeight="400" 
+             d:DesignHeight="560" 
              d:DesignWidth="420">
-    <Grid x:Name="MFAArea" Visibility="Visible" Height="400" Margin="0,0,0,0">
+    <Grid x:Name="MFAArea" Visibility="Visible" Height="560" Margin="0,0,0,0">
         <Border Margin="10,10,10,10" BorderBrush="Black" BorderThickness="8" CornerRadius="10">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="20" Direction="1" RenderingBias="Quality" ShadowDepth="1" Opacity="1"/>
@@ -25,14 +25,40 @@
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="30"></RowDefinition>
-                <RowDefinition Height="20"></RowDefinition>
+                <RowDefinition Height="30"></RowDefinition>
                 <RowDefinition Height="280"></RowDefinition>
+                <RowDefinition Height="30"></RowDefinition>
+                <RowDefinition Height="30"></RowDefinition>
+                <RowDefinition Height="100"></RowDefinition>
                 <RowDefinition Height="30"></RowDefinition>
             </Grid.RowDefinitions>
             <Label Content="Setup MFA" Grid.Row="0" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"></Label>
-            <Label x:Name="IdName" Content="" Grid.Row="1" FontSize="12" HorizontalAlignment="Center"></Label>
+            <Label x:Name="IdName" Content="Identity Name" Grid.Row="1" FontSize="12" Foreground="DarkGray" HorizontalAlignment="Center"></Label>
             <Image x:Name="MFAImage" Width="280" Height="280" Source="/Assets/Images/qrcode.png" Grid.Row="2" />
-            <Label Grid.Row="3" HorizontalAlignment="Center" Content="Go To Link" Foreground="#0069FF" MouseUp="GoTo"></Label>
+            <Label Grid.Row="3" HorizontalAlignment="Center" Content="Go To Link" Foreground="#0069FF" MouseUp="GoTo" Cursor="Hand"></Label>
+            <Label Content="Authentication Code" Grid.Row="4" FontSize="12" Foreground="Black" HorizontalAlignment="Center" FontWeight="Bold"></Label>
+            <Grid Grid.Row="5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="50"></ColumnDefinition>
+                    <ColumnDefinition Width="2"></ColumnDefinition>
+                    <ColumnDefinition Width="50"></ColumnDefinition>
+                    <ColumnDefinition Width="2"></ColumnDefinition>
+                    <ColumnDefinition Width="50"></ColumnDefinition>
+                    <ColumnDefinition Width="2"></ColumnDefinition>
+                    <ColumnDefinition Width="50"></ColumnDefinition>
+                    <ColumnDefinition Width="2"></ColumnDefinition>
+                    <ColumnDefinition Width="50"></ColumnDefinition>
+                    <ColumnDefinition Width="2"></ColumnDefinition>
+                    <ColumnDefinition Width="50"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="SetupAuth1" MaxLength="1" Grid.Column="0" KeyUp="GoNextSetup" BorderThickness="0 0 0 2" TextAlignment="Center" FontSize="50"></TextBox>
+                <TextBox x:Name="SetupAuth2" MaxLength="1" Grid.Column="2" KeyUp="GoNextSetup" BorderThickness="0 0 0 2" TextAlignment="Center" FontSize="50"></TextBox>
+                <TextBox x:Name="SetupAuth3" MaxLength="1" Grid.Column="4" KeyUp="GoNextSetup" BorderThickness="0 0 0 2" TextAlignment="Center" FontSize="50"></TextBox>
+                <TextBox x:Name="SetupAuth4" MaxLength="1" Grid.Column="6" KeyUp="GoNextSetup" BorderThickness="0 0 0 2" TextAlignment="Center" FontSize="50"></TextBox>
+                <TextBox x:Name="SetupAuth5" MaxLength="1" Grid.Column="8" KeyUp="GoNextSetup" BorderThickness="0 0 0 2" TextAlignment="Center" FontSize="50"></TextBox>
+                <TextBox x:Name="SetupAuth6" MaxLength="1" Grid.Column="10" BorderThickness="0 0 0 2" TextAlignment="Center" FontSize="50"></TextBox>
+            </Grid>
+            <Label HorizontalAlignment="Center" Content="Authenticate" Foreground="#0069FF" Grid.Row="6" MouseUp="DoSetupAuthenticate" Cursor="Hand"></Label>
         </Grid>
 
         <!-- MFA Recovery Codes -->

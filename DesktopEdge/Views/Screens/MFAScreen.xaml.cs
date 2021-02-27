@@ -48,6 +48,8 @@ namespace ZitiDesktopEdge {
 			MFAAuthArea.Visibility = Visibility.Collapsed;
 			MFASetupArea.Visibility = Visibility.Visible;
 			MFARecoveryArea.Visibility = Visibility.Collapsed;
+			for (int i = 1; i <= 6; i++) (this.FindName("SetupAuth" + i) as TextBox).Text = "";
+			SetupAuth1.Focus();
 		}
 
 		public void ShowRecovery(string[] codes) {
@@ -85,6 +87,22 @@ namespace ZitiDesktopEdge {
 
 		private void GoTo(object sender, MouseButtonEventArgs e) {
 			Process.Start(new ProcessStartInfo(_url) { UseShellExecute = true });
+		}
+
+		private void GoNextSetup(object sender, KeyEventArgs e) {
+			TextBox sentFrom = sender as TextBox;
+			string name = sentFrom.Name;
+			int index = 1;
+			if (name == "SetupAuth1") index = 2;
+			else if (name == "SetupAuth2") index = 3;
+			else if (name == "SetupAuth3") index = 4;
+			else if (name == "SetupAuth4") index = 5;
+			else if (name == "SetupAuth5") index = 6;
+
+			TextBox entry = this.FindName("SetupAuth" + index) as TextBox;
+			if (sentFrom.Text.Length > 0) {
+				entry.Focus();
+			}
 		}
 
 		private void GoNext(object sender, KeyEventArgs e) {
@@ -137,6 +155,12 @@ namespace ZitiDesktopEdge {
 
 		private void SaveCodes(object sender, MouseButtonEventArgs e) {
 
+		}
+
+		private void DoSetupAuthenticate(object sender, MouseButtonEventArgs e) {
+			string code = SetupAuth1.Text + SetupAuth2.Text + SetupAuth3.Text + SetupAuth4.Text + SetupAuth5.Text + SetupAuth6.Text;
+
+			// Clint - Execute the MFA with mah code
 		}
 
 		private void DoAuthenticate(object sender, MouseButtonEventArgs e) {
