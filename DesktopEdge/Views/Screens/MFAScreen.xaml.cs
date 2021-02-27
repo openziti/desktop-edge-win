@@ -45,6 +45,7 @@ namespace ZitiDesktopEdge {
 			IdName.Content = idName;
 			MFAImage.Source = LoadImage(imageUrl);
 			_url = url;
+			MFAArea.Height = 560;
 			MFAAuthArea.Visibility = Visibility.Collapsed;
 			MFASetupArea.Visibility = Visibility.Visible;
 			MFARecoveryArea.Visibility = Visibility.Collapsed;
@@ -58,6 +59,7 @@ namespace ZitiDesktopEdge {
 			MFARecoveryArea.Visibility = Visibility.Visible;
 			RecoveryList.Children.Clear();
 			_codes = codes;
+			MFAArea.Height = 380;
 			for (int i=0; i<codes.Length; i++) {
 				StackPanel panel = new StackPanel();
 				panel.Orientation = Orientation.Horizontal;
@@ -71,8 +73,10 @@ namespace ZitiDesktopEdge {
 			MFASetupArea.Visibility = Visibility.Collapsed;
 			MFARecoveryArea.Visibility = Visibility.Collapsed;
 			MFAAuthArea.Visibility = Visibility.Visible;
+			MFAArea.Height = 220;
 			for (int i = 1; i <= 6; i++) (this.FindName("Auth" + i) as TextBox).Text = "";
 			for (int i = 1; i <= 8; i++) (this.FindName("Rec" + i) as TextBox).Text = "";
+			Auth1.Focus();
 		}
 
 		private BitmapImage LoadImage(string url) {
@@ -145,11 +149,13 @@ namespace ZitiDesktopEdge {
 				AuthCodeArea.Visibility = Visibility.Visible;
 				ToggleType.Content = "Use Recovery Code";
 				AuthSubTitle.Content = "Enter your authorization code";
+				Auth1.Focus();
 			} else {
 				AuthRecoveryArea.Visibility = Visibility.Visible;
 				AuthCodeArea.Visibility = Visibility.Collapsed;
 				ToggleType.Content = "Use Auth Code";
 				AuthSubTitle.Content = "Enter a recovery code";
+				Rec1.Focus();
 			}
 		}
 

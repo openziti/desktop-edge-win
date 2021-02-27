@@ -6,7 +6,7 @@
              mc:Ignorable="d" 
              d:DesignHeight="560" 
              d:DesignWidth="420">
-    <Grid x:Name="MFAArea" Visibility="Visible" Height="560" Margin="0,0,0,0">
+    <Grid x:Name="MFAArea" Visibility="Visible" Margin="0,0,0,0">
         <Border Margin="10,10,10,10" BorderBrush="Black" BorderThickness="8" CornerRadius="10">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="20" Direction="1" RenderingBias="Quality" ShadowDepth="1" Opacity="1"/>
@@ -77,8 +77,8 @@
             </StackPanel>
             <Grid Grid.Row="2">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="190"></ColumnDefinition>
-                    <ColumnDefinition Width="190"></ColumnDefinition>
+                    <ColumnDefinition Width="160"></ColumnDefinition>
+                    <ColumnDefinition Width="*"></ColumnDefinition>
                 </Grid.ColumnDefinitions>
                 <Label HorizontalAlignment="Center" Content="Save Codes" Foreground="#0069FF" Cursor="Hand" Grid.Column="0" MouseUp="SaveCodes"></Label>
                 <Label HorizontalAlignment="Center" Content="Regenerate" Foreground="#0069FF" Cursor="Hand" Grid.Column="1" MouseUp="RegenerateCodes"></Label>
@@ -92,51 +92,63 @@
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="30"></RowDefinition>
-                <RowDefinition Height="20"></RowDefinition>
-                <RowDefinition Height="70"></RowDefinition>
+                <RowDefinition Height="30"></RowDefinition>
+                <RowDefinition Height="100"></RowDefinition>
                 <RowDefinition Height="30"></RowDefinition>
             </Grid.RowDefinitions>
             <Label Content="Authorize MFA" Grid.Row="0" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"></Label>
             <Label x:Name="AuthSubTitle" Content="Enter your authentication code" Grid.Row="1" FontSize="12" HorizontalAlignment="Center"></Label>
             <Grid x:Name="AuthCodeArea" Grid.Row="2">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="63"></ColumnDefinition>
-                    <ColumnDefinition Width="63"></ColumnDefinition>
-                    <ColumnDefinition Width="63"></ColumnDefinition>
-                    <ColumnDefinition Width="63"></ColumnDefinition>
-                    <ColumnDefinition Width="63"></ColumnDefinition>
-                    <ColumnDefinition Width="63"></ColumnDefinition>
+                    <ColumnDefinition Width="50"></ColumnDefinition>
+                    <ColumnDefinition Width="2"></ColumnDefinition>
+                    <ColumnDefinition Width="50"></ColumnDefinition>
+                    <ColumnDefinition Width="2"></ColumnDefinition>
+                    <ColumnDefinition Width="50"></ColumnDefinition>
+                    <ColumnDefinition Width="2"></ColumnDefinition>
+                    <ColumnDefinition Width="50"></ColumnDefinition>
+                    <ColumnDefinition Width="2"></ColumnDefinition>
+                    <ColumnDefinition Width="50"></ColumnDefinition>
+                    <ColumnDefinition Width="2"></ColumnDefinition>
+                    <ColumnDefinition Width="50"></ColumnDefinition>
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="Auth1" MaxLength="1" Grid.Column="0" KeyUp="GoNext"></TextBox>
-                <TextBox x:Name="Auth2" MaxLength="1" Grid.Column="1" KeyUp="GoNext"></TextBox>
-                <TextBox x:Name="Auth3" MaxLength="1" Grid.Column="2" KeyUp="GoNext"></TextBox>
-                <TextBox x:Name="Auth4" MaxLength="1" Grid.Column="3" KeyUp="GoNext"></TextBox>
-                <TextBox x:Name="Auth5" MaxLength="1" Grid.Column="4" KeyUp="GoNext"></TextBox>
-                <TextBox x:Name="Auth6" MaxLength="1" Grid.Column="5"></TextBox>
+                <TextBox x:Name="Auth1" MaxLength="1" Grid.Column="0" KeyUp="GoNext" BorderThickness="0 0 0 2" TextAlignment="Center" FontSize="50"></TextBox>
+                <TextBox x:Name="Auth2" MaxLength="1" Grid.Column="2" KeyUp="GoNext" BorderThickness="0 0 0 2" TextAlignment="Center" FontSize="50"></TextBox>
+                <TextBox x:Name="Auth3" MaxLength="1" Grid.Column="4" KeyUp="GoNext" BorderThickness="0 0 0 2" TextAlignment="Center" FontSize="50"></TextBox>
+                <TextBox x:Name="Auth4" MaxLength="1" Grid.Column="6" KeyUp="GoNext" BorderThickness="0 0 0 2" TextAlignment="Center" FontSize="50"></TextBox>
+                <TextBox x:Name="Auth5" MaxLength="1" Grid.Column="8" KeyUp="GoNext" BorderThickness="0 0 0 2" TextAlignment="Center" FontSize="50"></TextBox>
+                <TextBox x:Name="Auth6" MaxLength="1" Grid.Column="10" BorderThickness="0 0 0 2" TextAlignment="Center" FontSize="50"></TextBox>
             </Grid>
             <Grid x:Name="AuthRecoveryArea" Visibility="Collapsed" Grid.Row="2">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="47.5"></ColumnDefinition>
-                    <ColumnDefinition Width="47.5"></ColumnDefinition>
-                    <ColumnDefinition Width="47.5"></ColumnDefinition>
-                    <ColumnDefinition Width="47.5"></ColumnDefinition>
-                    <ColumnDefinition Width="47.5"></ColumnDefinition>
-                    <ColumnDefinition Width="47.5"></ColumnDefinition>
-                    <ColumnDefinition Width="47.5"></ColumnDefinition>
-                    <ColumnDefinition Width="47.5"></ColumnDefinition>
+                    <ColumnDefinition Width="40"></ColumnDefinition>
+                    <ColumnDefinition Width="2"></ColumnDefinition>
+                    <ColumnDefinition Width="40"></ColumnDefinition>
+                    <ColumnDefinition Width="2"></ColumnDefinition>
+                    <ColumnDefinition Width="40"></ColumnDefinition>
+                    <ColumnDefinition Width="2"></ColumnDefinition>
+                    <ColumnDefinition Width="40"></ColumnDefinition>
+                    <ColumnDefinition Width="2"></ColumnDefinition>
+                    <ColumnDefinition Width="40"></ColumnDefinition>
+                    <ColumnDefinition Width="2"></ColumnDefinition>
+                    <ColumnDefinition Width="40"></ColumnDefinition>
+                    <ColumnDefinition Width="2"></ColumnDefinition>
+                    <ColumnDefinition Width="40"></ColumnDefinition>
+                    <ColumnDefinition Width="2"></ColumnDefinition>
+                    <ColumnDefinition Width="40"></ColumnDefinition>
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="Rec1" MaxLength="1" Grid.Column="0" KeyUp="GoNextRecovery"></TextBox>
-                <TextBox x:Name="Rec2" MaxLength="1" Grid.Column="1" KeyUp="GoNextRecovery"></TextBox>
-                <TextBox x:Name="Rec3" MaxLength="1" Grid.Column="2" KeyUp="GoNextRecovery"></TextBox>
-                <TextBox x:Name="Rec4" MaxLength="1" Grid.Column="3" KeyUp="GoNextRecovery"></TextBox>
-                <TextBox x:Name="Rec5" MaxLength="1" Grid.Column="4" KeyUp="GoNextRecovery"></TextBox>
-                <TextBox x:Name="Rec6" MaxLength="1" Grid.Column="5" KeyUp="GoNextRecovery"></TextBox>
-                <TextBox x:Name="Rec7" MaxLength="1" Grid.Column="6" KeyUp="GoNextRecovery"></TextBox>
-                <TextBox x:Name="Rec8" MaxLength="1" Grid.Column="7"></TextBox>
+                <TextBox x:Name="Rec1" MaxLength="1" Grid.Column="0" KeyUp="GoNextRecovery" BorderThickness="0 0 0 2" TextAlignment="Center" FontSize="50"></TextBox>
+                <TextBox x:Name="Rec2" MaxLength="1" Grid.Column="2" KeyUp="GoNextRecovery" BorderThickness="0 0 0 2" TextAlignment="Center" FontSize="50"></TextBox>
+                <TextBox x:Name="Rec3" MaxLength="1" Grid.Column="4" KeyUp="GoNextRecovery" BorderThickness="0 0 0 2" TextAlignment="Center" FontSize="50"></TextBox>
+                <TextBox x:Name="Rec4" MaxLength="1" Grid.Column="6" KeyUp="GoNextRecovery" BorderThickness="0 0 0 2" TextAlignment="Center" FontSize="50"></TextBox>
+                <TextBox x:Name="Rec5" MaxLength="1" Grid.Column="8" KeyUp="GoNextRecovery" BorderThickness="0 0 0 2" TextAlignment="Center" FontSize="50"></TextBox>
+                <TextBox x:Name="Rec6" MaxLength="1" Grid.Column="10" KeyUp="GoNextRecovery" BorderThickness="0 0 0 2" TextAlignment="Center" FontSize="50"></TextBox>
+                <TextBox x:Name="Rec7" MaxLength="1" Grid.Column="12" KeyUp="GoNextRecovery" BorderThickness="0 0 0 2" TextAlignment="Center" FontSize="50"></TextBox>
+                <TextBox x:Name="Rec8" MaxLength="1" Grid.Column="14" BorderThickness="0 0 0 2" TextAlignment="Center" FontSize="50"></TextBox>
             </Grid>
             <Grid Grid.Row="3">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="200"></ColumnDefinition>
+                    <ColumnDefinition Width="160"></ColumnDefinition>
                     <ColumnDefinition Width="*"></ColumnDefinition>
                 </Grid.ColumnDefinitions>
                 <Label x:Name="ToggleType" HorizontalAlignment="Center" Content="Use Recovery Code" Foreground="#0069FF" Cursor="Hand" Grid.Column="0" MouseUp="ToggleRecovery"></Label>
