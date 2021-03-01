@@ -89,8 +89,8 @@ namespace ZitiDesktopEdge {
 			ServiceList.Children.Clear();
 			if (_identity.Services.Count>0) {
 				foreach(var zitiSvc in _identity.Services.OrderBy(s => s.Name.ToLower())) {
-					if (zitiSvc.Name.ToLower().IndexOf(filter)>=0||zitiSvc.Url.ToLower().IndexOf(filter)>=0) {
-						Logger.Debug("painting: " + zitiSvc.Name);
+					if (zitiSvc.Name.ToLower().IndexOf(filter)>=0||zitiSvc.ToString().ToLower().IndexOf(filter)>=0) {
+						Logger.Trace("painting: " + zitiSvc.Name);
 						ServiceInfo info = new ServiceInfo();
 						info.Info = zitiSvc;
 						info.OnMessage += Info_OnMessage;
@@ -117,9 +117,9 @@ namespace ZitiDesktopEdge {
 
 		private void ShowDetails(ZitiService info) {
 			DetailName.Text = info.Name;
-			DetailUrl.Text = info.Url;
+			DetailUrl.Text = info.ToString();
 			DetailAddress.Text = info.AssignedIP;
-			DetailPorts.Text = info.Port;
+			DetailPorts.Text = info.ToString();
 			// DetailProtocols.Text = info.Protocols;
 
 			DetailsArea.Visibility = Visibility.Visible;
