@@ -54,6 +54,7 @@ const (
 	COULD_NOT_ENROLL     = 2
 
 	UNKNOWN_ERROR          = 100
+	ERROR                  = 500
 	ERROR_DISCONNECTING_ID = 50
 	IDENTITY_NOT_FOUND     = 1000
 
