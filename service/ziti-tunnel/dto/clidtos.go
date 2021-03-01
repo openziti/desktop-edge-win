@@ -35,3 +35,8 @@ type ServiceCli struct {
 	AssignedHost  string
 	OwnsIntercept bool
 }
+
+type IdentityOnOffPayload struct {
+	OnOff       string
+	Fingerprint string
+}

@@ -24,7 +24,7 @@ import (
 
 // servicesCmd represents the services command
 var servicesCmd = &cobra.Command{
-	Use:   "services",
+	Use:   "services [all] [svc_name...]",
 	Short: "Lists services from ziti-tunnel",
 	Long: `View the services that this user has access to.
 	The records will be fetched from ziti-tunnel`,
@@ -37,5 +37,4 @@ var servicesCmd = &cobra.Command{
 
 func init() {
 	listCmd.AddCommand(servicesCmd)
-
 }

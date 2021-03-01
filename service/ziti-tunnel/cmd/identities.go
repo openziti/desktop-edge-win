@@ -26,7 +26,7 @@ var servicesOfID bool
 
 // identitiesCmd represents the identities command
 var identitiesCmd = &cobra.Command{
-	Use:   "identities",
+	Use:   "identities [all] [idname...]",
 	Short: "Lists identities from ziti-tunnel",
 	Long: `View the identities that this user has access to.
 The records will be fetched from ziti-tunnel`,

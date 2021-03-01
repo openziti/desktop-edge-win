@@ -105,6 +105,8 @@ func main() {
 		fmt.Println(version())
 	case "list":
 		commandline.Execute()
+	case "identity":
+		commandline.Execute()
 	default:
 		usage(fmt.Sprintf("invalid command %s", cmd))
 	}

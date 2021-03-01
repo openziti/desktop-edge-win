@@ -56,6 +56,7 @@ func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}, fn fetchF
 
 	if err != nil {
 		log.Error(err)
+		readDone <- struct{}{}
 		return
 	}
 
@@ -66,6 +67,7 @@ func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}, fn fetchF
 	dec := json.NewDecoder(strings.NewReader(msg))
 	var tunnelStatus dto.ZitiTunnelStatus
 	if err := dec.Decode(&tunnelStatus); err == io.EOF {
+		readDone <- struct{}{}
 		return
 	} else if err != nil {
 		log.Fatal(err)
@@ -86,17 +88,7 @@ func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}, fn fetchF
 	return
 }
 
-//GetIdentities is to fetch identities through cmdline
-func GetIdentities(args []string, flags map[string]bool) {
-	getDataFromIpcPipe(&GET_STATUS, GetIdentitiesFromRTS, args, flags)
-}
-
-//GetServices is to fetch services through cmdline
-func GetServices(args []string, flags map[string]bool) {
-	getDataFromIpcPipe(&GET_STATUS, GetServicesFromRTS, args, flags)
-}
-
-func getDataFromIpcPipe(commandMsg *dto.CommandMsg, fn fetchFromRTS, args []string, flags map[string]bool) {
+func GetDataFromIpcPipe(commandMsg *dto.CommandMsg, fn fetchFromRTS, args []string, flags map[string]bool) {
 	log.Infof("fetching identities through cmdline...%s", args)
 
 	log.Debug("Connecting to pipe")
