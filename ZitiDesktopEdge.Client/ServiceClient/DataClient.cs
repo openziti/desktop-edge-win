@@ -214,7 +214,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                             MetricsEvent(m.Identities);
                         }
                         break;
-                    case "status":
+                    case "status": //break here to see status on startup
                         TunnelStatusEvent tse = serializer.Deserialize<TunnelStatusEvent>(jsonReader);
 
                         if (tse != null) {

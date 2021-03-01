@@ -15,7 +15,6 @@ namespace ZitiUpdateService.checkers {
 		string url;
 		string downloadUrl = null;
 		string downloadFileName = null;
-		string currentResponse = null;
 		Version nextVersion = null;
 
 		public GithubCheck(string url) {

@@ -15,7 +15,7 @@
  *
  */
 
-package cziti
+package windns
 
 import (
 	"bytes"
@@ -28,21 +28,6 @@ import (
 )
 
 var log = logging.Logger()
-var noFileLog = logging.NoFilenameLogger()
-
-func ResetDNS() {
-	log.Info("resetting DNS server addresses")
-	script := `Get-NetIPInterface | ForEach-Object { Set-DnsClientServerAddress -InterfaceIndex $_.ifIndex -ResetServerAddresses }`
-
-	cmd := exec.Command("powershell", "-Command", script)
-	cmd.Stderr = os.Stdout
-	cmd.Stdout = os.Stdout
-
-	err := cmd.Run()
-	if err != nil {
-		log.Errorf("ERROR resetting DNS: %v", err)
-	}
-}
 
 func GetConnectionSpecificDomains() []string {
 	script := `Get-DnsClient | Select-Object ConnectionSpecificSuffix -Unique | ForEach-Object { $_.ConnectionSpecificSuffix }; (Get-DnsClientGlobalSetting).SuffixSearchList`
@@ -103,61 +88,6 @@ func GetUpstreamDNS() []string {
 	return names
 }
 
-
-func ReplaceDNS(ips []net.IP) {
-	ipsStrArr := make([]string, len(ips))
-	for i, ip := range ips {
-		ipsStrArr[i] = fmt.Sprintf("'%s'", ip.String())
-	}
-	ipsAsString := strings.Join(ipsStrArr, ",")
-
-	log.Infof("injecting DNS servers [%s] onto interfaces", ipsAsString)
-
-	script := fmt.Sprintf(`$dnsinfo=Get-DnsClientServerAddress
-$dnsIps=@(%s)
-
-# see https://docs.microsoft.com/en-us/dotnet/api/system.net.sockets.addressfamily
-$IPv4=2
-$IPv6=23
-
-$dnsUpdates = @{}
-
-foreach ($dns in $dnsinfo)
-{
-    if($dnsUpdates[$dns.InterfaceIndex] -eq $null) { $dnsUpdates[$dns.InterfaceIndex]=[System.Collections.ArrayList]@() }
-    if($dns.AddressFamily -eq $IPv6) {
-        $dnsServers=$dns.ServerAddresses
-        $ArrList=[System.Collections.ArrayList]@($dnsServers)
-        $dnsUpdates[$dns.InterfaceIndex].AddRange($ArrList)
-    }
-    elseif($dns.AddressFamily -eq $IPv4){
-        $dnsServers=$dns.ServerAddresses
-        $ArrList=[System.Collections.ArrayList]@($dnsServers)
-        foreach($d in $dnsIps) {
-            if(($dnsServers -ne $null) -and ($dnsServers.Contains($d)) ) {
-                # uncomment when debugging echo ($dns.InterfaceAlias + " IPv4 already contains $d")
-            } else {
-                $ArrList.Insert(0,$d)
-            }
-        }
-        $dnsUpdates[$dns.InterfaceIndex].AddRange($ArrList)
-    }
-}
-
-foreach ($key in $dnsUpdates.Keys)
-{
-    Set-DnsClientServerAddress -InterfaceIndex $key -ServerAddresses ($dnsUpdates[$key])
-}`, ipsAsString)
-
-	cmd := exec.Command("powershell", "-Command", script)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-
-	if err := cmd.Run(); err != nil {
-		log.Errorf("ERROR resetting DNS (%v)", err)
-	}
-}
-
 func FlushDNS() {
 	log.Info("flushing DNS cache using ipconfig /flushdns")
 	script := `ipconfig /flushdns`
@@ -169,5 +99,78 @@ func FlushDNS() {
 	err := cmd.Run()
 	if err != nil {
 		log.Errorf("ERROR flushing DNS: %v", err)
+	}
+}
+
+func RemoveAllNrptRules() {
+	script := fmt.Sprintf(`Get-DnsClientNrptRule | Where { $_.Comment.StartsWith("Added by ziti-tunnel") } | Remove-DnsClientNrptRule -ErrorAction SilentlyContinue -Force`)
+	log.Debugf("removing all nrpt rules with: %s", script)
+
+	cmd := exec.Command("powershell", "-Command", script)
+	cmd.Stderr = os.Stdout
+	cmd.Stdout = os.Stdout
+
+	err := cmd.Run()
+	if err != nil {
+		log.Errorf("ERROR removing all nrpt rules: %v", err)
+	}
+}
+
+func AddNrptRules(domainsToMap map[string]struct{}, dnsServer string) {
+	sb := strings.Builder{}
+	sb.WriteString(`$Rules = @(
+`)
+
+	for hostname := range domainsToMap {
+		sb.WriteString(fmt.Sprintf(`@{ Namespace ="%s"; NameServers = @("%s"); Comment = "Added by ziti-tunnel"; DisplayName = "ziti-tunnel:%s"; }%s`, hostname, dnsServer, hostname, "\n"))
+	}
+
+	sb.WriteString(fmt.Sprintf(`)
+
+ForEach ($Rule in $Rules) {
+	Add-DnsClientNrptRule @Rule
+}`))
+
+	script := sb.String()
+	log.Debugf("Executing NRPT script:\n%s", script)
+
+	cmd := exec.Command("powershell", "-Command", script)
+	cmd.Stderr = os.Stdout
+	cmd.Stdout = os.Stdout
+
+	err := cmd.Run()
+	if err != nil {
+		log.Errorf("ERROR adding nrpt rules: %v", err)
+	}
+}
+
+func RemoveNrptRules(domainsToMap map[string]struct{}) {
+	if len(domainsToMap) == 0 {
+		log.Debugf()
+	}
+
+	sb := strings.Builder{}
+	sb.WriteString(`$toRemove = @(
+`)
+
+	for hostname := range domainsToMap {
+		sb.WriteString(fmt.Sprintf(`"%s"%s`, hostname, "\n"))
+	}
+
+	sb.WriteString(fmt.Sprintf(`)
+
+Get-DnsClientNrptRule | Where { $toRemove -contains $_.DisplayName } | Remove-DnsClientNrptRule -ErrorAction SilentlyContinue -Force
+`))
+
+	script := sb.String()
+	log.Debugf("Executing NRPT script:\n%s", script)
+
+	cmd := exec.Command("powershell", "-Command", script)
+	cmd.Stderr = os.Stdout
+	cmd.Stdout = os.Stdout
+
+	err := cmd.Run()
+	if err != nil {
+		log.Errorf("ERROR removing nrpt rules: %v", err)
 	}
 }

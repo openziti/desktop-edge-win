@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #define USING_ZITI_SHARED
 #include <ziti/ziti.h>
+#include <ziti/ziti_tunnel_cbs.h>
 #include <ziti/ziti_log.h>
 #include <ziti/ziti_events.h>
 #include <uv.h>
@@ -59,8 +60,9 @@ extern void ziti_pq_mac_go(ziti_context ztx, char *id, ziti_pr_mac_cb response_c
 extern void log_writer_shim_go(int level, const char *loc, const char *msg, size_t msglen);
 
 void log_writer_cb(int level, char *loc, char *msg, int msglen);
-void ziti_dump_go_callback(char *outputPath, char *line);
-void ziti_dump_go_wrapper(void *ctx, char* outputPath);
+void ziti_dump_go_to_file_cb(char *outputPath, char *line);
+void ziti_dump_go_to_log_cb(void *stringsBuffer, char *line);
+
 bool is_null(void* anything);
 
 struct ziti_context_event* ziti_event_context_event(ziti_event_t *ev);
@@ -68,4 +70,8 @@ struct ziti_router_event* ziti_event_router_event(ziti_event_t *ev);
 struct ziti_service_event* ziti_event_service_event(ziti_event_t *ev);
 
 ziti_service* ziti_service_array_get(ziti_service_array arr, int idx);
+
+extern void ziti_dump_go(char* msg);
+
+
 #endif /* GOLANG_SDK_H */

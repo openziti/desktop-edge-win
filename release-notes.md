@@ -1,3 +1,83 @@
+# Release 1.9.0
+
+## What's New
+* MFA - details to follow
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* [#310](https://github.com/openziti/desktop-edge-win/pull/310) Restore identities moved by Windows after Windows system update
+
+## Dependency Updates
+* Tunneler SDK to v0.10.0/CSDK 0.20.13
+
+# Release 1.8.0
+
+## What's New
+* DNS resolution has *CHANGED*. Users have had issues with the proxied DNS requests at times leading to an
+  experience that was frustrating at time. Restarting the client fixed the problem but is also not what we want.
+  Now the Ziti Desktop Edge for Windows will add NRPT rules and only send intercepted services to the resolver.
+  The resolver will still proxy requests it does not know but fewer requests should need to be made to the internal
+  DNS resolver.
+* The internal DNS resolver no longer needs to be the primary DNS resolver on all interfaces due to the change
+  mentioned above  
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* none
+
+# Release 1.7.10
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* [#313](https://github.com/openziti/desktop-edge-win/pull/313) Add identity button missing
+
+## Dependency Updates
+* none
+
+# Release 1.7.9
+
+## What's New
+* Stopping the data service (`ziti`) using the big button no longer shows the old warning asking to start the service or exit the UI.
+  Now the expected behavior is to see the button "off" which is used to turn the tunnel back "on"
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* [#310](https://github.com/openziti/desktop-edge-win/pull/310) Restore identities moved by Windows after Windows system update
+
+## Dependency Updates
+* Tunneler SDK to v0.8.21/CSDK 0.20.13
+
+# Release 1.7.8
+
+## What's New
+* a new DNS probe record was added to the DNS server to allow DNS-related testing
+* ziti-monitor service now probes the DNS server for diagnostic reasons
+* added code to check upgrade status - only useful when the ziti-monitor service is not running
+
+## Other changes:
+* minor logging updates
+
+## Bugs fixed:
+* fixed an issue with hosting connections after channel failure [CSDK #233](https://github.com/openziti/ziti-sdk-c/pull/233)
+* fixed a UI issue when no identites existed
+
+## Dependency Updates
+* Tunneler SDK to v0.8.17/CSDK 0.20.12
+
 # Release 1.7.7
 
 ## What's New
@@ -11,6 +91,7 @@
 
 ## Dependency Updates
 * Tunneler SDK to v0.8.15
+
 # Release 1.7.6
 
 ## What's New

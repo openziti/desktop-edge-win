@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"github.com/Microsoft/go-winio"
 	"github.com/openziti/desktop-edge-win/service/cziti"
+	"github.com/openziti/desktop-edge-win/service/windns"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/constants"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
@@ -59,10 +60,9 @@ var shutdown = make(chan bool, 8) //a channel informing go routines to exit
 
 func SubMain(ops chan string, changes chan<- svc.Status) error {
 	log.Info("============================== service begins ==============================")
-	cziti.ResetDNS()
+	windns.RemoveAllNrptRules()
 
 	rts.LoadConfig()
-	defer rts.Close()
 	l := rts.state.LogLevel
 	parsedLevel, cLogLevel := logging.ParseLevel(l)
 
@@ -110,17 +110,27 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 
 	waitForStopRequest(ops)
 
+	log.Debug("shutting down. start a ZitiDump")
+	for _, id := range rts.ids {
+		if id.CId != nil {
+			sb := strings.Builder{}
+			cziti.ZitiDumpOnShutdown(id.CId, &sb)
+			log.Infof("working around the c sdk's limitation of embedding newlines on calling ziti_shutdown\n %s", sb.String())
+		}
+	}
+	log.Debug("shutting down. ZitiDump complete")
+
 	requestShutdown("service shutdown")
 
 	// signal to any connected consumers that the service is shutting down normally
-	events.broadcast <- dto.StatusEvent {
+	events.broadcast <- dto.StatusEvent{
 		Op: "shutdown",
 	}
 
 	// wait 1 second for the shutdown to send to clients
 	shutdownDelay := make(chan bool)
 	go func() {
-		time.Sleep(1*time.Second)
+		time.Sleep(1 * time.Second)
 		shutdownDelay <- true
 	}()
 	<-shutdownDelay
@@ -131,7 +141,19 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	log.Infof("shutting down events...")
 	events.shutdown()
 
-	cziti.ResetDNS()
+	windns.RemoveAllNrptRules()
+
+	log.Infof("Removing existing interface: %s", TunName)
+	wt, err := tun.WintunPool.OpenAdapter(TunName)
+	if err == nil {
+		// If so, we delete it, in case it has weird residual configuration.
+		_, err = wt.Delete(true)
+		if err != nil {
+			log.Errorf("Error deleting already existing interface: %v", err)
+		}
+	} else {
+		log.Errorf("INTERFACE %s was nil? %v", TunName, err)
+	}
 
 	rts.Close()
 
@@ -183,7 +205,7 @@ func openPipes() (*Pipes, error) {
 	if err != nil {
 		return nil, err
 	}
-	ipc, err := winio.ListenPipe(ipcPipeName(), &pc)
+	ipc, err := winio.ListenPipe(IpcPipeName(), &pc)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +220,7 @@ func openPipes() (*Pipes, error) {
 
 	// listen for ipc messages
 	go accept(ipc, serveIpc, "   ipc")
-	log.Debugf("ipc listener ready pipe: %s", ipcPipeName())
+	log.Debugf("ipc listener ready pipe: %s", IpcPipeName())
 
 	// listen for events messages
 	go accept(events, serveEvents, "events")
@@ -344,9 +366,9 @@ func serveIpc(conn net.Conn) {
 	defer func() {
 		log.Debugf("serveIpc is exiting. total connection count now: %d", ipcConnections)
 		ipcWg.Done()
-		ipcConnections --
+		ipcConnections--
 		log.Debugf("serveIpc is exiting. total connection count now: %d", ipcConnections)
-	}()   // count down whenever the function exits
+	}() // count down whenever the function exits
 	log.Debugf("accepting a new client for serveIpc. total connection count: %d", ipcConnections)
 
 	go func() {
@@ -511,7 +533,7 @@ func writeLogToStream(file *os.File, writer *bufio.Writer) {
 }
 
 func serveEvents(conn net.Conn) {
-	randomInt:= rand.Int()
+	randomInt := rand.Int()
 	log.Debug("accepted an events connection, writing events to pipe")
 	defer closeConn(conn) //close the connection after this function invoked as go routine exits
 
@@ -520,9 +542,9 @@ func serveEvents(conn net.Conn) {
 	defer func() {
 		log.Debugf("serveEvents is exiting. total connection count now: %d", eventsConnections)
 		eventsWg.Done()
-		eventsConnections --
+		eventsConnections--
 		log.Debugf("serveEvents is exiting. total connection count now: %d", eventsConnections)
-	}()   // count down whenever the function exits
+	}() // count down whenever the function exits
 	log.Debugf("accepting a new client for serveEvents. total connection count: %d", eventsConnections)
 
 	consumer := make(chan interface{}, 8)
@@ -533,7 +555,7 @@ func serveEvents(conn net.Conn) {
 	o := json.NewEncoder(w)
 
 	log.Info("new event client connected - sending current status")
-	err := o.Encode(	dto.TunnelStatusEvent{
+	err := o.Encode(dto.TunnelStatusEvent{
 		StatusEvent: dto.StatusEvent{Op: "status"},
 		Status:      rts.ToStatus(true),
 		ApiVersion:  API_VERSION,
@@ -548,15 +570,15 @@ func serveEvents(conn net.Conn) {
 loop:
 	for {
 		select {
-			case msg := <-consumer:
-				err := o.Encode(msg)
-				if err != nil {
-					log.Debugf("exiting from serveEvents - %v", err)
-					break loop
-				}
-				_ = w.Flush()
-			case <-interrupt:
+		case msg := <-consumer:
+			err := o.Encode(msg)
+			if err != nil {
+				log.Debugf("exiting from serveEvents - %v", err)
 				break loop
+			}
+			_ = w.Flush()
+		case <-interrupt:
+			break loop
 		}
 	}
 	log.Info("a connected event client has disconnected")
@@ -768,16 +790,13 @@ func connectIdentity(id *Id) {
 		log.Debugf("%s[%s] is already loaded", id.Name, id.FingerPrint)
 
 		id.CId.Services.Range(func(key interface{}, value interface{}) bool {
-			val := value.(cziti.ZService)
-			ip := cziti.DNSMgr.ReturnToDns(val.InterceptHost)
-			cziti.AddIntercept(val.Id, val.Name, ip.String(), int(val.InterceptPort), id.CId.UnsafePointer())
 			id.Services = append(id.Services, nil)
 			return true
 		})
 
 		events.broadcast <- dto.IdentityEvent{
 			ActionEvent: IDENTITY_ADDED,
-			Id: id.Identity,
+			Id:          id.Identity,
 		}
 		log.Infof("connecting identity completed: %s[%s]", id.Name, id.FingerPrint)
 	}
@@ -793,19 +812,15 @@ func disconnectIdentity(id *Id) error {
 			log.Debugf("ranging over services all services to remove intercept and deregister the service")
 
 			id.CId.Services.Range(func(key interface{}, value interface{}) bool {
-				val := value.(cziti.ZService)
+				val := value.(*cziti.ZService)
 				var wg sync.WaitGroup
 				wg.Add(1)
 				rwg := &cziti.RemoveWG{
-					SvcId: val.Id,
 					Wg:    &wg,
+					Czsvc: val,
 				}
 				cziti.RemoveIntercept(rwg)
 				wg.Wait()
-				ok := cziti.DNSMgr.UnregisterService(val.InterceptHost, val.InterceptPort)
-				if !ok {
-					log.Warnf("unregister service from disconnectIdentity was not ok? %s:%d", val.InterceptHost, val.InterceptPort)
-				}
 				return true
 			})
 			log.Infof("disconnecting identity complete: %s", id.Name)
@@ -864,7 +879,7 @@ func pipeName(path string) string {
 	}
 }
 
-func ipcPipeName() string {
+func IpcPipeName() string {
 	return pipeName("ipc")
 }
 
@@ -881,48 +896,22 @@ func acceptServices() {
 		select {
 		case <-shutdown:
 			return
-		case c := <-cziti.ServiceChanges:
-			log.Debugf("processing service change event. id:%s name:%s", c.Service.Id, c.Service.Name)
-			s := dto.Service{
-				Name:          c.Service.Name,
-				InterceptHost: c.Service.InterceptHost,
-				InterceptPort: c.Service.InterceptPort,
-				Id:            c.Service.Id,
-				AssignedIP:    c.Service.AssignedIP,
-				OwnsIntercept: c.Service.OwnsIntercept,
-				Owner: dto.ServiceOwner{
-					Network:   "",
-					ServiceId: "",
-				},
-			}
-			var action dto.ActionEvent
-			switch c.Operation {
-			case cziti.ADDED:
-				action = SERVICE_ADDED
-			case cziti.REMOVED:
-				action = SERVICE_REMOVED
-			default:
-				log.Warnf("service event was processed but unknown operation: %s", c.Operation)
-				continue
-			}
-
-			events.broadcast <- dto.ServiceEvent{
-				ActionEvent: action,
-				Fingerprint: c.ZitiContext.Fingerprint,
-				Service:     s,
-			}
-			log.Debugf("dispatched %s service change event", c.Operation)
+		case serviceChange := <-cziti.ServiceChanges:
+			log.Debugf("processing service change event. id:%s name:%s", serviceChange.Service.Id, serviceChange.Service.Name)
+			change := dto.ServiceEvent(serviceChange)
+			events.broadcast <- change
+			log.Debugf("dispatched %s service change event", serviceChange.Op)
 		}
 	}
 }
 
-func handleEvents(isInitialized chan struct{}){
+func handleEvents(isInitialized chan struct{}) {
 	events.run()
 	d := 5 * time.Second
 	every5s := time.NewTicker(d)
 
 	defer log.Debugf("exiting handleEvents. loops were set for %v", d)
-	<- isInitialized
+	<-isInitialized
 	log.Info("beginning metric collection")
 	for {
 		select {
@@ -938,7 +927,6 @@ func handleEvents(isInitialized chan struct{}){
 		}
 	}
 }
-
 
 //Removes the Config from the provided identity and returns a 'cleaned' id
 func Clean(src *Id) dto.Identity {
@@ -959,8 +947,8 @@ func Clean(src *Id) dto.Identity {
 	if src.CId != nil {
 		src.CId.Services.Range(func(key interface{}, value interface{}) bool {
 			//string, ZService
-			val := value.(cziti.ZService)
-			nid.Services = append(nid.Services, svcToDto(val))
+			val := value.(*cziti.ZService)
+			nid.Services = append(nid.Services, /*svcToDto(val)*/val.Service)
 			return true
 		})
 	}
@@ -984,16 +972,13 @@ func AddMetrics(id *Id) {
 func svcToDto(src cziti.ZService) *dto.Service {
 	dest := &dto.Service{
 		Name:          src.Name,
-		AssignedIP:    src.AssignedIP,
-		InterceptHost: src.InterceptHost,
-		InterceptPort: src.InterceptPort,
 		Id:            src.Id,
-		OwnsIntercept: src.OwnsIntercept,
-		Owner: dto.ServiceOwner{
-			Network:   "",
-			ServiceId: "",
-		},
+		OwnsIntercept: false,
 	}
-
+	if src.Service != nil {
+		dest.Protocols = src.Service.Protocols
+		dest.Addresses = src.Service.Addresses
+		dest.Ports = src.Service.Ports
+	}
 	return dest
 }
