@@ -17,7 +17,6 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/cli"
@@ -30,7 +29,7 @@ var identityCmd = &cobra.Command{
 	Use:   "identity [fingerprint] [on/off]",
 	Short: "enable or disable the identity",
 	Long: `Enable or disable identity based on the On Off values.
-	It accepts finger print of the identity followed by On Off values`,
+	It accepts finger print of the identity followed by on/off value`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
 			return errors.New("requires a 2 arguments, usage: identity [fingerprint] [on/off]")
@@ -41,7 +40,6 @@ var identityCmd = &cobra.Command{
 		return errors.New("incorrect arguments are passed, usage: identity [fingerprint] [on/off]")
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("identity called")
 		cli.OnOffIdentity(args, nil)
 	},
 }

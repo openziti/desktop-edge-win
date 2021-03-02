@@ -179,3 +179,19 @@ func generateResponse(dataType string, message string, filteredData interface{},
 
 	return dto.Response{Message: message, Code: service.SUCCESS, Error: "", Payload: responseStr}
 }
+
+// GetIdentityStatusFromRTS is to get identity info from the RTS
+func GetIdentityStatusFromRTS(args []string, status dto.Response, flags map[string]bool) dto.Response {
+	log.Debugf("Message from ziti-tunnel : %v", status.Message)
+	if status.Error == "" && status.Payload != nil {
+		log.Debugf("Payload from RTS %v", status.Payload)
+		payloadData := status.Payload.(map[string]interface{})
+		tunStatus := make(map[string]interface{})
+		tunStatus["FingerPrint"] = payloadData["FingerPrint"]
+		tunStatus["Active"] = payloadData["Active"]
+		tunStatus["Name"] = payloadData["Name"]
+		return dto.Response{Message: status.Message, Code: service.SUCCESS, Error: "", Payload: tunStatus}
+	} else {
+		return status
+	}
+}
