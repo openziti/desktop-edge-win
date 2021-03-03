@@ -117,6 +117,10 @@ func RemoveAllNrptRules() {
 }
 
 func AddNrptRules(domainsToMap map[string]struct{}, dnsServer string) {
+	if len(domainsToMap) == 0 {
+		log.Debug("no domains to map specified to AddNrptRules. exiting early")
+		return
+	}
 	sb := strings.Builder{}
 	sb.WriteString(`$Rules = @(
 `)
@@ -146,7 +150,8 @@ ForEach ($Rule in $Rules) {
 
 func RemoveNrptRules(domainsToMap map[string]struct{}) {
 	if len(domainsToMap) == 0 {
-		log.Debugf()
+		log.Debug("no domains to map specified to RemoveNrptRules. exiting early")
+		return
 	}
 
 	sb := strings.Builder{}

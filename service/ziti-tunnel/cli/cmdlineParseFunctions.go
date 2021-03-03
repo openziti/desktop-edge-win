@@ -41,11 +41,11 @@ func convertToIdentityCli(id *dto.Identity) dto.IdentityCli {
 func convertToServiceCli(svc dto.Service) dto.ServiceCli {
 	return dto.ServiceCli{
 		Name:          svc.Name,
-		Id:            svc.Id,
+		Id:            svc.Id,/*
 		InterceptHost: svc.InterceptHost,
 		InterceptPort: svc.InterceptPort,
 		AssignedIP:    svc.AssignedIP,
-		AssignedHost:  svc.AssignedHost,
+		AssignedHost:  svc.AssignedHost,*/
 		OwnsIntercept: svc.OwnsIntercept,
 	}
 }
