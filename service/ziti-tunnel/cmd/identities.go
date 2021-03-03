@@ -26,7 +26,7 @@ var servicesOfID bool
 
 // identitiesCmd represents the identities command
 var identitiesCmd = &cobra.Command{
-	Use:   "identities [all] [idname...]",
+	Use:   "identities [all] [idname...] [-s]",
 	Short: "Lists identities from ziti-tunnel",
 	Long: `View the identities that this user has access to.
 The records will be fetched from ziti-tunnel`,
@@ -45,7 +45,6 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	//identitiesCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	identitiesCmd.Flags().BoolVarP(&servicesOfID, "services", "s", false, "Display all services that belonged to the identity")
 
 }

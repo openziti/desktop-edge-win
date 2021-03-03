@@ -19,37 +19,39 @@ package cmd
 
 import (
 	"errors"
-	"strings"
 
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/cli"
-
 	"github.com/spf13/cobra"
 )
 
-// identityCmd represents the identity command
-var identityCmd = &cobra.Command{
-	Use:   "identity [fingerprint] [on/off]",
-	Short: "enable or disable the identity",
-	Long: `Enable or disable identity based on the On Off values.
-	It accepts finger print of the identity followed by on/off value`,
+var currentLogLevel bool
+
+// loglevelCmd represents the loglevel command
+var loglevelCmd = &cobra.Command{
+	Use:   "loglevel [loglevel]",
+	Short: "Set the loglevel of the ziti tunnel",
+	Long:  `Allows you to set the log level of ziti tunnel.`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 2 {
-			return errors.New("requires 2 arguments, usage: identity [fingerprint] [on/off]")
+		if len(args) < 1 && !currentLogLevel {
+			return errors.New("requires 1 argument or a flag, examples of the accepted loglevel arguments are trace, info, debug etc")
 		}
-		if len(args[0]) == 40 && isValidArg(args[1]) {
-			return nil
-		}
-		return errors.New("incorrect arguments are passed, usage: identity [fingerprint] [on/off]")
+		return nil
+
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		cli.OnOffIdentity(args, nil)
+		flags := map[string]bool{}
+		flags["query"] = currentLogLevel
+		cli.SetLogLevel(args, flags)
 	},
-}
-
-func isValidArg(onOff string) bool {
-	return (strings.EqualFold(onOff, "on") || strings.EqualFold(onOff, "off"))
 }
 
 func init() {
-	rootCmd.AddCommand(identityCmd)
+	rootCmd.AddCommand(loglevelCmd)
+
+	// Here you will define your flags and configuration settings.
+
+	// Cobra supports Persistent Flags which will work for this command
+	// and all subcommands, e.g.:
+	loglevelCmd.PersistentFlags().BoolVarP(&currentLogLevel, "query", "q", false, "Query current loglevel")
+
 }

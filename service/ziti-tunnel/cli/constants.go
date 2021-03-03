@@ -30,6 +30,10 @@ var ONOFF_IDENTITY = dto.CommandMsg{
 	Function: "IdentityOnOff",
 }
 
+var SET_LOGLEVEL = dto.CommandMsg{
+	Function: "SetLogLevel",
+}
+
 var templateIdentity = `{{printf "%40s" "Name"}} | {{printf "%41s" "FingerPrint"}} | {{printf "%6s" "Active"}} | {{printf "%30s" "Config"}} | {{"Status"}}
 {{range .}}{{printf "%40s" .Name}} | {{printf "%41s" .FingerPrint}} | {{printf "%6t" .Active}} | {{printf "%30s" .Config}} | {{.Status}}
 {{end}}`

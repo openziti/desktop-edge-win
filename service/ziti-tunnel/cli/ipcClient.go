@@ -100,7 +100,9 @@ func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}, fn fetchS
 		if response.Message != "" {
 			responseMsg := responseFn(args, response, flags)
 			if responseMsg.Code == service.SUCCESS {
-				log.Infof("Payload : %v", responseMsg.Payload)
+				if responseMsg.Payload != nil {
+					log.Infof("Payload : %v", responseMsg.Payload)
+				}
 				log.Infof("Message : %s", responseMsg.Message)
 			} else {
 				log.Info(responseMsg.Error)
@@ -115,7 +117,7 @@ func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}, fn fetchS
 }
 
 func GetDataFromIpcPipe(commandMsg *dto.CommandMsg, fn fetchStatusFromRTS, responseFn fetchResponseFromRTS, args []string, flags map[string]bool) {
-	log.Infof("fetching identities through cmdline...%s", args)
+	log.Infof("Command %s with args %s", commandMsg.Function, args)
 
 	log.Debug("Connecting to pipe")
 	timeout := 2000 * time.Millisecond
@@ -124,6 +126,7 @@ func GetDataFromIpcPipe(commandMsg *dto.CommandMsg, fn fetchStatusFromRTS, respo
 
 	if err != nil {
 		log.Errorf("Connection to ipc pipe is not established, %v", err)
+		log.Errorf("Ziti Desktop Edge app may not be running")
 		return
 	}
 	readDone := make(chan struct{})
@@ -144,8 +147,10 @@ func GetDataFromIpcPipe(commandMsg *dto.CommandMsg, fn fetchStatusFromRTS, respo
 }
 
 func closeConn(conn net.Conn) {
-	err := conn.Close()
-	if err != nil {
-		log.Warnf("abnormal error while closing connection. %v", err)
+	if conn != nil {
+		err := conn.Close()
+		if err != nil {
+			log.Warnf("abnormal error while closing connection. %v", err)
+		}
 	}
 }

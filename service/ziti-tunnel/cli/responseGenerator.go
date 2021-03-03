@@ -180,8 +180,19 @@ func generateResponse(dataType string, message string, filteredData interface{},
 	return dto.Response{Message: message, Code: service.SUCCESS, Error: "", Payload: responseStr}
 }
 
-// GetIdentityStatusFromRTS is to get identity info from the RTS
-func GetIdentityStatusFromRTS(args []string, status dto.Response, flags map[string]bool) dto.Response {
+func GetLogLevelFromRTS(args []string, status *dto.TunnelStatus, flags map[string]bool) dto.Response {
+
+	if flags["query"] == true {
+		message := fmt.Sprintf("Loglevel is currently set to %s", status.LogLevel)
+		return dto.Response{Message: message, Code: service.SUCCESS, Error: "", Payload: ""}
+	}
+	errMsg := fmt.Sprintf("Unknown error: args %s flag %v", args, flags)
+	return dto.Response{Message: "", Code: service.ERROR, Error: errMsg, Payload: ""}
+
+}
+
+// GetResponseObjectFromRTS is to get identity info from the RTS
+func GetResponseObjectFromRTS(args []string, status dto.Response, flags map[string]bool) dto.Response {
 	log.Debugf("Message from ziti-tunnel : %v", status.Message)
 	if status.Error == "" && status.Payload != nil {
 		log.Debugf("Payload from RTS %v", status.Payload)
