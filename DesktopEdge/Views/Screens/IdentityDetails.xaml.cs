@@ -231,7 +231,7 @@ namespace ZitiDesktopEdge {
 				MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
 
 				// CLINT - Need real data here
-				MFASetup.ShowSetup(this._identity.Name, "https://www.netfoundry.io", "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/QR_code_for_mobile_English_Wikipedia.svg/1200px-QR_code_for_mobile_English_Wikipedia.svg.png");
+				MFASetup.ShowSetup(this._identity.Name, "https://www.netfoundry.io", "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/QR_code_for_mobile_English_Wikipedia.svg/1200px-QR_code_for_mobile_English_Wikipedia.svg.png", this._identity);
 
 				ShowModal();
 			}
@@ -245,7 +245,7 @@ namespace ZitiDesktopEdge {
 			MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
 
 			string[] codes = new string[] { "12345678", "897654321", "32324232", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321" };
-			MFASetup.ShowRecovery(codes);
+			MFASetup.ShowRecovery(codes,this._identity);
 
 			ShowModal();
 		}
@@ -257,7 +257,7 @@ namespace ZitiDesktopEdge {
 			MFASetup.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
 			MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
 
-			MFASetup.ShowMFA();
+			MFASetup.ShowMFA(this._identity);
 
 			ShowModal();
 		}

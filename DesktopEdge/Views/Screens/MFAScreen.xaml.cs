@@ -15,6 +15,9 @@ using System.Windows.Shapes;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Windows.Media.Animation;
+using ZitiDesktopEdge.Models;
+using ZitiDesktopEdge.ServiceClient;
 
 namespace ZitiDesktopEdge {
 	/// <summary>
@@ -29,6 +32,8 @@ namespace ZitiDesktopEdge {
 		public event ErrorOccurred OnError;
 		private string[] _codes = new string[0];
 
+		private ZitiIdentity _identity;
+
 		public MFAScreen() {
 			InitializeComponent();
 		}
@@ -41,7 +46,8 @@ namespace ZitiDesktopEdge {
 			this.OnError?.Invoke(message);
 		}
 
-		public void ShowSetup(string idName, string url, string imageUrl) {
+		public void ShowSetup(string idName, string url, string imageUrl, ZitiIdentity identity) {
+			this._identity = identity;
 			IdName.Content = idName;
 			MFAImage.Source = LoadImage(imageUrl);
 			_url = url;
@@ -49,29 +55,49 @@ namespace ZitiDesktopEdge {
 			MFAAuthArea.Visibility = Visibility.Collapsed;
 			MFASetupArea.Visibility = Visibility.Visible;
 			MFARecoveryArea.Visibility = Visibility.Collapsed;
+			SeperationColor.Visibility = Visibility.Visible;
 			for (int i = 1; i <= 6; i++) (this.FindName("SetupAuth" + i) as TextBox).Text = "";
 			SetupAuth1.Focus();
 		}
 
-		public void ShowRecovery(string[] codes) {
+		public void ShowRecovery(string[] codes, ZitiIdentity identity) {
+			this._identity = identity;
 			MFASetupArea.Visibility = Visibility.Collapsed;
 			MFAAuthArea.Visibility = Visibility.Collapsed;
+			SeperationColor.Visibility = Visibility.Collapsed;
 			MFARecoveryArea.Visibility = Visibility.Visible;
 			RecoveryList.Children.Clear();
 			_codes = codes;
 			MFAArea.Height = 380;
-			for (int i=0; i<codes.Length; i++) {
-				StackPanel panel = new StackPanel();
-				panel.Orientation = Orientation.Horizontal;
-				Label label = new Label();
-				label.Content = codes[i];
-				RecoveryList.Children.Add(label);
+			Label label1 = new Label();
+			Label label2 = new Label();
+			Label label3 = new Label();
+			int index = 1;
+			for (int i=0; i<codes.Length; i++, index++) {
+				if (i%3==0) {
+					StackPanel panel2 = new StackPanel();
+					panel2.Orientation = Orientation.Horizontal;
+					panel2.Children.Add(label1);
+					panel2.Children.Add(label2);
+					panel2.Children.Add(label3);
+					RecoveryList.Children.Add(panel2);
+				}
+				if (index==1) label1.Content = codes[i];
+				else if (index == 2) label2.Content = codes[i];
+				else if (index == 3) label3.Content = codes[i];
 			}
+			StackPanel panel1 = new StackPanel();
+			panel1.Orientation = Orientation.Horizontal;
+			panel1.Children.Add(label1);
+			panel1.Children.Add(label2);
+			panel1.Children.Add(label3);
 		}
 
-		public void ShowMFA() {
+		public void ShowMFA(ZitiIdentity identity) {
+			this._identity = identity;
 			MFASetupArea.Visibility = Visibility.Collapsed;
 			MFARecoveryArea.Visibility = Visibility.Collapsed;
+			SeperationColor.Visibility = Visibility.Collapsed;
 			MFAAuthArea.Visibility = Visibility.Visible;
 			MFAArea.Height = 220;
 			for (int i = 1; i <= 6; i++) (this.FindName("Auth" + i) as TextBox).Text = "";
@@ -106,6 +132,7 @@ namespace ZitiDesktopEdge {
 			TextBox entry = this.FindName("SetupAuth" + index) as TextBox;
 			if (sentFrom.Text.Length > 0) {
 				entry.Focus();
+				entry.Select(0, entry.Text.Length);
 			}
 		}
 
@@ -164,6 +191,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void DoSetupAuthenticate(object sender, MouseButtonEventArgs e) {
+			AuthBgColor.Color = Color.FromRgb(0, 104, 249);
 			string code = SetupAuth1.Text + SetupAuth2.Text + SetupAuth3.Text + SetupAuth4.Text + SetupAuth5.Text + SetupAuth6.Text;
 
 			// Clint - Execute the MFA with mah code
@@ -184,6 +212,31 @@ namespace ZitiDesktopEdge {
 
 		private void RegenerateCodes(object sender, MouseButtonEventArgs e) {
 			// Clint - Call the regen service
+		}
+
+		/// <summary>
+		/// When the button area is entered slowly make it slightly opaque
+		/// </summary>
+		/// <param name="sender">The button object</param>
+		/// <param name="e">The mouse event</param>
+		private void HoverAuthSetup(object sender, MouseEventArgs e) {
+			AuthSetupBg.Opacity = 0.8;
+			AuthSetupBg.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1.0, TimeSpan.FromSeconds(.3)));
+		}
+
+		/// <summary>
+		/// When the mouse leaves the button ara snap the opacity back to full
+		/// </summary>
+		/// <param name="sender">The button object</param>
+		/// <param name="e">The mouse event</param>
+		private void LeaveAuthSetup(object sender, MouseEventArgs e) {
+			AuthBgColor.Color = Color.FromRgb(0, 104, 249);
+			AuthSetupBg.BeginAnimation(Grid.OpacityProperty, null);
+			AuthSetupBg.Opacity = 0.8;
+		}
+
+		private void AuthSetupClicked(object sender, MouseButtonEventArgs e) {
+			AuthBgColor.Color = Color.FromRgb(126, 180, 255);
 		}
 	}
 }
