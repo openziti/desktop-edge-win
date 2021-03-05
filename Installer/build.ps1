@@ -45,7 +45,7 @@ if($gituser -eq "ziti-ci") {
   }
 
   $b="$env:GIT_BRANCH"
-  if( $b -match '(^master$|^release-next|^release-[0-9]*\.[0-9]*\.[0-9]*)' ) {
+  if( $b -match '(^main$|^release-next|^release-[0-9]*\.[0-9]*\.[0-9]*)' ) {
     echo "branch $b matches the required regex - adding committing and pushing"
     git add service/ziti-tunnel/version.go
     git add DesktopEdge/Properties/AssemblyInfo.cs
