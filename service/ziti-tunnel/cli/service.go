@@ -19,7 +19,7 @@ func OnOffIdentity(args []string, flags map[string]bool) {
 	identityPayload["Fingerprint"] = args[0]
 	ONOFF_IDENTITY.Payload = identityPayload
 	log.Debugf("OnOffIdentity Payload %v", ONOFF_IDENTITY)
-	GetDataFromIpcPipe(&ONOFF_IDENTITY, nil, GetResponseObjectFromRTS, args, flags)
+	GetDataFromIpcPipe(&ONOFF_IDENTITY, nil, GetIdentityResponseObjectFromRTS, args, flags)
 }
 
 //SetLogLevel is to change the loglevel through cmdline
@@ -31,6 +31,10 @@ func SetLogLevel(args []string, flags map[string]bool) {
 		loglevelPayload["Level"] = args[0]
 		SET_LOGLEVEL.Payload = loglevelPayload
 		log.Debugf("LogLevel Payload %v", SET_LOGLEVEL)
-		GetDataFromIpcPipe(&SET_LOGLEVEL, nil, GetResponseObjectFromRTS, args, flags)
+		status := GetDataFromIpcPipe(&SET_LOGLEVEL, nil, GetResponseObjectFromRTS, args, flags)
+		if status {
+			log.Infof("Notifying the LogLevel to UI and Ziti monitor service %s", args[0])
+			GetDataFromIpcPipe(&NOTIFY_UI, nil, GetResponseObjectFromRTS, args, flags)
+		}
 	}
 }

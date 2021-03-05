@@ -116,7 +116,7 @@ func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}, fn fetchS
 	return
 }
 
-func GetDataFromIpcPipe(commandMsg *dto.CommandMsg, fn fetchStatusFromRTS, responseFn fetchResponseFromRTS, args []string, flags map[string]bool) {
+func GetDataFromIpcPipe(commandMsg *dto.CommandMsg, fn fetchStatusFromRTS, responseFn fetchResponseFromRTS, args []string, flags map[string]bool) bool {
 	log.Infof("Command %s with args %s", commandMsg.Function, args)
 
 	log.Debug("Connecting to pipe")
@@ -127,7 +127,7 @@ func GetDataFromIpcPipe(commandMsg *dto.CommandMsg, fn fetchStatusFromRTS, respo
 	if err != nil {
 		log.Errorf("Connection to ipc pipe is not established, %v", err)
 		log.Errorf("Ziti Desktop Edge app may not be running")
-		return
+		return false
 	}
 	readDone := make(chan struct{})
 	defer close(readDone) // ensure that goroutine exits
@@ -137,13 +137,14 @@ func GetDataFromIpcPipe(commandMsg *dto.CommandMsg, fn fetchStatusFromRTS, respo
 	err = sendMessagetoPipe(ipcPipeConn, commandMsg, args)
 	if err != nil {
 		log.Errorf("Message is not sent to ipc pipe, %v", err)
-		return
+		return false
 	}
 
 	log.Debugf("Connection to ipc pipe is established - %s and remote address %s", ipcPipeConn.LocalAddr().String(), ipcPipeConn.RemoteAddr().String())
 
 	<-readDone
 	log.Debug("read finished normally")
+	return true
 }
 
 func closeConn(conn net.Conn) {

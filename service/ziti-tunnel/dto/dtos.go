@@ -18,10 +18,11 @@
 package dto
 
 import (
+	"log"
+
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"github.com/openziti/sdk-golang/ziti/enroll"
-	"log"
 )
 
 type AddIdentity struct {
@@ -98,8 +99,8 @@ type TunnelStatus struct {
 }
 
 type ServiceVersion struct {
-	Version string
-	Revision string
+	Version   string
+	Revision  string
 	BuildDate string
 }
 
@@ -109,7 +110,7 @@ type ZitiTunnelStatus struct {
 }
 
 type StatusEvent struct {
-	Op      string
+	Op string
 }
 
 type ActionEvent struct {
@@ -137,4 +138,9 @@ type ServiceEvent struct {
 type IdentityEvent struct {
 	ActionEvent
 	Id Identity
+}
+
+type LogLevelEvent struct {
+	ActionEvent
+	LogLevel string
 }

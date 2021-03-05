@@ -191,18 +191,23 @@ func GetLogLevelFromRTS(args []string, status *dto.TunnelStatus, flags map[strin
 
 }
 
-// GetResponseObjectFromRTS is to get identity info from the RTS
-func GetResponseObjectFromRTS(args []string, status dto.Response, flags map[string]bool) dto.Response {
+// GetIdentityResponseObjectFromRTS is to get identity info from the RTS
+func GetIdentityResponseObjectFromRTS(args []string, status dto.Response, flags map[string]bool) dto.Response {
 	log.Debugf("Message from ziti-tunnel : %v", status.Message)
 	if status.Error == "" && status.Payload != nil {
 		log.Debugf("Payload from RTS %v", status.Payload)
 		payloadData := status.Payload.(map[string]interface{})
-		tunStatus := make(map[string]interface{})
-		tunStatus["FingerPrint"] = payloadData["FingerPrint"]
-		tunStatus["Active"] = payloadData["Active"]
-		tunStatus["Name"] = payloadData["Name"]
-		return dto.Response{Message: status.Message, Code: service.SUCCESS, Error: "", Payload: tunStatus}
+		identityStatus := make(map[string]interface{})
+		identityStatus["FingerPrint"] = payloadData["FingerPrint"]
+		identityStatus["Active"] = payloadData["Active"]
+		identityStatus["Name"] = payloadData["Name"]
+		return dto.Response{Message: status.Message, Code: service.SUCCESS, Error: "", Payload: identityStatus}
 	} else {
 		return status
 	}
+}
+
+// GetResponseObjectFromRTS is to get response object info from the RTS
+func GetResponseObjectFromRTS(args []string, status dto.Response, flags map[string]bool) dto.Response {
+	return status
 }

@@ -19,10 +19,12 @@ package service
 import "github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 
 const (
-	ADDED = "added"
-	REMOVED = "removed"
-	SERVICE_OP = "service"
+	ADDED       = "added"
+	REMOVED     = "removed"
+	SERVICE_OP  = "service"
 	IDENTITY_OP = "identity"
+	LOGLEVEL_OP = "logLevel"
+	CHANGED     = "changed"
 )
 
 var SERVICE_ADDED = dto.ActionEvent{
@@ -41,4 +43,8 @@ var IDENTITY_ADDED = dto.ActionEvent{
 var IDENTITY_REMOVED = dto.ActionEvent{
 	StatusEvent: dto.StatusEvent{Op: IDENTITY_OP},
 	Action:      REMOVED,
+}
+var LOGLEVEL_CHANGED = dto.ActionEvent{
+	StatusEvent: dto.StatusEvent{Op: LOGLEVEL_OP},
+	Action:      CHANGED,
 }

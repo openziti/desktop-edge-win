@@ -433,6 +433,8 @@ func serveIpc(conn net.Conn) {
 			toggleIdentity(enc, fingerprint, onOff)
 		case "SetLogLevel":
 			setLogLevel(enc, cmd.Payload["Level"].(string))
+		case "NotifyUIAndUpdateService":
+			sendLogLevelAndNotify(enc, cmd.Payload["Level"].(string))
 		case "ZitiDump":
 			log.Debug("request to ZitiDump received")
 			for _, id := range rts.ids {
@@ -997,4 +999,14 @@ func svcToDto(src cziti.ZService) *dto.Service {
 	}
 
 	return dest
+}
+
+func sendLogLevelAndNotify(enc *json.Encoder, loglevel string) {
+	events.broadcast <- dto.LogLevelEvent{
+		ActionEvent: LOGLEVEL_CHANGED,
+		LogLevel:    loglevel,
+	}
+	message := fmt.Sprintf("Loglevel %s is sent to the events channel", loglevel)
+	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: message}
+	respond(enc, resp)
 }
