@@ -11,6 +11,7 @@ using System.Drawing;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media.Animation;
+using System.Web;
 
 using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.DataStructures;
@@ -78,6 +79,135 @@ namespace ZitiDesktopEdge {
 			get {
 				return (List<ZitiIdentity>)Application.Current.Properties["Identities"];
 			}
+		}
+
+		/// <summary>
+		/// The MFA Toggle was toggled
+		/// </summary>
+		/// <param name="isOn">True if the toggle was on</param>
+		private async void MFAToggled(bool isOn) {
+			if (isOn) {
+				LoadingScreen.Visibility = Visibility.Visible;
+
+				await serviceClient.EnableMFA(this.IdentityMenu.Identity.Fingerprint);
+			} else {
+				ShowBlurb("MFA Disabled, this could impact access to services", "");
+			}
+		}
+
+		/// <summary>
+		/// When a Service Client is ready to setup the MFA Authorization
+		/// </summary>
+		/// <param name="sender">The service client</param>
+		/// <param name="e">The MFA Event</param>
+		private void ServiceClient_OnMfaEvent(object sender, MfaEvent mfa) {
+			this.Dispatcher.Invoke(() => {
+				if (mfa.Action == "enrollment_challenge") {
+					SetupMFA(this.IdentityMenu.Identity, HttpUtility.UrlDecode(mfa.ProvisioningUrl));
+				} else if (mfa.Action == "error") {
+					ShowBlurb("Error Setting Up MFA", "");
+				} else {
+					ShowBlurb("Error Setting Up MFA", "");
+				}
+			});
+		}
+
+		/// <summary>
+		/// Show the MFA Setup Modal
+		/// </summary>
+		/// <param name="identity">The Ziti Identity to Setup</param>
+		public void SetupMFA(ZitiIdentity identity, string url) {
+			MFASetup.Opacity = 0;
+			MFASetup.Visibility = Visibility.Visible;
+			MFASetup.Margin = new Thickness(0, 0, 0, 0);
+			MFASetup.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
+			MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
+			MFASetup.ShowSetup(identity, url);
+		}
+
+		/// <summary>
+		/// Show the MFA Authentication Screen when it is time to authenticate
+		/// </summary>
+		/// <param name="identity">The Ziti Identity to Authenticate</param>
+		public void MFAAuthenticate(ZitiIdentity identity) {
+			MFASetup.Opacity = 0;
+			MFASetup.Visibility = Visibility.Visible;
+			MFASetup.Margin = new Thickness(0, 0, 0, 0);
+			MFASetup.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
+			MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
+
+			MFASetup.ShowMFA(identity);
+
+			ShowModal();
+		}
+
+		/// <summary>
+		/// Show the MFA Recovery Codes
+		/// </summary>
+		/// <param name="identity">The Ziti Identity to Authenticate</param>
+		public void ShowMFARecoveryCodes(ZitiIdentity identity) {
+			if (identity.MFAInfo.RecoveryCodes.Length>0) {
+				MFASetup.Opacity = 0;
+				MFASetup.Visibility = Visibility.Visible;
+				MFASetup.Margin = new Thickness(0, 0, 0, 0);
+				MFASetup.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
+				MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
+
+				MFASetup.ShowRecovery(identity.MFAInfo.RecoveryCodes, identity);
+
+				ShowModal();
+			} else {
+				ShowBlurb("You do not have anymore recovery codes", "RECOVERY");
+			}
+		}
+
+		/// <summary>
+		/// Show the modal, aniimating opacity
+		/// </summary>
+		private void ShowModal() {
+			ModalBg.Visibility = Visibility.Visible;
+			ModalBg.Opacity = 0;
+			ModalBg.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(.8, TimeSpan.FromSeconds(.3)));
+		}
+
+		/// <summary>
+		/// Close the various MFA windows
+		/// </summary>
+		/// <param name="sender">The close button</param>
+		/// <param name="e">The event arguments</param>
+		private void CloseComplete(object sender, EventArgs e) {
+			MFASetup.Visibility = Visibility.Collapsed;
+		}
+
+		/// <summary>
+		/// Hide the modal animating the opacity
+		/// </summary>
+		private void HideModal() {
+			DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
+			animation.Completed += ModalHideComplete;
+			ModalBg.BeginAnimation(Grid.OpacityProperty, animation);
+		}
+
+		/// <summary>
+		/// When the animation completes, set the visibility to avoid UI object conflicts
+		/// </summary>
+		/// <param name="sender">The animation</param>
+		/// <param name="e">The event</param>
+		private void ModalHideComplete(object sender, EventArgs e) {
+			ModalBg.Visibility = Visibility.Collapsed;
+		}
+
+		/// <summary>
+		/// Close the MFA Screen with animation
+		/// </summary>
+		/// <param name="isComplete"></param>
+		private void DoClose(bool isComplete) {
+			DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
+			ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
+			animation.Completed += CloseComplete;
+			MFASetup.BeginAnimation(Grid.OpacityProperty, animation);
+			MFASetup.BeginAnimation(Grid.MarginProperty, animateThick);
+			HideModal();
 		}
 
 		private void AddIdentity(ZitiIdentity id) {
@@ -282,6 +412,7 @@ namespace ZitiDesktopEdge {
 			serviceClient.OnMetricsEvent += ServiceClient_OnMetricsEvent;
 			serviceClient.OnServiceEvent += ServiceClient_OnServiceEvent;
 			serviceClient.OnTunnelStatusEvent += ServiceClient_OnTunnelStatusEvent;
+			serviceClient.OnMfaEvent += ServiceClient_OnMfaEvent;
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
 
 			monitorClient = new MonitorClient();
@@ -315,7 +446,7 @@ namespace ZitiDesktopEdge {
 			Placement();
 		}
 
-        string nextVersionStr  = null;
+		string nextVersionStr  = null;
         private void MonitorClient_OnReconnectFailure(object sender, object e) {
             if (nextVersionStr == null) {
 				// check for the current version

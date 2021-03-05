@@ -23,6 +23,8 @@ namespace ZitiDesktopEdge {
 		public event Forgot OnForgot;
 		public delegate void ErrorOccurred(string message);
 		public event ErrorOccurred OnError;
+		public delegate void MFAToggled(bool isOn);
+		public event MFAToggled OnMFAToggled;
 		public delegate void Detched(MouseButtonEventArgs e);
 		public event Detched OnDetach;
 		public double MainHeight = 500;
@@ -157,7 +159,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void Info_OnMessage(string message) {
-			if (OnMessage != null) OnMessage(message);
+			OnMessage?.Invoke(message);
 		}
 
 		async private void IdToggle(bool on) {
@@ -206,9 +208,7 @@ namespace ZitiDesktopEdge {
 					}
 				}
 
-				if (OnForgot != null) {
-					OnForgot(forgotten);
-				}
+				OnForgot?.Invoke(forgotten);
 			} catch (DataStructures.ServiceException se) {
 				Logger.Error(se, se.Message);
 				OnError(se.Message);
@@ -223,86 +223,9 @@ namespace ZitiDesktopEdge {
 			if (this._identity!=null) UpdateView();
 		}
 
-		bool eventRegistered = false;
 
-		private async void ToggleMFA(bool isOn) {
-
-			DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
-
-			if (!eventRegistered) {
-				//register this event one time. this is 'maybe' the best time/place to register the event since it's in this class
-				serviceClient.OnMfaEvent += ServiceClient_OnMfaEvent;
-			}
-
-			if (isOn) {
-				// JEREMY SHOW SPINNER ICON WHILE MFA IS ENABLED
-
-
-				MFASetup.Opacity = 0;
-				MFASetup.Visibility = Visibility.Visible;
-				MFASetup.Margin = new Thickness(0, 0, 0, 0);
-				MFASetup.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
-				MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
-
-				await serviceClient.EnableMFA(this._identity.Fingerprint);
-
-				ShowModal();
-			} else {
-				// JEREMY SHOW WARNING/CONFIRMATION DIALOG HERE
-            }
-		}
-
-		private void ServiceClient_OnMfaEvent(object sender, DataStructures.MfaEvent mfa) {
-			this.Dispatcher.Invoke(() => {
-				if (mfa.Action == "enrollment_challenge") {
-
-					MFASetup.ShowSetup(this._identity, HttpUtility.UrlDecode(mfa.ProvisioningUrl));
-
-				} else if (mfa.Action == "error") {
-					Logger.Warn("warn here");
-				} else {
-					Logger.Warn("warn here");
-				}
-			});
-		}
-
-		private void ShowRecovery() {
-			MFASetup.Opacity = 0;
-			MFASetup.Visibility = Visibility.Visible;
-			MFASetup.Margin = new Thickness(0, 0, 0, 0);
-			MFASetup.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
-			MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
-
-			string[] codes = new string[] { "12345678", "897654321", "32324232", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321", "23454321" };
-			MFASetup.ShowRecovery(codes,this._identity);
-
-			ShowModal();
-		}
-
-		private void ShowMFA() {
-			MFASetup.Opacity = 0;
-			MFASetup.Visibility = Visibility.Visible;
-			MFASetup.Margin = new Thickness(0, 0, 0, 0);
-			MFASetup.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
-			MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
-
-			MFASetup.ShowMFA(this._identity);
-
-			ShowModal();
-		}
-
-		private void DoClose(bool isComplete) {
-			IdentityMFA.IsOn = isComplete;
-			DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
-			ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
-			animation.Completed += CloseComplete;
-			MFASetup.BeginAnimation(Grid.OpacityProperty, animation);
-			MFASetup.BeginAnimation(Grid.MarginProperty, animateThick);
-			HideModal();
-		}
-
-		private void CloseComplete(object sender, EventArgs e) {
-			MFASetup.Visibility = Visibility.Collapsed;
+		private void ToggleMFA(bool isOn) {
+			this.OnMFAToggled?.Invoke(isOn);
 		}
 
 		/* Modal UI Background visibility */
@@ -332,14 +255,6 @@ namespace ZitiDesktopEdge {
 		/// <param name="e">The event</param>
 		private void ModalHideComplete(object sender, EventArgs e) {
 			ModalBg.Visibility = Visibility.Collapsed;
-		}
-
-		private void DoShowRecovery(object sender, MouseButtonEventArgs e) {
-			ShowRecovery();
-		}
-
-		private void DoShowMFA(object sender, MouseButtonEventArgs e) {
-			ShowMFA();
 		}
 	}
 }
