@@ -723,15 +723,13 @@ namespace ZitiDesktopEdge {
 				DoubleAnimation animation = new DoubleAnimation((double)(ids.Length * 64), TimeSpan.FromSeconds(.3));
 				IdList.BeginAnimation(FrameworkElement.HeightProperty, animation);
 				IdListScroller.Visibility = Visibility.Visible;
-				AddIdButton.Visibility = Visibility.Visible;
-				AddIdAreaButton.Visibility = Visibility.Visible;
 			} else {
 				this.Height = 490;
 				MainMenu.IdentitiesButton.Visibility = Visibility.Collapsed;
 				IdListScroller.Visibility = Visibility.Collapsed;
-				AddIdButton.Visibility = Visibility.Collapsed;
-				AddIdAreaButton.Visibility = Visibility.Collapsed;
 			}
+			AddIdButton.Visibility = Visibility.Visible;
+			AddIdAreaButton.Visibility = Visibility.Visible;
 
 			Placement();
 		}
