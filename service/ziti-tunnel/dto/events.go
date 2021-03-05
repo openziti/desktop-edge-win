@@ -17,10 +17,16 @@
 package dto
 
 const (
-	ADDED = "added"
+	ADDED   = "added"
 	REMOVED = "removed"
-	SERVICE_OP = "service"
+	ERROR   = "error"
+
+	SERVICE_OP  = "service"
 	IDENTITY_OP = "identity"
+	MFA_OP      = "mfa"
+
+	MFA_ENROLL_CHALLENGE_ACTION = "enrollment_challenge"
+	MFA_AUTH_CHALLENGE_ACTION   = "auth_challenge"
 )
 
 var SERVICE_ADDED = ActionEvent{
@@ -39,4 +45,18 @@ var IDENTITY_ADDED = ActionEvent{
 var IDENTITY_REMOVED = ActionEvent{
 	StatusEvent: StatusEvent{Op: IDENTITY_OP},
 	Action:      REMOVED,
+}
+
+var MFA_ENROLLMENT_CHALLENGE = ActionEvent{
+	StatusEvent: StatusEvent{Op: MFA_OP},
+	Action:      MFA_ENROLL_CHALLENGE_ACTION,
+}
+var MFA_ERROR = ActionEvent{
+	StatusEvent: StatusEvent{Op: MFA_OP},
+	Action:      ERROR,
+}
+
+var MFA_CHALLENGE = ActionEvent{
+	StatusEvent: StatusEvent{Op: MFA_OP},
+	Action:      MFA_AUTH_CHALLENGE_ACTION,
 }

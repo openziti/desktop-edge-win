@@ -31,9 +31,10 @@ import (
 
 var domains []string // get any connection-specific local domains
 const (
-	MaxDnsRequests = 64
+	MaxDnsRequests   = 64
 	DnsMsgBufferSize = 1024
 )
+
 var reqch = make(chan dnsreq, MaxDnsRequests)
 var proxiedRequests = make(chan *proxiedReq, MaxDnsRequests)
 var respChan = make(chan []byte, MaxDnsRequests)
@@ -255,7 +256,7 @@ func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
 	dnsRetryInterval := 500
 
 	log.Infof("establishing links to all upstream DNS. total detected upstream DNS: %d", len(upstreamDnsServers))
-	outer:
+outer:
 	for _, s := range upstreamDnsServers {
 		for _, ldns := range localDnsServers {
 			if s == ldns.String() {

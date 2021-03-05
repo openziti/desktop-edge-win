@@ -33,6 +33,7 @@ type DesktopEdgeIface interface {
 	InterceptIP()
 	ReleaseIP()
 
+	BroadcastEvent(event interface{})
 	Close()
 }
 

@@ -38,7 +38,7 @@ import (
 )
 
 //export ziti_pq_domain_go
-func ziti_pq_domain_go(ctx C.ziti_context, id *C.char, response_cb C.ziti_pr_domain_cb ) {
+func ziti_pq_domain_go(ctx C.ziti_context, id *C.char, response_cb C.ziti_pr_domain_cb) {
 	svcId := C.GoString(id)
 	log.Debugf("domain posture check request [%s]", svcId)
 
@@ -70,6 +70,7 @@ func ziti_pq_process_go(ztx C.ziti_context, id *C.char, path *C.char, response_c
 	log.Debugf("proc posture check response [%s, %s]. running:%t, hash:%s, signers:%v", svcId, gopath, pi.IsRunning, pi.Hash, signers)
 	C.return_proc_info_c(ztx, id, path, response_cb, C.bool(pi.IsRunning), sha, csigners, numSigners)
 }
+
 //export ziti_pq_os_go
 func ziti_pq_os_go(ztx C.ziti_context, id *C.char, response_cb C.ziti_pr_os_cb) {
 	svcId := C.GoString(id)
@@ -87,6 +88,7 @@ func ziti_pq_os_go(ztx C.ziti_context, id *C.char, response_cb C.ziti_pr_os_cb) 
 	log.Debugf("os posture check response [%s]. ostype:%s, osvers:%s, osbuild:%s", svcId, oi.Type, oi.Version, gosbuild)
 	C.return_os_info_c(ztx, id, response_cb, ostype, osvers, osbuild)
 }
+
 //export ziti_pq_mac_go
 func ziti_pq_mac_go(ztx C.ziti_context, id *C.char, response_cb C.ziti_pr_mac_cb) {
 	svcId := C.GoString(id)

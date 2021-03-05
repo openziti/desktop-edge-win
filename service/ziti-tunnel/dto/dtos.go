@@ -33,7 +33,7 @@ type Service struct {
 	Name          string
 	Id            string
 	Protocols     []string
-	Addresses     []Address //string
+	Addresses     []Address   //string
 	Ports         []PortRange //string
 	OwnsIntercept bool
 }
@@ -56,7 +56,6 @@ type ServiceOwner struct {
 }
 
 type HostContext struct {
-
 }
 
 type Identity struct {
@@ -112,8 +111,8 @@ type TunnelStatus struct {
 }
 
 type ServiceVersion struct {
-	Version string
-	Revision string
+	Version   string
+	Revision  string
 	BuildDate string
 }
 
@@ -123,7 +122,7 @@ type ZitiTunnelStatus struct {
 }
 
 type StatusEvent struct {
-	Op      string
+	Op string
 }
 
 type ActionEvent struct {
@@ -151,4 +150,20 @@ type ServiceEvent struct {
 type IdentityEvent struct {
 	ActionEvent
 	Id Identity
+}
+
+type MfaEvent struct {
+	ActionEvent
+	Fingerprint     string
+	IsVerified      bool
+	ProvisioningUrl string
+	RecoveryCodes   []string
+}
+
+type MfaChallenge struct {
+	ActionEvent
+	Fingerprint string
+}
+
+type MfaResponse struct {
 }

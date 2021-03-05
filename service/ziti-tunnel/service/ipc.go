@@ -33,6 +33,7 @@ import (
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"github.com/openziti/sdk-golang/ziti/enroll"
 	"golang.org/x/sys/windows/svc"
+	"golang.zx2c4.com/wireguard/tun"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -260,8 +261,7 @@ func initialize(cLogLevel int) error {
 		return err
 	}
 
-	cziti.DnsInit(rts, rts.state.TunIpv4, rts.state.TunIpv4Mask)
-	cziti.Start(cLogLevel)
+	cziti.Start(rts, rts.state.TunIpv4, rts.state.TunIpv4Mask, cLogLevel)
 	err = cziti.HookupTun(*t)
 	if err != nil {
 		log.Panicf("An unrecoverable error has occurred! %v", err)
@@ -462,6 +462,13 @@ func serveIpc(conn net.Conn) {
 			}
 			log.Debug("request to ZitiDump complete")
 			respond(enc, dto.Response{Message: "ZitiDump complete", Code: SUCCESS, Error: "", Payload: nil})
+		case "EnableMFA":
+			fingerprint := cmd.Payload["Fingerprint"].(string)
+			enableMfa(enc, fingerprint)
+		case "VerifyMFA":
+			fingerprint := cmd.Payload["Fingerprint"].(string)
+			totp := cmd.Payload["Totp"].(string)
+			verifyMfa(enc, fingerprint, totp)
 		case "Debug":
 			dbg()
 			respond(enc, dto.Response{
@@ -480,6 +487,20 @@ func serveIpc(conn net.Conn) {
 
 		_ = rw.Flush()
 	}
+}
+
+func enableMfa(out *json.Encoder, fingerprint string) {
+	id := rts.Find(fingerprint)
+	cziti.EnableMFA(id.CId, fingerprint)
+
+	respond(out, dto.Response{Message: "mfa enroll complete", Code: SUCCESS, Error: "", Payload: nil})
+}
+
+func verifyMfa(out *json.Encoder, fingerprint string, totp string) {
+	id := rts.Find(fingerprint)
+	cziti.VerifyMFA(id.CId, fingerprint, totp)
+
+	respond(out, dto.Response{Message: "mfa verify complete", Code: SUCCESS, Error: "", Payload: nil})
 }
 
 func setLogLevel(out *json.Encoder, level string) {
@@ -795,7 +816,7 @@ func connectIdentity(id *Id) {
 		})
 
 		events.broadcast <- dto.IdentityEvent{
-			ActionEvent: IDENTITY_ADDED,
+			ActionEvent: dto.IDENTITY_ADDED,
 			Id:          id.Identity,
 		}
 		log.Infof("connecting identity completed: %s[%s]", id.Name, id.FingerPrint)
@@ -948,7 +969,7 @@ func Clean(src *Id) dto.Identity {
 		src.CId.Services.Range(func(key interface{}, value interface{}) bool {
 			//string, ZService
 			val := value.(*cziti.ZService)
-			nid.Services = append(nid.Services, /*svcToDto(val)*/val.Service)
+			nid.Services = append(nid.Services /*svcToDto(val)*/, val.Service)
 			return true
 		})
 	}

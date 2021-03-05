@@ -40,8 +40,6 @@ namespace ZitiDesktopEdge {
 		private int _right = 75;
 		private int _left = 75;
 		private int _top = 30;
-		private bool isConnected = false;
-		private double origHeight = 0.0;
 		private double _maxHeight = 800d;
 		private string[] suffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };
 
@@ -317,7 +315,7 @@ namespace ZitiDesktopEdge {
 			Placement();
 		}
 
-		string nextVersionStr  = null;
+        string nextVersionStr  = null;
         private void MonitorClient_OnReconnectFailure(object sender, object e) {
             if (nextVersionStr == null) {
 				// check for the current version
@@ -435,21 +433,20 @@ namespace ZitiDesktopEdge {
 					logger.Debug("ERROR: {0} : {1}", r.Message, r.Error);
 				} else {
 					logger.Info("Service started!");
-					startZitiButtonVisible = false;
+					//no longer used: startZitiButtonVisible = false;
 					CloseErrorButton.Click -= StartZitiService;
 					CloseError(null, null);
 				}
 			} catch (Exception ex) {
 				logger.Info(ex, "UNEXPECTED ERROR!");
-				startZitiButtonVisible = false;
-				CloseErrorButton.Click += StartZitiService;
+				//no longer used: startZitiButtonVisible = false;
+				//CloseErrorButton.Click += StartZitiService;
 				CloseErrorButton.IsEnabled = true;
 			}
 			CloseErrorButton.IsEnabled = true;
 			HideLoad();
 		}
 
-		bool startZitiButtonVisible = false;
 		private void ShowServiceNotStarted() {
 			TunnelConnected(false);
 			LoadIdentities(true);

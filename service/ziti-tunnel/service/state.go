@@ -234,7 +234,7 @@ func (t *RuntimeState) LoadIdentity(id *Id, refreshInterval int) {
 	}
 
 	_, err := os.Stat(id.Path())
-	if err != nil{
+	if err != nil {
 		if os.IsNotExist(err) {
 			//file does not exist. TODO remove this from the list
 		} else {
@@ -245,7 +245,7 @@ func (t *RuntimeState) LoadIdentity(id *Id, refreshInterval int) {
 
 	log.Infof("loading identity %s[%s]", id.Name, id.FingerPrint)
 
-	sc := func(status int){
+	sc := func(status int) {
 		log.Infof("status change! %d", status)
 
 		id.ControllerVersion = id.CId.Version
@@ -478,4 +478,8 @@ func (t *RuntimeState) InterceptIP() {
 
 func (t *RuntimeState) ReleaseIP() {
 	log.Panicf("implement me")
+}
+
+func (t *RuntimeState) BroadcastEvent(event interface{}) {
+	events.broadcast <- event
 }

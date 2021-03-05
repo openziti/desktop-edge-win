@@ -9,6 +9,7 @@ using ZitiDesktopEdge.ServiceClient;
 using System.Windows.Media.Animation;
 
 using NLog;
+using System.Web;
 
 namespace ZitiDesktopEdge {
 	/// <summary>
@@ -222,19 +223,47 @@ namespace ZitiDesktopEdge {
 			if (this._identity!=null) UpdateView();
 		}
 
-		private void ToggleMFA(bool isOn) {
+		bool eventRegistered = false;
+
+		private async void ToggleMFA(bool isOn) {
+
+			DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
+
+			if (!eventRegistered) {
+				//register this event one time. this is 'maybe' the best time/place to register the event since it's in this class
+				serviceClient.OnMfaEvent += ServiceClient_OnMfaEvent;
+			}
+
 			if (isOn) {
+				// JEREMY SHOW SPINNER ICON WHILE MFA IS ENABLED
+
+
 				MFASetup.Opacity = 0;
 				MFASetup.Visibility = Visibility.Visible;
 				MFASetup.Margin = new Thickness(0, 0, 0, 0);
 				MFASetup.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
 				MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
 
-				// CLINT - Need real data here
-				MFASetup.ShowSetup(this._identity.Name, "https://www.netfoundry.io", "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/QR_code_for_mobile_English_Wikipedia.svg/1200px-QR_code_for_mobile_English_Wikipedia.svg.png", this._identity);
+				await serviceClient.EnableMFA(this._identity.Fingerprint);
 
 				ShowModal();
-			}
+			} else {
+				// JEREMY SHOW WARNING/CONFIRMATION DIALOG HERE
+            }
+		}
+
+		private void ServiceClient_OnMfaEvent(object sender, DataStructures.MfaEvent mfa) {
+			this.Dispatcher.Invoke(() => {
+				if (mfa.Action == "enrollment_challenge") {
+
+					MFASetup.ShowSetup(this._identity, HttpUtility.UrlDecode(mfa.ProvisioningUrl));
+
+				} else if (mfa.Action == "error") {
+					Logger.Warn("warn here");
+				} else {
+					Logger.Warn("warn here");
+				}
+			});
 		}
 
 		private void ShowRecovery() {

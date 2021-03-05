@@ -20,39 +20,41 @@ package cziti
 /*
 #cgo windows LDFLAGS: -l libziti.imp -luv -lws2_32 -lpsapi
 
+#include <stdlib.h>
+
 #include <ziti/ziti.h>
 #include <ziti/ziti_events.h>
 #include <ziti/ziti_tunnel.h>
 #include <ziti/ziti_tunnel_cbs.h>
 #include "ziti/ziti_log.h"
-
 #include "sdk.h"
-extern void doZitiShutdown(uv_async_t *handle);
-extern void zitiContextEvent(ziti_context nf, int status, void *ctx);
-extern void eventCB(ziti_context ztx, ziti_event_t *event);
 
-extern void shutdown_callback(uv_async_t *handle);
-extern void free_async(uv_handle_t* timer);
+void doZitiShutdown(uv_async_t *handle);
+void zitiContextEvent(ziti_context nf, int status, void *ctx);
+void eventCB(ziti_context ztx, ziti_event_t *event);
 
-extern void c_mapiter(model_map *map);
-extern void ziti_dump_to_file(void *ctx, char* outputPath);
-extern int ziti_dump_to_log(void *ctx, void* stringsBuilder);
-extern void* stailq_first_forgo(void* entries);
+void shutdown_callback(uv_async_t *handle);
+void free_async(uv_handle_t* timer);
 
-extern protocol_t* stailq_first_protocol(tunneled_service_t* ts);
-extern address_t* stailq_first_address(tunneled_service_t* ts);
-extern port_range_t* stailq_first_port_range(tunneled_service_t* ts);
+void c_mapiter(model_map *map);
+void ziti_dump_to_file(void *ctx, char* outputPath);
+int ziti_dump_to_log(void *ctx, void* stringsBuilder);
+void* stailq_first_forgo(void* entries);
 
-extern protocol_t* stailq_next_protocol(protocol_t* cur);
-extern address_t* stailq_next_address(address_t* cur);
-extern port_range_t* stailq_next_port_range(port_range_t* cur);
-int ziti_dump_c_callback(void* _unused, const char *fmt,  ...);
+protocol_t* stailq_first_protocol(tunneled_service_t* ts);
+address_t* stailq_first_address(tunneled_service_t* ts);
+port_range_t* stailq_first_port_range(tunneled_service_t* ts);
+
+protocol_t* stailq_next_protocol(protocol_t* cur);
+address_t* stailq_next_address(address_t* cur);
+port_range_t* stailq_next_port_range(port_range_t* cur);
 
 */
 import "C"
 import (
 	"errors"
 	"github.com/openziti/desktop-edge-win/service/windns"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/api"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/logging"
 	"os"
@@ -92,7 +94,9 @@ func SetLogLevel(level int) {
 	C.set_log_level(C.int(level), _impl.libuvCtx)
 }
 
-func Start(loglevel int) {
+func Start(a api.DesktopEdgeIface, ip string, maskBits int, loglevel int) {
+	goapi = a
+	DnsInit(ip, maskBits)
 	appInfo := "Ziti Desktop Edge for Windows"
 	log.Debugf("informing c sdk of appinfo: %s at %s", appInfo, Version.Version)
 	C.ziti_set_app_info(C.CString(appInfo), C.CString(Version.Version))
@@ -240,17 +244,15 @@ func doZitiShutdown(async *C.uv_async_t) {
 	C.ziti_shutdown(ctx)
 }
 
-func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, tnlr_ctx unsafe.Pointer) []dto.Address {
-	//hostname := ""
-	//mapIt := false
-	isCnull := tnlr_ctx == C.NULL
-	isNil := tnlr_ctx == nil
+func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, appCtx unsafe.Pointer) []dto.Address {
+	isCnull := appCtx == C.NULL
+	isNil := appCtx == nil
 	if isCnull || isNil {
 		log.Errorf("in serviceCB with null tnlr_ctx??? ")
 		return make([]dto.Address, 0)
 	}
 
-	zid := (*ZIdentity)(tnlr_ctx)
+	zid := (*ZIdentity)(appCtx)
 
 	name := C.GoString(service.name)
 	svcId := C.GoString(service.id)
@@ -400,18 +402,18 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 }
 
 //export zitiContextEvent
-func zitiContextEvent(nf C.ziti_context, status C.int, data unsafe.Pointer) {
+func zitiContextEvent(ztx C.ziti_context, status C.int, data unsafe.Pointer) {
 	zid := (*ZIdentity)(data)
 
 	zid.status = int(status)
 	zid.statusErr = zitiError(status)
-	zid.czctx = nf
+	zid.czctx = ztx
 
 	cfg := C.GoString(zid.Options.config)
 
-	if status == C.int(0) {
-		if nf != nil {
-			zid.czid = C.ziti_get_identity(nf)
+	if status == C.ZITI_OK {
+		if ztx != nil {
+			zid.czid = C.ziti_get_identity(ztx)
 		}
 
 		zid.Name = zid.setNameFromId()
@@ -421,6 +423,7 @@ func zitiContextEvent(nf C.ziti_context, status C.int, data unsafe.Pointer) {
 		log.Errorf("zitiContextEvent failed to connect[%s] to controller for %s", zid.statusErr, cfg)
 	}
 	zid.StatusChanges(int(status))
+	idMap.Store(ztx, zid)
 }
 
 func zitiError(code C.int) error {
@@ -442,6 +445,9 @@ func LoadZiti(zid *ZIdentity, cfg string, refreshInterval int) {
 
 	zid.Options.events = C.ZitiContextEvent | C.ZitiServiceEvent | C.ZitiRouterEvent
 	zid.Options.event_cb = C.ziti_event_cb(C.eventCB)
+
+	zid.Options.aq_mfa_cb = C.ziti_aq_mfa_cb(C.ziti_aq_mfa_cb_go)
+
 	ptr := unsafe.Pointer(zid)
 	zid.Options.app_ctx = ptr
 

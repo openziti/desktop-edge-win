@@ -102,6 +102,34 @@ namespace ZitiDesktopEdge.DataStructures {
         public IdentityTogglePayload Payload { get; set; }
     }
 
+    public class EnableMFAFunction : ServiceFunction {
+        public EnableMFAFunction(string fingerprint) {
+            this.Function = "EnableMFA";
+            this.Payload = new EnableMFAFunctionPayload() {
+                Fingerprint = fingerprint
+            };
+        }
+        public EnableMFAFunctionPayload Payload { get; set; }
+    }
+    public class EnableMFAFunctionPayload {
+        public string Fingerprint { get; set; }
+    }
+
+    public class VerifyMFAFunction : ServiceFunction {
+        public VerifyMFAFunction(string fingerprint, string totp) {
+            this.Function = "VerifyMFA";
+            this.Payload = new VerifyMFAFunctionPayload() {
+                Fingerprint = fingerprint,
+                Totp = totp
+            };
+        }
+        public VerifyMFAFunctionPayload Payload { get; set; }
+    }
+    public class VerifyMFAFunctionPayload {
+        public string Fingerprint { get; set; }
+        public string Totp { get; set; }
+    }
+
     public class SetLogLevelFunction : ServiceFunction {
         public SetLogLevelFunction(string level) {
             this.Function = "SetLogLevel";
@@ -333,5 +361,12 @@ namespace ZitiDesktopEdge.DataStructures {
 
     public class StatusCheck : MonitorServiceStatusEvent {
         public bool UpdateAvailable { get; set; }
+    }
+
+    public class MfaEvent : ActionEvent {
+        public string Fingerprint { get; set; }
+        public bool IsVerified { get; set; }
+        public string ProvisioningUrl { get; set; }
+        public List<string> RecoveryCodes { get; set; }
     }
 }

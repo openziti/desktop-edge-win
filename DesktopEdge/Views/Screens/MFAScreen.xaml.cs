@@ -19,11 +19,15 @@ using System.Windows.Media.Animation;
 using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.ServiceClient;
 
+using NLog;
+using QRCoder;
+
 namespace ZitiDesktopEdge {
 	/// <summary>
 	/// Interaction logic for MFA.xaml
 	/// </summary>
 	public partial class MFAScreen : UserControl {
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		public delegate void CloseAction(bool isComplete);
 		public event CloseAction OnClose;
@@ -31,7 +35,7 @@ namespace ZitiDesktopEdge {
 		public delegate void ErrorOccurred(string message);
 		public event ErrorOccurred OnError;
 		private string[] _codes = new string[0];
-
+		DataClient serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
 		private ZitiIdentity _identity;
 
 		public MFAScreen() {
@@ -46,10 +50,29 @@ namespace ZitiDesktopEdge {
 			this.OnError?.Invoke(message);
 		}
 
-		public void ShowSetup(string idName, string url, string imageUrl, ZitiIdentity identity) {
+		private BitmapImage CreateQRFromUrl(string url) {
+			QRCodeGenerator qrGenerator = new QRCodeGenerator();
+			QRCodeData qrCodeData = qrGenerator.CreateQrCode(url, QRCodeGenerator.ECCLevel.Q);
+			QRCode qrCode = new QRCode(qrCodeData);
+			System.Drawing.Bitmap qrCodeImage = qrCode.GetGraphic(20);
+
+			MemoryStream ms = new MemoryStream();
+			((System.Drawing.Bitmap)qrCodeImage).Save(ms, System.Drawing.Imaging.ImageFormat.Bmp);
+			BitmapImage image = new BitmapImage();
+			image.BeginInit();
+			ms.Seek(0, SeekOrigin.Begin);
+			image.StreamSource = ms;
+			image.EndInit();
+			return image;
+		}
+
+		public void ShowSetup(ZitiIdentity identity, string url) {
 			this._identity = identity;
-			IdName.Content = idName;
-			MFAImage.Source = LoadImage(imageUrl);
+			IdName.Content = identity.Name;
+			Logger.Debug($"MFA Url: {url}");
+			
+			MFAImage.Source = CreateQRFromUrl(url);
+
 			_url = url;
 			MFAArea.Height = 560;
 			MFAAuthArea.Visibility = Visibility.Collapsed;
@@ -190,11 +213,12 @@ namespace ZitiDesktopEdge {
 
 		}
 
-		private void DoSetupAuthenticate(object sender, MouseButtonEventArgs e) {
+		async private void DoSetupAuthenticate(object sender, MouseButtonEventArgs e) {
 			AuthBgColor.Color = Color.FromRgb(0, 104, 249);
 			string code = SetupAuth1.Text + SetupAuth2.Text + SetupAuth3.Text + SetupAuth4.Text + SetupAuth5.Text + SetupAuth6.Text;
 
-			// Clint - Execute the MFA with mah code
+			DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
+			await serviceClient.VerifyMFA(this._identity.Fingerprint, code);
 		}
 
 		private void DoAuthenticate(object sender, MouseButtonEventArgs e) {

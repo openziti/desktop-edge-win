@@ -24,15 +24,14 @@ package cziti
 #include <ziti/ziti_tunnel.h>
 #include <ziti/ziti_tunnel_cbs.h>
 #include <ziti/ziti_log.h>
-
 #include <uv.h>
 
-extern int netifClose(netif_handle dev);
-extern ssize_t netifRead(netif_handle dev, void *buf, size_t buf_len);
-extern ssize_t netifWrite(netif_handle dev, void *buf, size_t len);
-extern int netifSetup(netif_handle dev, uv_loop_t *loop, packet_cb packetCb, void* ctx);
+int netifClose(netif_handle dev);
+ssize_t netifRead(netif_handle dev, void *buf, size_t buf_len);
+ssize_t netifWrite(netif_handle dev, void *buf, size_t len);
+int netifSetup(netif_handle dev, uv_loop_t *loop, packet_cb packetCb, void* ctx);
 
-extern int netifAddRoute(netif_handle dev, char* dest);
+int netifAddRoute(netif_handle dev, char* dest);
 
 
 typedef struct netif_handle_s {
@@ -41,17 +40,17 @@ typedef struct netif_handle_s {
    void *packet_cb_ctx;
 } netif_handle_t;
 
-extern void readAsync(struct uv_async_s *a);
-extern void readIdle(uv_prepare_t *idler);
+void readAsync(struct uv_async_s *a);
+void readIdle(uv_prepare_t *idler);
 
-extern void call_on_packet(void *packet, ssize_t len, packet_cb cb, void *ctx);
-extern void remove_intercepts(uv_async_t *handle);
-extern void free_async(uv_handle_t* timer);
+void call_on_packet(void *packet, ssize_t len, packet_cb cb, void *ctx);
+void remove_intercepts(uv_async_t *handle);
+void free_async(uv_handle_t* timer);
 
-extern dns_manager* get_dns_mgr_from_c();
-extern dns_manager* dns_mgr_c;
-extern int netifAddRoute(netif_handle dev, char* dest);
-extern int netifRemoveRoute(netif_handle dev, char* dest);
+dns_manager* get_dns_mgr_from_c();
+dns_manager* dns_mgr_c;
+int netifAddRoute(netif_handle dev, char* dest);
+int netifRemoveRoute(netif_handle dev, char* dest);
 
 */
 import "C"
@@ -85,7 +84,7 @@ type tunnel struct {
 //var devMap = make(map[string]*tunnel)
 var theTun *tunnel
 
-func HookupTun(dev tun.Device/*, dns []net.IP*/) error {
+func HookupTun(dev tun.Device /*, dns []net.IP*/) error {
 	log.Debug("in HookupTun ")
 	defer log.Debug("exiting HookupTun")
 	name, err := dev.Name()
@@ -130,7 +129,6 @@ func makeDriver(name string) C.netif_driver {
 	driver.delete_route = C.delete_route_cb(C.netifRemoveRoute)
 	return driver
 }
-
 
 //export netifWrite
 func netifWrite(_ C.netif_handle, buf unsafe.Pointer, length C.size_t) C.ssize_t {
@@ -267,7 +265,7 @@ func remove_intercepts(async *C.uv_async_t) {
 }
 
 //export apply_dns_go
-func apply_dns_go(_/*dns*/ *C.dns_manager , hostname *C.char, ip *C.char) C.int {
+func apply_dns_go(_ /*dns*/ *C.dns_manager, hostname *C.char, ip *C.char) C.int {
 	ghostname := C.GoString(hostname)
 	gip := C.GoString(ip)
 	log.Infof("hostname: %s, ip: %s", ghostname, gip)
