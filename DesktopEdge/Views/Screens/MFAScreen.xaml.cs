@@ -66,15 +66,19 @@ namespace ZitiDesktopEdge {
 			return image;
 		}
 
-		public void ShowSetup(ZitiIdentity identity, string url) {
+		public void ShowSetup(ZitiIdentity identity, string url, string secret) {
 			this._identity = identity;
+			MFAImage.Visibility = Visibility.Visible;
+			SecretCode.Visibility = Visibility.Collapsed;
+			SecretButton.Content = "Show Secret";
 			IdName.Content = identity.Name;
 			Logger.Debug($"MFA Url: {url}");
 			
 			MFAImage.Source = CreateQRFromUrl(url);
+			SecretCode.Text = secret;
 
 			_url = url;
-			MFAArea.Height = 560;
+			MFAArea.Height = 515;
 			MFAAuthArea.Visibility = Visibility.Collapsed;
 			MFASetupArea.Visibility = Visibility.Visible;
 			MFARecoveryArea.Visibility = Visibility.Collapsed;
@@ -261,6 +265,18 @@ namespace ZitiDesktopEdge {
 
 		private void AuthSetupClicked(object sender, MouseButtonEventArgs e) {
 			AuthBgColor.Color = Color.FromRgb(126, 180, 255);
+		}
+
+		private void ShowSecret(object sender, MouseButtonEventArgs e) {
+			if (SecretCode.Visibility==Visibility.Visible) {
+				MFAImage.Visibility = Visibility.Visible;
+				SecretCode.Visibility = Visibility.Collapsed;
+				SecretButton.Content = "Show Secret";
+			} else {
+				MFAImage.Visibility = Visibility.Collapsed;
+				SecretCode.Visibility = Visibility.Visible;
+				SecretButton.Content = "Show QR Code";
+			}
 		}
 	}
 }

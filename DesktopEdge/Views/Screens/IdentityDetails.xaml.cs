@@ -89,6 +89,7 @@ namespace ZitiDesktopEdge {
 			IdentityNetwork.Value = _identity.ControllerUrl;
 			IdentityEnrollment.Value = _identity.EnrollmentStatus;
 			IdentityStatus.Value = _identity.IsEnabled ? "active" : "disabled";
+			IdentityMFA.IsOn = _identity.IsMFAEnabled;
 			ServiceList.Children.Clear();
 			if (_identity.Services.Count>0) {
 				foreach(var zitiSvc in _identity.Services.OrderBy(s => s.Name.ToLower())) {

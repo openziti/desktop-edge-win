@@ -152,7 +152,7 @@
     <Compile Include="Views\Screens\IdentityDetails.xaml.cs">
       <DependentUpon>IdentityDetails.xaml</DependentUpon>
     </Compile>
-    <Compile Include="MainMenu.xaml.cs">
+    <Compile Include="Views\Screens\MainMenu.xaml.cs">
       <DependentUpon>MainMenu.xaml</DependentUpon>
     </Compile>
     <Compile Include="Models\UIModel.cs" />
@@ -181,9 +181,6 @@
     <Compile Include="Views\Controls\Toggler.xaml.cs">
       <DependentUpon>Toggler.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\Screens\MFAAuthScreen.xaml.cs">
-      <DependentUpon>MFAAuthScreen.xaml</DependentUpon>
-    </Compile>
     <Compile Include="Views\Screens\MFAScreen.xaml.cs">
       <DependentUpon>MFAScreen.xaml</DependentUpon>
     </Compile>
@@ -204,7 +201,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="MainMenu.xaml">
+    <Page Include="Views\Screens\MainMenu.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -252,10 +249,6 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Views\Controls\Toggler.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Views\Screens\MFAAuthScreen.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

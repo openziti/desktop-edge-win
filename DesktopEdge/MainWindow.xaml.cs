@@ -30,6 +30,7 @@ namespace ZitiDesktopEdge {
 	public partial class MainWindow : Window {
 		private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
+		public string RECOVER = "RECOVER";
 		public System.Windows.Forms.NotifyIcon notifyIcon;
 		public string Position = "Bottom";
 		private DateTime _startDate;
@@ -91,7 +92,7 @@ namespace ZitiDesktopEdge {
 
 				await serviceClient.EnableMFA(this.IdentityMenu.Identity.Fingerprint);
 			} else {
-				ShowBlurb("MFA Disabled, this could impact access to services", "");
+				ShowBlurb("MFA Disabled, limited service access", "");
 			}
 		}
 
@@ -123,7 +124,7 @@ namespace ZitiDesktopEdge {
 			MFASetup.Margin = new Thickness(0, 0, 0, 0);
 			MFASetup.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
 			MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
-			MFASetup.ShowSetup(identity, url);
+			MFASetup.ShowSetup(identity, url, "Clints Secret Code");
 			ShowModal();
 		}
 
@@ -159,7 +160,7 @@ namespace ZitiDesktopEdge {
 
 				ShowModal();
 			} else {
-				ShowBlurb("You do not have anymore recovery codes", "RECOVERY");
+				ShowBlurb("You do not have anymore recovery codes", this.RECOVER);
 			}
 		}
 
@@ -1130,6 +1131,11 @@ namespace ZitiDesktopEdge {
 
 		private string _blurbUrl = "";
 
+		/// <summary>
+		/// Show the blurb as a growler notification
+		/// </summary>
+		/// <param name="message">The message to show</param>
+		/// <param name="url">The url or action name to execute</param>
 		public void ShowBlurb(string message, string url) {
 			Blurb.Content = message;
 			_blurbUrl = url;
@@ -1142,10 +1148,18 @@ namespace ZitiDesktopEdge {
 			BlurbArea.BeginAnimation(Grid.MarginProperty, animateThick);
 		}
 
+		/// <summary>
+		/// Execute the hide operation wihout an action from the growler
+		/// </summary>
+		/// <param name="sender">The object that was clicked</param>
+		/// <param name="e">The click event</param>
 		private void DoHideBlurb(object sender, MouseButtonEventArgs e) {
 			HideBlurb();
 		}
 
+		/// <summary>
+		/// Hide the blurb area
+		/// </summary>
 		private void HideBlurb() {
 			DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
 			ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
@@ -1154,21 +1168,31 @@ namespace ZitiDesktopEdge {
 			BlurbArea.BeginAnimation(Grid.MarginProperty, animateThick);
 		}
 
+		/// <summary>
+		/// Hide the blurb area after the animation fades out
+		/// </summary>
+		/// <param name="sender">The animation object</param>
+		/// <param name="e">The completion event</param>
 		private void HideComplete(object sender, EventArgs e) {
 			BlurbArea.Visibility = Visibility.Collapsed;
 		}
 
+		/// <summary>
+		/// Execute a predefined action or url when the pop up is clicked
+		/// </summary>
+		/// <param name="sender">The object that was clicked</param>
+		/// <param name="e">The click event</param>
 		private void BlurbAction(object sender, MouseButtonEventArgs e) {
 			if (_blurbUrl.Length>0) {
 				// So this simply execute a url but you could do like if (_blurbUrl=="DoSomethingNifty") CallNifyFunction();
-				Process.Start(new ProcessStartInfo(_blurbUrl) { UseShellExecute = true });
+				if (_blurbUrl== this.RECOVER) {
+					// clint: can we know what identity to execute recovery against?
+				} else {
+					Process.Start(new ProcessStartInfo(_blurbUrl) { UseShellExecute = true });
+				}
 			} else {
 				HideBlurb();
 			}
-		}
-
-		private void UploadSpeedLabel_MouseUp(object sender, MouseButtonEventArgs e) {
-			ShowBlurb("An Update is available!", "https://www.axeda.com?buddy=true");
 		}
 	}
 }
