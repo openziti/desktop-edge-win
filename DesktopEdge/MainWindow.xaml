@@ -219,6 +219,7 @@
         <!-- MFA Setup Prompt -->
         <local:MFAScreen x:Name="MFASetup" Visibility="Collapsed" Margin="0,0,0,0" OnClose="DoClose"></local:MFAScreen>
 
+        <!-- Small messages screen that opens at the bottom -->
         <Grid x:Name="BlurbArea" Visibility="Collapsed" Height="80" Margin="0,500,0,0" VerticalAlignment="Bottom">
             <Border Margin="10,10,10,10" BorderBrush="Black" BorderThickness="8" CornerRadius="10">
                 <Border.Effect>

@@ -87,7 +87,7 @@ namespace ZitiDesktopEdge {
 		/// <param name="isOn">True if the toggle was on</param>
 		private async void MFAToggled(bool isOn) {
 			if (isOn) {
-				LoadingScreen.Visibility = Visibility.Visible;
+				ShowLoad("Generating MFA", "MFA Setup Commencing, please wait");
 
 				await serviceClient.EnableMFA(this.IdentityMenu.Identity.Fingerprint);
 			} else {
@@ -101,6 +101,7 @@ namespace ZitiDesktopEdge {
 		/// <param name="sender">The service client</param>
 		/// <param name="e">The MFA Event</param>
 		private void ServiceClient_OnMfaEvent(object sender, MfaEvent mfa) {
+			HideLoad();
 			this.Dispatcher.Invoke(() => {
 				if (mfa.Action == "enrollment_challenge") {
 					SetupMFA(this.IdentityMenu.Identity, HttpUtility.UrlDecode(mfa.ProvisioningUrl));
@@ -123,6 +124,7 @@ namespace ZitiDesktopEdge {
 			MFASetup.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
 			MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
 			MFASetup.ShowSetup(identity, url);
+			ShowModal();
 		}
 
 		/// <summary>
