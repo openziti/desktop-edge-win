@@ -212,7 +212,7 @@
         <!-- Menu UI -->
         <local:MainMenu x:Name="MainMenu" Visibility="Collapsed"></local:MainMenu>
         <!-- ID Detail UI -->
-        <local:IdentityDetails x:Name="IdentityMenu" Visibility="Collapsed" OnMFAToggled="MFAToggled"></local:IdentityDetails>
+        <local:IdentityDetails x:Name="IdentityMenu" Visibility="Collapsed" OnMFAToggled="MFAToggled" Authenticate="ShowAuthenticate" Recovery="ShowRecovery"></local:IdentityDetails>
 
         <!-- Modal Background -->
         <Rectangle x:Name="ModalBg" Margin="10,10,10,10" Fill="Black" RadiusY="10" RadiusX="10" Opacity="0" Visibility="Collapsed"></Rectangle>
