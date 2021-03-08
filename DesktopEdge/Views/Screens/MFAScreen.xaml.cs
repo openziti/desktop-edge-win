@@ -96,28 +96,18 @@ namespace ZitiDesktopEdge {
 			RecoveryList.Children.Clear();
 			_codes = codes;
 			MFAArea.Height = 380;
-			Label label1 = new Label();
-			Label label2 = new Label();
-			Label label3 = new Label();
-			int index = 1;
-			for (int i=0; i<codes.Length; i++, index++) {
-				if (i%3==0) {
-					StackPanel panel2 = new StackPanel();
-					panel2.Orientation = Orientation.Horizontal;
-					panel2.Children.Add(label1);
-					panel2.Children.Add(label2);
-					panel2.Children.Add(label3);
-					RecoveryList.Children.Add(panel2);
-				}
-				if (index==1) label1.Content = codes[i];
-				else if (index == 2) label2.Content = codes[i];
-				else if (index == 3) label3.Content = codes[i];
+			for (int i=0; i<codes.Length; i++) {
+				TextBox label = new TextBox();
+				label.Text = codes[i];
+				label.BorderThickness = new Thickness(0);
+				label.Background = new SolidColorBrush();
+				label.Background.Opacity = 0;
+				label.HorizontalAlignment = HorizontalAlignment.Center;
+				label.HorizontalContentAlignment = HorizontalAlignment.Center;
+				label.VerticalAlignment = VerticalAlignment.Center;
+				label.VerticalContentAlignment = VerticalAlignment.Center;
+				RecoveryList.Children.Add(label);
 			}
-			StackPanel panel1 = new StackPanel();
-			panel1.Orientation = Orientation.Horizontal;
-			panel1.Children.Add(label1);
-			panel1.Children.Add(label2);
-			panel1.Children.Add(label3);
 		}
 
 		public void ShowMFA(ZitiIdentity identity) {
@@ -214,7 +204,17 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void SaveCodes(object sender, MouseButtonEventArgs e) {
+			string fileText = string.Join("\n", _codes);
 
+			System.Windows.Forms.SaveFileDialog dialog = new System.Windows.Forms.SaveFileDialog();
+			dialog.Filter = "Text Files(*.txt)|*.txt|All(*.*)|*";
+			dialog.Title = "Save Recovery Codes";
+			dialog.FileName = "RecoveryCodes.txt";
+			dialog.ShowDialog();
+
+			if (dialog.FileName != "") {
+				File.WriteAllText(dialog.FileName, fileText);
+			}
 		}
 
 		async private void DoSetupAuthenticate(object sender, MouseButtonEventArgs e) {

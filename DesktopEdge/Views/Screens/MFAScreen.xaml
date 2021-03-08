@@ -126,9 +126,8 @@
                 <RowDefinition Height="30"></RowDefinition>
             </Grid.RowDefinitions>
             <Label Content="MFA Recovery Codes" Grid.Row="0" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"></Label>
-            <StackPanel x:Name="RecoveryList" Orientation="Vertical" Grid.Row="1">
-
-            </StackPanel>
+            <UniformGrid x:Name="RecoveryList" Grid.Row="1" Columns="3">
+            </UniformGrid>
             <Grid Grid.Row="2">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="160"></ColumnDefinition>
