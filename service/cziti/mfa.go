@@ -38,39 +38,43 @@ import (
 
 //export ziti_aq_mfa_cb_go
 func ziti_aq_mfa_cb_go(ztx C.ziti_context, mfa_ctx unsafe.Pointer, aq_mfa *C.ziti_auth_query_mfa, response_cb C.ziti_ar_mfa_cb) {
-	mzid, found := idMap.Load(ztx)
-	if found {
-		zid := mzid.(*ZIdentity)
-		var auth = dto.MfaChallenge{
-			ActionEvent: dto.MFA_CHALLENGE,
-			Fingerprint: zid.Fingerprint,
+	appCtx := C.ziti_app_ctx(ztx)
+	if appCtx != C.NULL {
+		log.Warnf("xxxxx ziti_aq_mfa_cb_go called")
+		zid := (*ZIdentity)(appCtx)
+		mfa := &Mfa{
+			mfaContext: mfa_ctx,
+			authQuery:  aq_mfa,
+			responseCb: response_cb,
 		}
-		goapi.BroadcastEvent(auth)
+		zid.mfa = mfa
+		zid.MfaNeeded = true
+		zid.MfaEnabled = true
+		log.Warnf("xxxxx ziti_aq_mfa_cb_go mfa set on ziti id %p with name %s and fingerprint %s", zid, zid.Name, zid.Fingerprint)
 	} else {
-		log.Warnf("ziti_aq_mfa_cb_go called but the context was NOT found in the map. This is unexpected. Please report.")
+		log.Warnf("xxxxx ziti_aq_mfa_cb_go called but the context was NOT found in the map. This is unexpected. Please report.")
 	}
 }
 
 //export ziti_mfa_enroll_cb_go
 func ziti_mfa_enroll_cb_go(_ C.ziti_context, status C.int, enrollment *C.ziti_mfa_enrollment, fingerprintP unsafe.Pointer) {
-	isVerified := bool(enrollment.is_verified)
-	url := C.GoString(enrollment.provisioning_url)
-	fp := C.GoString((*C.char)(fingerprintP))
-	C.free(fingerprintP) //CString created when executing EnableMFA
-
-	var m = dto.MfaEvent{
-		ActionEvent:     dto.MFA_ERROR,
-		Fingerprint:     fp,
-		IsVerified:      isVerified,
-		ProvisioningUrl: url,
-		RecoveryCodes:   nil,
-	}
-
 	if status != C.ZITI_OK {
 		e := C.ziti_errorstr(status)
 		ego := C.GoString(e)
 		log.Errorf("Error encounted when enrolling mfa: %v", ego)
 	} else {
+		isVerified := bool(enrollment.is_verified)
+		url := C.GoString(enrollment.provisioning_url)
+		fp := C.GoString((*C.char)(fingerprintP))
+		C.free(fingerprintP) //CString created when executing EnableMFA
+
+		var m = dto.MfaEvent{
+			ActionEvent:     dto.MFA_ERROR,
+			Fingerprint:     fp,
+			IsVerified:      isVerified,
+			ProvisioningUrl: url,
+			RecoveryCodes:   nil,
+		}
 		m.ActionEvent = dto.MFA_ENROLLMENT_CHALLENGE
 		i := 0
 		for {
@@ -82,8 +86,8 @@ func ziti_mfa_enroll_cb_go(_ C.ziti_context, status C.int, enrollment *C.ziti_mf
 			i++
 		}
 		log.Debugf("mfa results for %s: %v %v %v", fp, isVerified, url, m.RecoveryCodes)
+		goapi.BroadcastEvent(m)
 	}
-	goapi.BroadcastEvent(m)
 }
 
 //export ziti_mfa_cb_go

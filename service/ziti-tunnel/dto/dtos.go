@@ -65,6 +65,8 @@ type Identity struct {
 	Config            idcfg.Config
 	ControllerVersion string
 	Status            string
+	MfaEnabled        bool
+	MfaNeeded         bool
 	Services          []*Service `json:",omitempty"`
 	Metrics           *Metrics   `json:",omitempty"`
 	Tags              []string   `json:",omitempty"`

@@ -85,7 +85,11 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 		return err
 	}
 
-	setTunnelState(true)
+	TunStarted = time.Now()
+
+	for _, id := range rts.ids {
+		connectIdentity(id)
+	}
 
 	go handleEvents(initialized)
 
@@ -444,9 +448,6 @@ func serveIpc(conn net.Conn) {
 			removeIdentity(enc, cmd.Payload["Fingerprint"].(string))
 		case "Status":
 			reportStatus(enc)
-		case "TunnelState":
-			onOff := cmd.Payload["OnOff"].(bool)
-			tunnelState(onOff, enc)
 		case "IdentityOnOff":
 			onOff := cmd.Payload["OnOff"].(bool)
 			fingerprint := cmd.Payload["Fingerprint"].(string)
@@ -612,33 +613,6 @@ func reportStatus(out *json.Encoder) {
 		Metrics: nil,
 	})
 	log.Debugf("request for status responded to")
-}
-
-func tunnelState(onOff bool, out *json.Encoder) {
-	log.Debugf("toggle ziti on/off: %t", onOff)
-	state := rts.state
-	if onOff == state.Active {
-		log.Debugf("nothing to do. the state of the tunnel already matches the requested state: %t", onOff)
-		respond(out, dto.Response{Message: fmt.Sprintf("noop: tunnel state already set to %t", onOff), Code: SUCCESS, Error: "", Payload: nil})
-		return
-	}
-	setTunnelState(onOff)
-	state.Active = onOff
-
-	respond(out, dto.Response{Message: "tunnel state updated successfully", Code: SUCCESS, Error: "", Payload: nil})
-	log.Debugf("toggle ziti on/off: %t responded to", onOff)
-}
-
-func setTunnelState(onOff bool) {
-	if onOff {
-		TunStarted = time.Now()
-
-		for _, id := range rts.ids {
-			connectIdentity(id)
-		}
-	} else {
-		// state.Close()
-	}
 }
 
 func toggleIdentity(out *json.Encoder, fingerprint string, onOff bool) {
@@ -951,7 +925,7 @@ func handleEvents(isInitialized chan struct{}) {
 
 //Removes the Config from the provided identity and returns a 'cleaned' id
 func Clean(src *Id) dto.Identity {
-	log.Tracef("cleaning identity: %s", src.Name)
+	log.Tracef("cleaning identity: %s %v %v", src.Name, src.CId.MfaNeeded, src.CId.MfaEnabled)
 	AddMetrics(src)
 	nid := dto.Identity{
 		Name:              src.Name,
@@ -960,6 +934,8 @@ func Clean(src *Id) dto.Identity {
 		Config:            idcfg.Config{},
 		ControllerVersion: src.ControllerVersion,
 		Status:            "",
+		MfaNeeded:         src.CId.MfaNeeded,
+		MfaEnabled:        src.CId.MfaEnabled,
 		Services:          make([]*dto.Service, 0),
 		Metrics:           src.Metrics,
 		Tags:              nil,

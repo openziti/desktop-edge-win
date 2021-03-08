@@ -184,7 +184,7 @@
     <Compile Include="Views\Screens\MFAScreen.xaml.cs">
       <DependentUpon>MFAScreen.xaml</DependentUpon>
     </Compile>
-    <Compile Include="WinAPI.cs" />
+    <Compile Include="Native\WinAPI.cs" />
     <Page Include="Views\ItemRenderers\MenuEditSearch.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

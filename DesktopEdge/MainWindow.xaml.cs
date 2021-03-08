@@ -105,11 +105,13 @@ namespace ZitiDesktopEdge {
 			HideLoad();
 			this.Dispatcher.Invoke(() => {
 				if (mfa.Action == "enrollment_challenge") {
-					SetupMFA(this.IdentityMenu.Identity, HttpUtility.UrlDecode(mfa.ProvisioningUrl));
-				} else if (mfa.Action == "error") {
-					ShowBlurb("Error Setting Up MFA", "");
+					string url = HttpUtility.UrlDecode(mfa.ProvisioningUrl);
+					string secret = HttpUtility.ParseQueryString(url)["secret"];
+					SetupMFA(this.IdentityMenu.Identity, url, secret);
+				} else if (mfa.Action == "auth_challenge") {
+					ShowBlurb("Setting Up auth_challenge", "");
 				} else {
-					ShowBlurb("Error Setting Up MFA", "");
+					ShowBlurb("Error Setting Up MFA", mfa.Op);
 				}
 			});
 		}
@@ -118,13 +120,13 @@ namespace ZitiDesktopEdge {
 		/// Show the MFA Setup Modal
 		/// </summary>
 		/// <param name="identity">The Ziti Identity to Setup</param>
-		public void SetupMFA(ZitiIdentity identity, string url) {
+		public void SetupMFA(ZitiIdentity identity, string url, string secret) {
 			MFASetup.Opacity = 0;
 			MFASetup.Visibility = Visibility.Visible;
 			MFASetup.Margin = new Thickness(0, 0, 0, 0);
 			MFASetup.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
 			MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
-			MFASetup.ShowSetup(identity, url, "Clints Secret Code");
+			MFASetup.ShowSetup(identity, url, secret);
 			ShowModal();
 		}
 
@@ -286,6 +288,7 @@ namespace ZitiDesktopEdge {
 			MainMenu.OnDetach += OnDetach;
 
 			this.MainMenu.MainWindow = this;
+			this.IdentityMenu.MainWindow = this;
 			SetNotifyIcon("white");
 
 			IdentityMenu.OnMessage += IdentityMenu_OnMessage;
@@ -449,7 +452,7 @@ namespace ZitiDesktopEdge {
 			Placement();
 		}
 
-		string nextVersionStr  = null;
+        string nextVersionStr  = null;
         private void MonitorClient_OnReconnectFailure(object sender, object e) {
             if (nextVersionStr == null) {
 				// check for the current version
@@ -831,7 +834,7 @@ namespace ZitiDesktopEdge {
 			ZitiIdentity[] ids = identities.OrderBy(i => i.Name.ToLower()).ToArray();
 			MainMenu.SetupIdList(ids);
 
-			if (ids.Length>0&&serviceClient.Connected) {
+			if (ids.Length > 0 && serviceClient.Connected) {
 				double height = 490 + (ids.Length * 60);
 				if (height > _maxHeight) height = _maxHeight;
 				this.Height = height;

@@ -183,6 +183,8 @@ namespace ZitiDesktopEdge.DataStructures {
         public List<Service> Services { get; set; }
         public Metrics Metrics { get; set; }
         public string ControllerVersion { get; set; }
+        public bool MfaEnabled { get; set; }
+        public bool MfaNeeded { get; set; }
     }
 
     public class Service {

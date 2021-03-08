@@ -32,6 +32,8 @@ namespace ZitiDesktopEdge {
 		public delegate void Mesage(string message);
 		public event Mesage OnMessage;
 
+		internal MainWindow MainWindow { get; set; }
+
 		private List<ZitiIdentity> identities {
 			get {
 				return (List<ZitiIdentity>)Application.Current.Properties["Identities"];
@@ -82,6 +84,11 @@ namespace ZitiDesktopEdge {
 		}
 
 		public void UpdateView() {
+			if(_identity.IsMFAEnabled && !_identity.MFAInfo.IsAuthenticated) {
+				//verify mfa here
+				MainWindow.MFAAuthenticate(_identity);
+			}
+
 			IdDetailName.Text = _identity.Name;
 			IdDetailName.ToolTip = _identity.Name;
 			IdDetailToggle.Enabled = _identity.IsEnabled;

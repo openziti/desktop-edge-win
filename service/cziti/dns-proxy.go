@@ -285,7 +285,7 @@ outer:
 	}
 
 	if len(upstreamDnsServers) > 0 && len(dnsUpstreams) == 0 {
-		//this alomst certainly indicates the network has been disconnected for some reason.
+		//this almost certainly indicates the network has been disconnected for some reason.
 		//this happens when turning wifi off and waiting a moment - then turning wifi back on again
 		//might happen unplugging the ethernet from one port to another - you get the idea... if this
 		//happens - pause for a small amount of time and reinstitute the proxy establishing loop

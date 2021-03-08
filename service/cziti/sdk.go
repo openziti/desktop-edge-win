@@ -131,6 +131,15 @@ type ZIdentity struct {
 	Fingerprint   string
 	Active        bool
 	StatusChanges func(int)
+	MfaNeeded     bool
+	MfaEnabled    bool
+	mfa           *Mfa
+}
+
+type Mfa struct {
+	mfaContext unsafe.Pointer
+	authQuery  *C.ziti_auth_query_mfa
+	responseCb C.ziti_ar_mfa_cb
 }
 
 func NewZid(statusChange func(int)) *ZIdentity {
@@ -244,15 +253,11 @@ func doZitiShutdown(async *C.uv_async_t) {
 	C.ziti_shutdown(ctx)
 }
 
-func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, appCtx unsafe.Pointer) []dto.Address {
-	isCnull := appCtx == C.NULL
-	isNil := appCtx == nil
-	if isCnull || isNil {
-		log.Errorf("in serviceCB with null tnlr_ctx??? ")
+func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, zid *ZIdentity) []dto.Address {
+	if zid == nil {
+		log.Errorf("in serviceCB with nil zid??? ")
 		return make([]dto.Address, 0)
 	}
-
-	zid := (*ZIdentity)(appCtx)
 
 	name := C.GoString(service.name)
 	svcId := C.GoString(service.id)
@@ -327,13 +332,22 @@ var unimportant void
 
 //export eventCB
 func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
-	appCtx := C.ziti_app_ctx(ztx)
 	log.Tracef("events received. type: %d for ztx(%p)", event._type, ztx)
+
+	appCtx := C.ziti_app_ctx(ztx)
+	isCnull := appCtx == C.NULL
+	isNil := appCtx == nil
+	if isCnull || isNil {
+		log.Errorf("in eventCB with null ziti_app_ctx??? ")
+		return
+	}
+
+	zid := (*ZIdentity)(appCtx)
 
 	switch event._type {
 	case C.ZitiContextEvent:
 		ctxEvent := C.ziti_event_context_event(event)
-		zitiContextEvent(ztx, ctxEvent.ctrl_status, appCtx)
+		zitiContextEvent(ztx, ctxEvent.ctrl_status, zid)
 
 	case C.ZitiRouterEvent:
 		rtrEvent := C.ziti_event_router_event(event)
@@ -357,7 +371,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			if unsafe.Pointer(s) == C.NULL {
 				break
 			}
-			addys := serviceCB(ztx, s, C.ZITI_SERVICE_UNAVAILABLE, appCtx)
+			addys := serviceCB(ztx, s, C.ZITI_SERVICE_UNAVAILABLE, zid)
 			for _, toRemove := range addys {
 				hostnamesToRemove[toRemove.HostName] = unimportant
 			}
@@ -369,12 +383,12 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 				break
 			}
 			log.Info("service changed remove the service then add it back immediately", C.GoString(s.name))
-			addys := serviceCB(ztx, s, C.ZITI_SERVICE_UNAVAILABLE, appCtx)
+			addys := serviceCB(ztx, s, C.ZITI_SERVICE_UNAVAILABLE, zid)
 			for _, toRemove := range addys {
 				hostnamesToRemove[toRemove.HostName] = unimportant
 			}
 
-			addys = serviceCB(ztx, s, C.ZITI_OK, appCtx)
+			addys = serviceCB(ztx, s, C.ZITI_OK, zid)
 			for _, toAdd := range addys {
 				hostnamesToAdd[toAdd.HostName] = unimportant
 			}
@@ -385,7 +399,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 				break
 			}
 			log.Info("service added ", C.GoString(s.name))
-			addys := serviceCB(ztx, s, C.ZITI_OK, appCtx)
+			addys := serviceCB(ztx, s, C.ZITI_OK, zid)
 			for _, toAdd := range addys {
 				hostnamesToAdd[toAdd.HostName] = unimportant
 			}
@@ -401,9 +415,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 	}
 }
 
-//export zitiContextEvent
-func zitiContextEvent(ztx C.ziti_context, status C.int, data unsafe.Pointer) {
-	zid := (*ZIdentity)(data)
+func zitiContextEvent(ztx C.ziti_context, status C.int, zid *ZIdentity) {
 
 	zid.status = int(status)
 	zid.statusErr = zitiError(status)
@@ -418,12 +430,13 @@ func zitiContextEvent(ztx C.ziti_context, status C.int, data unsafe.Pointer) {
 
 		zid.Name = zid.setNameFromId()
 		zid.Version = zid.setVersionFromId()
-		log.Infof("============ controller connected: %s at %v", zid.Name, zid.Version)
+		log.Infof("============ controller connected: %s at %v. MFA: %v %v", zid.Name, zid.Version, zid.czid.is_mfa_enabled, zid.MfaEnabled)
 	} else {
 		log.Errorf("zitiContextEvent failed to connect[%s] to controller for %s", zid.statusErr, cfg)
 	}
 	zid.StatusChanges(int(status))
 	idMap.Store(ztx, zid)
+	log.Errorf("xxxxx STORED ID WITH: %p", ztx)
 }
 
 func zitiError(code C.int) error {
