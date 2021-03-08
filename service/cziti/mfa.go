@@ -106,9 +106,9 @@ func VerifyMFA(id *ZIdentity, fingerprint string, totp string) {
 }
 
 //export ziti_mfa_cb_go
-func ziti_mfa_cb_go(_ C.ziti_context, status C.int, fingerprintP unsafe.Pointer) {
-	fp := C.GoString((*C.char)(fingerprintP))
-	C.free(fingerprintP) //CString created when executing VerifyMFA
+func ziti_mfa_cb_go(_ C.ziti_context, status C.int, fingerprintP *C.char) {
+	fp := C.GoString(fingerprintP)
+	C.free(unsafe.Pointer(fingerprintP)) //CString created when executing VerifyMFA
 
 	log.Debugf("ziti_mfa_cb_go called for %s. status: %d for ", fp, int(status))
 	var m = dto.MfaEvent{
@@ -190,13 +190,13 @@ func ziti_mfa_recovery_codes_cb_return(_ C.ziti_context, status C.int, recoveryC
 }
 
 //export ziti_mfa_recovery_codes_cb_generate
-func ziti_mfa_recovery_codes_cb_generate(_ C.ziti_context, status C.int, recoveryCodes **C.char, fingerprintP unsafe.Pointer) {
+func ziti_mfa_recovery_codes_cb_generate(_ C.ziti_context, status C.int, recoveryCodes **C.char, fingerprintP *C.char) {
 	if status != C.ZITI_OK {
 		e := C.ziti_errorstr(status)
 		ego := C.GoString(e)
 		log.Errorf("Error encounted when generating mfa recovery codes: %v", ego)
 	} else {
-		fp := C.GoString((*C.char)(fingerprintP))
+		fp := C.GoString(fingerprintP)
 		codes <- mfaCodes{
 			codes:       populateStringSlice(recoveryCodes),
 			fingerprint: fp,
