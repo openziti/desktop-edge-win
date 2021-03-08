@@ -278,6 +278,7 @@ namespace ZitiDesktopEdge {
 			serviceClient.OnMetricsEvent += ServiceClient_OnMetricsEvent;
 			serviceClient.OnServiceEvent += ServiceClient_OnServiceEvent;
 			serviceClient.OnTunnelStatusEvent += ServiceClient_OnTunnelStatusEvent;
+			serviceClient.OnLogLevelEvent += ServiceClient_OnLogLevelEvent;
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
 
 			monitorClient = new MonitorClient();
@@ -608,6 +609,20 @@ namespace ZitiDesktopEdge {
 					deets.UpdateView();
 				}
 			});
+		}
+
+		private void ServiceClient_OnLogLevelEvent(object sender, LogLevelEvent e) {
+			if (e.LogLevel != null) {
+				SetLogLevel_monitor(e.LogLevel);
+				this.Dispatcher.Invoke(() => {
+					this.MainMenu.LogLevel = e.LogLevel;
+					Ziti.Desktop.Edge.Utils.UIUtils.SetLogLevel(e.LogLevel);
+				});
+			}
+		}
+
+		async private void SetLogLevel_monitor(string loglevel) {
+				await monitorClient.SetLogLevelAsync(loglevel);
 		}
 
 		private void IdentityForgotten(ZitiIdentity forgotten) {

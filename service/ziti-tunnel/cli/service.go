@@ -33,7 +33,8 @@ func SetLogLevel(args []string, flags map[string]bool) {
 		log.Debugf("LogLevel Payload %v", SET_LOGLEVEL)
 		status := GetDataFromIpcPipe(&SET_LOGLEVEL, nil, GetResponseObjectFromRTS, args, flags)
 		if status {
-			log.Infof("Notifying the LogLevel to UI and Ziti monitor service %s", args[0])
+			NOTIFY_UI.Payload = loglevelPayload
+			log.Infof("Notifying the LogLevel to UI and Ziti monitor service %v", NOTIFY_UI)
 			GetDataFromIpcPipe(&NOTIFY_UI, nil, GetResponseObjectFromRTS, args, flags)
 		}
 	}

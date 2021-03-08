@@ -295,6 +295,12 @@ namespace ZitiDesktopEdge.DataStructures {
     {
         public Identity Id { get; set; }
     }
+    
+    public class LogLevelEvent : ActionEvent
+    {
+        public string LogLevel { get; set; }
+    }
+
 
     public class MonitorServiceStatusEvent : SvcResponse {
         public string Status { get; set; }
