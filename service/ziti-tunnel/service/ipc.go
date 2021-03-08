@@ -433,8 +433,10 @@ func serveIpc(conn net.Conn) {
 			toggleIdentity(enc, fingerprint, onOff)
 		case "SetLogLevel":
 			setLogLevel(enc, cmd.Payload["Level"].(string))
-		case "NotifyUIAndUpdateService":
+		case "NotifyLogLevelUIAndUpdateService":
 			sendLogLevelAndNotify(enc, cmd.Payload["Level"].(string))
+		case "NotifyIdentityUI":
+			sendIdentityAndNotifyUI(enc, cmd.Payload["Fingerprint"].(string))
 		case "ZitiDump":
 			log.Debug("request to ZitiDump received")
 			for _, id := range rts.ids {
@@ -1007,6 +1009,25 @@ func sendLogLevelAndNotify(enc *json.Encoder, loglevel string) {
 		LogLevel:    loglevel,
 	}
 	message := fmt.Sprintf("Loglevel %s is sent to the events channel", loglevel)
+	log.Info(message)
 	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: message}
+	respond(enc, resp)
+}
+
+func sendIdentityAndNotifyUI(enc *json.Encoder, fingerprint string) {
+	for _, id := range rts.ids {
+		if id.FingerPrint == fingerprint {
+			events.broadcast <- dto.IdentityEvent{
+				ActionEvent: IDENTITY_ADDED,
+				Id:          id.Identity,
+			}
+			message := fmt.Sprintf("Identity %s - %s updated message is sent to the events channel", id.Identity.Name, id.Identity.FingerPrint)
+			log.Info(message)
+			resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: message}
+			respond(enc, resp)
+			return
+		}
+	}
+	resp := dto.Response{Message: "", Code: ERROR, Error: "Could not find id matching fingerprint " + fingerprint, Payload: ""}
 	respond(enc, resp)
 }

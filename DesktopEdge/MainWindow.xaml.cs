@@ -517,6 +517,7 @@ namespace ZitiDesktopEdge {
 						found.Name = zid.Name;
 						found.ControllerUrl = zid.ControllerUrl;
 						found.IsEnabled = zid.IsEnabled;
+						LoadIdentities(true);
 						return;
 					}
 				} else {

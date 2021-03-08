@@ -34,8 +34,12 @@ var SET_LOGLEVEL = dto.CommandMsg{
 	Function: "SetLogLevel",
 }
 
-var NOTIFY_UI = dto.CommandMsg{
-	Function: "NotifyUIAndUpdateService",
+var NOTIFY_LOGLEVEL_UI_MONITOR = dto.CommandMsg{
+	Function: "NotifyLogLevelUIAndUpdateService",
+}
+
+var NOTIFY_IDENTITY_UI = dto.CommandMsg{
+	Function: "NotifyIdentityUI",
 }
 
 var templateIdentity = `{{printf "%40s" "Name"}} | {{printf "%41s" "FingerPrint"}} | {{printf "%6s" "Active"}} | {{printf "%30s" "Config"}} | {{"Status"}}
