@@ -222,7 +222,12 @@ namespace ZitiDesktopEdge {
 			string code = SetupAuth1.Text + SetupAuth2.Text + SetupAuth3.Text + SetupAuth4.Text + SetupAuth5.Text + SetupAuth6.Text;
 
 			DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
-			await serviceClient.VerifyMFA(this._identity.Fingerprint, code);
+			ZitiDesktopEdge.DataStructures.SvcResponse resp = await serviceClient.VerifyMFA(this._identity.Fingerprint, code);
+			if (resp.Code != 0) {
+
+            } else {
+
+            }
 		}
 
 		async private void DoAuthenticate(object sender, MouseButtonEventArgs e) {

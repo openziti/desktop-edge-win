@@ -79,9 +79,10 @@ void ziti_dump_go(char* msg);
 //declare all mfa callbacks
 void ziti_aq_mfa_cb_go(ziti_context ztx, void* mfa_ctx, ziti_auth_query_mfa *aq_mfa, ziti_ar_mfa_cb response_cb);
 void ziti_ar_mfa_cb_go(ziti_context ztx, void* mfa_ctx, char* code);
-void ziti_mfa_recovery_codes_cb_go(ziti_context ztx, int status, char **recovery_codes, void *ctx);
 void ziti_mfa_enroll_cb_go(ziti_context ztx, int status, ziti_mfa_enrollment *mfa_enrollment, void *ctx);
 void ziti_mfa_cb_go(ziti_context ztx, int status, void *ctx);
+void ziti_mfa_recovery_codes_cb_return(ziti_context ztx, int status, char **recovery_codes, void *ctx);
+void ziti_mfa_recovery_codes_cb_generate(ziti_context ztx, int status, char **recovery_codes, void *ctx);
 
 
 #endif /* GOLANG_SDK_H */

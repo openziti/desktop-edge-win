@@ -430,7 +430,7 @@ func zitiContextEvent(ztx C.ziti_context, status C.int, zid *ZIdentity) {
 
 		zid.Name = zid.setNameFromId()
 		zid.Version = zid.setVersionFromId()
-		log.Infof("============ controller connected: %s at %v. MFA: %v %v", zid.Name, zid.Version, zid.czid.is_mfa_enabled, zid.MfaEnabled)
+		log.Infof("============ controller connected: %s at %v. MFA: %v", zid.Name, zid.Version, zid.MfaEnabled)
 	} else {
 		log.Errorf("zitiContextEvent failed to connect[%s] to controller for %s", zid.statusErr, cfg)
 	}

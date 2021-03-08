@@ -470,6 +470,14 @@ func serveIpc(conn net.Conn) {
 			fingerprint := cmd.Payload["Fingerprint"].(string)
 			totp := cmd.Payload["Totp"].(string)
 			verifyMfa(enc, fingerprint, totp)
+		case "ReturnMFACodes":
+			fingerprint := cmd.Payload["Fingerprint"].(string)
+			totp := cmd.Payload["Totp"].(string)
+			returnMfaCodes(enc, fingerprint, totp)
+		case "GenerateMFACodes":
+			fingerprint := cmd.Payload["Fingerprint"].(string)
+			totp := cmd.Payload["Totp"].(string)
+			generateMfaCodes(enc, fingerprint, totp)
 		case "Debug":
 			dbg()
 			respond(enc, dto.Response{
@@ -488,6 +496,17 @@ func serveIpc(conn net.Conn) {
 
 		_ = rw.Flush()
 	}
+}
+
+func generateMfaCodes(out *json.Encoder, fingerprint string, totp string) {
+	id := rts.Find(fingerprint)
+	cziti.GenerateMfaCodes(id.CId, fingerprint, totp)
+}
+
+func returnMfaCodes(out *json.Encoder, fingerprint string, totp string) {
+	id := rts.Find(fingerprint)
+	codes := cziti.ReturnMfaCodes(id.CId, fingerprint, totp)
+	respond(out, dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: codes})
 }
 
 func enableMfa(out *json.Encoder, fingerprint string) {

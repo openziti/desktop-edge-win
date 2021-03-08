@@ -28,7 +28,6 @@ package cziti
 #include "ziti/ziti_log.h"
 #include "sdk.h"
 
-void return_ziti_ar_mfa_cb(ziti_context ztx, void* mfa_ctx, char* code);
 */
 import "C"
 import (
@@ -54,6 +53,12 @@ func ziti_aq_mfa_cb_go(ztx C.ziti_context, mfa_ctx unsafe.Pointer, aq_mfa *C.zit
 	} else {
 		log.Warnf("xxxxx ziti_aq_mfa_cb_go called but the context was NOT found in the map. This is unexpected. Please report.")
 	}
+}
+
+func EnableMFA(id *ZIdentity, fingerprint string) {
+	cfp := C.CString(fingerprint)
+	//cfp is free'ed in ziti_mfa_enroll_cb_go
+	C.ziti_mfa_enroll(id.czctx, C.ziti_mfa_cb(C.ziti_mfa_enroll_cb_go), unsafe.Pointer(cfp))
 }
 
 //export ziti_mfa_enroll_cb_go
@@ -85,9 +90,19 @@ func ziti_mfa_enroll_cb_go(_ C.ziti_context, status C.int, enrollment *C.ziti_mf
 			m.RecoveryCodes = append(m.RecoveryCodes, C.GoString(cstr))
 			i++
 		}
-		log.Debugf("mfa results for %s: %v %v %v", fp, isVerified, url, m.RecoveryCodes)
+		log.Warnf("xxxx sending ziti_mfa_enroll response back to UI for %s. verified: %t. error: %s", fp, m.IsVerified, m.Error)
 		goapi.BroadcastEvent(m)
 	}
+}
+
+func VerifyMFA(id *ZIdentity, fingerprint string, totp string) {
+	ctotp := C.CString(totp)
+	defer C.free(unsafe.Pointer(ctotp))
+
+	cfp := C.CString(fingerprint)
+	//cfp is free'ed in ziti_mfa_cb_go
+	log.Errorf("VERIFYMFA: %v %v", fingerprint, totp)
+	C.ziti_mfa_verify(id.czctx, ctotp, C.ziti_mfa_cb(C.ziti_mfa_cb_go), unsafe.Pointer(cfp))
 }
 
 //export ziti_mfa_cb_go
@@ -97,7 +112,7 @@ func ziti_mfa_cb_go(_ C.ziti_context, status C.int, fingerprintP unsafe.Pointer)
 
 	log.Debugf("ziti_mfa_cb_go called for %s. status: %d for ", fp, int(status))
 	var m = dto.MfaEvent{
-		ActionEvent: dto.MFA_ERROR,
+		ActionEvent: dto.MFA_AUTH_RESPONSE,
 		Fingerprint: fp,
 		IsVerified:  false,
 		//ProvisioningUrl: url,
@@ -108,24 +123,97 @@ func ziti_mfa_cb_go(_ C.ziti_context, status C.int, fingerprintP unsafe.Pointer)
 		e := C.ziti_errorstr(status)
 		ego := C.GoString(e)
 		log.Errorf("Error encounted when enrolling mfa: %v", ego)
+		m.Error = ego
 	} else {
-		log.Debugf("Identity with fingerprint %s has successfully verified MFA", fp)
+		log.Warnf("xxxx Identity with fingerprint %s has successfully verified MFA", fp)
 	}
 
+	log.Warnf("xxxx sending ziti_mfa_verify response back to UI for %s. verified: %t. error: %s", fp, m.IsVerified, m.Error)
 	goapi.BroadcastEvent(m)
 }
 
-func EnableMFA(id *ZIdentity, fingerprint string) {
-	cfp := C.CString(fingerprint)
-	//cfp is free'ed in ziti_mfa_enroll_cb_go
-	C.ziti_mfa_enroll(id.czctx, C.ziti_mfa_cb(C.ziti_mfa_enroll_cb_go), unsafe.Pointer(cfp))
+type mfaCodes struct {
+	codes       []string
+	fingerprint string
 }
-func VerifyMFA(id *ZIdentity, fingerprint string, totp string) {
+
+var codes = make(chan mfaCodes)
+var emptyCodes []string
+
+func ReturnMfaCodes(id *ZIdentity, fingerprint string, totp string) []string {
 	ctotp := C.CString(totp)
 	defer C.free(unsafe.Pointer(ctotp))
-
 	cfp := C.CString(fingerprint)
-	//cfp is free'ed in ziti_mfa_cb_go
-	log.Errorf("VERIFYMFA: %v %v", fingerprint, totp)
-	C.ziti_mfa_verify(id.czctx, ctotp, C.ziti_mfa_cb(C.ziti_mfa_cb_go), unsafe.Pointer(cfp))
+	defer C.free(unsafe.Pointer(cfp))
+	log.Errorf("xxxx ReturnMfaCodes: %v %v", fingerprint, totp)
+	C.ziti_mfa_get_recovery_codes(id.czctx, ctotp, C.ziti_mfa_recovery_codes_cb(C.ziti_mfa_recovery_codes_cb_return), unsafe.Pointer(cfp))
+
+	rtn := <-codes
+	log.Errorf("xxxx ReturnMfaCodes: %v %v", fingerprint, rtn)
+	if fingerprint != rtn.fingerprint {
+		log.Warnf("unexpected condition correlating mfa codes returned! %s != %s", fingerprint, rtn.fingerprint)
+		return emptyCodes
+	}
+	return rtn.codes
+}
+
+func GenerateMfaCodes(id *ZIdentity, fingerprint string, totp string) []string {
+	ctotp := C.CString(totp)
+	defer C.free(unsafe.Pointer(ctotp))
+	cfp := C.CString(fingerprint)
+	defer C.free(unsafe.Pointer(cfp))
+	log.Errorf("xxxx GenerateMfaCodes: %v %v", fingerprint, totp)
+	C.ziti_mfa_new_recovery_codes(id.czctx, ctotp, C.ziti_mfa_recovery_codes_cb(C.ziti_mfa_recovery_codes_cb_generate), unsafe.Pointer(cfp))
+
+	rtn := <-codes
+	log.Errorf("xxxx ReturnMfaCodes: %v %v", fingerprint, rtn)
+	if fingerprint != rtn.fingerprint {
+		log.Warnf("unexpected condition correlating mfa codes when regenerating! %s != %s", fingerprint, rtn.fingerprint)
+		return emptyCodes
+	}
+	return rtn.codes
+}
+
+//export ziti_mfa_recovery_codes_cb_return
+func ziti_mfa_recovery_codes_cb_return(_ C.ziti_context, status C.int, recoveryCodes **C.char, fingerprintP unsafe.Pointer) {
+	if status != C.ZITI_OK {
+		e := C.ziti_errorstr(status)
+		ego := C.GoString(e)
+		log.Errorf("Error encounted when returning mfa recovery codes: %v", ego)
+	} else {
+		fp := C.GoString((*C.char)(fingerprintP))
+		codes <- mfaCodes{
+			codes:       populateStringSlice(recoveryCodes),
+			fingerprint: fp,
+		}
+	}
+}
+
+//export ziti_mfa_recovery_codes_cb_generate
+func ziti_mfa_recovery_codes_cb_generate(_ C.ziti_context, status C.int, recoveryCodes **C.char, fingerprintP unsafe.Pointer) {
+	if status != C.ZITI_OK {
+		e := C.ziti_errorstr(status)
+		ego := C.GoString(e)
+		log.Errorf("Error encounted when generating mfa recovery codes: %v", ego)
+	} else {
+		fp := C.GoString((*C.char)(fingerprintP))
+		codes <- mfaCodes{
+			codes:       populateStringSlice(recoveryCodes),
+			fingerprint: fp,
+		}
+	}
+}
+
+func populateStringSlice(c_char_array **C.char) []string {
+	var strs []string
+	i := 0
+	for {
+		var cstr = C.ziti_char_array_get(c_char_array, C.int(i))
+		if cstr == nil {
+			break
+		}
+		strs = append(strs, C.GoString(cstr))
+		i++
+	}
+	return strs
 }
