@@ -1194,6 +1194,7 @@ namespace ZitiDesktopEdge {
 				} else {
 					Process.Start(new ProcessStartInfo(_blurbUrl) { UseShellExecute = true });
 				}
+				HideBlurb();
 			} else {
 				HideBlurb();
 			}
