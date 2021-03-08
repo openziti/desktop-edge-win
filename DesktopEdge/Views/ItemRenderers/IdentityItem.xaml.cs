@@ -23,6 +23,8 @@ namespace ZitiDesktopEdge {
 
 		public delegate void StatusChanged(bool attached);
 		public event StatusChanged OnStatusChanged;
+		public delegate void OnAuthenticate(ZitiIdentity identity);
+		public event OnAuthenticate Authenticate;
 
 		public ZitiIdentity _identity;
 		public ZitiIdentity Identity {
@@ -37,6 +39,25 @@ namespace ZitiDesktopEdge {
 
 		public void RefreshUI () {
 			ToggleSwitch.Enabled = _identity.IsEnabled;
+			if (_identity.IsMFAEnabled) {
+				// Clint I need a sign
+				// if (_identity.IsMFAAuthentcated) {
+				ServiceCountArea.Visibility = Visibility.Visible;
+				MfaRequired.Visibility = Visibility.Collapsed;
+				ServiceCountAreaLabel.Content = "services";
+				MainArea.Opacity = 1.0;
+				// } else {
+				ServiceCountArea.Visibility = Visibility.Collapsed;
+				MfaRequired.Visibility = Visibility.Visible;
+				ServiceCountAreaLabel.Content = "authorize";
+				MainArea.Opacity = 0.6;
+				// }
+			} else {
+				ServiceCountArea.Visibility = Visibility.Visible;
+				MfaRequired.Visibility = Visibility.Collapsed;
+				ServiceCountAreaLabel.Content = "services";
+				MainArea.Opacity = 1.0;
+			}
 			IdName.Content = _identity.Name;
 			IdUrl.Content = _identity.ControllerUrl;
 			if (_identity.IsMFAEnabled && !_identity.MFAInfo.IsAuthenticated) {
@@ -90,6 +111,10 @@ namespace ZitiDesktopEdge {
 			deets.ServiceTitle.Clear();
 			deets.IdDetailToggle.Enabled = this.Identity.IsEnabled;
 			deets.Identity = this.Identity;
+		}
+
+		private void MFAAuthenticate(object sender, MouseButtonEventArgs e) {
+			this.Authenticate?.Invoke(_identity);
 		}
 	}
 }

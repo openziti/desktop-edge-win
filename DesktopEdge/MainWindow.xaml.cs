@@ -151,18 +151,22 @@ namespace ZitiDesktopEdge {
 		/// </summary>
 		/// <param name="identity">The Ziti Identity to Authenticate</param>
 		public void ShowMFARecoveryCodes(ZitiIdentity identity) {
-			if (identity.MFAInfo.RecoveryCodes.Length>0) {
-				MFASetup.Opacity = 0;
-				MFASetup.Visibility = Visibility.Visible;
-				MFASetup.Margin = new Thickness(0, 0, 0, 0);
-				MFASetup.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
-				MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
+			if (identity.MFAInfo!=null) {
+				if (identity.MFAInfo.RecoveryCodes.Length > 0) {
+					MFASetup.Opacity = 0;
+					MFASetup.Visibility = Visibility.Visible;
+					MFASetup.Margin = new Thickness(0, 0, 0, 0);
+					MFASetup.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
+					MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
 
-				MFASetup.ShowRecovery(identity.MFAInfo.RecoveryCodes, identity);
+					MFASetup.ShowRecovery(identity.MFAInfo.RecoveryCodes, identity);
 
-				ShowModal();
+					ShowModal();
+				} else {
+					ShowBlurb("You do not have anymore recovery codes", this.RECOVER);
+				}
 			} else {
-				ShowBlurb("You do not have anymore recovery codes", this.RECOVER);
+				ShowBlurb("MFA is not setup on this Identity", "");
 			}
 		}
 
@@ -1196,6 +1200,14 @@ namespace ZitiDesktopEdge {
 			} else {
 				HideBlurb();
 			}
+		}
+
+		private void ShowAuthenticate(ZitiIdentity identity) {
+			MFAAuthenticate(identity);
+		}
+
+		private void ShowRecovery(ZitiIdentity identity) {
+			ShowMFARecoveryCodes(identity);
 		}
 	}
 }

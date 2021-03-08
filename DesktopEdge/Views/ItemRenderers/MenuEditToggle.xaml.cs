@@ -12,6 +12,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using ZitiDesktopEdge.Models;
+using ZitiDesktopEdge.ServiceClient;
 
 namespace ZitiDesktopEdge {
     /// <summary>
@@ -21,6 +23,11 @@ namespace ZitiDesktopEdge {
 
 		public delegate void OnToggle(bool isOn);
 		public event OnToggle Toggle;
+		public delegate void OnAuthenticate();
+		public event OnAuthenticate Authenticate;
+		public delegate void OnRecovery();
+		public event OnRecovery Recovery;
+		private ZitiIdentity _identity;
 
 		private string _label = "";
 
@@ -42,6 +49,29 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
+		public ZitiIdentity Identity {
+			get {
+				return _identity; 
+			}
+			set {
+				_identity = value;
+				if (_identity.IsMFAEnabled) {
+					RecoveryButton.Visibility = Visibility.Visible;
+					// Clint: Need to know if we are authenticated or not and show or hide this
+					// if (_identity.IsMFAAuthentcated) {
+					AuthOff.Visibility = Visibility.Visible;
+					AuthOn.Visibility = Visibility.Collapsed;
+					// } else {
+					// AuthOff.Visibility = Visibility.Collapsed;
+					// AuthOn.Visibility = Visibility.Visible; 
+					// }
+				} else {
+					RecoveryButton.Visibility = Visibility.Collapsed;
+					AuthOff.Visibility = Visibility.Collapsed;
+				}
+			}
+		}
+
 		public MenuEditToggle() {
             InitializeComponent();
         }
@@ -49,6 +79,14 @@ namespace ZitiDesktopEdge {
 		public void Toggled(Boolean isOn) {
 			this.ToggleField.Enabled = isOn;
 			this.Toggle?.Invoke(isOn);
+		}
+
+		private void MFAAuthenticate(object sender, MouseButtonEventArgs e) {
+			this.Authenticate?.Invoke();
+		}
+
+		private void MFARecovery(object sender, MouseButtonEventArgs e) {
+			this.Recovery?.Invoke();
 		}
 	}
 }

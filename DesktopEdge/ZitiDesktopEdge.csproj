@@ -424,5 +424,12 @@
   <ItemGroup>
     <Resource Include="Assets\Images\qrcode.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Images\mfaoff.png" />
+    <Resource Include="Assets\Images\mfaon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Images\recovery.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

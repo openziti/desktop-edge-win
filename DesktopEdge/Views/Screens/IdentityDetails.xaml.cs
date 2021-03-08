@@ -31,6 +31,10 @@ namespace ZitiDesktopEdge {
 		public string filter = "";
 		public delegate void Mesage(string message);
 		public event Mesage OnMessage;
+		public delegate void OnAuthenticate(ZitiIdentity identity);
+		public event OnAuthenticate Authenticate;
+		public delegate void OnRecovery(ZitiIdentity identity);
+		public event OnRecovery Recovery;
 
 		internal MainWindow MainWindow { get; set; }
 
@@ -52,6 +56,7 @@ namespace ZitiDesktopEdge {
 				UpdateView();
 				IdentityArea.Opacity = 1.0;
 				IdentityArea.Visibility = Visibility.Visible;
+				IdentityMFA.IsOn = _identity.IsMFAEnabled;
 				this.Visibility = Visibility.Visible;
 			}
 		}
@@ -109,7 +114,7 @@ namespace ZitiDesktopEdge {
 						ServiceList.Children.Add(info);
 					}
 				}
-				double newHeight = MainHeight - 360; // Jeremy - Fix this post MFA
+				double newHeight = MainHeight - 330; // Jeremy - Fix this post MFA
 				ServiceRow.Height = new GridLength((double)newHeight);
 				MainDetailScroll.MaxHeight = newHeight;
 				MainDetailScroll.Height = newHeight;
@@ -263,6 +268,14 @@ namespace ZitiDesktopEdge {
 		/// <param name="e">The event</param>
 		private void ModalHideComplete(object sender, EventArgs e) {
 			ModalBg.Visibility = Visibility.Collapsed;
+		}
+
+		private void MFARecovery() {
+			this.Recovery?.Invoke(this.Identity);
+		}
+
+		private void MFAAuthenticate() {
+			this.Authenticate.Invoke(this.Identity);
 		}
 	}
 }
