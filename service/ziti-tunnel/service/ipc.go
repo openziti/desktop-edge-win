@@ -613,7 +613,7 @@ func toggleIdentity(out *json.Encoder, fingerprint string, onOff bool) {
 		msg := fmt.Sprintf("identity with fingerprint %s not found", fingerprint)
 		log.Warn(msg)
 		respond(out, dto.Response{
-			Code:    SUCCESS,
+			Code:    IDENTITY_NOT_FOUND,
 			Message: fmt.Sprintf("no update performed. %s", msg),
 			Error:   "",
 			Payload: nil,

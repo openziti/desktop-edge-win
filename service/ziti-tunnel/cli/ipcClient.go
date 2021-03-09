@@ -50,14 +50,14 @@ func sendMessagetoPipe(ipcPipeConn net.Conn, commandMsg *dto.CommandMsg, args []
 	return nil
 }
 
-func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}, fn fetchStatusFromRTS, responseFn fetchResponseFromRTS, args []string, flags map[string]bool) {
+func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan bool, fn fetchStatusFromRTS, responseFn fetchResponseFromRTS, args []string, flags map[string]bool) {
 
 	reader := bufio.NewReader(ipcPipeConn)
 	msg, err := reader.ReadString('\n')
 
 	if err != nil {
 		log.Error(err)
-		readDone <- struct{}{}
+		readDone <- false
 		return
 	}
 
@@ -70,18 +70,26 @@ func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}, fn fetchS
 	if fn != nil {
 		var tunnelStatus dto.ZitiTunnelStatus
 		if err := dec.Decode(&tunnelStatus); err == io.EOF {
-			readDone <- struct{}{}
+			readDone <- false
 			return
 		} else if err != nil {
 			log.Fatal(err)
+			readDone <- false
+			return
 		}
 
 		if tunnelStatus.Status != nil {
 			responseMsg := fn(args, tunnelStatus.Status, flags)
 			if responseMsg.Code == service.SUCCESS {
 				log.Info("\n" + responseMsg.Payload.(string) + "\n" + responseMsg.Message)
+				readDone <- true
+				return
 			} else {
-				log.Info(responseMsg.Error)
+				if responseMsg.Error != "" {
+					log.Info(responseMsg.Error)
+				} else {
+					log.Info(responseMsg.Message)
+				}
 			}
 		} else {
 			log.Errorf("Ziti tunnel retuned nil status")
@@ -91,10 +99,12 @@ func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}, fn fetchS
 	if responseFn != nil {
 		var response dto.Response
 		if err := dec.Decode(&response); err == io.EOF {
-			readDone <- struct{}{}
+			readDone <- false
 			return
 		} else if err != nil {
 			log.Fatal(err)
+			readDone <- false
+			return
 		}
 
 		if response.Message != "" {
@@ -104,15 +114,21 @@ func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan struct{}, fn fetchS
 					log.Infof("Payload : %v", responseMsg.Payload)
 				}
 				log.Infof("Message : %s", responseMsg.Message)
+				readDone <- true
+				return
 			} else {
-				log.Info(responseMsg.Error)
+				if responseMsg.Error != "" {
+					log.Info(responseMsg.Error)
+				} else {
+					log.Info(responseMsg.Message)
+				}
 			}
 		} else {
 			log.Errorf("Ziti tunnel retuned nil response")
 		}
 	}
 
-	readDone <- struct{}{}
+	readDone <- false
 	return
 }
 
@@ -129,7 +145,7 @@ func GetDataFromIpcPipe(commandMsg *dto.CommandMsg, fn fetchStatusFromRTS, respo
 		log.Errorf("Ziti Desktop Edge app may not be running")
 		return false
 	}
-	readDone := make(chan struct{})
+	readDone := make(chan bool)
 	defer close(readDone) // ensure that goroutine exits
 
 	go readMessageFromPipe(ipcPipeConn, readDone, fn, responseFn, args, flags)
@@ -142,9 +158,9 @@ func GetDataFromIpcPipe(commandMsg *dto.CommandMsg, fn fetchStatusFromRTS, respo
 
 	log.Debugf("Connection to ipc pipe is established - %s and remote address %s", ipcPipeConn.LocalAddr().String(), ipcPipeConn.RemoteAddr().String())
 
-	<-readDone
+	status := <-readDone
 	log.Debug("read finished normally")
-	return true
+	return status
 }
 
 func closeConn(conn net.Conn) {
