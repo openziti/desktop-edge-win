@@ -472,12 +472,12 @@ func serveIpc(conn net.Conn) {
 			verifyMfa(enc, fingerprint, totp)
 		case "ReturnMFACodes":
 			fingerprint := cmd.Payload["Fingerprint"].(string)
-			totp := cmd.Payload["Totp"].(string)
-			returnMfaCodes(enc, fingerprint, totp)
+			totpOrRecoveryCode := cmd.Payload["Code"].(string)
+			returnMfaCodes(enc, fingerprint, totpOrRecoveryCode)
 		case "GenerateMFACodes":
 			fingerprint := cmd.Payload["Fingerprint"].(string)
-			totp := cmd.Payload["Totp"].(string)
-			generateMfaCodes(enc, fingerprint, totp)
+			totpOrRecoveryCode := cmd.Payload["Code"].(string)
+			generateMfaCodes(enc, fingerprint, totpOrRecoveryCode)
 		case "Debug":
 			dbg()
 			respond(enc, dto.Response{
@@ -498,14 +498,15 @@ func serveIpc(conn net.Conn) {
 	}
 }
 
-func generateMfaCodes(out *json.Encoder, fingerprint string, totp string) {
+func generateMfaCodes(out *json.Encoder, fingerprint string, totpOrRecoveryCode string) {
 	id := rts.Find(fingerprint)
-	cziti.GenerateMfaCodes(id.CId, fingerprint, totp)
+	codes := cziti.GenerateMfaCodes(id.CId, fingerprint, totpOrRecoveryCode)
+	respond(out, dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: codes})
 }
 
-func returnMfaCodes(out *json.Encoder, fingerprint string, totp string) {
+func returnMfaCodes(out *json.Encoder, fingerprint string, totpOrRecoveryCode string) {
 	id := rts.Find(fingerprint)
-	codes := cziti.ReturnMfaCodes(id.CId, fingerprint, totp)
+	codes := cziti.ReturnMfaCodes(id.CId, fingerprint, totpOrRecoveryCode)
 	respond(out, dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: codes})
 }
 

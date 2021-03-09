@@ -18,6 +18,7 @@ using System.Net;
 using System.Windows.Media.Animation;
 using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.ServiceClient;
+using ZitiDesktopEdge.DataStructures;
 
 using NLog;
 using QRCoder;
@@ -222,7 +223,7 @@ namespace ZitiDesktopEdge {
 			string code = SetupAuth1.Text + SetupAuth2.Text + SetupAuth3.Text + SetupAuth4.Text + SetupAuth5.Text + SetupAuth6.Text;
 
 			DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
-			ZitiDesktopEdge.DataStructures.SvcResponse resp = await serviceClient.VerifyMFA(this._identity.Fingerprint, code);
+			SvcResponse resp = await serviceClient.VerifyMFA(this._identity.Fingerprint, code);
 			if (resp.Code != 0) {
 
             } else {
@@ -241,10 +242,13 @@ namespace ZitiDesktopEdge {
 
 
 				DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
-				await serviceClient.VerifyMFA(this._identity.Fingerprint, code);
-			}
+				//SvcResponse r1 = await serviceClient.VerifyMFA(this._identity.Fingerprint, code);
 
-			// Clint - Execute the MFA with mah code
+
+				SvcResponse r2 = await serviceClient.ReturnMFACodes(this._identity.Fingerprint, code);
+				SvcResponse r3 = await serviceClient.GenerateMFACodes(this._identity.Fingerprint, code);
+
+			}
 		}
 
 		private void RegenerateCodes(object sender, MouseButtonEventArgs e) {
