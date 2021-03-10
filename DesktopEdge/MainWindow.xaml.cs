@@ -112,8 +112,15 @@ namespace ZitiDesktopEdge {
 					SetupMFA(this.IdentityMenu.Identity, url, secret);
 				} else if (mfa.Action == "auth_challenge") {
 					ShowBlurb("Setting Up auth_challenge", "");
+				} else if (mfa.Action == "auth_response") {
+					if (mfa.IsVerified) {
+						HideModal();
+					} else {
+						ShowBlurb("Provided code could not be verified", "");
+					}
 				} else {
-					ShowBlurb("Error Setting Up MFA", "");
+					ShowBlurb("Unexpected error when processing MFA", "");
+					logger.Error("unexpected action: " + mfa.Action);
 				}
 			});
 		}

@@ -242,6 +242,19 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
 
+        async public Task<SvcResponse> AuthMFA(string fingerprint, string totp) {
+            try {
+                await sendAsync(new AuthMFAFunction(fingerprint, totp));
+                SvcResponse mfa = await readAsync<SvcResponse>(ipcReader);
+                return mfa;
+            } catch (Exception ioe) {
+                //almost certainly a problem with the pipe - recreate the pipe...
+                //throw ioe;
+                Logger.Error(ioe, "Unexpected error");
+            }
+            return null;
+        }
+
         async public Task<SvcResponse> ReturnMFACodes(string fingerprint, string totpOrRecoveryCode) {
             try {
                 await sendAsync(new ReturnMFACodesFunction(fingerprint, totpOrRecoveryCode));

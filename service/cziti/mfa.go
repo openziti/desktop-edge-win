@@ -126,6 +126,7 @@ func ziti_mfa_cb_go(_ C.ziti_context, status C.int, fingerprintP *C.char) {
 		m.Error = ego
 	} else {
 		log.Warnf("xxxx Identity with fingerprint %s has successfully verified MFA", fp)
+		m.IsVerified = true
 	}
 
 	log.Warnf("xxxx sending ziti_mfa_verify response back to UI for %s. verified: %t. error: %s", fp, m.IsVerified, m.Error)
@@ -194,7 +195,7 @@ func ziti_mfa_recovery_codes_cb_generate(_ C.ziti_context, status C.int, recover
 	if status != C.ZITI_OK {
 		e := C.ziti_errorstr(status)
 		ego := C.GoString(e)
-		log.Errorf("Error encounted when generating mfa recovery codes: %v", ego)
+		log.Errorf("Error encountedziti_ar_mfa_cb when generating mfa recovery codes: %v", ego)
 	} else {
 		fp := C.GoString(fingerprintP)
 		codes <- mfaCodes{
@@ -216,4 +217,32 @@ func populateStringSlice(c_char_array **C.char) []string {
 		i++
 	}
 	return strs
+}
+
+var mfaAuths = make(chan bool)
+
+func AuthMFA(id *ZIdentity, fingerprint string, code string) bool {
+	if id.mfa.responseCb == nil {
+		log.Warnf("xxxx AuthMFA called but response cb is nil. This usually is because the session is already validiated. returning true from AuthMFA")
+		return true
+	}
+
+	ccode := C.CString(code)
+	defer C.free(unsafe.Pointer(ccode))
+	log.Errorf("AuthMFA: %v %v", fingerprint, code)
+
+	C.ziti_mfa_auth_request(id.mfa.responseCb, id.czctx, id.mfa.mfaContext, ccode, C.ziti_ar_mfa_status_cb(C.ziti_ar_mfa_status_cb_go))
+	r := <-mfaAuths
+
+	if r {
+		log.Error("xxxx mfa successfully authenticated. removing callback from mfa")
+		id.mfa.responseCb = nil
+	}
+	return r
+}
+
+//export ziti_ar_mfa_status_cb_go
+func ziti_ar_mfa_status_cb_go(ztx C.ziti_context, mfa_ctx unsafe.Pointer, status C.int) {
+	log.Error("xxxx ziti_ar_mfa_status_cb_go with status %v", status)
+	mfaAuths <- status == C.ZITI_OK
 }

@@ -130,6 +130,21 @@ namespace ZitiDesktopEdge.DataStructures {
         public string Totp { get; set; }
     }
 
+    public class AuthMFAFunction : ServiceFunction {
+        public AuthMFAFunction(string fingerprint, string totp) {
+            this.Function = "AuthMFA";
+            this.Payload = new AuthMFAFunctionPayload() {
+                Fingerprint = fingerprint,
+                Totp = totp
+            };
+        }
+        public AuthMFAFunctionPayload Payload { get; set; }
+    }
+    public class AuthMFAFunctionPayload {
+        public string Fingerprint { get; set; }
+        public string Totp { get; set; }
+    }
+
     public class ReturnMFACodesFunction : ServiceFunction {
         public ReturnMFACodesFunction(string fingerprint, string totpOrRecoveryCode) {
             this.Function = "ReturnMFACodes";

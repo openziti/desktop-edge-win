@@ -242,12 +242,12 @@ namespace ZitiDesktopEdge {
 
 
 				DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
-				//SvcResponse r1 = await serviceClient.VerifyMFA(this._identity.Fingerprint, code);
+				SvcResponse authResult = await serviceClient.AuthMFA(this._identity.Fingerprint, code);
+				if(authResult.Code != 0) {
 
-
-				SvcResponse r2 = await serviceClient.ReturnMFACodes(this._identity.Fingerprint, code);
-				SvcResponse r3 = await serviceClient.GenerateMFACodes(this._identity.Fingerprint, code);
-
+                } else {
+					//success
+                }
 			}
 		}
 

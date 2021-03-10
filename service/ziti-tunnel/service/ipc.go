@@ -470,6 +470,10 @@ func serveIpc(conn net.Conn) {
 			fingerprint := cmd.Payload["Fingerprint"].(string)
 			totp := cmd.Payload["Totp"].(string)
 			verifyMfa(enc, fingerprint, totp)
+		case "AuthMFA":
+			fingerprint := cmd.Payload["Fingerprint"].(string)
+			code := cmd.Payload["Totp"].(string)
+			authMfa(enc, fingerprint, code)
 		case "ReturnMFACodes":
 			fingerprint := cmd.Payload["Fingerprint"].(string)
 			totpOrRecoveryCode := cmd.Payload["Code"].(string)
@@ -986,16 +990,12 @@ func AddMetrics(id *Id) {
 	id.Metrics.Down = down
 }
 
-func svcToDto(src cziti.ZService) *dto.Service {
-	dest := &dto.Service{
-		Name:          src.Name,
-		Id:            src.Id,
-		OwnsIntercept: false,
+func authMfa(out *json.Encoder, fingerprint string, code string) {
+	id := rts.Find(fingerprint)
+	success := cziti.AuthMFA(id.CId, fingerprint, code)
+	if success {
+		respond(out, dto.Response{Message: "mfa verify complete", Code: SUCCESS, Error: "", Payload: nil})
+	} else {
+		respondWithError(out, fmt.Sprintf("the supplied code was not valid: %s", code), 1, nil)
 	}
-	if src.Service != nil {
-		dest.Protocols = src.Service.Protocols
-		dest.Addresses = src.Service.Addresses
-		dest.Ports = src.Service.Ports
-	}
-	return dest
 }

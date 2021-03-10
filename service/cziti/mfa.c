@@ -18,32 +18,7 @@
 #include "sdk.h"
 #include <ziti/ziti_tunnel.h>
 #include <ziti/ziti_log.h>
-/*
-void return_domain_info_c(ziti_context ztx, char* id, ziti_pr_domain_cb response_cb, char* domain) {
-    response_cb(ztx, id, domain);
-}
-void return_mac_info_c(ziti_context ztx, char* id, ziti_pr_mac_cb response_cb, char** mac_addresses, int num_mac) {
-    response_cb(ztx, id, mac_addresses, num_mac);
-}
-void return_os_info_c(ziti_context ztx, char* id, ziti_pr_os_cb response_cb, char* os_type, char* os_version, char* os_build) {
-    response_cb(ztx, id, os_type, os_version, os_build);
-}
-void return_proc_info_c(ziti_context ztx, char* id, char* path, ziti_pr_process_cb response_cb, bool is_running, char* sha, char** signers, int num_signers) {
-    response_cb(ztx, id, path, is_running, sha, signers, num_signers);
-}
 
-char** aamakeCharArray(int size) {
-    return calloc(sizeof(char*), size);
+void ziti_mfa_auth_request(ziti_ar_mfa_cb response_cb, ziti_context ztx, void* mfa_ctx, char* code, ziti_ar_mfa_status_cb auth_response) {
+    response_cb(ztx, mfa_ctx, code, auth_response);
 }
-
-void aasetArrayString(char **a, char *s, int n) {
-    a[n] = s;
-}
-
-void aafreeCharArray(char **a, int size) {
-    int i;
-    for (i = 0; i < size; i++) {
-        free(a[i]);
-    }
-    free(a);
-}*/
