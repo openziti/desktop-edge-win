@@ -109,6 +109,8 @@ func main() {
 		commandline.Execute()
 	case "loglevel":
 		commandline.Execute()
+	case "feedback":
+		commandline.Execute()
 	default:
 		usage(fmt.Sprintf("invalid command %s", cmd))
 	}

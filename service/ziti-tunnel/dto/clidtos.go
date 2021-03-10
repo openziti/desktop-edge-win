@@ -40,3 +40,9 @@ type IdentityOnOffPayload struct {
 	OnOff       string
 	Fingerprint string
 }
+
+type MonitorServiceResponse struct {
+	Code    int
+	Message string
+	Error   string
+}

@@ -163,6 +163,91 @@ func GetDataFromIpcPipe(commandMsg *dto.CommandMsg, fn fetchStatusFromRTS, respo
 	return status
 }
 
+// monitor ipc messages
+
+func GetDataFromMonitorIpcPipe(actionMessage *dto.ActionEvent, args []string, flags map[string]bool) bool {
+	log.Infof("Command %s with args %s", actionMessage.StatusEvent.Op, args)
+
+	log.Debug("Connecting to pipe")
+	timeout := 2000 * time.Millisecond
+	ipcPipeConn, err := winio.DialPipe(monitorIpcPipe, &timeout)
+	defer closeConn(ipcPipeConn)
+
+	if err != nil {
+		log.Errorf("Connection to monitor ipc pipe is not established, %v", err)
+		log.Errorf("Ziti Update service may not be running")
+		return false
+	}
+	readDone := make(chan bool)
+	defer close(readDone) // ensure that goroutine exits
+
+	go readMessageFromMonitorPipe(ipcPipeConn, readDone, args, flags)
+
+	err = sendMessageToMonitorPipe(ipcPipeConn, actionMessage, args)
+	if err != nil {
+		log.Errorf("Message is not sent to monitor ipc pipe, %v", err)
+		return false
+	}
+
+	log.Debugf("Connection to monitor ipc pipe is established - %s and remote address %s", ipcPipeConn.LocalAddr().String(), ipcPipeConn.RemoteAddr().String())
+
+	status := <-readDone
+	log.Debug("read finished normally")
+	return status
+}
+
+func sendMessageToMonitorPipe(ipcPipeConn net.Conn, actionMessage *dto.ActionEvent, args []string) error {
+	writer := bufio.NewWriter(ipcPipeConn)
+	enc := json.NewEncoder(writer)
+
+	err := enc.Encode(actionMessage)
+	if err != nil {
+		log.Error("could not encode or write response message, %v", err)
+		return err
+	}
+
+	log.Debug("Message sent to monitor ipc pipe")
+
+	writer.Flush()
+
+	return nil
+}
+
+func readMessageFromMonitorPipe(ipcPipeConn net.Conn, readDone chan bool, args []string, flags map[string]bool) {
+
+	reader := bufio.NewReader(ipcPipeConn)
+	msg, err := reader.ReadString('\n')
+
+	if err != nil {
+		log.Error(err)
+		readDone <- false
+		return
+	}
+
+	dec := json.NewDecoder(strings.NewReader(msg))
+
+	var monitorServiceResponse dto.MonitorServiceResponse
+	if err := dec.Decode(&monitorServiceResponse); err == io.EOF {
+		readDone <- false
+		return
+	} else if err != nil {
+		log.Fatal(err)
+		readDone <- false
+		return
+	}
+
+	if monitorServiceResponse.Code == service.SUCCESS {
+		log.Infof("Feedback file %s is created", monitorServiceResponse.Message)
+		readDone <- true
+		return
+	} else {
+		log.Info(monitorServiceResponse.Error)
+	}
+
+	readDone <- false
+	return
+}
+
 func closeConn(conn net.Conn) {
 	if conn != nil {
 		err := conn.Close()

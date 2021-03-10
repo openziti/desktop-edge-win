@@ -24,7 +24,9 @@ const (
 	SERVICE_OP  = "service"
 	IDENTITY_OP = "identity"
 	LOGLEVEL_OP = "logLevel"
+	FEEDBACK_OP = "CaptureLogs"
 	CHANGED     = "changed"
+	NORMAL      = "Normal"
 )
 
 var SERVICE_ADDED = dto.ActionEvent{
@@ -47,4 +49,9 @@ var IDENTITY_REMOVED = dto.ActionEvent{
 var LOGLEVEL_CHANGED = dto.ActionEvent{
 	StatusEvent: dto.StatusEvent{Op: LOGLEVEL_OP},
 	Action:      CHANGED,
+}
+
+var FEEDBACK_REQUEST = dto.ActionEvent{
+	StatusEvent: dto.StatusEvent{Op: FEEDBACK_OP},
+	Action:      NORMAL,
 }

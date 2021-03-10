@@ -42,6 +42,8 @@ var NOTIFY_IDENTITY_UI = dto.CommandMsg{
 	Function: "NotifyIdentityUI",
 }
 
+var monitorIpcPipe = `\\.\pipe\OpenZiti\ziti-monitor\ipc`
+
 var templateIdentity = `{{printf "%40s" "Name"}} | {{printf "%41s" "FingerPrint"}} | {{printf "%6s" "Active"}} | {{printf "%30s" "Config"}} | {{"Status"}}
 {{range .}}{{printf "%40s" .Name}} | {{printf "%41s" .FingerPrint}} | {{printf "%6t" .Active}} | {{printf "%30s" .Config}} | {{.Status}}
 {{end}}`
