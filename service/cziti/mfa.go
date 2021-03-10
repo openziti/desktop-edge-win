@@ -32,6 +32,7 @@ package cziti
 import "C"
 import (
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
+	"strings"
 	"unsafe"
 )
 
@@ -219,12 +220,12 @@ func populateStringSlice(c_char_array **C.char) []string {
 	return strs
 }
 
-var mfaAuths = make(chan bool)
+var mfaAuthResults = make(chan string)
 
-func AuthMFA(id *ZIdentity, fingerprint string, code string) bool {
+func AuthMFA(id *ZIdentity, fingerprint string, code string) string {
 	if id.mfa.responseCb == nil {
 		log.Warnf("xxxx AuthMFA called but response cb is nil. This usually is because the session is already validiated. returning true from AuthMFA")
-		return true
+		return ""
 	}
 
 	ccode := C.CString(code)
@@ -232,9 +233,9 @@ func AuthMFA(id *ZIdentity, fingerprint string, code string) bool {
 	log.Errorf("AuthMFA: %v %v", fingerprint, code)
 
 	C.ziti_mfa_auth_request(id.mfa.responseCb, id.czctx, id.mfa.mfaContext, ccode, C.ziti_ar_mfa_status_cb(C.ziti_ar_mfa_status_cb_go))
-	r := <-mfaAuths
+	r := strings.TrimSpace(<-mfaAuthResults)
 
-	if r {
+	if r == "" {
 		log.Error("xxxx mfa successfully authenticated. removing callback from mfa")
 		id.mfa.responseCb = nil
 	}
@@ -244,5 +245,11 @@ func AuthMFA(id *ZIdentity, fingerprint string, code string) bool {
 //export ziti_ar_mfa_status_cb_go
 func ziti_ar_mfa_status_cb_go(ztx C.ziti_context, mfa_ctx unsafe.Pointer, status C.int) {
 	log.Error("xxxx ziti_ar_mfa_status_cb_go with status %v", status)
-	mfaAuths <- status == C.ZITI_OK
+	if status == C.ZITI_OK {
+		mfaAuthResults <- ""
+	} else {
+		e := C.ziti_errorstr(status)
+		ego := C.GoString(e)
+		mfaAuthResults <- ego
+	}
 }
