@@ -12,7 +12,6 @@ namespace ZitiDesktopEdge.Models {
 		public bool IsEnabled { get; set; }
 		public string EnrollmentStatus { get; set; }
 		public string Status { get; set; }
-
 		public bool IsMFAEnabled { get; set; }
 		public MFA MFAInfo { get; set; }
 
@@ -33,16 +32,19 @@ namespace ZitiDesktopEdge.Models {
 
 		public string Fingerprint { get; set; }
 
-		public static ZitiIdentity FromClient(DataStructures.Identity id)
-		{
-			ZitiIdentity zid = new ZitiIdentity()
-			{
+		public static ZitiIdentity FromClient(DataStructures.Identity id) {
+			System.Diagnostics.Debug.WriteLine("id is " + id.MfaEnabled);
+			ZitiIdentity zid = new ZitiIdentity() {
 				ControllerUrl = id.Config.ztAPI + " at " + id.ControllerVersion,
 				EnrollmentStatus = "status",
 				Fingerprint = id.FingerPrint,
 				IsEnabled = id.Active,
 				Name = (string.IsNullOrEmpty(id.Name) ? id.FingerPrint : id.Name),
 				Status = id.Status,
+				IsMFAEnabled = id.MfaEnabled,
+				MFAInfo = new MFA() { 
+					IsAuthenticated = !id.MfaNeeded,
+				},
 			};
 
 			if (id.Services != null) {

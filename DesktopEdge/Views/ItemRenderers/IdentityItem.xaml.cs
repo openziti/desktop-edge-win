@@ -60,7 +60,11 @@ namespace ZitiDesktopEdge {
 			}
 			IdName.Content = _identity.Name;
 			IdUrl.Content = _identity.ControllerUrl;
-			ServiceCount.Content = _identity.Services.Count.ToString();
+			if (_identity.IsMFAEnabled && !_identity.MFAInfo.IsAuthenticated) {
+				ServiceCount.Content = "MFA";
+			} else {
+				ServiceCount.Content = _identity.Services.Count.ToString();
+			}
 			if (ToggleSwitch.Enabled) {
 				ToggleStatus.Content = "ENABLED";
 			} else {

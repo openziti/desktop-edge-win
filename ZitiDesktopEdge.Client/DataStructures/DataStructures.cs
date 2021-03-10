@@ -130,6 +130,51 @@ namespace ZitiDesktopEdge.DataStructures {
         public string Totp { get; set; }
     }
 
+    public class AuthMFAFunction : ServiceFunction {
+        public AuthMFAFunction(string fingerprint, string totp) {
+            this.Function = "AuthMFA";
+            this.Payload = new AuthMFAFunctionPayload() {
+                Fingerprint = fingerprint,
+                Totp = totp
+            };
+        }
+        public AuthMFAFunctionPayload Payload { get; set; }
+    }
+    public class AuthMFAFunctionPayload {
+        public string Fingerprint { get; set; }
+        public string Totp { get; set; }
+    }
+
+    public class ReturnMFACodesFunction : ServiceFunction {
+        public ReturnMFACodesFunction(string fingerprint, string totpOrRecoveryCode) {
+            this.Function = "ReturnMFACodes";
+            this.Payload = new ReturnMFACodesFunctionPayload() {
+                Fingerprint = fingerprint,
+                Code = totpOrRecoveryCode,
+            };
+        }
+        public ReturnMFACodesFunctionPayload Payload { get; set; }
+    }
+    public class ReturnMFACodesFunctionPayload {
+        public string Fingerprint { get; set; }
+        public string Code { get; set; }
+    }
+
+    public class GenerateMFACodesFunction : ServiceFunction {
+        public GenerateMFACodesFunction(string fingerprint, string totpOrRecoveryCode) {
+            this.Function = "GenerateMFACodes";
+            this.Payload = new GenerateMFACodesFunctionPayload() {
+                Fingerprint = fingerprint,
+                Code = totpOrRecoveryCode,
+            };
+        }
+        public GenerateMFACodesFunctionPayload Payload { get; set; }
+    }
+    public class GenerateMFACodesFunctionPayload {
+        public string Fingerprint { get; set; }
+        public string Code { get; set; }
+    }
+
     public class SetLogLevelFunction : ServiceFunction {
         public SetLogLevelFunction(string level) {
             this.Function = "SetLogLevel";
@@ -183,6 +228,8 @@ namespace ZitiDesktopEdge.DataStructures {
         public List<Service> Services { get; set; }
         public Metrics Metrics { get; set; }
         public string ControllerVersion { get; set; }
+        public bool MfaEnabled { get; set; }
+        public bool MfaNeeded { get; set; }
     }
 
     public class Service {

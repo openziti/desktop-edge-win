@@ -94,6 +94,8 @@ namespace ZitiDesktopEdge {
 			} else {
 				ShowBlurb("MFA Disabled, limited service access", "");
 			}
+
+			HideLoad();
 		}
 
 		/// <summary>
@@ -105,11 +107,20 @@ namespace ZitiDesktopEdge {
 			HideLoad();
 			this.Dispatcher.Invoke(() => {
 				if (mfa.Action == "enrollment_challenge") {
-					SetupMFA(this.IdentityMenu.Identity, HttpUtility.UrlDecode(mfa.ProvisioningUrl));
-				} else if (mfa.Action == "error") {
-					ShowBlurb("Error Setting Up MFA", "");
+					string url = HttpUtility.UrlDecode(mfa.ProvisioningUrl);
+					string secret = HttpUtility.ParseQueryString(url)["secret"];
+					SetupMFA(this.IdentityMenu.Identity, url, secret);
+				} else if (mfa.Action == "auth_challenge") {
+					ShowBlurb("Setting Up auth_challenge", "");
+				} else if (mfa.Action == "auth_response") {
+					if (mfa.IsVerified) {
+						HideModal();
+					} else {
+						ShowBlurb("Provided code could not be verified", "");
+					}
 				} else {
-					ShowBlurb("Error Setting Up MFA", "");
+					ShowBlurb("Unexpected error when processing MFA", "");
+					logger.Error("unexpected action: " + mfa.Action);
 				}
 			});
 		}
@@ -118,13 +129,13 @@ namespace ZitiDesktopEdge {
 		/// Show the MFA Setup Modal
 		/// </summary>
 		/// <param name="identity">The Ziti Identity to Setup</param>
-		public void SetupMFA(ZitiIdentity identity, string url) {
+		public void SetupMFA(ZitiIdentity identity, string url, string secret) {
 			MFASetup.Opacity = 0;
 			MFASetup.Visibility = Visibility.Visible;
 			MFASetup.Margin = new Thickness(0, 0, 0, 0);
 			MFASetup.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
 			MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
-			MFASetup.ShowSetup(identity, url, "Clints Secret Code");
+			MFASetup.ShowSetup(identity, url, secret);
 			ShowModal();
 		}
 
@@ -150,7 +161,7 @@ namespace ZitiDesktopEdge {
 		/// <param name="identity">The Ziti Identity to Authenticate</param>
 		public void ShowMFARecoveryCodes(ZitiIdentity identity) {
 			if (identity.MFAInfo!=null) {
-				if (identity.MFAInfo.RecoveryCodes.Length > 0) {
+				if (identity.MFAInfo.RecoveryCodes?.Length > 0) {
 					MFASetup.Opacity = 0;
 					MFASetup.Visibility = Visibility.Visible;
 					MFASetup.Margin = new Thickness(0, 0, 0, 0);
@@ -290,6 +301,7 @@ namespace ZitiDesktopEdge {
 			MainMenu.OnDetach += OnDetach;
 
 			this.MainMenu.MainWindow = this;
+			this.IdentityMenu.MainWindow = this;
 			SetNotifyIcon("white");
 
 			IdentityMenu.OnMessage += IdentityMenu_OnMessage;
@@ -453,7 +465,7 @@ namespace ZitiDesktopEdge {
 			Placement();
 		}
 
-		string nextVersionStr  = null;
+        string nextVersionStr  = null;
         private void MonitorClient_OnReconnectFailure(object sender, object e) {
             if (nextVersionStr == null) {
 				// check for the current version
@@ -826,47 +838,49 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void LoadIdentities(Boolean repaint) {
-			IdList.Children.Clear();
-			IdList.Height = 0;
-			var desktopWorkingArea = SystemParameters.WorkArea;
-			if (_maxHeight > (desktopWorkingArea.Height - 10)) _maxHeight = desktopWorkingArea.Height - 10;
-			if (_maxHeight < 100) _maxHeight = 100;
-			IdList.MaxHeight = _maxHeight - 520;
-			ZitiIdentity[] ids = identities.OrderBy(i => i.Name.ToLower()).ToArray();
-			MainMenu.SetupIdList(ids);
+			this.Dispatcher.Invoke(() => {
+				IdList.Children.Clear();
+				IdList.Height = 0;
+				var desktopWorkingArea = SystemParameters.WorkArea;
+				if (_maxHeight > (desktopWorkingArea.Height - 10)) _maxHeight = desktopWorkingArea.Height - 10;
+				if (_maxHeight < 100) _maxHeight = 100;
+				IdList.MaxHeight = _maxHeight - 520;
+				ZitiIdentity[] ids = identities.OrderBy(i => i.Name.ToLower()).ToArray();
+				MainMenu.SetupIdList(ids);
 
-			if (ids.Length>0&&serviceClient.Connected) {
-				double height = 490 + (ids.Length * 60);
-				if (height > _maxHeight) height = _maxHeight;
-				this.Height = height;
-				IdentityMenu.SetHeight(this.Height - 160);
-				MainMenu.IdentitiesButton.Visibility = Visibility.Visible;
-				foreach (var id in ids) {
-					IdentityItem idItem = new IdentityItem();
+				if (ids.Length > 0 && serviceClient.Connected) {
+					double height = 490 + (ids.Length * 60);
+					if (height > _maxHeight) height = _maxHeight;
+					this.Height = height;
+					IdentityMenu.SetHeight(this.Height - 160);
+					MainMenu.IdentitiesButton.Visibility = Visibility.Visible;
+					foreach (var id in ids) {
+						IdentityItem idItem = new IdentityItem();
 
-					idItem.ToggleStatus.IsEnabled = id.IsEnabled;
-					if (id.IsEnabled) {
-						idItem.ToggleStatus.Content = "ENABLED";
-					} else {
-						idItem.ToggleStatus.Content = "DISABLED";
+						idItem.ToggleStatus.IsEnabled = id.IsEnabled;
+						if (id.IsEnabled) {
+							idItem.ToggleStatus.Content = "ENABLED";
+						} else {
+							idItem.ToggleStatus.Content = "DISABLED";
+						}
+						idItem.OnStatusChanged += Id_OnStatusChanged;
+						idItem.Identity = id;
+						IdList.Children.Add(idItem);
 					}
-					idItem.OnStatusChanged += Id_OnStatusChanged;
-					idItem.Identity = id;
-					IdList.Children.Add(idItem);
+					//IdList.Height = ;
+					DoubleAnimation animation = new DoubleAnimation((double)(ids.Length * 64), TimeSpan.FromSeconds(.3));
+					IdList.BeginAnimation(FrameworkElement.HeightProperty, animation);
+					IdListScroller.Visibility = Visibility.Visible;
+				} else {
+					this.Height = 490;
+					MainMenu.IdentitiesButton.Visibility = Visibility.Collapsed;
+					IdListScroller.Visibility = Visibility.Collapsed;
 				}
-				//IdList.Height = ;
-				DoubleAnimation animation = new DoubleAnimation((double)(ids.Length * 64), TimeSpan.FromSeconds(.3));
-				IdList.BeginAnimation(FrameworkElement.HeightProperty, animation);
-				IdListScroller.Visibility = Visibility.Visible;
-			} else {
-				this.Height = 490;
-				MainMenu.IdentitiesButton.Visibility = Visibility.Collapsed;
-				IdListScroller.Visibility = Visibility.Collapsed;
-			}
-			AddIdButton.Visibility = Visibility.Visible;
-			AddIdAreaButton.Visibility = Visibility.Visible;
+				AddIdButton.Visibility = Visibility.Visible;
+				AddIdAreaButton.Visibility = Visibility.Visible;
 
-			Placement();
+				Placement();
+			});
 		}
 
 		private void Id_OnStatusChanged(bool attached) {
@@ -879,13 +893,15 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void TunnelConnected(bool isConnected) {
-			if (isConnected) {
-				ConnectButton.Visibility = Visibility.Collapsed;
-				DisconnectButton.Visibility = Visibility.Visible;
-			} else {
-				ConnectButton.Visibility = Visibility.Visible;
-				DisconnectButton.Visibility = Visibility.Collapsed;
-			}
+			this.Dispatcher.Invoke(() => {
+				if (isConnected) {
+					ConnectButton.Visibility = Visibility.Collapsed;
+					DisconnectButton.Visibility = Visibility.Visible;
+				} else {
+					ConnectButton.Visibility = Visibility.Visible;
+					DisconnectButton.Visibility = Visibility.Collapsed;
+				}
+			});
 		}
 
 		private void SetLocation() {

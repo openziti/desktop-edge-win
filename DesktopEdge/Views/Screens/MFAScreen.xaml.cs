@@ -18,6 +18,7 @@ using System.Net;
 using System.Windows.Media.Animation;
 using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.ServiceClient;
+using ZitiDesktopEdge.DataStructures;
 
 using NLog;
 using QRCoder;
@@ -222,10 +223,15 @@ namespace ZitiDesktopEdge {
 			string code = SetupAuth1.Text + SetupAuth2.Text + SetupAuth3.Text + SetupAuth4.Text + SetupAuth5.Text + SetupAuth6.Text;
 
 			DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
-			await serviceClient.VerifyMFA(this._identity.Fingerprint, code);
+			SvcResponse resp = await serviceClient.VerifyMFA(this._identity.Fingerprint, code);
+			if (resp.Code != 0) {
+
+            } else {
+
+            }
 		}
 
-		private void DoAuthenticate(object sender, MouseButtonEventArgs e) {
+		async private void DoAuthenticate(object sender, MouseButtonEventArgs e) {
 			string code = "";
 			if (AuthRecoveryArea.Visibility == Visibility.Visible) {
 				code = Rec1.Text + Rec2.Text + Rec3.Text + Rec4.Text + Rec5.Text + Rec6.Text + Rec7.Text + Rec8.Text;
@@ -233,9 +239,16 @@ namespace ZitiDesktopEdge {
 			} else {
 				code = Auth1.Text + Auth2.Text + Auth3.Text + Auth4.Text + Auth5.Text + Auth6.Text;
 				if (code.Length != 6) this.ShowError("You must enter a valid code");
-			}
 
-			// Clint - Execute the MFA with mah code
+
+				DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
+				SvcResponse authResult = await serviceClient.AuthMFA(this._identity.Fingerprint, code);
+				if(authResult.Code != 0) {
+
+                } else {
+					//success
+                }
+			}
 		}
 
 		private void RegenerateCodes(object sender, MouseButtonEventArgs e) {
