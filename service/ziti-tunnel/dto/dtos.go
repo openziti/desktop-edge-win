@@ -65,6 +65,8 @@ type Identity struct {
 	Config            idcfg.Config
 	ControllerVersion string
 	Status            string
+	MfaEnabled        bool
+	MfaNeeded         bool
 	Services          []*Service `json:",omitempty"`
 	Metrics           *Metrics   `json:",omitempty"`
 	Tags              []string   `json:",omitempty"`
@@ -156,6 +158,7 @@ type MfaEvent struct {
 	ActionEvent
 	Fingerprint     string
 	IsVerified      bool
+	Error           string
 	ProvisioningUrl string
 	RecoveryCodes   []string
 }
