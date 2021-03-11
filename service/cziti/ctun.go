@@ -56,8 +56,11 @@ int netifRemoveRoute(netif_handle dev, char* dest);
 import "C"
 import (
 	"golang.zx2c4.com/wireguard/tun"
+	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
 	"io"
+	"net"
 	"os"
+	"strings"
 	"sync"
 	"unsafe"
 )
@@ -275,7 +278,27 @@ func apply_dns_go(_ /*dns*/ *C.dns_manager, hostname *C.char, ip *C.char) C.int 
 
 //export netifAddRoute
 func netifAddRoute(_ C.netif_handle, dest *C.char) C.int {
-	log.Infof("i am inside netifAddRoute: %s", C.GoString(dest))
+
+	/*
+
+	func (t *RuntimeState) AddRoute(destination net.IPNet, nextHop net.IP, metric uint32) error {
+		nativeTunDevice := (*t.tun).(*tun.NativeTun)
+		luid := winipcfg.LUID(nativeTunDevice.LUID())
+		return luid.AddRoute(destination, nextHop, metric)
+	}
+	 */
+	routeAsString := C.GoString(dest)
+	if strings.Contains(routeAsString, "/") {
+		log.Debugf("route appears to be in CIDR format: %s", routeAsString)
+		cidrIp, cidrMask, e := net.ParseCIDR(routeAsString)
+		if e != nil {
+			log.Errorf("The provided route does not appear to follow CIDR formatting? %s", routeAsString)
+
+		}
+		log.Infof("i am inside netifAddRoute: %v", cidrIp)
+	} else {
+		log.Debugf("route appears to be an IP (not CIDR): %s", routeAsString)
+	}
 	return 0
 }
 
