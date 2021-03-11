@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using NLog;
 
 using ZitiDesktopEdge.DataStructures;
+using ZitiDesktopEdge.Server;
 
 /// <summary>
 /// The implementation will abstract away the setup of the communication to
