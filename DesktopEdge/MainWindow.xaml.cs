@@ -109,6 +109,7 @@ namespace ZitiDesktopEdge {
 				if (mfa.Action == "enrollment_challenge") {
 					string url = HttpUtility.UrlDecode(mfa.ProvisioningUrl);
 					string secret = HttpUtility.ParseQueryString(url)["secret"];
+					this.IdentityMenu.Identity.MFAInfo.RecoveryCodes = mfa.RecoveryCodes.ToArray();
 					SetupMFA(this.IdentityMenu.Identity, url, secret);
 				} else if (mfa.Action == "auth_challenge") {
 					ShowBlurb("Setting Up auth_challenge", "");
