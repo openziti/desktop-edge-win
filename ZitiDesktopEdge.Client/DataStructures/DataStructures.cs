@@ -416,4 +416,9 @@ namespace ZitiDesktopEdge.DataStructures {
         public string ProvisioningUrl { get; set; }
         public List<string> RecoveryCodes { get; set; }
     }
+
+
+    public class MfaRecoveryCodesResponse : SvcResponse {
+        public string[] Payload { get; set; }
+    }
 }

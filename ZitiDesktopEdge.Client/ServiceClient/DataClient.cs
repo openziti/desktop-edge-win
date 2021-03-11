@@ -11,7 +11,6 @@ using Newtonsoft.Json;
 using NLog;
 
 using ZitiDesktopEdge.DataStructures;
-using ZitiDesktopEdge.Server;
 
 /// <summary>
 /// The implementation will abstract away the setup of the communication to
@@ -255,10 +254,10 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
 
-        async public Task<SvcResponse> ReturnMFACodes(string fingerprint, string totpOrRecoveryCode) {
+        async public Task<MfaRecoveryCodesResponse> ReturnMFACodes(string fingerprint, string totpOrRecoveryCode) {
             try {
                 await sendAsync(new ReturnMFACodesFunction(fingerprint, totpOrRecoveryCode));
-                SvcResponse mfa = await readAsync<SvcResponse>(ipcReader);
+                MfaRecoveryCodesResponse mfa = await readAsync<MfaRecoveryCodesResponse>(ipcReader);
                 return mfa;
             } catch (Exception ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
@@ -268,10 +267,10 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
 
-        async public Task<SvcResponse> GenerateMFACodes(string fingerprint, string totpOrRecoveryCode) {
+        async public Task<MfaRecoveryCodesResponse> GenerateMFACodes(string fingerprint, string totpOrRecoveryCode) {
             try {
                 await sendAsync(new GenerateMFACodesFunction(fingerprint, totpOrRecoveryCode));
-                SvcResponse mfa = await readAsync<SvcResponse>(ipcReader);
+                MfaRecoveryCodesResponse mfa = await readAsync<MfaRecoveryCodesResponse>(ipcReader);
                 return mfa;
             } catch (Exception ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...

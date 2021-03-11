@@ -36,6 +36,15 @@ import (
 	"unsafe"
 )
 
+type mfaCodes struct {
+	codes       []string
+	fingerprint string
+}
+
+var codes = make(chan mfaCodes)
+var emptyCodes []string
+var mfaAuthResults = make(chan string)
+
 //export ziti_aq_mfa_cb_go
 func ziti_aq_mfa_cb_go(ztx C.ziti_context, mfa_ctx unsafe.Pointer, aq_mfa *C.ziti_auth_query_mfa, response_cb C.ziti_ar_mfa_cb) {
 	appCtx := C.ziti_app_ctx(ztx)
@@ -134,24 +143,16 @@ func ziti_mfa_cb_go(_ C.ziti_context, status C.int, fingerprintP *C.char) {
 	goapi.BroadcastEvent(m)
 }
 
-type mfaCodes struct {
-	codes       []string
-	fingerprint string
-}
-
-var codes = make(chan mfaCodes)
-var emptyCodes []string
-
-func ReturnMfaCodes(id *ZIdentity, fingerprint string, totp string) []string {
-	ctotp := C.CString(totp)
-	defer C.free(unsafe.Pointer(ctotp))
+func ReturnMfaCodes(id *ZIdentity, fingerprint string, code string) []string {
+	ccode := C.CString(code)
+	defer C.free(unsafe.Pointer(ccode))
 	cfp := C.CString(fingerprint)
 	defer C.free(unsafe.Pointer(cfp))
-	log.Errorf("xxxx ReturnMfaCodes: %v %v", fingerprint, totp)
-	C.ziti_mfa_get_recovery_codes(id.czctx, ctotp, C.ziti_mfa_recovery_codes_cb(C.ziti_mfa_recovery_codes_cb_return), unsafe.Pointer(cfp))
+	log.Errorf("xxxx ReturnMfaCodesa: %v %v", fingerprint, code)
+	C.ziti_mfa_get_recovery_codes(id.czctx, ccode, C.ziti_mfa_recovery_codes_cb(C.ziti_mfa_recovery_codes_cb_return), unsafe.Pointer(cfp))
 
 	rtn := <-codes
-	log.Errorf("xxxx ReturnMfaCodes: %v %v", fingerprint, rtn)
+	log.Errorf("xxxx ReturnMfaCodesc: %v %v", fingerprint, rtn)
 	if fingerprint != rtn.fingerprint {
 		log.Warnf("unexpected condition correlating mfa codes returned! %s != %s", fingerprint, rtn.fingerprint)
 		return emptyCodes
@@ -159,16 +160,34 @@ func ReturnMfaCodes(id *ZIdentity, fingerprint string, totp string) []string {
 	return rtn.codes
 }
 
-func GenerateMfaCodes(id *ZIdentity, fingerprint string, totp string) []string {
-	ctotp := C.CString(totp)
-	defer C.free(unsafe.Pointer(ctotp))
+//export ziti_mfa_recovery_codes_cb_return
+func ziti_mfa_recovery_codes_cb_return(_ C.ziti_context, status C.int, recoveryCodes **C.char, fingerprintP *C.char) {
+	log.Errorf("xxxx ReturnMfaCodesb: %v %p", status, fingerprintP)
+	fp := C.GoString((*C.char)(fingerprintP))
+	var theCodes []string
+	if status != C.ZITI_OK {
+		e := C.ziti_errorstr(status)
+		ego := C.GoString(e)
+		log.Errorf("Error encounted when returning mfa recovery codes: %v", ego)
+	} else {
+		theCodes = populateStringSlice(recoveryCodes)
+	}
+	codes <- mfaCodes{
+		codes:       theCodes,
+		fingerprint: fp,
+	}
+}
+
+func GenerateMfaCodes(id *ZIdentity, fingerprint string, code string) []string {
+	ccode := C.CString(code)
+	defer C.free(unsafe.Pointer(ccode))
 	cfp := C.CString(fingerprint)
-	defer C.free(unsafe.Pointer(cfp))
-	log.Errorf("xxxx GenerateMfaCodes: %v %v", fingerprint, totp)
-	C.ziti_mfa_new_recovery_codes(id.czctx, ctotp, C.ziti_mfa_recovery_codes_cb(C.ziti_mfa_recovery_codes_cb_generate), unsafe.Pointer(cfp))
+	//	defer C.free(unsafe.Pointer(cfp))
+	log.Errorf("xxxx GenerateMfaCodesa: %v %v == %p %p ==", fingerprint, code, cfp, cfp)
+	C.ziti_mfa_new_recovery_codes(id.czctx, ccode, C.ziti_mfa_recovery_codes_cb(C.ziti_mfa_recovery_codes_cb_generate), unsafe.Pointer(cfp))
 
 	rtn := <-codes
-	log.Errorf("xxxx ReturnMfaCodes: %v %v", fingerprint, rtn)
+	log.Errorf("xxxx GenerateMfaCodesc: %v %v", fingerprint, rtn)
 	if fingerprint != rtn.fingerprint {
 		log.Warnf("unexpected condition correlating mfa codes when regenerating! %s != %s", fingerprint, rtn.fingerprint)
 		return emptyCodes
@@ -176,33 +195,21 @@ func GenerateMfaCodes(id *ZIdentity, fingerprint string, totp string) []string {
 	return rtn.codes
 }
 
-//export ziti_mfa_recovery_codes_cb_return
-func ziti_mfa_recovery_codes_cb_return(_ C.ziti_context, status C.int, recoveryCodes **C.char, fingerprintP unsafe.Pointer) {
-	if status != C.ZITI_OK {
-		e := C.ziti_errorstr(status)
-		ego := C.GoString(e)
-		log.Errorf("Error encounted when returning mfa recovery codes: %v", ego)
-	} else {
-		fp := C.GoString((*C.char)(fingerprintP))
-		codes <- mfaCodes{
-			codes:       populateStringSlice(recoveryCodes),
-			fingerprint: fp,
-		}
-	}
-}
-
 //export ziti_mfa_recovery_codes_cb_generate
 func ziti_mfa_recovery_codes_cb_generate(_ C.ziti_context, status C.int, recoveryCodes **C.char, fingerprintP *C.char) {
+	log.Errorf("xxxx GenerateMfaCodesb: %v == %p ==", status, fingerprintP)
+	fp := C.GoString((*C.char)(fingerprintP))
+	var theCodes []string
 	if status != C.ZITI_OK {
 		e := C.ziti_errorstr(status)
 		ego := C.GoString(e)
 		log.Errorf("Error encountedziti_ar_mfa_cb when generating mfa recovery codes: %v", ego)
 	} else {
-		fp := C.GoString(fingerprintP)
-		codes <- mfaCodes{
-			codes:       populateStringSlice(recoveryCodes),
-			fingerprint: fp,
-		}
+		theCodes = populateStringSlice(recoveryCodes)
+	}
+	codes <- mfaCodes{
+		codes:       theCodes,
+		fingerprint: fp,
 	}
 }
 
@@ -220,9 +227,11 @@ func populateStringSlice(c_char_array **C.char) []string {
 	return strs
 }
 
-var mfaAuthResults = make(chan string)
-
 func AuthMFA(id *ZIdentity, fingerprint string, code string) string {
+	if id.mfa == nil {
+		log.Warnf("xxxx AuthMFA called but mfa is nil. This usually is because AuthMFA is called from an unenrolled MFA endpoint")
+		return "Identity has not authenticated yet"
+	}
 	if id.mfa.responseCb == nil {
 		log.Warnf("xxxx AuthMFA called but response cb is nil. This usually is because the session is already validiated. returning true from AuthMFA")
 		return ""
