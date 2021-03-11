@@ -290,7 +290,7 @@ func netifAddRoute(_ C.netif_handle, dest *C.char) C.int {
 			return 1
 		}
 
-		_ = dnsMgrPrivate.tun.AddRoute(*cidr, dnsip, 1)
+		_ = goapi.AddRoute(*cidr, dnsip, 1)
 
 	} else {
 		log.Debugf("route appears to be an IP (not CIDR): %s", routeAsString)
@@ -299,7 +299,7 @@ func netifAddRoute(_ C.netif_handle, dest *C.char) C.int {
 			log.Errorf("An error occurred while parsing IP: %s", routeAsString)
 			return 1
 		}
-		_ = dnsMgrPrivate.tun.AddRoute(net.IPNet{IP: ip, Mask: net.IPMask{255, 255, 255, 255}}, dnsip, 1)
+		_ = goapi.AddRoute(net.IPNet{IP: ip, Mask: net.IPMask{255, 255, 255, 255}}, dnsip, 1)
 	}
 	return 0
 }
