@@ -11,6 +11,7 @@ using System.Drawing;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media.Animation;
+using System.Web;
 
 using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.DataStructures;
@@ -29,6 +30,7 @@ namespace ZitiDesktopEdge {
 	public partial class MainWindow : Window {
 		private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
+		public string RECOVER = "RECOVER";
 		public System.Windows.Forms.NotifyIcon notifyIcon;
 		public string Position = "Bottom";
 		private DateTime _startDate;
@@ -40,8 +42,6 @@ namespace ZitiDesktopEdge {
 		private int _right = 75;
 		private int _left = 75;
 		private int _top = 30;
-		private bool isConnected = false;
-		private double origHeight = 0.0;
 		private double _maxHeight = 800d;
 		private string[] suffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };
 
@@ -68,6 +68,10 @@ namespace ZitiDesktopEdge {
 			ExpectedLogPathServices = Path.Combine(ExpectedLogPathRoot, "service", $"ziti-tunneler.log");
 		}
 
+		private void IdentityMenu_OnMessage(string message) {
+			ShowBlurb(message, "");
+		}
+
 		private void SystemEvents_DisplaySettingsChanged(object sender, EventArgs e) {
 			LoadIdentities(true);
 		}
@@ -76,6 +80,152 @@ namespace ZitiDesktopEdge {
 			get {
 				return (List<ZitiIdentity>)Application.Current.Properties["Identities"];
 			}
+		}
+
+		/// <summary>
+		/// The MFA Toggle was toggled
+		/// </summary>
+		/// <param name="isOn">True if the toggle was on</param>
+		private async void MFAToggled(bool isOn) {
+			if (isOn) {
+				ShowLoad("Generating MFA", "MFA Setup Commencing, please wait");
+
+				await serviceClient.EnableMFA(this.IdentityMenu.Identity.Fingerprint);
+			} else {
+				ShowBlurb("MFA Disabled, limited service access", "");
+			}
+
+			HideLoad();
+		}
+
+		/// <summary>
+		/// When a Service Client is ready to setup the MFA Authorization
+		/// </summary>
+		/// <param name="sender">The service client</param>
+		/// <param name="e">The MFA Event</param>
+		private void ServiceClient_OnMfaEvent(object sender, MfaEvent mfa) {
+			HideLoad();
+			this.Dispatcher.Invoke(() => {
+				if (mfa.Action == "enrollment_challenge") {
+					string url = HttpUtility.UrlDecode(mfa.ProvisioningUrl);
+					string secret = HttpUtility.ParseQueryString(url)["secret"];
+					SetupMFA(this.IdentityMenu.Identity, url, secret);
+				} else if (mfa.Action == "auth_challenge") {
+					ShowBlurb("Setting Up auth_challenge", "");
+				} else if (mfa.Action == "auth_response") {
+					if (mfa.IsVerified) {
+						HideModal();
+					} else {
+						ShowBlurb("Provided code could not be verified", "");
+					}
+				} else {
+					ShowBlurb("Unexpected error when processing MFA", "");
+					logger.Error("unexpected action: " + mfa.Action);
+				}
+			});
+		}
+
+		/// <summary>
+		/// Show the MFA Setup Modal
+		/// </summary>
+		/// <param name="identity">The Ziti Identity to Setup</param>
+		public void SetupMFA(ZitiIdentity identity, string url, string secret) {
+			MFASetup.Opacity = 0;
+			MFASetup.Visibility = Visibility.Visible;
+			MFASetup.Margin = new Thickness(0, 0, 0, 0);
+			MFASetup.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
+			MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
+			MFASetup.ShowSetup(identity, url, secret);
+			ShowModal();
+		}
+
+		/// <summary>
+		/// Show the MFA Authentication Screen when it is time to authenticate
+		/// </summary>
+		/// <param name="identity">The Ziti Identity to Authenticate</param>
+		public void MFAAuthenticate(ZitiIdentity identity) {
+			MFASetup.Opacity = 0;
+			MFASetup.Visibility = Visibility.Visible;
+			MFASetup.Margin = new Thickness(0, 0, 0, 0);
+			MFASetup.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
+			MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
+
+			MFASetup.ShowMFA(identity);
+
+			ShowModal();
+		}
+
+		/// <summary>
+		/// Show the MFA Recovery Codes
+		/// </summary>
+		/// <param name="identity">The Ziti Identity to Authenticate</param>
+		public void ShowMFARecoveryCodes(ZitiIdentity identity) {
+			if (identity.MFAInfo!=null) {
+				if (identity.MFAInfo.RecoveryCodes?.Length > 0) {
+					MFASetup.Opacity = 0;
+					MFASetup.Visibility = Visibility.Visible;
+					MFASetup.Margin = new Thickness(0, 0, 0, 0);
+					MFASetup.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
+					MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
+
+					MFASetup.ShowRecovery(identity.MFAInfo.RecoveryCodes, identity);
+
+					ShowModal();
+				} else {
+					ShowBlurb("You do not have anymore recovery codes", this.RECOVER);
+				}
+			} else {
+				ShowBlurb("MFA is not setup on this Identity", "");
+			}
+		}
+
+		/// <summary>
+		/// Show the modal, aniimating opacity
+		/// </summary>
+		private void ShowModal() {
+			ModalBg.Visibility = Visibility.Visible;
+			ModalBg.Opacity = 0;
+			ModalBg.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(.8, TimeSpan.FromSeconds(.3)));
+		}
+
+		/// <summary>
+		/// Close the various MFA windows
+		/// </summary>
+		/// <param name="sender">The close button</param>
+		/// <param name="e">The event arguments</param>
+		private void CloseComplete(object sender, EventArgs e) {
+			MFASetup.Visibility = Visibility.Collapsed;
+		}
+
+		/// <summary>
+		/// Hide the modal animating the opacity
+		/// </summary>
+		private void HideModal() {
+			DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
+			animation.Completed += ModalHideComplete;
+			ModalBg.BeginAnimation(Grid.OpacityProperty, animation);
+		}
+
+		/// <summary>
+		/// When the animation completes, set the visibility to avoid UI object conflicts
+		/// </summary>
+		/// <param name="sender">The animation</param>
+		/// <param name="e">The event</param>
+		private void ModalHideComplete(object sender, EventArgs e) {
+			ModalBg.Visibility = Visibility.Collapsed;
+		}
+
+		/// <summary>
+		/// Close the MFA Screen with animation
+		/// </summary>
+		/// <param name="isComplete"></param>
+		private void DoClose(bool isComplete) {
+			DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
+			ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
+			animation.Completed += CloseComplete;
+			MFASetup.BeginAnimation(Grid.OpacityProperty, animation);
+			MFASetup.BeginAnimation(Grid.MarginProperty, animateThick);
+			HideModal();
 		}
 
 		private void AddIdentity(ZitiIdentity id) {
@@ -151,7 +301,10 @@ namespace ZitiDesktopEdge {
 			MainMenu.OnDetach += OnDetach;
 
 			this.MainMenu.MainWindow = this;
+			this.IdentityMenu.MainWindow = this;
 			SetNotifyIcon("white");
+
+			IdentityMenu.OnMessage += IdentityMenu_OnMessage;
 		}
 		private void contextMenuItem_Click(object Sender, EventArgs e) {
 			this.Close();
@@ -278,6 +431,7 @@ namespace ZitiDesktopEdge {
 			serviceClient.OnMetricsEvent += ServiceClient_OnMetricsEvent;
 			serviceClient.OnServiceEvent += ServiceClient_OnServiceEvent;
 			serviceClient.OnTunnelStatusEvent += ServiceClient_OnTunnelStatusEvent;
+			serviceClient.OnMfaEvent += ServiceClient_OnMfaEvent;
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
 
 			monitorClient = new MonitorClient();
@@ -311,7 +465,7 @@ namespace ZitiDesktopEdge {
 			Placement();
 		}
 
-		string nextVersionStr  = null;
+        string nextVersionStr  = null;
         private void MonitorClient_OnReconnectFailure(object sender, object e) {
             if (nextVersionStr == null) {
 				// check for the current version
@@ -429,21 +583,20 @@ namespace ZitiDesktopEdge {
 					logger.Debug("ERROR: {0} : {1}", r.Message, r.Error);
 				} else {
 					logger.Info("Service started!");
-					startZitiButtonVisible = false;
+					//no longer used: startZitiButtonVisible = false;
 					CloseErrorButton.Click -= StartZitiService;
 					CloseError(null, null);
 				}
 			} catch (Exception ex) {
 				logger.Info(ex, "UNEXPECTED ERROR!");
-				startZitiButtonVisible = false;
-				CloseErrorButton.Click += StartZitiService;
+				//no longer used: startZitiButtonVisible = false;
+				//CloseErrorButton.Click += StartZitiService;
 				CloseErrorButton.IsEnabled = true;
 			}
 			CloseErrorButton.IsEnabled = true;
 			HideLoad();
 		}
 
-		bool startZitiButtonVisible = false;
 		private void ShowServiceNotStarted() {
 			TunnelConnected(false);
 			LoadIdentities(true);
@@ -685,45 +838,49 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void LoadIdentities(Boolean repaint) {
-			IdList.Children.Clear();
-			IdList.Height = 0;
-			var desktopWorkingArea = SystemParameters.WorkArea;
-			if (_maxHeight > (desktopWorkingArea.Height - 10)) _maxHeight = desktopWorkingArea.Height - 10;
-			if (_maxHeight < 100) _maxHeight = 100;
-			IdList.MaxHeight = _maxHeight - 520;
-			ZitiIdentity[] ids = identities.OrderBy(i => i.Name.ToLower()).ToArray();
-			MainMenu.SetupIdList(ids);
+			this.Dispatcher.Invoke(() => {
+				IdList.Children.Clear();
+				IdList.Height = 0;
+				var desktopWorkingArea = SystemParameters.WorkArea;
+				if (_maxHeight > (desktopWorkingArea.Height - 10)) _maxHeight = desktopWorkingArea.Height - 10;
+				if (_maxHeight < 100) _maxHeight = 100;
+				IdList.MaxHeight = _maxHeight - 520;
+				ZitiIdentity[] ids = identities.OrderBy(i => i.Name.ToLower()).ToArray();
+				MainMenu.SetupIdList(ids);
 
-			if (ids.Length>0&&serviceClient.Connected) {
-				double height = 490 + (ids.Length * 60);
-				if (height > _maxHeight) height = _maxHeight;
-				this.Height = height;
-				IdentityMenu.SetHeight(this.Height - 160);
-				MainMenu.IdentitiesButton.Visibility = Visibility.Visible;
-				foreach (var id in ids) {
-					IdentityItem idItem = new IdentityItem();
+				if (ids.Length > 0 && serviceClient.Connected) {
+					double height = 490 + (ids.Length * 60);
+					if (height > _maxHeight) height = _maxHeight;
+					this.Height = height;
+					IdentityMenu.SetHeight(this.Height - 160);
+					MainMenu.IdentitiesButton.Visibility = Visibility.Visible;
+					foreach (var id in ids) {
+						IdentityItem idItem = new IdentityItem();
 
-					idItem.ToggleStatus.IsEnabled = id.IsEnabled;
-					if (id.IsEnabled) {
-						idItem.ToggleStatus.Content = "ENABLED";
-					} else {
-						idItem.ToggleStatus.Content = "DISABLED";
+						idItem.ToggleStatus.IsEnabled = id.IsEnabled;
+						if (id.IsEnabled) {
+							idItem.ToggleStatus.Content = "ENABLED";
+						} else {
+							idItem.ToggleStatus.Content = "DISABLED";
+						}
+						idItem.OnStatusChanged += Id_OnStatusChanged;
+						idItem.Identity = id;
+						IdList.Children.Add(idItem);
 					}
-					idItem.OnStatusChanged += Id_OnStatusChanged;
-					idItem.Identity = id;
-					IdList.Children.Add(idItem);
+					//IdList.Height = ;
+					DoubleAnimation animation = new DoubleAnimation((double)(ids.Length * 64), TimeSpan.FromSeconds(.3));
+					IdList.BeginAnimation(FrameworkElement.HeightProperty, animation);
+					IdListScroller.Visibility = Visibility.Visible;
+				} else {
+					this.Height = 490;
+					MainMenu.IdentitiesButton.Visibility = Visibility.Collapsed;
+					IdListScroller.Visibility = Visibility.Collapsed;
 				}
-				//IdList.Height = ;
-				DoubleAnimation animation = new DoubleAnimation((double)(ids.Length * 64), TimeSpan.FromSeconds(.3));
-				IdList.BeginAnimation(FrameworkElement.HeightProperty, animation);
-				IdListScroller.Visibility = Visibility.Visible;
-			} else {
-				this.Height = 490;
-				MainMenu.IdentitiesButton.Visibility = Visibility.Collapsed;
-				IdListScroller.Visibility = Visibility.Collapsed;
-			}
+				AddIdButton.Visibility = Visibility.Visible;
+				AddIdAreaButton.Visibility = Visibility.Visible;
 
-			Placement();
+				Placement();
+			});
 		}
 
 		private void Id_OnStatusChanged(bool attached) {
@@ -736,23 +893,15 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void TunnelConnected(bool isConnected) {
-			if (isConnected) {
-				ConnectButton.Visibility = Visibility.Collapsed;
-				DisconnectButton.Visibility = Visibility.Visible;
-				AddIdButton.Content = "Add Identity";
-				AddIdButton.IsEnabled = true;
-				SetNotifyIcon("green");
-			} else {
-				ConnectButton.Visibility = Visibility.Visible;
-				DisconnectButton.Visibility = Visibility.Collapsed;
-				SetNotifyIcon("white");
-				AddIdButton.Content = "Service is Not Connected";
-				AddIdButton.IsEnabled = false;
-				UploadSpeed.Content = "0.0";
-				UploadSpeedLabel.Content = "bps";
-				DownloadSpeed.Content = "0.0";
-				DownloadSpeedLabel.Content = "bps";
-			}
+			this.Dispatcher.Invoke(() => {
+				if (isConnected) {
+					ConnectButton.Visibility = Visibility.Collapsed;
+					DisconnectButton.Visibility = Visibility.Visible;
+				} else {
+					ConnectButton.Visibility = Visibility.Visible;
+					DisconnectButton.Visibility = Visibility.Collapsed;
+				}
+			});
 		}
 
 		private void SetLocation() {
@@ -1002,6 +1151,11 @@ namespace ZitiDesktopEdge {
 
 		private string _blurbUrl = "";
 
+		/// <summary>
+		/// Show the blurb as a growler notification
+		/// </summary>
+		/// <param name="message">The message to show</param>
+		/// <param name="url">The url or action name to execute</param>
 		public void ShowBlurb(string message, string url) {
 			Blurb.Content = message;
 			_blurbUrl = url;
@@ -1014,10 +1168,18 @@ namespace ZitiDesktopEdge {
 			BlurbArea.BeginAnimation(Grid.MarginProperty, animateThick);
 		}
 
+		/// <summary>
+		/// Execute the hide operation wihout an action from the growler
+		/// </summary>
+		/// <param name="sender">The object that was clicked</param>
+		/// <param name="e">The click event</param>
 		private void DoHideBlurb(object sender, MouseButtonEventArgs e) {
 			HideBlurb();
 		}
 
+		/// <summary>
+		/// Hide the blurb area
+		/// </summary>
 		private void HideBlurb() {
 			DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
 			ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
@@ -1026,73 +1188,40 @@ namespace ZitiDesktopEdge {
 			BlurbArea.BeginAnimation(Grid.MarginProperty, animateThick);
 		}
 
+		/// <summary>
+		/// Hide the blurb area after the animation fades out
+		/// </summary>
+		/// <param name="sender">The animation object</param>
+		/// <param name="e">The completion event</param>
 		private void HideComplete(object sender, EventArgs e) {
 			BlurbArea.Visibility = Visibility.Collapsed;
 		}
 
+		/// <summary>
+		/// Execute a predefined action or url when the pop up is clicked
+		/// </summary>
+		/// <param name="sender">The object that was clicked</param>
+		/// <param name="e">The click event</param>
 		private void BlurbAction(object sender, MouseButtonEventArgs e) {
 			if (_blurbUrl.Length>0) {
 				// So this simply execute a url but you could do like if (_blurbUrl=="DoSomethingNifty") CallNifyFunction();
-				Process.Start(new ProcessStartInfo(_blurbUrl) { UseShellExecute = true });
+				if (_blurbUrl== this.RECOVER) {
+					// clint: can we know what identity to execute recovery against?
+				} else {
+					Process.Start(new ProcessStartInfo(_blurbUrl) { UseShellExecute = true });
+				}
+				HideBlurb();
 			} else {
 				HideBlurb();
 			}
 		}
 
-		private void UploadSpeedLabel_MouseUp(object sender, MouseButtonEventArgs e) {
-			ShowBlurb("An Update is available!", "https://www.axeda.com?buddy=true");
+		private void ShowAuthenticate(ZitiIdentity identity) {
+			MFAAuthenticate(identity);
 		}
 
-		/*
-
-		private void MainUI_DpiChanged(object sender, DpiChangedEventArgs e) {
-			var desktopWorkingArea = SystemParameters.WorkArea;
-			Console.WriteLine("Old: " + desktopWorkingArea.Width + " New: " + desktopWorkingArea.Height);
+		private void ShowRecovery(ZitiIdentity identity) {
+			ShowMFARecoveryCodes(identity);
 		}
-
-		private void UpButtonClick(object sender, MouseButtonEventArgs e) {
-		}
-
-		private void DownButtonClick(object sender, MouseButtonEventArgs e) {
-		}
-
-		private void UpButton_MouseEnter(object sender, MouseEventArgs e) {
-			UpOver.Opacity = 0.2;
-		}
-
-		private void UpButton_MouseLeave(object sender, MouseEventArgs e) {
-			UpOver.Opacity = 0.0;
-		}
-
-		private void DownButton_MouseEnter(object sender, MouseEventArgs e) {
-			DownOver.Opacity = 0.2;
-		}
-
-		private void DownButton_MouseLeave(object sender, MouseEventArgs e) {
-			DownOver.Opacity = 0.0;
-		}
-
-		private void UpButton_MouseUp(object sender, MouseButtonEventArgs e) {
-			//isConnected = (DisconnectButton.Visibility == Visibility.Visible);
-			origHeight = IdListScroller.Height;
-			IdListScroller.Height = origHeight + 160.0 + StatArea.Height;
-			MessageBox.Show("::" + origHeight + " " + StatArea.Height + " " + IdListScroller.Height);
-			DisconnectButton.Visibility = Visibility.Collapsed;
-			ConnectButton.Visibility = Visibility.Collapsed;
-			StatArea.Visibility = Visibility.Collapsed;
-			UpButton.Visibility = Visibility.Collapsed;
-			DownButton.Visibility = Visibility.Visible;
-		}
-
-		private void DownButton_MouseUp(object sender, MouseButtonEventArgs e) {
-			IdListScroller.Height = origHeight;
-			StatArea.Visibility = Visibility.Visible;
-			if (isConnected) DisconnectButton.Visibility = Visibility.Visible;
-			else ConnectButton.Visibility = Visibility.Visible;
-			DownButton.Visibility = Visibility.Collapsed;
-			UpButton.Visibility = Visibility.Visible;
-		}
-
-		*/
 	}
 }

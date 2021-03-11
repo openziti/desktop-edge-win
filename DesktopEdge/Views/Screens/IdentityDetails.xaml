@@ -8,6 +8,7 @@
              x:Name="IdentityArea"
              d:DesignHeight="500" d:DesignWidth="350">
     <Grid>
+        <!-- Border Arrow pointing to TaskBar -->
         <Canvas>
             <Rectangle Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="White" Width="20" Canvas.Left="185" ClipToBounds="True" Canvas.Bottom="-10">
                 <Rectangle.LayoutTransform>
@@ -15,6 +16,8 @@
                 </Rectangle.LayoutTransform>
             </Rectangle>
         </Canvas>
+        
+        <!-- Background Color for Pop Overs -->
         <Rectangle x:Name="MainCanvas" Margin="10,10,10,10" Fill="White" RadiusY="10" RadiusX="10"></Rectangle>
 
         <Grid Margin="20,20,20,-20" MaxWidth="350">
@@ -22,6 +25,8 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="10,10,10,10">
+                
+                <!-- Header Controls -->
                 <Grid Margin="0,0,0,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="40"/>
@@ -42,42 +47,75 @@
                         <RowDefinition Height="30"></RowDefinition>
                         <RowDefinition Height="30"></RowDefinition>
                         <RowDefinition Height="30"></RowDefinition>
+                        <RowDefinition Height="30"></RowDefinition>
+                        <RowDefinition Height="30"></RowDefinition>
+                        <RowDefinition x:Name="ServiceRow" Height="140"></RowDefinition>
                         <RowDefinition Height="40"></RowDefinition>
-                        <RowDefinition x:Name="ServiceRow" Height="160"></RowDefinition>
                         <RowDefinition Height="40"></RowDefinition>
-                        <RowDefinition Height="0"></RowDefinition>
+                        <RowDefinition x:Name="IdImage" Height="0"></RowDefinition>
                     </Grid.RowDefinitions>
+                    
+                    <!-- Identity Details Area -->
                     <local:MenuEditItem x:Name="IdentityName" Grid.Column="0" Grid.Row="0" HorizontalAlignment="Stretch" Label="Name" IsLocked="True"></local:MenuEditItem>
-                    <local:MenuEditItem x:Name="IdentityNetwork" Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" Label="Network" IsLocked="True"></local:MenuEditItem>
-                    <local:MenuEditItem x:Name="IdentityStatus" Grid.Column="0" Grid.Row="2" HorizontalAlignment="Stretch" Label="Status" IsLocked="True"></local:MenuEditItem>
-                    <local:MenuEditItem x:Name="IdentityEnrollment" Grid.Column="0" Grid.Row="3" HorizontalAlignment="Stretch" Label="Enrollment Status" IsLocked="True"></local:MenuEditItem>
-                    <Grid Grid.Row="4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="100"></ColumnDefinition>
-                            <ColumnDefinition Width="*"></ColumnDefinition>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="40"></RowDefinition>
-                        </Grid.RowDefinitions>
-                        <Label Name="ServiceTitle" Content="SERVICES" Grid.Column="0" Grid.Row="0" Foreground="Gray" Padding="0,10,0,10" FontWeight="SemiBold" />
-                        <TextBox x:Name="Filter" Grid.Column="1" Grid.Row="0" LostFocus="FilterBlur" VerticalContentAlignment="Center" Padding="5,0,5,0" Margin="0" KeyUp="FilterServices" FontFamily="/ZitiDesktopEdge;component/Assets/Fonts/#Open Sans" SpellCheck.IsEnabled="True" VerticalAlignment="Center" FontSize="10" Height="24" MaxLength="100">
-                            <TextBox.Resources>
-                                <Style TargetType="{x:Type Border}">
-                                    <Setter Property="CornerRadius" Value="10"/>
-                                </Style>
-                            </TextBox.Resources>
-                        </TextBox>
-                        <Label Name="FilterLabel" Grid.Column="1" Cursor="Hand" MouseDown="FilterClicked" Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="10" Content="filter" FontFamily="/ZitiDesktopEdge;component/Assets/Fonts/#Open Sans" Foreground="#FFC7C7C7" Margin="5,0"></Label>
+                    <local:MenuEditToggle x:Name="IdentityMFA" Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" Label="Multi Factor Auth" Recovery="MFARecovery" Authenticate="MFAAuthenticate" Toggle="ToggleMFA"></local:MenuEditToggle>
+                    <local:MenuEditItem x:Name="IdentityNetwork" Grid.Column="0" Grid.Row="2" HorizontalAlignment="Stretch" Label="Network" IsLocked="True"></local:MenuEditItem>
+                    <local:MenuEditItem x:Name="IdentityStatus" Grid.Column="0" Grid.Row="3" HorizontalAlignment="Stretch" Label="Status" IsLocked="True"></local:MenuEditItem>
+                    <local:MenuEditItem x:Name="IdentityEnrollment" Grid.Column="0" Grid.Row="4" HorizontalAlignment="Stretch" Label="Enrollment Status" IsLocked="True"></local:MenuEditItem>
+                    <local:MenuEditSearch x:Name="ServiceTitle" Grid.Column="0" Grid.Row="5" HorizontalAlignment="Stretch" Filter="DoFilter"></local:MenuEditSearch>
+                    
+                    <!-- Service List Area (Higher Contrast to differentiate) -->
+                    <Grid Name="MainDetailScroll" Grid.Column="0" MaxHeight="160" Grid.Row="6" Margin="-8,0,-8,0">
+                        <Rectangle Margin="10,10,10,10" Fill="#070826" RadiusY="10" RadiusX="10"></Rectangle>
+                        <ScrollViewer VerticalScrollBarVisibility="Visible" CanContentScroll="True" Margin="16,16,8,16">
+                            <StackPanel Name="ServiceList" Orientation="Vertical"></StackPanel>
+                        </ScrollViewer>
                     </Grid>
-                    <ScrollViewer Name="MainDetailScroll" Grid.Column="0" MaxHeight="160" Grid.Row="5" VerticalScrollBarVisibility="Auto" CanContentScroll="True">
-                        <StackPanel Name="ServiceList" Orientation="Vertical"></StackPanel>
-                    </ScrollViewer>
-                    <Label Name="ForgetIdentityButton" Grid.Column="0" Grid.Row="6" Padding="0,10,0,10" Margin="0,0,0,0" Content="Forget This Identity" Cursor="Hand" Foreground="#F4044D" HorizontalAlignment="Center" Mouse.MouseUp="ForgetIdentity"></Label>
-                    <Image Name="ForgetIdentityImage" Visibility="Collapsed" Source="/Assets/Images/identity.png" Grid.Column="0" Grid.Row="7" Height="80" Width="80" Opacity="0.3" HorizontalAlignment="Stretch"></Image>
+                    
+                    <!-- Forget Identity Button -->
+                    <Label Name="ForgetIdentityButton" Grid.Column="0" Grid.Row="7" Padding="0,10,0,10" Margin="0,0,0,0" Content="Forget This Identity" Cursor="Hand" Foreground="#F4044D" HorizontalAlignment="Center" Mouse.MouseUp="ForgetIdentity"></Label>
+
+                    <Image Name="ForgetIdentityImage" Visibility="Collapsed" Source="/Assets/Images/identity.png" Grid.Column="0" Grid.Row="8" Height="80" Width="80" Opacity="0.3" HorizontalAlignment="Stretch"></Image>
                 </Grid>
             </StackPanel>
         </Grid>
 
+        <Rectangle x:Name="ModalBg" Margin="10,10,10,10" Fill="Black" RadiusY="10" RadiusX="10" Opacity="0" Visibility="Collapsed"></Rectangle>
+        
+        <!-- Expended Detail Modal for Details pop up on service list -->
+        <Grid x:Name="DetailsArea" Visibility="Collapsed" Height="400" Margin="0,0,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <Border Margin="10,10,10,10" BorderBrush="Black" BorderThickness="8" CornerRadius="10">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="20" Direction="1" RenderingBias="Quality" ShadowDepth="1" Opacity="1"/>
+                </Border.Effect>
+            </Border>
+            <Rectangle Margin="10,10,10,10" RadiusX="10" RadiusY="10" ClipToBounds="True">
+                <Rectangle.Fill>
+                    <SolidColorBrush Color="#FFFFFF" Opacity="0.97"/>
+                </Rectangle.Fill>
+            </Rectangle>
+            <StackPanel x:Name="DetailPanel" Grid.Column="0" Orientation="Vertical" Margin="20,20,20,20" VerticalAlignment="Center" FocusVisualStyle="{x:Null}">
+                <Label Content="Name" Padding="10,0,0,0" FontWeight="Bold" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
+                <TextBox x:Name="DetailName" MaxWidth="300" Grid.Row="0" Background="Transparent" IsReadOnly="True" HorizontalAlignment="Stretch" Height="20" BorderThickness="0" TextAlignment="Left" Padding="0,0,0,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
+
+                <Label Content="Url" Padding="10,0,0,0" FontWeight="Bold" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
+                <TextBox Grid.Column="0" x:Name="DetailUrl" MaxWidth="300" Background="Transparent" ClipToBounds="True" IsReadOnly="True" HorizontalAlignment="Stretch" Height="20" BorderThickness="0" TextAlignment="Left" Padding="0,0,0,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
+
+                <Label Content="Addresses" Padding="10,0,0,0" FontWeight="Bold" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
+                <TextBox x:Name="DetailAddress" MaxWidth="300" Background="Transparent" IsReadOnly="True" HorizontalAlignment="Stretch" Height="20" BorderThickness="0" TextAlignment="Left" Padding="0,0,0,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
+
+                <Label Content="Ports" Padding="10,0,0,0" FontWeight="Bold" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
+                <TextBox x:Name="DetailPorts" MaxWidth="300" Background="Transparent" IsReadOnly="True" HorizontalAlignment="Stretch" Height="20" BorderThickness="0" TextAlignment="Left" Padding="0,0,0,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
+
+                <Label Content="Protocols" Padding="10,0,0,0" FontWeight="Bold" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
+                <TextBox x:Name="DetailProtocols" MaxWidth="300" Background="Transparent" IsReadOnly="True" HorizontalAlignment="Stretch" Height="20" BorderThickness="0" TextAlignment="Left" Padding="0,0,0,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
+            </StackPanel>
+            <Image Source="/Assets/Images/closeBlack.png" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,40,40,0" Width="10" Height="10" Cursor="Hand" MouseUp="CloseDetails"></Image>
+        </Grid>
+
+        <!-- Confirmation Prompt for confirming deletion -->
         <Grid x:Name="ConfirmView" Visibility="Collapsed" Width="400">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>

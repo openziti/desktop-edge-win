@@ -6,8 +6,10 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.ServiceClient;
+using System.Windows.Media.Animation;
 
 using NLog;
+using System.Web;
 
 namespace ZitiDesktopEdge {
 	/// <summary>
@@ -21,10 +23,20 @@ namespace ZitiDesktopEdge {
 		public event Forgot OnForgot;
 		public delegate void ErrorOccurred(string message);
 		public event ErrorOccurred OnError;
+		public delegate void MFAToggled(bool isOn);
+		public event MFAToggled OnMFAToggled;
 		public delegate void Detched(MouseButtonEventArgs e);
 		public event Detched OnDetach;
 		public double MainHeight = 500;
 		public string filter = "";
+		public delegate void Mesage(string message);
+		public event Mesage OnMessage;
+		public delegate void OnAuthenticate(ZitiIdentity identity);
+		public event OnAuthenticate Authenticate;
+		public delegate void OnRecovery(ZitiIdentity identity);
+		public event OnRecovery Recovery;
+
+		internal MainWindow MainWindow { get; set; }
 
 		private List<ZitiIdentity> identities {
 			get {
@@ -44,6 +56,7 @@ namespace ZitiDesktopEdge {
 				UpdateView();
 				IdentityArea.Opacity = 1.0;
 				IdentityArea.Visibility = Visibility.Visible;
+				IdentityMFA.IsOn = _identity.IsMFAEnabled;
 				this.Visibility = Visibility.Visible;
 			}
 		}
@@ -76,42 +89,90 @@ namespace ZitiDesktopEdge {
 		}
 
 		public void UpdateView() {
+			if(_identity.IsMFAEnabled && !_identity.MFAInfo.IsAuthenticated) {
+				//verify mfa here
+				MainWindow.MFAAuthenticate(_identity);
+			}
+
 			IdDetailName.Text = _identity.Name;
 			IdDetailName.ToolTip = _identity.Name;
 			IdDetailToggle.Enabled = _identity.IsEnabled;
 			IdentityName.Value = _identity.Name;
 			IdentityNetwork.Value = _identity.ControllerUrl;
-			IdentityEnrollment.Value = _identity.Status;
+			IdentityEnrollment.Value = _identity.EnrollmentStatus;
 			IdentityStatus.Value = _identity.IsEnabled ? "active" : "disabled";
+			IdentityMFA.IsOn = _identity.IsMFAEnabled;
 			ServiceList.Children.Clear();
 			if (_identity.Services.Count>0) {
-				Filter.Visibility = Visibility.Visible;
-				FilterLabel.Visibility = Visibility.Visible;
 				foreach(var zitiSvc in _identity.Services.OrderBy(s => s.Name.ToLower())) {
-					if (zitiSvc.Name.ToLower().IndexOf(filter)>=0||zitiSvc.Url.ToLower().IndexOf(filter)>=0) {
-						Logger.Debug("painting: " + zitiSvc.Name);
-						ServiceInfo editor = new ServiceInfo();
-						editor.Label = zitiSvc.Name;
-						editor.Value = zitiSvc.Url;
-						editor.Warning = zitiSvc.Warning;
-						editor.IsLocked = true;
-						ServiceList.Children.Add(editor);
+					if (zitiSvc.Name.ToLower().IndexOf(filter)>=0||zitiSvc.ToString().ToLower().IndexOf(filter)>=0) {
+						Logger.Trace("painting: " + zitiSvc.Name);
+						ServiceInfo info = new ServiceInfo();
+						info.Info = zitiSvc;
+						info.OnMessage += Info_OnMessage;
+						info.OnDetails += ShowDetails;
+						ServiceList.Children.Add(info);
 					}
 				}
-				double newHeight = MainHeight - 300;
+				double newHeight = MainHeight - 330; // Jeremy - Fix this post MFA
 				ServiceRow.Height = new GridLength((double)newHeight);
 				MainDetailScroll.MaxHeight = newHeight;
 				MainDetailScroll.Height = newHeight;
 				MainDetailScroll.Visibility = Visibility.Visible;
-				ServiceTitle.Content = _identity.Services.Count + " SERVICES";
+				ServiceTitle.Label = _identity.Services.Count + " Services";
+				ServiceTitle.MainEdit.Visibility = Visibility.Visible;
 			} else {
-				Filter.Visibility = Visibility.Collapsed;
-				FilterLabel.Visibility = Visibility.Collapsed;
 				ServiceRow.Height = new GridLength((double)0.0);
 				MainDetailScroll.Visibility = Visibility.Collapsed;
-				ServiceTitle.Content = "NO SERVICES AVAILABLE";
+				ServiceTitle.Label = "No Services";
+				ServiceTitle.MainEdit.Text = "";
+				ServiceTitle.MainEdit.Visibility = Visibility.Collapsed;
 			}
 			ConfirmView.Visibility = Visibility.Collapsed;
+		}
+
+		private void ShowDetails(ZitiService info) {
+			DetailName.Text = info.Name;
+			DetailUrl.Text = info.ToString();
+			DetailAddress.Text = info.AssignedIP;
+			DetailPorts.Text = info.ToString();
+			// DetailProtocols.Text = info.Protocols;
+
+			DetailsArea.Visibility = Visibility.Visible;
+			DetailsArea.Opacity = 0;
+			DetailsArea.Margin = new Thickness(0, 0, 0, 0);
+			DoubleAnimation animation = new DoubleAnimation(1, TimeSpan.FromSeconds(.3));
+			animation.Completed += ShowCompleted;
+			DetailsArea.BeginAnimation(Grid.OpacityProperty, animation);
+			DetailsArea.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
+
+			ShowModal();
+		}
+
+		private void ShowCompleted(object sender, EventArgs e) {
+			DoubleAnimation animation = new DoubleAnimation(DetailPanel.ActualHeight + 60, TimeSpan.FromSeconds(.3));
+			DetailsArea.BeginAnimation(Grid.HeightProperty, animation);
+			//DetailsArea.Height = DetailPanel.ActualHeight + 60;
+		}
+
+		private void CloseDetails(object sender, MouseButtonEventArgs e) {
+			DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
+			ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
+			DoubleAnimation animation2 = new DoubleAnimation(DetailPanel.ActualHeight + 100, TimeSpan.FromSeconds(.3));
+			animation.Completed += HideComplete;
+			DetailsArea.BeginAnimation(Grid.HeightProperty, animation2);
+			DetailsArea.BeginAnimation(Grid.OpacityProperty, animation);
+			DetailsArea.BeginAnimation(Grid.MarginProperty, animateThick);
+			HideModal();
+		}
+
+		private void HideComplete(object sender, EventArgs e) {
+			DetailsArea.Visibility = Visibility.Collapsed;
+			ModalBg.Visibility = Visibility.Collapsed;
+		}
+
+		private void Info_OnMessage(string message) {
+			OnMessage?.Invoke(message);
 		}
 
 		async private void IdToggle(bool on) {
@@ -160,9 +221,7 @@ namespace ZitiDesktopEdge {
 					}
 				}
 
-				if (OnForgot != null) {
-					OnForgot(forgotten);
-				}
+				OnForgot?.Invoke(forgotten);
 			} catch (DataStructures.ServiceException se) {
 				Logger.Error(se, se.Message);
 				OnError(se.Message);
@@ -172,23 +231,51 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-		private void FilterServices(object sender, KeyEventArgs e) {
-			if (e.Key == Key.Return) {
-				DoFilter();
-			}
+		private void DoFilter(string filter) {
+			this.filter = filter;
+			if (this._identity!=null) UpdateView();
 		}
 
-		private void DoFilter() {
-			filter = Filter.Text.ToLower().Trim();
-			UpdateView();
+
+		private void ToggleMFA(bool isOn) {
+			this.OnMFAToggled?.Invoke(isOn);
 		}
 
-		private void FilterClicked(object sender, MouseButtonEventArgs e) {
-			DoFilter();
+		/* Modal UI Background visibility */
+
+		/// <summary>
+		/// Show the modal, aniimating opacity
+		/// </summary>
+		private void ShowModal() {
+			ModalBg.Visibility = Visibility.Visible;
+			ModalBg.Opacity = 0;
+			ModalBg.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(.8, TimeSpan.FromSeconds(.3)));
 		}
 
-		private void FilterBlur(object sender, RoutedEventArgs e) {
-			DoFilter();
+		/// <summary>
+		/// Hide the modal animating the opacity
+		/// </summary>
+		private void HideModal() {
+			DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
+			animation.Completed += ModalHideComplete;
+			ModalBg.BeginAnimation(Grid.OpacityProperty, animation);
+		}
+
+		/// <summary>
+		/// When the animation completes, set the visibility to avoid UI object conflicts
+		/// </summary>
+		/// <param name="sender">The animation</param>
+		/// <param name="e">The event</param>
+		private void ModalHideComplete(object sender, EventArgs e) {
+			ModalBg.Visibility = Visibility.Collapsed;
+		}
+
+		private void MFARecovery() {
+			this.Recovery?.Invoke(this.Identity);
+		}
+
+		private void MFAAuthenticate() {
+			this.Authenticate.Invoke(this.Identity);
 		}
 	}
 }

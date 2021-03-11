@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #define USING_ZITI_SHARED
 #include <ziti/ziti.h>
+#include <ziti/ziti_tunnel_cbs.h>
 #include <ziti/ziti_log.h>
 #include <ziti/ziti_events.h>
 #include <uv.h>
@@ -38,6 +39,9 @@ typedef struct libuv_ctx_s {
     uv_async_t stopper;
 } libuv_ctx;
 
+//utility type C functions
+char* ziti_char_array_get(char** arr, int idx);
+
 void libuv_stopper(uv_async_t *a);
 void libuv_init(libuv_ctx *lctx);
 void libuv_runner(void *arg);
@@ -47,20 +51,21 @@ void libuv_stop(libuv_ctx *lctx);
 void set_log_out(intptr_t h, libuv_ctx *lctx);
 void set_log_level(int level, libuv_ctx *lctx);
 
-extern const char** all_configs;
+const char** all_configs;
 
 //posture check functions
-extern void ziti_pq_domain_go(ziti_context ztx, char *id, ziti_pr_domain_cb response_cb);
-extern void ziti_pq_process_go(ziti_context ztx, char *id, char *path, ziti_pr_process_cb response_cb);
-extern void ziti_pq_os_go(ziti_context ztx, char *id, ziti_pr_os_cb response_cb);
-extern void ziti_pq_mac_go(ziti_context ztx, char *id, ziti_pr_mac_cb response_cb);
+void ziti_pq_domain_go(ziti_context ztx, char *id, ziti_pr_domain_cb response_cb);
+void ziti_pq_process_go(ziti_context ztx, char *id, char *path, ziti_pr_process_cb response_cb);
+void ziti_pq_os_go(ziti_context ztx, char *id, ziti_pr_os_cb response_cb);
+void ziti_pq_mac_go(ziti_context ztx, char *id, ziti_pr_mac_cb response_cb);
 
 //logging callback
 extern void log_writer_shim_go(int level, const char *loc, const char *msg, size_t msglen);
 
 void log_writer_cb(int level, char *loc, char *msg, int msglen);
-void ziti_dump_go_callback(char *outputPath, char *line);
-void ziti_dump_go_wrapper(void *ctx, char* outputPath);
+void ziti_dump_go_to_file_cb(char *outputPath, char *line);
+void ziti_dump_go_to_log_cb(void *stringsBuffer, char *line);
+
 bool is_null(void* anything);
 
 struct ziti_context_event* ziti_event_context_event(ziti_event_t *ev);
@@ -68,4 +73,17 @@ struct ziti_router_event* ziti_event_router_event(ziti_event_t *ev);
 struct ziti_service_event* ziti_event_service_event(ziti_event_t *ev);
 
 ziti_service* ziti_service_array_get(ziti_service_array arr, int idx);
+
+void ziti_dump_go(char* msg);
+
+//declare all mfa callbacks
+void ziti_aq_mfa_cb_go(ziti_context ztx, void* mfa_ctx, ziti_auth_query_mfa *aq_mfa, ziti_ar_mfa_cb response_cb);
+void ziti_mfa_enroll_cb_go(ziti_context ztx, int status, ziti_mfa_enrollment *mfa_enrollment, void *ctx);
+void ziti_mfa_cb_go(ziti_context ztx, int status, char *ctx);
+void ziti_mfa_recovery_codes_cb_return(ziti_context ztx, int status, char **recovery_codes, char *fingerprint);
+void ziti_mfa_recovery_codes_cb_generate(ziti_context ztx, int status, char **recovery_codes, char *fingerprint);
+void ziti_mfa_auth_request(ziti_ar_mfa_cb response_cb, ziti_context ztx, void* mfa_ctx, char* code, ziti_ar_mfa_status_cb auth_response);
+void ziti_mfa_ar_cb(ziti_context ztx, void* mfa_ctx, int status);
+void ziti_ar_mfa_status_cb_go(ziti_context ztx, void* mfa_ctx, int status);
+
 #endif /* GOLANG_SDK_H */

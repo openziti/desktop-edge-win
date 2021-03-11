@@ -1,16 +1,16 @@
-# Release 1.8.2
+# Release 1.9.0
 
 ## What's New
-* [#317](https://github.com/openziti/desktop-edge-win/issues/317) command line list function to fetch identities and services
+* MFA - details to follow
 
 ## Other changes:
 * none
 
 ## Bugs fixed:
-* none
+* [#310](https://github.com/openziti/desktop-edge-win/pull/310) Restore identities moved by Windows after Windows system update
 
 ## Dependency Updates
-* none
+* Tunneler SDK to v0.10.0/CSDK 0.20.13
 
 # Release 1.8.0
 

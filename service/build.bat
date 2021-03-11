@@ -14,11 +14,12 @@ REM See the License for the specific language governing permissions and
 REM limitations under the License.
 REM
 SET REPO_URL=https://github.com/openziti/ziti-tunnel-sdk-c.git
-SET ZITI_TUNNEL_REPO_BRANCH=v0.8.21
+SET ZITI_TUNNEL_REPO_BRANCH=v0.11.4
 REM override the c sdk used in the build - leave blank for the same as specified in the tunneler sdk
-SET ZITI_SDK_C_BRANCH=
+SET ZITI_SDK_C_BRANCH=mfa
 REM the number of TCP connections the tunneler sdk can have at any one time
 SET TCP_MAX_CONNECTIONS=256
+SET WINTUN_DL_URL=https://www.wintun.net/builds/wintun-0.10.2.zip
 
 set SVC_ROOT_DIR=%~dp0
 set CURDIR=%CD%
@@ -86,6 +87,23 @@ echo REMOVING ziti.dll at %SVC_ROOT_DIR%ziti.dll
 del /q %SVC_ROOT_DIR%ziti.dll
 
 :QUICK
+
+if not exist %SVC_ROOT_DIR%wintun.dll (
+    echo ------------------------------------------------------------------------------
+    echo DOWNLOADING wintun.dll using powershell
+    echo       from: %WINTUN_DL_URL%
+    echo ------------------------------------------------------------------------------
+    powershell "Invoke-WebRequest %WINTUN_DL_URL% -OutFile %SVC_ROOT_DIR%wintun.zip"
+    powershell "Expand-Archive -Path %SVC_ROOT_DIR%wintun.zip -Force -DestinationPath %SVC_ROOT_DIR%wintun-extracted"
+    echo    copying: %SVC_ROOT_DIR%wintun-extracted\wintun\bin\amd64\wintun.dll %SVC_ROOT_DIR%wintun.dll
+    copy %SVC_ROOT_DIR%wintun-extracted\wintun\bin\amd64\wintun.dll %SVC_ROOT_DIR%wintun.dll
+    echo   removing: %SVC_ROOT_DIR%wintun-extracted
+    del /s /q %SVC_ROOT_DIR%wintun-extracted\
+    rmdir %SVC_ROOT_DIR%wintun-extracted\
+    echo   removing: %SVC_ROOT_DIR%wintun.zip
+    del /s %SVC_ROOT_DIR%wintun.zip
+)
+
 echo changing to service folder: %SVC_ROOT_DIR%
 cd %SVC_ROOT_DIR%
 
