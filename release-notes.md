@@ -1,3 +1,17 @@
+# Release 1.8.3
+
+## What's New
+* [#322](https://github.com/openziti/desktop-edge-win/issues/322) Ability to toggle identity, set loglevel and generate feedback zip file from cmd line
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* none
+
 # Release 1.8.2
 
 ## What's New
