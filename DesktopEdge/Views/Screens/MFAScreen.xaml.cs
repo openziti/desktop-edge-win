@@ -36,7 +36,6 @@ namespace ZitiDesktopEdge {
 		public delegate void ErrorOccurred(string message);
 		public event ErrorOccurred OnError;
 		private string[] _codes = new string[0];
-		DataClient serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
 		private ZitiIdentity _identity;
 
 		public MFAScreen() {
@@ -189,14 +188,15 @@ namespace ZitiDesktopEdge {
 		}
 
 		async private void ToggleRecovery(object sender, MouseButtonEventArgs e) {
-			serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
 			if (AuthRecoveryArea.Visibility==Visibility.Visible) {
+				GenerateMFACodes(null, null);
 				AuthRecoveryArea.Visibility = Visibility.Collapsed;
 				AuthCodeArea.Visibility = Visibility.Visible;
 				ToggleType.Content = "Use Recovery Code";
 				AuthSubTitle.Content = "Enter your authorization code";
 				Auth1.Focus();
 			} else {
+				ReturnMFACodes(null, null);
 				AuthRecoveryArea.Visibility = Visibility.Visible;
 				AuthCodeArea.Visibility = Visibility.Collapsed;
 				ToggleType.Content = "Use Auth Code";
@@ -205,6 +205,7 @@ namespace ZitiDesktopEdge {
 			}
 		}
 		async private void ReturnMFACodes(object sender, MouseButtonEventArgs e) {
+			DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
 			string code = Auth1.Text + Auth2.Text + Auth3.Text + Auth4.Text + Auth5.Text + Auth6.Text; //jeremyfix
 			Logger.Debug("AuthMFA successful.");
 			MfaRecoveryCodesResponse getcodes = await serviceClient.ReturnMFACodes(this._identity.Fingerprint, code);
@@ -214,6 +215,7 @@ namespace ZitiDesktopEdge {
 			Logger.Error("PAYLOAD: {0}", getcodes.Payload);
 		}
 		async private void GenerateMFACodes(object sender, MouseButtonEventArgs e) {
+			DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
 			string code = Rec1.Text + Rec2.Text + Rec3.Text + Rec4.Text + Rec5.Text + Rec6.Text; //jeremyfix
 			MfaRecoveryCodesResponse gencodes = await serviceClient.GenerateMFACodes(this._identity.Fingerprint, code);
 			if (gencodes.Code != 0) {

@@ -504,14 +504,23 @@ func serveIpc(conn net.Conn) {
 
 func generateMfaCodes(out *json.Encoder, fingerprint string, totpOrRecoveryCode string) {
 	id := rts.Find(fingerprint)
-	codes := cziti.GenerateMfaCodes(id.CId, fingerprint, totpOrRecoveryCode)
-	respond(out, dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: codes})
+	codes, err := cziti.GenerateMfaCodes(id.CId, fingerprint, totpOrRecoveryCode)
+	//respond(out, dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: codes})
+	if err == nil {
+		respond(out, dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: codes})
+	} else {
+		respondWithError(out, "msg", MFA_FAILED_TO_RETURN_CODES, err)
+	}
 }
 
 func returnMfaCodes(out *json.Encoder, fingerprint string, totpOrRecoveryCode string) {
 	id := rts.Find(fingerprint)
-	codes := cziti.ReturnMfaCodes(id.CId, fingerprint, totpOrRecoveryCode)
-	respond(out, dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: codes})
+	codes, err := cziti.ReturnMfaCodes(id.CId, fingerprint, totpOrRecoveryCode)
+	if err == nil {
+		respond(out, dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: codes})
+	} else {
+		respondWithError(out, "msg", MFA_FAILED_TO_RETURN_CODES, err)
+	}
 }
 
 func enableMfa(out *json.Encoder, fingerprint string) {

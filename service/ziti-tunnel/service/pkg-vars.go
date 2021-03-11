@@ -58,6 +58,9 @@ const (
 	ERROR_DISCONNECTING_ID = 50
 	IDENTITY_NOT_FOUND     = 1000
 
+	MFA_FAILED_TO_GENERATE_CODES = 200
+	MFA_FAILED_TO_RETURN_CODES = 201
+
 	DEFAULT_REFRESH_INTERVAL = 10
 
 	cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown | svc.AcceptPauseAndContinue
