@@ -56,7 +56,6 @@ int netifRemoveRoute(netif_handle dev, char* dest);
 import "C"
 import (
 	"golang.zx2c4.com/wireguard/tun"
-	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
 	"io"
 	"net"
 	"os"
@@ -278,26 +277,29 @@ func apply_dns_go(_ /*dns*/ *C.dns_manager, hostname *C.char, ip *C.char) C.int 
 
 //export netifAddRoute
 func netifAddRoute(_ C.netif_handle, dest *C.char) C.int {
-
-	/*
-
-	func (t *RuntimeState) AddRoute(destination net.IPNet, nextHop net.IP, metric uint32) error {
-		nativeTunDevice := (*t.tun).(*tun.NativeTun)
-		luid := winipcfg.LUID(nativeTunDevice.LUID())
-		return luid.AddRoute(destination, nextHop, metric)
-	}
-	 */
 	routeAsString := C.GoString(dest)
 	if strings.Contains(routeAsString, "/") {
 		log.Debugf("route appears to be in CIDR format: %s", routeAsString)
-		cidrIp, cidrMask, e := net.ParseCIDR(routeAsString)
+		_, cidr, e := net.ParseCIDR(routeAsString)
 		if e != nil {
 			log.Errorf("The provided route does not appear to follow CIDR formatting? %s", routeAsString)
-
+			return 1
 		}
-		log.Infof("i am inside netifAddRoute: %v", cidrIp)
+		if cidr == nil {
+			log.Errorf("An error occurred while parsing CIDR: %s", routeAsString)
+			return 1
+		}
+
+		_ = dnsMgrPrivate.tun.AddRoute(*cidr, dnsip, 1)
+
 	} else {
 		log.Debugf("route appears to be an IP (not CIDR): %s", routeAsString)
+		ip := net.ParseIP(routeAsString)
+		if ip == nil {
+			log.Errorf("An error occurred while parsing IP: %s", routeAsString)
+			return 1
+		}
+		_ = dnsMgrPrivate.tun.AddRoute(net.IPNet{IP: ip, Mask: net.IPMask{255, 255, 255, 255}}, dnsip, 1)
 	}
 	return 0
 }

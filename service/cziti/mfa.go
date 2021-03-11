@@ -182,7 +182,7 @@ func GenerateMfaCodes(id *ZIdentity, fingerprint string, code string) []string {
 	ccode := C.CString(code)
 	defer C.free(unsafe.Pointer(ccode))
 	cfp := C.CString(fingerprint)
-	//	defer C.free(unsafe.Pointer(cfp))
+	defer C.free(unsafe.Pointer(cfp))
 	log.Errorf("xxxx GenerateMfaCodesa: %v %v == %p %p ==", fingerprint, code, cfp, cfp)
 	C.ziti_mfa_new_recovery_codes(id.czctx, ccode, C.ziti_mfa_recovery_codes_cb(C.ziti_mfa_recovery_codes_cb_generate), unsafe.Pointer(cfp))
 
@@ -241,7 +241,9 @@ func AuthMFA(id *ZIdentity, fingerprint string, code string) string {
 	defer C.free(unsafe.Pointer(ccode))
 	log.Errorf("AuthMFA: %v %v", fingerprint, code)
 
-	C.ziti_mfa_auth_request(id.mfa.responseCb, id.czctx, id.mfa.mfaContext, ccode, C.ziti_ar_mfa_status_cb(C.ziti_ar_mfa_status_cb_go))
+	cfp := C.CString(fingerprint)
+	defer C.free(unsafe.Pointer(cfp))
+	C.ziti_mfa_auth_request(id.mfa.responseCb, id.czctx, id.mfa.mfaContext, ccode, C.ziti_ar_mfa_status_cb(C.ziti_ar_mfa_status_cb_go), cfp)
 	r := strings.TrimSpace(<-mfaAuthResults)
 
 	if r == "" {
@@ -252,7 +254,7 @@ func AuthMFA(id *ZIdentity, fingerprint string, code string) string {
 }
 
 //export ziti_ar_mfa_status_cb_go
-func ziti_ar_mfa_status_cb_go(ztx C.ziti_context, mfa_ctx unsafe.Pointer, status C.int) {
+func ziti_ar_mfa_status_cb_go(ztx C.ziti_context, mfa_ctx unsafe.Pointer, status C.int, fingerprintC *C.char) {
 	log.Error("xxxx ziti_ar_mfa_status_cb_go with status %v", status)
 	if status == C.ZITI_OK {
 		mfaAuthResults <- ""

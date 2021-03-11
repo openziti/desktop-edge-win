@@ -21,6 +21,7 @@ import "C"
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/api"
 	"net"
 	"strings"
 	"sync"
@@ -42,7 +43,7 @@ type dnsImpl struct {
 	ipCount     uint32
 	serviceMap  map[string]*ctxService
 	hostnameMap map[string]*ctxIp
-	//tun         api.DesktopEdgeIface
+	tun         api.DesktopEdgeIface
 }
 
 func (dns *dnsImpl) ApplyDNS(dnsNameToReg string, ip string) {
