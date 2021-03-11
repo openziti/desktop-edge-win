@@ -188,7 +188,8 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-		private void ToggleRecovery(object sender, MouseButtonEventArgs e) {
+		async private void ToggleRecovery(object sender, MouseButtonEventArgs e) {
+			serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
 			if (AuthRecoveryArea.Visibility==Visibility.Visible) {
 				AuthRecoveryArea.Visibility = Visibility.Collapsed;
 				AuthCodeArea.Visibility = Visibility.Visible;
@@ -202,6 +203,23 @@ namespace ZitiDesktopEdge {
 				AuthSubTitle.Content = "Enter a recovery code";
 				Rec1.Focus();
 			}
+		}
+		async private void ReturnMFACodes(object sender, MouseButtonEventArgs e) {
+			string code = Auth1.Text + Auth2.Text + Auth3.Text + Auth4.Text + Auth5.Text + Auth6.Text; //jeremyfix
+			Logger.Debug("AuthMFA successful.");
+			MfaRecoveryCodesResponse getcodes = await serviceClient.ReturnMFACodes(this._identity.Fingerprint, code);
+			if (getcodes.Code != 0) {
+				Logger.Error("AuthMFA failed. " + getcodes.Message);
+			}
+			Logger.Error("PAYLOAD: {0}", getcodes.Payload);
+		}
+		async private void GenerateMFACodes(object sender, MouseButtonEventArgs e) {
+			string code = Rec1.Text + Rec2.Text + Rec3.Text + Rec4.Text + Rec5.Text + Rec6.Text; //jeremyfix
+			MfaRecoveryCodesResponse gencodes = await serviceClient.GenerateMFACodes(this._identity.Fingerprint, code);
+			if (gencodes.Code != 0) {
+				Logger.Error("AuthMFA failed. " + gencodes.Message);
+			}
+			Logger.Error("PAYLOAD: {0}", gencodes.Payload);
 		}
 
 		private void SaveCodes(object sender, MouseButtonEventArgs e) {
@@ -243,11 +261,31 @@ namespace ZitiDesktopEdge {
 
 				DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
 				SvcResponse authResult = await serviceClient.AuthMFA(this._identity.Fingerprint, code);
-				if(authResult.Code != 0) {
+				if (authResult?.Code != 0) {
+					Logger.Error("AuthMFA failed. " + authResult.Message);
+				} else {
+					//success - hide the screen Jeremy
+				}
+			}
+		}
 
-                } else {
-					//success
-                }
+		async private void DoAuthenticateb(object sender, MouseButtonEventArgs e) {
+			string code = "";
+			if (AuthRecoveryArea.Visibility == Visibility.Visible) {
+				code = Rec1.Text + Rec2.Text + Rec3.Text + Rec4.Text + Rec5.Text + Rec6.Text + Rec7.Text + Rec8.Text;
+				if (code.Length != 8) this.ShowError("You must enter a valid code");
+			} else {
+				code = Auth1.Text + Auth2.Text + Auth3.Text + Auth4.Text + Auth5.Text + Auth6.Text;
+				if (code.Length != 6) this.ShowError("You must enter a valid code");
+
+
+				DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
+				SvcResponse authResult = await serviceClient.VerifyMFA(this._identity.Fingerprint, code);
+				if (authResult?.Code != 0) {
+					Logger.Error("VerifyMFA failed. " + authResult.Message);
+				} else {
+					//success - hide the screen Jeremy
+				}
 			}
 		}
 

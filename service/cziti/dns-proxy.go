@@ -149,6 +149,7 @@ func runListener(ip *net.IP, port int, reqch chan dnsreq) {
 	attempts := 0
 	var server *net.UDPConn
 	var err error
+
 	maxAttempts := 20
 	for attempts < maxAttempts {
 		attempts++
@@ -157,6 +158,8 @@ func runListener(ip *net.IP, port int, reqch chan dnsreq) {
 			break
 		} else if attempts > maxAttempts {
 			log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "udp listening on network", err)
+		} else if attempts < (maxAttempts / 2) {
+			//just ignore the first 1/2 of all attempts...
 		} else if attempts < (3 * maxAttempts / 4) {
 			// only log at debug until we hit 3/4 the max attempts to remove unnecessary warns from the log
 			log.Debugf("System not ready to listen on %v yet. Retrying after 500ms. This has happened %d times.", laddr, attempts)
