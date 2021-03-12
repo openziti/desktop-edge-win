@@ -46,17 +46,17 @@ type dnsImpl struct {
 
 func (dns *dnsImpl) ApplyDNS(dnsNameToReg string, ip string) {
 	dnsName := normalizeDnsName(dnsNameToReg)
-	log.Warnf("APPLY DNS: %s=%s", dnsName, ip)
+	log.Debugf("adding dns to resolver: %s=%s", dnsName, ip)
 	ipnet := net.ParseIP(ip)
-	ctxIp := &ctxIp{
+	c := &ctxIp{
 		ip:         ipnet,
 		ctx:        nil,
 		network:    "nolongerused",
 		dnsEnabled: true,
 		refCount:   1,
 	}
-	dns.hostnameMap[dnsName] = ctxIp
-	log.Warnf("ADDED %s to resolver from source: %s", dnsName, dnsNameToReg)
+	dns.hostnameMap[dnsName] = c
+	log.Tracef("ADDED %s to resolver from source: %s", dnsName, dnsNameToReg)
 }
 
 type intercept struct {

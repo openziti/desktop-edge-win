@@ -147,21 +147,18 @@ dns_manager* get_dns_mgr_from_c() {
 /* functions allowing go to iterate tunneleed_service_t* */
 protocol_t* stailq_first_protocol(tunneled_service_t* ts) {
     if(ts == NULL || ts->intercept == NULL ) {
-        printf("SOMETHING WAS NULLproto");
         return NULL;
     }
     return STAILQ_FIRST(&ts->intercept->protocols);
 }
 address_t* stailq_first_address(tunneled_service_t* ts) {
     if(ts == NULL || ts->intercept == NULL ) {
-        printf("SOMETHING WAS NULLa");
         return NULL;
     }
     return STAILQ_FIRST(&ts->intercept->addresses);
 }
 port_range_t* stailq_first_port_range(tunneled_service_t* ts) {
     if(ts == NULL || ts->intercept == NULL ) {
-        printf("SOMETHING WAS NULLpr");
         return NULL;
     }
     return STAILQ_FIRST(&ts->intercept->port_ranges);

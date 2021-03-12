@@ -270,7 +270,7 @@ func remove_intercepts(async *C.uv_async_t) {
 func apply_dns_go(_ /*dns*/ *C.dns_manager, hostname *C.char, ip *C.char) C.int {
 	ghostname := C.GoString(hostname)
 	gip := C.GoString(ip)
-	log.Infof("hostname: %s, ip: %s", ghostname, gip)
+	log.Tracef("apply_dns_go callback hostname: %s, ip: %s", ghostname, gip)
 	DNSMgr.ApplyDNS(ghostname, gip)
 	return 0
 }

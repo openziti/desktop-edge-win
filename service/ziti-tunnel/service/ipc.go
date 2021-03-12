@@ -926,9 +926,9 @@ func acceptServices() {
 			return
 		case serviceChange := <-cziti.ServiceChanges:
 			log.Debugf("processing service change event. id:%s name:%s", serviceChange.Service.Id, serviceChange.Service.Name)
-			change := dto.ServiceEvent(serviceChange)
+			change := serviceChange
 			events.broadcast <- change
-			log.Debugf("dispatched %s service change event", serviceChange.Op)
+			log.Debugf("dispatched %s change event", serviceChange.Op)
 		}
 	}
 }

@@ -246,8 +246,7 @@ func (t *RuntimeState) LoadIdentity(id *Id, refreshInterval int) {
 	log.Infof("loading identity %s[%s]", id.Name, id.FingerPrint)
 
 	sc := func(status int) {
-		log.Infof("status change! %d", status)
-
+		log.Tracef("identity status change! %d", status)
 		id.ControllerVersion = id.CId.Version
 		id.CId.Fingerprint = id.FingerPrint
 		id.CId.Loaded = true
