@@ -438,7 +438,7 @@ func zitiContextEvent(ztx C.ziti_context, status C.int, zid *ZIdentity) {
 	}
 	zid.StatusChanges(int(status))
 	idMap.Store(ztx, zid)
-	log.Debug("zitiContextEvent triggered and stored in ZIdentity with pointer: %p", ztx)
+	log.Debugf("zitiContextEvent triggered and stored in ZIdentity with pointer: %p", ztx)
 }
 
 func zitiError(code C.int) error {

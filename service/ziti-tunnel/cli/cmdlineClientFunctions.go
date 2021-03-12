@@ -38,7 +38,7 @@ func sendMessagetoPipe(ipcPipeConn net.Conn, commandMsg *dto.CommandMsg, args []
 
 	err := enc.Encode(commandMsg)
 	if err != nil {
-		log.Error("could not encode or writer list identities message, %v", err)
+		log.Errorf("could not encode or writer list identities message, %v", err)
 		return err
 	}
 
