@@ -16,10 +16,10 @@ using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.ServiceClient;
 
 namespace ZitiDesktopEdge {
-    /// <summary>
-    /// Interaction logic for MenuItem.xaml
-    /// </summary>
-    public partial class ServiceInfo: UserControl {
+	/// <summary>
+	/// Interaction logic for MenuItem.xaml
+	/// </summary>
+	public partial class ServiceInfo : UserControl {
 
 		private ZitiService _info;
 
@@ -28,7 +28,7 @@ namespace ZitiDesktopEdge {
 		public delegate void Details(ZitiService info);
 		public event Details OnDetails;
 
-		public ZitiService Info { 
+		public ZitiService Info {
 			get {
 				return _info;
 			}
@@ -43,12 +43,12 @@ namespace ZitiDesktopEdge {
 					WarnIcon.Visibility = Visibility.Visible;
 					WarningColumn.Width = new GridLength(30);
 				}
-			} 
+			}
 		}
 
 		public ServiceInfo() {
-            InitializeComponent();
-        }
+			InitializeComponent();
+		}
 
 		private void MainEdit_PreviewMouseUp(object sender, MouseButtonEventArgs e) {
 			(sender as TextBox).SelectAll();

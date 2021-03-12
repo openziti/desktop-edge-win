@@ -65,20 +65,20 @@ namespace ZitiDesktopEdge.Models {
 
 		public override string ToString() {
 			string protos = "<none>";
-			if(Protocols?.Length > 0) {
-				if(Protocols.Length > 1) {
+			if (Protocols?.Length > 0) {
+				if (Protocols.Length > 1) {
 					protos = "[" + string.Join(",", Protocols.Select(p => p.ToString())) + "]";
 				} else {
 					protos = Protocols[0];
-                }
-            }
+				}
+			}
 			string addys = "<none>";
 			if (Addresses?.Length > 0) {
 				if (Addresses.Length > 1) {
 					addys = "[" + string.Join(",", Addresses.Select(a => a.ToString()).OrderBy(o => o)) + "]";
 				} else {
 					addys = Addresses[0].ToString();
-                }
+				}
 			}
 			string ranges = "<none>";
 			if (Ports?.Length > 0) {

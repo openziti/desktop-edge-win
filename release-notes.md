@@ -10,7 +10,35 @@
 * [#310](https://github.com/openziti/desktop-edge-win/pull/310) Restore identities moved by Windows after Windows system update
 
 ## Dependency Updates
-* Tunneler SDK to v0.10.0/CSDK 0.20.13
+* 
+
+# Release 1.8.3
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* Fixed a bug from the CSDK handling posture checks
+
+## Dependency Updates
+* Tunneler SDK to v0.11.7/CSDK 0.20.20
+
+# Release 1.8.2
+
+## What's New
+* [#317](https://github.com/openziti/desktop-edge-win/issues/317) command line list function to fetch identities and services
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* none
 
 # Release 1.8.0
 
