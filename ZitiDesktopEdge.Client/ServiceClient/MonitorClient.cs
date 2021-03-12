@@ -132,6 +132,10 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
         async public Task<SvcResponse> SetLogLevelAsync(string level) {
+            if ("verbose".Equals(level?.ToLower())) {
+                //only the data client understands verbose - so use trace...
+                level = "TRACE";
+            }
             ActionEvent action = new ActionEvent() { Op = "SetLogLevel", Action = level };
             try {
                 await sendAsync(action);

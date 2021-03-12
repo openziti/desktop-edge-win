@@ -96,7 +96,7 @@ ziti_service* ziti_service_array_get(ziti_service_array arr, int idx) {
     return arr ? arr[idx] : NULL;
 }
 
-int ziti_dump_c_callback(void* outputPath, const char *fmt,  ...) {
+int ziti_dump_c_to_file_cb(void* outputPath, const char *fmt,  ...) {
     static char line[4096];
 
     va_list vargs;
@@ -105,12 +105,76 @@ int ziti_dump_c_callback(void* outputPath, const char *fmt,  ...) {
     va_end(vargs);
 
     //call back into go with the line
-    ziti_dump_go_callback(outputPath, line);
+    ziti_dump_go_to_file_cb(outputPath, line);
     return 0;
 }
 
-//a simple C function to work around cgo not understanding varadic args
-void ziti_dump_go_wrapper(void *ctx, char* outputPath) {
-    //actuall invoke ziti_dump here
-    ziti_dump(ctx, ziti_dump_c_callback, outputPath);
+int ziti_dump_c_to_log_cb(void* stringsBuilder, const char *fmt,  ...) {
+    static char line[4096];
+
+    va_list vargs;
+    va_start(vargs, fmt);
+    vsnprintf(line, sizeof(line), fmt, vargs);
+    va_end(vargs);
+
+    //call back into go with the line
+    ziti_dump_go_to_log_cb(stringsBuilder, line);
+    return 0;
 }
+
+//a simple C function to work around cgo not understanding variadic args
+void ziti_dump_to_file(void *ctx, char* outputPath) {
+    //actually invoke ziti_dump here
+    ziti_dump(ctx, ziti_dump_c_to_file_cb, outputPath);
+}
+//a simple C function to work around cgo not understanding variadic args
+ void ziti_dump_to_log(void *ctx, void* stringsBuilder) {
+     //actually invoke ziti_dump here
+     ziti_dump(ctx, ziti_dump_c_to_log_cb, stringsBuilder);
+ }
+
+extern int apply_dns_go(dns_manager *dns_manager, const char *hostname, const char *ip);
+
+dns_manager dns_mgr_c = {
+        .apply = apply_dns_go,
+        .data = NULL
+};
+
+dns_manager* get_dns_mgr_from_c() {
+    return &dns_mgr_c;
+}
+
+/* functions allowing go to iterate tunneleed_service_t* */
+protocol_t* stailq_first_protocol(tunneled_service_t* ts) {
+    if(ts == NULL || ts->intercept == NULL ) {
+        return NULL;
+    }
+    return STAILQ_FIRST(&ts->intercept->protocols);
+}
+address_t* stailq_first_address(tunneled_service_t* ts) {
+    if(ts == NULL || ts->intercept == NULL ) {
+        return NULL;
+    }
+    return STAILQ_FIRST(&ts->intercept->addresses);
+}
+port_range_t* stailq_first_port_range(tunneled_service_t* ts) {
+    if(ts == NULL || ts->intercept == NULL ) {
+        return NULL;
+    }
+    return STAILQ_FIRST(&ts->intercept->port_ranges);
+}
+protocol_t* stailq_next_protocol(protocol_t* cur) {
+    return STAILQ_NEXT(cur, entries);
+}
+address_t* stailq_next_address(address_t* cur) {
+    return STAILQ_NEXT(cur, entries);
+}
+port_range_t* stailq_next_port_range(port_range_t* cur) {
+    return STAILQ_NEXT(cur, entries);
+}
+
+char* ziti_char_array_get(char** arr, int idx) {
+    return arr ? arr[idx] : NULL;
+}
+
+

@@ -10,7 +10,7 @@
 * Fixed a bug from the CSDK handling posture checks
 
 ## Dependency Updates
-* Tunneler SDK to v0.11.7/CSDK 0.20.20
+* Tunneler SDK to v0.11.9/CSDK 0.20.21
 
 # Release 1.8.2
 
