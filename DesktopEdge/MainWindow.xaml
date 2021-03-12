@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ZitiDesktopEdge"
+        xmlns:debug="clr-namespace:Ziti.Desktop.Edge.Views.Screens"
         xmlns:i="clr-namespace:Lada.Windows.Input;assembly=WpfMouseWheelLib"
         mc:Ignorable="d"
         ShowInTaskbar="False"
@@ -17,7 +18,9 @@
         i:MouseWheel.LogicalScrollDebouncing="Auto"
         i:MouseWheel.LogicalScrollIncrement="1"
         i:MouseWheel.ScrollMode="Auto"
-        WindowStyle="None" Loaded="MainWindow_Loaded" Background="#000F0F23">
+        WindowStyle="None" Loaded="MainWindow_Loaded" Background="#000F0F23"
+        DataContext="{Binding RelativeSource={RelativeSource Self}}"
+        >
     <Window.Resources>
         <Style TargetType="Image">
             <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality" />
@@ -209,6 +212,8 @@
                 <Label Name="AddIdButton" Padding="0,0,0,20" Grid.Column="0" Margin="0,0,0,20" Content="Add Identity" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="#0069FF" FontSize="16" Cursor="Hand" HorizontalAlignment="Center" VerticalAlignment="Center" MouseDown="AddIdentity"></Label>
             </Grid>
         </StackPanel>
+        <!-- Form for debugging -->
+        <debug:Debugging x:Name="DebugForm" Visibility="Collapsed" />
         <!-- Menu UI -->
         <local:MainMenu x:Name="MainMenu" Visibility="Collapsed"></local:MainMenu>
         <!-- ID Detail UI -->
@@ -361,4 +366,7 @@
             </Grid>
         </Grid>
     </Grid>
+    <Window.InputBindings>
+        <KeyBinding x:Name="ShowDebug" Command="{Binding SomeCommand}" Key="F12" />
+    </Window.InputBindings>
 </Window>

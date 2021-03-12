@@ -1224,5 +1224,40 @@ namespace ZitiDesktopEdge {
 		private void ShowRecovery(ZitiIdentity identity) {
 			ShowMFARecoveryCodes(identity);
 		}
+
+
+
+
+
+		private ICommand someCommand;
+		public ICommand SomeCommand {
+			get {
+				return someCommand
+					?? (someCommand = new ActionCommand(() => {
+						DebugForm.Visibility = Visibility.Visible;
+					}));
+			}
+            set {
+				someCommand = value;
+            }
+		}
+	}
+
+	public class ActionCommand : ICommand {
+		private readonly Action _action;
+
+		public ActionCommand(Action action) {
+			_action = action;
+		}
+
+		public void Execute(object parameter) {
+			_action();
+		}
+
+		public bool CanExecute(object parameter) {
+			return true;
+		}
+
+		public event EventHandler CanExecuteChanged;
 	}
 }

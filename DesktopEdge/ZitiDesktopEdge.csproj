@@ -149,6 +149,9 @@
     <Compile Include="Views\ItemRenderers\MenuEditToggle.xaml.cs">
       <DependentUpon>MenuEditToggle.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\Screens\Debugging.xaml.cs">
+      <DependentUpon>Debugging.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\Screens\IdentityDetails.xaml.cs">
       <DependentUpon>IdentityDetails.xaml</DependentUpon>
     </Compile>
@@ -192,6 +195,10 @@
     <Page Include="Views\ItemRenderers\MenuEditToggle.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\Screens\Debugging.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Views\Screens\IdentityDetails.xaml">
       <SubType>Designer</SubType>
