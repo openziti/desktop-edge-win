@@ -75,54 +75,44 @@ func EnableMFA(id *ZIdentity, fingerprint string) {
 
 //export ziti_mfa_enroll_cb_go
 func ziti_mfa_enroll_cb_go(_ C.ziti_context, status C.int, enrollment *C.ziti_mfa_enrollment, fingerprintP unsafe.Pointer) {
+	isVerified := bool(enrollment.is_verified)
+	url := C.GoString(enrollment.provisioning_url)
+	fp := C.GoString((*C.char)(fingerprintP))
+	C.free(fingerprintP) //CString created when executing EnableMFA
+
+	var m = dto.MfaEvent{
+		ActionEvent:     dto.MFA_ENROLLMENT_CHALLENGE,
+		Fingerprint:     fp,
+		IsVerified:      isVerified,
+		ProvisioningUrl: url,
+		RecoveryCodes:   populateStringSlice(enrollment.recovery_codes),
+	}
 	if status != C.ZITI_OK {
 		e := C.ziti_errorstr(status)
 		ego := C.GoString(e)
 		log.Errorf("Error encounted when enrolling mfa: %v", ego)
 	} else {
-		isVerified := bool(enrollment.is_verified)
-		url := C.GoString(enrollment.provisioning_url)
-		fp := C.GoString((*C.char)(fingerprintP))
-		C.free(fingerprintP) //CString created when executing EnableMFA
-
-		var m = dto.MfaEvent{
-			ActionEvent:     dto.MFA_ERROR,
-			Fingerprint:     fp,
-			IsVerified:      isVerified,
-			ProvisioningUrl: url,
-			RecoveryCodes:   nil,
-		}
-		m.ActionEvent = dto.MFA_ENROLLMENT_CHALLENGE
-		i := 0
-		for {
-			var cstr = C.ziti_char_array_get(enrollment.recovery_codes, C.int(i))
-			if cstr == nil {
-				break
-			}
-			m.RecoveryCodes = append(m.RecoveryCodes, C.GoString(cstr))
-			i++
-		}
 		log.Warnf("xxxx sending ziti_mfa_enroll response back to UI for %s. verified: %t. error: %s", fp, m.IsVerified, m.Error)
 		goapi.BroadcastEvent(m)
 	}
 }
 
-func VerifyMFA(id *ZIdentity, fingerprint string, totp string) {
-	ctotp := C.CString(totp)
-	defer C.free(unsafe.Pointer(ctotp))
+func VerifyMFA(id *ZIdentity, fingerprint string, code string) {
+	ccode := C.CString(code)
+	defer C.free(unsafe.Pointer(ccode))
 
 	cfp := C.CString(fingerprint)
-	//cfp is free'ed in ziti_mfa_cb_go
-	log.Errorf("VERIFYMFA: %v %v", fingerprint, totp)
-	C.ziti_mfa_verify(id.czctx, ctotp, C.ziti_mfa_cb(C.ziti_mfa_cb_go), unsafe.Pointer(cfp))
+	//cfp is free'ed in ziti_mfa_cb_verify_go
+	log.Errorf("VERIFYMFA: %v %v", fingerprint, code)
+	C.ziti_mfa_verify(id.czctx, ccode, C.ziti_mfa_cb(C.ziti_mfa_cb_verify_go), unsafe.Pointer(cfp))
 }
 
-//export ziti_mfa_cb_go
-func ziti_mfa_cb_go(_ C.ziti_context, status C.int, fingerprintP *C.char) {
+//export ziti_mfa_cb_verify_go
+func ziti_mfa_cb_verify_go(_ C.ziti_context, status C.int, fingerprintP *C.char) {
 	fp := C.GoString(fingerprintP)
 	C.free(unsafe.Pointer(fingerprintP)) //CString created when executing VerifyMFA
 
-	log.Debugf("ziti_mfa_cb_go called for %s. status: %d for ", fp, int(status))
+	log.Debugf("ziti_mfa_cb_verify_go called for %s. status: %d for ", fp, int(status))
 	var m = dto.MfaEvent{
 		ActionEvent: dto.MFA_AUTH_RESPONSE,
 		Fingerprint: fp,
@@ -270,4 +260,41 @@ func ziti_ar_mfa_status_cb_go(ztx C.ziti_context, mfa_ctx unsafe.Pointer, status
 		ego := C.GoString(e)
 		mfaAuthResults <- ego
 	}
+}
+
+func RemoveMFA(id *ZIdentity, fingerprint string, code string) {
+	ccode := C.CString(code)
+	defer C.free(unsafe.Pointer(ccode))
+
+	cfp := C.CString(fingerprint)
+	//cfp is free'ed in ziti_mfa_cb_verify_go
+	log.Errorf("VERIFYMFA: %v %v", fingerprint, code)
+	C.ziti_mfa_remove(id.czctx, ccode, C.ziti_mfa_cb(C.ziti_mfa_cb_verify_go), unsafe.Pointer(cfp))
+}
+
+//export ziti_mfa_cb_remove_go
+func ziti_mfa_cb_remove_go(_ C.ziti_context, status C.int, fingerprintP *C.char) {
+	fp := C.GoString(fingerprintP)
+	C.free(unsafe.Pointer(fingerprintP)) //CString created when executing VerifyMFA
+
+	log.Debugf("ziti_mfa_cb_remove_go called for %s. status: %d for ", fp, int(status))
+	var m = dto.MfaEvent{
+		ActionEvent: dto.MFA_AUTH_RESPONSE,
+		Fingerprint: fp,
+		IsVerified:  false,
+		RecoveryCodes: nil,
+	}
+
+	if status != C.ZITI_OK {
+		e := C.ziti_errorstr(status)
+		ego := C.GoString(e)
+		log.Errorf("Error encounted when removing mfa: %v", ego)
+		m.Error = ego
+	} else {
+		log.Warnf("xxxx Identity with fingerprint %s has successfully removed MFA", fp)
+		m.IsVerified = true
+	}
+
+	log.Warnf("xxxx sending ziti_mfa_verify response back to UI for %s. verified: %t. error: %s", fp, m.IsVerified, m.Error)
+	goapi.BroadcastEvent(m)
 }

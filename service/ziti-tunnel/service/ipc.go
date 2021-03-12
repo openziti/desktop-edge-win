@@ -468,20 +468,24 @@ func serveIpc(conn net.Conn) {
 			enableMfa(enc, fingerprint)
 		case "VerifyMFA":
 			fingerprint := cmd.Payload["Fingerprint"].(string)
-			totp := cmd.Payload["Totp"].(string)
-			verifyMfa(enc, fingerprint, totp)
+			code := cmd.Payload["Code"].(string)
+			verifyMfa(enc, fingerprint, code)
 		case "AuthMFA":
 			fingerprint := cmd.Payload["Fingerprint"].(string)
-			code := cmd.Payload["Totp"].(string)
+			code := cmd.Payload["Code"].(string)
 			authMfa(enc, fingerprint, code)
 		case "ReturnMFACodes":
 			fingerprint := cmd.Payload["Fingerprint"].(string)
-			totpOrRecoveryCode := cmd.Payload["Code"].(string)
-			returnMfaCodes(enc, fingerprint, totpOrRecoveryCode)
+			code := cmd.Payload["Code"].(string)
+			returnMfaCodes(enc, fingerprint, code)
 		case "GenerateMFACodes":
 			fingerprint := cmd.Payload["Fingerprint"].(string)
-			totpOrRecoveryCode := cmd.Payload["Code"].(string)
-			generateMfaCodes(enc, fingerprint, totpOrRecoveryCode)
+			code := cmd.Payload["Code"].(string)
+			generateMfaCodes(enc, fingerprint, code)
+		case "RemoveMFA":
+			fingerprint := cmd.Payload["Fingerprint"].(string)
+			code := cmd.Payload["Code"].(string)
+			removeMFA(enc, fingerprint, code)
 		case "Debug":
 			dbg()
 			respond(enc, dto.Response{
@@ -502,9 +506,9 @@ func serveIpc(conn net.Conn) {
 	}
 }
 
-func generateMfaCodes(out *json.Encoder, fingerprint string, totpOrRecoveryCode string) {
+func generateMfaCodes(out *json.Encoder, fingerprint string, code string) {
 	id := rts.Find(fingerprint)
-	codes, err := cziti.GenerateMfaCodes(id.CId, fingerprint, totpOrRecoveryCode)
+	codes, err := cziti.GenerateMfaCodes(id.CId, fingerprint, code)
 	//respond(out, dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: codes})
 	if err == nil {
 		respond(out, dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: codes})
@@ -513,9 +517,9 @@ func generateMfaCodes(out *json.Encoder, fingerprint string, totpOrRecoveryCode 
 	}
 }
 
-func returnMfaCodes(out *json.Encoder, fingerprint string, totpOrRecoveryCode string) {
+func returnMfaCodes(out *json.Encoder, fingerprint string, code string) {
 	id := rts.Find(fingerprint)
-	codes, err := cziti.ReturnMfaCodes(id.CId, fingerprint, totpOrRecoveryCode)
+	codes, err := cziti.ReturnMfaCodes(id.CId, fingerprint, code)
 	if err == nil {
 		respond(out, dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: codes})
 	} else {
@@ -530,11 +534,18 @@ func enableMfa(out *json.Encoder, fingerprint string) {
 	respond(out, dto.Response{Message: "mfa enroll complete", Code: SUCCESS, Error: "", Payload: nil})
 }
 
-func verifyMfa(out *json.Encoder, fingerprint string, totp string) {
+func verifyMfa(out *json.Encoder, fingerprint string, code string) {
 	id := rts.Find(fingerprint)
-	cziti.VerifyMFA(id.CId, fingerprint, totp)
+	cziti.VerifyMFA(id.CId, fingerprint, code)
 
 	respond(out, dto.Response{Message: "mfa verify complete", Code: SUCCESS, Error: "", Payload: nil})
+}
+
+func removeMFA(out *json.Encoder, fingerprint string, code string) {
+	id := rts.Find(fingerprint)
+	cziti.RemoveMFA(id.CId, fingerprint, code)
+
+	respond(out, dto.Response{Message: "mfa removed successfully", Code: SUCCESS, Error: "", Payload: nil})
 }
 
 func setLogLevel(out *json.Encoder, level string) {

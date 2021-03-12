@@ -116,41 +116,55 @@ namespace ZitiDesktopEdge.DataStructures {
     }
 
     public class VerifyMFAFunction : ServiceFunction {
-        public VerifyMFAFunction(string fingerprint, string totp) {
+        public VerifyMFAFunction(string fingerprint, string code) {
             this.Function = "VerifyMFA";
             this.Payload = new VerifyMFAFunctionPayload() {
                 Fingerprint = fingerprint,
-                Totp = totp
+                Code = code
             };
         }
         public VerifyMFAFunctionPayload Payload { get; set; }
     }
     public class VerifyMFAFunctionPayload {
         public string Fingerprint { get; set; }
-        public string Totp { get; set; }
+        public string Code { get; set; }
+    }
+    public class RemoveMFAFunction : ServiceFunction {
+        public RemoveMFAFunction(string fingerprint, string code) {
+            this.Function = "RemoveMFA";
+            this.Payload = new RemoveMFAFunctionPayload() {
+                Fingerprint = fingerprint,
+                Code = code
+            };
+        }
+        public RemoveMFAFunctionPayload Payload { get; set; }
+    }
+    public class RemoveMFAFunctionPayload {
+        public string Fingerprint { get; set; }
+        public string Code { get; set; }
     }
 
     public class AuthMFAFunction : ServiceFunction {
-        public AuthMFAFunction(string fingerprint, string totp) {
+        public AuthMFAFunction(string fingerprint, string code) {
             this.Function = "AuthMFA";
             this.Payload = new AuthMFAFunctionPayload() {
                 Fingerprint = fingerprint,
-                Totp = totp
+                Code = code
             };
         }
         public AuthMFAFunctionPayload Payload { get; set; }
     }
     public class AuthMFAFunctionPayload {
         public string Fingerprint { get; set; }
-        public string Totp { get; set; }
+        public string Code { get; set; }
     }
 
     public class ReturnMFACodesFunction : ServiceFunction {
-        public ReturnMFACodesFunction(string fingerprint, string totpOrRecoveryCode) {
+        public ReturnMFACodesFunction(string fingerprint, string code) {
             this.Function = "ReturnMFACodes";
             this.Payload = new ReturnMFACodesFunctionPayload() {
                 Fingerprint = fingerprint,
-                Code = totpOrRecoveryCode,
+                Code = code,
             };
         }
         public ReturnMFACodesFunctionPayload Payload { get; set; }
@@ -161,11 +175,11 @@ namespace ZitiDesktopEdge.DataStructures {
     }
 
     public class GenerateMFACodesFunction : ServiceFunction {
-        public GenerateMFACodesFunction(string fingerprint, string totpOrRecoveryCode) {
+        public GenerateMFACodesFunction(string fingerprint, string code) {
             this.Function = "GenerateMFACodes";
             this.Payload = new GenerateMFACodesFunctionPayload() {
                 Fingerprint = fingerprint,
-                Code = totpOrRecoveryCode,
+                Code = code,
             };
         }
         public GenerateMFACodesFunctionPayload Payload { get; set; }
