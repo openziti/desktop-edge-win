@@ -1,3 +1,17 @@
+# Release 1.8.3
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* Fixed a bug from the CSDK handling posture checks
+
+## Dependency Updates
+* Tunneler SDK to v0.11.7/CSDK 0.20.20
+
 # Release 1.8.2
 
 ## What's New
