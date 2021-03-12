@@ -117,6 +117,10 @@ func RemoveAllNrptRules() {
 }
 
 func AddNrptRules(domainsToMap map[string]struct{}, dnsServer string) {
+	if len(domainsToMap) == 0 {
+		log.Debug("no domains to map specified to AddNrptRules. exiting early")
+		return
+	}
 	sb := strings.Builder{}
 	sb.WriteString(`$Rules = @(
 `)
@@ -141,5 +145,37 @@ ForEach ($Rule in $Rules) {
 	err := cmd.Run()
 	if err != nil {
 		log.Errorf("ERROR adding nrpt rules: %v", err)
+	}
+}
+
+func RemoveNrptRules(domainsToMap map[string]struct{}) {
+	if len(domainsToMap) == 0 {
+		log.Debug("no domains to map specified to RemoveNrptRules. exiting early")
+		return
+	}
+
+	sb := strings.Builder{}
+	sb.WriteString(`$toRemove = @(
+`)
+
+	for hostname := range domainsToMap {
+		sb.WriteString(fmt.Sprintf(`"%s"%s`, hostname, "\n"))
+	}
+
+	sb.WriteString(fmt.Sprintf(`)
+
+Get-DnsClientNrptRule | Where { $toRemove -contains $_.DisplayName } | Remove-DnsClientNrptRule -ErrorAction SilentlyContinue -Force
+`))
+
+	script := sb.String()
+	log.Debugf("Executing NRPT script:\n%s", script)
+
+	cmd := exec.Command("powershell", "-Command", script)
+	cmd.Stderr = os.Stdout
+	cmd.Stdout = os.Stdout
+
+	err := cmd.Run()
+	if err != nil {
+		log.Errorf("ERROR removing nrpt rules: %v", err)
 	}
 }

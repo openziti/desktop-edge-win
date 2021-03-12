@@ -267,7 +267,7 @@ func (t *RuntimeState) LoadIdentity(id *Id, refreshInterval int) {
 		}
 
 		events.broadcast <- dto.IdentityEvent{
-			ActionEvent: IDENTITY_ADDED,
+			ActionEvent: dto.IDENTITY_ADDED,
 			Id:          id.Identity,
 		}
 		log.Infof("connecting identity completed: %s[%s]", id.Name, id.FingerPrint)
@@ -478,4 +478,8 @@ func (t *RuntimeState) InterceptIP() {
 
 func (t *RuntimeState) ReleaseIP() {
 	log.Panicf("implement me")
+}
+
+func (t *RuntimeState) BroadcastEvent(event interface{}) {
+	events.broadcast <- event
 }

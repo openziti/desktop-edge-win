@@ -31,9 +31,10 @@ import (
 
 var domains []string // get any connection-specific local domains
 const (
-	MaxDnsRequests = 64
+	MaxDnsRequests   = 64
 	DnsMsgBufferSize = 1024
 )
+
 var reqch = make(chan dnsreq, MaxDnsRequests)
 var proxiedRequests = make(chan *proxiedReq, MaxDnsRequests)
 var respChan = make(chan []byte, MaxDnsRequests)
@@ -148,6 +149,7 @@ func runListener(ip *net.IP, port int, reqch chan dnsreq) {
 	attempts := 0
 	var server *net.UDPConn
 	var err error
+
 	maxAttempts := 20
 	for attempts < maxAttempts {
 		attempts++
@@ -156,6 +158,8 @@ func runListener(ip *net.IP, port int, reqch chan dnsreq) {
 			break
 		} else if attempts > maxAttempts {
 			log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "udp listening on network", err)
+		} else if attempts < (maxAttempts / 2) {
+			//just ignore the first 1/2 of all attempts...
 		} else if attempts < (3 * maxAttempts / 4) {
 			// only log at debug until we hit 3/4 the max attempts to remove unnecessary warns from the log
 			log.Debugf("System not ready to listen on %v yet. Retrying after 500ms. This has happened %d times.", laddr, attempts)
@@ -255,7 +259,7 @@ func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
 	dnsRetryInterval := 500
 
 	log.Infof("establishing links to all upstream DNS. total detected upstream DNS: %d", len(upstreamDnsServers))
-	outer:
+outer:
 	for _, s := range upstreamDnsServers {
 		for _, ldns := range localDnsServers {
 			if s == ldns.String() {
@@ -284,7 +288,7 @@ func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
 	}
 
 	if len(upstreamDnsServers) > 0 && len(dnsUpstreams) == 0 {
-		//this alomst certainly indicates the network has been disconnected for some reason.
+		//this almost certainly indicates the network has been disconnected for some reason.
 		//this happens when turning wifi off and waiting a moment - then turning wifi back on again
 		//might happen unplugging the ethernet from one port to another - you get the idea... if this
 		//happens - pause for a small amount of time and reinstitute the proxy establishing loop

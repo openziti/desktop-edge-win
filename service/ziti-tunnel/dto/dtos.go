@@ -31,18 +31,31 @@ type AddIdentity struct {
 
 type Service struct {
 	Name          string
-	AssignedIP    string
-	InterceptHost string
-	InterceptPort uint16
 	Id            string
-	AssignedHost  string
+	Protocols     []string
+	Addresses     []Address   //string
+	Ports         []PortRange //string
 	OwnsIntercept bool
-	Owner         ServiceOwner
+}
+
+type Address struct {
+	IsHost   bool
+	HostName string
+	IP       string
+	Prefix   int
+}
+
+type PortRange struct {
+	High int
+	Low  int
 }
 
 type ServiceOwner struct {
 	Network   string
 	ServiceId string
+}
+
+type HostContext struct {
 }
 
 type Identity struct {
@@ -52,6 +65,8 @@ type Identity struct {
 	Config            idcfg.Config
 	ControllerVersion string
 	Status            string
+	MfaEnabled        bool
+	MfaNeeded         bool
 	Services          []*Service `json:",omitempty"`
 	Metrics           *Metrics   `json:",omitempty"`
 	Tags              []string   `json:",omitempty"`
@@ -98,8 +113,8 @@ type TunnelStatus struct {
 }
 
 type ServiceVersion struct {
-	Version string
-	Revision string
+	Version   string
+	Revision  string
 	BuildDate string
 }
 
@@ -109,7 +124,7 @@ type ZitiTunnelStatus struct {
 }
 
 type StatusEvent struct {
-	Op      string
+	Op string
 }
 
 type ActionEvent struct {
@@ -131,10 +146,27 @@ type MetricsEvent struct {
 type ServiceEvent struct {
 	ActionEvent
 	Fingerprint string
-	Service     Service
+	Service     *Service
 }
 
 type IdentityEvent struct {
 	ActionEvent
 	Id Identity
+}
+
+type MfaEvent struct {
+	ActionEvent
+	Fingerprint     string
+	IsVerified      bool
+	Error           string
+	ProvisioningUrl string
+	RecoveryCodes   []string
+}
+
+type MfaChallenge struct {
+	ActionEvent
+	Fingerprint string
+}
+
+type MfaResponse struct {
 }

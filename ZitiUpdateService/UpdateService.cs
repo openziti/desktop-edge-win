@@ -17,8 +17,8 @@ using ZitiDesktopEdge.Utility;
 
 using NLog;
 using Newtonsoft.Json;
-using DnsClient;
 using System.Net;
+using DnsClient;
 
 namespace ZitiUpdateService {
 	public partial class UpdateService : ServiceBase {
@@ -381,7 +381,7 @@ namespace ZitiUpdateService {
 
 		IPAddress lh = IPAddress.Parse("127.0.0.1"); //expected result
 		int dnsProbeFailCount = 0;
-		int dnsProbeIntervalInSeconds = 15;
+		int dnsProbeIntervalInSeconds = 60;
 		bool dnsProbeStarted = false;
 
         private void DnsProbe_Elapsed(object sender, ElapsedEventArgs e) {
