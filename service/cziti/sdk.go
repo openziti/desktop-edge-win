@@ -267,7 +267,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 	protocols := getTunneledServiceProtocols(ts)
 	addresses := getTunneledServiceAddresses(ts)
 	portRanges := getTunneledServicePortRanges(ts)
-	log.Warnf("service: %s, id: %s, portocols:%s, addresses:%v, portRanges: %v", name, svcId, protocols, addresses, portRanges)
+	log.Infof("service update: %s, id: %s, portocols:%s, addresses:%v, portRanges: %v", name, svcId, protocols, addresses, portRanges)
 
 	svc := &dto.Service{
 		Name:          name,
@@ -375,7 +375,6 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			for _, toRemove := range addys {
 				hostnamesToRemove[toRemove.HostName] = unimportant
 			}
-			log.Info("service removed ", C.GoString(s.name))
 		}
 		for i := 0; true; i++ {
 			s := C.ziti_service_array_get(srvEvent.changed, C.int(i))
@@ -398,18 +397,21 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			if unsafe.Pointer(s) == C.NULL {
 				break
 			}
-			log.Info("service added ", C.GoString(s.name))
 			addys := serviceCB(ztx, s, C.ZITI_OK, zid)
 			for _, toAdd := range addys {
 				hostnamesToAdd[toAdd.HostName] = unimportant
 			}
 		}
 
-		windns.AddNrptRules(hostnamesToAdd, dnsip.String())
-		log.Infof("mapped the following hostnames: %v", hostnamesToAdd)
+		if len(hostnamesToAdd) > 0 {
+			windns.AddNrptRules(hostnamesToAdd, dnsip.String())
+			log.Infof("mapped the following hostnames: %v", hostnamesToAdd)
+		}
 
-		windns.RemoveNrptRules(hostnamesToRemove)
-		log.Infof("unmapped the following hostnames: %v", hostnamesToRemove)
+		if len(hostnamesToRemove) > 0 {
+			windns.RemoveNrptRules(hostnamesToRemove)
+			log.Infof("unmapped the following hostnames: %v", hostnamesToRemove)
+		}
 	default:
 		log.Infof("event %d not handled", event._type)
 	}
@@ -436,7 +438,7 @@ func zitiContextEvent(ztx C.ziti_context, status C.int, zid *ZIdentity) {
 	}
 	zid.StatusChanges(int(status))
 	idMap.Store(ztx, zid)
-	log.Errorf("xxxxx STORED ID WITH: %p", ztx)
+	log.Debugf("zitiContextEvent triggered and stored in ZIdentity with pointer: %p", ztx)
 }
 
 func zitiError(code C.int) error {
