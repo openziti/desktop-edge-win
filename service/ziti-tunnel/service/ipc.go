@@ -22,16 +22,6 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"math/rand"
-	"net"
-	"os"
-	"os/signal"
-	"strings"
-	"sync"
-	"time"
-
 	"github.com/Microsoft/go-winio"
 	"github.com/openziti/desktop-edge-win/service/cziti"
 	"github.com/openziti/desktop-edge-win/service/windns"
@@ -43,6 +33,16 @@ import (
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"github.com/openziti/sdk-golang/ziti/enroll"
 	"golang.org/x/sys/windows/svc"
+	"golang.zx2c4.com/wireguard/tun"
+	"io"
+	"io/ioutil"
+	"math/rand"
+	"net"
+	"os"
+	"os/signal"
+	"strings"
+	"sync"
+	"time"
 )
 
 type Pipes struct {
@@ -64,7 +64,6 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	windns.RemoveAllNrptRules()
 
 	rts.LoadConfig()
-	defer rts.Close()
 	l := rts.state.LogLevel
 	parsedLevel, cLogLevel := logging.ParseLevel(l)
 
@@ -86,7 +85,11 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 		return err
 	}
 
-	setTunnelState(true)
+	TunStarted = time.Now()
+
+	for _, id := range rts.ids {
+		connectIdentity(id)
+	}
 
 	go handleEvents(initialized)
 
@@ -112,6 +115,16 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 
 	waitForStopRequest(ops)
 
+	log.Debug("shutting down. start a ZitiDump")
+	for _, id := range rts.ids {
+		if id.CId != nil {
+			sb := strings.Builder{}
+			cziti.ZitiDumpOnShutdown(id.CId, &sb)
+			log.Infof("working around the c sdk's limitation of embedding newlines on calling ziti_shutdown\n %s", sb.String())
+		}
+	}
+	log.Debug("shutting down. ZitiDump complete")
+
 	requestShutdown("service shutdown")
 
 	// signal to any connected consumers that the service is shutting down normally
@@ -134,6 +147,18 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	events.shutdown()
 
 	windns.RemoveAllNrptRules()
+
+	log.Infof("Removing existing interface: %s", TunName)
+	wt, err := tun.WintunPool.OpenAdapter(TunName)
+	if err == nil {
+		// If so, we delete it, in case it has weird residual configuration.
+		_, err = wt.Delete(true)
+		if err != nil {
+			log.Errorf("Error deleting already existing interface: %v", err)
+		}
+	} else {
+		log.Errorf("INTERFACE %s was nil? %v", TunName, err)
+	}
 
 	rts.Close()
 
@@ -240,8 +265,7 @@ func initialize(cLogLevel int) error {
 		return err
 	}
 
-	cziti.DnsInit(rts, rts.state.TunIpv4, rts.state.TunIpv4Mask)
-	cziti.Start(cLogLevel)
+	cziti.Start(rts, rts.state.TunIpv4, rts.state.TunIpv4Mask, cLogLevel)
 	err = cziti.HookupTun(*t)
 	if err != nil {
 		log.Panicf("An unrecoverable error has occurred! %v", err)
@@ -424,9 +448,6 @@ func serveIpc(conn net.Conn) {
 			removeIdentity(enc, cmd.Payload["Fingerprint"].(string))
 		case "Status":
 			reportStatus(enc)
-		case "TunnelState":
-			onOff := cmd.Payload["OnOff"].(bool)
-			tunnelState(onOff, enc)
 		case "IdentityOnOff":
 			onOff := cmd.Payload["OnOff"].(bool)
 			fingerprint := cmd.Payload["Fingerprint"].(string)
@@ -446,6 +467,25 @@ func serveIpc(conn net.Conn) {
 			}
 			log.Debug("request to ZitiDump complete")
 			respond(enc, dto.Response{Message: "ZitiDump complete", Code: SUCCESS, Error: "", Payload: nil})
+		case "EnableMFA":
+			fingerprint := cmd.Payload["Fingerprint"].(string)
+			enableMfa(enc, fingerprint)
+		case "VerifyMFA":
+			fingerprint := cmd.Payload["Fingerprint"].(string)
+			totp := cmd.Payload["Totp"].(string)
+			verifyMfa(enc, fingerprint, totp)
+		case "AuthMFA":
+			fingerprint := cmd.Payload["Fingerprint"].(string)
+			code := cmd.Payload["Totp"].(string)
+			authMfa(enc, fingerprint, code)
+		case "ReturnMFACodes":
+			fingerprint := cmd.Payload["Fingerprint"].(string)
+			totpOrRecoveryCode := cmd.Payload["Code"].(string)
+			returnMfaCodes(enc, fingerprint, totpOrRecoveryCode)
+		case "GenerateMFACodes":
+			fingerprint := cmd.Payload["Fingerprint"].(string)
+			totpOrRecoveryCode := cmd.Payload["Code"].(string)
+			generateMfaCodes(enc, fingerprint, totpOrRecoveryCode)
 		case "Debug":
 			dbg()
 			respond(enc, dto.Response{
@@ -464,6 +504,41 @@ func serveIpc(conn net.Conn) {
 
 		_ = rw.Flush()
 	}
+}
+
+func generateMfaCodes(out *json.Encoder, fingerprint string, totpOrRecoveryCode string) { /*
+		id := rts.Find(fingerprint)
+		codes, err := cziti.GenerateMfaCodes(id.CId, fingerprint, totpOrRecoveryCode)
+		//respond(out, dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: codes})
+		if err == nil {
+			respond(out, dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: codes})
+		} else {
+			respondWithError(out, "msg", MFA_FAILED_TO_RETURN_CODES, err)
+		}*/
+}
+
+func returnMfaCodes(out *json.Encoder, fingerprint string, totpOrRecoveryCode string) { /*
+		id := rts.Find(fingerprint)
+		codes, err := cziti.ReturnMfaCodes(id.CId, fingerprint, totpOrRecoveryCode)
+		if err == nil {
+			respond(out, dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: codes})
+		} else {
+			respondWithError(out, "msg", MFA_FAILED_TO_RETURN_CODES, err)
+		}*/
+}
+
+func enableMfa(out *json.Encoder, fingerprint string) { /*
+		id := rts.Find(fingerprint)
+		cziti.EnableMFA(id.CId, fingerprint)
+
+		respond(out, dto.Response{Message: "mfa enroll complete", Code: SUCCESS, Error: "", Payload: nil})*/
+}
+
+func verifyMfa(out *json.Encoder, fingerprint string, totp string) { /*
+		id := rts.Find(fingerprint)
+		cziti.VerifyMFA(id.CId, fingerprint, totp)
+
+		respond(out, dto.Response{Message: "mfa verify complete", Code: SUCCESS, Error: "", Payload: nil})*/
 }
 
 func setLogLevel(out *json.Encoder, level string) {
@@ -575,33 +650,6 @@ func reportStatus(out *json.Encoder) {
 		Metrics: nil,
 	})
 	log.Debugf("request for status responded to")
-}
-
-func tunnelState(onOff bool, out *json.Encoder) {
-	log.Debugf("toggle ziti on/off: %t", onOff)
-	state := rts.state
-	if onOff == state.Active {
-		log.Debugf("nothing to do. the state of the tunnel already matches the requested state: %t", onOff)
-		respond(out, dto.Response{Message: fmt.Sprintf("noop: tunnel state already set to %t", onOff), Code: SUCCESS, Error: "", Payload: nil})
-		return
-	}
-	setTunnelState(onOff)
-	state.Active = onOff
-
-	respond(out, dto.Response{Message: "tunnel state updated successfully", Code: SUCCESS, Error: "", Payload: nil})
-	log.Debugf("toggle ziti on/off: %t responded to", onOff)
-}
-
-func setTunnelState(onOff bool) {
-	if onOff {
-		TunStarted = time.Now()
-
-		for _, id := range rts.ids {
-			connectIdentity(id)
-		}
-	} else {
-		// state.Close()
-	}
 }
 
 func toggleIdentity(out *json.Encoder, fingerprint string, onOff bool) {
@@ -774,15 +822,12 @@ func connectIdentity(id *Id) {
 		log.Debugf("%s[%s] is already loaded", id.Name, id.FingerPrint)
 
 		id.CId.Services.Range(func(key interface{}, value interface{}) bool {
-			val := value.(cziti.ZService)
-			ip := cziti.DNSMgr.ReturnToDns(val.InterceptHost)
-			cziti.AddIntercept(val.Id, val.Name, ip.String(), int(val.InterceptPort), id.CId.UnsafePointer())
 			id.Services = append(id.Services, nil)
 			return true
 		})
 
 		events.broadcast <- dto.IdentityEvent{
-			ActionEvent: IDENTITY_ADDED,
+			ActionEvent: dto.IDENTITY_ADDED,
 			Id:          id.Identity,
 		}
 		log.Infof("connecting identity completed: %s[%s]", id.Name, id.FingerPrint)
@@ -799,19 +844,15 @@ func disconnectIdentity(id *Id) error {
 			log.Debugf("ranging over services all services to remove intercept and deregister the service")
 
 			id.CId.Services.Range(func(key interface{}, value interface{}) bool {
-				val := value.(cziti.ZService)
+				val := value.(*cziti.ZService)
 				var wg sync.WaitGroup
 				wg.Add(1)
 				rwg := &cziti.RemoveWG{
-					SvcId: val.Id,
 					Wg:    &wg,
+					Czsvc: val,
 				}
 				cziti.RemoveIntercept(rwg)
 				wg.Wait()
-				ok := cziti.DNSMgr.UnregisterService(val.InterceptHost, val.InterceptPort)
-				if !ok {
-					log.Warnf("unregister service from disconnectIdentity was not ok? %s:%d", val.InterceptHost, val.InterceptPort)
-				}
 				return true
 			})
 			log.Infof("disconnecting identity complete: %s", id.Name)
@@ -887,37 +928,11 @@ func acceptServices() {
 		select {
 		case <-shutdown:
 			return
-		case c := <-cziti.ServiceChanges:
-			log.Debugf("processing service change event. id:%s name:%s", c.Service.Id, c.Service.Name)
-			s := dto.Service{
-				Name:          c.Service.Name,
-				InterceptHost: c.Service.InterceptHost,
-				InterceptPort: c.Service.InterceptPort,
-				Id:            c.Service.Id,
-				AssignedIP:    c.Service.AssignedIP,
-				OwnsIntercept: c.Service.OwnsIntercept,
-				Owner: dto.ServiceOwner{
-					Network:   "",
-					ServiceId: "",
-				},
-			}
-			var action dto.ActionEvent
-			switch c.Operation {
-			case cziti.ADDED:
-				action = SERVICE_ADDED
-			case cziti.REMOVED:
-				action = SERVICE_REMOVED
-			default:
-				log.Warnf("service event was processed but unknown operation: %s", c.Operation)
-				continue
-			}
-
-			events.broadcast <- dto.ServiceEvent{
-				ActionEvent: action,
-				Fingerprint: c.ZitiContext.Fingerprint,
-				Service:     s,
-			}
-			log.Debugf("dispatched %s service change event", c.Operation)
+		case serviceChange := <-cziti.ServiceChanges:
+			log.Debugf("processing service change event. id:%s name:%s", serviceChange.Service.Id, serviceChange.Service.Name)
+			change := serviceChange
+			events.broadcast <- change
+			log.Debugf("dispatched %s change event", serviceChange.Op)
 		}
 	}
 }
@@ -947,7 +962,7 @@ func handleEvents(isInitialized chan struct{}) {
 
 //Removes the Config from the provided identity and returns a 'cleaned' id
 func Clean(src *Id) dto.Identity {
-	log.Tracef("cleaning identity: %s", src.Name)
+	log.Tracef("cleaning identity: %s %v %v", src.Name, src.CId.MfaNeeded, src.CId.MfaEnabled)
 	AddMetrics(src)
 	nid := dto.Identity{
 		Name:              src.Name,
@@ -956,6 +971,8 @@ func Clean(src *Id) dto.Identity {
 		Config:            idcfg.Config{},
 		ControllerVersion: src.ControllerVersion,
 		Status:            "",
+		MfaNeeded:         src.CId.MfaNeeded,
+		MfaEnabled:        src.CId.MfaEnabled,
 		Services:          make([]*dto.Service, 0),
 		Metrics:           src.Metrics,
 		Tags:              nil,
@@ -964,8 +981,8 @@ func Clean(src *Id) dto.Identity {
 	if src.CId != nil {
 		src.CId.Services.Range(func(key interface{}, value interface{}) bool {
 			//string, ZService
-			val := value.(cziti.ZService)
-			nid.Services = append(nid.Services, svcToDto(val))
+			val := value.(*cziti.ZService)
+			nid.Services = append(nid.Services /*svcToDto(val)*/, val.Service)
 			return true
 		})
 	}
@@ -986,21 +1003,14 @@ func AddMetrics(id *Id) {
 	id.Metrics.Down = down
 }
 
-func svcToDto(src cziti.ZService) *dto.Service {
-	dest := &dto.Service{
-		Name:          src.Name,
-		AssignedIP:    src.AssignedIP,
-		InterceptHost: src.InterceptHost,
-		InterceptPort: src.InterceptPort,
-		Id:            src.Id,
-		OwnsIntercept: src.OwnsIntercept,
-		Owner: dto.ServiceOwner{
-			Network:   "",
-			ServiceId: "",
-		},
-	}
-
-	return dest
+func authMfa(out *json.Encoder, fingerprint string, code string) { /*
+		id := rts.Find(fingerprint)
+		result := cziti.AuthMFA(id.CId, fingerprint, code)
+		if result != "" {
+			respond(out, dto.Response{Message: "mfa verify complete", Code: SUCCESS, Error: "", Payload: nil})
+		} else {
+			respondWithError(out, fmt.Sprintf("the supplied code [%s] was not valid: %s", code, result), 1, nil)
+		}*/
 }
 
 func sendLogLevelAndNotify(enc *json.Encoder, loglevel string) {

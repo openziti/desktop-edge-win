@@ -111,7 +111,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                     break;
                 } catch (IOException ioe) {
                     //almost certainly a problem with the pipe - recreate the pipe... try one more time.
-                    //setupPipe();
+                    await ConnectPipesAsync();
                     if (retried) {
                         //we tried - throw the error...
                         throw ioe;

@@ -1,4 +1,4 @@
-# Release 1.8.3
+# Release 1.8.4
 
 ## What's New
 * [#322](https://github.com/openziti/desktop-edge-win/issues/322) Ability to toggle identity, set loglevel and generate feedback zip file from cmd line
@@ -7,10 +7,24 @@
 * none
 
 ## Bugs fixed:
-* none
+None
 
 ## Dependency Updates
+None
+
+# Release 1.8.3
+
+## What's New
 * none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* Fixed a bug from the CSDK handling posture checks
+
+## Dependency Updates
+* Tunneler SDK to v0.11.9/CSDK 0.20.21
 
 # Release 1.8.2
 

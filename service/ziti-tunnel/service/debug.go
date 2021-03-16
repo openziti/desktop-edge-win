@@ -34,17 +34,13 @@ func dbg() {
 	svcs := make([]*dto.Service, 2)
 	svcs[0] = &dto.Service{
 		Name:          "FakeService1",
-		InterceptHost: "fake-service.com",
-		InterceptPort: 1234,
 	}
 	svcs[1] = &dto.Service{
 		Name:          "Second Fake Service",
-		InterceptHost: "some-other-host.ziti",
-		InterceptPort: 5555,
 	}
 
 	events.broadcast <- dto.IdentityEvent{
-		ActionEvent: IDENTITY_ADDED,
+		ActionEvent: dto.IDENTITY_ADDED,
 		Id: dto.Identity{
 			Name:        "NewIdentity",
 			FingerPrint: "new_id_fingerprint",
@@ -59,25 +55,23 @@ func dbg() {
 	}
 
 	events.broadcast <- dto.ServiceEvent{
-		ActionEvent: SERVICE_ADDED,
-		Service: dto.Service{
+		ActionEvent: dto.SERVICE_ADDED,
+		Service: &dto.Service{
 			Name:          "New Service",
-			InterceptHost: "some new hostname",
-			InterceptPort: 5000,
 		},
 		Fingerprint: "new_id_fingerprint",
 	}
 
 	events.broadcast <- dto.ServiceEvent{
-		ActionEvent: SERVICE_REMOVED,
-		Service: dto.Service{
+		ActionEvent: dto.SERVICE_REMOVED,
+		Service: &dto.Service{
 			Name: "New Service",
 		},
 		Fingerprint: "new_id_fingerprint",
 	}
 
 	events.broadcast <- dto.IdentityEvent{
-		ActionEvent: IDENTITY_REMOVED,
+		ActionEvent: dto.IDENTITY_REMOVED,
 		Id: dto.Identity{
 			Name:        "",
 			FingerPrint: "new_id_fingerprint",

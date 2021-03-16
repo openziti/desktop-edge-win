@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 
 /// <summary>
@@ -101,6 +102,79 @@ namespace ZitiDesktopEdge.DataStructures {
         public IdentityTogglePayload Payload { get; set; }
     }
 
+    public class EnableMFAFunction : ServiceFunction {
+        public EnableMFAFunction(string fingerprint) {
+            this.Function = "EnableMFA";
+            this.Payload = new EnableMFAFunctionPayload() {
+                Fingerprint = fingerprint
+            };
+        }
+        public EnableMFAFunctionPayload Payload { get; set; }
+    }
+    public class EnableMFAFunctionPayload {
+        public string Fingerprint { get; set; }
+    }
+
+    public class VerifyMFAFunction : ServiceFunction {
+        public VerifyMFAFunction(string fingerprint, string totp) {
+            this.Function = "VerifyMFA";
+            this.Payload = new VerifyMFAFunctionPayload() {
+                Fingerprint = fingerprint,
+                Totp = totp
+            };
+        }
+        public VerifyMFAFunctionPayload Payload { get; set; }
+    }
+    public class VerifyMFAFunctionPayload {
+        public string Fingerprint { get; set; }
+        public string Totp { get; set; }
+    }
+
+    public class AuthMFAFunction : ServiceFunction {
+        public AuthMFAFunction(string fingerprint, string totp) {
+            this.Function = "AuthMFA";
+            this.Payload = new AuthMFAFunctionPayload() {
+                Fingerprint = fingerprint,
+                Totp = totp
+            };
+        }
+        public AuthMFAFunctionPayload Payload { get; set; }
+    }
+    public class AuthMFAFunctionPayload {
+        public string Fingerprint { get; set; }
+        public string Totp { get; set; }
+    }
+
+    public class ReturnMFACodesFunction : ServiceFunction {
+        public ReturnMFACodesFunction(string fingerprint, string totpOrRecoveryCode) {
+            this.Function = "ReturnMFACodes";
+            this.Payload = new ReturnMFACodesFunctionPayload() {
+                Fingerprint = fingerprint,
+                Code = totpOrRecoveryCode,
+            };
+        }
+        public ReturnMFACodesFunctionPayload Payload { get; set; }
+    }
+    public class ReturnMFACodesFunctionPayload {
+        public string Fingerprint { get; set; }
+        public string Code { get; set; }
+    }
+
+    public class GenerateMFACodesFunction : ServiceFunction {
+        public GenerateMFACodesFunction(string fingerprint, string totpOrRecoveryCode) {
+            this.Function = "GenerateMFACodes";
+            this.Payload = new GenerateMFACodesFunctionPayload() {
+                Fingerprint = fingerprint,
+                Code = totpOrRecoveryCode,
+            };
+        }
+        public GenerateMFACodesFunctionPayload Payload { get; set; }
+    }
+    public class GenerateMFACodesFunctionPayload {
+        public string Fingerprint { get; set; }
+        public string Code { get; set; }
+    }
+
     public class SetLogLevelFunction : ServiceFunction {
         public SetLogLevelFunction(string level) {
             this.Function = "SetLogLevel";
@@ -154,14 +228,41 @@ namespace ZitiDesktopEdge.DataStructures {
         public List<Service> Services { get; set; }
         public Metrics Metrics { get; set; }
         public string ControllerVersion { get; set; }
+        public bool MfaEnabled { get; set; }
+        public bool MfaNeeded { get; set; }
     }
-    public class Service
-    {
+
+    public class Service {
         public string Name { get; set; }
-        public string InterceptHost { get; set; }
-        public UInt16 InterceptPort { get; set; }
+        public string[] Protocols { get; set; }
+        public Address[] Addresses { get; set; }
+        public PortRange[] Ports { get; set; }
         public bool OwnsIntercept { get; set; }
         public string AssignedIP { get; set; }
+    }
+
+    public class Address {
+        public bool IsHost { get; set; }
+        public string Hostname { get; set; }
+        public string IP { get; set; }
+        public int Prefix { get; set; }
+
+        public override string ToString() {
+            return Hostname;
+        }
+    }
+
+    public class PortRange {
+        public int High { get; set; }
+        public int Low { get; set; }
+
+        public override string ToString() {
+            if (Low == High) {
+                return Low.ToString();
+            } else {
+                return Low + "-" + High;
+            }
+        }
     }
 
     public class EnrollmentFlags
@@ -227,7 +328,7 @@ namespace ZitiDesktopEdge.DataStructures {
                     {
                         foreach (Service s in id?.Services)
                         {
-                            writer.WriteLine($"      Name: {s.Name} HostName: {s.InterceptHost} Port: {s.InterceptPort}");
+                           //xxfix writer.WriteLine($"      Name: {s.Name} Protocols: {string.Join(",", s.Protocols)} Addresses: {string.Join(",", s.Addresses)} Ports: {string.Join(",", s.Ports)}");
                         }
                     }
                     writer.WriteLine("=============================================");
@@ -313,5 +414,17 @@ namespace ZitiDesktopEdge.DataStructures {
 
     public class StatusCheck : MonitorServiceStatusEvent {
         public bool UpdateAvailable { get; set; }
+    }
+
+    public class MfaEvent : ActionEvent {
+        public string Fingerprint { get; set; }
+        public bool IsVerified { get; set; }
+        public string ProvisioningUrl { get; set; }
+        public List<string> RecoveryCodes { get; set; }
+    }
+
+
+    public class MfaRecoveryCodesResponse : SvcResponse {
+        public string[] Payload { get; set; }
     }
 }
