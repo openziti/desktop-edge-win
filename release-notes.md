@@ -1,3 +1,17 @@
+# Release 1.8.4
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* Fixed a bug from the CSDK handling hosted services
+
+## Dependency Updates
+* Tunneler SDK to v0.11.10/CSDK 0.20.22
+
 # Release 1.8.3
 
 ## What's New
