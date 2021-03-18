@@ -623,3 +623,7 @@ func getTunneledServiceAddresses(ts *C.tunneled_service_t) []dto.Address {
 	}
 	return values
 }
+
+func InitTunnelerDns(ipBase uint32, mask int) {
+	C.ziti_tunneler_init_dns(C.uint32_t(ipBase), C.int(mask))
+}

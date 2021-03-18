@@ -85,5 +85,6 @@ void ziti_dump_go(char *msg);
 //void ziti_mfa_auth_request(ziti_ar_mfa_cb response_cb, ziti_context ztx, void *mfa_ctx, char *code, ziti_ar_mfa_status_cb auth_response, char *fingerprint);
 //void ziti_mfa_ar_cb(ziti_context ztx, void *mfa_ctx, int status);
 //void ziti_ar_mfa_status_cb_go(ziti_context ztx, void *mfa_ctx, int status, char *fingerprint);
+int dnsFallback(const char *name, void *ctx, struct in_addr* addr);
 
 #endif /* GOLANG_SDK_H */

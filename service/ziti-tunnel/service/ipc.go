@@ -20,6 +20,7 @@ package service
 import (
 	"bufio"
 	"crypto/sha1"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"github.com/Microsoft/go-winio"
@@ -260,6 +261,27 @@ func (p *Pipes) shutdownConnections() {
 }
 
 func initialize(cLogLevel int) error {
+	//TODO: this all needs to be cleaned up. it's done it two places and redundant
+	//TODO: fix with mfa?
+	ipv4 := rts.state.TunIpv4
+	ipv4mask := rts.state.TunIpv4Mask
+	if strings.TrimSpace(ipv4) == "" {
+		log.Infof("ip not provided using default: %v", ipv4)
+		ipv4 = constants.Ipv4ip
+		rts.UpdateIpv4(ipv4)
+	}
+	if ipv4mask < constants.Ipv4MaxMask {
+		log.Warnf("provided mask is too large: %d using default: %d", ipv4mask, constants.Ipv4DefaultMask)
+		ipv4mask = constants.Ipv4DefaultMask
+		rts.UpdateIpv4Mask(ipv4mask)
+	}
+	_, ipnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", ipv4, ipv4mask))
+	if err != nil {
+		return fmt.Errorf("error parsing CIDR block: (%v)", err)
+	}
+	dnsIpAsUint32 := binary.BigEndian.Uint32(ipnet.IP)
+	cziti.InitTunnelerDns(dnsIpAsUint32, len(ipnet.Mask))
+
 	assignedIp, t, err := rts.CreateTun(rts.state.TunIpv4, rts.state.TunIpv4Mask)
 	if err != nil {
 		return err
@@ -310,6 +332,16 @@ func setTunInfo(s *dto.TunnelStatus) {
 	if err != nil {
 		log.Errorf("error parsing CIDR block: (%v)", err)
 		return
+	}
+
+	carrierGradeNetworkRange := fmt.Sprintf("%s/%d", constants.Ipv4ip, 10)
+	_, cgsubnet, _ := net.ParseCIDR(carrierGradeNetworkRange)
+
+	if !cgsubnet.Contains(ipnet.IP) {
+		log.Warnf("============================================================================")
+		log.Warnf("the ip provided [%s] is NOT in the expected CIDR range of %s", ipv4, carrierGradeNetworkRange)
+		log.Warnf("this can cause unintented consequences. Please update the ip to one in the specified range.")
+		log.Warnf("============================================================================")
 	}
 
 	t := *rts.tun
