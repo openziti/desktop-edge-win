@@ -8,6 +8,8 @@
 
 ## Bugs fixed:
 * Fixed a bug from the CSDK handling hosted services
+* Fixed issue intercepting connections when the configured IP is not exactly in 100.64.0.0/10
+* Print a warning when the configured IP is not in the carrier grade NAT range 100.64.0.0/10
 
 ## Dependency Updates
 * Tunneler SDK to v0.11.10/CSDK 0.20.22
