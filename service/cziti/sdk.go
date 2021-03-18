@@ -326,10 +326,6 @@ func serviceUnavailable(ctx *ZIdentity, svcId string, name string) {
 	}
 }
 
-type void struct{}
-
-var unimportant void
-
 //export eventCB
 func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 	log.Tracef("events received. type: %d for ztx(%p)", event._type, ztx)
@@ -363,8 +359,8 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 		}
 
 	case C.ZitiServiceEvent:
-		hostnamesToAdd := make(map[string]struct{})
-		hostnamesToRemove := make(map[string]struct{})
+		hostnamesToAdd := make(map[string]bool)
+		hostnamesToRemove := make(map[string]bool)
 		srvEvent := C.ziti_event_service_event(event)
 		for i := 0; true; i++ {
 			s := C.ziti_service_array_get(srvEvent.removed, C.int(i))
@@ -373,7 +369,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			}
 			addys := serviceCB(ztx, s, C.ZITI_SERVICE_UNAVAILABLE, zid)
 			for _, toRemove := range addys {
-				hostnamesToRemove[toRemove.HostName] = unimportant
+				hostnamesToRemove[toRemove.HostName] = true
 			}
 		}
 		for i := 0; true; i++ {
@@ -384,12 +380,12 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			log.Info("service changed remove the service then add it back immediately", C.GoString(s.name))
 			addys := serviceCB(ztx, s, C.ZITI_SERVICE_UNAVAILABLE, zid)
 			for _, toRemove := range addys {
-				hostnamesToRemove[toRemove.HostName] = unimportant
+				hostnamesToRemove[toRemove.HostName] = true
 			}
 
 			addys = serviceCB(ztx, s, C.ZITI_OK, zid)
 			for _, toAdd := range addys {
-				hostnamesToAdd[toAdd.HostName] = unimportant
+				hostnamesToAdd[toAdd.HostName] = true
 			}
 		}
 		for i := 0; true; i++ {
@@ -399,7 +395,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			}
 			addys := serviceCB(ztx, s, C.ZITI_OK, zid)
 			for _, toAdd := range addys {
-				hostnamesToAdd[toAdd.HostName] = unimportant
+				hostnamesToAdd[toAdd.HostName] = true
 			}
 		}
 
@@ -438,7 +434,7 @@ func zitiContextEvent(ztx C.ziti_context, status C.int, zid *ZIdentity) {
 	}
 	zid.StatusChanges(int(status))
 	idMap.Store(ztx, zid)
-	log.Debugf("zitiContextEvent triggered and stored in ZIdentity with pointer: %p", ztx)
+	log.Debugf("zitiContextEvent triggered and stored in ZIdentity with pointer: %p", unsafe.Pointer(ztx))
 }
 
 func zitiError(code C.int) error {

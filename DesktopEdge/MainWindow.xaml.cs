@@ -1234,7 +1234,11 @@ namespace ZitiDesktopEdge {
 			get {
 				return someCommand
 					?? (someCommand = new ActionCommand(() => {
-						DebugForm.Visibility = Visibility.Visible;
+						if (DebugForm.Visibility == Visibility.Hidden) {
+							DebugForm.Visibility = Visibility.Visible;
+						} else {
+							DebugForm.Visibility = Visibility.Hidden;
+						} 
 					}));
 			}
             set {

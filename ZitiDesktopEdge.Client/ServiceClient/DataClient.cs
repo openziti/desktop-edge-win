@@ -147,6 +147,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 //setupPipe();
                 //throw;
                 Logger.Error(ex, "Unexpected error");
+                CommunicationError(ex);
             }
             return null;
         }
@@ -170,6 +171,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 //setupPipe();
                 //throw ioe;
                 Logger.Error(ioe, "Unexpected error");
+                CommunicationError(ioe);
             }
             return;
         }
@@ -184,6 +186,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 //setupPipe();
                 //throw ioe;
                 Logger.Error(ioe, "Unexpected error");
+                CommunicationError(ioe);
             }
             return;
         }
@@ -198,6 +201,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 //setupPipe();
                 //throw ioe;
                 Logger.Error(ioe, "Unexpected error");
+                CommunicationError(ioe);
             }
             return;
         }
@@ -212,6 +216,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 //setupPipe();
                 //throw ioe;
                 Logger.Error(ioe, "Unexpected error");
+                CommunicationError(ioe);
             }
             return null;
         }
@@ -225,6 +230,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //throw ioe;
                 Logger.Error(ioe, "Unexpected error");
+                CommunicationError(ioe);
             }
             return null;
         }
@@ -238,6 +244,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //throw ioe;
                 Logger.Error(ioe, "Unexpected error");
+                CommunicationError(ioe);
             }
             return null;
         }
@@ -251,6 +258,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //throw ioe;
                 Logger.Error(ioe, "Unexpected error");
+                CommunicationError(ioe);
             }
             return null;
         }
@@ -264,6 +272,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //throw ioe;
                 Logger.Error(ioe, "Unexpected error");
+                CommunicationError(ioe);
             }
             return null;
         }
@@ -277,6 +286,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //throw ioe;
                 Logger.Error(ioe, "Unexpected error");
+                CommunicationError(ioe);
             }
             return null;
         }
@@ -289,6 +299,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //throw ioe;
                 Logger.Error(ioe, "Unexpected error");
+                CommunicationError(ioe);
             }
             return null;
         }

@@ -320,7 +320,7 @@ func setTunInfo(s *dto.TunnelStatus) {
 
 	if strings.TrimSpace(ipv4) == "" {
 		ipv4 = constants.Ipv4ip
-		log.Infof("ip not provided using default: %v", ipv4)
+		log.Infof("ip not provided in config file. using default: %v", ipv4)
 		rts.UpdateIpv4(ipv4)
 	}
 	if ipv4mask < constants.Ipv4MaxMask || ipv4mask > constants.Ipv4MinMask {
@@ -424,9 +424,9 @@ func serveIpc(conn net.Conn) {
 	enc := json.NewEncoder(writer)
 
 	for {
-		log.Debug("ipc read begins")
+		log.Trace("ipc read begins")
 		msg, err := reader.ReadString('\n')
-		log.Debug("ipc read ends")
+		log.Trace("ipc read ends")
 		if err != nil {
 			if err != winio.ErrFileClosed {
 				if err == io.EOF {
@@ -475,17 +475,29 @@ func serveIpc(conn net.Conn) {
 				log.Fatal(err)
 			}
 			newIdentity(newId, enc)
+
+			//save the state
+			rts.SaveState()
 		case "RemoveIdentity":
 			log.Debugf("Request received to remove an identity")
 			removeIdentity(enc, cmd.Payload["Fingerprint"].(string))
+
+			//save the state
+			rts.SaveState()
 		case "Status":
 			reportStatus(enc)
 		case "IdentityOnOff":
 			onOff := cmd.Payload["OnOff"].(bool)
 			fingerprint := cmd.Payload["Fingerprint"].(string)
 			toggleIdentity(enc, fingerprint, onOff)
+
+			//save the state
+			rts.SaveState()
 		case "SetLogLevel":
 			setLogLevel(enc, cmd.Payload["Level"].(string))
+
+			//save the state
+			rts.SaveState()
 		case "ZitiDump":
 			log.Debug("request to ZitiDump received")
 			for _, id := range rts.ids {
@@ -526,13 +538,13 @@ func serveIpc(conn net.Conn) {
 				Error:   "debug",
 				Payload: nil,
 			})
+
+			//save the state
+			rts.SaveState()
 		default:
 			log.Warnf("Unknown operation: %s. Returning error on pipe", cmd.Function)
 			respondWithError(enc, "Something unexpected has happened", UNKNOWN_ERROR, nil)
 		}
-
-		//save the state
-		rts.SaveState()
 
 		_ = rw.Flush()
 	}
@@ -540,44 +552,61 @@ func serveIpc(conn net.Conn) {
 
 func generateMfaCodes(out *json.Encoder, fingerprint string, code string) {
 	id := rts.Find(fingerprint)
-	codes, err := cziti.GenerateMfaCodes(id.CId, fingerprint, code)
-	//respond(out, dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: codes})
-	if err == nil {
-		respond(out, dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: codes})
+	if id != nil {
+		codes, err := cziti.GenerateMfaCodes(id.CId, fingerprint, code)
+		if err == nil {
+			respond(out, dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: codes})
+		} else {
+			respondWithError(out, "msg", MFA_FAILED_TO_RETURN_CODES, err)
+		}
 	} else {
-		respondWithError(out, "msg", MFA_FAILED_TO_RETURN_CODES, err)
+		respondWithError(out, "Could not generate mfa codes", MFA_FINGERPRINT_NOT_FOUND, fmt.Errorf("id not found with fingerprint: %s", fingerprint))
 	}
 }
 
 func returnMfaCodes(out *json.Encoder, fingerprint string, code string) {
 	id := rts.Find(fingerprint)
-	codes, err := cziti.ReturnMfaCodes(id.CId, fingerprint, code)
-	if err == nil {
-		respond(out, dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: codes})
+	if id != nil {
+		codes, err := cziti.ReturnMfaCodes(id.CId, fingerprint, code)
+		if err == nil {
+			respond(out, dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: codes})
+		} else {
+			log.Warnf("could not return mfa codes? %v", err)
+			respondWithError(out, "could not return mfa codes", MFA_FAILED_TO_RETURN_CODES, err)
+		}
 	} else {
-		respondWithError(out, "msg", MFA_FAILED_TO_RETURN_CODES, err)
+		respondWithError(out, "Could not return mfa codes", MFA_FINGERPRINT_NOT_FOUND, fmt.Errorf("id not found with fingerprint: %s", fingerprint))
 	}
 }
 
 func enableMfa(out *json.Encoder, fingerprint string) {
 	id := rts.Find(fingerprint)
-	cziti.EnableMFA(id.CId, fingerprint)
-
-	respond(out, dto.Response{Message: "mfa enroll complete", Code: SUCCESS, Error: "", Payload: nil})
+	if id != nil {
+		cziti.EnableMFA(id.CId, fingerprint)
+		respond(out, dto.Response{Message: "mfa enroll complete", Code: SUCCESS, Error: "", Payload: nil})
+	} else {
+		respondWithError(out, "Could not enable mfa", MFA_FINGERPRINT_NOT_FOUND, fmt.Errorf("id not found with fingerprint: %s", fingerprint))
+	}
 }
 
 func verifyMfa(out *json.Encoder, fingerprint string, code string) {
 	id := rts.Find(fingerprint)
-	cziti.VerifyMFA(id.CId, fingerprint, code)
-
-	respond(out, dto.Response{Message: "mfa verify complete", Code: SUCCESS, Error: "", Payload: nil})
+	if id != nil {
+		cziti.VerifyMFA(id.CId, fingerprint, code)
+		respond(out, dto.Response{Message: "mfa verify complete", Code: SUCCESS, Error: "", Payload: nil})
+	} else {
+		respondWithError(out, "Could not verify mfa code", MFA_FINGERPRINT_NOT_FOUND, fmt.Errorf("id not found with fingerprint: %s", fingerprint))
+	}
 }
 
 func removeMFA(out *json.Encoder, fingerprint string, code string) {
 	id := rts.Find(fingerprint)
-	cziti.RemoveMFA(id.CId, fingerprint, code)
-
-	respond(out, dto.Response{Message: "mfa removed successfully", Code: SUCCESS, Error: "", Payload: nil})
+	if id != nil {
+		cziti.RemoveMFA(id.CId, fingerprint, code)
+		respond(out, dto.Response{Message: "mfa removed successfully", Code: SUCCESS, Error: "", Payload: nil})
+	} else {
+		respondWithError(out, "Could not remove mfa", MFA_FINGERPRINT_NOT_FOUND, fmt.Errorf("id not found with fingerprint: %s", fingerprint))
+	}
 }
 
 func setLogLevel(out *json.Encoder, level string) {
