@@ -196,7 +196,11 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         protected void debugServiceCommunication(string msg) {
-            Logger.Error(msg);
+#if DEBUG
+            Logger.Debug(msg);
+#else
+            Logger.Trace(msg);
+#endif
         }
 
         async protected Task<T> readAsync<T>(StreamReader reader) where T : SvcResponse {
