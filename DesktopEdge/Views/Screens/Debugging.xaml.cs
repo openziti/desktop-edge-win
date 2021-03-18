@@ -31,15 +31,15 @@ namespace Ziti.Desktop.Edge.Views.Screens {
         }
 
         async private void btn2_Click(object sender, RoutedEventArgs e) {
-            await client.VerifyMFA(FingerPrint.Text, VerifyMFACode.Text);
+            await client.VerifyMFA(FingerPrint.Text, TheMFACode.Text);
         }
 
         async private void btn3_Click(object sender, RoutedEventArgs e) {
-            await client.AuthMFA(FingerPrint.Text, AuthMFACode.Text);
+            await client.AuthMFA(FingerPrint.Text, TheMFACode.Text);
         }
 
         async private void btn4_Click(object sender, RoutedEventArgs e) {
-            await client.RemoveMFA(FingerPrint.Text, RemoveMFACode.Text);
+            await client.RemoveMFA(FingerPrint.Text, TheMFACode.Text);
         }
 
         bool initialized = false;
@@ -67,6 +67,14 @@ namespace Ziti.Desktop.Edge.Views.Screens {
                     MfaRecoveryCodes.Text = "";
                 }
             });
+        }
+
+        async private void btn5_Click(object sender, RoutedEventArgs e) {
+            await client.ReturnMFACodes(FingerPrint.Text, TheMFACode.Text);
+        }
+
+        async private void btn6_Click(object sender, RoutedEventArgs e) {
+            await client.GenerateMFACodes(FingerPrint.Text, TheMFACode.Text);
         }
     }
 }

@@ -1018,12 +1018,12 @@ func handleEvents(isInitialized chan struct{}) {
 		case <-shutdown:
 			return
 		case <-every5s.C:
-			s := rts.ToMetrics()
+/*			s := rts.ToMetrics()
 
 			events.broadcast <- dto.MetricsEvent{
 				StatusEvent: dto.StatusEvent{Op: "metrics"},
 				Identities:  s.Identities,
-			}
+			}*/
 		}
 	}
 }
@@ -1074,8 +1074,8 @@ func AddMetrics(id *Id) {
 func authMfa(out *json.Encoder, fingerprint string, code string) {
 	id := rts.Find(fingerprint)
 	result := cziti.AuthMFA(id.CId, fingerprint, code)
-	if result != "" {
-		respond(out, dto.Response{Message: "mfa verify complete", Code: SUCCESS, Error: "", Payload: nil})
+	if result == "" {
+		respond(out, dto.Response{Message: "mfa verify complete", Code: SUCCESS, Error: "", Payload: fingerprint})
 	} else {
 		respondWithError(out, fmt.Sprintf("the supplied code [%s] was not valid: %s", code, result), 1, nil)
 	}

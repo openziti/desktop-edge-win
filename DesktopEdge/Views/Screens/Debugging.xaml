@@ -9,7 +9,7 @@
       d:DesignHeight="450" d:DesignWidth="400" IsVisibleChanged="UserControl_IsVisibleChanged"
 >
     <StackPanel>
-        <Expander Header="Enable MFA" Background="AliceBlue">
+        <Expander Header="MFA" Background="AliceBlue">
             <StackPanel Background="AliceBlue">
                 <Button x:Name="btn1" Content="Add Fingerprint and click to enable mfa" Click="btn1_Click"/>
                 <TextBox x:Name="FingerPrint"/>
@@ -17,25 +17,14 @@
                 <TextBox x:Name="MfaIsVerified"/>
                 <TextBox x:Name="MfaProvisioningUrl"/>
                 <TextBox x:Name="MfaRecoveryCodes"/>
+                <Line></Line>
+                <TextBox x:Name="TheMFACode"/>
+                <Button x:Name="btn2" Content="Click to verify enrollment" Click="btn2_Click"/>
+                <Button x:Name="btn3" Content="Click to Authorize" Click="btn3_Click"/>
+                <Button x:Name="btn4" Content="Click to remove mfa" Click="btn4_Click"/>
+                <Button x:Name="btn5" Content="Click to return codes" Click="btn5_Click"/>
+                <Button x:Name="btn6" Content="Click to generate codes" Click="btn6_Click"/>
             </StackPanel>
-        </Expander>
-        <Expander Header="Verify MFA" Background="AliceBlue">
-            <StackPanel Background="AliceBlue">
-                <Button x:Name="btn2" Content="Enter 6 or 8 digit code and click to verify enrollment" Click="btn2_Click"/>
-                <TextBox x:Name="VerifyMFACode"/>
-            </StackPanel>
-        </Expander>
-        <Expander Header="Authorize MFA" Background="AliceBlue">
-            <StackPanel Background="AliceBlue">
-                <Button x:Name="btn3" Content="Enter 6 or 8 digit code and click to auth enrollment" Click="btn3_Click"/>
-                <TextBox x:Name="AuthMFACode"/>
-            </StackPanel>
-        </Expander>
-        <Expander Header="Remove MFA" Background="AliceBlue">
-        <StackPanel Background="AliceBlue">
-            <Button x:Name="btn4" Content="some other stuff here" Click="btn4_Click"/>
-            <TextBox x:Name="RemoveMFACode"/>
-        </StackPanel>
         </Expander>
     </StackPanel>
 </UserControl>
