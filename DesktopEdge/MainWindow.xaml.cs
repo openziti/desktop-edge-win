@@ -219,7 +219,6 @@ namespace ZitiDesktopEdge {
 		/// <summary>
 		/// Close the MFA Screen with animation
 		/// </summary>
-		/// <param name="isComplete"></param>
 		private void DoClose(bool isComplete) {
 			DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
 			ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
@@ -227,6 +226,8 @@ namespace ZitiDesktopEdge {
 			MFASetup.BeginAnimation(Grid.OpacityProperty, animation);
 			MFASetup.BeginAnimation(Grid.MarginProperty, animateThick);
 			HideModal();
+			LoadIdentities(true);
+			if (IdentityMenu.IsVisible) IdentityMenu.UpdateView();
 		}
 
 		private void AddIdentity(ZitiIdentity id) {
@@ -756,7 +757,6 @@ namespace ZitiDesktopEdge {
 				InitializeTimer((int)e.Status.Duration);
 				LoadStatusFromService(e.Status);
 				LoadIdentities(true);
-
 				IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
 				if (deets.IsVisible) {
 					deets.UpdateView();

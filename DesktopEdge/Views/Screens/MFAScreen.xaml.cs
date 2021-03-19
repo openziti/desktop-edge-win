@@ -245,10 +245,10 @@ namespace ZitiDesktopEdge {
 			DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
 			SvcResponse resp = await serviceClient.VerifyMFA(this._identity.Fingerprint, code);
 			if (resp.Code != 0) {
-
-            } else {
-
-            }
+				this.OnClose?.Invoke(false);
+			} else {
+				this.OnClose?.Invoke(false);
+			}
 		}
 
 		async private void DoAuthenticate(object sender, MouseButtonEventArgs e) {
@@ -265,8 +265,9 @@ namespace ZitiDesktopEdge {
 				SvcResponse authResult = await serviceClient.AuthMFA(this._identity.Fingerprint, code);
 				if (authResult?.Code != 0) {
 					Logger.Error("AuthMFA failed. " + authResult.Message);
+					this.OnClose?.Invoke(false);
 				} else {
-					//success - hide the screen Jeremy
+					this.OnClose?.Invoke(true);
 				}
 			}
 		}

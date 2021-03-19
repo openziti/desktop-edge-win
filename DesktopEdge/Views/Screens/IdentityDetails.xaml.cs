@@ -57,6 +57,21 @@ namespace ZitiDesktopEdge {
 				IdentityArea.Opacity = 1.0;
 				IdentityArea.Visibility = Visibility.Visible;
 				IdentityMFA.IsOn = _identity.IsMFAEnabled;
+				if (_identity.IsMFAEnabled) {
+					if (_identity.MFAInfo.IsAuthenticated) {
+						IdentityMFA.AuthOn.Visibility = Visibility.Visible;
+						IdentityMFA.AuthOff.Visibility = Visibility.Collapsed;
+						IdentityMFA.RecoveryButton.Visibility = Visibility.Visible;
+					} else {
+						IdentityMFA.AuthOn.Visibility = Visibility.Collapsed;
+						IdentityMFA.AuthOff.Visibility = Visibility.Visible;
+						IdentityMFA.RecoveryButton.Visibility = Visibility.Collapsed;
+					}
+				} else {
+					IdentityMFA.AuthOn.Visibility = Visibility.Collapsed;
+					IdentityMFA.AuthOff.Visibility = Visibility.Collapsed;
+					IdentityMFA.RecoveryButton.Visibility = Visibility.Collapsed;
+				}
 				this.Visibility = Visibility.Visible;
 			}
 		}
@@ -102,6 +117,21 @@ namespace ZitiDesktopEdge {
 			IdentityEnrollment.Value = _identity.EnrollmentStatus;
 			IdentityStatus.Value = _identity.IsEnabled ? "active" : "disabled";
 			IdentityMFA.IsOn = _identity.IsMFAEnabled;
+			if (_identity.IsMFAEnabled) {
+				if (_identity.MFAInfo.IsAuthenticated) {
+					IdentityMFA.AuthOn.Visibility = Visibility.Visible;
+					IdentityMFA.AuthOff.Visibility = Visibility.Collapsed;
+					IdentityMFA.RecoveryButton.Visibility = Visibility.Visible;
+				} else {
+					IdentityMFA.AuthOn.Visibility = Visibility.Collapsed;
+					IdentityMFA.AuthOff.Visibility = Visibility.Visible;
+					IdentityMFA.RecoveryButton.Visibility = Visibility.Collapsed;
+				}
+			} else {
+				IdentityMFA.AuthOn.Visibility = Visibility.Collapsed;
+				IdentityMFA.AuthOff.Visibility = Visibility.Collapsed;
+				IdentityMFA.RecoveryButton.Visibility = Visibility.Collapsed;
+			}
 			ServiceList.Children.Clear();
 			if (_identity.Services.Count>0) {
 				foreach(var zitiSvc in _identity.Services.OrderBy(s => s.Name.ToLower())) {
