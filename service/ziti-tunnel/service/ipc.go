@@ -1018,12 +1018,12 @@ func handleEvents(isInitialized chan struct{}) {
 		case <-shutdown:
 			return
 		case <-every5s.C:
-/*			s := rts.ToMetrics()
+			s := rts.ToMetrics()
 
 			events.broadcast <- dto.MetricsEvent{
 				StatusEvent: dto.StatusEvent{Op: "metrics"},
 				Identities:  s.Identities,
-			}*/
+			}
 		}
 	}
 }
