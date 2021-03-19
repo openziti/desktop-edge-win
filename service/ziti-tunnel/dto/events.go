@@ -44,12 +44,12 @@ var IDENTITY_REMOVED = ActionEvent{
 	StatusEvent: StatusEvent{Op: IDENTITY_OP},
 	Action:      REMOVED,
 }
-var LOGLEVEL_CHANGED = dto.ActionEvent{
-	StatusEvent: dto.StatusEvent{Op: LOGLEVEL_OP},
+var LOGLEVEL_CHANGED = ActionEvent{
+	StatusEvent: StatusEvent{Op: LOGLEVEL_OP},
 	Action:      CHANGED,
 }
 
-var FEEDBACK_REQUEST = dto.ActionEvent{
-	StatusEvent: dto.StatusEvent{Op: FEEDBACK_OP},
+var FEEDBACK_REQUEST = ActionEvent{
+	StatusEvent: StatusEvent{Op: FEEDBACK_OP},
 	Action:      NORMAL,
 }

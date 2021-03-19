@@ -3,7 +3,7 @@ package cli
 import (
 	"strings"
 
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/service"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 )
 
 //GetIdentities is to fetch identities through cmdline
@@ -51,5 +51,5 @@ func SetLogLevel(args []string, flags map[string]bool) {
 
 //GetFeedback is to create logs zip through cmdline
 func GetFeedback(args []string, flags map[string]bool) {
-	GetDataFromMonitorIpcPipe(&service.FEEDBACK_REQUEST, args, flags)
+	GetDataFromMonitorIpcPipe(&dto.FEEDBACK_REQUEST, args, flags)
 }

@@ -28,11 +28,10 @@ type IdentityCli struct {
 
 type ServiceCli struct {
 	Name          string
-	AssignedIP    string
-	InterceptHost string
-	InterceptPort uint16
 	Id            string
-	AssignedHost  string
+	Protocols	  string
+	Ports    	  string
+	Addresses	  string
 	OwnsIntercept bool
 }
 

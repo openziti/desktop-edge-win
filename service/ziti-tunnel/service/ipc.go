@@ -1013,9 +1013,10 @@ func authMfa(out *json.Encoder, fingerprint string, code string) { /*
 		}*/
 }
 
+// when the log level is updated through command line, the message is broadcasted to UI and update service as well
 func sendLogLevelAndNotify(enc *json.Encoder, loglevel string) {
 	events.broadcast <- dto.LogLevelEvent{
-		ActionEvent: LOGLEVEL_CHANGED,
+		ActionEvent: dto.LOGLEVEL_CHANGED,
 		LogLevel:    loglevel,
 	}
 	message := fmt.Sprintf("Loglevel %s is sent to the events channel", loglevel)
@@ -1024,11 +1025,12 @@ func sendLogLevelAndNotify(enc *json.Encoder, loglevel string) {
 	respond(enc, resp)
 }
 
+// when the identity status is updated through command line, the message is sent to UI as well
 func sendIdentityAndNotifyUI(enc *json.Encoder, fingerprint string) {
 	for _, id := range rts.ids {
 		if id.FingerPrint == fingerprint {
 			events.broadcast <- dto.IdentityEvent{
-				ActionEvent: IDENTITY_ADDED,
+				ActionEvent: dto.IDENTITY_ADDED,
 				Id:          id.Identity,
 			}
 			message := fmt.Sprintf("Identity %s - %s updated message is sent to the events channel", id.Identity.Name, id.Identity.FingerPrint)

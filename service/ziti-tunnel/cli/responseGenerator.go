@@ -39,13 +39,29 @@ func convertToIdentityCli(id *dto.Identity) dto.IdentityCli {
 }
 
 func convertToServiceCli(svc dto.Service) dto.ServiceCli {
+	cliPorts := ""
+	for _, val := range svc.Ports {
+		if len(cliPorts) != 0 {
+			cliPorts = fmt.Sprintf("%s, %d-%d", cliPorts, val.Low, val.High)
+		} else {
+			cliPorts = fmt.Sprintf("%d-%d", val.Low, val.High)
+		}
+	}
+	cliAddresses := ""
+	for _, val := range svc.Addresses {
+		if len(cliAddresses) != 0 {
+			cliAddresses = cliAddresses + ", " + val.HostName + "/" + val.IP
+		} else {
+			cliAddresses = val.HostName + "/" + val.IP
+		}
+	}
+
 	return dto.ServiceCli{
 		Name:          svc.Name,
 		Id:            svc.Id,
-		InterceptHost: svc.InterceptHost,
-		InterceptPort: svc.InterceptPort,
-		AssignedIP:    svc.AssignedIP,
-		AssignedHost:  svc.AssignedHost,
+		Protocols: 	   strings.Join(svc.Protocols, ","),
+		Ports:		   cliPorts,
+		Addresses:     cliAddresses,
 		OwnsIntercept: svc.OwnsIntercept,
 	}
 }
