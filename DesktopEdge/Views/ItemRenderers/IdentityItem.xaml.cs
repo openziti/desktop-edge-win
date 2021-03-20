@@ -40,18 +40,17 @@ namespace ZitiDesktopEdge {
 		public void RefreshUI () {
 			ToggleSwitch.Enabled = _identity.IsEnabled;
 			if (_identity.IsMFAEnabled) {
-				// Clint I need a sign
-				// if (_identity.IsMFAAuthentcated) {
-				ServiceCountArea.Visibility = Visibility.Visible;
-				MfaRequired.Visibility = Visibility.Collapsed;
-				ServiceCountAreaLabel.Content = "services";
-				MainArea.Opacity = 1.0;
-				// } else {
-				ServiceCountArea.Visibility = Visibility.Collapsed;
-				MfaRequired.Visibility = Visibility.Visible;
-				ServiceCountAreaLabel.Content = "authorize";
-				MainArea.Opacity = 0.6;
-				// }
+				if (_identity.MFAInfo.IsAuthenticated) {
+					ServiceCountArea.Visibility = Visibility.Visible;
+					MfaRequired.Visibility = Visibility.Collapsed;
+					ServiceCountAreaLabel.Content = "services";
+					MainArea.Opacity = 1.0;
+				} else {
+					ServiceCountArea.Visibility = Visibility.Collapsed;
+					MfaRequired.Visibility = Visibility.Visible;
+					ServiceCountAreaLabel.Content = "authorize";
+					MainArea.Opacity = 0.6;
+				}
 			} else {
 				ServiceCountArea.Visibility = Visibility.Visible;
 				MfaRequired.Visibility = Visibility.Collapsed;

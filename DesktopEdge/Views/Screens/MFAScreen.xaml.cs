@@ -67,6 +67,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		public void ShowSetup(ZitiIdentity identity, string url, string secret) {
+			SetupCode.Text = "";
 			this._identity = identity;
 			MFAImage.Visibility = Visibility.Visible;
 			SecretCode.Visibility = Visibility.Collapsed;
@@ -84,7 +85,7 @@ namespace ZitiDesktopEdge {
 			MFARecoveryArea.Visibility = Visibility.Collapsed;
 			SeperationColor.Visibility = Visibility.Visible;
 			for (int i = 1; i <= 6; i++) (this.FindName("SetupAuth" + i) as TextBox).Text = "";
-			SetupAuth1.Focus();
+			SetupCode.Focus();
 		}
 
 		public void ShowRecovery(string[] codes, ZitiIdentity identity) {
@@ -111,15 +112,14 @@ namespace ZitiDesktopEdge {
 		}
 
 		public void ShowMFA(ZitiIdentity identity) {
+			AuthCode.Text = "";
 			this._identity = identity;
 			MFASetupArea.Visibility = Visibility.Collapsed;
 			MFARecoveryArea.Visibility = Visibility.Collapsed;
 			SeperationColor.Visibility = Visibility.Collapsed;
 			MFAAuthArea.Visibility = Visibility.Visible;
 			MFAArea.Height = 220;
-			for (int i = 1; i <= 6; i++) (this.FindName("Auth" + i) as TextBox).Text = "";
-			for (int i = 1; i <= 8; i++) (this.FindName("Rec" + i) as TextBox).Text = "";
-			Auth1.Focus();
+			AuthCode.Focus();
 		}
 
 		private BitmapImage LoadImage(string url) {
@@ -136,77 +136,24 @@ namespace ZitiDesktopEdge {
 			Process.Start(new ProcessStartInfo(_url) { UseShellExecute = true });
 		}
 
-		private void GoNextSetup(object sender, KeyEventArgs e) {
-			TextBox sentFrom = sender as TextBox;
-			string name = sentFrom.Name;
-			int index = 1;
-			if (name == "SetupAuth1") index = 2;
-			else if (name == "SetupAuth2") index = 3;
-			else if (name == "SetupAuth3") index = 4;
-			else if (name == "SetupAuth4") index = 5;
-			else if (name == "SetupAuth5") index = 6;
-
-			TextBox entry = this.FindName("SetupAuth" + index) as TextBox;
-			if (sentFrom.Text.Length > 0) {
-				entry.Focus();
-				entry.Select(0, entry.Text.Length);
-			}
-		}
-
-		private void GoNext(object sender, KeyEventArgs e) {
-			TextBox sentFrom = sender as TextBox;
-			string name = sentFrom.Name;
-			int index = 1;
-			if (name == "Auth1") index = 2;
-			else if (name == "Auth2") index = 3;
-			else if (name == "Auth3") index = 4;
-			else if (name == "Auth4") index = 5;
-			else if (name == "Auth5") index = 6;
-
-			TextBox entry = this.FindName("Auth"+index) as TextBox;
-			if (sentFrom.Text.Length>0) {
-				entry.Focus();
-			}
-		}
-
-		private void GoNextRecovery(object sender, KeyEventArgs e) {
-			TextBox sentFrom = sender as TextBox;
-			string name = sentFrom.Name;
-			int index = 1;
-			if (name == "Rec1") index = 2;
-			else if (name == "Rec2") index = 3;
-			else if (name == "Rec3") index = 4;
-			else if (name == "Rec4") index = 5;
-			else if (name == "Rec5") index = 6;
-			else if (name == "Rec6") index = 7;
-			else if (name == "Rec7") index = 8;
-
-			TextBox entry = this.FindName("Rec" + index) as TextBox;
-			if (sentFrom.Text.Length > 0) {
-				entry.Focus();
-			}
-		}
-
-		async private void ToggleRecovery(object sender, MouseButtonEventArgs e) {
-			if (AuthRecoveryArea.Visibility==Visibility.Visible) {
+		private void ToggleRecovery(object sender, MouseButtonEventArgs e) {
+			AuthCode.Text = "";
+			if (AuthCode.MaxLength==6) {
 				GenerateMFACodes(null, null);
-				AuthRecoveryArea.Visibility = Visibility.Collapsed;
-				AuthCodeArea.Visibility = Visibility.Visible;
-				ToggleType.Content = "Use Recovery Code";
-				AuthSubTitle.Content = "Enter your authorization code";
-				Auth1.Focus();
-			} else {
-				ReturnMFACodes(null, null);
-				AuthRecoveryArea.Visibility = Visibility.Visible;
-				AuthCodeArea.Visibility = Visibility.Collapsed;
+				AuthCode.MaxLength = 8;
 				ToggleType.Content = "Use Auth Code";
 				AuthSubTitle.Content = "Enter a recovery code";
-				Rec1.Focus();
+				AuthCode.Focus();
+			} else {
+				AuthCode.MaxLength = 6;
+				ToggleType.Content = "Use Recovery Code";
+				AuthSubTitle.Content = "Enter your authorization code";
+				AuthCode.Focus();
 			}
 		}
 		async private void ReturnMFACodes(object sender, MouseButtonEventArgs e) {
 			DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
-			string code = Auth1.Text + Auth2.Text + Auth3.Text + Auth4.Text + Auth5.Text + Auth6.Text; //jeremyfix
+			string code = AuthCode.Text;
 			Logger.Debug("AuthMFA successful.");
 			MfaRecoveryCodesResponse getcodes = await serviceClient.ReturnMFACodes(this._identity.Fingerprint, code);
 			if (getcodes.Code != 0) {
@@ -216,7 +163,7 @@ namespace ZitiDesktopEdge {
 		}
 		async private void GenerateMFACodes(object sender, MouseButtonEventArgs e) {
 			DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
-			string code = Rec1.Text + Rec2.Text + Rec3.Text + Rec4.Text + Rec5.Text + Rec6.Text; //jeremyfix
+			string code = AuthCode.Text;
 			MfaRecoveryCodesResponse gencodes = await serviceClient.GenerateMFACodes(this._identity.Fingerprint, code);
 			if (gencodes.Code != 0) {
 				Logger.Error("AuthMFA failed. " + gencodes.Message);
@@ -240,7 +187,7 @@ namespace ZitiDesktopEdge {
 
 		async private void DoSetupAuthenticate(object sender, MouseButtonEventArgs e) {
 			AuthBgColor.Color = Color.FromRgb(0, 104, 249);
-			string code = SetupAuth1.Text + SetupAuth2.Text + SetupAuth3.Text + SetupAuth4.Text + SetupAuth5.Text + SetupAuth6.Text;
+			string code = SetupCode.Text;
 
 			DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
 			SvcResponse resp = await serviceClient.VerifyMFA(this._identity.Fingerprint, code);
@@ -252,43 +199,21 @@ namespace ZitiDesktopEdge {
 		}
 
 		async private void DoAuthenticate(object sender, MouseButtonEventArgs e) {
-			string code = "";
-			if (AuthRecoveryArea.Visibility == Visibility.Visible) {
-				code = Rec1.Text + Rec2.Text + Rec3.Text + Rec4.Text + Rec5.Text + Rec6.Text + Rec7.Text + Rec8.Text;
-				if (code.Length != 8) this.ShowError("You must enter a valid code");
+			string code = AuthCode.Text;
+			if (AuthCode.MaxLength==8) {
+				if (code.Length != 8) this.ShowError("You must enter a valid recovery code");
 			} else {
-				code = Auth1.Text + Auth2.Text + Auth3.Text + Auth4.Text + Auth5.Text + Auth6.Text;
 				if (code.Length != 6) this.ShowError("You must enter a valid code");
-
-
-				DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
-				SvcResponse authResult = await serviceClient.AuthMFA(this._identity.Fingerprint, code);
-				if (authResult?.Code != 0) {
-					Logger.Error("AuthMFA failed. " + authResult.Message);
-					this.OnClose?.Invoke(false);
-				} else {
-					this.OnClose?.Invoke(true);
-				}
 			}
-		}
 
-		async private void DoAuthenticateb(object sender, MouseButtonEventArgs e) {
-			string code = "";
-			if (AuthRecoveryArea.Visibility == Visibility.Visible) {
-				code = Rec1.Text + Rec2.Text + Rec3.Text + Rec4.Text + Rec5.Text + Rec6.Text + Rec7.Text + Rec8.Text;
-				if (code.Length != 8) this.ShowError("You must enter a valid code");
+
+			DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
+			SvcResponse authResult = await serviceClient.AuthMFA(this._identity.Fingerprint, code);
+			if (authResult?.Code != 0) {
+				Logger.Error("AuthMFA failed. " + authResult.Message);
+				this.OnClose?.Invoke(false);
 			} else {
-				code = Auth1.Text + Auth2.Text + Auth3.Text + Auth4.Text + Auth5.Text + Auth6.Text;
-				if (code.Length != 6) this.ShowError("You must enter a valid code");
-
-
-				DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
-				SvcResponse authResult = await serviceClient.VerifyMFA(this._identity.Fingerprint, code);
-				if (authResult?.Code != 0) {
-					Logger.Error("VerifyMFA failed. " + authResult.Message);
-				} else {
-					//success - hide the screen Jeremy
-				}
+				this.OnClose?.Invoke(true);
 			}
 		}
 
@@ -330,6 +255,18 @@ namespace ZitiDesktopEdge {
 				MFAImage.Visibility = Visibility.Collapsed;
 				SecretCode.Visibility = Visibility.Visible;
 				SecretButton.Content = "Show QR Code";
+			}
+		}
+
+		private void HandleKey(object sender, KeyEventArgs e) {
+			if (e.Key == Key.Return) {
+				DoSetupAuthenticate(sender, null);
+			}
+		}
+
+		private void AuthCode_KeyUp(object sender, KeyEventArgs e) {
+			if (e.Key == Key.Return) {
+				DoAuthenticate(sender, null);
 			}
 		}
 	}

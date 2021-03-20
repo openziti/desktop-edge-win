@@ -123,6 +123,7 @@ namespace ZitiDesktopEdge {
 					ShowBlurb("Unexpected error when processing MFA", "");
 					logger.Error("unexpected action: " + mfa.Action);
 				}
+				LoadIdentities(true);
 			});
 		}
 
@@ -276,7 +277,6 @@ namespace ZitiDesktopEdge {
 			logger.Info("========================================================================");
 
 			App.Current.MainWindow.WindowState = WindowState.Normal;
-			App.Current.MainWindow.Closing += MainWindow_Closing;
 			App.Current.MainWindow.Deactivated += MainWindow_Deactivated;
 			App.Current.MainWindow.Activated += MainWindow_Activated;
 
@@ -864,6 +864,7 @@ namespace ZitiDesktopEdge {
 						} else {
 							idItem.ToggleStatus.Content = "DISABLED";
 						}
+						idItem.Authenticate += IdItem_Authenticate;
 						idItem.OnStatusChanged += Id_OnStatusChanged;
 						idItem.Identity = id;
 						IdList.Children.Add(idItem);
@@ -882,6 +883,10 @@ namespace ZitiDesktopEdge {
 
 				Placement();
 			});
+		}
+
+		private void IdItem_Authenticate(ZitiIdentity identity) {
+			ShowAuthenticate(identity);
 		}
 
 		private void Id_OnStatusChanged(bool attached) {

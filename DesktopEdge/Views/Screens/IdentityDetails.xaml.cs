@@ -56,22 +56,6 @@ namespace ZitiDesktopEdge {
 				UpdateView();
 				IdentityArea.Opacity = 1.0;
 				IdentityArea.Visibility = Visibility.Visible;
-				IdentityMFA.IsOn = _identity.IsMFAEnabled;
-				if (_identity.IsMFAEnabled) {
-					if (_identity.MFAInfo.IsAuthenticated) {
-						IdentityMFA.AuthOn.Visibility = Visibility.Visible;
-						IdentityMFA.AuthOff.Visibility = Visibility.Collapsed;
-						IdentityMFA.RecoveryButton.Visibility = Visibility.Visible;
-					} else {
-						IdentityMFA.AuthOn.Visibility = Visibility.Collapsed;
-						IdentityMFA.AuthOff.Visibility = Visibility.Visible;
-						IdentityMFA.RecoveryButton.Visibility = Visibility.Collapsed;
-					}
-				} else {
-					IdentityMFA.AuthOn.Visibility = Visibility.Collapsed;
-					IdentityMFA.AuthOff.Visibility = Visibility.Collapsed;
-					IdentityMFA.RecoveryButton.Visibility = Visibility.Collapsed;
-				}
 				this.Visibility = Visibility.Visible;
 			}
 		}
@@ -104,11 +88,6 @@ namespace ZitiDesktopEdge {
 		}
 
 		public void UpdateView() {
-			if(_identity.IsMFAEnabled && !_identity.MFAInfo.IsAuthenticated) {
-				//verify mfa here
-				MainWindow.MFAAuthenticate(_identity);
-			}
-
 			IdDetailName.Text = _identity.Name;
 			IdDetailName.ToolTip = _identity.Name;
 			IdDetailToggle.Enabled = _identity.IsEnabled;
@@ -117,12 +96,16 @@ namespace ZitiDesktopEdge {
 			IdentityEnrollment.Value = _identity.EnrollmentStatus;
 			IdentityStatus.Value = _identity.IsEnabled ? "active" : "disabled";
 			IdentityMFA.IsOn = _identity.IsMFAEnabled;
+			IdentityMFA.ToggleField.Opacity = 1;
 			if (_identity.IsMFAEnabled) {
 				if (_identity.MFAInfo.IsAuthenticated) {
+					IdentityMFA.ToggleField.IsEnabled = true;
 					IdentityMFA.AuthOn.Visibility = Visibility.Visible;
 					IdentityMFA.AuthOff.Visibility = Visibility.Collapsed;
 					IdentityMFA.RecoveryButton.Visibility = Visibility.Visible;
 				} else {
+					IdentityMFA.ToggleField.Opacity = 0.2;
+					IdentityMFA.ToggleField.IsEnabled = false;
 					IdentityMFA.AuthOn.Visibility = Visibility.Collapsed;
 					IdentityMFA.AuthOff.Visibility = Visibility.Visible;
 					IdentityMFA.RecoveryButton.Visibility = Visibility.Collapsed;
