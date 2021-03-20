@@ -110,10 +110,12 @@ namespace ZitiDesktopEdge {
 					string url = HttpUtility.UrlDecode(mfa.ProvisioningUrl);
 					string secret = HttpUtility.ParseQueryString(url)["secret"];
 					this.IdentityMenu.Identity.MFAInfo.RecoveryCodes = mfa?.RecoveryCodes?.ToArray();
-					ShowMFARecoveryCodes(this.IdentityMenu.Identity);
+					SetupMFA(this.IdentityMenu.Identity, url, secret);
 				} else if (mfa.Action == "auth_challenge") {
 					ShowBlurb("Setting Up auth_challenge", "");
 				} else if (mfa.Action == "auth_response") {
+					/// Clint - This needs to be called after the setup completes
+					/// ShowMFARecoveryCodes(this.IdentityMenu.Identity);
 					if (mfa.IsVerified) {
 						if (this.IdentityMenu.Identity.Fingerprint==mfa.Fingerprint) {
 							this.IdentityMenu.Identity.MFAInfo.IsAuthenticated = mfa.IsVerified;

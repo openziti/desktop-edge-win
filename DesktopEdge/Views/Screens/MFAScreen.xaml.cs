@@ -84,7 +84,6 @@ namespace ZitiDesktopEdge {
 			MFASetupArea.Visibility = Visibility.Visible;
 			MFARecoveryArea.Visibility = Visibility.Collapsed;
 			SeperationColor.Visibility = Visibility.Visible;
-			for (int i = 1; i <= 6; i++) (this.FindName("SetupAuth" + i) as TextBox).Text = "";
 			SetupCode.Focus();
 		}
 
