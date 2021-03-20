@@ -110,11 +110,15 @@ namespace ZitiDesktopEdge {
 					string url = HttpUtility.UrlDecode(mfa.ProvisioningUrl);
 					string secret = HttpUtility.ParseQueryString(url)["secret"];
 					this.IdentityMenu.Identity.MFAInfo.RecoveryCodes = mfa?.RecoveryCodes?.ToArray();
-					SetupMFA(this.IdentityMenu.Identity, url, secret);
+					ShowMFARecoveryCodes(this.IdentityMenu.Identity);
 				} else if (mfa.Action == "auth_challenge") {
 					ShowBlurb("Setting Up auth_challenge", "");
 				} else if (mfa.Action == "auth_response") {
 					if (mfa.IsVerified) {
+						if (this.IdentityMenu.Identity.Fingerprint==mfa.Fingerprint) {
+							this.IdentityMenu.Identity.MFAInfo.IsAuthenticated = mfa.IsVerified;
+							this.IdentityMenu.UpdateView();
+						}
 						HideModal();
 					} else {
 						ShowBlurb("Provided code could not be verified", "");
