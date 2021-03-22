@@ -117,14 +117,13 @@ namespace ZitiDesktopEdge {
 					if (mfa.IsVerified) {
 						ShowMFARecoveryCodes(this.IdentityMenu.Identity);
 						if (this.IdentityMenu.Identity.Fingerprint==mfa.Fingerprint) {
-							/// Clint - Here too I am manually setting these to get the UIs right
 							this.IdentityMenu.Identity.IsMFAEnabled = true;
 							this.IdentityMenu.Identity.MFAInfo.IsAuthenticated = mfa.IsVerified;
 							this.IdentityMenu.UpdateView();
 						}
 						HideModal();
 					} else {
-						// ShowBlurb("Provided code could not be verified", ""); - This blurbs on remove MFA and it shouldnt
+						 ShowBlurb("Provided code could not be verified", "");
 					}
 				} else {
 					ShowBlurb("Unexpected error when processing MFA", "");
@@ -239,6 +238,15 @@ namespace ZitiDesktopEdge {
 			MFASetup.BeginAnimation(Grid.MarginProperty, animateThick);
 			HideModal();
 			LoadIdentities(true);
+			if (isComplete) {
+				if (MFASetup.Type == 1) {
+					for (int i=0; i<identities.Count; i++) {
+						if (identities[i].Fingerprint==MFASetup.Identity.Fingerprint) {
+							identities[i] = MFASetup.Identity;
+						}
+					}
+				}
+			}
 			if (IdentityMenu.IsVisible) {
 				if (isComplete) {
 					if (MFASetup.Type == 2) {
@@ -881,8 +889,6 @@ namespace ZitiDesktopEdge {
 					IdentityMenu.SetHeight(this.Height - 160);
 					MainMenu.IdentitiesButton.Visibility = Visibility.Visible;
 					foreach (var id in ids) {
-						/// Clint - This next line doesnt seem right, should that be filled from the service
-						if (id.IsMFAEnabled && id.Services.Count > 0) id.MFAInfo.IsAuthenticated = true;
 						IdentityItem idItem = new IdentityItem();
 
 						idItem.ToggleStatus.IsEnabled = id.IsEnabled;

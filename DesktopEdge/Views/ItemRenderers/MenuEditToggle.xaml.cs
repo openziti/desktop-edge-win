@@ -57,14 +57,13 @@ namespace ZitiDesktopEdge {
 				_identity = value;
 				if (_identity.IsMFAEnabled) {
 					RecoveryButton.Visibility = Visibility.Visible;
-					// Clint: Need to know if we are authenticated or not and show or hide this
-					// if (_identity.IsMFAAuthentcated) {
-					AuthOff.Visibility = Visibility.Visible;
-					AuthOn.Visibility = Visibility.Collapsed;
-					// } else {
-					// AuthOff.Visibility = Visibility.Collapsed;
-					// AuthOn.Visibility = Visibility.Visible; 
-					// }
+					if (!_identity.MFAInfo.IsAuthenticated) {
+						AuthOff.Visibility = Visibility.Visible;
+						AuthOn.Visibility = Visibility.Collapsed;
+					} else {
+						AuthOff.Visibility = Visibility.Collapsed;
+						AuthOn.Visibility = Visibility.Visible; 
+					}
 				} else {
 					RecoveryButton.Visibility = Visibility.Collapsed;
 					AuthOff.Visibility = Visibility.Collapsed;
