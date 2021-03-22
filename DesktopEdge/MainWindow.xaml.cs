@@ -92,8 +92,7 @@ namespace ZitiDesktopEdge {
 
 				await serviceClient.EnableMFA(this.IdentityMenu.Identity.Fingerprint);
 			} else {
-				// Clint - Disable MFA
-				ShowBlurb("MFA Disabled, limited service access", "");
+				this.ShowMFA(IdentityMenu.Identity, 3);
 			}
 
 			HideLoad();
@@ -125,7 +124,7 @@ namespace ZitiDesktopEdge {
 						}
 						HideModal();
 					} else {
-						ShowBlurb("Provided code could not be verified", "");
+						// ShowBlurb("Provided code could not be verified", ""); - This blurbs on remove MFA and it shouldnt
 					}
 				} else {
 					ShowBlurb("Unexpected error when processing MFA", "");
@@ -154,13 +153,17 @@ namespace ZitiDesktopEdge {
 		/// </summary>
 		/// <param name="identity">The Ziti Identity to Authenticate</param>
 		public void MFAAuthenticate(ZitiIdentity identity) {
+			this.ShowMFA(identity, 1);
+		}
+
+		private void ShowMFA(ZitiIdentity identity, int type) {
 			MFASetup.Opacity = 0;
 			MFASetup.Visibility = Visibility.Visible;
 			MFASetup.Margin = new Thickness(0, 0, 0, 0);
 			MFASetup.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
 			MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
 
-			MFASetup.ShowMFA(identity);
+			MFASetup.ShowMFA(identity, type);
 
 			ShowModal();
 		}
@@ -171,7 +174,6 @@ namespace ZitiDesktopEdge {
 		/// <param name="identity">The Ziti Identity to Authenticate</param>
 		public void ShowMFARecoveryCodes(ZitiIdentity identity) {
 			if (identity.MFAInfo!=null) {
-				// Clint - Rcovery Codes is always null so this never shows, can you add the call to get the recovery codes?
 				if (identity.MFAInfo.RecoveryCodes?.Length > 0) {
 					MFASetup.Opacity = 0;
 					MFASetup.Visibility = Visibility.Visible;
@@ -183,7 +185,7 @@ namespace ZitiDesktopEdge {
 
 					ShowModal();
 				} else {
-					ShowBlurb("You do not have anymore recovery codes", this.RECOVER);
+					this.ShowMFA(IdentityMenu.Identity, 2);
 				}
 			} else {
 				ShowBlurb("MFA is not setup on this Identity", "");
@@ -237,7 +239,19 @@ namespace ZitiDesktopEdge {
 			MFASetup.BeginAnimation(Grid.MarginProperty, animateThick);
 			HideModal();
 			LoadIdentities(true);
-			if (IdentityMenu.IsVisible) IdentityMenu.UpdateView();
+			if (IdentityMenu.IsVisible) {
+				if (isComplete) {
+					if (MFASetup.Type == 2) {
+						if (IdentityMenu.Identity.MFAInfo.RecoveryCodes.Length==0) ShowBlurb("You do not have anymore recovery codes", this.RECOVER);
+						else ShowRecovery(IdentityMenu.Identity);
+					} else if (MFASetup.Type == 3) {
+						IdentityMenu.Identity.IsMFAEnabled = false;
+						IdentityMenu.Identity.MFAInfo.IsAuthenticated = false;
+						ShowBlurb("MFA Disabled, Service Access Can Be Limited", "");
+					}
+				}
+				IdentityMenu.UpdateView();
+			}
 		}
 
 		private void AddIdentity(ZitiIdentity id) {
@@ -1223,7 +1237,7 @@ namespace ZitiDesktopEdge {
 			if (_blurbUrl.Length>0) {
 				// So this simply execute a url but you could do like if (_blurbUrl=="DoSomethingNifty") CallNifyFunction();
 				if (_blurbUrl== this.RECOVER) {
-					// Clint: can we know what identity to execute recovery against? - Here too this should call the regnerate codes function
+					this.ShowMFA(IdentityMenu.Identity, 2);
 				} else {
 					Process.Start(new ProcessStartInfo(_blurbUrl) { UseShellExecute = true });
 				}

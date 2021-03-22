@@ -22,6 +22,7 @@ using ZitiDesktopEdge.DataStructures;
 
 using NLog;
 using QRCoder;
+using System.Text.RegularExpressions;
 
 namespace ZitiDesktopEdge {
 	/// <summary>
@@ -37,6 +38,8 @@ namespace ZitiDesktopEdge {
 		public event ErrorOccurred OnError;
 		private string[] _codes = new string[0];
 		private ZitiIdentity _identity;
+		private bool _executing = false;
+		public int Type { get; set; }
 
 		public MFAScreen() {
 			InitializeComponent();
@@ -110,7 +113,8 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-		public void ShowMFA(ZitiIdentity identity) {
+		public void ShowMFA(ZitiIdentity identity, int type) {
+			this.Type = type;
 			AuthCode.Text = "";
 			this._identity = identity;
 			MFASetupArea.Visibility = Visibility.Collapsed;
@@ -170,13 +174,14 @@ namespace ZitiDesktopEdge {
 			Logger.Error("PAYLOAD: {0}", gencodes.Payload);
 		}
 
-		private void SaveCodes(object sender, MouseButtonEventArgs e) {
+		private void SaveCodes() {
 			string fileText = string.Join("\n", _codes);
+			string name = Regex.Replace(this._identity.Name, "[^a-zA-Z0-9]", String.Empty);
 
 			System.Windows.Forms.SaveFileDialog dialog = new System.Windows.Forms.SaveFileDialog();
 			dialog.Filter = "Text Files(*.txt)|*.txt|All(*.*)|*";
 			dialog.Title = "Save Recovery Codes";
-			dialog.FileName = "RecoveryCodes.txt";
+			dialog.FileName = name+"RecoveryCodes.txt";
 			dialog.ShowDialog();
 
 			if (dialog.FileName != "") {
@@ -198,20 +203,52 @@ namespace ZitiDesktopEdge {
 		}
 
 		async private void DoAuthenticate(object sender, MouseButtonEventArgs e) {
-			string code = AuthCode.Text;
-			if (AuthCode.MaxLength==8) {
-				if (code.Length != 8) this.ShowError("You must enter a valid recovery code");
-			} else {
-				if (code.Length != 6) this.ShowError("You must enter a valid code");
-			}
+			if (!this._executing) {
+				this._executing = true;
+				string code = AuthCode.Text;
+				if (AuthCode.MaxLength == 8) {
+					if (code.Length != 8) this.ShowError("You must enter a valid recovery code");
+				} else {
+					if (code.Length != 6) this.ShowError("You must enter a valid code");
+				}
 
-
-			DataClient serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
-			SvcResponse authResult = await serviceClient.AuthMFA(this._identity.Fingerprint, code);
-			if (authResult?.Code != 0) {
-				Logger.Error("AuthMFA failed. " + authResult.Message);
-			} else {
-				this.OnClose?.Invoke(true);
+				DataClient serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
+				if (this.Type==1) {
+					SvcResponse authResult = await serviceClient.AuthMFA(this._identity.Fingerprint, code);
+					if (authResult?.Code != 0) {
+						Logger.Error("AuthMFA failed. " + authResult.Message);
+						this.OnError?.Invoke("Authentication Failed");
+						this._executing = false;
+					} else {
+						MfaRecoveryCodesResponse codeResponse = await serviceClient.ReturnMFACodes(this._identity.Fingerprint, code);
+						this._identity.MFAInfo.RecoveryCodes = codeResponse.Payload;
+						this.OnClose?.Invoke(true);
+						this._executing = false;
+					}
+				} else if (this.Type == 2) {
+					MfaRecoveryCodesResponse codeResponse = await serviceClient.ReturnMFACodes(this._identity.Fingerprint, code);
+					if (codeResponse?.Code!=0) {
+						Logger.Error("AuthMFA failed. " + codeResponse.Message);
+						AuthCode.Text = "";
+						this.OnError?.Invoke("Authentication Failed");
+						this._executing = false;
+					} else {
+						this._identity.MFAInfo.RecoveryCodes = codeResponse.Payload;
+						this.OnClose?.Invoke(true);
+						this._executing = false;
+					}
+				} else if (this.Type == 3) {
+					SvcResponse authResult = await serviceClient.RemoveMFA(this._identity.Fingerprint, code);
+					if (authResult?.Code != 0) {
+						Logger.Error("AuthMFA failed. " + authResult.Message);
+						AuthCode.Text = "";
+						this.OnError?.Invoke("Authentication Failed");
+						this._executing = false;
+					} else {
+						this.OnClose?.Invoke(true);
+						this._executing = false;
+					}
+				}
 			}
 		}
 

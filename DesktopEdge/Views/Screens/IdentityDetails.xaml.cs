@@ -127,19 +127,35 @@ namespace ZitiDesktopEdge {
 						ServiceList.Children.Add(info);
 					}
 				}
-				double newHeight = MainHeight - 330; // Jeremy - Fix this post MFA
+				double newHeight = MainHeight - 330; 
 				ServiceRow.Height = new GridLength((double)newHeight);
 				MainDetailScroll.MaxHeight = newHeight;
 				MainDetailScroll.Height = newHeight;
 				MainDetailScroll.Visibility = Visibility.Visible;
 				ServiceTitle.Label = _identity.Services.Count + " Services";
 				ServiceTitle.MainEdit.Visibility = Visibility.Visible;
+				ServiceTitle.Visibility = Visibility.Visible;
+				AuthMessageBg.Visibility = Visibility.Collapsed;
+				AuthMessageLabel.Visibility = Visibility.Collapsed;
+				NoAuthServices.Visibility = Visibility.Collapsed;
 			} else {
 				ServiceRow.Height = new GridLength((double)0.0);
 				MainDetailScroll.Visibility = Visibility.Collapsed;
 				ServiceTitle.Label = "No Services";
 				ServiceTitle.MainEdit.Text = "";
 				ServiceTitle.MainEdit.Visibility = Visibility.Collapsed;
+				if (this._identity.IsMFAEnabled&&!this._identity.MFAInfo.IsAuthenticated) {
+					ServiceTitle.Visibility = Visibility.Collapsed;
+					AuthMessageBg.Visibility = Visibility.Visible;
+					AuthMessageLabel.Visibility = Visibility.Visible;
+					ServiceRow.Height = new GridLength((double)30);
+					NoAuthServices.Visibility = Visibility.Visible;
+				} else {
+					ServiceTitle.Visibility = Visibility.Visible;
+					AuthMessageBg.Visibility = Visibility.Collapsed;
+					AuthMessageLabel.Visibility = Visibility.Collapsed;
+					NoAuthServices.Visibility = Visibility.Collapsed;
+				}
 			}
 			ConfirmView.Visibility = Visibility.Collapsed;
 		}
@@ -288,6 +304,10 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void MFAAuthenticate() {
+			this.Authenticate.Invoke(this.Identity);
+		}
+
+		private void AuthFromMessage(object sender, MouseButtonEventArgs e) {
 			this.Authenticate.Invoke(this.Identity);
 		}
 	}

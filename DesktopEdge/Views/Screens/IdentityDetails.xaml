@@ -62,7 +62,8 @@
                     <local:MenuEditItem x:Name="IdentityStatus" Grid.Column="0" Grid.Row="3" HorizontalAlignment="Stretch" Label="Status" IsLocked="True"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="IdentityEnrollment" Grid.Column="0" Grid.Row="4" HorizontalAlignment="Stretch" Label="Enrollment Status" IsLocked="True"></local:MenuEditItem>
                     <local:MenuEditSearch x:Name="ServiceTitle" Grid.Column="0" Grid.Row="5" HorizontalAlignment="Stretch" Filter="DoFilter"></local:MenuEditSearch>
-                    
+                    <TextBox Name="NoAuthServices" Height="30" FontWeight="Bold" TextAlignment="Center" Text="You must authenticate to access services" IsReadOnly="True" HorizontalAlignment="Stretch" BorderThickness="0" ClipToBounds="True" Grid.Column="0" Grid.Row="5" VerticalAlignment="Center" Padding="0,6,3,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBox>
+
                     <!-- Service List Area (Higher Contrast to differentiate) -->
                     <Grid Name="MainDetailScroll" Grid.Column="0" MaxHeight="160" Grid.Row="6" Margin="-8,0,-8,0">
                         <Rectangle Margin="10,10,10,10" Fill="#070826" RadiusY="10" RadiusX="10"></Rectangle>
@@ -70,6 +71,12 @@
                             <StackPanel Name="ServiceList" Orientation="Vertical"></StackPanel>
                         </ScrollViewer>
                     </Grid>
+                    <Rectangle x:Name="AuthMessageBg" Margin="40,0,40,0" Opacity="0.8" RadiusX="7" Grid.Row="6" RadiusY="7" ClipToBounds="True" Height="30" VerticalAlignment="Bottom" Cursor="Hand" MouseUp="AuthFromMessage">
+                        <Rectangle.Fill>
+                            <SolidColorBrush x:Name="AuthBgColor" Color="#0069FF"/>
+                        </Rectangle.Fill>
+                    </Rectangle>
+                    <Label x:Name="AuthMessageLabel" HorizontalAlignment="Center" Content="Authenticate" IsHitTestVisible="False" Foreground="#FFFFFF" Grid.Row="6"></Label>
                     
                     <!-- Forget Identity Button -->
                     <Label Name="ForgetIdentityButton" Grid.Column="0" Grid.Row="7" Padding="0,10,0,10" Margin="0,0,0,0" Content="Forget This Identity" Cursor="Hand" Foreground="#F4044D" HorizontalAlignment="Center" Mouse.MouseUp="ForgetIdentity"></Label>

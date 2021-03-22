@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ZitiDesktopEdge"
              mc:Ignorable="d" 
              d:DesignHeight="570" 
              d:DesignWidth="420">
@@ -83,8 +84,8 @@
                     <ColumnDefinition Width="160"></ColumnDefinition>
                     <ColumnDefinition Width="*"></ColumnDefinition>
                 </Grid.ColumnDefinitions>
-                <Label HorizontalAlignment="Center" Content="Save Codes" Foreground="#0069FF" Cursor="Hand" Grid.Column="0" MouseUp="SaveCodes"></Label>
-                <Label HorizontalAlignment="Center" Content="Regenerate" Foreground="#0069FF" Cursor="Hand" Grid.Column="1" MouseUp="RegenerateCodes"></Label>
+                <Label HorizontalAlignment="Center" Content="Regenerate" Foreground="#0069FF" Cursor="Hand" Grid.Column="0" MouseUp="RegenerateCodes"></Label>
+                <local:StyledButton x:Name="SaveButton" Label="Save Codes" Grid.Column="1" OnClick="SaveCodes"></local:StyledButton>
             </Grid>
         </Grid>
 
