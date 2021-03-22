@@ -206,11 +206,10 @@ namespace ZitiDesktopEdge {
 			}
 
 
-			DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
+			DataClient serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
 			SvcResponse authResult = await serviceClient.AuthMFA(this._identity.Fingerprint, code);
 			if (authResult?.Code != 0) {
 				Logger.Error("AuthMFA failed. " + authResult.Message);
-				this.OnClose?.Invoke(false);
 			} else {
 				this.OnClose?.Invoke(true);
 			}

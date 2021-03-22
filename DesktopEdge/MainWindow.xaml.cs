@@ -92,6 +92,7 @@ namespace ZitiDesktopEdge {
 
 				await serviceClient.EnableMFA(this.IdentityMenu.Identity.Fingerprint);
 			} else {
+				// Clint - Disable MFA
 				ShowBlurb("MFA Disabled, limited service access", "");
 			}
 
@@ -114,10 +115,11 @@ namespace ZitiDesktopEdge {
 				} else if (mfa.Action == "auth_challenge") {
 					ShowBlurb("Setting Up auth_challenge", "");
 				} else if (mfa.Action == "auth_response") {
-					/// Clint - This needs to be called after the setup completes
-					/// ShowMFARecoveryCodes(this.IdentityMenu.Identity);
 					if (mfa.IsVerified) {
+						ShowMFARecoveryCodes(this.IdentityMenu.Identity);
 						if (this.IdentityMenu.Identity.Fingerprint==mfa.Fingerprint) {
+							/// Clint - Here too I am manually setting these to get the UIs right
+							this.IdentityMenu.Identity.IsMFAEnabled = true;
 							this.IdentityMenu.Identity.MFAInfo.IsAuthenticated = mfa.IsVerified;
 							this.IdentityMenu.UpdateView();
 						}
@@ -169,6 +171,7 @@ namespace ZitiDesktopEdge {
 		/// <param name="identity">The Ziti Identity to Authenticate</param>
 		public void ShowMFARecoveryCodes(ZitiIdentity identity) {
 			if (identity.MFAInfo!=null) {
+				// Clint - Rcovery Codes is always null so this never shows, can you add the call to get the recovery codes?
 				if (identity.MFAInfo.RecoveryCodes?.Length > 0) {
 					MFASetup.Opacity = 0;
 					MFASetup.Visibility = Visibility.Visible;
@@ -862,6 +865,8 @@ namespace ZitiDesktopEdge {
 					IdentityMenu.SetHeight(this.Height - 160);
 					MainMenu.IdentitiesButton.Visibility = Visibility.Visible;
 					foreach (var id in ids) {
+						/// Clint - This next line doesnt seem right, should that be filled from the service
+						if (id.Services.Count > 0) id.MFAInfo.IsAuthenticated = true;
 						IdentityItem idItem = new IdentityItem();
 
 						idItem.ToggleStatus.IsEnabled = id.IsEnabled;
@@ -1218,7 +1223,7 @@ namespace ZitiDesktopEdge {
 			if (_blurbUrl.Length>0) {
 				// So this simply execute a url but you could do like if (_blurbUrl=="DoSomethingNifty") CallNifyFunction();
 				if (_blurbUrl== this.RECOVER) {
-					// clint: can we know what identity to execute recovery against?
+					// Clint: can we know what identity to execute recovery against? - Here too this should call the regnerate codes function
 				} else {
 					Process.Start(new ProcessStartInfo(_blurbUrl) { UseShellExecute = true });
 				}
