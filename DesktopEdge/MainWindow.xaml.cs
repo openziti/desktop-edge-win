@@ -113,19 +113,21 @@ namespace ZitiDesktopEdge {
 					SetupMFA(this.IdentityMenu.Identity, url, secret);
 				} else if (mfa.Action == "auth_challenge") {
 					ShowBlurb("Setting Up auth_challenge", "");
-				} else if (mfa.Action == "auth_response") {
-					if (mfa.IsVerified) {
+				} else if (mfa.Action == "enrollment_verification") {
+					if (mfa.Successful) {
 						ShowMFARecoveryCodes(this.IdentityMenu.Identity);
-						if (this.IdentityMenu.Identity.Fingerprint==mfa.Fingerprint) {
+						if (this.IdentityMenu.Identity.Fingerprint == mfa.Fingerprint) {
 							/// Clint - Here too I am manually setting these to get the UIs right
 							this.IdentityMenu.Identity.IsMFAEnabled = true;
-							this.IdentityMenu.Identity.MFAInfo.IsAuthenticated = mfa.IsVerified;
+							this.IdentityMenu.Identity.MFAInfo.IsAuthenticated = mfa.Successful;
 							this.IdentityMenu.UpdateView();
 						}
 						HideModal();
 					} else {
 						// ShowBlurb("Provided code could not be verified", ""); - This blurbs on remove MFA and it shouldnt
 					}
+				} else if (mfa.Action == "enrollment_remove") {
+					ShowBlurb("removed mfa: " + mfa.Successful, "");
 				} else {
 					ShowBlurb("Unexpected error when processing MFA", "");
 					logger.Error("unexpected action: " + mfa.Action);
@@ -1029,7 +1031,7 @@ namespace ZitiDesktopEdge {
 					}
 					await serviceClient.IdentityOnOffAsync(createdId.FingerPrint, true);
 				} catch (ServiceException se) {
-					ShowError("Error Occurred", se.Message + " " + se.AdditionalInfo);
+					ShowError(se.Message, se.AdditionalInfo);
 				} catch (Exception ex) {
 					ShowError("Unexpected Error", "Code 2:" + ex.Message);
 				}

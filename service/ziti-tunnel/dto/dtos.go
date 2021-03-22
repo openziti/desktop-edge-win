@@ -157,7 +157,7 @@ type IdentityEvent struct {
 type MfaEvent struct {
 	ActionEvent
 	Fingerprint     string
-	IsVerified      bool
+	Successful      bool
 	Error           string
 	ProvisioningUrl string
 	RecoveryCodes   []string

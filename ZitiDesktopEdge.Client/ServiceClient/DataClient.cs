@@ -121,6 +121,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         ServiceFunction AddIdentityFunction = new ServiceFunction() { Function = "AddIdentity" };
 
         async public Task<Identity> AddIdentityAsync(string identityName, bool activate, string jwt) {
+            IdentityResponse resp = null;
             try {
                 Identity id = new Identity {
                     Active = activate,
@@ -136,20 +137,21 @@ namespace ZitiDesktopEdge.ServiceClient {
 
                 await sendAsync(AddIdentityFunction);
                 await sendAsync(newId);
-                var resp = await readAsync<IdentityResponse>(ipcReader);
+                resp = await readAsync<IdentityResponse>(ipcReader);
                 Logger.Debug(resp.ToString());
-                if (resp.Code != 0) {
-                    throw new ServiceException(resp.Message, resp.Code, resp.Error);
-                }
-                return resp.Payload;
             } catch (Exception ex) {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //setupPipe();
                 //throw;
                 Logger.Error(ex, "Unexpected error");
                 CommunicationError(ex);
+                throw ex;
             }
-            return null;
+            if (resp?.Code != 0) {
+                Logger.Warn("failed to enroll. {0} {1}", resp.Message, resp.Error);
+                throw new ServiceException("Failed to Enroll", resp.Code, "The provided token was invalid. This usually is because the token has already been used or it has expired.");
+            }
+            return resp.Payload;
         }
 
 

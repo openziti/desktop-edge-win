@@ -426,7 +426,7 @@ namespace ZitiDesktopEdge.DataStructures {
 
     public class MfaEvent : ActionEvent {
         public string Fingerprint { get; set; }
-        public bool IsVerified { get; set; }
+        public bool Successful { get; set; }
         public string ProvisioningUrl { get; set; }
         public List<string> RecoveryCodes { get; set; }
     }

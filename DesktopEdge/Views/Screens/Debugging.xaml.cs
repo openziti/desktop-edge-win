@@ -59,7 +59,7 @@ namespace Ziti.Desktop.Edge.Views.Screens {
         private void Client_OnMfaEvent(object sender, ZitiDesktopEdge.DataStructures.MfaEvent mfa) {
             this.Dispatcher.Invoke(() => {
                 MfaActionOp.Text = mfa.Action + " - " + mfa.Op;
-                MfaIsVerified.Text = "verified: " + mfa.IsVerified;
+                MfaIsVerified.Text = "verified: " + mfa.Successful;
                 MfaProvisioningUrl.Text = mfa.ProvisioningUrl;
                 if (mfa.RecoveryCodes != null) {
                     MfaRecoveryCodes.Text = string.Join(",", mfa.RecoveryCodes);

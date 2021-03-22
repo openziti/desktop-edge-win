@@ -85,9 +85,9 @@ func ziti_mfa_enroll_cb_go(_ C.ziti_context, status C.int, enrollment *C.ziti_mf
 	C.free(cFingerprint) //CString created when executing EnableMFA
 
 	var m = dto.MfaEvent{
-		ActionEvent:     dto.MFA_ENROLLMENT_CHALLENGE,
+		ActionEvent:     dto.MFAEnrollmentChallengeEvent,
 		Fingerprint:     fp,
-		IsVerified:      isVerified,
+		Successful:      isVerified,
 		ProvisioningUrl: url,
 		RecoveryCodes:   populateStringSlice(enrollment.recovery_codes),
 	}
@@ -118,9 +118,9 @@ func ziti_mfa_cb_verify_go(_ C.ziti_context, status C.int, cFingerprint *C.char)
 
 	log.Debugf("ziti_mfa_cb_verify_go called for %s. status: %d for ", fp, int(status))
 	var m = dto.MfaEvent{
-		ActionEvent: dto.MFA_AUTH_RESPONSE,
+		ActionEvent: dto.MFAEnrollmentVerificationEvent,
 		Fingerprint: fp,
-		IsVerified:  false,
+		Successful:  false,
 		RecoveryCodes: nil,
 	}
 
@@ -131,10 +131,10 @@ func ziti_mfa_cb_verify_go(_ C.ziti_context, status C.int, cFingerprint *C.char)
 		m.Error = ego
 	} else {
 		log.Infof("mfa successfully verified for fingerprint: %s", fp)
-		m.IsVerified = true
+		m.Successful = true
 	}
 
-	log.Debugf("mfa verify callback. sending ziti_mfa_verify response back to UI for %s. verified: %t. error: %s", fp, m.IsVerified, m.Error)
+	log.Debugf("mfa verify callback. sending ziti_mfa_verify response back to UI for %s. verified: %t. error: %s", fp, m.Successful, m.Error)
 	goapi.BroadcastEvent(m)
 }
 
@@ -297,9 +297,9 @@ func ziti_mfa_cb_remove_go(_ C.ziti_context, status C.int, cFingerprint *C.char)
 
 	log.Debugf("ziti_mfa_cb_remove_go called for %s. status: %d for ", fp, int(status))
 	var m = dto.MfaEvent{
-		ActionEvent: dto.MFA_AUTH_RESPONSE,
+		ActionEvent: dto.MFAEnrollmentRemovedEvent,
 		Fingerprint: fp,
-		IsVerified:  false,
+		Successful:  false,
 		RecoveryCodes: nil,
 	}
 
@@ -310,9 +310,9 @@ func ziti_mfa_cb_remove_go(_ C.ziti_context, status C.int, cFingerprint *C.char)
 		m.Error = ego
 	} else {
 		log.Infof("Identity with fingerprint %s has successfully removed MFA", fp)
-		m.IsVerified = true
+		m.Successful = true
 	}
 
-	log.Debugf("sending ziti_mfa_verify response back to UI for %s. verified: %t. error: %s", fp, m.IsVerified, m.Error)
+	log.Debugf("sending ziti_mfa_verify response back to UI for %s. verified: %t. error: %s", fp, m.Successful, m.Error)
 	goapi.BroadcastEvent(m)
 }

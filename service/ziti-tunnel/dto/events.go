@@ -25,9 +25,11 @@ const (
 	IDENTITY_OP = "identity"
 	MFA_OP      = "mfa"
 
-	MFA_ENROLL_CHALLENGE_ACTION = "enrollment_challenge"
+	MFAEnrollmentChallengAtion		= "enrollment_challenge"
+	MFAEnrollmentVerificationAction	= "enrollment_verification"
+	MFAEnrollmentRemovedAction		= "enrollment_remove"
+
 	MFA_AUTH_CHALLENGE_ACTION   = "auth_challenge"
-	MFA_AUTH_RESPONSE_ACTION    = "auth_response"
 )
 
 var SERVICE_ADDED = ActionEvent{
@@ -48,20 +50,24 @@ var IDENTITY_REMOVED = ActionEvent{
 	Action:      REMOVED,
 }
 
-var MFA_ENROLLMENT_CHALLENGE = ActionEvent{
+var MFAEnrollmentChallengeEvent = ActionEvent{
 	StatusEvent: StatusEvent{Op: MFA_OP},
-	Action:      MFA_ENROLL_CHALLENGE_ACTION,
+	Action:      MFAEnrollmentChallengAtion,
 }
-var MFA_AUTH_RESPONSE = ActionEvent{
+var MFAEnrollmentVerificationEvent = ActionEvent{
 	StatusEvent: StatusEvent{Op: MFA_OP},
-	Action:      MFA_AUTH_RESPONSE_ACTION,
+	Action:      MFAEnrollmentVerificationAction,
 }
-var MFA_ERROR = ActionEvent{
+var MFAEnrollmentRemovedEvent = ActionEvent{
+	StatusEvent: StatusEvent{Op: MFA_OP},
+	Action:      MFAEnrollmentRemovedAction,
+}
+var MFAErrorEvent = ActionEvent{
 	StatusEvent: StatusEvent{Op: MFA_OP},
 	Action:      ERROR,
 }
 
-var MFA_CHALLENGE = ActionEvent{
+var MFAAuthChallengeEvent = ActionEvent{
 	StatusEvent: StatusEvent{Op: MFA_OP},
 	Action:      MFA_AUTH_CHALLENGE_ACTION,
 }
