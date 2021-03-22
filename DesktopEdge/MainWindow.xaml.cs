@@ -880,7 +880,7 @@ namespace ZitiDesktopEdge {
 					MainMenu.IdentitiesButton.Visibility = Visibility.Visible;
 					foreach (var id in ids) {
 						/// Clint - This next line doesnt seem right, should that be filled from the service
-						if (id.Services.Count > 0) id.MFAInfo.IsAuthenticated = true;
+						if (id.IsMFAEnabled && id.Services.Count > 0) id.MFAInfo.IsAuthenticated = true;
 						IdentityItem idItem = new IdentityItem();
 
 						idItem.ToggleStatus.IsEnabled = id.IsEnabled;
