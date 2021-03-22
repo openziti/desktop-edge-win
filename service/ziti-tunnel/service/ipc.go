@@ -1074,9 +1074,9 @@ func AddMetrics(id *Id) {
 func authMfa(out *json.Encoder, fingerprint string, code string) {
 	id := rts.Find(fingerprint)
 	result := cziti.AuthMFA(id.CId, fingerprint, code)
-	if result == "" {
-		respond(out, dto.Response{Message: "mfa verify complete", Code: SUCCESS, Error: "", Payload: fingerprint})
+	if result == nil {
+		respond(out, dto.Response{Message: "AuthMFA complete", Code: SUCCESS, Error: "", Payload: fingerprint})
 	} else {
-		respondWithError(out, fmt.Sprintf("the supplied code [%s] was not valid: %s", code, result), 1, nil)
+		respondWithError(out, fmt.Sprintf("AuthMFA failed. the supplied code [%s] was not valid: %s", code, result), 1, result)
 	}
 }

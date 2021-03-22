@@ -239,30 +239,30 @@ func populateStringSlice(c_char_array **C.char) []string {
 	return strs
 }
 
-func AuthMFA(id *ZIdentity, fingerprint string, code string) string {
+func AuthMFA(id *ZIdentity, fingerprint string, code string) error {
 	if id.mfa == nil {
 		log.Warnf("AuthMFA called but mfa is nil. This usually is because AuthMFA is called from an unenrolled MFA endpoint or the endpoint has already been auth'ed")
-		return "Identity has not authenticated yet"
+		return fmt.Errorf("identity has not authenticated yet")
 	}
 	if id.mfa.responseCb == nil {
 		log.Warnf("AuthMFA called but response cb is nil. This usually is because the session is already validiated. returning true from AuthMFA")
-		return ""
+		return nil
 	}
 
 	ccode := C.CString(code)
 	defer C.free(unsafe.Pointer(ccode))
-	log.Errorf("AuthMFA: %s %s", fingerprint, code)
 
 	cfp := C.CString(fingerprint)
 	defer C.free(unsafe.Pointer(cfp))
+	log.Debugf("beginning authentication for fingerprint %s with code %s", fingerprint, code)
 	C.ziti_mfa_auth_request(id.mfa.responseCb, id.czctx, id.mfa.mfaContext, ccode, C.ziti_ar_mfa_status_cb(C.ziti_ar_mfa_status_cb_go), cfp)
-	r := strings.TrimSpace(<-mfaAuthResults)
+	authResult := strings.TrimSpace(<-mfaAuthResults)
 
-	if r == "" {
-		log.Debug("mfa successfully authenticated. removing callback from mfa")
+	if authResult == "" {
 		id.mfa.responseCb = nil
+		return nil
 	}
-	return r
+	return fmt.Errorf("error in authMFA: %v", authResult)
 }
 
 //export ziti_ar_mfa_status_cb_go
