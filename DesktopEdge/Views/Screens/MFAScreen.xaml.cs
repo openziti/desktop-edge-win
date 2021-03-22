@@ -213,7 +213,7 @@ namespace ZitiDesktopEdge {
 				}
 
 				DataClient serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
-				if (this.Type==1) {
+				if (this.Type == 1) {
 					SvcResponse authResult = await serviceClient.AuthMFA(this._identity.Fingerprint, code);
 					if (authResult?.Code != 0) {
 						Logger.Error("AuthMFA failed. " + authResult.Message);
@@ -227,7 +227,7 @@ namespace ZitiDesktopEdge {
 					}
 				} else if (this.Type == 2) {
 					MfaRecoveryCodesResponse codeResponse = await serviceClient.ReturnMFACodes(this._identity.Fingerprint, code);
-					if (codeResponse?.Code!=0) {
+					if (codeResponse?.Code != 0) {
 						Logger.Error("AuthMFA failed. " + codeResponse.Message);
 						AuthCode.Text = "";
 						this.OnError?.Invoke("Authentication Failed");
@@ -248,12 +248,23 @@ namespace ZitiDesktopEdge {
 						this.OnClose?.Invoke(true);
 						this._executing = false;
 					}
+				} else if (this.Type == 4) {
+					SvcResponse authResult = await serviceClient.GenerateMFACodes(this._identity.Fingerprint, code);
+					if (authResult?.Code != 0) {
+						Logger.Error("AuthMFA failed. " + authResult.Message);
+						AuthCode.Text = "";
+						this.OnError?.Invoke("Authentication Failed");
+						this._executing = false;
+					} else {
+						this.OnClose?.Invoke(true);
+						this._executing = false;
+					}
 				}
 			}
 		}
 
 		private void RegenerateCodes(object sender, MouseButtonEventArgs e) {
-			// Clint - Call the regen service
+			ShowMFA(this._identity, 4);
 		}
 
 		/// <summary>

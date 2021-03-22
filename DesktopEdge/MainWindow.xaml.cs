@@ -248,6 +248,8 @@ namespace ZitiDesktopEdge {
 						IdentityMenu.Identity.IsMFAEnabled = false;
 						IdentityMenu.Identity.MFAInfo.IsAuthenticated = false;
 						ShowBlurb("MFA Disabled, Service Access Can Be Limited", "");
+					} else if (MFASetup.Type == 4) {
+						ShowRecovery(IdentityMenu.Identity);
 					}
 				}
 				IdentityMenu.UpdateView();
@@ -1237,7 +1239,7 @@ namespace ZitiDesktopEdge {
 			if (_blurbUrl.Length>0) {
 				// So this simply execute a url but you could do like if (_blurbUrl=="DoSomethingNifty") CallNifyFunction();
 				if (_blurbUrl== this.RECOVER) {
-					this.ShowMFA(IdentityMenu.Identity, 2);
+					this.ShowMFA(IdentityMenu.Identity, 4);
 				} else {
 					Process.Start(new ProcessStartInfo(_blurbUrl) { UseShellExecute = true });
 				}
