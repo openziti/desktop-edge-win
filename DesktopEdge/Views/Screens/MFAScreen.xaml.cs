@@ -41,6 +41,15 @@ namespace ZitiDesktopEdge {
 		private bool _executing = false;
 		public int Type { get; set; }
 
+		public ZitiIdentity Identity { 
+			get {
+				return this._identity;
+			}
+			set {
+				this._identity = value;
+			}
+		}
+
 		public MFAScreen() {
 			InitializeComponent();
 		}
@@ -220,8 +229,7 @@ namespace ZitiDesktopEdge {
 						this.OnError?.Invoke("Authentication Failed");
 						this._executing = false;
 					} else {
-						MfaRecoveryCodesResponse codeResponse = await serviceClient.ReturnMFACodes(this._identity.Fingerprint, code);
-						this._identity.MFAInfo.RecoveryCodes = codeResponse.Payload;
+						this._identity.MFAInfo.IsAuthenticated = true;
 						this.OnClose?.Invoke(true);
 						this._executing = false;
 					}
@@ -249,13 +257,14 @@ namespace ZitiDesktopEdge {
 						this._executing = false;
 					}
 				} else if (this.Type == 4) {
-					SvcResponse authResult = await serviceClient.GenerateMFACodes(this._identity.Fingerprint, code);
-					if (authResult?.Code != 0) {
-						Logger.Error("AuthMFA failed. " + authResult.Message);
+					MfaRecoveryCodesResponse codeResponse = await serviceClient.GenerateMFACodes(this._identity.Fingerprint, code);
+					if (codeResponse?.Code != 0) {
+						Logger.Error("AuthMFA failed. " + codeResponse.Message);
 						AuthCode.Text = "";
 						this.OnError?.Invoke("Authentication Failed");
 						this._executing = false;
 					} else {
+						this._identity.MFAInfo.RecoveryCodes = codeResponse.Payload;
 						this.OnClose?.Invoke(true);
 						this._executing = false;
 					}
