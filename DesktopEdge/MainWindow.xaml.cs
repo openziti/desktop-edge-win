@@ -894,6 +894,8 @@ namespace ZitiDesktopEdge {
 					foreach (var id in ids) {
 						IdentityItem idItem = new IdentityItem();
 
+						// Clint - I am going to put this back in until the MFA info is set before the ui load
+						if (id.IsMFAEnabled && id.Services.Count > 0) id.MFAInfo.IsAuthenticated = true;
 						idItem.ToggleStatus.IsEnabled = id.IsEnabled;
 						if (id.IsEnabled) {
 							idItem.ToggleStatus.Content = "ENABLED";
