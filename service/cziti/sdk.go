@@ -297,7 +297,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 				} else {
 					pcIds[C.GoString(pq.id)] = false
 					pc := dto.PostureCheck{
-						IsFailing: true,
+						IsPassing: bool(pq.is_passing),
 						QueryType: C.GoString(pq.query_type),
 						Id:        pcId,
 					}

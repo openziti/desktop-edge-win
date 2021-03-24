@@ -281,7 +281,7 @@ namespace ZitiDesktopEdge.DataStructures {
     }
 
     public class PostureCheck {
-        public bool IsFailing { get; set; }
+        public bool IsPassing { get; set; }
         public string QueryType { get; set; }
         public string Id { get; set; }
     }

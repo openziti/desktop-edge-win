@@ -322,6 +322,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                         }
                         break;
                     case "status": //break here to see status on startup
+                        //dbg comment Logger.Warn("STATUS EVENT: \n" + respAsString);
                         TunnelStatusEvent tse = serializer.Deserialize<TunnelStatusEvent>(jsonReader);
 
                         if (tse != null) {
@@ -329,6 +330,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                         }
                         break;
                     case "identity":
+                        //dbg comment Logger.Warn("IDENTITY EVENT: \n" + respAsString);
                         IdentityEvent id = serializer.Deserialize<IdentityEvent>(jsonReader);
 
                         if (id != null) {
@@ -336,6 +338,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                         }
                         break;
                     case "service":
+                        //dbg comment Logger.Warn("SERVICE EVENT: \n" + respAsString);
                         ServiceEvent svc = serializer.Deserialize<ServiceEvent>(jsonReader);
 
                         if (svc != null) {
@@ -349,6 +352,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                         ShutdownEvent(se);
                         break;
                     case "mfa":
+                        //dbg comment Logger.Warn("MFA EVENT: \n" + respAsString);
                         Logger.Debug("mfa event received");
                         MfaEvent mfa = serializer.Deserialize<MfaEvent>(jsonReader);
                         MfaEvent(mfa);

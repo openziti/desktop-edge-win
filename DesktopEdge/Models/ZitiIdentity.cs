@@ -1,3 +1,4 @@
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace ZitiDesktopEdge.Models {
 	public class ZitiIdentity {
+		private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 		public List<ZitiService> Services { get; set; }
 		public string Name { get; set; }
 		public string ControllerUrl { get; set; }
@@ -14,6 +16,17 @@ namespace ZitiDesktopEdge.Models {
 		public string Status { get; set; }
 		public bool IsMFAEnabled { get; set; }
 		public MFA MFAInfo { get; set; }
+
+		private bool svcFailingPostureCheck = false;
+		public bool HasServiceFailingPostureCheck {
+			get {
+				return svcFailingPostureCheck;
+			}
+			set {
+				logger.Info("Identity: {0} posture change. is a posture check failing: {1}", Name, !value);
+				svcFailingPostureCheck = value;
+			}
+		}
 
 		public ZitiIdentity()
 		{
@@ -54,6 +67,7 @@ namespace ZitiDesktopEdge.Models {
 						zid.Services.Add(zsvc);
 					}
 				}
+				zid.HasServiceFailingPostureCheck = zid.Services.Any(p => !p.HasFailingPostureCheck());
 			}
 			return zid;
 		}

@@ -761,6 +761,12 @@ namespace ZitiDesktopEdge {
 					var svc = found.Services.Find(s => s.Name == zs.Name);
 					if (svc == null) {
 						found.Services.Add(zs);
+						if (zs.HasFailingPostureCheck()) {
+							found.HasServiceFailingPostureCheck = true;
+							if (zs.PostureChecks.Any(p => !p.IsPassing && p.QueryType == "MFA")) {
+								found.MFAInfo.IsAuthenticated = false;
+							}
+						}
 					} else {
 						logger.Debug("the service named " + zs.Name + " is already accounted for on this identity.");
 					}

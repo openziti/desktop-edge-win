@@ -52,7 +52,7 @@ type PortRange struct {
 }
 
 type PostureCheck struct {
-	IsFailing bool
+	IsPassing bool
 	QueryType string
 	Id        string
 }
