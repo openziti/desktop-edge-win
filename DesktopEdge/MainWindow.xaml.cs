@@ -127,7 +127,7 @@ namespace ZitiDesktopEdge {
 						// ShowBlurb("Provided code could not be verified", ""); - This blurbs on remove MFA and it shouldnt
 					}
 				} else if (mfa.Action == "enrollment_remove") {
-					ShowBlurb("removed mfa: " + mfa.Successful, "");
+					// ShowBlurb("removed mfa: " + mfa.Successful, "");
 				} else {
 					ShowBlurb("Unexpected error when processing MFA", "");
 					logger.Error("unexpected action: " + mfa.Action);
