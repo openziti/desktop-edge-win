@@ -229,6 +229,8 @@ namespace ZitiDesktopEdge {
 						this.OnError?.Invoke("Authentication Failed");
 						this._executing = false;
 					} else {
+						MfaRecoveryCodesResponse codeResponse = await serviceClient.ReturnMFACodes(this._identity.Fingerprint, code);
+						this._identity.MFAInfo.RecoveryCodes = codeResponse.Payload;
 						this._identity.MFAInfo.IsAuthenticated = true;
 						this.OnClose?.Invoke(true);
 						this._executing = false;
