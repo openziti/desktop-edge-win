@@ -33,9 +33,10 @@ type Service struct {
 	Name          string
 	Id            string
 	Protocols     []string
-	Addresses     []Address   //string
-	Ports         []PortRange //string
+	Addresses     []Address
+	Ports         []PortRange
 	OwnsIntercept bool
+	PostureChecks []PostureCheck
 }
 
 type Address struct {
@@ -48,6 +49,12 @@ type Address struct {
 type PortRange struct {
 	High int
 	Low  int
+}
+
+type PostureCheck struct {
+	IsFailing bool
+	QueryType string
+	Id        string
 }
 
 type ServiceOwner struct {

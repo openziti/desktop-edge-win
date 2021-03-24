@@ -425,20 +425,20 @@ func serveIpc(conn net.Conn) {
 
 	for {
 		log.Trace("ipc read begins")
-		msg, err := reader.ReadString('\n')
+		msg, readErr := reader.ReadString('\n')
 		log.Trace("ipc read ends")
-		if err != nil {
-			if err != winio.ErrFileClosed {
-				if err == io.EOF {
+		if readErr != nil {
+			if readErr != winio.ErrFileClosed {
+				if readErr == io.EOF {
 					log.Debug("pipe closed. client likely disconnected")
 				} else {
-					log.Errorf("unexpected error while reading line. %v", err)
+					log.Errorf("unexpected error while reading line. %v", readErr)
 
 					//try to respond... likely won't work but try...
-					respondWithError(enc, "could not read line properly! exiting loop!", UNKNOWN_ERROR, err)
+					respondWithError(enc, "could not read line properly! exiting loop!", UNKNOWN_ERROR, readErr)
 				}
 			}
-			log.Debugf("connection closed due to shutdown request for ipc: %v", err)
+			log.Debugf("connection closed due to shutdown request for ipc: %v", readErr)
 			return
 		}
 
@@ -452,20 +452,20 @@ func serveIpc(conn net.Conn) {
 
 		dec := json.NewDecoder(strings.NewReader(msg))
 		var cmd dto.CommandMsg
-		if err := dec.Decode(&cmd); err == io.EOF {
+		if cmdErr := dec.Decode(&cmd); cmdErr == io.EOF {
 			break
-		} else if err != nil {
-			log.Fatal(err)
+		} else if cmdErr != nil {
+			log.Fatal(cmdErr)
 		}
 
 		switch cmd.Function {
 		case "AddIdentity":
-			addIdMsg, err := reader.ReadString('\n')
-			if err != nil {
-				respondWithError(enc, "could not read string properly", UNKNOWN_ERROR, err)
+			addIdMsg, addErr := reader.ReadString('\n')
+			if addErr != nil {
+				respondWithError(enc, "could not read string properly", UNKNOWN_ERROR, addErr)
 				return
 			}
-			log.Debugf("msg received: %s", addIdMsg)
+			log.Debugf("AddIdentity msg received: %s", addIdMsg)
 			addIdDec := json.NewDecoder(strings.NewReader(addIdMsg))
 
 			var newId dto.AddIdentity
@@ -858,7 +858,7 @@ func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
 	}
 
 	rts.ids[id.FingerPrint] = id
-
+	id.Active = true //since it's a new id being added - presume that it's active
 	connectIdentity(id)
 
 	state := rts.state

@@ -253,6 +253,7 @@ namespace ZitiDesktopEdge.DataStructures {
         public PortRange[] Ports { get; set; }
         public bool OwnsIntercept { get; set; }
         public string AssignedIP { get; set; }
+        public PostureCheck[] PostureChecks { get; set; }
     }
 
     public class Address {
@@ -277,6 +278,12 @@ namespace ZitiDesktopEdge.DataStructures {
                 return Low + "-" + High;
             }
         }
+    }
+
+    public class PostureCheck {
+        public bool IsFailing { get; set; }
+        public string QueryType { get; set; }
+        public string Id { get; set; }
     }
 
     public class EnrollmentFlags

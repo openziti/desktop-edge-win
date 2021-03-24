@@ -154,7 +154,7 @@ func (c *ZIdentity) GetMetrics() (int64, int64, bool) {
 	if c == nil {
 		return 0, 0, false
 	}
-	if C.is_null(unsafe.Pointer(c.czctx)) {
+	if unsafe.Pointer(c.czctx) == C.NULL {
 		log.Debugf("ziti context is still null. the identity is probably not initialized yet: %s", c.Fingerprint)
 		return 0, 0, false
 	}
@@ -269,25 +269,60 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 	portRanges := getTunneledServicePortRanges(ts)
 	log.Infof("service update: %s, id: %s, portocols:%s, addresses:%v, portRanges: %v", name, svcId, protocols, addresses, portRanges)
 
-	svc := &dto.Service{
-		Name:          name,
-		Id:            svcId,
-		Protocols:     protocols,
-		Addresses:     addresses,
-		Ports:         portRanges,
-		OwnsIntercept: true,
-	}
-
-	added := ZService{
-		Name:    name,
-		Id:      svcId,
-		Service: svc,
-		Czctx:   ziti_ctx,
-	}
-
 	if status == C.ZITI_SERVICE_UNAVAILABLE {
 		serviceUnavailable(zid, svcId, name)
 	} else if status == C.ZITI_OK {
+		pcIds := make(map[string]bool)
+		var postureChecks []dto.PostureCheck
+
+		//find all posture checks sets...
+		for setIdx := 0; true; setIdx++ {
+			pqs := C.posture_query_set_get(service.posture_query_set, C.int(setIdx))
+			if unsafe.Pointer(pqs) == C.NULL {
+				break
+			}
+			//get all posture checks in this set...
+			for pqIdx := 0; true; pqIdx++ {
+				pq := C.posture_queries_get(pqs.posture_queries, C.int(pqIdx))
+				if unsafe.Pointer(pq) == C.NULL {
+					break
+				}
+
+				var pcId string
+				pcId = C.GoString(pq.id)
+
+				_, found := pcIds[pcId]
+				if found {
+					log.Tracef("posture check with id %s already in failing posture check map", pcId)
+				} else {
+					pcIds[C.GoString(pq.id)] = false
+					pc := dto.PostureCheck{
+						IsFailing: true,
+						QueryType: C.GoString(pq.query_type),
+						Id:        pcId,
+					}
+
+					postureChecks = append(postureChecks, pc)
+				}
+			}
+		}
+
+		svc := &dto.Service{
+			Name:          name,
+			Id:            svcId,
+			Protocols:     protocols,
+			Addresses:     addresses,
+			Ports:         portRanges,
+			OwnsIntercept: true,
+			PostureChecks: postureChecks,
+		}
+
+		added := ZService{
+			Name:    name,
+			Id:      svcId,
+			Service: svc,
+			Czctx:   ziti_ctx,
+		}
 
 		se := dto.ServiceEvent{
 			ActionEvent: dto.SERVICE_ADDED,
@@ -302,25 +337,22 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 }
 
 func serviceUnavailable(ctx *ZIdentity, svcId string, name string) {
+	log.Debugf("serivce has become unavailalbe: %s [%s]", name, svcId)
 	f, ok := ctx.Services.Load(svcId)
 	if ok {
 		found := f.(*ZService)
 		found.Service = nil
 		ctx.Services.Delete(svcId)
 		se := dto.ServiceEvent{
-			ActionEvent: dto.SERVICE_ADDED,
+			ActionEvent: dto.SERVICE_REMOVED,
 			Fingerprint: ctx.Fingerprint,
 			Service: &dto.Service{
 				Name: name,
 				Id:   svcId,
-				/* none of these matter to a remove
-				Protocols:     protocols,
-				Addresses:     nil,
-				Ports:         nil,
-				*/
 			},
 		}
 		ServiceChanges <- se
+		log.Debugf("dispatched serivce has become unavailalbe to ui: %s [%s]", name, svcId)
 	} else {
 		log.Warnf("could not remove service? service not found with id: %s, name: %s in context %d", svcId, name, &ctx)
 	}
@@ -362,38 +394,39 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 		hostnamesToAdd := make(map[string]bool)
 		hostnamesToRemove := make(map[string]bool)
 		srvEvent := C.ziti_event_service_event(event)
+
 		for i := 0; true; i++ {
-			s := C.ziti_service_array_get(srvEvent.removed, C.int(i))
-			if unsafe.Pointer(s) == C.NULL {
+			removed := C.ziti_service_array_get(srvEvent.removed, C.int(i))
+			if unsafe.Pointer(removed) == C.NULL {
 				break
 			}
-			addys := serviceCB(ztx, s, C.ZITI_SERVICE_UNAVAILABLE, zid)
+			addys := serviceCB(ztx, removed, C.ZITI_SERVICE_UNAVAILABLE, zid)
 			for _, toRemove := range addys {
 				hostnamesToRemove[toRemove.HostName] = true
 			}
 		}
 		for i := 0; true; i++ {
-			s := C.ziti_service_array_get(srvEvent.changed, C.int(i))
-			if unsafe.Pointer(s) == C.NULL {
+			changed := C.ziti_service_array_get(srvEvent.changed, C.int(i))
+			if unsafe.Pointer(changed) == C.NULL {
 				break
 			}
-			log.Info("service changed remove the service then add it back immediately", C.GoString(s.name))
-			addys := serviceCB(ztx, s, C.ZITI_SERVICE_UNAVAILABLE, zid)
+			log.Info("service changed remove the service then add it back immediately", C.GoString(changed.name))
+			addys := serviceCB(ztx, changed, C.ZITI_SERVICE_UNAVAILABLE, zid)
 			for _, toRemove := range addys {
 				hostnamesToRemove[toRemove.HostName] = true
 			}
 
-			addys = serviceCB(ztx, s, C.ZITI_OK, zid)
+			addys = serviceCB(ztx, changed, C.ZITI_OK, zid)
 			for _, toAdd := range addys {
 				hostnamesToAdd[toAdd.HostName] = true
 			}
 		}
 		for i := 0; true; i++ {
-			s := C.ziti_service_array_get(srvEvent.added, C.int(i))
-			if unsafe.Pointer(s) == C.NULL {
+			added := C.ziti_service_array_get(srvEvent.added, C.int(i))
+			if unsafe.Pointer(added) == C.NULL {
 				break
 			}
-			addys := serviceCB(ztx, s, C.ZITI_OK, zid)
+			addys := serviceCB(ztx, added, C.ZITI_OK, zid)
 			for _, toAdd := range addys {
 				hostnamesToAdd[toAdd.HostName] = true
 			}

@@ -101,15 +101,10 @@ namespace ZitiDesktopEdge.ServiceClient {
                     string toSend = JsonConvert.SerializeObject(objToSend, Formatting.None);
 
                     if (toSend?.Trim() != null) {
-                        debugServiceCommunication("===============  sending message =============== ");
                         debugServiceCommunication(toSend);
                         await ipcWriter.WriteAsync(toSend);
                         await ipcWriter.WriteAsync('\n');
-                        debugServiceCommunication("=============== flushing message =============== ");
                         await ipcWriter.FlushAsync();
-                        debugServiceCommunication("===============     sent message =============== ");
-                        debugServiceCommunication("");
-                        debugServiceCommunication("");
                     } else {
                         Logger.Debug("NOT sending empty object??? " + objToSend?.ToString());
                     }
@@ -213,17 +208,13 @@ namespace ZitiDesktopEdge.ServiceClient {
             try {
                 int emptyCount = 1; //just a stop gap in case something crazy happens in the communication
 
-                debugServiceCommunication("==============a  reading message =============== ");
                 string respAsString = await reader.ReadLineAsync();
                 debugServiceCommunication(respAsString);
-                debugServiceCommunication("===============     read message =============== ");
                 while (string.IsNullOrEmpty(respAsString?.Trim())) {
                     debugServiceCommunication("Received empty payload - continuing to read until a payload is received");
                     //now how'd that happen...
-                    debugServiceCommunication("==============b  reading message =============== ");
                     respAsString = await reader.ReadLineAsync();
                     debugServiceCommunication(respAsString);
-                    debugServiceCommunication("===============     read message =============== ");
                     emptyCount++;
                     if (emptyCount > 5) {
                         Logger.Debug("are we there yet? " + reader.EndOfStream);
@@ -231,8 +222,6 @@ namespace ZitiDesktopEdge.ServiceClient {
                         return null;
                     }
                 }
-                debugServiceCommunication("");
-                debugServiceCommunication("");
                 return respAsString;
             } catch (IOException ioe) {
                 //almost certainly a problem with the pipe

@@ -81,7 +81,7 @@ func ziti_mfa_enroll_cb_go(_ C.ziti_context, status C.int, enrollment *C.ziti_mf
 	}
 	isVerified := bool(enrollment.is_verified)
 	url := C.GoString(enrollment.provisioning_url)
-	fp := string(C.GoString((*C.char)(cFingerprint)))
+	fp := C.GoString((*C.char)(cFingerprint))
 	C.free(cFingerprint) //CString created when executing EnableMFA
 
 	var m = dto.MfaEvent{
@@ -113,7 +113,7 @@ func VerifyMFA(id *ZIdentity, fingerprint string, code string) {
 
 //export ziti_mfa_cb_verify_go
 func ziti_mfa_cb_verify_go(_ C.ziti_context, status C.int, cFingerprint *C.char) {
-	fp := string(C.GoString(cFingerprint))
+	fp := C.GoString(cFingerprint)
 	C.free(unsafe.Pointer(cFingerprint)) //CString created when executing VerifyMFA
 
 	log.Debugf("ziti_mfa_cb_verify_go called for %s. status: %d for ", fp, int(status))
@@ -162,13 +162,13 @@ func ReturnMfaCodes(id *ZIdentity, fingerprint string, code string) ([]string, e
 
 //export ziti_mfa_recovery_codes_cb_return
 func ziti_mfa_recovery_codes_cb_return(_ C.ziti_context, status C.int, recoveryCodes **C.char, cFingerprint *C.char) {
-	fp := string(C.GoString((*C.char)(cFingerprint)))
+	fp := C.GoString((*C.char)(cFingerprint))
 	log.Debugf("ziti_mfa_recovery_codes_cb_return called with status and fingerprint: %s with status: %v", fp, status)
 	var ego error
 	var theCodes []string
 	if status != C.ZITI_OK {
 		e := C.ziti_errorstr(status)
-		ego = fmt.Errorf("%s", string(C.GoString(e)))
+		ego = fmt.Errorf("%s", C.GoString(e))
 		log.Errorf("Error encounted when returning mfa recovery codes: %v", ego)
 	} else {
 		theCodes = populateStringSlice(recoveryCodes)
@@ -205,13 +205,13 @@ func GenerateMfaCodes(id *ZIdentity, fingerprint string, code string) ([]string,
 
 //export ziti_mfa_recovery_codes_cb_generate
 func ziti_mfa_recovery_codes_cb_generate(_ C.ziti_context, status C.int, recoveryCodes **C.char, cFingerprint *C.char) {
-	fp := string(C.GoString((*C.char)(cFingerprint)))
+	fp := C.GoString((*C.char)(cFingerprint))
 	log.Debugf("csdk has called back for GenerateMfaCodes for fingerprint: %s with status: %v", fp, status)
 	var theCodes []string
 	var ego error
 	if status != C.ZITI_OK {
 		e := C.ziti_errorstr(status)
-		ego = fmt.Errorf("%s", string(C.GoString(e)))
+		ego = fmt.Errorf("%s", C.GoString(e))
 		log.Errorf("Error when generating mfa recovery codes: %v", ego)
 	} else {
 		theCodes = populateStringSlice(recoveryCodes)
@@ -267,7 +267,7 @@ func AuthMFA(id *ZIdentity, fingerprint string, code string) error {
 
 //export ziti_ar_mfa_status_cb_go
 func ziti_ar_mfa_status_cb_go(ztx C.ziti_context, mfa_ctx unsafe.Pointer, status C.int, cFingerprint *C.char) {
-	fp := string(C.GoString((*C.char)(cFingerprint)))
+	fp := C.GoString((*C.char)(cFingerprint))
 	log.Debugf("ziti_ar_mfa_status_cb_go called for fingerprint: %s with status %v", fp, status)
 	if status == C.ZITI_OK {
 		log.Infof("mfa authentication succeeded for fingerprint: %s", fp)
@@ -292,7 +292,7 @@ func RemoveMFA(id *ZIdentity, fingerprint string, code string) {
 
 //export ziti_mfa_cb_remove_go
 func ziti_mfa_cb_remove_go(_ C.ziti_context, status C.int, cFingerprint *C.char) {
-	fp := string(C.GoString(cFingerprint))
+	fp := C.GoString(cFingerprint)
 	C.free(unsafe.Pointer(cFingerprint)) //CString created when executing VerifyMFA
 
 	log.Debugf("ziti_mfa_cb_remove_go called for %s. status: %d for ", fp, int(status))

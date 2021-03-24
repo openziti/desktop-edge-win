@@ -66,8 +66,6 @@ void log_writer_cb(int level, char *loc, char *msg, int msglen);
 void ziti_dump_go_to_file_cb(char *outputPath, char *line);
 void ziti_dump_go_to_log_cb(void *stringsBuffer, char *line);
 
-bool is_null(void* anything);
-
 struct ziti_context_event* ziti_event_context_event(ziti_event_t *ev);
 struct ziti_router_event* ziti_event_router_event(ziti_event_t *ev);
 struct ziti_service_event* ziti_event_service_event(ziti_event_t *ev);
@@ -86,5 +84,8 @@ void ziti_mfa_recovery_codes_cb_generate(ziti_context ztx, int status, char **re
 void ziti_mfa_auth_request(ziti_ar_mfa_cb response_cb, ziti_context ztx, void *mfa_ctx, char *code, ziti_ar_mfa_status_cb auth_response, char *fingerprint);
 void ziti_mfa_ar_cb(ziti_context ztx, void *mfa_ctx, int status);
 void ziti_ar_mfa_status_cb_go(ziti_context ztx, void *mfa_ctx, int status, char *fingerprint);
+
+ziti_posture_query_set* posture_query_set_get(ziti_posture_query_set_array arr, int idx);
+ziti_posture_query* posture_queries_get(ziti_posture_query_array arr, int idx);
 
 #endif /* GOLANG_SDK_H */
