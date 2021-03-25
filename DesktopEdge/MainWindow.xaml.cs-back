@@ -117,10 +117,12 @@ namespace ZitiDesktopEdge {
 					if (mfa.Successful) {
 						ShowMFARecoveryCodes(this.IdentityMenu.Identity);
 						if (this.IdentityMenu.Identity.Fingerprint == mfa.Fingerprint) {
+							/// Clint - Here too I am manually setting these to get the UIs right
 							this.IdentityMenu.Identity.IsMFAEnabled = true;
 							this.IdentityMenu.Identity.MFAInfo.IsAuthenticated = mfa.Successful;
 							this.IdentityMenu.UpdateView();
 						}
+						HideModal();
 					} else {
 						// ShowBlurb("Provided code could not be verified", ""); - This blurbs on remove MFA and it shouldnt
 					}
@@ -198,8 +200,7 @@ namespace ZitiDesktopEdge {
 		private void ShowModal() {
 			ModalBg.Visibility = Visibility.Visible;
 			ModalBg.Opacity = 0;
-			DoubleAnimation animation = new DoubleAnimation(.8, TimeSpan.FromSeconds(.3));
-			ModalBg.BeginAnimation(Grid.OpacityProperty, animation);
+			ModalBg.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(.8, TimeSpan.FromSeconds(.3)));
 		}
 
 		/// <summary>
@@ -314,7 +315,6 @@ namespace ZitiDesktopEdge {
 			App.Current.MainWindow.WindowState = WindowState.Normal;
 			App.Current.MainWindow.Deactivated += MainWindow_Deactivated;
 			App.Current.MainWindow.Activated += MainWindow_Activated;
-			App.Current.Exit += Current_Exit;
 
 
 			this.components = new System.ComponentModel.Container();
@@ -344,16 +344,6 @@ namespace ZitiDesktopEdge {
 
 			IdentityMenu.OnMessage += IdentityMenu_OnMessage;
 		}
-
-		private void Current_Exit(object sender, ExitEventArgs e) {
-			if (notifyIcon != null) {
-				notifyIcon.Visible = false;
-				notifyIcon.Icon.Dispose();
-				notifyIcon.Dispose();
-				notifyIcon = null;
-			}
-		}
-
 		private void contextMenuItem_Click(object Sender, EventArgs e) {
 			this.Close();
 		}
@@ -706,7 +696,7 @@ namespace ZitiDesktopEdge {
 			ZitiIdentity zid = ZitiIdentity.FromClient(e.Id);
 			logger.Debug($"==== IdentityEvent    : action:{e.Action} fingerprint:{e.Id.FingerPrint} name:{e.Id.Name} ");
 
-			this.Dispatcher.Invoke(async () => {
+			this.Dispatcher.Invoke(() => {
 				if (e.Action == "added") {
 					var found = identities.Find(i => i.Fingerprint == e.Id.FingerPrint);
 					if (found == null) {
@@ -719,10 +709,15 @@ namespace ZitiDesktopEdge {
 						found.IsEnabled = zid.IsEnabled;
 						return;
 					}
-				} else if (e.Action == "updated") {
-					//this indicates that all updates have been sent to the UI... wait for 2 seconds then trigger any ui updates needed
-					await Task.Delay(2000);
-					
+				} else
+				if (e.Action == "updated") {
+					var found = identities.Find(i => i.Fingerprint == e.Id.FingerPrint);
+					if (found == null) {
+						logger.Warn("update event for fingerprint {0} but no identity was found with this fingerprint?", e.Id.FingerPrint);
+					} else {
+						Task.Delay(1000).Wait(); //wait for 1 sec then re-evaluate posture checks...
+						found.CheckForFailingPostureChecks();
+					}
 				} else {
 					IdentityForgotten(ZitiIdentity.FromClient(e.Id));
 				}
@@ -776,11 +771,14 @@ namespace ZitiDesktopEdge {
 					if (svc == null) {
 						found.Services.Add(zs);
 						if (zs.HasFailingPostureCheck()) {
+							logger.Warn("   FAILING POSTURE for : " + found.Name);
 							found.HasServiceFailingPostureCheck = true;
 							if (zs.PostureChecks.Any(p => !p.IsPassing && p.QueryType == "MFA")) {
 								found.MFAInfo.IsAuthenticated = false;
 							}
-						}
+						} else {
+							logger.Warn("NO FAILING POSTURE for : " + found.Name);
+                        }
 					} else {
 						logger.Debug("the service named " + zs.Name + " is already accounted for on this identity.");
 					}
@@ -914,6 +912,8 @@ namespace ZitiDesktopEdge {
 					foreach (var id in ids) {
 						IdentityItem idItem = new IdentityItem();
 
+						// Clint - I am going to put this back in until the MFA info is set before the ui load
+						if (id.IsMFAEnabled && id.Services.Count > 0) id.MFAInfo.IsAuthenticated = true;
 						idItem.ToggleStatus.IsEnabled = id.IsEnabled;
 						if (id.IsEnabled) {
 							idItem.ToggleStatus.Content = "ENABLED";
@@ -962,8 +962,6 @@ namespace ZitiDesktopEdge {
 				} else {
 					ConnectButton.Visibility = Visibility.Visible;
 					DisconnectButton.Visibility = Visibility.Collapsed;
-					IdentityMenu.Visibility = Visibility.Collapsed;
-					MainMenu.Visibility = Visibility.Collapsed;
 				}
 			});
 		}

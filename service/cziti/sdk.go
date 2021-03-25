@@ -275,12 +275,20 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 		pcIds := make(map[string]bool)
 		var postureChecks []dto.PostureCheck
 
+		//if any posture query sets pass - that will grant the user access to that service
+		hasAccess := false
+
 		//find all posture checks sets...
 		for setIdx := 0; true; setIdx++ {
 			pqs := C.posture_query_set_get(service.posture_query_set, C.int(setIdx))
 			if unsafe.Pointer(pqs) == C.NULL {
 				break
 			}
+
+			if bool(pqs.is_passing) {
+				hasAccess = true
+			}
+
 			//get all posture checks in this set...
 			for pqIdx := 0; true; pqIdx++ {
 				pq := C.posture_queries_get(pqs.posture_queries, C.int(pqIdx))
@@ -315,6 +323,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 			Ports:         portRanges,
 			OwnsIntercept: true,
 			PostureChecks: postureChecks,
+			IsAccessable:  hasAccess,
 		}
 
 		added := ZService{
@@ -441,6 +450,16 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			windns.RemoveNrptRules(hostnamesToRemove)
 			log.Infof("unmapped the following hostnames: %v", hostnamesToRemove)
 		}
+
+		var m = dto.IdentityEvent{
+			ActionEvent: dto.IdentityUpdateComplete,
+			Id:          dto.Identity{
+				FingerPrint: zid.Fingerprint,
+			},
+		}
+
+		goapi.BroadcastEvent(m)
+
 	default:
 		log.Infof("event %d not handled", event._type)
 	}

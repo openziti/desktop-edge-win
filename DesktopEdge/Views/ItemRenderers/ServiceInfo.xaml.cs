@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NLog;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,6 +21,7 @@ namespace ZitiDesktopEdge {
 	/// Interaction logic for MenuItem.xaml
 	/// </summary>
 	public partial class ServiceInfo : UserControl {
+		private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
 		private ZitiService _info;
 
@@ -44,12 +46,17 @@ namespace ZitiDesktopEdge {
 					WarnIcon.Visibility = Visibility.Visible;
 					WarningColumn.Width = new GridLength(30);
 				}
-				if (this._info.PostureChecks!=null&&this._info.PostureChecks.Length>0) {
-					for (int i=0; i<this._info.PostureChecks.Length; i++) {
-						if (!this._info.PostureChecks[i].IsPassing) {
-							WarnIcon.ToolTip = "Posture Check Failing: "+ this._info.PostureChecks[i].QueryType;
-							WarnIcon.Visibility = Visibility.Visible;
-							WarningColumn.Width = new GridLength(30);
+				if (this._info.IsAccessable) {
+					// the service is accessible - failing posture checks "probably" should be ignored...
+					logger.Debug("Service {0} is marked as accessible. failing posture checks probably do not matter", this._info.Name);
+				} else {
+					if (this._info.PostureChecks != null && this._info.PostureChecks.Length > 0) {
+						for (int i = 0; i < this._info.PostureChecks.Length; i++) {
+							if (!this._info.PostureChecks[i].IsPassing) {
+								WarnIcon.ToolTip = "Posture Check Failing: " + this._info.PostureChecks[i].QueryType;
+								WarnIcon.Visibility = Visibility.Visible;
+								WarningColumn.Width = new GridLength(30);
+							}
 						}
 					}
 				}

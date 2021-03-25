@@ -23,7 +23,11 @@ namespace ZitiDesktopEdge.Models {
 				return svcFailingPostureCheck;
 			}
 			set {
-				logger.Info("Identity: {0} posture change. is a posture check failing: {1}", Name, !value);
+				if (value) {
+					logger.Info("a posture check is now failing for: {0}", Name);
+				} else {
+					//dbg comment logger.Warn("no posture checks are failing for: {0}", Name);
+				}
 				svcFailingPostureCheck = value;
 			}
 		}
@@ -46,6 +50,7 @@ namespace ZitiDesktopEdge.Models {
 		public string Fingerprint { get; set; }
 
 		public static ZitiIdentity FromClient(DataStructures.Identity id) {
+			System.Diagnostics.Debug.WriteLine("id is " + id.MfaEnabled);
 			ZitiIdentity zid = new ZitiIdentity() {
 				ControllerUrl = id.Config.ztAPI + " at " + id.ControllerVersion,
 				EnrollmentStatus = "status",
@@ -66,9 +71,14 @@ namespace ZitiDesktopEdge.Models {
 						zid.Services.Add(zsvc);
 					}
 				}
-				zid.HasServiceFailingPostureCheck = zid.Services.Any(p => !p.HasFailingPostureCheck());
 			}
+			zid.CheckForFailingPostureChecks();
 			return zid;
+		}
+
+		public void CheckForFailingPostureChecks() {
+			HasServiceFailingPostureCheck = Services.Any(p => !p.HasFailingPostureCheck());
+			logger.Debug("checking for failing posture checks. result: {0}", HasServiceFailingPostureCheck);
 		}
 	}
 }

@@ -37,6 +37,7 @@ type Service struct {
 	Ports         []PortRange
 	OwnsIntercept bool
 	PostureChecks []PostureCheck
+	IsAccessable  bool
 }
 
 type Address struct {

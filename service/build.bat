@@ -276,10 +276,11 @@ EXIT /B %ACTUAL_ERR%
 
 :END
 cd /d %CURDIR%
+
 echo.
 echo.
 echo =====================================================
-echo -- BUILD COMPLETE                                  --
+echo -- BUILD COMPLETE  : %date% %time%
 echo --     tunneler sdk: %ZITI_TUNNEL_REPO_BRANCH%
 echo --     c sdk       : %CSDK_BRANCH%
 echo --                 : %CSDK_HASH%
