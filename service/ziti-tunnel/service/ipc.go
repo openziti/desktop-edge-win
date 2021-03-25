@@ -553,7 +553,7 @@ func serveIpc(conn net.Conn) {
 func generateMfaCodes(out *json.Encoder, fingerprint string, code string) {
 	id := rts.Find(fingerprint)
 	if id != nil {
-		codes, err := cziti.GenerateMfaCodes(id.CId, fingerprint, code)
+		codes, err := cziti.GenerateMfaCodes(id.CId, code)
 		if err == nil {
 			respond(out, dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: codes})
 		} else {
@@ -567,7 +567,7 @@ func generateMfaCodes(out *json.Encoder, fingerprint string, code string) {
 func returnMfaCodes(out *json.Encoder, fingerprint string, code string) {
 	id := rts.Find(fingerprint)
 	if id != nil {
-		codes, err := cziti.ReturnMfaCodes(id.CId, fingerprint, code)
+		codes, err := cziti.ReturnMfaCodes(id.CId, code)
 		if err == nil {
 			respond(out, dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: codes})
 		} else {
@@ -582,7 +582,7 @@ func returnMfaCodes(out *json.Encoder, fingerprint string, code string) {
 func enableMfa(out *json.Encoder, fingerprint string) {
 	id := rts.Find(fingerprint)
 	if id != nil {
-		cziti.EnableMFA(id.CId, fingerprint)
+		cziti.EnableMFA(id.CId)
 		respond(out, dto.Response{Message: "mfa enroll complete", Code: SUCCESS, Error: "", Payload: nil})
 	} else {
 		respondWithError(out, "Could not enable mfa", MFA_FINGERPRINT_NOT_FOUND, fmt.Errorf("id not found with fingerprint: %s", fingerprint))
@@ -592,7 +592,7 @@ func enableMfa(out *json.Encoder, fingerprint string) {
 func verifyMfa(out *json.Encoder, fingerprint string, code string) {
 	id := rts.Find(fingerprint)
 	if id != nil {
-		cziti.VerifyMFA(id.CId, fingerprint, code)
+		cziti.VerifyMFA(id.CId, code)
 		respond(out, dto.Response{Message: "mfa verify complete", Code: SUCCESS, Error: "", Payload: nil})
 	} else {
 		respondWithError(out, "Could not verify mfa code", MFA_FINGERPRINT_NOT_FOUND, fmt.Errorf("id not found with fingerprint: %s", fingerprint))
@@ -602,7 +602,7 @@ func verifyMfa(out *json.Encoder, fingerprint string, code string) {
 func removeMFA(out *json.Encoder, fingerprint string, code string) {
 	id := rts.Find(fingerprint)
 	if id != nil {
-		cziti.RemoveMFA(id.CId, fingerprint, code)
+		cziti.RemoveMFA(id.CId, code)
 		respond(out, dto.Response{Message: "mfa removed successfully", Code: SUCCESS, Error: "", Payload: nil})
 	} else {
 		respondWithError(out, "Could not remove mfa", MFA_FINGERPRINT_NOT_FOUND, fmt.Errorf("id not found with fingerprint: %s", fingerprint))
@@ -1073,7 +1073,7 @@ func AddMetrics(id *Id) {
 
 func authMfa(out *json.Encoder, fingerprint string, code string) {
 	id := rts.Find(fingerprint)
-	result := cziti.AuthMFA(id.CId, fingerprint, code)
+	result := cziti.AuthMFA(id.CId, code)
 	if result == nil {
 		respond(out, dto.Response{Message: "AuthMFA complete", Code: SUCCESS, Error: "", Payload: fingerprint})
 	} else {

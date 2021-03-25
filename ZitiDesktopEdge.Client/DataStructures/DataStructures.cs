@@ -254,6 +254,7 @@ namespace ZitiDesktopEdge.DataStructures {
         public bool OwnsIntercept { get; set; }
         public string AssignedIP { get; set; }
         public PostureCheck[] PostureChecks { get; set; }
+        public bool IsAccessable { get; set; }
     }
 
     public class Address {

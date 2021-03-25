@@ -20,6 +20,7 @@ const (
 	ADDED   = "added"
 	REMOVED = "removed"
 	ERROR   = "error"
+	UPDATED = "updated"
 
 	SERVICE_OP  = "service"
 	IDENTITY_OP = "identity"
@@ -48,6 +49,10 @@ var IDENTITY_ADDED = ActionEvent{
 var IDENTITY_REMOVED = ActionEvent{
 	StatusEvent: StatusEvent{Op: IDENTITY_OP},
 	Action:      REMOVED,
+}
+var IdentityUpdateComplete = ActionEvent{
+	StatusEvent: StatusEvent{Op: IDENTITY_OP},
+	Action:      UPDATED,
 }
 
 var MFAEnrollmentChallengeEvent = ActionEvent{

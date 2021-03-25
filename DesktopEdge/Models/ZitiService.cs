@@ -23,6 +23,7 @@ namespace ZitiDesktopEdge.Models {
 		public bool HasFailingPostureCheck() {
 			return failingPostureCheck;
 		}
+		public bool IsAccessable { get; set; }
 
 		public string Warning {
 			get {
@@ -48,6 +49,7 @@ namespace ZitiDesktopEdge.Models {
 			if (this.PostureChecks != null) {
 				this.failingPostureCheck = this.PostureChecks.Any(p => !p.IsPassing);
 			}
+			this.IsAccessable = svc.IsAccessable;
 			//commented out for now logger.Warn("SERVICE: " + this.Name + " HAS FAILING POSTURE CHECK: " + failingPostureCheck);
 		}
 
