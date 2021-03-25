@@ -314,6 +314,7 @@ namespace ZitiDesktopEdge {
 			App.Current.MainWindow.WindowState = WindowState.Normal;
 			App.Current.MainWindow.Deactivated += MainWindow_Deactivated;
 			App.Current.MainWindow.Activated += MainWindow_Activated;
+			App.Current.Exit += Current_Exit;
 
 
 			this.components = new System.ComponentModel.Container();
@@ -343,6 +344,16 @@ namespace ZitiDesktopEdge {
 
 			IdentityMenu.OnMessage += IdentityMenu_OnMessage;
 		}
+
+		private void Current_Exit(object sender, ExitEventArgs e) {
+			if (notifyIcon != null) {
+				notifyIcon.Visible = false;
+				notifyIcon.Icon.Dispose();
+				notifyIcon.Dispose();
+				notifyIcon = null;
+			}
+		}
+
 		private void contextMenuItem_Click(object Sender, EventArgs e) {
 			this.Close();
 		}
