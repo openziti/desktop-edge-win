@@ -924,6 +924,11 @@ namespace ZitiDesktopEdge {
 						idItem.OnStatusChanged += Id_OnStatusChanged;
 						idItem.Identity = id;
 						IdList.Children.Add(idItem);
+						if (IdentityMenu.Visibility==Visibility.Visible) {
+							if (id.Fingerprint==IdentityMenu.Identity.Fingerprint) {
+								IdentityMenu.Identity = id;
+							}
+						}
 					}
 					//IdList.Height = ;
 					DoubleAnimation animation = new DoubleAnimation((double)(ids.Length * 64), TimeSpan.FromSeconds(.3));

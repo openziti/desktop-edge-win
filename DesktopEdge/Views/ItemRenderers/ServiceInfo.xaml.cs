@@ -51,13 +51,17 @@ namespace ZitiDesktopEdge {
 					logger.Debug("Service {0} is marked as accessible. failing posture checks probably do not matter", this._info.Name);
 				} else {
 					if (this._info.PostureChecks != null && this._info.PostureChecks.Length > 0) {
+						string checks = "";
+						bool hasFailing = false;
 						for (int i = 0; i < this._info.PostureChecks.Length; i++) {
 							if (!this._info.PostureChecks[i].IsPassing) {
-								WarnIcon.ToolTip = "Posture Check Failing: " + this._info.PostureChecks[i].QueryType;
+								hasFailing = true;
+								checks += ((checks.Length>0)?", ":"")+this._info.PostureChecks[i].QueryType;
 								WarnIcon.Visibility = Visibility.Visible;
 								WarningColumn.Width = new GridLength(30);
 							}
 						}
+						if (hasFailing) WarnIcon.ToolTip = "Posture Check Failing: " + checks;
 					}
 				}
 			}
