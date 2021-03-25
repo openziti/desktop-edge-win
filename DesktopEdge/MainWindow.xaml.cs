@@ -69,7 +69,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void IdentityMenu_OnMessage(string message) {
-			ShowBlurb(message, "");
+			ShowBlurbAsync(message, "");
 		}
 
 		private void SystemEvents_DisplaySettingsChanged(object sender, EventArgs e) {
@@ -112,7 +112,7 @@ namespace ZitiDesktopEdge {
 					this.IdentityMenu.Identity.MFAInfo.RecoveryCodes = mfa?.RecoveryCodes?.ToArray();
 					SetupMFA(this.IdentityMenu.Identity, url, secret);
 				} else if (mfa.Action == "auth_challenge") {
-					ShowBlurb("Setting Up auth_challenge", "");
+					ShowBlurbAsync("Setting Up auth_challenge", "");
 				} else if (mfa.Action == "enrollment_verification") {
 					if (mfa.Successful) {
 						ShowMFARecoveryCodes(this.IdentityMenu.Identity);
@@ -127,7 +127,7 @@ namespace ZitiDesktopEdge {
 				} else if (mfa.Action == "enrollment_remove") {
 					// ShowBlurb("removed mfa: " + mfa.Successful, "");
 				} else {
-					ShowBlurb("Unexpected error when processing MFA", "");
+					ShowBlurbAsync("Unexpected error when processing MFA", "");
 					logger.Error("unexpected action: " + mfa.Action);
 				}
 				LoadIdentities(true);
@@ -188,7 +188,7 @@ namespace ZitiDesktopEdge {
 					this.ShowMFA(IdentityMenu.Identity, 2);
 				}
 			} else {
-				ShowBlurb("MFA is not setup on this Identity", "");
+				ShowBlurbAsync("MFA is not setup on this Identity", "");
 			}
 		}
 
@@ -252,12 +252,12 @@ namespace ZitiDesktopEdge {
 			if (IdentityMenu.IsVisible) {
 				if (isComplete) {
 					if (MFASetup.Type == 2) {
-						if (IdentityMenu.Identity.MFAInfo.RecoveryCodes.Length==0) ShowBlurb("You do not have anymore recovery codes", this.RECOVER);
+						if (IdentityMenu.Identity.MFAInfo.RecoveryCodes.Length==0) ShowBlurbAsync("You do not have anymore recovery codes", this.RECOVER);
 						else ShowRecovery(IdentityMenu.Identity);
 					} else if (MFASetup.Type == 3) {
 						IdentityMenu.Identity.IsMFAEnabled = false;
 						IdentityMenu.Identity.MFAInfo.IsAuthenticated = false;
-						ShowBlurb("MFA Disabled, Service Access Can Be Limited", "");
+						ShowBlurbAsync("MFA Disabled, Service Access Can Be Limited", "");
 					} else if (MFASetup.Type == 4) {
 						ShowRecovery(IdentityMenu.Identity);
 					}
@@ -1226,7 +1226,7 @@ namespace ZitiDesktopEdge {
 		/// </summary>
 		/// <param name="message">The message to show</param>
 		/// <param name="url">The url or action name to execute</param>
-		public void ShowBlurb(string message, string url) {
+		public async Task ShowBlurbAsync(string message, string url) {
 			Blurb.Content = message;
 			_blurbUrl = url;
 			BlurbArea.Visibility = Visibility.Visible;
@@ -1236,6 +1236,8 @@ namespace ZitiDesktopEdge {
 			ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(15, 0, 15, 15), TimeSpan.FromSeconds(.3));
 			BlurbArea.BeginAnimation(Grid.OpacityProperty, animation);
 			BlurbArea.BeginAnimation(Grid.MarginProperty, animateThick);
+			await Task.Delay(5000);
+			HideBlurb();
 		}
 
 		/// <summary>

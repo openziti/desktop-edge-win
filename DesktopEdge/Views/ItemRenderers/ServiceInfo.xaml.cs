@@ -51,20 +51,41 @@ namespace ZitiDesktopEdge {
 					logger.Debug("Service {0} is marked as accessible. failing posture checks probably do not matter", this._info.Name);
 				} else {
 					if (this._info.PostureChecks != null && this._info.PostureChecks.Length > 0) {
-						string checks = "";
-						bool hasFailing = false;
+						List<MessageCount> messages = new List<MessageCount>();
 						for (int i = 0; i < this._info.PostureChecks.Length; i++) {
 							if (!this._info.PostureChecks[i].IsPassing) {
-								hasFailing = true;
-								checks += ((checks.Length>0)?", ":"")+this._info.PostureChecks[i].QueryType;
+								messages = AppendMessage(messages, this._info.PostureChecks[i].QueryType);
 								WarnIcon.Visibility = Visibility.Visible;
 								WarningColumn.Width = new GridLength(30);
 							}
 						}
-						if (hasFailing) WarnIcon.ToolTip = "Posture Check Failing: " + checks;
+						if (messages.Count > 0) {
+							string checks = "";
+							for (int i = 0; i < messages.Count; i++) {
+								checks += ((i > 0) ? ", ":"") + messages[i].Total + " " + messages[i].Message;
+							}
+							WarnIcon.ToolTip = "Posture Check Failing: " + checks;
+						}
 					}
 				}
 			}
+		}
+
+		private List<MessageCount> AppendMessage(List<MessageCount> items, string message) {
+			bool found = false;
+			for (int i=0; i<items.Count; i++) {
+				if (items[i].Message == message) {
+					items[i].Total++;
+					found = true;
+				}
+			}
+			if (!found) {
+				MessageCount count = new MessageCount();
+				count.Total = 1;
+				count.Message = message;
+				items.Add(count);
+			}
+			return items;
 		}
 
 		public ServiceInfo() {

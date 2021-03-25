@@ -142,6 +142,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Models\MessageCount.cs" />
     <Compile Include="Models\MFA.cs" />
     <Compile Include="Views\Controls\StyledButton.xaml.cs">
       <DependentUpon>StyledButton.xaml</DependentUpon>
