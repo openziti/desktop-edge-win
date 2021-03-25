@@ -969,6 +969,7 @@ namespace ZitiDesktopEdge {
 					DisconnectButton.Visibility = Visibility.Collapsed;
 					IdentityMenu.Visibility = Visibility.Collapsed;
 					MainMenu.Visibility = Visibility.Collapsed;
+					HideBlurb();
 				}
 			});
 		}
