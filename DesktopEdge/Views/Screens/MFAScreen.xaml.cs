@@ -145,7 +145,11 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void GoTo(object sender, MouseButtonEventArgs e) {
-			Process.Start(new ProcessStartInfo(_url) { UseShellExecute = true });
+			if (_url!=null&&_url.Length>0) {
+				Process.Start(new ProcessStartInfo(_url) { UseShellExecute = true });
+			} else {
+				this.OnError?.Invoke("Invalid MFA Url");
+			}
 		}
 
 		private void ToggleRecovery(object sender, MouseButtonEventArgs e) {
@@ -198,8 +202,7 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-		async private void DoSetupAuthenticate(object sender, MouseButtonEventArgs e) {
-			AuthBgColor.Color = Color.FromRgb(0, 104, 249);
+		async private void DoSetupAuthenticate() {
 			string code = SetupCode.Text;
 
 			DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
@@ -278,31 +281,6 @@ namespace ZitiDesktopEdge {
 			ShowMFA(this._identity, 4);
 		}
 
-		/// <summary>
-		/// When the button area is entered slowly make it slightly opaque
-		/// </summary>
-		/// <param name="sender">The button object</param>
-		/// <param name="e">The mouse event</param>
-		private void HoverAuthSetup(object sender, MouseEventArgs e) {
-			AuthSetupBg.Opacity = 0.8;
-			AuthSetupBg.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1.0, TimeSpan.FromSeconds(.3)));
-		}
-
-		/// <summary>
-		/// When the mouse leaves the button ara snap the opacity back to full
-		/// </summary>
-		/// <param name="sender">The button object</param>
-		/// <param name="e">The mouse event</param>
-		private void LeaveAuthSetup(object sender, MouseEventArgs e) {
-			AuthBgColor.Color = Color.FromRgb(0, 104, 249);
-			AuthSetupBg.BeginAnimation(Grid.OpacityProperty, null);
-			AuthSetupBg.Opacity = 0.8;
-		}
-
-		private void AuthSetupClicked(object sender, MouseButtonEventArgs e) {
-			AuthBgColor.Color = Color.FromRgb(126, 180, 255);
-		}
-
 		private void ShowSecret(object sender, MouseButtonEventArgs e) {
 			if (SecretCode.Visibility==Visibility.Visible) {
 				MFAImage.Visibility = Visibility.Visible;
@@ -317,7 +295,7 @@ namespace ZitiDesktopEdge {
 
 		private void HandleKey(object sender, KeyEventArgs e) {
 			if (e.Key == Key.Return) {
-				DoSetupAuthenticate(sender, null);
+				DoSetupAuthenticate();
 			}
 		}
 

@@ -38,10 +38,20 @@ namespace ZitiDesktopEdge {
 				MainEdit.Text = this._info.ToString();
 				MainLabel.ToolTip = this._info.Name;
 				MainLabel.Text = this._info.Name;
+				WarningColumn.Width = new GridLength(0);
 				if (this._info.Warning.Length > 0) {
 					WarnIcon.ToolTip = this._info.Warning;
 					WarnIcon.Visibility = Visibility.Visible;
 					WarningColumn.Width = new GridLength(30);
+				}
+				if (this._info.PostureChecks!=null&&this._info.PostureChecks.Length>0) {
+					for (int i=0; i<this._info.PostureChecks.Length; i++) {
+						if (!this._info.PostureChecks[i].IsPassing) {
+							WarnIcon.ToolTip = "Posture Check Failing: "+ this._info.PostureChecks[i].QueryType;
+							WarnIcon.Visibility = Visibility.Visible;
+							WarningColumn.Width = new GridLength(30);
+						}
+					}
 				}
 			}
 		}
@@ -55,7 +65,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void WarnIcon_MouseUp(object sender, MouseButtonEventArgs e) {
-			OnMessage?.Invoke(this._info.Warning);
+			OnMessage?.Invoke(WarnIcon.ToolTip.ToString());
 		}
 
 		private void DetailIcon_MouseUp(object sender, MouseButtonEventArgs e) {

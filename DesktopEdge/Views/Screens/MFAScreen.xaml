@@ -58,12 +58,7 @@
                     </Style>
                 </TextBox.Resources>
             </TextBox>
-            <Rectangle x:Name="AuthSetupBg" Margin="40,0,40,0" Opacity="0.8" RadiusX="7" Grid.Row="8" RadiusY="7" ClipToBounds="True" Height="30" VerticalAlignment="Bottom" MouseUp="DoSetupAuthenticate" Cursor="Hand" MouseEnter="HoverAuthSetup" MouseLeave="LeaveAuthSetup" MouseDown="AuthSetupClicked">
-                <Rectangle.Fill>
-                    <SolidColorBrush x:Name="AuthBgColor" Color="#0069FF"/>
-                </Rectangle.Fill>
-            </Rectangle>
-            <Label x:Name="AuthLabel" HorizontalAlignment="Center" Content="Authenticate" IsHitTestVisible="False" Foreground="#FFFFFF" Grid.Row="8"></Label>
+            <local:StyledButton x:Name="AuthSetupButton" OnClick="DoSetupAuthenticate" Label="Authenticate" Grid.Row="8"></local:StyledButton>
         </Grid>
 
         <!-- MFA Recovery Codes -->
@@ -77,8 +72,7 @@
                 <RowDefinition Height="30"></RowDefinition>
             </Grid.RowDefinitions>
             <Label Content="MFA Recovery Codes" Grid.Row="0" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"></Label>
-            <UniformGrid x:Name="RecoveryList" Grid.Row="1" Columns="3">
-            </UniformGrid>
+            <UniformGrid x:Name="RecoveryList" Grid.Row="1" Columns="3"></UniformGrid>
             <Grid Grid.Row="2">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="160"></ColumnDefinition>

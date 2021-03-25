@@ -117,12 +117,10 @@ namespace ZitiDesktopEdge {
 					if (mfa.Successful) {
 						ShowMFARecoveryCodes(this.IdentityMenu.Identity);
 						if (this.IdentityMenu.Identity.Fingerprint == mfa.Fingerprint) {
-							/// Clint - Here too I am manually setting these to get the UIs right
 							this.IdentityMenu.Identity.IsMFAEnabled = true;
 							this.IdentityMenu.Identity.MFAInfo.IsAuthenticated = mfa.Successful;
 							this.IdentityMenu.UpdateView();
 						}
-						HideModal();
 					} else {
 						// ShowBlurb("Provided code could not be verified", ""); - This blurbs on remove MFA and it shouldnt
 					}
@@ -200,7 +198,8 @@ namespace ZitiDesktopEdge {
 		private void ShowModal() {
 			ModalBg.Visibility = Visibility.Visible;
 			ModalBg.Opacity = 0;
-			ModalBg.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(.8, TimeSpan.FromSeconds(.3)));
+			DoubleAnimation animation = new DoubleAnimation(.8, TimeSpan.FromSeconds(.3));
+			ModalBg.BeginAnimation(Grid.OpacityProperty, animation);
 		}
 
 		/// <summary>
@@ -900,8 +899,6 @@ namespace ZitiDesktopEdge {
 					foreach (var id in ids) {
 						IdentityItem idItem = new IdentityItem();
 
-						// Clint - I am going to put this back in until the MFA info is set before the ui load
-						if (id.IsMFAEnabled && id.Services.Count > 0) id.MFAInfo.IsAuthenticated = true;
 						idItem.ToggleStatus.IsEnabled = id.IsEnabled;
 						if (id.IsEnabled) {
 							idItem.ToggleStatus.Content = "ENABLED";
@@ -950,6 +947,8 @@ namespace ZitiDesktopEdge {
 				} else {
 					ConnectButton.Visibility = Visibility.Visible;
 					DisconnectButton.Visibility = Visibility.Collapsed;
+					IdentityMenu.Visibility = Visibility.Collapsed;
+					MainMenu.Visibility = Visibility.Collapsed;
 				}
 			});
 		}

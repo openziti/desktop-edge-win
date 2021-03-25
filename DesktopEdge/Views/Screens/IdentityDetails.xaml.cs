@@ -96,6 +96,7 @@ namespace ZitiDesktopEdge {
 			IdentityEnrollment.Value = _identity.EnrollmentStatus;
 			IdentityStatus.Value = _identity.IsEnabled ? "active" : "disabled";
 			IdentityMFA.IsOn = _identity.IsMFAEnabled;
+			IdentityMFA.ToggleField.IsEnabled = true;
 			IdentityMFA.ToggleField.Opacity = 1;
 			if (_identity.IsMFAEnabled) {
 				if (_identity.MFAInfo.IsAuthenticated) {
@@ -163,9 +164,24 @@ namespace ZitiDesktopEdge {
 		private void ShowDetails(ZitiService info) {
 			DetailName.Text = info.Name;
 			DetailUrl.Text = info.ToString();
-			DetailAddress.Text = info.AssignedIP;
-			DetailPorts.Text = info.ToString();
-			// DetailProtocols.Text = info.Protocols;
+
+			string protocols = "";
+			string addresses = "";
+			string ports = "";
+
+			for (int i = 0; i < info.Protocols.Length; i++) {
+				protocols += ((i > 0) ? "," : "") + info.Protocols[i];
+			}
+			for (int i = 0; i < info.Addresses.Length; i++) {
+				addresses += ((i>0)?",":"")+info.Addresses[i];
+			}
+			for (int i = 0; i < info.Ports.Length; i++) {
+				ports += ((i > 0) ? "," : "") + info.Ports[i];
+			}
+
+			DetailProtocols.Text = protocols;
+			DetailAddress.Text = addresses;
+			DetailPorts.Text = ports;
 
 			DetailsArea.Visibility = Visibility.Visible;
 			DetailsArea.Opacity = 0;

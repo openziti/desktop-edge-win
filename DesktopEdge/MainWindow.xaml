@@ -121,7 +121,7 @@
         </Canvas>
         <Border Margin="10,10,10,10" Name="UIBorder" BorderBrush="Black" BorderThickness="8" CornerRadius="10">
             <Border.Effect>
-                <DropShadowEffect BlurRadius="20" Direction="1" RenderingBias="Quality" ShadowDepth="1" Opacity="1"/>
+                <DropShadowEffect BlurRadius="15" Direction="1" RenderingBias="Quality" ShadowDepth="1" Opacity="1"/>
             </Border.Effect>
         </Border>
         <Rectangle Margin="10,10,10,10" Name="BgColor" Stroke="Black" RadiusY="10" RadiusX="10" ClipToBounds="True">
