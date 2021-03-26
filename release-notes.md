@@ -1,3 +1,17 @@
+# Release 1.9.0
+
+## What's New
+* MFA functionality has been implemented and works with later versions of the Ziti Controller (18.5+). [A brief overview is here](doc/mfa/mfa.md)
+
+## Other changes:
+* UI: changed the icon to show the "white" icon when off, green when on.
+
+## Bugs fixed:
+* fixed a bug with the monitor service indicating it was using zulu time - when it was not
+
+## Dependency Updates
+* Tunneler SDK to v0.14.0/CSDK 0.22.0
+
 # Release 1.8.4
 
 ## What's New
