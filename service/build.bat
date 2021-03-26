@@ -14,9 +14,9 @@ REM See the License for the specific language governing permissions and
 REM limitations under the License.
 REM
 SET REPO_URL=https://github.com/openziti/ziti-tunnel-sdk-c.git
-SET ZITI_TUNNEL_REPO_BRANCH=v0.13.1
+SET ZITI_TUNNEL_REPO_BRANCH=v0.14.0
 REM override the c sdk used in the build - leave blank for the same as specified in the tunneler sdk
-SET ZITI_SDK_C_BRANCH=add-cached_last_activity_at
+SET ZITI_SDK_C_BRANCH=
 REM the number of TCP connections the tunneler sdk can have at any one time
 SET TCP_MAX_CONNECTIONS=256
 SET WINTUN_DL_URL=https://www.wintun.net/builds/wintun-0.10.2.zip

@@ -1,13 +1,13 @@
 # Release 1.9.0
 
 ## What's New
-* MFA - details to follow
+* MFA functionality has been implemented and works with later versions of the Ziti Controller (18.5+). [A brief overview is here](doc/mfa/mfa.md)
 
 ## Other changes:
-* none
+* UI: changed the icon to show the "white" icon when off, green when on
 
 ## Bugs fixed:
-* [#310](https://github.com/openziti/desktop-edge-win/pull/310) Restore identities moved by Windows after Windows system update
+* fixed a bug with the monitor service indicating it was using zulu time - when it was not
 
 ## Dependency Updates
 * 
