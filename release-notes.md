@@ -10,7 +10,7 @@
 * fixed a bug with the monitor service indicating it was using zulu time - when it was not
 
 ## Dependency Updates
-* Tunneler SDK to v0.13.0/CSDK 0.22.0
+* Tunneler SDK to v0.14.0/CSDK 0.22.0
 
 # Release 1.8.4
 
