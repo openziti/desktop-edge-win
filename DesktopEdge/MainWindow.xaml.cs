@@ -355,7 +355,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void contextMenuItem_Click(object Sender, EventArgs e) {
-			this.Close();
+			Application.Current.Shutdown();
 		}
 
 		private void NotifyIcon_MouseClick(object sender, System.Windows.Forms.MouseEventArgs e) {
@@ -431,13 +431,13 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void TargetNotifyIcon_Click(object sender, EventArgs e) {
-//			this.Show();
-//			System.Windows.Forms.MouseEventArgs mea = (System.Windows.Forms.MouseEventArgs)e;
-			/*if (mea.cli mea.RightButton) {
-			} else {
-				
-			}*/
-//			this.Activate();
+			this.Show();
+			this.Activate();
+			if (!Application.Current.MainWindow.IsVisible) Application.Current.MainWindow.Show();
+			if (Application.Current.MainWindow.WindowState == WindowState.Minimized) Application.Current.MainWindow.WindowState = WindowState.Normal;
+			Application.Current.MainWindow.Activate();
+			Application.Current.MainWindow.Topmost = true; 
+			Application.Current.MainWindow.Focus();
 		}
 
 		private void UpdateServiceView() {
