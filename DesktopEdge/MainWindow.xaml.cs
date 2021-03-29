@@ -315,6 +315,7 @@ namespace ZitiDesktopEdge {
 			App.Current.MainWindow.Deactivated += MainWindow_Deactivated;
 			App.Current.MainWindow.Activated += MainWindow_Activated;
 			App.Current.Exit += Current_Exit;
+			App.Current.SessionEnding += Current_SessionEnding;
 
 
 			this.components = new System.ComponentModel.Container();
@@ -343,6 +344,16 @@ namespace ZitiDesktopEdge {
 			SetNotifyIcon("white");
 
 			IdentityMenu.OnMessage += IdentityMenu_OnMessage;
+		}
+
+		private void Current_SessionEnding(object sender, SessionEndingCancelEventArgs e) {
+			if (notifyIcon != null) {
+				notifyIcon.Visible = false;
+				notifyIcon.Icon.Dispose();
+				notifyIcon.Dispose();
+				notifyIcon = null;
+			}
+			Application.Current.Shutdown();
 		}
 
 		private void Current_Exit(object sender, ExitEventArgs e) {
@@ -392,18 +403,15 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void MainWindow_Activated(object sender, EventArgs e) {
-			this.Visibility = Visibility.Visible;
 			Placement();
+			this.Show();
+			this.Visibility = Visibility.Visible;
+			this.Opacity = 1;
 		}
 
 		private void MainWindow_Deactivated(object sender, EventArgs e) {
 			if (this._isAttached) {
-#if DEBUG
-				logger.Debug("debug is enabled - windows pinned");
-				this.Visibility = Visibility.Collapsed;
-#else
-				this.Visibility = Visibility.Collapsed;
-#endif
+				this.Visibility = Visibility.Hidden;
 			}
 		}
 
@@ -433,11 +441,7 @@ namespace ZitiDesktopEdge {
 		private void TargetNotifyIcon_Click(object sender, EventArgs e) {
 			this.Show();
 			this.Activate();
-			if (!Application.Current.MainWindow.IsVisible) Application.Current.MainWindow.Show();
-			if (Application.Current.MainWindow.WindowState == WindowState.Minimized) Application.Current.MainWindow.WindowState = WindowState.Normal;
 			Application.Current.MainWindow.Activate();
-			Application.Current.MainWindow.Topmost = true; 
-			Application.Current.MainWindow.Focus();
 		}
 
 		private void UpdateServiceView() {
