@@ -315,6 +315,7 @@ namespace ZitiDesktopEdge {
 			App.Current.MainWindow.Deactivated += MainWindow_Deactivated;
 			App.Current.MainWindow.Activated += MainWindow_Activated;
 			App.Current.Exit += Current_Exit;
+			App.Current.SessionEnding += Current_SessionEnding;
 
 
 			this.components = new System.ComponentModel.Container();
@@ -345,6 +346,16 @@ namespace ZitiDesktopEdge {
 			IdentityMenu.OnMessage += IdentityMenu_OnMessage;
 		}
 
+		private void Current_SessionEnding(object sender, SessionEndingCancelEventArgs e) {
+			if (notifyIcon != null) {
+				notifyIcon.Visible = false;
+				notifyIcon.Icon.Dispose();
+				notifyIcon.Dispose();
+				notifyIcon = null;
+			}
+			Application.Current.Shutdown();
+		}
+
 		private void Current_Exit(object sender, ExitEventArgs e) {
 			if (notifyIcon != null) {
 				notifyIcon.Visible = false;
@@ -355,7 +366,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void contextMenuItem_Click(object Sender, EventArgs e) {
-			this.Close();
+			Application.Current.Shutdown();
 		}
 
 		private void NotifyIcon_MouseClick(object sender, System.Windows.Forms.MouseEventArgs e) {
@@ -392,18 +403,15 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void MainWindow_Activated(object sender, EventArgs e) {
-			this.Visibility = Visibility.Visible;
 			Placement();
+			this.Show();
+			this.Visibility = Visibility.Visible;
+			this.Opacity = 1;
 		}
 
 		private void MainWindow_Deactivated(object sender, EventArgs e) {
 			if (this._isAttached) {
-#if DEBUG
-				logger.Debug("debug is enabled - windows pinned");
-				this.Visibility = Visibility.Collapsed;
-#else
-				this.Visibility = Visibility.Collapsed;
-#endif
+				this.Visibility = Visibility.Hidden;
 			}
 		}
 
@@ -431,13 +439,9 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void TargetNotifyIcon_Click(object sender, EventArgs e) {
-//			this.Show();
-//			System.Windows.Forms.MouseEventArgs mea = (System.Windows.Forms.MouseEventArgs)e;
-			/*if (mea.cli mea.RightButton) {
-			} else {
-				
-			}*/
-//			this.Activate();
+			this.Show();
+			this.Activate();
+			Application.Current.MainWindow.Activate();
 		}
 
 		private void UpdateServiceView() {
