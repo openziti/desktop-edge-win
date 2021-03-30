@@ -160,6 +160,20 @@ func GetServicesFromRTS(args []string, status *dto.TunnelStatus, flags map[strin
 
 }
 
+func GetStatusFromRTS(args []string, status *dto.TunnelStatus, flags map[string]bool) dto.Response {
+
+	if status == nil {
+		return dto.Response{Message: "Stopped / Unknown State", Code: service.SUCCESS, Error: "", Payload: ""}
+	}
+
+	if status.Active {
+		return dto.Response{Message: "Running", Code: service.SUCCESS, Error: "", Payload: ""}
+	} else {
+		return dto.Response{Message: "Stopped", Code: service.SUCCESS, Error: "", Payload: ""}
+	}
+
+}
+
 func generateResponse(dataType string, message string, filteredData interface{}, flags map[string]bool, templateStr string) dto.Response {
 
 	var bytesData []byte

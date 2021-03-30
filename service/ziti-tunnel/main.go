@@ -111,6 +111,8 @@ func main() {
 		commandline.Execute()
 	case "feedback":
 		commandline.Execute()
+	case "config":
+		commandline.Execute()
 	default:
 		usage(fmt.Sprintf("invalid command %s", cmd))
 	}

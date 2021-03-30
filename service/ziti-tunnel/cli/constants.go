@@ -42,6 +42,10 @@ var NOTIFY_IDENTITY_UI = dto.CommandMsg{
 	Function: "NotifyIdentityUI",
 }
 
+var UPDATE_TUN_IPV4 = dto.CommandMsg{
+	Function: "UpdateTunIpv4",
+}
+
 var monitorIpcPipe = `\\.\pipe\OpenZiti\ziti-monitor\ipc`
 
 var templateIdentity = `{{printf "%40s" "Name"}} | {{printf "%41s" "FingerPrint"}} | {{printf "%6s" "Active"}} | {{printf "%30s" "Config"}} | {{"Status"}}

@@ -28,7 +28,8 @@ import (
 	"path"
 	"strings"
 	"time"
-
+	"path/filepath"
+	"errors"
 	"github.com/openziti/desktop-edge-win/service/cziti"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/constants"
@@ -92,6 +93,58 @@ func backupConfig() (string, error) {
 	}
 	defer original.Close()
 	backup := config.File() + ".backup"
+	new, err := os.Create(backup)
+	if err != nil {
+		return "", err
+	}
+	defer new.Close()
+
+	_, err = io.Copy(new, original)
+	if err != nil {
+		return "", err
+	}
+	return backup, err
+}
+
+
+func (t *RuntimeState) SaveStateWithPath(systemPath string) {
+	// overwrite file if it exists
+	_ = os.MkdirAll(systemPath, 0644)
+
+	log.Debugf("backing up config")
+	backup, err := backupConfigWithPath(systemPath)
+	if err != nil {
+		log.Warnf("could not backup config file! %v", err)
+	} else {
+		log.Debugf("config file backed up to: %s", backup)
+	}
+
+	cfg, err := os.OpenFile(filepath.Join(systemPath, string(os.PathSeparator), "config.json"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+	defer cfg.Close()
+	if err != nil {
+		log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "opening the config file", err)
+	}
+
+	w := bufio.NewWriter(bufio.NewWriter(cfg))
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	_ = enc.Encode(t.state)
+	_ = w.Flush()
+
+	err = cfg.Close()
+	if err != nil {
+		log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "closing the config file", err)
+	}
+	log.Debug("state saved")
+}
+
+func backupConfigWithPath(systemPath string) (string, error) {
+	original, err := os.Open(filepath.Join(systemPath, string(os.PathSeparator), "config.json"))
+	if err != nil {
+		return "", err
+	}
+	defer original.Close()
+	backup := filepath.Join(systemPath, string(os.PathSeparator), "config.json.backup")
 	new, err := os.Create(backup)
 	if err != nil {
 		return "", err
@@ -395,6 +448,37 @@ func (t *RuntimeState) UpdateIpv4Mask(ipv4mask int) {
 func (t *RuntimeState) UpdateIpv4(ipv4 string) {
 	rts.state.TunIpv4 = ipv4
 	rts.SaveState()
+}
+
+func UpdateRuntimeStateIpv4(offline bool, ip string, ipv4Mask int) error {
+
+	log.Infof("ip and mask %s %d", ip, ipv4Mask)
+
+	if offline {
+		systemDrivePath := os.Getenv("SystemDrive")
+		if systemDrivePath == "" {
+			return errors.New("SystemDrive env is not found")
+		}
+		configPath := "Windows\\System32\\config\\systemprofile\\AppData\\Roaming\\NetFoundry"
+		systemPath := filepath.Join(systemDrivePath, string(os.PathSeparator), configPath)
+		err := readConfig(rts, filepath.Join(systemPath, string(os.PathSeparator), "config.json"))
+		if (err != nil) {
+			log.Errorf("Unable to read the config file, %v", err)
+			return err
+		}
+
+		rts.state.TunIpv4 = ip
+		rts.state.TunIpv4Mask = ipv4Mask
+
+		rts.SaveStateWithPath(systemPath)			
+
+	} else {
+		rts.state.TunIpv4 = ip
+		rts.state.TunIpv4Mask = ipv4Mask
+		rts.SaveState()
+	}
+
+	return nil
 }
 
 // uses the registry to determine if IPv6 is enabled or disabled on this machine. If it is disabled an IPv6 DNS entry

@@ -42,6 +42,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -498,6 +499,8 @@ func serveIpc(conn net.Conn) {
 
 			//save the state
 			rts.SaveState()
+		case "UpdateTunIpv4":
+			updateTunIpv4(enc, cmd.Payload["TunIPv4"].(string), cmd.Payload["TunIPv4Mask"].(string))
 		case "NotifyLogLevelUIAndUpdateService":
 			sendLogLevelAndNotify(enc, cmd.Payload["Level"].(string))
 		case "NotifyIdentityUI":
@@ -620,6 +623,21 @@ func setLogLevel(out *json.Encoder, level string) {
 	cziti.SetLogLevel(cLevel)
 	rts.state.LogLevel = goLevel.String()
 	respond(out, dto.Response{Message: "log level set", Code: SUCCESS, Error: "", Payload: nil})
+}
+
+func updateTunIpv4(out *json.Encoder, ip string, ipmask string) {
+	ipMask, err := strconv.Atoi(ipmask)
+	if err != nil {
+		respondWithError(out, "Incorrect ipv4 mask", UNKNOWN_ERROR, err)
+		return
+	}
+	err = UpdateRuntimeStateIpv4(false, ip, ipMask)
+	if err != nil {
+		respondWithError(out, "Could not set Tun ip and mask", UNKNOWN_ERROR, err)
+		return
+	}
+	
+	respond(out, dto.Response{Message: "TunIPv4 and mask is set", Code: SUCCESS, Error: "", Payload: ""})
 }
 
 func serveLogs(conn net.Conn) {

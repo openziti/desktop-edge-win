@@ -2,8 +2,10 @@ package cli
 
 import (
 	"strings"
-
+	"strconv"
+	"golang.org/x/sys/windows/svc"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/service"
 )
 
 //GetIdentities is to fetch identities through cmdline
@@ -52,4 +54,50 @@ func SetLogLevel(args []string, flags map[string]bool) {
 //GetFeedback is to create logs zip through cmdline
 func GetFeedback(args []string, flags map[string]bool) {
 	GetDataFromMonitorIpcPipe(&dto.FEEDBACK_REQUEST, args, flags)
+}
+
+func UpdateConfigIPSubnet(args []string, flags map[string]interface{}) {
+	CIDRstring := flags["CIDR"]
+	log.Infof("Updating the config file with IP CIDR %v", flags["CIDR"])
+	var cidr = strings.Split(CIDRstring.(string), "/")
+	if len(cidr) != 2 {
+		log.Error("Incorrect cidr")
+	}
+	ipMask, err := strconv.Atoi(cidr[1])
+	if err != nil {
+		log.Errorf("Incorrect ipv4 mask, %s", cidr[1])
+		return
+	}
+	updateTunIpv4Payload := make(map[string]interface{})
+	updateTunIpv4Payload["TunIPv4"] = cidr[0]
+	updateTunIpv4Payload["TunIPv4Mask"] = cidr[1]
+	UPDATE_TUN_IPV4.Payload = updateTunIpv4Payload
+	log.Debugf("updateTunIpv4 Payload %v", UPDATE_TUN_IPV4)
+	
+	status := GetDataFromIpcPipe(&UPDATE_TUN_IPV4, nil, GetResponseObjectFromRTS, args, nil)
+
+	if !status {
+		log.Infof("Updating ip and mask in the config file. Manual restart is required")
+		err = service.UpdateRuntimeStateIpv4(true, cidr[0], ipMask)
+		if err != nil {
+			log.Errorf("Unable to set Tun ip and mask, %v", err)
+			return
+		}
+		log.Infof("ip and mask are set")
+	}
+
+	if status {
+		log.Infof("Attempting to restart ziti ")
+
+		err = service.ControlService(svc.Stop, svc.Stopped)
+		if (err != nil) {
+			log.Errorf("Unable to stop the service, %v", err)
+			return	
+		}
+		err = service.StartService()
+		if (err != nil) {
+			log.Errorf("Unable to start the service, %v", err)
+		}
+	}
+
 }
