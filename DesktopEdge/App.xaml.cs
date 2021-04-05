@@ -22,7 +22,11 @@ namespace ZitiDesktopEdge {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         private static Mutex _mutex = null;
 
-        protected override void OnStartup(StartupEventArgs e) {
+		protected override void OnSessionEnding(SessionEndingCancelEventArgs e) {
+			base.OnSessionEnding(e);
+		}
+
+		protected override void OnStartup(StartupEventArgs e) {
             const string appName = "Ziti Desktop Edge";
 
             bool createdNew;

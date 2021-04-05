@@ -29,8 +29,6 @@ version-resolver:
   default: patch
 exclude-labels:
   - 'changelog-ignore'
-include-labels:
-  - 'changelog-add'
 template: |
   ## Changes
   $CHANGES

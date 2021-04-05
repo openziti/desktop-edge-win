@@ -43,7 +43,7 @@
             <Label Content="Setup MFA" Grid.Row="0" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"></Label>
             <Label x:Name="IdName" Content="Identity Name" Grid.Row="1" FontSize="12" Foreground="DarkGray" HorizontalAlignment="Center"></Label>
             <Image x:Name="MFAImage" MaxWidth="200" MaxHeight="200" Width="200" Height="200" RenderOptions.BitmapScalingMode="Fant" Stretch="UniformToFill" Source="/Assets/Images/qrcode.png" Margin="50,0,50,0" Grid.Row="2" />
-            <TextBlock x:Name="SecretCode" TextWrapping="WrapWithOverflow" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center"></TextBlock>
+            <TextBox x:Name="SecretCode" TextWrapping="WrapWithOverflow" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" IsReadOnly="True" BorderThickness="0"></TextBox>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Grid.Row="3" Grid.Column="1" VerticalAlignment="Center">
                 <Label HorizontalAlignment="Center" Content="Go To Link" Foreground="#0069FF" MouseUp="GoTo" Cursor="Hand"></Label>
                 <Label HorizontalAlignment="Center" Content=" or " Foreground="#000000" Cursor="Hand"></Label>
