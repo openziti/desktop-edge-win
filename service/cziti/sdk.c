@@ -35,6 +35,9 @@ void log_writer_shim_go(int level, const char *loc, const char *msg, size_t msgl
 void libuv_init(libuv_ctx *lctx) {
     lctx->l = uv_default_loop();
     ziti_log_init(lctx->l, 6 /*default to 6*/, log_writer_shim_go);
+    ziti_tunnel_set_log_level(ziti_log_level());
+    ziti_tunnel_set_logger(ziti_logger);
+    
     uv_async_init(lctx->l, &lctx->stopper, libuv_stopper);
 }
 
