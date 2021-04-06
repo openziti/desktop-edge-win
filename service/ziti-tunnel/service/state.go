@@ -152,6 +152,9 @@ func (t *RuntimeState) ToMetrics() dto.TunnelStatus {
 			Name:        id.Name,
 			FingerPrint: id.FingerPrint,
 			Metrics:     id.Metrics,
+			Active:		 id.Active,
+			MfaEnabled:	 id.MfaEnabled,
+			MfaNeeded:	 id.MfaNeeded,
 		}
 		i++
 	}
@@ -200,14 +203,6 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, *tun.Device
 	err = luid.SetIPAddresses([]net.IPNet{{IP: ip, Mask: ipnet.Mask}})
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to set IP address to %v: (%v)", ip, err)
-	}
-
-	dnsServers := []net.IP{ip}
-
-	log.Infof("adding DNS servers to TUN: %s", dnsServers)
-	err = luid.AddDNS(dnsServers)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to add DNS addresses: (%v)", err)
 	}
 
 	log.Info("checking TUN dns servers")
@@ -264,12 +259,14 @@ func (t *RuntimeState) LoadIdentity(id *Id, refreshInterval int) {
 		if !found {
 			t.ids[id.FingerPrint] = id //add this identity to the list of known ids
 		}
+		id.MfaEnabled = id.CId.MfaEnabled
+		id.MfaNeeded = id.CId.MfaNeeded
 
 		events.broadcast <- dto.IdentityEvent{
 			ActionEvent: dto.IDENTITY_ADDED,
 			Id:          id.Identity,
 		}
-		log.Infof("connecting identity completed: %s[%s]", id.Name, id.FingerPrint)
+		log.Infof("connecting identity completed: %s[%s] %t/%t", id.Name, id.FingerPrint, id.MfaEnabled, id.MfaNeeded)
 	}
 
 	id.CId = cziti.NewZid(sc)

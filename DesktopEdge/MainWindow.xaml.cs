@@ -1129,7 +1129,7 @@ namespace ZitiDesktopEdge {
 				}
 			} catch(Exception ex) {
 				logger.Error(ex, "unexpected error: {0}", ex.Message);
-				ShowError("Erorr Disabling Service", "An error occurred while trying to disable the data service. Is the monitor service running?");
+				ShowError("Error Disabling Service", "An error occurred while trying to disable the data service. Is the monitor service running?");
 			}
 			HideLoad();
 		}
