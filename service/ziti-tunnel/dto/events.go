@@ -21,8 +21,8 @@ const (
 	REMOVED = "removed"
 	ERROR   = "error"
 	UPDATED = "updated"
-	CHANGED     = "changed"
-	NORMAL      = "Normal"
+	CHANGED = "changed"
+	NORMAL  = "Normal"
 
 	SERVICE_OP  = "service"
 	IDENTITY_OP = "identity"
@@ -30,11 +30,11 @@ const (
 	FEEDBACK_OP = "CaptureLogs"
 	MFA_OP      = "mfa"
 
-	MFAEnrollmentChallengAtion		= "enrollment_challenge"
-	MFAEnrollmentVerificationAction	= "enrollment_verification"
-	MFAEnrollmentRemovedAction		= "enrollment_remove"
+	MFAEnrollmentChallengAtion      = "enrollment_challenge"
+	MFAEnrollmentVerificationAction = "enrollment_verification"
+	MFAEnrollmentRemovedAction      = "enrollment_remove"
 
-	MFA_AUTH_CHALLENGE_ACTION   = "auth_challenge"
+	MFA_AUTH_CHALLENGE_ACTION = "auth_challenge"
 )
 
 var SERVICE_ADDED = ActionEvent{

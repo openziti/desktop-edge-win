@@ -59,8 +59,8 @@ func convertToServiceCli(svc dto.Service) dto.ServiceCli {
 	return dto.ServiceCli{
 		Name:          svc.Name,
 		Id:            svc.Id,
-		Protocols: 	   strings.Join(svc.Protocols, ","),
-		Ports:		   cliPorts,
+		Protocols:     strings.Join(svc.Protocols, ","),
+		Ports:         cliPorts,
 		Addresses:     cliAddresses,
 		OwnsIntercept: svc.OwnsIntercept,
 	}

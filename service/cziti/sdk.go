@@ -453,7 +453,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 
 		var m = dto.IdentityEvent{
 			ActionEvent: dto.IdentityUpdateComplete,
-			Id:          dto.Identity{
+			Id: dto.Identity{
 				FingerPrint: zid.Fingerprint,
 			},
 		}
