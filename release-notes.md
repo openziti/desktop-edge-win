@@ -13,6 +13,7 @@
 
 ## Bugs fixed:
 * [#332](https://github.com/openziti/desktop-edge-win/issues/332) Logs from csdk/tunneler are missing
+* [#340](https://github.com/openziti/desktop-edge-win/issues/340) auth mfa verify icon is missing at ZDE startup
 * Fixed a bug where process posture checks were case sensitive
 
 ## Dependency Updates
