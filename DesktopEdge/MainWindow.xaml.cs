@@ -252,8 +252,11 @@ namespace ZitiDesktopEdge {
 			if (IdentityMenu.IsVisible) {
 				if (isComplete) {
 					if (MFASetup.Type == 2) {
-						if (IdentityMenu.Identity.MFAInfo.RecoveryCodes.Length==0) ShowBlurbAsync("You do not have anymore recovery codes", this.RECOVER);
-						else ShowRecovery(IdentityMenu.Identity);
+						if (IdentityMenu.Identity.MFAInfo?.RecoveryCodes?.Length > 0) {
+							ShowRecovery(IdentityMenu.Identity);
+						} else {
+							ShowBlurbAsync("You do not have anymore recovery codes", this.RECOVER);
+						}
 					} else if (MFASetup.Type == 3) {
 						IdentityMenu.Identity.IsMFAEnabled = false;
 						IdentityMenu.Identity.MFAInfo.IsAuthenticated = false;
