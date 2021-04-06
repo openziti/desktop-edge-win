@@ -17,10 +17,12 @@ as the name of a server/resource on the network. The Ziti Desktop Edge for Windo
 so that a human can enter a well-known name and expect to be able to access the resource by name. 
 
 In order to interact with DNS the Ziti Desktop Edge for Windows will start a small DNS server of its own. The purpose
-of this DNS server is to allow for targeted DNS requests to be sent to the Ziti Desktop Edge for Windows service. 
-These DNS requests will be used to convert the intercept name of a Ziti Service to an IP address that is mapped to
-the Ziti Overlay Network.  This server will listen on the IP address specified in the configuration by the parameter
-named `TunIpv4` and will listen on port 53.
+of this DNS server is to allow DNS requests made by Windows to be sent to the Ziti Desktop Edge for Windows. There, these
+DNS requests are used to identify the [Ziti Service](https://openziti.github.io/ziti/services/overview.html?tabs=create-service-ui)
+which to be intercepted. If a match is found the associated IPv4 address is returned that corresponds to the intercepted 
+Ziti Service.
+
+The server will listen on the IP address specified in the configuration by the parameter named `TunIpv4` and listens on port 53.
 
 ## DNS Resolution
 
@@ -33,17 +35,22 @@ intercepted to the internal DNS resolver for resolution.  When a new service nee
 added to the NRPT for that service which will tell windows that for the given intercept names DNS requests should 
 be sent to the Ziti Desktop Edge for Windows DNS server for resolution.
 
+If interested in seeing configured NRPT rules. Once a Ziti Desktop Edge for Windows is running - any Ziti Services 
+configured to be intercepted can be listed by issuing this powershell command: `Get-DnsClientNrptRule`.
+
 ### Fully Qualified Names
 
-DNS requests are considered "fully qualified" if the query in question contains a period within it.  For example these
-are all considered "fully qualified" names:
+The Ziti Desktop Edge for Windows considers DNS requests as "fully qualified" if the query in question
+contains any period within it at any position and does not require a request to contain a trailing dot to be fully 
+qualified.  For example these would all be considered "fully qualified" names:
 
 * `this.is.an.intercept`
-* `my.server`
+* `my.server.`
 * `another-intercept.`
 
-Fully qualified DNS requests will first need to match a rule configured in the NRPT in order to be resolved. If no rule
-is matched the DNS request will be sent to the default resolvers configured by the operating system.
+Fully qualified DNS requests will first need to match a rule configured in the NRPT in order to be sent to the Ziti Desktop
+Edge for Windows DNS resolve for resolution. If no NRPT rule is matched the DNS request will be sent to the default 
+resolvers configured by the operating system.
 
 ### Unqualified Domain Names
 
@@ -108,7 +115,7 @@ For example in a DNS query to `www.google.com` the `www` part is considered a su
 is considered a subdomain of the top level domain (TLD) of `com`.  Subdomains are not resolved by the Ziti Desktop Edge
 for Windows.
 
-### Example
+### Subdomain Example
 
 Consider a Ziti Service configured to intercept `my-server.ziti`. In order for the Ziti Desktop Edge for Windows to 
 resolve a DNS request sent to it, it must match exactly. In this example the following queries would produce no matches:
