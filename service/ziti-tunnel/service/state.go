@@ -152,6 +152,9 @@ func (t *RuntimeState) ToMetrics() dto.TunnelStatus {
 			Name:        id.Name,
 			FingerPrint: id.FingerPrint,
 			Metrics:     id.Metrics,
+			Active:		 id.Active,
+			MfaEnabled:	 id.MfaEnabled,
+			MfaNeeded:	 id.MfaNeeded,
 		}
 		i++
 	}
@@ -264,6 +267,8 @@ func (t *RuntimeState) LoadIdentity(id *Id, refreshInterval int) {
 		if !found {
 			t.ids[id.FingerPrint] = id //add this identity to the list of known ids
 		}
+		id.MfaEnabled = id.CId.MfaEnabled
+		id.MfaNeeded = id.CId.MfaNeeded
 
 		events.broadcast <- dto.IdentityEvent{
 			ActionEvent: dto.IDENTITY_ADDED,
