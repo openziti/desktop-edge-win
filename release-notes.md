@@ -1,3 +1,19 @@
+# Release 1.9.1
+
+## What's New
+* nothing
+
+## Other changes:
+* After TUN creation the interface metric will be set to 255 to persuade Windows to send
+  all DNS requests to an interface that is not the TUN first
+
+## Bugs fixed:
+* [#332](https://github.com/openziti/desktop-edge-win/issues/332) Logs from csdk/tunneler are missing
+* [#340](https://github.com/openziti/desktop-edge-win/issues/340) auth mfa verify icon is missing at ZDE startup
+
+## Dependency Updates
+* Tunneler SDK to v0.15.1(CSDK 0.22.0)
+
 # Release 1.9.0
 
 ## What's New
