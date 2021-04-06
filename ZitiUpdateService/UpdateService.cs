@@ -194,7 +194,7 @@ namespace ZitiUpdateService {
 
 				outputIpconfigInfo(destinationLocation);
 				outputSystemInfo(destinationLocation);
-				outputDnsCache(destinationLocation);
+				// removing this as of 1.9.0+ since we use NRPT... outputDnsCache(destinationLocation);
 				outputExternalIP(destinationLocation);
 				outputTasklist(destinationLocation);
 				outputRouteInfo(destinationLocation);

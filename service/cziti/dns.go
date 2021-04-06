@@ -107,6 +107,10 @@ func normalizeDnsName(dnsName string) string {
 }
 
 func (dns *dnsImpl) Resolve(toResolve string) net.IP {
+	return dns.resolveWithConnectionSpecificDomain(toResolve, true)
+}
+
+func (dns *dnsImpl) resolveWithConnectionSpecificDomain(toResolve string, useConnectionSpecificDomain bool) net.IP {
 	dnsName := normalizeDnsName(toResolve)
 	found := dns.hostnameMap[dnsName]
 	if found != nil {
@@ -114,6 +118,18 @@ func (dns *dnsImpl) Resolve(toResolve string) net.IP {
 			return found.ip
 		} else {
 			log.Debugf("resolved %s as %v but service is not active", toResolve, found.ip)
+		}
+	} else {
+		if useConnectionSpecificDomain {
+			//check to see if this ends with a connection specific domain...
+			//if it does, remove the domain and check...
+			for _, csd := range domains {
+				if strings.HasSuffix(toResolve, csd) {
+					toResolveWithoutCSD := trimSuffix(toResolve, csd)
+					log.Debugf("request to resolve %s matches a connection specific domain. Attempting to resolve: %s", toResolve, toResolveWithoutCSD)
+					return dns.resolveWithConnectionSpecificDomain(toResolveWithoutCSD, false)
+				}
+			}
 		}
 	}
 	return nil

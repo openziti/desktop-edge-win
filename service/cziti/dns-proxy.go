@@ -244,17 +244,37 @@ func dnsPanicRecover(localDnsServers []net.IP, now time.Time) {
 	go runDNSproxy(windns.GetUpstreamDNS(), localDnsServers)
 }
 
+func trimSuffix(source string, suffix string) string {
+	if strings.HasSuffix(source, suffix) {
+		source = source[:len(source)-len(suffix)]
+	}
+	return source
+}
+
+func cleanDomainsForNrpt() map[string]bool {
+	//AddNrptRules takes a map - so make a map... AND - can't have the trailing period produced from GetConnectionSpecificDomains
+	domainMap := make(map[string]bool)
+	for _, d := range domains {
+		domainMap[fmt.Sprintf(".%s", trimSuffix(d, "."))] = true
+	}
+	return domainMap
+}
+
 func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
 	windns.FlushDNS() //do this in case the services come back in different order and the ip returned is no longer the same
 	log.Infof("starting DNS proxy upstream: %v, local: %v", upstreamDnsServers, localDnsServers)
 	domains = windns.GetConnectionSpecificDomains()
-	log.Infof("ConnectionSpecificDomains deteted: %v", domains)
+	log.Infof("ConnectionSpecificDomains detected: %v", domains)
 	defer func() {
 		if err := recover(); err != nil {
 			log.Errorf("Recovering from panic due to DNS-related issue. %v", err)
 			dnsPanicRecover(localDnsServers, time.Now())
 		}
 	}()
+
+	domainMap := cleanDomainsForNrpt()
+	windns.AddNrptRules(domainMap, dnsip.String())
+	log.Infof("Added connection specific domains to NRPT: %v", domainMap)
 
 	dnsRetryInterval := 500
 
@@ -379,7 +399,7 @@ outer:
 			for k, r := range reqs {
 				if now.After(r.exp) {
 					log.Debugf("a DNS request has expired - enable trace logging and reproduce this issue for more information")
-					log.Tracef("service adde         expired DNS req: %s %s", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
+					log.Tracef("expired DNS req: %s %s", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
 
 					delete(reqs, k)
 				}

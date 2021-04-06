@@ -141,13 +141,13 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	}()
 	<-shutdownDelay
 
+	windns.RemoveAllNrptRules()
+
 	log.Infof("shutting down connections...")
 	pipes.shutdownConnections()
 
 	log.Infof("shutting down events...")
 	events.shutdown()
-
-	windns.RemoveAllNrptRules()
 
 	log.Infof("Removing existing interface: %s", TunName)
 	wt, err := tun.WintunPool.OpenAdapter(TunName)
@@ -286,6 +286,8 @@ func initialize(cLogLevel int) error {
 	if err != nil {
 		return err
 	}
+
+	cziti.SetInterfaceMetric(TunName, 255)
 
 	cziti.Start(rts, rts.state.TunIpv4, rts.state.TunIpv4Mask, cLogLevel)
 	err = cziti.HookupTun(*t)
@@ -721,6 +723,7 @@ func reportStatus(out *json.Encoder) {
 		Status:  &s,
 		Metrics: nil,
 	})
+
 	log.Debugf("request for status responded to")
 }
 
@@ -902,7 +905,7 @@ func connectIdentity(id *Id) {
 			ActionEvent: dto.IDENTITY_ADDED,
 			Id:          id.Identity,
 		}
-		log.Infof("connecting identity completed: %s[%s]", id.Name, id.FingerPrint)
+		log.Infof("connecting identity completed: %s[%s] %t/%t", id.Name, id.FingerPrint, id.MfaEnabled, id.MfaNeeded)
 	}
 }
 

@@ -1,4 +1,4 @@
-# Release 1.9.1
+# Release 1.9.2
 
 ## What's New
 * [#322](https://github.com/openziti/desktop-edge-win/issues/322) Ability to toggle identity, set loglevel and generate feedback zip file from cmd line
@@ -11,6 +11,28 @@
 
 ## Dependency Updates
 * none
+
+# Release 1.9.1
+
+## What's New
+* NRPT rules will be created matching all "Connection Specific Domains" discovered. This should allow for unqualified
+  names to be properly resolved
+* TUN will no longer have an assigned DNS server. This will prevent a large number of DNS requests from being sent to
+  the ZitiTUN to be proxied. Now only DNS requests matching an NRPT rule will land at the ZitiTUN DNS Server
+
+## Other changes:
+* After TUN creation the interface metric will be set to 255 to persuade Windows to send
+  all DNS requests to an interface that is not the TUN first
+* Removed dnscache.txt from feedback zip
+
+## Bugs fixed:
+* [#332](https://github.com/openziti/desktop-edge-win/issues/332) Logs from csdk/tunneler are missing
+* [#340](https://github.com/openziti/desktop-edge-win/issues/340) auth mfa verify icon is missing at ZDE startup
+* Fixed a bug where process posture checks were case sensitive
+
+## Dependency Updates
+* Tunneler SDK to v0.15.1(CSDK 0.22.0)
+* All go dependencies updated - numerous changes see commit log for details
 
 # Release 1.9.0
 
