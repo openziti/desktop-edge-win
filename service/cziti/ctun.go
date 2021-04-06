@@ -56,10 +56,12 @@ int netifRemoveRoute(netif_handle dev, char* dest);
 */
 import "C"
 import (
+	"fmt"
 	"golang.zx2c4.com/wireguard/tun"
 	"io"
 	"net"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 	"unsafe"
@@ -304,4 +306,19 @@ func netifAddRoute(_ C.netif_handle, dest *C.char) C.int {
 func netifRemoveRoute(_ C.netif_handle, dest *C.char) C.int {
 	log.Infof("i am inside netifRemoveRoute: %s", C.GoString(dest))
 	return 0
+}
+
+func SetInterfaceMetric(interfaceName string, metric int) {
+	script := fmt.Sprintf(`$i=Get-NetIPInterface | Where -FilterScript {$_.InterfaceAlias -Eq "%s"}
+Set-NetIPInterface -InterfaceIndex $i.ifIndex -InterfaceMetric %d`, interfaceName, metric)
+	log.Debugf("setting %s interface metric to %d with script: %s", interfaceName, metric, script)
+
+	cmd := exec.Command("powershell", "-Command", script)
+	cmd.Stderr = os.Stdout
+	cmd.Stdout = os.Stdout
+
+	err := cmd.Run()
+	if err != nil {
+		log.Errorf("ERROR setting interface metric: %v", err)
+	}
 }
