@@ -122,7 +122,7 @@ func AddNrptRules(domainsToMap map[string]bool, dnsServer string) {
 		return
 	}
 
-	blockSize := 250
+	blockSize := 50
 	if len(domainsToMap) > blockSize {
 		log.Debugf("domainsToMap is too long [%d] and may fail on some systems. splitting the requested entries into blocks of %d", len(domainsToMap), blockSize)
 	}
@@ -137,6 +137,10 @@ func AddNrptRules(domainsToMap map[string]bool, dnsServer string) {
 			hostnames = make([]string, blockSize)
 			currentSize = 0
 		}
+	}
+	if currentSize > 0 {
+		//means there's a chunk still to add....
+		chunkedAddNrptRules(hostnames[:currentSize], dnsServer)
 	}
 }
 
