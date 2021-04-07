@@ -52,9 +52,9 @@ func InstallService() error {
 
 	log.Infof("service installed using path: %s", fullPath)
 	s, err = m.CreateService(SvcStartName, fullPath, mgr.Config{
-		StartType:        mgr.StartAutomatic,
-		DisplayName:      SvcName,
-		Description:      SvcNameLong,
+		StartType:   mgr.StartAutomatic,
+		DisplayName: SvcName,
+		Description: SvcNameLong,
 	})
 	if err != nil {
 		return err

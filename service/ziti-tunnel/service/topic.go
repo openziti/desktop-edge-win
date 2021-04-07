@@ -19,8 +19,8 @@ package service
 
 type topic struct {
 	broadcast chan interface{}
-	channels map[int]chan interface{}
-	done chan bool
+	channels  map[int]chan interface{}
+	done      chan bool
 }
 
 func newTopic(cap int16) topic {
@@ -31,19 +31,19 @@ func newTopic(cap int16) topic {
 	}
 }
 
-func(t *topic) register(id int, c chan interface{}) {
+func (t *topic) register(id int, c chan interface{}) {
 	t.channels[id] = c
 }
 
-func(t *topic) unregister(id int) {
+func (t *topic) unregister(id int) {
 	delete(t.channels, id)
 }
 
-func(t *topic) shutdown() {
+func (t *topic) shutdown() {
 	t.done <- true
 }
 
-func(t *topic) run() {
+func (t *topic) run() {
 	go func() {
 		for {
 			select {

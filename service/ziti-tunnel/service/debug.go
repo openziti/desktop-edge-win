@@ -18,8 +18,8 @@
 package service
 
 import (
-	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
+	idcfg "github.com/openziti/sdk-golang/ziti/config"
 )
 
 func dbg() {
@@ -28,15 +28,15 @@ func dbg() {
 	events.broadcast <- dto.TunnelStatusEvent{
 		StatusEvent: dto.StatusEvent{Op: "status"},
 		Status:      r,
-		ApiVersion: API_VERSION,
+		ApiVersion:  API_VERSION,
 	}
 
 	svcs := make([]*dto.Service, 2)
 	svcs[0] = &dto.Service{
-		Name:          "FakeService1",
+		Name: "FakeService1",
 	}
 	svcs[1] = &dto.Service{
-		Name:          "Second Fake Service",
+		Name: "Second Fake Service",
 	}
 
 	events.broadcast <- dto.IdentityEvent{
@@ -57,7 +57,7 @@ func dbg() {
 	events.broadcast <- dto.ServiceEvent{
 		ActionEvent: dto.SERVICE_ADDED,
 		Service: &dto.Service{
-			Name:          "New Service",
+			Name: "New Service",
 		},
 		Fingerprint: "new_id_fingerprint",
 	}

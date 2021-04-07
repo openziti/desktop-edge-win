@@ -29,9 +29,9 @@ type IdentityCli struct {
 type ServiceCli struct {
 	Name          string
 	Id            string
-	Protocols	  string
-	Ports    	  string
-	Addresses	  string
+	Protocols     string
+	Ports         string
+	Addresses     string
 	OwnsIntercept bool
 }
 
