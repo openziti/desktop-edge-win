@@ -32,7 +32,6 @@ type ServiceCli struct {
 	Protocols     string
 	Ports         string
 	Addresses     string
-	OwnsIntercept bool
 }
 
 type IdentityOnOffPayload struct {
