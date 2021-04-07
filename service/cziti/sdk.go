@@ -340,7 +340,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 		}
 
 		zid.Services.Store(svcId, &added)
-		ServiceChanges <- se
+		go func() {ServiceChanges <- se}() //do this in a go routine just in case it gets blocked so the uv loop doesn't block
 	}
 	return addresses
 }
@@ -411,7 +411,9 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			}
 			addys := serviceCB(ztx, removed, C.ZITI_SERVICE_UNAVAILABLE, zid)
 			for _, toRemove := range addys {
-				hostnamesToRemove[toRemove.HostName] = true
+				if toRemove.IsHost {
+					hostnamesToRemove[toRemove.HostName] = true
+				}
 			}
 		}
 		for i := 0; true; i++ {
@@ -422,12 +424,16 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			log.Info("service changed remove the service then add it back immediately", C.GoString(changed.name))
 			addys := serviceCB(ztx, changed, C.ZITI_SERVICE_UNAVAILABLE, zid)
 			for _, toRemove := range addys {
-				hostnamesToRemove[toRemove.HostName] = true
+				if toRemove.IsHost {
+					hostnamesToRemove[toRemove.HostName] = true
+				}
 			}
 
 			addys = serviceCB(ztx, changed, C.ZITI_OK, zid)
 			for _, toAdd := range addys {
-				hostnamesToAdd[toAdd.HostName] = true
+				if toAdd.IsHost {
+					hostnamesToAdd[toAdd.HostName] = true
+				}
 			}
 		}
 		for i := 0; true; i++ {
@@ -437,7 +443,9 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			}
 			addys := serviceCB(ztx, added, C.ZITI_OK, zid)
 			for _, toAdd := range addys {
-				hostnamesToAdd[toAdd.HostName] = true
+				if toAdd.IsHost {
+					hostnamesToAdd[toAdd.HostName] = true
+				}
 			}
 		}
 
