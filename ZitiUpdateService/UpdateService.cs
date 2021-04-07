@@ -199,6 +199,7 @@ namespace ZitiUpdateService {
 				outputTasklist(destinationLocation);
 				outputRouteInfo(destinationLocation);
 				outputNetstatInfo(destinationLocation);
+				outputNrpt(destinationLocation);
 
 				Task.Delay(500).Wait();
 
@@ -332,6 +333,37 @@ namespace ZitiUpdateService {
 				var netstatOutput = Path.Combine(destinationFolder, "netstat.txt");
 				Logger.Debug("running netstat -ano to {0}", netstatOutput);
 				startInfo.Arguments = $"/C netstat -ano > \"{netstatOutput}\"";
+				process.StartInfo = startInfo;
+				process.Start();
+				process.WaitForExit();
+			} catch (Exception ex) {
+				Logger.Error(ex, "Unexpected error {0}", ex.Message);
+			}
+		}
+
+		private void outputNrpt(string destinationFolder) {
+			Logger.Info("outputting NRPT rules");
+			try {
+				Logger.Info("outputting NRPT DnsClientNrptRule");
+				string nrptRuleOutput = Path.Combine(destinationFolder, "NrptRule.txt");
+				Process nrptRuleProcess = new Process();
+				ProcessStartInfo nrptRuleStartInfo = new ProcessStartInfo();
+				nrptRuleStartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+				nrptRuleStartInfo.FileName = "cmd.exe";
+				nrptRuleStartInfo.Arguments = $"/C powershell \"Get-DnsClientNrptRule | sort -Property Namespace\" > \"{nrptRuleOutput}\"";
+				Logger.Info("Running: {0}", nrptRuleStartInfo.Arguments);
+				nrptRuleProcess.StartInfo = nrptRuleStartInfo;
+				nrptRuleProcess.Start();
+				nrptRuleProcess.WaitForExit();
+
+				Logger.Info("outputting NRPT DnsClientNrptPolicy");
+				string nrptOutput = Path.Combine(destinationFolder, "NrptPolicy.txt");
+				Process process = new Process();
+				ProcessStartInfo startInfo = new ProcessStartInfo();
+				startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+				startInfo.FileName = "cmd.exe";
+				startInfo.Arguments = $"/C powershell \"Get-DnsClientNrptPolicy | sort -Property Namespace\" > \"{nrptOutput}\"";
+				Logger.Info("Running: {0}", startInfo.Arguments);
 				process.StartInfo = startInfo;
 				process.Start();
 				process.WaitForExit();
