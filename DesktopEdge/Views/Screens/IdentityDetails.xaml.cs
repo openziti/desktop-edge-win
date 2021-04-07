@@ -119,7 +119,7 @@ namespace ZitiDesktopEdge {
 			ServiceList.Children.Clear();
 			if (_identity.Services.Count>0) {
 				foreach(var zitiSvc in _identity.Services.OrderBy(s => s.Name.ToLower())) {
-					if (zitiSvc.Name.ToLower().IndexOf(filter)>=0||zitiSvc.ToString().ToLower().IndexOf(filter)>=0) {
+					if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >=0||zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >=0) {
 						Logger.Trace("painting: " + zitiSvc.Name);
 						ServiceInfo info = new ServiceInfo();
 						info.Info = zitiSvc;
