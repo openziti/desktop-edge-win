@@ -121,11 +121,31 @@ func AddNrptRules(domainsToMap map[string]bool, dnsServer string) {
 		log.Debug("no domains to map specified to AddNrptRules. exiting early")
 		return
 	}
+
+	blockSize := 250
+	if len(domainsToMap) > blockSize {
+		log.Debugf("domainsToMap is too long [%d] and may fail on some systems. splitting the requested entries into blocks of %d", len(domainsToMap), blockSize)
+	}
+	currentSize := 0
+	hostnames := make([]string, blockSize)
+	for hostname := range domainsToMap {
+		hostnames[currentSize] = hostname
+		currentSize ++
+		if currentSize >= blockSize {
+			log.Debugf("sending chunk of domains to be added to NRPT")
+			chunkedAddNrptRules(hostnames, dnsServer)
+			hostnames = make([]string, blockSize)
+			currentSize = 0
+		}
+	}
+}
+
+func chunkedAddNrptRules(domainsToAdd []string, dnsServer string) {
 	sb := strings.Builder{}
 	sb.WriteString(`$Rules = @(
 `)
 
-	for hostname := range domainsToMap {
+	for _, hostname := range domainsToAdd {
 		sb.WriteString(fmt.Sprintf(`@{ Namespace ="%s"; NameServers = @("%s"); Comment = "Added by ziti-tunnel"; DisplayName = "ziti-tunnel:%s"; }%s`, hostname, dnsServer, hostname, "\n"))
 	}
 
@@ -136,7 +156,7 @@ ForEach ($Rule in $Rules) {
 }`))
 
 	script := sb.String()
-	log.Debugf("Executing NRPT script:\n%s", script)
+	log.Debugf("Executing NRPT script containing %d domains:\n%s", len(domainsToAdd), script)
 
 	cmd := exec.Command("powershell", "-Command", script)
 	cmd.Stderr = os.Stdout
@@ -147,6 +167,7 @@ ForEach ($Rule in $Rules) {
 		log.Errorf("ERROR adding nrpt rules: %v", err)
 	}
 }
+
 
 func RemoveNrptRules(domainsToMap map[string]bool) {
 	if len(domainsToMap) == 0 {
