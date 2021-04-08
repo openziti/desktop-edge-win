@@ -19,6 +19,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -75,5 +76,5 @@ func initConfig() {
 }
 
 func checkHelp() {
-	fmt.Println("Use -h or --help option to get the help message")
+	log.Println("Use -h or --help option to get the help message")
 }

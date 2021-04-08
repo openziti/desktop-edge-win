@@ -18,10 +18,11 @@
 package dto
 
 import (
+	"log"
+
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"github.com/openziti/sdk-golang/ziti/enroll"
-	"log"
 )
 
 type AddIdentity struct {
@@ -160,6 +161,11 @@ type ServiceEvent struct {
 type IdentityEvent struct {
 	ActionEvent
 	Id Identity
+}
+
+type LogLevelEvent struct {
+	ActionEvent
+	LogLevel string
 }
 
 type MfaEvent struct {
