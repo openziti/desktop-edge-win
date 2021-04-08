@@ -1003,13 +1003,48 @@ func acceptServices() {
 		select {
 		case <-shutdown:
 			return
-		case serviceChange := <-cziti.ServiceChanges:
-			log.Debugf("processing service change event. id:%s name:%s", serviceChange.Service.Id, serviceChange.Service.Name)
-			change := dto.ServiceEvent(serviceChange)
-			events.broadcast <- change
-			log.Debugf("dispatched %s service change event", serviceChange.Op)
+		case bulkServiceChange := <-cziti.BulkServiceChanges:
+			log.Debugf("processing a bulk service change event. Hostnames to add/remove:[%d/%d] service notifications added/removed: [%d/%d]",
+				len(bulkServiceChange.HostnamesToAdd),
+				len(bulkServiceChange.HostnamesToRemove),
+				len(bulkServiceChange.ServicesToAdd),
+				len(bulkServiceChange.ServicesToRemove))
+			handleBulkServiceChange(bulkServiceChange)
 		}
 	}
+}
+
+func handleBulkServiceChange(sc cziti.BulkServiceChange) {
+	if len(sc.HostnamesToRemove) > 0 {
+		log.Debug("removing rules from NRPT")
+		windns.RemoveNrptRules(sc.HostnamesToRemove)
+		log.Infof("removed NRPT rules for: %v", sc.HostnamesToRemove)
+	} else {
+		log.Debug("bulk service change had no hostnames to remove")
+	}
+
+	if len(sc.HostnamesToAdd) > 0 {
+		log.Debug("adding rules to NRPT")
+		windns.AddNrptRules(sc.HostnamesToAdd, rts.state.TunIpv4)
+		log.Infof("mapped the following hostnames: %v", sc.HostnamesToAdd)
+	}
+
+	be := dto.BulkServiceEvent{
+		ActionEvent:     dto.SERVICE_BULK,
+		Fingerprint:     sc.Fingerprint,
+		AddedServices:   sc.ServicesToAdd,
+		RemovedServices: sc.ServicesToRemove,
+	}
+
+	rts.BroadcastEvent(be)
+
+	var m = dto.IdentityEvent{
+		ActionEvent: dto.IdentityUpdateComplete,
+		Id: dto.Identity{
+			FingerPrint: sc.Fingerprint,
+		},
+	}
+	rts.BroadcastEvent(m)
 }
 
 func handleEvents(isInitialized chan struct{}) {

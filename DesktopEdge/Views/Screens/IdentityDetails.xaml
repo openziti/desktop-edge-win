@@ -50,7 +50,7 @@
                         <RowDefinition Height="30"></RowDefinition>
                         <RowDefinition Height="30"></RowDefinition>
                         <RowDefinition x:Name="ServiceRow" Height="140"></RowDefinition>
-                        <RowDefinition Height="40"></RowDefinition>
+                        <RowDefinition Height="30"></RowDefinition>
                         <RowDefinition Height="40"></RowDefinition>
                         <RowDefinition x:Name="IdImage" Height="0"></RowDefinition>
                     </Grid.RowDefinitions>
@@ -78,10 +78,41 @@
                     </Rectangle>
                     <Label x:Name="AuthMessageLabel" HorizontalAlignment="Center" Content="Authenticate" IsHitTestVisible="False" Foreground="#FFFFFF" Grid.Row="6"></Label>
                     
-                    <!-- Forget Identity Button -->
-                    <Label Name="ForgetIdentityButton" Grid.Column="0" Grid.Row="7" Padding="0,10,0,10" Margin="0,0,0,0" Content="Forget This Identity" Cursor="Hand" Foreground="#F4044D" HorizontalAlignment="Center" Mouse.MouseUp="ForgetIdentity"></Label>
+                    <!-- Sorting and Paging -->
+                    <Grid x:Name="PageSortArea" Grid.Column="0" Grid.Row="7">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="40"></ColumnDefinition>
+                            <ColumnDefinition Width="*"></ColumnDefinition>
+                            <ColumnDefinition Width="40"></ColumnDefinition>
+                            <ColumnDefinition Width="90"></ColumnDefinition>
+                            <ColumnDefinition Width="70"></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="30"></RowDefinition>
+                        </Grid.RowDefinitions>
+                        
+                        <Label Content="Page" Grid.Column="0" Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Center"></Label>
+                        <ComboBox Name="Pages" Grid.Column="1" Grid.Row="0" SelectionChanged="Pages_SelectionChanged"  Width="60" Height="28" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="0" Background="#FFD4CECE" Foreground="#FF292626" FontFamily="/ZitiDesktopEdge;component/Assets/Fonts/#Open Sans" FontSize="14"></ComboBox>
 
-                    <Image Name="ForgetIdentityImage" Visibility="Collapsed" Source="/Assets/Images/identity.png" Grid.Column="0" Grid.Row="8" Height="80" Width="80" Opacity="0.3" HorizontalAlignment="Stretch"></Image>
+                        <Label Content="Sort" Grid.Column="2" Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Center"></Label>
+                        <ComboBox Name="SortByField" Grid.Column="3" Grid.Row="0" SelectionChanged="SortByField_SelectionChanged" Height="28" VerticalAlignment="Top" HorizontalAlignment="Stretch" BorderThickness="0" Background="#FFD4CECE" Foreground="#FF292626" FontFamily="/ZitiDesktopEdge;component/Assets/Fonts/#Open Sans" FontSize="14">
+                            <ComboBoxItem IsSelected="True">Name</ComboBoxItem>
+                            <ComboBoxItem>Address</ComboBoxItem>
+                            <ComboBoxItem>Protocol</ComboBoxItem>
+                            <ComboBoxItem>Port</ComboBoxItem>
+                        </ComboBox>
+                        <ComboBox Name="SortWayField" Grid.Column="4" Grid.Row="0" Margin="5,0,0,0" SelectionChanged="SortWayField_SelectionChanged" Height="28" VerticalAlignment="Top" HorizontalAlignment="Stretch" BorderThickness="0" Foreground="#FF292626" FontFamily="/ZitiDesktopEdge;component/Assets/Fonts/#Open Sans" FontSize="14">
+                            <ComboBox.Resources>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}" Color="Yellow" />
+                                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Red" />
+                            </ComboBox.Resources>
+                            <ComboBoxItem IsSelected="True">Asc</ComboBoxItem>
+                            <ComboBoxItem>Desc</ComboBoxItem>
+                        </ComboBox>
+                    </Grid>
+                    
+                    <!-- Forget Identity Button -->
+                    <Label Name="ForgetIdentityButton" Grid.Column="0" Grid.Row="8" Padding="0,10,0,10" Margin="0,0,0,0" Content="Forget This Identity" Cursor="Hand" Foreground="#F4044D" HorizontalAlignment="Center" Mouse.MouseUp="ForgetIdentity"></Label>
                 </Grid>
             </StackPanel>
         </Grid>
