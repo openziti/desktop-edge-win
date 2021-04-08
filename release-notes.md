@@ -6,13 +6,13 @@
 * Consistent UX for MFA Screens
 
 ## Other changes:
-* none
+* Service to UI interaction is now with one bulk update of services instead of one event per service update
 
 ## Bugs fixed:
 * none
 
 ## Dependency Updates
-* none
+* Tunneler SDK to v0.16.0 (CSDK 0.22.1)
 
 # Release 1.9.2
 
