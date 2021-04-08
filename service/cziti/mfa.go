@@ -113,9 +113,9 @@ func ziti_mfa_cb_verify_go(_ C.ziti_context, status C.int, cFingerprint *C.char)
 	fp := C.GoString(cFingerprint)
 	log.Debugf("ziti_mfa_cb_verify_go called for %s. status: %d for ", fp, int(status))
 	var m = dto.MfaEvent{
-		ActionEvent: dto.MFAEnrollmentVerificationEvent,
-		Fingerprint: fp,
-		Successful:  false,
+		ActionEvent:   dto.MFAEnrollmentVerificationEvent,
+		Fingerprint:   fp,
+		Successful:    false,
 		RecoveryCodes: nil,
 	}
 
@@ -135,6 +135,7 @@ func ziti_mfa_cb_verify_go(_ C.ziti_context, status C.int, cFingerprint *C.char)
 }
 
 var rtnCodes = make(chan mfaCodes)
+
 func ReturnMfaCodes(id *ZIdentity, code string) ([]string, error) {
 	ccode := C.CString(code)
 	defer C.free(unsafe.Pointer(ccode))
@@ -179,6 +180,7 @@ func ziti_mfa_recovery_codes_cb_return(_ C.ziti_context, status C.int, recoveryC
 }
 
 var genCodes = make(chan mfaCodes)
+
 func GenerateMfaCodes(id *ZIdentity, code string) ([]string, error) {
 	ccode := C.CString(code)
 	defer C.free(unsafe.Pointer(ccode))
@@ -292,9 +294,9 @@ func ziti_mfa_cb_remove_go(_ C.ziti_context, status C.int, cFingerprint *C.char)
 
 	log.Debugf("ziti_mfa_cb_remove_go called for %s. status: %d for ", fp, int(status))
 	var m = dto.MfaEvent{
-		ActionEvent: dto.MFAEnrollmentRemovedEvent,
-		Fingerprint: fp,
-		Successful:  false,
+		ActionEvent:   dto.MFAEnrollmentRemovedEvent,
+		Fingerprint:   fp,
+		Successful:    false,
 		RecoveryCodes: nil,
 	}
 

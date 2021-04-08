@@ -22,19 +22,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// servicesCmd represents the services command
-var servicesCmd = &cobra.Command{
-	Use:   "services [all] [svc_name...]",
-	Short: "Lists services from ziti-tunnel",
-	Long: `View the services that this user has access to.
-	The records will be fetched from ziti-tunnel`,
+// feedbackCmd represents the feedback command
+var feedbackCmd = &cobra.Command{
+	Use:   "feedback",
+	Short: "fetch system information and logs from ziti-tunnel",
+	Long: `Fetch the system information and logs, zip it and attach it to the email.
+User has to send the email to support@netfoundry.io`,
 	Run: func(cmd *cobra.Command, args []string) {
-		flags := map[string]bool{}
-		flags["prettyJSON"] = prettyJSON
-		cli.GetServices(args, flags)
+		cli.GetFeedback(args, nil)
 	},
 }
 
 func init() {
-	listCmd.AddCommand(servicesCmd)
+	rootCmd.AddCommand(feedbackCmd)
 }

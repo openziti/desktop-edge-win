@@ -500,6 +500,10 @@ func serveIpc(conn net.Conn) {
 
 			//save the state
 			rts.SaveState()
+		case "NotifyLogLevelUIAndUpdateService":
+			sendLogLevelAndNotify(enc, cmd.Payload["Level"].(string))
+		case "NotifyIdentityUI":
+			sendIdentityAndNotifyUI(enc, cmd.Payload["Fingerprint"].(string))
 		case "ZitiDump":
 			log.Debug("request to ZitiDump received")
 			for _, id := range rts.ids {
@@ -732,7 +736,7 @@ func toggleIdentity(out *json.Encoder, fingerprint string, onOff bool) {
 		msg := fmt.Sprintf("identity with fingerprint %s not found", fingerprint)
 		log.Warn(msg)
 		respond(out, dto.Response{
-			Code:    SUCCESS,
+			Code:    IDENTITY_NOT_FOUND,
 			Message: fmt.Sprintf("no update performed. %s", msg),
 			Error:   "",
 			Payload: nil,
@@ -1033,7 +1037,15 @@ func handleEvents(isInitialized chan struct{}) {
 
 //Removes the Config from the provided identity and returns a 'cleaned' id
 func Clean(src *Id) dto.Identity {
-	log.Tracef("cleaning identity: %s %v %v", src.Name, src.CId.MfaNeeded, src.CId.MfaEnabled)
+	mfaNeeded := false
+	mfaEnabled := false
+
+	if src.CId != nil {
+		mfaNeeded = src.CId.MfaNeeded
+		mfaEnabled = src.CId.MfaEnabled
+	}
+
+	log.Tracef("cleaning identity: %s", src.Name, mfaNeeded, mfaEnabled)
 	AddMetrics(src)
 	nid := dto.Identity{
 		Name:              src.Name,
@@ -1042,8 +1054,8 @@ func Clean(src *Id) dto.Identity {
 		Config:            idcfg.Config{},
 		ControllerVersion: src.ControllerVersion,
 		Status:            "",
-		MfaNeeded:         src.CId.MfaNeeded,
-		MfaEnabled:        src.CId.MfaEnabled,
+		MfaNeeded:         mfaNeeded,
+		MfaEnabled:        mfaEnabled,
 		Services:          make([]*dto.Service, 0),
 		Metrics:           src.Metrics,
 		Tags:              nil,
@@ -1082,4 +1094,35 @@ func authMfa(out *json.Encoder, fingerprint string, code string) {
 	} else {
 		respondWithError(out, fmt.Sprintf("AuthMFA failed. the supplied code [%s] was not valid: %s", code, result), 1, result)
 	}
+}
+
+// when the log level is updated through command line, the message is broadcasted to UI and update service as well
+func sendLogLevelAndNotify(enc *json.Encoder, loglevel string) {
+	events.broadcast <- dto.LogLevelEvent{
+		ActionEvent: dto.LOGLEVEL_CHANGED,
+		LogLevel:    loglevel,
+	}
+	message := fmt.Sprintf("Loglevel %s is sent to the events channel", loglevel)
+	log.Info(message)
+	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: message}
+	respond(enc, resp)
+}
+
+// when the identity status is updated through command line, the message is sent to UI as well
+func sendIdentityAndNotifyUI(enc *json.Encoder, fingerprint string) {
+	for _, id := range rts.ids {
+		if id.FingerPrint == fingerprint {
+			events.broadcast <- dto.IdentityEvent{
+				ActionEvent: dto.IDENTITY_ADDED,
+				Id:          id.Identity,
+			}
+			message := fmt.Sprintf("Identity %s - %s updated message is sent to the events channel", id.Identity.Name, id.Identity.FingerPrint)
+			log.Info(message)
+			resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: message}
+			respond(enc, resp)
+			return
+		}
+	}
+	resp := dto.Response{Message: "", Code: ERROR, Error: "Could not find id matching fingerprint " + fingerprint, Payload: ""}
+	respond(enc, resp)
 }

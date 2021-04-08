@@ -29,10 +29,10 @@ var (
 	modws2_32   = windows.NewLazySystemDLL("ws2_32.dll")
 	modiphlpapi = windows.NewLazySystemDLL("iphlpapi.dll")
 
-	procWSACreateEvent   = modws2_32.NewProc("WSACreateEvent")
-	procNotifyAddrChange = modiphlpapi.NewProc("NotifyAddrChange")
+	procWSACreateEvent    = modws2_32.NewProc("WSACreateEvent")
+	procNotifyAddrChange  = modiphlpapi.NewProc("NotifyAddrChange")
 	procNotifyRouteChange = modiphlpapi.NewProc("NotifyRouteChange")
-	log = logging.Logger()
+	log                   = logging.Logger()
 )
 
 func OnIPChange(callback func()) {
@@ -43,7 +43,7 @@ func OnIPChange(callback func()) {
 	log.Debugf("Symbol [NotifyAddrChange] loaded at %#v", procNotifyAddrChange.Addr())
 
 	var (
-		err error
+		err     error
 		overlap *windows.Overlapped = &windows.Overlapped{}
 	)
 

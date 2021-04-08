@@ -33,6 +33,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         public event EventHandler<List<Identity>> OnMetricsEvent;
         public event EventHandler<IdentityEvent> OnIdentityEvent;
         public event EventHandler<ServiceEvent> OnServiceEvent;
+        public event EventHandler<LogLevelEvent> OnLogLevelEvent;
         public event EventHandler<MfaEvent> OnMfaEvent;
 
         protected override void ShutdownEvent(StatusEvent e) {
@@ -56,6 +57,11 @@ namespace ZitiDesktopEdge.ServiceClient {
         protected virtual void ServiceEvent(ServiceEvent e) {
             OnServiceEvent?.Invoke(this, e);
         }
+        
+        protected virtual void LogLevelEvent(LogLevelEvent e) {
+            OnLogLevelEvent?.Invoke(this, e);
+        }
+
 
         protected virtual void MfaEvent(MfaEvent e) {
             OnMfaEvent?.Invoke(this, e);
@@ -343,6 +349,13 @@ namespace ZitiDesktopEdge.ServiceClient {
 
                         if (svc != null) {
                             ServiceEvent(svc);
+                        }
+                        break;
+                    case "logLevel":
+                        LogLevelEvent ll = serializer.Deserialize<LogLevelEvent>(jsonReader);
+
+                        if (ll != null) {
+                            LogLevelEvent(ll);
                         }
                         break;
                     case "shutdown":

@@ -1,3 +1,19 @@
+# Release 1.9.2
+
+## What's New
+* [#322](https://github.com/openziti/desktop-edge-win/issues/322) Ability to toggle identity, set loglevel and generate feedback zip file from cmd line
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* [#346](https://github.com/openziti/desktop-edge-win/issues/346) Fixed the UI filtering of services on the Identity detail screen
+* [#348](https://github.com/openziti/desktop-edge-win/issues/348) IP addresses do not need to be added to the NRPT
+* [#349](https://github.com/openziti/desktop-edge-win/issues/349) Too many services can cause the NRPT update to fail
+
+## Dependency Updates
+* none
+
 # Release 1.9.1
 
 ## What's New

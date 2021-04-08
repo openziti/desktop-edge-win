@@ -152,9 +152,9 @@ func (t *RuntimeState) ToMetrics() dto.TunnelStatus {
 			Name:        id.Name,
 			FingerPrint: id.FingerPrint,
 			Metrics:     id.Metrics,
-			Active:		 id.Active,
-			MfaEnabled:	 id.MfaEnabled,
-			MfaNeeded:	 id.MfaNeeded,
+			Active:      id.Active,
+			MfaEnabled:  id.MfaEnabled,
+			MfaNeeded:   id.MfaNeeded,
 		}
 		i++
 	}

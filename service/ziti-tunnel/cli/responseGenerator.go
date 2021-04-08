@@ -39,15 +39,29 @@ func convertToIdentityCli(id *dto.Identity) dto.IdentityCli {
 }
 
 func convertToServiceCli(svc dto.Service) dto.ServiceCli {
+	cliPorts := ""
+	for _, val := range svc.Ports {
+		if len(cliPorts) != 0 {
+			cliPorts = fmt.Sprintf("%s, %d-%d", cliPorts, val.Low, val.High)
+		} else {
+			cliPorts = fmt.Sprintf("%d-%d", val.Low, val.High)
+		}
+	}
+	cliAddresses := ""
+	for _, val := range svc.Addresses {
+		if len(cliAddresses) != 0 {
+			cliAddresses = cliAddresses + ", " + val.HostName + "/" + val.IP
+		} else {
+			cliAddresses = val.HostName + "/" + val.IP
+		}
+	}
+
 	return dto.ServiceCli{
-		Name: svc.Name,
-		Id:   svc.Id,
-		/*InterceptHost: svc.InterceptHost,
-		InterceptPort: svc.InterceptPort,
-		AssignedIP:    svc.AssignedIP,
-		AssignedHost:  svc.AssignedHost,
-		*/
-		OwnsIntercept: svc.OwnsIntercept,
+		Name:          svc.Name,
+		Id:            svc.Id,
+		Protocols:     strings.Join(svc.Protocols, ","),
+		Ports:         cliPorts,
+		Addresses:     cliAddresses,
 	}
 }
 
@@ -179,4 +193,36 @@ func generateResponse(dataType string, message string, filteredData interface{},
 	}
 
 	return dto.Response{Message: message, Code: service.SUCCESS, Error: "", Payload: responseStr}
+}
+
+func GetLogLevelFromRTS(args []string, status *dto.TunnelStatus, flags map[string]bool) dto.Response {
+
+	if flags["query"] == true {
+		message := fmt.Sprintf("Loglevel is currently set to %s", status.LogLevel)
+		return dto.Response{Message: message, Code: service.SUCCESS, Error: "", Payload: ""}
+	}
+	errMsg := fmt.Sprintf("Unknown error: args %s flag %v", args, flags)
+	return dto.Response{Message: "", Code: service.ERROR, Error: errMsg, Payload: ""}
+
+}
+
+// GetIdentityResponseObjectFromRTS is to get identity info from the RTS
+func GetIdentityResponseObjectFromRTS(args []string, status dto.Response, flags map[string]bool) dto.Response {
+	log.Debugf("Message from ziti-tunnel : %v", status.Message)
+	if status.Error == "" && status.Payload != nil {
+		log.Debugf("Payload from RTS %v", status.Payload)
+		payloadData := status.Payload.(map[string]interface{})
+		identityStatus := make(map[string]interface{})
+		identityStatus["FingerPrint"] = payloadData["FingerPrint"]
+		identityStatus["Active"] = payloadData["Active"]
+		identityStatus["Name"] = payloadData["Name"]
+		return dto.Response{Message: status.Message, Code: service.SUCCESS, Error: "", Payload: identityStatus}
+	} else {
+		return status
+	}
+}
+
+// GetResponseObjectFromRTS is to get response object info from the RTS
+func GetResponseObjectFromRTS(args []string, status dto.Response, flags map[string]bool) dto.Response {
+	return status
 }
