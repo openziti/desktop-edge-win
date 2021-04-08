@@ -129,14 +129,14 @@ func AddNrptRules(domainsToMap map[string]bool, dnsServer string) {
 	currentSize := 0
 	hostnames := make([]string, blockSize)
 	for hostname := range domainsToMap {
-		hostnames[currentSize] = hostname
-		currentSize ++
 		if currentSize >= blockSize {
 			log.Debugf("sending chunk of domains to be added to NRPT")
 			chunkedAddNrptRules(hostnames, dnsServer)
 			hostnames = make([]string, blockSize)
 			currentSize = 0
 		}
+		hostnames[currentSize] = hostname
+		currentSize++
 	}
 	if currentSize > 0 {
 		//means there's a chunk still to add....
@@ -171,7 +171,6 @@ ForEach ($Rule in $Rules) {
 		log.Errorf("ERROR adding nrpt rules: %v", err)
 	}
 }
-
 
 func RemoveNrptRules(domainsToMap map[string]bool) {
 	if len(domainsToMap) == 0 {
