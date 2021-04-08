@@ -12,7 +12,7 @@
 * none
 
 ## Dependency Updates
-* Tunneler SDK to v0.16.0 (CSDK 0.22.1)
+* none
 
 # Release 1.9.2
 
