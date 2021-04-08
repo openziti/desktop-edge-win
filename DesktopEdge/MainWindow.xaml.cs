@@ -174,7 +174,7 @@ namespace ZitiDesktopEdge {
 		/// <param name="identity">The Ziti Identity to Authenticate</param>
 		public void ShowMFARecoveryCodes(ZitiIdentity identity) {
 			if (identity.MFAInfo!=null) {
-				if (identity.MFAInfo.RecoveryCodes?.Length > 0) {
+				if (identity.MFAInfo.IsAuthenticated&& identity.MFAInfo.RecoveryCodes!=null) {
 					MFASetup.Opacity = 0;
 					MFASetup.Visibility = Visibility.Visible;
 					MFASetup.Margin = new Thickness(0, 0, 0, 0);
@@ -252,11 +252,7 @@ namespace ZitiDesktopEdge {
 			if (IdentityMenu.IsVisible) {
 				if (isComplete) {
 					if (MFASetup.Type == 2) {
-						if (IdentityMenu.Identity.MFAInfo?.RecoveryCodes?.Length > 0) {
-							ShowRecovery(IdentityMenu.Identity);
-						} else {
-							ShowBlurbAsync("You do not have anymore recovery codes", this.RECOVER);
-						}
+						ShowRecovery(IdentityMenu.Identity);
 					} else if (MFASetup.Type == 3) {
 						IdentityMenu.Identity.IsMFAEnabled = false;
 						IdentityMenu.Identity.MFAInfo.IsAuthenticated = false;
@@ -346,7 +342,13 @@ namespace ZitiDesktopEdge {
 			this.IdentityMenu.MainWindow = this;
 			SetNotifyIcon("white");
 
+			MFASetup.OnLoad += MFASetup_OnLoad;
 			IdentityMenu.OnMessage += IdentityMenu_OnMessage;
+		}
+
+		private void MFASetup_OnLoad(bool isComplete, string title, string message) {
+			if (isComplete) HideLoad();
+			else ShowLoad(title, message);
 		}
 
 		private void Current_SessionEnding(object sender, SessionEndingCancelEventArgs e) {
@@ -698,6 +700,9 @@ namespace ZitiDesktopEdge {
 
 		private void ServiceClient_OnClientDisconnected(object sender, object e) {
 			this.Dispatcher.Invoke(() => {
+				IdentityMenu.Visibility = Visibility.Collapsed;
+				MFASetup.Visibility = Visibility.Collapsed;
+				HideModal();
 				IdList.Children.Clear();
 				if (e != null) {
 					logger.Debug(e.ToString());
@@ -771,6 +776,8 @@ namespace ZitiDesktopEdge {
 			Debug.WriteLine($"==== ServiceEvent     : action:{e.Action} fingerprint:{e.Fingerprint} name:{e.Service.Name} ");
 			this.Dispatcher.Invoke(() => {
 				var found = identities.Find(id => id.Fingerprint == e.Fingerprint);
+
+				Debug.WriteLine(e.Action+" Calling Service Appender");
 
 				if (found == null) {
 					Debug.WriteLine($"{e.Action} service event for {e.Service.Name} but the provided identity fingerprint {e.Fingerprint} is not found!");

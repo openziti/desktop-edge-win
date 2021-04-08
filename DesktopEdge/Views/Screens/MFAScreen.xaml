@@ -13,10 +13,18 @@
                 <DropShadowEffect BlurRadius="20" Direction="1" RenderingBias="Quality" ShadowDepth="1" Opacity="1"/>
             </Border.Effect>
         </Border>
-        <Rectangle Margin="10,10,10,10" RadiusX="12" RadiusY="12" ClipToBounds="True">
+        <Rectangle x:Name="MainBrush" Margin="10,10,10,10" RadiusX="12" RadiusY="12" ClipToBounds="True">
             <Rectangle.Fill>
                 <SolidColorBrush Color="#FFFFFF" Opacity="0.97"/>
             </Rectangle.Fill>
+        </Rectangle>
+        <Rectangle x:Name="AuthBrush" Margin="10,10,10,10" RadiusX="12" RadiusY="12" ClipToBounds="True">
+            <Rectangle.Fill>
+                <SolidColorBrush Color="#131429" Opacity="0.97"/>
+            </Rectangle.Fill>
+            <Rectangle.Stroke>
+                <SolidColorBrush Color="White" Opacity="0.4"></SolidColorBrush>
+            </Rectangle.Stroke>
         </Rectangle>
         <Rectangle x:Name="SeperationColor" Margin="16,10,16,16" RadiusX="10" RadiusY="10" ClipToBounds="True" Height="160" VerticalAlignment="Bottom">
             <Rectangle.Fill>
@@ -51,7 +59,7 @@
             </StackPanel>
             <Label Content="enter the code below to finish setup" Grid.Row="4" FontSize="11" Foreground="DarkGray" HorizontalAlignment="Center"></Label>
             <Label Content="Authentication Code" Grid.Row="5" FontSize="18" Foreground="#FFFFFF" HorizontalAlignment="Center" FontWeight="Bold" FontFamily="/ZitiDesktopEdge;component/Assets/Fonts/#Russo One"></Label>
-            <TextBox x:Name="SetupCode" MaxLength="6" Padding="0,5,0,0" TextBlock.LineHeight="80" Grid.Row="6" Keyboard.KeyUp="HandleKey" BorderThickness="0 0 0 0" TextAlignment="Center" FontSize="50">
+            <TextBox x:Name="SetupCode" MaxLength="6" Padding="0,5,0,0" Grid.Row="6" Keyboard.KeyUp="HandleKey" BorderThickness="0 0 0 0" TextAlignment="Center" FontSize="50">
                 <TextBox.Resources>
                     <Style TargetType="{x:Type Border}">
                         <Setter Property="CornerRadius" Value="7"/>
@@ -73,6 +81,8 @@
             </Grid.RowDefinitions>
             <Label Content="MFA Recovery Codes" Grid.Row="0" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"></Label>
             <UniformGrid x:Name="RecoveryList" Grid.Row="1" Columns="3"></UniformGrid>
+            <TextBlock TextWrapping="WrapWithOverflow" x:Name="NoRecovery" Visibility="Collapsed" Text="No Recovery Codes Available" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="20,0,20,0" FontSize="16"></TextBlock>
+
             <Grid Grid.Row="2">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="160"></ColumnDefinition>
@@ -91,28 +101,22 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="30"></RowDefinition>
                 <RowDefinition Height="30"></RowDefinition>
-                <RowDefinition Height="100"></RowDefinition>
+                <RowDefinition Height="80"></RowDefinition>
                 <RowDefinition Height="30"></RowDefinition>
             </Grid.RowDefinitions>
-            <Label Content="Authorize MFA" Grid.Row="0" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"></Label>
-            <Label x:Name="AuthSubTitle" Content="Enter your authentication code" Grid.Row="1" FontSize="12" HorizontalAlignment="Center"></Label>
-            <TextBox x:Name="AuthCode" MaxLength="6" FontSize="50" Padding="0,5,0,0" Grid.Row="2" Keyboard.KeyUp="AuthCode_KeyUp" TextAlignment="Center" BorderThickness="0 0 0 2">
+            <Label Content="Authorize MFA" Foreground="White" Grid.Row="0" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"></Label>
+            <Label x:Name="AuthSubTitle" Foreground="White" Opacity="0.7" Content="Enter Authorization or Recovery Code" Grid.Row="1" FontSize="12" HorizontalAlignment="Center"></Label>
+            <TextBox x:Name="AuthCode" MaxLength="8" FontSize="50" Padding="0,5,0,0" Grid.Row="2" Keyboard.KeyUp="AuthCode_KeyUp" TextAlignment="Center" BorderThickness="0 0 0 0" Margin="0,0,0,5">
                 <TextBox.Resources>
                     <Style TargetType="{x:Type Border}">
                         <Setter Property="CornerRadius" Value="7"/>
                     </Style>
                 </TextBox.Resources>
             </TextBox>
-            <Grid Grid.Row="3">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="160"></ColumnDefinition>
-                    <ColumnDefinition Width="*"></ColumnDefinition>
-                </Grid.ColumnDefinitions>
-                <Label x:Name="ToggleType" HorizontalAlignment="Center" Content="Use Recovery Code" Foreground="#0069FF" Cursor="Hand" Grid.Column="0" MouseUp="ToggleRecovery"></Label>
-                <Label HorizontalAlignment="Center" Content="Authenticate" Foreground="#0069FF" Cursor="Hand" Grid.Column="1" MouseUp="DoAuthenticate"></Label>
-            </Grid>
+            <local:StyledButton x:Name="AuthButton" OnClick="DoAuthenticate" Label="Authenticate" Grid.Row="7"></local:StyledButton>
         </Grid>
 
-        <Image Source="/Assets/Images/closeBlack.png" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,40,40,0" Width="10" Height="10" Cursor="Hand" MouseUp="ExecuteClose"></Image>
+        <Image x:Name="CloseBlack" Source="/Assets/Images/closeBlack.png" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,40,40,0" Width="10" Height="10" Cursor="Hand" MouseUp="ExecuteClose"></Image>
+        <Image x:Name="CloseWhite" Source="/Assets/Images/close.png" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,40,40,0" Width="10" Height="10" Cursor="Hand" MouseUp="ExecuteClose"></Image>
     </Grid>
 </UserControl>
