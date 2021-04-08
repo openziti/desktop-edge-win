@@ -408,10 +408,15 @@ namespace ZitiDesktopEdge.DataStructures {
         public List<Identity> Identities { get; set; }
     }
 
-    public class ServiceEvent : ActionEvent
-    {
+    public class ServiceEvent : ActionEvent {
         public string Fingerprint { get; set; }
         public Service Service { get; set; }
+    }
+
+    public class BulkServiceEvent : ActionEvent {
+        public string Fingerprint { get; set; }
+        public List<Service> AddedServices { get; set; }
+        public List<Service> RemovedServices { get; set; }
     }
 
     public class IdentityEvent : ActionEvent

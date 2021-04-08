@@ -489,7 +489,8 @@ namespace ZitiDesktopEdge {
 			serviceClient.OnServiceEvent += ServiceClient_OnServiceEvent;
 			serviceClient.OnTunnelStatusEvent += ServiceClient_OnTunnelStatusEvent;
 			serviceClient.OnMfaEvent += ServiceClient_OnMfaEvent;
-            serviceClient.OnLogLevelEvent += ServiceClient_OnLogLevelEvent;
+			serviceClient.OnLogLevelEvent += ServiceClient_OnLogLevelEvent;
+			serviceClient.OnBulkServiceEvent += ServiceClient_OnBulkServiceEvent;
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
 
 			monitorClient = new MonitorClient();
@@ -521,6 +522,28 @@ namespace ZitiDesktopEdge {
 
 			IdentityMenu.OnForgot += IdentityForgotten;
 			Placement();
+		}
+
+        private void ServiceClient_OnBulkServiceEvent(object sender, BulkServiceEvent e) {
+			var found = identities.Find(id => id.Fingerprint == e.Fingerprint);
+			if (found == null) {
+				logger.Warn($"{e.Action} service event for {e.Fingerprint} but the provided identity fingerprint was not found!");
+				return;
+			} else {
+				foreach (var removed in e.RemovedServices) {
+					removeService(found, removed);
+				}
+				foreach (var removed in e.AddedServices) {
+					addService(found, removed);
+				}
+				LoadIdentities(false);
+				this.Dispatcher.Invoke(() => {
+					IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
+					if (deets.IsVisible) {
+						deets.UpdateView();
+					}
+				});
+			}
 		}
 
         string nextVersionStr  = null;
@@ -775,41 +798,46 @@ namespace ZitiDesktopEdge {
 		private void ServiceClient_OnServiceEvent(object sender, ServiceEvent e) {
 			if (e == null) return;
 
-			Debug.WriteLine($"==== ServiceEvent     : action:{e.Action} fingerprint:{e.Fingerprint} name:{e.Service.Name} ");
+			logger.Debug($"==== ServiceEvent     : action:{e.Action} fingerprint:{e.Fingerprint} name:{e.Service.Name} ");
+			var found = identities.Find(id => id.Fingerprint == e.Fingerprint);
+			if (found == null) {
+				logger.Debug($"{e.Action} service event for {e.Service.Name} but the provided identity fingerprint {e.Fingerprint} is not found!");
+				return;
+			}
+
+			if (e.Action == "added") {
+				addService(found, e.Service);
+			} else {
+				removeService(found, e.Service);
+			}
+			LoadIdentities(false);
 			this.Dispatcher.Invoke(() => {
-				var found = identities.Find(id => id.Fingerprint == e.Fingerprint);
-
-				Debug.WriteLine(e.Action+" Calling Service Appender");
-
-				if (found == null) {
-					Debug.WriteLine($"{e.Action} service event for {e.Service.Name} but the provided identity fingerprint {e.Fingerprint} is not found!");
-					return;
-				}
-
-				if (e.Action == "added") {
-					ZitiService zs = new ZitiService(e.Service);
-					var svc = found.Services.Find(s => s.Name == zs.Name);
-					if (svc == null) {
-						found.Services.Add(zs);
-						if (zs.HasFailingPostureCheck()) {
-							found.HasServiceFailingPostureCheck = true;
-							if (zs.PostureChecks.Any(p => !p.IsPassing && p.QueryType == "MFA")) {
-								found.MFAInfo.IsAuthenticated = false;
-							}
-						}
-					} else {
-						logger.Debug("the service named " + zs.Name + " is already accounted for on this identity.");
-					}
-				} else {
-					logger.Debug("removing the service named: " + e.Service.Name);
-					found.Services.RemoveAll(s => s.Name == e.Service.Name);
-				}
-				LoadIdentities(false);
 				IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
 				if (deets.IsVisible) {
 					deets.UpdateView();
 				}
 			});
+		}
+
+		private void addService(ZitiIdentity found, Service added) {
+			ZitiService zs = new ZitiService(added);
+			var svc = found.Services.Find(s => s.Name == zs.Name);
+			if (svc == null) {
+				found.Services.Add(zs);
+				if (zs.HasFailingPostureCheck()) {
+					found.HasServiceFailingPostureCheck = true;
+					if (zs.PostureChecks.Any(p => !p.IsPassing && p.QueryType == "MFA")) {
+						found.MFAInfo.IsAuthenticated = false;
+					}
+				}
+			} else {
+				logger.Debug("the service named " + zs.Name + " is already accounted for on this identity.");
+			}
+		}
+
+		private void removeService(ZitiIdentity found, Service removed) {
+			logger.Debug("removing the service named: {0}", removed.Name);
+			found.Services.RemoveAll(s => s.Name == removed.Name);
 		}
 
 		private void ServiceClient_OnTunnelStatusEvent(object sender, TunnelStatusEvent e) {
