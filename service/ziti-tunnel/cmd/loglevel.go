@@ -18,33 +18,40 @@ package cmd
  */
 
 import (
+	"errors"
+
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/cli"
 	"github.com/spf13/cobra"
 )
 
-var servicesOfID bool
+var currentLogLevel bool
 
-// identitiesCmd represents the identities command
-var identitiesCmd = &cobra.Command{
-	Use:   "identities [all] [idname...] [-s]",
-	Short: "Lists identities from ziti-tunnel",
-	Long: `View the identities that this user has access to.
-The records will be fetched from ziti-tunnel`,
+// loglevelCmd represents the loglevel command
+var loglevelCmd = &cobra.Command{
+	Use:   "loglevel [loglevel]",
+	Short: "Set the loglevel of the ziti tunnel",
+	Long:  `Allows you to set the log level of ziti tunnel.`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 && !currentLogLevel {
+			return errors.New("requires 1 argument or a flag, examples of the accepted loglevel arguments are trace, info, debug etc")
+		}
+		return nil
+
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		flags := map[string]bool{}
-		flags["services"] = servicesOfID
-		flags["prettyJSON"] = prettyJSON
-		cli.GetIdentities(args, flags)
+		flags["query"] = currentLogLevel
+		cli.SetLogLevel(args, flags)
 	},
 }
 
 func init() {
-	listCmd.AddCommand(identitiesCmd)
+	rootCmd.AddCommand(loglevelCmd)
 
 	// Here you will define your flags and configuration settings.
 
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	identitiesCmd.Flags().BoolVarP(&servicesOfID, "services", "s", false, "Display all services that belonged to the identity")
+	// Cobra supports Persistent Flags which will work for this command
+	// and all subcommands, e.g.:
+	loglevelCmd.PersistentFlags().BoolVarP(&currentLogLevel, "query", "q", false, "Query current loglevel")
 
 }

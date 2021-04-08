@@ -21,16 +21,20 @@ const (
 	REMOVED = "removed"
 	ERROR   = "error"
 	UPDATED = "updated"
+	CHANGED = "changed"
+	NORMAL  = "Normal"
 
 	SERVICE_OP  = "service"
 	IDENTITY_OP = "identity"
+	LOGLEVEL_OP = "logLevel"
+	FEEDBACK_OP = "CaptureLogs"
 	MFA_OP      = "mfa"
 
-	MFAEnrollmentChallengAtion		= "enrollment_challenge"
-	MFAEnrollmentVerificationAction	= "enrollment_verification"
-	MFAEnrollmentRemovedAction		= "enrollment_remove"
+	MFAEnrollmentChallengAtion      = "enrollment_challenge"
+	MFAEnrollmentVerificationAction = "enrollment_verification"
+	MFAEnrollmentRemovedAction      = "enrollment_remove"
 
-	MFA_AUTH_CHALLENGE_ACTION   = "auth_challenge"
+	MFA_AUTH_CHALLENGE_ACTION = "auth_challenge"
 )
 
 var SERVICE_ADDED = ActionEvent{
@@ -50,6 +54,16 @@ var IDENTITY_REMOVED = ActionEvent{
 	StatusEvent: StatusEvent{Op: IDENTITY_OP},
 	Action:      REMOVED,
 }
+var LOGLEVEL_CHANGED = ActionEvent{
+	StatusEvent: StatusEvent{Op: LOGLEVEL_OP},
+	Action:      CHANGED,
+}
+
+var FEEDBACK_REQUEST = ActionEvent{
+	StatusEvent: StatusEvent{Op: FEEDBACK_OP},
+	Action:      NORMAL,
+}
+
 var IdentityUpdateComplete = ActionEvent{
 	StatusEvent: StatusEvent{Op: IDENTITY_OP},
 	Action:      UPDATED,

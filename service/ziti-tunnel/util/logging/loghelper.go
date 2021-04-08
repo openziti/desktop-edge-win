@@ -48,16 +48,13 @@ func init() {
 	setConsoleModeProc := kernel32DLL.NewProc("SetConsoleMode")
 	setConsoleModeProc.Call(uintptr(handle), 0x0001|0x0002|0x0004)
 
-
-	with := &dateFormatterNoFilename{
-	}
+	with := &dateFormatterNoFilename{}
 	/*with := &dateFormatterWithFilename{
 	}*/
 	with.dateFormatter.timeFormat = UTCFormat()
 	withFilenameLogger.SetFormatter(with)
 
-	without := &dateFormatterNoFilename{
-	}
+	without := &dateFormatterNoFilename{}
 	without.dateFormatter.timeFormat = UTCFormat()
 	noFilenamelogger.SetFormatter(without)
 }
@@ -70,7 +67,7 @@ func NoFilenameLogger() *logrus.Logger {
 	return noFilenamelogger
 }
 
-func SetLoggingLevel(goLevel logrus.Level){
+func SetLoggingLevel(goLevel logrus.Level) {
 	withFilenameLogger.SetLevel(goLevel)
 	noFilenamelogger.SetLevel(goLevel)
 }
@@ -84,8 +81,8 @@ func initLogger(logger *logrus.Logger, level logrus.Level) {
 
 	logger.SetReportCaller(true)
 
-	rl, _ := rotatelogs.New(config.LogFile() + ".%Y%m%d%H%M.log",
-		rotatelogs.WithRotationTime(24 * time.Hour),
+	rl, _ := rotatelogs.New(config.LogFile()+".%Y%m%d%H%M.log",
+		rotatelogs.WithRotationTime(24*time.Hour),
 		rotatelogs.WithRotationCount(7),
 		rotatelogs.WithLinkName(config.LogFile()))
 
