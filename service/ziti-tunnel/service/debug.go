@@ -54,22 +54,6 @@ func dbg() {
 		},
 	}
 
-	events.broadcast <- dto.ServiceEvent{
-		ActionEvent: dto.SERVICE_ADDED,
-		Service: &dto.Service{
-			Name: "New Service",
-		},
-		Fingerprint: "new_id_fingerprint",
-	}
-
-	events.broadcast <- dto.ServiceEvent{
-		ActionEvent: dto.SERVICE_REMOVED,
-		Service: &dto.Service{
-			Name: "New Service",
-		},
-		Fingerprint: "new_id_fingerprint",
-	}
-
 	events.broadcast <- dto.IdentityEvent{
 		ActionEvent: dto.IDENTITY_REMOVED,
 		Id: dto.Identity{

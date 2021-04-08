@@ -489,8 +489,8 @@ namespace ZitiDesktopEdge {
 			serviceClient.OnServiceEvent += ServiceClient_OnServiceEvent;
 			serviceClient.OnTunnelStatusEvent += ServiceClient_OnTunnelStatusEvent;
 			serviceClient.OnMfaEvent += ServiceClient_OnMfaEvent;
-            serviceClient.OnLogLevelEvent += ServiceClient_OnLogLevelEvent;
-            serviceClient.OnBulkServiceEvent += ServiceClient_OnBulkServiceEvent;
+			serviceClient.OnLogLevelEvent += ServiceClient_OnLogLevelEvent;
+			serviceClient.OnBulkServiceEvent += ServiceClient_OnBulkServiceEvent;
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
 
 			monitorClient = new MonitorClient();

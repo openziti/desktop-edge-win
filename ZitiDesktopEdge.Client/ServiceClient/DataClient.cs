@@ -356,7 +356,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                         }
                         break;
                     case "bulkservice":
-                        //dbg comment Logger.Warn("SERVICE EVENT: \n" + respAsString);
+                        //dbg comment Logger.Warn("BULKSERVICE EVENT: \n" + respAsString);
                         BulkServiceEvent bsvc = serializer.Deserialize<BulkServiceEvent>(jsonReader);
 
                         if (bsvc != null) {

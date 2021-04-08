@@ -70,7 +70,6 @@ const (
 var log = logging.Logger()
 var noFileLog = logging.NoFilenameLogger()
 var Version dto.ServiceVersion
-var aServiceChanges = make(chan dto.ServiceEvent, 256)
 var BulkServiceChanges = make(chan BulkServiceChange, 32)
 
 type sdk struct {

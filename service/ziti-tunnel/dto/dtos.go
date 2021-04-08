@@ -152,12 +152,6 @@ type MetricsEvent struct {
 	Identities []*Identity
 }
 
-type ServiceEvent struct {
-	ActionEvent
-	Fingerprint string
-	Service     *Service
-}
-
 type BulkServiceEvent struct {
 	ActionEvent
 	Fingerprint     string
