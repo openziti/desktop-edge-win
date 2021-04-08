@@ -158,6 +158,13 @@ type ServiceEvent struct {
 	Service     *Service
 }
 
+type BulkServiceEvent struct {
+	ActionEvent
+	Fingerprint     string
+	AddedServices   []*Service
+	RemovedServices []*Service
+}
+
 type IdentityEvent struct {
 	ActionEvent
 	Id Identity

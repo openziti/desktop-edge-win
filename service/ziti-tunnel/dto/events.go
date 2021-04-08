@@ -18,6 +18,7 @@ package dto
 
 const (
 	ADDED   = "added"
+	BULK    = "bulk"
 	REMOVED = "removed"
 	ERROR   = "error"
 	UPDATED = "updated"
@@ -44,6 +45,10 @@ var SERVICE_ADDED = ActionEvent{
 var SERVICE_REMOVED = ActionEvent{
 	StatusEvent: StatusEvent{Op: SERVICE_OP},
 	Action:      REMOVED,
+}
+var SERVICE_BULK = ActionEvent{
+	StatusEvent: StatusEvent{Op: SERVICE_OP},
+	Action:      BULK,
 }
 
 var IDENTITY_ADDED = ActionEvent{
