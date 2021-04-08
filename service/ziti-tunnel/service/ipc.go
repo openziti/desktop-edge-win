@@ -1037,7 +1037,15 @@ func handleEvents(isInitialized chan struct{}) {
 
 //Removes the Config from the provided identity and returns a 'cleaned' id
 func Clean(src *Id) dto.Identity {
-	log.Tracef("cleaning identity: %s %v %v", src.Name, src.CId.MfaNeeded, src.CId.MfaEnabled)
+	mfaNeeded := false
+	mfaEnabled := false
+
+	if src.CId != nil {
+		mfaNeeded = src.CId.MfaNeeded
+		mfaEnabled = src.CId.MfaEnabled
+	}
+
+	log.Tracef("cleaning identity: %s", src.Name, mfaNeeded, mfaEnabled)
 	AddMetrics(src)
 	nid := dto.Identity{
 		Name:              src.Name,
@@ -1046,8 +1054,8 @@ func Clean(src *Id) dto.Identity {
 		Config:            idcfg.Config{},
 		ControllerVersion: src.ControllerVersion,
 		Status:            "",
-		MfaNeeded:         src.CId.MfaNeeded,
-		MfaEnabled:        src.CId.MfaEnabled,
+		MfaNeeded:         mfaNeeded,
+		MfaEnabled:        mfaEnabled,
 		Services:          make([]*dto.Service, 0),
 		Metrics:           src.Metrics,
 		Tags:              nil,
