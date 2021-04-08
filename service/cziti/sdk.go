@@ -70,7 +70,7 @@ const (
 var log = logging.Logger()
 var noFileLog = logging.NoFilenameLogger()
 var Version dto.ServiceVersion
-var ServiceChanges = make(chan dto.ServiceEvent, 256)
+var aServiceChanges = make(chan dto.ServiceEvent, 256)
 var BulkServiceChanges = make(chan BulkServiceChange, 32)
 
 type sdk struct {
@@ -348,6 +348,13 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 			PostureChecks: postureChecks,
 			IsAccessable:  hasAccess,
 		}
+		added := ZService{
+			Name:    name,
+			Id:      svcId,
+			Service: svc,
+			Czctx:   ziti_ctx,
+		}
+		zid.Services.Store(svcId, &added)
 	}
 
 	return svc
@@ -399,13 +406,15 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 				break
 			}
 			svcToRemove := serviceCB(ztx, removed, C.ZITI_SERVICE_UNAVAILABLE, zid)
-			remAddys := svcToRemove.Addresses
-			for _, toRemove := range remAddys {
-				if toRemove.IsHost {
-					hostnamesToRemove[toRemove.HostName] = true
+			if svcToRemove != nil {
+				remAddys := svcToRemove.Addresses
+				for _, toRemove := range remAddys {
+					if toRemove.IsHost {
+						hostnamesToRemove[toRemove.HostName] = true
+					}
 				}
+				servicesToRemove = append(servicesToRemove, svcToRemove)
 			}
-			servicesToRemove = append(servicesToRemove, svcToRemove)
 		}
 		for i := 0; true; i++ {
 			changed := C.ziti_service_array_get(srvEvent.changed, C.int(i))
@@ -414,22 +423,26 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			}
 			log.Info("service changed remove the service then add it back immediately", C.GoString(changed.name))
 			svcToRemove := serviceCB(ztx, changed, C.ZITI_SERVICE_UNAVAILABLE, zid)
-			remAddys := svcToRemove.Addresses
-			for _, toRemove := range remAddys {
-				if toRemove.IsHost {
-					hostnamesToRemove[toRemove.HostName] = true
+			if svcToRemove != nil {
+				remAddys := svcToRemove.Addresses
+				for _, toRemove := range remAddys {
+					if toRemove.IsHost {
+						hostnamesToRemove[toRemove.HostName] = true
+					}
 				}
+				servicesToRemove = append(servicesToRemove, svcToRemove)
 			}
-			servicesToRemove = append(servicesToRemove, svcToRemove)
 
 			svcToAdd := serviceCB(ztx, changed, C.ZITI_OK, zid)
-			addAddys := svcToAdd.Addresses
-			for _, toAdd := range addAddys {
-				if toAdd.IsHost {
-					hostnamesToAdd[toAdd.HostName] = true
+			if svcToAdd != nil {
+				addAddys := svcToAdd.Addresses
+				for _, toAdd := range addAddys {
+					if toAdd.IsHost {
+						hostnamesToAdd[toAdd.HostName] = true
+					}
 				}
+				servicesToAdd = append(servicesToAdd, svcToAdd)
 			}
-			servicesToAdd = append(servicesToAdd, svcToAdd)
 		}
 		for i := 0; true; i++ {
 			added := C.ziti_service_array_get(srvEvent.added, C.int(i))
@@ -437,13 +450,15 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 				break
 			}
 			svcToAdd := serviceCB(ztx, added, C.ZITI_OK, zid)
-			addAddys := svcToAdd.Addresses
-			for _, toAdd := range addAddys {
-				if toAdd.IsHost {
-					hostnamesToAdd[toAdd.HostName] = true
+			if svcToAdd != nil {
+				addAddys := svcToAdd.Addresses
+				for _, toAdd := range addAddys {
+					if toAdd.IsHost {
+						hostnamesToAdd[toAdd.HostName] = true
+					}
 				}
+				servicesToAdd = append(servicesToAdd, svcToAdd)
 			}
-			servicesToAdd = append(servicesToAdd, svcToAdd)
 		}
 
 		svcChange := BulkServiceChange{

@@ -1003,11 +1003,11 @@ func acceptServices() {
 		select {
 		case <-shutdown:
 			return
-		case serviceChange := <-cziti.ServiceChanges:
+/*xxxxx		case serviceChange := <-cziti.ServiceChanges:
 			log.Debugf("processing service change event. id:%s name:%s", serviceChange.Service.Id, serviceChange.Service.Name)
 			change := serviceChange
 			events.broadcast <- change
-			log.Debugf("dispatched %s service change event", serviceChange.Op)
+			log.Debugf("dispatched %s service change event", serviceChange.Op)*/
 		case bulkServiceChange := <-cziti.BulkServiceChanges:
 			log.Debugf("processing a bulk service change event. Hostnames to add/remove:[%d/%d] service notifications added/removed: [%d/%d]",
 				len(bulkServiceChange.HostnamesToAdd),
