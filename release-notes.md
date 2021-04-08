@@ -1,3 +1,13 @@
+# Release 1.9.3
+
+## What's New
+* Page Service List
+* Sort Service on Identity Details Page
+* Consistent UX for MFA Screens
+
+## Bugs fixed:
+* [#343](https://github.com/openziti/desktop-edge-win/issues/343) MFA Code Regeneration, UI Clickable Areas, Service Crash Handling
+
 # Release 1.9.1
 
 ## What's New
