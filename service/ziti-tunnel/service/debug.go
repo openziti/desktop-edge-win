@@ -25,11 +25,11 @@ import (
 func dbg() {
 
 	r := rts.ToStatus(true)
-	events.broadcast <- dto.TunnelStatusEvent{
+	rts.BroadcastEvent(dto.TunnelStatusEvent{
 		StatusEvent: dto.StatusEvent{Op: "status"},
 		Status:      r,
 		ApiVersion:  API_VERSION,
-	}
+	})
 
 	svcs := make([]*dto.Service, 2)
 	svcs[0] = &dto.Service{
@@ -39,7 +39,7 @@ func dbg() {
 		Name: "Second Fake Service",
 	}
 
-	events.broadcast <- dto.IdentityEvent{
+	rts.BroadcastEvent(dto.IdentityEvent{
 		ActionEvent: dto.IDENTITY_ADDED,
 		Id: dto.Identity{
 			Name:        "NewIdentity",
@@ -52,9 +52,9 @@ func dbg() {
 			Services: svcs,
 			Metrics:  nil,
 		},
-	}
+	})
 
-	events.broadcast <- dto.IdentityEvent{
+	rts.BroadcastEvent(dto.IdentityEvent{
 		ActionEvent: dto.IDENTITY_REMOVED,
 		Id: dto.Identity{
 			Name:        "",
@@ -65,5 +65,5 @@ func dbg() {
 			Services:    nil,
 			Metrics:     nil,
 		},
-	}
+	})
 }

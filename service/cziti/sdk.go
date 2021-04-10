@@ -280,7 +280,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 
 	strClientV1cfg := C.GoString(C.ziti_service_get_raw_config(service, cCfgInterceptV1))
 	if strClientV1cfg != "" {
-		log.Warnf("xxx: %s", strClientV1cfg)
+		log.Tracef("intercept.v1: %s", strClientV1cfg)
 		var obj clientV1Cfg
 		uerr := json.Unmarshal([]byte(strClientV1cfg), &obj)
 		if uerr != nil {
@@ -296,7 +296,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 		addresses = append(a)
 	} else {
 		strZitiTunnelerClientV1 := C.GoString(C.ziti_service_get_raw_config(service, cCfgZitiTunnelerClientV1))
-		log.Warnf("xxx: %s", strZitiTunnelerClientV1)
+		log.Warnf("ziti-tunneler-client.v1: %s", strZitiTunnelerClientV1)
 		var obj v1ClientCfg
 		uerr := json.Unmarshal([]byte(strZitiTunnelerClientV1), &obj)
 		if uerr != nil {
@@ -427,7 +427,7 @@ func toAddy(hostOrIpOrCidr string) dto.Address {
 		addy.IP = ip.String()
 		addy.Prefix = ones
 	}
-	log.Warnf("ADDY: %v", addy)
+	log.Tracef("parsed address: %v from %s", addy, hostOrIpOrCidr)
 	return addy
 }
 

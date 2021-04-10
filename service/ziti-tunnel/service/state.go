@@ -262,10 +262,10 @@ func (t *RuntimeState) LoadIdentity(id *Id, refreshInterval int) {
 		id.MfaEnabled = id.CId.MfaEnabled
 		id.MfaNeeded = id.CId.MfaNeeded
 
-		events.broadcast <- dto.IdentityEvent{
+		rts.BroadcastEvent(dto.IdentityEvent{
 			ActionEvent: dto.IDENTITY_ADDED,
 			Id:          id.Identity,
-		}
+		})
 		log.Infof("connecting identity completed: %s[%s] %t/%t", id.Name, id.FingerPrint, id.MfaEnabled, id.MfaNeeded)
 	}
 
@@ -477,6 +477,9 @@ func (t *RuntimeState) ReleaseIP() {
 }
 
 func (t *RuntimeState) BroadcastEvent(event interface{}) {
+	if len(events.broadcast) == cap(events.broadcast) {
+		log.Warn("event channel is full and is about to block!")
+	}
 	events.broadcast <- event
 }
 

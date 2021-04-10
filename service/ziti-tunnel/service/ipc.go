@@ -129,9 +129,9 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	requestShutdown("service shutdown")
 
 	// signal to any connected consumers that the service is shutting down normally
-	events.broadcast <- dto.StatusEvent{
+	rts.BroadcastEvent(dto.StatusEvent{
 		Op: "shutdown",
-	}
+	})
 
 	// wait 1 second for the shutdown to send to clients
 	shutdownDelay := make(chan bool)
@@ -681,8 +681,9 @@ func serveEvents(conn net.Conn) {
 	log.Debugf("accepting a new client for serveEvents. total connection count: %d", eventsConnections)
 
 	consumer := make(chan interface{}, 8)
-	events.register(randomInt, consumer)
-	defer events.unregister(randomInt)
+	id := fmt.Sprintf("serveEvents:%d", randomInt)
+	events.register(id, consumer)
+	defer events.unregister(id)
 
 	w := bufio.NewWriter(conn)
 	o := json.NewEncoder(w)
@@ -704,12 +705,17 @@ loop:
 	for {
 		select {
 		case msg := <-consumer:
-			err := o.Encode(msg)
-			if err != nil {
-				log.Debugf("exiting from serveEvents - %v", err)
+			log.Tracef("sending event to id: %s [%v]", id, msg)
+			eerr := o.Encode(msg)
+			if eerr != nil {
+				log.Warnf("exiting from serveEvents due to error: %v", eerr)
 				break loop
 			}
-			_ = w.Flush()
+			ferr := w.Flush()
+			if ferr != nil {
+				log.Warnf("flush error: %v", ferr)
+			}
+			log.Tracef("sent event to id: %s [%v]", id, msg)
 		case <-interrupt:
 			break loop
 		}
@@ -901,10 +907,10 @@ func connectIdentity(id *Id) {
 			return true
 		})
 
-		events.broadcast <- dto.IdentityEvent{
+		rts.BroadcastEvent(dto.IdentityEvent{
 			ActionEvent: dto.IDENTITY_ADDED,
 			Id:          id.Identity,
-		}
+		})
 		log.Infof("connecting identity completed: %s[%s] %t/%t", id.Name, id.FingerPrint, id.MfaEnabled, id.MfaNeeded)
 	}
 }
@@ -1062,10 +1068,10 @@ func handleEvents(isInitialized chan struct{}) {
 		case <-every5s.C:
 			s := rts.ToMetrics()
 
-			events.broadcast <- dto.MetricsEvent{
+			rts.BroadcastEvent(dto.MetricsEvent{
 				StatusEvent: dto.StatusEvent{Op: "metrics"},
 				Identities:  s.Identities,
-			}
+			})
 		}
 	}
 }
@@ -1133,10 +1139,10 @@ func authMfa(out *json.Encoder, fingerprint string, code string) {
 
 // when the log level is updated through command line, the message is broadcasted to UI and update service as well
 func sendLogLevelAndNotify(enc *json.Encoder, loglevel string) {
-	events.broadcast <- dto.LogLevelEvent{
+	rts.BroadcastEvent(dto.LogLevelEvent{
 		ActionEvent: dto.LOGLEVEL_CHANGED,
 		LogLevel:    loglevel,
-	}
+	})
 	message := fmt.Sprintf("Loglevel %s is sent to the events channel", loglevel)
 	log.Info(message)
 	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: message}
@@ -1147,10 +1153,10 @@ func sendLogLevelAndNotify(enc *json.Encoder, loglevel string) {
 func sendIdentityAndNotifyUI(enc *json.Encoder, fingerprint string) {
 	for _, id := range rts.ids {
 		if id.FingerPrint == fingerprint {
-			events.broadcast <- dto.IdentityEvent{
+			rts.BroadcastEvent(dto.IdentityEvent{
 				ActionEvent: dto.IDENTITY_ADDED,
 				Id:          id.Identity,
-			}
+			})
 			message := fmt.Sprintf("Identity %s - %s updated message is sent to the events channel", id.Identity.Name, id.Identity.FingerPrint)
 			log.Info(message)
 			resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: message}
