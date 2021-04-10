@@ -151,35 +151,6 @@ dns_manager* get_dns_mgr_from_c() {
     return &dns_mgr_c;
 }
 
-/* functions allowing go to iterate tunneleed_service_t* */
-protocol_t* stailq_first_protocol(tunneled_service_t* ts) {
-    if(ts == NULL || ts->intercept == NULL ) {
-        return NULL;
-    }
-    return STAILQ_FIRST(&ts->intercept->protocols);
-}
-address_t* stailq_first_address(tunneled_service_t* ts) {
-    if(ts == NULL || ts->intercept == NULL ) {
-        return NULL;
-    }
-    return STAILQ_FIRST(&ts->intercept->addresses);
-}
-port_range_t* stailq_first_port_range(tunneled_service_t* ts) {
-    if(ts == NULL || ts->intercept == NULL ) {
-        return NULL;
-    }
-    return STAILQ_FIRST(&ts->intercept->port_ranges);
-}
-protocol_t* stailq_next_protocol(protocol_t* cur) {
-    return STAILQ_NEXT(cur, entries);
-}
-address_t* stailq_next_address(address_t* cur) {
-    return STAILQ_NEXT(cur, entries);
-}
-port_range_t* stailq_next_port_range(port_range_t* cur) {
-    return STAILQ_NEXT(cur, entries);
-}
-
 char* ziti_char_array_get(char** arr, int idx) {
     return arr ? arr[idx] : NULL;
 }

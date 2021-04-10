@@ -264,7 +264,11 @@ namespace ZitiDesktopEdge.DataStructures {
         public int Prefix { get; set; }
 
         public override string ToString() {
-            return Hostname;
+            if (IsHost) {
+                return Hostname;
+            } else {
+                return IP + "/" + Prefix;
+            }
         }
     }
 

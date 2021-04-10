@@ -28,6 +28,7 @@ import (
 )
 
 var log = logging.Logger()
+var	exeName = "ziti-tunnel"
 
 func GetConnectionSpecificDomains() []string {
 	script := `Get-DnsClient | Select-Object ConnectionSpecificSuffix -Unique | ForEach-Object { $_.ConnectionSpecificSuffix }; (Get-DnsClientGlobalSetting).SuffixSearchList`
@@ -103,7 +104,7 @@ func FlushDNS() {
 }
 
 func RemoveAllNrptRules() {
-	script := fmt.Sprintf(`Get-DnsClientNrptRule | Where { $_.Comment.StartsWith("Added by ziti-tunnel") } | Remove-DnsClientNrptRule -ErrorAction SilentlyContinue -Force`)
+	script := fmt.Sprintf(`Get-DnsClientNrptRule | Where { $_.Comment.StartsWith("Added by %s") } | Remove-DnsClientNrptRule -ErrorAction SilentlyContinue -Force`, exeName)
 	log.Debugf("removing all nrpt rules with: %s", script)
 
 	cmd := exec.Command("powershell", "-Command", script)
@@ -116,24 +117,26 @@ func RemoveAllNrptRules() {
 	}
 }
 
+var namespaceTemplate = `%s@{n="%s";}`
+var namespaceTemplatePadding = len(namespaceTemplate)
 func AddNrptRules(domainsToMap map[string]bool, dnsServer string) {
 	if len(domainsToMap) == 0 {
 		log.Debug("no domains to map specified to AddNrptRules. exiting early")
 		return
 	}
 
-	blockSize := 50
-	if len(domainsToMap) > blockSize {
-		log.Debugf("domainsToMap is too long [%d] and may fail on some systems. splitting the requested entries into blocks of %d", len(domainsToMap), blockSize)
-	}
+	maxBucketSize := 500
 	currentSize := 0
-	hostnames := make([]string, blockSize)
+	hostnames := make([]string, maxBucketSize)
+	ruleSize := 0
 	for hostname := range domainsToMap {
-		if currentSize >= blockSize {
+		ruleSize = ruleSize + len(hostname) + namespaceTemplatePadding
+		if ruleSize > 7500 || currentSize >= maxBucketSize {
 			log.Debugf("sending chunk of domains to be added to NRPT")
-			chunkedAddNrptRules(hostnames, dnsServer)
-			hostnames = make([]string, blockSize)
+			chunkedAddNrptRules(hostnames[:currentSize], dnsServer)
+			hostnames = make([]string, maxBucketSize)
 			currentSize = 0
+			ruleSize = len(hostname) + namespaceTemplatePadding
 		}
 		hostnames[currentSize] = hostname
 		currentSize++
@@ -146,21 +149,23 @@ func AddNrptRules(domainsToMap map[string]bool, dnsServer string) {
 
 func chunkedAddNrptRules(domainsToAdd []string, dnsServer string) {
 	sb := strings.Builder{}
-	sb.WriteString(`$Rules = @(
+	sb.WriteString(`$Namespaces = @(
 `)
 
 	for _, hostname := range domainsToAdd {
-		sb.WriteString(fmt.Sprintf(`@{ Namespace ="%s"; NameServers = @("%s"); Comment = "Added by ziti-tunnel"; DisplayName = "ziti-tunnel:%s"; }%s`, hostname, dnsServer, hostname, "\n"))
+		sb.WriteString(fmt.Sprintf(namespaceTemplate, "\n", hostname))
 	}
 
 	sb.WriteString(fmt.Sprintf(`)
 
-ForEach ($Rule in $Rules) {
-	Add-DnsClientNrptRule @Rule
-}`))
+ForEach ($Namespace in $Namespaces) {
+    $ns=$Namespace["n"]
+    $Rule = @{Namespace="${ns}"; NameServers=@("%s"); Comment="Added by %s"; DisplayName="%s:${ns}"; }
+    Add-DnsClientNrptRule @Rule
+}`, dnsServer, exeName, exeName))
 
 	script := sb.String()
-	log.Debugf("Executing NRPT script containing %d domains:\n%s", len(domainsToAdd), script)
+	log.Debugf("Executing    ADD NRPT script containing %d domains. total script size: %d\n%s", len(domainsToAdd), len(script), script)
 
 	cmd := exec.Command("powershell", "-Command", script)
 	cmd.Stderr = os.Stdout
@@ -172,27 +177,51 @@ ForEach ($Rule in $Rules) {
 	}
 }
 
-func RemoveNrptRules(domainsToMap map[string]bool) {
-	if len(domainsToMap) == 0 {
+func RemoveNrptRules(domainsToRemove map[string]bool) {
+	if len(domainsToRemove) == 0 {
 		log.Debug("no domains to map specified to RemoveNrptRules. exiting early")
 		return
 	}
 
-	sb := strings.Builder{}
-	sb.WriteString(`$toRemove = @(
-`)
+	maxBucketSize := 500
+	currentSize := 0
+	hostnames := make([]string, maxBucketSize)
+	ruleSize := 0
+	for hostname := range domainsToRemove {
+		ruleSize = ruleSize + len(hostname) + namespaceTemplatePadding
+		if ruleSize > 7500 || currentSize >= maxBucketSize {
+			log.Debugf("sending chunk of domains to be added to NRPT")
+			chunkedRemoveNrptRules(hostnames[:currentSize])
+			hostnames = make([]string, maxBucketSize)
+			currentSize = 0
+			ruleSize = len(hostname) + namespaceTemplatePadding
+		}
+		hostnames[currentSize] = hostname
+		currentSize++
+	}
+	if currentSize > 0 {
+		//means there's a chunk still to add....
+		chunkedRemoveNrptRules(hostnames[:currentSize])
+	}
+}
 
-	for hostname := range domainsToMap {
-		sb.WriteString(fmt.Sprintf(`"%s"%s`, hostname, "\n"))
+func chunkedRemoveNrptRules(domainsToRemove []string) {
+	sb := strings.Builder{}
+	sb.WriteString(`$toRemove = @(`)
+
+	for hostname := range domainsToRemove {
+		sb.WriteString(fmt.Sprintf(namespaceTemplate, "\n", hostname))
 	}
 
 	sb.WriteString(fmt.Sprintf(`)
-
-Get-DnsClientNrptRule | Where { $toRemove -contains $_.DisplayName } | Remove-DnsClientNrptRule -ErrorAction SilentlyContinue -Force
+ForEach ($ns in $toRemove) {
+  $nrpt = Get-DnsClientNrptRule | Where {$_.Namespace -contains "${ns}"}
+  foreach ($n in $nrpt){Remove-DnsClientNrptRule -Name $n.Name -PassThru -Force -ErrorAction SilentlyContinue}
+}
 `))
 
 	script := sb.String()
-	log.Debugf("Executing NRPT script:\n%s", script)
+	log.Debugf("Executing REMOVE NRPT script containing %d domains. total script size: %d\n%s", len(domainsToRemove), len(script), script)
 
 	cmd := exec.Command("powershell", "-Command", script)
 	cmd.Stderr = os.Stdout
