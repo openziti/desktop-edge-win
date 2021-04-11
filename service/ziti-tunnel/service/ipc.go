@@ -282,7 +282,7 @@ func initialize(cLogLevel int) error {
 	dnsIpAsUint32 := binary.BigEndian.Uint32(ipnet.IP)
 	cziti.InitTunnelerDns(dnsIpAsUint32, len(ipnet.Mask))
 
-	assignedIp, t, err := rts.CreateTun(rts.state.TunIpv4, rts.state.TunIpv4Mask)
+	assignedIp, t, err := rts.CreateTun(rts.state.TunIpv4, rts.state.TunIpv4Mask, rts.state.AddDns)
 	if err != nil {
 		return err
 	}
@@ -714,6 +714,7 @@ loop:
 			ferr := w.Flush()
 			if ferr != nil {
 				log.Warnf("flush error: %v", ferr)
+				return
 			}
 			log.Tracef("sent event to id: %s [%v]", id, msg)
 		case <-interrupt:
@@ -721,6 +722,10 @@ loop:
 		}
 	}
 	log.Info("a connected event client has disconnected")
+}
+
+func writerFlush(writer bufio.Writer) {
+	writer.Flush()
 }
 
 func reportStatus(out *json.Encoder) {

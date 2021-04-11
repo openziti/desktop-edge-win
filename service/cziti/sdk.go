@@ -296,7 +296,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 		addresses = append(a)
 	} else {
 		strZitiTunnelerClientV1 := C.GoString(C.ziti_service_get_raw_config(service, cCfgZitiTunnelerClientV1))
-		log.Warnf("ziti-tunneler-client.v1: %s", strZitiTunnelerClientV1)
+		log.Tracef("ziti-tunneler-client.v1: %s", strZitiTunnelerClientV1)
 		var obj v1ClientCfg
 		uerr := json.Unmarshal([]byte(strZitiTunnelerClientV1), &obj)
 		if uerr != nil {
@@ -554,7 +554,6 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 }
 
 func zitiContextEvent(ztx C.ziti_context, status C.int, zid *ZIdentity) {
-
 	zid.status = int(status)
 	zid.statusErr = zitiError(status)
 	zid.czctx = ztx

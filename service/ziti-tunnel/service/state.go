@@ -21,6 +21,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/sys/windows"
 	"io"
 	"io/ioutil"
 	"net"
@@ -162,7 +163,7 @@ func (t *RuntimeState) ToMetrics() dto.TunnelStatus {
 	return clean
 }
 
-func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, *tun.Device, error) {
+func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int, applyDns bool) (net.IP, *tun.Device, error) {
 	log.Infof("creating TUN device: %s", TunName)
 	tunDevice, err := tun.CreateTUN(TunName, 64*1024-1)
 	if err == nil {
@@ -218,6 +219,11 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, *tun.Device
 		return nil, nil, fmt.Errorf("failed to SetRoutes: (%v)", err)
 	}
 	log.Info("routing applied")
+
+	if applyDns {
+		//for windows 10+ this might be able to replace NRPT?
+		luid.SetDNS(windows.AF_INET, []net.IP{ip}, nil)
+	}
 
 	return ip, t.tun, nil
 }
