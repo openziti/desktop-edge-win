@@ -230,7 +230,7 @@ namespace ZitiDesktopEdge {
 				ConfigIp.Value = Application.Current.Properties["ip"]?.ToString();
 				ConfigSubnet.Value = Application.Current.Properties["subnet"]?.ToString();
 				ConfigMtu.Value = Application.Current.Properties["mtu"]?.ToString();
-				ConfigDns.Value = Application.Current.Properties["dns"]?.ToString();
+				ConfigDns.Value = (bool)Application.Current.Properties["dnsenabled"] ? Application.Current.Properties["dns"]?.ToString() : "disabled";
 			} else if (menuState == "Identities") {
 				MenuTitle.Content = "Identities";
 				IdListScrollView.Visibility = Visibility.Visible;

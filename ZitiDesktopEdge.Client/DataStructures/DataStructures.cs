@@ -337,6 +337,7 @@ namespace ZitiDesktopEdge.DataStructures {
         public string LogLevel { get; set; }
 
         public ServiceVersion ServiceVersion { get; set; }
+        public bool AddDns { get; set; }
 
         public void Dump(System.IO.TextWriter writer)
         {

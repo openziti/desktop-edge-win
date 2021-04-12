@@ -924,6 +924,9 @@ namespace ZitiDesktopEdge {
 				if (!Application.Current.Properties.Contains("dns")) {
 					Application.Current.Properties.Add("dns", status?.IpInfo?.DNS);
 				}
+				if (!Application.Current.Properties.Contains("dnsenabled")) {
+					Application.Current.Properties.Add("dnsenabled", status?.AddDns);
+				}
 
 				foreach (var id in status.Identities) {
 					updateViewWithIdentity(id);
