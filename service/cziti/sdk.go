@@ -307,11 +307,6 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 		addresses = []dto.Address{toAddy(obj.Hostname)}
 	}
 
-	/*
-		protocols := getTunneledServiceProtocols(ts)
-		addresses := getTunneledServiceAddresses(ts)
-		portRanges := getTunneledServicePortRanges(ts)
-	*/
 	log.Infof("service update: %s, id: %s, portocols:%s, addresses:%v, portRanges: %v", name, svcId, protocols, addresses, portRanges)
 
 	var svc *dto.Service
@@ -539,8 +534,8 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			Fingerprint:       zid.Fingerprint,
 			HostnamesToAdd:    hostnamesToAdd,
 			HostnamesToRemove: hostnamesToRemove,
-			ServicesToRemove:  servicesToRemove,
 			ServicesToAdd:     servicesToAdd,
+			ServicesToRemove:  servicesToRemove,
 		}
 
 		if len(BulkServiceChanges) == cap(BulkServiceChanges) {
@@ -684,82 +679,12 @@ func ziti_dump_go_to_log_cb(stringsBuilder unsafe.Pointer, charData *C.char) {
 	sb := (*strings.Builder)(stringsBuilder)
 	sb.WriteString(C.GoString(charData))
 }
-func ZitiDumpOnShutdown(zid *ZIdentity, sb *strings.Builder) {
-	C.ziti_dump_to_log(unsafe.Pointer(zid.czctx), unsafe.Pointer(sb))
+func ZitiDumpOnShutdown(zid *ZIdentity) {
+	sb := strings.Builder{}
+	C.ziti_dump_to_log(unsafe.Pointer(zid.czctx), unsafe.Pointer(&sb))
+	log.Infof("working around the c sdk's limitation of embedding newlines on calling ziti_shutdown\n %s", sb.String())
 }
 
-/*
-func getTunneledServiceProtocols(ts *C.tunneled_service_t) []string {
-	var protocols []string
-	next := C.stailq_first_protocol(ts)
-	if unsafe.Pointer(next) != C.NULL {
-		protocols = append(protocols, C.GoString(next.protocol))
-		for {
-			next = C.stailq_next_protocol(next)
-			if unsafe.Pointer(next) != C.NULL {
-				protocols = append(protocols, C.GoString(next.protocol))
-			} else {
-				break
-			}
-		}
-	}
-	return protocols
-}
-
-func getTunneledServicePortRanges(ts *C.tunneled_service_t) []dto.PortRange {
-	var values []dto.PortRange
-	next := C.stailq_first_port_range(ts)
-	if unsafe.Pointer(next) != C.NULL {
-		p := dto.PortRange{
-			High: int(next.high),
-			Low:  int(next.low),
-		}
-		values = append(values, p)
-		for {
-			next = C.stailq_next_port_range(next)
-			if unsafe.Pointer(next) != C.NULL {
-				p := dto.PortRange{
-					High: int(next.high),
-					Low:  int(next.low),
-				}
-				values = append(values, p)
-			} else {
-				break
-			}
-		}
-	}
-	return values
-}
-
-func getTunneledServiceAddresses(ts *C.tunneled_service_t) []dto.Address {
-	var values []dto.Address
-	next := C.stailq_first_address(ts)
-	if unsafe.Pointer(next) != C.NULL {
-		p := dto.Address{
-			IsHost:   bool(next.is_hostname),
-			HostName: C.GoString(&next.str[0]),
-			IP:       C.GoString(C.ipaddr_ntoa(&next.ip)),
-			Prefix:   int(next.prefix_len),
-		}
-		values = append(values, p)
-		for {
-			next = C.stailq_next_address(next)
-			if unsafe.Pointer(next) != C.NULL {
-				p := dto.Address{
-					IsHost:   bool(next.is_hostname),
-					HostName: C.GoString(&next.str[0]),
-					IP:       C.GoString(C.ipaddr_ntoa(&next.ip)),
-					Prefix:   int(next.prefix_len),
-				}
-				values = append(values, p)
-			} else {
-				break
-			}
-		}
-	}
-	return values
-}
-*/
 func InitTunnelerDns(ipBase uint32, mask int) {
 	C.ziti_tunneler_init_dns(C.uint32_t(ipBase), C.int(mask))
 }
@@ -772,15 +697,17 @@ func hostnameAdded(host string) int {
 		count = cur + 1
 	}
 	addressCount[host] = count
-	log.Warnf("hostname added. count now: %d", count)
+	log.Debugf("hostname added: %s. count now: %d", host, count)
 	return count
 }
 func hostnameRemoved(host string) int {
-	count := 1
+	count := 0
 	if cur, ok := addressCount[host]; ok {
-		count = cur - 1
+		if cur > 0 {
+			count = cur - 1
+		}
 	}
 	addressCount[host] = count
-	log.Warnf("hostname removed. count now: %d", count)
+	log.Debugf("hostname removed %s. count now: %d", host, count)
 	return count
 }

@@ -28,7 +28,7 @@ import (
 )
 
 var log = logging.Logger()
-var	exeName = "ziti-tunnel"
+var exeName = "ziti-tunnel"
 
 func GetConnectionSpecificDomains() []string {
 	script := `Get-DnsClient | Select-Object ConnectionSpecificSuffix -Unique | ForEach-Object { $_.ConnectionSpecificSuffix }; (Get-DnsClientGlobalSetting).SuffixSearchList`
@@ -105,7 +105,7 @@ func FlushDNS() {
 
 func RemoveAllNrptRules() {
 	script := fmt.Sprintf(`Get-DnsClientNrptRule | Where { $_.Comment.StartsWith("Added by %s") } | Remove-DnsClientNrptRule -ErrorAction SilentlyContinue -Force`, exeName)
-	log.Debugf("removing all nrpt rules with: %s", script)
+	log.Tracef("removing all nrpt rules with: %s", script)
 
 	cmd := exec.Command("powershell", "-Command", script)
 	cmd.Stderr = os.Stdout
@@ -119,6 +119,7 @@ func RemoveAllNrptRules() {
 
 var namespaceTemplate = `%s@{n="%s";}`
 var namespaceTemplatePadding = len(namespaceTemplate)
+
 func AddNrptRules(domainsToMap map[string]bool, dnsServer string) {
 	if len(domainsToMap) == 0 {
 		log.Debug("no domains to map specified to AddNrptRules. exiting early")
@@ -165,7 +166,7 @@ ForEach ($Namespace in $Namespaces) {
 }`, dnsServer, exeName, exeName))
 
 	script := sb.String()
-	log.Debugf("Executing    ADD NRPT script containing %d domains. total script size: %d\n%s", len(domainsToAdd), len(script), script)
+	log.Tracef("Executing    ADD NRPT script containing %d domains. total script size: %d\n%s", len(domainsToAdd), len(script), script)
 
 	cmd := exec.Command("powershell", "-Command", script)
 	cmd.Stderr = os.Stdout
@@ -199,6 +200,7 @@ func RemoveNrptRules(domainsToRemove map[string]bool) {
 		hostnames[currentSize] = hostname
 		currentSize++
 	}
+
 	if currentSize > 0 {
 		//means there's a chunk still to add....
 		chunkedRemoveNrptRules(hostnames[:currentSize])
@@ -209,19 +211,19 @@ func chunkedRemoveNrptRules(domainsToRemove []string) {
 	sb := strings.Builder{}
 	sb.WriteString(`$toRemove = @(`)
 
-	for hostname := range domainsToRemove {
+	for _, hostname := range domainsToRemove {
 		sb.WriteString(fmt.Sprintf(namespaceTemplate, "\n", hostname))
 	}
 
 	sb.WriteString(fmt.Sprintf(`)
-ForEach ($ns in $toRemove) {
-  $nrpt = Get-DnsClientNrptRule | Where {$_.Namespace -contains "${ns}"}
-  foreach ($n in $nrpt){Remove-DnsClientNrptRule -Name $n.Name -PassThru -Force -ErrorAction SilentlyContinue}
+
+ForEach ($ns in $toRemove){
+  Get-DnsClientNrptRule | where Namespace -eq $ns["n"] | Remove-DnsClientNrptRule -Force -ErrorAction SilentlyContinue
 }
 `))
 
 	script := sb.String()
-	log.Debugf("Executing REMOVE NRPT script containing %d domains. total script size: %d\n%s", len(domainsToRemove), len(script), script)
+	log.Tracef("Executing REMOVE NRPT script containing %d domains. total script size: %d\n%s", len(domainsToRemove), len(script), script)
 
 	cmd := exec.Command("powershell", "-Command", script)
 	cmd.Stderr = os.Stdout

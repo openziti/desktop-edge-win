@@ -119,9 +119,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	log.Debug("shutting down. start a ZitiDump")
 	for _, id := range rts.ids {
 		if id.CId != nil {
-			sb := strings.Builder{}
-			cziti.ZitiDumpOnShutdown(id.CId, &sb)
-			log.Infof("working around the c sdk's limitation of embedding newlines on calling ziti_shutdown\n %s", sb.String())
+			cziti.ZitiDumpOnShutdown(id.CId)
 		}
 	}
 	log.Debug("shutting down. ZitiDump complete")
@@ -1029,7 +1027,7 @@ func handleBulkServiceChange(sc cziti.BulkServiceChange) {
 	if len(sc.HostnamesToRemove) > 0 {
 		log.Debug("removing rules from NRPT")
 		windns.RemoveNrptRules(sc.HostnamesToRemove)
-		log.Infof("removed NRPT rules for: %v", sc.HostnamesToRemove)
+		log.Info("removed NRPT rules for: %v", sc.HostnamesToRemove)
 	} else {
 		log.Debug("bulk service change had no hostnames to remove")
 	}

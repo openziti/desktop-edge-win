@@ -122,6 +122,7 @@ func (t *RuntimeState) ToStatus(onlyInitialized bool) dto.TunnelStatus {
 		ServiceVersion: Version,
 		TunIpv4:        t.state.TunIpv4,
 		TunIpv4Mask:    t.state.TunIpv4Mask,
+		AddDns:         t.state.AddDns,
 	}
 
 	i := 0
