@@ -7,6 +7,23 @@
 
 ## Other changes:
 * Service to UI interaction is now with one bulk update of services instead of one event per service update
+* Added a configuration option to control if DNS is applied to the TUN. Some users are having issues with NRPT-only working. For now we'll add a boolean that allows the user to control if DNS should be added to the TUN
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* none
+
+# Release 1.9.3
+
+## What's New
+* Page Service List
+* Sort Service on Identity Details Page
+* Consistent UX for MFA Screens
+
+## Other changes:
+* Service to UI interaction is now with one bulk update of services instead of one event per service update
 
 ## Bugs fixed:
 * none
