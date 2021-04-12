@@ -27,6 +27,10 @@ import (
 	"strings"
 )
 
+const (
+	MAX_POWERSHELL_SCRIPT_LEN = 7500 //represents how long the powershell script can be. as of apr 2021 the limit was 8k (8192). leaves a little room for the rest of the script
+)
+
 var log = logging.Logger()
 var exeName = "ziti-tunnel"
 
@@ -132,7 +136,7 @@ func AddNrptRules(domainsToMap map[string]bool, dnsServer string) {
 	ruleSize := 0
 	for hostname := range domainsToMap {
 		ruleSize = ruleSize + len(hostname) + namespaceTemplatePadding
-		if ruleSize > 7500 || currentSize >= maxBucketSize {
+		if ruleSize > MAX_POWERSHELL_SCRIPT_LEN || currentSize >= maxBucketSize {
 			log.Debugf("sending chunk of domains to be added to NRPT")
 			chunkedAddNrptRules(hostnames[:currentSize], dnsServer)
 			hostnames = make([]string, maxBucketSize)
@@ -190,7 +194,7 @@ func RemoveNrptRules(domainsToRemove map[string]bool) {
 	ruleSize := 0
 	for hostname := range domainsToRemove {
 		ruleSize = ruleSize + len(hostname) + namespaceTemplatePadding
-		if ruleSize > 7500 || currentSize >= maxBucketSize {
+		if ruleSize > MAX_POWERSHELL_SCRIPT_LEN || currentSize >= maxBucketSize {
 			log.Debugf("sending chunk of domains to be added to NRPT")
 			chunkedRemoveNrptRules(hostnames[:currentSize])
 			hostnames = make([]string, maxBucketSize)
