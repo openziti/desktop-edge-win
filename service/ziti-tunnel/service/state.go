@@ -222,7 +222,7 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int, applyDns bool) (net.
 	log.Info("routing applied")
 
 	if applyDns {
-		//for windows 10+ this might be able to replace NRPT?
+		//for windows 10+, could 'domains' be able to replace NRPT? dunno - didn't test it
 		luid.SetDNS(windows.AF_INET, []net.IP{ip}, nil)
 	}
 
