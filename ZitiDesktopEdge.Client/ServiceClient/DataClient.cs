@@ -35,6 +35,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         public event EventHandler<ServiceEvent> OnServiceEvent;
         public event EventHandler<LogLevelEvent> OnLogLevelEvent;
         public event EventHandler<MfaEvent> OnMfaEvent;
+        public event EventHandler<BulkServiceEvent> OnBulkServiceEvent;
 
         protected override void ShutdownEvent(StatusEvent e) {
             Logger.Debug("Clean shutdown detected from ziti");
@@ -57,11 +58,14 @@ namespace ZitiDesktopEdge.ServiceClient {
         protected virtual void ServiceEvent(ServiceEvent e) {
             OnServiceEvent?.Invoke(this, e);
         }
-        
+
+        protected virtual void BulkServiceEvent(BulkServiceEvent e) {
+            OnBulkServiceEvent?.Invoke(this, e);
+        }
+
         protected virtual void LogLevelEvent(LogLevelEvent e) {
             OnLogLevelEvent?.Invoke(this, e);
         }
-
 
         protected virtual void MfaEvent(MfaEvent e) {
             OnMfaEvent?.Invoke(this, e);
@@ -187,21 +191,6 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task SetLogLevelAsync(string level) {
             try {
                 await sendAsync(new SetLogLevelFunction(level));
-                SvcResponse resp = await readAsync<SvcResponse>(ipcReader);
-                return;
-            } catch (Exception ioe) {
-                //almost certainly a problem with the pipe - recreate the pipe...
-                //setupPipe();
-                //throw ioe;
-                Logger.Error(ioe, "Unexpected error");
-                CommunicationError(ioe);
-            }
-            return;
-        }
-
-        async public Task SetLogLevelAsync(LogLevelEnum level) {
-            try {
-                await sendAsync(new SetLogLevelFunction(Enum.GetName(level.GetType(), level)));
                 SvcResponse resp = await readAsync<SvcResponse>(ipcReader);
                 return;
             } catch (Exception ioe) {
@@ -349,6 +338,14 @@ namespace ZitiDesktopEdge.ServiceClient {
 
                         if (svc != null) {
                             ServiceEvent(svc);
+                        }
+                        break;
+                    case "bulkservice":
+                        //dbg comment Logger.Warn("BULKSERVICE EVENT: \n" + respAsString);
+                        BulkServiceEvent bsvc = serializer.Deserialize<BulkServiceEvent>(jsonReader);
+
+                        if (bsvc != null) {
+                            BulkServiceEvent(bsvc);
                         }
                         break;
                     case "logLevel":

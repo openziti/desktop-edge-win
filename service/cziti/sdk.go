@@ -41,37 +41,28 @@ void ziti_dump_to_file(void *ctx, char* outputPath);
 int ziti_dump_to_log(void *ctx, void* stringsBuilder);
 void* stailq_first_forgo(void* entries);
 
-protocol_t* stailq_first_protocol(tunneled_service_t* ts);
-address_t* stailq_first_address(tunneled_service_t* ts);
-port_range_t* stailq_first_port_range(tunneled_service_t* ts);
-
-protocol_t* stailq_next_protocol(protocol_t* cur);
-address_t* stailq_next_address(address_t* cur);
-port_range_t* stailq_next_port_range(port_range_t* cur);
-
 */
 import "C"
 import (
+	"encoding/json"
 	"errors"
-	"github.com/openziti/desktop-edge-win/service/windns"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/api"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/logging"
+	"net"
 	"os"
 	"strings"
 	"sync"
 	"unsafe"
 )
 
-const (
-	ADDED   = "added"
-	REMOVED = "removed"
-)
-
 var log = logging.Logger()
 var noFileLog = logging.NoFilenameLogger()
 var Version dto.ServiceVersion
-var ServiceChanges = make(chan dto.ServiceEvent, 256)
+var BulkServiceChanges = make(chan BulkServiceChange, 32)
+
+var cCfgZitiTunnelerClientV1 = C.CString("ziti-tunneler-client.v1")
+var cCfgInterceptV1 = C.CString("intercept.v1")
 
 type sdk struct {
 	libuvCtx *C.libuv_ctx
@@ -80,6 +71,13 @@ type ServiceChange struct {
 	Operation   string
 	Service     *ZService
 	ZitiContext *ZIdentity
+}
+type BulkServiceChange struct {
+	Fingerprint       string
+	HostnamesToAdd    map[string]bool
+	HostnamesToRemove map[string]bool
+	ServicesToRemove  []*dto.Service
+	ServicesToAdd     []*dto.Service
 }
 
 var _impl sdk
@@ -150,54 +148,54 @@ func NewZid(statusChange func(int)) *ZIdentity {
 	return zid
 }
 
-func (c *ZIdentity) GetMetrics() (int64, int64, bool) {
-	if c == nil {
+func (zid *ZIdentity) GetMetrics() (int64, int64, bool) {
+	if zid == nil {
 		return 0, 0, false
 	}
-	if unsafe.Pointer(c.czctx) == C.NULL {
-		log.Debugf("ziti context is still null. the identity is probably not initialized yet: %s", c.Fingerprint)
+	if unsafe.Pointer(zid.czctx) == C.NULL {
+		log.Debugf("ziti context is still null. the identity is probably not initialized yet: %s", zid.Fingerprint)
 		return 0, 0, false
 	}
 	var up, down C.double
-	C.ziti_get_transfer_rates(c.czctx, &up, &down)
+	C.ziti_get_transfer_rates(zid.czctx, &up, &down)
 
 	return int64(up), int64(down), true
 }
 
-func (c *ZIdentity) UnsafePointer() unsafe.Pointer {
-	return unsafe.Pointer(c.czctx)
+func (zid *ZIdentity) UnsafePointer() unsafe.Pointer {
+	return unsafe.Pointer(zid.czctx)
 }
-func (c *ZIdentity) AsKey() string {
+func (zid *ZIdentity) AsKey() string {
 	return "marker askey"
 }
 
-func (c *ZIdentity) Status() (int, error) {
-	return c.status, c.statusErr
+func (zid *ZIdentity) Status() (int, error) {
+	return zid.status, zid.statusErr
 }
 
-func (c *ZIdentity) setVersionFromId() string {
-	if len(c.Version) > 0 {
-		return c.Version
+func (zid *ZIdentity) setVersionFromId() string {
+	if len(zid.Version) > 0 {
+		return zid.Version
 	}
-	c.Version = "<unknown version>"
-	if c != nil {
-		if c.czctx != nil {
-			v1 := C.ziti_get_controller_version(c.czctx)
+	zid.Version = "<unknown version>"
+	if zid != nil {
+		if zid.czctx != nil {
+			v1 := C.ziti_get_controller_version(zid.czctx)
 			return C.GoString(v1.version)
 		}
 	}
-	return c.Version
+	return zid.Version
 }
 
-func (c *ZIdentity) setNameFromId() string {
-	if len(c.Name) > 0 {
-		return c.Name
+func (zid *ZIdentity) setNameFromId() string {
+	if len(zid.Name) > 0 {
+		return zid.Name
 	}
-	c.Name = "<unknown>"
-	if c != nil {
-		if c.czid != nil {
-			if c.czid.name != nil {
-				c.Name = C.GoString(c.czid.name)
+	zid.Name = "<unknown>"
+	if zid != nil {
+		if zid.czid != nil {
+			if zid.czid.name != nil {
+				zid.Name = C.GoString(zid.czid.name)
 			} else {
 				log.Debug("in Name - c.zid.name was nil")
 			}
@@ -207,12 +205,12 @@ func (c *ZIdentity) setNameFromId() string {
 	} else {
 		log.Debug("in Name - c was nil")
 	}
-	return c.Name
+	return zid.Name
 }
 
-func (c *ZIdentity) Tags() []string {
-	if c.czctx != nil && c.czid != nil {
-		C.c_mapiter(&c.czid.tags)
+func (zid *ZIdentity) Tags() []string {
+	if zid.czctx != nil && zid.czid != nil {
+		C.c_mapiter(&zid.czid.tags)
 		/*
 			it := C.model_map_iterator(&c.zid.tags)
 			for {
@@ -230,11 +228,11 @@ func (c *ZIdentity) Tags() []string {
 	return nil
 }
 
-func (c *ZIdentity) Controller() string {
-	if c.czctx != nil {
-		return C.GoString(C.ziti_get_controller(c.czctx))
+func (zid *ZIdentity) Controller() string {
+	if zid.czctx != nil {
+		return C.GoString(C.ziti_get_controller(zid.czctx))
 	}
-	return C.GoString(c.Options.controller)
+	return C.GoString(zid.Options.controller)
 }
 
 func (zid *ZIdentity) Shutdown() {
@@ -253,24 +251,84 @@ func doZitiShutdown(async *C.uv_async_t) {
 	C.ziti_shutdown(ctx)
 }
 
-func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, zid *ZIdentity) []dto.Address {
+type clientV1Cfg struct {
+	//{"addresses":["eth0.ziti.ranged","eth0.second","eth0.third"],"portRanges":[{"high":80,"low":80},{"high":443,"low":443}],"protocols":["tcp"]}
+	Addresses  []string        `json:"addresses"`
+	PortRanges []dto.PortRange `json:"portRanges"`
+	Protocols  []string        `json:"protocols"`
+}
+type v1ClientCfg struct {
+	//{"hostname":"192.168.15.15","port":80}
+	Hostname string `json:"hostname"`
+	Port     int    `json:"port"`
+}
+
+func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, zid *ZIdentity) *dto.Service {
 	if zid == nil {
 		log.Errorf("in serviceCB with nil zid??? ")
-		return make([]dto.Address, 0)
+		return nil
 	}
 
 	name := C.GoString(service.name)
 	svcId := C.GoString(service.id)
 	log.Debugf("============ INSIDE serviceCB - status: %s:%s - %v, %v ============", name, svcId, status, service.perm_flags)
-	ts := C.ziti_sdk_c_on_service(ziti_ctx, service, status, unsafe.Pointer(theTun.tunCtx))
+	C.ziti_sdk_c_on_service(ziti_ctx, service, status, unsafe.Pointer(theTun.tunCtx))
 
-	protocols := getTunneledServiceProtocols(ts)
-	addresses := getTunneledServiceAddresses(ts)
-	portRanges := getTunneledServicePortRanges(ts)
+	var protocols []string
+	var portRanges []dto.PortRange
+	var addresses []dto.Address
+
+	strClientV1cfg := C.GoString(C.ziti_service_get_raw_config(service, cCfgInterceptV1))
+	if strClientV1cfg != "" {
+		log.Tracef("intercept.v1: %s", strClientV1cfg)
+		var obj clientV1Cfg
+		uerr := json.Unmarshal([]byte(strClientV1cfg), &obj)
+		if uerr != nil {
+			log.Errorf("could not marshall json? %v", uerr)
+		}
+		protocols = obj.Protocols
+		portRanges = obj.PortRanges
+		a := make([]dto.Address, len(obj.Addresses))
+		for idx, add := range obj.Addresses {
+			a[idx] = toAddy(add)
+		}
+
+		addresses = append(a)
+	} else {
+		strZitiTunnelerClientV1 := C.GoString(C.ziti_service_get_raw_config(service, cCfgZitiTunnelerClientV1))
+		log.Tracef("ziti-tunneler-client.v1: %s", strZitiTunnelerClientV1)
+		var obj v1ClientCfg
+		uerr := json.Unmarshal([]byte(strZitiTunnelerClientV1), &obj)
+		if uerr != nil {
+			log.Errorf("could not marshall json? %v", uerr)
+		}
+		protocols = []string{"UDP", "TCP"}
+		portRanges = []dto.PortRange{{Low: obj.Port, High: obj.Port}}
+		addresses = []dto.Address{toAddy(obj.Hostname)}
+	}
+
 	log.Infof("service update: %s, id: %s, portocols:%s, addresses:%v, portRanges: %v", name, svcId, protocols, addresses, portRanges)
 
+	var svc *dto.Service
+
 	if status == C.ZITI_SERVICE_UNAVAILABLE {
-		serviceUnavailable(zid, svcId, name)
+		log.Debugf("serivce has become unavailable: %s [%s]", name, svcId)
+		f, ok := zid.Services.Load(svcId)
+		if ok {
+			svc = &dto.Service{
+				Name:      name,
+				Id:        svcId,
+				Addresses: addresses,
+			}
+			found := f.(*ZService)
+			if found != nil {
+				found.Service = nil
+			}
+			zid.Services.Delete(svcId)
+			return svc
+		} else {
+			log.Warnf("could not remove service? service not found with id: %s, name: %s in context %d", svcId, name, &zid)
+		}
 	} else if status == C.ZITI_OK {
 		pcIds := make(map[string]bool)
 		var postureChecks []dto.PostureCheck
@@ -315,7 +373,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 			}
 		}
 
-		svc := &dto.Service{
+		svc = &dto.Service{
 			Name:          name,
 			Id:            svcId,
 			Protocols:     protocols,
@@ -325,46 +383,47 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 			PostureChecks: postureChecks,
 			IsAccessable:  hasAccess,
 		}
-
 		added := ZService{
 			Name:    name,
 			Id:      svcId,
 			Service: svc,
 			Czctx:   ziti_ctx,
 		}
-
-		se := dto.ServiceEvent{
-			ActionEvent: dto.SERVICE_ADDED,
-			Fingerprint: zid.Fingerprint,
-			Service:     svc,
-		}
-
 		zid.Services.Store(svcId, &added)
-		go func() {ServiceChanges <- se}() //do this in a go routine just in case it gets blocked so the uv loop doesn't block
 	}
-	return addresses
+
+	return svc
 }
 
-func serviceUnavailable(ctx *ZIdentity, svcId string, name string) {
-	log.Debugf("serivce has become unavailalbe: %s [%s]", name, svcId)
-	f, ok := ctx.Services.Load(svcId)
-	if ok {
-		found := f.(*ZService)
-		found.Service = nil
-		ctx.Services.Delete(svcId)
-		se := dto.ServiceEvent{
-			ActionEvent: dto.SERVICE_REMOVED,
-			Fingerprint: ctx.Fingerprint,
-			Service: &dto.Service{
-				Name: name,
-				Id:   svcId,
-			},
-		}
-		ServiceChanges <- se
-		log.Debugf("dispatched serivce has become unavailalbe to ui: %s [%s]", name, svcId)
-	} else {
-		log.Warnf("could not remove service? service not found with id: %s, name: %s in context %d", svcId, name, &ctx)
+func toAddy(hostOrIpOrCidr string) dto.Address {
+	addy := dto.Address{
+		IsHost:   false,
+		HostName: "",
+		IP:       "",
+		Prefix:   0,
 	}
+
+	log.Debugf("parsing %s to address", hostOrIpOrCidr)
+	ip, ipnet, err := net.ParseCIDR(hostOrIpOrCidr)
+	if err != nil {
+		//must not be an CIDR... try IP parse
+		ip = net.ParseIP(hostOrIpOrCidr)
+		if ip == nil {
+			log.Debugf("%s does not appear to be an ip/cidr combination. considering it a hostname", hostOrIpOrCidr)
+			addy.HostName = hostOrIpOrCidr
+			addy.IsHost = true
+		} else {
+			log.Debugf("%s determined to be ip", hostOrIpOrCidr)
+			addy.IP = ip.String()
+		}
+	} else {
+		log.Debugf("%s appears to be a proper CIDR", hostOrIpOrCidr)
+		ones, _ := ipnet.Mask.Size()
+		addy.IP = ip.String()
+		addy.Prefix = ones
+	}
+	log.Tracef("parsed address: %v from %s", addy, hostOrIpOrCidr)
+	return addy
 }
 
 //export eventCB
@@ -402,6 +461,9 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 	case C.ZitiServiceEvent:
 		hostnamesToAdd := make(map[string]bool)
 		hostnamesToRemove := make(map[string]bool)
+		servicesToRemove := make([]*dto.Service, 0)
+		servicesToAdd := make([]*dto.Service, 0)
+
 		srvEvent := C.ziti_event_service_event(event)
 
 		for i := 0; true; i++ {
@@ -409,11 +471,16 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			if unsafe.Pointer(removed) == C.NULL {
 				break
 			}
-			addys := serviceCB(ztx, removed, C.ZITI_SERVICE_UNAVAILABLE, zid)
-			for _, toRemove := range addys {
-				if toRemove.IsHost {
-					hostnamesToRemove[toRemove.HostName] = true
+
+			svcToRemove := serviceCB(ztx, removed, C.ZITI_SERVICE_UNAVAILABLE, zid)
+			if svcToRemove != nil {
+				remAddys := svcToRemove.Addresses
+				for _, toRemove := range remAddys {
+					if toRemove.IsHost && hostnameRemoved(toRemove.HostName) == 0 {
+						hostnamesToRemove[toRemove.HostName] = true
+					}
 				}
+				servicesToRemove = append(servicesToRemove, svcToRemove)
 			}
 		}
 		for i := 0; true; i++ {
@@ -421,19 +488,29 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			if unsafe.Pointer(changed) == C.NULL {
 				break
 			}
+
 			log.Info("service changed remove the service then add it back immediately", C.GoString(changed.name))
-			addys := serviceCB(ztx, changed, C.ZITI_SERVICE_UNAVAILABLE, zid)
-			for _, toRemove := range addys {
-				if toRemove.IsHost {
-					hostnamesToRemove[toRemove.HostName] = true
+			svcToRemove := serviceCB(ztx, changed, C.ZITI_SERVICE_UNAVAILABLE, zid)
+			if svcToRemove != nil {
+
+				remAddys := svcToRemove.Addresses
+				for _, toRemove := range remAddys {
+					if toRemove.IsHost && hostnameRemoved(toRemove.HostName) == 0 {
+						hostnamesToRemove[toRemove.HostName] = true
+					}
 				}
+				servicesToRemove = append(servicesToRemove, svcToRemove)
 			}
 
-			addys = serviceCB(ztx, changed, C.ZITI_OK, zid)
-			for _, toAdd := range addys {
-				if toAdd.IsHost {
-					hostnamesToAdd[toAdd.HostName] = true
+			svcToAdd := serviceCB(ztx, changed, C.ZITI_OK, zid)
+			if svcToAdd != nil {
+				addAddys := svcToAdd.Addresses
+				for _, toAdd := range addAddys {
+					if toAdd.IsHost && hostnameAdded(toAdd.HostName) == 1 {
+						hostnamesToAdd[toAdd.HostName] = true
+					}
 				}
+				servicesToAdd = append(servicesToAdd, svcToAdd)
 			}
 		}
 		for i := 0; true; i++ {
@@ -441,40 +518,37 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			if unsafe.Pointer(added) == C.NULL {
 				break
 			}
-			addys := serviceCB(ztx, added, C.ZITI_OK, zid)
-			for _, toAdd := range addys {
-				if toAdd.IsHost {
-					hostnamesToAdd[toAdd.HostName] = true
+			svcToAdd := serviceCB(ztx, added, C.ZITI_OK, zid)
+			if svcToAdd != nil {
+				addAddys := svcToAdd.Addresses
+				for _, toAdd := range addAddys {
+					if toAdd.IsHost && hostnameAdded(toAdd.HostName) == 1 {
+						hostnamesToAdd[toAdd.HostName] = true
+					}
 				}
+				servicesToAdd = append(servicesToAdd, svcToAdd)
 			}
 		}
 
-		if len(hostnamesToAdd) > 0 {
-			windns.AddNrptRules(hostnamesToAdd, dnsip.String())
-			log.Infof("mapped the following hostnames: %v", hostnamesToAdd)
+		svcChange := BulkServiceChange{
+			Fingerprint:       zid.Fingerprint,
+			HostnamesToAdd:    hostnamesToAdd,
+			HostnamesToRemove: hostnamesToRemove,
+			ServicesToAdd:     servicesToAdd,
+			ServicesToRemove:  servicesToRemove,
 		}
 
-		if len(hostnamesToRemove) > 0 {
-			windns.RemoveNrptRules(hostnamesToRemove)
-			log.Infof("unmapped the following hostnames: %v", hostnamesToRemove)
+		if len(BulkServiceChanges) == cap(BulkServiceChanges) {
+			log.Warn("Service changes are not being processed fast enough. This client is out of date from the controller! This is unexpected. If you see this warning please report")
+		} else {
+			BulkServiceChanges <- svcChange
 		}
-
-		var m = dto.IdentityEvent{
-			ActionEvent: dto.IdentityUpdateComplete,
-			Id: dto.Identity{
-				FingerPrint: zid.Fingerprint,
-			},
-		}
-
-		goapi.BroadcastEvent(m)
-
 	default:
 		log.Infof("event %d not handled", event._type)
 	}
 }
 
 func zitiContextEvent(ztx C.ziti_context, status C.int, zid *ZIdentity) {
-
 	zid.status = int(status)
 	zid.statusErr = zitiError(status)
 	zid.czctx = ztx
@@ -605,81 +679,35 @@ func ziti_dump_go_to_log_cb(stringsBuilder unsafe.Pointer, charData *C.char) {
 	sb := (*strings.Builder)(stringsBuilder)
 	sb.WriteString(C.GoString(charData))
 }
-func ZitiDumpOnShutdown(zid *ZIdentity, sb *strings.Builder) {
-	C.ziti_dump_to_log(unsafe.Pointer(zid.czctx), unsafe.Pointer(sb))
-}
-
-func getTunneledServiceProtocols(ts *C.tunneled_service_t) []string {
-	var protocols []string
-	next := C.stailq_first_protocol(ts)
-	if unsafe.Pointer(next) != C.NULL {
-		protocols = append(protocols, C.GoString(next.protocol))
-		for {
-			next = C.stailq_next_protocol(next)
-			if unsafe.Pointer(next) != C.NULL {
-				protocols = append(protocols, C.GoString(next.protocol))
-			} else {
-				break
-			}
-		}
-	}
-	return protocols
-}
-
-func getTunneledServicePortRanges(ts *C.tunneled_service_t) []dto.PortRange {
-	var values []dto.PortRange
-	next := C.stailq_first_port_range(ts)
-	if unsafe.Pointer(next) != C.NULL {
-		p := dto.PortRange{
-			High: int(next.high),
-			Low:  int(next.low),
-		}
-		values = append(values, p)
-		for {
-			next = C.stailq_next_port_range(next)
-			if unsafe.Pointer(next) != C.NULL {
-				p := dto.PortRange{
-					High: int(next.high),
-					Low:  int(next.low),
-				}
-				values = append(values, p)
-			} else {
-				break
-			}
-		}
-	}
-	return values
-}
-
-func getTunneledServiceAddresses(ts *C.tunneled_service_t) []dto.Address {
-	var values []dto.Address
-	next := C.stailq_first_address(ts)
-	if unsafe.Pointer(next) != C.NULL {
-		p := dto.Address{
-			IsHost:   bool(next.is_hostname),
-			HostName: C.GoString(&next.str[0]),
-			IP:       C.GoString(C.ipaddr_ntoa(&next.ip)),
-			Prefix:   int(next.prefix_len),
-		}
-		values = append(values, p)
-		for {
-			next = C.stailq_next_address(next)
-			if unsafe.Pointer(next) != C.NULL {
-				p := dto.Address{
-					IsHost:   bool(next.is_hostname),
-					HostName: C.GoString(&next.str[0]),
-					IP:       C.GoString(C.ipaddr_ntoa(&next.ip)),
-					Prefix:   int(next.prefix_len),
-				}
-				values = append(values, p)
-			} else {
-				break
-			}
-		}
-	}
-	return values
+func ZitiDumpOnShutdown(zid *ZIdentity) {
+	sb := strings.Builder{}
+	C.ziti_dump_to_log(unsafe.Pointer(zid.czctx), unsafe.Pointer(&sb))
+	log.Infof("working around the c sdk's limitation of embedding newlines on calling ziti_shutdown\n %s", sb.String())
 }
 
 func InitTunnelerDns(ipBase uint32, mask int) {
 	C.ziti_tunneler_init_dns(C.uint32_t(ipBase), C.int(mask))
+}
+
+var addressCount = make(map[string]int)
+
+func hostnameAdded(host string) int {
+	count := 1
+	if cur, ok := addressCount[host]; ok {
+		count = cur + 1
+	}
+	addressCount[host] = count
+	log.Debugf("hostname added: %s. count now: %d", host, count)
+	return count
+}
+func hostnameRemoved(host string) int {
+	count := 0
+	if cur, ok := addressCount[host]; ok {
+		if cur > 0 {
+			count = cur - 1
+		}
+	}
+	addressCount[host] = count
+	log.Debugf("hostname removed %s. count now: %d", host, count)
+	return count
 }

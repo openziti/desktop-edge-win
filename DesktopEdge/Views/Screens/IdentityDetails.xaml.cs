@@ -35,6 +35,10 @@ namespace ZitiDesktopEdge {
 		public event OnAuthenticate Authenticate;
 		public delegate void OnRecovery(ZitiIdentity identity);
 		public event OnRecovery Recovery;
+		public int Page = 1;
+		public int PerPage = 50;
+		public string SortBy = "Name";
+		public string SortWay = "Asc";
 
 		internal MainWindow MainWindow { get; set; }
 
@@ -53,6 +57,11 @@ namespace ZitiDesktopEdge {
 			set {
 				_identity = value;
 				this.IdDetailToggle.Enabled = _identity.IsEnabled;
+				Page = 1;
+				SortBy = "Name";
+				SortWay = "Asc";
+				SortByField.SelectedIndex = 0;
+				SortWayField.SelectedIndex = 0;
 				UpdateView();
 				IdentityArea.Opacity = 1.0;
 				IdentityArea.Visibility = Visibility.Visible;
@@ -117,17 +126,45 @@ namespace ZitiDesktopEdge {
 				IdentityMFA.RecoveryButton.Visibility = Visibility.Collapsed;
 			}
 			ServiceList.Children.Clear();
+			PageSortArea.Visibility = Visibility.Collapsed;
 			if (_identity.Services.Count>0) {
-				foreach(var zitiSvc in _identity.Services.OrderBy(s => s.Name.ToLower())) {
-					if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >=0||zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >=0) {
-						Logger.Trace("painting: " + zitiSvc.Name);
-						ServiceInfo info = new ServiceInfo();
-						info.Info = zitiSvc;
-						info.OnMessage += Info_OnMessage;
-						info.OnDetails += ShowDetails;
-						ServiceList.Children.Add(info);
+				PageSortArea.Visibility = Visibility.Visible;
+				int index = 0;
+				int total = 0;
+				ZitiService[] services = new ZitiService[0];
+				if (SortBy == "Name") services = _identity.Services.OrderBy(s => s.Name.ToLower()).ToArray();
+				else if (SortBy == "Address") services = _identity.Services.OrderBy(s => s.Addresses.ToString()).ToArray();
+				else if (SortBy == "Protocol") services = _identity.Services.OrderBy(s => s.Protocols.ToString()).ToArray();
+				else if (SortBy == "Port") services = _identity.Services.OrderBy(s => s.Ports.ToString()).ToArray();
+				if (SortWay == "Desc") services = services.Reverse().ToArray();
+				int startIndex = (Page - 1) * PerPage;
+				for (int i= startIndex; i<services.Length; i++) {
+					ZitiService zitiSvc = services[i];
+					total++;
+					if (index<100) {
+						if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0) {
+							Logger.Trace("painting: " + zitiSvc.Name);
+							ServiceInfo info = new ServiceInfo();
+							info.Info = zitiSvc;
+							info.OnMessage += Info_OnMessage;
+							info.OnDetails += ShowDetails;
+							ServiceList.Children.Add(info);
+							index++;
+						}
 					}
 				}
+
+				if (Page==1) {
+					Pages.Items.Clear();
+					int totalPages = (total / PerPage) + 1;
+					for (int i = 1; i <= totalPages; i++) {
+						ComboBoxItem item = new ComboBoxItem();
+						if (i == Page) item.IsSelected = true;
+						item.Content = i.ToString();
+						Pages.Items.Add(item);
+					}
+				}
+
 				double newHeight = MainHeight - 330; 
 				ServiceRow.Height = new GridLength((double)newHeight);
 				MainDetailScroll.MaxHeight = newHeight;
@@ -325,6 +362,37 @@ namespace ZitiDesktopEdge {
 
 		private void AuthFromMessage(object sender, MouseButtonEventArgs e) {
 			this.Authenticate.Invoke(this.Identity);
+		}
+
+		private void Pages_SelectionChanged(object sender, SelectionChangedEventArgs e) {
+			ComboBoxItem selected = (ComboBoxItem)Pages.SelectedValue;
+			if (selected!=null) {
+				int value = Int32.Parse(selected.Content.ToString());
+				if (value!=Page) {
+					Page = value;
+					UpdateView();
+				}
+			}
+		}
+
+		private void SortByField_SelectionChanged(object sender, SelectionChangedEventArgs e) {
+			ComboBoxItem selected = (ComboBoxItem)SortByField.SelectedValue;
+			if (selected != null && selected.Content!=null) {
+				if (selected.Content.ToString()!=SortBy) {
+					SortBy = selected.Content.ToString();
+					UpdateView();
+				}
+			}
+		}
+
+		private void SortWayField_SelectionChanged(object sender, SelectionChangedEventArgs e) {
+			ComboBoxItem selected = (ComboBoxItem)SortWayField.SelectedValue;
+			if (selected != null && selected.Content != null) {
+				if (selected.Content.ToString() != SortWay) {
+					SortWay = selected.Content.ToString();
+					UpdateView();
+				}
+			}
 		}
 	}
 }
