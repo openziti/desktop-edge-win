@@ -19,23 +19,23 @@ package service
 
 type topic struct {
 	broadcast chan interface{}
-	channels  map[int]chan interface{}
+	channels  map[string]chan interface{}
 	done      chan bool
 }
 
 func newTopic(cap int16) topic {
 	return topic{
 		broadcast: make(chan interface{}, cap),
-		channels:  make(map[int]chan interface{}, cap),
+		channels:  make(map[string]chan interface{}, cap),
 		done:      make(chan bool, cap),
 	}
 }
 
-func (t *topic) register(id int, c chan interface{}) {
+func (t *topic) register(id string, c chan interface{}) {
 	t.channels[id] = c
 }
 
-func (t *topic) unregister(id int) {
+func (t *topic) unregister(id string) {
 	delete(t.channels, id)
 }
 
@@ -48,7 +48,10 @@ func (t *topic) run() {
 		for {
 			select {
 			case msg := <-t.broadcast:
-				for _, c := range t.channels {
+				for id, c := range t.channels {
+					if len(c) == cap(c) {
+						log.Warnf("channel with id [%s] is about to block!", id)
+					}
 					c <- msg
 				}
 				break

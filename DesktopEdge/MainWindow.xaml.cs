@@ -68,8 +68,8 @@ namespace ZitiDesktopEdge {
 			ExpectedLogPathServices = Path.Combine(ExpectedLogPathRoot, "service", $"ziti-tunneler.log");
 		}
 
-		private void IdentityMenu_OnMessage(string message) {
-			ShowBlurbAsync(message, "");
+		async private void IdentityMenu_OnMessage(string message) {
+			await ShowBlurbAsync(message, "");
 		}
 
 		private void SystemEvents_DisplaySettingsChanged(object sender, EventArgs e) {
@@ -105,14 +105,14 @@ namespace ZitiDesktopEdge {
 		/// <param name="e">The MFA Event</param>
 		private void ServiceClient_OnMfaEvent(object sender, MfaEvent mfa) {
 			HideLoad();
-			this.Dispatcher.Invoke(() => {
+			this.Dispatcher.Invoke(async () => {
 				if (mfa.Action == "enrollment_challenge") {
 					string url = HttpUtility.UrlDecode(mfa.ProvisioningUrl);
 					string secret = HttpUtility.ParseQueryString(url)["secret"];
 					this.IdentityMenu.Identity.MFAInfo.RecoveryCodes = mfa?.RecoveryCodes?.ToArray();
 					SetupMFA(this.IdentityMenu.Identity, url, secret);
 				} else if (mfa.Action == "auth_challenge") {
-					ShowBlurbAsync("Setting Up auth_challenge", "");
+					await ShowBlurbAsync("Setting Up auth_challenge", "");
 				} else if (mfa.Action == "enrollment_verification") {
 					if (mfa.Successful) {
 						ShowMFARecoveryCodes(this.IdentityMenu.Identity);
@@ -127,7 +127,7 @@ namespace ZitiDesktopEdge {
 				} else if (mfa.Action == "enrollment_remove") {
 					// ShowBlurb("removed mfa: " + mfa.Successful, "");
 				} else {
-					ShowBlurbAsync("Unexpected error when processing MFA", "");
+					await ShowBlurbAsync ("Unexpected error when processing MFA", "");
 					logger.Error("unexpected action: " + mfa.Action);
 				}
 				LoadIdentities(true);
@@ -172,7 +172,7 @@ namespace ZitiDesktopEdge {
 		/// Show the MFA Recovery Codes
 		/// </summary>
 		/// <param name="identity">The Ziti Identity to Authenticate</param>
-		public void ShowMFARecoveryCodes(ZitiIdentity identity) {
+		async public void ShowMFARecoveryCodes(ZitiIdentity identity) {
 			if (identity.MFAInfo!=null) {
 				if (identity.MFAInfo.IsAuthenticated&& identity.MFAInfo.RecoveryCodes!=null) {
 					MFASetup.Opacity = 0;
@@ -188,7 +188,7 @@ namespace ZitiDesktopEdge {
 					this.ShowMFA(IdentityMenu.Identity, 2);
 				}
 			} else {
-				ShowBlurbAsync("MFA is not setup on this Identity", "");
+				await ShowBlurbAsync("MFA is not setup on this Identity", "");
 			}
 		}
 
@@ -232,7 +232,7 @@ namespace ZitiDesktopEdge {
 		/// <summary>
 		/// Close the MFA Screen with animation
 		/// </summary>
-		private void DoClose(bool isComplete) {
+		async private void DoClose(bool isComplete) {
 			DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
 			ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
 			animation.Completed += CloseComplete;
@@ -256,7 +256,7 @@ namespace ZitiDesktopEdge {
 					} else if (MFASetup.Type == 3) {
 						IdentityMenu.Identity.IsMFAEnabled = false;
 						IdentityMenu.Identity.MFAInfo.IsAuthenticated = false;
-						ShowBlurbAsync("MFA Disabled, Service Access Can Be Limited", "");
+						await ShowBlurbAsync("MFA Disabled, Service Access Can Be Limited", "");
 					} else if (MFASetup.Type == 4) {
 						ShowRecovery(IdentityMenu.Identity);
 					}
@@ -923,6 +923,9 @@ namespace ZitiDesktopEdge {
 				}
 				if (!Application.Current.Properties.Contains("dns")) {
 					Application.Current.Properties.Add("dns", status?.IpInfo?.DNS);
+				}
+				if (!Application.Current.Properties.Contains("dnsenabled")) {
+					Application.Current.Properties.Add("dnsenabled", status?.AddDns);
 				}
 
 				foreach (var id in status.Identities) {

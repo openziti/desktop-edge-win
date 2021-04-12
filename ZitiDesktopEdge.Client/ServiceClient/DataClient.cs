@@ -203,21 +203,6 @@ namespace ZitiDesktopEdge.ServiceClient {
             return;
         }
 
-        async public Task SetLogLevelAsync(LogLevelEnum level) {
-            try {
-                await sendAsync(new SetLogLevelFunction(Enum.GetName(level.GetType(), level)));
-                SvcResponse resp = await readAsync<SvcResponse>(ipcReader);
-                return;
-            } catch (Exception ioe) {
-                //almost certainly a problem with the pipe - recreate the pipe...
-                //setupPipe();
-                //throw ioe;
-                Logger.Error(ioe, "Unexpected error");
-                CommunicationError(ioe);
-            }
-            return;
-        }
-
         async public Task<Identity> IdentityOnOffAsync(string fingerprint, bool onOff) {
             try {
                 await sendAsync(new IdentityToggleFunction(fingerprint, onOff));

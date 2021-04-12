@@ -18,9 +18,9 @@ package cli
  */
 
 import (
-	"fmt"
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"strings"
