@@ -533,8 +533,8 @@ namespace ZitiDesktopEdge {
 				foreach (var removed in e.RemovedServices) {
 					removeService(found, removed);
 				}
-				foreach (var removed in e.AddedServices) {
-					addService(found, removed);
+				foreach (var added in e.AddedServices) {
+					addService(found, added);
 				}
 				LoadIdentities(false);
 				this.Dispatcher.Invoke(() => {
