@@ -31,6 +31,7 @@ import (
 	"time"
 	"path/filepath"
 	"errors"
+	"strconv"
 	"github.com/openziti/desktop-edge-win/service/cziti"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/constants"
@@ -454,9 +455,19 @@ func (t *RuntimeState) UpdateIpv4(ipv4 string) {
 	rts.SaveState()
 }
 
-func UpdateRuntimeStateIpv4(offline bool, ip string, ipv4Mask int) error {
+func UpdateRuntimeStateIpv4(offline bool, ip string, ipv4Mask int, addDns string) error {
 
 	log.Infof("ip and mask %s %d", ip, ipv4Mask)
+
+	var addDnsBool bool
+	var err error
+	if addDns != "" {
+		addDnsBool, err = strconv.ParseBool(addDns)
+
+		if err != nil {
+			return errors.New(fmt.Sprintf("Incorrect addDns %v", err))
+		}
+	}
 
 	if offline {
 		systemDrivePath := os.Getenv("SystemDrive")
@@ -471,14 +482,28 @@ func UpdateRuntimeStateIpv4(offline bool, ip string, ipv4Mask int) error {
 			return err
 		}
 
-		rts.state.TunIpv4 = ip
-		rts.state.TunIpv4Mask = ipv4Mask
+		// if ip is not empty, then we set both ip and mask
+		if ip != "" {
+			rts.state.TunIpv4 = ip
+			rts.state.TunIpv4Mask = ipv4Mask
+		}
+		if addDns != "" {
+			rts.state.AddDns = addDnsBool
+		}
 
 		rts.SaveStateWithPath(systemPath)			
 
 	} else {
-		rts.state.TunIpv4 = ip
-		rts.state.TunIpv4Mask = ipv4Mask
+
+		// if ip is not empty, then we set both ip and mask
+		if ip != "" {
+			rts.state.TunIpv4 = ip
+			rts.state.TunIpv4Mask = ipv4Mask
+		}
+		if addDns != "" {
+			rts.state.AddDns = addDnsBool
+		}
+
 		rts.SaveState()
 	}
 

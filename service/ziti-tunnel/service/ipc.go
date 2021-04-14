@@ -500,7 +500,19 @@ func serveIpc(conn net.Conn) {
 			//save the state
 			rts.SaveState()
 		case "UpdateTunIpv4":
-			updateTunIpv4(enc, cmd.Payload["TunIPv4"].(string), cmd.Payload["TunIPv4Mask"].(string))
+			var tunIPv4 string
+			var tunIPv4Mask string
+			var addDns string
+			if cmd.Payload["TunIPv4"] != nil {
+				tunIPv4 = cmd.Payload["TunIPv4"].(string)
+			}
+			if cmd.Payload["TunIPv4Mask"] != nil {
+				tunIPv4Mask = cmd.Payload["TunIPv4Mask"].(string)
+			}
+			if cmd.Payload["AddDns"] != nil {
+				addDns = strconv.FormatBool(cmd.Payload["AddDns"].(bool))
+			}
+			updateTunIpv4(enc, tunIPv4, tunIPv4Mask, addDns)
 		case "NotifyLogLevelUIAndUpdateService":
 			sendLogLevelAndNotify(enc, cmd.Payload["Level"].(string))
 		case "NotifyIdentityUI":
@@ -625,13 +637,19 @@ func setLogLevel(out *json.Encoder, level string) {
 	respond(out, dto.Response{Message: "log level set", Code: SUCCESS, Error: "", Payload: nil})
 }
 
-func updateTunIpv4(out *json.Encoder, ip string, ipmask string) {
-	ipMask, err := strconv.Atoi(ipmask)
-	if err != nil {
-		respondWithError(out, "Incorrect ipv4 mask", UNKNOWN_ERROR, err)
-		return
+func updateTunIpv4(out *json.Encoder, ip string, ipmask string, addDns string) {
+	var ipMask int
+	var err error
+	if ipmask != "" {
+		ipMask, err = strconv.Atoi(ipmask)
+
+		if err != nil {
+			respondWithError(out, "Incorrect ipv4 mask", UNKNOWN_ERROR, err)
+			return
+		}
 	}
-	err = UpdateRuntimeStateIpv4(false, ip, ipMask)
+
+	err = UpdateRuntimeStateIpv4(false, ip, ipMask, addDns)
 	if err != nil {
 		respondWithError(out, "Could not set Tun ip and mask", UNKNOWN_ERROR, err)
 		return

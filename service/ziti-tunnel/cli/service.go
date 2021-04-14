@@ -58,19 +58,37 @@ func GetFeedback(args []string, flags map[string]bool) {
 
 func UpdateConfigIPSubnet(args []string, flags map[string]interface{}) {
 	CIDRstring := flags["CIDR"]
-	log.Infof("Updating the config file with IP CIDR %v", flags["CIDR"])
-	var cidr = strings.Split(CIDRstring.(string), "/")
-	if len(cidr) != 2 {
-		log.Error("Incorrect cidr")
-	}
-	ipMask, err := strconv.Atoi(cidr[1])
-	if err != nil {
-		log.Errorf("Incorrect ipv4 mask, %s", cidr[1])
-		return
-	}
+	AddDns := flags["AddDns"]
+	log.Info("Updating the config file")
+	var cidr []string
+	var ipMask int
+	var err error
+
 	updateTunIpv4Payload := make(map[string]interface{})
-	updateTunIpv4Payload["TunIPv4"] = cidr[0]
-	updateTunIpv4Payload["TunIPv4Mask"] = cidr[1]
+	if CIDRstring != "" {
+		cidr = strings.Split(CIDRstring.(string), "/")
+		if len(cidr) != 2 {
+			log.Error("Incorrect cidr")
+		}
+		ipMask, err = strconv.Atoi(cidr[1])
+		if err != nil {
+			log.Errorf("Incorrect ipv4 mask, %s", cidr[1])
+			return
+		}
+		updateTunIpv4Payload["TunIPv4"] = cidr[0]
+		updateTunIpv4Payload["TunIPv4Mask"] = cidr[1]
+	}
+	if AddDns != "" {
+		var addDnsBool bool
+		addDnsBool, err = strconv.ParseBool(AddDns.(string))
+
+		if err != nil {
+			log.Errorf("Incorrect addDns %v", err)
+			return
+		}
+		updateTunIpv4Payload["AddDns"] = addDnsBool
+	}
+
 	UPDATE_TUN_IPV4.Payload = updateTunIpv4Payload
 	log.Debugf("updateTunIpv4 Payload %v", UPDATE_TUN_IPV4)
 	
@@ -78,7 +96,7 @@ func UpdateConfigIPSubnet(args []string, flags map[string]interface{}) {
 
 	if !status {
 		log.Infof("Updating ip and mask in the config file. Manual restart is required")
-		err = service.UpdateRuntimeStateIpv4(true, cidr[0], ipMask)
+		err = service.UpdateRuntimeStateIpv4(true, cidr[0], ipMask, AddDns.(string))
 		if err != nil {
 			log.Errorf("Unable to set Tun ip and mask, %v", err)
 			return
