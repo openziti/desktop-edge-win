@@ -96,7 +96,11 @@ func UpdateConfigIPSubnet(args []string, flags map[string]interface{}) {
 
 	if !status {
 		log.Infof("Updating ip and mask in the config file. Manual restart is required")
-		err = service.UpdateRuntimeStateIpv4(true, cidr[0], ipMask, AddDns.(string))
+		var tunIpv4 string
+		if len(cidr) == 2 {
+			tunIpv4 = cidr[0]
+		}
+		err = service.UpdateRuntimeStateIpv4(true, tunIpv4, ipMask, AddDns.(string))
 		if err != nil {
 			log.Errorf("Unable to set Tun ip and mask, %v", err)
 			return
