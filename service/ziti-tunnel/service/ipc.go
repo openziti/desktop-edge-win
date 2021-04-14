@@ -120,9 +120,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	log.Debug("shutting down. start a ZitiDump")
 	for _, id := range rts.ids {
 		if id.CId != nil {
-			sb := strings.Builder{}
-			cziti.ZitiDumpOnShutdown(id.CId, &sb)
-			log.Infof("working around the c sdk's limitation of embedding newlines on calling ziti_shutdown\n %s", sb.String())
+			cziti.ZitiDumpOnShutdown(id.CId)
 		}
 	}
 	log.Debug("shutting down. ZitiDump complete")
@@ -130,9 +128,9 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	requestShutdown("service shutdown")
 
 	// signal to any connected consumers that the service is shutting down normally
-	events.broadcast <- dto.StatusEvent{
+	rts.BroadcastEvent(dto.StatusEvent{
 		Op: "shutdown",
-	}
+	})
 
 	// wait 1 second for the shutdown to send to clients
 	shutdownDelay := make(chan bool)
@@ -142,13 +140,13 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	}()
 	<-shutdownDelay
 
+	windns.RemoveAllNrptRules()
+
 	log.Infof("shutting down connections...")
 	pipes.shutdownConnections()
 
 	log.Infof("shutting down events...")
 	events.shutdown()
-
-	windns.RemoveAllNrptRules()
 
 	log.Infof("Removing existing interface: %s", TunName)
 	wt, err := tun.WintunPool.OpenAdapter(TunName)
@@ -283,10 +281,12 @@ func initialize(cLogLevel int) error {
 	dnsIpAsUint32 := binary.BigEndian.Uint32(ipnet.IP)
 	cziti.InitTunnelerDns(dnsIpAsUint32, len(ipnet.Mask))
 
-	assignedIp, t, err := rts.CreateTun(rts.state.TunIpv4, rts.state.TunIpv4Mask)
+	assignedIp, t, err := rts.CreateTun(rts.state.TunIpv4, rts.state.TunIpv4Mask, rts.state.AddDns)
 	if err != nil {
 		return err
 	}
+
+	cziti.SetInterfaceMetric(TunName, 255)
 
 	cziti.Start(rts, rts.state.TunIpv4, rts.state.TunIpv4Mask, cLogLevel)
 	err = cziti.HookupTun(*t)
@@ -697,8 +697,9 @@ func serveEvents(conn net.Conn) {
 	log.Debugf("accepting a new client for serveEvents. total connection count: %d", eventsConnections)
 
 	consumer := make(chan interface{}, 8)
-	events.register(randomInt, consumer)
-	defer events.unregister(randomInt)
+	id := fmt.Sprintf("serveEvents:%d", randomInt)
+	events.register(id, consumer)
+	defer events.unregister(id)
 
 	w := bufio.NewWriter(conn)
 	o := json.NewEncoder(w)
@@ -720,17 +721,27 @@ loop:
 	for {
 		select {
 		case msg := <-consumer:
-			err := o.Encode(msg)
-			if err != nil {
-				log.Debugf("exiting from serveEvents - %v", err)
+			log.Tracef("sending event to id: %s [%v]", id, msg)
+			eerr := o.Encode(msg)
+			if eerr != nil {
+				log.Warnf("exiting from serveEvents due to error: %v", eerr)
 				break loop
 			}
-			_ = w.Flush()
+			ferr := w.Flush()
+			if ferr != nil {
+				log.Warnf("flush error: %v", ferr)
+				return
+			}
+			log.Tracef("sent event to id: %s [%v]", id, msg)
 		case <-interrupt:
 			break loop
 		}
 	}
 	log.Info("a connected event client has disconnected")
+}
+
+func writerFlush(writer bufio.Writer) {
+	writer.Flush()
 }
 
 func reportStatus(out *json.Encoder) {
@@ -739,6 +750,7 @@ func reportStatus(out *json.Encoder) {
 		Status:  &s,
 		Metrics: nil,
 	})
+
 	log.Debugf("request for status responded to")
 }
 
@@ -916,11 +928,11 @@ func connectIdentity(id *Id) {
 			return true
 		})
 
-		events.broadcast <- dto.IdentityEvent{
+		rts.BroadcastEvent(dto.IdentityEvent{
 			ActionEvent: dto.IDENTITY_ADDED,
 			Id:          id.Identity,
-		}
-		log.Infof("connecting identity completed: %s[%s]", id.Name, id.FingerPrint)
+		})
+		log.Infof("connecting identity completed: %s[%s] %t/%t", id.Name, id.FingerPrint, id.MfaEnabled, id.MfaNeeded)
 	}
 }
 
@@ -1018,13 +1030,48 @@ func acceptServices() {
 		select {
 		case <-shutdown:
 			return
-		case serviceChange := <-cziti.ServiceChanges:
-			log.Debugf("processing service change event. id:%s name:%s", serviceChange.Service.Id, serviceChange.Service.Name)
-			change := dto.ServiceEvent(serviceChange)
-			events.broadcast <- change
-			log.Debugf("dispatched %s service change event", serviceChange.Op)
+		case bulkServiceChange := <-cziti.BulkServiceChanges:
+			log.Debugf("processing a bulk service change event. Hostnames to add/remove:[%d/%d] service notifications added/removed: [%d/%d]",
+				len(bulkServiceChange.HostnamesToAdd),
+				len(bulkServiceChange.HostnamesToRemove),
+				len(bulkServiceChange.ServicesToAdd),
+				len(bulkServiceChange.ServicesToRemove))
+			handleBulkServiceChange(bulkServiceChange)
 		}
 	}
+}
+
+func handleBulkServiceChange(sc cziti.BulkServiceChange) {
+	if len(sc.HostnamesToRemove) > 0 {
+		log.Debug("removing rules from NRPT")
+		windns.RemoveNrptRules(sc.HostnamesToRemove)
+		log.Info("removed NRPT rules for: %v", sc.HostnamesToRemove)
+	} else {
+		log.Debug("bulk service change had no hostnames to remove")
+	}
+
+	if len(sc.HostnamesToAdd) > 0 {
+		log.Debug("adding rules to NRPT")
+		windns.AddNrptRules(sc.HostnamesToAdd, rts.state.TunIpv4)
+		log.Infof("mapped the following hostnames: %v", sc.HostnamesToAdd)
+	}
+
+	be := dto.BulkServiceEvent{
+		ActionEvent:     dto.SERVICE_BULK,
+		Fingerprint:     sc.Fingerprint,
+		AddedServices:   sc.ServicesToAdd,
+		RemovedServices: sc.ServicesToRemove,
+	}
+
+	rts.BroadcastEvent(be)
+
+	var m = dto.IdentityEvent{
+		ActionEvent: dto.IdentityUpdateComplete,
+		Id: dto.Identity{
+			FingerPrint: sc.Fingerprint,
+		},
+	}
+	rts.BroadcastEvent(m)
 }
 
 func handleEvents(isInitialized chan struct{}) {
@@ -1042,17 +1089,25 @@ func handleEvents(isInitialized chan struct{}) {
 		case <-every5s.C:
 			s := rts.ToMetrics()
 
-			events.broadcast <- dto.MetricsEvent{
+			rts.BroadcastEvent(dto.MetricsEvent{
 				StatusEvent: dto.StatusEvent{Op: "metrics"},
 				Identities:  s.Identities,
-			}
+			})
 		}
 	}
 }
 
 //Removes the Config from the provided identity and returns a 'cleaned' id
 func Clean(src *Id) dto.Identity {
-	log.Tracef("cleaning identity: %s %v %v", src.Name, src.CId.MfaNeeded, src.CId.MfaEnabled)
+	mfaNeeded := false
+	mfaEnabled := false
+
+	if src.CId != nil {
+		mfaNeeded = src.CId.MfaNeeded
+		mfaEnabled = src.CId.MfaEnabled
+	}
+
+	log.Tracef("cleaning identity: %s", src.Name, mfaNeeded, mfaEnabled)
 	AddMetrics(src)
 	nid := dto.Identity{
 		Name:              src.Name,
@@ -1061,8 +1116,8 @@ func Clean(src *Id) dto.Identity {
 		Config:            idcfg.Config{},
 		ControllerVersion: src.ControllerVersion,
 		Status:            "",
-		MfaNeeded:         src.CId.MfaNeeded,
-		MfaEnabled:        src.CId.MfaEnabled,
+		MfaNeeded:         mfaNeeded,
+		MfaEnabled:        mfaEnabled,
 		Services:          make([]*dto.Service, 0),
 		Metrics:           src.Metrics,
 		Tags:              nil,
@@ -1105,10 +1160,10 @@ func authMfa(out *json.Encoder, fingerprint string, code string) {
 
 // when the log level is updated through command line, the message is broadcasted to UI and update service as well
 func sendLogLevelAndNotify(enc *json.Encoder, loglevel string) {
-	events.broadcast <- dto.LogLevelEvent{
+	rts.BroadcastEvent(dto.LogLevelEvent{
 		ActionEvent: dto.LOGLEVEL_CHANGED,
 		LogLevel:    loglevel,
-	}
+	})
 	message := fmt.Sprintf("Loglevel %s is sent to the events channel", loglevel)
 	log.Info(message)
 	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: message}
@@ -1119,10 +1174,10 @@ func sendLogLevelAndNotify(enc *json.Encoder, loglevel string) {
 func sendIdentityAndNotifyUI(enc *json.Encoder, fingerprint string) {
 	for _, id := range rts.ids {
 		if id.FingerPrint == fingerprint {
-			events.broadcast <- dto.IdentityEvent{
+			rts.BroadcastEvent(dto.IdentityEvent{
 				ActionEvent: dto.IDENTITY_ADDED,
 				Id:          id.Identity,
-			}
+			})
 			message := fmt.Sprintf("Identity %s - %s updated message is sent to the events channel", id.Identity.Name, id.Identity.FingerPrint)
 			log.Info(message)
 			resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: message}

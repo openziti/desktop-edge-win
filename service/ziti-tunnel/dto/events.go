@@ -18,23 +18,25 @@ package dto
 
 const (
 	ADDED   = "added"
+	BULK    = "bulk"
 	REMOVED = "removed"
 	ERROR   = "error"
 	UPDATED = "updated"
-	CHANGED     = "changed"
-	NORMAL      = "Normal"
+	CHANGED = "changed"
+	NORMAL  = "Normal"
 
-	SERVICE_OP  = "service"
-	IDENTITY_OP = "identity"
-	LOGLEVEL_OP = "logLevel"
-	FEEDBACK_OP = "CaptureLogs"
-	MFA_OP      = "mfa"
+	SERVICE_OP      = "service"
+	BULK_SERVICE_OP = "bulkservice"
+	IDENTITY_OP     = "identity"
+	LOGLEVEL_OP     = "logLevel"
+	FEEDBACK_OP     = "CaptureLogs"
+	MFA_OP          = "mfa"
 
-	MFAEnrollmentChallengAtion		= "enrollment_challenge"
-	MFAEnrollmentVerificationAction	= "enrollment_verification"
-	MFAEnrollmentRemovedAction		= "enrollment_remove"
+	MFAEnrollmentChallengAtion      = "enrollment_challenge"
+	MFAEnrollmentVerificationAction = "enrollment_verification"
+	MFAEnrollmentRemovedAction      = "enrollment_remove"
 
-	MFA_AUTH_CHALLENGE_ACTION   = "auth_challenge"
+	MFA_AUTH_CHALLENGE_ACTION = "auth_challenge"
 )
 
 var SERVICE_ADDED = ActionEvent{
@@ -44,6 +46,10 @@ var SERVICE_ADDED = ActionEvent{
 var SERVICE_REMOVED = ActionEvent{
 	StatusEvent: StatusEvent{Op: SERVICE_OP},
 	Action:      REMOVED,
+}
+var SERVICE_BULK = ActionEvent{
+	StatusEvent: StatusEvent{Op: BULK_SERVICE_OP},
+	Action:      BULK,
 }
 
 var IDENTITY_ADDED = ActionEvent{

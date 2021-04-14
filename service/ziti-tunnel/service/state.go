@@ -21,6 +21,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/sys/windows"
 	"io"
 	"io/ioutil"
 	"net"
@@ -174,6 +175,7 @@ func (t *RuntimeState) ToStatus(onlyInitialized bool) dto.TunnelStatus {
 		ServiceVersion: Version,
 		TunIpv4:        t.state.TunIpv4,
 		TunIpv4Mask:    t.state.TunIpv4Mask,
+		AddDns:         t.state.AddDns,
 	}
 
 	i := 0
@@ -205,6 +207,9 @@ func (t *RuntimeState) ToMetrics() dto.TunnelStatus {
 			Name:        id.Name,
 			FingerPrint: id.FingerPrint,
 			Metrics:     id.Metrics,
+			Active:      id.Active,
+			MfaEnabled:  id.MfaEnabled,
+			MfaNeeded:   id.MfaNeeded,
 		}
 		i++
 	}
@@ -212,7 +217,7 @@ func (t *RuntimeState) ToMetrics() dto.TunnelStatus {
 	return clean
 }
 
-func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, *tun.Device, error) {
+func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int, applyDns bool) (net.IP, *tun.Device, error) {
 	log.Infof("creating TUN device: %s", TunName)
 	tunDevice, err := tun.CreateTUN(TunName, 64*1024-1)
 	if err == nil {
@@ -255,14 +260,6 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, *tun.Device
 		return nil, nil, fmt.Errorf("failed to set IP address to %v: (%v)", ip, err)
 	}
 
-	dnsServers := []net.IP{ip}
-
-	log.Infof("adding DNS servers to TUN: %s", dnsServers)
-	err = luid.AddDNS(dnsServers)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to add DNS addresses: (%v)", err)
-	}
-
 	log.Info("checking TUN dns servers")
 	dns, err := luid.DNS()
 	if err != nil {
@@ -276,6 +273,11 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int) (net.IP, *tun.Device
 		return nil, nil, fmt.Errorf("failed to SetRoutes: (%v)", err)
 	}
 	log.Info("routing applied")
+
+	if applyDns {
+		//for windows 10+, could 'domains' be able to replace NRPT? dunno - didn't test it
+		luid.SetDNS(windows.AF_INET, []net.IP{ip}, nil)
+	}
 
 	return ip, t.tun, nil
 }
@@ -317,12 +319,14 @@ func (t *RuntimeState) LoadIdentity(id *Id, refreshInterval int) {
 		if !found {
 			t.ids[id.FingerPrint] = id //add this identity to the list of known ids
 		}
+		id.MfaEnabled = id.CId.MfaEnabled
+		id.MfaNeeded = id.CId.MfaNeeded
 
-		events.broadcast <- dto.IdentityEvent{
+		rts.BroadcastEvent(dto.IdentityEvent{
 			ActionEvent: dto.IDENTITY_ADDED,
 			Id:          id.Identity,
-		}
-		log.Infof("connecting identity completed: %s[%s]", id.Name, id.FingerPrint)
+		})
+		log.Infof("connecting identity completed: %s[%s] %t/%t", id.Name, id.FingerPrint, id.MfaEnabled, id.MfaNeeded)
 	}
 
 	id.CId = cziti.NewZid(sc)
@@ -564,6 +568,9 @@ func (t *RuntimeState) ReleaseIP() {
 }
 
 func (t *RuntimeState) BroadcastEvent(event interface{}) {
+	if len(events.broadcast) == cap(events.broadcast) {
+		log.Warn("event channel is full and is about to block!")
+	}
 	events.broadcast <- event
 }
 

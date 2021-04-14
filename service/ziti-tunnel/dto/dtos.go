@@ -119,6 +119,7 @@ type TunnelStatus struct {
 	TunIpv4        string
 	TunIpv4Mask    int
 	Status         string
+	AddDns         bool
 }
 
 type ServiceVersion struct {
@@ -152,10 +153,11 @@ type MetricsEvent struct {
 	Identities []*Identity
 }
 
-type ServiceEvent struct {
+type BulkServiceEvent struct {
 	ActionEvent
-	Fingerprint string
-	Service     *Service
+	Fingerprint     string
+	AddedServices   []*Service
+	RemovedServices []*Service
 }
 
 type IdentityEvent struct {

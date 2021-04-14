@@ -31,6 +31,8 @@ namespace ZitiDesktopEdge {
 	public partial class MFAScreen : UserControl {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
+		public delegate void LoadEvent(bool isComplete, string title, string message);
+		public event LoadEvent OnLoad;
 		public delegate void CloseAction(bool isComplete);
 		public event CloseAction OnClose;
 		private string _url = "";
@@ -83,10 +85,14 @@ namespace ZitiDesktopEdge {
 			this._identity = identity;
 			MFAImage.Visibility = Visibility.Visible;
 			SecretCode.Visibility = Visibility.Collapsed;
+			CloseBlack.Visibility = Visibility.Visible;
+			CloseWhite.Visibility = Visibility.Collapsed;
 			SecretButton.Content = "Show Secret";
 			IdName.Content = identity.Name;
 			Logger.Debug($"MFA Url: {url}");
-			
+			AuthBrush.Visibility = Visibility.Collapsed;
+			MainBrush.Visibility = Visibility.Visible;
+
 			MFAImage.Source = CreateQRFromUrl(url);
 			SecretCode.Text = secret;
 
@@ -107,24 +113,39 @@ namespace ZitiDesktopEdge {
 			MFARecoveryArea.Visibility = Visibility.Visible;
 			RecoveryList.Children.Clear();
 			_codes = codes;
+			AuthBrush.Visibility = Visibility.Collapsed;
+			MainBrush.Visibility = Visibility.Visible;
+			CloseBlack.Visibility = Visibility.Visible;
+			CloseWhite.Visibility = Visibility.Collapsed;
 			MFAArea.Height = 380;
-			for (int i=0; i<codes.Length; i++) {
-				TextBox label = new TextBox();
-				label.Text = codes[i];
-				label.BorderThickness = new Thickness(0);
-				label.Background = new SolidColorBrush();
-				label.Background.Opacity = 0;
-				label.HorizontalAlignment = HorizontalAlignment.Center;
-				label.HorizontalContentAlignment = HorizontalAlignment.Center;
-				label.VerticalAlignment = VerticalAlignment.Center;
-				label.VerticalContentAlignment = VerticalAlignment.Center;
-				RecoveryList.Children.Add(label);
+			if (codes.Length>0) {
+				for (int i = 0; i < codes.Length; i++) {
+					TextBox label = new TextBox();
+					label.Text = codes[i];
+					label.BorderThickness = new Thickness(0);
+					label.Background = new SolidColorBrush();
+					label.Background.Opacity = 0;
+					label.HorizontalAlignment = HorizontalAlignment.Center;
+					label.HorizontalContentAlignment = HorizontalAlignment.Center;
+					label.VerticalAlignment = VerticalAlignment.Center;
+					label.VerticalContentAlignment = VerticalAlignment.Center;
+					RecoveryList.Children.Add(label);
+				}
+				RecoveryList.Visibility = Visibility.Visible;
+				NoRecovery.Visibility = Visibility.Collapsed;
+			} else {
+				RecoveryList.Visibility = Visibility.Collapsed;
+				NoRecovery.Visibility = Visibility.Visible;
 			}
 		}
 
 		public void ShowMFA(ZitiIdentity identity, int type) {
 			this.Type = type;
 			AuthCode.Text = "";
+			AuthBrush.Visibility = Visibility.Visible;
+			MainBrush.Visibility = Visibility.Collapsed;
+			CloseBlack.Visibility = Visibility.Collapsed;
+			CloseWhite.Visibility = Visibility.Visible;
 			this._identity = identity;
 			MFASetupArea.Visibility = Visibility.Collapsed;
 			MFARecoveryArea.Visibility = Visibility.Collapsed;
@@ -152,21 +173,6 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-		private void ToggleRecovery(object sender, MouseButtonEventArgs e) {
-			AuthCode.Text = "";
-			if (AuthCode.MaxLength==6) {
-				GenerateMFACodes(null, null);
-				AuthCode.MaxLength = 8;
-				ToggleType.Content = "Use Auth Code";
-				AuthSubTitle.Content = "Enter a recovery code";
-				AuthCode.Focus();
-			} else {
-				AuthCode.MaxLength = 6;
-				ToggleType.Content = "Use Recovery Code";
-				AuthSubTitle.Content = "Enter your authorization code";
-				AuthCode.Focus();
-			}
-		}
 		async private void ReturnMFACodes(object sender, MouseButtonEventArgs e) {
 			DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
 			string code = AuthCode.Text;
@@ -214,17 +220,14 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-		async private void DoAuthenticate(object sender, MouseButtonEventArgs e) {
+		async private void DoAuthenticate() {
 			if (!this._executing) {
+
 				this._executing = true;
 				string code = AuthCode.Text;
-				if (AuthCode.MaxLength == 8) {
-					if (code.Length != 8) this.ShowError("You must enter a valid recovery code");
-				} else {
-					if (code.Length != 6) this.ShowError("You must enter a valid code");
-				}
 
 				DataClient serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
+				this.OnLoad?.Invoke(false, "Authentication", "One Moment Please...");
 				if (this.Type == 1) {
 					SvcResponse authResult = await serviceClient.AuthMFA(this._identity.Fingerprint, code);
 					if (authResult?.Code != 0) {
@@ -238,6 +241,7 @@ namespace ZitiDesktopEdge {
 						this.OnClose?.Invoke(true);
 						this._executing = false;
 					}
+					this.OnLoad?.Invoke(true, "", "");
 				} else if (this.Type == 2) {
 					MfaRecoveryCodesResponse codeResponse = await serviceClient.ReturnMFACodes(this._identity.Fingerprint, code);
 					if (codeResponse?.Code != 0) {
@@ -250,6 +254,7 @@ namespace ZitiDesktopEdge {
 						this.OnClose?.Invoke(true);
 						this._executing = false;
 					}
+					this.OnLoad?.Invoke(true, "", "");
 				} else if (this.Type == 3) {
 					SvcResponse authResult = await serviceClient.RemoveMFA(this._identity.Fingerprint, code);
 					if (authResult?.Code != 0) {
@@ -261,6 +266,7 @@ namespace ZitiDesktopEdge {
 						this.OnClose?.Invoke(true);
 						this._executing = false;
 					}
+					this.OnLoad?.Invoke(true, "", "");
 				} else if (this.Type == 4) {
 					MfaRecoveryCodesResponse codeResponse = await serviceClient.GenerateMFACodes(this._identity.Fingerprint, code);
 					if (codeResponse?.Code != 0) {
@@ -273,6 +279,7 @@ namespace ZitiDesktopEdge {
 						this.OnClose?.Invoke(true);
 						this._executing = false;
 					}
+					this.OnLoad?.Invoke(true, "", "");
 				}
 			}
 		}
@@ -301,7 +308,7 @@ namespace ZitiDesktopEdge {
 
 		private void AuthCode_KeyUp(object sender, KeyEventArgs e) {
 			if (e.Key == Key.Return) {
-				DoAuthenticate(sender, null);
+				DoAuthenticate();
 			}
 		}
 	}

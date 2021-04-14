@@ -35,7 +35,7 @@ func Ipv4Inc(ip net.IP, maskBits int) net.IP {
 
 	newIpAsInt := ipAsInt + 1
 
-	return Uint32ToIpv4(baseIp + newIpAsInt & uint32(ipMask))
+	return Uint32ToIpv4(baseIp + newIpAsInt&uint32(ipMask))
 }
 func Ipv4ToUint32(ip net.IP) uint32 {
 	if len(ip) == 16 {

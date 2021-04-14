@@ -2,10 +2,10 @@ package cli
 
 import (
 	"strings"
-	"strconv"
-	"golang.org/x/sys/windows/svc"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/service"
+    "strconv"
+    "golang.org/x/sys/windows/svc"
+    "github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
+    "github.com/openziti/desktop-edge-win/service/ziti-tunnel/service"
 )
 
 //GetIdentities is to fetch identities through cmdline
@@ -101,3 +101,4 @@ func UpdateConfigIPSubnet(args []string, flags map[string]interface{}) {
 	}
 
 }
+

@@ -115,5 +115,17 @@ namespace ZitiDesktopEdge {
 		private void MFAAuthenticate(object sender, MouseButtonEventArgs e) {
 			this.Authenticate?.Invoke(_identity);
 		}
+
+		private void ToggledSwitch(object sender, MouseButtonEventArgs e) {
+			ToggleSwitch.Toggle();
+		}
+
+		private void DoMFAOrOpen(object sender, MouseButtonEventArgs e) {
+			if (MfaRequired.Visibility==Visibility.Visible) {
+				MFAAuthenticate(sender, e);
+			} else {
+				OpenDetails(sender, e);
+			}
+		}
 	}
 }

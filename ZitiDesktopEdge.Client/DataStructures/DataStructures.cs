@@ -264,7 +264,11 @@ namespace ZitiDesktopEdge.DataStructures {
         public int Prefix { get; set; }
 
         public override string ToString() {
-            return Hostname;
+            if (IsHost) {
+                return Hostname;
+            } else {
+                return IP + "/" + Prefix;
+            }
         }
     }
 
@@ -333,6 +337,7 @@ namespace ZitiDesktopEdge.DataStructures {
         public string LogLevel { get; set; }
 
         public ServiceVersion ServiceVersion { get; set; }
+        public bool AddDns { get; set; }
 
         public void Dump(System.IO.TextWriter writer)
         {
@@ -408,10 +413,15 @@ namespace ZitiDesktopEdge.DataStructures {
         public List<Identity> Identities { get; set; }
     }
 
-    public class ServiceEvent : ActionEvent
-    {
+    public class ServiceEvent : ActionEvent {
         public string Fingerprint { get; set; }
         public Service Service { get; set; }
+    }
+
+    public class BulkServiceEvent : ActionEvent {
+        public string Fingerprint { get; set; }
+        public List<Service> AddedServices { get; set; }
+        public List<Service> RemovedServices { get; set; }
     }
 
     public class IdentityEvent : ActionEvent

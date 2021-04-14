@@ -1,4 +1,37 @@
-# Release 1.9.1
+# Release 1.9.3
+
+## What's New
+* Page Service List
+* Sort Service on Identity Details Page
+* Consistent UX for MFA Screens
+
+## Other changes:
+* Service to UI interaction is now with one bulk update of services instead of one event per service update
+* Added a configuration option to control if DNS is applied to the TUN. Some users are having issues with NRPT-only working. For now we'll add a boolean that allows the user to control if DNS should be added to the TUN
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* none
+
+# Release 1.9.3
+
+## What's New
+* Page Service List
+* Sort Service on Identity Details Page
+* Consistent UX for MFA Screens
+
+## Other changes:
+* Service to UI interaction is now with one bulk update of services instead of one event per service update
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* none
+
+# Release 1.9.2
 
 ## What's New
 * [#322](https://github.com/openziti/desktop-edge-win/issues/322) Ability to toggle identity, set loglevel and generate feedback zip file from cmd line
@@ -7,10 +40,34 @@
 * none
 
 ## Bugs fixed:
-* none
+* [#346](https://github.com/openziti/desktop-edge-win/issues/346) Fixed the UI filtering of services on the Identity detail screen
+* [#348](https://github.com/openziti/desktop-edge-win/issues/348) IP addresses do not need to be added to the NRPT
+* [#349](https://github.com/openziti/desktop-edge-win/issues/349) Too many services can cause the NRPT update to fail
 
 ## Dependency Updates
 * none
+
+# Release 1.9.1
+
+## What's New
+* NRPT rules will be created matching all "Connection Specific Domains" discovered. This should allow for unqualified
+  names to be properly resolved
+* TUN will no longer have an assigned DNS server. This will prevent a large number of DNS requests from being sent to
+  the ZitiTUN to be proxied. Now only DNS requests matching an NRPT rule will land at the ZitiTUN DNS Server
+
+## Other changes:
+* After TUN creation the interface metric will be set to 255 to persuade Windows to send
+  all DNS requests to an interface that is not the TUN first
+* Removed dnscache.txt from feedback zip
+
+## Bugs fixed:
+* [#332](https://github.com/openziti/desktop-edge-win/issues/332) Logs from csdk/tunneler are missing
+* [#340](https://github.com/openziti/desktop-edge-win/issues/340) auth mfa verify icon is missing at ZDE startup
+* Fixed a bug where process posture checks were case sensitive
+
+## Dependency Updates
+* Tunneler SDK to v0.15.1(CSDK 0.22.0)
+* All go dependencies updated - numerous changes see commit log for details
 
 # Release 1.9.0
 

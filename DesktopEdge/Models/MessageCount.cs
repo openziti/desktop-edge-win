@@ -9,7 +9,7 @@ namespace ZitiDesktopEdge.Models {
 
 		public int Total { get; set; }
 		public string Message { get; set; }
-		public string ToString() {
+		public override string ToString() {
 			return Total + " " + Message;
 		}
 	}

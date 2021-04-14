@@ -20,6 +20,7 @@ package cli
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"strings"
@@ -81,18 +82,19 @@ func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan bool, fn fetchStatu
 		if tunnelStatus.Status != nil {
 			responseMsg := fn(args, tunnelStatus.Status, flags)
 			if responseMsg.Code == service.SUCCESS {
-				log.Info("\n" + responseMsg.Payload.(string) + "\n" + responseMsg.Message)
+				fmt.Println(responseMsg.Payload.(string))
+				fmt.Println(responseMsg.Message)
 				readDone <- true
 				return
 			} else {
 				if responseMsg.Error != "" {
-					log.Info(responseMsg.Error)
+					log.Error(responseMsg.Error)
 				} else {
 					log.Info(responseMsg.Message)
 				}
 			}
 		} else {
-			log.Errorf("Ziti tunnel retuned nil status")
+			log.Errorf("Ziti tunnel retuned status, %v", tunnelStatus)
 		}
 	}
 
@@ -118,13 +120,13 @@ func readMessageFromPipe(ipcPipeConn net.Conn, readDone chan bool, fn fetchStatu
 				return
 			} else {
 				if responseMsg.Error != "" {
-					log.Info(responseMsg.Error)
+					log.Error(responseMsg.Error)
 				} else {
 					log.Info(responseMsg.Message)
 				}
 			}
 		} else {
-			log.Errorf("Ziti tunnel retuned nil response")
+			log.Errorf("Ziti tunnel retuned nil response message, %v", response)
 		}
 	}
 
@@ -142,7 +144,7 @@ func GetDataFromIpcPipe(commandMsg *dto.CommandMsg, fn fetchStatusFromRTS, respo
 
 	if err != nil {
 		log.Errorf("Connection to ipc pipe is not established, %v", err)
-		log.Errorf("Ziti Desktop Edge app may not be running")
+		log.Fatal("Ziti Desktop Edge app may not be running")
 		return false
 	}
 	readDone := make(chan bool)
@@ -241,7 +243,7 @@ func readMessageFromMonitorPipe(ipcPipeConn net.Conn, readDone chan bool, args [
 		readDone <- true
 		return
 	} else {
-		log.Info(monitorServiceResponse.Error)
+		log.Error(monitorServiceResponse.Error)
 	}
 
 	readDone <- false
