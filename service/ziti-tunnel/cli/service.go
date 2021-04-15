@@ -21,6 +21,7 @@ import (
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"strconv"
 	"strings"
+	"net"
 )
 
 //GetIdentities is to fetch identities through cmdline
@@ -75,27 +76,20 @@ func UpdateConfigIPSubnet(args []string, flags map[string]interface{}) {
 	CIDRstring := flags["CIDR"]
 	AddDns := flags["AddDns"]
 	log.Info("Updating the config file")
-	var cidr []string
-	var ipMask int
-	var err error
 
 	updateTunIpv4Payload := make(map[string]interface{})
 	if CIDRstring != "" {
-		cidr = strings.Split(CIDRstring.(string), "/")
-		if len(cidr) != 2 {
-			log.Error("Incorrect cidr")
-		}
-		ipMask, err = strconv.Atoi(cidr[1])
+		ip, ipnet, err := net.ParseCIDR(CIDRstring.(string))
 		if err != nil {
-			log.Errorf("Incorrect ipv4 mask, %s", cidr[1])
-			return
+			log.Error("Incorrect cidr %s", CIDRstring.(string))
 		}
-		updateTunIpv4Payload["TunIPv4"] = cidr[0]
+		ipMask, _ := ipnet.Mask.Size()
+
+		updateTunIpv4Payload["TunIPv4"] = ip
 		updateTunIpv4Payload["TunIPv4Mask"] = ipMask
 	}
 	if AddDns != "" {
-		var addDnsBool bool
-		addDnsBool, err = strconv.ParseBool(AddDns.(string))
+		addDnsBool, err := strconv.ParseBool(AddDns.(string))
 
 		if err != nil {
 			log.Errorf("Incorrect addDns %v", err)

@@ -405,7 +405,11 @@ func (t *RuntimeState) UpdateIpv4(ipv4 string) {
 
 func UpdateRuntimeStateIpv4(ip string, ipv4Mask int, addDns string) error {
 
-	log.Infof("ip and mask %s %d", ip, ipv4Mask)
+	log.Infof("updating configuration ip: %s, mask: %d, dns: %t", ip, ipv4Mask, addDns)
+
+	if ipv4Mask < constants.Ipv4MaxMask || ipv4Mask > constants.Ipv4MinMask {
+		return errors.New(fmt.Sprintf("ipv4Mask should be between %d and %d", constants.Ipv4MaxMask, constants.Ipv4MinMask))
+	}
 
 	if addDns != "" {
 		addDnsBool, err := strconv.ParseBool(addDns)
