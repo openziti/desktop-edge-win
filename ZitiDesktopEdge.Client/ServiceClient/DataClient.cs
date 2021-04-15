@@ -390,6 +390,30 @@ namespace ZitiDesktopEdge.ServiceClient {
             return;
         }
 
+        async public Task<SvcResponse> UpdateConfigAsync(string tunIPv4, int tunIPv4Mask, bool addDns) {
+            SvcResponse resp = null;
+            try {
+
+                ConfigUpdateFunction configPayload = new ConfigUpdateFunction(tunIPv4, tunIPv4Mask, addDns);
+
+                await sendAsync(configPayload);
+                resp = await readAsync<SvcResponse>(ipcReader);
+                Logger.Debug("config update payload is sent to the ziti tunnel");
+            } catch (Exception ex) {
+                //almost certainly a problem with the pipe - recreate the pipe...
+                //setupPipe();
+                //throw;
+                Logger.Error(ex, "Unexpected error");
+                CommunicationError(ex);
+                throw ex;
+            }
+            if (resp?.Code != 0) {
+                Logger.Warn("failed to update the config. {0} {1}", resp.Message, resp.Error);
+                throw new ServiceException("Failed to update the config", resp.Code, "Un expected error.");
+            }
+            return resp;
+        }
+
         async public Task<ZitiTunnelStatus> debugAsync() {
             try {
                 await sendAsync(new ServiceFunction() { Function = "Debug" });

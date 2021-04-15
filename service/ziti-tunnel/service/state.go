@@ -29,7 +29,8 @@ import (
 	"path"
 	"strings"
 	"time"
-
+	"errors"
+	"strconv"
 	"github.com/openziti/desktop-edge-win/service/cziti"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/constants"
@@ -105,6 +106,7 @@ func backupConfig() (string, error) {
 	}
 	return backup, err
 }
+
 
 func (t *RuntimeState) ToStatus(onlyInitialized bool) dto.TunnelStatus {
 	var uptime int64
@@ -399,6 +401,36 @@ func (t *RuntimeState) UpdateIpv4Mask(ipv4mask int) {
 func (t *RuntimeState) UpdateIpv4(ipv4 string) {
 	rts.state.TunIpv4 = ipv4
 	rts.SaveState()
+}
+
+func UpdateRuntimeStateIpv4(ip string, ipv4Mask int, addDns string) error {
+
+	log.Infof("updating configuration ip: %s, mask: %d, dns: %t", ip, ipv4Mask, addDns)
+
+	if ipv4Mask < constants.Ipv4MaxMask || ipv4Mask > constants.Ipv4MinMask {
+		return errors.New(fmt.Sprintf("ipv4Mask should be between %d and %d", constants.Ipv4MaxMask, constants.Ipv4MinMask))
+	}
+
+	if addDns != "" {
+		addDnsBool, err := strconv.ParseBool(addDns)
+
+		if err != nil {
+			return errors.New(fmt.Sprintf("Incorrect addDns %v", err))
+		}
+
+		rts.state.AddDns = addDnsBool
+	}
+
+	// if ip is not empty, then we set both ip and mask
+	if ip != "" {
+		rts.state.TunIpv4 = ip
+		rts.state.TunIpv4Mask = ipv4Mask
+	}
+
+	rts.SaveState()
+	
+
+	return nil
 }
 
 // uses the registry to determine if IPv6 is enabled or disabled on this machine. If it is disabled an IPv6 DNS entry
