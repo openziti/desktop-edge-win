@@ -93,6 +93,21 @@
                     <local:MenuEditItem x:Name="ConfigSubnet" HorizontalAlignment="Stretch" Width="Auto" Label="Subnet Mask:"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigMtu" HorizontalAlignment="Stretch" Width="Auto" Label="MTU:"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigDns" HorizontalAlignment="Stretch" Width="Auto" Label="DNS Servers:"></local:MenuEditItem>
+
+                    <Label Content="ConfigIp" Padding="10,0,0,0" FontWeight="Bold" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
+                    <TextBox x:Name="ConfigIpNew" MaxWidth="300" Grid.Row="0" Background="Transparent" IsReadOnly="False" HorizontalAlignment="Stretch" Height="20" BorderThickness="1" TextAlignment="Left" Padding="0,0,0,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
+                    <Label Content="ConfigMask" Padding="10,0,0,0" FontWeight="Bold" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
+                    <TextBox x:Name="ConfigMaskNew" MaxWidth="300" Grid.Row="0" Background="Transparent" IsReadOnly="False" HorizontalAlignment="Stretch" Height="20" BorderThickness="1" TextAlignment="Left" Padding="0,0,0,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
+                    <Label Content="AddDns" Padding="10,0,0,0" FontWeight="Bold" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
+                    <TextBox x:Name="AddDnsNew" MaxWidth="300" Grid.Row="0" Background="Transparent" IsReadOnly="False" HorizontalAlignment="Stretch" Height="20" BorderThickness="1" TextAlignment="Left" Padding="0,0,0,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
+                    <Button Name="UpdateConfig" Height="40" Grid.Column="1" Margin="20,0,40,0" Width="260" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#0069FF" Content="Update Config" Click="UpdateConfig_Click" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="5"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+
                 </StackPanel>
                 <ScrollViewer Name="IdListScrollView" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" CanContentScroll="True" ClipToBounds="True" Visibility="Collapsed">
                     <StackPanel Name="IdListView" Orientation="Vertical" IsItemsHost="False"></StackPanel>

@@ -144,7 +144,7 @@ func GetDataFromIpcPipe(commandMsg *dto.CommandMsg, fn fetchStatusFromRTS, respo
 
 	if err != nil {
 		log.Errorf("Connection to ipc pipe is not established, %v", err)
-		log.Errorf("Ziti Desktop Edge app may not be running")
+		log.Fatal("Ziti Desktop Edge app may not be running")
 		return false
 	}
 	readDone := make(chan bool)

@@ -1,11 +1,26 @@
 package cli
 
+/*
+ * Copyright NetFoundry, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+ 
 import (
 	"strings"
     "strconv"
-    "golang.org/x/sys/windows/svc"
     "github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
-    "github.com/openziti/desktop-edge-win/service/ziti-tunnel/service"
 )
 
 //GetIdentities is to fetch identities through cmdline
@@ -95,31 +110,7 @@ func UpdateConfigIPSubnet(args []string, flags map[string]interface{}) {
 	status := GetDataFromIpcPipe(&UPDATE_TUN_IPV4, nil, GetResponseObjectFromRTS, args, nil)
 
 	if !status {
-		log.Infof("Updating ip and mask in the config file. Manual restart is required")
-		var tunIpv4 string
-		if len(cidr) == 2 {
-			tunIpv4 = cidr[0]
-		}
-		err = service.UpdateRuntimeStateIpv4(true, tunIpv4, ipMask, AddDns.(string))
-		if err != nil {
-			log.Errorf("Unable to set Tun ip and mask, %v", err)
-			return
-		}
-		log.Infof("ip and mask are set")
-	}
-
-	if status {
-		log.Infof("Attempting to restart ziti ")
-
-		err = service.ControlService(svc.Stop, svc.Stopped)
-		if (err != nil) {
-			log.Errorf("Unable to stop the service, %v", err)
-			return	
-		}
-		err = service.StartService()
-		if (err != nil) {
-			log.Errorf("Unable to start the service, %v", err)
-		}
+		log.Infof("Config can be updated only if the tunnel is started")
 	}
 
 }

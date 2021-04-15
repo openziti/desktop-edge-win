@@ -424,6 +424,23 @@ namespace ZitiDesktopEdge {
 			CheckForUpdate.IsEnabled = true;
 		}
 
+		async private void UpdateConfig_Click(object sender, RoutedEventArgs e) {
+			logger.Info("updating config...");
+			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+			try {
+				var newMaskVar = Int32.Parse(ConfigMaskNew.Text);
+				var addDnsNewVar = Convert.ToBoolean(AddDnsNew.Text);
+
+				var r = await client.UpdateConfigAsync(ConfigIpNew.Text, newMaskVar, addDnsNewVar);
+				logger.Info("Got response from update config task : {0}", r);
+			} catch (DataStructures.ServiceException se) {
+				logger.Error(se, "service exception in update check: {0}", se.Message);
+			}
+			catch (Exception ex) {
+				logger.Error(ex, "unexpected error in update check: {0}", ex.Message);
+			}
+		}
+
 		async private void TriggerUpdate_Click(object sender, RoutedEventArgs e) {
 			try {
 				CheckForUpdate.IsEnabled = false;

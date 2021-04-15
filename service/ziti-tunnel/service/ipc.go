@@ -640,13 +640,13 @@ func setLogLevel(out *json.Encoder, level string) {
 
 func updateTunIpv4(out *json.Encoder, ip string, ipMask int, addDns string) {
 
-	err := UpdateRuntimeStateIpv4(false, ip, ipMask, addDns)
+	err := UpdateRuntimeStateIpv4(ip, ipMask, addDns)
 	if err != nil {
 		respondWithError(out, "Could not set Tun ip and mask", UNKNOWN_ERROR, err)
 		return
 	}
 	
-	respond(out, dto.Response{Message: "TunIPv4 and mask is set", Code: SUCCESS, Error: "", Payload: ""})
+	respond(out, dto.Response{Message: "TunIPv4 and mask is set, Manual Restart is required", Code: SUCCESS, Error: "", Payload: ""})
 }
 
 func serveLogs(conn net.Conn) {
