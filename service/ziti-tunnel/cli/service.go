@@ -76,7 +76,7 @@ func UpdateConfigIPSubnet(args []string, flags map[string]interface{}) {
 			return
 		}
 		updateTunIpv4Payload["TunIPv4"] = cidr[0]
-		updateTunIpv4Payload["TunIPv4Mask"] = cidr[1]
+		updateTunIpv4Payload["TunIPv4Mask"] = ipMask
 	}
 	if AddDns != "" {
 		var addDnsBool bool

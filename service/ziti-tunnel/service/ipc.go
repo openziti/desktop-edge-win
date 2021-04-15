@@ -501,13 +501,14 @@ func serveIpc(conn net.Conn) {
 			rts.SaveState()
 		case "UpdateTunIpv4":
 			var tunIPv4 string
-			var tunIPv4Mask string
+			var tunIPv4Mask int
 			var addDns string
 			if cmd.Payload["TunIPv4"] != nil {
 				tunIPv4 = cmd.Payload["TunIPv4"].(string)
 			}
 			if cmd.Payload["TunIPv4Mask"] != nil {
-				tunIPv4Mask = cmd.Payload["TunIPv4Mask"].(string)
+				var tunIpv4Mask = cmd.Payload["TunIPv4Mask"].(float64)
+				tunIPv4Mask = int(tunIpv4Mask)
 			}
 			if cmd.Payload["AddDns"] != nil {
 				addDns = strconv.FormatBool(cmd.Payload["AddDns"].(bool))
@@ -637,19 +638,9 @@ func setLogLevel(out *json.Encoder, level string) {
 	respond(out, dto.Response{Message: "log level set", Code: SUCCESS, Error: "", Payload: nil})
 }
 
-func updateTunIpv4(out *json.Encoder, ip string, ipmask string, addDns string) {
-	var ipMask int
-	var err error
-	if ipmask != "" {
-		ipMask, err = strconv.Atoi(ipmask)
+func updateTunIpv4(out *json.Encoder, ip string, ipMask int, addDns string) {
 
-		if err != nil {
-			respondWithError(out, "Incorrect ipv4 mask", UNKNOWN_ERROR, err)
-			return
-		}
-	}
-
-	err = UpdateRuntimeStateIpv4(false, ip, ipMask, addDns)
+	err := UpdateRuntimeStateIpv4(false, ip, ipMask, addDns)
 	if err != nil {
 		respondWithError(out, "Could not set Tun ip and mask", UNKNOWN_ERROR, err)
 		return
