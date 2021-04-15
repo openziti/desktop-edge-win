@@ -407,23 +407,20 @@ func UpdateRuntimeStateIpv4(ip string, ipv4Mask int, addDns string) error {
 
 	log.Infof("ip and mask %s %d", ip, ipv4Mask)
 
-	var addDnsBool bool
-	var err error
 	if addDns != "" {
-		addDnsBool, err = strconv.ParseBool(addDns)
+		addDnsBool, err := strconv.ParseBool(addDns)
 
 		if err != nil {
 			return errors.New(fmt.Sprintf("Incorrect addDns %v", err))
 		}
+
+		rts.state.AddDns = addDnsBool
 	}
 
 	// if ip is not empty, then we set both ip and mask
 	if ip != "" {
 		rts.state.TunIpv4 = ip
 		rts.state.TunIpv4Mask = ipv4Mask
-	}
-	if addDns != "" {
-		rts.state.AddDns = addDnsBool
 	}
 
 	rts.SaveState()
