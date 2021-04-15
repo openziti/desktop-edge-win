@@ -67,7 +67,7 @@
                     <!-- Service List Area (Higher Contrast to differentiate) -->
                     <Grid Name="MainDetailScroll" Grid.Column="0" MaxHeight="160" Grid.Row="6" Margin="-8,0,-8,0">
                         <Rectangle Margin="10,10,10,10" Fill="#070826" RadiusY="10" RadiusX="10"></Rectangle>
-                        <ScrollViewer VerticalScrollBarVisibility="Visible" CanContentScroll="True" Margin="16,16,8,16">
+                        <ScrollViewer x:Name="ServiceScroller" VerticalScrollBarVisibility="Visible" CanContentScroll="True" Margin="16,16,8,16" ScrollChanged="Scrolled">
                             <StackPanel Name="ServiceList" Orientation="Vertical"></StackPanel>
                         </ScrollViewer>
                     </Grid>

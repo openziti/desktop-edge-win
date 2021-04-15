@@ -37,6 +37,7 @@ namespace ZitiDesktopEdge {
 		public event OnRecovery Recovery;
 		public int Page = 1;
 		public int PerPage = 50;
+		public int TotalPages = 1;
 		public string SortBy = "Name";
 		public string SortWay = "Asc";
 
@@ -156,8 +157,8 @@ namespace ZitiDesktopEdge {
 
 				if (Page==1) {
 					Pages.Items.Clear();
-					int totalPages = (total / PerPage) + 1;
-					for (int i = 1; i <= totalPages; i++) {
+					TotalPages = (total / PerPage) + 1;
+					for (int i = 1; i <= TotalPages; i++) {
 						ComboBoxItem item = new ComboBoxItem();
 						if (i == Page) item.IsSelected = true;
 						item.Content = i.ToString();
@@ -391,6 +392,42 @@ namespace ZitiDesktopEdge {
 				if (selected.Content.ToString() != SortWay) {
 					SortWay = selected.Content.ToString();
 					UpdateView();
+				}
+			}
+		}
+
+		private void Scrolled(object sender, ScrollChangedEventArgs e) {
+			var verticalOffset = ServiceScroller.VerticalOffset;
+			var maxVerticalOffset = ServiceScroller.ScrollableHeight; 
+
+			if (maxVerticalOffset < 0 ||
+				verticalOffset == maxVerticalOffset) {
+				if (Page < TotalPages) {
+					Page += 1;
+					int index = 0;
+					int total = 0;
+					ZitiService[] services = new ZitiService[0];
+					if (SortBy == "Name") services = _identity.Services.OrderBy(s => s.Name.ToLower()).ToArray();
+					else if (SortBy == "Address") services = _identity.Services.OrderBy(s => s.Addresses.ToString()).ToArray();
+					else if (SortBy == "Protocol") services = _identity.Services.OrderBy(s => s.Protocols.ToString()).ToArray();
+					else if (SortBy == "Port") services = _identity.Services.OrderBy(s => s.Ports.ToString()).ToArray();
+					if (SortWay == "Desc") services = services.Reverse().ToArray();
+					int startIndex = (Page - 1) * PerPage;
+					for (int i = startIndex; i < services.Length; i++) {
+						ZitiService zitiSvc = services[i];
+						total++;
+						if (index < 100) {
+							if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0) {
+								Logger.Trace("painting: " + zitiSvc.Name);
+								ServiceInfo info = new ServiceInfo();
+								info.Info = zitiSvc;
+								info.OnMessage += Info_OnMessage;
+								info.OnDetails += ShowDetails;
+								ServiceList.Children.Add(info);
+								index++;
+							}
+						}
+					}
 				}
 			}
 		}
