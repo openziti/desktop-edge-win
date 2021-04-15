@@ -16,11 +16,11 @@ package cli
  * limitations under the License.
  *
  */
- 
+
 import (
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
+	"strconv"
 	"strings"
-    "strconv"
-    "github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 )
 
 //GetIdentities is to fetch identities through cmdline
@@ -106,7 +106,7 @@ func UpdateConfigIPSubnet(args []string, flags map[string]interface{}) {
 
 	UPDATE_TUN_IPV4.Payload = updateTunIpv4Payload
 	log.Debugf("updateTunIpv4 Payload %v", UPDATE_TUN_IPV4)
-	
+
 	status := GetDataFromIpcPipe(&UPDATE_TUN_IPV4, nil, GetResponseObjectFromRTS, args, nil)
 
 	if !status {
@@ -114,4 +114,3 @@ func UpdateConfigIPSubnet(args []string, flags map[string]interface{}) {
 	}
 
 }
-

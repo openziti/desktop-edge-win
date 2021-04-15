@@ -57,11 +57,11 @@ func convertToServiceCli(svc dto.Service) dto.ServiceCli {
 	}
 
 	return dto.ServiceCli{
-		Name:          svc.Name,
-		Id:            svc.Id,
-		Protocols:     strings.Join(svc.Protocols, ","),
-		Ports:         cliPorts,
-		Addresses:     cliAddresses,
+		Name:      svc.Name,
+		Id:        svc.Id,
+		Protocols: strings.Join(svc.Protocols, ","),
+		Ports:     cliPorts,
+		Addresses: cliAddresses,
 	}
 }
 
@@ -240,4 +240,3 @@ func GetStatusFromRTS(args []string, status *dto.TunnelStatus, flags map[string]
 	}
 
 }
-
