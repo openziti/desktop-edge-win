@@ -20,6 +20,11 @@
                 <SolidColorBrush x:Name="ButtonBgColor" Color="#0069FF"/>
             </Rectangle.Fill>
         </Rectangle>
+        <Rectangle x:Name="ButtonBgDarken" Margin="40,0,40,0" Opacity="0.0" RadiusX="7" Grid.Row="8" RadiusY="7" ClipToBounds="True" Height="30" VerticalAlignment="Bottom" MouseUp="DoClick" Cursor="Hand" MouseEnter="Hover" MouseLeave="Leave" MouseDown="Down">
+            <Rectangle.Fill>
+                <SolidColorBrush Color="#000000"/>
+            </Rectangle.Fill>
+        </Rectangle>
         <Label x:Name="ButtonLabel" HorizontalAlignment="Center" IsHitTestVisible="False" Foreground="#FFFFFF" Grid.Row="8"></Label>
     </Grid>
 </UserControl>

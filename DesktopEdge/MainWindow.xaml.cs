@@ -531,7 +531,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void MainMenu_OnShowBlurb(string message) {
-			_ = ShowBlurbAsync(message, "");
+			_ = ShowBlurbAsync(message, "", "info");
 		}
 
 		private void ServiceClient_OnBulkServiceEvent(object sender, BulkServiceEvent e) {
@@ -1297,7 +1297,14 @@ namespace ZitiDesktopEdge {
 		/// </summary>
 		/// <param name="message">The message to show</param>
 		/// <param name="url">The url or action name to execute</param>
-		public async Task ShowBlurbAsync(string message, string url) {
+		public async Task ShowBlurbAsync(string message, string url, string level="error") {
+			RedBlurb.Visibility = Visibility.Collapsed;
+			InfoBlurb.Visibility = Visibility.Collapsed;
+			if (level=="error") {
+				RedBlurb.Visibility = Visibility.Visible;
+			} else {
+				InfoBlurb.Visibility = Visibility.Visible;
+			}
 			Blurb.Content = message;
 			_blurbUrl = url;
 			BlurbArea.Visibility = Visibility.Visible;
@@ -1386,6 +1393,11 @@ namespace ZitiDesktopEdge {
             set {
 				someCommand = value;
             }
+		}
+
+		private void DoLoading(bool isComplete) {
+			if (isComplete) HideLoad();
+			else ShowLoad("Loading", "Please Wait.");
 		}
 	}
 

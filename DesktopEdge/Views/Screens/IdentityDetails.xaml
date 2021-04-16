@@ -20,100 +20,51 @@
         <!-- Background Color for Pop Overs -->
         <Rectangle x:Name="MainCanvas" Margin="10,10,10,10" Fill="White" RadiusY="10" RadiusX="10"></Rectangle>
 
-        <Grid Margin="20,20,20,-20" MaxWidth="350">
+        <Grid Margin="0,30,0,-20">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="10,10,10,10">
-                
+            <StackPanel Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,0,0,30">
+
                 <!-- Header Controls -->
                 <Grid Margin="0,0,0,10">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="40"/>
+                        <ColumnDefinition Width="60"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="40"/>
+                        <ColumnDefinition Width="60"/>
                     </Grid.ColumnDefinitions>
-                    <local:Toggler x:Name="IdDetailToggle" Grid.Column="0" HorizontalAlignment="Left" OnToggled="IdToggle"></local:Toggler>
+                    <Image x:Name="IsConnected" Grid.Column="0" Visibility="Visible" Source="/Assets/Images/online.png" Height="25" HorizontalAlignment="Right" Cursor="Hand" MouseUp="DoDisconnect" />
+                    <Image x:Name="IsDisconnected" Grid.Column="0" Visibility="Collapsed" Source="/Assets/Images/offline.png" Height="25" HorizontalAlignment="Right" Cursor="Hand" MouseUp="DoConnect" />
                     <TextBlock x:Name="IdDetailName" MouseDown="Window_MouseDown" MaxWidth="220" Grid.Column="1" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" FontSize="14" FontWeight="Bold" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="#0F0F23" VerticalAlignment="Center" TextWrapping="NoWrap" />
-                    <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/x.png" Width="20" Height="20" Margin="0,0,0,0" HorizontalAlignment="Right" MouseUp="HideMenu"></Image>
+                    <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/x.png" Width="20" Height="20" Margin="0,0,0,0" HorizontalAlignment="Left" MouseUp="HideMenu"></Image>
                 </Grid>
-                <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"></ColumnDefinition>
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="30"></RowDefinition>
-                        <RowDefinition Height="30"></RowDefinition>
-                        <RowDefinition Height="30"></RowDefinition>
-                        <RowDefinition Height="30"></RowDefinition>
-                        <RowDefinition Height="30"></RowDefinition>
-                        <RowDefinition Height="30"></RowDefinition>
-                        <RowDefinition x:Name="ServiceRow" Height="140"></RowDefinition>
-                        <RowDefinition Height="30"></RowDefinition>
-                        <RowDefinition Height="40"></RowDefinition>
-                        <RowDefinition x:Name="IdImage" Height="0"></RowDefinition>
-                    </Grid.RowDefinitions>
-                    
-                    <!-- Identity Details Area -->
-                    <local:MenuEditItem x:Name="IdentityName" Grid.Column="0" Grid.Row="0" HorizontalAlignment="Stretch" Label="Name" IsLocked="True"></local:MenuEditItem>
-                    <local:MenuEditToggle x:Name="IdentityMFA" Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" Label="Multi Factor Auth" Recovery="MFARecovery" Authenticate="MFAAuthenticate" Toggle="ToggleMFA"></local:MenuEditToggle>
-                    <local:MenuEditItem x:Name="IdentityNetwork" Grid.Column="0" Grid.Row="2" HorizontalAlignment="Stretch" Label="Network" IsLocked="True"></local:MenuEditItem>
-                    <local:MenuEditItem x:Name="IdentityStatus" Grid.Column="0" Grid.Row="3" HorizontalAlignment="Stretch" Label="Status" IsLocked="True"></local:MenuEditItem>
-                    <local:MenuEditItem x:Name="IdentityEnrollment" Grid.Column="0" Grid.Row="4" HorizontalAlignment="Stretch" Label="Enrollment Status" IsLocked="True"></local:MenuEditItem>
-                    <local:MenuEditSearch x:Name="ServiceTitle" Grid.Column="0" Grid.Row="5" HorizontalAlignment="Stretch" Filter="DoFilter"></local:MenuEditSearch>
-                    <TextBox Name="NoAuthServices" Height="30" FontWeight="Bold" TextAlignment="Center" Text="You must authenticate to access services" IsReadOnly="True" HorizontalAlignment="Stretch" BorderThickness="0" ClipToBounds="True" Grid.Column="0" Grid.Row="5" VerticalAlignment="Center" Padding="0,6,3,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBox>
+                <Rectangle Margin="40,0,40,10" Fill="#070826" Height="1" RadiusY="10" RadiusX="10" Opacity="0.1"></Rectangle>
+                <local:MenuEditItem x:Name="IdName" Label="Name" IsLocked="True" />
+                <Rectangle Margin="40,0,40,10" Fill="#070826" Height="1" RadiusY="10" RadiusX="10" Opacity="0.1"></Rectangle>
+                <local:MenuEditItem x:Name="IdServer" Label="Network" IsLocked="True" />
+                <Rectangle Margin="40,0,40,10" Fill="#070826" Height="1" RadiusY="10" RadiusX="10" Opacity="0.1"></Rectangle>
+                <local:MenuEditToggle x:Name="IdentityMFA" HorizontalAlignment="Stretch" Label="Multi Factor Auth" Margin="0,10,0,0" Recovery="MFARecovery" Authenticate="MFAAuthenticate" Toggle="ToggleMFA"></local:MenuEditToggle>
 
-                    <!-- Service List Area (Higher Contrast to differentiate) -->
-                    <Grid Name="MainDetailScroll" Grid.Column="0" MaxHeight="160" Grid.Row="6" Margin="-8,0,-8,0">
-                        <Rectangle Margin="10,10,10,10" Fill="#070826" RadiusY="10" RadiusX="10"></Rectangle>
-                        <ScrollViewer x:Name="ServiceScroller" VerticalScrollBarVisibility="Visible" CanContentScroll="True" Margin="16,16,8,16" ScrollChanged="Scrolled">
-                            <StackPanel Name="ServiceList" Orientation="Vertical"></StackPanel>
-                        </ScrollViewer>
-                    </Grid>
-                    <Rectangle x:Name="AuthMessageBg" Margin="40,0,40,0" Opacity="0.8" RadiusX="7" Grid.Row="6" RadiusY="7" ClipToBounds="True" Height="30" VerticalAlignment="Bottom" Cursor="Hand" MouseUp="AuthFromMessage">
+                <local:Filter x:Name="FilterServices" OnFilter="DoFilter" VerticalAlignment="Top" Margin="10,16,10,0" />
+                
+                <TextBox Name="NoAuthServices" Height="30" FontWeight="Bold" TextAlignment="Center" Text="You must authenticate to access services" IsReadOnly="True" HorizontalAlignment="Stretch" BorderThickness="0" ClipToBounds="True" Grid.Column="0" Grid.Row="5" VerticalAlignment="Center" Padding="0,6,3,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBox>
+                <Grid Name="MainDetailScroll" MaxHeight="160" Margin="10,0,10,0">
+                    <Rectangle Margin="10,10,10,10" Fill="#070826" RadiusY="10" RadiusX="10"></Rectangle>
+                    <ScrollViewer x:Name="ServiceScroller" VerticalScrollBarVisibility="Visible" CanContentScroll="True" Margin="16,16,8,16" ScrollChanged="Scrolled">
+                        <StackPanel Name="ServiceList" Orientation="Vertical"></StackPanel>
+                    </ScrollViewer>
+                </Grid>
+                <Grid>
+                    <Rectangle x:Name="AuthMessageBg" Margin="40,0,40,0" Opacity="0.8" RadiusX="7" RadiusY="7" ClipToBounds="True" Height="30" VerticalAlignment="Bottom" Cursor="Hand" MouseUp="AuthFromMessage">
                         <Rectangle.Fill>
                             <SolidColorBrush x:Name="AuthBgColor" Color="#0069FF"/>
                         </Rectangle.Fill>
                     </Rectangle>
-                    <Label x:Name="AuthMessageLabel" HorizontalAlignment="Center" Content="Authenticate" IsHitTestVisible="False" Foreground="#FFFFFF" Grid.Row="6"></Label>
-                    
-                    <!-- Sorting and Paging -->
-                    <Grid x:Name="PageSortArea" Grid.Column="0" Grid.Row="7">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="40"></ColumnDefinition>
-                            <ColumnDefinition Width="*"></ColumnDefinition>
-                            <ColumnDefinition Width="40"></ColumnDefinition>
-                            <ColumnDefinition Width="90"></ColumnDefinition>
-                            <ColumnDefinition Width="70"></ColumnDefinition>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="30"></RowDefinition>
-                        </Grid.RowDefinitions>
-                        
-                        <Label Content="Sort" Grid.Column="2" Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Center"></Label>
-                        <ComboBox Name="SortByField" Grid.Column="3" Grid.Row="0" SelectionChanged="SortByField_SelectionChanged" Height="28" VerticalAlignment="Top" HorizontalAlignment="Stretch" BorderThickness="0" Background="#FFD4CECE" Foreground="#FF292626" FontFamily="/ZitiDesktopEdge;component/Assets/Fonts/#Open Sans" FontSize="14">
-                            <ComboBoxItem IsSelected="True">Name</ComboBoxItem>
-                            <ComboBoxItem>Address</ComboBoxItem>
-                            <ComboBoxItem>Protocol</ComboBoxItem>
-                            <ComboBoxItem>Port</ComboBoxItem>
-                        </ComboBox>
-                        <ComboBox Name="SortWayField" Grid.Column="4" Grid.Row="0" Margin="5,0,0,0" SelectionChanged="SortWayField_SelectionChanged" Height="28" VerticalAlignment="Top" HorizontalAlignment="Stretch" BorderThickness="0" Foreground="#FF292626" FontFamily="/ZitiDesktopEdge;component/Assets/Fonts/#Open Sans" FontSize="14">
-                            <ComboBox.Resources>
-                                <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}" Color="Yellow" />
-                                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Red" />
-                            </ComboBox.Resources>
-                            <ComboBoxItem IsSelected="True">Asc</ComboBoxItem>
-                            <ComboBoxItem>Desc</ComboBoxItem>
-                        </ComboBox>
-                    </Grid>
-                    
-                    <!-- Forget Identity Button -->
-                    <Label Name="ForgetIdentityButton" Grid.Column="0" Grid.Row="8" Padding="0,10,0,10" Margin="0,0,0,0" Content="Forget This Identity" Cursor="Hand" Foreground="#F4044D" HorizontalAlignment="Center" Mouse.MouseUp="ForgetIdentity"></Label>
+                    <Label x:Name="AuthMessageLabel" HorizontalAlignment="Center" Content="Authenticate" IsHitTestVisible="False" Foreground="#FFFFFF"></Label>
                 </Grid>
             </StackPanel>
+            <local:StyledButton x:Name="ForgetIdentityButton" MinWidth="310" BgColor="#F4044D" Label="Forget This Identity" Margin="0,0,0,40" OnClick="ForgetIdentity" HorizontalAlignment="Center" VerticalAlignment="Bottom" />
         </Grid>
-
         <Rectangle x:Name="ModalBg" Margin="10,10,10,10" Fill="Black" RadiusY="10" RadiusX="10" Opacity="0" Visibility="Collapsed"></Rectangle>
         
         <!-- Expended Detail Modal for Details pop up on service list -->

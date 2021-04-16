@@ -35,6 +35,9 @@ namespace ZitiDesktopEdge {
 		public event OnAuthenticate Authenticate;
 		public delegate void OnRecovery(ZitiIdentity identity);
 		public event OnRecovery Recovery;
+		public delegate void LoadingEvent(bool isComplete);
+		public event LoadingEvent OnLoading;
+
 		public int Page = 1;
 		public int PerPage = 50;
 		public int TotalPages = 1;
@@ -42,6 +45,7 @@ namespace ZitiDesktopEdge {
 		public string SortWay = "Asc";
 		private bool _loaded = false;
 		private double scrolledTo = 0;
+		public int totalServices = 0;
 
 		internal MainWindow MainWindow { get; set; }
 
@@ -59,14 +63,13 @@ namespace ZitiDesktopEdge {
 			}
 			set {
 				_loaded = false;
+				FilterServices.Clear();
 				scrolledTo = 0;
 				_identity = value;
-				this.IdDetailToggle.Enabled = _identity.IsEnabled;
 				Page = 1;
 				SortBy = "Name";
 				SortWay = "Asc";
-				SortByField.SelectedIndex = 0;
-				SortWayField.SelectedIndex = 0;
+				filter = "";
 				UpdateView();
 				IdentityArea.Opacity = 1.0;
 				IdentityArea.Visibility = Visibility.Visible;
@@ -108,14 +111,20 @@ namespace ZitiDesktopEdge {
 			scrolledTo = 0;
 			IdDetailName.Text = _identity.Name;
 			IdDetailName.ToolTip = _identity.Name;
-			IdDetailToggle.Enabled = _identity.IsEnabled;
-			IdentityName.Value = _identity.Name;
-			IdentityNetwork.Value = _identity.ControllerUrl;
-			IdentityEnrollment.Value = _identity.EnrollmentStatus;
-			IdentityStatus.Value = _identity.IsEnabled ? "active" : "disabled";
 			IdentityMFA.IsOn = _identity.IsMFAEnabled;
 			IdentityMFA.ToggleField.IsEnabled = true;
 			IdentityMFA.ToggleField.Opacity = 1;
+			IsConnected.Visibility = Visibility.Collapsed;
+			IsDisconnected.Visibility = Visibility.Collapsed;
+			IsConnected.ToolTip = "Enabled - Click To Disable";
+			IsDisconnected.ToolTip = "Disabled - Click to Enable";
+			IdServer.Value = _identity.ControllerUrl;
+			IdName.Value = _identity.Name;
+			if (_identity.IsEnabled) {
+				IsConnected.Visibility = Visibility.Visible;
+			} else {
+				IsDisconnected.Visibility = Visibility.Visible;
+			}
 			if (_identity.IsMFAEnabled) {
 				if (_identity.MFAInfo.IsAuthenticated) {
 					IdentityMFA.ToggleField.IsEnabled = true;
@@ -135,9 +144,10 @@ namespace ZitiDesktopEdge {
 				IdentityMFA.RecoveryButton.Visibility = Visibility.Collapsed;
 			}
 			ServiceList.Children.Clear();
-			PageSortArea.Visibility = Visibility.Collapsed;
+
+			totalServices = _identity.Services.Count;
+
 			if (_identity.Services.Count>0) {
-				PageSortArea.Visibility = Visibility.Visible;
 				int index = 0;
 				int total = 0;
 				ZitiService[] services = new ZitiService[0];
@@ -165,31 +175,21 @@ namespace ZitiDesktopEdge {
 
 				TotalPages = (total / PerPage) + 1;
 
-				double newHeight = MainHeight - 330; 
-				ServiceRow.Height = new GridLength((double)newHeight);
+				double newHeight = MainHeight - 330;
 				MainDetailScroll.MaxHeight = newHeight;
 				MainDetailScroll.Height = newHeight;
 				MainDetailScroll.Visibility = Visibility.Visible;
-				ServiceTitle.Label = _identity.Services.Count + " Services";
-				ServiceTitle.MainEdit.Visibility = Visibility.Visible;
-				ServiceTitle.Visibility = Visibility.Visible;
+
 				AuthMessageBg.Visibility = Visibility.Collapsed;
 				AuthMessageLabel.Visibility = Visibility.Collapsed;
 				NoAuthServices.Visibility = Visibility.Collapsed;
 			} else {
-				ServiceRow.Height = new GridLength((double)0.0);
 				MainDetailScroll.Visibility = Visibility.Collapsed;
-				ServiceTitle.Label = "No Services";
-				ServiceTitle.MainEdit.Text = "";
-				ServiceTitle.MainEdit.Visibility = Visibility.Collapsed;
 				if (this._identity.IsMFAEnabled&&!this._identity.MFAInfo.IsAuthenticated) {
-					ServiceTitle.Visibility = Visibility.Collapsed;
 					AuthMessageBg.Visibility = Visibility.Visible;
 					AuthMessageLabel.Visibility = Visibility.Visible;
-					ServiceRow.Height = new GridLength((double)30);
 					NoAuthServices.Visibility = Visibility.Visible;
 				} else {
-					ServiceTitle.Visibility = Visibility.Visible;
 					AuthMessageBg.Visibility = Visibility.Collapsed;
 					AuthMessageLabel.Visibility = Visibility.Collapsed;
 					NoAuthServices.Visibility = Visibility.Collapsed;
@@ -258,15 +258,6 @@ namespace ZitiDesktopEdge {
 			OnMessage?.Invoke(message);
 		}
 
-		async private void IdToggle(bool on) {
-			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-			await client.IdentityOnOffAsync(_identity.Fingerprint, on);
-			if (SelectedIdentity!=null) SelectedIdentity.ToggleSwitch.Enabled = on;
-			if (SelectedIdentityMenu != null) SelectedIdentityMenu.ToggleSwitch.Enabled = on;
-			_identity.IsEnabled = on;
-			IdentityStatus.Value = _identity.IsEnabled ? "active" : "disabled";
-		}
-
 		public IdentityDetails() {
 			InitializeComponent();
 		}
@@ -278,7 +269,7 @@ namespace ZitiDesktopEdge {
 			MainDetailScroll.Height = height;
 		}
 
-		private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
+		private void ForgetIdentity() {
 			if (this.Visibility==Visibility.Visible&&ConfirmView.Visibility==Visibility.Collapsed) {
 				ConfirmView.Visibility = Visibility.Visible;
 			}
@@ -313,12 +304,6 @@ namespace ZitiDesktopEdge {
 				OnError("An unexpected error has occured while removing the identity. Please verify the service is still running and try again.");
 			}
 		}
-
-		private void DoFilter(string filter) {
-			this.filter = filter;
-			if (this._identity!=null) UpdateView();
-		}
-
 
 		private void ToggleMFA(bool isOn) {
 			this.OnMFAToggled?.Invoke(isOn);
@@ -365,26 +350,6 @@ namespace ZitiDesktopEdge {
 			this.Authenticate.Invoke(this.Identity);
 		}
 
-		private void SortByField_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-			ComboBoxItem selected = (ComboBoxItem)SortByField.SelectedValue;
-			if (selected != null && selected.Content!=null) {
-				if (selected.Content.ToString()!=SortBy) {
-					SortBy = selected.Content.ToString();
-					UpdateView();
-				}
-			}
-		}
-
-		private void SortWayField_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-			ComboBoxItem selected = (ComboBoxItem)SortWayField.SelectedValue;
-			if (selected != null && selected.Content != null) {
-				if (selected.Content.ToString() != SortWay) {
-					SortWay = selected.Content.ToString();
-					UpdateView();
-				}
-			}
-		}
-
 		private void Scrolled(object sender, ScrollChangedEventArgs e) {
 			if (_loaded) {
 				var verticalOffset = ServiceScroller.VerticalOffset;
@@ -429,6 +394,41 @@ namespace ZitiDesktopEdge {
 					}
 				}
 			}
+		}
+
+		private void DoFilter(FilterData filterData) {
+			filter = filterData.SearchFor;
+			SortBy = filterData.SortBy;
+			SortWay = filterData.SortHow;
+			UpdateView();
+		}
+
+		async private void DoConnect(object sender, MouseButtonEventArgs e) {
+			this.OnLoading?.Invoke(false);
+			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+			await client.IdentityOnOffAsync(_identity.Fingerprint, true);
+			if (SelectedIdentity != null) SelectedIdentity.ToggleSwitch.Enabled = true;
+			if (SelectedIdentityMenu != null) SelectedIdentityMenu.ToggleSwitch.Enabled = true;
+			_identity.IsEnabled = true;
+			IsConnected.Visibility = Visibility.Visible;
+			IsDisconnected.Visibility = Visibility.Collapsed;
+			this.OnLoading?.Invoke(true);
+		}
+
+		async private void DoDisconnect(object sender, MouseButtonEventArgs e) {
+			this.OnLoading?.Invoke(false);
+			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+			await client.IdentityOnOffAsync(_identity.Fingerprint, false);
+			if (SelectedIdentity != null) SelectedIdentity.ToggleSwitch.Enabled = false;
+			if (SelectedIdentityMenu != null) SelectedIdentityMenu.ToggleSwitch.Enabled = false;
+			_identity.IsEnabled = false;
+			IsConnected.Visibility = Visibility.Collapsed;
+			IsDisconnected.Visibility = Visibility.Visible;
+			this.OnLoading?.Invoke(true);
+		}
+
+		private void ForgetIdentityButton_OnClick() {
+
 		}
 	}
 }

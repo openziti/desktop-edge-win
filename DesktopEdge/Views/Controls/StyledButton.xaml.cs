@@ -23,6 +23,15 @@ namespace ZitiDesktopEdge {
 		public delegate void ClickAction();
 		public event ClickAction OnClick;
 		private string _label = "";
+		private string bgColor = "#0069FF";
+
+		public string BgColor {
+			get { return bgColor; }
+			set { 
+				bgColor = value; 
+				ButtonBgColor.Color = (Color)ColorConverter.ConvertFromString(bgColor);
+			}
+		}
 
 		public string Label {
 			get {
@@ -44,8 +53,8 @@ namespace ZitiDesktopEdge {
 		/// <param name="sender">The button object</param>
 		/// <param name="e">The mouse event</param>
 		private void Hover(object sender, MouseEventArgs e) {
-			ButtonBg.Opacity = 0.8;
-			ButtonBg.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1.0, TimeSpan.FromSeconds(.3)));
+			ButtonBgDarken.Opacity = 0.0;
+			ButtonBgDarken.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(0.2, TimeSpan.FromSeconds(.3)));
 		}
 
 		/// <summary>
@@ -54,9 +63,8 @@ namespace ZitiDesktopEdge {
 		/// <param name="sender">The button object</param>
 		/// <param name="e">The mouse event</param>
 		private void Leave(object sender, MouseEventArgs e) {
-			ButtonBgColor.Color = Color.FromRgb(0, 104, 249);
-			ButtonBg.BeginAnimation(Grid.OpacityProperty, null);
-			ButtonBg.Opacity = 0.8;
+			ButtonBgDarken.Opacity = 0.2;
+			ButtonBgDarken.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(0.0, TimeSpan.FromSeconds(.3)));
 		}
 
 		/// <summary>
@@ -65,7 +73,7 @@ namespace ZitiDesktopEdge {
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
 		private void Down(object sender, MouseButtonEventArgs e) {
-			ButtonBgColor.Color = Color.FromRgb(126, 180, 255);
+			// ButtonBgColor.Color = Color.FromRgb(126, 180, 255);
 		}
 
 		/// <summary>
