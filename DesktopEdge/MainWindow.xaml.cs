@@ -156,6 +156,11 @@ namespace ZitiDesktopEdge {
 			this.ShowMFA(identity, 1);
 		}
 
+		/// <summary>
+		/// Show MFA for the identity and set the type of screen to show
+		/// </summary>
+		/// <param name="identity">The Identity that is currently active</param>
+		/// <param name="type">The type of screen to show - 1 Setup, 2 Authenticate, 3 Remove MFA, 4 Regenerate Codes</param>
 		private void ShowMFA(ZitiIdentity identity, int type) {
 			MFASetup.Opacity = 0;
 			MFASetup.Visibility = Visibility.Visible;
@@ -503,6 +508,7 @@ namespace ZitiDesktopEdge {
 			Application.Current.Properties.Add("Identities", new List<ZitiIdentity>());
 			MainMenu.OnAttachmentChange += AttachmentChanged;
 			MainMenu.OnLogLevelChanged += LogLevelChanged;
+			MainMenu.OnShowBlurb += MainMenu_OnShowBlurb;
 			IdentityMenu.OnError += IdentityMenu_OnError;
 
 			try {
@@ -524,7 +530,11 @@ namespace ZitiDesktopEdge {
 			Placement();
 		}
 
-        private void ServiceClient_OnBulkServiceEvent(object sender, BulkServiceEvent e) {
+		private void MainMenu_OnShowBlurb(string message) {
+			_ = ShowBlurbAsync(message, "");
+		}
+
+		private void ServiceClient_OnBulkServiceEvent(object sender, BulkServiceEvent e) {
 			var found = identities.Find(id => id.Fingerprint == e.Fingerprint);
 			if (found == null) {
 				logger.Warn($"{e.Action} service event for {e.Fingerprint} but the provided identity fingerprint was not found!");

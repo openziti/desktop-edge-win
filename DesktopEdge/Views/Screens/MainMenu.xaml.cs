@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Net.Mail;
 using System.IO;
 using NLog;
+using System.Windows.Media.Animation;
 
 using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.DataStructures;
@@ -26,6 +27,8 @@ namespace ZitiDesktopEdge {
 		public event LogLevelChanged OnLogLevelChanged;
 		public delegate void Detched(MouseButtonEventArgs e);
 		public event Detched OnDetach;
+		public delegate void ShowBlurb(string message);
+		public event ShowBlurb OnShowBlurb;
 		public string menuState = "Main";
 		public string licenseData = "it's open source.";
 		public string LogLevel = "";
@@ -424,24 +427,7 @@ namespace ZitiDesktopEdge {
 			CheckForUpdate.IsEnabled = true;
 		}
 
-		async private void UpdateConfig_Click(object sender, RoutedEventArgs e) {
-			logger.Info("updating config...");
-			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-			try {
-				var newMaskVar = Int32.Parse(ConfigMaskNew.Text);
-				var addDnsNewVar = Convert.ToBoolean(AddDnsNew.Text);
-
-				var r = await client.UpdateConfigAsync(ConfigIpNew.Text, newMaskVar, addDnsNewVar);
-				logger.Info("Got response from update config task : {0}", r);
-			} catch (DataStructures.ServiceException se) {
-				logger.Error(se, "service exception in update check: {0}", se.Message);
-			}
-			catch (Exception ex) {
-				logger.Error(ex, "unexpected error in update check: {0}", ex.Message);
-			}
-		}
-
-		async private void TriggerUpdate_Click(object sender, RoutedEventArgs e) {
+		async public void TriggerUpdate_Click(object sender, RoutedEventArgs e) {
 			try {
 				CheckForUpdate.IsEnabled = false;
 				TriggerUpdateButton.IsEnabled = false;
@@ -484,6 +470,117 @@ namespace ZitiDesktopEdge {
 				VersionNewer.Visibility = Visibility.Visible;
 				VersionOlder.Visibility = Visibility.Collapsed;
 			});
+		}
+
+		/// <summary>
+		/// Save the config information to the properties and queue for update.
+		/// </summary>
+		async private void UpdateConfig() {
+			logger.Info("updating config...");
+			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+			try {
+				ComboBoxItem item = (ComboBoxItem)ConfigMaskNew.SelectedValue;
+				var newMaskVar = Int32.Parse(item.Tag.ToString());
+				var addDnsNewVar = Convert.ToBoolean(AddDnsNew.IsChecked);
+
+				var r = await client.UpdateConfigAsync(ConfigIpNew.Text, newMaskVar, addDnsNewVar);
+				if (r.Code != 0) {
+					this.OnShowBlurb?.Invoke("Error: " + r.Error);
+					logger.Debug("ERROR: {0} : {1}", r.Message, r.Error);
+				} else {
+					this.OnShowBlurb?.Invoke("Config Save, Please Restart Ziti to Update");
+					this.CloseEdit();
+				}
+				logger.Info("Got response from update config task : {0}", r);
+			} catch (DataStructures.ServiceException se) {
+				this.OnShowBlurb?.Invoke("Error: " + se.Message);
+				logger.Error(se, "service exception in update check: {0}", se.Message);
+			} catch (Exception ex) {
+				this.OnShowBlurb?.Invoke("Error: " + ex.Message);
+				logger.Error(ex, "unexpected error in update check: {0}", ex.Message);
+			}
+		}
+
+		/// <summary>
+		/// Show the Edit Modal and blur the background
+		/// </summary>
+		private void ShowEdit() {
+			ConfigIpNew.Text = ConfigIp.Value;
+			for (int i=0; i<ConfigMaskNew.Items.Count; i++) {
+				ComboBoxItem item = (ComboBoxItem)ConfigMaskNew.Items.GetItemAt(i);
+				if (item.Content.ToString().IndexOf(ConfigSubnet.Value)>0) {
+					ConfigMaskNew.SelectedIndex = i;
+					break;
+				}
+			}
+			EditArea.Opacity = 0;
+			EditArea.Visibility = Visibility.Visible;
+			EditArea.Margin = new Thickness(0, 0, 0, 0);
+			EditArea.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
+			EditArea.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
+			ShowModal();
+		}
+
+		/// <summary>
+		/// Hide the Edit Config
+		/// </summary>
+		private void CloseEdit() {
+			DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
+			ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
+			animation.Completed += CloseComplete;
+			EditArea.BeginAnimation(Grid.OpacityProperty, animation);
+			EditArea.BeginAnimation(Grid.MarginProperty, animateThick);
+			HideModal();
+		}
+
+		/// <summary>
+		/// Show the modal, aniimating opacity
+		/// </summary>
+		private void ShowModal() {
+			ModalBg.Visibility = Visibility.Visible;
+			ModalBg.Opacity = 0;
+			DoubleAnimation animation = new DoubleAnimation(.8, TimeSpan.FromSeconds(.3));
+			ModalBg.BeginAnimation(Grid.OpacityProperty, animation);
+		}
+
+		/// <summary>
+		/// Close the config window
+		/// </summary>
+		/// <param name="sender">The close button</param>
+		/// <param name="e">The event arguments</param>
+		private void CloseComplete(object sender, EventArgs e) {
+			EditArea.Visibility = Visibility.Collapsed;
+		}
+
+		/// <summary>
+		/// Hide the modal animating the opacity
+		/// </summary>
+		private void HideModal() {
+			DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
+			animation.Completed += ModalHideComplete;
+			ModalBg.BeginAnimation(Grid.OpacityProperty, animation);
+		}
+
+		/// <summary>
+		/// When the animation completes, set the visibility to avoid UI object conflicts
+		/// </summary>
+		/// <param name="sender">The animation</param>
+		/// <param name="e">The event</param>
+		private void ModalHideComplete(object sender, EventArgs e) {
+			ModalBg.Visibility = Visibility.Collapsed;
+		}
+
+		/// <summary>
+		/// Close the config editor without saving
+		/// </summary>
+		/// <param name="sender">The image button</param>
+		/// <param name="e">The click event</param>
+		private void CloseEditConfig(object sender, MouseButtonEventArgs e) {
+			CloseEdit();
+		}
+
+		private void SaveConfig() {
+			this.UpdateConfig();
 		}
 	}
 }
