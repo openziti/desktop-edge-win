@@ -91,9 +91,6 @@
                             <RowDefinition Height="30"></RowDefinition>
                         </Grid.RowDefinitions>
                         
-                        <Label Content="Page" Grid.Column="0" Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Center"></Label>
-                        <ComboBox Name="Pages" Grid.Column="1" Grid.Row="0" SelectionChanged="Pages_SelectionChanged"  Width="60" Height="28" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="0" Background="#FFD4CECE" Foreground="#FF292626" FontFamily="/ZitiDesktopEdge;component/Assets/Fonts/#Open Sans" FontSize="14"></ComboBox>
-
                         <Label Content="Sort" Grid.Column="2" Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Center"></Label>
                         <ComboBox Name="SortByField" Grid.Column="3" Grid.Row="0" SelectionChanged="SortByField_SelectionChanged" Height="28" VerticalAlignment="Top" HorizontalAlignment="Stretch" BorderThickness="0" Background="#FFD4CECE" Foreground="#FF292626" FontFamily="/ZitiDesktopEdge;component/Assets/Fonts/#Open Sans" FontSize="14">
                             <ComboBoxItem IsSelected="True">Name</ComboBoxItem>

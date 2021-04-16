@@ -40,6 +40,8 @@ namespace ZitiDesktopEdge {
 		public int TotalPages = 1;
 		public string SortBy = "Name";
 		public string SortWay = "Asc";
+		private bool _loaded = false;
+		private double scrolledTo = 0;
 
 		internal MainWindow MainWindow { get; set; }
 
@@ -56,6 +58,8 @@ namespace ZitiDesktopEdge {
 				return _identity;
 			}
 			set {
+				_loaded = false;
+				scrolledTo = 0;
 				_identity = value;
 				this.IdDetailToggle.Enabled = _identity.IsEnabled;
 				Page = 1;
@@ -98,6 +102,10 @@ namespace ZitiDesktopEdge {
 		}
 
 		public void UpdateView() {
+			ServiceScroller.InvalidateScrollInfo();
+			ServiceScroller.ScrollToVerticalOffset(0);
+			ServiceScroller.InvalidateScrollInfo();
+			scrolledTo = 0;
 			IdDetailName.Text = _identity.Name;
 			IdDetailName.ToolTip = _identity.Name;
 			IdDetailToggle.Enabled = _identity.IsEnabled;
@@ -142,7 +150,7 @@ namespace ZitiDesktopEdge {
 				for (int i= startIndex; i<services.Length; i++) {
 					ZitiService zitiSvc = services[i];
 					total++;
-					if (index<100) {
+					if (index<PerPage) {
 						if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0) {
 							Logger.Trace("painting: " + zitiSvc.Name);
 							ServiceInfo info = new ServiceInfo();
@@ -155,16 +163,7 @@ namespace ZitiDesktopEdge {
 					}
 				}
 
-				if (Page==1) {
-					Pages.Items.Clear();
-					TotalPages = (total / PerPage) + 1;
-					for (int i = 1; i <= TotalPages; i++) {
-						ComboBoxItem item = new ComboBoxItem();
-						if (i == Page) item.IsSelected = true;
-						item.Content = i.ToString();
-						Pages.Items.Add(item);
-					}
-				}
+				TotalPages = (total / PerPage) + 1;
 
 				double newHeight = MainHeight - 330; 
 				ServiceRow.Height = new GridLength((double)newHeight);
@@ -197,6 +196,7 @@ namespace ZitiDesktopEdge {
 				}
 			}
 			ConfirmView.Visibility = Visibility.Collapsed;
+			_loaded = true;
 		}
 
 		private void ShowDetails(ZitiService info) {
@@ -365,17 +365,6 @@ namespace ZitiDesktopEdge {
 			this.Authenticate.Invoke(this.Identity);
 		}
 
-		private void Pages_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-			ComboBoxItem selected = (ComboBoxItem)Pages.SelectedValue;
-			if (selected!=null) {
-				int value = Int32.Parse(selected.Content.ToString());
-				if (value!=Page) {
-					Page = value;
-					UpdateView();
-				}
-			}
-		}
-
 		private void SortByField_SelectionChanged(object sender, SelectionChangedEventArgs e) {
 			ComboBoxItem selected = (ComboBoxItem)SortByField.SelectedValue;
 			if (selected != null && selected.Content!=null) {
@@ -397,36 +386,46 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void Scrolled(object sender, ScrollChangedEventArgs e) {
-			var verticalOffset = ServiceScroller.VerticalOffset;
-			var maxVerticalOffset = ServiceScroller.ScrollableHeight; 
+			if (_loaded) {
+				var verticalOffset = ServiceScroller.VerticalOffset;
+				var maxVerticalOffset = ServiceScroller.ScrollableHeight;
 
-			if (maxVerticalOffset < 0 ||
-				verticalOffset == maxVerticalOffset) {
-				if (Page < TotalPages) {
-					Page += 1;
-					int index = 0;
-					int total = 0;
-					ZitiService[] services = new ZitiService[0];
-					if (SortBy == "Name") services = _identity.Services.OrderBy(s => s.Name.ToLower()).ToArray();
-					else if (SortBy == "Address") services = _identity.Services.OrderBy(s => s.Addresses.ToString()).ToArray();
-					else if (SortBy == "Protocol") services = _identity.Services.OrderBy(s => s.Protocols.ToString()).ToArray();
-					else if (SortBy == "Port") services = _identity.Services.OrderBy(s => s.Ports.ToString()).ToArray();
-					if (SortWay == "Desc") services = services.Reverse().ToArray();
-					int startIndex = (Page - 1) * PerPage;
-					for (int i = startIndex; i < services.Length; i++) {
-						ZitiService zitiSvc = services[i];
-						total++;
-						if (index < 100) {
-							if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0) {
-								Logger.Trace("painting: " + zitiSvc.Name);
-								ServiceInfo info = new ServiceInfo();
-								info.Info = zitiSvc;
-								info.OnMessage += Info_OnMessage;
-								info.OnDetails += ShowDetails;
-								ServiceList.Children.Add(info);
-								index++;
+				if ((maxVerticalOffset < 0 || verticalOffset == maxVerticalOffset) && verticalOffset>0 && scrolledTo<verticalOffset) {
+					if (Page < TotalPages) {
+						scrolledTo = verticalOffset;
+						ServiceScroller.ScrollChanged -= Scrolled;
+						Logger.Trace("Paging: " + Page);
+						_loaded = false;
+						Page += 1;
+						int index = 0;
+						ZitiService[] services = new ZitiService[0];
+						if (SortBy == "Name") services = _identity.Services.OrderBy(s => s.Name.ToLower()).ToArray();
+						else if (SortBy == "Address") services = _identity.Services.OrderBy(s => s.Addresses.ToString()).ToArray();
+						else if (SortBy == "Protocol") services = _identity.Services.OrderBy(s => s.Protocols.ToString()).ToArray();
+						else if (SortBy == "Port") services = _identity.Services.OrderBy(s => s.Ports.ToString()).ToArray();
+						if (SortWay == "Desc") services = services.Reverse().ToArray();
+						int startIndex = (Page - 1) * PerPage;
+						for (int i = startIndex; i < services.Length; i++) {
+							ZitiService zitiSvc = services[i];
+							if (index < PerPage) {
+								if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0) {
+									ServiceInfo info = new ServiceInfo();
+									info.Info = zitiSvc;
+									info.OnMessage += Info_OnMessage;
+									info.OnDetails += ShowDetails;
+									ServiceList.Children.Add(info);
+									index++;
+								}
 							}
 						}
+						double totalOffset = ServiceScroller.VerticalOffset;
+						double toNegate = index * 33;
+						double scrollTo = (totalOffset - toNegate);
+						ServiceScroller.InvalidateScrollInfo();
+						ServiceScroller.ScrollToVerticalOffset(verticalOffset);
+						ServiceScroller.InvalidateScrollInfo();
+						_loaded = true;
+						ServiceScroller.ScrollChanged += Scrolled;
 					}
 				}
 			}
