@@ -10,9 +10,9 @@
              HorizontalAlignment="Stretch" 
              d:DesignWidth="350" >
     <Grid Margin="0,0,0,0">
-        <Rectangle Margin="0,0,0,0" Fill="#070826" RadiusY="0" RadiusX="0"></Rectangle>
+        <Rectangle Margin="0,0,0,0" Fill="#070826" Opacity="0.1" RadiusY="0" RadiusX="0"></Rectangle>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-            <Label Content="Filter" Foreground="White" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="12" FontWeight="Bold" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
+            <Label Content="Filter" Foreground="Black" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="12" FontWeight="Bold" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
             <TextBox x:Name="FilterFor" Text="any text" Width="80" Height="26" Padding="6,0,6,0" Grid.Row="0" VerticalContentAlignment="Center" BorderThickness="0" Cursor="Hand" Foreground="#070826" FontSize="12" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" GotFocus="FocusFilter" LostFocus="FocusLostFilter" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Keyboard.KeyUp="FilterChanged" Keyboard.KeyDown="FilterPressed">
                 <TextBox.Resources>
                     <Style TargetType="{x:Type Border}">
@@ -20,7 +20,7 @@
                     </Style>
                 </TextBox.Resources>
             </TextBox>
-            <Label Content=" and sort by " Foreground="White" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
+            <Label Content=" and sort by " Foreground="Black" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
             <ComboBox Name="SortByField" SelectionChanged="SortByChanged" Width="80" VerticalContentAlignment="Center" Cursor="Hand" Height="26" VerticalAlignment="Center" TextBlock.TextAlignment="Center" HorizontalAlignment="Stretch" BorderThickness="0" Foreground="#070826" FontFamily="/ZitiDesktopEdge;component/Assets/Fonts/#Open Sans" FontSize="12" Style="{DynamicResource FilterComboStyle}">
                 <ComboBoxItem IsSelected="True">Name</ComboBoxItem>
                 <ComboBoxItem>Address</ComboBoxItem>

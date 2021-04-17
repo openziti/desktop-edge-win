@@ -36,10 +36,41 @@ namespace ZitiDesktopEdge {
 			}
 			set {
 				this._info = value;
-				MainEdit.ToolTip = this._info.ToString();
-				MainEdit.Text = this._info.ToString();
+
+				string addresses = "";
+				if (_info.Addresses!=null) {
+					for (int i = 0; i < this._info.Addresses?.Length; i++) {
+						addresses += ((i > 0) ? "," : "") + this._info.Addresses[i].Hostname;
+					}
+				}
+
+				MainEdit.ToolTip = addresses;
+				MainEdit.Text = addresses;
+
 				MainLabel.ToolTip = this._info.Name;
 				MainLabel.Text = this._info.Name;
+
+				string ports = "";
+				if (_info.Ports != null) {
+					for (int i = 0; i < this._info.Ports.Length; i++) {
+						ports += ((i > 0) ? "," : "") + this._info.Ports[i].ToString();
+					}
+				}
+
+				Ports.ToolTip = ports;
+				Ports.Text = ports;
+
+				string protocols = "";
+
+				if (_info.Protocols != null) {
+					for (int i = 0; i < this._info.Protocols.Length; i++) {
+						protocols += ((i > 0) ? "," : "") + this._info.Protocols[i];
+					}
+				}
+
+				Protocols.ToolTip = protocols;
+				Protocols.Text = protocols;
+
 				WarningColumn.Width = new GridLength(0);
 				if (this._info.Warning.Length > 0) {
 					WarnIcon.ToolTip = this._info.Warning;

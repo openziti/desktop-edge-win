@@ -48,12 +48,13 @@
                 <local:Filter x:Name="FilterServices" OnFilter="DoFilter" VerticalAlignment="Top" Margin="10,16,10,0" />
                 
                 <TextBox Name="NoAuthServices" Height="30" FontWeight="Bold" TextAlignment="Center" Text="You must authenticate to access services" IsReadOnly="True" HorizontalAlignment="Stretch" BorderThickness="0" ClipToBounds="True" Grid.Column="0" Grid.Row="5" VerticalAlignment="Center" Padding="0,6,3,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBox>
-                <Grid Name="MainDetailScroll" MaxHeight="160" Margin="10,0,10,0">
+                <Grid Name="MainDetailScroll" MaxHeight="160" Margin="10,0,10,-10">
                     <Rectangle Margin="10,10,10,10" Fill="#070826" RadiusY="10" RadiusX="10"></Rectangle>
                     <ScrollViewer x:Name="ServiceScroller" VerticalScrollBarVisibility="Visible" CanContentScroll="True" Margin="16,16,8,16" ScrollChanged="Scrolled">
                         <StackPanel Name="ServiceList" Orientation="Vertical"></StackPanel>
                     </ScrollViewer>
                 </Grid>
+                <Label x:Name="ServiceCount" HorizontalAlignment="Center" Content="0 Services" Margin="0,0,0,0" Foreground="Gray" FontWeight="Bold" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                 <Grid>
                     <Rectangle x:Name="AuthMessageBg" Margin="40,0,40,0" Opacity="0.8" RadiusX="7" RadiusY="7" ClipToBounds="True" Height="30" VerticalAlignment="Bottom" Cursor="Hand" MouseUp="AuthFromMessage">
                         <Rectangle.Fill>

@@ -66,6 +66,7 @@ namespace ZitiDesktopEdge {
 				FilterServices.Clear();
 				scrolledTo = 0;
 				_identity = value;
+				ServiceCount.Content = _identity.Services.Count + " services";
 				Page = 1;
 				SortBy = "Name";
 				SortWay = "Asc";
