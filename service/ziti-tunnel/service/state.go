@@ -20,25 +20,26 @@ package service
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/openziti/desktop-edge-win/service/cziti"
+	"github.com/openziti/desktop-edge-win/service/windns"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/constants"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
+	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"golang.org/x/sys/windows"
+	"golang.org/x/sys/windows/registry"
+	"golang.zx2c4.com/wireguard/tun"
+	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
 	"io"
 	"io/ioutil"
 	"net"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"time"
-	"errors"
-	"strconv"
-	"github.com/openziti/desktop-edge-win/service/cziti"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/constants"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
-	idcfg "github.com/openziti/sdk-golang/ziti/config"
-	"golang.org/x/sys/windows/registry"
-	"golang.zx2c4.com/wireguard/tun"
-	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
 )
 
 type RuntimeState struct {
@@ -106,7 +107,6 @@ func backupConfig() (string, error) {
 	}
 	return backup, err
 }
-
 
 func (t *RuntimeState) ToStatus(onlyInitialized bool) dto.TunnelStatus {
 	var uptime int64
@@ -223,7 +223,8 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int, applyDns bool) (net.
 	}
 	log.Info("routing applied")
 
-	if applyDns {
+	zitiPoliciesEffective := windns.IsNrptPoliciesEffective()
+	if applyDns || !zitiPoliciesEffective {
 		//for windows 10+, could 'domains' be able to replace NRPT? dunno - didn't test it
 		luid.SetDNS(windows.AF_INET, []net.IP{ip}, nil)
 	}
@@ -428,7 +429,6 @@ func UpdateRuntimeStateIpv4(ip string, ipv4Mask int, addDns string) error {
 	}
 
 	rts.SaveState()
-	
 
 	return nil
 }

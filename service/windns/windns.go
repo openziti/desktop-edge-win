@@ -238,3 +238,51 @@ ForEach ($ns in $toRemove){
 		log.Errorf("ERROR removing nrpt rules: %v", err)
 	}
 }
+
+func IsNrptPoliciesEffective() bool {
+	script := fmt.Sprintf(`Add-DnsClientNrptRule -Namespace ".ziti.test" -NameServers "100.64.0.1" -Comment "Added by ziti-tunnel" -DisplayName "ziti-tunnel:.ziti.test"
+	Get-DnsClientNrptPolicy -Effective | Select-Object Namespace -Unique | Where-Object Namespace -Eq ".ziti.test"`)
+	log.Debugf("checking the nrpt policies with: %s", script)
+
+	cmd := exec.Command("powershell", "-Command", script)
+	cmd.Stderr = os.Stdout
+	output := new(bytes.Buffer)
+	cmd.Stdout = output
+
+	err := cmd.Run()
+	if err != nil {
+		log.Errorf("ERROR removing all nrpt rules: %v", err)
+	}
+
+	policyFound := false
+	for {
+		l, err := output.ReadString('\n')
+		policyOut := strings.Trim(l, "\r\n")
+		if err != nil {
+			break
+		}
+
+		if strings.Compare(policyOut, ".ziti.test") == 0 {
+			policyFound = true
+			log.Debug("The nrpt policies are effective in this client")
+			removeSingleNrtpRule(".ziti.test")
+			break
+		}
+	}
+	return policyFound
+}
+
+func removeSingleNrtpRule(nrptRule string) {
+	script := fmt.Sprintf(`Get-DnsClientNrptRule | where Namespace -eq "%s" | Remove-DnsClientNrptRule -Force -ErrorAction SilentlyContinue`, nrptRule)
+	log.Debugf("Removing the nrpt rule with: %s", script)
+
+	cmd := exec.Command("powershell", "-Command", script)
+	cmd.Stderr = os.Stdout
+	output := new(bytes.Buffer)
+	cmd.Stdout = output
+
+	err := cmd.Run()
+	if err != nil {
+		log.Errorf("ERROR removing the nrpt rules: %v", err)
+	}
+}
