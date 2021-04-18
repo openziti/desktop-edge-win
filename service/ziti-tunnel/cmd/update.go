@@ -37,7 +37,7 @@ var updateCmd = &cobra.Command{
 		flags := map[string]interface{}{}
 		flags["CIDR"] = CIDR
 		flags["AddDns"] = AddDns
-		cli.UpdateConfigIPSubnet(args,flags)
+		cli.UpdateConfigIPSubnet(args, flags)
 	},
 }
 

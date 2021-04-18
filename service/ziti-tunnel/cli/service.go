@@ -19,9 +19,9 @@ package cli
 
 import (
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
+	"net"
 	"strconv"
 	"strings"
-	"net"
 )
 
 //GetIdentities is to fetch identities through cmdline

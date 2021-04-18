@@ -214,7 +214,7 @@ namespace ZitiUpdateService {
 				}
 				return zipName;
 			} catch (Exception ex) {
-				Logger.Error(ex, "Unexpected error {0}", ex.Message);
+				Logger.Error(ex, "Unexpected error in generating system files {0}", ex.Message);
 				return null;
 			}
 		}
@@ -233,7 +233,7 @@ namespace ZitiUpdateService {
 				process.Start();
 				process.WaitForExit();
 			} catch (Exception ex) {
-				Logger.Error(ex, "Unexpected error {0}", ex.Message);
+				Logger.Error(ex, "Unexpected error in outputIpconfigInfo {0}", ex.Message);
 			}
 		}
 
@@ -251,7 +251,7 @@ namespace ZitiUpdateService {
 				process.Start();
 				process.WaitForExit();
 			} catch (Exception ex) {
-				Logger.Error(ex, "Unexpected error {0}", ex.Message);
+				Logger.Error(ex, "Unexpected error in outputSystemInfo {0}", ex.Message);
 			}
 		}
 
@@ -269,7 +269,7 @@ namespace ZitiUpdateService {
 				process.Start();
 				process.WaitForExit();
 			} catch (Exception ex) {
-				Logger.Error(ex, "Unexpected error {0}", ex.Message);
+				Logger.Error(ex, "Unexpected error in outputDnsCache {0}", ex.Message);
 			}
 		}
 
@@ -283,7 +283,7 @@ namespace ZitiUpdateService {
 				string responseBody = resp.Content.ReadAsStringAsync().Result;
 				File.WriteAllText(extIpFile, responseBody);
 			} catch (Exception ex) {
-				Logger.Error(ex, "Unexpected error {0}", ex.Message);
+				Logger.Error(ex, "Unexpected error in outputExternalIP {0}", ex.Message);
 			}
 		}
 
