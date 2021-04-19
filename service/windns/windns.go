@@ -239,9 +239,9 @@ ForEach ($ns in $toRemove){
 	}
 }
 
-func IsNrptPoliciesEffective() bool {
-	script := fmt.Sprintf(`Add-DnsClientNrptRule -Namespace ".ziti.test" -NameServers "100.64.0.1" -Comment "Added by ziti-tunnel" -DisplayName "ziti-tunnel:.ziti.test"
-	Get-DnsClientNrptPolicy -Effective | Select-Object Namespace -Unique | Where-Object Namespace -Eq ".ziti.test"`)
+func IsNrptPoliciesEffective(dnsserver string) bool {
+	script := fmt.Sprintf(`Add-DnsClientNrptRule -Namespace ".ziti.test" -NameServers "%s" -Comment "Added by ziti-tunnel" -DisplayName "ziti-tunnel:.ziti.test"
+	Get-DnsClientNrptPolicy -Effective | Select-Object Namespace -Unique | Where-Object Namespace -Eq ".ziti.test"`, dnsserver)
 	log.Debugf("checking the nrpt policies with: %s", script)
 
 	cmd := exec.Command("powershell", "-Command", script)
