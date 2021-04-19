@@ -252,6 +252,7 @@ func IsNrptPoliciesEffective() bool {
 	err := cmd.Run()
 	if err != nil {
 		log.Errorf("ERROR adding the test nrpt rules: %v", err)
+		return false
 	}
 
 	policyFound := false
