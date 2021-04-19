@@ -251,7 +251,7 @@ func IsNrptPoliciesEffective() bool {
 
 	err := cmd.Run()
 	if err != nil {
-		log.Errorf("ERROR removing all nrpt rules: %v", err)
+		log.Errorf("ERROR adding the test nrpt rules: %v", err)
 	}
 
 	policyFound := false
@@ -265,10 +265,11 @@ func IsNrptPoliciesEffective() bool {
 		if strings.Compare(policyOut, ".ziti.test") == 0 {
 			policyFound = true
 			log.Debug("The nrpt policies are effective in this client")
-			removeSingleNrtpRule(".ziti.test")
 			break
 		}
 	}
+	removeSingleNrtpRule(".ziti.test")
+
 	return policyFound
 }
 
