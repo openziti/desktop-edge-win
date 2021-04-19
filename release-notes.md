@@ -8,6 +8,7 @@
 
 ## Bugs fixed:
 * [#362](https://github.com/openziti/desktop-edge-win/issues/362) Update tun ip, mask and addDns flag
+* [#364](https://github.com/openziti/desktop-edge-win/issues/364) Add the test nrpt policy function in the startup method
 
 ## Dependency Updates
 * none
