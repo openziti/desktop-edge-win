@@ -41,8 +41,8 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"strings"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -645,7 +645,7 @@ func updateTunIpv4(out *json.Encoder, ip string, ipMask int, addDns string) {
 		respondWithError(out, "Could not set Tun ip and mask", UNKNOWN_ERROR, err)
 		return
 	}
-	
+
 	respond(out, dto.Response{Message: "TunIPv4 and mask is set, Manual Restart is required", Code: SUCCESS, Error: "", Payload: ""})
 }
 
