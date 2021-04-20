@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,6 +11,7 @@ using System.Windows.Media.Animation;
 
 using NLog;
 using System.Web;
+using System.Windows.Media;
 
 namespace ZitiDesktopEdge {
 	/// <summary>
@@ -47,6 +49,9 @@ namespace ZitiDesktopEdge {
 		private double scrolledTo = 0;
 		public int totalServices = 0;
 
+		public ObservableCollection<ZitiService> _services = new ObservableCollection<ZitiService>();
+		public ObservableCollection<ZitiService> ZitiServices { get { return _services; } }
+
 		internal MainWindow MainWindow { get; set; }
 
 		private List<ZitiIdentity> identities {
@@ -66,7 +71,7 @@ namespace ZitiDesktopEdge {
 				FilterServices.Clear();
 				scrolledTo = 0;
 				_identity = value;
-				ServiceCount.Content = _identity.Services.Count + " services";
+				ServiceCount.Content = _identity.Services.Count + " service"+((_identity.Services.Count>1)?"s":"");
 				Page = 1;
 				SortBy = "Name";
 				SortWay = "Asc";
@@ -106,9 +111,9 @@ namespace ZitiDesktopEdge {
 		}
 
 		public void UpdateView() {
-			ServiceScroller.InvalidateScrollInfo();
-			ServiceScroller.ScrollToVerticalOffset(0);
-			ServiceScroller.InvalidateScrollInfo();
+			//ServiceScroller.InvalidateScrollInfo();
+			//ServiceScroller.ScrollToVerticalOffset(0);
+			//ServiceScroller.InvalidateScrollInfo();
 			scrolledTo = 0;
 			IdDetailName.Text = _identity.Name;
 			IdDetailName.ToolTip = _identity.Name;
@@ -144,7 +149,7 @@ namespace ZitiDesktopEdge {
 				IdentityMFA.AuthOff.Visibility = Visibility.Collapsed;
 				IdentityMFA.RecoveryButton.Visibility = Visibility.Collapsed;
 			}
-			ServiceList.Children.Clear();
+			//ServiceList.Children.Clear();
 
 			totalServices = _identity.Services.Count;
 
@@ -152,6 +157,8 @@ namespace ZitiDesktopEdge {
 				int index = 0;
 				int total = 0;
 				ZitiService[] services = new ZitiService[0];
+				_services = null;
+				_services = new ObservableCollection<ZitiService>(); 
 				if (SortBy == "Name") services = _identity.Services.OrderBy(s => s.Name.ToLower()).ToArray();
 				else if (SortBy == "Address") services = _identity.Services.OrderBy(s => s.Addresses.ToString()).ToArray();
 				else if (SortBy == "Protocol") services = _identity.Services.OrderBy(s => s.Protocols.ToString()).ToArray();
@@ -160,19 +167,15 @@ namespace ZitiDesktopEdge {
 				int startIndex = (Page - 1) * PerPage;
 				for (int i= startIndex; i<services.Length; i++) {
 					ZitiService zitiSvc = services[i];
-					total++;
+					total++; 
 					if (index<PerPage) {
 						if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0) {
-							Logger.Trace("painting: " + zitiSvc.Name);
-							ServiceInfo info = new ServiceInfo();
-							info.Info = zitiSvc;
-							info.OnMessage += Info_OnMessage;
-							info.OnDetails += ShowDetails;
-							ServiceList.Children.Add(info);
+							_services.Add(zitiSvc);
 							index++;
 						}
 					}
 				}
+				ServiceList.ItemsSource = ZitiServices;
 
 				TotalPages = (total / PerPage) + 1;
 
@@ -202,25 +205,10 @@ namespace ZitiDesktopEdge {
 
 		private void ShowDetails(ZitiService info) {
 			DetailName.Text = info.Name;
+			DetailProtocols.Text = info.ProtocolString;
+			DetailAddress.Text = info.AddressString;
+			DetailPorts.Text = info.PortString;
 			DetailUrl.Text = info.ToString();
-
-			string protocols = "";
-			string addresses = "";
-			string ports = "";
-
-			for (int i = 0; i < info.Protocols.Length; i++) {
-				protocols += ((i > 0) ? "," : "") + info.Protocols[i];
-			}
-			for (int i = 0; i < info.Addresses.Length; i++) {
-				addresses += ((i>0)?",":"")+info.Addresses[i];
-			}
-			for (int i = 0; i < info.Ports.Length; i++) {
-				ports += ((i > 0) ? "," : "") + info.Ports[i];
-			}
-
-			DetailProtocols.Text = protocols;
-			DetailAddress.Text = addresses;
-			DetailPorts.Text = ports;
 
 			DetailsArea.Visibility = Visibility.Visible;
 			DetailsArea.Opacity = 0;
@@ -351,15 +339,30 @@ namespace ZitiDesktopEdge {
 			this.Authenticate.Invoke(this.Identity);
 		}
 
+		public static DependencyObject GetScrollViewer(DependencyObject o) {
+			if (o is ScrollViewer) { return o; }
+			for (int i = 0; i < VisualTreeHelper.GetChildrenCount(o); i++) {
+				var child = VisualTreeHelper.GetChild(o, i);
+				var result = GetScrollViewer(child);
+				if (result == null) {
+					continue;
+				} else {
+					return result;
+				}
+			}
+			return null;
+		}
+
 		private void Scrolled(object sender, ScrollChangedEventArgs e) {
 			if (_loaded) {
-				var verticalOffset = ServiceScroller.VerticalOffset;
-				var maxVerticalOffset = ServiceScroller.ScrollableHeight;
-
+				var scrollViewer = GetScrollViewer(ServiceList) as ScrollViewer;
+				var verticalOffset = scrollViewer.VerticalOffset;
+				var maxVerticalOffset = scrollViewer.ScrollableHeight;
+			
 				if ((maxVerticalOffset < 0 || verticalOffset == maxVerticalOffset) && verticalOffset>0 && scrolledTo<verticalOffset) {
 					if (Page < TotalPages) {
 						scrolledTo = verticalOffset;
-						ServiceScroller.ScrollChanged -= Scrolled;
+						// scrollViewer.ScrollChanged -= Scrolled;
 						Logger.Trace("Paging: " + Page);
 						_loaded = false;
 						Page += 1;
@@ -375,23 +378,19 @@ namespace ZitiDesktopEdge {
 							ZitiService zitiSvc = services[i];
 							if (index < PerPage) {
 								if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0) {
-									ServiceInfo info = new ServiceInfo();
-									info.Info = zitiSvc;
-									info.OnMessage += Info_OnMessage;
-									info.OnDetails += ShowDetails;
-									ServiceList.Children.Add(info);
+									ZitiServices.Add(zitiSvc);
 									index++;
 								}
 							}
 						}
-						double totalOffset = ServiceScroller.VerticalOffset;
+						double totalOffset = scrollViewer.VerticalOffset;
 						double toNegate = index * 33;
 						double scrollTo = (totalOffset - toNegate);
-						ServiceScroller.InvalidateScrollInfo();
-						ServiceScroller.ScrollToVerticalOffset(verticalOffset);
-						ServiceScroller.InvalidateScrollInfo();
+						scrollViewer.InvalidateScrollInfo();
+						scrollViewer.ScrollToVerticalOffset(verticalOffset);
+						scrollViewer.InvalidateScrollInfo();
 						_loaded = true;
-						ServiceScroller.ScrollChanged += Scrolled;
+						// scrollViewer.ScrollChanged += Scrolled;
 					}
 				}
 			}
@@ -428,8 +427,22 @@ namespace ZitiDesktopEdge {
 			this.OnLoading?.Invoke(true);
 		}
 
-		private void ForgetIdentityButton_OnClick() {
+		private void WarnClicked(object sender, MouseButtonEventArgs e) {
+			ZitiService item = (ZitiService)(sender as FrameworkElement).DataContext;
+			OnMessage?.Invoke(item.Warning);
+		}
 
+		private void DetailsClicked(object sender, MouseButtonEventArgs e) {
+			ZitiService item = (ZitiService)(sender as FrameworkElement).DataContext;
+			ShowDetails(item);
+		}
+
+		private void VisibilityChanged(object sender, DependencyPropertyChangedEventArgs e) {
+			if (this.Visibility==Visibility.Collapsed) {
+				ServiceList.DataContext = null;
+				_services.Clear();
+				_services = null;
+			}
 		}
 	}
 }

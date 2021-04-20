@@ -9,7 +9,7 @@
     <StackPanel Orientation="Vertical" Height="33">
         <Grid Height="32">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="220"/>
                 <ColumnDefinition Width="100"/>
                 <ColumnDefinition x:Name="WarningColumn" Width="0"/>
                 <ColumnDefinition x:Name="DetailColumn" Width="30"/>

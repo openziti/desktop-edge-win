@@ -347,8 +347,16 @@ namespace ZitiDesktopEdge {
 			this.IdentityMenu.MainWindow = this;
 			SetNotifyIcon("white");
 
+			this.PreviewKeyDown += KeyPressed;
 			MFASetup.OnLoad += MFASetup_OnLoad;
 			IdentityMenu.OnMessage += IdentityMenu_OnMessage;
+		}
+
+		private void KeyPressed(object sender, KeyEventArgs e) {
+			if (e.Key == Key.Escape) {
+				if (IdentityMenu.Visibility == Visibility.Visible) IdentityMenu.Visibility = Visibility.Collapsed;
+				else if (MainMenu.Visibility == Visibility.Visible) MainMenu.Visibility = Visibility.Collapsed;
+			}
 		}
 
 		private void MFASetup_OnLoad(bool isComplete, string title, string message) {

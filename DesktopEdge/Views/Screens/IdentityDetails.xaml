@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:ZitiDesktopEdge"
              mc:Ignorable="d" 
              x:Name="IdentityArea"
-             d:DesignHeight="500" d:DesignWidth="350">
+             d:DesignHeight="500" d:DesignWidth="350" IsVisibleChanged="VisibilityChanged">
     <Grid>
         <!-- Border Arrow pointing to TaskBar -->
         <Canvas>
@@ -16,7 +16,7 @@
                 </Rectangle.LayoutTransform>
             </Rectangle>
         </Canvas>
-        
+
         <!-- Background Color for Pop Overs -->
         <Rectangle x:Name="MainCanvas" Margin="10,10,10,10" Fill="White" RadiusY="10" RadiusX="10"></Rectangle>
 
@@ -46,13 +46,46 @@
                 <local:MenuEditToggle x:Name="IdentityMFA" HorizontalAlignment="Stretch" Label="Multi Factor Auth" Margin="0,10,0,0" Recovery="MFARecovery" Authenticate="MFAAuthenticate" Toggle="ToggleMFA"></local:MenuEditToggle>
 
                 <local:Filter x:Name="FilterServices" OnFilter="DoFilter" VerticalAlignment="Top" Margin="10,16,10,0" />
-                
+
                 <TextBox Name="NoAuthServices" Height="30" FontWeight="Bold" TextAlignment="Center" Text="You must authenticate to access services" IsReadOnly="True" HorizontalAlignment="Stretch" BorderThickness="0" ClipToBounds="True" Grid.Column="0" Grid.Row="5" VerticalAlignment="Center" Padding="0,6,3,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBox>
                 <Grid Name="MainDetailScroll" MaxHeight="160" Margin="10,0,10,-10">
                     <Rectangle Margin="10,10,10,10" Fill="#070826" RadiusY="10" RadiusX="10"></Rectangle>
-                    <ScrollViewer x:Name="ServiceScroller" VerticalScrollBarVisibility="Visible" CanContentScroll="True" Margin="16,16,8,16" ScrollChanged="Scrolled">
-                        <StackPanel Name="ServiceList" Orientation="Vertical"></StackPanel>
-                    </ScrollViewer>
+                    <ListView x:Name="ServiceList" VirtualizingPanel.IsVirtualizing="True" ScrollViewer.ScrollChanged="Scrolled" Focusable="False" IsManipulationEnabled="False" BorderThickness="0" Background="Transparent" Margin="20,20,10,20" Style="{DynamicResource ServiceListStyle}">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="{x:Type ListViewItem}">
+                                <Setter Property="Background" Value="Transparent" />
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="{x:Type ListViewItem}">
+                                            <ContentPresenter />
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Height="32">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="220"/>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition x:Name="WarningColumn" Width="{Binding WarnWidth}"/>
+                                        <ColumnDefinition x:Name="DetailColumn" Width="20"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Orientation="Vertical" Height="30" Grid.Column="0">
+                                        <TextBox Name="MainLabel" Text="{Binding Name}" Padding="0,0,12,0" Height="15" IsReadOnly="True" BorderThickness="0" FontWeight="Bold" Background="Transparent" ClipToBounds="True" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" FontSize="11" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White"></TextBox>
+                                        <TextBox Name="MainEdit" Text="{Binding AddressString}" IsReadOnly="True" Height="14" Padding="0,0,12,0" TextAlignment="Left" BorderThickness="0" Background="Transparent" ClipToBounds="True" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Stretch" FontSize="10" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="LightGray"></TextBox>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Vertical" Height="30" Grid.Column="1">
+                                        <TextBox Name="Protocols" Text="{Binding ProtocolString}" Padding="0,0,12,0" Height="15" IsReadOnly="True" BorderThickness="0" FontWeight="Bold" Background="Transparent" ClipToBounds="True" VerticalAlignment="Bottom" HorizontalAlignment="Right" FontSize="11" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Opacity="0.9"></TextBox>
+                                        <TextBox Name="Ports" Text="{Binding PortString}" IsReadOnly="True" Height="14" Padding="0,0,12,0" TextAlignment="Right" BorderThickness="0" Background="Transparent" ClipToBounds="True" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Stretch" FontSize="10" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="LightGray"></TextBox>
+                                    </StackPanel>
+                                    <Image x:Name="WarnIcon" Visibility="{Binding WarningVisibility}" ToolTip="{Binding WarningMessage}" Source="/Assets/Images/Warning.png" Grid.Column="2" Width="20" Height="20" Cursor="Hand" MouseUp="WarnClicked"/>
+                                    <Image x:Name="DetailIcon" Source="/Assets/Images/detail.png" Grid.Column="3" Width="20" Height="20" Cursor="Hand" MouseUp="DetailsClicked"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
                 </Grid>
                 <Label x:Name="ServiceCount" HorizontalAlignment="Center" Content="0 Services" Margin="0,0,0,0" Foreground="Gray" FontWeight="Bold" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                 <Grid>
@@ -67,7 +100,7 @@
             <local:StyledButton x:Name="ForgetIdentityButton" MinWidth="310" BgColor="#F4044D" Label="Forget This Identity" Margin="0,0,0,40" OnClick="ForgetIdentity" HorizontalAlignment="Center" VerticalAlignment="Bottom" />
         </Grid>
         <Rectangle x:Name="ModalBg" Margin="10,10,10,10" Fill="Black" RadiusY="10" RadiusX="10" Opacity="0" Visibility="Collapsed"></Rectangle>
-        
+
         <!-- Expended Detail Modal for Details pop up on service list -->
         <Grid x:Name="DetailsArea" Visibility="Collapsed" Height="400" Margin="0,0,0,0">
             <Grid.ColumnDefinitions>
@@ -98,7 +131,7 @@
 
                 <Label Content="Protocols" Padding="10,0,0,0" FontWeight="Bold" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
                 <TextBox x:Name="DetailProtocols" MaxWidth="300" Background="Transparent" IsReadOnly="True" HorizontalAlignment="Stretch" Height="20" BorderThickness="0" TextAlignment="Left" Padding="0,0,0,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
-                
+
             </StackPanel>
             <Image Source="/Assets/Images/closeBlack.png" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,40,40,0" Width="10" Height="10" Cursor="Hand" MouseUp="CloseDetails"></Image>
         </Grid>
