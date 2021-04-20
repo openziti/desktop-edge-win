@@ -49,6 +49,7 @@ namespace ZitiDesktopEdge {
 		private bool _loaded = false;
 		private double scrolledTo = 0;
 		public int totalServices = 0;
+		private ScrollViewer _scroller;
 
 		public ObservableCollection<ZitiService> _services = new ObservableCollection<ZitiService>();
 		public ObservableCollection<ZitiService> ZitiServices { get { return _services; } }
@@ -112,11 +113,13 @@ namespace ZitiDesktopEdge {
 		}
 
 		public void UpdateView() {
-			var scrollViewer = GetScrollViewer(ServiceList) as ScrollViewer;
-			if (scrollViewer!=null) {
-				scrollViewer.InvalidateScrollInfo();
-				scrollViewer.ScrollToVerticalOffset(0);
-				scrollViewer.InvalidateScrollInfo();
+			if (_scroller==null) {
+				_scroller = GetScrollViewer(ServiceList) as ScrollViewer;
+			}
+			if (_scroller != null) {
+				_scroller.InvalidateScrollInfo();
+				_scroller.ScrollToVerticalOffset(0);
+				_scroller.InvalidateScrollInfo();
 			}
 			scrolledTo = 0;
 			IdDetailName.Text = _identity.Name;
@@ -359,9 +362,11 @@ namespace ZitiDesktopEdge {
 
 		private void Scrolled(object sender, ScrollChangedEventArgs e) {
 			if (_loaded) {
-				var scrollViewer = GetScrollViewer(ServiceList) as ScrollViewer;
-				var verticalOffset = scrollViewer.VerticalOffset;
-				var maxVerticalOffset = scrollViewer.ScrollableHeight;
+				if (_scroller == null) {
+					_scroller = GetScrollViewer(ServiceList) as ScrollViewer;
+				}
+				var verticalOffset = _scroller.VerticalOffset;
+				var maxVerticalOffset = _scroller.ScrollableHeight;
 			
 				if ((maxVerticalOffset < 0 || verticalOffset == maxVerticalOffset) && verticalOffset>0 && scrolledTo<verticalOffset) {
 					if (Page < TotalPages) {
@@ -387,12 +392,12 @@ namespace ZitiDesktopEdge {
 								}
 							}
 						}
-						double totalOffset = scrollViewer.VerticalOffset;
+						double totalOffset = _scroller.VerticalOffset;
 						double toNegate = index * 33;
 						double scrollTo = (totalOffset - toNegate);
-						scrollViewer.InvalidateScrollInfo();
-						scrollViewer.ScrollToVerticalOffset(verticalOffset);
-						scrollViewer.InvalidateScrollInfo();
+						_scroller.InvalidateScrollInfo();
+						_scroller.ScrollToVerticalOffset(verticalOffset);
+						_scroller.InvalidateScrollInfo();
 						_loaded = true;
 						// scrollViewer.ScrollChanged += Scrolled;
 					}
@@ -449,10 +454,6 @@ namespace ZitiDesktopEdge {
 				BindingOperations.ClearAllBindings(ServiceList);
 				GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
 			}
-		}
-
-		private void ServiceList_Scroll(object sender, System.Windows.Controls.Primitives.ScrollEventArgs e) {
-
 		}
 	}
 }
