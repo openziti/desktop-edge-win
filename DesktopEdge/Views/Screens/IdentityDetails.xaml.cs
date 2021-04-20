@@ -451,8 +451,6 @@ namespace ZitiDesktopEdge {
 				ServiceList.DataContext = null;
 				_services.Clear();
 				_services = null;
-				BindingOperations.ClearAllBindings(ServiceList);
-				GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
 			}
 		}
 	}
