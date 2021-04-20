@@ -50,7 +50,7 @@
                 <TextBox Name="NoAuthServices" Height="30" FontWeight="Bold" TextAlignment="Center" Text="You must authenticate to access services" IsReadOnly="True" HorizontalAlignment="Stretch" BorderThickness="0" ClipToBounds="True" Grid.Column="0" Grid.Row="5" VerticalAlignment="Center" Padding="0,6,3,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBox>
                 <Grid Name="MainDetailScroll" MaxHeight="160" Margin="10,0,10,-10">
                     <Rectangle Margin="10,10,10,10" Fill="#070826" RadiusY="10" RadiusX="10"></Rectangle>
-                    <ListView x:Name="ServiceList" VirtualizingPanel.IsVirtualizing="True" ScrollViewer.ScrollChanged="Scrolled" Focusable="False" IsManipulationEnabled="False" BorderThickness="0" Background="Transparent" Margin="20,20,10,20" Style="{DynamicResource ServiceListStyle}">
+                    <ListView x:Name="ServiceList" VirtualizingPanel.IsVirtualizing="True" ScrollViewer.IsDeferredScrollingEnabled="True" ScrollViewer.ScrollChanged="Scrolled" Focusable="False" IsManipulationEnabled="False" BorderThickness="0" Background="Transparent" Margin="20,20,10,20" Style="{DynamicResource ServiceListStyle}">
                         <ListView.ItemContainerStyle>
                             <Style TargetType="{x:Type ListViewItem}">
                                 <Setter Property="Background" Value="Transparent" />

@@ -12,6 +12,7 @@ using System.Windows.Media.Animation;
 using NLog;
 using System.Web;
 using System.Windows.Media;
+using System.Windows.Data;
 
 namespace ZitiDesktopEdge {
 	/// <summary>
@@ -111,9 +112,12 @@ namespace ZitiDesktopEdge {
 		}
 
 		public void UpdateView() {
-			//ServiceScroller.InvalidateScrollInfo();
-			//ServiceScroller.ScrollToVerticalOffset(0);
-			//ServiceScroller.InvalidateScrollInfo();
+			var scrollViewer = GetScrollViewer(ServiceList) as ScrollViewer;
+			if (scrollViewer!=null) {
+				scrollViewer.InvalidateScrollInfo();
+				scrollViewer.ScrollToVerticalOffset(0);
+				scrollViewer.InvalidateScrollInfo();
+			}
 			scrolledTo = 0;
 			IdDetailName.Text = _identity.Name;
 			IdDetailName.ToolTip = _identity.Name;
@@ -442,7 +446,13 @@ namespace ZitiDesktopEdge {
 				ServiceList.DataContext = null;
 				_services.Clear();
 				_services = null;
+				BindingOperations.ClearAllBindings(ServiceList);
+				GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
 			}
+		}
+
+		private void ServiceList_Scroll(object sender, System.Windows.Controls.Primitives.ScrollEventArgs e) {
+
 		}
 	}
 }
