@@ -69,16 +69,16 @@
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="220"/>
                                         <ColumnDefinition Width="100"/>
-                                        <ColumnDefinition x:Name="WarningColumn" Width="{Binding WarnWidth}"/>
+                                        <ColumnDefinition x:Name="WarningColumn" Width="20"/>
                                         <ColumnDefinition x:Name="DetailColumn" Width="20"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Orientation="Vertical" Height="30" Grid.Column="0">
-                                        <Label Name="MainLabel" Content="{Binding Name}" Padding="0,0,12,0" Height="15" BorderThickness="0" FontWeight="Bold" Background="Transparent" ClipToBounds="True" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" FontSize="11" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White"></Label>
-                                        <Label Name="MainEdit" Content="{Binding AddressString}" Height="14" Padding="0,0,12,0" BorderThickness="0" Background="Transparent" ClipToBounds="True" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Stretch" FontSize="10" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="LightGray"></Label>
+                                        <TextBlock Name="MainLabel" Text="{Binding Name}" Padding="0,0,12,0" Height="15" FontWeight="Bold" Background="Transparent" ClipToBounds="True" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" FontSize="11" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White"></TextBlock>
+                                        <TextBlock Name="MainEdit" Text="{Binding AddressString}" Height="14" Padding="0,0,12,0" Background="Transparent" ClipToBounds="True" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Stretch" FontSize="10" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="LightGray"></TextBlock>
                                     </StackPanel>
                                     <StackPanel Orientation="Vertical" Height="30" Grid.Column="1">
-                                        <Label Name="Protocols" Content="{Binding ProtocolString}" Padding="0,0,12,0" Height="15" BorderThickness="0" FontWeight="Bold" Background="Transparent" ClipToBounds="True" VerticalAlignment="Bottom" HorizontalAlignment="Right" FontSize="11" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Opacity="0.9"></Label>
-                                        <Label Name="Ports" Content="{Binding PortString}" Height="14" Padding="0,0,12,0" HorizontalAlignment="Right" BorderThickness="0" Background="Transparent" ClipToBounds="True" Grid.Column="0" VerticalAlignment="Top" FontSize="10" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="LightGray"></Label>
+                                        <TextBlock Name="Protocols" Text="{Binding ProtocolString}" Padding="0,0,12,0" Height="15" FontWeight="Bold" Background="Transparent" ClipToBounds="True" VerticalAlignment="Bottom" HorizontalAlignment="Center" FontSize="11" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Opacity="0.9"></TextBlock>
+                                        <TextBlock Name="Ports" Text="{Binding PortString}" Height="14" Padding="0,0,12,0" HorizontalAlignment="Center" Background="Transparent" ClipToBounds="True" Grid.Column="0" VerticalAlignment="Top" FontSize="10" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="LightGray"></TextBlock>
                                     </StackPanel>
                                     <Image x:Name="WarnIcon" Visibility="{Binding WarningVisibility}" ToolTip="{Binding WarningMessage}" Source="/Assets/Images/Warning.png" Grid.Column="2" Width="20" Height="20" Cursor="Hand" MouseUp="WarnClicked"/>
                                     <Image x:Name="DetailIcon" Source="/Assets/Images/detail.png" Grid.Column="3" Width="20" Height="20" Cursor="Hand" MouseUp="DetailsClicked"/>

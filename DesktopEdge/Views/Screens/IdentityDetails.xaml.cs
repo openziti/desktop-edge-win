@@ -438,7 +438,7 @@ namespace ZitiDesktopEdge {
 
 		private void WarnClicked(object sender, MouseButtonEventArgs e) {
 			ZitiService item = (ZitiService)(sender as FrameworkElement).DataContext;
-			OnMessage?.Invoke(item.Warning);
+			OnMessage?.Invoke(item.WarningMessage);
 		}
 
 		private void DetailsClicked(object sender, MouseButtonEventArgs e) {
@@ -449,8 +449,10 @@ namespace ZitiDesktopEdge {
 		private void VisibilityChanged(object sender, DependencyPropertyChangedEventArgs e) {
 			if (this.Visibility==Visibility.Collapsed) {
 				ServiceList.DataContext = null;
-				_services.Clear();
-				_services = null;
+				if (_services!=null) {
+					_services.Clear();
+					_services = null;
+				}
 			}
 		}
 	}

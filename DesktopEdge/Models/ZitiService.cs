@@ -156,7 +156,7 @@ namespace ZitiDesktopEdge.Models {
 			get {
 				string toReturn = "";
 				for (int i = 0; i < this.Addresses.Length; i++) {
-					toReturn += ((i > 0) ? "," : "") + this.Addresses[i].Hostname;
+					toReturn += ((i > 0) ? "," : "") + this.Addresses[i].ToString();
 				}
 				return toReturn;
 			}
