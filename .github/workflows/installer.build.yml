@@ -53,6 +53,10 @@ jobs:
         with:
           name: ziti-tunnel-win.zip-${{ env.VERSION }}
           path: "service/ziti-tunnel-win.zip"
+      - uses: nuget/setup-nuget@v1
+        with:
+          nuget-api-key: ${{ secrets.NuGetAPIKey }}
+          nuget-version: '5.8.1.7021'
       - name: Restore nuget packages
         run: nuget restore ZitiDesktopEdge.sln
       - shell: pwsh
