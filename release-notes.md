@@ -1,16 +1,14 @@
-# Release 1.9.3
+# Release 1.9.4
 
 ## What's New
-* Page Service List
-* Sort Service on Identity Details Page
-* Consistent UX for MFA Screens
+* none
 
 ## Other changes:
-* Service to UI interaction is now with one bulk update of services instead of one event per service update
-* Added a configuration option to control if DNS is applied to the TUN. Some users are having issues with NRPT-only working. For now we'll add a boolean that allows the user to control if DNS should be added to the TUN
+* none
 
 ## Bugs fixed:
-* none
+* [#362](https://github.com/openziti/desktop-edge-win/issues/362) Update tun ip, mask and addDns flag
+* [#364](https://github.com/openziti/desktop-edge-win/issues/364) Add the test nrpt policy function in the startup method
 
 ## Dependency Updates
 * none
@@ -24,6 +22,7 @@
 
 ## Other changes:
 * Service to UI interaction is now with one bulk update of services instead of one event per service update
+* Added a configuration option to control if DNS is applied to the TUN. Some users are having issues with NRPT-only working. For now we'll add a boolean that allows the user to control if DNS should be added to the TUN
 
 ## Bugs fixed:
 * none

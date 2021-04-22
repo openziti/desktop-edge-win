@@ -143,10 +143,14 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Models\FilterData.cs" />
     <Compile Include="Models\MessageCount.cs" />
     <Compile Include="Models\MFA.cs" />
     <Compile Include="Views\Controls\StyledButton.xaml.cs">
       <DependentUpon>StyledButton.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\ItemRenderers\Filter.xaml.cs">
+      <DependentUpon>Filter.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\ItemRenderers\MenuEditSearch.xaml.cs">
       <DependentUpon>MenuEditSearch.xaml</DependentUpon>
@@ -194,6 +198,10 @@
     </Compile>
     <Compile Include="Native\WinAPI.cs" />
     <Page Include="Views\Controls\StyledButton.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\ItemRenderers\Filter.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -446,6 +454,11 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Assets\Images\recovery.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Images\disconnected.png" />
+    <Resource Include="Assets\Images\name.png" />
+    <Resource Include="Assets\Images\statusconnected.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

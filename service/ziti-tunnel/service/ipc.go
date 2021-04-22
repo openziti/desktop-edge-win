@@ -41,6 +41,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -498,6 +499,21 @@ func serveIpc(conn net.Conn) {
 
 			//save the state
 			rts.SaveState()
+		case "UpdateTunIpv4":
+			var tunIPv4 string
+			var tunIPv4Mask int
+			var addDns string
+			if cmd.Payload["TunIPv4"] != nil {
+				tunIPv4 = cmd.Payload["TunIPv4"].(string)
+			}
+			if cmd.Payload["TunIPv4Mask"] != nil {
+				var tunIpv4Mask = cmd.Payload["TunIPv4Mask"].(float64)
+				tunIPv4Mask = int(tunIpv4Mask)
+			}
+			if cmd.Payload["AddDns"] != nil {
+				addDns = strconv.FormatBool(cmd.Payload["AddDns"].(bool))
+			}
+			updateTunIpv4(enc, tunIPv4, tunIPv4Mask, addDns)
 		case "NotifyLogLevelUIAndUpdateService":
 			sendLogLevelAndNotify(enc, cmd.Payload["Level"].(string))
 		case "NotifyIdentityUI":
@@ -620,6 +636,17 @@ func setLogLevel(out *json.Encoder, level string) {
 	cziti.SetLogLevel(cLevel)
 	rts.state.LogLevel = goLevel.String()
 	respond(out, dto.Response{Message: "log level set", Code: SUCCESS, Error: "", Payload: nil})
+}
+
+func updateTunIpv4(out *json.Encoder, ip string, ipMask int, addDns string) {
+
+	err := UpdateRuntimeStateIpv4(ip, ipMask, addDns)
+	if err != nil {
+		respondWithError(out, "Could not set Tun ip and mask", UNKNOWN_ERROR, err)
+		return
+	}
+
+	respond(out, dto.Response{Message: "TunIPv4 and mask is set, Manual Restart is required", Code: SUCCESS, Error: "", Payload: ""})
 }
 
 func serveLogs(conn net.Conn) {

@@ -20,24 +20,26 @@ package service
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/openziti/desktop-edge-win/service/cziti"
+	"github.com/openziti/desktop-edge-win/service/windns"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/constants"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
+	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"golang.org/x/sys/windows"
+	"golang.org/x/sys/windows/registry"
+	"golang.zx2c4.com/wireguard/tun"
+	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
 	"io"
 	"io/ioutil"
 	"net"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"time"
-
-	"github.com/openziti/desktop-edge-win/service/cziti"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/constants"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
-	idcfg "github.com/openziti/sdk-golang/ziti/config"
-	"golang.org/x/sys/windows/registry"
-	"golang.zx2c4.com/wireguard/tun"
-	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
 )
 
 type RuntimeState struct {
@@ -221,7 +223,14 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int, applyDns bool) (net.
 	}
 	log.Info("routing applied")
 
-	if applyDns {
+	zitiPoliciesEffective := windns.IsNrptPoliciesEffective(ipv4)
+	if applyDns || !zitiPoliciesEffective {
+		if applyDns {
+			log.Infof("DNS is applied to the TUN interface, because apply Dns flag in the config file is %t ", applyDns)
+		}
+		if !applyDns && !zitiPoliciesEffective {
+			log.Infof("DNS is applied to the TUN interface, because Ziti policies test result in this client is %t", zitiPoliciesEffective)
+		}
 		//for windows 10+, could 'domains' be able to replace NRPT? dunno - didn't test it
 		luid.SetDNS(windows.AF_INET, []net.IP{ip}, nil)
 	}
@@ -399,6 +408,35 @@ func (t *RuntimeState) UpdateIpv4Mask(ipv4mask int) {
 func (t *RuntimeState) UpdateIpv4(ipv4 string) {
 	rts.state.TunIpv4 = ipv4
 	rts.SaveState()
+}
+
+func UpdateRuntimeStateIpv4(ip string, ipv4Mask int, addDns string) error {
+
+	log.Infof("updating configuration ip: %s, mask: %d, dns: %t", ip, ipv4Mask, addDns)
+
+	if ipv4Mask < constants.Ipv4MaxMask || ipv4Mask > constants.Ipv4MinMask {
+		return errors.New(fmt.Sprintf("ipv4Mask should be between %d and %d", constants.Ipv4MaxMask, constants.Ipv4MinMask))
+	}
+
+	if addDns != "" {
+		addDnsBool, err := strconv.ParseBool(addDns)
+
+		if err != nil {
+			return errors.New(fmt.Sprintf("Incorrect addDns %v", err))
+		}
+
+		rts.state.AddDns = addDnsBool
+	}
+
+	// if ip is not empty, then we set both ip and mask
+	if ip != "" {
+		rts.state.TunIpv4 = ip
+		rts.state.TunIpv4Mask = ipv4Mask
+	}
+
+	rts.SaveState()
+
+	return nil
 }
 
 // uses the registry to determine if IPv6 is enabled or disabled on this machine. If it is disabled an IPv6 DNS entry

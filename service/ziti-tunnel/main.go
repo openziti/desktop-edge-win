@@ -111,6 +111,8 @@ func main() {
 		commandline.Execute()
 	case "feedback":
 		commandline.Execute()
+	case "config":
+		commandline.Execute()
 	default:
 		usage(fmt.Sprintf("invalid command %s", cmd))
 	}
@@ -126,7 +128,7 @@ func usage(errmsg string) {
 		"%s\n\n"+
 			"usage: %s <command>\n"+
 			"       where <command> is one of\n"+
-			"       install, remove, debug, start, stop, pause, continue, list, identity, loglevel, feedback or version.\n",
+			"       install, remove, debug, start, stop, pause, continue, list, identity, loglevel, feedback, config or version.\n",
 		errmsg, os.Args[0])
 	os.Exit(2)
 }

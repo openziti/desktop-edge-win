@@ -21,7 +21,7 @@
             <TextBox Name="MainEdit" Background="White" HorizontalAlignment="Stretch" Height="30" Grid.Column="1" BorderThickness="1" TextAlignment="Left" Margin="30,0,0,0" Padding="5,3,3,5" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" VerticalContentAlignment="Center" SpellCheck.IsEnabled="True" MaxLength="100" KeyUp="MainEdit_KeyUp">
                 <TextBox.Resources>
                     <Style TargetType="{x:Type Border}">
-                        <Setter Property="CornerRadius" Value="10"/>
+                        <Setter Property="CornerRadius" Value="7"/>
                     </Style>
                 </TextBox.Resources>
             </TextBox>

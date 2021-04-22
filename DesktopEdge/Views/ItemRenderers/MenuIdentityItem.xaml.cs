@@ -64,7 +64,6 @@ namespace ZitiDesktopEdge {
 		private void ShowIdentity(object sender, MouseButtonEventArgs e) {
 			IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
 			deets.SelectedIdentityMenu = this;
-			deets.IdDetailToggle.Enabled = this.Identity.IsEnabled;
 			deets.Identity = this.Identity;
 		}
 	}

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,6 +11,8 @@ using System.Windows.Media.Animation;
 
 using NLog;
 using System.Web;
+using System.Windows.Media;
+using System.Windows.Data;
 
 namespace ZitiDesktopEdge {
 	/// <summary>
@@ -35,10 +38,21 @@ namespace ZitiDesktopEdge {
 		public event OnAuthenticate Authenticate;
 		public delegate void OnRecovery(ZitiIdentity identity);
 		public event OnRecovery Recovery;
+		public delegate void LoadingEvent(bool isComplete);
+		public event LoadingEvent OnLoading;
+
 		public int Page = 1;
 		public int PerPage = 50;
+		public int TotalPages = 1;
 		public string SortBy = "Name";
 		public string SortWay = "Asc";
+		private bool _loaded = false;
+		private double scrolledTo = 0;
+		public int totalServices = 0;
+		private ScrollViewer _scroller;
+
+		public ObservableCollection<ZitiService> _services = new ObservableCollection<ZitiService>();
+		public ObservableCollection<ZitiService> ZitiServices { get { return _services; } }
 
 		internal MainWindow MainWindow { get; set; }
 
@@ -55,13 +69,15 @@ namespace ZitiDesktopEdge {
 				return _identity;
 			}
 			set {
+				_loaded = false;
+				FilterServices.Clear();
+				scrolledTo = 0;
 				_identity = value;
-				this.IdDetailToggle.Enabled = _identity.IsEnabled;
+				ServiceCount.Content = _identity.Services.Count + " service"+((_identity.Services.Count>1)?"s":"");
 				Page = 1;
 				SortBy = "Name";
 				SortWay = "Asc";
-				SortByField.SelectedIndex = 0;
-				SortWayField.SelectedIndex = 0;
+				filter = "";
 				UpdateView();
 				IdentityArea.Opacity = 1.0;
 				IdentityArea.Visibility = Visibility.Visible;
@@ -97,16 +113,31 @@ namespace ZitiDesktopEdge {
 		}
 
 		public void UpdateView() {
+			if (_scroller==null) {
+				_scroller = GetScrollViewer(ServiceList) as ScrollViewer;
+			}
+			if (_scroller != null) {
+				_scroller.InvalidateScrollInfo();
+				_scroller.ScrollToVerticalOffset(0);
+				_scroller.InvalidateScrollInfo();
+			}
+			scrolledTo = 0;
 			IdDetailName.Text = _identity.Name;
 			IdDetailName.ToolTip = _identity.Name;
-			IdDetailToggle.Enabled = _identity.IsEnabled;
-			IdentityName.Value = _identity.Name;
-			IdentityNetwork.Value = _identity.ControllerUrl;
-			IdentityEnrollment.Value = _identity.EnrollmentStatus;
-			IdentityStatus.Value = _identity.IsEnabled ? "active" : "disabled";
 			IdentityMFA.IsOn = _identity.IsMFAEnabled;
 			IdentityMFA.ToggleField.IsEnabled = true;
 			IdentityMFA.ToggleField.Opacity = 1;
+			IsConnected.Visibility = Visibility.Collapsed;
+			IsDisconnected.Visibility = Visibility.Collapsed;
+			IsConnected.ToolTip = "Enabled - Click To Disable";
+			IsDisconnected.ToolTip = "Disabled - Click to Enable";
+			IdServer.Value = _identity.ControllerUrl;
+			IdName.Value = _identity.Name;
+			if (_identity.IsEnabled) {
+				IsConnected.Visibility = Visibility.Visible;
+			} else {
+				IsDisconnected.Visibility = Visibility.Visible;
+			}
 			if (_identity.IsMFAEnabled) {
 				if (_identity.MFAInfo.IsAuthenticated) {
 					IdentityMFA.ToggleField.IsEnabled = true;
@@ -125,13 +156,16 @@ namespace ZitiDesktopEdge {
 				IdentityMFA.AuthOff.Visibility = Visibility.Collapsed;
 				IdentityMFA.RecoveryButton.Visibility = Visibility.Collapsed;
 			}
-			ServiceList.Children.Clear();
-			PageSortArea.Visibility = Visibility.Collapsed;
+			//ServiceList.Children.Clear();
+
+			totalServices = _identity.Services.Count;
+
 			if (_identity.Services.Count>0) {
-				PageSortArea.Visibility = Visibility.Visible;
 				int index = 0;
 				int total = 0;
 				ZitiService[] services = new ZitiService[0];
+				_services = null;
+				_services = new ObservableCollection<ZitiService>(); 
 				if (SortBy == "Name") services = _identity.Services.OrderBy(s => s.Name.ToLower()).ToArray();
 				else if (SortBy == "Address") services = _identity.Services.OrderBy(s => s.Addresses.ToString()).ToArray();
 				else if (SortBy == "Protocol") services = _identity.Services.OrderBy(s => s.Protocols.ToString()).ToArray();
@@ -140,85 +174,48 @@ namespace ZitiDesktopEdge {
 				int startIndex = (Page - 1) * PerPage;
 				for (int i= startIndex; i<services.Length; i++) {
 					ZitiService zitiSvc = services[i];
-					total++;
-					if (index<100) {
+					total++; 
+					if (index<PerPage) {
 						if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0) {
-							Logger.Trace("painting: " + zitiSvc.Name);
-							ServiceInfo info = new ServiceInfo();
-							info.Info = zitiSvc;
-							info.OnMessage += Info_OnMessage;
-							info.OnDetails += ShowDetails;
-							ServiceList.Children.Add(info);
+							_services.Add(zitiSvc);
 							index++;
 						}
 					}
 				}
+				ServiceList.ItemsSource = ZitiServices;
 
-				if (Page==1) {
-					Pages.Items.Clear();
-					int totalPages = (total / PerPage) + 1;
-					for (int i = 1; i <= totalPages; i++) {
-						ComboBoxItem item = new ComboBoxItem();
-						if (i == Page) item.IsSelected = true;
-						item.Content = i.ToString();
-						Pages.Items.Add(item);
-					}
-				}
+				TotalPages = (total / PerPage) + 1;
 
-				double newHeight = MainHeight - 330; 
-				ServiceRow.Height = new GridLength((double)newHeight);
+				double newHeight = MainHeight - 330;
 				MainDetailScroll.MaxHeight = newHeight;
 				MainDetailScroll.Height = newHeight;
 				MainDetailScroll.Visibility = Visibility.Visible;
-				ServiceTitle.Label = _identity.Services.Count + " Services";
-				ServiceTitle.MainEdit.Visibility = Visibility.Visible;
-				ServiceTitle.Visibility = Visibility.Visible;
+
 				AuthMessageBg.Visibility = Visibility.Collapsed;
 				AuthMessageLabel.Visibility = Visibility.Collapsed;
 				NoAuthServices.Visibility = Visibility.Collapsed;
 			} else {
-				ServiceRow.Height = new GridLength((double)0.0);
 				MainDetailScroll.Visibility = Visibility.Collapsed;
-				ServiceTitle.Label = "No Services";
-				ServiceTitle.MainEdit.Text = "";
-				ServiceTitle.MainEdit.Visibility = Visibility.Collapsed;
 				if (this._identity.IsMFAEnabled&&!this._identity.MFAInfo.IsAuthenticated) {
-					ServiceTitle.Visibility = Visibility.Collapsed;
 					AuthMessageBg.Visibility = Visibility.Visible;
 					AuthMessageLabel.Visibility = Visibility.Visible;
-					ServiceRow.Height = new GridLength((double)30);
 					NoAuthServices.Visibility = Visibility.Visible;
 				} else {
-					ServiceTitle.Visibility = Visibility.Visible;
 					AuthMessageBg.Visibility = Visibility.Collapsed;
 					AuthMessageLabel.Visibility = Visibility.Collapsed;
 					NoAuthServices.Visibility = Visibility.Collapsed;
 				}
 			}
 			ConfirmView.Visibility = Visibility.Collapsed;
+			_loaded = true;
 		}
 
 		private void ShowDetails(ZitiService info) {
 			DetailName.Text = info.Name;
+			DetailProtocols.Text = info.ProtocolString;
+			DetailAddress.Text = info.AddressString;
+			DetailPorts.Text = info.PortString;
 			DetailUrl.Text = info.ToString();
-
-			string protocols = "";
-			string addresses = "";
-			string ports = "";
-
-			for (int i = 0; i < info.Protocols.Length; i++) {
-				protocols += ((i > 0) ? "," : "") + info.Protocols[i];
-			}
-			for (int i = 0; i < info.Addresses.Length; i++) {
-				addresses += ((i>0)?",":"")+info.Addresses[i];
-			}
-			for (int i = 0; i < info.Ports.Length; i++) {
-				ports += ((i > 0) ? "," : "") + info.Ports[i];
-			}
-
-			DetailProtocols.Text = protocols;
-			DetailAddress.Text = addresses;
-			DetailPorts.Text = ports;
 
 			DetailsArea.Visibility = Visibility.Visible;
 			DetailsArea.Opacity = 0;
@@ -257,15 +254,6 @@ namespace ZitiDesktopEdge {
 			OnMessage?.Invoke(message);
 		}
 
-		async private void IdToggle(bool on) {
-			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-			await client.IdentityOnOffAsync(_identity.Fingerprint, on);
-			if (SelectedIdentity!=null) SelectedIdentity.ToggleSwitch.Enabled = on;
-			if (SelectedIdentityMenu != null) SelectedIdentityMenu.ToggleSwitch.Enabled = on;
-			_identity.IsEnabled = on;
-			IdentityStatus.Value = _identity.IsEnabled ? "active" : "disabled";
-		}
-
 		public IdentityDetails() {
 			InitializeComponent();
 		}
@@ -277,7 +265,7 @@ namespace ZitiDesktopEdge {
 			MainDetailScroll.Height = height;
 		}
 
-		private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
+		private void ForgetIdentity() {
 			if (this.Visibility==Visibility.Visible&&ConfirmView.Visibility==Visibility.Collapsed) {
 				ConfirmView.Visibility = Visibility.Visible;
 			}
@@ -312,12 +300,6 @@ namespace ZitiDesktopEdge {
 				OnError("An unexpected error has occured while removing the identity. Please verify the service is still running and try again.");
 			}
 		}
-
-		private void DoFilter(string filter) {
-			this.filter = filter;
-			if (this._identity!=null) UpdateView();
-		}
-
 
 		private void ToggleMFA(bool isOn) {
 			this.OnMFAToggled?.Invoke(isOn);
@@ -364,33 +346,112 @@ namespace ZitiDesktopEdge {
 			this.Authenticate.Invoke(this.Identity);
 		}
 
-		private void Pages_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-			ComboBoxItem selected = (ComboBoxItem)Pages.SelectedValue;
-			if (selected!=null) {
-				int value = Int32.Parse(selected.Content.ToString());
-				if (value!=Page) {
-					Page = value;
-					UpdateView();
+		public static DependencyObject GetScrollViewer(DependencyObject o) {
+			if (o is ScrollViewer) { return o; }
+			for (int i = 0; i < VisualTreeHelper.GetChildrenCount(o); i++) {
+				var child = VisualTreeHelper.GetChild(o, i);
+				var result = GetScrollViewer(child);
+				if (result == null) {
+					continue;
+				} else {
+					return result;
+				}
+			}
+			return null;
+		}
+
+		private void Scrolled(object sender, ScrollChangedEventArgs e) {
+			if (_loaded) {
+				if (_scroller == null) {
+					_scroller = GetScrollViewer(ServiceList) as ScrollViewer;
+				}
+				var verticalOffset = _scroller.VerticalOffset;
+				var maxVerticalOffset = _scroller.ScrollableHeight;
+			
+				if ((maxVerticalOffset < 0 || verticalOffset == maxVerticalOffset) && verticalOffset>0 && scrolledTo<verticalOffset) {
+					if (Page < TotalPages) {
+						scrolledTo = verticalOffset;
+						// scrollViewer.ScrollChanged -= Scrolled;
+						Logger.Trace("Paging: " + Page);
+						_loaded = false;
+						Page += 1;
+						int index = 0;
+						ZitiService[] services = new ZitiService[0];
+						if (SortBy == "Name") services = _identity.Services.OrderBy(s => s.Name.ToLower()).ToArray();
+						else if (SortBy == "Address") services = _identity.Services.OrderBy(s => s.Addresses.ToString()).ToArray();
+						else if (SortBy == "Protocol") services = _identity.Services.OrderBy(s => s.Protocols.ToString()).ToArray();
+						else if (SortBy == "Port") services = _identity.Services.OrderBy(s => s.Ports.ToString()).ToArray();
+						if (SortWay == "Desc") services = services.Reverse().ToArray();
+						int startIndex = (Page - 1) * PerPage;
+						for (int i = startIndex; i < services.Length; i++) {
+							ZitiService zitiSvc = services[i];
+							if (index < PerPage) {
+								if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0) {
+									ZitiServices.Add(zitiSvc);
+									index++;
+								}
+							}
+						}
+						double totalOffset = _scroller.VerticalOffset;
+						double toNegate = index * 33;
+						double scrollTo = (totalOffset - toNegate);
+						_scroller.InvalidateScrollInfo();
+						_scroller.ScrollToVerticalOffset(verticalOffset);
+						_scroller.InvalidateScrollInfo();
+						_loaded = true;
+						// scrollViewer.ScrollChanged += Scrolled;
+					}
 				}
 			}
 		}
 
-		private void SortByField_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-			ComboBoxItem selected = (ComboBoxItem)SortByField.SelectedValue;
-			if (selected != null && selected.Content!=null) {
-				if (selected.Content.ToString()!=SortBy) {
-					SortBy = selected.Content.ToString();
-					UpdateView();
-				}
-			}
+		private void DoFilter(FilterData filterData) {
+			filter = filterData.SearchFor;
+			SortBy = filterData.SortBy;
+			SortWay = filterData.SortHow;
+			UpdateView();
 		}
 
-		private void SortWayField_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-			ComboBoxItem selected = (ComboBoxItem)SortWayField.SelectedValue;
-			if (selected != null && selected.Content != null) {
-				if (selected.Content.ToString() != SortWay) {
-					SortWay = selected.Content.ToString();
-					UpdateView();
+		async private void DoConnect(object sender, MouseButtonEventArgs e) {
+			this.OnLoading?.Invoke(false);
+			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+			await client.IdentityOnOffAsync(_identity.Fingerprint, true);
+			if (SelectedIdentity != null) SelectedIdentity.ToggleSwitch.Enabled = true;
+			if (SelectedIdentityMenu != null) SelectedIdentityMenu.ToggleSwitch.Enabled = true;
+			_identity.IsEnabled = true;
+			IsConnected.Visibility = Visibility.Visible;
+			IsDisconnected.Visibility = Visibility.Collapsed;
+			this.OnLoading?.Invoke(true);
+		}
+
+		async private void DoDisconnect(object sender, MouseButtonEventArgs e) {
+			this.OnLoading?.Invoke(false);
+			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+			await client.IdentityOnOffAsync(_identity.Fingerprint, false);
+			if (SelectedIdentity != null) SelectedIdentity.ToggleSwitch.Enabled = false;
+			if (SelectedIdentityMenu != null) SelectedIdentityMenu.ToggleSwitch.Enabled = false;
+			_identity.IsEnabled = false;
+			IsConnected.Visibility = Visibility.Collapsed;
+			IsDisconnected.Visibility = Visibility.Visible;
+			this.OnLoading?.Invoke(true);
+		}
+
+		private void WarnClicked(object sender, MouseButtonEventArgs e) {
+			ZitiService item = (ZitiService)(sender as FrameworkElement).DataContext;
+			OnMessage?.Invoke(item.WarningMessage);
+		}
+
+		private void DetailsClicked(object sender, MouseButtonEventArgs e) {
+			ZitiService item = (ZitiService)(sender as FrameworkElement).DataContext;
+			ShowDetails(item);
+		}
+
+		private void VisibilityChanged(object sender, DependencyPropertyChangedEventArgs e) {
+			if (this.Visibility==Visibility.Collapsed) {
+				ServiceList.DataContext = null;
+				if (_services!=null) {
+					_services.Clear();
+					_services = null;
 				}
 			}
 		}

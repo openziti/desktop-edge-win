@@ -156,6 +156,11 @@ namespace ZitiDesktopEdge {
 			this.ShowMFA(identity, 1);
 		}
 
+		/// <summary>
+		/// Show MFA for the identity and set the type of screen to show
+		/// </summary>
+		/// <param name="identity">The Identity that is currently active</param>
+		/// <param name="type">The type of screen to show - 1 Setup, 2 Authenticate, 3 Remove MFA, 4 Regenerate Codes</param>
 		private void ShowMFA(ZitiIdentity identity, int type) {
 			MFASetup.Opacity = 0;
 			MFASetup.Visibility = Visibility.Visible;
@@ -342,8 +347,16 @@ namespace ZitiDesktopEdge {
 			this.IdentityMenu.MainWindow = this;
 			SetNotifyIcon("white");
 
+			this.PreviewKeyDown += KeyPressed;
 			MFASetup.OnLoad += MFASetup_OnLoad;
 			IdentityMenu.OnMessage += IdentityMenu_OnMessage;
+		}
+
+		private void KeyPressed(object sender, KeyEventArgs e) {
+			if (e.Key == Key.Escape) {
+				if (IdentityMenu.Visibility == Visibility.Visible) IdentityMenu.Visibility = Visibility.Collapsed;
+				else if (MainMenu.Visibility == Visibility.Visible) MainMenu.Visibility = Visibility.Collapsed;
+			}
 		}
 
 		private void MFASetup_OnLoad(bool isComplete, string title, string message) {
@@ -503,6 +516,7 @@ namespace ZitiDesktopEdge {
 			Application.Current.Properties.Add("Identities", new List<ZitiIdentity>());
 			MainMenu.OnAttachmentChange += AttachmentChanged;
 			MainMenu.OnLogLevelChanged += LogLevelChanged;
+			MainMenu.OnShowBlurb += MainMenu_OnShowBlurb;
 			IdentityMenu.OnError += IdentityMenu_OnError;
 
 			try {
@@ -524,7 +538,11 @@ namespace ZitiDesktopEdge {
 			Placement();
 		}
 
-        private void ServiceClient_OnBulkServiceEvent(object sender, BulkServiceEvent e) {
+		private void MainMenu_OnShowBlurb(string message) {
+			_ = ShowBlurbAsync(message, "", "info");
+		}
+
+		private void ServiceClient_OnBulkServiceEvent(object sender, BulkServiceEvent e) {
 			var found = identities.Find(id => id.Fingerprint == e.Fingerprint);
 			if (found == null) {
 				logger.Warn($"{e.Action} service event for {e.Fingerprint} but the provided identity fingerprint was not found!");
@@ -1287,7 +1305,14 @@ namespace ZitiDesktopEdge {
 		/// </summary>
 		/// <param name="message">The message to show</param>
 		/// <param name="url">The url or action name to execute</param>
-		public async Task ShowBlurbAsync(string message, string url) {
+		public async Task ShowBlurbAsync(string message, string url, string level="error") {
+			RedBlurb.Visibility = Visibility.Collapsed;
+			InfoBlurb.Visibility = Visibility.Collapsed;
+			if (level=="error") {
+				RedBlurb.Visibility = Visibility.Visible;
+			} else {
+				InfoBlurb.Visibility = Visibility.Visible;
+			}
 			Blurb.Content = message;
 			_blurbUrl = url;
 			BlurbArea.Visibility = Visibility.Visible;
@@ -1376,6 +1401,11 @@ namespace ZitiDesktopEdge {
             set {
 				someCommand = value;
             }
+		}
+
+		private void DoLoading(bool isComplete) {
+			if (isComplete) HideLoad();
+			else ShowLoad("Loading", "Please Wait.");
 		}
 	}
 
