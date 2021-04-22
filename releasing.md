@@ -19,6 +19,7 @@ Making a point release is a manual process at this time. It's kept as a manual p
 1. Locate the execuable installer added to the job and download it. It'll have a name such as: ZitiDesktopEdgeClient-x.y.z and will be a zip file
 1. After downloading the zip file, unzip it somewhere and verify there are two different files: the executable and a hash
 1. Back on the [Releases](https://github.com/openziti/desktop-edge-win/releases) page - click the button to 'edit' the latest release (which should be marked 'Draft')
+1. Veify the Tag Version and Release title match the version specified in the `version` file
 1. Drag the unzipped files (two of them) onto the section of the form labeled: "Attach binaries by dropping them here or selecting them."
 1. Copy the release notes markdown from the release-notes.md into the release.
 1. When ready click "Publish Release"
