@@ -343,6 +343,14 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 				break
 			}
 
+			if C.GoString(pqs.policy_type) == "Bind" {
+				log.Tracef("Posture Query set returned a Bind policy: %s [ignored]", C.GoString(pqs.policy_id))
+				// posture check does not consider bind policies
+				continue
+			} else {
+				log.Tracef("Posture Query set returned a %s policy: %s, is_passing %t", C.GoString(pqs.policy_type), C.GoString(pqs.policy_id), pqs.is_passing)
+			}
+
 			if bool(pqs.is_passing) {
 				hasAccess = true
 			}

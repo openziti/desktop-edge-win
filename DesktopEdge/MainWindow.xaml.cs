@@ -932,18 +932,28 @@ namespace ZitiDesktopEdge {
 				}
 				if (!Application.Current.Properties.Contains("ip")) {
 					Application.Current.Properties.Add("ip", status?.IpInfo?.Ip);
+				} else {
+					Application.Current.Properties["ip"] = status?.IpInfo?.Ip;
 				}
 				if (!Application.Current.Properties.Contains("subnet")) {
 					Application.Current.Properties.Add("subnet", status?.IpInfo?.Subnet);
+				} else {
+					Application.Current.Properties["subnet"] = status?.IpInfo?.Subnet;
 				}
 				if (!Application.Current.Properties.Contains("mtu")) {
 					Application.Current.Properties.Add("mtu", status?.IpInfo?.MTU);
+				} else {
+					Application.Current.Properties["mtu"] = status?.IpInfo?.MTU;
 				}
 				if (!Application.Current.Properties.Contains("dns")) {
 					Application.Current.Properties.Add("dns", status?.IpInfo?.DNS);
+				} else {
+					Application.Current.Properties["dns"] = status?.IpInfo?.DNS;
 				}
 				if (!Application.Current.Properties.Contains("dnsenabled")) {
 					Application.Current.Properties.Add("dnsenabled", status?.AddDns);
+				} else {
+					Application.Current.Properties["dnsenabled"] = status?.AddDns;
 				}
 
 				foreach (var id in status.Identities) {
