@@ -11,7 +11,8 @@
 * [#367](https://github.com/openziti/desktop-edge-win/issues/367) Refresh tun config when user updates them
 
 ## Dependency Updates
-* none
+* wintun dll is updated to https://www.wintun.net/builds/wintun-0.10.3.zip
+* tsdk is updated to v0.15.2
 
 # Release 1.9.4
 
