@@ -7,6 +7,21 @@
 * none
 
 ## Bugs fixed:
+* [#360](https://github.com/openziti/desktop-edge-win/issues/360) Display issue when no cidr is used
+* [#367](https://github.com/openziti/desktop-edge-win/issues/367) Refresh tun config when user updates them
+
+## Dependency Updates
+* none
+
+# Release 1.9.4
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
 * [#362](https://github.com/openziti/desktop-edge-win/issues/362) Update tun ip, mask and addDns flag
 * [#364](https://github.com/openziti/desktop-edge-win/issues/364) Add the test nrpt policy function in the startup method
 
