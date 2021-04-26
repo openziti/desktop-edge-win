@@ -27,6 +27,7 @@ import (
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/constants"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
+	"github.com/openziti/foundation/identity/identity"
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
@@ -271,6 +272,9 @@ func (t *RuntimeState) LoadIdentity(id *Id, refreshInterval int) {
 			id.Name = id.CId.Name
 		}
 		log.Infof("successfully loaded %s@%s", id.CId.Name, id.CId.Controller())
+
+		id.Config.ID = identity.IdentityConfig{} //after successfully loading the identity clear the id info
+
 		_, found := t.ids[id.FingerPrint]
 		if !found {
 			t.ids[id.FingerPrint] = id //add this identity to the list of known ids
