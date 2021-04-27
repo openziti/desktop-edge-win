@@ -771,7 +771,8 @@ namespace ZitiDesktopEdge {
 						found.Name = zid.Name;
 						found.ControllerUrl = zid.ControllerUrl;
 						found.IsEnabled = zid.IsEnabled;
-                        LoadIdentities(true);
+						found.MFAInfo.IsAuthenticated = !e.Id.MfaNeeded;
+						LoadIdentities(true);
 						return;
 					}
 				} else if (e.Action == "updated") {
@@ -993,7 +994,6 @@ namespace ZitiDesktopEdge {
 				IdList.MaxHeight = _maxHeight - 520;
 				ZitiIdentity[] ids = identities.OrderBy(i => i.Name.ToLower()).ToArray();
 				MainMenu.SetupIdList(ids);
-
 				if (ids.Length > 0 && serviceClient.Connected) {
 					double height = 490 + (ids.Length * 60);
 					if (height > _maxHeight) height = _maxHeight;
@@ -1012,7 +1012,13 @@ namespace ZitiDesktopEdge {
 						idItem.Authenticate += IdItem_Authenticate;
 						idItem.OnStatusChanged += Id_OnStatusChanged;
 						idItem.Identity = id;
+						if (!id.MFAInfo.IsAuthenticated)
+						{
+							idItem.RefreshUI();
+						}
+
 						IdList.Children.Add(idItem);
+
 						if (IdentityMenu.Visibility==Visibility.Visible) {
 							if (id.Fingerprint==IdentityMenu.Identity.Fingerprint) {
 								IdentityMenu.Identity = id;

@@ -41,6 +41,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -730,7 +731,8 @@ loop:
 	for {
 		select {
 		case msg := <-consumer:
-			log.Tracef("sending event to id: %s [%v]", id, msg)
+			t := reflect.TypeOf(msg)
+			log.Tracef("sending event to id: %s [%v]", id, t.Name())
 			eerr := o.Encode(msg)
 			if eerr != nil {
 				log.Warnf("exiting from serveEvents due to error: %v", eerr)
@@ -741,7 +743,7 @@ loop:
 				log.Warnf("flush error: %v", ferr)
 				return
 			}
-			log.Tracef("sent event to id: %s [%v]", id, msg)
+			log.Tracef("send event to id complete: %s [%v]", id, t.Name())
 		case <-interrupt:
 			break loop
 		}
