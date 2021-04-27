@@ -8,11 +8,12 @@
 
 ## Bugs fixed:
 * [#360](https://github.com/openziti/desktop-edge-win/issues/360) Display issue when no cidr is used
+* [#366](https://github.com/openziti/desktop-edge-win/issues/366) ZDE app does not prompt for the mfa token after starting the laptop from sleep
 * [#367](https://github.com/openziti/desktop-edge-win/issues/367) Refresh tun config when user updates them
 
 ## Dependency Updates
 * wintun dll is updated to https://www.wintun.net/builds/wintun-0.10.3.zip
-* tsdk is updated to v0.15.2
+* tsdk is updated to v0.15.4
 
 # Release 1.9.4
 
