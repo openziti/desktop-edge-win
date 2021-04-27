@@ -248,7 +248,7 @@ if %ACTUAL_ERR% NEQ 0 (
 )
 
 echo creating the distribution zip file
-zip ziti-tunnel-win.zip *.dll ziti*exe
+powershell "Compress-Archive -Force -path *.dll, *.exe -DestinationPath .\ziti-tunnel-win.zip"
 
 GOTO END
 
