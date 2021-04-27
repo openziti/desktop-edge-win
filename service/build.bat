@@ -14,7 +14,7 @@ REM See the License for the specific language governing permissions and
 REM limitations under the License.
 REM
 SET REPO_URL=https://github.com/openziti/ziti-tunnel-sdk-c.git
-SET ZITI_TUNNEL_REPO_BRANCH=v0.15.2
+SET ZITI_TUNNEL_REPO_BRANCH=v0.15.4
 REM override the c sdk used in the build - leave blank for the same as specified in the tunneler sdk
 SET ZITI_SDK_C_BRANCH=
 REM the number of TCP connections the tunneler sdk can have at any one time
@@ -248,7 +248,7 @@ if %ACTUAL_ERR% NEQ 0 (
 )
 
 echo creating the distribution zip file
-zip ziti-tunnel-win.zip *.dll ziti*exe
+powershell "Compress-Archive -Force -path *.dll, *.exe -DestinationPath .\ziti-tunnel-win.zip"
 
 GOTO END
 
