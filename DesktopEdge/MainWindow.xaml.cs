@@ -771,7 +771,8 @@ namespace ZitiDesktopEdge {
 						found.Name = zid.Name;
 						found.ControllerUrl = zid.ControllerUrl;
 						found.IsEnabled = zid.IsEnabled;
-                        LoadIdentities(true);
+						found.MFAInfo.IsAuthenticated = !e.Id.MfaNeeded;
+						LoadIdentities(true);
 						return;
 					}
 				} else if (e.Action == "updated") {
@@ -932,18 +933,28 @@ namespace ZitiDesktopEdge {
 				}
 				if (!Application.Current.Properties.Contains("ip")) {
 					Application.Current.Properties.Add("ip", status?.IpInfo?.Ip);
+				} else {
+					Application.Current.Properties["ip"] = status?.IpInfo?.Ip;
 				}
 				if (!Application.Current.Properties.Contains("subnet")) {
 					Application.Current.Properties.Add("subnet", status?.IpInfo?.Subnet);
+				} else {
+					Application.Current.Properties["subnet"] = status?.IpInfo?.Subnet;
 				}
 				if (!Application.Current.Properties.Contains("mtu")) {
 					Application.Current.Properties.Add("mtu", status?.IpInfo?.MTU);
+				} else {
+					Application.Current.Properties["mtu"] = status?.IpInfo?.MTU;
 				}
 				if (!Application.Current.Properties.Contains("dns")) {
 					Application.Current.Properties.Add("dns", status?.IpInfo?.DNS);
+				} else {
+					Application.Current.Properties["dns"] = status?.IpInfo?.DNS;
 				}
 				if (!Application.Current.Properties.Contains("dnsenabled")) {
 					Application.Current.Properties.Add("dnsenabled", status?.AddDns);
+				} else {
+					Application.Current.Properties["dnsenabled"] = status?.AddDns;
 				}
 
 				foreach (var id in status.Identities) {
@@ -983,7 +994,6 @@ namespace ZitiDesktopEdge {
 				IdList.MaxHeight = _maxHeight - 520;
 				ZitiIdentity[] ids = identities.OrderBy(i => i.Name.ToLower()).ToArray();
 				MainMenu.SetupIdList(ids);
-
 				if (ids.Length > 0 && serviceClient.Connected) {
 					double height = 490 + (ids.Length * 60);
 					if (height > _maxHeight) height = _maxHeight;
@@ -1002,7 +1012,13 @@ namespace ZitiDesktopEdge {
 						idItem.Authenticate += IdItem_Authenticate;
 						idItem.OnStatusChanged += Id_OnStatusChanged;
 						idItem.Identity = id;
+						if (!id.MFAInfo.IsAuthenticated)
+						{
+							idItem.RefreshUI();
+						}
+
 						IdList.Children.Add(idItem);
+
 						if (IdentityMenu.Visibility==Visibility.Visible) {
 							if (id.Fingerprint==IdentityMenu.Identity.Fingerprint) {
 								IdentityMenu.Identity = id;
