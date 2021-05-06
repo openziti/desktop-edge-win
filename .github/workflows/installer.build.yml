@@ -56,7 +56,7 @@ jobs:
       - uses: nuget/setup-nuget@v1
         with:
           nuget-api-key: ${{ secrets.NuGetAPIKey }}
-          nuget-version: 'latest'
+          nuget-version: '5.8.1'
       - name: Restore nuget packages
         run: nuget restore ZitiDesktopEdge.sln
       - shell: pwsh
