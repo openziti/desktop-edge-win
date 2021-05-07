@@ -1,3 +1,18 @@
+# Release 1.9.6
+
+## What's New
+* none
+
+## Other changes:
+* updated installation config
+* renewed signing cert
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* tsdk is updated to v0.15.6
+
 # Release 1.9.5
 
 ## What's New
@@ -12,8 +27,8 @@
 * [#367](https://github.com/openziti/desktop-edge-win/issues/367) Refresh tun config when user updates them
 
 ## Dependency Updates
-* wintun dll is updated to https://www.wintun.net/builds/wintun-0.10.3.zip
-* tsdk is updated to v0.15.4
+* use wintun[0.10.3](https://www.wintun.net/builds/wintun-0.10.3.zip)
+* tsdk is updated to v0.15.4, c-sdk 0.22.5
 
 # Release 1.9.4
 
