@@ -11,7 +11,7 @@
 * none
 
 ## Dependency Updates
-* tsdk is updated to v0.15.6
+* tsdk is updated to v0.15.6, c-sdk 0.22.5
 
 # Release 1.9.5
 
