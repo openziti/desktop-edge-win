@@ -34,7 +34,7 @@ namespace ZitiUpdateService {
 		public bool useGithubCheck { get; private set; }
 
 		private static string[] expected_hashes = new string[] { "39636E9F5E80308DE370C914CE8112876ECF4E0C" };
-		private static string[] expected_subject = new string[] { @"CN=""NetFoundry, Inc."", O=""NetFoundry, Inc."", L=Herndon, S=Virginia, C=US" };
+		private static string[] expected_subject = new string[] { @"CN=""NetFoundry, Inc."", O=""NetFoundry, Inc."", L=Herndon, S=Virginia, C=US", @"CN=NetFoundry Inc., O=NetFoundry Inc., L=Herndon, S=Virginia, C=US" };
 
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 

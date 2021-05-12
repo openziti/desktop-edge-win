@@ -12,6 +12,7 @@
 
 ## Dependency Updates
 * tsdk is updated to v0.15.6, c-sdk 0.22.5
+* use wintun[0.11](https://www.wintun.net/builds/wintun-0.11.zip)
 
 # Release 1.9.5
 
