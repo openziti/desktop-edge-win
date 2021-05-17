@@ -85,6 +85,8 @@ echo REMOVING old build folder if it exists at %TUNNELER_SDK_DIR%build
 rmdir /s /q %TUNNELER_SDK_DIR%build
 echo REMOVING ziti.dll at %SVC_ROOT_DIR%ziti.dll
 del /q %SVC_ROOT_DIR%ziti.dll
+echo REMOVING wintun.dll at %SVC_ROOT_DIR%wintun.dll
+del /q %SVC_ROOT_DIR%wintun.dll
 
 :QUICK
 
