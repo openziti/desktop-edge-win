@@ -6,9 +6,11 @@
 ## Other changes:
 * updated auto-installation config
 * renewed signing cert
+* added dns cache output back to feedback.zip
+* set lower metric, if dns server property is set
 
 ## Bugs fixed:
-* set lower metric, if dns server property is set
+* none
 
 ## Dependency Updates
 * tsdk is updated to v0.15.6, c-sdk 0.22.5

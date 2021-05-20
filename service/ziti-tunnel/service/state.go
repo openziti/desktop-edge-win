@@ -225,6 +225,7 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int, applyDns bool) (net.
 	log.Info("routing applied")
 
 	zitiPoliciesEffective := windns.IsNrptPoliciesEffective(ipv4)
+	interfaceMetric := 255
 	if applyDns || !zitiPoliciesEffective {
 		if applyDns {
 			log.Infof("DNS is applied to the TUN interface, because apply Dns flag in the config file is %t ", applyDns)
@@ -234,10 +235,10 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int, applyDns bool) (net.
 		}
 		//for windows 10+, could 'domains' be able to replace NRPT? dunno - didn't test it
 		luid.SetDNS(windows.AF_INET, []net.IP{ip}, nil)
-		cziti.SetInterfaceMetric(TunName, 5)
-	} else {
-		cziti.SetInterfaceMetric(TunName, 255)
+		interfaceMetric = 5
 	}
+	cziti.SetInterfaceMetric(TunName, interfaceMetric)
+	log.Debugf("Interface Metric of %s is set to %d", TunName, interfaceMetric)
 
 	return ip, t.tun, nil
 }
