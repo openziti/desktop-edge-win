@@ -234,6 +234,9 @@ func (t *RuntimeState) CreateTun(ipv4 string, ipv4mask int, applyDns bool) (net.
 		}
 		//for windows 10+, could 'domains' be able to replace NRPT? dunno - didn't test it
 		luid.SetDNS(windows.AF_INET, []net.IP{ip}, nil)
+		cziti.SetInterfaceMetric(TunName, 5)
+	} else {
+		cziti.SetInterfaceMetric(TunName, 255)
 	}
 
 	return ip, t.tun, nil

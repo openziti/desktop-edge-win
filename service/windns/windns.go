@@ -288,3 +288,23 @@ func removeSingleNrtpRule(nrptRule string) {
 		log.Errorf("ERROR removing the nrpt rules: %v", err)
 	}
 }
+
+func CleanUpNetworkAdapterProfile() {
+	script := fmt.Sprintf(`$key="Microsoft.PowerShell.Core\Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\Signatures\Unmanaged\*"
+Get-ItemProperty -Path $key | where {$_.FirstNetwork -match "ziti.*"} | Remove-Item
+
+$key="Microsoft.PowerShell.Core\Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\Profiles\*"
+Get-ItemProperty -Path $key | where {$_.ProfileName -match "Ziti.*"} | Remove-Item`)
+	log.Debugf("Cleaning up the Network Adapter profiles with: %s", script)
+
+	cmd := exec.Command("powershell", "-Command", script)
+	cmd.Stderr = os.Stdout
+	output := new(bytes.Buffer)
+	cmd.Stdout = output
+
+	err := cmd.Run()
+	if err != nil {
+		log.Errorf("ERROR Cleaning up the Network Adapter profiles: %v", err)
+	}
+
+}
