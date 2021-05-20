@@ -1,11 +1,13 @@
 # Release 1.9.6
 
 ## What's New
-* none
+* [#378](https://github.com/openziti/desktop-edge-win/issues/378) Cleanup old ziti network adapter profiles
 
 ## Other changes:
-* updated installation config
+* updated auto-installation config
 * renewed signing cert
+* added dns cache output back to feedback.zip
+* set lower metric, if dns server property is set
 
 ## Bugs fixed:
 * none

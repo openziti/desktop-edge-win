@@ -65,6 +65,8 @@ var shutdown = make(chan bool, 8) //a channel informing go routines to exit
 func SubMain(ops chan string, changes chan<- svc.Status) error {
 	log.Info("============================== service begins ==============================")
 	windns.RemoveAllNrptRules()
+	// cleanup old ziti tun profiles
+	windns.CleanUpNetworkAdapterProfile()
 
 	rts.LoadConfig()
 	l := rts.state.LogLevel
@@ -286,8 +288,6 @@ func initialize(cLogLevel int) error {
 	if err != nil {
 		return err
 	}
-
-	cziti.SetInterfaceMetric(TunName, 255)
 
 	cziti.Start(rts, rts.state.TunIpv4, rts.state.TunIpv4Mask, cLogLevel)
 	err = cziti.HookupTun(*t)
