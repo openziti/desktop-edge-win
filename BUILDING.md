@@ -16,9 +16,9 @@ components:
 
 Build steps
 
-* Set SVC_ROOT_DIR variable to the "<project path>\desktop-edge-win\service\" path
+* Set PROJECT_ROOT=<project_path> and SVC_ROOT_DIR=%PROJECT_ROOT%\desktop-edge-win\service\ path
 * Go to service directory: "cd %SVC_ROOT_DIR%"
-* Run "build.bat clean|quick" (Use quick option, if you have already done a clean build, and you have the latest tsdk library in the _deps folder)
-* Copy the WinSign.p12 file to the "<project path>\desktop-edge-win\Installer" path
-* Build Installer: cd to the "<project path>\desktop-edge-win" path and execute "powershell -file Installer\build.ps1"
-* If build is successful, the installer and sha file will be generated in "<project path>\desktop-edge-win\Installer\Output"
+* Run "build.bat clean|quick" or quick.bat or clean.bat (Use quick, if you have already done a clean build, and you have the latest tsdk library in the _deps folder)
+* Obtain WinSign.p12 file and copy it to the "%PROJECT_ROOT%\desktop-edge-win\Installer" path. This is the signing certificate and that it's necessary to build the installer with this.
+* Build Installer: cd to the "%PROJECT_ROOT%\desktop-edge-win" path and execute "powershell -file Installer\build.ps1"
+* If build is successful, the installer and sha file will be generated in "%PROJECT_ROOT%\desktop-edge-win\Installer\Output"
