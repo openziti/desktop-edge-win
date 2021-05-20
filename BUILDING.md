@@ -14,3 +14,11 @@ components:
 * A Windows service which runs as the local system account which creates the TUN as well as manages the Ziti connections
 * A Windows UWP UI application that allows the interactively logged on user to interact with the Windows service
 
+Build steps
+
+* Set SVC_ROOT_DIR variable to the "<project path>\desktop-edge-win\service\" path
+* Go to service directory: "cd %SVC_ROOT_DIR%"
+* Run "build.bat clean|quick" (Use quick option, if you have already done a clean build, and you have the latest tsdk library in the _deps folder)
+* Copy the WinSign.p12 file to the "<project path>\desktop-edge-win\Installer" path
+* Build Installer: cd to the "<project path>\desktop-edge-win" path and execute "powershell -file Installer\build.ps1"
+* If build is successful, the installer and sha file will be generated in "<project path>\desktop-edge-win\Installer\Output"
