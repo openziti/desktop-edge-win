@@ -19,6 +19,7 @@ using NLog;
 using Newtonsoft.Json;
 using System.Net;
 using DnsClient;
+using ZitiUpdateService.Checkers.PeFile;
 
 namespace ZitiUpdateService {
 	public partial class UpdateService : ServiceBase {
@@ -54,7 +55,7 @@ namespace ZitiUpdateService {
 		IPCServer svr = new IPCServer();
 		Task ipcServer = null;
 		Task eventServer = null;
-		checkers.UpdateCheck check = null;
+		Checkers.UpdateCheck check = null;
 
 		private Timer dnsProbeTimer = new Timer();
 		private IPAddress dnsIpAddress = null;
@@ -574,9 +575,9 @@ namespace ZitiUpdateService {
 				updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win-beta/releases/latest";
 			}
 			if (useGithubCheck) {
-				check = new checkers.GithubCheck(updateUrl);
+				check = new Checkers.GithubCheck(updateUrl);
 			} else {
-				check = new checkers.FilesystemCheck(1);
+				check = new Checkers.FilesystemCheck(1);
 			}
 		}
 
@@ -605,7 +606,7 @@ namespace ZitiUpdateService {
 				Logger.Warn("Still in update check. This is abnormal. Please report if you see this warning");
 				return;
 			}
-			inUpdateCheck = true; //simple semaphone
+			inUpdateCheck = true; //simple semaphore
 			try {
 				Logger.Debug("checking for update");
 
@@ -626,8 +627,8 @@ namespace ZitiUpdateService {
 				string fileDestination = Path.Combine(updateFolder, filename);
 
 				if (check.AlreadyDownloaded(updateFolder, filename)) {
-					Logger.Info("package has already been downloaded to {0} - moving to install phase", Path.Combine(updateFolder, filename));
-				} else {
+					Logger.Info("package has already been downloaded to {0} - moving to install phase", fileDestination);
+                } else {
 					Logger.Info("copying update package begins");
 					check.CopyUpdatePackage(updateFolder, filename);
 					Logger.Info("copying update package complete");
@@ -640,6 +641,8 @@ namespace ZitiUpdateService {
 					return;
 				}
 				Logger.Debug("downloaded file hash was correct. update can continue.");
+
+                new SignedFileValidator(fileDestination).Verify();
 
 				// check digital signature
 				var signer = X509Certificate.CreateFromSignedFile(fileDestination);
