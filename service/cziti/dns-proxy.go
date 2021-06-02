@@ -362,9 +362,7 @@ outer:
 			case <-ticker.C:
 				// cleanup requests we didn't get answers for
 				now := time.Now()
-				log.Debugf("Check for expiry - begin")
 				for k, r := range reqs {
-					log.Debugf("Check for expiry now - %v , dns request expiry time - %v, DNS req: %s %s", now, r.exp, dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
 					if now.After(r.exp) {
 						log.Debugf("a DNS request has expired - enable trace logging and reproduce this issue for more information")
 						log.Tracef("expired DNS req: %s %s", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
