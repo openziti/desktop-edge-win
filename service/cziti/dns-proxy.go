@@ -350,32 +350,38 @@ outer:
 
 	reqs := make(map[uint32]*proxiedReq)
 
-	log.Debug("Upstream DNS proxy loop begins")
-	for {
-		select {
-		case pr := <-proxiedRequests:
-			id := (uint32(pr.req.Id) << 16) | uint32(pr.req.Question[0].Qtype)
-			reqs[id] = pr
-			b, _ := pr.req.Pack()
-			for _, proxy := range dnsUpstreams {
-				if _, err := proxy.Write(b); err != nil {
+	tickerChannel := make(chan bool)
+	ticker := time.NewTicker(60 * time.Second)
+	defer func() {
+		tickerChannel <- false
+		log.Tracef("Removing timer tasks for dns request handling")
+	}()
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				// cleanup requests we didn't get answers for
+				now := time.Now()
+				log.Debugf("Check for expiry - begin")
+				for k, r := range reqs {
+					log.Debugf("Check for expiry now - %v , dns request expiry time - %v, DNS req: %s %s", now, r.exp, dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
+					if now.After(r.exp) {
+						log.Debugf("a DNS request has expired - enable trace logging and reproduce this issue for more information")
+						log.Tracef("expired DNS req: %s %s", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
 
-					_ = proxy.Close() //first thing - close the proxy connection
-
-					// when this hits - it never seems to recover. throw a panic which will get recovered
-					// via the defer specified above and try to recreate the connections. this is a heavy
-					// handed way of reconnecting to the DNS server but it should be infrequent
-					log.Panicf("failed to proxy DNS to %s %s %v. %v",
-						dns.Type(pr.req.Question[0].Qtype),
-						pr.req.Question[0].Name,
-						proxy.RemoteAddr(),
-						err)
-				} else {
-					log.Tracef("Proxied request sent to %v from ipv%d listener", proxy.RemoteAddr(), pr.ipVer)
+						delete(reqs, k)
+					}
 				}
+			case <-tickerChannel:
+				ticker.Stop()
+				return
 			}
+		}
+	}()
 
-		case rep := <-respChan:
+	go func() {
+		for {
+			rep := <-respChan
 			reply := dns.Msg{}
 			if err := reply.Unpack(rep); err == nil {
 				id := (uint32(reply.Id) << 16) | uint32(reply.Question[0].Qtype)
@@ -393,17 +399,33 @@ outer:
 					// log.Tracef("matching request was not found for id:%d. %s %s", reply.Id, dns.Type(reply.Question[0].Qtype), reply.Question[0].Name)
 				}
 			}
-		case <-time.After(time.Minute):
-			// cleanup requests we didn't get answers for
-			now := time.Now()
-			for k, r := range reqs {
-				if now.After(r.exp) {
-					log.Debugf("a DNS request has expired - enable trace logging and reproduce this issue for more information")
-					log.Tracef("expired DNS req: %s %s", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
+		}
 
-					delete(reqs, k)
-				}
+	}()
+
+	log.Debug("Upstream DNS proxy loop begins")
+	for {
+		pr := <-proxiedRequests
+		id := (uint32(pr.req.Id) << 16) | uint32(pr.req.Question[0].Qtype)
+		reqs[id] = pr
+		b, _ := pr.req.Pack()
+		for _, proxy := range dnsUpstreams {
+			if _, err := proxy.Write(b); err != nil {
+
+				_ = proxy.Close() //first thing - close the proxy connection
+
+				// when this hits - it never seems to recover. throw a panic which will get recovered
+				// via the defer specified above and try to recreate the connections. this is a heavy
+				// handed way of reconnecting to the DNS server but it should be infrequent
+				log.Panicf("failed to proxy DNS to %s %s %v. %v",
+					dns.Type(pr.req.Question[0].Qtype),
+					pr.req.Question[0].Name,
+					proxy.RemoteAddr(),
+					err)
+			} else {
+				log.Tracef("Proxied request sent to %v from ipv%d listener", proxy.RemoteAddr(), pr.ipVer)
 			}
 		}
+
 	}
 }
