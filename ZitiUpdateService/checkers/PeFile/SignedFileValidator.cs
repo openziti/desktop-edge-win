@@ -187,17 +187,19 @@ namespace ZitiUpdateService.Checkers.PeFile {
         public void Verify() {
             List<X509Certificate2> list = ExtractVerifiedSignatureCertificates();
             foreach (X509Certificate2 cert in list) {
-                if (IsCertificateOpenZitiVerifies(cert)) {
-                    //verify this certificate was issued from the known CA
-                    try {
-                        VerifyTrust(empty, expectedRootCa, cert, true).Wait();
-                        Logger.Info("Certificate {0}:{1} was verified signed by {2}:{3}", cert.Thumbprint, cert.Subject, expectedRootCa.Thumbprint, expectedRootCa.Subject);
-                        return; //yes!
-                    } catch {
-                        //empty on purpose. keep checking...
-                    }
-                }
+	            if (IsCertificateOpenZitiVerifies(cert)) {
+		            //verify this certificate was issued from the known CA
+		            try {
+			            VerifyTrust(empty, expectedRootCa, cert, true).Wait();
+			            Logger.Info("Certificate {0}:{1} was verified signed by {2}:{3}", cert.Thumbprint, cert.Subject, expectedRootCa.Thumbprint, expectedRootCa.Subject);
+			            return; //yes!
+		            }
+		            catch {
+			            //empty on purpose. keep checking...
+		            }
+	            }
             }
+
             throw new CryptographicException("Executable not signed by an appropriate certificate");
         }
 

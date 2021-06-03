@@ -165,10 +165,10 @@ namespace ZitiDesktopEdge.ServiceClient {
                         } else {
                             //ClientDisconnected(null);
                         }
-                    } catch (Exception e) {
+                    } catch (Exception) {
                         try {
                             ReconnectFailureEvent("reconnect failure");
-                        } catch (Exception ex){
+                        } catch (Exception){
                             // don't care - just catch it and continue... it's a timeout...
                         }
                         var now = DateTime.Now;
