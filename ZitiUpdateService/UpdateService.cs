@@ -638,8 +638,8 @@ namespace ZitiUpdateService {
 					return;
 				}
 				Logger.Debug("downloaded file hash was correct. update can continue.");
-
-                new SignedFileValidator(fileDestination).Verify();
+				
+				new SignedFileValidator(fileDestination).Verify();
 
 				StopZiti();
 				StopUI().Wait();
