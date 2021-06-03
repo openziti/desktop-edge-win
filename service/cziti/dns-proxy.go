@@ -354,6 +354,7 @@ outer:
 	for {
 		select {
 		case pr := <-proxiedRequests:
+			log.Warnf("i am in proxiedRequests")
 			id := (uint32(pr.req.Id) << 16) | uint32(pr.req.Question[0].Qtype)
 			reqs[id] = pr
 			b, _ := pr.req.Pack()
@@ -376,6 +377,7 @@ outer:
 			}
 
 		case rep := <-respChan:
+			log.Warnf("i am in respChan")
 			reply := dns.Msg{}
 			if err := reply.Unpack(rep); err == nil {
 				id := (uint32(reply.Id) << 16) | uint32(reply.Question[0].Qtype)
@@ -394,6 +396,7 @@ outer:
 				}
 			}
 		case <-time.After(time.Minute):
+			log.Warnf("i am in time.After")
 			// cleanup requests we didn't get answers for
 			now := time.Now()
 			for k, r := range reqs {

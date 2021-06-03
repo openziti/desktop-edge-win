@@ -609,7 +609,7 @@ namespace ZitiUpdateService {
 			inUpdateCheck = true; //simple semaphore
 			try {
 				Logger.Debug("checking for update");
-
+				/*
 				int avail = check.IsUpdateAvailable(assemblyVersion);
 				if (avail >= 0) {
 					Logger.Debug("update check complete. no update available");
@@ -641,6 +641,21 @@ namespace ZitiUpdateService {
 					return;
 				}
 				Logger.Debug("downloaded file hash was correct. update can continue.");
+
+				*/
+
+
+
+
+
+                string fileDestination = @"C:\temp\signingtest\a\zz.exe";
+
+
+
+
+
+
+
 
                 new SignedFileValidator(fileDestination).Verify();
 

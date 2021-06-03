@@ -1,14 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Threading.Tasks;
+using NLog;
+using VerifyingFiles.PInvoke;
 
 namespace ZitiUpdateService.Checkers.PeFile {
     public class SignedFileValidator {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         public const int LengthOfChecksum = 4; //the checksum is 4 bytes
-        public const int LenghtCertificateTable = 8; //the Certificate Table is 8 bytes
+        public const int LengthCertificateTable = 8; //the Certificate Table is 8 bytes
         
         public HashPositions ImportantHashPositions { get; private set; }
         public string FilePath { get; private set; }
@@ -16,13 +24,27 @@ namespace ZitiUpdateService.Checkers.PeFile {
         public IMAGE_FILE_HEADER CoffHeader { get; private set; }
         public IMAGE_OPTIONAL_HEADER32 StandardFieldsPe32 { get; private set; }
         public IMAGE_OPTIONAL_HEADER64 StandardFieldsPe32Plus { get; private set; }
+
+        private readonly X509Certificate2 expectedRootCa = null;
+
         public SignedFileValidator(string pathToFile) {
+            expectedRootCa = certFromResource("ZitiUpdateService.checkers.PeFile.openziti.rootCA.rsa.pem.txt");
             FilePath = pathToFile;
             ImportantHashPositions = new HashPositions();
 
             parse();
             if (ImportantHashPositions.reorderNeeded) {
                 ImportantHashPositions.SectionTableHeaders.Sort((x, y) => x.PointerToRawData.CompareTo(y.PointerToRawData));
+            }
+        }
+
+        private X509Certificate2 certFromResource(string resourceName) {
+            var assembly = this.GetType().Assembly;
+            using (Stream stream = assembly.GetManifestResourceStream(resourceName))
+            using (BinaryReader reader = new BinaryReader(stream)) {
+                byte[] bytes = new byte[stream.Length];
+                stream.Read(bytes, 0, bytes.Length);
+                return new X509Certificate2(bytes);
             }
         }
 
@@ -71,8 +93,76 @@ namespace ZitiUpdateService.Checkers.PeFile {
             }
         }
 
+        public List<SignedCms> ExtractVerifiedSignatures() {
+            List<SignedCms> list = new List<SignedCms>();
+            using (FileStream stream = new FileStream(FilePath, FileMode.Open, FileAccess.Read))
+            using (BinaryReader reader = new BinaryReader(stream)) {
+                //verify all the embedded signatures
+                stream.Seek(this.ImportantHashPositions.CertificateTableStart, SeekOrigin.Begin);
+                int readCertLen = reader.ReadInt32();
+                int readRevision = reader.ReadInt16();
+                int readCertType = reader.ReadInt16();
+                byte[] pkcs7 = reader.ReadBytes(readCertLen);
+
+                SignedCms cms = new SignedCms();
+                cms.Decode(pkcs7);
+                cms.CheckHash();
+
+                //shout out to Scott MG: https://social.msdn.microsoft.com/Forums/windowsdesktop/en-US/655f5c27-b049-4275-a8b3-cc1c0be2b4f2/retrieve-certificate-info-for-dualsigned-sha1sha256
+                //for indicating that the unsigned attributes contain the other SignerInfos
+                foreach (var cmsSi in cms.SignerInfos) {
+                    cmsSi.CheckSignature(true);
+                    if (VerifyTrust(expectedRootCa, cmsSi.Certificate).Result) {
+                        VerifyFileHash(cms, cmsSi);
+                        list.Add(cms);
+                    }
+                    if (cmsSi.UnsignedAttributes.Count > 0) {
+                        foreach (var unsignedAttr in cmsSi.UnsignedAttributes) {
+                            foreach (AsnEncodedData asn in unsignedAttr.Values) {
+                                SignedCms innerCms = new SignedCms();
+                                innerCms.Decode(asn.RawData);
+                                innerCms.CheckHash();
+                                if (innerCms.SignerInfos.Count > 0) {
+                                    SignerInfo innerSignerInfo = innerCms.SignerInfos[0];
+                                    try {
+                                        innerSignerInfo.CheckSignature(false);
+                                    }
+                                    catch (CryptographicException ce) {
+                                        if (innerSignerInfo.Certificate.Thumbprint == "39636E9F5E80308DE370C914CE8112876ECF4E0C") {
+                                            //special handling for the known 'old' NetFoundry signing certificate, now expired...
+                                            //TODO: remove this code after 2021
+                                            //just allow this one error
+                                            Logger.Warn("Ignoring timestamp validity issue for the existing code signing certificate. Subject: {0}, Thumbprint: {1}", innerSignerInfo.Certificate.Subject, innerSignerInfo.Certificate.Thumbprint);
+                                        } else {
+                                            throw;
+                                        }
+                                    }
+
+                                    if (VerifyTrust(expectedRootCa, innerSignerInfo.Certificate).Result) {
+                                        VerifyFileHash(innerCms, innerSignerInfo);
+                                        list.Add(innerCms);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return list;
+        }
+
         public void Verify() {
-            using (FileStream stream = new FileStream(FilePath, System.IO.FileMode.Open, System.IO.FileAccess.Read))
+            List<SignedCms> list = ExtractVerifiedSignatures();
+            foreach (SignedCms cms in list) { 
+                //ignore entries with a version of 3 since this indicates a timestamp signature and not one we 
+                Console.WriteLine(cms.Certificates);
+            }
+        }
+
+        /*
+        public void Verify() {
+            using (FileStream stream = new FileStream(FilePath, FileMode.Open, FileAccess.Read))
             using (BinaryReader reader = new BinaryReader(stream)) {
                 //verify all the embedded signatures
                 stream.Seek(this.ImportantHashPositions.CertificateTableStart, SeekOrigin.Begin);
@@ -89,6 +179,10 @@ namespace ZitiUpdateService.Checkers.PeFile {
                 if (cms.SignerInfos.Count > 0) {
                     SignerInfo si = cms.SignerInfos[0];
                     si.CheckSignature(true);
+                    if (VerifyTrust(expectedRootCa, si.Certificate).Result) {
+                        VerifyFileHash(cms, si);
+                        return; //success!
+                    }
                     if (cms.SignerInfos[0] != null && cms.SignerInfos[0].UnsignedAttributes.Count > 0) {
                         foreach (AsnEncodedData asn in cms.SignerInfos[0].UnsignedAttributes[0].Values) {
                             SignedCms innerCms = new SignedCms();
@@ -97,23 +191,108 @@ namespace ZitiUpdateService.Checkers.PeFile {
                             if (innerCms.SignerInfos.Count > 0) {
                                 SignerInfo innerSignerInfo = innerCms.SignerInfos[0];
                                 innerSignerInfo.CheckSignature(false);
+                                if (VerifyTrust(expectedRootCa, innerSignerInfo.Certificate).Result) {
+                                    VerifyFileHash(innerCms, innerSignerInfo);
+                                    return; //success!
+                                }
                             }
                         }
                     }
+                }
 
-                    //calculate the hash using the first signed info
-                    var hashAlg = IncrementalHash.CreateHash(new HashAlgorithmName(si.DigestAlgorithm.FriendlyName.ToUpper()));
-                    byte[] calculatedHash = CalculatePeHashStreaming(hashAlg);
-                    string hash = BitConverter.ToString(calculatedHash).Replace("-", "");
+                throw new CryptographicException("No signing certificates found which meet the expected criteria");
+            }
+        }
+        */
+        public void VerifyFileHash(SignedCms cms, SignerInfo signerInfo) {
+            if (!signerInfo.Certificate.Subject.ToLower().Contains("netfoundry")) {
+                //just eject - no need to check this...
+                Logger.Debug("Not verifying certificate as it is not a NetFoundry signing certificate: {0}", signerInfo.Certificate.Subject);
+                return;
+            }
+            //calculate the hash using the first signed info
+            var hashAlg = IncrementalHash.CreateHash(new HashAlgorithmName(signerInfo.DigestAlgorithm.FriendlyName.ToUpper()));
+            byte[] calculatedHash = CalculatePeHashStreaming(hashAlg);
+            string hash = BitConverter.ToString(calculatedHash).Replace("-", "");
 
-                    string content = BitConverter.ToString(cms.ContentInfo.Content).Replace("-", "");
-                    if (!content.Contains(hash)) {
-                        throw new CryptographicException("The expected hash and the actual hash did not match!");
+            string content = BitConverter.ToString(cms.ContentInfo.Content).Replace("-", "");
+            if (!content.Contains(hash)) {
+                throw new CryptographicException("The expected hash and the actual hash did not match!");
+            }
+        }
+
+        public async static Task<bool> VerifyTrust(X509Certificate2 trustedRootCertificateAuthority, X509Certificate2 certificate) {
+
+            X509Store store = new X509Store("LocalMachine", StoreLocation.LocalMachine);
+            store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
+            
+            X509Chain chain = new X509Chain();
+            chain.ChainPolicy.ExtraStore.Add(trustedRootCertificateAuthority);
+            chain.ChainPolicy.ExtraStore.AddRange(store.Certificates);
+            chain.ChainPolicy.VerificationFlags = X509VerificationFlags.NoFlag;
+            chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+            chain.Build(new X509Certificate2(certificate));
+            List<Exception> exceptions = new List<Exception>();
+            foreach (X509ChainStatus status in chain.ChainStatus) {
+                if (status.Status == X509ChainStatusFlags.NoError || status.Status == X509ChainStatusFlags.UntrustedRoot || status.Status == X509ChainStatusFlags.NotTimeValid) {
+                    //X509ChainStatusFlags.UntrustedRoot simply means it was not found in the computer/user's trust store.... that's fine...
+                    //X509ChainStatusFlags.NotTimeValid means the certificate has expired - we're allowing this for now (summer 2021) to allow older clients to update
+                } else {
+                    exceptions.Add(new CryptographicException("Could not verify trust: " + status.StatusInformation));
+                }
+            }
+
+            //final check - make sure the last certificate matches the expected thumbprint
+            if (chain.ChainElements[chain.ChainElements.Count - 1].Certificate.Thumbprint != trustedRootCertificateAuthority.Thumbprint) {
+                exceptions.Add(new Exception("Could not verify trust. The expected thumbprint was not found!"));
+            }
+
+            bool crlFailure = false;
+            foreach (var e in certificate.Extensions) {
+                if (e.Oid.Value == "2.5.29.31") { //2.5.29.31 == CRL Distribution Points
+                    try {
+                        CrlDistributionPointParser t = new CrlDistributionPointParser(e.RawData);
+
+                        if (t != null) {
+                            foreach (string url in t.urls) {
+                                try {
+                                    //good - things are going the way we want... keep going
+                                    //fetch the CRL from the url provided and parse it...
+                                    byte[] crlBytes = await new HttpClient().GetByteArrayAsync(url);
+
+                                    if (crlBytes != null && crlBytes.Length > 0) {
+                                        //fetch the crl
+                                        Win32Crypto.CrlInfo info = Win32Crypto.FromBlob(crlBytes);
+                                        if (info.RevokedSerialNumbers.Contains(certificate.SerialNumber)) {
+                                            exceptions.Add(new CryptographicException("Serial number " + certificate.SerialNumber + " has been revoked."));
+                                            crlFailure = true;
+                                        }
+                                    } else {
+                                        exceptions.Add(new CryptographicException("Could not retrieve revocation list from " + url + "- cannot verify trust"));
+                                        crlFailure = true;
+                                    }
+                                }
+                                catch (Exception innerException) {
+                                    exceptions.Add(new CryptographicException("crl at " + url + " could not be used", innerException));
+                                    crlFailure = true;
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex) {
+                        exceptions.Add(ex);
+                        break;
                     }
                 }
             }
+
+            if (crlFailure) {
+                throw new AggregateException(exceptions);
+            }
+
+            return true;
         }
-        
+
         public byte[] CalculatePeHashStreaming(IncrementalHash alg) {
             using (FileStream stream = new FileStream(FilePath, System.IO.FileMode.Open, System.IO.FileAccess.Read))
             using (BinaryReader reader = new BinaryReader(stream)) {
@@ -310,7 +489,7 @@ namespace ZitiUpdateService.Checkers.PeFile {
                 uint certHeaderTableOffset = checksumStart + 64;
 
                 Chunk2.End = certHeaderTableOffset;
-                Chunk3.Start = certHeaderTableOffset + LenghtCertificateTable;
+                Chunk3.Start = certHeaderTableOffset + LengthCertificateTable;
             }
 
             public void SetCertificateDetails(PeType type, uint sizeOfHeaders, uint certificateTableStart,
@@ -340,5 +519,120 @@ namespace ZitiUpdateService.Checkers.PeFile {
     public enum PeType {
         Pe32,
         Pe32Plus
+    }
+
+    public class CRLDistributionPointsParser {
+        public static List<string> GetCrlUrls(BinaryReader asn1Data) {
+            //read the first byte - make sure it's marker 0x30 for SEQUENCE
+            byte first = asn1Data.ReadByte();
+            if (first != 0x30) { 
+                throw new CryptographicException("Could not parse CRL Distribution Points. First byte not asn marker");
+            }
+
+            if (first > 127) {
+                //means there's more bytes to read that control the overall length of the next section
+            }
+            List<string> rtn = new List<string>();
+
+            return rtn;
+        }
+
+        private static void readType(MemoryStream asn1Data) {
+
+        }
+
+        private static void readLen(byte lenByte, MemoryStream asn1Data) {
+
+        }
+        /*
+        internal static CrlDistributionPointParser ParseTags(BinaryReader asn1Data, int asn1DataLen) {
+
+            CrlDistributionPointParser tag = new CrlDistributionPointParser(asn1Data, asn1DataLen);
+
+            return tag;
+        }*/
+    }
+
+    internal class CrlDistributionPointParser {
+        internal int offset;
+        internal int length;
+        internal List<CrlDistributionPointParser> tags = new List<CrlDistributionPointParser>();
+        private CrlDistributionPointParser parent = null;
+        private AsnTagType type = AsnTagType.NONE;
+        internal List<string> urls = new List<string>();
+        private int consumedBytes = 0;
+
+        internal CrlDistributionPointParser(byte[] asn1Data) : this(new MemoryStream(asn1Data)) {
+
+        }
+
+        internal CrlDistributionPointParser(MemoryStream asn1Data) : this(null, asn1Data/*new BinaryReader(asn1Data)*/, 0) {
+
+        }
+
+        internal CrlDistributionPointParser(CrlDistributionPointParser parent, MemoryStream memoryStream, /*BinaryReader asn1Reader,*/ int offset) {
+            BinaryReader asn1Reader = new BinaryReader(memoryStream);
+            this.offset = offset;
+            type = readTag(asn1Reader); 
+            length = readTagLen(asn1Reader);
+            this.parent = parent;
+            int headerBytes = consumedBytes;
+            while (this.consumedBytes < length + headerBytes) {
+                switch (type) {
+                    case AsnTagType.SEQUENCE:
+                    case AsnTagType.ARRAY_ELEMENT:
+                        var t = new CrlDistributionPointParser(this, memoryStream, (int) memoryStream.Position);
+                        consumedBytes += t.consumedBytes;
+                        tags.Add(t);
+                        this.urls.AddRange(t.urls);
+                        break;
+                    case AsnTagType.STRING:
+                        consumedBytes += length;
+                        urls.Add(System.Text.Encoding.UTF8.GetString(asn1Reader.ReadBytes(length)));
+                        break;
+                }
+            }
+        }
+
+        internal AsnTagType readTag(BinaryReader asn1Data) {
+            byte tagByte = asn1Data.ReadByte();
+            if (tagByte != 0x30 && tagByte != 0xA0 && tagByte != 0x86) {
+                throw new CryptographicException("Could not parse CRL Distribution Points. First byte not asn SEQUENCE|ARRAY|STRING marker");
+            }
+
+            consumedBytes++;
+            if (tagByte == 0x30) return AsnTagType.SEQUENCE;
+            if (tagByte == 0xA0) return AsnTagType.ARRAY_ELEMENT;
+            if (tagByte == 0x86) return AsnTagType.STRING;
+            return AsnTagType.NONE;
+        }
+
+        internal int readTagLen(BinaryReader asn1Data) {
+            int tagLen = asn1Data.ReadByte();
+            consumedBytes++;
+            if (tagLen > 128) {
+                //means there's more bytes to read that control the overall length of the next section
+                int moreBytes = tagLen - 128;
+                byte[] lenBytes = new byte[4];
+                byte[] d = asn1Data.ReadBytes(moreBytes);
+
+                int pos = 0;
+                for (int i = d.Length - 1; i >= 0; i--) {
+                    lenBytes[pos++] = d[i];
+                }
+
+                tagLen = BitConverter.ToInt32(lenBytes, 0);
+                consumedBytes += moreBytes;
+            }
+
+            return tagLen;
+        }
+    }
+
+    internal enum AsnTagType {
+        SEQUENCE = 0x30,
+        ARRAY_ELEMENT = 0xA0,
+        STRING = 0x86,
+        NONE = 0,
     }
 }
