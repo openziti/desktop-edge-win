@@ -77,6 +77,18 @@ loop:
 			case svc.Continue:
 				changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 				_ = logging.Elog.Info(ContinueEvent, "request to continue service received. todo - unimplemented")
+			case svc.PowerEvent:
+				var powerEvent string
+				if c.EventType == PBT_APMRESUMESUSPEND || c.EventType == PBT_APMPOWERSTATUSCHANGE || c.EventType == PBT_APMRESUMEAUTOMATIC {
+					// more than one event may be generated
+					powerEvent = fmt.Sprintf("Power event received - resumed, Event Type - %d", c.EventType)
+				} else if c.EventType == PBT_APMSUSPEND {
+					powerEvent = fmt.Sprintf("Power event received - suspend, Event Type - %d", c.EventType)
+				} else {
+					powerEvent = fmt.Sprintf("Power event received - unknown, Event Type - %d", c.EventType)
+				}
+				_ = logging.Elog.Info(InformationEvent, powerEvent)
+				log.Infof(powerEvent)
 			default:
 				_ = logging.Elog.Error(1, fmt.Sprintf("unexpected control request #%d", c))
 			}

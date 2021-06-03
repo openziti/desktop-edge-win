@@ -8,6 +8,7 @@
 * renewed signing cert
 * added dns cache output back to feedback.zip
 * set lower metric, if dns server property is set
+* Detect power events
 
 ## Bugs fixed:
 * none

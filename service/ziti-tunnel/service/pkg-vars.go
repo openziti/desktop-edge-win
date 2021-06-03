@@ -64,7 +64,7 @@ const (
 
 	DEFAULT_REFRESH_INTERVAL = 10
 
-	cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown | svc.AcceptPauseAndContinue
+	cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown | svc.AcceptPauseAndContinue | svc.AcceptPowerEvent
 
 	InformationEvent = 0 //1
 	ContinueEvent    = 0 //2
@@ -74,6 +74,12 @@ const (
 	StopEvent        = 0 //6
 	ShutdownEvent    = 0 //7
 	ErrorEvent       = 0 //1000
+
+	// power events microsoft docs https://docs.microsoft.com/en-us/windows/win32/cimwin32prov/win32-powermanagementevent?redirectedfrom=MSDN
+	PBT_APMSUSPEND = 4 // Entering Suspend
+	PBT_APMRESUMESUSPEND = 7 // Resume from Suspend
+	PBT_APMPOWERSTATUSCHANGE = 10 // Power Status Change
+	PBT_APMRESUMEAUTOMATIC = 18 // Resume Automatic
 
 	// This is the name you will use for the NET START command
 	SvcStartName = "ziti"
