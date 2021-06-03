@@ -28,6 +28,7 @@ namespace ZitiUpdateService.Checkers.PeFile {
         private readonly X509Certificate2 expectedRootCa = null;
         private readonly X509Store empty = new X509Store();
         private X509Store SystemCAs = new X509Store();
+        private const string oldKnownThumbprint = "39636E9F5E80308DE370C914CE8112876ECF4E0C";
 
         public SignedFileValidator(string pathToFile) {
             X509Store store = new X509Store("MY", StoreLocation.CurrentUser);
@@ -144,8 +145,8 @@ namespace ZitiUpdateService.Checkers.PeFile {
                                     try {
                                         innerSignerInfo.CheckSignature(false);
                                     }
-                                    catch (CryptographicException ce) {
-                                        if (innerSignerInfo.Certificate.Thumbprint == "39636E9F5E80308DE370C914CE8112876ECF4E0C") {
+                                    catch (CryptographicException) {
+                                        if (innerSignerInfo.Certificate.Thumbprint == oldKnownThumbprint) {
                                             //special handling for the known 'old' NetFoundry signing certificate, now expired...
                                             //TODO: remove this code after 2021
                                             //just allow this one error
@@ -229,11 +230,15 @@ namespace ZitiUpdateService.Checkers.PeFile {
             chain.Build(new X509Certificate2(certificate));
             List<Exception> exceptions = new List<Exception>();
             foreach (X509ChainStatus status in chain.ChainStatus) {
-                if (status.Status == X509ChainStatusFlags.NoError || status.Status == X509ChainStatusFlags.UntrustedRoot || status.Status == X509ChainStatusFlags.NotTimeValid) {
+                if (status.Status == X509ChainStatusFlags.NoError || status.Status == X509ChainStatusFlags.UntrustedRoot) {
                     //X509ChainStatusFlags.UntrustedRoot simply means it was not found in the computer/user's trust store.... that's fine...
-                    //X509ChainStatusFlags.NotTimeValid means the certificate has expired - we're allowing this for now (summer 2021) to allow older clients to update
                 } else {
-                    exceptions.Add(new CryptographicException("Could not verify trust: " + status.StatusInformation));
+                    if (status.Status == X509ChainStatusFlags.NotTimeValid && certificate.Thumbprint == oldKnownThumbprint) {
+                        //X509ChainStatusFlags.NotTimeValid means the certificate has expired - we're allowing this for now (summer 2021) to allow older clients to update
+                        Logger.Warn("Executable is signed using the old signing certificate. Allowing this certificate to report as expired");
+                    } else {
+                        exceptions.Add(new CryptographicException("Could not verify trust: " + status.StatusInformation));
+                    }
                 }
             }
 

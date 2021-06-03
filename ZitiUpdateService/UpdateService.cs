@@ -34,12 +34,9 @@ namespace ZitiUpdateService {
 
 		public bool useGithubCheck { get; private set; }
 
-		private static string[] expected_subject = new string[] { @"CN=""NetFoundry, Inc."", O=""NetFoundry, Inc."", L=Herndon, S=Virginia, C=US", @"CN=NetFoundry Inc., O=NetFoundry Inc., L=Herndon, S=Virginia, C=US" };
-
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		private Timer _updateTimer = new Timer();
-		private Timer openzitiRemovalTimer = new Timer();
 		private bool inUpdateCheck = false;
 
 		private string exeLocation = null;
