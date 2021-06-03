@@ -93,8 +93,18 @@ namespace ZitiUpdateService.Checkers.PeFile {
             }
         }
 
-        public List<SignedCms> ExtractVerifiedSignatures() {
-            List<SignedCms> list = new List<SignedCms>();
+        private void addCertToList(SignerInfo si, List<X509Certificate2> list) {
+
+            X509Certificate2 cert = si.Certificate;
+            if (list.Find(x => x.Thumbprint == cert.Thumbprint) == null) {
+                list.Add(cert);
+            } else {
+                Logger.Debug("Certificate with Thumbprint {0} already in list. skipping.", cert.Thumbprint);
+            }
+        }
+
+        public List<X509Certificate2> ExtractVerifiedSignatureCertificates() {
+            List<X509Certificate2> list = new List<X509Certificate2>();
             using (FileStream stream = new FileStream(FilePath, FileMode.Open, FileAccess.Read))
             using (BinaryReader reader = new BinaryReader(stream)) {
                 //verify all the embedded signatures
@@ -114,7 +124,7 @@ namespace ZitiUpdateService.Checkers.PeFile {
                     cmsSi.CheckSignature(true);
                     if (VerifyTrust(expectedRootCa, cmsSi.Certificate).Result) {
                         VerifyFileHash(cms, cmsSi);
-                        list.Add(cms);
+                        addCertToList(cmsSi, list);
                     }
                     if (cmsSi.UnsignedAttributes.Count > 0) {
                         foreach (var unsignedAttr in cmsSi.UnsignedAttributes) {
@@ -134,13 +144,17 @@ namespace ZitiUpdateService.Checkers.PeFile {
                                             //just allow this one error
                                             Logger.Warn("Ignoring timestamp validity issue for the existing code signing certificate. Subject: {0}, Thumbprint: {1}", innerSignerInfo.Certificate.Subject, innerSignerInfo.Certificate.Thumbprint);
                                         } else {
-                                            throw;
+                                            if (IsCertificateOpenZitiVerifies(innerSignerInfo.Certificate)) {
+                                                Logger.Debug("Signature could not be verified. This is expected for the certificates issued by openziti/netfoundry.");
+                                            } else {
+                                                throw;
+                                            }
                                         }
                                     }
 
                                     if (VerifyTrust(expectedRootCa, innerSignerInfo.Certificate).Result) {
                                         VerifyFileHash(innerCms, innerSignerInfo);
-                                        list.Add(innerCms);
+                                        addCertToList(innerSignerInfo, list);
                                     }
                                 }
                             }
@@ -152,64 +166,38 @@ namespace ZitiUpdateService.Checkers.PeFile {
             return list;
         }
 
-        public void Verify() {
-            List<SignedCms> list = ExtractVerifiedSignatures();
-            foreach (SignedCms cms in list) { 
-                //ignore entries with a version of 3 since this indicates a timestamp signature and not one we 
-                Console.WriteLine(cms.Certificates);
+        public bool IsCertificateOpenZitiVerifies(X509Certificate2 cert) {
+            bool yesOrNo = cert.Subject.ToLower().Contains("netfoundry") || cert.Subject.ToLower().Contains("openziti");
+            if (yesOrNo) {
+                Logger.Debug("Certificate is one openziti verifies: {0}", cert.Subject);
             }
+            return yesOrNo;
         }
 
-        /*
         public void Verify() {
-            using (FileStream stream = new FileStream(FilePath, FileMode.Open, FileAccess.Read))
-            using (BinaryReader reader = new BinaryReader(stream)) {
-                //verify all the embedded signatures
-                stream.Seek(this.ImportantHashPositions.CertificateTableStart, SeekOrigin.Begin);
-                int readCertLen = reader.ReadInt32();
-                int readRevision = reader.ReadInt16();
-                int readCertType = reader.ReadInt16();
-                byte[] pkcs7 = reader.ReadBytes(readCertLen);
+            List<X509Certificate2> list = ExtractVerifiedSignatureCertificates();
+            foreach (X509Certificate2 cert in list) {
+                if (IsCertificateOpenZitiVerifies(cert)) {
+                    //verify this certificate was issued from the known CA
+                    try {
+                        VerifyTrust(expectedRootCa, cert);
 
-                SignedCms cms = new SignedCms();
-                cms.Decode(pkcs7);
-                cms.CheckHash();
-                //shout out to Scott MG: https://social.msdn.microsoft.com/Forums/windowsdesktop/en-US/655f5c27-b049-4275-a8b3-cc1c0be2b4f2/retrieve-certificate-info-for-dualsigned-sha1sha256
-                //for indicating that the unsigned attributes contain the other fingerprints
-                if (cms.SignerInfos.Count > 0) {
-                    SignerInfo si = cms.SignerInfos[0];
-                    si.CheckSignature(true);
-                    if (VerifyTrust(expectedRootCa, si.Certificate).Result) {
-                        VerifyFileHash(cms, si);
-                        return; //success!
+                        return; //yes!
+                    } catch {
+                        //empty on purpose. keep checking...
                     }
-                    if (cms.SignerInfos[0] != null && cms.SignerInfos[0].UnsignedAttributes.Count > 0) {
-                        foreach (AsnEncodedData asn in cms.SignerInfos[0].UnsignedAttributes[0].Values) {
-                            SignedCms innerCms = new SignedCms();
-                            innerCms.Decode(asn.RawData);
-                            innerCms.CheckHash();
-                            if (innerCms.SignerInfos.Count > 0) {
-                                SignerInfo innerSignerInfo = innerCms.SignerInfos[0];
-                                innerSignerInfo.CheckSignature(false);
-                                if (VerifyTrust(expectedRootCa, innerSignerInfo.Certificate).Result) {
-                                    VerifyFileHash(innerCms, innerSignerInfo);
-                                    return; //success!
-                                }
-                            }
-                        }
-                    }
+                } else {
+                    Logger.Debug("Certificate is not one ziti verifies for: {0}", cert.Subject);
                 }
-
-                throw new CryptographicException("No signing certificates found which meet the expected criteria");
             }
+            throw new CryptographicException("Executable not signed by an appropriate certificate");
         }
-        */
+
         public void VerifyFileHash(SignedCms cms, SignerInfo signerInfo) {
-            if (!signerInfo.Certificate.Subject.ToLower().Contains("netfoundry")) {
-                //just eject - no need to check this...
-                Logger.Debug("Not verifying certificate as it is not a NetFoundry signing certificate: {0}", signerInfo.Certificate.Subject);
+            if (!IsCertificateOpenZitiVerifies(signerInfo.Certificate)) {
                 return;
             }
+
             //calculate the hash using the first signed info
             var hashAlg = IncrementalHash.CreateHash(new HashAlgorithmName(signerInfo.DigestAlgorithm.FriendlyName.ToUpper()));
             byte[] calculatedHash = CalculatePeHashStreaming(hashAlg);
@@ -223,7 +211,7 @@ namespace ZitiUpdateService.Checkers.PeFile {
 
         public async static Task<bool> VerifyTrust(X509Certificate2 trustedRootCertificateAuthority, X509Certificate2 certificate) {
 
-            X509Store store = new X509Store("LocalMachine", StoreLocation.LocalMachine);
+            X509Store store = new X509Store("MY", StoreLocation.CurrentUser);
             store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
             
             X509Chain chain = new X509Chain();

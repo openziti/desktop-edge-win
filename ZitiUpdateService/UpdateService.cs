@@ -609,7 +609,7 @@ namespace ZitiUpdateService {
 			inUpdateCheck = true; //simple semaphore
 			try {
 				Logger.Debug("checking for update");
-				/*
+				
 				int avail = check.IsUpdateAvailable(assemblyVersion);
 				if (avail >= 0) {
 					Logger.Debug("update check complete. no update available");
@@ -642,39 +642,7 @@ namespace ZitiUpdateService {
 				}
 				Logger.Debug("downloaded file hash was correct. update can continue.");
 
-				*/
-
-
-
-
-
-                string fileDestination = @"C:\temp\signingtest\a\zz.exe";
-
-
-
-
-
-
-
-
                 new SignedFileValidator(fileDestination).Verify();
-
-				// check digital signature
-				var signer = X509Certificate.CreateFromSignedFile(fileDestination);
-				/* keep these commented out lines - just in case we need all the certs from the file use this
-				var coll = new X509Certificate2Collection();
-				coll.Import(filePath);
-				*/
-
-				var subject = signer.Subject;
-				if (!expected_subject.Contains(subject)) {
-					Logger.Error("the file downloaded uses a subject that is unknown! the installation will not proceed. [subject:{0}]", subject);
-					inUpdateCheck = false;
-					return;
-
-				} else {
-					Logger.Info("the file downloaded uses a known subject. installation and can proceed. [subject:{0}]", subject);
-				}
 
 				StopZiti();
 				StopUI().Wait();
