@@ -70,5 +70,11 @@ if($gituser -eq "ziti-ci") {
 } else {
   echo "detected user [${gituser}] which is not ziti-ci - skipping installer commit"
 }
-(Get-FileHash "${scriptPath}\Output\Ziti Desktop Edge Client-${installerVersion}.exe").Hash > "${scriptPath}\Output\Ziti Desktop Edge Client-${installerVersion}.exe.sha256"
+
+$exeAbsPath="${scriptPath}\Output\Ziti Desktop Edge Client-${installerVersion}.exe"
+
+echo "adding additional signature to executable with openziti.org signing certificate"
+signtool sign /f "${env:PFXFILE_OPENZITI}" /p "${env:PFXPASS_OPENZITI}" /fd sha512 /td sha512 /as "${exeAbsPath}"
+
+(Get-FileHash "${exeAbsPath}").Hash > "${scriptPath}\Output\Ziti Desktop Edge Client-${installerVersion}.exe.sha256"
 echo "========================== build.ps1 competed =========================="
