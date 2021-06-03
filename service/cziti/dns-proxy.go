@@ -349,12 +349,13 @@ outer:
 	}
 
 	reqs := make(map[uint32]*proxiedReq)
+	var dnsReqMutex = &sync.Mutex{}
 
-	tickerChannel := make(chan bool)
+	dnsReqChannel := make(chan struct{})
 	ticker := time.NewTicker(60 * time.Second)
 	defer func() {
-		tickerChannel <- false
-		log.Tracef("Removing timer tasks for dns request handling")
+		close(dnsReqChannel)
+		log.Tracef("Exiting dns request handling routines.")
 	}()
 	go func() {
 		for {
@@ -362,6 +363,7 @@ outer:
 			case <-ticker.C:
 				// cleanup requests we didn't get answers for
 				now := time.Now()
+				dnsReqMutex.Lock()
 				for k, r := range reqs {
 					if now.After(r.exp) {
 						log.Debugf("a DNS request has expired - enable trace logging and reproduce this issue for more information")
@@ -370,7 +372,8 @@ outer:
 						delete(reqs, k)
 					}
 				}
-			case <-tickerChannel:
+				dnsReqMutex.Unlock()
+			case <-dnsReqChannel:
 				ticker.Stop()
 				return
 			}
@@ -379,23 +382,30 @@ outer:
 
 	go func() {
 		for {
-			rep := <-respChan
-			reply := dns.Msg{}
-			if err := reply.Unpack(rep); err == nil {
-				id := (uint32(reply.Id) << 16) | uint32(reply.Question[0].Qtype)
-				req, found := reqs[id]
-				if found {
-					delete(reqs, id)
-					log.Tracef("proxy resolved request for %v id:%d", reply.Question[0].Name, reply.Id)
-					n, oobn, err := req.s.WriteMsgUDP(rep, nil, req.peer)
-					if err != nil {
-						log.Errorf("an error has occurred while trying to write a udp message. n:%d, oobn:%d, err:%v", n, oobn, err)
+			select {
+			case rep := <-respChan:
+				reply := dns.Msg{}
+				if err := reply.Unpack(rep); err == nil {
+					id := (uint32(reply.Id) << 16) | uint32(reply.Question[0].Qtype)
+					dnsReqMutex.Lock()
+					req, found := reqs[id]
+					if found {
+						delete(reqs, id)
+						dnsReqMutex.Unlock()
+						log.Tracef("proxy resolved request for %v id:%d", reply.Question[0].Name, reply.Id)
+						n, oobn, err := req.s.WriteMsgUDP(rep, nil, req.peer)
+						if err != nil {
+							log.Errorf("an error has occurred while trying to write a udp message. n:%d, oobn:%d, err:%v", n, oobn, err)
+						}
+					} else {
+						dnsReqMutex.Unlock()
+						// keep this log but leave commented out. When two listeners are enabled (ipv4/v6) this msg will
+						// just mean some other request was processed successfully and removed the entry from the map
+						// log.Tracef("matching request was not found for id:%d. %s %s", reply.Id, dns.Type(reply.Question[0].Qtype), reply.Question[0].Name)
 					}
-				} else {
-					// keep this log but leave commented out. When two listeners are enabled (ipv4/v6) this msg will
-					// just mean some other request was processed successfully and removed the entry from the map
-					// log.Tracef("matching request was not found for id:%d. %s %s", reply.Id, dns.Type(reply.Question[0].Qtype), reply.Question[0].Name)
 				}
+			case <-dnsReqChannel:
+				return
 			}
 		}
 
@@ -405,7 +415,9 @@ outer:
 	for {
 		pr := <-proxiedRequests
 		id := (uint32(pr.req.Id) << 16) | uint32(pr.req.Question[0].Qtype)
+		dnsReqMutex.Lock()
 		reqs[id] = pr
+		dnsReqMutex.Unlock()
 		b, _ := pr.req.Pack()
 		for _, proxy := range dnsUpstreams {
 			if _, err := proxy.Write(b); err != nil {
