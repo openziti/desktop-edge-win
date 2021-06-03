@@ -518,38 +518,6 @@ namespace ZitiUpdateService.Checkers.PeFile {
         Pe32Plus
     }
 
-    public class CRLDistributionPointsParser {
-        public static List<string> GetCrlUrls(BinaryReader asn1Data) {
-            //read the first byte - make sure it's marker 0x30 for SEQUENCE
-            byte first = asn1Data.ReadByte();
-            if (first != 0x30) { 
-                throw new CryptographicException("Could not parse CRL Distribution Points. First byte not asn marker");
-            }
-
-            if (first > 127) {
-                //means there's more bytes to read that control the overall length of the next section
-            }
-            List<string> rtn = new List<string>();
-
-            return rtn;
-        }
-
-        private static void readType(MemoryStream asn1Data) {
-
-        }
-
-        private static void readLen(byte lenByte, MemoryStream asn1Data) {
-
-        }
-        /*
-        internal static CrlDistributionPointParser ParseTags(BinaryReader asn1Data, int asn1DataLen) {
-
-            CrlDistributionPointParser tag = new CrlDistributionPointParser(asn1Data, asn1DataLen);
-
-            return tag;
-        }*/
-    }
-
     internal class CrlDistributionPointParser {
         internal int offset;
         internal int length;
