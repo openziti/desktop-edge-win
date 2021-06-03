@@ -74,7 +74,7 @@ if($gituser -eq "ziti-ci") {
 $exeAbsPath="${scriptPath}\Output\Ziti Desktop Edge Client-${installerVersion}.exe"
 
 echo "adding additional signature to executable with openziti.org signing certificate"
-signtool sign /f "${env:PFXFILE_OPENZITI}" /p "${env:PFXPASS_OPENZITI}" /tr http://ts.ssl.com /fd sha512 /td sha512 /as "${exeAbsPath}"
+signtool sign /f "${scriptPath}\openziti.p12" /p "${env:OPENZITI_P12_PASS}" /tr http://ts.ssl.com /fd sha512 /td sha512 /as "${exeAbsPath}"
 
 (Get-FileHash "${exeAbsPath}").Hash > "${scriptPath}\Output\Ziti Desktop Edge Client-${installerVersion}.exe.sha256"
 echo "========================== build.ps1 competed =========================="

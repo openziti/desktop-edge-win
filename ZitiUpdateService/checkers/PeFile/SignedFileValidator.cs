@@ -185,13 +185,17 @@ namespace ZitiUpdateService.Checkers.PeFile {
         }
 
         public void Verify() {
+            Logger.Debug("extracting certificates from file: {0}", FilePath);
             List<X509Certificate2> list = ExtractVerifiedSignatureCertificates();
+            Logger.Info("Certificates extracted: {0}", list.Count);
             foreach (X509Certificate2 cert in list) {
+	            Logger.Info("Checking certificate: [{0}] {1}", cert.Thumbprint, cert);
 	            if (IsCertificateOpenZitiVerifies(cert)) {
 		            //verify this certificate was issued from the known CA
 		            try {
+			            Logger.Info("Verifying trust of certificate: [{0}] {1}", cert, cert.Thumbprint);
 			            VerifyTrust(empty, expectedRootCa, cert, true).Wait();
-			            Logger.Info("Certificate {0}:{1} was verified signed by {2}:{3}", cert.Thumbprint, cert.Subject, expectedRootCa.Thumbprint, expectedRootCa.Subject);
+			            Logger.Info("Certificate [{0}] {1} was verified signed by [{2}] {3}", cert.Thumbprint, cert.Subject, expectedRootCa.Thumbprint, expectedRootCa.Subject);
 			            return; //yes!
 		            }
 		            catch {
