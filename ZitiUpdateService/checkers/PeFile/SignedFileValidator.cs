@@ -26,8 +26,15 @@ namespace ZitiUpdateService.Checkers.PeFile {
         public IMAGE_OPTIONAL_HEADER64 StandardFieldsPe32Plus { get; private set; }
 
         private readonly X509Certificate2 expectedRootCa = null;
+        private readonly X509Store empty = new X509Store();
+        private X509Store SystemCAs = new X509Store();
 
         public SignedFileValidator(string pathToFile) {
+            X509Store store = new X509Store("MY", StoreLocation.CurrentUser);
+            store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
+            SystemCAs.Open(OpenFlags.ReadWrite);
+            SystemCAs.AddRange(store.Certificates);
+
             expectedRootCa = certFromResource("ZitiUpdateService.checkers.PeFile.openziti.rootCA.rsa.pem.txt");
             FilePath = pathToFile;
             ImportantHashPositions = new HashPositions();
@@ -122,7 +129,7 @@ namespace ZitiUpdateService.Checkers.PeFile {
                 //for indicating that the unsigned attributes contain the other SignerInfos
                 foreach (var cmsSi in cms.SignerInfos) {
                     cmsSi.CheckSignature(true);
-                    if (VerifyTrust(expectedRootCa, cmsSi.Certificate).Result) {
+                    if (VerifyTrust(SystemCAs, expectedRootCa, cmsSi.Certificate).Result) {
                         VerifyFileHash(cms, cmsSi);
                         addCertToList(cmsSi, list);
                     }
@@ -152,7 +159,7 @@ namespace ZitiUpdateService.Checkers.PeFile {
                                         }
                                     }
 
-                                    if (VerifyTrust(expectedRootCa, innerSignerInfo.Certificate).Result) {
+                                    if (VerifyTrust(SystemCAs, expectedRootCa, innerSignerInfo.Certificate).Result) {
                                         VerifyFileHash(innerCms, innerSignerInfo);
                                         addCertToList(innerSignerInfo, list);
                                     }
@@ -169,7 +176,9 @@ namespace ZitiUpdateService.Checkers.PeFile {
         public bool IsCertificateOpenZitiVerifies(X509Certificate2 cert) {
             bool yesOrNo = cert.Subject.ToLower().Contains("netfoundry") || cert.Subject.ToLower().Contains("openziti");
             if (yesOrNo) {
-                Logger.Debug("Certificate is one openziti verifies: {0}", cert.Subject);
+                Logger.Debug("Certificate does     need verification: {0}", cert.Subject);
+            } else {
+                Logger.Debug("Certificate does not need verification: {0}", cert.Subject);
             }
             return yesOrNo;
         }
@@ -180,14 +189,12 @@ namespace ZitiUpdateService.Checkers.PeFile {
                 if (IsCertificateOpenZitiVerifies(cert)) {
                     //verify this certificate was issued from the known CA
                     try {
-                        VerifyTrust(expectedRootCa, cert);
-
+                        VerifyTrust(empty, expectedRootCa, cert, true).Wait();
+                        Logger.Info("Certificate {0}:{1} was verified signed by {2}:{3}", cert.Thumbprint, cert.Subject, expectedRootCa.Thumbprint, expectedRootCa.Subject);
                         return; //yes!
                     } catch {
                         //empty on purpose. keep checking...
                     }
-                } else {
-                    Logger.Debug("Certificate is not one ziti verifies for: {0}", cert.Subject);
                 }
             }
             throw new CryptographicException("Executable not signed by an appropriate certificate");
@@ -209,14 +216,14 @@ namespace ZitiUpdateService.Checkers.PeFile {
             }
         }
 
-        public async static Task<bool> VerifyTrust(X509Certificate2 trustedRootCertificateAuthority, X509Certificate2 certificate) {
+        public async static Task<bool> VerifyTrust(X509Store cas, X509Certificate2 trustedRootCertificateAuthority, X509Certificate2 certificate) {
+            return await VerifyTrust(cas, trustedRootCertificateAuthority, certificate, false);
+        }
 
-            X509Store store = new X509Store("MY", StoreLocation.CurrentUser);
-            store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
-            
+        public async static Task<bool> VerifyTrust(X509Store cas, X509Certificate2 trustedRootCertificateAuthority, X509Certificate2 certificate, bool verifyTrustedRoot) {
             X509Chain chain = new X509Chain();
             chain.ChainPolicy.ExtraStore.Add(trustedRootCertificateAuthority);
-            chain.ChainPolicy.ExtraStore.AddRange(store.Certificates);
+            chain.ChainPolicy.ExtraStore.AddRange(cas.Certificates);
             chain.ChainPolicy.VerificationFlags = X509VerificationFlags.NoFlag;
             chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
             chain.Build(new X509Certificate2(certificate));
@@ -231,11 +238,10 @@ namespace ZitiUpdateService.Checkers.PeFile {
             }
 
             //final check - make sure the last certificate matches the expected thumbprint
-            if (chain.ChainElements[chain.ChainElements.Count - 1].Certificate.Thumbprint != trustedRootCertificateAuthority.Thumbprint) {
+            if (verifyTrustedRoot && chain.ChainElements[chain.ChainElements.Count - 1].Certificate.Thumbprint != trustedRootCertificateAuthority.Thumbprint) {
                 exceptions.Add(new Exception("Could not verify trust. The expected thumbprint was not found!"));
             }
 
-            bool crlFailure = false;
             foreach (var e in certificate.Extensions) {
                 if (e.Oid.Value == "2.5.29.31") { //2.5.29.31 == CRL Distribution Points
                     try {
@@ -253,28 +259,24 @@ namespace ZitiUpdateService.Checkers.PeFile {
                                         Win32Crypto.CrlInfo info = Win32Crypto.FromBlob(crlBytes);
                                         if (info.RevokedSerialNumbers.Contains(certificate.SerialNumber)) {
                                             exceptions.Add(new CryptographicException("Serial number " + certificate.SerialNumber + " has been revoked."));
-                                            crlFailure = true;
                                         }
                                     } else {
                                         exceptions.Add(new CryptographicException("Could not retrieve revocation list from " + url + "- cannot verify trust"));
-                                        crlFailure = true;
                                     }
                                 }
                                 catch (Exception innerException) {
                                     exceptions.Add(new CryptographicException("crl at " + url + " could not be used", innerException));
-                                    crlFailure = true;
                                 }
                             }
                         }
                     }
                     catch (Exception ex) {
                         exceptions.Add(ex);
-                        break;
                     }
                 }
             }
 
-            if (crlFailure) {
+            if (exceptions.Count > 0) {
                 throw new AggregateException(exceptions);
             }
 
