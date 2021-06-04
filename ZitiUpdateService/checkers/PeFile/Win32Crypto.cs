@@ -159,7 +159,7 @@ namespace VerifyingFiles.PInvoke {
 
         #endregion
 
-        private static List<string> GetRevokedGetSerialNumbers(CRL_INFO stCrlInfo) {
+        private static List<string> GetRevokedSerialNumbers(CRL_INFO stCrlInfo) {
             List<string> rtn = new List<string>();
             var rgCrlEntry = stCrlInfo.rgCRLEntry;
 
@@ -228,7 +228,7 @@ namespace VerifyingFiles.PInvoke {
                 CrlInfo info = new CrlInfo();
                 info.validTo = FileTimeToDateTime(stCrlInfo.NextUpdate);
                 info.validFrom = FileTimeToDateTime(stCrlInfo.ThisUpdate);
-                info.RevokedSerialNumbers = GetRevokedGetSerialNumbers(stCrlInfo);
+                info.RevokedSerialNumbers = GetRevokedSerialNumbers(stCrlInfo);
 
                 return info;
             } finally {
