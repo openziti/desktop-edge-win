@@ -343,7 +343,10 @@ outer:
 				} else {
 					if len(respChan) == cap(respChan) {
 						log.Warn("respChan will be blocked. If this warning is continuously displayed please report")
+					} else {
+						log.Tracef("Response received, respChan len: %d, cap: %d ", len(respChan), cap(respChan))
 					}
+
 					respChan <- resp[:n]
 				}
 			}
