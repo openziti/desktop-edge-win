@@ -7,8 +7,9 @@ using NLog;
 using Newtonsoft.Json.Linq;
 
 using ZitiDesktopEdge.Utility;
+using ZitiUpdateService.Checkers.PeFile;
 
-namespace ZitiUpdateService.checkers {
+namespace ZitiUpdateService.Checkers {
 
 	internal class GithubCheck : UpdateCheck {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
@@ -97,7 +98,7 @@ namespace ZitiUpdateService.checkers {
 				File.Delete(sha256dest);
 				return computed.ToLower().Trim() == hash.ToLower().Trim();
 			}
-		}
+        }
 
 		override public Version GetNextVersion() {
 			return nextVersion;

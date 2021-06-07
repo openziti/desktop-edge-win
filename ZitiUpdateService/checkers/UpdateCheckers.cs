@@ -3,7 +3,7 @@ using System.IO;
 
 using NLog;
 
-namespace ZitiUpdateService.checkers {
+namespace ZitiUpdateService.Checkers {
 
     abstract class UpdateCheck {
         public abstract int IsUpdateAvailable(Version current);
