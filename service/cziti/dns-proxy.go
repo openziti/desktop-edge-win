@@ -318,6 +318,8 @@ outer:
 			dnsRetryInterval = 10000
 		}
 		goto GetUpstream
+	} else {
+		log.Debugf("Upstream DNS dials succeeded.")
 	}
 	if len(upstreamDnsServers) > 0 && len(dnsUpstreams) != 0 && dnsRetryInterval>500 {
 		AddDomainSpecificNrpt()
