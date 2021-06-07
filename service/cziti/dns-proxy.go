@@ -117,7 +117,7 @@ type dnsreq struct {
 }
 
 func RunDNSserver(dnsBind []net.IP, ready chan bool) {
-	go runDNSproxy(windns.GetUpstreamDNS(), dnsBind)
+	go runDNSproxy(dnsBind)
 
 	for _, bindAddr := range dnsBind {
 		go runListener(&bindAddr, 53, reqch)
@@ -241,7 +241,7 @@ func dnsPanicRecover(localDnsServers []net.IP, now time.Time) {
 	log.Infof("dnsPanicRecovery set time to: %s", lastDnsRecover.String())
 
 	// get dns again and reconfigure
-	go runDNSproxy(windns.GetUpstreamDNS(), localDnsServers)
+	go runDNSproxy(localDnsServers)
 }
 
 func trimSuffix(source string, suffix string) string {
@@ -260,23 +260,20 @@ func cleanDomainsForNrpt() map[string]bool {
 	return domainMap
 }
 
-func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
-	windns.FlushDNS() //do this in case the services come back in different order and the ip returned is no longer the same
-	log.Infof("starting DNS proxy upstream: %v, local: %v", upstreamDnsServers, localDnsServers)
-	domains = windns.GetConnectionSpecificDomains()
-	log.Infof("ConnectionSpecificDomains detected: %v", domains)
+func runDNSproxy(localDnsServers []net.IP) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Errorf("Recovering from panic due to DNS-related issue. %v", err)
 			dnsPanicRecover(localDnsServers, time.Now())
 		}
 	}()
-
-	domainMap := cleanDomainsForNrpt()
-	windns.AddNrptRules(domainMap, dnsip.String())
-	log.Infof("Added connection specific domains to NRPT: %v", domainMap)
-
+	windns.FlushDNS() //do this in case the services come back in different order and the ip returned is no longer the same
 	dnsRetryInterval := 500
+
+GetUpstream:
+	upstreamDnsServers := windns.GetUpstreamDNS()
+	log.Infof("starting DNS proxy upstream: %v, local: %v", upstreamDnsServers, localDnsServers)
+	AddDomainSpecificNrpt()
 
 	log.Infof("establishing links to all upstream DNS. total detected upstream DNS: %d", len(upstreamDnsServers))
 outer:
@@ -320,7 +317,10 @@ outer:
 		if dnsRetryInterval >= 10000 {
 			dnsRetryInterval = 10000
 		}
-		goto outer
+		goto GetUpstream
+	}
+	if len(upstreamDnsServers) > 0 && len(dnsUpstreams) != 0 && dnsRetryInterval>500 {
+		AddDomainSpecificNrpt()
 	}
 
 	log.Infof("starting goroutines for all connected DNS proxies. Total goroutines to spawn: %d of %d detected DNS", len(dnsUpstreams), len(upstreamDnsServers))
@@ -352,15 +352,19 @@ outer:
 	var dnsReqMutex = &sync.Mutex{}
 
 	dnsReqChannel := make(chan struct{})
-	ticker := time.NewTicker(60 * time.Second)
+	ticker := time.NewTicker(5 * time.Second)
 	defer func() {
 		close(dnsReqChannel)
 		log.Tracef("Exiting dns request handling routines.")
 	}()
 	go func() {
+	CleanUpIteration:
 		for {
 			select {
 			case <-ticker.C:
+				if len(reqs) == 0 {
+					continue CleanUpIteration
+				}
 				// cleanup requests we didn't get answers for
 				now := time.Now()
 				dnsReqMutex.Lock()
@@ -438,4 +442,13 @@ outer:
 		}
 
 	}
+}
+
+func AddDomainSpecificNrpt() {
+	domains = windns.GetConnectionSpecificDomains()
+	log.Infof("ConnectionSpecificDomains detected: %v", domains)
+
+	domainMap := cleanDomainsForNrpt()
+	windns.AddNrptRules(domainMap, dnsip.String())
+	log.Infof("Added connection specific domains to NRPT: %v", domainMap)
 }
