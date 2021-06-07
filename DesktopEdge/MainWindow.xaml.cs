@@ -1439,7 +1439,8 @@ namespace ZitiDesktopEdge {
 		public bool CanExecute(object parameter) {
 			return true;
 		}
-
+#pragma warning disable CS0067 //The event 'ActionCommand.CanExecuteChanged' is never used
 		public event EventHandler CanExecuteChanged;
+#pragma warning restore CS0067 //The event 'ActionCommand.CanExecuteChanged' is never used
 	}
 }

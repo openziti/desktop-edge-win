@@ -19,6 +19,7 @@ using NLog;
 using Newtonsoft.Json;
 using System.Net;
 using DnsClient;
+using ZitiUpdateService.Checkers.PeFile;
 
 namespace ZitiUpdateService {
 	public partial class UpdateService : ServiceBase {
@@ -33,12 +34,9 @@ namespace ZitiUpdateService {
 
 		public bool useGithubCheck { get; private set; }
 
-		private static string[] expected_subject = new string[] { @"CN=""NetFoundry, Inc."", O=""NetFoundry, Inc."", L=Herndon, S=Virginia, C=US", @"CN=NetFoundry Inc., O=NetFoundry Inc., L=Herndon, S=Virginia, C=US" };
-
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		private Timer _updateTimer = new Timer();
-		private Timer openzitiRemovalTimer = new Timer();
 		private bool inUpdateCheck = false;
 
 		private string exeLocation = null;
@@ -54,7 +52,7 @@ namespace ZitiUpdateService {
 		IPCServer svr = new IPCServer();
 		Task ipcServer = null;
 		Task eventServer = null;
-		checkers.UpdateCheck check = null;
+		Checkers.UpdateCheck check = null;
 
 		private Timer dnsProbeTimer = new Timer();
 		private IPAddress dnsIpAddress = null;
@@ -574,9 +572,9 @@ namespace ZitiUpdateService {
 				updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win-beta/releases/latest";
 			}
 			if (useGithubCheck) {
-				check = new checkers.GithubCheck(updateUrl);
+				check = new Checkers.GithubCheck(updateUrl);
 			} else {
-				check = new checkers.FilesystemCheck(1);
+				check = new Checkers.FilesystemCheck(1);
 			}
 		}
 
@@ -605,10 +603,10 @@ namespace ZitiUpdateService {
 				Logger.Warn("Still in update check. This is abnormal. Please report if you see this warning");
 				return;
 			}
-			inUpdateCheck = true; //simple semaphone
+			inUpdateCheck = true; //simple semaphore
 			try {
 				Logger.Debug("checking for update");
-
+				
 				int avail = check.IsUpdateAvailable(assemblyVersion);
 				if (avail >= 0) {
 					Logger.Debug("update check complete. no update available");
@@ -626,8 +624,8 @@ namespace ZitiUpdateService {
 				string fileDestination = Path.Combine(updateFolder, filename);
 
 				if (check.AlreadyDownloaded(updateFolder, filename)) {
-					Logger.Info("package has already been downloaded to {0} - moving to install phase", Path.Combine(updateFolder, filename));
-				} else {
+					Logger.Info("package has already been downloaded to {0} - moving to install phase", fileDestination);
+                } else {
 					Logger.Info("copying update package begins");
 					check.CopyUpdatePackage(updateFolder, filename);
 					Logger.Info("copying update package complete");
@@ -640,23 +638,8 @@ namespace ZitiUpdateService {
 					return;
 				}
 				Logger.Debug("downloaded file hash was correct. update can continue.");
-
-				// check digital signature
-				var signer = X509Certificate.CreateFromSignedFile(fileDestination);
-				/* keep these commented out lines - just in case we need all the certs from the file use this
-				var coll = new X509Certificate2Collection();
-				coll.Import(filePath);
-				*/
-
-				var subject = signer.Subject;
-				if (!expected_subject.Contains(subject)) {
-					Logger.Error("the file downloaded uses a subject that is unknown! the installation will not proceed. [subject:{0}]", subject);
-					inUpdateCheck = false;
-					return;
-
-				} else {
-					Logger.Info("the file downloaded uses a known subject. installation and can proceed. [subject:{0}]", subject);
-				}
+				
+				new SignedFileValidator(fileDestination).Verify();
 
 				StopZiti();
 				StopUI().Wait();
