@@ -20,9 +20,9 @@
 package main
 
 const (
-	Version   = "1.9.6"
-	Revision  = "ed9a214d5c33"
-	Branch    = "main"
+	Version   = "1.9.7"
+	Revision  = "ee3ae6e2d5bb"
+	Branch    = "release-next"
 	BuildUser = ""
-	BuildDate = "2021-05-31 14:36:25"
+	BuildDate = "2021-06-04 17:27:26"
 )
