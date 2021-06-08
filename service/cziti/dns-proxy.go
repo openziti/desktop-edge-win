@@ -449,12 +449,3 @@ outer:
 
 	}
 }
-
-func AddDomainSpecificNrpt() {
-	domains = windns.GetConnectionSpecificDomains()
-	log.Infof("ConnectionSpecificDomains detected: %v", domains)
-
-	domainMap := cleanDomainsForNrpt()
-	windns.AddNrptRules(domainMap, dnsip.String())
-	log.Infof("Added connection specific domains to NRPT: %v", domainMap)
-}
