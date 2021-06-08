@@ -373,6 +373,7 @@ outer:
 				}
 				// cleanup requests we didn't get answers for
 				now := time.Now()
+				log.Tracef("Attempting to lock mutex for the dns requests map in cleanup")
 				dnsReqMutex.Lock()
 				for k, r := range reqs {
 					if now.After(r.exp) {
@@ -383,8 +384,10 @@ outer:
 					}
 				}
 				dnsReqMutex.Unlock()
+				log.Tracef("Unlocked the mutex for the dns requests map in cleanup - duration %v", time.Now().Sub(now))
 			case <-dnsReqChannel:
 				ticker.Stop()
+				log.Tracef("Exiting dns request cleanup go routine.")
 				return
 			}
 		}
@@ -415,6 +418,7 @@ outer:
 					}
 				}
 			case <-dnsReqChannel:
+				log.Tracef("Exiting the go routine for network interface response channel")
 				return
 			}
 		}
