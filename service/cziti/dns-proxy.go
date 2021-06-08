@@ -273,7 +273,13 @@ func runDNSproxy(localDnsServers []net.IP) {
 GetUpstream:
 	upstreamDnsServers := windns.GetUpstreamDNS()
 	log.Infof("starting DNS proxy upstream: %v, local: %v", upstreamDnsServers, localDnsServers)
-	AddDomainSpecificNrpt()
+
+	domains = windns.GetConnectionSpecificDomains()
+	log.Infof("ConnectionSpecificDomains detected: %v", domains)
+
+	domainMap := cleanDomainsForNrpt()
+	windns.AddNrptRules(domainMap, dnsip.String())
+	log.Infof("Added connection specific domains to NRPT: %v", domainMap)
 
 	log.Infof("establishing links to all upstream DNS. total detected upstream DNS: %d", len(upstreamDnsServers))
 outer:
@@ -318,11 +324,6 @@ outer:
 			dnsRetryInterval = 10000
 		}
 		goto GetUpstream
-	} else {
-		log.Debugf("Upstream DNS dials succeeded.")
-	}
-	if len(upstreamDnsServers) > 0 && len(dnsUpstreams) != 0 && dnsRetryInterval>500 {
-		AddDomainSpecificNrpt()
 	}
 
 	log.Infof("starting goroutines for all connected DNS proxies. Total goroutines to spawn: %d of %d detected DNS", len(dnsUpstreams), len(upstreamDnsServers))
