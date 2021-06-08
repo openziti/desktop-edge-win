@@ -268,7 +268,7 @@ service/libuv.dll
 Installer/build/
 Installer/ziti-tunnel-service.zip
 ziti-tunnel-service.zip
-WinSign.p12
+WinSign.*
 *.p12
 *.pfx
 *.pem

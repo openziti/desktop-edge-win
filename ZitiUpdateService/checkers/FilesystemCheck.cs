@@ -1,13 +1,9 @@
 ﻿using System;
 using System.IO;
-using System.Net;
-
-using System.Security.Cryptography;
 
 using NLog;
-using Newtonsoft.Json.Linq;
 
-namespace ZitiUpdateService.checkers {
+namespace ZitiUpdateService.Checkers {
 	internal class FilesystemCheck : UpdateCheck {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 		string dest = null;
