@@ -1,3 +1,31 @@
+# Release 1.9.9
+
+## What's New
+* none
+
+## Other changes:
+* [#387](https://github.com/openziti/desktop-edge-win/issues/387) DNS clean up and dns responses are delayed
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* none
+
+# Release 1.9.8
+
+## What's New
+* none
+
+## Other changes:
+* Singing process updates
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* none
+
 # Release 1.9.7
 
 ## What's New
