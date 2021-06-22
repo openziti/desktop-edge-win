@@ -117,7 +117,7 @@ type dnsreq struct {
 }
 
 func RunDNSserver(dnsBind []net.IP, ready chan bool) {
-	go runDNSproxy(windns.GetUpstreamDNS(), dnsBind)
+	go runDNSproxy(dnsBind)
 
 	for _, bindAddr := range dnsBind {
 		go runListener(&bindAddr, 53, reqch)
@@ -241,7 +241,7 @@ func dnsPanicRecover(localDnsServers []net.IP, now time.Time) {
 	log.Infof("dnsPanicRecovery set time to: %s", lastDnsRecover.String())
 
 	// get dns again and reconfigure
-	go runDNSproxy(windns.GetUpstreamDNS(), localDnsServers)
+	go runDNSproxy(localDnsServers)
 }
 
 func trimSuffix(source string, suffix string) string {
@@ -260,23 +260,26 @@ func cleanDomainsForNrpt() map[string]bool {
 	return domainMap
 }
 
-func runDNSproxy(upstreamDnsServers []string, localDnsServers []net.IP) {
-	windns.FlushDNS() //do this in case the services come back in different order and the ip returned is no longer the same
-	log.Infof("starting DNS proxy upstream: %v, local: %v", upstreamDnsServers, localDnsServers)
-	domains = windns.GetConnectionSpecificDomains()
-	log.Infof("ConnectionSpecificDomains detected: %v", domains)
+func runDNSproxy(localDnsServers []net.IP) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Errorf("Recovering from panic due to DNS-related issue. %v", err)
 			dnsPanicRecover(localDnsServers, time.Now())
 		}
 	}()
+	windns.FlushDNS() //do this in case the services come back in different order and the ip returned is no longer the same
+	dnsRetryInterval := 500
+
+GetUpstream:
+	upstreamDnsServers := windns.GetUpstreamDNS()
+	log.Infof("starting DNS proxy upstream: %v, local: %v", upstreamDnsServers, localDnsServers)
+
+	domains = windns.GetConnectionSpecificDomains()
+	log.Infof("ConnectionSpecificDomains detected: %v", domains)
 
 	domainMap := cleanDomainsForNrpt()
 	windns.AddNrptRules(domainMap, dnsip.String())
 	log.Infof("Added connection specific domains to NRPT: %v", domainMap)
-
-	dnsRetryInterval := 500
 
 	log.Infof("establishing links to all upstream DNS. total detected upstream DNS: %d", len(upstreamDnsServers))
 outer:
@@ -320,7 +323,7 @@ outer:
 		if dnsRetryInterval >= 10000 {
 			dnsRetryInterval = 10000
 		}
-		goto outer
+		goto GetUpstream
 	}
 
 	log.Infof("starting goroutines for all connected DNS proxies. Total goroutines to spawn: %d of %d detected DNS", len(dnsUpstreams), len(upstreamDnsServers))
@@ -341,7 +344,10 @@ outer:
 				} else {
 					if len(respChan) == cap(respChan) {
 						log.Warn("respChan will be blocked. If this warning is continuously displayed please report")
+					} else {
+						log.Tracef("Response received, respChan len: %d, cap: %d ", len(respChan), cap(respChan))
 					}
+
 					respChan <- resp[:n]
 				}
 			}
@@ -349,61 +355,101 @@ outer:
 	}
 
 	reqs := make(map[uint32]*proxiedReq)
+	var dnsReqMutex = &sync.Mutex{}
+
+	dnsReqChannel := make(chan struct{})
+	ticker := time.NewTicker(5 * time.Second)
+	defer func() {
+		close(dnsReqChannel)
+		log.Tracef("Exiting dns request handling routines.")
+	}()
+	go func() {
+	CleanUpIteration:
+		for {
+			select {
+			case <-ticker.C:
+				if len(reqs) == 0 {
+					continue CleanUpIteration
+				}
+				// cleanup requests we didn't get answers for
+				now := time.Now()
+				log.Tracef("Attempting to lock mutex for the dns requests map in cleanup")
+				dnsReqMutex.Lock()
+				for k, r := range reqs {
+					if now.After(r.exp) {
+						log.Debugf("a DNS request has expired - enable trace logging and reproduce this issue for more information")
+						log.Tracef("expired DNS req: %s %s", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
+
+						delete(reqs, k)
+					}
+				}
+				dnsReqMutex.Unlock()
+				log.Tracef("Unlocked the mutex for the dns requests map in cleanup - duration %v", time.Now().Sub(now))
+			case <-dnsReqChannel:
+				ticker.Stop()
+				log.Tracef("Exiting dns request cleanup go routine.")
+				return
+			}
+		}
+	}()
+
+	go func() {
+		for {
+			select {
+			case rep := <-respChan:
+				reply := dns.Msg{}
+				if err := reply.Unpack(rep); err == nil {
+					id := (uint32(reply.Id) << 16) | uint32(reply.Question[0].Qtype)
+					dnsReqMutex.Lock()
+					req, found := reqs[id]
+					if found {
+						delete(reqs, id)
+						dnsReqMutex.Unlock()
+						log.Tracef("proxy resolved request for %v id:%d", reply.Question[0].Name, reply.Id)
+						n, oobn, err := req.s.WriteMsgUDP(rep, nil, req.peer)
+						if err != nil {
+							log.Errorf("an error has occurred while trying to write a udp message. n:%d, oobn:%d, err:%v", n, oobn, err)
+						}
+					} else {
+						dnsReqMutex.Unlock()
+						// keep this log but leave commented out. When two listeners are enabled (ipv4/v6) this msg will
+						// just mean some other request was processed successfully and removed the entry from the map
+						// log.Tracef("matching request was not found for id:%d. %s %s", reply.Id, dns.Type(reply.Question[0].Qtype), reply.Question[0].Name)
+					}
+				}
+			case <-dnsReqChannel:
+				log.Tracef("Exiting the go routine for network interface response channel")
+				return
+			}
+		}
+
+	}()
 
 	log.Debug("Upstream DNS proxy loop begins")
 	for {
-		select {
-		case pr := <-proxiedRequests:
-			id := (uint32(pr.req.Id) << 16) | uint32(pr.req.Question[0].Qtype)
-			reqs[id] = pr
-			b, _ := pr.req.Pack()
-			for _, proxy := range dnsUpstreams {
-				if _, err := proxy.Write(b); err != nil {
+		pr := <-proxiedRequests
+		id := (uint32(pr.req.Id) << 16) | uint32(pr.req.Question[0].Qtype)
+		dnsReqMutex.Lock()
+		reqs[id] = pr
+		dnsReqMutex.Unlock()
+		b, _ := pr.req.Pack()
+		for _, proxy := range dnsUpstreams {
+			if _, err := proxy.Write(b); err != nil {
 
-					_ = proxy.Close() //first thing - close the proxy connection
+				_ = proxy.Close() //first thing - close the proxy connection
 
-					// when this hits - it never seems to recover. throw a panic which will get recovered
-					// via the defer specified above and try to recreate the connections. this is a heavy
-					// handed way of reconnecting to the DNS server but it should be infrequent
-					log.Panicf("failed to proxy DNS to %s %s %v. %v",
-						dns.Type(pr.req.Question[0].Qtype),
-						pr.req.Question[0].Name,
-						proxy.RemoteAddr(),
-						err)
-				} else {
-					log.Tracef("Proxied request sent to %v from ipv%d listener", proxy.RemoteAddr(), pr.ipVer)
-				}
-			}
-
-		case rep := <-respChan:
-			reply := dns.Msg{}
-			if err := reply.Unpack(rep); err == nil {
-				id := (uint32(reply.Id) << 16) | uint32(reply.Question[0].Qtype)
-				req, found := reqs[id]
-				if found {
-					delete(reqs, id)
-					log.Tracef("proxy resolved request for %v id:%d", reply.Question[0].Name, reply.Id)
-					n, oobn, err := req.s.WriteMsgUDP(rep, nil, req.peer)
-					if err != nil {
-						log.Errorf("an error has occurred while trying to write a udp message. n:%d, oobn:%d, err:%v", n, oobn, err)
-					}
-				} else {
-					// keep this log but leave commented out. When two listeners are enabled (ipv4/v6) this msg will
-					// just mean some other request was processed successfully and removed the entry from the map
-					// log.Tracef("matching request was not found for id:%d. %s %s", reply.Id, dns.Type(reply.Question[0].Qtype), reply.Question[0].Name)
-				}
-			}
-		case <-time.After(time.Minute):
-			// cleanup requests we didn't get answers for
-			now := time.Now()
-			for k, r := range reqs {
-				if now.After(r.exp) {
-					log.Debugf("a DNS request has expired - enable trace logging and reproduce this issue for more information")
-					log.Tracef("expired DNS req: %s %s", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
-
-					delete(reqs, k)
-				}
+				// when this hits - it never seems to recover. throw a panic which will get recovered
+				// via the defer specified above and try to recreate the connections. this is a heavy
+				// handed way of reconnecting to the DNS server but it should be infrequent
+				log.Panicf("failed to proxy DNS to %s %s %v. %v",
+					dns.Type(pr.req.Question[0].Qtype),
+					pr.req.Question[0].Name,
+					proxy.RemoteAddr(),
+					err)
+			} else {
+				log.Tracef("Proxied request sent to %v from ipv%d listener", proxy.RemoteAddr(), pr.ipVer)
 			}
 		}
+
 	}
 }
