@@ -37,6 +37,8 @@ jobs:
         run: echo "GIT_BRANCH=$env:GITHUB_HEAD_REF" >> $env:GITHUB_ENV
       - name: Adding gopath to env
         run: echo "$(go env GOPATH)\bin" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
+      - name: Adding signtool to github path
+        run: echo "C:\Program Files (x86)\Microsoft SDKs\ClickOnce\SignTool" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
       - name: Setup secrets
         run: |
           echo "${env:SIGNING_CERT}" > WinSign.b64
