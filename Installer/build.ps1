@@ -24,7 +24,8 @@ msbuild ZitiDesktopEdge.sln /property:Configuration=Release
 
 Pop-Location
 
-$ADVINST = "C:\Program Files (x86)\Caphyon\Advanced Installer 18.3\bin\x86\AdvancedInstaller.com"
+$ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer 18.3"
+$ADVINST = "${ADV_INST_HOME}\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
 $installerVersion=(Get-Content -Path ${scriptPath}\..\version)
 $action = '/SetVersion'
@@ -74,7 +75,7 @@ if($gituser -eq "ziti-ci") {
 $exeAbsPath="${scriptPath}\Output\Ziti Desktop Edge Client-${installerVersion}.exe"
 
 echo "adding additional signature to executable with openziti.org signing certificate"
-signtool sign /f "${scriptPath}\openziti.p12" /p "${env:OPENZITI_P12_PASS}" /tr http://ts.ssl.com /fd sha512 /td sha512 /as "${exeAbsPath}"
+& "$ADV_INST_HOME\third-party\winsdk\x64\signtool" sign /f "${scriptPath}\openziti.p12" /p "${env:OPENZITI_P12_PASS}" /tr http://ts.ssl.com /fd sha512 /td sha512 /as "${exeAbsPath}"
 
 (Get-FileHash "${exeAbsPath}").Hash > "${scriptPath}\Output\Ziti Desktop Edge Client-${installerVersion}.exe.sha256"
 echo "========================== build.ps1 competed =========================="

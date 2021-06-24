@@ -208,26 +208,6 @@ func (zid *ZIdentity) setNameFromId() string {
 	return zid.Name
 }
 
-func (zid *ZIdentity) Tags() []string {
-	if zid.czctx != nil && zid.czid != nil {
-		C.c_mapiter(&zid.czid.tags)
-		/*
-			it := C.model_map_iterator(&c.zid.tags)
-			for {
-				if it != nil {
-					k := C.model_map_it_value(it)
-					v := C.model_map_it_value(it)
-					log.Infof("key: %s. value: %s", k, v)
-				} else {
-					break
-				}
-				it = C.model_map_it_next(it) //get the next entry
-			}
-			return nil*/
-	}
-	return nil
-}
-
 func (zid *ZIdentity) Controller() string {
 	if zid.czctx != nil {
 		return C.GoString(C.ziti_get_controller(zid.czctx))
