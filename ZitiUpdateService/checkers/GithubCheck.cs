@@ -17,6 +17,8 @@ namespace ZitiUpdateService.Checkers {
 		string downloadUrl = null;
 		string downloadFileName = null;
 		Version nextVersion = null;
+		Int16 TimeRemaining = 60;
+		ZDEInstallerInfo info;
 
 		public GithubCheck(string url) {
 			this.url = url;
@@ -102,6 +104,21 @@ namespace ZitiUpdateService.Checkers {
 
 		override public Version GetNextVersion() {
 			return nextVersion;
+		}
+
+		override public ZDEInstallerInfo GetZDEInstallerInfo(string fileDestination) {
+			try {
+				info.CreationTime = File.GetCreationTime(fileDestination);
+				info.Version = nextVersion;
+				info.IsCritical = true; // determine it
+				info.TimeRemaining = TimeRemaining; // use timer
+
+			}
+			catch (Exception e) {
+				Logger.Error("Could not fetch the installer information due to - {0}", e.Message);
+			}
+
+			return info;	
 		}
 	}
 }

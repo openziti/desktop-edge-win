@@ -542,7 +542,7 @@ namespace ZitiUpdateService {
 			Logger.Info("Version Checker is running every {0} minutes", upInt.TotalMinutes);
 
 			//on startup - see if the old wintun software was installed and if so ... try to remove it
-			UninstallOpenZitiWintun.DetectAndUninstallOpenZitiWintun();
+			// UninstallOpenZitiWintun.DetectAndUninstallOpenZitiWintun();
 
 			string assemblyVersionStr = Assembly.GetExecutingAssembly().GetName().Version.ToString(); //fetch from ziti?
 			assemblyVersion = new Version(assemblyVersionStr);
@@ -638,19 +638,39 @@ namespace ZitiUpdateService {
 					return;
 				}
 				Logger.Debug("downloaded file hash was correct. update can continue.");
-				
 				new SignedFileValidator(fileDestination).Verify();
 
-				StopZiti();
-				StopUI().Wait();
-
-				Logger.Info("Running update package: " + fileDestination);
-				// shell out to a new process and run the uninstall, reinstall steps which SHOULD stop this current process as well
-				Process.Start(fileDestination, "/passive");
+				if (sender == null && e == null) {
+					installZDE(fileDestination);
+				} else {
+					Checkers.ZDEInstallerInfo info = check.GetZDEInstallerInfo(fileDestination);
+					NotifyInstallationUpdates(info);
+					if (info.IsCritical && info.TimeRemaining <= 0) {
+						installZDE(fileDestination);
+					}
+					// show how many number of days old the executable is
+					// show current and new version
+					// if critical feature (minor or major version has increased and revision was not 9) or installation pending for more than a week, show timer for 1 hour and auto install
+					// send installation pending message to the UI
+					// Jeremy to show the notification in the ZDE UI
+				}
 			} catch (Exception ex) {
 				Logger.Error(ex, "Unexpected error has occurred");
 			}
 			inUpdateCheck = false;
+		}
+
+		private void installZDE(string fileDestination) {
+		    try {
+                StopZiti();
+                StopUI().Wait();
+
+                Logger.Info("Running update package: " + fileDestination);
+                // shell out to a new process and run the uninstall, reinstall steps which SHOULD stop this current process as well
+                Process.Start(fileDestination, "/passive");
+		    } catch (Exception ex) {
+		        Logger.Error(ex, "Unexpected error during installation");
+		    }
 		}
 
 		private bool isOlder(Version current) {
@@ -837,6 +857,20 @@ namespace ZitiUpdateService {
 				}
 				Logger.Info("DNS RESULTS:\n{0}", sw.ToString());
 			}
+		}
+
+		private static void NotifyInstallationUpdates(Checkers.ZDEInstallerInfo info) {
+			InstallationCheckEvent check = new InstallationCheckEvent() {
+				Code = 0,
+				Error = "",
+				Message = "InstallationUpdate",
+				CreationDate = info.CreationTime,
+				ZDEVersion = info.Version,
+				IsCritical = info.IsCritical,
+				TimeRemaining = info.TimeRemaining
+			};
+			EventRegistry.SendEventToConsumers(check);
+
 		}
 	}
 }

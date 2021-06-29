@@ -57,6 +57,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             var jsonReader = new JsonTextReader(new StringReader(line));
             MonitorServiceStatusEvent evt = serializer.Deserialize<MonitorServiceStatusEvent>(jsonReader);
             ServiceStatusEvent(evt);
+            // On Notification event
         }
 
         async internal Task<string> SendServiceFunctionAsync(object toSend) {

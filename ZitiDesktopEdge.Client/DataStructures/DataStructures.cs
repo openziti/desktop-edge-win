@@ -450,6 +450,20 @@ namespace ZitiDesktopEdge.DataStructures {
         public bool UpdateAvailable { get; set; }
     }
 
+    public class MonitorServiceNotificationEvent : SvcResponse {
+        public string ReleaseStream { get; set; }
+
+    }
+
+    public class InstallationCheckEvent : MonitorServiceNotificationEvent {
+        public Version ZDEVersion { get; set; }
+        public DateTime CreationDate { get; set; }
+
+        public bool IsCritical { get; set; }
+
+        public Int16 TimeRemaining { get; set; }
+    }
+
     public class MfaEvent : ActionEvent {
         public string Fingerprint { get; set; }
         public bool Successful { get; set; }

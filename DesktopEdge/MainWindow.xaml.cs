@@ -508,6 +508,7 @@ namespace ZitiDesktopEdge {
 
 			monitorClient = new MonitorClient();
 			monitorClient.OnClientConnected += MonitorClient_OnClientConnected;
+			monitorClient.OnInstallationCheckEvent += MonitorClient_OnInstallationCheckEvent;
             monitorClient.OnServiceStatusEvent += MonitorClient_OnServiceStatusEvent;
             monitorClient.OnShutdownEvent += MonitorClient_OnShutdownEvent;
             monitorClient.OnReconnectFailure += MonitorClient_OnReconnectFailure;
@@ -636,6 +637,15 @@ namespace ZitiDesktopEdge {
 				}
 			} catch (Exception ex) {
 				logger.Warn(ex, "unexpected exception in MonitorClient_OnShutdownEvent? {0}", ex.Message);
+			}
+		}
+
+		private void MonitorClient_OnInstallationCheckEvent(object sender, InstallationCheckEvent evt) {
+			logger.Debug("MonitorClient_OnInstallationCheckEvent: {0}", evt.Message);
+
+			if ("installationupdate".Equals(evt.Message?.ToLower())) {
+				logger.Debug("Installation Update is available - {0}", evt.ZDEVersion);
+				// display a tag in UI and a button for the update software
 			}
 		}
 

@@ -37,5 +37,9 @@ namespace ZitiUpdateService.Checkers {
 		override public Version GetNextVersion() {
 			throw new NotImplementedException();
 		}
+
+		override public ZDEInstallerInfo GetZDEInstallerInfo(string fileDestination) {
+			return new ZDEInstallerInfo() { IsCritical = true, TimeRemaining = 60};	
+		}
 	}
 }
