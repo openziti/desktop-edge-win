@@ -19,7 +19,6 @@ namespace ZitiDesktopEdge.ServiceClient {
         public event EventHandler<object> OnClientDisconnected;
         public event EventHandler<StatusEvent> OnShutdownEvent;
         public event EventHandler<object> OnReconnectFailure;
-        public event EventHandler<InstallationCheckEvent> OnInstallationCheckEvent;
         public virtual event EventHandler<Exception> OnCommunicationError;
 
         protected NamedPipeClientStream pipeClient = null;
@@ -89,11 +88,6 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         protected virtual void ReconnectFailureEvent(object e) {
             OnReconnectFailure?.Invoke(this, e);
-        }
-
-        protected virtual void InstallationCheckEvent(InstallationCheckEvent e)
-        {
-            OnInstallationCheckEvent?.Invoke(this, e);
         }
 
         protected virtual void CommunicationError(Exception e) {

@@ -444,18 +444,15 @@ namespace ZitiDesktopEdge.DataStructures {
         public bool IsStopped() {
             return "Stopped" == this.Status;
         }
+        public string Type { get; set; }
     }
 
     public class StatusCheck : MonitorServiceStatusEvent {
         public bool UpdateAvailable { get; set; }
     }
 
-    public class MonitorServiceNotificationEvent : SvcResponse {
-        public string ReleaseStream { get; set; }
-
-    }
-
-    public class InstallationCheckEvent : MonitorServiceNotificationEvent {
+    public class InstallationNotificationEvent : MonitorServiceStatusEvent
+    {
         public Version ZDEVersion { get; set; }
         public DateTime CreationDate { get; set; }
 

@@ -548,6 +548,10 @@ namespace ZitiUpdateService {
 			assemblyVersion = new Version(assemblyVersionStr);
 			asmDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 			updateFolder = Path.Combine(asmDir, "updates");
+			if (!Directory.Exists(updateFolder)) {
+				Directory.CreateDirectory(updateFolder);
+			}
+
 			cleanOldLogs(asmDir);
 			scanForStaleDownloads(updateFolder);
 
@@ -616,7 +620,9 @@ namespace ZitiUpdateService {
 				}
 
 				Logger.Info("update is available.");
-				Directory.CreateDirectory(updateFolder);
+				if (!Directory.Exists(updateFolder)) {
+					Directory.CreateDirectory(updateFolder);
+				}
 
 				Logger.Info("copying update package");
 				string filename = check.FileName();
@@ -646,6 +652,7 @@ namespace ZitiUpdateService {
 					Checkers.ZDEInstallerInfo info = check.GetZDEInstallerInfo(fileDestination);
 					NotifyInstallationUpdates(info);
 					if (info.IsCritical && info.TimeRemaining <= 0) {
+						Logger.Debug("Critical Installation Updates. installation will start.");
 						installZDE(fileDestination);
 					}
 					// show how many number of days old the executable is
@@ -860,16 +867,18 @@ namespace ZitiUpdateService {
 		}
 
 		private static void NotifyInstallationUpdates(Checkers.ZDEInstallerInfo info) {
-			InstallationCheckEvent check = new InstallationCheckEvent() {
+			InstallationNotificationEvent check = new InstallationNotificationEvent() {
 				Code = 0,
 				Error = "",
 				Message = "InstallationUpdate",
+				Type = "Notification",
 				CreationDate = info.CreationTime,
 				ZDEVersion = info.Version,
 				IsCritical = info.IsCritical,
 				TimeRemaining = info.TimeRemaining
 			};
 			EventRegistry.SendEventToConsumers(check);
+			Logger.Debug("The installation updates are sent to the events pipe...{0}", info.Version);
 
 		}
 	}
