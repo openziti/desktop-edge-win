@@ -915,7 +915,7 @@ namespace ZitiUpdateService {
 
 		private static void NotifyInstallationUpdates(Checkers.ZDEInstallerInfo info, int code, string error) {
 			InstallationNotificationEvent installationNotificationEvent = new InstallationNotificationEvent() {
-				Code = 0,
+				Code = code,
 				Error = error,
 				Message = "InstallationUpdate",
 				Type = "Notification",
