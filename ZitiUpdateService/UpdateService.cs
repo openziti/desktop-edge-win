@@ -549,7 +549,7 @@ namespace ZitiUpdateService {
 			var updateTimerInterval = ConfigurationManager.AppSettings.Get("UpdateTimer");
 			var upInt = TimeSpan.Zero;
 			if (!TimeSpan.TryParse(updateTimerInterval, out upInt)) {
-				upInt = new TimeSpan(0, 10, 0);
+				upInt = new TimeSpan(0, 1, 0);
 			}
 
 			_updateTimer = new System.Timers.Timer();

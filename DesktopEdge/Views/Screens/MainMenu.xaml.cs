@@ -513,6 +513,7 @@ namespace ZitiDesktopEdge {
 					break;
 				}
 			}
+			AddDnsNew.IsChecked = (bool)Application.Current.Properties["dnsenabled"];
 			EditArea.Opacity = 0;
 			EditArea.Visibility = Visibility.Visible;
 			EditArea.Margin = new Thickness(0, 0, 0, 0);
