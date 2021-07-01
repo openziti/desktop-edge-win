@@ -17,8 +17,7 @@ namespace ZitiUpdateService.Checkers {
 		string downloadUrl = null;
 		string downloadFileName = null;
 		Version nextVersion = null;
-		Int16 TimeRemaining = 60;
-		ZDEInstallerInfo info;
+		string publishedDateTime = null;
 
 		public GithubCheck(string url) {
 			this.url = url;
@@ -40,7 +39,7 @@ namespace ZitiUpdateService.Checkers {
 			return downloadFileName;
 		}
 
-		override public int IsUpdateAvailable(Version currentVersion) {
+		override public void IsUpdateAvailable(Version currentVersion, out int avail, out string publishedDate) {
 			Logger.Debug("checking for update begins. current version detected as {0}", currentVersion);
 			Logger.Debug("issuing http get to url: {0}", url);
 			JObject json = GithubAPI.GetJson(url);
@@ -59,7 +58,9 @@ namespace ZitiUpdateService.Checkers {
 
 			if (downloadUrl == null) {
 				Logger.Error("DOWNLOAD URL not found at: {0}", url);
-				return 0;
+				avail = 0;
+				publishedDate = null;
+				return;
 			}
 			Logger.Debug("download url detected: {0}", downloadUrl);
 			downloadFileName = downloadUrl.Substring(downloadUrl.LastIndexOf('/') + 1);
@@ -68,17 +69,17 @@ namespace ZitiUpdateService.Checkers {
 			string releaseVersion = json.Property("tag_name").Value.ToString();
 			string releaseName = json.Property("name").Value.ToString();
 			nextVersion = VersionUtil.NormalizeVersion(new Version(releaseVersion));
+			string isoPublishedDate = json.Property("published_at").Value.ToString();
+			publishedDate = convertISOToDateTimeString(isoPublishedDate);
+			publishedDateTime = publishedDate;
 
 			int compare = currentVersion.CompareTo(nextVersion);
 			if (compare < 0) {
 				Logger.Info("upgrade {} is available. Published version: {} is newer than the current version: {}", releaseName, nextVersion, currentVersion);
-				return compare;
 			} else if (compare > 0) {
 				Logger.Info("the version installed: {0} is newer than the released version: {1}", currentVersion, nextVersion);
-				return compare;
-			} else {
-				return compare;
 			}
+			avail = compare;
 		}
 
 		override public bool HashIsValid(string destinationFolder, string destinationName) {
@@ -107,11 +108,22 @@ namespace ZitiUpdateService.Checkers {
 		}
 
 		override public ZDEInstallerInfo GetZDEInstallerInfo(string fileDestination) {
+			ZDEInstallerInfo info = new ZDEInstallerInfo();
 			try {
-				info.CreationTime = File.GetCreationTime(fileDestination);
+
+				info.CreationTime = getCreationTime(publishedDateTime, fileDestination);
 				info.Version = nextVersion;
-				info.IsCritical = true; // determine it
-				info.TimeRemaining = TimeRemaining; // use timer
+
+				Logger.Info("File is created at {0}, comparing with current time - {1} ", info.CreationTime.ToString(), info.CreationTime.Date.AddDays(7).CompareTo(DateTime.Now));
+				if (info.CreationTime.Date.AddDays(7).CompareTo(DateTime.Now) <= 0 )
+                {
+					info.IsCritical = true;
+					Logger.Info("ZDEInstaller is marked as critical, because the user has not installed the new installer for a week");
+				}
+				else
+                {
+					info.IsCritical = false;
+				}
 
 			}
 			catch (Exception e) {
@@ -119,6 +131,37 @@ namespace ZitiUpdateService.Checkers {
 			}
 
 			return info;	
+		}
+
+		private string convertISOToDateTimeString(string publishedDateISO)
+        {
+			try
+			{
+				DateTime publishedDate = DateTime.Parse(publishedDateISO, null, System.Globalization.DateTimeStyles.RoundtripKind);
+				return publishedDate.ToString();
+			}
+			catch (Exception e)
+			{
+				Logger.Error("Could not convert published date of the installer - input string : {0} due to {1}. Fetching download time instead.", publishedDateISO, e.Message);
+				return null;
+			}
+		}
+
+		private DateTime getCreationTime(string publishedDateStr, string fileDestination)
+        {
+			DateTime publishedDate;
+
+			try
+			{
+				DateTime.TryParse(publishedDateStr, out publishedDate);	
+			}
+			catch (Exception e)
+			{
+				Logger.Error("Could not convert published date of the installer - input string : {0} due to {1}. Fetching download time instead.", publishedDateStr, e.Message);
+				publishedDate = File.GetCreationTime(fileDestination);
+
+			}
+			return publishedDate;
 		}
 	}
 }
