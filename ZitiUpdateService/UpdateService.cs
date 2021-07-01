@@ -6,6 +6,7 @@ using System.IO;
 using System.Timers;
 using System.Configuration;
 using System.Threading.Tasks;
+using System.Threading;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.IO.Compression;
@@ -37,9 +38,9 @@ namespace ZitiUpdateService {
 
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-		private Timer _updateTimer = new Timer();
+		private System.Timers.Timer _updateTimer = new System.Timers.Timer();
 		private CustomTimer _installationReminder = null;
-		private bool inUpdateCheck = false;
+		private static SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
 
 		private string exeLocation = null;
 
@@ -56,7 +57,7 @@ namespace ZitiUpdateService {
 		Task eventServer = null;
 		Checkers.UpdateCheck check = null;
 
-		private Timer dnsProbeTimer = new Timer();
+		private System.Timers.Timer dnsProbeTimer = new System.Timers.Timer();
 		private IPAddress dnsIpAddress = null;
 
 		public UpdateService() {
@@ -89,8 +90,7 @@ namespace ZitiUpdateService {
 			TimerState timerState = (TimerState)state;
 			Logger.Debug("Timer initiating installation of {0}, exhausted allowed waiting time - {1}", timerState.zdeInstallerInfo.Version.ToString(), timerState._timer.Period);
 			checkUpdateImmediately();
-			timerState._timer.Dispose();
-			timerState._timer = null;
+			Logger.Warn("The installation must not have been completed. So timer will initiate this function again at the next interval - {0}", timerState._timer.Period);
 		}
 
 		private void checkUpdateImmediately() {
@@ -552,7 +552,7 @@ namespace ZitiUpdateService {
 				upInt = new TimeSpan(0, 10, 0);
 			}
 
-			_updateTimer = new Timer();
+			_updateTimer = new System.Timers.Timer();
 			_updateTimer.Elapsed += CheckUpdate;
 			_updateTimer.Interval = upInt.TotalMilliseconds;
 			_updateTimer.Enabled = true;
@@ -621,12 +621,11 @@ namespace ZitiUpdateService {
 			if (e != null) {
 				Logger.Debug("Timer triggered CheckUpdate at {0}", e.SignalTime);
 			}
-			if (inUpdateCheck || check == null) {
-				Logger.Warn("Still in update check. This is abnormal. Please report if you see this warning");
+			if (check == null) {
+				Logger.Warn("update check object is not ready. This is abnormal. Please report if you see this warning");
 				return;
 			}
-			// need to be synchronized
-			inUpdateCheck = true; //simple semaphore
+			semaphore.Wait();
 			
 			try {
 				Logger.Debug("checking for update");
@@ -636,8 +635,7 @@ namespace ZitiUpdateService {
 				check.IsUpdateAvailable(assemblyVersion, out avail, out publishedDate);
 				if (avail >= 0) {
 					Logger.Debug("update check complete. no update available");
-					inUpdateCheck = false;
-
+					semaphore.Release();
 					return;
 				}
 
@@ -668,7 +666,7 @@ namespace ZitiUpdateService {
 					{
 						Logger.Warn("The file was downloaded but the hash is not valid. The file will be removed: {0}", fileDestination);
 						File.Delete(fileDestination);
-						inUpdateCheck = false;
+						semaphore.Release();
 						return;
 					}
 					Logger.Debug("downloaded file hash was correct. update can continue.");
@@ -679,41 +677,40 @@ namespace ZitiUpdateService {
 					Checkers.ZDEInstallerInfo info = check.GetZDEInstallerInfo(fileDestination);
 
 					Logger.Debug("Comparing Version {0}, with current {1}. Result {2}", info.Version.ToString(), assemblyVersion.ToString(), info.Version.CompareTo(assemblyVersion));
-					if (info.Version.CompareTo(assemblyVersion) > 5)
-                    {
-						info.IsCritical = true;
-						Logger.Info("ZDEInstaller is marked as critical because the client is behind 5 updates");
-					}
-					if (info.IsCritical && _installationReminder == null)
-					{
-						// Timer for installation reminder
-						var installationReminderInterval = ConfigurationManager.AppSettings.Get("InstallationReminder");
-						var instInt = TimeSpan.Zero;
-						if (!TimeSpan.TryParse(installationReminderInterval, out instInt))
-						{
-							// if InstallationReminder value is not configured, set it to 1 hour
-							instInt = new TimeSpan(1, 0, 0);
-						}
-						TimerState state = new TimerState();
-						state.zdeInstallerInfo = info;
-						System.Threading.TimerCallback callback = new System.Threading.TimerCallback(TriggerUpdateEvent);
-						// waits for the time updated in instInt field and then triggers at every interval
-						_installationReminder = new CustomTimer(callback, state, instInt, instInt);
-						state._timer = _installationReminder;
-						Logger.Info("Installation reminder for ZDE version {0} is set to {1}", info.Version, instInt);
-					}
-					if (_installationReminder != null)
-                    {
-						info.TimeRemaining = _installationReminder.DueTime.TotalMilliseconds / 1000; // converting to seconds
-						info.InstallTime = DateTime.Now.AddMilliseconds(_installationReminder.DueTime.TotalMilliseconds);
-						Logger.Info("Installation of ZDE version {0} will be initiated in {1} seconds, approximately at {2}", info.Version, info.TimeRemaining, info.InstallTime);
-					}
-					NotifyInstallationUpdates(info);
+
+                    if (info.Version.CompareTo(assemblyVersion) > 5) {
+                        info.IsCritical = true;
+                        Logger.Info("ZDEInstaller is marked as critical because the client is behind 5 updates");
+                    }
+
+                    if (info.IsCritical && _installationReminder == null) {
+                        // Timer for installation reminder
+                        var installationReminderInterval = ConfigurationManager.AppSettings.Get("InstallationReminder");
+                        var instInt = TimeSpan.Zero;
+                        if (!TimeSpan.TryParse(installationReminderInterval, out instInt)) {
+                            // if InstallationReminder value is not configured, set it to 1 hour
+                            instInt = new TimeSpan(1, 0, 0);
+                        }
+                        TimerState state = new TimerState();
+                        state.zdeInstallerInfo = info;
+                        System.Threading.TimerCallback callback = new System.Threading.TimerCallback(TriggerUpdateEvent);
+                        // waits for the time updated in instInt field and then triggers at every interval
+                        _installationReminder = new CustomTimer(callback, state, instInt, instInt);
+                        state._timer = _installationReminder;
+                        Logger.Info("Installation reminder for ZDE version {0} is set to {1}", info.Version, instInt);
+                    }
+
+                    if (_installationReminder != null) {
+                        info.TimeRemaining = _installationReminder.DueTime.TotalMilliseconds / 1000; // converting to seconds
+                        info.InstallTime = DateTime.Now.AddMilliseconds(_installationReminder.DueTime.TotalMilliseconds);
+                        Logger.Info("Installation of ZDE version {0} will be initiated in {1} seconds, approximately at {2}", info.Version, info.TimeRemaining, info.InstallTime);
+                    }
+                    NotifyInstallationUpdates(info);
 				}
 			} catch (Exception ex) {
 				Logger.Error(ex, "Unexpected error has occurred");
 			}
-			inUpdateCheck = false;
+			semaphore.Release();
 		}
 
 		private void installZDE(string fileDestination) {

@@ -107,61 +107,49 @@ namespace ZitiUpdateService.Checkers {
 			return nextVersion;
 		}
 
-		override public ZDEInstallerInfo GetZDEInstallerInfo(string fileDestination) {
-			ZDEInstallerInfo info = new ZDEInstallerInfo();
-			try {
+        override public ZDEInstallerInfo GetZDEInstallerInfo(string fileDestination) {
+            ZDEInstallerInfo info = new ZDEInstallerInfo();
+            try {
 
-				info.CreationTime = getCreationTime(publishedDateTime, fileDestination);
-				info.Version = nextVersion;
+                info.CreationTime = getCreationTime(publishedDateTime, fileDestination);
+                info.Version = nextVersion;
 
-				Logger.Info("File is created at {0}, comparing with current time - {1} ", info.CreationTime.ToString(), info.CreationTime.Date.AddDays(7).CompareTo(DateTime.Now));
-				if (info.CreationTime.Date.AddDays(7).CompareTo(DateTime.Now) <= 0 )
-                {
-					info.IsCritical = true;
-					Logger.Info("ZDEInstaller is marked as critical, because the user has not installed the new installer for a week");
-				}
-				else
-                {
-					info.IsCritical = false;
-				}
+                Logger.Trace("File is created at {0}, comparing with current time: {1} ", info.CreationTime.ToString(), info.CreationTime.Date.AddDays(7).CompareTo(DateTime.Now));
+                if (info.CreationTime.Date.AddDays(7).CompareTo(DateTime.Now) <= 0) {
+                    info.IsCritical = true;
+                    Logger.Info("ZDEInstaller is marked as critical, because the user has not installed the new installer for a week");
+                } else {
+                    info.IsCritical = false;
+                }
 
-			}
-			catch (Exception e) {
-				Logger.Error("Could not fetch the installer information due to - {0}", e.Message);
-			}
+            } catch (Exception e) {
+                Logger.Error("Could not fetch the installer information due to - {0}", e.Message);
+            }
 
-			return info;	
-		}
+            return info;
+        }
 
-		private string convertISOToDateTimeString(string publishedDateISO)
-        {
-			try
-			{
-				DateTime publishedDate = DateTime.Parse(publishedDateISO, null, System.Globalization.DateTimeStyles.RoundtripKind);
-				return publishedDate.ToString();
-			}
-			catch (Exception e)
-			{
-				Logger.Error("Could not convert published date of the installer - input string : {0} due to {1}. Fetching download time instead.", publishedDateISO, e.Message);
-				return null;
-			}
-		}
+        private string convertISOToDateTimeString(string publishedDateISO) {
+            try {
+                DateTime publishedDate = DateTime.Parse(publishedDateISO, null, System.Globalization.DateTimeStyles.RoundtripKind);
+                return publishedDate.ToString();
+            } catch (Exception e) {
+                Logger.Error("Could not convert published date of the installer - input string : {0} due to {1}. Fetching download time instead.", publishedDateISO, e.Message);
+                return null;
+            }
+        }
 
-		private DateTime getCreationTime(string publishedDateStr, string fileDestination)
-        {
-			DateTime publishedDate;
+        private DateTime getCreationTime(string publishedDateStr, string fileDestination) {
+            DateTime publishedDate;
 
-			try
-			{
-				DateTime.TryParse(publishedDateStr, out publishedDate);	
-			}
-			catch (Exception e)
-			{
-				Logger.Error("Could not convert published date of the installer - input string : {0} due to {1}. Fetching download time instead.", publishedDateStr, e.Message);
-				publishedDate = File.GetCreationTime(fileDestination);
+            try {
+                DateTime.TryParse(publishedDateStr, out publishedDate);
+            } catch (Exception e) {
+                Logger.Error("Could not convert published date of the installer - input string : {0} due to {1}. Fetching download time instead.", publishedDateStr, e.Message);
+                publishedDate = File.GetCreationTime(fileDestination);
 
-			}
-			return publishedDate;
-		}
-	}
+            }
+            return publishedDate;
+        }
+    }
 }
