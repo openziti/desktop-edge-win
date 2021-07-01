@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Reflection;
 using System.Net;
 using System.Security.Cryptography;
 
@@ -119,8 +120,21 @@ namespace ZitiUpdateService.Checkers {
                     info.IsCritical = true;
                     Logger.Info("ZDEInstaller is marked as critical, because the user has not installed the new installer for a week");
                 } else {
-                    info.IsCritical = false;
-                }
+					string assemblyVersionStr = Assembly.GetExecutingAssembly().GetName().Version.ToString(); //fetch from ziti?
+					Version assemblyVersion = new Version(assemblyVersionStr);
+
+					Logger.Debug("Comparing Version {0}, with current {1}", info.Version.ToString(), assemblyVersion.ToString());
+
+					if (info.Version.Build - assemblyVersion.Build >= 5) {
+						info.IsCritical = true;
+						Logger.Info("ZDEInstaller is marked as critical because the client is behind 5 updates");
+					} else if ((info.Version.Major - assemblyVersion.Major >= 1) || (info.Version.Minor - assemblyVersion.Minor >= 1)) {
+						info.IsCritical = true;
+						Logger.Info("ZDEInstaller is marked as critical because the major/minor version has changed");
+					} else {
+						info.IsCritical = false;
+					}
+				}
 
             } catch (Exception e) {
                 Logger.Error("Could not fetch the installer information due to - {0}", e.Message);

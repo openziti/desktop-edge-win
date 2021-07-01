@@ -676,14 +676,7 @@ namespace ZitiUpdateService {
 				} else {
 					Checkers.ZDEInstallerInfo info = check.GetZDEInstallerInfo(fileDestination);
 
-					Logger.Debug("Comparing Version {0}, with current {1}. Result {2}", info.Version.ToString(), assemblyVersion.ToString(), info.Version.CompareTo(assemblyVersion));
-
-                    if (info.Version.CompareTo(assemblyVersion) > 5) {
-                        info.IsCritical = true;
-                        Logger.Info("ZDEInstaller is marked as critical because the client is behind 5 updates");
-                    }
-
-                    if (info.IsCritical && _installationReminder == null) {
+					if (info.IsCritical && _installationReminder == null) {
                         // Timer for installation reminder
                         var installationReminderInterval = ConfigurationManager.AppSettings.Get("InstallationReminder");
                         var instInt = TimeSpan.Zero;
@@ -705,10 +698,21 @@ namespace ZitiUpdateService {
                         info.InstallTime = DateTime.Now.AddMilliseconds(_installationReminder.DueTime.TotalMilliseconds);
                         Logger.Info("Installation of ZDE version {0} will be initiated in {1} seconds, approximately at {2}", info.Version, info.TimeRemaining, info.InstallTime);
                     }
-                    NotifyInstallationUpdates(info);
+					if (info.Version != null) {
+						NotifyInstallationUpdates(info, 0, "");
+					}
 				}
 			} catch (Exception ex) {
-				Logger.Error(ex, "Unexpected error has occurred");
+				try {
+					string filename = check.FileName();
+					string fileDestination = Path.Combine(updateFolder, filename);
+					Checkers.ZDEInstallerInfo info = check.GetZDEInstallerInfo(fileDestination);
+					if (info.Version != null) {
+						NotifyInstallationUpdates(info, -1, "Error Occured");
+					}
+				} finally {
+					Logger.Error(ex, "Unexpected error has occurred");
+				}
 			}
 			semaphore.Release();
 		}
@@ -912,10 +916,10 @@ namespace ZitiUpdateService {
 			}
 		}
 
-		private static void NotifyInstallationUpdates(Checkers.ZDEInstallerInfo info) {
+		private static void NotifyInstallationUpdates(Checkers.ZDEInstallerInfo info, int code, string error) {
 			InstallationNotificationEvent installationNotificationEvent = new InstallationNotificationEvent() {
 				Code = 0,
-				Error = "",
+				Error = error,
 				Message = "InstallationUpdate",
 				Type = "Notification",
 				CreationDate = info.CreationTime,
@@ -925,7 +929,7 @@ namespace ZitiUpdateService {
 				InstallTime = info.InstallTime
 			};
 			EventRegistry.SendEventToConsumers(installationNotificationEvent);
-			Logger.Debug("The installation updates are sent to the events pipe...{0}", info.Version);
+			Logger.Debug("The installation updates for version {0} is sent to the events pipe...", info.Version);
 
 		}
 	}
