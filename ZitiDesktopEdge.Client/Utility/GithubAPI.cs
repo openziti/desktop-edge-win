@@ -29,6 +29,5 @@ namespace ZitiDesktopEdge.Utility {
 			string releaseName = json.Property("name").Value.ToString();
 			return VersionUtil.NormalizeVersion(new Version(releaseVersion));
 		}
-
 	}
 }
