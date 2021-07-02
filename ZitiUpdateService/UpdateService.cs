@@ -575,7 +575,7 @@ namespace ZitiUpdateService {
 
 			ConfigureCheck();
 
-			CheckUpdate(null, null); //check immediately
+			checkUpdateImmediately();
 
 			try {
 				dataClient.ConnectAsync().Wait();
