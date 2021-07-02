@@ -42,7 +42,9 @@ namespace ZitiDesktopEdge {
 		private int _right = 75;
 		private int _left = 75;
 		private int _top = 30;
+		public bool IsUpdateAvailable = false;
 		private double _maxHeight = 800d;
+		public string CurrentIcon = "white";
 		private string[] suffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };
 
 		private static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
@@ -645,6 +647,10 @@ namespace ZitiDesktopEdge {
 
 			if ("installationupdate".Equals(evt.Message?.ToLower())) {
 				logger.Debug("Installation Update is available - {0}", evt.ZDEVersion);
+				IsUpdateAvailable = true;
+				MainMenu.ShowUpdateAvailable();
+				AlertCanvas.Visibility = Visibility.Visible;
+				SetNotifyIcon("");
 				// display a tag in UI and a button for the update software
 			}
 		}
@@ -987,7 +993,8 @@ namespace ZitiDesktopEdge {
 			identities.Add(zid);
 		}
 		private void SetNotifyIcon(string iconPrefix) {
-			var iconUri = new Uri("pack://application:,,/Assets/Images/ziti-" + iconPrefix + ".ico");
+			if (iconPrefix != "") CurrentIcon = iconPrefix;
+			var iconUri = new Uri("pack://application:,,/Assets/Images/ziti-" + CurrentIcon + ((IsUpdateAvailable)?"-update":"")+".ico");
 			Stream iconStream = Application.GetResourceStream(iconUri).Stream;
 			notifyIcon.Icon = new Icon(iconStream);
 

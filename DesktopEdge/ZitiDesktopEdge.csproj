@@ -460,5 +460,16 @@
     <Resource Include="Assets\Images\name.png" />
     <Resource Include="Assets\Images\statusconnected.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Images\Ziti-Green-Update.ico" />
+    <Resource Include="Assets\Images\Ziti-Green-Update.png" />
+    <Resource Include="Assets\Images\Ziti-Red-Update.ico" />
+    <Resource Include="Assets\Images\Ziti-Red-Update.png" />
+    <Resource Include="Assets\Images\Ziti-White-Update.ico" />
+    <Resource Include="Assets\Images\Ziti-White-Update.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Images\UpdateWarn.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
