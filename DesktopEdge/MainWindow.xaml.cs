@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media.Animation;
 using System.Web;
+using Microsoft.Toolkit.Uwp.Notifications;
 
 using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.DataStructures;
@@ -24,6 +25,8 @@ using NLog.Targets;
 using Microsoft.Win32;
 
 using System.Windows.Interop;
+using Windows.UI.Notifications;
+using Windows.Data.Xml.Dom;
 
 namespace ZitiDesktopEdge {
 
@@ -650,9 +653,17 @@ namespace ZitiDesktopEdge {
 				IsUpdateAvailable = true;
 				MainMenu.ShowUpdateAvailable();
 				AlertCanvas.Visibility = Visibility.Visible;
+				ShowToast("An Update is Available for Ziti Desktop Edge");
 				SetNotifyIcon("");
 				// display a tag in UI and a button for the update software
 			}
+		}
+
+		private void ShowToast(string message) {
+			new ToastContentBuilder()
+				.AddText("Important Notice")
+				.AddText(message)
+				.Show();
 		}
 
 		async private Task WaitForServiceToStop(DateTime until) {
@@ -1153,6 +1164,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void ShowMenu(object sender, MouseButtonEventArgs e) {
+			ShowToast("An Update is Available for Ziti Desktop Edge");
 			MainMenu.Visibility = Visibility.Visible;
 		}
 
