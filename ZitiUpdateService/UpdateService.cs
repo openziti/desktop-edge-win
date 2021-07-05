@@ -63,6 +63,8 @@ namespace ZitiUpdateService {
 		public UpdateService() {
 			InitializeComponent();
 
+			base.CanHandlePowerEvent = true;
+
 			useGithubCheck = true; //set this to false if you want to use the FileCheck test class instead of Github
 
 			exeLocation = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
@@ -78,6 +80,7 @@ namespace ZitiUpdateService {
 			svr.SetReleaseStream = SetReleaseStream;
 			svr.DoUpdateCheck = DoUpdateCheck;
 			svr.TriggerUpdate = TriggerUpdate;
+
 		}
 
 		private SvcResponse TriggerUpdate() {
@@ -90,7 +93,7 @@ namespace ZitiUpdateService {
 			TimerState timerState = (TimerState)state;
 			Logger.Debug("Timer initiating installation of {0}, exhausted allowed waiting time - {1}", timerState.zdeInstallerInfo.Version.ToString(), timerState._timer.Period);
 			checkUpdateImmediately();
-			Logger.Warn("The installation must not have been completed. So timer will initiate this function again at the next interval - {0}", timerState._timer.Period);
+			Logger.Warn("If installation didnt complete, then the timer will initiate this function again at the next interval - {0}", timerState._timer.Period);
 		}
 
 		private void checkUpdateImmediately() {
@@ -542,6 +545,10 @@ namespace ZitiUpdateService {
 
 		protected override bool OnPowerEvent(PowerBroadcastStatus powerStatus) {
 			Logger.Info("ziti-monitor OnPowerEvent was called {0}", powerStatus);
+            if (_installationReminder != null) {
+                Logger.Info("Installation timer - Power event");
+                _installationReminder.UpdateTimer(powerStatus);
+            }
 			return base.OnPowerEvent(powerStatus);
 		}
 
@@ -575,7 +582,7 @@ namespace ZitiUpdateService {
 
 			ConfigureCheck();
 
-			checkUpdateImmediately();
+			// for testing checkUpdateImmediately();
 
 			try {
 				dataClient.ConnectAsync().Wait();
