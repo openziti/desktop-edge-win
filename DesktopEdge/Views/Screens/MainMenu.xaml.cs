@@ -42,6 +42,10 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
+		public void ShowUpdateAvailable() {
+			ForceUpdate.Visibility = Visibility.Visible;
+		}
+
 		internal MainWindow MainWindow { get; set; }
 
 		public MainMenu() {
