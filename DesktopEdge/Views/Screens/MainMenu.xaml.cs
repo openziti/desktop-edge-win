@@ -42,8 +42,12 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-		public void ShowUpdateAvailable() {
+		public void ShowUpdateAvailable(double timeLeft, DateTime updateTime) {
 			ForceUpdate.Visibility = Visibility.Visible;
+			if (timeLeft>0) {
+				UpdateTimeLeft.Visibility = Visibility.Visible;
+				UpdateTimeLeft.Content = "Update will occur "+updateTime.ToString("g");
+			}
 		}
 
 		internal MainWindow MainWindow { get; set; }
