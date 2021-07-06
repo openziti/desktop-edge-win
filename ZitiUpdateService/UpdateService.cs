@@ -595,13 +595,16 @@ namespace ZitiUpdateService {
 
 		private void ConfigureCheck() {
 			string updateUrl = null;
+			string releasesUrl = null;
 			if (!IsBeta) {
 				updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win/releases/latest"; //hardcoded on purpose
+				releasesUrl = GithubAPI.ProdReleasesUrl;
 			} else {
 				updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win-beta/releases/latest";
+				releasesUrl = GithubAPI.BetaReleasesUrl;
 			}
 			if (useGithubCheck) {
-				check = new Checkers.GithubCheck(updateUrl);
+				check = new Checkers.GithubCheck(updateUrl, releasesUrl);
 			} else {
 				check = new Checkers.FilesystemCheck(1);
 			}

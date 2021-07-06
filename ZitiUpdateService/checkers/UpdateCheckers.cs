@@ -5,8 +5,7 @@ using NLog;
 
 namespace ZitiUpdateService.Checkers {
 
-    public struct ZDEInstallerInfo
-    {
+    public struct ZDEInstallerInfo {
         public DateTime CreationTime;
         public Version Version;
         public bool IsCritical;

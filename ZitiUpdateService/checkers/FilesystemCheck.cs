@@ -40,7 +40,7 @@ namespace ZitiUpdateService.Checkers {
 		}
 
 		override public ZDEInstallerInfo GetZDEInstallerInfo(string fileDestination) {
-			return new ZDEInstallerInfo() { IsCritical = true, TimeRemaining = 60};	
+			return new ZDEInstallerInfo() { IsCritical = true, TimeRemaining = 60 };
 		}
 	}
 }
