@@ -57,7 +57,7 @@ func processDNSquery(packet []byte, p *net.UDPAddr, s *net.UDPConn, ipVer int) {
 		query = q.Question[0]
 		log.Tracef("processing a dns query. type:%s, for:%s on %v. id:%v", dns.Type(query.Qtype), query.Name, p, q.Id)
 	} else {
-		log.Warnf("DNS MSG had no question! %v", msg.String())
+		log.Warnf("discarding dns message as it contained no question! %v", msg.String())
 		return
 	}
 
@@ -378,7 +378,11 @@ outer:
 				for k, r := range reqs {
 					if now.After(r.exp) {
 						log.Debugf("a DNS request has expired - enable trace logging and reproduce this issue for more information")
-						log.Tracef("expired DNS req: %s %s", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
+						if len(r.req.Question) > 1 {
+							log.Tracef("expired DNS req: %s %s", dns.Type(r.req.Question[0].Qtype), r.req.Question[0].Name)
+						} else {
+							log.Tracef("expired DNS req - had no question???")
+						}
 
 						delete(reqs, k)
 					}
@@ -399,7 +403,7 @@ outer:
 			case rep := <-respChan:
 				reply := dns.Msg{}
 				if err := reply.Unpack(rep); err == nil {
-					id := (uint32(reply.Id) << 16) | uint32(reply.Question[0].Qtype)
+					id := calcDnsId(&reply)
 					dnsReqMutex.Lock()
 					req, found := reqs[id]
 					if found {
@@ -428,7 +432,7 @@ outer:
 	log.Debug("Upstream DNS proxy loop begins")
 	for {
 		pr := <-proxiedRequests
-		id := (uint32(pr.req.Id) << 16) | uint32(pr.req.Question[0].Qtype)
+		id := calcDnsId(pr.req)
 		dnsReqMutex.Lock()
 		reqs[id] = pr
 		dnsReqMutex.Unlock()
@@ -450,6 +454,13 @@ outer:
 				log.Tracef("Proxied request sent to %v from ipv%d listener", proxy.RemoteAddr(), pr.ipVer)
 			}
 		}
+	}
+}
 
+func calcDnsId(req *dns.Msg) uint32 {
+	if len(req.Question) > 0 {
+		return (uint32(req.Id) << 16) | uint32(req.Question[0].Qtype)
+	} else {
+		return 0 //this shouldn't be happening - yet a user hit this situation
 	}
 }
