@@ -940,6 +940,17 @@ func connectIdentity(id *Id) {
 
 		id.CId.Services.Range(func(key interface{}, value interface{}) bool {
 			id.Services = append(id.Services, nil)
+
+			val := value.(*cziti.ZService)
+			var wg sync.WaitGroup
+			wg.Add(1)
+			rwg := &cziti.TunnelerActionWaitGroup{
+				Wg:    &wg,
+				Czsvc: val,
+			}
+			cziti.AddIntercept(rwg)
+			wg.Wait()
+
 			return true
 		})
 
@@ -964,7 +975,7 @@ func disconnectIdentity(id *Id) error {
 				val := value.(*cziti.ZService)
 				var wg sync.WaitGroup
 				wg.Add(1)
-				rwg := &cziti.RemoveWG{
+				rwg := &cziti.TunnelerActionWaitGroup{
 					Wg:    &wg,
 					Czsvc: val,
 				}
