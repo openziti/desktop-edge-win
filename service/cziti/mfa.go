@@ -47,7 +47,8 @@ type mfaCodes struct {
 var emptyCodes []string
 var mfaAuthResults = make(chan string)
 
-//export ziti_aq_mfa_cb_go
+//export
+/*
 func ziti_aq_mfa_cb_go(ztx C.ziti_context, mfa_ctx unsafe.Pointer, aq_mfa *C.ziti_auth_query_mfa, response_cb C.ziti_ar_mfa_cb) {
 	appCtx := C.ziti_app_ctx(ztx)
 	if appCtx != C.NULL {
@@ -61,11 +62,30 @@ func ziti_aq_mfa_cb_go(ztx C.ziti_context, mfa_ctx unsafe.Pointer, aq_mfa *C.zit
 		zid.mfa = mfa
 		zid.MfaNeeded = true
 		zid.MfaEnabled = true
+
+		if zid.Fingerprint != "" {
+			var id = dto.Identity{
+				Name:              zid.Name,
+				FingerPrint:       zid.Fingerprint,
+				Active:            zid.Active,
+				ControllerVersion: zid.Version,
+				Status:            "",
+				MfaNeeded:         true,
+				MfaEnabled:        true,
+				Tags:              nil,
+			}
+	
+			var m = dto.IdentityEvent{
+				ActionEvent: dto.IDENTITY_ADDED,
+				Id:          id,
+			}
+			goapi.BroadcastEvent(m)
+		}
 		log.Debugf("mfa enabled/needed set to true for ziti context [%p]. Identity name:%s [fingerprint: %s]", zid, zid.Name, zid.Fingerprint)
 	} else {
 		log.Debugf("mfa requested for ziti context/mfa context [%p, %p] but the context was NOT found in the map. This is unexpected. Please report.", ztx, mfa_ctx)
 	}
-}
+}*/
 
 func EnableMFA(id *ZIdentity) {
 	C.ziti_mfa_enroll(id.czctx, C.ziti_mfa_cb(C.ziti_mfa_enroll_cb_go), unsafe.Pointer(C.CString(id.Fingerprint)))
@@ -104,7 +124,7 @@ func VerifyMFA(id *ZIdentity, code string) {
 	defer C.free(unsafe.Pointer(ccode))
 
 	log.Tracef("verifying MFA for fingerprint: %s using code: %s", id.Fingerprint, code)
-	C.ziti_mfa_verify(id.czctx, ccode, C.ziti_mfa_cb(C.ziti_mfa_cb_verify_go), unsafe.Pointer(C.CString(id.Fingerprint)))
+	C.ziti_mfa_auth(id.czctx, ccode, C.ziti_mfa_cb(C.ziti_mfa_cb_verify_go), unsafe.Pointer(C.CString(id.Fingerprint)))
 }
 
 //export ziti_mfa_cb_verify_go
@@ -313,4 +333,9 @@ func ziti_mfa_cb_remove_go(_ C.ziti_context, status C.int, cFingerprint *C.char)
 
 	log.Debugf("sending ziti_mfa_verify response back to UI for %s. verified: %t. error: %s", fp, m.Successful, m.Error)
 	goapi.BroadcastEvent(m)
+}
+
+func EndpointStateChanged(id *ZIdentity, woken bool, unlocked bool) {
+	C.ziti_endpoint_state_change(id.czctx, woken, unlocked)
+	log.Debugf("Endpoint status changed - woken %t, unlocked %t", woken, unlocked)
 }

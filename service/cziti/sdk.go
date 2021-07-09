@@ -531,6 +531,37 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 		} else {
 			BulkServiceChanges <- svcChange
 		}
+	case C.ZitiMfaAuthEvent:
+		log.Debugf("mfa requested for ziti context.")
+		zid := (*ZIdentity)(appCtx)
+		/*mfa := &Mfa{
+			mfaContext: mfa_ctx,
+			authQuery:  aq_mfa,
+			responseCb: response_cb,
+		}
+		zid.mfa = mfa*/
+		zid.MfaNeeded = true
+		zid.MfaEnabled = true
+
+		if zid.Fingerprint != "" {
+			var id = dto.Identity{
+				Name:              zid.Name,
+				FingerPrint:       zid.Fingerprint,
+				Active:            zid.Active,
+				ControllerVersion: zid.Version,
+				Status:            "",
+				MfaNeeded:         true,
+				MfaEnabled:        true,
+				Tags:              nil,
+			}
+
+			var m = dto.IdentityEvent{
+				ActionEvent: dto.IDENTITY_ADDED,
+				Id:          id,
+			}
+			goapi.BroadcastEvent(m)
+		}
+		log.Debugf("mfa enabled/needed set to true for ziti context [%p]. Identity name:%s [fingerprint: %s]", zid, zid.Name, zid.Fingerprint)
 	default:
 		log.Infof("event %d not handled", event._type)
 	}
@@ -576,10 +607,10 @@ func LoadZiti(zid *ZIdentity, cfg string, refreshInterval int) {
 	zid.Options.pq_os_cb = C.ziti_pq_os_cb(C.ziti_pq_os_go)
 	zid.Options.pq_process_cb = C.ziti_pq_process_cb(C.ziti_pq_process_go)
 
-	zid.Options.events = C.ZitiContextEvent | C.ZitiServiceEvent | C.ZitiRouterEvent
+	zid.Options.events = C.ZitiContextEvent | C.ZitiServiceEvent | C.ZitiRouterEvent | C.ZitiMfaAuthEvent
 	zid.Options.event_cb = C.ziti_event_cb(C.eventCB)
 
-	zid.Options.aq_mfa_cb = C.ziti_aq_mfa_cb(C.ziti_aq_mfa_cb_go)
+	// zid.Options.aq_mfa_cb = C.ziti_aq_mfa_cb(C.ziti_aq_mfa_cb_go)
 
 	ptr := unsafe.Pointer(zid)
 	zid.Options.app_ctx = ptr

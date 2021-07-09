@@ -62,7 +62,7 @@ func (p *Pipes) Close() {
 
 var shutdown = make(chan bool, 8) //a channel informing go routines to exit
 
-func SubMain(ops chan string, changes chan<- svc.Status) error {
+func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan WindowsEvents) error {
 	log.Info("============================== service begins ==============================")
 	windns.RemoveAllNrptRules()
 	// cleanup old ziti tun profiles
@@ -82,6 +82,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 
 	// a channel to signal the handleEvents that initialization is complete
 	initialized := make(chan struct{})
+	shutdownDelay := make(chan bool)
 
 	// initialize the network interface
 	err := initialize(cLogLevel)
@@ -100,6 +101,26 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 
 	//listen for services that show up
 	go acceptServices()
+
+	// listen for windows power events and call mfa auth func
+	go func() {
+		for {
+			select {
+			case wEvents := <- winEvents:
+				log.Debugf("Received Windows Event in tunnel %d", wEvents.WinPowerEvent)
+				if wEvents.WinPowerEvent == PBT_APMRESUMESUSPEND || wEvents.WinPowerEvent == PBT_APMRESUMEAUTOMATIC {
+					for _, id := range rts.ids {
+						if id.MfaEnabled {
+							cziti.EndpointStateChanged(id.CId, true, false)
+						}
+					}
+				}
+				// should fetch lock events also
+			case <- shutdownDelay:
+				log.Tracef("Exiting windows power events loop")
+			}
+		}
+	}()
 
 	// open the pipe for business
 	pipes, err := openPipes()
@@ -136,10 +157,9 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	})
 
 	// wait 1 second for the shutdown to send to clients
-	shutdownDelay := make(chan bool)
 	go func() {
 		time.Sleep(1 * time.Second)
-		shutdownDelay <- true
+		close(shutdownDelay)
 	}()
 	<-shutdownDelay
 
