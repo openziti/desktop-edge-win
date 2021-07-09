@@ -931,6 +931,10 @@ func connectIdentity(id *Id) {
 
 	if id.CId == nil || !id.CId.Loaded {
 		rts.LoadIdentity(id, DEFAULT_REFRESH_INTERVAL)
+		rts.BroadcastEvent(dto.IdentityEvent{
+			ActionEvent: dto.IDENTITY_ADDED,
+			Id:          id.Identity,
+		})
 	} else {
 		log.Debugf("%s[%s] is already loaded", id.Name, id.FingerPrint)
 
@@ -940,7 +944,7 @@ func connectIdentity(id *Id) {
 		})
 
 		rts.BroadcastEvent(dto.IdentityEvent{
-			ActionEvent: dto.IDENTITY_ADDED,
+			ActionEvent: dto.IDENTITY_CONNECTED,
 			Id:          id.Identity,
 		})
 		log.Infof("connecting identity completed: %s[%s] %t/%t", id.Name, id.FingerPrint, id.MfaEnabled, id.MfaNeeded)
@@ -967,6 +971,10 @@ func disconnectIdentity(id *Id) error {
 				cziti.RemoveIntercept(rwg)
 				wg.Wait()
 				return true
+			})
+			rts.BroadcastEvent(dto.IdentityEvent{
+				ActionEvent: dto.IDENTITY_DISCONNECTED,
+				Id:          id.Identity,
 			})
 			log.Infof("disconnecting identity complete: %s", id.Name)
 		}
@@ -1118,7 +1126,7 @@ func Clean(src *Id) dto.Identity {
 		mfaEnabled = src.CId.MfaEnabled
 	}
 
-	log.Tracef("cleaning identity: %s", src.Name, mfaNeeded, mfaEnabled)
+	log.Tracef("cleaning identity: %s: mfaNeeded: %t mfaEnabled:%t", src.Name, mfaNeeded, mfaEnabled)
 	AddMetrics(src)
 	nid := dto.Identity{
 		Name:              src.Name,

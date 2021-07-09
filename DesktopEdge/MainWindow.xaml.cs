@@ -773,12 +773,16 @@ namespace ZitiDesktopEdge {
 						found.IsEnabled = zid.IsEnabled;
 						found.MFAInfo.IsAuthenticated = !e.Id.MfaNeeded;
 						LoadIdentities(true);
-						return;
 					}
 				} else if (e.Action == "updated") {
 					//this indicates that all updates have been sent to the UI... wait for 2 seconds then trigger any ui updates needed
 					await Task.Delay(2000);
-					
+				} else if (e.Action == "connected") {
+					//this indicates that all updates have been sent to the UI... wait for 2 seconds then trigger any ui updates needed
+					await Task.Delay(2000);
+				} else if (e.Action == "disconnected") {
+					//this indicates that all updates have been sent to the UI... wait for 2 seconds then trigger any ui updates needed
+					await Task.Delay(2000);
 				} else {
 					IdentityForgotten(ZitiIdentity.FromClient(e.Id));
 				}
