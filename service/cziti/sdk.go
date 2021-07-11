@@ -131,14 +131,14 @@ type ZIdentity struct {
 	StatusChanges func(int)
 	MfaNeeded     bool
 	MfaEnabled    bool
-	mfa           *Mfa
+	//mfa           *Mfa
 }
 
-type Mfa struct {
+/*type Mfa struct {
 	mfaContext unsafe.Pointer
 	authQuery  *C.ziti_auth_query_mfa
 	responseCb C.ziti_ar_mfa_cb
-}
+}*/
 
 func NewZid(statusChange func(int)) *ZIdentity {
 	zid := &ZIdentity{}
@@ -315,6 +315,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 
 		//if any posture query sets pass - that will grant the user access to that service
 		hasAccess := false
+		timeout	  := -1
 
 		//find all posture checks sets...
 		for setIdx := 0; true; setIdx++ {
@@ -348,13 +349,24 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 				_, found := pcIds[pcId]
 				if found {
 					log.Tracef("posture check with id %s already in failing posture check map", pcId)
+					for _, pc := range postureChecks {
+						if pc.Id == C.GoString(pq.id) {
+							if pc.Timeout > int(pq.timeout) {
+								pc.Timeout = int(pq.timeout)
+								timeout	= pc.Timeout
+							}
+							break
+						}
+					}
 				} else {
 					pcIds[C.GoString(pq.id)] = false
 					pc := dto.PostureCheck{
 						IsPassing: bool(pq.is_passing),
 						QueryType: C.GoString(pq.query_type),
 						Id:        pcId,
+						Timeout:   int(pq.timeout),
 					}
+					timeout	= pc.Timeout
 
 					postureChecks = append(postureChecks, pc)
 				}
@@ -370,6 +382,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 			OwnsIntercept: true,
 			PostureChecks: postureChecks,
 			IsAccessable:  hasAccess,
+			Timeout:	   timeout,
 		}
 		added := ZService{
 			Name:    name,
@@ -532,8 +545,8 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			BulkServiceChanges <- svcChange
 		}
 	case C.ZitiMfaAuthEvent:
-		log.Debugf("mfa requested for ziti context.")
 		zid := (*ZIdentity)(appCtx)
+		log.Debugf("mfa requested for finger print %s", zid.Fingerprint)
 		/*mfa := &Mfa{
 			mfaContext: mfa_ctx,
 			authQuery:  aq_mfa,

@@ -46,6 +46,7 @@ type mfaCodes struct {
 
 var emptyCodes []string
 var mfaAuthResults = make(chan string)
+var mfa2FactorAuthResults = make(chan string)
 
 //export
 /*
@@ -119,12 +120,13 @@ func ziti_mfa_enroll_cb_go(_ C.ziti_context, status C.int, enrollment *C.ziti_mf
 	}
 }
 
+// requires that the identity already be fully authenticated and used specifically for enrollment
 func VerifyMFA(id *ZIdentity, code string) {
 	ccode := C.CString(code)
 	defer C.free(unsafe.Pointer(ccode))
 
 	log.Tracef("verifying MFA for fingerprint: %s using code: %s", id.Fingerprint, code)
-	C.ziti_mfa_auth(id.czctx, ccode, C.ziti_mfa_cb(C.ziti_mfa_cb_verify_go), unsafe.Pointer(C.CString(id.Fingerprint)))
+	C.ziti_mfa_verify(id.czctx, ccode, C.ziti_mfa_cb(C.ziti_mfa_cb_verify_go), unsafe.Pointer(C.CString(id.Fingerprint)))
 }
 
 //export ziti_mfa_cb_verify_go
@@ -175,6 +177,55 @@ func ReturnMfaCodes(id *ZIdentity, code string) ([]string, error) {
 	case <-time.After(10 * time.Second):
 		return emptyCodes, fmt.Errorf("returning mfa codes has timed out")
 	}
+}
+
+
+// used when an identity is partially authenticated and waiting on 2fa, i.e. for authentication and for timeouts
+func AuthMFA(id *ZIdentity, code string) error {
+	ccode := C.CString(code)
+	defer C.free(unsafe.Pointer(ccode))
+
+	log.Tracef("authenticating 2factor MFA for fingerprint: %s using code: %s", id.Fingerprint, code)
+	// call back for ziti_mfa_auth, status check and send the error or success response
+	C.ziti_mfa_auth(id.czctx, ccode, C.ziti_mfa_cb(C.ziti_2fauth_mfa_status_cb_go), unsafe.Pointer(C.CString(id.Fingerprint)))
+	authResult := strings.TrimSpace(<-mfa2FactorAuthResults)
+
+	if authResult == "" {
+		id.MfaEnabled = true
+		id.MfaNeeded = false
+		return nil
+	}
+	return fmt.Errorf("error in 2factor authMFA: %v", authResult)
+}
+
+//export ziti_2fauth_mfa_status_cb_go
+func ziti_2fauth_mfa_status_cb_go(ztx C.ziti_context, status C.int, cFingerprint *C.char) {
+	defer C.free(unsafe.Pointer(cFingerprint))
+	fp := C.GoString(cFingerprint)
+
+	log.Debugf("ziti_2fauth_mfa_status_cb_go called for %s. status: %d for ", fp, int(status))
+	var m = dto.MfaEvent{
+		ActionEvent:   dto.MFA2FactorAuthenticationEvent,
+		Fingerprint:   fp,
+		Successful:    false,
+		RecoveryCodes: nil,
+	}
+
+	if status != C.ZITI_OK {
+		e := C.ziti_errorstr(status)
+		ego := C.GoString(e)
+		log.Errorf("Error encounted when authenticating 2f mfa: %v", ego)
+		m.Error = ego
+		mfa2FactorAuthResults <- ego
+	} else {
+		log.Infof("Identity with fingerprint %s has successfully authenticated MFA", fp)
+		m.Successful = true
+		goapi.UpdateMfa(fp, true, false)
+		mfa2FactorAuthResults <- ""
+	}
+
+	log.Debugf("sending ziti_mfa_auth response back to UI for %s. verified: %t. error: %s", fp, m.Successful, m.Error)
+	goapi.BroadcastEvent(m)
 }
 
 //export ziti_mfa_recovery_codes_cb_return
@@ -257,7 +308,7 @@ func populateStringSlice(c_char_array **C.char) []string {
 	return strs
 }
 
-func AuthMFA(id *ZIdentity, code string) error {
+/*func AuthMFA_old(id *ZIdentity, code string) error {
 	if id.mfa == nil {
 		log.Warnf("AuthMFA called but mfa is nil. This usually is because AuthMFA is called from an unenrolled MFA endpoint or the endpoint has already been auth'ed")
 		return fmt.Errorf("identity has not authenticated yet")
@@ -297,7 +348,7 @@ func ziti_ar_mfa_status_cb_go(ztx C.ziti_context, mfa_ctx unsafe.Pointer, status
 		ego := C.GoString(e)
 		mfaAuthResults <- ego
 	}
-}
+}*/
 
 func RemoveMFA(id *ZIdentity, code string) {
 	ccode := C.CString(code)
@@ -336,6 +387,6 @@ func ziti_mfa_cb_remove_go(_ C.ziti_context, status C.int, cFingerprint *C.char)
 }
 
 func EndpointStateChanged(id *ZIdentity, woken bool, unlocked bool) {
-	C.ziti_endpoint_state_change(id.czctx, woken, unlocked)
+	C.ziti_endpoint_state_change(id.czctx, C.bool(woken), C.bool(unlocked))
 	log.Debugf("Endpoint status changed - woken %t, unlocked %t", woken, unlocked)
 }

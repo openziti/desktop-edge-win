@@ -39,6 +39,7 @@ type Service struct {
 	OwnsIntercept bool
 	PostureChecks []PostureCheck
 	IsAccessable  bool
+	Timeout		  int
 }
 
 type Address struct {
@@ -57,6 +58,7 @@ type PostureCheck struct {
 	IsPassing bool
 	QueryType string
 	Id        string
+	Timeout	  int
 }
 
 type ServiceOwner struct {

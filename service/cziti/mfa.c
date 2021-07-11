@@ -14,11 +14,11 @@
  * limitations under the License.
  *
  */
-
+/*
 #include "sdk.h"
 #include <ziti/ziti_tunnel.h>
 #include <ziti/ziti_log.h>
 
 void ziti_mfa_auth_request(ziti_ar_mfa_cb response_cb, ziti_context ztx, void *mfa_ctx, char *code, ziti_ar_mfa_status_cb auth_response, char *fingerprint) {
     response_cb(ztx, mfa_ctx, code, auth_response, fingerprint);
-}
+}*/

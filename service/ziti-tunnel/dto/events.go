@@ -37,6 +37,7 @@ const (
 	MFAEnrollmentRemovedAction      = "enrollment_remove"
 
 	MFA_AUTH_CHALLENGE_ACTION = "auth_challenge"
+	MFA2FactorAuthenticationAction	= "mfa_2f_auth"
 )
 
 var SERVICE_ADDED = ActionEvent{
@@ -95,4 +96,8 @@ var MFAErrorEvent = ActionEvent{
 var MFAAuthChallengeEvent = ActionEvent{
 	StatusEvent: StatusEvent{Op: MFA_OP},
 	Action:      MFA_AUTH_CHALLENGE_ACTION,
+}
+var MFA2FactorAuthenticationEvent = ActionEvent{
+	StatusEvent: StatusEvent{Op: MFA_OP},
+	Action:      MFA2FactorAuthenticationAction,
 }
