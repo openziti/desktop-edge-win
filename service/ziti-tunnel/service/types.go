@@ -12,4 +12,5 @@ type Id struct {
 
 type WindowsEvents struct {
 	WinPowerEvent uint32
+	WinSessionEvent uint32
 }

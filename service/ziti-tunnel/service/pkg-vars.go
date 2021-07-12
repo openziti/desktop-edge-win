@@ -64,7 +64,7 @@ const (
 
 	DEFAULT_REFRESH_INTERVAL = 10
 
-	cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown | svc.AcceptPauseAndContinue | svc.AcceptPowerEvent
+	cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown | svc.AcceptPauseAndContinue | svc.AcceptPowerEvent | svc.AcceptSessionChange
 
 	InformationEvent = 0 //1
 	ContinueEvent    = 0 //2
@@ -80,6 +80,10 @@ const (
 	PBT_APMRESUMESUSPEND     = 7  // Resume from Suspend
 	PBT_APMPOWERSTATUSCHANGE = 10 // Power Status Change
 	PBT_APMRESUMEAUTOMATIC   = 18 // Resume Automatic
+
+	// windows session changes microsoft docs https://docs.microsoft.com/en-us/windows/win32/termserv/wm-wtssession-change
+	WTS_SESSION_LOCK	= 7
+	WTS_SESSION_UNLOCK	= 8
 
 	// This is the name you will use for the NET START command
 	SvcStartName = "ziti"

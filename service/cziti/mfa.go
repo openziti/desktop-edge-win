@@ -387,5 +387,5 @@ func ziti_mfa_cb_remove_go(_ C.ziti_context, status C.int, cFingerprint *C.char)
 
 func EndpointStateChanged(id *ZIdentity, woken bool, unlocked bool) {
 	C.ziti_endpoint_state_change(id.czctx, C.bool(woken), C.bool(unlocked))
-	log.Debugf("Endpoint status changed - woken %t, unlocked %t", woken, unlocked)
+	log.Debugf("Endpoint status changed for id %s - woken %t, unlocked %t", id.Fingerprint, woken, unlocked)
 }

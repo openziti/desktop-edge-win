@@ -104,21 +104,30 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 
 	// listen for windows power events and call mfa auth func
 	go func() {
+		windowsEvents:
 		for {
 			select {
 			case wEvents := <- winEvents:
-				log.Debugf("Received Windows Event in tunnel %d", wEvents.WinPowerEvent)
 				if wEvents.WinPowerEvent == PBT_APMRESUMESUSPEND || wEvents.WinPowerEvent == PBT_APMRESUMEAUTOMATIC {
+					log.Debugf("Received Windows Power Event in tunnel %d", wEvents.WinPowerEvent)
 					for _, id := range rts.ids {
 						if id.MfaEnabled {
 							cziti.EndpointStateChanged(id.CId, true, false)
 						}
 					}
 				}
+				if wEvents.WinSessionEvent == WTS_SESSION_UNLOCK {
+					log.Debugf("Received Windows Session Event in tunnel %d", wEvents.WinSessionEvent)
+					for _, id := range rts.ids {
+						if id.MfaEnabled {
+							cziti.EndpointStateChanged(id.CId, false, true)
+						}
+					}
+				}
 			// should fetch lock events also
 			case <- shutdownDelay:
 				log.Tracef("Exiting windows power events loop")
-				break
+				break windowsEvents
 			}
 		}
 	}()
