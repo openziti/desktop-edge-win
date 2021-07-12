@@ -84,7 +84,7 @@ void ziti_mfa_recovery_codes_cb_generate(ziti_context ztx, int status, char **re
 //void ziti_mfa_auth_request(ziti_ar_mfa_cb response_cb, ziti_context ztx, void *mfa_ctx, char *code, ziti_ar_mfa_status_cb auth_response, char *fingerprint);
 void ziti_mfa_ar_cb(ziti_context ztx, void *mfa_ctx, int status);
 void ziti_ar_mfa_status_cb_go(ziti_context ztx, void *mfa_ctx, int status, char *fingerprint);
-void ziti_2fauth_mfa_status_cb_go(ziti_context ztx, int status, char *fingerprint);
+void ziti_auth_mfa_status_cb_go(ziti_context ztx, int status, char *fingerprint);
 
 ziti_posture_query_set* posture_query_set_get(ziti_posture_query_set_array arr, int idx);
 ziti_posture_query* posture_queries_get(ziti_posture_query_array arr, int idx);

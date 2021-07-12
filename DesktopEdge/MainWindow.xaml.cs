@@ -126,6 +126,8 @@ namespace ZitiDesktopEdge {
 					}
 				} else if (mfa.Action == "enrollment_remove") {
 					// ShowBlurb("removed mfa: " + mfa.Successful, "");
+				} else if (mfa.Action == "mfa_auth_status") {
+					// ShowBlurb("mfa authenticated: " + mfa.Successful, "");
 				} else {
 					await ShowBlurbAsync ("Unexpected error when processing MFA", "");
 					logger.Error("unexpected action: " + mfa.Action);

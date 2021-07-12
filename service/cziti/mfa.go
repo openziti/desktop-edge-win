@@ -46,7 +46,7 @@ type mfaCodes struct {
 
 var emptyCodes []string
 var mfaAuthResults = make(chan string)
-var mfa2FactorAuthResults = make(chan string)
+//var mfaOldAuthResults = make(chan string)
 
 //export
 /*
@@ -185,27 +185,27 @@ func AuthMFA(id *ZIdentity, code string) error {
 	ccode := C.CString(code)
 	defer C.free(unsafe.Pointer(ccode))
 
-	log.Tracef("authenticating 2factor MFA for fingerprint: %s using code: %s", id.Fingerprint, code)
+	log.Tracef("authenticating MFA for fingerprint: %s using code: %s", id.Fingerprint, code)
 	// call back for ziti_mfa_auth, status check and send the error or success response
-	C.ziti_mfa_auth(id.czctx, ccode, C.ziti_mfa_cb(C.ziti_2fauth_mfa_status_cb_go), unsafe.Pointer(C.CString(id.Fingerprint)))
-	authResult := strings.TrimSpace(<-mfa2FactorAuthResults)
+	C.ziti_mfa_auth(id.czctx, ccode, C.ziti_mfa_cb(C.ziti_auth_mfa_status_cb_go), unsafe.Pointer(C.CString(id.Fingerprint)))
+	authResult := strings.TrimSpace(<-mfaAuthResults)
 
 	if authResult == "" {
 		id.MfaEnabled = true
 		id.MfaNeeded = false
 		return nil
 	}
-	return fmt.Errorf("error in 2factor authMFA: %v", authResult)
+	return fmt.Errorf("error in authMFA: %v", authResult)
 }
 
-//export ziti_2fauth_mfa_status_cb_go
-func ziti_2fauth_mfa_status_cb_go(ztx C.ziti_context, status C.int, cFingerprint *C.char) {
+//export ziti_auth_mfa_status_cb_go
+func ziti_auth_mfa_status_cb_go(ztx C.ziti_context, status C.int, cFingerprint *C.char) {
 	defer C.free(unsafe.Pointer(cFingerprint))
 	fp := C.GoString(cFingerprint)
 
-	log.Debugf("ziti_2fauth_mfa_status_cb_go called for %s. status: %d for ", fp, int(status))
+	log.Debugf("ziti_auth_mfa_status_cb_go called for %s. status: %d for ", fp, int(status))
 	var m = dto.MfaEvent{
-		ActionEvent:   dto.MFA2FactorAuthenticationEvent,
+		ActionEvent:   dto.MFAAuthenticationEvent,
 		Fingerprint:   fp,
 		Successful:    false,
 		RecoveryCodes: nil,
@@ -216,12 +216,12 @@ func ziti_2fauth_mfa_status_cb_go(ztx C.ziti_context, status C.int, cFingerprint
 		ego := C.GoString(e)
 		log.Errorf("Error encounted when authenticating 2f mfa: %v", ego)
 		m.Error = ego
-		mfa2FactorAuthResults <- ego
+		mfaAuthResults <- ego
 	} else {
 		log.Infof("Identity with fingerprint %s has successfully authenticated MFA", fp)
 		m.Successful = true
 		goapi.UpdateMfa(fp, true, false)
-		mfa2FactorAuthResults <- ""
+		mfaAuthResults <- ""
 	}
 
 	log.Debugf("sending ziti_mfa_auth response back to UI for %s. verified: %t. error: %s", fp, m.Successful, m.Error)
@@ -325,7 +325,7 @@ func populateStringSlice(c_char_array **C.char) []string {
 	defer C.free(unsafe.Pointer(cfp))
 	log.Debugf("beginning authentication for fingerprint %s with code %s", id.Fingerprint, code)
 	C.ziti_mfa_auth_request(id.mfa.responseCb, id.czctx, id.mfa.mfaContext, ccode, C.ziti_ar_mfa_status_cb(C.ziti_ar_mfa_status_cb_go), cfp)
-	authResult := strings.TrimSpace(<-mfaAuthResults)
+	authResult := strings.TrimSpace(<-mfaOldAuthResults)
 
 	if authResult == "" {
 		id.mfa.responseCb = nil
@@ -341,12 +341,12 @@ func ziti_ar_mfa_status_cb_go(ztx C.ziti_context, mfa_ctx unsafe.Pointer, status
 	log.Debugf("ziti_ar_mfa_status_cb_go called for fingerprint: %s with status %v", fp, status)
 	if status == C.ZITI_OK {
 		log.Infof("mfa authentication succeeded for fingerprint: %s", fp)
-		mfaAuthResults <- ""
+		mfaOldAuthResults <- ""
 	} else {
 		log.Warnf("mfa authentication failed for fingerprint: %s", fp)
 		e := C.ziti_errorstr(status)
 		ego := C.GoString(e)
-		mfaAuthResults <- ego
+		mfaOldAuthResults <- ego
 	}
 }*/
 
