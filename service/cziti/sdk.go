@@ -546,7 +546,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 		}
 	case C.ZitiMfaAuthEvent:
 		zid := (*ZIdentity)(appCtx)
-		log.Debugf("mfa requested for finger print %s", zid.Fingerprint)
+		log.Debugf("mfa auth event for finger print %s", zid.Fingerprint)
 		/*mfa := &Mfa{
 			mfaContext: mfa_ctx,
 			authQuery:  aq_mfa,
@@ -574,7 +574,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			}
 			goapi.BroadcastEvent(m)
 		}
-		log.Debugf("mfa enabled/needed set to true for ziti context [%p]. Identity name:%s [fingerprint: %s]", zid, zid.Name, zid.Fingerprint)
+		log.Debugf("mfa auth event set enabled/needed to true for ziti context [%p]. Identity name:%s [fingerprint: %s]", zid, zid.Name, zid.Fingerprint)
 	default:
 		log.Infof("event %d not handled", event._type)
 	}

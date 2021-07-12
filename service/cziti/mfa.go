@@ -186,7 +186,6 @@ func AuthMFA(id *ZIdentity, code string) error {
 	defer C.free(unsafe.Pointer(ccode))
 
 	log.Tracef("authenticating MFA for fingerprint: %s using code: %s", id.Fingerprint, code)
-	// call back for ziti_mfa_auth, status check and send the error or success response
 	C.ziti_mfa_auth(id.czctx, ccode, C.ziti_mfa_cb(C.ziti_auth_mfa_status_cb_go), unsafe.Pointer(C.CString(id.Fingerprint)))
 	authResult := strings.TrimSpace(<-mfaAuthResults)
 

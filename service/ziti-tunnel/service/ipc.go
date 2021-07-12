@@ -115,9 +115,10 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 						}
 					}
 				}
-				// should fetch lock events also
+			// should fetch lock events also
 			case <- shutdownDelay:
 				log.Tracef("Exiting windows power events loop")
+				break
 			}
 		}
 	}()
