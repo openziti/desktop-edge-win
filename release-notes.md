@@ -1,3 +1,18 @@
+# Release 1.9.10
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* wintun updated to 0.12
+
+
 # Release 1.9.9
 
 ## What's New
