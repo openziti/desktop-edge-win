@@ -7,7 +7,8 @@
 * none
 
 ## Bugs fixed:
-* none
+* [#408](https://github.com/openziti/desktop-edge-win/issues/408) Toggling an identity ON (true) responds with Active:false
+* [#403](https://github.com/openziti/desktop-edge-win/issues/403) 0 DNS questions in a Response causes crash
 
 ## Dependency Updates
 * wintun updated to 0.12
