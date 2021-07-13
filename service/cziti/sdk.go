@@ -46,6 +46,7 @@ import "C"
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/api"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/logging"
@@ -60,6 +61,7 @@ var log = logging.Logger()
 var noFileLog = logging.NoFilenameLogger()
 var Version dto.ServiceVersion
 var BulkServiceChanges = make(chan BulkServiceChange, 32)
+var ToastNotifications = make(chan ToastNotification, 32)
 
 var cCfgZitiTunnelerClientV1 = C.CString("ziti-tunneler-client.v1")
 var cCfgInterceptV1 = C.CString("intercept.v1")
@@ -78,6 +80,12 @@ type BulkServiceChange struct {
 	HostnamesToRemove map[string]bool
 	ServicesToRemove  []*dto.Service
 	ServicesToAdd     []*dto.Service
+}
+
+type ToastNotification struct {
+	Message		string
+	TimeOut		int
+	Severity	string
 }
 
 var _impl sdk
@@ -345,6 +353,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 
 				var pcId string
 				pcId = C.GoString(pq.id)
+				log.Infof("Posture query %s, timeout %d", C.GoString(pq.id) , int(pq.timeout))
 
 				_, found := pcIds[pcId]
 				if found {
@@ -464,6 +473,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 		hostnamesToRemove := make(map[string]bool)
 		servicesToRemove := make([]*dto.Service, 0)
 		servicesToAdd := make([]*dto.Service, 0)
+		servicesTimingOut := make([]string, 0, 3)
 
 		srvEvent := C.ziti_event_service_event(event)
 
@@ -514,6 +524,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 				servicesToAdd = append(servicesToAdd, svcToAdd)
 			}
 		}
+		minimumTimeout := 0
 		for i := 0; true; i++ {
 			added := C.ziti_service_array_get(srvEvent.added, C.int(i))
 			if unsafe.Pointer(added) == C.NULL {
@@ -521,6 +532,9 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			}
 			svcToAdd := serviceCB(ztx, added, C.ZITI_OK, zid)
 			if svcToAdd != nil {
+				if svcToAdd.Timeout >= 0 && (minimumTimeout == 0 || minimumTimeout >= svcToAdd.Timeout) {
+					minimumTimeout = svcToAdd.Timeout
+				}
 				addAddys := svcToAdd.Addresses
 				for _, toAdd := range addAddys {
 					if toAdd.IsHost && hostnameAdded(toAdd.HostName) == 1 {
@@ -529,6 +543,22 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 				}
 				servicesToAdd = append(servicesToAdd, svcToAdd)
 			}
+		}
+		if len(servicesToAdd) > 0 && minimumTimeout > 0 {
+			for _, svcAdded := range servicesToAdd {
+				if svcAdded.Timeout == minimumTimeout && len(servicesTimingOut) < cap(servicesTimingOut) {
+					servicesTimingOut = append(servicesTimingOut, svcAdded.Name)
+				}
+				if len(servicesTimingOut) == cap(servicesTimingOut) {
+					break
+				}
+			}
+			toastNotificationMsg := ToastNotification {
+				Message: fmt.Sprintf("Some of the services (%v) are timing out in sometime", servicesTimingOut),
+				TimeOut: minimumTimeout,
+				Severity: "Major",
+			}
+			ToastNotifications <- toastNotificationMsg
 		}
 
 		svcChange := BulkServiceChange{

@@ -102,32 +102,28 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 	//listen for services that show up
 	go acceptServices()
 
+	go sendNotifications()
+
 	// listen for windows power events and call mfa auth func
 	go func() {
-		windowsEvents:
 		for {
 			select {
 			case wEvents := <- winEvents:
 				if wEvents.WinPowerEvent == PBT_APMRESUMESUSPEND || wEvents.WinPowerEvent == PBT_APMRESUMEAUTOMATIC {
 					log.Debugf("Received Windows Power Event in tunnel %d", wEvents.WinPowerEvent)
 					for _, id := range rts.ids {
-						if id.MfaEnabled {
-							cziti.EndpointStateChanged(id.CId, true, false)
-						}
+						cziti.EndpointStateChanged(id.CId, true, false)
 					}
 				}
 				if wEvents.WinSessionEvent == WTS_SESSION_UNLOCK {
-					log.Debugf("Received Windows Session Event in tunnel %d", wEvents.WinSessionEvent)
+					log.Debugf("Received Windows Session Event (device unlocked) in tunnel %d", wEvents.WinSessionEvent)
 					for _, id := range rts.ids {
-						if id.MfaEnabled {
-							cziti.EndpointStateChanged(id.CId, false, true)
-						}
+						cziti.EndpointStateChanged(id.CId, false, true)
 					}
 				}
-			// should fetch lock events also
 			case <- shutdownDelay:
 				log.Tracef("Exiting windows power events loop")
-				break windowsEvents
+				return
 			}
 		}
 	}()
@@ -203,8 +199,9 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 
 func requestShutdown(requester string) {
 	log.Infof("shutdown requested by %v", requester)
-	shutdown <- true // stops the metrics ticker
-	shutdown <- true // stops the service change listener
+	// shutdown <- true // stops the metrics ticker
+	// shutdown <- true // stops the service change listener
+	close(shutdown) // stops the metrics ticker, service change listener and notification alert loop
 }
 
 func waitForStopRequest(ops <-chan string) {
@@ -1228,4 +1225,79 @@ func sendIdentityAndNotifyUI(enc *json.Encoder, fingerprint string) {
 	}
 	resp := dto.Response{Message: "", Code: ERROR, Error: "Could not find id matching fingerprint " + fingerprint, Payload: ""}
 	respond(enc, resp)
+}
+
+func sendNotifications() {
+	log.Debug("Started toast notification routine")
+
+	var notificationTicker *time.Ticker = nil
+	var notificationEndTicker *time.Ticker = nil
+	notificationMap := make(map[string]cziti.ToastNotification)
+
+	timerStop := make(chan bool)
+	timerStart := time.Now()
+
+	for {
+		select {
+		case <- shutdown:
+			log.Debugf("Exiting Notification Alert loop")
+			return
+		case notification := <- cziti.ToastNotifications:
+			log.Infof("Notification Message : %s, timeout %d", notification.Message, notification.TimeOut)
+
+			if _, ok := notificationMap["mfaTimeOut"]; ok {
+				if notification.TimeOut < ( notificationMap["mfaTimeOut"].TimeOut - int(time.Since(timerStart).Seconds() - 60) ) ||
+					notification.TimeOut > ( notificationMap["mfaTimeOut"].TimeOut - int(time.Since(timerStart).Seconds() + 60) ) {
+					notificationMap["mfaTimeOut"] = notification
+					notificationEndTicker.Reset(time.Duration(notification.TimeOut))
+				}
+			}
+
+			if _, ok := notificationMap["mfaTimeOut"]; !ok {
+				notificationMap["mfaTimeOut"] = notification
+				timerStart = time.Now()
+
+				// get frequency 300 from config, get it from ui and save it in config
+				notificationTicker = time.NewTicker(time.Duration(300) * time.Second)
+
+				go func () {
+					for {
+						select {
+						case <- shutdown:
+							log.Debugf("shutdown request received, exiting notification ticker loop")
+							return
+						case <- timerStop:
+							notificationTicker.Stop()
+							log.Debugf("timer is stopped, exiting notification ticker loop")
+							notificationTicker = nil
+							delete(notificationMap, "mfaTimeOut")
+							return
+						case <- notificationTicker.C:
+							log.Infof("Notification Message to be sent to UI %s", notificationMap["mfaTimeOut"])
+
+							// should send a toast message to UI
+							// should send a toast message to windows
+						}
+					}
+
+				}()
+				notificationEndTicker = time.NewTicker(time.Duration(notification.TimeOut) * time.Second)
+				go func () {
+					for {
+						select {
+						case <- shutdown:
+							log.Debugf("shutdown request received, exiting notification ticker loop")
+							return
+						case <- notificationEndTicker.C:
+							log.Infof("Stopping all MFA Notification timers")
+							notificationEndTicker.Stop()
+							notificationEndTicker = nil
+							close(timerStop)
+							return
+						}
+					}
+				}()
+			}
+		}
+	}
 }
