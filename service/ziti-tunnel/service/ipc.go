@@ -1230,12 +1230,11 @@ func sendIdentityAndNotifyUI(enc *json.Encoder, fingerprint string) {
 func sendNotifications() {
 	log.Debug("Started toast notification routine")
 
+	var runtimeStatusTicker *time.Ticker = nil
 	var notificationTicker *time.Ticker = nil
-	var notificationEndTicker *time.Ticker = nil
 	notificationMap := make(map[string]cziti.ToastNotification)
 
 	timerStop := make(chan bool)
-	timerStart := time.Now()
 
 	for {
 		select {
@@ -1243,23 +1242,59 @@ func sendNotifications() {
 			log.Debugf("Exiting Notification Alert loop")
 			return
 		case notification := <- cziti.ToastNotifications:
-			log.Infof("Notification Message : %s, timeout %d", notification.Message, notification.TimeOut)
+			log.Infof("Notification Message : %s, lowest timeout %d, all services timeout : %d", notification.Message, notification.MinimumTimeOut, notification.AllServicesTimeout)
 
-			if _, ok := notificationMap["mfaTimeOut"]; ok {
-				if notification.TimeOut < ( notificationMap["mfaTimeOut"].TimeOut - int(time.Since(timerStart).Seconds() - 60) ) ||
-					notification.TimeOut > ( notificationMap["mfaTimeOut"].TimeOut - int(time.Since(timerStart).Seconds() + 60) ) {
-					notificationMap["mfaTimeOut"] = notification
-					notificationEndTicker.Reset(time.Duration(notification.TimeOut))
+			// if timeout is -1, remove it from the notification map and close all timers is the map is empty
+			if notification.MinimumTimeOut == -1 {
+				if _, ok := notificationMap[notification.Fingerprint]; ok {
+					delete(notificationMap, notification.Fingerprint)
+
+					if len(notificationMap) == 0 {
+						log.Tracef("Closing all the notification timers")
+						close(timerStop)
+					}
 				}
+				break
 			}
 
-			if _, ok := notificationMap["mfaTimeOut"]; !ok {
-				notificationMap["mfaTimeOut"] = notification
-				timerStart = time.Now()
+			if len(notificationMap) > 0 {
+				notificationMap[notification.Fingerprint] = notification
+			}
+
+			if len(notificationMap) == 0 {
+				notificationMap[notification.Fingerprint] = notification
+
+				// update the timeout in the runtime state and send runtime status to UI every 5 minutes
+				runtimeStatusTicker = time.NewTicker(time.Duration(300) * time.Second)
 
 				// get frequency 300 from config, get it from ui and save it in config
 				notificationTicker = time.NewTicker(time.Duration(300) * time.Second)
 
+				// send runtime status to UI every 5 minutes
+				go func () {
+					for {
+						select {
+						case <- shutdown:
+							log.Debugf("shutdown request received, exiting notification ticker loop")
+							return
+						case <- timerStop:
+							runtimeStatusTicker.Stop()
+							log.Debugf("timer is stopped, exiting runtime status ticker loop")
+							runtimeStatusTicker = nil
+							return
+						case <- runtimeStatusTicker.C:
+							log.Debugf("Runtime status to be sent to UI")
+							rts.BroadcastEvent(dto.TunnelStatusEvent{
+								StatusEvent: dto.StatusEvent{Op: "status"},
+								Status:      rts.updateTimeOut(notificationMap),
+								ApiVersion:  API_VERSION,
+							})
+						}
+					}
+
+				}()
+
+				// send notification to UI and windows toast message based on the frequency set by the user
 				go func () {
 					for {
 						select {
@@ -1270,33 +1305,47 @@ func sendNotifications() {
 							notificationTicker.Stop()
 							log.Debugf("timer is stopped, exiting notification ticker loop")
 							notificationTicker = nil
-							delete(notificationMap, "mfaTimeOut")
+							// remove all elements from map
+							notificationMap = make(map[string]cziti.ToastNotification)
 							return
 						case <- notificationTicker.C:
-							log.Infof("Notification Message to be sent to UI %s", notificationMap["mfaTimeOut"])
+							cleanNotifications := make([]cziti.ToastNotification, 0)
+							for k, v := range notificationMap {
+								newMinTimeOut := 0
+								newAllServicesTimeout := 0
+								if (v.MinimumTimeOut - int(time.Since(v.NotificationTime).Seconds())) < 0 {
+									v.Message = fmt.Sprintf("Some of the services of identity %s are timed out", v.IdentityName)
+								} else {
+									newMinTimeOut = v.MinimumTimeOut - int(time.Since(v.NotificationTime).Seconds())
+								}
+								if (v.AllServicesTimeout - int(time.Since(v.NotificationTime).Seconds())) < 0 {
+									v.Message = fmt.Sprintf("All of the services of identity %s are timed out", v.IdentityName)
+								} else {
+									newAllServicesTimeout = v.AllServicesTimeout - int(time.Since(v.NotificationTime).Seconds())
+								}
+								notificationMap[k] = v
 
-							// should send a toast message to UI
+								cleanNotifications = append(cleanNotifications, cziti.ToastNotification{
+									Fingerprint: v.Fingerprint,
+									IdentityName: v.IdentityName,
+									Severity: v.Severity,
+									MinimumTimeOut: newMinTimeOut,
+									AllServicesTimeout: newAllServicesTimeout,
+									NotificationTime: v.NotificationTime,
+								})
+							}
+							log.Debugf("Sending notification message to be sent to UI %v", cleanNotifications)
+							rts.BroadcastEvent(cziti.TunnelNotificationEvent{
+								Op: 			"notification",
+								Notification:	cleanNotifications,
+							})
+
 							// should send a toast message to windows
 						}
 					}
 
 				}()
-				notificationEndTicker = time.NewTicker(time.Duration(notification.TimeOut) * time.Second)
-				go func () {
-					for {
-						select {
-						case <- shutdown:
-							log.Debugf("shutdown request received, exiting notification ticker loop")
-							return
-						case <- notificationEndTicker.C:
-							log.Infof("Stopping all MFA Notification timers")
-							notificationEndTicker.Stop()
-							notificationEndTicker = nil
-							close(timerStop)
-							return
-						}
-					}
-				}()
+
 			}
 		}
 	}

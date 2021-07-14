@@ -145,6 +145,22 @@ func (t *RuntimeState) ToStatus(onlyInitialized bool) dto.TunnelStatus {
 	return clean
 }
 
+func (t *RuntimeState) updateTimeOut(notificationMap map[string]cziti.ToastNotification) dto.TunnelStatus {
+	clean := t.ToStatus(true)
+	for _,v := range notificationMap {
+		for _,id := range clean.Identities {
+			for _, svc := range id.Services {
+				if (svc.Timeout - int(time.Since(v.NotificationTime).Seconds())) >= 0 {
+					svc.Timeout = svc.Timeout - int(time.Since(v.NotificationTime).Seconds())
+				} else {
+					svc.Timeout = 0
+				}
+			}
+		}
+	}
+	return clean
+}
+
 func (t *RuntimeState) ToMetrics() dto.TunnelStatus {
 	clean := dto.TunnelStatus{
 		Identities: make([]*dto.Identity, len(t.ids)),

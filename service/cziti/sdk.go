@@ -54,6 +54,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 	"unsafe"
 )
 
@@ -83,9 +84,18 @@ type BulkServiceChange struct {
 }
 
 type ToastNotification struct {
-	Message		string
-	TimeOut		int
-	Severity	string
+	IdentityName		string
+	Fingerprint			string
+	Message				string
+	MinimumTimeOut		int
+	AllServicesTimeout	int
+	NotificationTime	time.Time
+	Severity			string
+}
+
+type TunnelNotificationEvent struct {
+	Op				string
+	Notification	[]ToastNotification
 }
 
 var _impl sdk
@@ -524,7 +534,8 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 				servicesToAdd = append(servicesToAdd, svcToAdd)
 			}
 		}
-		minimumTimeout := 0
+		minimumTimeout := -1
+		allServicesTimeout := -1
 		for i := 0; true; i++ {
 			added := C.ziti_service_array_get(srvEvent.added, C.int(i))
 			if unsafe.Pointer(added) == C.NULL {
@@ -532,8 +543,13 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			}
 			svcToAdd := serviceCB(ztx, added, C.ZITI_OK, zid)
 			if svcToAdd != nil {
-				if svcToAdd.Timeout >= 0 && (minimumTimeout == 0 || minimumTimeout >= svcToAdd.Timeout) {
-					minimumTimeout = svcToAdd.Timeout
+				if svcToAdd.Timeout >= 0 {
+					if minimumTimeout == -1 || minimumTimeout >= svcToAdd.Timeout {
+						minimumTimeout = svcToAdd.Timeout
+					}
+					if allServicesTimeout == -1 || allServicesTimeout <= svcToAdd.Timeout {
+						allServicesTimeout = svcToAdd.Timeout
+					}
 				}
 				addAddys := svcToAdd.Addresses
 				for _, toAdd := range addAddys {
@@ -544,7 +560,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 				servicesToAdd = append(servicesToAdd, svcToAdd)
 			}
 		}
-		if len(servicesToAdd) > 0 && minimumTimeout > 0 {
+		if len(servicesToAdd) > 0 && minimumTimeout > -1 {
 			for _, svcAdded := range servicesToAdd {
 				if svcAdded.Timeout == minimumTimeout && len(servicesTimingOut) < cap(servicesTimingOut) {
 					servicesTimingOut = append(servicesTimingOut, svcAdded.Name)
@@ -553,12 +569,25 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 					break
 				}
 			}
-			toastNotificationMsg := ToastNotification {
-				Message: fmt.Sprintf("Some of the services (%v) are timing out in sometime", servicesTimingOut),
-				TimeOut: minimumTimeout,
+			ToastNotifications <- ToastNotification {
+				IdentityName: zid.Name,
+				Fingerprint: zid.Fingerprint,
+				Message: fmt.Sprintf("Some of the services, eg: %v of Identity %s are timing out in some time", servicesTimingOut, zid.Name),
+				MinimumTimeOut: minimumTimeout,
+				AllServicesTimeout: allServicesTimeout,
+				NotificationTime: time.Now(),
 				Severity: "Major",
 			}
-			ToastNotifications <- toastNotificationMsg
+		} else {
+			ToastNotifications <- ToastNotification {
+				IdentityName: zid.Name,
+				Fingerprint: zid.Fingerprint,
+				Message: fmt.Sprintf("No timeout set for the services of Identity %s", zid.Name),
+				MinimumTimeOut: minimumTimeout,
+				AllServicesTimeout: allServicesTimeout,
+				NotificationTime: time.Now(),
+				Severity: "Info",
+			}
 		}
 
 		svcChange := BulkServiceChange{
