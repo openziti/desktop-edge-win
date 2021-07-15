@@ -506,6 +506,7 @@ namespace ZitiDesktopEdge {
 			serviceClient.OnMfaEvent += ServiceClient_OnMfaEvent;
 			serviceClient.OnLogLevelEvent += ServiceClient_OnLogLevelEvent;
 			serviceClient.OnBulkServiceEvent += ServiceClient_OnBulkServiceEvent;
+			serviceClient.OnNotificationEvent += ServiceClient_OnNotificationEvent;
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
 
 			monitorClient = new MonitorClient();
@@ -566,7 +567,38 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-        string nextVersionStr  = null;
+		private void ServiceClient_OnNotificationEvent(object sender, NotificationEvent e) {
+			var displayMFARequired = false;
+			foreach (var notification in e.Notification) {
+				var found = identities.Find(id => id.Fingerprint == notification.Fingerprint);
+				if (found == null) {
+					logger.Warn($"{e.Op} event for {notification.Fingerprint} but the provided identity fingerprint was not found!");
+					continue;
+				}
+				if (notification.AllServicesTimeout == 0) {
+					found.MFAInfo.IsAuthenticated = false;
+					// display mfa token icon
+					displayMFARequired = true;
+				} else if (notification.MinimumTimeOut == 0) {
+					// display option to enter mfa, only few services are timed out
+				} else {
+					// display option to enter mfa, only few services are about to timeout
+				}
+			}
+			// we need to display mfa icon for the identities that have all the services timed out. 
+			if (displayMFARequired) {
+				LoadIdentities(true);
+				this.Dispatcher.Invoke(() => {
+					IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
+					if (deets.IsVisible) {
+						deets.UpdateView();
+					}
+				});
+			}
+		}
+
+
+		string nextVersionStr  = null;
         private void MonitorClient_OnReconnectFailure(object sender, object e) {
             if (nextVersionStr == null) {
 				// check for the current version

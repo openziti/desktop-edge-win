@@ -1230,123 +1230,82 @@ func sendIdentityAndNotifyUI(enc *json.Encoder, fingerprint string) {
 func sendNotifications() {
 	log.Debug("Started toast notification routine")
 
-	var runtimeStatusTicker *time.Ticker = nil
-	var notificationTicker *time.Ticker = nil
 	notificationMap := make(map[string]cziti.ToastNotification)
+	var notificationMutex = &sync.Mutex{}
+	// change to 5 minutes
+	broadcastStatusTicker := time.NewTicker(1 * time.Minute)
+	// allow user to set frequency
+	broadcastNotificationTicker := time.NewTicker(5 * time.Minute)
 
-	timerStop := make(chan bool)
 
 	for {
 		select {
 		case <- shutdown:
 			log.Debugf("Exiting Notification Alert loop")
 			return
+
+		case <- broadcastStatusTicker.C:
+			notificationMutex.Lock()
+			if len(notificationMap) > 0 {
+				/*rts.BroadcastEvent(dto.TunnelStatusEvent{
+					StatusEvent: dto.StatusEvent{Op: "status"},
+					Status:      rts.StatusWithUpdatedTimeOut(notificationMap),
+					ApiVersion:  API_VERSION,
+				})*/
+			}
+			notificationMutex.Unlock()
+		case <- broadcastNotificationTicker.C:
+			notificationMutex.Lock()
+			if len(notificationMap) > 0 {
+				cleanNotifications := make([]cziti.ToastNotification, 0)
+				for _, v := range notificationMap {
+					newMinTimeOut := 0
+					newAllServicesTimeout := 0
+					newMessage := v.Message
+					if (v.MinimumTimeOut - int(time.Since(v.NotificationTime).Seconds())) < 0 {
+						newMessage = fmt.Sprintf("Some of the services of identity %s are timed out", v.IdentityName)
+					} else {
+						newMinTimeOut = v.MinimumTimeOut - int(time.Since(v.NotificationTime).Seconds())
+					}
+					if (v.AllServicesTimeout - int(time.Since(v.NotificationTime).Seconds())) < 0 {
+						newMessage = fmt.Sprintf("All of the services of identity %s are timed out", v.IdentityName)
+					} else {
+						newAllServicesTimeout = v.AllServicesTimeout - int(time.Since(v.NotificationTime).Seconds())
+					}
+
+					cleanNotifications = append(cleanNotifications, cziti.ToastNotification{
+						Fingerprint: v.Fingerprint,
+						IdentityName: v.IdentityName,
+						Severity: v.Severity,
+						MinimumTimeOut: newMinTimeOut,
+						AllServicesTimeout: newAllServicesTimeout,
+						NotificationTime: v.NotificationTime,
+						Message: newMessage,
+					})
+				}
+				log.Debugf("Sending notification message to UI %v", cleanNotifications)
+				rts.BroadcastEvent(cziti.TunnelNotificationEvent{
+					Op: 			"notification",
+					Notification:	cleanNotifications,
+				})
+
+				// should send a toast message to windows
+			}
+			notificationMutex.Unlock()
+
 		case notification := <- cziti.ToastNotifications:
 			log.Infof("Notification Message : %s, lowest timeout %d, all services timeout : %d", notification.Message, notification.MinimumTimeOut, notification.AllServicesTimeout)
 
-			// if timeout is -1, remove it from the notification map and close all timers is the map is empty
+			notificationMutex.Lock()
+			// if timeout is -1, remove it from the notification map
 			if notification.MinimumTimeOut == -1 {
 				if _, ok := notificationMap[notification.Fingerprint]; ok {
 					delete(notificationMap, notification.Fingerprint)
-
-					if len(notificationMap) == 0 {
-						log.Tracef("Closing all the notification timers")
-						close(timerStop)
-					}
 				}
-				break
-			}
-
-			if len(notificationMap) > 0 {
+			} else {
 				notificationMap[notification.Fingerprint] = notification
 			}
-
-			if len(notificationMap) == 0 {
-				notificationMap[notification.Fingerprint] = notification
-
-				// update the timeout in the runtime state and send runtime status to UI every 5 minutes
-				runtimeStatusTicker = time.NewTicker(time.Duration(300) * time.Second)
-
-				// get frequency 300 from config, get it from ui and save it in config
-				notificationTicker = time.NewTicker(time.Duration(300) * time.Second)
-
-				// send runtime status to UI every 5 minutes
-				go func () {
-					for {
-						select {
-						case <- shutdown:
-							log.Debugf("shutdown request received, exiting notification ticker loop")
-							return
-						case <- timerStop:
-							runtimeStatusTicker.Stop()
-							log.Debugf("timer is stopped, exiting runtime status ticker loop")
-							runtimeStatusTicker = nil
-							return
-						case <- runtimeStatusTicker.C:
-							log.Debugf("Runtime status to be sent to UI")
-							rts.BroadcastEvent(dto.TunnelStatusEvent{
-								StatusEvent: dto.StatusEvent{Op: "status"},
-								Status:      rts.updateTimeOut(notificationMap),
-								ApiVersion:  API_VERSION,
-							})
-						}
-					}
-
-				}()
-
-				// send notification to UI and windows toast message based on the frequency set by the user
-				go func () {
-					for {
-						select {
-						case <- shutdown:
-							log.Debugf("shutdown request received, exiting notification ticker loop")
-							return
-						case <- timerStop:
-							notificationTicker.Stop()
-							log.Debugf("timer is stopped, exiting notification ticker loop")
-							notificationTicker = nil
-							// remove all elements from map
-							notificationMap = make(map[string]cziti.ToastNotification)
-							return
-						case <- notificationTicker.C:
-							cleanNotifications := make([]cziti.ToastNotification, 0)
-							for k, v := range notificationMap {
-								newMinTimeOut := 0
-								newAllServicesTimeout := 0
-								if (v.MinimumTimeOut - int(time.Since(v.NotificationTime).Seconds())) < 0 {
-									v.Message = fmt.Sprintf("Some of the services of identity %s are timed out", v.IdentityName)
-								} else {
-									newMinTimeOut = v.MinimumTimeOut - int(time.Since(v.NotificationTime).Seconds())
-								}
-								if (v.AllServicesTimeout - int(time.Since(v.NotificationTime).Seconds())) < 0 {
-									v.Message = fmt.Sprintf("All of the services of identity %s are timed out", v.IdentityName)
-								} else {
-									newAllServicesTimeout = v.AllServicesTimeout - int(time.Since(v.NotificationTime).Seconds())
-								}
-								notificationMap[k] = v
-
-								cleanNotifications = append(cleanNotifications, cziti.ToastNotification{
-									Fingerprint: v.Fingerprint,
-									IdentityName: v.IdentityName,
-									Severity: v.Severity,
-									MinimumTimeOut: newMinTimeOut,
-									AllServicesTimeout: newAllServicesTimeout,
-									NotificationTime: v.NotificationTime,
-								})
-							}
-							log.Debugf("Sending notification message to be sent to UI %v", cleanNotifications)
-							rts.BroadcastEvent(cziti.TunnelNotificationEvent{
-								Op: 			"notification",
-								Notification:	cleanNotifications,
-							})
-
-							// should send a toast message to windows
-						}
-					}
-
-				}()
-
-			}
+			notificationMutex.Unlock()
 		}
 	}
 }

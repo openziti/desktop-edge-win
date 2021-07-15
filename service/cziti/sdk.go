@@ -370,9 +370,9 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 					log.Tracef("posture check with id %s already in failing posture check map", pcId)
 					for _, pc := range postureChecks {
 						if pc.Id == C.GoString(pq.id) {
-							if pc.Timeout > int(pq.timeout) {
-								pc.Timeout = int(pq.timeout)
-								timeout	= pc.Timeout
+							if timeout == -1 || timeout > int(pq.timeout) {
+								// pc.Timeout = int(pq.timeout)
+								timeout	= int(pq.timeout)
 							}
 							break
 						}
