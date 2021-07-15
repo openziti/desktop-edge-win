@@ -545,37 +545,3 @@ func (t *RuntimeState) UpdateMfa(fingerprint string, mfaEnabled bool, mfaNeeded 
 	}
 }
 
-func (t *RuntimeState) StatusWithUpdatedTimeOut(notificationMap map[string]cziti.ToastNotification) dto.TunnelStatus {
-	clean := t.ToStatus(true)
-	for _,v := range notificationMap {
-		for _,id := range clean.Identities {
-			log.Debugf("Id %s Mfa enabled %t", id.FingerPrint, id.MfaEnabled)
-			allSvcTimedOut := true
-			for _, svc := range id.Services {
-				timeout := -1
-				for _, pc := range svc.PostureChecks {
-					if timeout == -1 || timeout > pc.Timeout {
-						timeout = pc.Timeout
-					}
-				}
-				if timeout >= 0 {
-					if (timeout - int(time.Since(v.NotificationTime).Seconds())) >= 0 {
-						svc.Timeout = timeout - int(time.Since(v.NotificationTime).Seconds())
-						allSvcTimedOut = false
-					} else {
-						svc.Timeout = 0
-					}
-				}
-			}
-			if allSvcTimedOut && id.MfaEnabled {
-				rts.UpdateMfa(id.FingerPrint, false, true)
-
-				// update mfa in return value
-				id.MfaEnabled = false
-				id.MfaNeeded = true
-			}
-		}
-	}
-	return clean
-}
-

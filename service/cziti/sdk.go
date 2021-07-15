@@ -81,6 +81,9 @@ type BulkServiceChange struct {
 	HostnamesToRemove map[string]bool
 	ServicesToRemove  []*dto.Service
 	ServicesToAdd     []*dto.Service
+	MinTimeout		  int
+	MaxTimeout		  int
+	LastUpdatedTime	  time.Time
 }
 
 type ToastNotification struct {
@@ -135,20 +138,23 @@ type ZService struct {
 }
 
 type ZIdentity struct {
-	Options       *C.ziti_options
-	czctx         C.ziti_context
-	czid          *C.ziti_identity
-	status        int
-	statusErr     error
-	Loaded        bool
-	Name          string
-	Version       string
-	Services      sync.Map
-	Fingerprint   string
-	Active        bool
-	StatusChanges func(int)
-	MfaNeeded     bool
-	MfaEnabled    bool
+	Options       	*C.ziti_options
+	czctx         	C.ziti_context
+	czid          	*C.ziti_identity
+	status        	int
+	statusErr     	error
+	Loaded        	bool
+	Name          	string
+	Version       	string
+	Services      	sync.Map
+	Fingerprint   	string
+	Active        	bool
+	StatusChanges 	func(int)
+	MfaNeeded     	bool
+	MfaEnabled    	bool
+	MinTimeout	  	int
+	MaxTimeout	  	int
+	LastUpdatedTime	time.Time
 	//mfa           *Mfa
 }
 
@@ -544,10 +550,10 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			svcToAdd := serviceCB(ztx, added, C.ZITI_OK, zid)
 			if svcToAdd != nil {
 				if svcToAdd.Timeout >= 0 {
-					if minimumTimeout == -1 || minimumTimeout >= svcToAdd.Timeout {
+					if minimumTimeout == -1 || minimumTimeout > svcToAdd.Timeout {
 						minimumTimeout = svcToAdd.Timeout
 					}
-					if allServicesTimeout == -1 || allServicesTimeout <= svcToAdd.Timeout {
+					if allServicesTimeout == -1 || allServicesTimeout < svcToAdd.Timeout {
 						allServicesTimeout = svcToAdd.Timeout
 					}
 				}
@@ -590,12 +596,19 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			}
 		}
 
+		zid.MinTimeout = minimumTimeout
+		zid.MaxTimeout = allServicesTimeout
+		zid.LastUpdatedTime = time.Now()
+
 		svcChange := BulkServiceChange{
 			Fingerprint:       zid.Fingerprint,
 			HostnamesToAdd:    hostnamesToAdd,
 			HostnamesToRemove: hostnamesToRemove,
 			ServicesToAdd:     servicesToAdd,
 			ServicesToRemove:  servicesToRemove,
+			MinTimeout:		   minimumTimeout,
+			MaxTimeout:		   allServicesTimeout,
+			LastUpdatedTime:   time.Now(),
 		}
 
 		if len(BulkServiceChanges) == cap(BulkServiceChanges) {

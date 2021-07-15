@@ -1162,12 +1162,48 @@ func Clean(src *Id) dto.Identity {
 	}
 
 	if src.CId != nil {
+		minTimeout := -1
+		maxTimeout := -1
+		allSvcTimeout := -1
 		src.CId.Services.Range(func(key interface{}, value interface{}) bool {
 			//string, ZService
 			val := value.(*cziti.ZService)
+			timeout	  := -1
+
+			for _, pc := range val.Service.PostureChecks {
+				if timeout == -1 || timeout > pc.Timeout {
+					timeout	= pc.Timeout
+				}
+			}
+			if (timeout - int(time.Since(src.CId.LastUpdatedTime).Seconds())) < 0 {
+				val.Service.Timeout = 0
+			} else {
+				val.Service.Timeout = timeout - int(time.Since(src.CId.LastUpdatedTime).Seconds())
+			}
+			if allSvcTimeout == -1 || allSvcTimeout < val.Service.Timeout {
+				allSvcTimeout = val.Service.Timeout
+			}
+			if minTimeout == -1 || minTimeout > timeout {
+				minTimeout	= timeout
+			}
+			if maxTimeout == -1 || maxTimeout < timeout {
+				maxTimeout = timeout
+			}
+
 			nid.Services = append(nid.Services /*svcToDto(val)*/, val.Service)
 			return true
 		})
+		nid.MinTimeout = minTimeout
+		nid.MaxTimeout = maxTimeout
+		if minTimeout == -1 && maxTimeout == -1 {
+			nid.LastUpdatedTime = time.Now()
+		} else {
+			nid.LastUpdatedTime = src.CId.LastUpdatedTime
+		}
+
+		if allSvcTimeout == 0 && nid.MfaEnabled {
+			nid.MfaNeeded = true
+		}
 	}
 
 	nid.Config.ZtAPI = src.Config.ZtAPI
@@ -1232,7 +1268,6 @@ func sendNotifications() {
 
 	notificationMap := make(map[string]cziti.ToastNotification)
 	var notificationMutex = &sync.Mutex{}
-	// change to 5 minutes
 	broadcastStatusTicker := time.NewTicker(1 * time.Minute)
 	// allow user to set frequency
 	broadcastNotificationTicker := time.NewTicker(5 * time.Minute)
@@ -1247,11 +1282,12 @@ func sendNotifications() {
 		case <- broadcastStatusTicker.C:
 			notificationMutex.Lock()
 			if len(notificationMap) > 0 {
-				/*rts.BroadcastEvent(dto.TunnelStatusEvent{
+				clean := rts.ToStatus(true)
+				rts.BroadcastEvent(dto.TunnelStatusEvent{
 					StatusEvent: dto.StatusEvent{Op: "status"},
-					Status:      rts.StatusWithUpdatedTimeOut(notificationMap),
+					Status:      clean,
 					ApiVersion:  API_VERSION,
-				})*/
+				})
 			}
 			notificationMutex.Unlock()
 		case <- broadcastNotificationTicker.C:

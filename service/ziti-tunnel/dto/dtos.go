@@ -19,6 +19,7 @@ package dto
 
 import (
 	"log"
+	"time"
 
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
@@ -81,6 +82,9 @@ type Identity struct {
 	Services          []*Service `json:",omitempty"`
 	Metrics           *Metrics   `json:",omitempty"`
 	Tags              []string   `json:",omitempty"`
+	MinTimeout	  	  int
+	MaxTimeout	  	  int
+	LastUpdatedTime	  time.Time
 }
 type Metrics struct {
 	Up   int64
