@@ -61,6 +61,7 @@ var log = logging.Logger()
 var noFileLog = logging.NoFilenameLogger()
 var Version dto.ServiceVersion
 var BulkServiceChanges = make(chan BulkServiceChange, 32)
+var TimeoutPostureChecks = make(chan map[string]bool)
 
 var cCfgZitiTunnelerClientV1 = C.CString("ziti-tunneler-client.v1")
 var cCfgInterceptV1 = C.CString("intercept.v1")
@@ -90,7 +91,7 @@ type ToastNotification struct {
 	Message				string
 	MinimumTimeOut		int
 	AllServicesTimeout	int
-	NotificationTime	time.Time
+	TimeDuration		int
 	Severity			string
 }
 
@@ -153,14 +154,7 @@ type ZIdentity struct {
 	MinTimeout	  	int
 	MaxTimeout	  	int
 	LastUpdatedTime	time.Time
-	//mfa           *Mfa
 }
-
-/*type Mfa struct {
-	mfaContext unsafe.Pointer
-	authQuery  *C.ziti_auth_query_mfa
-	responseCb C.ziti_ar_mfa_cb
-}*/
 
 func NewZid(statusChange func(int)) *ZIdentity {
 	zid := &ZIdentity{}
@@ -568,6 +562,16 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 		zid.MaxTimeout = allServicesTimeout
 		zid.LastUpdatedTime = time.Now()
 
+		if minimumTimeout == -1 && allServicesTimeout == -1 {
+			TimeoutPostureChecks <- map[string]bool {
+				zid.Fingerprint: false,
+			}
+		} else {
+			TimeoutPostureChecks <- map[string]bool {
+				zid.Fingerprint: true,
+			}
+		}
+
 		svcChange := BulkServiceChange{
 			Fingerprint:       zid.Fingerprint,
 			HostnamesToAdd:    hostnamesToAdd,
@@ -587,12 +591,6 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 	case C.ZitiMfaAuthEvent:
 		zid := (*ZIdentity)(appCtx)
 		log.Debugf("mfa auth event for finger print %s", zid.Fingerprint)
-		/*mfa := &Mfa{
-			mfaContext: mfa_ctx,
-			authQuery:  aq_mfa,
-			responseCb: response_cb,
-		}
-		zid.mfa = mfa*/
 		zid.MfaNeeded = true
 		zid.MfaEnabled = true
 
@@ -662,8 +660,6 @@ func LoadZiti(zid *ZIdentity, cfg string, refreshInterval int) {
 
 	zid.Options.events = C.ZitiContextEvent | C.ZitiServiceEvent | C.ZitiRouterEvent | C.ZitiMfaAuthEvent
 	zid.Options.event_cb = C.ziti_event_cb(C.eventCB)
-
-	// zid.Options.aq_mfa_cb = C.ziti_aq_mfa_cb(C.ziti_aq_mfa_cb_go)
 
 	ptr := unsafe.Pointer(zid)
 	zid.Options.app_ctx = ptr

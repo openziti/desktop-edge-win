@@ -75,13 +75,11 @@ ziti_service* ziti_service_array_get(ziti_service_array arr, int idx);
 void ziti_dump_go(char *msg);
 
 //declare all mfa callbacks
-//void ziti_aq_mfa_cb_go(ziti_context ztx, void *mfa_ctx, ziti_auth_query_mfa *aq_mfa, ziti_ar_mfa_cb response_cb);
 void ziti_mfa_enroll_cb_go(ziti_context ztx, int status, ziti_mfa_enrollment *mfa_enrollment, char *fingerprint);
 void ziti_mfa_cb_verify_go(ziti_context ztx, int status, char *fingerprint);
 void ziti_mfa_cb_remove_go(ziti_context ztx, int status, char *fingerprint);
 void ziti_mfa_recovery_codes_cb_return(ziti_context ztx, int status, char **recovery_codes, char *fingerprint);
 void ziti_mfa_recovery_codes_cb_generate(ziti_context ztx, int status, char **recovery_codes, char *fingerprint);
-//void ziti_mfa_auth_request(ziti_ar_mfa_cb response_cb, ziti_context ztx, void *mfa_ctx, char *code, ziti_ar_mfa_status_cb auth_response, char *fingerprint);
 void ziti_mfa_ar_cb(ziti_context ztx, void *mfa_ctx, int status);
 void ziti_ar_mfa_status_cb_go(ziti_context ztx, void *mfa_ctx, int status, char *fingerprint);
 void ziti_auth_mfa_status_cb_go(ziti_context ztx, int status, char *fingerprint);

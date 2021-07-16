@@ -43,6 +43,9 @@ import (
 	"time"
 )
 
+var RuntimeTimerStop = make(chan bool)
+var RuntimeStatusTicker *time.Ticker = nil
+
 type RuntimeState struct {
 	state   *dto.TunnelStatus
 	tun     *tun.Device
@@ -543,5 +546,39 @@ func (t *RuntimeState) UpdateMfa(fingerprint string, mfaEnabled bool, mfaNeeded 
 		id.MfaEnabled = mfaEnabled
 		id.MfaNeeded = mfaNeeded
 	}
+}
+
+func (t *RuntimeState) CheckTimeOuts() {
+	go func () {
+		for {
+			select {
+			case <- shutdown:
+				log.Debugf("Shutting down posture check timeout loop")
+				return
+			case timeoutEvent := <- cziti.TimeoutPostureChecks:
+
+				timeoutRefreshRequired := false
+				for _, id := range rts.ids {
+					if val, ok := timeoutEvent[id.FingerPrint]; ok {
+						if val {
+								timeoutRefreshRequired = true
+						}
+					} else {
+						if id.MinTimeout > -1 || id.MaxTimeout > -1 {
+							timeoutRefreshRequired = true
+						}
+					}
+				}
+				if timeoutRefreshRequired {
+					if RuntimeStatusTicker == nil {
+						StartRefreshTimer()
+						SendNotifications()
+					}
+				} else {
+					RuntimeTimerStop <- true
+				}
+			}
+		}
+	}()
 }
 
