@@ -46,47 +46,6 @@ type mfaCodes struct {
 
 var emptyCodes []string
 var mfaAuthResults = make(chan string)
-//var mfaOldAuthResults = make(chan string)
-
-//export
-/*
-func ziti_aq_mfa_cb_go(ztx C.ziti_context, mfa_ctx unsafe.Pointer, aq_mfa *C.ziti_auth_query_mfa, response_cb C.ziti_ar_mfa_cb) {
-	appCtx := C.ziti_app_ctx(ztx)
-	if appCtx != C.NULL {
-		log.Debugf("mfa requested for ziti context %p.", ztx)
-		zid := (*ZIdentity)(appCtx)
-		mfa := &Mfa{
-			mfaContext: mfa_ctx,
-			authQuery:  aq_mfa,
-			responseCb: response_cb,
-		}
-		zid.mfa = mfa
-		zid.MfaNeeded = true
-		zid.MfaEnabled = true
-
-		if zid.Fingerprint != "" {
-			var id = dto.Identity{
-				Name:              zid.Name,
-				FingerPrint:       zid.Fingerprint,
-				Active:            zid.Active,
-				ControllerVersion: zid.Version,
-				Status:            "",
-				MfaNeeded:         true,
-				MfaEnabled:        true,
-				Tags:              nil,
-			}
-	
-			var m = dto.IdentityEvent{
-				ActionEvent: dto.IDENTITY_ADDED,
-				Id:          id,
-			}
-			goapi.BroadcastEvent(m)
-		}
-		log.Debugf("mfa enabled/needed set to true for ziti context [%p]. Identity name:%s [fingerprint: %s]", zid, zid.Name, zid.Fingerprint)
-	} else {
-		log.Debugf("mfa requested for ziti context/mfa context [%p, %p] but the context was NOT found in the map. This is unexpected. Please report.", ztx, mfa_ctx)
-	}
-}*/
 
 func EnableMFA(id *ZIdentity) {
 	C.ziti_mfa_enroll(id.czctx, C.ziti_mfa_cb(C.ziti_mfa_enroll_cb_go), unsafe.Pointer(C.CString(id.Fingerprint)))
@@ -306,48 +265,6 @@ func populateStringSlice(c_char_array **C.char) []string {
 	}
 	return strs
 }
-
-/*func AuthMFA_old(id *ZIdentity, code string) error {
-	if id.mfa == nil {
-		log.Warnf("AuthMFA called but mfa is nil. This usually is because AuthMFA is called from an unenrolled MFA endpoint or the endpoint has already been auth'ed")
-		return fmt.Errorf("identity has not authenticated yet")
-	}
-	if id.mfa.responseCb == nil {
-		log.Warnf("AuthMFA called but response cb is nil. This usually is because the session is already validiated. returning true from AuthMFA")
-		return nil
-	}
-
-	ccode := C.CString(code)
-	defer C.free(unsafe.Pointer(ccode))
-
-	cfp := C.CString(id.Fingerprint)
-	defer C.free(unsafe.Pointer(cfp))
-	log.Debugf("beginning authentication for fingerprint %s with code %s", id.Fingerprint, code)
-	C.ziti_mfa_auth_request(id.mfa.responseCb, id.czctx, id.mfa.mfaContext, ccode, C.ziti_ar_mfa_status_cb(C.ziti_ar_mfa_status_cb_go), cfp)
-	authResult := strings.TrimSpace(<-mfaOldAuthResults)
-
-	if authResult == "" {
-		id.mfa.responseCb = nil
-		id.MfaNeeded = false
-		return nil
-	}
-	return fmt.Errorf("error in authMFA: %v", authResult)
-}
-
-//export ziti_ar_mfa_status_cb_go
-func ziti_ar_mfa_status_cb_go(ztx C.ziti_context, mfa_ctx unsafe.Pointer, status C.int, cFingerprint *C.char) {
-	fp := C.GoString(cFingerprint)
-	log.Debugf("ziti_ar_mfa_status_cb_go called for fingerprint: %s with status %v", fp, status)
-	if status == C.ZITI_OK {
-		log.Infof("mfa authentication succeeded for fingerprint: %s", fp)
-		mfaOldAuthResults <- ""
-	} else {
-		log.Warnf("mfa authentication failed for fingerprint: %s", fp)
-		e := C.ziti_errorstr(status)
-		ego := C.GoString(e)
-		mfaOldAuthResults <- ego
-	}
-}*/
 
 func RemoveMFA(id *ZIdentity, code string) {
 	ccode := C.CString(code)

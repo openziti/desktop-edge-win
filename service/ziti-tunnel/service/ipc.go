@@ -1264,12 +1264,11 @@ func sendIdentityAndNotifyUI(enc *json.Encoder, fingerprint string) {
 }
 
 func sendNotifications() {
-	log.Debug("Started toast notification routine")
+	log.Debug("Started notification routine")
 
-	notificationMap := make(map[string]cziti.ToastNotification)
 	var notificationMutex = &sync.Mutex{}
 	broadcastStatusTicker := time.NewTicker(1 * time.Minute)
-	// allow user to set frequency
+	// allow user to set frequency dynamically
 	broadcastNotificationTicker := time.NewTicker(5 * time.Minute)
 
 
@@ -1281,67 +1280,51 @@ func sendNotifications() {
 
 		case <- broadcastStatusTicker.C:
 			notificationMutex.Lock()
-			if len(notificationMap) > 0 {
-				clean := rts.ToStatus(true)
-				rts.BroadcastEvent(dto.TunnelStatusEvent{
-					StatusEvent: dto.StatusEvent{Op: "status"},
-					Status:      clean,
-					ApiVersion:  API_VERSION,
-				})
-			}
+			clean := rts.ToStatus(true)
 			notificationMutex.Unlock()
+
+			rts.BroadcastEvent(dto.TunnelStatusEvent{
+				StatusEvent: dto.StatusEvent{Op: "status"},
+				Status:      clean,
+				ApiVersion:  API_VERSION,
+			})
+
 		case <- broadcastNotificationTicker.C:
 			notificationMutex.Lock()
-			if len(notificationMap) > 0 {
-				cleanNotifications := make([]cziti.ToastNotification, 0)
-				for _, v := range notificationMap {
-					newMinTimeOut := 0
-					newAllServicesTimeout := 0
-					newMessage := v.Message
-					if (v.MinimumTimeOut - int(time.Since(v.NotificationTime).Seconds())) < 0 {
-						newMessage = fmt.Sprintf("Some of the services of identity %s are timed out", v.IdentityName)
-					} else {
-						newMinTimeOut = v.MinimumTimeOut - int(time.Since(v.NotificationTime).Seconds())
-					}
-					if (v.AllServicesTimeout - int(time.Since(v.NotificationTime).Seconds())) < 0 {
-						newMessage = fmt.Sprintf("All of the services of identity %s are timed out", v.IdentityName)
-					} else {
-						newAllServicesTimeout = v.AllServicesTimeout - int(time.Since(v.NotificationTime).Seconds())
-					}
+			clean := rts.ToStatus(true)
+			notificationMutex.Unlock()
 
-					cleanNotifications = append(cleanNotifications, cziti.ToastNotification{
-						Fingerprint: v.Fingerprint,
-						IdentityName: v.IdentityName,
-						Severity: v.Severity,
-						MinimumTimeOut: newMinTimeOut,
-						AllServicesTimeout: newAllServicesTimeout,
-						NotificationTime: v.NotificationTime,
-						Message: newMessage,
-					})
+			cleanNotifications := make([]cziti.ToastNotification, 0)
+
+			notificationMessage := ""
+			for _, id := range clean.Identities {
+
+				if (id.MaxTimeout - int(time.Since(id.LastUpdatedTime).Seconds())) < 0 {
+					notificationMessage = fmt.Sprintf("All of the services of identity %s are timed out", id.Name)
+				} else if (id.MinTimeout - int(time.Since(id.LastUpdatedTime).Seconds())) < 0 {
+					notificationMessage = fmt.Sprintf("Some of the services of identity %s are timed out", id.Name)
+				} else if (id.MinTimeout - int(time.Since(id.LastUpdatedTime).Seconds())) < int(time.Duration(20 * time.Minute)) {
+					notificationMessage = fmt.Sprintf("Some of the services of identity %s are timing out in sometime", id.Name)
 				}
+
+				cleanNotifications = append(cleanNotifications, cziti.ToastNotification{
+					Fingerprint: id.FingerPrint,
+					IdentityName: id.Name,
+					Severity: "major",
+					MinimumTimeOut: id.MinTimeout,
+					AllServicesTimeout: id.MaxTimeout,
+					Message: notificationMessage,
+				})
+
+			}
+			if len(cleanNotifications) > 0 {
 				log.Debugf("Sending notification message to UI %v", cleanNotifications)
 				rts.BroadcastEvent(cziti.TunnelNotificationEvent{
 					Op: 			"notification",
 					Notification:	cleanNotifications,
 				})
-
-				// should send a toast message to windows
 			}
-			notificationMutex.Unlock()
-
-		case notification := <- cziti.ToastNotifications:
-			log.Infof("Notification Message : %s, lowest timeout %d, all services timeout : %d", notification.Message, notification.MinimumTimeOut, notification.AllServicesTimeout)
-
-			notificationMutex.Lock()
-			// if timeout is -1, remove it from the notification map
-			if notification.MinimumTimeOut == -1 {
-				if _, ok := notificationMap[notification.Fingerprint]; ok {
-					delete(notificationMap, notification.Fingerprint)
-				}
-			} else {
-				notificationMap[notification.Fingerprint] = notification
-			}
-			notificationMutex.Unlock()
+			// should send a toast message to windows
 		}
 	}
 }

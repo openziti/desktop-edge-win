@@ -46,7 +46,6 @@ import "C"
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/api"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/logging"
@@ -62,7 +61,6 @@ var log = logging.Logger()
 var noFileLog = logging.NoFilenameLogger()
 var Version dto.ServiceVersion
 var BulkServiceChanges = make(chan BulkServiceChange, 32)
-var ToastNotifications = make(chan ToastNotification, 32)
 
 var cCfgZitiTunnelerClientV1 = C.CString("ziti-tunneler-client.v1")
 var cCfgInterceptV1 = C.CString("intercept.v1")
@@ -489,7 +487,6 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 		hostnamesToRemove := make(map[string]bool)
 		servicesToRemove := make([]*dto.Service, 0)
 		servicesToAdd := make([]*dto.Service, 0)
-		servicesTimingOut := make([]string, 0, 3)
 
 		srvEvent := C.ziti_event_service_event(event)
 
@@ -564,35 +561,6 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 					}
 				}
 				servicesToAdd = append(servicesToAdd, svcToAdd)
-			}
-		}
-		if len(servicesToAdd) > 0 && minimumTimeout > -1 {
-			for _, svcAdded := range servicesToAdd {
-				if svcAdded.Timeout == minimumTimeout && len(servicesTimingOut) < cap(servicesTimingOut) {
-					servicesTimingOut = append(servicesTimingOut, svcAdded.Name)
-				}
-				if len(servicesTimingOut) == cap(servicesTimingOut) {
-					break
-				}
-			}
-			ToastNotifications <- ToastNotification {
-				IdentityName: zid.Name,
-				Fingerprint: zid.Fingerprint,
-				Message: fmt.Sprintf("Some of the services, eg: %v of Identity %s are timing out in some time", servicesTimingOut, zid.Name),
-				MinimumTimeOut: minimumTimeout,
-				AllServicesTimeout: allServicesTimeout,
-				NotificationTime: time.Now(),
-				Severity: "Major",
-			}
-		} else {
-			ToastNotifications <- ToastNotification {
-				IdentityName: zid.Name,
-				Fingerprint: zid.Fingerprint,
-				Message: fmt.Sprintf("No timeout set for the services of Identity %s", zid.Name),
-				MinimumTimeOut: minimumTimeout,
-				AllServicesTimeout: allServicesTimeout,
-				NotificationTime: time.Now(),
-				Severity: "Info",
 			}
 		}
 
