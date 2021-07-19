@@ -15,6 +15,12 @@ namespace ZitiDesktopEdge.Models {
 		public string EnrollmentStatus { get; set; }
 		public string Status { get; set; }
 		public bool IsMFAEnabled { get; set; }
+		public int MinTimeout { get; set; }
+		public int MaxTimeout { get; set; }
+		public DateTime LastUpdatedTime { get; set; }
+		public bool IsTimingOut { get; set; }
+		public string TimeoutMessage { get; set; }
+
 		public MFA MFAInfo { get; set; }
 
 		private bool svcFailingPostureCheck = false;
@@ -41,6 +47,11 @@ namespace ZitiDesktopEdge.Models {
 			this.IsEnabled = IsEnabled;
 			this.EnrollmentStatus = "Enrolled";
 			this.Status = "Available";
+			this.MaxTimeout = -1;
+			this.MinTimeout = -1;
+			this.LastUpdatedTime = DateTime.Now;
+			this.IsTimingOut = false;
+			this.TimeoutMessage = "";
 		}
 
 		public string Fingerprint { get; set; }
@@ -54,9 +65,14 @@ namespace ZitiDesktopEdge.Models {
 				Name = (string.IsNullOrEmpty(id.Name) ? id.FingerPrint : id.Name),
 				Status = id.Status,
 				IsMFAEnabled = id.MfaEnabled,
-				MFAInfo = new MFA() { 
+				MFAInfo = new MFA() {
 					IsAuthenticated = !id.MfaNeeded,
 				},
+				MinTimeout = id.MinTimeout,
+				MaxTimeout = id.MaxTimeout,
+				LastUpdatedTime = id.LastUpdatedTime,
+				IsTimingOut = id.MinTimeout == 0 && id.MaxTimeout>0,
+				TimeoutMessage = ""
 			};
 
 			if (id.Services != null) {

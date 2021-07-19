@@ -20,6 +20,7 @@ namespace ZitiDesktopEdge.Models {
 		public PostureCheck[] PostureChecks { get; set; }
 		public bool OwnsIntercept { get; set; }
 		public string AssignedIP { get; set; }
+		public int Timeout { get; set; }
 
 		private bool failingPostureCheck;
 		public bool HasFailingPostureCheck() {
@@ -47,6 +48,7 @@ namespace ZitiDesktopEdge.Models {
 			this.Protocols = svc.Protocols == null ? null : svc.Protocols.Select(p => p.ToUpper()).ToArray();
 			this.Ports = svc.Ports;
 			this.PostureChecks = svc.PostureChecks;
+			this.Timeout = svc.Timeout;
 			this.OwnsIntercept = svc.OwnsIntercept;
 			if (this.PostureChecks != null) {
 				this.failingPostureCheck = this.PostureChecks.Any(p => !p.IsPassing);

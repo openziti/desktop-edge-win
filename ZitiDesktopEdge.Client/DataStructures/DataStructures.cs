@@ -244,7 +244,10 @@ namespace ZitiDesktopEdge.DataStructures {
         public string ControllerVersion { get; set; }
         public bool MfaEnabled { get; set; }
         public bool MfaNeeded { get; set; }
-    }
+		public int MinTimeout { get; set; }
+		public int MaxTimeout { get; set; }
+		public DateTime LastUpdatedTime { get; set; }
+	}
 
     public class Service {
         public string Name { get; set; }
@@ -255,7 +258,8 @@ namespace ZitiDesktopEdge.DataStructures {
         public string AssignedIP { get; set; }
         public PostureCheck[] PostureChecks { get; set; }
         public bool IsAccessable { get; set; }
-    }
+		public int Timeout { get; set; }
+	}
 
     public class Address {
         public bool IsHost { get; set; }

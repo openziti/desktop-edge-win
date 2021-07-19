@@ -575,14 +575,17 @@ namespace ZitiDesktopEdge {
 					logger.Warn($"{e.Op} event for {notification.Fingerprint} but the provided identity fingerprint was not found!");
 					continue;
 				}
+				found.TimeoutMessage = notification.Message;
 				if (notification.AllServicesTimeout == 0) {
-					found.MFAInfo.IsAuthenticated = false;
 					// display mfa token icon
+					found.MFAInfo.IsAuthenticated = false;
 					displayMFARequired = true;
 				} else if (notification.MinimumTimeOut == 0) {
 					// display option to enter mfa, only few services are timed out
+					found.IsTimingOut = true;
 				} else {
 					// display option to enter mfa, only few services are about to timeout
+					found.IsTimingOut = true;
 				}
 			}
 			// we need to display mfa icon for the identities that have all the services timed out. 
@@ -1038,25 +1041,18 @@ namespace ZitiDesktopEdge {
 						IdentityItem idItem = new IdentityItem();
 
 						idItem.ToggleStatus.IsEnabled = id.IsEnabled;
-						if (id.IsEnabled) {
-							idItem.ToggleStatus.Content = "ENABLED";
-						} else {
-							idItem.ToggleStatus.Content = "DISABLED";
-						}
+						if (id.IsEnabled) idItem.ToggleStatus.Content = "ENABLED";
+						else idItem.ToggleStatus.Content = "DISABLED";
+
 						idItem.Authenticate += IdItem_Authenticate;
 						idItem.OnStatusChanged += Id_OnStatusChanged;
 						idItem.Identity = id;
-						if (!id.MFAInfo.IsAuthenticated)
-						{
-							idItem.RefreshUI();
-						}
+						if (!id.MFAInfo.IsAuthenticated) idItem.RefreshUI();
 
 						IdList.Children.Add(idItem);
 
 						if (IdentityMenu.Visibility==Visibility.Visible) {
-							if (id.Fingerprint==IdentityMenu.Identity.Fingerprint) {
-								IdentityMenu.Identity = id;
-							}
+							if (id.Fingerprint==IdentityMenu.Identity.Fingerprint) IdentityMenu.Identity = id;
 						}
 					}
 					//IdList.Height = ;
@@ -1082,9 +1078,7 @@ namespace ZitiDesktopEdge {
 		private void Id_OnStatusChanged(bool attached) {
 			for (int i = 0; i < IdList.Children.Count; i++) {
 				IdentityItem item = IdList.Children[i] as IdentityItem;
-				if (item.ToggleSwitch.Enabled) {
-					break;
-				}
+				if (item.ToggleSwitch.Enabled) break;
 			}
 		}
 
