@@ -296,7 +296,15 @@ func (t *RuntimeState) LoadIdentity(id *Id, refreshInterval int) {
 		log.Infof("connecting identity completed: %s[%s] %t/%t", id.Name, id.FingerPrint, id.MfaEnabled, id.MfaNeeded)
 	}
 
-	id.CId = cziti.NewZid(sc)
+	rc := func(minTimeout int32, maxTimeOut int32) bool {
+		if minTimeout == -1 && maxTimeOut == -1 {
+			return false
+		} else {
+			return true
+		}
+	}
+
+	id.CId = cziti.NewZid(sc, rc)
 	id.CId.Active = id.Active
 	cziti.LoadZiti(id.CId, id.Path(), refreshInterval)
 }
@@ -546,39 +554,5 @@ func (t *RuntimeState) UpdateMfa(fingerprint string, mfaEnabled bool, mfaNeeded 
 		id.MfaEnabled = mfaEnabled
 		id.MfaNeeded = mfaNeeded
 	}
-}
-
-func (t *RuntimeState) CheckTimeOuts() {
-	go func () {
-		for {
-			select {
-			case <- shutdown:
-				log.Debugf("Shutting down posture check timeout loop")
-				return
-			case timeoutEvent := <- cziti.TimeoutPostureChecks:
-
-				timeoutRefreshRequired := false
-				for _, id := range rts.ids {
-					if val, ok := timeoutEvent[id.FingerPrint]; ok {
-						if val {
-								timeoutRefreshRequired = true
-						}
-					} else {
-						if id.MinTimeout > -1 || id.MaxTimeout > -1 {
-							timeoutRefreshRequired = true
-						}
-					}
-				}
-				if timeoutRefreshRequired {
-					if RuntimeStatusTicker == nil {
-						StartRefreshTimer()
-						SendNotifications()
-					}
-				} else {
-					RuntimeTimerStop <- true
-				}
-			}
-		}
-	}()
 }
 

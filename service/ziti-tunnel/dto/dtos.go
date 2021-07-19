@@ -40,7 +40,7 @@ type Service struct {
 	OwnsIntercept bool
 	PostureChecks []PostureCheck
 	IsAccessable  bool
-	Timeout		  int
+	Timeout		  int32
 }
 
 type Address struct {
@@ -82,8 +82,8 @@ type Identity struct {
 	Services          []*Service `json:",omitempty"`
 	Metrics           *Metrics   `json:",omitempty"`
 	Tags              []string   `json:",omitempty"`
-	MinTimeout	  	  int
-	MaxTimeout	  	  int
+	MinTimeout	  	  int32
+	MaxTimeout	  	  int32
 	LastUpdatedTime	  time.Time
 }
 type Metrics struct {

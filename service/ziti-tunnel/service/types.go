@@ -7,7 +7,7 @@ import (
 
 type Id struct {
 	dto.Identity
-	CId *cziti.ZIdentity
+	CId 			*cziti.ZIdentity
 }
 
 type WindowsEvents struct {

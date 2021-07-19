@@ -61,7 +61,6 @@ var log = logging.Logger()
 var noFileLog = logging.NoFilenameLogger()
 var Version dto.ServiceVersion
 var BulkServiceChanges = make(chan BulkServiceChange, 32)
-var TimeoutPostureChecks = make(chan map[string]bool)
 
 var cCfgZitiTunnelerClientV1 = C.CString("ziti-tunneler-client.v1")
 var cCfgInterceptV1 = C.CString("intercept.v1")
@@ -80,24 +79,24 @@ type BulkServiceChange struct {
 	HostnamesToRemove map[string]bool
 	ServicesToRemove  []*dto.Service
 	ServicesToAdd     []*dto.Service
-	MinTimeout		  int
-	MaxTimeout		  int
+	MinTimeout		  int32
+	MaxTimeout		  int32
 	LastUpdatedTime	  time.Time
 }
 
-type ToastNotification struct {
+type NotificationMessage struct {
 	IdentityName		string
 	Fingerprint			string
 	Message				string
-	MinimumTimeOut		int
-	AllServicesTimeout	int
+	MinimumTimeOut		int32
+	AllServicesTimeout	int32
 	TimeDuration		int
 	Severity			string
 }
 
 type TunnelNotificationEvent struct {
 	Op				string
-	Notification	[]ToastNotification
+	Notification	[]NotificationMessage
 }
 
 var _impl sdk
@@ -129,6 +128,8 @@ func (inst *sdk) run(loglevel int) {
 	C.libuv_run(inst.libuvCtx)
 }
 
+type RefreshRequiredCheck func(int32, int32) bool
+
 type ZService struct {
 	Name    string
 	Id      string
@@ -151,16 +152,21 @@ type ZIdentity struct {
 	StatusChanges 	func(int)
 	MfaNeeded     	bool
 	MfaEnabled    	bool
-	MinTimeout	  	int
-	MaxTimeout	  	int
+	MinTimeout	  	int32
+	MaxTimeout	  	int32
+	RefreshCheck	RefreshRequiredCheck
 	LastUpdatedTime	time.Time
 }
 
-func NewZid(statusChange func(int)) *ZIdentity {
+func NewZid(statusChange func(int), refreshCheck func(int32, int32) bool) *ZIdentity {
 	zid := &ZIdentity{}
 	zid.Services = sync.Map{}
 	zid.Options = (*C.ziti_options)(C.calloc(1, C.sizeof_ziti_options))
 	zid.StatusChanges = statusChange
+	zid.RefreshCheck = refreshCheck
+	zid.MinTimeout	= -1
+	zid.MaxTimeout	= -1
+	zid.LastUpdatedTime	= time.Now()
 	return zid
 }
 
@@ -399,7 +405,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 			OwnsIntercept: true,
 			PostureChecks: postureChecks,
 			IsAccessable:  hasAccess,
-			Timeout:	   timeout,
+			Timeout:	   int32(timeout),
 		}
 		added := ZService{
 			Name:    name,
@@ -531,8 +537,8 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 				servicesToAdd = append(servicesToAdd, svcToAdd)
 			}
 		}
-		minimumTimeout := -1
-		allServicesTimeout := -1
+		var minimumTimeout int32 = -1
+		var allServicesTimeout int32 = -1
 		for i := 0; true; i++ {
 			added := C.ziti_service_array_get(srvEvent.added, C.int(i))
 			if unsafe.Pointer(added) == C.NULL {
@@ -540,14 +546,6 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			}
 			svcToAdd := serviceCB(ztx, added, C.ZITI_OK, zid)
 			if svcToAdd != nil {
-				if svcToAdd.Timeout >= 0 {
-					if minimumTimeout == -1 || minimumTimeout > svcToAdd.Timeout {
-						minimumTimeout = svcToAdd.Timeout
-					}
-					if allServicesTimeout == -1 || allServicesTimeout < svcToAdd.Timeout {
-						allServicesTimeout = svcToAdd.Timeout
-					}
-				}
 				addAddys := svcToAdd.Addresses
 				for _, toAdd := range addAddys {
 					if toAdd.IsHost && hostnameAdded(toAdd.HostName) == 1 {
@@ -557,20 +555,22 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 				servicesToAdd = append(servicesToAdd, svcToAdd)
 			}
 		}
+		if len(servicesToAdd) > 0 {
+			for _,svc := range servicesToAdd {
+				if svc.Timeout >= 0 {
+					if minimumTimeout == -1 || minimumTimeout > svc.Timeout {
+						minimumTimeout = svc.Timeout
+					}
+					if allServicesTimeout == -1 || allServicesTimeout < svc.Timeout {
+						allServicesTimeout = svc.Timeout
+					}
+				}
+			}
+		}
 
 		zid.MinTimeout = minimumTimeout
 		zid.MaxTimeout = allServicesTimeout
 		zid.LastUpdatedTime = time.Now()
-
-		if minimumTimeout == -1 && allServicesTimeout == -1 {
-			TimeoutPostureChecks <- map[string]bool {
-				zid.Fingerprint: false,
-			}
-		} else {
-			TimeoutPostureChecks <- map[string]bool {
-				zid.Fingerprint: true,
-			}
-		}
 
 		svcChange := BulkServiceChange{
 			Fingerprint:       zid.Fingerprint,

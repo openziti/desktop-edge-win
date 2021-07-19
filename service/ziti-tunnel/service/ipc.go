@@ -17,6 +17,7 @@
 
 package service
 
+import "C"
 import (
 	"bufio"
 	"crypto/sha1"
@@ -45,6 +46,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -101,8 +103,6 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 
 	//listen for services that show up
 	go acceptServices()
-
-	go rts.CheckTimeOuts()
 
 	// listen for windows power events and call mfa auth func
 	go func() {
@@ -199,8 +199,6 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 
 func requestShutdown(requester string) {
 	log.Infof("shutdown requested by %v", requester)
-	// shutdown <- true // stops the metrics ticker
-	// shutdown <- true // stops the service change listener
 	close(shutdown) // stops the metrics ticker, service change listener and notification alert loop
 }
 
@@ -1116,6 +1114,7 @@ func handleEvents(isInitialized chan struct{}) {
 	events.run()
 	d := 5 * time.Second
 	every5s := time.NewTicker(d)
+	notificationFrequency := time.NewTicker(time.Duration(5) * time.Second)
 
 	defer log.Debugf("exiting handleEvents. loops were set for %v", d)
 	<-isInitialized
@@ -1127,10 +1126,78 @@ func handleEvents(isInitialized chan struct{}) {
 		case <-every5s.C:
 			s := rts.ToMetrics()
 
+			// broadcast metrics
 			rts.BroadcastEvent(dto.MetricsEvent{
 				StatusEvent: dto.StatusEvent{Op: "metrics"},
 				Identities:  s.Identities,
 			})
+
+			// refresh timeout of services
+			for _,id := range rts.ids {
+				zid := id.CId
+				if zid == nil || !zid.RefreshCheck(zid.MinTimeout, zid.MaxTimeout) {
+					continue
+				}
+
+				// refresh timeout
+				zid.Services.Range(func(key interface{}, value interface{}) bool {
+					//string, ZService
+					val := value.(*cziti.ZService)
+
+					var svcTimeout int32 = -1
+					for _, pc := range val.Service.PostureChecks {
+							if svcTimeout == -1 || svcTimeout > int32(pc.Timeout) {
+								svcTimeout	= int32(pc.Timeout)
+							}
+							break
+					}
+					if (svcTimeout - int32(time.Since(zid.LastUpdatedTime).Seconds())) < 0 {
+						atomic.StoreInt32(&val.Service.Timeout, 0)
+					} else {
+						atomic.StoreInt32(&val.Service.Timeout, svcTimeout - int32(time.Since(zid.LastUpdatedTime).Seconds()))
+					}
+					return true
+				})
+
+			}
+
+		// notification message
+		case <- notificationFrequency.C:
+			cleanNotifications := make([]cziti.NotificationMessage, 0)
+			for _,id := range rts.ids{
+				if id.CId == nil || !id.CId.RefreshCheck(id.CId.MinTimeout, id.CId.MaxTimeout) {
+					continue
+				}
+				notificationMessage := ""
+
+				if (id.CId.MaxTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < 0 {
+					notificationMessage = fmt.Sprintf("All of the services of identity %s are timed out", id.Name)
+				} else if (id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < 0 {
+					notificationMessage = fmt.Sprintf("Some of the services of identity %s are timed out", id.Name)
+				} else if (id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < int32(time.Duration(20 * time.Minute).Seconds()) {
+					notificationMessage = fmt.Sprintf("Some of the services of identity %s are timing out in sometime", id.Name)
+				}
+
+				if len(notificationMessage) > 0 {
+					cleanNotifications = append(cleanNotifications, cziti.NotificationMessage{
+						Fingerprint: id.FingerPrint,
+						IdentityName: id.Name,
+						Severity: "major",
+						MinimumTimeOut: id.CId.MinTimeout,
+						AllServicesTimeout: id.CId.MaxTimeout,
+						Message: notificationMessage,
+						TimeDuration: int(time.Since(id.CId.LastUpdatedTime).Seconds()),
+					})
+				}
+			}
+
+			if len(cleanNotifications) > 0 {
+				log.Debugf("Sending notification message to UI %v", cleanNotifications)
+				rts.BroadcastEvent(cziti.TunnelNotificationEvent{
+					Op: 			"notification",
+					Notification:	cleanNotifications,
+				})
+			}
 		}
 	}
 }
@@ -1162,47 +1229,22 @@ func Clean(src *Id) dto.Identity {
 	}
 
 	if src.CId != nil {
-		minTimeout := -1
-		maxTimeout := -1
-		allSvcTimeout := -1
 		src.CId.Services.Range(func(key interface{}, value interface{}) bool {
 			//string, ZService
 			val := value.(*cziti.ZService)
-			timeout	  := -1
-
-			for _, pc := range val.Service.PostureChecks {
-				if timeout == -1 || timeout > pc.Timeout {
-					timeout	= pc.Timeout
-				}
-			}
-			if (timeout - int(time.Since(src.CId.LastUpdatedTime).Seconds())) < 0 {
-				val.Service.Timeout = 0
-			} else {
-				val.Service.Timeout = timeout - int(time.Since(src.CId.LastUpdatedTime).Seconds())
-			}
-			if allSvcTimeout == -1 || allSvcTimeout < val.Service.Timeout {
-				allSvcTimeout = val.Service.Timeout
-			}
-			if minTimeout == -1 || minTimeout > timeout {
-				minTimeout	= timeout
-			}
-			if maxTimeout == -1 || maxTimeout < timeout {
-				maxTimeout = timeout
-			}
 
 			nid.Services = append(nid.Services /*svcToDto(val)*/, val.Service)
 			return true
 		})
-		nid.MinTimeout = minTimeout
-		nid.MaxTimeout = maxTimeout
-		if minTimeout == -1 && maxTimeout == -1 {
+		nid.MinTimeout = src.CId.MinTimeout
+		nid.MaxTimeout = src.CId.MaxTimeout
+		if !src.CId.RefreshCheck(nid.MinTimeout, nid.MaxTimeout) {
 			nid.LastUpdatedTime = time.Now()
 		} else {
 			nid.LastUpdatedTime = src.CId.LastUpdatedTime
-		}
-
-		if allSvcTimeout == 0 && nid.MfaEnabled {
-			nid.MfaNeeded = true
+			if (nid.MaxTimeout - int32(time.Since(nid.LastUpdatedTime).Seconds())) < 0 && nid.MfaEnabled {
+				nid.MfaNeeded = true
+			}
 		}
 	}
 
@@ -1263,92 +1305,3 @@ func sendIdentityAndNotifyUI(enc *json.Encoder, fingerprint string) {
 	respond(enc, resp)
 }
 
-func StartRefreshTimer() {
-
-	RuntimeStatusTicker := time.NewTicker(time.Duration(1) * time.Minute)
-	log.Debugf("starting service timeout refresh routine")
-
-	go func () {
-		for {
-			select {
-			case <- shutdown:
-				log.Debugf("shutdown request received, exiting refresh timer routine")
-				return
-			case <- RuntimeTimerStop:
-				RuntimeStatusTicker.Stop()
-				log.Debugf("timer is stopped, exiting runtime status ticker loop")
-				RuntimeStatusTicker = nil
-				return
-			case <- RuntimeStatusTicker.C:
-				clean := rts.ToStatus(true)
-				rts.BroadcastEvent(dto.TunnelStatusEvent{
-					StatusEvent: dto.StatusEvent{Op: "status"},
-					Status:      clean,
-					ApiVersion:  API_VERSION,
-				})
-			}
-		}
-	} ()
-}
-
-func SendNotifications() {
-	log.Debug("Started notification routine")
-
-	// allow user to set frequency dynamically
-	broadcastNotificationTicker := time.NewTicker(5 * time.Minute)
-
-	go func(){
-		for {
-			select {
-			case <- shutdown:
-				log.Debugf("Exiting Notification Alert loop")
-				return
-			case <- RuntimeTimerStop:
-				broadcastNotificationTicker.Stop()
-				log.Debugf("timer is stopped, exiting Notifications ticker loop")
-				broadcastNotificationTicker = nil
-				return
-			case <- broadcastNotificationTicker.C:
-				clean := rts.ToStatus(true)
-
-				cleanNotifications := make([]cziti.ToastNotification, 0)
-
-				notificationMessage := ""
-				for _, id := range clean.Identities {
-
-					if id.MaxTimeout == -1 && id.MinTimeout == -1 {
-						continue
-					}
-
-					if (id.MaxTimeout - int(time.Since(id.LastUpdatedTime).Seconds())) < 0 {
-						notificationMessage = fmt.Sprintf("All of the services of identity %s are timed out", id.Name)
-					} else if (id.MinTimeout - int(time.Since(id.LastUpdatedTime).Seconds())) < 0 {
-						notificationMessage = fmt.Sprintf("Some of the services of identity %s are timed out", id.Name)
-					} else if (id.MinTimeout - int(time.Since(id.LastUpdatedTime).Seconds())) < int(time.Duration(20 * time.Minute)) {
-						notificationMessage = fmt.Sprintf("Some of the services of identity %s are timing out in sometime", id.Name)
-					}
-
-					cleanNotifications = append(cleanNotifications, cziti.ToastNotification{
-						Fingerprint: id.FingerPrint,
-						IdentityName: id.Name,
-						Severity: "major",
-						MinimumTimeOut: id.MinTimeout,
-						AllServicesTimeout: id.MaxTimeout,
-						Message: notificationMessage,
-						TimeDuration: int(time.Since(id.LastUpdatedTime).Seconds()),
-					})
-
-				}
-				if len(cleanNotifications) > 0 {
-					log.Debugf("Sending notification message to UI %v", cleanNotifications)
-					rts.BroadcastEvent(cziti.TunnelNotificationEvent{
-						Op: 			"notification",
-						Notification:	cleanNotifications,
-					})
-				}
-				// should send a toast message to windows
-			}
-		}
-	}()
-
-}
