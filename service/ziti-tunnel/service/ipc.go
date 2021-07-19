@@ -108,7 +108,7 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 	go func() {
 		for {
 			select {
-			case wEvents := <- winEvents:
+			case wEvents := <-winEvents:
 				if wEvents.WinPowerEvent == PBT_APMRESUMESUSPEND || wEvents.WinPowerEvent == PBT_APMRESUMEAUTOMATIC {
 					log.Debugf("Received Windows Power Event in tunnel %d", wEvents.WinPowerEvent)
 					for _, id := range rts.ids {
@@ -121,7 +121,7 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 						cziti.EndpointStateChanged(id.CId, false, true)
 					}
 				}
-			case <- shutdownDelay:
+			case <-shutdownDelay:
 				log.Tracef("Exiting windows power events loop")
 				return
 			}
@@ -1133,7 +1133,7 @@ func handleEvents(isInitialized chan struct{}) {
 			})
 
 			// refresh timeout of services
-			for _,id := range rts.ids {
+			for _, id := range rts.ids {
 				zid := id.CId
 				if zid == nil || !zid.RefreshCheck(zid.MinTimeout, zid.MaxTimeout) {
 					continue
@@ -1146,15 +1146,15 @@ func handleEvents(isInitialized chan struct{}) {
 
 					var svcTimeout int32 = -1
 					for _, pc := range val.Service.PostureChecks {
-							if svcTimeout == -1 || svcTimeout > int32(pc.Timeout) {
-								svcTimeout	= int32(pc.Timeout)
-							}
-							break
+						if svcTimeout == -1 || svcTimeout > int32(pc.Timeout) {
+							svcTimeout = int32(pc.Timeout)
+						}
+						break
 					}
 					if (svcTimeout - int32(time.Since(zid.LastUpdatedTime).Seconds())) < 0 {
 						atomic.StoreInt32(&val.Service.Timeout, 0)
 					} else {
-						atomic.StoreInt32(&val.Service.Timeout, svcTimeout - int32(time.Since(zid.LastUpdatedTime).Seconds()))
+						atomic.StoreInt32(&val.Service.Timeout, svcTimeout-int32(time.Since(zid.LastUpdatedTime).Seconds()))
 					}
 					return true
 				})
@@ -1162,9 +1162,9 @@ func handleEvents(isInitialized chan struct{}) {
 			}
 
 		// notification message
-		case <- notificationFrequency.C:
+		case <-notificationFrequency.C:
 			cleanNotifications := make([]cziti.NotificationMessage, 0)
-			for _,id := range rts.ids{
+			for _, id := range rts.ids {
 				if id.CId == nil || !id.CId.RefreshCheck(id.CId.MinTimeout, id.CId.MaxTimeout) {
 					continue
 				}
@@ -1174,19 +1174,19 @@ func handleEvents(isInitialized chan struct{}) {
 					notificationMessage = fmt.Sprintf("All of the services of identity %s are timed out", id.Name)
 				} else if (id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < 0 {
 					notificationMessage = fmt.Sprintf("Some of the services of identity %s are timed out", id.Name)
-				} else if (id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < int32(time.Duration(20 * time.Minute).Seconds()) {
+				} else if (id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < int32(time.Duration(20*time.Minute).Seconds()) {
 					notificationMessage = fmt.Sprintf("Some of the services of identity %s are timing out in sometime", id.Name)
 				}
 
 				if len(notificationMessage) > 0 {
 					cleanNotifications = append(cleanNotifications, cziti.NotificationMessage{
-						Fingerprint: id.FingerPrint,
-						IdentityName: id.Name,
-						Severity: "major",
-						MinimumTimeOut: id.CId.MinTimeout,
+						Fingerprint:        id.FingerPrint,
+						IdentityName:       id.Name,
+						Severity:           "major",
+						MinimumTimeOut:     id.CId.MinTimeout,
 						AllServicesTimeout: id.CId.MaxTimeout,
-						Message: notificationMessage,
-						TimeDuration: int(time.Since(id.CId.LastUpdatedTime).Seconds()),
+						Message:            notificationMessage,
+						TimeDuration:       int(time.Since(id.CId.LastUpdatedTime).Seconds()),
 					})
 				}
 			}
@@ -1194,8 +1194,8 @@ func handleEvents(isInitialized chan struct{}) {
 			if len(cleanNotifications) > 0 {
 				log.Debugf("Sending notification message to UI %v", cleanNotifications)
 				rts.BroadcastEvent(cziti.TunnelNotificationEvent{
-					Op: 			"notification",
-					Notification:	cleanNotifications,
+					Op:           "notification",
+					Notification: cleanNotifications,
 				})
 			}
 		}
@@ -1242,7 +1242,7 @@ func Clean(src *Id) dto.Identity {
 			nid.LastUpdatedTime = time.Now()
 		} else {
 			nid.LastUpdatedTime = src.CId.LastUpdatedTime
-			if (nid.MaxTimeout - int32(time.Since(nid.LastUpdatedTime).Seconds())) < 0 && nid.MfaEnabled {
+			if (nid.MaxTimeout-int32(time.Since(nid.LastUpdatedTime).Seconds())) < 0 && nid.MfaEnabled {
 				nid.MfaNeeded = true
 			}
 		}
@@ -1304,4 +1304,3 @@ func sendIdentityAndNotifyUI(enc *json.Encoder, fingerprint string) {
 	resp := dto.Response{Message: "", Code: ERROR, Error: "Could not find id matching fingerprint " + fingerprint, Payload: ""}
 	respond(enc, resp)
 }
-

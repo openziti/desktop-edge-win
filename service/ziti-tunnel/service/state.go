@@ -555,4 +555,3 @@ func (t *RuntimeState) UpdateMfa(fingerprint string, mfaEnabled bool, mfaNeeded 
 		id.MfaNeeded = mfaNeeded
 	}
 }
-

@@ -82,8 +82,8 @@ const (
 	PBT_APMRESUMEAUTOMATIC   = 18 // Resume Automatic
 
 	// windows session changes microsoft docs https://docs.microsoft.com/en-us/windows/win32/termserv/wm-wtssession-change
-	WTS_SESSION_LOCK	= 7
-	WTS_SESSION_UNLOCK	= 8
+	WTS_SESSION_LOCK   = 7
+	WTS_SESSION_UNLOCK = 8
 
 	// This is the name you will use for the NET START command
 	SvcStartName = "ziti"

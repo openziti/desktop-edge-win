@@ -138,7 +138,6 @@ func ReturnMfaCodes(id *ZIdentity, code string) ([]string, error) {
 	}
 }
 
-
 // used when an identity is partially authenticated and waiting on 2fa, i.e. for authentication and for timeouts
 func AuthMFA(id *ZIdentity, code string) error {
 	ccode := C.CString(code)

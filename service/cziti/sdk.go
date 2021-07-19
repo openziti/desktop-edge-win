@@ -79,24 +79,24 @@ type BulkServiceChange struct {
 	HostnamesToRemove map[string]bool
 	ServicesToRemove  []*dto.Service
 	ServicesToAdd     []*dto.Service
-	MinTimeout		  int32
-	MaxTimeout		  int32
-	LastUpdatedTime	  time.Time
+	MinTimeout        int32
+	MaxTimeout        int32
+	LastUpdatedTime   time.Time
 }
 
 type NotificationMessage struct {
-	IdentityName		string
-	Fingerprint			string
-	Message				string
-	MinimumTimeOut		int32
-	AllServicesTimeout	int32
-	TimeDuration		int
-	Severity			string
+	IdentityName       string
+	Fingerprint        string
+	Message            string
+	MinimumTimeOut     int32
+	AllServicesTimeout int32
+	TimeDuration       int
+	Severity           string
 }
 
 type TunnelNotificationEvent struct {
-	Op				string
-	Notification	[]NotificationMessage
+	Op           string
+	Notification []NotificationMessage
 }
 
 var _impl sdk
@@ -138,24 +138,24 @@ type ZService struct {
 }
 
 type ZIdentity struct {
-	Options       	*C.ziti_options
-	czctx         	C.ziti_context
-	czid          	*C.ziti_identity
-	status        	int
-	statusErr     	error
-	Loaded        	bool
-	Name          	string
-	Version       	string
-	Services      	sync.Map
-	Fingerprint   	string
-	Active        	bool
-	StatusChanges 	func(int)
-	MfaNeeded     	bool
-	MfaEnabled    	bool
-	MinTimeout	  	int32
-	MaxTimeout	  	int32
-	RefreshCheck	RefreshRequiredCheck
-	LastUpdatedTime	time.Time
+	Options         *C.ziti_options
+	czctx           C.ziti_context
+	czid            *C.ziti_identity
+	status          int
+	statusErr       error
+	Loaded          bool
+	Name            string
+	Version         string
+	Services        sync.Map
+	Fingerprint     string
+	Active          bool
+	StatusChanges   func(int)
+	MfaNeeded       bool
+	MfaEnabled      bool
+	MinTimeout      int32
+	MaxTimeout      int32
+	RefreshCheck    RefreshRequiredCheck
+	LastUpdatedTime time.Time
 }
 
 func NewZid(statusChange func(int), refreshCheck func(int32, int32) bool) *ZIdentity {
@@ -164,9 +164,9 @@ func NewZid(statusChange func(int), refreshCheck func(int32, int32) bool) *ZIden
 	zid.Options = (*C.ziti_options)(C.calloc(1, C.sizeof_ziti_options))
 	zid.StatusChanges = statusChange
 	zid.RefreshCheck = refreshCheck
-	zid.MinTimeout	= -1
-	zid.MaxTimeout	= -1
-	zid.LastUpdatedTime	= time.Now()
+	zid.MinTimeout = -1
+	zid.MaxTimeout = -1
+	zid.LastUpdatedTime = time.Now()
 	return zid
 }
 
@@ -337,7 +337,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 
 		//if any posture query sets pass - that will grant the user access to that service
 		hasAccess := false
-		timeout	  := -1
+		timeout := -1
 
 		//find all posture checks sets...
 		for setIdx := 0; true; setIdx++ {
@@ -367,7 +367,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 
 				var pcId string
 				pcId = C.GoString(pq.id)
-				log.Infof("Posture query %s, timeout %d", C.GoString(pq.id) , int(pq.timeout))
+				log.Infof("Posture query %s, timeout %d", C.GoString(pq.id), int(pq.timeout))
 
 				_, found := pcIds[pcId]
 				if found {
@@ -376,7 +376,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 						if pc.Id == C.GoString(pq.id) {
 							if timeout == -1 || timeout > int(pq.timeout) {
 								// pc.Timeout = int(pq.timeout)
-								timeout	= int(pq.timeout)
+								timeout = int(pq.timeout)
 							}
 							break
 						}
@@ -389,7 +389,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 						Id:        pcId,
 						Timeout:   int(pq.timeout),
 					}
-					timeout	= pc.Timeout
+					timeout = pc.Timeout
 
 					postureChecks = append(postureChecks, pc)
 				}
@@ -405,7 +405,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 			OwnsIntercept: true,
 			PostureChecks: postureChecks,
 			IsAccessable:  hasAccess,
-			Timeout:	   int32(timeout),
+			Timeout:       int32(timeout),
 		}
 		added := ZService{
 			Name:    name,
@@ -556,7 +556,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			}
 		}
 		if len(servicesToAdd) > 0 {
-			for _,svc := range servicesToAdd {
+			for _, svc := range servicesToAdd {
 				if svc.Timeout >= 0 {
 					if minimumTimeout == -1 || minimumTimeout > svc.Timeout {
 						minimumTimeout = svc.Timeout
@@ -578,8 +578,8 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			HostnamesToRemove: hostnamesToRemove,
 			ServicesToAdd:     servicesToAdd,
 			ServicesToRemove:  servicesToRemove,
-			MinTimeout:		   minimumTimeout,
-			MaxTimeout:		   allServicesTimeout,
+			MinTimeout:        minimumTimeout,
+			MaxTimeout:        allServicesTimeout,
 			LastUpdatedTime:   time.Now(),
 		}
 

@@ -37,7 +37,7 @@ const (
 	MFAEnrollmentRemovedAction      = "enrollment_remove"
 
 	MFA_AUTH_CHALLENGE_ACTION = "auth_challenge"
-	MFAAuthenticationAction	= "mfa_auth_status"
+	MFAAuthenticationAction   = "mfa_auth_status"
 )
 
 var SERVICE_ADDED = ActionEvent{
