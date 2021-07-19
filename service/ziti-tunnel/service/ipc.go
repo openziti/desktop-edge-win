@@ -118,7 +118,9 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 				if wEvents.WinSessionEvent == WTS_SESSION_UNLOCK {
 					log.Debugf("Received Windows Session Event (device unlocked) in tunnel %d", wEvents.WinSessionEvent)
 					for _, id := range rts.ids {
-						cziti.EndpointStateChanged(id.CId, false, true)
+						if id.CId != nil && id.CId.Loaded {
+							cziti.EndpointStateChanged(id.CId, false, true)
+						}
 					}
 				}
 			case <-shutdownDelay:
@@ -1114,7 +1116,7 @@ func handleEvents(isInitialized chan struct{}) {
 	events.run()
 	d := 5 * time.Second
 	every5s := time.NewTicker(d)
-	notificationFrequency := time.NewTicker(time.Duration(5) * time.Second)
+	notificationFrequency := time.NewTicker(time.Duration(5) * time.Minute)
 
 	defer log.Debugf("exiting handleEvents. loops were set for %v", d)
 	<-isInitialized
@@ -1143,6 +1145,10 @@ func handleEvents(isInitialized chan struct{}) {
 				zid.Services.Range(func(key interface{}, value interface{}) bool {
 					//string, ZService
 					val := value.(*cziti.ZService)
+
+					if val.Service.Timeout <= 0 {
+						return true
+					}
 
 					var svcTimeout int32 = -1
 					for _, pc := range val.Service.PostureChecks {

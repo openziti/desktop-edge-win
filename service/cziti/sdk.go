@@ -375,7 +375,6 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 					for _, pc := range postureChecks {
 						if pc.Id == C.GoString(pq.id) {
 							if timeout == -1 || timeout > int(pq.timeout) {
-								// pc.Timeout = int(pq.timeout)
 								timeout = int(pq.timeout)
 							}
 							break
