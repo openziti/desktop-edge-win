@@ -325,9 +325,9 @@ namespace ZitiDesktopEdge.DataStructures {
         public string IdentityName { get; set; }
         public string Fingerprint { get; set; }
         public string Message { get; set; }
-        public int MinimumTimeOut { get; set; }
-        public int AllServicesTimeout { get; set; }
-        public string NotificationTime { get; set; }
+        public int MinimumTimeout { get; set; }
+        public int MaximumTimeout { get; set; }
+        public int TimeDuration { get; set; }
         public string Severity { get; set; }
 
     }

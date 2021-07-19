@@ -43,9 +43,6 @@ import (
 	"time"
 )
 
-var RuntimeTimerStop = make(chan bool)
-var RuntimeStatusTicker *time.Ticker = nil
-
 type RuntimeState struct {
 	state   *dto.TunnelStatus
 	tun     *tun.Device
@@ -296,15 +293,7 @@ func (t *RuntimeState) LoadIdentity(id *Id, refreshInterval int) {
 		log.Infof("connecting identity completed: %s[%s] %t/%t", id.Name, id.FingerPrint, id.MfaEnabled, id.MfaNeeded)
 	}
 
-	rc := func(minTimeout int32, maxTimeOut int32) bool {
-		if minTimeout == -1 && maxTimeOut == -1 {
-			return false
-		} else {
-			return true
-		}
-	}
-
-	id.CId = cziti.NewZid(sc, rc)
+	id.CId = cziti.NewZid(sc)
 	id.CId.Active = id.Active
 	cziti.LoadZiti(id.CId, id.Path(), refreshInterval)
 }

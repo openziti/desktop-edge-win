@@ -181,6 +181,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                     Function = "RemoveIdentity",
                     Payload = new FingerprintPayload() { Fingerprint = fingerPrint }
                 };
+                Logger.Info("Removing Identity with fingerprint {0}", fingerPrint);
                 await sendAsync(removeFunction);
                 var r = await readAsync<SvcResponse>(ipcReader);
             } catch (Exception ioe) {

@@ -1137,7 +1137,7 @@ func handleEvents(isInitialized chan struct{}) {
 			// refresh timeout of services
 			for _, id := range rts.ids {
 				zid := id.CId
-				if zid == nil || !zid.RefreshCheck(zid.MinTimeout, zid.MaxTimeout) {
+				if zid == nil || !zid.RefreshNeeded() {
 					continue
 				}
 
@@ -1171,12 +1171,12 @@ func handleEvents(isInitialized chan struct{}) {
 		case <-notificationFrequency.C:
 			cleanNotifications := make([]cziti.NotificationMessage, 0)
 			for _, id := range rts.ids {
-				if id.CId == nil || !id.CId.RefreshCheck(id.CId.MinTimeout, id.CId.MaxTimeout) {
+				if id.CId == nil || !id.CId.RefreshNeeded() {
 					continue
 				}
 				notificationMessage := ""
 
-				if (id.CId.MaxTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < 0 {
+				if (id.CId.MaxTimeout > -1) && (id.CId.MaxTimeout-int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < 0 {
 					notificationMessage = fmt.Sprintf("All of the services of identity %s are timed out", id.Name)
 				} else if (id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < 0 {
 					notificationMessage = fmt.Sprintf("Some of the services of identity %s are timed out", id.Name)
@@ -1186,13 +1186,13 @@ func handleEvents(isInitialized chan struct{}) {
 
 				if len(notificationMessage) > 0 {
 					cleanNotifications = append(cleanNotifications, cziti.NotificationMessage{
-						Fingerprint:        id.FingerPrint,
-						IdentityName:       id.Name,
-						Severity:           "major",
-						MinimumTimeOut:     id.CId.MinTimeout,
-						AllServicesTimeout: id.CId.MaxTimeout,
-						Message:            notificationMessage,
-						TimeDuration:       int(time.Since(id.CId.LastUpdatedTime).Seconds()),
+						Fingerprint:    id.FingerPrint,
+						IdentityName:   id.Name,
+						Severity:       "major",
+						MinimumTimeout: id.CId.MinTimeout,
+						MaximumTimeout: id.CId.MaxTimeout,
+						Message:        notificationMessage,
+						TimeDuration:   int(time.Since(id.CId.LastUpdatedTime).Seconds()),
 					})
 				}
 			}
@@ -1244,7 +1244,7 @@ func Clean(src *Id) dto.Identity {
 		})
 		nid.MinTimeout = src.CId.MinTimeout
 		nid.MaxTimeout = src.CId.MaxTimeout
-		if !src.CId.RefreshCheck(nid.MinTimeout, nid.MaxTimeout) {
+		if !src.CId.RefreshNeeded() {
 			nid.LastUpdatedTime = time.Now()
 		} else {
 			nid.LastUpdatedTime = src.CId.LastUpdatedTime

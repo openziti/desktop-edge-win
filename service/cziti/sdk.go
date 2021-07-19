@@ -85,13 +85,13 @@ type BulkServiceChange struct {
 }
 
 type NotificationMessage struct {
-	IdentityName       string
-	Fingerprint        string
-	Message            string
-	MinimumTimeOut     int32
-	AllServicesTimeout int32
-	TimeDuration       int
-	Severity           string
+	IdentityName   string
+	Fingerprint    string
+	Message        string
+	MinimumTimeout int32
+	MaximumTimeout int32
+	TimeDuration   int
+	Severity       string
 }
 
 type TunnelNotificationEvent struct {
@@ -154,16 +154,14 @@ type ZIdentity struct {
 	MfaEnabled      bool
 	MinTimeout      int32
 	MaxTimeout      int32
-	RefreshCheck    RefreshRequiredCheck
 	LastUpdatedTime time.Time
 }
 
-func NewZid(statusChange func(int), refreshCheck func(int32, int32) bool) *ZIdentity {
+func NewZid(statusChange func(int)) *ZIdentity {
 	zid := &ZIdentity{}
 	zid.Services = sync.Map{}
 	zid.Options = (*C.ziti_options)(C.calloc(1, C.sizeof_ziti_options))
 	zid.StatusChanges = statusChange
-	zid.RefreshCheck = refreshCheck
 	zid.MinTimeout = -1
 	zid.MaxTimeout = -1
 	zid.LastUpdatedTime = time.Now()
@@ -244,6 +242,10 @@ func (zid *ZIdentity) Shutdown() {
 	log.Debugf("setting up call to ziti_shutdown for context %p using uv_async_t", async.data)
 	C.uv_async_init(_impl.libuvCtx.l, async, C.uv_async_cb(C.doZitiShutdown))
 	C.uv_async_send((*C.uv_async_t)(unsafe.Pointer(async)))
+}
+
+func (zid *ZIdentity) RefreshNeeded() bool {
+	return !(zid.MinTimeout == -1 && zid.MaxTimeout == -1)
 }
 
 //export doZitiShutdown
@@ -536,8 +538,6 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 				servicesToAdd = append(servicesToAdd, svcToAdd)
 			}
 		}
-		var minimumTimeout int32 = -1
-		var allServicesTimeout int32 = -1
 		for i := 0; true; i++ {
 			added := C.ziti_service_array_get(srvEvent.added, C.int(i))
 			if unsafe.Pointer(added) == C.NULL {
@@ -554,21 +554,29 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 				servicesToAdd = append(servicesToAdd, svcToAdd)
 			}
 		}
+		var minimumTimeout int32 = -1
+		var maximumTimeout int32 = -1
+		noTimeoutSvc := false
 		if len(servicesToAdd) > 0 {
 			for _, svc := range servicesToAdd {
 				if svc.Timeout >= 0 {
 					if minimumTimeout == -1 || minimumTimeout > svc.Timeout {
 						minimumTimeout = svc.Timeout
 					}
-					if allServicesTimeout == -1 || allServicesTimeout < svc.Timeout {
-						allServicesTimeout = svc.Timeout
+					if maximumTimeout == -1 || maximumTimeout < svc.Timeout {
+						maximumTimeout = svc.Timeout
 					}
+				} else {
+					noTimeoutSvc = true
 				}
+			}
+			if noTimeoutSvc {
+				maximumTimeout = -1
 			}
 		}
 
 		zid.MinTimeout = minimumTimeout
-		zid.MaxTimeout = allServicesTimeout
+		zid.MaxTimeout = maximumTimeout
 		zid.LastUpdatedTime = time.Now()
 
 		svcChange := BulkServiceChange{
@@ -578,7 +586,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			ServicesToAdd:     servicesToAdd,
 			ServicesToRemove:  servicesToRemove,
 			MinTimeout:        minimumTimeout,
-			MaxTimeout:        allServicesTimeout,
+			MaxTimeout:        maximumTimeout,
 			LastUpdatedTime:   time.Now(),
 		}
 

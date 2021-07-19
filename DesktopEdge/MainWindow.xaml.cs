@@ -575,11 +575,11 @@ namespace ZitiDesktopEdge {
 					logger.Warn($"{e.Op} event for {notification.Fingerprint} but the provided identity fingerprint was not found!");
 					continue;
 				}
-				if (notification.AllServicesTimeout == 0) {
+				if (notification.MaximumTimeout > -1 && (notification.TimeDuration - notification.MaximumTimeout) == 0) {
 					found.MFAInfo.IsAuthenticated = false;
 					// display mfa token icon
 					displayMFARequired = true;
-				} else if (notification.MinimumTimeOut == 0) {
+				} else if (notification.MinimumTimeout == 0) {
 					// display option to enter mfa, only few services are timed out
 				} else {
 					// display option to enter mfa, only few services are about to timeout
