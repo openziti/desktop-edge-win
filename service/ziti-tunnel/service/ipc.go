@@ -1176,11 +1176,16 @@ func handleEvents(isInitialized chan struct{}) {
 				}
 				notificationMessage := ""
 
+				var notificationMinTimeout int32 = 0
+				var notificationMaxTimeout int32 = 0
 				if (id.CId.MaxTimeout > -1) && (id.CId.MaxTimeout-int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < 0 {
 					notificationMessage = fmt.Sprintf("All of the services of identity %s are timed out", id.Name)
 				} else if (id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < 0 {
+					notificationMaxTimeout = id.CId.MaxTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())
 					notificationMessage = fmt.Sprintf("Some of the services of identity %s are timed out", id.Name)
 				} else if (id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < int32(20*60) {
+					notificationMinTimeout = id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())
+					notificationMaxTimeout = id.CId.MaxTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())
 					notificationMessage = fmt.Sprintf("Some of the services of identity %s are timing out in sometime", id.Name)
 				}
 
@@ -1189,8 +1194,8 @@ func handleEvents(isInitialized chan struct{}) {
 						Fingerprint:    id.FingerPrint,
 						IdentityName:   id.Name,
 						Severity:       "major",
-						MinimumTimeout: id.CId.MinTimeout,
-						MaximumTimeout: id.CId.MaxTimeout,
+						MinimumTimeout: notificationMinTimeout,
+						MaximumTimeout: notificationMaxTimeout,
 						Message:        notificationMessage,
 						TimeDuration:   int(time.Since(id.CId.LastUpdatedTime).Seconds()),
 					})

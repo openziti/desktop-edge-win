@@ -575,17 +575,18 @@ namespace ZitiDesktopEdge {
 					logger.Warn($"{e.Op} event for {notification.Fingerprint} but the provided identity fingerprint was not found!");
 					continue;
 				}
-				if (notification.MaximumTimeout > -1 && (notification.TimeDuration - notification.MaximumTimeout) > 0) {
+				if (notification.MaximumTimeout == 0) {
 					found.MFAInfo.IsAuthenticated = false;
-					// display mfa token icon
+					// display notification message - critical 
 					displayMFARequired = true;
 				} else if (notification.MinimumTimeout == 0) {
-					// display option to enter mfa, only few services are timed out
+					// display notification message, only few services are timed out
 				} else {
-					// display option to enter mfa, only few services are about to timeout
+					// display notification message, only few services are about to timeout
 				}
 			}
-			// we need to display mfa icon for the identities that have all the services timed out. 
+			// we may need to display mfa icon, based on the timer in UI, remove found.MFAInfo.IsAuthenticated setting in this function. 
+			// the below function can show mfa icon even after user authenticates successfully, in race conditions
 			if (displayMFARequired) {
 				LoadIdentities(true);
 				this.Dispatcher.Invoke(() => {
