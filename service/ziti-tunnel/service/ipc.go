@@ -1180,7 +1180,7 @@ func handleEvents(isInitialized chan struct{}) {
 					notificationMessage = fmt.Sprintf("All of the services of identity %s are timed out", id.Name)
 				} else if (id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < 0 {
 					notificationMessage = fmt.Sprintf("Some of the services of identity %s are timed out", id.Name)
-				} else if (id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < int32(time.Duration(20*time.Minute).Seconds()) {
+				} else if (id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < int32(20*60) {
 					notificationMessage = fmt.Sprintf("Some of the services of identity %s are timing out in sometime", id.Name)
 				}
 
@@ -1274,6 +1274,7 @@ func authMfa(out *json.Encoder, fingerprint string, code string) {
 	id := rts.Find(fingerprint)
 	result := cziti.AuthMFA(id.CId, code)
 	if result == nil {
+		id.CId.MfaNeeded = false
 		respond(out, dto.Response{Message: "AuthMFA complete", Code: SUCCESS, Error: "", Payload: fingerprint})
 	} else {
 		respondWithError(out, fmt.Sprintf("AuthMFA failed. the supplied code [%s] was not valid: %s", code, result), 1, result)

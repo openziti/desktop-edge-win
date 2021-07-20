@@ -618,8 +618,10 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 				Id:          id,
 			}
 			goapi.BroadcastEvent(m)
+			log.Debugf("mfa auth event set enabled/needed to true for ziti context [%p]. Identity name:%s [fingerprint: %s]", zid, zid.Name, zid.Fingerprint)
+		} else {
+			log.Debugf("mfa auth event set received with empty finger print, ziti context [%p]", zid)
 		}
-		log.Debugf("mfa auth event set enabled/needed to true for ziti context [%p]. Identity name:%s [fingerprint: %s]", zid, zid.Name, zid.Fingerprint)
 	default:
 		log.Infof("event %d not handled", event._type)
 	}
