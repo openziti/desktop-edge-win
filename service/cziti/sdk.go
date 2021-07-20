@@ -134,6 +134,7 @@ type ZService struct {
 	Name    string
 	Id      string
 	Service *dto.Service
+	Czsvc   *C.ziti_service
 	Czctx   C.ziti_context
 }
 
@@ -412,6 +413,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 			Name:    name,
 			Id:      svcId,
 			Service: svc,
+			Czsvc:   service,
 			Czctx:   ziti_ctx,
 		}
 		zid.Services.Store(svcId, &added)
