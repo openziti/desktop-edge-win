@@ -321,6 +321,17 @@ namespace ZitiDesktopEdge.DataStructures {
         }
     }
 
+    public class Notification {
+        public string IdentityName { get; set; }
+        public string Fingerprint { get; set; }
+        public string Message { get; set; }
+        public int MinimumTimeout { get; set; }
+        public int MaximumTimeout { get; set; }
+        public int TimeDuration { get; set; }
+        public string Severity { get; set; }
+
+    }
+
     public class ZitiTunnelStatus : SvcResponse
     {
         public TunnelStatus Status { get; set; }
@@ -413,6 +424,11 @@ namespace ZitiDesktopEdge.DataStructures {
     public class MetricsEvent : StatusEvent
     {
         public List<Identity> Identities { get; set; }
+    }
+
+    public class NotificationEvent : StatusEvent {
+        public List<Notification> Notification { get; set; }
+
     }
 
     public class ServiceEvent : ActionEvent {

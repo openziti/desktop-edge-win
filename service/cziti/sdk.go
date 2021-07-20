@@ -53,6 +53,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 	"unsafe"
 )
 
@@ -78,6 +79,24 @@ type BulkServiceChange struct {
 	HostnamesToRemove map[string]bool
 	ServicesToRemove  []*dto.Service
 	ServicesToAdd     []*dto.Service
+	MinTimeout        int32
+	MaxTimeout        int32
+	LastUpdatedTime   time.Time
+}
+
+type NotificationMessage struct {
+	IdentityName   string
+	Fingerprint    string
+	Message        string
+	MinimumTimeout int32
+	MaximumTimeout int32
+	TimeDuration   int
+	Severity       string
+}
+
+type TunnelNotificationEvent struct {
+	Op           string
+	Notification []NotificationMessage
 }
 
 var _impl sdk
@@ -109,6 +128,8 @@ func (inst *sdk) run(loglevel int) {
 	C.libuv_run(inst.libuvCtx)
 }
 
+type RefreshRequiredCheck func(int32, int32) bool
+
 type ZService struct {
 	Name    string
 	Id      string
@@ -118,27 +139,23 @@ type ZService struct {
 }
 
 type ZIdentity struct {
-	Options       *C.ziti_options
-	czctx         C.ziti_context
-	czid          *C.ziti_identity
-	status        int
-	statusErr     error
-	Loaded        bool
-	Name          string
-	Version       string
-	Services      sync.Map
-	Fingerprint   string
-	Active        bool
-	StatusChanges func(int)
-	MfaNeeded     bool
-	MfaEnabled    bool
-	mfa           *Mfa
-}
-
-type Mfa struct {
-	mfaContext unsafe.Pointer
-	authQuery  *C.ziti_auth_query_mfa
-	responseCb C.ziti_ar_mfa_cb
+	Options         *C.ziti_options
+	czctx           C.ziti_context
+	czid            *C.ziti_identity
+	status          int
+	statusErr       error
+	Loaded          bool
+	Name            string
+	Version         string
+	Services        sync.Map
+	Fingerprint     string
+	Active          bool
+	StatusChanges   func(int)
+	MfaNeeded       bool
+	MfaEnabled      bool
+	MinTimeout      int32
+	MaxTimeout      int32
+	LastUpdatedTime time.Time
 }
 
 func NewZid(statusChange func(int)) *ZIdentity {
@@ -146,6 +163,9 @@ func NewZid(statusChange func(int)) *ZIdentity {
 	zid.Services = sync.Map{}
 	zid.Options = (*C.ziti_options)(C.calloc(1, C.sizeof_ziti_options))
 	zid.StatusChanges = statusChange
+	zid.MinTimeout = -1
+	zid.MaxTimeout = -1
+	zid.LastUpdatedTime = time.Now()
 	return zid
 }
 
@@ -223,6 +243,10 @@ func (zid *ZIdentity) Shutdown() {
 	log.Debugf("setting up call to ziti_shutdown for context %p using uv_async_t", async.data)
 	C.uv_async_init(_impl.libuvCtx.l, async, C.uv_async_cb(C.doZitiShutdown))
 	C.uv_async_send((*C.uv_async_t)(unsafe.Pointer(async)))
+}
+
+func (zid *ZIdentity) RefreshNeeded() bool {
+	return !(zid.MinTimeout == -1 && zid.MaxTimeout == -1)
 }
 
 //export doZitiShutdown
@@ -316,6 +340,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 
 		//if any posture query sets pass - that will grant the user access to that service
 		hasAccess := false
+		timeout := -1
 
 		//find all posture checks sets...
 		for setIdx := 0; true; setIdx++ {
@@ -345,17 +370,28 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 
 				var pcId string
 				pcId = C.GoString(pq.id)
+				log.Infof("Posture query %s, timeout %d", C.GoString(pq.id), int(pq.timeout))
 
 				_, found := pcIds[pcId]
 				if found {
 					log.Tracef("posture check with id %s already in failing posture check map", pcId)
+					for _, pc := range postureChecks {
+						if pc.Id == C.GoString(pq.id) {
+							if timeout == -1 || timeout > int(pq.timeout) {
+								timeout = int(pq.timeout)
+							}
+							break
+						}
+					}
 				} else {
 					pcIds[C.GoString(pq.id)] = false
 					pc := dto.PostureCheck{
 						IsPassing: bool(pq.is_passing),
 						QueryType: C.GoString(pq.query_type),
 						Id:        pcId,
+						Timeout:   int(pq.timeout),
 					}
+					timeout = pc.Timeout
 
 					postureChecks = append(postureChecks, pc)
 				}
@@ -371,6 +407,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 			OwnsIntercept: true,
 			PostureChecks: postureChecks,
 			IsAccessable:  hasAccess,
+			Timeout:       int32(timeout),
 		}
 		added := ZService{
 			Name:    name,
@@ -519,6 +556,30 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 				servicesToAdd = append(servicesToAdd, svcToAdd)
 			}
 		}
+		var minimumTimeout int32 = -1
+		var maximumTimeout int32 = -1
+		noTimeoutSvc := false
+		if len(servicesToAdd) > 0 {
+			for _, svc := range servicesToAdd {
+				if svc.Timeout >= 0 {
+					if minimumTimeout == -1 || minimumTimeout > svc.Timeout {
+						minimumTimeout = svc.Timeout
+					}
+					if maximumTimeout == -1 || maximumTimeout < svc.Timeout {
+						maximumTimeout = svc.Timeout
+					}
+				} else {
+					noTimeoutSvc = true
+				}
+			}
+			if noTimeoutSvc {
+				maximumTimeout = -1
+			}
+		}
+
+		zid.MinTimeout = minimumTimeout
+		zid.MaxTimeout = maximumTimeout
+		zid.LastUpdatedTime = time.Now()
 
 		svcChange := BulkServiceChange{
 			Fingerprint:       zid.Fingerprint,
@@ -526,12 +587,42 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			HostnamesToRemove: hostnamesToRemove,
 			ServicesToAdd:     servicesToAdd,
 			ServicesToRemove:  servicesToRemove,
+			MinTimeout:        minimumTimeout,
+			MaxTimeout:        maximumTimeout,
+			LastUpdatedTime:   time.Now(),
 		}
 
 		if len(BulkServiceChanges) == cap(BulkServiceChanges) {
 			log.Warn("Service changes are not being processed fast enough. This client is out of date from the controller! This is unexpected. If you see this warning please report")
 		} else {
 			BulkServiceChanges <- svcChange
+		}
+	case C.ZitiMfaAuthEvent:
+		zid := (*ZIdentity)(appCtx)
+		log.Debugf("mfa auth event for finger print %s", zid.Fingerprint)
+		zid.MfaNeeded = true
+		zid.MfaEnabled = true
+
+		if zid.Fingerprint != "" {
+			var id = dto.Identity{
+				Name:              zid.Name,
+				FingerPrint:       zid.Fingerprint,
+				Active:            zid.Active,
+				ControllerVersion: zid.Version,
+				Status:            "",
+				MfaNeeded:         true,
+				MfaEnabled:        true,
+				Tags:              nil,
+			}
+
+			var m = dto.IdentityEvent{
+				ActionEvent: dto.IDENTITY_ADDED,
+				Id:          id,
+			}
+			goapi.BroadcastEvent(m)
+			log.Debugf("mfa auth event set enabled/needed to true for ziti context [%p]. Identity name:%s [fingerprint: %s]", zid, zid.Name, zid.Fingerprint)
+		} else {
+			log.Debugf("mfa auth event set received with empty finger print, ziti context [%p]", zid)
 		}
 	default:
 		log.Infof("event %d not handled", event._type)
@@ -578,10 +669,8 @@ func LoadZiti(zid *ZIdentity, cfg string, refreshInterval int) {
 	zid.Options.pq_os_cb = C.ziti_pq_os_cb(C.ziti_pq_os_go)
 	zid.Options.pq_process_cb = C.ziti_pq_process_cb(C.ziti_pq_process_go)
 
-	zid.Options.events = C.ZitiContextEvent | C.ZitiServiceEvent | C.ZitiRouterEvent
+	zid.Options.events = C.ZitiContextEvent | C.ZitiServiceEvent | C.ZitiRouterEvent | C.ZitiMfaAuthEvent
 	zid.Options.event_cb = C.ziti_event_cb(C.eventCB)
-
-	zid.Options.aq_mfa_cb = C.ziti_aq_mfa_cb(C.ziti_aq_mfa_cb_go)
 
 	ptr := unsafe.Pointer(zid)
 	zid.Options.app_ctx = ptr

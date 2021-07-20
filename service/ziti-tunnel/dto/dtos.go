@@ -19,6 +19,7 @@ package dto
 
 import (
 	"log"
+	"time"
 
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
@@ -39,6 +40,7 @@ type Service struct {
 	OwnsIntercept bool
 	PostureChecks []PostureCheck
 	IsAccessable  bool
+	Timeout       int32
 }
 
 type Address struct {
@@ -57,6 +59,7 @@ type PostureCheck struct {
 	IsPassing bool
 	QueryType string
 	Id        string
+	Timeout   int
 }
 
 type ServiceOwner struct {
@@ -79,6 +82,9 @@ type Identity struct {
 	Services          []*Service `json:",omitempty"`
 	Metrics           *Metrics   `json:",omitempty"`
 	Tags              []string   `json:",omitempty"`
+	MinTimeout        int32
+	MaxTimeout        int32
+	LastUpdatedTime   time.Time
 }
 type Metrics struct {
 	Up   int64
