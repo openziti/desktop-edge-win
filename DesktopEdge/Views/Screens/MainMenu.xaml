@@ -180,6 +180,18 @@
                 <CheckBox x:Name="AddDnsNew" Content="Add DNS" IsChecked="True" Margin="10"/>
 
                 <local:StyledButton x:Name="SaveConfigButton" OnClick="SaveConfig" Label="Save" Grid.Row="8"></local:StyledButton>
+
+                <Label Content="Frequency" Padding="10,0,0,0"  FontWeight="Bold" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
+                <TextBox x:Name="FrequencyNew" Padding="10" Margin="10,10,10,10" Height="40" BorderThickness="1" TextAlignment="Left" FontSize="14" Foreground="Black" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                    <TextBox.Resources>
+                        <Style TargetType="{x:Type Border}">
+                            <Setter Property="CornerRadius" Value="7"/>
+                        </Style>
+                    </TextBox.Resources>
+                </TextBox>
+
+                <local:StyledButton x:Name="SaveFrequencyButton" OnClick="SaveFrequency" Label="Save" Grid.Row="8"></local:StyledButton>
+
             </StackPanel>
             <Image Source="/Assets/Images/closeBlack.png" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,40,40,0" Width="10" Height="10" Cursor="Hand" MouseUp="CloseEditConfig"></Image>
         </Grid>

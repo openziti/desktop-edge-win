@@ -500,4 +500,19 @@ namespace ZitiDesktopEdge.DataStructures {
         public ConfigPayload Payload { get; set; }
     }
 
+    public class NotificationFrequencyPayload {
+        public int NotificationFrequency { get; set; }
+    }
+
+    public class NotificationFrequencyFunction: ServiceFunction {
+        public NotificationFrequencyFunction(int notificationFrequency) {
+            this.Function = "";
+            this.Payload = new NotificationFrequencyPayload() {
+                NotificationFrequency = notificationFrequency
+            };
+        }
+		
+        public NotificationFrequencyPayload Payload { get; set; }
+	}
+
 }

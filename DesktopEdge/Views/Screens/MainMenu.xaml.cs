@@ -502,6 +502,33 @@ namespace ZitiDesktopEdge {
 		}
 
 		/// <summary>
+		/// Save the frequency information to the properties and queue for update.
+		/// </summary>
+		async private void UpdateFrequency() {
+			logger.Info("updating frequency...");
+			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+			try {
+				var newFrequencyVar = Int32.Parse(FrequencyNew.Text);
+
+				var r = await client.NotificationFrequencyPayloadAsync(newFrequencyVar);
+				if (r.Code != 0) {
+					this.OnShowBlurb?.Invoke("Error: " + r.Error);
+					logger.Debug("ERROR: {0} : {1}", r.Message, r.Error);
+				} else {
+					this.OnShowBlurb?.Invoke("Frequency Saved");
+					this.CloseEdit();
+				}
+				logger.Info("Got response from update frequency task : {0}", r);
+			} catch (DataStructures.ServiceException se) {
+				this.OnShowBlurb?.Invoke("Error: " + se.Message);
+				logger.Error(se, "service exception in update frequency check: {0}", se.Message);
+			} catch (Exception ex) {
+				this.OnShowBlurb?.Invoke("Error: " + ex.Message);
+				logger.Error(ex, "unexpected error in update frequency check: {0}", ex.Message);
+			}
+		}
+
+		/// <summary>
 		/// Show the Edit Modal and blur the background
 		/// </summary>
 		private void ShowEdit() {
@@ -581,6 +608,10 @@ namespace ZitiDesktopEdge {
 
 		private void SaveConfig() {
 			this.UpdateConfig();
+		}
+
+		private void SaveFrequency() {
+			this.UpdateFrequency();
 		}
 	}
 }

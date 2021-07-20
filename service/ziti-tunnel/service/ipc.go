@@ -63,6 +63,7 @@ func (p *Pipes) Close() {
 }
 
 var shutdown = make(chan bool, 8) //a channel informing go routines to exit
+var resetFrequency = make(chan int)
 
 func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan WindowsEvents) error {
 	log.Info("============================== service begins ==============================")
@@ -578,6 +579,8 @@ func serveIpc(conn net.Conn) {
 			fingerprint := cmd.Payload["Fingerprint"].(string)
 			code := cmd.Payload["Code"].(string)
 			removeMFA(enc, fingerprint, code)
+		case "UpdateFrequency":
+			updateNotificationFrequency(enc, cmd.Payload["NotificationFrequency"].(int))
 		case "Debug":
 			dbg()
 			respond(enc, dto.Response{
@@ -1116,7 +1119,7 @@ func handleEvents(isInitialized chan struct{}) {
 	events.run()
 	d := 5 * time.Second
 	every5s := time.NewTicker(d)
-	notificationFrequency := time.NewTicker(time.Duration(5) * time.Minute)
+	notificationFrequency := time.NewTicker(time.Duration(5) * time.Second)
 
 	defer log.Debugf("exiting handleEvents. loops were set for %v", d)
 	<-isInitialized
@@ -1209,6 +1212,9 @@ func handleEvents(isInitialized chan struct{}) {
 					Notification: cleanNotifications,
 				})
 			}
+
+			case newFrequency := <- resetFrequency:
+				notificationFrequency.Reset(time.Duration(newFrequency) * time.Minute)
 		}
 	}
 }
@@ -1315,4 +1321,19 @@ func sendIdentityAndNotifyUI(enc *json.Encoder, fingerprint string) {
 	}
 	resp := dto.Response{Message: "", Code: ERROR, Error: "Could not find id matching fingerprint " + fingerprint, Payload: ""}
 	respond(enc, resp)
+}
+
+func updateNotificationFrequency(out *json.Encoder, notificationFreq int) {
+
+	if notificationFreq != rts.state.NotificationFrequency {
+		err := rts.UpdateNotificationFrequency(notificationFreq)
+		if err != nil {
+			respondWithError(out, "Could not set notification frequency", UNKNOWN_ERROR, err)
+			return
+		}
+
+		resetFrequency <- notificationFreq
+	}
+	respond(out, dto.Response{Message: "Notification frequency is set", Code: SUCCESS, Error: "", Payload: ""})
+
 }

@@ -126,6 +126,7 @@ func (t *RuntimeState) ToStatus(onlyInitialized bool) dto.TunnelStatus {
 		TunIpv4:        t.state.TunIpv4,
 		TunIpv4Mask:    t.state.TunIpv4Mask,
 		AddDns:         t.state.AddDns,
+		NotificationFrequency: t.state.NotificationFrequency,
 	}
 
 	i := 0
@@ -160,6 +161,9 @@ func (t *RuntimeState) ToMetrics() dto.TunnelStatus {
 			Active:      id.Active,
 			MfaEnabled:  id.MfaEnabled,
 			MfaNeeded:   id.MfaNeeded,
+			MinTimeout:	 id.MinTimeout,
+			MaxTimeout:  id.MaxTimeout,
+			LastUpdatedTime: id.LastUpdatedTime,
 		}
 		i++
 	}
@@ -320,6 +324,10 @@ func (t *RuntimeState) LoadConfig() {
 	if t.state.TunIpv4Mask > constants.Ipv4MinMask {
 		log.Warnf("provided mask: [%d] is smaller than the minimum permitted: [%d] and will be changed", rts.state.TunIpv4Mask, constants.Ipv4MinMask)
 		rts.UpdateIpv4Mask(constants.Ipv4MinMask)
+	}
+
+	if t.state.NotificationFrequency == 0 {
+		rts.UpdateNotificationFrequency(constants.MinimumFrequency)
 	}
 }
 
@@ -543,4 +551,19 @@ func (t *RuntimeState) UpdateMfa(fingerprint string, mfaEnabled bool, mfaNeeded 
 		id.MfaEnabled = mfaEnabled
 		id.MfaNeeded = mfaNeeded
 	}
+}
+
+func (t *RuntimeState) UpdateNotificationFrequency(notificationFreq int) error {
+
+	log.Infof("setting notification frequency : %d", notificationFreq)
+
+	if notificationFreq < constants.MinimumFrequency || notificationFreq > constants.MaximumFrequency {
+		return errors.New(fmt.Sprintf("Notification frequency should be between %d and %d minutes", constants.MinimumFrequency, constants.MaximumFrequency))
+	}
+
+	rts.state.NotificationFrequency = notificationFreq
+
+	rts.SaveState()
+
+	return nil
 }

@@ -22,4 +22,6 @@ const (
 	Ipv4MaxMask     = 8
 	Ipv4MinMask     = 16
 	Ipv4DefaultMask = 10
+	MinimumFrequency	= 5
+	MaximumFrequency	= 20
 )

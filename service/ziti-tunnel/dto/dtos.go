@@ -126,6 +126,7 @@ type TunnelStatus struct {
 	TunIpv4Mask    int
 	Status         string
 	AddDns         bool
+	NotificationFrequency	int
 }
 
 type ServiceVersion struct {
