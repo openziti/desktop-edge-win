@@ -508,7 +508,7 @@ namespace ZitiDesktopEdge {
 			logger.Info("updating frequency...");
 			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
 			try {
-				var newFrequencyVar = Int32.Parse(FrequencyNew.Text);
+				var newFrequencyVar = 5; // Int32.Parse(FrequencyNew.Text);
 
 				var r = await client.NotificationFrequencyPayloadAsync(newFrequencyVar);
 				if (r.Code != 0) {
