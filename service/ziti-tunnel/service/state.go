@@ -117,15 +117,15 @@ func (t *RuntimeState) ToStatus(onlyInitialized bool) dto.TunnelStatus {
 	uptime = tunStart.Milliseconds()
 
 	clean := dto.TunnelStatus{
-		Active:         t.state.Active,
-		Duration:       uptime,
-		Identities:     make([]*dto.Identity, 0),
-		IpInfo:         t.state.IpInfo,
-		LogLevel:       t.state.LogLevel,
-		ServiceVersion: Version,
-		TunIpv4:        t.state.TunIpv4,
-		TunIpv4Mask:    t.state.TunIpv4Mask,
-		AddDns:         t.state.AddDns,
+		Active:                t.state.Active,
+		Duration:              uptime,
+		Identities:            make([]*dto.Identity, 0),
+		IpInfo:                t.state.IpInfo,
+		LogLevel:              t.state.LogLevel,
+		ServiceVersion:        Version,
+		TunIpv4:               t.state.TunIpv4,
+		TunIpv4Mask:           t.state.TunIpv4Mask,
+		AddDns:                t.state.AddDns,
 		NotificationFrequency: t.state.NotificationFrequency,
 	}
 
@@ -155,14 +155,14 @@ func (t *RuntimeState) ToMetrics() dto.TunnelStatus {
 	for _, id := range t.ids {
 		AddMetrics(id)
 		clean.Identities[i] = &dto.Identity{
-			Name:        id.Name,
-			FingerPrint: id.FingerPrint,
-			Metrics:     id.Metrics,
-			Active:      id.Active,
-			MfaEnabled:  id.MfaEnabled,
-			MfaNeeded:   id.MfaNeeded,
-			MinTimeout:	 id.MinTimeout,
-			MaxTimeout:  id.MaxTimeout,
+			Name:            id.Name,
+			FingerPrint:     id.FingerPrint,
+			Metrics:         id.Metrics,
+			Active:          id.Active,
+			MfaEnabled:      id.MfaEnabled,
+			MfaNeeded:       id.MfaNeeded,
+			MinTimeout:      id.MinTimeout,
+			MaxTimeout:      id.MaxTimeout,
 			LastUpdatedTime: id.LastUpdatedTime,
 		}
 		i++

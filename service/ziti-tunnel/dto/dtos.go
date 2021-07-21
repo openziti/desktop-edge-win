@@ -116,17 +116,17 @@ func (id *Identity) Path() string {
 }
 
 type TunnelStatus struct {
-	Active         bool
-	Duration       int64
-	Identities     []*Identity
-	IpInfo         *TunIpInfo `json:"IpInfo,omitempty"`
-	LogLevel       string
-	ServiceVersion ServiceVersion
-	TunIpv4        string
-	TunIpv4Mask    int
-	Status         string
-	AddDns         bool
-	NotificationFrequency	int
+	Active                bool
+	Duration              int64
+	Identities            []*Identity
+	IpInfo                *TunIpInfo `json:"IpInfo,omitempty"`
+	LogLevel              string
+	ServiceVersion        ServiceVersion
+	TunIpv4               string
+	TunIpv4Mask           int
+	Status                string
+	AddDns                bool
+	NotificationFrequency int
 }
 
 type ServiceVersion struct {

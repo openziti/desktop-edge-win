@@ -1242,8 +1242,8 @@ func handleEvents(isInitialized chan struct{}) {
 				})
 			}
 
-			case newFrequency := <- resetFrequency:
-				notificationFrequency.Reset(time.Duration(newFrequency) * time.Minute)
+		case newFrequency := <-resetFrequency:
+			notificationFrequency.Reset(time.Duration(newFrequency) * time.Minute)
 		}
 	}
 }
@@ -1315,6 +1315,7 @@ func authMfa(out *json.Encoder, fingerprint string, code string) {
 	result := cziti.AuthMFA(id.CId, code)
 	if result == nil {
 		id.CId.MfaNeeded = false
+		id.CId.LastUpdatedTime = time.Now()
 		respond(out, dto.Response{Message: "AuthMFA complete", Code: SUCCESS, Error: "", Payload: fingerprint})
 	} else {
 		respondWithError(out, fmt.Sprintf("AuthMFA failed. the supplied code [%s] was not valid: %s", code, result), 1, result)

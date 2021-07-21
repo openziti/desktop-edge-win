@@ -545,6 +545,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			if unsafe.Pointer(added) == C.NULL {
 				break
 			}
+
 			svcToAdd := serviceCB(ztx, added, C.ZITI_OK, zid)
 			if svcToAdd != nil {
 				addAddys := svcToAdd.Addresses
@@ -579,7 +580,6 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 
 		zid.MinTimeout = minimumTimeout
 		zid.MaxTimeout = maximumTimeout
-		zid.LastUpdatedTime = time.Now()
 
 		svcChange := BulkServiceChange{
 			Fingerprint:       zid.Fingerprint,
