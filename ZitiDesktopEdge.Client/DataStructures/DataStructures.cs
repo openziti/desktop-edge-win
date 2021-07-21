@@ -506,7 +506,7 @@ namespace ZitiDesktopEdge.DataStructures {
 
     public class NotificationFrequencyFunction: ServiceFunction {
         public NotificationFrequencyFunction(int notificationFrequency) {
-            this.Function = "";
+            this.Function = "UpdateFrequency";
             this.Payload = new NotificationFrequencyPayload() {
                 NotificationFrequency = notificationFrequency
             };

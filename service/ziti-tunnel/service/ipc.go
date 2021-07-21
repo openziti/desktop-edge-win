@@ -580,7 +580,8 @@ func serveIpc(conn net.Conn) {
 			code := cmd.Payload["Code"].(string)
 			removeMFA(enc, fingerprint, code)
 		case "UpdateFrequency":
-			updateNotificationFrequency(enc, cmd.Payload["NotificationFrequency"].(int))
+			notificationFreq := cmd.Payload["NotificationFrequency"].(float64)
+			updateNotificationFrequency(enc, int(notificationFreq))
 		case "Debug":
 			dbg()
 			respond(enc, dto.Response{
@@ -1138,7 +1139,7 @@ func handleEvents(isInitialized chan struct{}) {
 	events.run()
 	d := 5 * time.Second
 	every5s := time.NewTicker(d)
-	notificationFrequency := time.NewTicker(time.Duration(5) * time.Second)
+	notificationFrequency := time.NewTicker(time.Duration(rts.state.NotificationFrequency) * time.Minute)
 
 	defer log.Debugf("exiting handleEvents. loops were set for %v", d)
 	<-isInitialized
@@ -1199,16 +1200,25 @@ func handleEvents(isInitialized chan struct{}) {
 				notificationMessage := ""
 
 				var notificationMinTimeout int32 = 0
-				var notificationMaxTimeout int32 = 0
+				var notificationMaxTimeout int32 = -1
 				if (id.CId.MaxTimeout > -1) && (id.CId.MaxTimeout-int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < 0 {
 					notificationMessage = fmt.Sprintf("All of the services of identity %s are timed out", id.Name)
 				} else if (id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < 0 {
-					notificationMaxTimeout = id.CId.MaxTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())
 					notificationMessage = fmt.Sprintf("Some of the services of identity %s are timed out", id.Name)
 				} else if (id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < int32(20*60) {
-					notificationMinTimeout = id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())
-					notificationMaxTimeout = id.CId.MaxTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())
 					notificationMessage = fmt.Sprintf("Some of the services of identity %s are timing out in sometime", id.Name)
+				}
+				if id.CId.MaxTimeout > -1 {
+					if (id.CId.MaxTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < 0 {
+						notificationMaxTimeout = 0
+					} else {
+						notificationMaxTimeout = id.CId.MaxTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())
+					}
+				}
+				if (id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < 0 {
+					notificationMinTimeout = 0
+				} else {
+					notificationMinTimeout = id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())
 				}
 
 				if len(notificationMessage) > 0 {
