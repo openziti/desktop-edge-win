@@ -63,7 +63,7 @@ func (p *Pipes) Close() {
 }
 
 var shutdown = make(chan bool, 8) //a channel informing go routines to exit
-var resetFrequency = make(chan int)
+var notificationFrequency *time.Ticker
 
 func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan WindowsEvents) error {
 	log.Info("============================== service begins ==============================")
@@ -1139,7 +1139,7 @@ func handleEvents(isInitialized chan struct{}) {
 	events.run()
 	d := 5 * time.Second
 	every5s := time.NewTicker(d)
-	notificationFrequency := time.NewTicker(time.Duration(rts.state.NotificationFrequency) * time.Minute)
+	notificationFrequency = time.NewTicker(time.Duration(rts.state.NotificationFrequency) * time.Minute)
 
 	defer log.Debugf("exiting handleEvents. loops were set for %v", d)
 	<-isInitialized
@@ -1157,39 +1157,6 @@ func handleEvents(isInitialized chan struct{}) {
 				Identities:  s.Identities,
 			})
 
-			// refresh timeout of services
-			for _, id := range rts.ids {
-				zid := id.CId
-				if zid == nil || !zid.RefreshNeeded() {
-					continue
-				}
-
-				// refresh timeout
-				zid.Services.Range(func(key interface{}, value interface{}) bool {
-					//string, ZService
-					val := value.(*cziti.ZService)
-
-					if val.Service.Timeout <= 0 {
-						return true
-					}
-
-					var svcTimeout int32 = -1
-					for _, pc := range val.Service.PostureChecks {
-						if svcTimeout == -1 || svcTimeout > int32(pc.Timeout) {
-							svcTimeout = int32(pc.Timeout)
-						}
-						break
-					}
-					if (svcTimeout - int32(time.Since(zid.LastUpdatedTime).Seconds())) < 0 {
-						atomic.StoreInt32(&val.Service.Timeout, 0)
-					} else {
-						atomic.StoreInt32(&val.Service.Timeout, svcTimeout-int32(time.Since(zid.LastUpdatedTime).Seconds()))
-					}
-					return true
-				})
-
-			}
-
 		// notification message
 		case <-notificationFrequency.C:
 			cleanNotifications := make([]cziti.NotificationMessage, 0)
@@ -1201,24 +1168,24 @@ func handleEvents(isInitialized chan struct{}) {
 
 				var notificationMinTimeout int32 = 0
 				var notificationMaxTimeout int32 = -1
-				if (id.CId.MaxTimeout > -1) && (id.CId.MaxTimeout-int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < 0 {
+				if (id.CId.MfaMaxTimeout > -1) && (id.CId.MfaMaxTimeout-int32(time.Since(id.CId.MfaLastUpdatedTime).Seconds())) < 0 {
 					notificationMessage = fmt.Sprintf("All of the services of identity %s are timed out", id.Name)
-				} else if (id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < 0 {
+				} else if (id.CId.MfaMinTimeout - int32(time.Since(id.CId.MfaLastUpdatedTime).Seconds())) < 0 {
 					notificationMessage = fmt.Sprintf("Some of the services of identity %s are timed out", id.Name)
-				} else if (id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < int32(20*60) {
+				} else if (id.CId.MfaMinTimeout - int32(time.Since(id.CId.MfaLastUpdatedTime).Seconds())) < int32((constants.MaximumFrequency+5)*60) {
 					notificationMessage = fmt.Sprintf("Some of the services of identity %s are timing out in sometime", id.Name)
 				}
-				if id.CId.MaxTimeout > -1 {
-					if (id.CId.MaxTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < 0 {
+				if id.CId.MfaMaxTimeout > -1 {
+					if (id.CId.MfaMaxTimeout - int32(time.Since(id.CId.MfaLastUpdatedTime).Seconds())) < 0 {
 						notificationMaxTimeout = 0
 					} else {
-						notificationMaxTimeout = id.CId.MaxTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())
+						notificationMaxTimeout = id.CId.MfaMaxTimeout - int32(time.Since(id.CId.MfaLastUpdatedTime).Seconds())
 					}
 				}
-				if (id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < 0 {
+				if (id.CId.MfaMinTimeout - int32(time.Since(id.CId.MfaLastUpdatedTime).Seconds())) < 0 {
 					notificationMinTimeout = 0
 				} else {
-					notificationMinTimeout = id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())
+					notificationMinTimeout = id.CId.MfaMinTimeout - int32(time.Since(id.CId.MfaLastUpdatedTime).Seconds())
 				}
 
 				if len(notificationMessage) > 0 {
@@ -1226,10 +1193,10 @@ func handleEvents(isInitialized chan struct{}) {
 						Fingerprint:    id.FingerPrint,
 						IdentityName:   id.Name,
 						Severity:       "major",
-						MinimumTimeout: notificationMinTimeout,
-						MaximumTimeout: notificationMaxTimeout,
+						MfaMinimumTimeout: notificationMinTimeout,
+						MfaMaximumTimeout: notificationMaxTimeout,
 						Message:        notificationMessage,
-						TimeDuration:   int(time.Since(id.CId.LastUpdatedTime).Seconds()),
+						MfaTimeDuration:   int(time.Since(id.CId.MfaLastUpdatedTime).Seconds()),
 					})
 				}
 			}
@@ -1241,11 +1208,12 @@ func handleEvents(isInitialized chan struct{}) {
 					Notification: cleanNotifications,
 				})
 			}
-
-		case newFrequency := <-resetFrequency:
-			notificationFrequency.Reset(time.Duration(newFrequency) * time.Minute)
 		}
 	}
+}
+
+func ResetFrequency(newFrequency int) {
+	notificationFrequency.Reset(time.Duration(newFrequency) * time.Minute)
 }
 
 //Removes the Config from the provided identity and returns a 'cleaned' id
@@ -1279,16 +1247,31 @@ func Clean(src *Id) dto.Identity {
 			//string, ZService
 			val := value.(*cziti.ZService)
 
+			if src.CId.RefreshNeeded() && val.Service.Timeout > 0 {
+				var svcTimeout int32 = -1
+				for _, pc := range val.Service.PostureChecks {
+					if svcTimeout == -1 || svcTimeout > int32(pc.Timeout) {
+						svcTimeout = int32(pc.Timeout)
+					}
+					break
+				}
+				if (svcTimeout - int32(time.Since(src.CId.MfaLastUpdatedTime).Seconds())) < 0 {
+					atomic.StoreInt32(&val.Service.Timeout, 0)
+				} else {
+					atomic.StoreInt32(&val.Service.Timeout, svcTimeout-int32(time.Since(src.CId.MfaLastUpdatedTime).Seconds()))
+				}
+			}
+
 			nid.Services = append(nid.Services /*svcToDto(val)*/, val.Service)
 			return true
 		})
-		nid.MinTimeout = src.CId.MinTimeout
-		nid.MaxTimeout = src.CId.MaxTimeout
+		nid.MfaMinTimeout = src.CId.MfaMinTimeout
+		nid.MfaMaxTimeout = src.CId.MfaMaxTimeout
 		if !src.CId.RefreshNeeded() {
-			nid.LastUpdatedTime = time.Now()
+			nid.MfaLastUpdatedTime = time.Now()
 		} else {
-			nid.LastUpdatedTime = src.CId.LastUpdatedTime
-			if (nid.MaxTimeout-int32(time.Since(nid.LastUpdatedTime).Seconds())) < 0 && nid.MfaEnabled {
+			nid.MfaLastUpdatedTime = src.CId.MfaLastUpdatedTime
+			if (nid.MfaMaxTimeout-int32(time.Since(nid.MfaLastUpdatedTime).Seconds())) < 0 && nid.MfaEnabled {
 				nid.MfaNeeded = true
 			}
 		}
@@ -1315,7 +1298,7 @@ func authMfa(out *json.Encoder, fingerprint string, code string) {
 	result := cziti.AuthMFA(id.CId, code)
 	if result == nil {
 		id.CId.MfaNeeded = false
-		id.CId.LastUpdatedTime = time.Now()
+		id.CId.MfaLastUpdatedTime = time.Now()
 		respond(out, dto.Response{Message: "AuthMFA complete", Code: SUCCESS, Error: "", Payload: fingerprint})
 	} else {
 		respondWithError(out, fmt.Sprintf("AuthMFA failed. the supplied code [%s] was not valid: %s", code, result), 1, result)
@@ -1362,7 +1345,7 @@ func updateNotificationFrequency(out *json.Encoder, notificationFreq int) {
 			return
 		}
 
-		resetFrequency <- notificationFreq
+		ResetFrequency(notificationFreq)
 	}
 	respond(out, dto.Response{Message: "Notification frequency is set", Code: SUCCESS, Error: "", Payload: ""})
 

@@ -155,15 +155,15 @@ func (t *RuntimeState) ToMetrics() dto.TunnelStatus {
 	for _, id := range t.ids {
 		AddMetrics(id)
 		clean.Identities[i] = &dto.Identity{
-			Name:            id.Name,
-			FingerPrint:     id.FingerPrint,
-			Metrics:         id.Metrics,
-			Active:          id.Active,
-			MfaEnabled:      id.MfaEnabled,
-			MfaNeeded:       id.MfaNeeded,
-			MinTimeout:      id.MinTimeout,
-			MaxTimeout:      id.MaxTimeout,
-			LastUpdatedTime: id.LastUpdatedTime,
+			Name:               id.Name,
+			FingerPrint:        id.FingerPrint,
+			Metrics:            id.Metrics,
+			Active:             id.Active,
+			MfaEnabled:         id.MfaEnabled,
+			MfaNeeded:          id.MfaNeeded,
+			MfaMinTimeout:      id.MfaMinTimeout,
+			MfaMaxTimeout:      id.MfaMaxTimeout,
+			MfaLastUpdatedTime: id.MfaLastUpdatedTime,
 		}
 		i++
 	}
@@ -326,7 +326,7 @@ func (t *RuntimeState) LoadConfig() {
 		rts.UpdateIpv4Mask(constants.Ipv4MinMask)
 	}
 
-	if t.state.NotificationFrequency == 0 {
+	if t.state.NotificationFrequency < constants.MinimumFrequency {
 		rts.UpdateNotificationFrequency(constants.MinimumFrequency)
 	}
 }
