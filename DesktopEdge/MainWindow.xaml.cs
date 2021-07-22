@@ -576,6 +576,8 @@ namespace ZitiDesktopEdge {
 					continue;
 				}
 				found.TimeoutMessage = notification.Message;
+				ShowBlurbAsync(found.TimeoutMessage, ""); // Replace with ShowToast(found.TimeoutMessage) when it gets merged
+				// Send Notification
 				if (notification.MfaMaximumTimeout == 0) {
 					found.MFAInfo.IsAuthenticated = false;
 					// display mfa token icon
@@ -588,6 +590,7 @@ namespace ZitiDesktopEdge {
 					found.IsTimingOut = true;
 				}
 			}
+
 			// we may need to display mfa icon, based on the timer in UI, remove found.MFAInfo.IsAuthenticated setting in this function. 
 			// the below function can show mfa icon even after user authenticates successfully, in race conditions
 			if (displayMFARequired) {

@@ -218,6 +218,17 @@ namespace ZitiDesktopEdge {
 			DetailPorts.Text = info.PortString;
 			DetailUrl.Text = info.ToString();
 
+			if (info.Timeout>-1) {
+				double timeSince = (DateTime.Now - info.TimeUpdated).TotalMinutes;
+				if (timeSince>0) {
+					TimeoutDetails.Text = timeSince+ " minutes";
+				} else {
+					TimeoutDetails.Text = "Timed out";
+				}
+			} else {
+				TimeoutDetails.Text = "Never";
+			}
+
 			DetailsArea.Visibility = Visibility.Visible;
 			DetailsArea.Opacity = 0;
 			DetailsArea.Margin = new Thickness(0, 0, 0, 0);
