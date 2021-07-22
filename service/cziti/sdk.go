@@ -47,6 +47,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/api"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/constants"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/logging"
 	"net"
@@ -245,8 +246,32 @@ func (zid *ZIdentity) Shutdown() {
 	C.uv_async_send((*C.uv_async_t)(unsafe.Pointer(async)))
 }
 
-func (zid *ZIdentity) RefreshNeeded() bool {
+func (zid *ZIdentity) MfaRefreshNeeded() bool {
 	return !(zid.MfaMinTimeout == -1 && zid.MfaMaxTimeout == -1)
+}
+
+func (zid *ZIdentity) GetRemainingTime(timeout int32) int32 {
+	var remainingTimeout int32
+	if (timeout - int32(time.Since(zid.MfaLastUpdatedTime).Seconds())) <= 0 {
+		remainingTimeout = 0
+	} else {
+		remainingTimeout = timeout - int32(time.Since(zid.MfaLastUpdatedTime).Seconds())
+	}
+	return remainingTimeout
+}
+
+func (zid *ZIdentity) GetMFAState(interval int32) int {
+	var mfaState int
+	if (zid.MfaMaxTimeout > -1) && (zid.MfaMaxTimeout-int32(time.Since(zid.MfaLastUpdatedTime).Seconds())) < 0 {
+		mfaState = constants.MfaAllSvcTimeout
+	} else if (zid.MfaMinTimeout - int32(time.Since(zid.MfaLastUpdatedTime).Seconds())) < 0 {
+		mfaState = constants.MfaFewSvcTimeout
+	} else if (zid.MfaMinTimeout - int32(time.Since(zid.MfaLastUpdatedTime).Seconds())) < interval {
+		mfaState = constants.MfaNearingTimeout
+	} else {
+		mfaState = -1
+	}
+	return mfaState
 }
 
 //export doZitiShutdown
