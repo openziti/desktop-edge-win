@@ -575,17 +575,14 @@ namespace ZitiDesktopEdge {
 					logger.Warn($"{e.Op} event for {notification.Fingerprint} but the provided identity fingerprint was not found!");
 					continue;
 				}
-				found.TimeoutMessage = notification.Message;
-				if (notification.MaximumTimeout == 0) {
-					// display mfa token icon
+				if (notification.AllServicesTimeout == 0) {
 					found.MFAInfo.IsAuthenticated = false;
+					// display mfa token icon
 					displayMFARequired = true;
-				} else if (notification.MinimumTimeout == 0) {
+				} else if (notification.MinimumTimeOut == 0) {
 					// display option to enter mfa, only few services are timed out
-					found.IsTimingOut = true;
 				} else {
 					// display option to enter mfa, only few services are about to timeout
-					found.IsTimingOut = true;
 				}
 			}
 			// we may need to display mfa icon, based on the timer in UI, remove found.MFAInfo.IsAuthenticated setting in this function. 

@@ -74,23 +74,23 @@ type ServiceChange struct {
 	ZitiContext *ZIdentity
 }
 type BulkServiceChange struct {
-	Fingerprint       string
-	HostnamesToAdd    map[string]bool
-	HostnamesToRemove map[string]bool
-	ServicesToRemove  []*dto.Service
-	ServicesToAdd     []*dto.Service
-	MinTimeout        int32
-	MaxTimeout        int32
-	LastUpdatedTime   time.Time
+	Fingerprint        string
+	HostnamesToAdd     map[string]bool
+	HostnamesToRemove  map[string]bool
+	ServicesToRemove   []*dto.Service
+	ServicesToAdd      []*dto.Service
+	MfaMinTimeout      int32
+	MfaMaxTimeout      int32
+	MfaLastUpdatedTime time.Time
 }
 
 type NotificationMessage struct {
 	IdentityName   string
 	Fingerprint    string
 	Message        string
-	MinimumTimeout int32
-	MaximumTimeout int32
-	TimeDuration   int
+	MfaMinimumTimeout int32
+	MfaMaximumTimeout int32
+	MfaTimeDuration   int
 	Severity       string
 }
 
@@ -139,23 +139,23 @@ type ZService struct {
 }
 
 type ZIdentity struct {
-	Options         *C.ziti_options
-	czctx           C.ziti_context
-	czid            *C.ziti_identity
-	status          int
-	statusErr       error
-	Loaded          bool
-	Name            string
-	Version         string
-	Services        sync.Map
-	Fingerprint     string
-	Active          bool
-	StatusChanges   func(int)
-	MfaNeeded       bool
-	MfaEnabled      bool
-	MinTimeout      int32
-	MaxTimeout      int32
-	LastUpdatedTime time.Time
+	Options            *C.ziti_options
+	czctx              C.ziti_context
+	czid               *C.ziti_identity
+	status             int
+	statusErr          error
+	Loaded             bool
+	Name               string
+	Version            string
+	Services           sync.Map
+	Fingerprint        string
+	Active             bool
+	StatusChanges      func(int)
+	MfaNeeded          bool
+	MfaEnabled         bool
+	MfaMinTimeout      int32
+	MfaMaxTimeout      int32
+	MfaLastUpdatedTime time.Time
 }
 
 func NewZid(statusChange func(int)) *ZIdentity {
@@ -163,9 +163,9 @@ func NewZid(statusChange func(int)) *ZIdentity {
 	zid.Services = sync.Map{}
 	zid.Options = (*C.ziti_options)(C.calloc(1, C.sizeof_ziti_options))
 	zid.StatusChanges = statusChange
-	zid.MinTimeout = -1
-	zid.MaxTimeout = -1
-	zid.LastUpdatedTime = time.Now()
+	zid.MfaMinTimeout = -1
+	zid.MfaMaxTimeout = -1
+	zid.MfaLastUpdatedTime = time.Now()
 	return zid
 }
 
@@ -246,7 +246,7 @@ func (zid *ZIdentity) Shutdown() {
 }
 
 func (zid *ZIdentity) RefreshNeeded() bool {
-	return !(zid.MinTimeout == -1 && zid.MaxTimeout == -1)
+	return !(zid.MfaMinTimeout == -1 && zid.MfaMaxTimeout == -1)
 }
 
 //export doZitiShutdown
@@ -545,6 +545,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			if unsafe.Pointer(added) == C.NULL {
 				break
 			}
+
 			svcToAdd := serviceCB(ztx, added, C.ZITI_OK, zid)
 			if svcToAdd != nil {
 				addAddys := svcToAdd.Addresses
@@ -560,36 +561,41 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 		var maximumTimeout int32 = -1
 		noTimeoutSvc := false
 		if len(servicesToAdd) > 0 {
-			for _, svc := range servicesToAdd {
-				if svc.Timeout >= 0 {
-					if minimumTimeout == -1 || minimumTimeout > svc.Timeout {
-						minimumTimeout = svc.Timeout
+			zid.Services.Range(func(key interface{}, value interface{}) bool {
+				//string, ZService
+				val := value.(*ZService)
+
+				if val.Service.Timeout >= 0 {
+					if minimumTimeout == -1 || minimumTimeout > val.Service.Timeout {
+						minimumTimeout = val.Service.Timeout
 					}
-					if maximumTimeout == -1 || maximumTimeout < svc.Timeout {
-						maximumTimeout = svc.Timeout
+					if maximumTimeout == -1 || maximumTimeout < val.Service.Timeout {
+						maximumTimeout = val.Service.Timeout
 					}
 				} else {
 					noTimeoutSvc = true
 				}
-			}
+
+				return true
+
+			})
 			if noTimeoutSvc {
 				maximumTimeout = -1
 			}
 		}
 
-		zid.MinTimeout = minimumTimeout
-		zid.MaxTimeout = maximumTimeout
-		zid.LastUpdatedTime = time.Now()
+		zid.MfaMinTimeout = minimumTimeout
+		zid.MfaMaxTimeout = maximumTimeout
 
 		svcChange := BulkServiceChange{
-			Fingerprint:       zid.Fingerprint,
-			HostnamesToAdd:    hostnamesToAdd,
-			HostnamesToRemove: hostnamesToRemove,
-			ServicesToAdd:     servicesToAdd,
-			ServicesToRemove:  servicesToRemove,
-			MinTimeout:        minimumTimeout,
-			MaxTimeout:        maximumTimeout,
-			LastUpdatedTime:   time.Now(),
+			Fingerprint:        zid.Fingerprint,
+			HostnamesToAdd:     hostnamesToAdd,
+			HostnamesToRemove:  hostnamesToRemove,
+			ServicesToAdd:      servicesToAdd,
+			ServicesToRemove:   servicesToRemove,
+			MfaMinTimeout:      minimumTimeout,
+			MfaMaxTimeout:      maximumTimeout,
+			MfaLastUpdatedTime: time.Now(),
 		}
 
 		if len(BulkServiceChanges) == cap(BulkServiceChanges) {

@@ -180,6 +180,7 @@
                 <CheckBox x:Name="AddDnsNew" Content="Add DNS" IsChecked="True" Margin="10"/>
 
                 <local:StyledButton x:Name="SaveConfigButton" OnClick="SaveConfig" Label="Save" Grid.Row="8"></local:StyledButton>
+
             </StackPanel>
             <Image Source="/Assets/Images/closeBlack.png" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,40,40,0" Width="10" Height="10" Cursor="Hand" MouseUp="CloseEditConfig"></Image>
         </Grid>

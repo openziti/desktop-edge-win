@@ -71,20 +71,20 @@ type HostContext struct {
 }
 
 type Identity struct {
-	Name              string
-	FingerPrint       string
-	Active            bool
-	Config            idcfg.Config
-	ControllerVersion string
-	Status            string
-	MfaEnabled        bool
-	MfaNeeded         bool
-	Services          []*Service `json:",omitempty"`
-	Metrics           *Metrics   `json:",omitempty"`
-	Tags              []string   `json:",omitempty"`
-	MinTimeout        int32
-	MaxTimeout        int32
-	LastUpdatedTime   time.Time
+	Name               string
+	FingerPrint        string
+	Active             bool
+	Config             idcfg.Config
+	ControllerVersion  string
+	Status             string
+	MfaEnabled         bool
+	MfaNeeded          bool
+	Services           []*Service `json:",omitempty"`
+	Metrics            *Metrics   `json:",omitempty"`
+	Tags               []string   `json:",omitempty"`
+	MfaMinTimeout      int32
+	MfaMaxTimeout      int32
+	MfaLastUpdatedTime time.Time
 }
 type Metrics struct {
 	Up   int64
@@ -116,16 +116,17 @@ func (id *Identity) Path() string {
 }
 
 type TunnelStatus struct {
-	Active         bool
-	Duration       int64
-	Identities     []*Identity
-	IpInfo         *TunIpInfo `json:"IpInfo,omitempty"`
-	LogLevel       string
-	ServiceVersion ServiceVersion
-	TunIpv4        string
-	TunIpv4Mask    int
-	Status         string
-	AddDns         bool
+	Active                bool
+	Duration              int64
+	Identities            []*Identity
+	IpInfo                *TunIpInfo `json:"IpInfo,omitempty"`
+	LogLevel              string
+	ServiceVersion        ServiceVersion
+	TunIpv4               string
+	TunIpv4Mask           int
+	Status                string
+	AddDns                bool
+	NotificationFrequency int
 }
 
 type ServiceVersion struct {
