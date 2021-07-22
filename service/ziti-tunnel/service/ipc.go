@@ -958,16 +958,31 @@ func connectIdentity(id *Id) {
 
 	if id.CId == nil || !id.CId.Loaded {
 		rts.LoadIdentity(id, DEFAULT_REFRESH_INTERVAL)
+		rts.BroadcastEvent(dto.IdentityEvent{
+			ActionEvent: dto.IDENTITY_ADDED,
+			Id:          id.Identity,
+		})
 	} else {
 		log.Debugf("%s[%s] is already loaded", id.Name, id.FingerPrint)
 
 		id.CId.Services.Range(func(key interface{}, value interface{}) bool {
 			id.Services = append(id.Services, nil)
+
+			val := value.(*cziti.ZService)
+			var wg sync.WaitGroup
+			wg.Add(1)
+			rwg := &cziti.TunnelerActionWaitGroup{
+				Wg:    &wg,
+				Czsvc: val,
+			}
+			cziti.AddIntercept(rwg)
+			wg.Wait()
+
 			return true
 		})
 
 		rts.BroadcastEvent(dto.IdentityEvent{
-			ActionEvent: dto.IDENTITY_ADDED,
+			ActionEvent: dto.IDENTITY_CONNECTED,
 			Id:          id.Identity,
 		})
 		log.Infof("connecting identity completed: %s[%s] %t/%t", id.Name, id.FingerPrint, id.MfaEnabled, id.MfaNeeded)
@@ -987,13 +1002,17 @@ func disconnectIdentity(id *Id) error {
 				val := value.(*cziti.ZService)
 				var wg sync.WaitGroup
 				wg.Add(1)
-				rwg := &cziti.RemoveWG{
+				rwg := &cziti.TunnelerActionWaitGroup{
 					Wg:    &wg,
 					Czsvc: val,
 				}
 				cziti.RemoveIntercept(rwg)
 				wg.Wait()
 				return true
+			})
+			rts.BroadcastEvent(dto.IdentityEvent{
+				ActionEvent: dto.IDENTITY_DISCONNECTED,
+				Id:          id.Identity,
 			})
 			log.Infof("disconnecting identity complete: %s", id.Name)
 		}
@@ -1137,7 +1156,7 @@ func handleEvents(isInitialized chan struct{}) {
 			// refresh timeout of services
 			for _, id := range rts.ids {
 				zid := id.CId
-				if zid == nil || !zid.RefreshCheck(zid.MinTimeout, zid.MaxTimeout) {
+				if zid == nil || !zid.RefreshNeeded() {
 					continue
 				}
 
@@ -1171,28 +1190,33 @@ func handleEvents(isInitialized chan struct{}) {
 		case <-notificationFrequency.C:
 			cleanNotifications := make([]cziti.NotificationMessage, 0)
 			for _, id := range rts.ids {
-				if id.CId == nil || !id.CId.RefreshCheck(id.CId.MinTimeout, id.CId.MaxTimeout) {
+				if id.CId == nil || !id.CId.RefreshNeeded() {
 					continue
 				}
 				notificationMessage := ""
 
-				if (id.CId.MaxTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < 0 {
+				var notificationMinTimeout int32 = 0
+				var notificationMaxTimeout int32 = 0
+				if (id.CId.MaxTimeout > -1) && (id.CId.MaxTimeout-int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < 0 {
 					notificationMessage = fmt.Sprintf("All of the services of identity %s are timed out", id.Name)
 				} else if (id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < 0 {
+					notificationMaxTimeout = id.CId.MaxTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())
 					notificationMessage = fmt.Sprintf("Some of the services of identity %s are timed out", id.Name)
-				} else if (id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < int32(time.Duration(20*time.Minute).Seconds()) {
+				} else if (id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())) < int32(20*60) {
+					notificationMinTimeout = id.CId.MinTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())
+					notificationMaxTimeout = id.CId.MaxTimeout - int32(time.Since(id.CId.LastUpdatedTime).Seconds())
 					notificationMessage = fmt.Sprintf("Some of the services of identity %s are timing out in sometime", id.Name)
 				}
 
 				if len(notificationMessage) > 0 {
 					cleanNotifications = append(cleanNotifications, cziti.NotificationMessage{
-						Fingerprint:        id.FingerPrint,
-						IdentityName:       id.Name,
-						Severity:           "major",
-						MinimumTimeOut:     id.CId.MinTimeout,
-						AllServicesTimeout: id.CId.MaxTimeout,
-						Message:            notificationMessage,
-						TimeDuration:       int(time.Since(id.CId.LastUpdatedTime).Seconds()),
+						Fingerprint:    id.FingerPrint,
+						IdentityName:   id.Name,
+						Severity:       "major",
+						MinimumTimeout: notificationMinTimeout,
+						MaximumTimeout: notificationMaxTimeout,
+						Message:        notificationMessage,
+						TimeDuration:   int(time.Since(id.CId.LastUpdatedTime).Seconds()),
 					})
 				}
 			}
@@ -1218,7 +1242,7 @@ func Clean(src *Id) dto.Identity {
 		mfaEnabled = src.CId.MfaEnabled
 	}
 
-	log.Tracef("cleaning identity: %s", src.Name, mfaNeeded, mfaEnabled)
+	log.Tracef("cleaning identity: %s: mfaNeeded: %t mfaEnabled:%t", src.Name, mfaNeeded, mfaEnabled)
 	AddMetrics(src)
 	nid := dto.Identity{
 		Name:              src.Name,
@@ -1244,7 +1268,7 @@ func Clean(src *Id) dto.Identity {
 		})
 		nid.MinTimeout = src.CId.MinTimeout
 		nid.MaxTimeout = src.CId.MaxTimeout
-		if !src.CId.RefreshCheck(nid.MinTimeout, nid.MaxTimeout) {
+		if !src.CId.RefreshNeeded() {
 			nid.LastUpdatedTime = time.Now()
 		} else {
 			nid.LastUpdatedTime = src.CId.LastUpdatedTime
@@ -1274,6 +1298,7 @@ func authMfa(out *json.Encoder, fingerprint string, code string) {
 	id := rts.Find(fingerprint)
 	result := cziti.AuthMFA(id.CId, code)
 	if result == nil {
+		id.CId.MfaNeeded = false
 		respond(out, dto.Response{Message: "AuthMFA complete", Code: SUCCESS, Error: "", Payload: fingerprint})
 	} else {
 		respondWithError(out, fmt.Sprintf("AuthMFA failed. the supplied code [%s] was not valid: %s", code, result), 1, result)

@@ -576,11 +576,11 @@ namespace ZitiDesktopEdge {
 					continue;
 				}
 				found.TimeoutMessage = notification.Message;
-				if (notification.AllServicesTimeout == 0) {
+				if (notification.MaximumTimeout == 0) {
 					// display mfa token icon
 					found.MFAInfo.IsAuthenticated = false;
 					displayMFARequired = true;
-				} else if (notification.MinimumTimeOut == 0) {
+				} else if (notification.MinimumTimeout == 0) {
 					// display option to enter mfa, only few services are timed out
 					found.IsTimingOut = true;
 				} else {
@@ -588,7 +588,8 @@ namespace ZitiDesktopEdge {
 					found.IsTimingOut = true;
 				}
 			}
-			// we need to display mfa icon for the identities that have all the services timed out. 
+			// we may need to display mfa icon, based on the timer in UI, remove found.MFAInfo.IsAuthenticated setting in this function. 
+			// the below function can show mfa icon even after user authenticates successfully, in race conditions
 			if (displayMFARequired) {
 				LoadIdentities(true);
 				this.Dispatcher.Invoke(() => {
@@ -810,12 +811,16 @@ namespace ZitiDesktopEdge {
 						found.IsEnabled = zid.IsEnabled;
 						found.MFAInfo.IsAuthenticated = !e.Id.MfaNeeded;
 						LoadIdentities(true);
-						return;
 					}
 				} else if (e.Action == "updated") {
 					//this indicates that all updates have been sent to the UI... wait for 2 seconds then trigger any ui updates needed
 					await Task.Delay(2000);
-					
+				} else if (e.Action == "connected") {
+					//this indicates that all updates have been sent to the UI... wait for 2 seconds then trigger any ui updates needed
+					await Task.Delay(2000);
+				} else if (e.Action == "disconnected") {
+					//this indicates that all updates have been sent to the UI... wait for 2 seconds then trigger any ui updates needed
+					await Task.Delay(2000);
 				} else {
 					IdentityForgotten(ZitiIdentity.FromClient(e.Id));
 				}
