@@ -1172,7 +1172,7 @@ func handleEvents(isInitialized chan struct{}) {
 					notificationMessage = fmt.Sprintf("All of the services of identity %s are timed out", id.Name)
 				} else if (id.CId.MfaMinTimeout - int32(time.Since(id.CId.MfaLastUpdatedTime).Seconds())) < 0 {
 					notificationMessage = fmt.Sprintf("Some of the services of identity %s are timed out", id.Name)
-				} else if (id.CId.MfaMinTimeout - int32(time.Since(id.CId.MfaLastUpdatedTime).Seconds())) < int32((constants.MaximumFrequency+5)*60) {
+				} else if (id.CId.MfaMinTimeout - int32(time.Since(id.CId.MfaLastUpdatedTime).Seconds())) < int32((constants.MaximumFrequency+rts.state.NotificationFrequency)*60) {
 					notificationMessage = fmt.Sprintf("Some of the services of identity %s are timing out in sometime", id.Name)
 				}
 				if id.CId.MfaMaxTimeout > -1 {
