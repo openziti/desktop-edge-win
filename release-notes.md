@@ -1,3 +1,17 @@
+# Release 1.10.0
+
+## What's New
+* mfa timeout process
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* updated c-sdk to v0.25.2, updated t-sdk to v0.15.9
+
 # Release 1.9.10
 
 ## What's New

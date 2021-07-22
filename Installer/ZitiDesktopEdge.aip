@@ -23,10 +23,10 @@
     <ROW Property="CTRLS" Value="2"/>
     <ROW Property="Manufacturer" Value="NetFoundry, Inc."/>
     <ROW Property="MsiLogging" MultiBuildValue="AnyCPU_Release:vp"/>
-    <ROW Property="ProductCode" Value="1033:{E25726B6-A552-4251-856C-E0CD55D38735} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{9B642F1E-1972-4540-9411-AA1CEEDA4780} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="Ziti Desktop Edge"/>
-    <ROW Property="ProductVersion" Value="1.9.10" Type="32"/>
+    <ROW Property="ProductVersion" Value="1.10.0" Type="32"/>
     <ROW Property="REBOOT" MultiBuildValue="AnyCPU_Release:Suppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{CB7E173A-663D-4A23-BB22-D1E8D885C2F3}"/>
@@ -45,6 +45,7 @@
     <ROW Directory="APPDIR" Directory_Parent="TARGETDIR" DefaultDir="APPDIR:." IsPseudoRoot="1"/>
     <ROW Directory="DesktopFolder" Directory_Parent="TARGETDIR" DefaultDir="DESKTO~1|DesktopFolder" IsPseudoRoot="1"/>
     <ROW Directory="SHORTCUTDIR" Directory_Parent="TARGETDIR" DefaultDir="SHORTC~1|SHORTCUTDIR" IsPseudoRoot="1"/>
+    <ROW Directory="StartupFolder" Directory_Parent="TARGETDIR" DefaultDir="STARTU~1|StartupFolder" IsPseudoRoot="1"/>
     <ROW Directory="TARGETDIR" DefaultDir="SourceDir"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiCompsComponent">
@@ -336,6 +337,7 @@
     <ROW ServiceInstall="zititunnel.exe" Name="ziti" DisplayName="Ziti Desktop Edge Service" ServiceType="16" StartType="2" ErrorControl="32769" Component_="zititunnel.exe" Description="Access your Networks Secured by Ziti"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiShortsComponent">
+    <ROW Shortcut="ZitiDesktopEdge" Directory_="StartupFolder" Name="ZITIDE~2|Ziti Desktop Edge" Component_="ZitiDesktopEdge.exe" Target="[#ZitiDesktopEdge.exe]" Description="Ziti Desktop Edge configuration interface" Hotkey="0" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
     <ROW Shortcut="ZitiDesktopEdge.exe" Directory_="SHORTCUTDIR" Name="ZITIDE~1|Ziti Desktop Edge" Component_="ZitiDesktopEdge.exe" Target="[#ZitiDesktopEdge.exe]" Description="Ziti Desktop Edge configuration interface" Hotkey="0" Icon_="ziti.exe" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
     <ROW Shortcut="ZitiDesktopEdge.exe_1" Directory_="DesktopFolder" Name="ZITIDE~1|Ziti Desktop Edge" Component_="ZitiDesktopEdge.exe" Target="[#ZitiDesktopEdge.exe]" Description="Ziti Desktop Edge configuration interface" Hotkey="0" Icon_="ziti.exe" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
   </COMPONENT>

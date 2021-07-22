@@ -425,6 +425,30 @@ namespace ZitiDesktopEdge.ServiceClient {
             return resp;
         }
 
+        async public Task<SvcResponse> NotificationFrequencyPayloadAsync(int frequency) {
+            SvcResponse resp = null;
+            try {
+
+                NotificationFrequencyFunction frequencyPayload = new NotificationFrequencyFunction(frequency);
+
+                await sendAsync(frequencyPayload);
+                resp = await readAsync<SvcResponse>(ipcReader);
+                Logger.Debug("frequency update payload is sent to the ziti tunnel");
+            } catch (Exception ex) {
+                //almost certainly a problem with the pipe - recreate the pipe...
+                //setupPipe();
+                //throw;
+                Logger.Error(ex, "Unexpected error");
+                CommunicationError(ex);
+                throw ex;
+            }
+            if (resp?.Code != 0) {
+                Logger.Warn("failed to update the frequency. {0} {1}", resp.Message, resp.Error);
+                throw new ServiceException("Failed to update the frequency", resp.Code, "Un expected error.");
+            }
+            return resp;
+        }
+
         async public Task<ZitiTunnelStatus> debugAsync() {
             try {
                 await sendAsync(new ServiceFunction() { Function = "Debug" });
