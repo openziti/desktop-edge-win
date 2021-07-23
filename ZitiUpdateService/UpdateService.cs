@@ -668,22 +668,13 @@ namespace ZitiUpdateService {
 				}
 
 				if (sender == null && e == null) {
-					Logger.Info("package is in {0} - moving to install phase", fileDestination);
-
-					if (!check.HashIsValid(updateFolder, filename)) {
-						Logger.Warn("The file was downloaded but the hash is not valid. The file will be removed: {0}", fileDestination);
-						File.Delete(fileDestination);
-						semaphore.Release();
-						return;
-					}
-					Logger.Debug("downloaded file hash was correct. update can continue.");
-					new SignedFileValidator(fileDestination).Verify();
-
-					installZDE(fileDestination);
+					installZDE(fileDestination, filename);
 				} else {
 					Checkers.ZDEInstallerInfo info = check.GetZDEInstallerInfo(fileDestination);
 
-					if (info.IsCritical && _installationReminder == null) {
+					if (info.IsCritical) {
+						installZDE(fileDestination, filename);
+					} else if (!info.IsCritical && _installationReminder == null) {
 						// Timer for installation reminder
 						var installationReminderInterval = ConfigurationManager.AppSettings.Get("InstallationReminder");
 						var instInt = TimeSpan.Zero;
@@ -724,7 +715,18 @@ namespace ZitiUpdateService {
 			semaphore.Release();
 		}
 
-		private void installZDE(string fileDestination) {
+		private void installZDE(string fileDestination, string filename) {
+			Logger.Info("package is in {0} - moving to install phase", fileDestination);
+
+			if (!check.HashIsValid(updateFolder, filename)) {
+				Logger.Warn("The file was downloaded but the hash is not valid. The file will be removed: {0}", fileDestination);
+				File.Delete(fileDestination);
+				semaphore.Release();
+				return;
+			}
+			Logger.Debug("downloaded file hash was correct. update can continue.");
+			new SignedFileValidator(fileDestination).Verify();
+
 			try {
                 StopZiti();
                 StopUI().Wait();
