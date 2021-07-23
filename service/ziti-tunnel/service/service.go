@@ -41,8 +41,9 @@ func (m *zitiService) Execute(args []string, r <-chan svc.ChangeRequest, changes
 	}
 	control := make(chan string)
 	mainLoop := make(chan struct{})
+	winEvents := make(chan WindowsEvents)
 	go func() {
-		err := SubMain(control, changes)
+		err := SubMain(control, changes, winEvents)
 		if err != nil {
 			log.Errorf("the main loop exited with an unexpected error: %v", err)
 		}
@@ -82,6 +83,7 @@ loop:
 				if c.EventType == PBT_APMRESUMESUSPEND || c.EventType == PBT_APMPOWERSTATUSCHANGE || c.EventType == PBT_APMRESUMEAUTOMATIC {
 					// more than one event may be generated
 					powerEvent = fmt.Sprintf("Power event received - resumed, Event Type - %d", c.EventType)
+					winEvents <- WindowsEvents{WinPowerEvent: c.EventType, WinSessionEvent: 0}
 				} else if c.EventType == PBT_APMSUSPEND {
 					powerEvent = fmt.Sprintf("Power event received - suspend, Event Type - %d", c.EventType)
 				} else {
@@ -89,6 +91,18 @@ loop:
 				}
 				_ = logging.Elog.Info(InformationEvent, powerEvent)
 				log.Infof(powerEvent)
+			case svc.SessionChange:
+				var sessionChangedEvent string
+				if c.EventType == WTS_SESSION_UNLOCK {
+					sessionChangedEvent = fmt.Sprintf("Windows session changed event received - unlocked device, Event Type %d", c.EventType)
+					winEvents <- WindowsEvents{WinPowerEvent: 0, WinSessionEvent: c.EventType}
+				} else if c.EventType == WTS_SESSION_LOCK {
+					sessionChangedEvent = fmt.Sprintf("Windows session changed event received - locked device, Event Type %d", c.EventType)
+				} else {
+					sessionChangedEvent = fmt.Sprintf("Windows session changed unknown event received - Event Type %d", c.EventType)
+				}
+				_ = logging.Elog.Info(InformationEvent, sessionChangedEvent)
+				log.Infof(sessionChangedEvent)
 			default:
 				_ = logging.Elog.Error(1, fmt.Sprintf("unexpected control request #%d", c))
 			}

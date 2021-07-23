@@ -321,6 +321,17 @@ namespace ZitiDesktopEdge.DataStructures {
         }
     }
 
+    public class Notification {
+        public string IdentityName { get; set; }
+        public string Fingerprint { get; set; }
+        public string Message { get; set; }
+        public int MfaMinimumTimeout { get; set; }
+        public int MfaMaximumTimeout { get; set; }
+        public int TimeDuration { get; set; }
+        public string Severity { get; set; }
+
+    }
+
     public class ZitiTunnelStatus : SvcResponse
     {
         public TunnelStatus Status { get; set; }
@@ -415,6 +426,11 @@ namespace ZitiDesktopEdge.DataStructures {
         public List<Identity> Identities { get; set; }
     }
 
+    public class NotificationEvent : StatusEvent {
+        public List<Notification> Notification { get; set; }
+
+    }
+
     public class ServiceEvent : ActionEvent {
         public string Fingerprint { get; set; }
         public Service Service { get; set; }
@@ -493,5 +509,20 @@ namespace ZitiDesktopEdge.DataStructures {
         }
         public ConfigPayload Payload { get; set; }
     }
+
+    public class NotificationFrequencyPayload {
+        public int NotificationFrequency { get; set; }
+    }
+
+    public class NotificationFrequencyFunction: ServiceFunction {
+        public NotificationFrequencyFunction(int notificationFrequency) {
+            this.Function = "UpdateFrequency";
+            this.Payload = new NotificationFrequencyPayload() {
+                NotificationFrequency = notificationFrequency
+            };
+        }
+		
+        public NotificationFrequencyPayload Payload { get; set; }
+	}
 
 }

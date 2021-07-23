@@ -17,13 +17,15 @@
 package dto
 
 const (
-	ADDED   = "added"
-	BULK    = "bulk"
-	REMOVED = "removed"
-	ERROR   = "error"
-	UPDATED = "updated"
-	CHANGED = "changed"
-	NORMAL  = "Normal"
+	ADDED        = "added"
+	BULK         = "bulk"
+	REMOVED      = "removed"
+	ERROR        = "error"
+	UPDATED      = "updated"
+	CHANGED      = "changed"
+	NORMAL       = "Normal"
+	CONNECTED    = "connected"
+	DISCONNECTED = "disconnected"
 
 	SERVICE_OP      = "service"
 	BULK_SERVICE_OP = "bulkservice"
@@ -37,6 +39,7 @@ const (
 	MFAEnrollmentRemovedAction      = "enrollment_remove"
 
 	MFA_AUTH_CHALLENGE_ACTION = "auth_challenge"
+	MFAAuthenticationAction   = "mfa_auth_status"
 )
 
 var SERVICE_ADDED = ActionEvent{
@@ -59,6 +62,14 @@ var IDENTITY_ADDED = ActionEvent{
 var IDENTITY_REMOVED = ActionEvent{
 	StatusEvent: StatusEvent{Op: IDENTITY_OP},
 	Action:      REMOVED,
+}
+var IDENTITY_CONNECTED = ActionEvent{
+	StatusEvent: StatusEvent{Op: IDENTITY_OP},
+	Action:      CONNECTED,
+}
+var IDENTITY_DISCONNECTED = ActionEvent{
+	StatusEvent: StatusEvent{Op: IDENTITY_OP},
+	Action:      DISCONNECTED,
 }
 var LOGLEVEL_CHANGED = ActionEvent{
 	StatusEvent: StatusEvent{Op: LOGLEVEL_OP},
@@ -95,4 +106,8 @@ var MFAErrorEvent = ActionEvent{
 var MFAAuthChallengeEvent = ActionEvent{
 	StatusEvent: StatusEvent{Op: MFA_OP},
 	Action:      MFA_AUTH_CHALLENGE_ACTION,
+}
+var MFAAuthenticationEvent = ActionEvent{
+	StatusEvent: StatusEvent{Op: MFA_OP},
+	Action:      MFAAuthenticationAction,
 }

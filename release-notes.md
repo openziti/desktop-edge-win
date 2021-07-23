@@ -5,12 +5,30 @@
 
 ## Other changes:
 * [#278](https://github.com/openziti/desktop-edge-win/issues/278) inform the user an update is available before automatically updating. So user can manually install the latest version anytime within 1 week after the release is published. If a major/minor version has changed or if the client is missing 5 updates, then the auto installation will start in 4 hours. If the user does not initiate manual installation within the given time, a warning will be displayed for 4 hours and ZDE will auto update.
+* mfa timeout process
+
+## Other changes:
+* none
 
 ## Bugs fixed:
 * none
 
 ## Dependency Updates
+* updated c-sdk to v0.25.2, updated t-sdk to v0.15.9
+
+# Release 1.9.10
+
+## What's New
 * none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* wintun updated to 0.12
 
 # Release 1.9.9
 
