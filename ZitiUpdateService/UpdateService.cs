@@ -689,15 +689,16 @@ namespace ZitiUpdateService {
 						_installationReminder = new CustomTimer(callback, state, instInt, instInt);
 						state._timer = _installationReminder;
 						Logger.Info("Installation reminder for ZDE version {0} is set to {1}", info.Version, instInt);
+
+						info.TimeRemaining = _installationReminder.DueTime.TotalMilliseconds / 1000; // converting to seconds
+						info.InstallTime = DateTime.Now.AddMilliseconds(_installationReminder.DueTime.TotalMilliseconds);
+						NotifyInstallationUpdates(info, 0, "");
 					}
 
 					if (_installationReminder != null) {
 						info.TimeRemaining = _installationReminder.DueTime.TotalMilliseconds / 1000; // converting to seconds
 						info.InstallTime = DateTime.Now.AddMilliseconds(_installationReminder.DueTime.TotalMilliseconds);
 						Logger.Info("Installation of ZDE version {0} will be initiated in {1} seconds, approximately at {2}", info.Version, info.TimeRemaining, info.InstallTime);
-					}
-					if (info.Version != null) {
-						NotifyInstallationUpdates(info, 0, "");
 					}
 				}
 			} catch (Exception ex) {
