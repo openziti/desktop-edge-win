@@ -1196,31 +1196,31 @@ func handleEvents(isInitialized chan struct{}) {
 
 				var notificationMinTimeout int32 = 0
 				var notificationMaxTimeout int32 = -1
-				switch mfaState := id.CId.GetMFAState(int32((constants.MaximumFrequency+rts.state.NotificationFrequency)*60)); mfaState {
+				switch mfaState := id.CId.GetMFAState(int32((constants.MaximumFrequency + rts.state.NotificationFrequency) * 60)); mfaState {
 				case constants.MfaAllSvcTimeout:
 					notificationMessage = fmt.Sprintf("All of the services of identity %s are timed out", id.Name)
 				case constants.MfaFewSvcTimeout:
 					notificationMessage = fmt.Sprintf("Some of the services of identity %s are timed out", id.Name)
 				case constants.MfaNearingTimeout:
-					notificationMinTimeout = id.CId.GetRemainingTime(id.CId.MfaMinTimeout)
+					notificationMinTimeout = id.CId.GetRemainingTime(id.CId.MfaMinTimeoutRem)
 					notificationMessage = fmt.Sprintf("Some of the services of identity %s are timing out in %s", id.Name, secondsToReadableFmt(notificationMinTimeout))
 				default:
 					// do nothing
 				}
 				if len(notificationMessage) > 0 {
 
-					if id.CId.MfaMaxTimeout > -1 {
-						notificationMaxTimeout = id.CId.GetRemainingTime(id.CId.MfaMaxTimeout)
+					if id.CId.MfaMaxTimeoutRem > -1 {
+						notificationMaxTimeout = id.CId.GetRemainingTime(id.CId.MfaMaxTimeoutRem)
 					}
-					notificationMinTimeout = id.CId.GetRemainingTime(id.CId.MfaMinTimeout)
+					notificationMinTimeout = id.CId.GetRemainingTime(id.CId.MfaMinTimeoutRem)
 
 					cleanNotifications = append(cleanNotifications, cziti.NotificationMessage{
-						Fingerprint:    id.FingerPrint,
-						IdentityName:   id.Name,
-						Severity:       "major",
+						Fingerprint:       id.FingerPrint,
+						IdentityName:      id.Name,
+						Severity:          "major",
 						MfaMinimumTimeout: notificationMinTimeout,
 						MfaMaximumTimeout: notificationMaxTimeout,
-						Message:        notificationMessage,
+						Message:           notificationMessage,
 						MfaTimeDuration:   int(time.Since(id.CId.MfaLastUpdatedTime).Seconds()),
 					})
 				}
@@ -1292,11 +1292,13 @@ func Clean(src *Id) dto.Identity {
 		})
 		nid.MfaMinTimeout = src.CId.MfaMinTimeout
 		nid.MfaMaxTimeout = src.CId.MfaMaxTimeout
+		nid.MfaMinTimeoutRem = src.CId.MfaMinTimeoutRem
+		nid.MfaMaxTimeoutRem = src.CId.MfaMaxTimeoutRem
 		if !src.CId.MfaRefreshNeeded() {
 			nid.MfaLastUpdatedTime = time.Now()
 		} else {
 			nid.MfaLastUpdatedTime = src.CId.MfaLastUpdatedTime
-			if (nid.MfaMaxTimeout-int32(time.Since(nid.MfaLastUpdatedTime).Seconds())) < 0 && nid.MfaEnabled {
+			if (nid.MfaMaxTimeoutRem-int32(time.Since(nid.MfaLastUpdatedTime).Seconds())) < 0 && nid.MfaEnabled {
 				nid.MfaNeeded = true
 			}
 		}
@@ -1322,8 +1324,7 @@ func authMfa(out *json.Encoder, fingerprint string, code string) {
 	id := rts.Find(fingerprint)
 	result := cziti.AuthMFA(id.CId, code)
 	if result == nil {
-		id.CId.MfaNeeded = false
-		id.CId.MfaLastUpdatedTime = time.Now()
+		id.CId.UpdateMFATime()
 		respond(out, dto.Response{Message: "AuthMFA complete", Code: SUCCESS, Error: "", Payload: fingerprint})
 	} else {
 		respondWithError(out, fmt.Sprintf("AuthMFA failed. the supplied code [%s] was not valid: %s", code, result), 1, result)
