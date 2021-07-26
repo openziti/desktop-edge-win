@@ -54,6 +54,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 	"unsafe"
 )
@@ -281,9 +282,28 @@ func (zid *ZIdentity) GetMFAState(interval int32) int {
 }
 
 func (zid *ZIdentity) UpdateMFATime() {
+
+	zid.Services.Range(func(key interface{}, value interface{}) bool {
+		//string, ZService
+		val := value.(*ZService)
+
+		if zid.MfaRefreshNeeded() && val.Service.Timeout > 0 {
+			var svcTimeout int32 = -1
+			for _, pc := range val.Service.PostureChecks {
+				if svcTimeout == -1 || svcTimeout > int32(pc.Timeout) {
+					svcTimeout = int32(pc.Timeout)
+				}
+				break
+			}
+			atomic.StoreInt32(&val.Service.TimeoutRemaining, svcTimeout)
+		}
+
+		return true
+	})
 	zid.MfaLastUpdatedTime = time.Now()
 	zid.MfaMaxTimeoutRem = zid.MfaMaxTimeout
 	zid.MfaMinTimeoutRem = zid.MfaMinTimeout
+	log.Debugf("updated Mfa Maximum Timeout Remaining to %d and Mfa Minimum Timeout Remaining to %d", zid.MfaMaxTimeoutRem, zid.MfaMinTimeoutRem)
 }
 
 //export doZitiShutdown

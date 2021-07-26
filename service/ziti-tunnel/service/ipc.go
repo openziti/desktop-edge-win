@@ -1272,18 +1272,18 @@ func Clean(src *Id) dto.Identity {
 			//string, ZService
 			val := value.(*cziti.ZService)
 
-			if src.CId.MfaRefreshNeeded() && val.Service.Timeout > 0 {
+			if src.CId.MfaRefreshNeeded() && val.Service.TimeoutRemaining > 0 {
 				var svcTimeout int32 = -1
 				for _, pc := range val.Service.PostureChecks {
-					if svcTimeout == -1 || svcTimeout > int32(pc.Timeout) {
-						svcTimeout = int32(pc.Timeout)
+					if svcTimeout == -1 || svcTimeout > int32(pc.TimeoutRemaining) {
+						svcTimeout = int32(pc.TimeoutRemaining)
 					}
 					break
 				}
 				if (svcTimeout - int32(time.Since(src.CId.MfaLastUpdatedTime).Seconds())) < 0 {
-					atomic.StoreInt32(&val.Service.Timeout, 0)
+					atomic.StoreInt32(&val.Service.TimeoutRemaining, 0)
 				} else {
-					atomic.StoreInt32(&val.Service.Timeout, svcTimeout-int32(time.Since(src.CId.MfaLastUpdatedTime).Seconds()))
+					atomic.StoreInt32(&val.Service.TimeoutRemaining, svcTimeout-int32(time.Since(src.CId.MfaLastUpdatedTime).Seconds()))
 				}
 			}
 
