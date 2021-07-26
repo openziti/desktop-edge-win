@@ -1164,7 +1164,6 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void ShowMenu(object sender, MouseButtonEventArgs e) {
-			ShowToast("An Update is Available for Ziti Desktop Edge");
 			MainMenu.Visibility = Visibility.Visible;
 		}
 
