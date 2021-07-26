@@ -45,6 +45,7 @@ void readIdle(uv_prepare_t *idler);
 
 void call_on_packet(void *packet, ssize_t len, packet_cb cb, void *ctx);
 void remove_intercepts(uv_async_t *handle);
+void add_intercepts(uv_async_t *handle);
 void free_async(uv_handle_t* timer);
 
 dns_manager* get_dns_mgr_from_c();
@@ -242,26 +243,42 @@ func (t *tunnel) runWriteLoop() {
 	}
 }
 
-type RemoveWG struct {
+type TunnelerActionWaitGroup struct {
 	Wg    *sync.WaitGroup
 	Czsvc *ZService
 }
 
-func RemoveIntercept(rwg *RemoveWG) {
+func RemoveIntercept(removeWaitGroup *TunnelerActionWaitGroup) {
 	async := (*C.uv_async_t)(C.malloc(C.sizeof_uv_async_t))
-	async.data = unsafe.Pointer(rwg)
+	async.data = unsafe.Pointer(removeWaitGroup)
 	C.uv_async_init(_impl.libuvCtx.l, async, C.uv_async_cb(C.remove_intercepts))
+	C.uv_async_send((*C.uv_async_t)(unsafe.Pointer(async)))
+}
+
+func AddIntercept(addWaitGroup *TunnelerActionWaitGroup) {
+	async := (*C.uv_async_t)(C.malloc(C.sizeof_uv_async_t))
+	async.data = unsafe.Pointer(addWaitGroup)
+	C.uv_async_init(_impl.libuvCtx.l, async, C.uv_async_cb(C.add_intercepts))
 	C.uv_async_send((*C.uv_async_t)(unsafe.Pointer(async)))
 }
 
 //export remove_intercepts
 func remove_intercepts(async *C.uv_async_t) {
-	rwg := (*RemoveWG)(async.data)
-	cSvcName := C.CString(rwg.Czsvc.Name)
+	removeWaitGroup := (*TunnelerActionWaitGroup)(async.data)
+	cSvcName := C.CString(removeWaitGroup.Czsvc.Name)
 	defer C.free(unsafe.Pointer(cSvcName))
-	C.ziti_tunneler_stop_intercepting(theTun.tunCtx, unsafe.Pointer(rwg.Czsvc.Czctx), cSvcName)
+	C.ziti_tunneler_stop_intercepting(theTun.tunCtx, unsafe.Pointer(removeWaitGroup.Czsvc.Czctx), cSvcName)
 	C.uv_close((*C.uv_handle_t)(unsafe.Pointer(async)), C.uv_close_cb(C.free_async))
-	rwg.Wg.Done()
+	removeWaitGroup.Wg.Done()
+}
+
+//export add_intercepts
+func add_intercepts(async *C.uv_async_t) {
+	addWaitGroup := (*TunnelerActionWaitGroup)(async.data)
+
+	C.ziti_sdk_c_on_service(addWaitGroup.Czsvc.Czctx, addWaitGroup.Czsvc.Czsvc, C.ZITI_OK, unsafe.Pointer(theTun.tunCtx))
+	C.uv_close((*C.uv_handle_t)(unsafe.Pointer(async)), C.uv_close_cb(C.free_async))
+	addWaitGroup.Wg.Done()
 }
 
 //export apply_dns_go

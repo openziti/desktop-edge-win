@@ -131,6 +131,8 @@ namespace ZitiDesktopEdge {
 					}
 				} else if (mfa.Action == "enrollment_remove") {
 					// ShowBlurb("removed mfa: " + mfa.Successful, "");
+				} else if (mfa.Action == "mfa_auth_status") {
+					// ShowBlurb("mfa authenticated: " + mfa.Successful, "");
 				} else {
 					await ShowBlurbAsync ("Unexpected error when processing MFA", "");
 					logger.Error("unexpected action: " + mfa.Action);
@@ -509,6 +511,7 @@ namespace ZitiDesktopEdge {
 			serviceClient.OnMfaEvent += ServiceClient_OnMfaEvent;
 			serviceClient.OnLogLevelEvent += ServiceClient_OnLogLevelEvent;
 			serviceClient.OnBulkServiceEvent += ServiceClient_OnBulkServiceEvent;
+			serviceClient.OnNotificationEvent += ServiceClient_OnNotificationEvent;
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
 
 			monitorClient = new MonitorClient();
@@ -570,7 +573,39 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-        string nextVersionStr  = null;
+		private void ServiceClient_OnNotificationEvent(object sender, NotificationEvent e) {
+			var displayMFARequired = false;
+			foreach (var notification in e.Notification) {
+				var found = identities.Find(id => id.Fingerprint == notification.Fingerprint);
+				if (found == null) {
+					logger.Warn($"{e.Op} event for {notification.Fingerprint} but the provided identity fingerprint was not found!");
+					continue;
+				}
+				if (notification.MfaMaximumTimeout == 0) {
+					found.MFAInfo.IsAuthenticated = false;
+					// display notification message - critical 
+					displayMFARequired = true;
+				} else if (notification.MfaMinimumTimeout == 0) {
+					// display notification message, only few services are timed out
+				} else {
+					// display notification message, only few services are about to timeout
+				}
+			}
+			// we may need to display mfa icon, based on the timer in UI, remove found.MFAInfo.IsAuthenticated setting in this function. 
+			// the below function can show mfa icon even after user authenticates successfully, in race conditions
+			if (displayMFARequired) {
+				LoadIdentities(true);
+				this.Dispatcher.Invoke(() => {
+					IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
+					if (deets.IsVisible) {
+						deets.UpdateView();
+					}
+				});
+			}
+		}
+
+
+		string nextVersionStr  = null;
         private void MonitorClient_OnReconnectFailure(object sender, object e) {
             if (nextVersionStr == null) {
 				// check for the current version
@@ -653,7 +688,7 @@ namespace ZitiDesktopEdge {
 				IsUpdateAvailable = true;
 				MainMenu.ShowUpdateAvailable(evt.TimeRemaining, evt.InstallTime);
 				AlertCanvas.Visibility = Visibility.Visible;
-				ShowToast("An Update is Available for Ziti Desktop Edge");
+				ShowToast("An Update is Available for Ziti Desktop Edge, will initiate auto installation by " + evt.InstallTime);
 				SetNotifyIcon("");
 				// display a tag in UI and a button for the update software
 			}
@@ -800,12 +835,16 @@ namespace ZitiDesktopEdge {
 						found.IsEnabled = zid.IsEnabled;
 						found.MFAInfo.IsAuthenticated = !e.Id.MfaNeeded;
 						LoadIdentities(true);
-						return;
 					}
 				} else if (e.Action == "updated") {
 					//this indicates that all updates have been sent to the UI... wait for 2 seconds then trigger any ui updates needed
 					await Task.Delay(2000);
-					
+				} else if (e.Action == "connected") {
+					//this indicates that all updates have been sent to the UI... wait for 2 seconds then trigger any ui updates needed
+					await Task.Delay(2000);
+				} else if (e.Action == "disconnected") {
+					//this indicates that all updates have been sent to the UI... wait for 2 seconds then trigger any ui updates needed
+					await Task.Delay(2000);
 				} else {
 					IdentityForgotten(ZitiIdentity.FromClient(e.Id));
 				}

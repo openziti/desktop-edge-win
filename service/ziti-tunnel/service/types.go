@@ -9,3 +9,8 @@ type Id struct {
 	dto.Identity
 	CId *cziti.ZIdentity
 }
+
+type WindowsEvents struct {
+	WinPowerEvent   uint32
+	WinSessionEvent uint32
+}

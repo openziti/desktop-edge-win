@@ -181,10 +181,7 @@ namespace ZitiUpdateService.Checkers {
 				} else {
 					Logger.Debug("Comparing Version {0}, with current {1}", info.Version.ToString(), assemblyVersion.ToString());
 
-					if (info.Version.Build - assemblyVersion.Build >= 5) {
-						info.IsCritical = true;
-						Logger.Info("ZDEInstaller is marked as critical because the client is behind 5 updates");
-					} else if ((info.Version.Major - assemblyVersion.Major >= 1) || (info.Version.Minor - assemblyVersion.Minor >= 1)) {
+					if ((info.Version.Major - assemblyVersion.Major >= 1) || (info.Version.Minor - assemblyVersion.Minor >= 1)) {
 						info.IsCritical = true;
 						Logger.Info("ZDEInstaller is marked as critical because the major/minor version has changed");
 					} else {

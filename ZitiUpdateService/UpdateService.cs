@@ -582,7 +582,7 @@ namespace ZitiUpdateService {
 
 			ConfigureCheck();
 
-			// for testing checkUpdateImmediately();
+			checkUpdateImmediately();
 
 			try {
 				dataClient.ConnectAsync().Wait();
@@ -668,22 +668,13 @@ namespace ZitiUpdateService {
 				}
 
 				if (sender == null && e == null) {
-					Logger.Info("package is in {0} - moving to install phase", fileDestination);
-
-					if (!check.HashIsValid(updateFolder, filename)) {
-						Logger.Warn("The file was downloaded but the hash is not valid. The file will be removed: {0}", fileDestination);
-						File.Delete(fileDestination);
-						semaphore.Release();
-						return;
-					}
-					Logger.Debug("downloaded file hash was correct. update can continue.");
-					new SignedFileValidator(fileDestination).Verify();
-
-					installZDE(fileDestination);
+					installZDE(fileDestination, filename);
 				} else {
 					Checkers.ZDEInstallerInfo info = check.GetZDEInstallerInfo(fileDestination);
 
-					if (info.IsCritical && _installationReminder == null) {
+					if (info.IsCritical) {
+						installZDE(fileDestination, filename);
+					} else if (!info.IsCritical && _installationReminder == null) {
 						// Timer for installation reminder
 						var installationReminderInterval = ConfigurationManager.AppSettings.Get("InstallationReminder");
 						var instInt = TimeSpan.Zero;
@@ -698,15 +689,16 @@ namespace ZitiUpdateService {
 						_installationReminder = new CustomTimer(callback, state, instInt, instInt);
 						state._timer = _installationReminder;
 						Logger.Info("Installation reminder for ZDE version {0} is set to {1}", info.Version, instInt);
+
+						info.TimeRemaining = _installationReminder.DueTime.TotalMilliseconds / 1000; // converting to seconds
+						info.InstallTime = DateTime.Now.AddMilliseconds(_installationReminder.DueTime.TotalMilliseconds);
+						NotifyInstallationUpdates(info, 0, "");
 					}
 
 					if (_installationReminder != null) {
 						info.TimeRemaining = _installationReminder.DueTime.TotalMilliseconds / 1000; // converting to seconds
 						info.InstallTime = DateTime.Now.AddMilliseconds(_installationReminder.DueTime.TotalMilliseconds);
 						Logger.Info("Installation of ZDE version {0} will be initiated in {1} seconds, approximately at {2}", info.Version, info.TimeRemaining, info.InstallTime);
-					}
-					if (info.Version != null) {
-						NotifyInstallationUpdates(info, 0, "");
 					}
 				}
 			} catch (Exception ex) {
@@ -724,7 +716,18 @@ namespace ZitiUpdateService {
 			semaphore.Release();
 		}
 
-		private void installZDE(string fileDestination) {
+		private void installZDE(string fileDestination, string filename) {
+			Logger.Info("package is in {0} - moving to install phase", fileDestination);
+
+			if (!check.HashIsValid(updateFolder, filename)) {
+				Logger.Warn("The file was downloaded but the hash is not valid. The file will be removed: {0}", fileDestination);
+				File.Delete(fileDestination);
+				semaphore.Release();
+				return;
+			}
+			Logger.Debug("downloaded file hash was correct. update can continue.");
+			new SignedFileValidator(fileDestination).Verify();
+
 			try {
                 StopZiti();
                 StopUI().Wait();
