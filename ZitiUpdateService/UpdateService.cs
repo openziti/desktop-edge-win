@@ -673,6 +673,8 @@ namespace ZitiUpdateService {
 					Checkers.ZDEInstallerInfo info = check.GetZDEInstallerInfo(fileDestination);
 
 					if (info.IsCritical) {
+						info.TimeRemaining = 0;
+						NotifyInstallationUpdates(info, 0, "");
 						installZDE(fileDestination, filename);
 					} else if (!info.IsCritical && _installationReminder == null) {
 						// Timer for installation reminder
