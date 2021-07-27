@@ -62,7 +62,6 @@ namespace ZitiUpdateService {
 
 		public UpdateService() {
 			InitializeComponent();
-
 			base.CanHandlePowerEvent = true;
 
 			useGithubCheck = true; //set this to false if you want to use the FileCheck test class instead of Github
@@ -82,6 +81,7 @@ namespace ZitiUpdateService {
 			svr.TriggerUpdate = TriggerUpdate;
 
 		}
+
 
 		private SvcResponse TriggerUpdate() {
 			SvcResponse r = new SvcResponse();
@@ -545,10 +545,10 @@ namespace ZitiUpdateService {
 
 		protected override bool OnPowerEvent(PowerBroadcastStatus powerStatus) {
 			Logger.Info("ziti-monitor OnPowerEvent was called {0}", powerStatus);
-            if (_installationReminder != null) {
-                Logger.Info("Installation timer - Power event");
-                _installationReminder.UpdateTimer(powerStatus);
-            }
+			if (_installationReminder != null) {
+				Logger.Info("Installation timer - Power event");
+				_installationReminder.UpdateTimer(powerStatus);
+			}
 			return base.OnPowerEvent(powerStatus);
 		}
 
@@ -701,6 +701,9 @@ namespace ZitiUpdateService {
 						info.TimeRemaining = _installationReminder.DueTime.TotalMilliseconds / 1000; // converting to seconds
 						info.InstallTime = DateTime.Now.AddMilliseconds(_installationReminder.DueTime.TotalMilliseconds);
 						Logger.Info("Installation of ZDE version {0} will be initiated in {1} seconds, approximately at {2}", info.Version, info.TimeRemaining, info.InstallTime);
+						if (info.TimeRemaining > 0 && (info.TimeRemaining / 1000) < 1 ) {
+							NotifyInstallationUpdates(info, 0, "");
+						}
 					}
 				}
 			} catch (Exception ex) {
