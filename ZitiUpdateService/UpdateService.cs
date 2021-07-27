@@ -690,10 +690,11 @@ namespace ZitiUpdateService {
 						// waits for the time updated in instInt field and then triggers at every interval
 						_installationReminder = new CustomTimer(callback, state, instInt, instInt);
 						state._timer = _installationReminder;
-						Logger.Info("Installation reminder for ZDE version {0} is set to {1}", info.Version, instInt);
 
 						info.TimeRemaining = _installationReminder.DueTime.TotalMilliseconds / 1000; // converting to seconds
 						info.InstallTime = DateTime.Now.AddMilliseconds(_installationReminder.DueTime.TotalMilliseconds);
+						Logger.Info("Installation reminder for ZDE version {0} is set to {1}, TimeRemaining - {2}, approximate install time - {3}", info.Version, instInt, info.TimeRemaining, info.InstallTime);
+
 						NotifyInstallationUpdates(info, 0, "");
 					}
 
@@ -931,20 +932,25 @@ namespace ZitiUpdateService {
 			}
 		}
 
-		private static void NotifyInstallationUpdates(Checkers.ZDEInstallerInfo info, int code, string error) {
-			InstallationNotificationEvent installationNotificationEvent = new InstallationNotificationEvent() {
-				Code = code,
-				Error = error,
-				Message = "InstallationUpdate",
-				Type = "Notification",
-				CreationDate = info.CreationTime,
-				ZDEVersion = info.Version.ToString(),
-				IsCritical = info.IsCritical,
-				TimeRemaining = info.TimeRemaining,
-				InstallTime = info.InstallTime
-			};
-			EventRegistry.SendEventToConsumers(installationNotificationEvent);
-			Logger.Debug("The installation updates for version {0} is sent to the events pipe...", info.Version);
+		private void NotifyInstallationUpdates(Checkers.ZDEInstallerInfo info, int code, string error) {
+			try {
+				InstallationNotificationEvent installationNotificationEvent = new InstallationNotificationEvent() {
+					Code = code,
+					Error = error,
+					Message = "InstallationUpdate",
+					Type = "Notification",
+					CreationDate = info.CreationTime,
+					ZDEVersion = info.Version.ToString(),
+					IsCritical = info.IsCritical,
+					TimeRemaining = info.TimeRemaining,
+					InstallTime = info.InstallTime
+				};
+				EventRegistry.SendEventToConsumers(installationNotificationEvent);
+				Logger.Debug("The installation updates for version {0} is sent to the events pipe...", info.Version);
+			} catch (Exception e) {
+				Logger.Error("The notification for the installation updates for version {0} has failed", info.Version);
+			}
+
 
 		}
 	}

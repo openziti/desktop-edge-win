@@ -683,15 +683,22 @@ namespace ZitiDesktopEdge {
 		private void MonitorClient_OnInstallationNotificationEvent(object sender, InstallationNotificationEvent evt) {
 			logger.Debug("MonitorClient_OnInstallationNotificationEvent: {0}", evt.Message);
 
-			if ("installationupdate".Equals(evt.Message?.ToLower())) {
-				logger.Debug("Installation Update is available - {0}", evt.ZDEVersion);
-				IsUpdateAvailable = true;
-				MainMenu.ShowUpdateAvailable(evt.TimeRemaining, evt.InstallTime);
-				AlertCanvas.Visibility = Visibility.Visible;
-				ShowToast("An Update is Available for Ziti Desktop Edge, will initiate auto installation by " + evt.InstallTime);
-				SetNotifyIcon("");
-				// display a tag in UI and a button for the update software
-			}
+			this.Dispatcher.Invoke(() => {
+			try {
+					if ("installationupdate".Equals(evt.Message?.ToLower())) {
+						logger.Debug("Installation Update is available - {0}", evt.ZDEVersion);
+						IsUpdateAvailable = true;
+						MainMenu.ShowUpdateAvailable(evt.TimeRemaining, evt.InstallTime);
+						AlertCanvas.Visibility = Visibility.Visible;
+						ShowToast("An Update is Available for Ziti Desktop Edge");
+						SetNotifyIcon("");
+						// display a tag in UI and a button for the update software
+					}
+
+				} catch (Exception e) {
+					logger.Error("Error occured while processing notification");
+				}
+			});
 		}
 
 		private void ShowToast(string message) {
