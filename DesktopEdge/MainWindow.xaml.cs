@@ -686,7 +686,6 @@ namespace ZitiDesktopEdge {
 
 				if ("installationupdate".Equals(evt.Message?.ToLower())) {
 					logger.Debug("Installation Update is available - {0}", evt.ZDEVersion);
-
 					IsUpdateAvailable = true;
 					MainMenu.ShowUpdateAvailable(evt.TimeRemaining, evt.InstallTime);
 					AlertCanvas.Visibility = Visibility.Visible;

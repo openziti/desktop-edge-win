@@ -114,7 +114,9 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 				if wEvents.WinPowerEvent == PBT_APMRESUMESUSPEND || wEvents.WinPowerEvent == PBT_APMRESUMEAUTOMATIC {
 					log.Debugf("Received Windows Power Event in tunnel %d", wEvents.WinPowerEvent)
 					for _, id := range rts.ids {
-						cziti.EndpointStateChanged(id.CId, true, false)
+						if id.CId != nil && id.CId.Loaded {
+							cziti.EndpointStateChanged(id.CId, true, false)
+						}
 					}
 				}
 				if wEvents.WinSessionEvent == WTS_SESSION_UNLOCK {
@@ -1196,7 +1198,7 @@ func handleEvents(isInitialized chan struct{}) {
 
 				var notificationMinTimeout int32 = 0
 				var notificationMaxTimeout int32 = -1
-				switch mfaState := id.CId.GetMFAState(int32((constants.MaximumFrequency+rts.state.NotificationFrequency)*60)); mfaState {
+				switch mfaState := id.CId.GetMFAState(int32((constants.MaximumFrequency + rts.state.NotificationFrequency) * 60)); mfaState {
 				case constants.MfaAllSvcTimeout:
 					notificationMessage = fmt.Sprintf("All of the services of identity %s are timed out", id.Name)
 				case constants.MfaFewSvcTimeout:
@@ -1215,12 +1217,12 @@ func handleEvents(isInitialized chan struct{}) {
 					notificationMinTimeout = id.CId.GetRemainingTime(id.CId.MfaMinTimeout)
 
 					cleanNotifications = append(cleanNotifications, cziti.NotificationMessage{
-						Fingerprint:    id.FingerPrint,
-						IdentityName:   id.Name,
-						Severity:       "major",
+						Fingerprint:       id.FingerPrint,
+						IdentityName:      id.Name,
+						Severity:          "major",
 						MfaMinimumTimeout: notificationMinTimeout,
 						MfaMaximumTimeout: notificationMaxTimeout,
-						Message:        notificationMessage,
+						Message:           notificationMessage,
 						MfaTimeDuration:   int(time.Since(id.CId.MfaLastUpdatedTime).Seconds()),
 					})
 				}

@@ -86,13 +86,13 @@ type BulkServiceChange struct {
 }
 
 type NotificationMessage struct {
-	IdentityName   string
-	Fingerprint    string
-	Message        string
+	IdentityName      string
+	Fingerprint       string
+	Message           string
 	MfaMinimumTimeout int32
 	MfaMaximumTimeout int32
 	MfaTimeDuration   int
-	Severity       string
+	Severity          string
 }
 
 type TunnelNotificationEvent struct {
