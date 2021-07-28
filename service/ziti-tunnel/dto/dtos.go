@@ -32,15 +32,16 @@ type AddIdentity struct {
 }
 
 type Service struct {
-	Name          string
-	Id            string
-	Protocols     []string
-	Addresses     []Address
-	Ports         []PortRange
-	OwnsIntercept bool
-	PostureChecks []PostureCheck
-	IsAccessable  bool
-	Timeout       int32
+	Name             string
+	Id               string
+	Protocols        []string
+	Addresses        []Address
+	Ports            []PortRange
+	OwnsIntercept    bool
+	PostureChecks    []PostureCheck
+	IsAccessable     bool
+	Timeout          int32
+	TimeoutRemaining int32
 }
 
 type Address struct {
@@ -56,10 +57,11 @@ type PortRange struct {
 }
 
 type PostureCheck struct {
-	IsPassing bool
-	QueryType string
-	Id        string
-	Timeout   int
+	IsPassing        bool
+	QueryType        string
+	Id               string
+	Timeout          int
+	TimeoutRemaining int
 }
 
 type ServiceOwner struct {
@@ -84,6 +86,8 @@ type Identity struct {
 	Tags               []string   `json:",omitempty"`
 	MfaMinTimeout      int32
 	MfaMaxTimeout      int32
+	MfaMinTimeoutRem   int32
+	MfaMaxTimeoutRem   int32
 	MfaLastUpdatedTime time.Time
 }
 type Metrics struct {

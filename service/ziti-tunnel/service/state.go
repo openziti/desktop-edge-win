@@ -163,6 +163,8 @@ func (t *RuntimeState) ToMetrics() dto.TunnelStatus {
 			MfaNeeded:          id.MfaNeeded,
 			MfaMinTimeout:      id.MfaMinTimeout,
 			MfaMaxTimeout:      id.MfaMaxTimeout,
+			MfaMinTimeoutRem:   id.MfaMinTimeoutRem,
+			MfaMaxTimeoutRem:   id.MfaMaxTimeoutRem,
 			MfaLastUpdatedTime: id.MfaLastUpdatedTime,
 		}
 		i++
