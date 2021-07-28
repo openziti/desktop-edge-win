@@ -1,16 +1,20 @@
 # Release 1.10.0
 
 ## What's New
+* none
+
+## Other changes:
+* [#278](https://github.com/openziti/desktop-edge-win/issues/278) inform the user an update is available before automatically updating. So user can manually install the latest version anytime within 2 hours after the release is published. If a major/minor version has changed, then the auto installation will start immediately. If the user does not initiate manual installation within the given time, a warning will be displayed and after 2 hours the ZDE will auto update.
 * mfa timeout process
 
 ## Other changes:
-* none
+* [#381](https://github.com/openziti/desktop-edge-win/issues/381) Open Ziti UI on startup.
 
 ## Bugs fixed:
 * none
 
 ## Dependency Updates
-* updated c-sdk to v0.25.2, updated t-sdk to v0.15.9
+* updated c-sdk to v0.25.5, updated t-sdk to v0.15.10
 
 # Release 1.9.10
 
@@ -25,7 +29,6 @@
 
 ## Dependency Updates
 * wintun updated to 0.12
-
 
 # Release 1.9.9
 
@@ -48,7 +51,7 @@
 * none
 
 ## Other changes:
-* Singing process updates
+* Signing process updates
 
 ## Bugs fixed:
 * none

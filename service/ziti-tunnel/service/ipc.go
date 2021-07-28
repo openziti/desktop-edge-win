@@ -114,7 +114,9 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 				if wEvents.WinPowerEvent == PBT_APMRESUMESUSPEND || wEvents.WinPowerEvent == PBT_APMRESUMEAUTOMATIC {
 					log.Debugf("Received Windows Power Event in tunnel %d", wEvents.WinPowerEvent)
 					for _, id := range rts.ids {
-						cziti.EndpointStateChanged(id.CId, true, false)
+						if id.CId != nil && id.CId.Loaded {
+							cziti.EndpointStateChanged(id.CId, true, false)
+						}
 					}
 				}
 				if wEvents.WinSessionEvent == WTS_SESSION_UNLOCK {

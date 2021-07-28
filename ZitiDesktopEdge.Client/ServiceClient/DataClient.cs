@@ -164,7 +164,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
             if (resp?.Code != 0) {
                 Logger.Warn("failed to enroll. {0} {1}", resp.Message, resp.Error);
-                throw new ServiceException("Failed to Enroll", resp.Code, "The provided token was invalid. This usually is because the token has already been used or it has expired.");
+                throw new ServiceException("Failed to Enroll", resp.Code, !string.IsNullOrEmpty(resp.Error) ? resp.Error : "The provided token was invalid. This usually is because the token has already been used or it has expired.");
             }
             return resp.Payload;
         }
