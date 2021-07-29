@@ -218,10 +218,13 @@ namespace ZitiDesktopEdge {
 			DetailPorts.Text = info.PortString;
 			DetailUrl.Text = info.ToString();
 
-			if (info.Timeout>-1) {
+			if (info.Timeout>-1&&_identity.IsMFAEnabled) {
 				double timeSince = (DateTime.Now - info.TimeUpdated).TotalMinutes;
 				if (timeSince>0) {
-					TimeoutDetails.Text = timeSince+ " minutes";
+					TimeSpan t = TimeSpan.FromSeconds(timeSince);
+
+					string answer = string.Format("{0:D2} days {1:D2} hours {2:D2} minutes", t.Hours, t.Minutes);
+					TimeoutDetails.Text = answer;
 				} else {
 					TimeoutDetails.Text = "Timed out";
 				}
@@ -399,6 +402,7 @@ namespace ZitiDesktopEdge {
 							ZitiService zitiSvc = services[i];
 							if (index < PerPage) {
 								if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0) {
+									zitiSvc.TimeUpdated = _identity.LastUpdatedTime;
 									ZitiServices.Add(zitiSvc);
 									index++;
 								}

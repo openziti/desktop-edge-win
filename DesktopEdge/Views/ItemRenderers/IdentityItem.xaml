@@ -29,7 +29,7 @@
                 <Label Name="ToggleStatus" Grid.Column="0" Grid.Row="1" Margin="0,-5,0,0" Content="Enabled" Foreground="White" FontSize="11" Typography.Capitals="AllSmallCaps" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"></Label>
                 <Rectangle Fill="Transparent" Grid.Column="0" Grid.RowSpan="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Cursor="Hand" MouseUp="ToggledSwitch"></Rectangle>
 
-                <Label Name="IdName" MaxWidth="230" Grid.Row="0" Grid.Column="1" VerticalAlignment="Bottom" Margin="0,6,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" FontSize="16" Foreground="White" HorizontalAlignment="Left">
+                <Label Name="IdName" MaxWidth="230" Grid.Row="0" Padding="0,0,26,0" Grid.Column="1" VerticalAlignment="Bottom" Margin="0,6,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" FontSize="16" Foreground="White" HorizontalAlignment="Left">
                     <TextBlock TextTrimming="CharacterEllipsis">Identity Name</TextBlock>
                 </Label>
                 <Image Name="TimerCountdown" Visibility="Collapsed" Grid.Row="0" Grid.Column="1" Source="/Assets/Images/timer.png" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="15" Height="16" Margin="0,0,0,6" Cursor="Hand" MouseUp="MFAAuthenticate"></Image>

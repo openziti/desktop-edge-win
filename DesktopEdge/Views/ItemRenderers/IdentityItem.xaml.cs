@@ -65,7 +65,7 @@ namespace ZitiDesktopEdge {
 				ServiceCount.Content = _identity.Services.Count.ToString();
 			}
 			TimerCountdown.ToolTip = _identity.TimeoutMessage;
-			TimerCountdown.Visibility = (_identity.IsTimingOut) ? Visibility.Visible : Visibility.Collapsed;
+			TimerCountdown.Visibility = _identity.IsTimingOut ? Visibility.Visible : Visibility.Collapsed;
 			if (ToggleSwitch.Enabled) {
 				ToggleStatus.Content = "ENABLED";
 			} else {

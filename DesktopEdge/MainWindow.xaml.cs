@@ -257,6 +257,15 @@ namespace ZitiDesktopEdge {
 					for (int i=0; i<identities.Count; i++) {
 						if (identities[i].Fingerprint==MFASetup.Identity.Fingerprint) {
 							identities[i] = MFASetup.Identity;
+
+							// This will set the timout in the UI to not show the timing out icon but as you can see
+							// it is not real and won't properly update until a real timeout is sent via the service
+							// and if someone pages the service list and we have not got an update from the service
+							// this will also be invalid
+							identities[i].IsTimingOut = false;
+							for (int j=0; j<identities[i].Services.Count; j++) {
+								identities[i].Services[j].Timeout = -1;
+							}
 						}
 					}
 				}
@@ -268,6 +277,8 @@ namespace ZitiDesktopEdge {
 					} else if (MFASetup.Type == 3) {
 						IdentityMenu.Identity.IsMFAEnabled = false;
 						IdentityMenu.Identity.MFAInfo.IsAuthenticated = false;
+						IdentityMenu.Identity.IsTimingOut = false;
+
 						await ShowBlurbAsync("MFA Disabled, Service Access Can Be Limited", "");
 					} else if (MFASetup.Type == 4) {
 						ShowRecovery(IdentityMenu.Identity);

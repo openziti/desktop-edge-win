@@ -75,11 +75,17 @@ namespace ZitiDesktopEdge.Models {
 				TimeoutMessage = ""
 			};
 
+			if (!zid.IsMFAEnabled) zid.IsTimingOut = false;
+
 			if (id.Services != null) {
 				foreach (var svc in id.Services) {
 					if (svc != null) {
 						var zsvc = new ZitiService(svc);
 						zid.Services.Add(zsvc);
+						if (zid.IsMFAEnabled) {
+							double timeSince = (DateTime.Now - zsvc.TimeUpdated).TotalMinutes;
+							if (timeSince >= (zsvc.Timeout-20)) zid.IsTimingOut = true;
+						}
 					}
 				}
 				zid.HasServiceFailingPostureCheck = zid.Services.Any(p => !p.HasFailingPostureCheck());
