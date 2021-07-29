@@ -24,4 +24,8 @@ const (
 	Ipv4DefaultMask  = 10
 	MinimumFrequency = 5  // minimum notification window
 	MaximumFrequency = 20 // maximum notification window
+
+	MfaAllSvcTimeout  = 0
+	MfaFewSvcTimeout  = 1
+	MfaNearingTimeout = 2
 )
