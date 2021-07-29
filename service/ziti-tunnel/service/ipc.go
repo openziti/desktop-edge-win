@@ -1277,8 +1277,8 @@ func Clean(src *Id) dto.Identity {
 			if src.CId.MfaRefreshNeeded() && val.Service.TimeoutRemaining > 0 {
 				var svcTimeout int32 = -1
 				for _, pc := range val.Service.PostureChecks {
-					if svcTimeout == -1 || svcTimeout > int32(pc.TimeoutRemaining) {
-						svcTimeout = int32(pc.TimeoutRemaining)
+					if svcTimeout == -1 || svcTimeout > int32(pc.Timeout) {
+						svcTimeout = int32(pc.Timeout)
 					}
 					break
 				}
@@ -1300,7 +1300,7 @@ func Clean(src *Id) dto.Identity {
 			nid.MfaLastUpdatedTime = time.Now()
 		} else {
 			nid.MfaLastUpdatedTime = src.CId.MfaLastUpdatedTime
-			if (nid.MfaMaxTimeoutRem-int32(time.Since(nid.MfaLastUpdatedTime).Seconds())) < 0 && nid.MfaEnabled {
+			if (nid.MfaMaxTimeoutRem > -1 && (nid.MfaMaxTimeoutRem-int32(time.Since(nid.MfaLastUpdatedTime).Seconds())) < 0) && nid.MfaEnabled {
 				nid.MfaNeeded = true
 			}
 		}
@@ -1330,11 +1330,6 @@ func authMfa(out *json.Encoder, fingerprint string, code string) {
 		respond(out, dto.Response{Message: "AuthMFA complete", Code: SUCCESS, Error: "", Payload: fingerprint})
 
 		id.CId.UpdateMFATime()
-		rts.BroadcastEvent(dto.TunnelStatusEvent{
-			StatusEvent: dto.StatusEvent{Op: "status"},
-			Status:      rts.ToStatus(true),
-			ApiVersion:  API_VERSION,
-		})
 	} else {
 		respondWithError(out, fmt.Sprintf("AuthMFA failed. the supplied code [%s] was not valid: %s", code, result), 1, result)
 	}
