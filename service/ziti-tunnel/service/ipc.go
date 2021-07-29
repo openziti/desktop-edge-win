@@ -1326,8 +1326,15 @@ func authMfa(out *json.Encoder, fingerprint string, code string) {
 	id := rts.Find(fingerprint)
 	result := cziti.AuthMFA(id.CId, code)
 	if result == nil {
-		id.CId.UpdateMFATime()
+		// respond with auth success message immediately
 		respond(out, dto.Response{Message: "AuthMFA complete", Code: SUCCESS, Error: "", Payload: fingerprint})
+
+		id.CId.UpdateMFATime()
+		rts.BroadcastEvent(dto.TunnelStatusEvent{
+			StatusEvent: dto.StatusEvent{Op: "status"},
+			Status:      rts.ToStatus(true),
+			ApiVersion:  API_VERSION,
+		})
 	} else {
 		respondWithError(out, fmt.Sprintf("AuthMFA failed. the supplied code [%s] was not valid: %s", code, result), 1, result)
 	}

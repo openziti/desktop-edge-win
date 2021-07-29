@@ -626,6 +626,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 		var minimumTimeoutRem int32 = -1
 		var maximumTimeoutRem int32 = -1
 		noTimeoutSvc := false
+		noTimeoutRemSvc := false
 		if len(servicesToAdd) > 0 {
 			zid.Services.Range(func(key interface{}, value interface{}) bool {
 				//string, ZService
@@ -649,7 +650,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 						maximumTimeoutRem = val.Service.TimeoutRemaining
 					}
 				} else {
-					noTimeoutSvc = true
+					noTimeoutRemSvc = true
 				}
 
 				return true
@@ -657,6 +658,8 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			})
 			if noTimeoutSvc {
 				maximumTimeout = -1
+			}
+			if noTimeoutRemSvc {
 				maximumTimeoutRem = -1
 			}
 		}
