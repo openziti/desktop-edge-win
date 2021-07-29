@@ -428,18 +428,26 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 
 				var pcId string
 				pcId = C.GoString(pq.id)
-				log.Infof("Posture query %s, timeout %d, timeoutRemaining %d", C.GoString(pq.id), int(pq.timeout), int(pq.timeoutRemaining))
+
+				var pcTimeoutRemaining int
+				if unsafe.Pointer(pq.timeoutRemaining) != C.NULL {
+					pcTimeoutRemaining = int(*(*C.int)(pq.timeoutRemaining))
+				} else {
+					pcTimeoutRemaining = -1
+				}
+
+				log.Infof("Posture query %s, timeout %d, timeoutRemaining %d", pcId, int(pq.timeout), pcTimeoutRemaining)
 
 				_, found := pcIds[pcId]
 				if found {
 					log.Tracef("posture check with id %s already in failing posture check map", pcId)
 					for _, pc := range postureChecks {
-						if pc.Id == C.GoString(pq.id) {
+						if pc.Id == pcId {
 							if timeout == -1 || timeout > int(pq.timeout) {
 								timeout = int(pq.timeout)
 							}
-							if timeoutRemaining == -1 || timeoutRemaining > int(pq.timeoutRemaining) {
-								timeoutRemaining = int(pq.timeoutRemaining)
+							if timeoutRemaining == -1 || timeoutRemaining > pcTimeoutRemaining {
+								timeoutRemaining = pcTimeoutRemaining
 							}
 							break
 						}
@@ -451,7 +459,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 						QueryType:        C.GoString(pq.query_type),
 						Id:               pcId,
 						Timeout:          int(pq.timeout),
-						TimeoutRemaining: int(pq.timeoutRemaining),
+						TimeoutRemaining: pcTimeoutRemaining,
 					}
 					timeout = pc.Timeout
 					timeoutRemaining = pc.TimeoutRemaining
