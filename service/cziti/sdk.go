@@ -86,6 +86,7 @@ type BulkServiceChange struct {
 	MfaMinTimeoutRem   int32
 	MfaMaxTimeoutRem   int32
 	MfaLastUpdatedTime time.Time
+	ServiceUpdatedTime time.Time
 }
 
 type NotificationMessage struct {
@@ -162,6 +163,7 @@ type ZIdentity struct {
 	MfaMinTimeoutRem   int32
 	MfaMaxTimeoutRem   int32
 	MfaLastUpdatedTime time.Time
+	ServiceUpdatedTime time.Time
 }
 
 func NewZid(statusChange func(int)) *ZIdentity {
@@ -174,6 +176,7 @@ func NewZid(statusChange func(int)) *ZIdentity {
 	zid.MfaMaxTimeout = -1
 	zid.MfaMinTimeout = -1
 	zid.MfaLastUpdatedTime = time.Now()
+	zid.ServiceUpdatedTime = time.Now()
 	return zid
 }
 
@@ -257,14 +260,27 @@ func (zid *ZIdentity) MfaRefreshNeeded() bool {
 	return !(zid.MfaMinTimeoutRem == -1 && zid.MfaMaxTimeoutRem == -1)
 }
 
-func (zid *ZIdentity) GetRemainingTime(timeout int32) int32 {
+func (zid *ZIdentity) GetRemainingTime(timeout int32, timeoutRemaining int32) int32 {
 	var remainingTimeout int32
-	if (timeout - int32(time.Since(zid.MfaLastUpdatedTime).Seconds())) <= 0 {
-		remainingTimeout = 0
+
+	// calculate effective timeout remaining from last mfa or service update time
+	if zid.MfaLastUpdatedTime.After(zid.ServiceUpdatedTime) {
+		//calculate svc remaining timeout
+		if (timeout - int32(time.Since(zid.MfaLastUpdatedTime).Seconds())) < 0 {
+			remainingTimeout = 0
+		} else {
+			remainingTimeout = timeout-int32(time.Since(zid.MfaLastUpdatedTime).Seconds())
+		}
 	} else {
-		remainingTimeout = timeout - int32(time.Since(zid.MfaLastUpdatedTime).Seconds())
+		//calculate svc remaining timeout
+		if (timeoutRemaining - int32(time.Since(zid.ServiceUpdatedTime).Seconds())) < 0 {
+			remainingTimeout = 0
+		} else {
+			remainingTimeout = timeoutRemaining - int32(time.Since(zid.ServiceUpdatedTime).Seconds())
+		}
 	}
 	return remainingTimeout
+
 }
 
 func (zid *ZIdentity) GetMFAState(interval int32) int {
@@ -677,7 +693,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 		zid.MfaMaxTimeout = maximumTimeout
 		zid.MfaMinTimeoutRem = minimumTimeoutRem
 		zid.MfaMaxTimeoutRem = maximumTimeoutRem
-		zid.MfaLastUpdatedTime = now
+		zid.ServiceUpdatedTime = now
 
 		svcChange := BulkServiceChange{
 			Fingerprint:        zid.Fingerprint,
@@ -689,7 +705,8 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			MfaMaxTimeout:      maximumTimeout,
 			MfaMinTimeoutRem:   minimumTimeoutRem,
 			MfaMaxTimeoutRem:   maximumTimeoutRem,
-			MfaLastUpdatedTime: now,
+			MfaLastUpdatedTime: zid.MfaLastUpdatedTime,
+			ServiceUpdatedTime: now,
 		}
 
 		if len(BulkServiceChanges) == cap(BulkServiceChanges) {

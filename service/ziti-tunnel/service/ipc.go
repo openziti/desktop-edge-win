@@ -1136,6 +1136,10 @@ func handleBulkServiceChange(sc cziti.BulkServiceChange) {
 		},
 	}
 	rts.BroadcastEvent(m)
+
+	if (sc.MfaMinTimeoutRem > -1 && sc.MfaMinTimeoutRem < 60) || (sc.MfaMaxTimeoutRem > -1 && sc.MfaMaxTimeoutRem < 60) {
+		broadcastNotification()
+	}
 }
 
 func addUnit(count int, unit string) (result string) {
@@ -1189,53 +1193,57 @@ func handleEvents(isInitialized chan struct{}) {
 
 		// notification message
 		case <-notificationFrequency.C:
-			cleanNotifications := make([]cziti.NotificationMessage, 0)
-			for _, id := range rts.ids {
-				if id.CId == nil || !id.CId.MfaRefreshNeeded() {
-					continue
-				}
-				notificationMessage := ""
-
-				var notificationMinTimeout int32 = 0
-				var notificationMaxTimeout int32 = -1
-				switch mfaState := id.CId.GetMFAState(int32((constants.MaximumFrequency + rts.state.NotificationFrequency) * 60)); mfaState {
-				case constants.MfaAllSvcTimeout:
-					notificationMessage = fmt.Sprintf("All of the services of identity %s are timed out", id.Name)
-				case constants.MfaFewSvcTimeout:
-					notificationMessage = fmt.Sprintf("Some of the services of identity %s are timed out", id.Name)
-				case constants.MfaNearingTimeout:
-					notificationMinTimeout = id.CId.GetRemainingTime(id.CId.MfaMinTimeoutRem)
-					notificationMessage = fmt.Sprintf("Some of the services of identity %s are timing out in %s", id.Name, secondsToReadableFmt(notificationMinTimeout))
-				default:
-					// do nothing
-				}
-				if len(notificationMessage) > 0 {
-
-					if id.CId.MfaMaxTimeoutRem > -1 {
-						notificationMaxTimeout = id.CId.GetRemainingTime(id.CId.MfaMaxTimeoutRem)
-					}
-					notificationMinTimeout = id.CId.GetRemainingTime(id.CId.MfaMinTimeoutRem)
-
-					cleanNotifications = append(cleanNotifications, cziti.NotificationMessage{
-						Fingerprint:       id.FingerPrint,
-						IdentityName:      id.Name,
-						Severity:          "major",
-						MfaMinimumTimeout: notificationMinTimeout,
-						MfaMaximumTimeout: notificationMaxTimeout,
-						Message:           notificationMessage,
-						MfaTimeDuration:   int(time.Since(id.CId.MfaLastUpdatedTime).Seconds()),
-					})
-				}
-			}
-
-			if len(cleanNotifications) > 0 {
-				log.Debugf("Sending notification message to UI %v", cleanNotifications)
-				rts.BroadcastEvent(cziti.TunnelNotificationEvent{
-					Op:           "notification",
-					Notification: cleanNotifications,
-				})
-			}
+			broadcastNotification()
 		}
+	}
+}
+
+func broadcastNotification() {
+	cleanNotifications := make([]cziti.NotificationMessage, 0)
+	for _, id := range rts.ids {
+		if id.CId == nil || !id.CId.MfaRefreshNeeded() {
+			continue
+		}
+		notificationMessage := ""
+
+		var notificationMinTimeout int32 = 0
+		var notificationMaxTimeout int32 = -1
+		switch mfaState := id.CId.GetMFAState(int32((constants.MaximumFrequency + rts.state.NotificationFrequency) * 60)); mfaState {
+		case constants.MfaAllSvcTimeout:
+			notificationMessage = fmt.Sprintf("All of the services of identity %s are timed out", id.Name)
+		case constants.MfaFewSvcTimeout:
+			notificationMessage = fmt.Sprintf("Some of the services of identity %s are timed out", id.Name)
+		case constants.MfaNearingTimeout:
+			notificationMinTimeout = id.CId.GetRemainingTime(id.CId.MfaMinTimeout, id.CId.MfaMinTimeoutRem)
+			notificationMessage = fmt.Sprintf("Some of the services of identity %s are timing out in %s", id.Name, secondsToReadableFmt(notificationMinTimeout))
+		default:
+			// do nothing
+		}
+		if len(notificationMessage) > 0 {
+
+			if id.CId.MfaMaxTimeoutRem > -1 {
+				notificationMaxTimeout = id.CId.GetRemainingTime(id.CId.MfaMaxTimeout, id.CId.MfaMaxTimeoutRem)
+			}
+			notificationMinTimeout = id.CId.GetRemainingTime(id.CId.MfaMinTimeout, id.CId.MfaMinTimeoutRem)
+
+			cleanNotifications = append(cleanNotifications, cziti.NotificationMessage{
+				Fingerprint:       id.FingerPrint,
+				IdentityName:      id.Name,
+				Severity:          "major",
+				MfaMinimumTimeout: notificationMinTimeout,
+				MfaMaximumTimeout: notificationMaxTimeout,
+				Message:           notificationMessage,
+				MfaTimeDuration:   int(time.Since(id.CId.MfaLastUpdatedTime).Seconds()),
+			})
+		}
+	}
+
+	if len(cleanNotifications) > 0 {
+		log.Debugf("Sending notification message to UI %v", cleanNotifications)
+		rts.BroadcastEvent(cziti.TunnelNotificationEvent{
+			Op:           "notification",
+			Notification: cleanNotifications,
+		})
 	}
 }
 
@@ -1270,23 +1278,39 @@ func Clean(src *Id) dto.Identity {
 	}
 
 	if src.CId != nil {
+		var mfaMinTimeoutRemaining int32 = -1
+		var mfaMaxTimeoutRemaining int32 = -1
 		src.CId.Services.Range(func(key interface{}, value interface{}) bool {
 			//string, ZService
 			val := value.(*cziti.ZService)
+			var svcMinTimeoutRemaining int32 = -1
 
 			if src.CId.MfaRefreshNeeded() && val.Service.TimeoutRemaining > 0 {
 				var svcTimeout int32 = -1
+				var svcTimeoutRemaining int32 = -1
+				// fetch svc timeout and timeout remaining from pc
 				for _, pc := range val.Service.PostureChecks {
 					if svcTimeout == -1 || svcTimeout > int32(pc.Timeout) {
 						svcTimeout = int32(pc.Timeout)
 					}
-					break
+					if svcTimeoutRemaining == -1 || svcTimeoutRemaining > int32(pc.TimeoutRemaining) {
+						svcTimeoutRemaining = int32(pc.TimeoutRemaining)
+					}
 				}
-				if (svcTimeout - int32(time.Since(src.CId.MfaLastUpdatedTime).Seconds())) < 0 {
-					atomic.StoreInt32(&val.Service.TimeoutRemaining, 0)
-				} else {
-					atomic.StoreInt32(&val.Service.TimeoutRemaining, svcTimeout-int32(time.Since(src.CId.MfaLastUpdatedTime).Seconds()))
+
+				// calculate effective timeout remaining from last mfa or service update time
+				svcMinTimeoutRemaining = src.CId.GetRemainingTime(svcTimeout, svcTimeoutRemaining)
+				//calculate mfa min remaining timeout
+				if mfaMinTimeoutRemaining == -1 && src.CId.MfaMinTimeoutRem != -1 {
+					mfaMinTimeoutRemaining = src.CId.GetRemainingTime(src.CId.MfaMinTimeout, src.CId.MfaMinTimeoutRem)
 				}
+				//calculate mfa max remaining timeout
+				if mfaMaxTimeoutRemaining == -1 && src.CId.MfaMaxTimeoutRem != -1 {
+					mfaMaxTimeoutRemaining = src.CId.GetRemainingTime(src.CId.MfaMaxTimeout, src.CId.MfaMaxTimeoutRem)
+				}
+
+				atomic.StoreInt32(&val.Service.TimeoutRemaining, svcMinTimeoutRemaining)
+
 			}
 
 			nid.Services = append(nid.Services /*svcToDto(val)*/, val.Service)
@@ -1294,12 +1318,11 @@ func Clean(src *Id) dto.Identity {
 		})
 		nid.MfaMinTimeout = src.CId.MfaMinTimeout
 		nid.MfaMaxTimeout = src.CId.MfaMaxTimeout
-		nid.MfaMinTimeoutRem = src.CId.MfaMinTimeoutRem
-		nid.MfaMaxTimeoutRem = src.CId.MfaMaxTimeoutRem
-		if !src.CId.MfaRefreshNeeded() {
-			nid.MfaLastUpdatedTime = time.Now()
-		} else {
-			nid.MfaLastUpdatedTime = src.CId.MfaLastUpdatedTime
+		nid.MfaMinTimeoutRem = mfaMinTimeoutRemaining
+		nid.MfaMaxTimeoutRem = mfaMaxTimeoutRemaining
+		nid.ServiceUpdatedTime = src.CId.ServiceUpdatedTime
+		nid.MfaLastUpdatedTime = src.CId.MfaLastUpdatedTime
+		if src.CId.MfaRefreshNeeded() {
 			if (nid.MfaMaxTimeoutRem > -1 && (nid.MfaMaxTimeoutRem-int32(time.Since(nid.MfaLastUpdatedTime).Seconds())) < 0) && nid.MfaEnabled {
 				nid.MfaNeeded = true
 			}
