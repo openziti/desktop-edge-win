@@ -321,7 +321,31 @@ func netifAddRoute(_ C.netif_handle, dest *C.char) C.int {
 
 //export netifRemoveRoute
 func netifRemoveRoute(_ C.netif_handle, dest *C.char) C.int {
-	log.Infof("i am inside netifRemoveRoute: %s", C.GoString(dest))
+	log.Infof("inside netifRemoveRoute: %s", C.GoString(dest))
+	routeAsString := C.GoString(dest)
+	if strings.Contains(routeAsString, "/") {
+		log.Debugf("route appears to be in CIDR format: %s", routeAsString)
+		_, cidr, e := net.ParseCIDR(routeAsString)
+		if e != nil {
+			log.Errorf("The provided route does not appear to follow CIDR formatting? %s", routeAsString)
+			return 1
+		}
+		if cidr == nil {
+			log.Errorf("An error occurred while parsing CIDR: %s", routeAsString)
+			return 1
+		}
+
+		_ = goapi.RemoveRoute(*cidr, dnsip)
+
+	} else {
+		log.Debugf("route appears to be an IP (not CIDR): %s", routeAsString)
+		ip := net.ParseIP(routeAsString)
+		if ip == nil {
+			log.Errorf("An error occurred while parsing IP: %s", routeAsString)
+			return 1
+		}
+		_ = goapi.RemoveRoute(net.IPNet{IP: ip, Mask: net.IPMask{255, 255, 255, 255}}, dnsip)
+	}
 	return 0
 }
 
