@@ -218,18 +218,27 @@ namespace ZitiDesktopEdge {
 			DetailPorts.Text = info.PortString;
 			DetailUrl.Text = info.ToString();
 
-			if (info.Timeout>-1&&_identity.IsMFAEnabled) {
-				double timeSince = (DateTime.Now - info.TimeUpdated).TotalMinutes;
-				if (timeSince>0) {
-					TimeSpan t = TimeSpan.FromSeconds(timeSince);
+			try {
+				if (_identity.IsMFAEnabled) {
+					if (info.Timeout > 0) {
+						double timeSince = (DateTime.Now - info.TimeUpdated).TotalMinutes;
+						if (timeSince > 0) {
+							TimeSpan t = TimeSpan.FromSeconds(timeSince);
 
-					string answer = string.Format("{0:D2} days {1:D2} hours {2:D2} minutes", t.Hours, t.Minutes);
-					TimeoutDetails.Text = answer;
+							string answer = string.Format("{0:D2} days {1:D2} hours {2:D2} minutes", t.Hours, t.Minutes);
+							TimeoutDetails.Text = answer;
+						} else {
+							TimeoutDetails.Text = "Timed out";
+						}
+					} else {
+						TimeoutDetails.Text = "Never";
+					}
 				} else {
-					TimeoutDetails.Text = "Timed out";
+					TimeoutDetails.Text = "Never";
 				}
-			} else {
+			} catch (Exception e) {
 				TimeoutDetails.Text = "Never";
+				Console.WriteLine("Error: "+e.ToString());
 			}
 
 			DetailsArea.Visibility = Visibility.Visible;

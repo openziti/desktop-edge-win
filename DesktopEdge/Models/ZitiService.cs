@@ -22,6 +22,7 @@ namespace ZitiDesktopEdge.Models {
 		public string AssignedIP { get; set; }
 		public DateTime TimeUpdated { get; set; }
 		public int Timeout { get; set; }
+		public int TimeoutRemaining { get; set; }
 
 		private bool failingPostureCheck;
 		public bool HasFailingPostureCheck() {
@@ -50,6 +51,7 @@ namespace ZitiDesktopEdge.Models {
 			this.Ports = svc.Ports;
 			this.PostureChecks = svc.PostureChecks;
 			this.Timeout = svc.Timeout;
+			this.TimeoutRemaining = svc.TimeoutRemaining;
 			this.OwnsIntercept = svc.OwnsIntercept;
 			this.TimeUpdated = DateTime.Now;
 			if (this.PostureChecks != null) {
