@@ -90,7 +90,7 @@ type Identity struct {
 	MfaMaxTimeoutRem   int32
 	MfaLastUpdatedTime time.Time
 	ServiceUpdatedTime time.Time
-
+	Deleted            bool
 }
 type Metrics struct {
 	Up   int64

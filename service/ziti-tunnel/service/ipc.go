@@ -97,8 +97,24 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 
 	TunStarted = time.Now()
 
+	// add active identities
 	for _, id := range rts.ids {
-		connectIdentity(id)
+		if id.Active {
+			connectIdentity(id)
+		} else {
+			isFound := IsIdentityFound(id)
+			if !isFound {
+				id.Deleted = true
+			}
+		}
+	}
+
+	// delete identities with missing json
+	for k, id := range rts.ids {
+		if id.Deleted {
+			log.Warn("No Identity File found, deleting the id with fingerprint %s:%s from config", id.Name, id.FingerPrint)
+			delete(rts.ids, k)
+		}
 	}
 
 	go handleEvents(initialized)
@@ -107,32 +123,7 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 	go acceptServices()
 
 	// listen for windows power events and call mfa auth func
-	go func() {
-		for {
-			select {
-			case wEvents := <-winEvents:
-				if wEvents.WinPowerEvent == PBT_APMRESUMESUSPEND || wEvents.WinPowerEvent == PBT_APMRESUMEAUTOMATIC {
-					log.Debugf("Received Windows Power Event in tunnel %d", wEvents.WinPowerEvent)
-					for _, id := range rts.ids {
-						if id.CId != nil && id.CId.Loaded {
-							cziti.EndpointStateChanged(id.CId, true, false)
-						}
-					}
-				}
-				if wEvents.WinSessionEvent == WTS_SESSION_UNLOCK {
-					log.Debugf("Received Windows Session Event (device unlocked) in tunnel %d", wEvents.WinSessionEvent)
-					for _, id := range rts.ids {
-						if id.CId != nil && id.CId.Loaded {
-							cziti.EndpointStateChanged(id.CId, false, true)
-						}
-					}
-				}
-			case <-shutdownDelay:
-				log.Tracef("Exiting windows power events loop")
-				return
-			}
-		}
-	}()
+	go handleWindowsEvents(winEvents, shutdownDelay)
 
 	// open the pipe for business
 	pipes, err := openPipes()
@@ -201,6 +192,33 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 
 	ops <- "done"
 	return nil
+}
+
+func handleWindowsEvents(winEvents <-chan WindowsEvents, shutdownDelay chan bool) {
+	for {
+		select {
+		case wEvents := <-winEvents:
+			if wEvents.WinPowerEvent == PBT_APMRESUMESUSPEND || wEvents.WinPowerEvent == PBT_APMRESUMEAUTOMATIC {
+				log.Debugf("Received Windows Power Event in tunnel %d", wEvents.WinPowerEvent)
+				for _, id := range rts.ids {
+					if id.CId != nil && id.CId.Loaded {
+						cziti.EndpointStateChanged(id.CId, true, false)
+					}
+				}
+			}
+			if wEvents.WinSessionEvent == WTS_SESSION_UNLOCK {
+				log.Debugf("Received Windows Session Event (device unlocked) in tunnel %d", wEvents.WinSessionEvent)
+				for _, id := range rts.ids {
+					if id.CId != nil && id.CId.Loaded {
+						cziti.EndpointStateChanged(id.CId, false, true)
+					}
+				}
+			}
+		case <-shutdownDelay:
+			log.Tracef("Exiting windows power events loop")
+			return
+		}
+	}
 }
 
 func requestShutdown(requester string) {
@@ -751,7 +769,7 @@ func serveEvents(conn net.Conn) {
 	log.Info("new event client connected - sending current status")
 	err := o.Encode(dto.TunnelStatusEvent{
 		StatusEvent: dto.StatusEvent{Op: "status"},
-		Status:      rts.ToStatus(true),
+		Status:      rts.ToStatus(false),
 		ApiVersion:  API_VERSION,
 	})
 
@@ -1330,7 +1348,9 @@ func Clean(src *Id) dto.Identity {
 	}
 
 	nid.Config.ZtAPI = src.Config.ZtAPI
-	log.Tracef("Up: %v Down %v", nid.Metrics.Up, nid.Metrics.Down)
+	if nid.Metrics != nil {
+		log.Tracef("Up: %v Down %v", nid.Metrics.Up, nid.Metrics.Down)
+	}
 	return nid
 }
 

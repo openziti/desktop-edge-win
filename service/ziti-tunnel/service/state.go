@@ -255,13 +255,8 @@ func (t *RuntimeState) LoadIdentity(id *Id, refreshInterval int) {
 		return
 	}
 
-	_, err := os.Stat(id.Path())
-	if err != nil {
-		if os.IsNotExist(err) {
-			//file does not exist. TODO remove this from the list
-		} else {
-			log.Warnf("refusing to load identity with fingerprint %s:%s due to error %v", id.Name, id.FingerPrint, err)
-		}
+	isFound := IsIdentityFound(id)
+	if !isFound {
 		return
 	}
 
@@ -302,6 +297,21 @@ func (t *RuntimeState) LoadIdentity(id *Id, refreshInterval int) {
 	id.CId = cziti.NewZid(sc)
 	id.CId.Active = id.Active
 	cziti.LoadZiti(id.CId, id.Path(), refreshInterval)
+}
+
+func IsIdentityFound(id *Id) bool {
+	_, err := os.Stat(id.Path())
+	if err != nil {
+		if os.IsNotExist(err) {
+			//file does not exist. remove this from the list
+			log.Warnf("identity with fingerprint %s:%s does not exist. It is marked as deleted", id.Name, id.FingerPrint)
+			id.Deleted = true
+		} else {
+			log.Warnf("refusing to load identity with fingerprint %s:%s due to error %v", id.Name, id.FingerPrint, err)
+		}
+		return false
+	}
+	return true
 }
 
 func (t *RuntimeState) LoadConfig() {
