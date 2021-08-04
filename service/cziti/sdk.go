@@ -269,7 +269,7 @@ func (zid *ZIdentity) GetRemainingTime(timeout int32, timeoutRemaining int32) in
 		if (timeout - int32(time.Since(zid.MfaLastUpdatedTime).Seconds())) < 0 {
 			remainingTimeout = 0
 		} else {
-			remainingTimeout = timeout-int32(time.Since(zid.MfaLastUpdatedTime).Seconds())
+			remainingTimeout = timeout - int32(time.Since(zid.MfaLastUpdatedTime).Seconds())
 		}
 	} else {
 		//calculate svc remaining timeout

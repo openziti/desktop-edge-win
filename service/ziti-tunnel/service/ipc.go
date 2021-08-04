@@ -1137,9 +1137,6 @@ func handleBulkServiceChange(sc cziti.BulkServiceChange) {
 	}
 	rts.BroadcastEvent(m)
 
-	if (sc.MfaMinTimeoutRem > -1 && sc.MfaMinTimeoutRem < 60) || (sc.MfaMaxTimeoutRem > -1 && sc.MfaMaxTimeoutRem < 60) {
-		broadcastNotification()
-	}
 }
 
 func addUnit(count int, unit string) (result string) {
