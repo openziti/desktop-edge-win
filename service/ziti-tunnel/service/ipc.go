@@ -990,6 +990,7 @@ func connectIdentity(id *Id) {
 	} else {
 		log.Debugf("%s[%s] is already loaded", id.Name, id.FingerPrint)
 
+		hostnamesToAdd := make(map[string]bool)
 		id.CId.Services.Range(func(key interface{}, value interface{}) bool {
 			id.Services = append(id.Services, nil)
 
@@ -1002,9 +1003,19 @@ func connectIdentity(id *Id) {
 			}
 			cziti.AddIntercept(rwg)
 			wg.Wait()
-
+			addAddys := val.Service.Addresses
+			for _, toAdd := range addAddys {
+				if toAdd.IsHost {
+					hostnamesToAdd[toAdd.HostName] = true
+				}
+			}
 			return true
 		})
+		if len(hostnamesToAdd) > 0 {
+			log.Debug("adding rules to NRPT")
+			windns.AddNrptRules(hostnamesToAdd, rts.state.TunIpv4)
+			log.Infof("mapped the following hostnames: %v", hostnamesToAdd)
+		}
 
 		rts.BroadcastEvent(dto.IdentityEvent{
 			ActionEvent: dto.IDENTITY_CONNECTED,
@@ -1288,6 +1299,8 @@ func Clean(src *Id) dto.Identity {
 	if src.CId != nil && src.CId.Loaded  {
 		mfaNeeded = src.CId.MfaNeeded
 		mfaEnabled = src.CId.MfaEnabled
+	} else if src.CId != nil && !src.CId.Loaded && src.MfaEnabled {
+		mfaNeeded = true
 	}
 
 	log.Tracef("cleaning identity: %s: mfaNeeded: %t mfaEnabled:%t", src.Name, mfaNeeded, mfaEnabled)

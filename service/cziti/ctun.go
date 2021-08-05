@@ -321,6 +321,7 @@ func netifAddRoute(_ C.netif_handle, dest *C.char) C.int {
 
 //export netifRemoveRoute
 func netifRemoveRoute(_ C.netif_handle, dest *C.char) C.int {
+	// remove route command fails when adapter ip is sent as a param. We do not delete all routes with the same ip
 	log.Infof("inside netifRemoveRoute: %s", C.GoString(dest))
 	routeAsString := C.GoString(dest)
 	if strings.Contains(routeAsString, "/") {
