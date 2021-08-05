@@ -335,7 +335,10 @@ func netifRemoveRoute(_ C.netif_handle, dest *C.char) C.int {
 			return 1
 		}
 
-		_ = goapi.RemoveRoute(*cidr, dnsip)
+		err := goapi.RemoveRoute(*cidr, dnsip)
+		if err != nil {
+			log.Errorf("An error occurred removing the route for IP: %s, error : %v", routeAsString, err)
+		}
 
 	} else {
 		log.Debugf("route appears to be an IP (not CIDR): %s", routeAsString)
@@ -344,7 +347,10 @@ func netifRemoveRoute(_ C.netif_handle, dest *C.char) C.int {
 			log.Errorf("An error occurred while parsing IP: %s", routeAsString)
 			return 1
 		}
-		_ = goapi.RemoveRoute(net.IPNet{IP: ip, Mask: net.IPMask{255, 255, 255, 255}}, dnsip)
+		err := goapi.RemoveRoute(net.IPNet{IP: ip, Mask: net.IPMask{255, 255, 255, 255}}, dnsip)
+		if err != nil {
+			log.Errorf("An error occurred removing the route for IP: %s, error : %v", routeAsString, err)
+		}
 	}
 	return 0
 }

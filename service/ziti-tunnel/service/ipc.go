@@ -1023,6 +1023,7 @@ func disconnectIdentity(id *Id) error {
 		} else {
 			log.Debugf("ranging over services all services to remove intercept and deregister the service")
 
+			hostnamesToRemove := make(map[string]bool)
 			id.CId.Services.Range(func(key interface{}, value interface{}) bool {
 				val := value.(*cziti.ZService)
 				var wg sync.WaitGroup
@@ -1033,8 +1034,18 @@ func disconnectIdentity(id *Id) error {
 				}
 				cziti.RemoveIntercept(rwg)
 				wg.Wait()
+				remAddys := val.Service.Addresses
+				for _, toRemove := range remAddys {
+					if toRemove.IsHost {
+						hostnamesToRemove[toRemove.HostName] = true
+					}
+				}
 				return true
 			})
+			log.Debug("removing rules from NRPT")
+			windns.RemoveNrptRules(hostnamesToRemove)
+			log.Info("removed NRPT rules for: %v", hostnamesToRemove)
+
 			rts.BroadcastEvent(dto.IdentityEvent{
 				ActionEvent: dto.IDENTITY_DISCONNECTED,
 				Id:          id.Identity,
@@ -1271,10 +1282,10 @@ func ResetFrequency(newFrequency int) {
 
 //Removes the Config from the provided identity and returns a 'cleaned' id
 func Clean(src *Id) dto.Identity {
-	mfaNeeded := false
-	mfaEnabled := false
+	mfaNeeded := src.MfaNeeded
+	mfaEnabled := src.MfaEnabled
 
-	if src.CId != nil {
+	if src.CId != nil && src.CId.Loaded  {
 		mfaNeeded = src.CId.MfaNeeded
 		mfaEnabled = src.CId.MfaEnabled
 	}
