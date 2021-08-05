@@ -1,3 +1,17 @@
+# Release 1.10.2
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* [#405](https://github.com/openziti/desktop-edge-win/issues/405) Disabled Identity works on startup.
+
+## Dependency Updates
+* none
+
 # Release 1.10.0
 
 ## What's New
