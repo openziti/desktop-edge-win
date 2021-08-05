@@ -286,6 +286,7 @@ namespace ZitiDesktopEdge {
 				}
 				IdentityMenu.UpdateView();
 			}
+			LoadIdentities(true);
 		}
 
 		private void AddIdentity(ZitiIdentity id) {
@@ -591,20 +592,26 @@ namespace ZitiDesktopEdge {
 				if (found == null) {
 					logger.Warn($"{e.Op} event for {notification.Fingerprint} but the provided identity fingerprint was not found!");
 					continue;
-				}
-				found.TimeoutMessage = notification.Message;
-				ShowBlurbAsync(found.TimeoutMessage, ""); // Replace with ShowToast(found.TimeoutMessage) when it gets merged
-				// Send Notification
-				if (notification.MfaMaximumTimeout == 0) {
-					found.MFAInfo.IsAuthenticated = false;
-					// display mfa token icon
-					displayMFARequired = true;
-				} else if (notification.MfaMinimumTimeout == 0) {
-					// display option to enter mfa, only few services are timed out
-					found.IsTimingOut = true;
 				} else {
-					// display option to enter mfa, only few services are about to timeout
-					found.IsTimingOut = true;
+					found.TimeoutMessage = notification.Message;
+					ShowToast(found.TimeoutMessage);
+					// Send Notification
+					if (notification.MfaTimeoutDuration == 0) {
+						found.MFAInfo.IsAuthenticated = false;
+						// display mfa token icon
+						displayMFARequired = true;
+					} else {
+						if (notification.MfaTimeoutDuration<1200) {
+							found.IsTimingOut = true;
+						}
+					}
+
+					for (int i = 0; i < identities.Count; i++) {
+						if (identities[i].Fingerprint==found.Fingerprint) {
+							identities[i] = found;
+							break;
+						}
+					}
 				}
 			}
 

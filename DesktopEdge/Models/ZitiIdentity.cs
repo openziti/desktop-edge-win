@@ -71,7 +71,6 @@ namespace ZitiDesktopEdge.Models {
 				MinTimeout = id.MinTimeout,
 				MaxTimeout = id.MaxTimeout,
 				LastUpdatedTime = id.LastUpdatedTime,
-				IsTimingOut = id.MinTimeout == 0 && id.MaxTimeout>0,
 				TimeoutMessage = ""
 			};
 
@@ -83,8 +82,7 @@ namespace ZitiDesktopEdge.Models {
 						var zsvc = new ZitiService(svc);
 						zid.Services.Add(zsvc);
 						if (zid.IsMFAEnabled) {
-							double timeSince = (DateTime.Now - zsvc.TimeUpdated).TotalMinutes;
-							if (timeSince >= (zsvc.Timeout-20)) zid.IsTimingOut = true;
+							if (zsvc.TimeoutRemaining<1260) zid.IsTimingOut = true;
 						}
 					}
 				}

@@ -333,6 +333,7 @@ namespace ZitiDesktopEdge.DataStructures {
         public int MfaMinimumTimeout { get; set; }
         public int MfaMaximumTimeout { get; set; }
         public int TimeDuration { get; set; }
+        public int MfaTimeoutDuration { get; set; }
         public string Severity { get; set; }
 
     }

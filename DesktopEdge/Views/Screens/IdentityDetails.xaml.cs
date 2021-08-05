@@ -220,18 +220,17 @@ namespace ZitiDesktopEdge {
 
 			try {
 				if (_identity.IsMFAEnabled) {
-					if (info.Timeout > 0) {
-						double timeSince = (DateTime.Now - info.TimeUpdated).TotalMinutes;
-						if (timeSince > 0) {
-							TimeSpan t = TimeSpan.FromSeconds(timeSince);
+					if (info.TimeoutRemaining > 0) {
+						TimeSpan t = TimeSpan.FromSeconds(info.TimeoutRemaining);
 
-							string answer = string.Format("{0:D2} days {1:D2} hours {2:D2} minutes", t.Hours, t.Minutes);
-							TimeoutDetails.Text = answer;
-						} else {
-							TimeoutDetails.Text = "Timed out";
+						string answer = string.Format("{0:D2} minutes", t.Minutes);
+						if (t.Days>0) answer = string.Format("{0:D2} days {1:D2} hours {2:D2} minutes", t.Days, t.Hours, t.Minutes);
+						else {
+							if (t.Hours>0) answer = string.Format("{0:D2} hours {1:D2} minutes", t.Hours, t.Minutes);
 						}
+						TimeoutDetails.Text = answer;
 					} else {
-						TimeoutDetails.Text = "Never";
+						TimeoutDetails.Text = "Timed Out";
 					}
 				} else {
 					TimeoutDetails.Text = "Never";

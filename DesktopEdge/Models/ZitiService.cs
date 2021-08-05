@@ -112,6 +112,25 @@ namespace ZitiDesktopEdge.Models {
 			}
 			set { }
 		}
+		public int WarningWidth {
+			get {
+				return (HasWarning) ? 20 : 0;
+			}
+			set { }
+		}
+
+		public Visibility TimerVisibility {
+			get {
+				return (TimeoutRemaining>-1&&TimeoutRemaining<1260) ? Visibility.Visible : Visibility.Collapsed;
+			}
+			set { }
+		}
+		public int TimerWidth {
+			get {
+				return (TimeoutRemaining > -1 && TimeoutRemaining < 1260) ? 20 : 0;
+			}
+			set { }
+		}
 
 		public bool HasWarning {
 			get {
