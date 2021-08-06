@@ -15,6 +15,7 @@ namespace ZitiUpdateService.Utils {
         private DateTime _next;
         private DateTime _lastTickTime;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private TimerState _state;
 
         public CustomTimer(TimerCallback callback, object state, TimeSpan dueTime, TimeSpan period) {
             _timer = new Timer(Callback, state, dueTime, period);
@@ -22,6 +23,7 @@ namespace ZitiUpdateService.Utils {
             _period = period;
             _next = DateTime.Now.Add(dueTime);
             _lastTickTime = DateTime.Now;
+            _state = (TimerState)state;
         }
 
         private void Callback(object state) {
@@ -32,6 +34,7 @@ namespace ZitiUpdateService.Utils {
         public TimeSpan Period => _period;
         public DateTime Next => _next;
         public TimeSpan DueTime => _next - DateTime.Now;
+        public TimerState State => _state;
         public bool Change(TimeSpan dueTime, TimeSpan period) {
             _period = period;
             _next = DateTime.Now.Add(dueTime);

@@ -85,6 +85,7 @@ namespace ZitiUpdateService {
 
 		private SvcResponse TriggerUpdate() {
 			SvcResponse r = new SvcResponse();
+			r.Message = "Initiating Update Check";
 			checkUpdateImmediately();
 			return r;
 		}
@@ -493,6 +494,12 @@ namespace ZitiUpdateService {
 			};
 			await writer.WriteLineAsync(JsonConvert.SerializeObject(status));
 			await writer.FlushAsync();
+			if (_installationReminder != null) {
+				TimerState state = _installationReminder.State;
+				InstallationNotificationEvent notificationMsg = logAndNotifyInstallationUpdates(state.zdeInstallerInfo, true);
+				await writer.WriteLineAsync(JsonConvert.SerializeObject(notificationMsg));
+				await writer.FlushAsync();
+			}
 		}
 
 #pragma warning disable 1998 //This async method lacks 'await'
@@ -674,6 +681,7 @@ namespace ZitiUpdateService {
 
 					if (info.IsCritical) {
 						info.TimeRemaining = 0;
+						info.InstallTime = DateTime.Now;
 						NotifyInstallationUpdates(info, 0, "");
 						installZDE(fileDestination, filename);
 					} else if (!info.IsCritical && _installationReminder == null) {
@@ -699,12 +707,7 @@ namespace ZitiUpdateService {
 					}
 
 					if (_installationReminder != null) {
-						info.TimeRemaining = _installationReminder.DueTime.TotalMilliseconds / 1000; // converting to seconds
-						info.InstallTime = DateTime.Now.AddMilliseconds(_installationReminder.DueTime.TotalMilliseconds);
-						Logger.Info("Installation of ZDE version {0} will be initiated in {1} seconds, approximately at {2}", info.Version, info.TimeRemaining, info.InstallTime);
-						if (info.TimeRemaining > 0 && (info.TimeRemaining / 1000) < 1 ) {
-							NotifyInstallationUpdates(info, 0, "");
-						}
+						logAndNotifyInstallationUpdates(info, false);
 					}
 				}
 			} catch (Exception ex) {
@@ -720,6 +723,16 @@ namespace ZitiUpdateService {
 				}
 			}
 			semaphore.Release();
+		}
+
+		private InstallationNotificationEvent logAndNotifyInstallationUpdates(Checkers.ZDEInstallerInfo info, bool newClient) {
+			info.TimeRemaining = _installationReminder.DueTime.TotalMilliseconds / 1000; // converting to seconds
+			info.InstallTime = DateTime.Now.AddMilliseconds(_installationReminder.DueTime.TotalMilliseconds);
+			Logger.Info("Installation of ZDE version {0} will be initiated in {1} seconds, approximately at {2}", info.Version, info.TimeRemaining, info.InstallTime);
+			if (newClient || (info.TimeRemaining > 0 && (info.TimeRemaining / 1000) < 1)) {
+				return NotifyInstallationUpdates(info, 0, "");
+			}
+			return null;
 		}
 
 		private void installZDE(string fileDestination, string filename) {
@@ -886,6 +899,10 @@ namespace ZitiUpdateService {
 				dnsProbeTimer.Start();
 				Logger.Info("DNS Probe enabled");
 			}
+			if (_installationReminder != null) {
+				TimerState state = _installationReminder.State;
+				logAndNotifyInstallationUpdates(state.zdeInstallerInfo, true);
+			}
 		}
 
 		private void Svc_OnClientDisconnected(object sender, object e) {
@@ -931,7 +948,7 @@ namespace ZitiUpdateService {
 			}
 		}
 
-		private void NotifyInstallationUpdates(Checkers.ZDEInstallerInfo info, int code, string error) {
+		private InstallationNotificationEvent NotifyInstallationUpdates(Checkers.ZDEInstallerInfo info, int code, string error) {
 			try {
 				InstallationNotificationEvent installationNotificationEvent = new InstallationNotificationEvent() {
 					Code = code,
@@ -946,10 +963,11 @@ namespace ZitiUpdateService {
 				};
 				EventRegistry.SendEventToConsumers(installationNotificationEvent);
 				Logger.Debug("The installation updates for version {0} is sent to the events pipe...", info.Version);
+				return installationNotificationEvent;
 			} catch (Exception e) {
 				Logger.Error("The notification for the installation updates for version {0} has failed", info.Version);
 			}
-
+			return null;
 
 		}
 	}
