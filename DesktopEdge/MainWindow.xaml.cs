@@ -586,6 +586,7 @@ namespace ZitiDesktopEdge {
 
 		private void ServiceClient_OnNotificationEvent(object sender, NotificationEvent e) {
 			var displayMFARequired = false;
+			var displayMFATimout = false;
 			foreach (var notification in e.Notification) {
 				var found = identities.Find(id => id.Fingerprint == notification.Fingerprint);
 				if (found == null) {
@@ -602,9 +603,8 @@ namespace ZitiDesktopEdge {
 						// display mfa token icon
 						displayMFARequired = true;
 					} else {
-						if (notification.MfaMinimumTimeout<1200) {
-							found.IsTimingOut = true;
-						}
+						found.IsTimingOut = true;
+						displayMFATimout = true;
 					}
 
 					for (int i = 0; i < identities.Count; i++) {
@@ -618,7 +618,7 @@ namespace ZitiDesktopEdge {
 
 			// we may need to display mfa icon, based on the timer in UI, remove found.MFAInfo.IsAuthenticated setting in this function. 
 			// the below function can show mfa icon even after user authenticates successfully, in race conditions
-			if (displayMFARequired) {
+			if (displayMFARequired || displayMFATimout) {
 				LoadIdentities(true);
 				this.Dispatcher.Invoke(() => {
 					IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
