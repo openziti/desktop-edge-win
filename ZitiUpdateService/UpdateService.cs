@@ -899,10 +899,6 @@ namespace ZitiUpdateService {
 				dnsProbeTimer.Start();
 				Logger.Info("DNS Probe enabled");
 			}
-			if (_installationReminder != null) {
-				TimerState state = _installationReminder.State;
-				logAndNotifyInstallationUpdates(state.zdeInstallerInfo, true);
-			}
 		}
 
 		private void Svc_OnClientDisconnected(object sender, object e) {
