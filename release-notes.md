@@ -1,14 +1,27 @@
-# Release 1.10.0
+# Release 1.10.1
 
 ## What's New
 * none
 
 ## Other changes:
+* [#421](https://github.com/openziti/desktop-edge-win/issues/421) Calculate timeoutRemaining based on the service updates time or mfa auth time
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* updated c-sdk to v0.25.6, updated t-sdk to v0.15.12
+
+# Release 1.10.0
+
+## What's New
+* mfa timeout process. ZDE will prompt the user to enter MFA token, when the timeout set for the services is about to expire. Sends notification periodically until MFA token is entered
+* [#418](https://github.com/openziti/desktop-edge-win/issues/418) notification has to be sent based on timeout remaining field. When User enters auth Mfa, the timer will reset to original timeout field. timeout remaining field will also be reset to the value in timeout field
 * [#278](https://github.com/openziti/desktop-edge-win/issues/278) inform the user an update is available before automatically updating. So user can manually install the latest version anytime within 2 hours after the release is published. If a major/minor version has changed, then the auto installation will start immediately. If the user does not initiate manual installation within the given time, a warning will be displayed and after 2 hours the ZDE will auto update.
-* mfa timeout process
 
 ## Other changes:
 * [#381](https://github.com/openziti/desktop-edge-win/issues/381) Open Ziti UI on startup.
+* [#415](https://github.com/openziti/desktop-edge-win/issues/415) The notification frequency should be between 5 and 20 minutes. ZDE accepts the requests to modify it (UI is not ready yet). 20 minutes before the timeout, it should start sending the notification to UI
 
 ## Bugs fixed:
 * none
