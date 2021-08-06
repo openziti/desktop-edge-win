@@ -321,7 +321,6 @@ func netifAddRoute(_ C.netif_handle, dest *C.char) C.int {
 
 //export netifRemoveRoute
 func netifRemoveRoute(_ C.netif_handle, dest *C.char) C.int {
-	// remove route command fails when adapter ip is sent as a param. We do not delete all routes with the same ip
 	log.Infof("inside netifRemoveRoute: %s", C.GoString(dest))
 	routeAsString := C.GoString(dest)
 	if strings.Contains(routeAsString, "/") {
@@ -336,10 +335,11 @@ func netifRemoveRoute(_ C.netif_handle, dest *C.char) C.int {
 			return 1
 		}
 
-		err := goapi.RemoveRoute(*cidr, dnsip)
+		// commented the code, because the route delete operation is failing when ZDE is running
+		/*err := goapi.RemoveRoute(*cidr, dnsip)
 		if err != nil {
 			log.Errorf("An error occurred removing the route for IP: %s, error : %v", routeAsString, err)
-		}
+		}*/
 
 	} else {
 		log.Debugf("route appears to be an IP (not CIDR): %s", routeAsString)
@@ -348,10 +348,11 @@ func netifRemoveRoute(_ C.netif_handle, dest *C.char) C.int {
 			log.Errorf("An error occurred while parsing IP: %s", routeAsString)
 			return 1
 		}
-		err := goapi.RemoveRoute(net.IPNet{IP: ip, Mask: net.IPMask{255, 255, 255, 255}}, dnsip)
+		// commented the code, because the route delete operation is failing when ZDE is running
+		/*err := goapi.RemoveRoute(net.IPNet{IP: ip, Mask: net.IPMask{255, 255, 255, 255}}, dnsip)
 		if err != nil {
 			log.Errorf("An error occurred removing the route for IP: %s, error : %v", routeAsString, err)
-		}
+		}*/
 	}
 	return 0
 }

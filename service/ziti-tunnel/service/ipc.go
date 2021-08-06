@@ -97,22 +97,15 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 
 	TunStarted = time.Now()
 
-	// add active identities
+	// connect all identities those have a valid identity file
 	for _, id := range rts.ids {
-		if id.Active {
-			connectIdentity(id)
-		} else {
-			isFound := IsIdentityFound(id)
-			if !isFound {
-				id.Deleted = true
-			}
-		}
+		connectIdentity(id)
 	}
 
-	// delete identities with missing json
+	// delete identities with missing identity file
 	for k, id := range rts.ids {
 		if id.Deleted {
-			log.Warn("No Identity File found, deleting the id with fingerprint %s:%s from config", id.Name, id.FingerPrint)
+			log.Warn("Identity file is either not found or it is corrupted, this id %s:%s will be deleted from config file", id.Name, id.FingerPrint)
 			delete(rts.ids, k)
 		}
 	}
@@ -769,7 +762,7 @@ func serveEvents(conn net.Conn) {
 	log.Info("new event client connected - sending current status")
 	err := o.Encode(dto.TunnelStatusEvent{
 		StatusEvent: dto.StatusEvent{Op: "status"},
-		Status:      rts.ToStatus(false),
+		Status:      rts.ToStatus(true),
 		ApiVersion:  API_VERSION,
 	})
 
@@ -990,7 +983,7 @@ func connectIdentity(id *Id) {
 	} else {
 		log.Debugf("%s[%s] is already loaded", id.Name, id.FingerPrint)
 
-		hostnamesToAdd := make(map[string]bool)
+		//hostnamesToAdd := make(map[string]bool)
 		id.CId.Services.Range(func(key interface{}, value interface{}) bool {
 			id.Services = append(id.Services, nil)
 
@@ -1003,19 +996,20 @@ func connectIdentity(id *Id) {
 			}
 			cziti.AddIntercept(rwg)
 			wg.Wait()
-			addAddys := val.Service.Addresses
+			/*addAddys := val.Service.Addresses
 			for _, toAdd := range addAddys {
 				if toAdd.IsHost {
 					hostnamesToAdd[toAdd.HostName] = true
 				}
-			}
+			}*/
 			return true
 		})
-		if len(hostnamesToAdd) > 0 {
+		id.CId.Active = true
+		/*if len(hostnamesToAdd) > 0 {
 			log.Debug("adding rules to NRPT")
 			windns.AddNrptRules(hostnamesToAdd, rts.state.TunIpv4)
 			log.Infof("mapped the following hostnames: %v", hostnamesToAdd)
-		}
+		}*/
 
 		rts.BroadcastEvent(dto.IdentityEvent{
 			ActionEvent: dto.IDENTITY_CONNECTED,
@@ -1034,7 +1028,7 @@ func disconnectIdentity(id *Id) error {
 		} else {
 			log.Debugf("ranging over services all services to remove intercept and deregister the service")
 
-			hostnamesToRemove := make(map[string]bool)
+			//hostnamesToRemove := make(map[string]bool)
 			id.CId.Services.Range(func(key interface{}, value interface{}) bool {
 				val := value.(*cziti.ZService)
 				var wg sync.WaitGroup
@@ -1045,17 +1039,18 @@ func disconnectIdentity(id *Id) error {
 				}
 				cziti.RemoveIntercept(rwg)
 				wg.Wait()
-				remAddys := val.Service.Addresses
+				/*remAddys := val.Service.Addresses
 				for _, toRemove := range remAddys {
 					if toRemove.IsHost {
 						hostnamesToRemove[toRemove.HostName] = true
 					}
-				}
+				}*/
 				return true
 			})
-			log.Debug("removing rules from NRPT")
+			/*log.Debug("removing rules from NRPT")
 			windns.RemoveNrptRules(hostnamesToRemove)
-			log.Info("removed NRPT rules for: %v", hostnamesToRemove)
+			log.Info("removed NRPT rules for: %v", hostnamesToRemove)*/
+			id.CId.Active = false
 
 			rts.BroadcastEvent(dto.IdentityEvent{
 				ActionEvent: dto.IDENTITY_DISCONNECTED,
@@ -1296,9 +1291,10 @@ func Clean(src *Id) dto.Identity {
 	if src.CId != nil && src.CId.Loaded  {
 		mfaNeeded = src.CId.MfaNeeded
 		mfaEnabled = src.CId.MfaEnabled
-	} else if src.CId != nil && !src.CId.Loaded && src.MfaEnabled {
+	} /* else if src.CId != nil && !src.CId.Loaded && src.MfaEnabled {
+		// this else block is needed, if we do not want to load the identities that are disabled
 		mfaNeeded = true
-	}
+	}*/
 
 	log.Tracef("cleaning identity: %s: mfaNeeded: %t mfaEnabled:%t", src.Name, mfaNeeded, mfaEnabled)
 	AddMetrics(src)

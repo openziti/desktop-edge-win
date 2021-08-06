@@ -308,6 +308,7 @@ func IsIdentityFound(id *Id) bool {
 			id.Deleted = true
 		} else {
 			log.Warnf("refusing to load identity with fingerprint %s:%s due to error %v", id.Name, id.FingerPrint, err)
+			id.Deleted = true
 		}
 		return false
 	}
