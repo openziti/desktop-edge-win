@@ -86,6 +86,7 @@ type BulkServiceChange struct {
 	MfaMinTimeoutRem   int32
 	MfaMaxTimeoutRem   int32
 	MfaLastUpdatedTime time.Time
+	ServiceUpdatedTime time.Time
 }
 
 type NotificationMessage struct {
@@ -162,6 +163,7 @@ type ZIdentity struct {
 	MfaMinTimeoutRem   int32
 	MfaMaxTimeoutRem   int32
 	MfaLastUpdatedTime time.Time
+	ServiceUpdatedTime time.Time
 }
 
 func NewZid(statusChange func(int)) *ZIdentity {
@@ -174,6 +176,7 @@ func NewZid(statusChange func(int)) *ZIdentity {
 	zid.MfaMaxTimeout = -1
 	zid.MfaMinTimeout = -1
 	zid.MfaLastUpdatedTime = time.Now()
+	zid.ServiceUpdatedTime = time.Now()
 	return zid
 }
 
@@ -257,14 +260,27 @@ func (zid *ZIdentity) MfaRefreshNeeded() bool {
 	return !(zid.MfaMinTimeoutRem == -1 && zid.MfaMaxTimeoutRem == -1)
 }
 
-func (zid *ZIdentity) GetRemainingTime(timeout int32) int32 {
+func (zid *ZIdentity) GetRemainingTime(timeout int32, timeoutRemaining int32) int32 {
 	var remainingTimeout int32
-	if (timeout - int32(time.Since(zid.MfaLastUpdatedTime).Seconds())) <= 0 {
-		remainingTimeout = 0
+
+	// calculate effective timeout remaining from last mfa or service update time
+	if zid.MfaLastUpdatedTime.After(zid.ServiceUpdatedTime) {
+		//calculate svc remaining timeout
+		if (timeout - int32(time.Since(zid.MfaLastUpdatedTime).Seconds())) < 0 {
+			remainingTimeout = 0
+		} else {
+			remainingTimeout = timeout - int32(time.Since(zid.MfaLastUpdatedTime).Seconds())
+		}
 	} else {
-		remainingTimeout = timeout - int32(time.Since(zid.MfaLastUpdatedTime).Seconds())
+		//calculate svc remaining timeout
+		if (timeoutRemaining - int32(time.Since(zid.ServiceUpdatedTime).Seconds())) < 0 {
+			remainingTimeout = 0
+		} else {
+			remainingTimeout = timeoutRemaining - int32(time.Since(zid.ServiceUpdatedTime).Seconds())
+		}
 	}
 	return remainingTimeout
+
 }
 
 func (zid *ZIdentity) GetMFAState(interval int32) int {
@@ -428,18 +444,26 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 
 				var pcId string
 				pcId = C.GoString(pq.id)
-				log.Infof("Posture query %s, timeout %d, timeoutRemaining %d", C.GoString(pq.id), int(pq.timeout), int(pq.timeoutRemaining))
+
+				var pcTimeoutRemaining int
+				if unsafe.Pointer(pq.timeoutRemaining) != C.NULL {
+					pcTimeoutRemaining = int(*(*C.int)(pq.timeoutRemaining))
+				} else {
+					pcTimeoutRemaining = -1
+				}
+
+				log.Infof("Posture query %s, timeout %d, timeoutRemaining %d", pcId, int(pq.timeout), pcTimeoutRemaining)
 
 				_, found := pcIds[pcId]
 				if found {
 					log.Tracef("posture check with id %s already in failing posture check map", pcId)
 					for _, pc := range postureChecks {
-						if pc.Id == C.GoString(pq.id) {
+						if pc.Id == pcId {
 							if timeout == -1 || timeout > int(pq.timeout) {
 								timeout = int(pq.timeout)
 							}
-							if timeoutRemaining == -1 || timeoutRemaining > int(pq.timeoutRemaining) {
-								timeoutRemaining = int(pq.timeoutRemaining)
+							if timeoutRemaining == -1 || timeoutRemaining > pcTimeoutRemaining {
+								timeoutRemaining = pcTimeoutRemaining
 							}
 							break
 						}
@@ -451,7 +475,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 						QueryType:        C.GoString(pq.query_type),
 						Id:               pcId,
 						Timeout:          int(pq.timeout),
-						TimeoutRemaining: int(pq.timeoutRemaining),
+						TimeoutRemaining: pcTimeoutRemaining,
 					}
 					timeout = pc.Timeout
 					timeoutRemaining = pc.TimeoutRemaining
@@ -626,6 +650,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 		var minimumTimeoutRem int32 = -1
 		var maximumTimeoutRem int32 = -1
 		noTimeoutSvc := false
+		noTimeoutRemSvc := false
 		if len(servicesToAdd) > 0 {
 			zid.Services.Range(func(key interface{}, value interface{}) bool {
 				//string, ZService
@@ -649,7 +674,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 						maximumTimeoutRem = val.Service.TimeoutRemaining
 					}
 				} else {
-					noTimeoutSvc = true
+					noTimeoutRemSvc = true
 				}
 
 				return true
@@ -657,6 +682,8 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			})
 			if noTimeoutSvc {
 				maximumTimeout = -1
+			}
+			if noTimeoutRemSvc {
 				maximumTimeoutRem = -1
 			}
 		}
@@ -666,7 +693,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 		zid.MfaMaxTimeout = maximumTimeout
 		zid.MfaMinTimeoutRem = minimumTimeoutRem
 		zid.MfaMaxTimeoutRem = maximumTimeoutRem
-		zid.MfaLastUpdatedTime = now
+		zid.ServiceUpdatedTime = now
 
 		svcChange := BulkServiceChange{
 			Fingerprint:        zid.Fingerprint,
@@ -678,7 +705,8 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			MfaMaxTimeout:      maximumTimeout,
 			MfaMinTimeoutRem:   minimumTimeoutRem,
 			MfaMaxTimeoutRem:   maximumTimeoutRem,
-			MfaLastUpdatedTime: now,
+			MfaLastUpdatedTime: zid.MfaLastUpdatedTime,
+			ServiceUpdatedTime: now,
 		}
 
 		if len(BulkServiceChanges) == cap(BulkServiceChanges) {
