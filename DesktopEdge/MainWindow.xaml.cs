@@ -132,6 +132,7 @@ namespace ZitiDesktopEdge {
 				} else if (mfa.Action == "enrollment_remove") {
 					// ShowBlurb("removed mfa: " + mfa.Successful, "");
 				} else if (mfa.Action == "mfa_auth_status") {
+					// serviceClient.GetStatusAsync();
 					// ShowBlurb("mfa authenticated: " + mfa.Successful, "");
 				} else {
 					await ShowBlurbAsync ("Unexpected error when processing MFA", "");
@@ -263,9 +264,7 @@ namespace ZitiDesktopEdge {
 							// and if someone pages the service list and we have not got an update from the service
 							// this will also be invalid
 							identities[i].IsTimingOut = false;
-							for (int j=0; j<identities[i].Services.Count; j++) {
-								identities[i].Services[j].Timeout = -1;
-							}
+							identities[i].LastUpdatedTime = DateTime.Now;
 						}
 					}
 				}
@@ -594,14 +593,16 @@ namespace ZitiDesktopEdge {
 					continue;
 				} else {
 					found.TimeoutMessage = notification.Message;
+					found.MaxTimeout = notification.MfaMaximumTimeout;
+					found.MinTimeout = notification.MfaMinimumTimeout;
 					ShowToast(found.TimeoutMessage);
 					// Send Notification
-					if (notification.MfaTimeoutDuration == 0) {
+					if (notification.MfaMinimumTimeout == 0) {
 						found.MFAInfo.IsAuthenticated = false;
 						// display mfa token icon
 						displayMFARequired = true;
 					} else {
-						if (notification.MfaTimeoutDuration<1200) {
+						if (notification.MfaMinimumTimeout<1200) {
 							found.IsTimingOut = true;
 						}
 					}

@@ -70,7 +70,7 @@ namespace ZitiDesktopEdge.Models {
 				},
 				MinTimeout = id.MinTimeout,
 				MaxTimeout = id.MaxTimeout,
-				LastUpdatedTime = id.LastUpdatedTime,
+				LastUpdatedTime = id.MfaLastUpdatedTime,
 				TimeoutMessage = ""
 			};
 
