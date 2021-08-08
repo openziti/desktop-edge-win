@@ -711,16 +711,7 @@ namespace ZitiUpdateService {
 					}
 				}
 			} catch (Exception ex) {
-				try {
-					string filename = check.FileName();
-					string fileDestination = Path.Combine(updateFolder, filename);
-					Checkers.ZDEInstallerInfo info = check.GetZDEInstallerInfo(fileDestination);
-					if (info.Version != null) {
-						NotifyInstallationUpdates(info, -1, "Error Occurred");
-					}
-				} finally {
-					Logger.Error(ex, "Unexpected error has occurred");
-				}
+				Logger.Error(ex, "Unexpected error has occurred during the check for ZDE updates");
 			}
 			semaphore.Release();
 		}
