@@ -350,7 +350,11 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 	name := C.GoString(service.name)
 	svcId := C.GoString(service.id)
 	log.Debugf("============ INSIDE serviceCB - status: %s:%s - %v, %v ============", name, svcId, status, service.perm_flags)
-	C.ziti_sdk_c_on_service(ziti_ctx, service, status, unsafe.Pointer(theTun.tunCtx))
+	if zid.Active {
+		C.ziti_sdk_c_on_service(ziti_ctx, service, status, unsafe.Pointer(theTun.tunCtx))
+	} else {
+		log.Infof("Identity is disabled. Manually enable the identity to add intercepts")
+	}
 
 	var protocols []string
 	var portRanges []dto.PortRange

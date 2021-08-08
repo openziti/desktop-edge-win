@@ -1005,6 +1005,7 @@ func connectIdentity(id *Id) {
 			return true
 		})
 		id.CId.Active = true
+		//uncomment this code, if remove intercept removes all traces of intercepts
 		/*if len(hostnamesToAdd) > 0 {
 			log.Debug("adding rules to NRPT")
 			windns.AddNrptRules(hostnamesToAdd, rts.state.TunIpv4)
@@ -1047,6 +1048,7 @@ func disconnectIdentity(id *Id) error {
 				}*/
 				return true
 			})
+			//uncomment this code, if remove intercept removes all traces of intercepts
 			/*log.Debug("removing rules from NRPT")
 			windns.RemoveNrptRules(hostnamesToRemove)
 			log.Info("removed NRPT rules for: %v", hostnamesToRemove)*/
