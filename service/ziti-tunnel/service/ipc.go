@@ -136,6 +136,7 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 	initialized <- struct{}{}
 
 	waitForStopRequest(ops)
+	rts.SaveState() // save the state of runtime before shutdown
 
 	log.Debug("shutting down. start a ZitiDump")
 	for _, id := range rts.ids {
