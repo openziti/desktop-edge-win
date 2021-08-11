@@ -238,7 +238,8 @@ namespace ZitiDesktopEdge {
 						}
 
 					} else {
-						TimeoutDetails.Text = "Timed Out";
+						if (info.TimeoutRemaining == 0) TimeoutDetails.Text = "Timed Out";
+						else TimeoutDetails.Text = "Never";
 					}
 				} else {
 					TimeoutDetails.Text = "Never";
