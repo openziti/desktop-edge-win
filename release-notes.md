@@ -1,3 +1,17 @@
+# Release 1.9.11
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* tsdk is updated to v0.15.3, c-sdk 0.24.3
+
 # Release 1.9.10
 
 ## What's New
