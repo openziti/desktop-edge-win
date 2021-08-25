@@ -49,7 +49,6 @@ void add_intercepts(uv_async_t *handle);
 void free_async(uv_handle_t* timer);
 
 dns_manager* get_dns_mgr_from_c();
-dns_manager* dns_mgr_c;
 int netifAddRoute(netif_handle dev, char* dest);
 int netifRemoveRoute(netif_handle dev, char* dest);
 

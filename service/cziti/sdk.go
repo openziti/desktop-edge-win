@@ -780,7 +780,7 @@ func LoadZiti(zid *ZIdentity, cfg string, refreshInterval int) {
 	zid.Options.config = C.CString(cfg)
 	zid.Options.refresh_interval = C.long(refreshInterval)
 	zid.Options.metrics_type = C.INSTANT
-	zid.Options.config_types = C.all_configs
+	zid.Options.config_types = C.get_all_configs()
 	zid.Options.pq_domain_cb = C.ziti_pq_domain_cb(C.ziti_pq_domain_go)
 	zid.Options.pq_mac_cb = C.ziti_pq_mac_cb(C.ziti_pq_mac_go)
 	zid.Options.pq_os_cb = C.ziti_pq_os_cb(C.ziti_pq_os_go)
