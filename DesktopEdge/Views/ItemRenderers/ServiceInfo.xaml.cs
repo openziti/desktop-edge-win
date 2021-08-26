@@ -71,6 +71,16 @@ namespace ZitiDesktopEdge {
 				Protocols.ToolTip = protocols;
 				Protocols.Text = protocols;
 
+				TimerColumn.Width = new GridLength(0);
+				TimerIcon.Visibility = Visibility.Collapsed;
+
+				if (this._info.TimeoutRemaining>-1) {
+					if (this._info.TimeoutRemaining<1260) {
+						TimerIcon.Visibility = Visibility.Visible;
+						TimerColumn.Width = new GridLength(30);
+					}
+				}
+
 				WarningColumn.Width = new GridLength(0);
 				if (this._info.Warning.Length > 0) {
 					WarnIcon.ToolTip = this._info.Warning;
