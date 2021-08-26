@@ -82,7 +82,7 @@ namespace ZitiDesktopEdge.Models {
 						var zsvc = new ZitiService(svc);
 						zid.Services.Add(zsvc);
 						if (zid.IsMFAEnabled) {
-							if (zsvc.TimeoutRemaining<1260) zid.IsTimingOut = true;
+							if (zsvc.TimeoutRemaining>-1 && zsvc.TimeoutRemaining<1260) zid.IsTimingOut = true;
 						}
 					}
 				}

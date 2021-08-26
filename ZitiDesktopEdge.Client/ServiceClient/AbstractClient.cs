@@ -194,7 +194,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 #if DEBUG
             Logger.Debug(msg);
 #else
-            Logger.Trace(msg);
+            Logger.Info(msg);
 #endif
         }
 
