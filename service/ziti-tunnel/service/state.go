@@ -275,8 +275,8 @@ func (t *RuntimeState) LoadIdentity(id *Id, refreshInterval int) {
 		id.Config.ZtAPI = id.CId.Controller()
 
 		// hack for now - if the identity name is '<unknown>' don't set it... :(
-		if id.CId.Name == "<unknown>" {
-			log.Debugf("name is set to <unknown> which probably indicates the controller is down - not changing the name")
+		if id.CId.Name == "<unknown>" || id.CId.Name == "" {
+			log.Debugf("name is set to '%s' which probably indicates the controller is down or the identity is not authorized - not changing the name. Continuing to use: %s", id.CId.Name, id.Name)
 		} else if id.Name != id.CId.Name {
 			log.Debugf("name changed from %s to %s", id.Name, id.CId.Name)
 			id.Name = id.CId.Name
