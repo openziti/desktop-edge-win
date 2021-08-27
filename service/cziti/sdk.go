@@ -425,6 +425,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 			if C.GoString(pqs.policy_type) == "Bind" {
 				log.Tracef("Posture Query set returned a Bind policy: %s [ignored]", C.GoString(pqs.policy_id))
 				// posture check does not consider bind policies
+				it = C.model_map_it_next(it)
 				continue
 			} else {
 				log.Tracef("Posture Query set returned a %s policy: %s, is_passing %t", C.GoString(pqs.policy_type), C.GoString(pqs.policy_id), pqs.is_passing)
@@ -486,14 +487,12 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 			it = C.model_map_it_next(it)
 		}
 
-
 		//find all posture checks sets...
 		for setIdx := 0; true; setIdx++ {
 			pqs := C.posture_query_set_get(service.posture_query_set, C.int(setIdx))
 			if unsafe.Pointer(pqs) == C.NULL {
 				break
 			}
-
 
 		}
 
