@@ -120,12 +120,13 @@ namespace ZitiDesktopEdge {
 					await ShowBlurbAsync("Setting Up auth_challenge", "");
 				} else if (mfa.Action == "enrollment_verification") {
 					if (mfa.Successful) {
-						ShowMFARecoveryCodes(this.IdentityMenu.Identity);
+						// ShowMFARecoveryCodes(this.IdentityMenu.Identity);
 						if (this.IdentityMenu.Identity.Fingerprint == mfa.Fingerprint) {
 							this.IdentityMenu.Identity.IsMFAEnabled = true;
 							this.IdentityMenu.Identity.MFAInfo.IsAuthenticated = mfa.Successful;
 							this.IdentityMenu.UpdateView();
 						}
+						ShowMFARecoveryCodes(this.IdentityMenu.Identity);
 					} else {
 						// ShowBlurb("Provided code could not be verified", ""); - This blurbs on remove MFA and it shouldnt
 					}
