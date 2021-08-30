@@ -556,6 +556,14 @@ func (t *RuntimeState) UpdateMfa(fingerprint string, mfaEnabled bool, mfaNeeded 
 	}
 }
 
+func (t *RuntimeState) SetNotified(fingerprint string, notified bool) {
+	id := t.Find(fingerprint)
+
+	if id != nil {
+		id.Notified = notified
+	}
+}
+
 func (t *RuntimeState) UpdateNotificationFrequency(notificationFreq int) error {
 
 	log.Infof("setting notification frequency : %d", notificationFreq)

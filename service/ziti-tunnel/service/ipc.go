@@ -127,6 +127,7 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 						}
 					}
 				}
+				broadcastNotification(true)
 			case <-shutdownDelay:
 				log.Tracef("Exiting windows power events loop")
 				return
@@ -1140,6 +1141,12 @@ func handleBulkServiceChange(sc cziti.BulkServiceChange) {
 	}
 	rts.BroadcastEvent(m)
 
+	id := rts.Find(sc.Fingerprint)
+	if id != nil && !id.Notified {
+		broadcastNotification(true)
+		rts.SetNotified(id.FingerPrint, true)
+	}
+
 }
 
 func addUnit(count int, unit string) (result string) {
@@ -1193,17 +1200,26 @@ func handleEvents(isInitialized chan struct{}) {
 
 		// notification message
 		case <-notificationFrequency.C:
-			broadcastNotification()
+			broadcastNotification(false)
 		}
 	}
 }
 
-func broadcastNotification() {
+func broadcastNotification(adhoc bool) {
+	changedNotifiedStatus := false
 	cleanNotifications := make([]cziti.NotificationMessage, 0)
 	for _, id := range rts.ids {
+		if !id.Notified {
+			rts.SetNotified(id.FingerPrint, true)
+			changedNotifiedStatus = true
+		} else if id.Notified && adhoc {
+			continue
+		}
+
 		if id.CId == nil || !id.CId.MfaRefreshNeeded() {
 			continue
 		}
+
 		notificationMessage := ""
 
 		var notificationMinTimeout int32 = 0
@@ -1236,6 +1252,10 @@ func broadcastNotification() {
 				MfaTimeDuration:   int(time.Since(id.CId.MfaLastUpdatedTime).Seconds()),
 			})
 		}
+	}
+
+	if changedNotifiedStatus && adhoc {
+		ResetFrequency(rts.state.NotificationFrequency)
 	}
 
 	if len(cleanNotifications) > 0 {
@@ -1356,7 +1376,7 @@ func authMfa(out *json.Encoder, fingerprint string, code string) {
 	if result == nil {
 		// respond with auth success message immediately
 		respond(out, dto.Response{Message: "AuthMFA complete", Code: SUCCESS, Error: "", Payload: fingerprint})
-
+		rts.SetNotified(fingerprint, false)
 		id.CId.UpdateMFATime()
 	} else {
 		respondWithError(out, fmt.Sprintf("AuthMFA failed. the supplied code [%s] was not valid: %s", code, result), 1, result)
