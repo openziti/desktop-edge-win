@@ -1207,9 +1207,9 @@ func broadcastNotification() {
 		var notificationMaxTimeout int32 = -1
 		switch mfaState := id.CId.GetMFAState(int32((constants.MaximumFrequency + rts.state.NotificationFrequency) * 60)); mfaState {
 		case constants.MfaAllSvcTimeout:
-			notificationMessage = fmt.Sprintf("All of the services of identity %s are timed out", id.Name)
+			notificationMessage = fmt.Sprintf("All of the services of identity %s have timed out", id.Name)
 		case constants.MfaFewSvcTimeout:
-			notificationMessage = fmt.Sprintf("Some of the services of identity %s are timed out", id.Name)
+			notificationMessage = fmt.Sprintf("Some of the services of identity %s have timed out", id.Name)
 		case constants.MfaNearingTimeout:
 			notificationMinTimeout = id.CId.GetRemainingTime(id.CId.MfaMinTimeout, id.CId.MfaMinTimeoutRem)
 			notificationMessage = fmt.Sprintf("Some of the services of identity %s are timing out in %s", id.Name, secondsToReadableFmt(notificationMinTimeout))

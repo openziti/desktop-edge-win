@@ -416,16 +416,16 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 		timeout := -1
 		timeoutRemaining := -1
 
-		//find all posture checks sets...
-		for setIdx := 0; true; setIdx++ {
-			pqs := C.posture_query_set_get(service.posture_query_set, C.int(setIdx))
-			if unsafe.Pointer(pqs) == C.NULL {
-				break
-			}
+		it := C.model_map_iterator(&service.posture_query_map)
+		for unsafe.Pointer(it) != C.NULL {
+			ptr := C.model_map_it_value(it)
+
+			pqs := (*C.ziti_posture_query_set)(unsafe.Pointer(ptr))
 
 			if C.GoString(pqs.policy_type) == "Bind" {
 				log.Tracef("Posture Query set returned a Bind policy: %s [ignored]", C.GoString(pqs.policy_id))
 				// posture check does not consider bind policies
+				it = C.model_map_it_next(it)
 				continue
 			} else {
 				log.Tracef("Posture Query set returned a %s policy: %s, is_passing %t", C.GoString(pqs.policy_type), C.GoString(pqs.policy_id), pqs.is_passing)
@@ -483,6 +483,17 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 					postureChecks = append(postureChecks, pc)
 				}
 			}
+
+			it = C.model_map_it_next(it)
+		}
+
+		//find all posture checks sets...
+		for setIdx := 0; true; setIdx++ {
+			pqs := C.posture_query_set_get(service.posture_query_set, C.int(setIdx))
+			if unsafe.Pointer(pqs) == C.NULL {
+				break
+			}
+
 		}
 
 		svc = &dto.Service{
