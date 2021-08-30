@@ -449,6 +449,31 @@ namespace ZitiDesktopEdge.ServiceClient {
             return resp;
         }
 
+
+        async public Task<SvcResponse> SnoozeNotificationPayloadAsync(bool snooze) {
+            SvcResponse resp = null;
+            try {
+
+                SnoozeNotificationFunction snoozeNotificationPayload = new SnoozeNotificationFunction(snooze);
+
+                await sendAsync(snoozeNotificationPayload);
+                resp = await readAsync<SvcResponse>(ipcReader);
+                Logger.Debug("snooze notification payload is sent to the ziti tunnel");
+            } catch (Exception ex) {
+                //almost certainly a problem with the pipe - recreate the pipe...
+                //setupPipe();
+                //throw;
+                Logger.Error(ex, "Unexpected error");
+                CommunicationError(ex);
+                throw ex;
+            }
+            if (resp?.Code != 0) {
+                Logger.Warn("failed to enable/diable the snooze notification option. {0} {1}", resp.Message, resp.Error);
+                throw new ServiceException("Failed to enable/diable the snooze notification option", resp.Code, "Un expected error.");
+            }
+            return resp;
+        }
+
         async public Task<ZitiTunnelStatus> debugAsync() {
             try {
                 await sendAsync(new ServiceFunction() { Function = "Debug" });

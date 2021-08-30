@@ -537,6 +537,33 @@ namespace ZitiDesktopEdge {
 		}
 
 		/// <summary>
+		/// Save the snooze notification information to the properties and queue for update.
+		/// </summary>
+		async private void SnoozeNotification() {
+			logger.Info("snooze service timeout notification...");
+			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+			try {
+				var snoozeNotificationVar = false; // Boolean.Parse(Snooze.Text);
+
+				var r = await client.SnoozeNotificationPayloadAsync(snoozeNotificationVar);
+				if (r.Code != 0) {
+					this.OnShowBlurb?.Invoke("Error: " + r.Error);
+					logger.Debug("ERROR: {0} : {1}", r.Message, r.Error);
+				} else {
+					this.OnShowBlurb?.Invoke("Frequency Saved");
+					this.CloseFrequency();
+				}
+				logger.Info("Got response from snooze service timeout notitification task : {0}", r);
+			} catch (DataStructures.ServiceException se) {
+				this.OnShowBlurb?.Invoke("Error: " + se.Message);
+				logger.Error(se, "service exception in snooze service timeout notitification check: {0}", se.Message);
+			} catch (Exception ex) {
+				this.OnShowBlurb?.Invoke("Error: " + ex.Message);
+				logger.Error(ex, "unexpected error in snooze service timeout notitification check: {0}", ex.Message);
+			}
+		}
+
+		/// <summary>
 		/// Show the Edit Modal and blur the background
 		/// </summary>
 		private void ShowEdit() {
