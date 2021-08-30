@@ -1144,7 +1144,6 @@ func handleBulkServiceChange(sc cziti.BulkServiceChange) {
 	id := rts.Find(sc.Fingerprint)
 	if id != nil && !id.Notified {
 		broadcastNotification(true)
-		rts.SetNotified(id.FingerPrint, true)
 	}
 
 }
@@ -1209,14 +1208,15 @@ func broadcastNotification(adhoc bool) {
 	changedNotifiedStatus := false
 	cleanNotifications := make([]cziti.NotificationMessage, 0)
 	for _, id := range rts.ids {
+
+		if id.CId == nil || !id.CId.MfaRefreshNeeded() {
+			continue
+		}
+
 		if !id.Notified {
 			rts.SetNotified(id.FingerPrint, true)
 			changedNotifiedStatus = true
 		} else if id.Notified && adhoc {
-			continue
-		}
-
-		if id.CId == nil || !id.CId.MfaRefreshNeeded() {
 			continue
 		}
 
@@ -1378,6 +1378,7 @@ func authMfa(out *json.Encoder, fingerprint string, code string) {
 		respond(out, dto.Response{Message: "AuthMFA complete", Code: SUCCESS, Error: "", Payload: fingerprint})
 		rts.SetNotified(fingerprint, false)
 		id.CId.UpdateMFATime()
+		broadcastNotification(true)
 	} else {
 		respondWithError(out, fmt.Sprintf("AuthMFA failed. the supplied code [%s] was not valid: %s", code, result), 1, result)
 	}
