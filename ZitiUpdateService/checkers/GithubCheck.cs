@@ -45,7 +45,7 @@ namespace ZitiUpdateService.Checkers {
 			return downloadFileName;
 		}
 
-		override public void IsUpdateAvailable(Version currentVersion, out int avail, out string publishedDate) {
+		override public void CheckUpdate(Version currentVersion, out int avail, out string publishedDate) {
 			Logger.Debug("checking for update begins. current version detected as {0}", currentVersion);
 			Logger.Debug("issuing http get to url: {0}", url);
 			JObject json = GithubAPI.GetJson(url);

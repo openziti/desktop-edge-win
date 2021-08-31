@@ -109,7 +109,7 @@ namespace ZitiUpdateService {
 			StatusCheck r = new StatusCheck();
 			int updateAvailable;
 			string publishedDate;
-			check.IsUpdateAvailable(assemblyVersion, out updateAvailable, out publishedDate);
+			check.CheckUpdate(assemblyVersion, out updateAvailable, out publishedDate);
 			r.Code = updateAvailable;
 			r.ReleaseStream = IsBeta ? "beta" : "stable";
 			switch (r.Code) {
@@ -649,7 +649,7 @@ namespace ZitiUpdateService {
 				String publishedDate;
 				int avail;
 
-				check.IsUpdateAvailable(assemblyVersion, out avail, out publishedDate);
+				check.CheckUpdate(assemblyVersion, out avail, out publishedDate);
 				if (avail >= 0) {
 					Logger.Debug("update check complete. no update available");
 					semaphore.Release();
