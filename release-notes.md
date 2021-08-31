@@ -10,7 +10,7 @@
 * none
 
 ## Dependency Updates
-* updated c-sdk to v0.25.6, updated t-sdk to v0.15.12
+* updated c-sdk to v0.26.3, updated t-sdk to v0.15.14
 
 # Release 1.10.0
 
