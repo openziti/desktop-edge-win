@@ -29,7 +29,7 @@
 ## Dependency Updates
 * updated c-sdk to v0.25.5, updated t-sdk to v0.15.10
 
-# Release 1.9.10
+# Release 1.9.11
 
 ## What's New
 * none
@@ -39,6 +39,21 @@
 
 ## Bugs fixed:
 * none
+
+## Dependency Updates
+* tsdk is updated to v0.15.13, c-sdk 0.24.3
+
+# Release 1.9.10
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* [#408](https://github.com/openziti/desktop-edge-win/issues/408) Toggling an identity ON (true) responds with Active:false
+* [#403](https://github.com/openziti/desktop-edge-win/issues/403) 0 DNS questions in a Response causes crash
 
 ## Dependency Updates
 * wintun updated to 0.12
