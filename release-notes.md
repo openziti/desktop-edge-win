@@ -4,8 +4,7 @@
 * none
 
 ## Other changes:
-* [#430](https://github.com/openziti/desktop-edge-win/issues/430) Snooze service timeout Notification.
-  - Send notification if WDE receives the service updates with timeout that is less than 5 minutes
+* [#430](https://github.com/openziti/desktop-edge-win/issues/430) Send notification if WDE receives the service updates with timeout that is less than 5 minutes
 
 ## Bugs fixed:
 * none
