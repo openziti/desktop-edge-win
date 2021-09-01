@@ -15,6 +15,13 @@ namespace ZitiDesktopEdge.Models {
 		public string EnrollmentStatus { get; set; }
 		public string Status { get; set; }
 		public bool IsMFAEnabled { get; set; }
+		public int MinTimeout { get; set; }
+		public int MaxTimeout { get; set; }
+		public DateTime LastUpdatedTime { get; set; }
+		public bool IsTimingOut { get; set; }
+		public string TimeoutMessage { get; set; }
+		public bool WasNotified { get; set; }
+
 		public MFA MFAInfo { get; set; }
 
 		private bool svcFailingPostureCheck = false;
@@ -64,6 +71,9 @@ namespace ZitiDesktopEdge.Models {
 					if (svc != null) {
 						var zsvc = new ZitiService(svc);
 						zid.Services.Add(zsvc);
+						if (zid.IsMFAEnabled) {
+							if (zsvc.TimeoutRemaining>-1 && zsvc.TimeoutRemaining<1200) zid.IsTimingOut = true;
+						}
 					}
 				}
 				zid.HasServiceFailingPostureCheck = zid.Services.Any(p => !p.HasFailingPostureCheck());
