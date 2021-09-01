@@ -71,6 +71,7 @@ namespace ZitiDesktopEdge {
 			ExpectedLogPathRoot = Path.Combine(ExecutionDirectory, "logs");
 			ExpectedLogPathUI = Path.Combine(ExpectedLogPathRoot, "UI", $"{ThisAssemblyName}.log");
 			ExpectedLogPathServices = Path.Combine(ExpectedLogPathRoot, "service", $"ziti-tunneler.log");
+
 		}
 
 		async private void IdentityMenu_OnMessage(string message) {
@@ -132,6 +133,16 @@ namespace ZitiDesktopEdge {
 				} else if (mfa.Action == "enrollment_remove") {
 					// ShowBlurb("removed mfa: " + mfa.Successful, "");
 				} else if (mfa.Action == "mfa_auth_status") {
+					for (int i=0; i<identities.Count; i++) {
+						if (identities[i].Fingerprint==mfa.Fingerprint) {
+							identities[i].WasNotified = false;
+							for (int j=0; j<identities[i].Services.Count; j++) {
+								identities[i].Services[j].TimeoutRemaining = -1;
+							}
+							break;
+						}
+					}
+					// serviceClient.GetStatusAsync();
 					// ShowBlurb("mfa authenticated: " + mfa.Successful, "");
 				} else {
 					await ShowBlurbAsync ("Unexpected error when processing MFA", "");
@@ -257,6 +268,13 @@ namespace ZitiDesktopEdge {
 					for (int i=0; i<identities.Count; i++) {
 						if (identities[i].Fingerprint==MFASetup.Identity.Fingerprint) {
 							identities[i] = MFASetup.Identity;
+
+							// This will set the timout in the UI to not show the timing out icon but as you can see
+							// it is not real and won't properly update until a real timeout is sent via the service
+							// and if someone pages the service list and we have not got an update from the service
+							// this will also be invalid
+							identities[i].IsTimingOut = false;
+							identities[i].LastUpdatedTime = DateTime.Now;
 						}
 					}
 				}
@@ -268,6 +286,8 @@ namespace ZitiDesktopEdge {
 					} else if (MFASetup.Type == 3) {
 						IdentityMenu.Identity.IsMFAEnabled = false;
 						IdentityMenu.Identity.MFAInfo.IsAuthenticated = false;
+						IdentityMenu.Identity.IsTimingOut = false;
+
 						await ShowBlurbAsync("MFA Disabled, Service Access Can Be Limited", "");
 					} else if (MFASetup.Type == 4) {
 						ShowRecovery(IdentityMenu.Identity);
@@ -275,6 +295,7 @@ namespace ZitiDesktopEdge {
 				}
 				IdentityMenu.UpdateView();
 			}
+			LoadIdentities(true);
 		}
 
 		private void AddIdentity(ZitiIdentity id) {
@@ -292,6 +313,9 @@ namespace ZitiDesktopEdge {
 			InitializeComponent();
 			SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
 			string nlogFile = Path.Combine(ExecutionDirectory, ThisAssemblyName + "-log.config");
+
+
+			ToastNotificationManagerCompat.OnActivated += ToastNotificationManagerCompat_OnActivated;
 
 			bool byFile = false;
 			if (File.Exists(nlogFile)) {
@@ -357,6 +381,26 @@ namespace ZitiDesktopEdge {
 			this.PreviewKeyDown += KeyPressed;
 			MFASetup.OnLoad += MFASetup_OnLoad;
 			IdentityMenu.OnMessage += IdentityMenu_OnMessage;
+		}
+
+		private void ToastNotificationManagerCompat_OnActivated(ToastNotificationActivatedEventArgsCompat e) {
+			this.Dispatcher.Invoke(() => {
+				if (e.Argument != null && e.Argument.Length > 0) {
+					string[] items = e.Argument.Split(';');
+					if (items.Length > 0) {
+						string[] values = items[0].Split('=');
+						if (values.Length == 2) {
+							string fingerprint = values[1];
+							for (int i = 0; i < identities.Count; i++) {
+								if (identities[i].Fingerprint == fingerprint) {
+									ShowMFA(identities[i], 1);
+									break;
+								}
+							}
+						}
+					}
+				}
+			});
 		}
 
 		private void KeyPressed(object sender, KeyEventArgs e) {
@@ -575,25 +619,42 @@ namespace ZitiDesktopEdge {
 
 		private void ServiceClient_OnNotificationEvent(object sender, NotificationEvent e) {
 			var displayMFARequired = false;
+			var displayMFATimout = false;
 			foreach (var notification in e.Notification) {
 				var found = identities.Find(id => id.Fingerprint == notification.Fingerprint);
 				if (found == null) {
 					logger.Warn($"{e.Op} event for {notification.Fingerprint} but the provided identity fingerprint was not found!");
 					continue;
-				}
-				if (notification.MfaMaximumTimeout == 0) {
-					found.MFAInfo.IsAuthenticated = false;
-					// display notification message - critical 
-					displayMFARequired = true;
-				} else if (notification.MfaMinimumTimeout == 0) {
-					// display notification message, only few services are timed out
 				} else {
-					// display notification message, only few services are about to timeout
+					found.TimeoutMessage = notification.Message;
+					found.MaxTimeout = notification.MfaMaximumTimeout;
+					found.MinTimeout = notification.MfaMinimumTimeout;
+					if (!found.WasNotified) {
+						found.WasNotified = true;
+						ShowMFAToast(found.TimeoutMessage, found);
+					}
+					// Send Notification
+					if (notification.MfaMinimumTimeout == 0) {
+						found.MFAInfo.IsAuthenticated = false;
+						// display mfa token icon
+						displayMFARequired = true;
+					} else {
+						found.IsTimingOut = true;
+						displayMFATimout = true;
+					}
+
+					for (int i = 0; i < identities.Count; i++) {
+						if (identities[i].Fingerprint==found.Fingerprint) {
+							identities[i] = found;
+							break;
+						}
+					}
 				}
 			}
+
 			// we may need to display mfa icon, based on the timer in UI, remove found.MFAInfo.IsAuthenticated setting in this function. 
 			// the below function can show mfa icon even after user authenticates successfully, in race conditions
-			if (displayMFARequired) {
+			if (displayMFARequired || displayMFATimout) {
 				LoadIdentities(true);
 				this.Dispatcher.Invoke(() => {
 					IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
@@ -696,10 +757,20 @@ namespace ZitiDesktopEdge {
 			});
 		}
 
+		private void ShowMFAToast(string message, ZitiIdentity identity) {
+			new ToastContentBuilder()
+				.AddText("Important Notice")
+				.AddText(message)
+				.AddArgument("fingerprint", identity.Fingerprint)
+				.SetBackgroundActivation()
+				.Show();
+		}
+
 		private void ShowToast(string message) {
 			new ToastContentBuilder()
 				.AddText("Important Notice")
 				.AddText(message)
+				.SetBackgroundActivation()
 				.Show();
 		}
 
@@ -836,6 +907,14 @@ namespace ZitiDesktopEdge {
 						found.ControllerUrl = zid.ControllerUrl;
 						found.IsEnabled = zid.IsEnabled;
 						found.MFAInfo.IsAuthenticated = !e.Id.MfaNeeded;
+						found.WasNotified = false;
+						found.Services = zid.Services;
+						for (int i=0; i<identities.Count; i++) {
+							if (identities[i].Fingerprint==found.Fingerprint) {
+								identities[i] = found;
+								break;
+							}
+						}
 						LoadIdentities(true);
 					}
 				} else if (e.Action == "updated") {
@@ -1073,25 +1152,18 @@ namespace ZitiDesktopEdge {
 						IdentityItem idItem = new IdentityItem();
 
 						idItem.ToggleStatus.IsEnabled = id.IsEnabled;
-						if (id.IsEnabled) {
-							idItem.ToggleStatus.Content = "ENABLED";
-						} else {
-							idItem.ToggleStatus.Content = "DISABLED";
-						}
+						if (id.IsEnabled) idItem.ToggleStatus.Content = "ENABLED";
+						else idItem.ToggleStatus.Content = "DISABLED";
+
 						idItem.Authenticate += IdItem_Authenticate;
 						idItem.OnStatusChanged += Id_OnStatusChanged;
 						idItem.Identity = id;
-						if (!id.MFAInfo.IsAuthenticated)
-						{
-							idItem.RefreshUI();
-						}
+						if (!id.MFAInfo.IsAuthenticated) idItem.RefreshUI();
 
 						IdList.Children.Add(idItem);
 
 						if (IdentityMenu.Visibility==Visibility.Visible) {
-							if (id.Fingerprint==IdentityMenu.Identity.Fingerprint) {
-								IdentityMenu.Identity = id;
-							}
+							if (id.Fingerprint==IdentityMenu.Identity.Fingerprint) IdentityMenu.Identity = id;
 						}
 					}
 					//IdList.Height = ;
@@ -1117,9 +1189,7 @@ namespace ZitiDesktopEdge {
 		private void Id_OnStatusChanged(bool attached) {
 			for (int i = 0; i < IdList.Children.Count; i++) {
 				IdentityItem item = IdList.Children[i] as IdentityItem;
-				if (item.ToggleSwitch.Enabled) {
-					break;
-				}
+				if (item.ToggleSwitch.Enabled) break;
 			}
 		}
 

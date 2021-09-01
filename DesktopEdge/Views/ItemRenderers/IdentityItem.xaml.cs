@@ -25,6 +25,7 @@ namespace ZitiDesktopEdge {
 		public event StatusChanged OnStatusChanged;
 		public delegate void OnAuthenticate(ZitiIdentity identity);
 		public event OnAuthenticate Authenticate;
+		private System.Windows.Forms.Timer _timer;
 
 		public ZitiIdentity _identity;
 		public ZitiIdentity Identity {
@@ -45,6 +46,13 @@ namespace ZitiDesktopEdge {
 					MfaRequired.Visibility = Visibility.Collapsed;
 					ServiceCountAreaLabel.Content = "services";
 					MainArea.Opacity = 1.0;
+					if (_identity.MaxTimeout>0) {
+						if (_timer != null) _timer.Stop();
+						_timer = new System.Windows.Forms.Timer();
+						_timer.Interval = _identity.MaxTimeout;
+						_timer.Tick += TimerTicked;
+						_timer.Start();
+					}
 				} else {
 					ServiceCountArea.Visibility = Visibility.Collapsed;
 					MfaRequired.Visibility = Visibility.Visible;
@@ -64,11 +72,20 @@ namespace ZitiDesktopEdge {
 			} else {
 				ServiceCount.Content = _identity.Services.Count.ToString();
 			}
+			TimerCountdown.ToolTip = _identity.TimeoutMessage;
+			if (TimerCountdown.ToolTip.ToString().Length == 0) TimerCountdown.ToolTip = "Timing Out";
+			TimerCountdown.Visibility = _identity.IsTimingOut ? Visibility.Visible : Visibility.Collapsed;
 			if (ToggleSwitch.Enabled) {
 				ToggleStatus.Content = "ENABLED";
 			} else {
 				ToggleStatus.Content = "DISABLED";
 			}
+		}
+
+		private void TimerTicked(object sender, EventArgs e) {
+			_identity.MFAInfo.IsAuthenticated = false;
+			RefreshUI();
+			_timer.Stop();
 		}
 
 		public IdentityItem() {

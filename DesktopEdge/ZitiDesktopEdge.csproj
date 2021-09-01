@@ -453,6 +453,7 @@
     <Resource Include="Assets\Images\statusconnected.png" />
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Assets\Images\timer.png" />
     <Resource Include="Assets\Images\Ziti-Green-Update.ico" />
     <Resource Include="Assets\Images\Ziti-Green-Update.png" />
     <Resource Include="Assets\Images\Ziti-Red-Update.ico" />
