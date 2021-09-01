@@ -268,6 +268,13 @@ namespace ZitiDesktopEdge {
 					for (int i=0; i<identities.Count; i++) {
 						if (identities[i].Fingerprint==MFASetup.Identity.Fingerprint) {
 							identities[i] = MFASetup.Identity;
+
+							// This will set the timout in the UI to not show the timing out icon but as you can see
+							// it is not real and won't properly update until a real timeout is sent via the service
+							// and if someone pages the service list and we have not got an update from the service
+							// this will also be invalid
+							identities[i].IsTimingOut = false;
+							identities[i].LastUpdatedTime = DateTime.Now;
 						}
 					}
 				}
@@ -279,6 +286,8 @@ namespace ZitiDesktopEdge {
 					} else if (MFASetup.Type == 3) {
 						IdentityMenu.Identity.IsMFAEnabled = false;
 						IdentityMenu.Identity.MFAInfo.IsAuthenticated = false;
+						IdentityMenu.Identity.IsTimingOut = false;
+
 						await ShowBlurbAsync("MFA Disabled, Service Access Can Be Limited", "");
 					} else if (MFASetup.Type == 4) {
 						ShowRecovery(IdentityMenu.Identity);
@@ -286,6 +295,7 @@ namespace ZitiDesktopEdge {
 				}
 				IdentityMenu.UpdateView();
 			}
+			LoadIdentities(true);
 		}
 
 		private void AddIdentity(ZitiIdentity id) {
@@ -608,20 +618,13 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void ServiceClient_OnNotificationEvent(object sender, NotificationEvent e) {
-			bool displayMFARequired = false;
-			bool displayMFATimout = false;
+			var displayMFARequired = false;
+			var displayMFATimout = false;
 			foreach (var notification in e.Notification) {
 				var found = identities.Find(id => id.Fingerprint == notification.Fingerprint);
 				if (found == null) {
 					logger.Warn($"{e.Op} event for {notification.Fingerprint} but the provided identity fingerprint was not found!");
 					continue;
-				}
-				if (notification.MfaMaximumTimeout == 0) {
-					found.MFAInfo.IsAuthenticated = false;
-					// display notification message - critical 
-					displayMFARequired = true;
-				} else if (notification.MfaMinimumTimeout == 0) {
-					// display notification message, only few services are timed out
 				} else {
 					// display notification message, only few services are about to timeout
 					found.TimeoutMessage = notification.Message;
@@ -649,9 +652,10 @@ namespace ZitiDesktopEdge {
 					}
 				}
 			}
+
 			// we may need to display mfa icon, based on the timer in UI, remove found.MFAInfo.IsAuthenticated setting in this function. 
 			// the below function can show mfa icon even after user authenticates successfully, in race conditions
-			if (displayMFARequired) {
+			if (displayMFARequired || displayMFATimout) {
 				LoadIdentities(true);
 				this.Dispatcher.Invoke(() => {
 					IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
@@ -1149,25 +1153,18 @@ namespace ZitiDesktopEdge {
 						IdentityItem idItem = new IdentityItem();
 
 						idItem.ToggleStatus.IsEnabled = id.IsEnabled;
-						if (id.IsEnabled) {
-							idItem.ToggleStatus.Content = "ENABLED";
-						} else {
-							idItem.ToggleStatus.Content = "DISABLED";
-						}
+						if (id.IsEnabled) idItem.ToggleStatus.Content = "ENABLED";
+						else idItem.ToggleStatus.Content = "DISABLED";
+
 						idItem.Authenticate += IdItem_Authenticate;
 						idItem.OnStatusChanged += Id_OnStatusChanged;
 						idItem.Identity = id;
-						if (!id.MFAInfo.IsAuthenticated)
-						{
-							idItem.RefreshUI();
-						}
+						if (!id.MFAInfo.IsAuthenticated) idItem.RefreshUI();
 
 						IdList.Children.Add(idItem);
 
 						if (IdentityMenu.Visibility==Visibility.Visible) {
-							if (id.Fingerprint==IdentityMenu.Identity.Fingerprint) {
-								IdentityMenu.Identity = id;
-							}
+							if (id.Fingerprint==IdentityMenu.Identity.Fingerprint) IdentityMenu.Identity = id;
 						}
 					}
 					//IdList.Height = ;
@@ -1193,9 +1190,7 @@ namespace ZitiDesktopEdge {
 		private void Id_OnStatusChanged(bool attached) {
 			for (int i = 0; i < IdList.Children.Count; i++) {
 				IdentityItem item = IdList.Children[i] as IdentityItem;
-				if (item.ToggleSwitch.Enabled) {
-					break;
-				}
+				if (item.ToggleSwitch.Enabled) break;
 			}
 		}
 

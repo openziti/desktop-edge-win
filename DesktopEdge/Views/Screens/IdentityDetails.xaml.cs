@@ -177,6 +177,7 @@ namespace ZitiDesktopEdge {
 					total++; 
 					if (index<PerPage) {
 						if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0) {
+							zitiSvc.TimeUpdated = _identity.LastUpdatedTime;
 							_services.Add(zitiSvc);
 							index++;
 						}
@@ -421,6 +422,7 @@ namespace ZitiDesktopEdge {
 							ZitiService zitiSvc = services[i];
 							if (index < PerPage) {
 								if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0) {
+									zitiSvc.TimeUpdated = _identity.LastUpdatedTime;
 									ZitiServices.Add(zitiSvc);
 									index++;
 								}
