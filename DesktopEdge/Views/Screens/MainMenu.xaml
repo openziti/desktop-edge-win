@@ -45,6 +45,14 @@
                     <local:MenuItem Label="Support" Icon="/Assets/Images/support.png" MouseUp="ShowSupport"></local:MenuItem>
                     <local:MenuItem x:Name="DetachButton" Label="Detach App" Icon="/Assets/Images/detach.png" MouseUp="DetachWindow"></local:MenuItem>
                     <local:MenuItem x:Name="AttachButton" Label="Attach App" Icon="/Assets/Images/detach.png" MouseUp="RetachWindow" Visibility="Collapsed"></local:MenuItem>
+                    <Label Name="UpdateTimeLeft" Visibility="Collapsed" Content="" HorizontalAlignment="Center" FontSize="10" Height="50" Padding="0,30,0,0" Foreground="#F4044D" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
+                    <Button Name="ForceUpdate" Visibility="Collapsed" Height="40" Grid.Column="1" Margin="20,20,40,0" Width="260" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#dc252c" Content="Update Now" Click="TriggerUpdate_Click" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="5"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
                 </StackPanel>
                 <StackPanel Name="AboutItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <local:SubMenuItem HorizontalAlignment="Stretch" Width="Auto" Label="Privacy Policy" MouseUp="ShowPrivacy"></local:SubMenuItem>
@@ -56,6 +64,7 @@
                     <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/logs.png" Width="Auto" Label="Application Logs" MouseUp="ShowUILogs"></local:MenuItem>
                     <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/advanced.png" Width="Auto" Label="Set Logging Level" MouseUp="SetLogLevel"></local:MenuItem>
                     <local:MenuItem x:Name="ShowReleaseStreamMenuItem" Visibility="Collapsed" HorizontalAlignment="Stretch" Icon="/Assets/Images/update.png" Width="Auto" Label="Set Release Stream" MouseUp="ShowReleaseStreamMenuAction"></local:MenuItem>
+                    <local:StyledButton x:Name="EditFreqButton" OnClick="EditFreqButton_OnClick" Label="Change Notification Frequency" Grid.Row="8" Margin="0,20,0,0"></local:StyledButton>
                 </StackPanel>
                 <StackPanel Name="LogLevelItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <local:SubOptionItem x:Name="LogFatal" HorizontalAlignment="Stretch" Width="Auto" Label="Fatal" MouseUp="SetLevel"></local:SubOptionItem>
@@ -180,8 +189,41 @@
                 <CheckBox x:Name="AddDnsNew" Content="Add DNS" IsChecked="True" Margin="10"/>
 
                 <local:StyledButton x:Name="SaveConfigButton" OnClick="SaveConfig" Label="Save" Grid.Row="8"></local:StyledButton>
+
             </StackPanel>
             <Image Source="/Assets/Images/closeBlack.png" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,40,40,0" Width="10" Height="10" Cursor="Hand" MouseUp="CloseEditConfig"></Image>
+        </Grid>
+
+        <!-- Modal For modifying the notification frequency -->
+        <Grid x:Name="FrequencyArea" Visibility="Collapsed" Height="170" Margin="0,0,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <Border Margin="10,10,10,10" BorderBrush="Black" BorderThickness="8" CornerRadius="10">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="20" Direction="1" RenderingBias="Quality" ShadowDepth="1" Opacity="1"/>
+                </Border.Effect>
+            </Border>
+            <Rectangle Margin="10,10,10,10" RadiusX="10" RadiusY="10" ClipToBounds="True">
+                <Rectangle.Fill>
+                    <SolidColorBrush Color="#FFFFFF" Opacity="0.97"/>
+                </Rectangle.Fill>
+            </Rectangle>
+            <StackPanel Grid.Column="0" Orientation="Vertical" Margin="20,20,20,20" VerticalAlignment="Center" FocusVisualStyle="{x:Null}">
+
+                <Label Content="Notification Frequency" Padding="10,0,0,0"  FontWeight="Bold" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
+                <TextBox x:Name="Frequency" Padding="10" Margin="10,10,10,10" Height="40" Keyboard.KeyUp="Frequency_KeyUp" BorderThickness="1" TextAlignment="Left" FontSize="14" Foreground="Black" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                    <TextBox.Resources>
+                        <Style TargetType="{x:Type Border}">
+                            <Setter Property="CornerRadius" Value="7"/>
+                        </Style>
+                    </TextBox.Resources>
+                </TextBox>
+
+                <local:StyledButton x:Name="SaveFrequencyButton" OnClick="SaveFrequencyButton_OnClick" Label="Save" Grid.Row="8"></local:StyledButton>
+
+            </StackPanel>
+            <Image Source="/Assets/Images/closeBlack.png" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,30,30,0" Width="10" Height="10" Cursor="Hand" MouseUp="CloseFrequencyArea"></Image>
         </Grid>
     </Grid>
 </UserControl>

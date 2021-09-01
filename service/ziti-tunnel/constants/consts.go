@@ -18,8 +18,14 @@
 package constants
 
 const (
-	Ipv4ip          = "100.64.0.1"
-	Ipv4MaxMask     = 8
-	Ipv4MinMask     = 16
-	Ipv4DefaultMask = 10
+	Ipv4ip           = "100.64.0.1"
+	Ipv4MaxMask      = 10
+	Ipv4MinMask      = 16
+	Ipv4DefaultMask  = 10
+	MinimumFrequency = 5  // minimum notification window
+	MaximumFrequency = 20 // maximum notification window
+
+	MfaAllSvcTimeout  = 0
+	MfaFewSvcTimeout  = 1
+	MfaNearingTimeout = 2
 )

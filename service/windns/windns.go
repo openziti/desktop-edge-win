@@ -158,7 +158,9 @@ func chunkedAddNrptRules(domainsToAdd []string, dnsServer string) {
 `)
 
 	for _, hostname := range domainsToAdd {
-		sb.WriteString(fmt.Sprintf(namespaceTemplate, "\n", hostname))
+		if strings.TrimSpace(hostname) != "" {
+			sb.WriteString(fmt.Sprintf(namespaceTemplate, "\n", hostname))
+		}
 	}
 
 	sb.WriteString(fmt.Sprintf(`)

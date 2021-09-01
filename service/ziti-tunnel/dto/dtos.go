@@ -19,6 +19,7 @@ package dto
 
 import (
 	"log"
+	"time"
 
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/config"
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
@@ -31,14 +32,16 @@ type AddIdentity struct {
 }
 
 type Service struct {
-	Name          string
-	Id            string
-	Protocols     []string
-	Addresses     []Address
-	Ports         []PortRange
-	OwnsIntercept bool
-	PostureChecks []PostureCheck
-	IsAccessable  bool
+	Name             string
+	Id               string
+	Protocols        []string
+	Addresses        []Address
+	Ports            []PortRange
+	OwnsIntercept    bool
+	PostureChecks    []PostureCheck
+	IsAccessable     bool
+	Timeout          int32
+	TimeoutRemaining int32
 }
 
 type Address struct {
@@ -54,9 +57,11 @@ type PortRange struct {
 }
 
 type PostureCheck struct {
-	IsPassing bool
-	QueryType string
-	Id        string
+	IsPassing        bool
+	QueryType        string
+	Id               string
+	Timeout          int
+	TimeoutRemaining int
 }
 
 type ServiceOwner struct {
@@ -68,17 +73,25 @@ type HostContext struct {
 }
 
 type Identity struct {
-	Name              string
-	FingerPrint       string
-	Active            bool
-	Config            idcfg.Config
-	ControllerVersion string
-	Status            string
-	MfaEnabled        bool
-	MfaNeeded         bool
-	Services          []*Service `json:",omitempty"`
-	Metrics           *Metrics   `json:",omitempty"`
-	Tags              []string   `json:",omitempty"`
+	Name               string
+	FingerPrint        string
+	Active             bool
+	Config             idcfg.Config
+	ControllerVersion  string
+	Status             string
+	MfaEnabled         bool
+	MfaNeeded          bool
+	Services           []*Service `json:",omitempty"`
+	Metrics            *Metrics   `json:",omitempty"`
+	Tags               []string   `json:",omitempty"`
+	MfaMinTimeout      int32
+	MfaMaxTimeout      int32
+	MfaMinTimeoutRem   int32
+	MfaMaxTimeoutRem   int32
+	MfaLastUpdatedTime time.Time
+	ServiceUpdatedTime time.Time
+	Notified		   bool
+
 }
 type Metrics struct {
 	Up   int64
@@ -110,16 +123,17 @@ func (id *Identity) Path() string {
 }
 
 type TunnelStatus struct {
-	Active         bool
-	Duration       int64
-	Identities     []*Identity
-	IpInfo         *TunIpInfo `json:"IpInfo,omitempty"`
-	LogLevel       string
-	ServiceVersion ServiceVersion
-	TunIpv4        string
-	TunIpv4Mask    int
-	Status         string
-	AddDns         bool
+	Active                bool
+	Duration              int64
+	Identities            []*Identity
+	IpInfo                *TunIpInfo `json:"IpInfo,omitempty"`
+	LogLevel              string
+	ServiceVersion        ServiceVersion
+	TunIpv4               string
+	TunIpv4Mask           int
+	Status                string
+	AddDns                bool
+	NotificationFrequency int
 }
 
 type ServiceVersion struct {

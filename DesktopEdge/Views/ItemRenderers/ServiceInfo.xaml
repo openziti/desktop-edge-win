@@ -11,6 +11,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="220"/>
                 <ColumnDefinition Width="100"/>
+                <ColumnDefinition x:Name="TimerColumn" Width="0"/>
                 <ColumnDefinition x:Name="WarningColumn" Width="0"/>
                 <ColumnDefinition x:Name="DetailColumn" Width="30"/>
             </Grid.ColumnDefinitions>
@@ -22,8 +23,9 @@
                 <TextBox Name="Protocols" Padding="0,0,12,0" Height="15" IsReadOnly="True" BorderThickness="0" FontWeight="Bold" Background="Transparent" ClipToBounds="True" VerticalAlignment="Bottom" HorizontalAlignment="Right" FontSize="11" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Opacity="0.9"></TextBox>
                 <TextBox Name="Ports" IsReadOnly="True" Height="14" Padding="0,0,12,0" TextAlignment="Right" BorderThickness="0" Background="Transparent" ClipToBounds="True" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Stretch" FontSize="10" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="LightGray"></TextBox>
             </StackPanel>
-            <Image x:Name="DetailIcon" Source="/Assets/Images/detail.png" Grid.Column="3" Width="20" Height="20" Cursor="Hand" MouseUp="DetailIcon_MouseUp"/>
-            <Image x:Name="WarnIcon" Visibility="Collapsed" Source="/Assets/Images/Warning.png" Grid.Column="2" Width="20" Height="20" Cursor="Hand" MouseUp="WarnIcon_MouseUp"/>
+            <Image x:Name="TimerIcon" Visibility="Collapsed" Source="/Assets/Images/timer.png" Grid.Column="2" Width="20" Height="20"/>
+            <Image x:Name="WarnIcon" Visibility="Collapsed" Source="/Assets/Images/Warning.png" Grid.Column="3" Width="20" Height="20" Cursor="Hand" MouseUp="WarnIcon_MouseUp"/>
+            <Image x:Name="DetailIcon" Source="/Assets/Images/detail.png" Grid.Column="4" Width="20" Height="20" Cursor="Hand" MouseUp="DetailIcon_MouseUp"/>
         </Grid>
     </StackPanel>
 </UserControl>

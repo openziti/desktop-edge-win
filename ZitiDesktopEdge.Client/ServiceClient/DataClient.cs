@@ -36,6 +36,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         public event EventHandler<LogLevelEvent> OnLogLevelEvent;
         public event EventHandler<MfaEvent> OnMfaEvent;
         public event EventHandler<BulkServiceEvent> OnBulkServiceEvent;
+        public event EventHandler<NotificationEvent> OnNotificationEvent;
 
         protected override void ShutdownEvent(StatusEvent e) {
             Logger.Debug("Clean shutdown detected from ziti");
@@ -70,6 +71,10 @@ namespace ZitiDesktopEdge.ServiceClient {
         protected virtual void MfaEvent(MfaEvent e) {
             OnMfaEvent?.Invoke(this, e);
         }
+
+        protected virtual void NotificationEvent(NotificationEvent e) {
+            OnNotificationEvent?.Invoke(this, e);
+		}
 
         protected override void ClientConnected(object e) {
             base.ClientConnected(e);
@@ -159,7 +164,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
             if (resp?.Code != 0) {
                 Logger.Warn("failed to enroll. {0} {1}", resp.Message, resp.Error);
-                throw new ServiceException("Failed to Enroll", resp.Code, "The provided token was invalid. This usually is because the token has already been used or it has expired.");
+                throw new ServiceException("Failed to Enroll", resp.Code, !string.IsNullOrEmpty(resp.Error) ? resp.Error : "The provided token was invalid. This usually is because the token has already been used or it has expired.");
             }
             return resp.Payload;
         }
@@ -176,6 +181,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                     Function = "RemoveIdentity",
                     Payload = new FingerprintPayload() { Fingerprint = fingerPrint }
                 };
+                Logger.Info("Removing Identity with fingerprint {0}", fingerPrint);
                 await sendAsync(removeFunction);
                 var r = await readAsync<SvcResponse>(ipcReader);
             } catch (Exception ioe) {
@@ -366,7 +372,12 @@ namespace ZitiDesktopEdge.ServiceClient {
                         Logger.Debug("mfa event received");
                         MfaEvent mfa = serializer.Deserialize<MfaEvent>(jsonReader);
                         MfaEvent(mfa);
-                        break;                        
+                        break;
+                    case "notification":
+                        Logger.Debug("Notification event received");
+                        NotificationEvent notificationEvent = serializer.Deserialize<NotificationEvent>(jsonReader);
+                        NotificationEvent(notificationEvent);
+                        break;
                     default:
                         Logger.Debug("unexpected operation! " + evt.Op);
                         break;
@@ -413,6 +424,31 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
             return resp;
         }
+
+        async public Task<SvcResponse> NotificationFrequencyPayloadAsync(int frequency) {
+            SvcResponse resp = null;
+            try {
+
+                NotificationFrequencyFunction frequencyPayload = new NotificationFrequencyFunction(frequency);
+
+                await sendAsync(frequencyPayload);
+                resp = await readAsync<SvcResponse>(ipcReader);
+                Logger.Debug("frequency update payload is sent to the ziti tunnel");
+            } catch (Exception ex) {
+                //almost certainly a problem with the pipe - recreate the pipe...
+                //setupPipe();
+                //throw;
+                Logger.Error(ex, "Unexpected error");
+                CommunicationError(ex);
+                throw ex;
+            }
+            if (resp?.Code != 0) {
+                Logger.Warn("failed to update the frequency. {0} {1}", resp.Message, resp.Error);
+                throw new ServiceException("Failed to update the frequency", resp.Code, "Un expected error.");
+            }
+            return resp;
+        }
+
 
         async public Task<ZitiTunnelStatus> debugAsync() {
             try {

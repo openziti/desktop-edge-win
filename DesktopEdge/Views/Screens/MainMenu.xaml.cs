@@ -42,6 +42,14 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
+		public void ShowUpdateAvailable(double timeLeft, DateTime updateTime) {
+			ForceUpdate.Visibility = Visibility.Visible;
+			if (timeLeft>0) {
+				UpdateTimeLeft.Visibility = Visibility.Visible;
+				UpdateTimeLeft.Content = "Update will occur "+updateTime.ToString("g");
+			}
+		}
+
 		internal MainWindow MainWindow { get; set; }
 
 		public MainMenu() {
@@ -502,6 +510,34 @@ namespace ZitiDesktopEdge {
 		}
 
 		/// <summary>
+		/// Save the frequency information to the properties and queue for update.
+		/// </summary>
+		async private void UpdateFrequency() {
+			logger.Info("updating frequency...");
+			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+			try {
+				var newFrequencyVar = Int32.Parse(Frequency.Text);
+
+				var r = await client.NotificationFrequencyPayloadAsync(newFrequencyVar);
+				if (r.Code != 0) {
+					this.OnShowBlurb?.Invoke("Error: " + r.Error);
+					logger.Debug("ERROR: {0} : {1}", r.Message, r.Error);
+				} else {
+					this.OnShowBlurb?.Invoke("Frequency Saved");
+					this.CloseFrequency();
+				}
+				logger.Info("Got response from update frequency task : {0}", r);
+			} catch (DataStructures.ServiceException se) {
+				this.OnShowBlurb?.Invoke("Error: " + se.Message);
+				logger.Error(se, "service exception in update frequency check: {0}", se.Message);
+			} catch (Exception ex) {
+				this.OnShowBlurb?.Invoke("Error: " + ex.Message);
+				logger.Error(ex, "unexpected error in update frequency check: {0}", ex.Message);
+			}
+		}
+
+
+		/// <summary>
 		/// Show the Edit Modal and blur the background
 		/// </summary>
 		private void ShowEdit() {
@@ -513,12 +549,47 @@ namespace ZitiDesktopEdge {
 					break;
 				}
 			}
+			AddDnsNew.IsChecked = (bool)Application.Current.Properties["dnsenabled"];
 			EditArea.Opacity = 0;
 			EditArea.Visibility = Visibility.Visible;
 			EditArea.Margin = new Thickness(0, 0, 0, 0);
 			EditArea.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
 			EditArea.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
 			ShowModal();
+		}
+
+		/// <summary>
+		/// Show the Frequency Modal and blur the background
+		/// </summary>
+		private void ShowFrequency() {
+			Frequency.Text = "";
+			FrequencyArea.Opacity = 0;
+			FrequencyArea.Visibility = Visibility.Visible;
+			FrequencyArea.Margin = new Thickness(0, 0, 0, 0);
+			FrequencyArea.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
+			FrequencyArea.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
+			ShowModal();
+		}
+
+		/// <summary>
+		/// Hide the Edit Config
+		/// </summary>
+		private void CloseFrequency() {
+			DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
+			ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
+			animation.Completed += CloseFrequencyComplete;
+			FrequencyArea.BeginAnimation(Grid.OpacityProperty, animation);
+			FrequencyArea.BeginAnimation(Grid.MarginProperty, animateThick);
+			HideModal();
+		}
+
+		/// <summary>
+		/// Close the config window
+		/// </summary>
+		/// <param name="sender">The close button</param>
+		/// <param name="e">The event arguments</param>
+		private void CloseFrequencyComplete(object sender, EventArgs e) {
+			FrequencyArea.Visibility = Visibility.Collapsed;
 		}
 
 		/// <summary>
@@ -581,6 +652,24 @@ namespace ZitiDesktopEdge {
 
 		private void SaveConfig() {
 			this.UpdateConfig();
+		}
+
+		private void SaveFrequencyButton_OnClick() {
+			UpdateFrequency();
+		}
+
+		private void CloseFrequencyArea(object sender, MouseButtonEventArgs e) {
+			CloseFrequency();
+		}
+
+		private void EditFreqButton_OnClick() {
+			ShowFrequency();
+		}
+
+		private void Frequency_KeyUp(object sender, KeyEventArgs e) {
+			if (e.Key == Key.Return) {
+				UpdateFrequency();
+			}
 		}
 	}
 }

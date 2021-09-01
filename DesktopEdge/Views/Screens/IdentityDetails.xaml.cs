@@ -177,6 +177,7 @@ namespace ZitiDesktopEdge {
 					total++; 
 					if (index<PerPage) {
 						if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0) {
+							zitiSvc.TimeUpdated = _identity.LastUpdatedTime;
 							_services.Add(zitiSvc);
 							index++;
 						}
@@ -216,6 +217,37 @@ namespace ZitiDesktopEdge {
 			DetailAddress.Text = info.AddressString;
 			DetailPorts.Text = info.PortString;
 			DetailUrl.Text = info.ToString();
+
+			try {
+				if (_identity.IsMFAEnabled) {
+					if (info.TimeoutRemaining > 0) {
+						// t = TimeSpan.FromSeconds(info.TimeoutRemaining);
+						TimeSpan t = (DateTime.Now - info.TimeUpdated);
+						int timeout = info.Timeout - (int)Math.Floor(t.TotalSeconds);
+
+						if  (timeout>0) {
+							t = TimeSpan.FromSeconds(timeout);
+							string answer = string.Format("{0:D2} minutes", t.Minutes);
+							if (t.Days > 0) answer = string.Format("{0:D2} days {1:D2} hours {2:D2} minutes", t.Days, t.Hours, t.Minutes);
+							else {
+								if (t.Hours > 0) answer = string.Format("{0:D2} hours {1:D2} minutes", t.Hours, t.Minutes);
+							}
+							TimeoutDetails.Text = answer;
+						} else {
+							TimeoutDetails.Text = "Timed Out";
+						}
+
+					} else {
+						if (info.TimeoutRemaining == 0) TimeoutDetails.Text = "Timed Out";
+						else TimeoutDetails.Text = "Never";
+					}
+				} else {
+					TimeoutDetails.Text = "Never";
+				}
+			} catch (Exception e) {
+				TimeoutDetails.Text = "Never";
+				Console.WriteLine("Error: "+e.ToString());
+			}
 
 			DetailsArea.Visibility = Visibility.Visible;
 			DetailsArea.Opacity = 0;
@@ -387,6 +419,7 @@ namespace ZitiDesktopEdge {
 							ZitiService zitiSvc = services[i];
 							if (index < PerPage) {
 								if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0) {
+									zitiSvc.TimeUpdated = _identity.LastUpdatedTime;
 									ZitiServices.Add(zitiSvc);
 									index++;
 								}

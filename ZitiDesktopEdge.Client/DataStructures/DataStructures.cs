@@ -244,7 +244,10 @@ namespace ZitiDesktopEdge.DataStructures {
         public string ControllerVersion { get; set; }
         public bool MfaEnabled { get; set; }
         public bool MfaNeeded { get; set; }
-    }
+		public int MinTimeout { get; set; }
+		public int MaxTimeout { get; set; }
+		public DateTime MfaLastUpdatedTime { get; set; }
+	}
 
     public class Service {
         public string Name { get; set; }
@@ -255,6 +258,8 @@ namespace ZitiDesktopEdge.DataStructures {
         public string AssignedIP { get; set; }
         public PostureCheck[] PostureChecks { get; set; }
         public bool IsAccessable { get; set; }
+		public int Timeout { get; set; }
+        public int TimeoutRemaining { get; set; }
     }
 
     public class Address {
@@ -319,6 +324,17 @@ namespace ZitiDesktopEdge.DataStructures {
         {
             return $"Version: {Version}, Revision: {Revision}, BuildDate: {BuildDate}";
         }
+    }
+
+    public class Notification {
+        public string IdentityName { get; set; }
+        public string Fingerprint { get; set; }
+        public string Message { get; set; }
+        public int MfaMinimumTimeout { get; set; }
+        public int MfaMaximumTimeout { get; set; }
+        public int MfaTimeDuration { get; set; }
+        public string Severity { get; set; }
+
     }
 
     public class ZitiTunnelStatus : SvcResponse
@@ -415,6 +431,11 @@ namespace ZitiDesktopEdge.DataStructures {
         public List<Identity> Identities { get; set; }
     }
 
+    public class NotificationEvent : StatusEvent {
+        public List<Notification> Notification { get; set; }
+
+    }
+
     public class ServiceEvent : ActionEvent {
         public string Fingerprint { get; set; }
         public Service Service { get; set; }
@@ -444,10 +465,20 @@ namespace ZitiDesktopEdge.DataStructures {
         public bool IsStopped() {
             return "Stopped" == this.Status;
         }
+        public string Type { get; set; }
     }
 
     public class StatusCheck : MonitorServiceStatusEvent {
         public bool UpdateAvailable { get; set; }
+    }
+
+    public class InstallationNotificationEvent : MonitorServiceStatusEvent
+    {
+        public String ZDEVersion { get; set; }
+        public DateTime CreationDate { get; set; }
+        public bool IsCritical { get; set; }
+        public double TimeRemaining { get; set; }
+        public DateTime InstallTime { get; set; }
     }
 
     public class MfaEvent : ActionEvent {
@@ -483,5 +514,21 @@ namespace ZitiDesktopEdge.DataStructures {
         }
         public ConfigPayload Payload { get; set; }
     }
+
+    public class NotificationFrequencyPayload {
+        public int NotificationFrequency { get; set; }
+    }
+
+    public class NotificationFrequencyFunction: ServiceFunction {
+        public NotificationFrequencyFunction(int notificationFrequency) {
+            this.Function = "UpdateFrequency";
+            this.Payload = new NotificationFrequencyPayload() {
+                NotificationFrequency = notificationFrequency
+            };
+        }
+		
+        public NotificationFrequencyPayload Payload { get; set; }
+	}
+
 
 }
