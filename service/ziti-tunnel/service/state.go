@@ -127,7 +127,6 @@ func (t *RuntimeState) ToStatus(onlyInitialized bool) dto.TunnelStatus {
 		TunIpv4Mask:           t.state.TunIpv4Mask,
 		AddDns:                t.state.AddDns,
 		NotificationFrequency: t.state.NotificationFrequency,
-		SnoozeNotification:	   t.state.SnoozeNotification,
 	}
 
 	i := 0
@@ -571,9 +570,3 @@ func (t *RuntimeState) UpdateNotificationFrequency(notificationFreq int) error {
 	return nil
 }
 
-func (t *RuntimeState) SnoozeNotification(snooze bool) {
-	log.Infof("Set Snooze notification to: %t", snooze)
-	rts.state.SnoozeNotification = snooze
-	rts.SaveState()
-
-}

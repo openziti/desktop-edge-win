@@ -133,7 +133,6 @@ type TunnelStatus struct {
 	Status                string
 	AddDns                bool
 	NotificationFrequency int
-	SnoozeNotification	  bool
 }
 
 type ServiceVersion struct {

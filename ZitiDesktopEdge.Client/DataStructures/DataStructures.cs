@@ -530,19 +530,5 @@ namespace ZitiDesktopEdge.DataStructures {
         public NotificationFrequencyPayload Payload { get; set; }
 	}
 
-    public class SnoozeNotificationPayload {
-        public bool SnoozeNotification { get; set; }
-    }
-
-    public class SnoozeNotificationFunction : ServiceFunction {
-        public SnoozeNotificationFunction(bool snoozeNotification) {
-            this.Function = "SnoozeNotification";
-            this.Payload = new SnoozeNotificationPayload() {
-                SnoozeNotification = snoozeNotification
-            };
-        }
-
-        public SnoozeNotificationPayload Payload { get; set; }
-    }
 
 }

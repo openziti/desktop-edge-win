@@ -585,9 +585,6 @@ func serveIpc(conn net.Conn) {
 		case "UpdateFrequency":
 			notificationFreq := cmd.Payload["NotificationFrequency"].(float64)
 			updateNotificationFrequency(enc, int(notificationFreq))
-		case "SnoozeNotification":
-			snoozeFreq := cmd.Payload["SnoozeNotification"].(bool)
-			snoozeNotification(enc, snoozeFreq)
 		case "Debug":
 			dbg()
 			respond(enc, dto.Response{
@@ -1239,10 +1236,6 @@ func broadcastNotification() {
 	}
 
 	if len(cleanNotifications) > 0 {
-		if rts.state.SnoozeNotification {
-			log.Debugf("Notification Snoozed. Notification message: %v", cleanNotifications)
-			return
-		}
 		log.Debugf("Sending notification message to UI %v", cleanNotifications)
 
 		rts.BroadcastEvent(cziti.TunnelNotificationEvent{
@@ -1409,9 +1402,3 @@ func updateNotificationFrequency(out *json.Encoder, notificationFreq int) {
 
 }
 
-func snoozeNotification(out *json.Encoder, snooze bool) {
-	if snooze != rts.state.SnoozeNotification {
-		rts.SnoozeNotification(snooze)
-	}
-	respond(out, dto.Response{Message: "Snooze Notification frequency option is set", Code: SUCCESS, Error: "", Payload: ""})
-}
