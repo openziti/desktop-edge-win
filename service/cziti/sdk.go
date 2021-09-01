@@ -416,16 +416,16 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 		timeout := -1
 		timeoutRemaining := -1
 
-		//find all posture checks sets...
-		for setIdx := 0; true; setIdx++ {
-			pqs := C.posture_query_set_get(service.posture_query_set, C.int(setIdx))
-			if unsafe.Pointer(pqs) == C.NULL {
-				break
-			}
+		it := C.model_map_iterator(&service.posture_query_map)
+		for unsafe.Pointer(it) != C.NULL {
+			ptr := C.model_map_it_value(it)
+
+			pqs := (*C.ziti_posture_query_set)(unsafe.Pointer(ptr))
 
 			if C.GoString(pqs.policy_type) == "Bind" {
 				log.Tracef("Posture Query set returned a Bind policy: %s [ignored]", C.GoString(pqs.policy_id))
 				// posture check does not consider bind policies
+				it = C.model_map_it_next(it)
 				continue
 			} else {
 				log.Tracef("Posture Query set returned a %s policy: %s, is_passing %t", C.GoString(pqs.policy_type), C.GoString(pqs.policy_id), pqs.is_passing)
@@ -483,6 +483,17 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 					postureChecks = append(postureChecks, pc)
 				}
 			}
+
+			it = C.model_map_it_next(it)
+		}
+
+		//find all posture checks sets...
+		for setIdx := 0; true; setIdx++ {
+			pqs := C.posture_query_set_get(service.posture_query_set, C.int(setIdx))
+			if unsafe.Pointer(pqs) == C.NULL {
+				break
+			}
+
 		}
 
 		svc = &dto.Service{
@@ -780,7 +791,7 @@ func LoadZiti(zid *ZIdentity, cfg string, refreshInterval int) {
 	zid.Options.config = C.CString(cfg)
 	zid.Options.refresh_interval = C.long(refreshInterval)
 	zid.Options.metrics_type = C.INSTANT
-	zid.Options.config_types = C.all_configs
+	zid.Options.config_types = C.get_all_configs()
 	zid.Options.pq_domain_cb = C.ziti_pq_domain_cb(C.ziti_pq_domain_go)
 	zid.Options.pq_mac_cb = C.ziti_pq_mac_cb(C.ziti_pq_mac_go)
 	zid.Options.pq_os_cb = C.ziti_pq_os_cb(C.ziti_pq_os_go)

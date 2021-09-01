@@ -51,8 +51,6 @@ void libuv_stop(libuv_ctx *lctx);
 void set_log_out(intptr_t h, libuv_ctx *lctx);
 void set_log_level(int level, libuv_ctx *lctx);
 
-const char** all_configs;
-
 //posture check functions
 void ziti_pq_domain_go(ziti_context ztx, char *id, ziti_pr_domain_cb response_cb);
 void ziti_pq_process_go(ziti_context ztx, char *id, char *path, ziti_pr_process_cb response_cb);
@@ -86,5 +84,8 @@ void ziti_auth_mfa_status_cb_go(ziti_context ztx, int status, char *fingerprint)
 
 ziti_posture_query_set* posture_query_set_get(ziti_posture_query_set_array arr, int idx);
 ziti_posture_query* posture_queries_get(ziti_posture_query_array arr, int idx);
+
+
+const char** get_all_configs();
 
 #endif /* GOLANG_SDK_H */

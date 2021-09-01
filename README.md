@@ -18,3 +18,58 @@ components:
 
 see [releasing](./releasing.md)
 
+## Microsoft Defender SmartScreen Issues
+
+After the new signing process was adopted where we sign with a legitimate, purchased signing certificate from a trusted CA as well
+as signing using our own signing certificates, Microsoft Defender SmartScreen began flagging the installer as potentially malicious.
+Thankfully we were able to submit a ticket and get an understanding of the issue and how to resolve this going forward. This is a
+short synopses of what transpired:
+
+* Contact support through our "Pay-for" avenues
+* Submit the exe along with a small description of the issue
+* Talk to a representative about the issue over MS Teams - provide additional information
+* Microsoft Defender SmartScreen team analyzed the exe, which confirmed the .exe was clean
+* Establish "reputation" in the Microsoft Defender SmartScreen system by submitting the exe
+
+Here is a brief transcript of the emails returned from support along with the steps taken:
+
+
+### Response after submitting the exe for review
+
+We have reviewed the reported application "ziti.desktop.edge.client-x.y.z.exe" and confirm that it is clean. 
+Accordingly we have adjusted the SmartScreen ratings to address this issue. 
+Now we can confirm that there will be no SmartScreen warning on the file. 
+
+In future if you wish to report false warning you should perform the following steps. 
+This ensures that the issue is put into our system so our team members can investigate it as soon as possible. 
+Site Owner reports are prioritized.
+
+•	Attempt downloading the file using Microsoft Edge  
+•	When informed the download was blocked by SmartScreen Filter  
+•	Click the blocked download and select Report this file as safe | I am the owner or representative of this website and I want to report an incorrect warning about it  
+•	Fill out the form completely and submit. You will receive an email confirming receipt of your report.  
+
+### Response after another brief chat via MS Teams
+
+The warning you reported indicates that the application being downloaded and run does not yet have known reputation in our system. 
+We can confirm that the submitted application has since established reputation and attempting to download or run the application 
+should no longer show any warnings.
+
+The signing certificate (thumbprint: “51d52749da021f095b021df8c09bd62c55c36f1f”) is still in the process of establishing reputation.
+ 
+When a certificate is renewed, or if a new certificate is used to sign files, fresh reputation needs to be established.
+The reputation of the previous certificate is one of the important elements in attaching reputation to the newer certificate.
+Typically, a renewed certificate will establish reputation more quickly than a completely new certificate such as one from a
+different CA or one which uses different organization details (company name, etc.).
+ 
+Once your signing certificate has gained reputation in our system, all applications or releases signed with your certificate 
+should have warn-free experience (assuming nothing happens to denigrate the reputation of the certificate, such as being
+used to sign malware).
+  
+For more information about Windows Defender SmartScreen®, refer to the following resources: 
+https://docs.microsoft.com/en-us/windows/security/threat-protection/microsoft-defender-smartscreen/microsoft-defender-smartscreen-overview 
+https://feedback.smartscreen.microsoft.com/smartscreenfaq.aspx 
+  
+For more information about code signing requirements, refer to:             
+http://msdn.microsoft.com/en-us/windows/hardware/gg487309.aspx 
+ 

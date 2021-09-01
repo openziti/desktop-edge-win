@@ -14,7 +14,7 @@ namespace ZitiUpdateService.Checkers {
     }
 
     abstract class UpdateCheck {
-        public abstract void IsUpdateAvailable(Version current, out int avail, out string publishedDate);
+        public abstract void CheckUpdate(Version current, out int avail, out string publishedDate);
         public abstract string FileName();
         public abstract void CopyUpdatePackage(string destinationFolder, string destinationName);
         public abstract bool AlreadyDownloaded(string destinationFolder, string destinationName);

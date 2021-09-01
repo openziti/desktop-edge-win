@@ -1,3 +1,17 @@
+# Release 1.10.2
+
+## What's New
+* none
+
+## Other changes:
+* [#430](https://github.com/openziti/desktop-edge-win/issues/430) Send notification if WDE receives the service updates with timeout that is less than 5 minutes
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* none
+
 # Release 1.10.1
 
 ## What's New
@@ -10,7 +24,7 @@
 * none
 
 ## Dependency Updates
-* updated c-sdk to v0.25.6, updated t-sdk to v0.15.12
+* updated c-sdk to v0.26.3, updated t-sdk to v0.15.14
 
 # Release 1.10.0
 
@@ -29,7 +43,7 @@
 ## Dependency Updates
 * updated c-sdk to v0.25.5, updated t-sdk to v0.15.10
 
-# Release 1.9.10
+# Release 1.9.11
 
 ## What's New
 * none
@@ -39,6 +53,21 @@
 
 ## Bugs fixed:
 * none
+
+## Dependency Updates
+* tsdk is updated to v0.15.13, c-sdk 0.24.3
+
+# Release 1.9.10
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* [#408](https://github.com/openziti/desktop-edge-win/issues/408) Toggling an identity ON (true) responds with Active:false
+* [#403](https://github.com/openziti/desktop-edge-win/issues/403) 0 DNS questions in a Response causes crash
 
 ## Dependency Updates
 * wintun updated to 0.12

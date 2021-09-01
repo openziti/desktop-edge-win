@@ -127,6 +127,7 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 						}
 					}
 				}
+				broadcastNotification(true)
 			case <-shutdownDelay:
 				log.Tracef("Exiting windows power events loop")
 				return
@@ -1137,6 +1138,11 @@ func handleBulkServiceChange(sc cziti.BulkServiceChange) {
 	}
 	rts.BroadcastEvent(m)
 
+	id := rts.Find(sc.Fingerprint)
+	if id != nil && !id.Notified {
+		broadcastNotification(true)
+	}
+
 }
 
 func addUnit(count int, unit string) (result string) {
@@ -1190,26 +1196,36 @@ func handleEvents(isInitialized chan struct{}) {
 
 		// notification message
 		case <-notificationFrequency.C:
-			broadcastNotification()
+			broadcastNotification(false)
 		}
 	}
 }
 
-func broadcastNotification() {
+func broadcastNotification(adhoc bool) {
+	changedNotifiedStatus := false
 	cleanNotifications := make([]cziti.NotificationMessage, 0)
 	for _, id := range rts.ids {
+
 		if id.CId == nil || !id.CId.MfaRefreshNeeded() {
 			continue
 		}
+
+		if !id.Notified {
+			rts.SetNotified(id.FingerPrint, true)
+			changedNotifiedStatus = true
+		} else if id.Notified && adhoc {
+			continue
+		}
+
 		notificationMessage := ""
 
 		var notificationMinTimeout int32 = 0
 		var notificationMaxTimeout int32 = -1
 		switch mfaState := id.CId.GetMFAState(int32((constants.MaximumFrequency + rts.state.NotificationFrequency) * 60)); mfaState {
 		case constants.MfaAllSvcTimeout:
-			notificationMessage = fmt.Sprintf("All of the services of identity %s are timed out", id.Name)
+			notificationMessage = fmt.Sprintf("All of the services of identity %s have timed out", id.Name)
 		case constants.MfaFewSvcTimeout:
-			notificationMessage = fmt.Sprintf("Some of the services of identity %s are timed out", id.Name)
+			notificationMessage = fmt.Sprintf("Some of the services of identity %s have timed out", id.Name)
 		case constants.MfaNearingTimeout:
 			notificationMinTimeout = id.CId.GetRemainingTime(id.CId.MfaMinTimeout, id.CId.MfaMinTimeoutRem)
 			notificationMessage = fmt.Sprintf("Some of the services of identity %s are timing out in %s", id.Name, secondsToReadableFmt(notificationMinTimeout))
@@ -1235,8 +1251,13 @@ func broadcastNotification() {
 		}
 	}
 
+	if changedNotifiedStatus && adhoc {
+		ResetFrequency(rts.state.NotificationFrequency)
+	}
+
 	if len(cleanNotifications) > 0 {
 		log.Debugf("Sending notification message to UI %v", cleanNotifications)
+
 		rts.BroadcastEvent(cziti.TunnelNotificationEvent{
 			Op:           "notification",
 			Notification: cleanNotifications,
@@ -1348,8 +1369,9 @@ func authMfa(out *json.Encoder, fingerprint string, code string) {
 	if result == nil {
 		// respond with auth success message immediately
 		respond(out, dto.Response{Message: "AuthMFA complete", Code: SUCCESS, Error: "", Payload: fingerprint})
-
+		rts.SetNotified(fingerprint, false)
 		id.CId.UpdateMFATime()
+		broadcastNotification(true)
 	} else {
 		respondWithError(out, fmt.Sprintf("AuthMFA failed. the supplied code [%s] was not valid: %s", code, result), 1, result)
 	}
@@ -1400,3 +1422,4 @@ func updateNotificationFrequency(out *json.Encoder, notificationFreq int) {
 	respond(out, dto.Response{Message: "Notification frequency is set", Code: SUCCESS, Error: "", Payload: ""})
 
 }
+

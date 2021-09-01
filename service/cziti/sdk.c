@@ -58,12 +58,6 @@ void libuv_stop(libuv_ctx *lctx) {
     }
 }
 
-static const char* _all[] = {
-   "all", NULL
-};
-
-const char** all_configs = _all;
-
 extern void call_on_packet(const char *packet, ssize_t len, packet_cb cb, void *ctx) {
      cb(packet, len, ctx);
 }
@@ -77,6 +71,16 @@ extern void c_mapiter(model_map *map) {
 		printf("k: %s, v: %s", k, v);
 		it = model_map_it_next(it);
 	}
+}
+
+static const char* _all[] = {
+   "all", NULL
+};
+
+const char** all_configs = _all;
+
+const char** get_all_configs(){
+    return all_configs;
 }
 
 struct ziti_context_event* ziti_event_context_event(ziti_event_t *ev) {

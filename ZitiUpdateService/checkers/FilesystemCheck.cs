@@ -26,7 +26,7 @@ namespace ZitiUpdateService.Checkers {
 			return "Ziti Desktop Edge Client-1.3.0.exe";
 		}
 
-		override public void IsUpdateAvailable(Version current, out int avail, out string publishedDate) {
+		override public void CheckUpdate(Version current, out int avail, out string publishedDate) {
 			avail = isUpdateAvailable;
 			publishedDate = File.GetCreationTime(dest).ToString();
 		}

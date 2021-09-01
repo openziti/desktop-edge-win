@@ -244,7 +244,10 @@ namespace ZitiDesktopEdge.DataStructures {
         public string ControllerVersion { get; set; }
         public bool MfaEnabled { get; set; }
         public bool MfaNeeded { get; set; }
-    }
+		public int MinTimeout { get; set; }
+		public int MaxTimeout { get; set; }
+		public DateTime MfaLastUpdatedTime { get; set; }
+	}
 
     public class Service {
         public string Name { get; set; }
@@ -329,7 +332,7 @@ namespace ZitiDesktopEdge.DataStructures {
         public string Message { get; set; }
         public int MfaMinimumTimeout { get; set; }
         public int MfaMaximumTimeout { get; set; }
-        public int TimeDuration { get; set; }
+        public int MfaTimeDuration { get; set; }
         public string Severity { get; set; }
 
     }
@@ -526,5 +529,6 @@ namespace ZitiDesktopEdge.DataStructures {
 		
         public NotificationFrequencyPayload Payload { get; set; }
 	}
+
 
 }
