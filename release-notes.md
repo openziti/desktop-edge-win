@@ -1,3 +1,18 @@
+# Release 1.10.2
+
+## What's New
+* none
+
+## Other changes:
+* [#430](https://github.com/openziti/desktop-edge-win/issues/430) Snooze service timeout Notification.
+  - Send notification if WDE receives the service updates with timeout that is less than 5 minutes
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* none
+
 # Release 1.10.1
 
 ## What's New

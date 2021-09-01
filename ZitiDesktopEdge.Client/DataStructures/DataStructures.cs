@@ -530,4 +530,5 @@ namespace ZitiDesktopEdge.DataStructures {
         public NotificationFrequencyPayload Payload { get; set; }
 	}
 
+
 }

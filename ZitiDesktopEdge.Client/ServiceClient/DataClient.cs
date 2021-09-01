@@ -449,6 +449,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             return resp;
         }
 
+
         async public Task<ZitiTunnelStatus> debugAsync() {
             try {
                 await sendAsync(new ServiceFunction() { Function = "Debug" });

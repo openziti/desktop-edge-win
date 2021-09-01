@@ -536,6 +536,7 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
+
 		/// <summary>
 		/// Show the Edit Modal and blur the background
 		/// </summary>
