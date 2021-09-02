@@ -1341,7 +1341,7 @@ func Clean(src *Id) dto.Identity {
 		nid.ServiceUpdatedTime = src.CId.ServiceUpdatedTime
 		nid.MfaLastUpdatedTime = src.CId.MfaLastUpdatedTime
 		if src.CId.MfaRefreshNeeded() {
-			if (nid.MfaMaxTimeoutRem > -1 && (nid.MfaMaxTimeoutRem-int32(time.Since(nid.MfaLastUpdatedTime).Seconds())) < 0) && nid.MfaEnabled {
+			if (nid.MfaMaxTimeoutRem == 0) && nid.MfaEnabled {
 				nid.MfaNeeded = true
 			}
 		}
