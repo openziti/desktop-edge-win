@@ -40,6 +40,14 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
+		public int GetMaxTimeout() {
+			int maxto = -1;
+			for (int i=0; i<_identity.Services.Count; i++) {
+				if (_identity.Services[i].TimeoutRemaining > maxto) maxto = _identity.Services[i].TimeoutRemaining;
+			}
+			return maxto;
+		}
+
 		public void RefreshUI () {
 			ToggleSwitch.Enabled = _identity.IsEnabled;
 			if (_identity.IsMFAEnabled) {
@@ -49,11 +57,20 @@ namespace ZitiDesktopEdge {
 					ServiceCountAreaLabel.Content = "services";
 					MainArea.Opacity = 1.0;
 					if (_identity.MaxTimeout>0) {
-						if (_timer != null) _timer.Stop();
-						_timer = new System.Windows.Forms.Timer();
-						_timer.Interval = _identity.MaxTimeout*1000;
-						_timer.Tick += TimerTicked;
-						_timer.Start();
+						int maxto = GetMaxTimeout();
+						if (maxto > 0) {
+							if (_timer != null) _timer.Stop();
+							_timer = new System.Windows.Forms.Timer();
+							_timer.Interval = _identity.MaxTimeout * 1000;
+							_timer.Tick += TimerTicked;
+							_timer.Start();
+						} else {
+							_identity.MFAInfo.IsAuthenticated = false;
+							ServiceCountArea.Visibility = Visibility.Collapsed;
+							MfaRequired.Visibility = Visibility.Visible;
+							ServiceCountAreaLabel.Content = "authorize";
+							MainArea.Opacity = 0.6;
+						}
 					}
 					if (_identity.MinTimeout > 0) {
 						if (_timingTimer != null) _timingTimer.Stop();
