@@ -136,8 +136,9 @@ namespace ZitiDesktopEdge {
 					for (int i=0; i<identities.Count; i++) {
 						if (identities[i].Fingerprint==mfa.Fingerprint) {
 							identities[i].WasNotified = false;
+							identities[i].MFAInfo.IsAuthenticated = mfa.Successful;
 							for (int j=0; j<identities[i].Services.Count; j++) {
-								identities[i].Services[j].TimeoutRemaining = -1;
+								identities[i].Services[j].TimeoutRemaining = identities[i].Services[j].Timeout;
 							}
 							break;
 						}
@@ -630,10 +631,14 @@ namespace ZitiDesktopEdge {
 					found.TimeoutMessage = notification.Message;
 					found.MaxTimeout = notification.MfaMaximumTimeout;
 					found.MinTimeout = notification.MfaMinimumTimeout;
-					if (!found.WasNotified) {
-						found.WasNotified = true;
-						ShowMFAToast(found.TimeoutMessage, found);
+
+					if (found.MinTimeout<1200) {
+						if (!found.WasNotified) {
+							found.WasNotified = true;
+							ShowMFAToast(found.TimeoutMessage, found);
+						}
 					}
+
 					// Send Notification
 					if (notification.MfaMinimumTimeout == 0) {
 						found.MFAInfo.IsAuthenticated = false;
@@ -1159,7 +1164,7 @@ namespace ZitiDesktopEdge {
 						idItem.Authenticate += IdItem_Authenticate;
 						idItem.OnStatusChanged += Id_OnStatusChanged;
 						idItem.Identity = id;
-						if (!id.MFAInfo.IsAuthenticated) idItem.RefreshUI();
+						if (repaint) idItem.RefreshUI();
 
 						IdList.Children.Add(idItem);
 

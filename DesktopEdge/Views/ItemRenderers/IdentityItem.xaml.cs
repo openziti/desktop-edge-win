@@ -26,6 +26,8 @@ namespace ZitiDesktopEdge {
 		public delegate void OnAuthenticate(ZitiIdentity identity);
 		public event OnAuthenticate Authenticate;
 		private System.Windows.Forms.Timer _timer;
+		private System.Windows.Forms.Timer _timingTimer;
+		private int countdown = -1;
 
 		public ZitiIdentity _identity;
 		public ZitiIdentity Identity {
@@ -49,9 +51,17 @@ namespace ZitiDesktopEdge {
 					if (_identity.MaxTimeout>0) {
 						if (_timer != null) _timer.Stop();
 						_timer = new System.Windows.Forms.Timer();
-						_timer.Interval = _identity.MaxTimeout;
+						_timer.Interval = _identity.MaxTimeout*1000;
 						_timer.Tick += TimerTicked;
 						_timer.Start();
+					}
+					if (_identity.MinTimeout > 0) {
+						if (_timingTimer != null) _timingTimer.Stop();
+						countdown = _identity.MinTimeout;
+						_timingTimer = new System.Windows.Forms.Timer();
+						_timingTimer.Interval = 1000;
+						_timingTimer.Tick += TimingTimerTick; ;
+						_timingTimer.Start();
 					}
 				} else {
 					ServiceCountArea.Visibility = Visibility.Collapsed;
@@ -79,6 +89,18 @@ namespace ZitiDesktopEdge {
 				ToggleStatus.Content = "ENABLED";
 			} else {
 				ToggleStatus.Content = "DISABLED";
+			}
+		}
+
+		private void TimingTimerTick(object sender, EventArgs e) {
+			if (countdown>-1) {
+				countdown--;
+				if (countdown<1260) {
+					_identity.IsTimingOut = true;
+					TimerCountdown.ToolTip = _identity.TimeoutMessage;
+					if (TimerCountdown.ToolTip.ToString().Length == 0) TimerCountdown.ToolTip = "Timing Out";
+					TimerCountdown.Visibility = _identity.IsTimingOut ? Visibility.Visible : Visibility.Collapsed;
+				}
 			}
 		}
 
