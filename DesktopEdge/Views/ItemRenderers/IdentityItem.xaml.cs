@@ -83,7 +83,7 @@ namespace ZitiDesktopEdge {
 				ServiceCount.Content = _identity.Services.Count.ToString();
 			}
 			TimerCountdown.ToolTip = _identity.TimeoutMessage;
-			if (TimerCountdown.ToolTip.ToString().Length == 0) TimerCountdown.ToolTip = "Timing Out";
+			if (TimerCountdown.ToolTip.ToString().Length == 0) TimerCountdown.ToolTip = "Some or all of the services have timed out.";
 			TimerCountdown.Visibility = _identity.IsTimingOut ? Visibility.Visible : Visibility.Collapsed;
 			if (ToggleSwitch.Enabled) {
 				ToggleStatus.Content = "ENABLED";
@@ -97,10 +97,25 @@ namespace ZitiDesktopEdge {
 				countdown--;
 				if (countdown<1260) {
 					_identity.IsTimingOut = true;
-					TimerCountdown.ToolTip = _identity.TimeoutMessage;
-					if (TimerCountdown.ToolTip.ToString().Length == 0) TimerCountdown.ToolTip = "Timing Out";
-					TimerCountdown.Visibility = _identity.IsTimingOut ? Visibility.Visible : Visibility.Collapsed;
 				}
+
+					if (countdown > 0) {
+						TimeSpan t = TimeSpan.FromSeconds(countdown);
+						string answer = t.Seconds + " seconds";
+						if (t.Days > 0) answer = t.Days + " days " + t.Hours + " hours " + t.Minutes + " minutes " + t.Seconds + " seconds";
+						else {
+							if (t.Hours > 0) answer = t.Hours + " hours " + t.Minutes + " minutes " + t.Seconds + " seconds";
+							else {
+								if (t.Minutes > 0) answer = t.Minutes + " minutes " + t.Seconds + " seconds";
+							}
+						}
+						TimerCountdown.ToolTip = "Some or all of the services will be timing out in " + answer;
+					} else {
+						TimerCountdown.ToolTip = "Some or all of the services have timed out.";
+					}
+					TimerCountdown.Visibility = _identity.IsTimingOut ? Visibility.Visible : Visibility.Collapsed;
+			} else {
+				TimerCountdown.ToolTip = "Some or all of the services have timed out.";
 			}
 		}
 
