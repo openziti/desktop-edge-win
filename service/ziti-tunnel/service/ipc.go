@@ -1303,8 +1303,9 @@ func Clean(src *Id) dto.Identity {
 			val := value.(*cziti.ZService)
 			var svcMinTimeoutRemaining int32 = -1
 
-			if src.CId.MfaRefreshNeeded() && val.Service.TimeoutRemaining > 0 {
+			if src.CId.MfaRefreshNeeded() && val.Service.TimeoutRemaining > -1 {
 				var svcTimeout int32 = -1
+				// to save the value from the pc timeout remaining, this value comes from the controller
 				var svcTimeoutRemaining int32 = -1
 				// fetch svc timeout and timeout remaining from pc
 				for _, pc := range val.Service.PostureChecks {
@@ -1341,7 +1342,7 @@ func Clean(src *Id) dto.Identity {
 		nid.ServiceUpdatedTime = src.CId.ServiceUpdatedTime
 		nid.MfaLastUpdatedTime = src.CId.MfaLastUpdatedTime
 		if src.CId.MfaRefreshNeeded() {
-			if (nid.MfaMaxTimeoutRem > -1 && (nid.MfaMaxTimeoutRem-int32(time.Since(nid.MfaLastUpdatedTime).Seconds())) < 0) && nid.MfaEnabled {
+			if (nid.MfaMaxTimeoutRem == 0) && nid.MfaEnabled {
 				nid.MfaNeeded = true
 			}
 		}

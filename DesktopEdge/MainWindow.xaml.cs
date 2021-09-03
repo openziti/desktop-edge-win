@@ -71,6 +71,7 @@ namespace ZitiDesktopEdge {
 			ExpectedLogPathRoot = Path.Combine(ExecutionDirectory, "logs");
 			ExpectedLogPathUI = Path.Combine(ExpectedLogPathRoot, "UI", $"{ThisAssemblyName}.log");
 			ExpectedLogPathServices = Path.Combine(ExpectedLogPathRoot, "service", $"ziti-tunneler.log");
+
 		}
 
 		async private void IdentityMenu_OnMessage(string message) {
@@ -132,6 +133,16 @@ namespace ZitiDesktopEdge {
 				} else if (mfa.Action == "enrollment_remove") {
 					// ShowBlurb("removed mfa: " + mfa.Successful, "");
 				} else if (mfa.Action == "mfa_auth_status") {
+					for (int i=0; i<identities.Count; i++) {
+						if (identities[i].Fingerprint==mfa.Fingerprint) {
+							identities[i].WasNotified = false;
+							identities[i].MFAInfo.IsAuthenticated = mfa.Successful;
+							for (int j=0; j<identities[i].Services.Count; j++) {
+								identities[i].Services[j].TimeoutRemaining = identities[i].Services[j].Timeout;
+							}
+							break;
+						}
+					}
 					// serviceClient.GetStatusAsync();
 					// ShowBlurb("mfa authenticated: " + mfa.Successful, "");
 				} else {
@@ -304,6 +315,9 @@ namespace ZitiDesktopEdge {
 			SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
 			string nlogFile = Path.Combine(ExecutionDirectory, ThisAssemblyName + "-log.config");
 
+
+			ToastNotificationManagerCompat.OnActivated += ToastNotificationManagerCompat_OnActivated;
+
 			bool byFile = false;
 			if (File.Exists(nlogFile)) {
 				LogManager.Configuration = new XmlLoggingConfiguration(nlogFile);
@@ -368,6 +382,26 @@ namespace ZitiDesktopEdge {
 			this.PreviewKeyDown += KeyPressed;
 			MFASetup.OnLoad += MFASetup_OnLoad;
 			IdentityMenu.OnMessage += IdentityMenu_OnMessage;
+		}
+
+		private void ToastNotificationManagerCompat_OnActivated(ToastNotificationActivatedEventArgsCompat e) {
+			this.Dispatcher.Invoke(() => {
+				if (e.Argument != null && e.Argument.Length > 0) {
+					string[] items = e.Argument.Split(';');
+					if (items.Length > 0) {
+						string[] values = items[0].Split('=');
+						if (values.Length == 2) {
+							string fingerprint = values[1];
+							for (int i = 0; i < identities.Count; i++) {
+								if (identities[i].Fingerprint == fingerprint) {
+									ShowMFA(identities[i], 1);
+									break;
+								}
+							}
+						}
+					}
+				}
+			});
 		}
 
 		private void KeyPressed(object sender, KeyEventArgs e) {
@@ -593,10 +627,18 @@ namespace ZitiDesktopEdge {
 					logger.Warn($"{e.Op} event for {notification.Fingerprint} but the provided identity fingerprint was not found!");
 					continue;
 				} else {
+					// display notification message, only few services are about to timeout
 					found.TimeoutMessage = notification.Message;
 					found.MaxTimeout = notification.MfaMaximumTimeout;
 					found.MinTimeout = notification.MfaMinimumTimeout;
-					ShowToast(found.TimeoutMessage);
+
+					if (found.MinTimeout<1200) {
+						if (!found.WasNotified) {
+							found.WasNotified = true;
+							ShowMFAToast(found.TimeoutMessage, found);
+						}
+					}
+
 					// Send Notification
 					if (notification.MfaMinimumTimeout == 0) {
 						found.MFAInfo.IsAuthenticated = false;
@@ -721,10 +763,20 @@ namespace ZitiDesktopEdge {
 			});
 		}
 
+		private void ShowMFAToast(string message, ZitiIdentity identity) {
+			new ToastContentBuilder()
+				.AddText("Important Notice")
+				.AddText(message)
+				.AddArgument("fingerprint", identity.Fingerprint)
+				.SetBackgroundActivation()
+				.Show();
+		}
+
 		private void ShowToast(string message) {
 			new ToastContentBuilder()
 				.AddText("Important Notice")
 				.AddText(message)
+				.SetBackgroundActivation()
 				.Show();
 		}
 
@@ -861,6 +913,14 @@ namespace ZitiDesktopEdge {
 						found.ControllerUrl = zid.ControllerUrl;
 						found.IsEnabled = zid.IsEnabled;
 						found.MFAInfo.IsAuthenticated = !e.Id.MfaNeeded;
+						found.WasNotified = false;
+						found.Services = zid.Services;
+						for (int i=0; i<identities.Count; i++) {
+							if (identities[i].Fingerprint==found.Fingerprint) {
+								identities[i] = found;
+								break;
+							}
+						}
 						LoadIdentities(true);
 					}
 				} else if (e.Action == "updated") {
@@ -1104,7 +1164,7 @@ namespace ZitiDesktopEdge {
 						idItem.Authenticate += IdItem_Authenticate;
 						idItem.OnStatusChanged += Id_OnStatusChanged;
 						idItem.Identity = id;
-						if (!id.MFAInfo.IsAuthenticated) idItem.RefreshUI();
+						if (repaint) idItem.RefreshUI();
 
 						IdList.Children.Add(idItem);
 

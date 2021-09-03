@@ -75,7 +75,7 @@ namespace ZitiDesktopEdge {
 				TimerIcon.Visibility = Visibility.Collapsed;
 
 				if (this._info.TimeoutRemaining>-1) {
-					if (this._info.TimeoutRemaining<1260) {
+					if (this._info.TimeoutRemaining<1200) {
 						TimerIcon.Visibility = Visibility.Visible;
 						TimerColumn.Width = new GridLength(30);
 					}

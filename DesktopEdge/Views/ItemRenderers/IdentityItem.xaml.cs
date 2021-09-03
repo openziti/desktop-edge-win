@@ -26,6 +26,8 @@ namespace ZitiDesktopEdge {
 		public delegate void OnAuthenticate(ZitiIdentity identity);
 		public event OnAuthenticate Authenticate;
 		private System.Windows.Forms.Timer _timer;
+		private System.Windows.Forms.Timer _timingTimer;
+		private int countdown = -1;
 
 		public ZitiIdentity _identity;
 		public ZitiIdentity Identity {
@@ -38,6 +40,14 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
+		public int GetMaxTimeout() {
+			int maxto = -1;
+			for (int i=0; i<_identity.Services.Count; i++) {
+				if (_identity.Services[i].TimeoutRemaining > maxto) maxto = _identity.Services[i].TimeoutRemaining;
+			}
+			return maxto;
+		}
+
 		public void RefreshUI () {
 			ToggleSwitch.Enabled = _identity.IsEnabled;
 			if (_identity.IsMFAEnabled) {
@@ -47,11 +57,28 @@ namespace ZitiDesktopEdge {
 					ServiceCountAreaLabel.Content = "services";
 					MainArea.Opacity = 1.0;
 					if (_identity.MaxTimeout>0) {
-						if (_timer != null) _timer.Stop();
-						_timer = new System.Windows.Forms.Timer();
-						_timer.Interval = _identity.MaxTimeout;
-						_timer.Tick += TimerTicked;
-						_timer.Start();
+						int maxto = GetMaxTimeout();
+						if (maxto > 0) {
+							if (_timer != null) _timer.Stop();
+							_timer = new System.Windows.Forms.Timer();
+							_timer.Interval = _identity.MaxTimeout * 1000;
+							_timer.Tick += TimerTicked;
+							_timer.Start();
+						} else {
+							_identity.MFAInfo.IsAuthenticated = false;
+							ServiceCountArea.Visibility = Visibility.Collapsed;
+							MfaRequired.Visibility = Visibility.Visible;
+							ServiceCountAreaLabel.Content = "authorize";
+							MainArea.Opacity = 0.6;
+						}
+					}
+					if (_identity.MinTimeout > 0) {
+						if (_timingTimer != null) _timingTimer.Stop();
+						countdown = _identity.MinTimeout;
+						_timingTimer = new System.Windows.Forms.Timer();
+						_timingTimer.Interval = 1000;
+						_timingTimer.Tick += TimingTimerTick; ;
+						_timingTimer.Start();
 					}
 				} else {
 					ServiceCountArea.Visibility = Visibility.Collapsed;
@@ -73,11 +100,39 @@ namespace ZitiDesktopEdge {
 				ServiceCount.Content = _identity.Services.Count.ToString();
 			}
 			TimerCountdown.ToolTip = _identity.TimeoutMessage;
+			if (TimerCountdown.ToolTip.ToString().Length == 0) TimerCountdown.ToolTip = "Some or all of the services have timed out.";
 			TimerCountdown.Visibility = _identity.IsTimingOut ? Visibility.Visible : Visibility.Collapsed;
 			if (ToggleSwitch.Enabled) {
 				ToggleStatus.Content = "ENABLED";
 			} else {
 				ToggleStatus.Content = "DISABLED";
+			}
+		}
+
+		private void TimingTimerTick(object sender, EventArgs e) {
+			if (countdown>-1) {
+				countdown--;
+				if (countdown<1260) {
+					_identity.IsTimingOut = true;
+				}
+
+					if (countdown > 0) {
+						TimeSpan t = TimeSpan.FromSeconds(countdown);
+						string answer = t.Seconds + " seconds";
+						if (t.Days > 0) answer = t.Days + " days " + t.Hours + " hours " + t.Minutes + " minutes " + t.Seconds + " seconds";
+						else {
+							if (t.Hours > 0) answer = t.Hours + " hours " + t.Minutes + " minutes " + t.Seconds + " seconds";
+							else {
+								if (t.Minutes > 0) answer = t.Minutes + " minutes " + t.Seconds + " seconds";
+							}
+						}
+						TimerCountdown.ToolTip = "Some or all of the services will be timing out in " + answer;
+					} else {
+						TimerCountdown.ToolTip = "Some or all of the services have timed out.";
+					}
+					TimerCountdown.Visibility = _identity.IsTimingOut ? Visibility.Visible : Visibility.Collapsed;
+			} else {
+				TimerCountdown.ToolTip = "Some or all of the services have timed out.";
 			}
 		}
 
