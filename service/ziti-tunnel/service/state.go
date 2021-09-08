@@ -280,6 +280,7 @@ func (t *RuntimeState) LoadIdentity(id *Id, refreshInterval int) {
 		} else if id.Name != id.CId.Name {
 			log.Debugf("name changed from %s to %s", id.Name, id.CId.Name)
 			id.Name = id.CId.Name
+			rts.SaveState()
 		}
 		log.Infof("successfully loaded %s@%s", id.CId.Name, id.CId.Controller())
 
