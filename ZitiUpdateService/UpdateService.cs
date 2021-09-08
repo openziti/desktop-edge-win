@@ -574,7 +574,7 @@ namespace ZitiUpdateService {
 			Logger.Info("Version Checker is running every {0} minutes", upInt.TotalMinutes);
 
 			//on startup - see if the old wintun software was installed and if so ... try to remove it
-			// UninstallOpenZitiWintun.DetectAndUninstallOpenZitiWintun();
+			UninstallOpenZitiWintun.DetectAndUninstallOpenZitiWintun();
 
 			string assemblyVersionStr = Assembly.GetExecutingAssembly().GetName().Version.ToString(); //fetch from ziti?
 			assemblyVersion = new Version(assemblyVersionStr);

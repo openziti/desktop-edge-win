@@ -944,6 +944,7 @@ func newIdentity(newId dto.AddIdentity, out *json.Encoder) {
 	state := rts.state
 	//if successful parse the output and add the config to the identity
 	state.Identities = append(state.Identities, &newId.Id)
+	rts.SaveState()
 
 	//return successful message
 	resp := dto.Response{Message: "success", Code: SUCCESS, Error: "", Payload: Clean(id)}
