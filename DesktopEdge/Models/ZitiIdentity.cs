@@ -89,6 +89,7 @@ namespace ZitiDesktopEdge.Models {
 				}
 				zid.HasServiceFailingPostureCheck = zid.Services.Any(p => !p.HasFailingPostureCheck());
 			}
+			logger.Info("Identity: {0} updated To {1}", zid.Name, Newtonsoft.Json.JsonConvert.SerializeObject(id));
 			return zid;
 		}
 	}

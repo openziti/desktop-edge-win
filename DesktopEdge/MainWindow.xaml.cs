@@ -914,7 +914,6 @@ namespace ZitiDesktopEdge {
 						found.IsEnabled = zid.IsEnabled;
 						found.MFAInfo.IsAuthenticated = !e.Id.MfaNeeded;
 						found.WasNotified = false;
-						found.Services = zid.Services;
 						for (int i=0; i<identities.Count; i++) {
 							if (identities[i].Fingerprint==found.Fingerprint) {
 								identities[i] = found;
