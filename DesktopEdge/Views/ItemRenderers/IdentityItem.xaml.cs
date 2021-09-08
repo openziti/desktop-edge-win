@@ -43,9 +43,24 @@ namespace ZitiDesktopEdge {
 		public int GetMaxTimeout() {
 			int maxto = -1;
 			for (int i=0; i<_identity.Services.Count; i++) {
-				if (_identity.Services[i].TimeoutRemaining > maxto) maxto = _identity.Services[i].TimeoutRemaining;
+				ZitiService info = _identity.Services[i];
+				TimeSpan t = (DateTime.Now - info.TimeUpdated);
+				int timeout = info.Timeout - (int)Math.Floor(t.TotalSeconds);
+				if (timeout > maxto) maxto = timeout;
 			}
 			return maxto;
+		}
+		public int GetMinTimeout(int minTimout) {
+			int minto = minTimout;
+			for (int i = 0; i < _identity.Services.Count; i++) {
+				ZitiService info = _identity.Services[i];
+				if (info.Timeout>-1) {
+					TimeSpan t = (DateTime.Now - info.TimeUpdated);
+					int timeout = info.Timeout - (int)Math.Floor(t.TotalSeconds);
+					if (timeout < minto) minto = timeout;
+				}
+			}
+			return minto;
 		}
 
 		public void RefreshUI () {
@@ -61,7 +76,7 @@ namespace ZitiDesktopEdge {
 						if (maxto > 0) {
 							if (_timer != null) _timer.Stop();
 							_timer = new System.Windows.Forms.Timer();
-							_timer.Interval = _identity.MaxTimeout * 1000;
+							_timer.Interval = maxto * 1000;
 							_timer.Tick += TimerTicked;
 							_timer.Start();
 						} else {
@@ -73,11 +88,12 @@ namespace ZitiDesktopEdge {
 						}
 					}
 					if (_identity.MinTimeout > 0) {
+						int minto = GetMinTimeout(_identity.MinTimeout);
 						if (_timingTimer != null) _timingTimer.Stop();
-						countdown = _identity.MinTimeout;
+						countdown = minto;
 						_timingTimer = new System.Windows.Forms.Timer();
 						_timingTimer.Interval = 1000;
-						_timingTimer.Tick += TimingTimerTick; ;
+						_timingTimer.Tick += TimingTimerTick;
 						_timingTimer.Start();
 					}
 				} else {
@@ -112,7 +128,7 @@ namespace ZitiDesktopEdge {
 		private void TimingTimerTick(object sender, EventArgs e) {
 			if (countdown>-1) {
 				countdown--;
-				if (countdown<1260) {
+				if (countdown<1200) {
 					_identity.IsTimingOut = true;
 				}
 
