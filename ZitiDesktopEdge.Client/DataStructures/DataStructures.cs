@@ -245,16 +245,7 @@ namespace ZitiDesktopEdge.DataStructures {
         public bool MfaNeeded { get; set; }
         public int MinTimeout { get; set; }
         public int MaxTimeout { get; set; }
-
-        public DateTime MfaLastUpdatedTime = DateTime.Now;
-
-        public DateTime GetMfaLastUpdatedTime() {
-            return MfaLastUpdatedTime;
-        }
-
-        public void SetMfaLastUpdatedTime(DateTime MfaLastUpdatedTimeVal) {
-            this.MfaLastUpdatedTime = MfaLastUpdatedTimeVal;
-        }
+        public DateTime MfaLastUpdatedTime { get; set; }
 
     }
 
