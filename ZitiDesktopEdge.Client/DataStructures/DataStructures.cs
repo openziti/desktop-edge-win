@@ -232,8 +232,7 @@ namespace ZitiDesktopEdge.DataStructures {
         public long Down { get; set; }
     }
 
-    public class Identity
-    {
+    public class Identity {
         public string Name { get; set; }
         public string FingerPrint { get; set; }
         public bool Active { get; set; }
@@ -244,10 +243,20 @@ namespace ZitiDesktopEdge.DataStructures {
         public string ControllerVersion { get; set; }
         public bool MfaEnabled { get; set; }
         public bool MfaNeeded { get; set; }
-		public int MinTimeout { get; set; }
-		public int MaxTimeout { get; set; }
-		public DateTime MfaLastUpdatedTime { get; set; }
-	}
+        public int MinTimeout { get; set; }
+        public int MaxTimeout { get; set; }
+
+        public DateTime MfaLastUpdatedTime = DateTime.Now;
+
+        public DateTime GetMfaLastUpdatedTime() {
+            return MfaLastUpdatedTime;
+        }
+
+        public void SetMfaLastUpdatedTime(DateTime MfaLastUpdatedTimeVal) {
+            this.MfaLastUpdatedTime = MfaLastUpdatedTimeVal;
+        }
+
+    }
 
     public class Service {
         public string Name { get; set; }

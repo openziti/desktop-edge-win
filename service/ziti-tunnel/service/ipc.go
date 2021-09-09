@@ -489,7 +489,9 @@ func serveIpc(conn net.Conn) {
 		if cmdErr := dec.Decode(&cmd); cmdErr == io.EOF {
 			break
 		} else if cmdErr != nil {
-			log.Fatal(cmdErr)
+			log.Error(cmdErr)
+			respondWithError(enc, "could not decode command properly", UNKNOWN_ERROR, cmdErr)
+			break
 		}
 
 		switch cmd.Function {
@@ -497,7 +499,7 @@ func serveIpc(conn net.Conn) {
 			addIdMsg, addErr := reader.ReadString('\n')
 			if addErr != nil {
 				respondWithError(enc, "could not read string properly", UNKNOWN_ERROR, addErr)
-				return
+				break
 			}
 			log.Debugf("AddIdentity msg received: %s", addIdMsg)
 			addIdDec := json.NewDecoder(strings.NewReader(addIdMsg))
@@ -506,7 +508,9 @@ func serveIpc(conn net.Conn) {
 			if err := addIdDec.Decode(&newId); err == io.EOF {
 				break
 			} else if err != nil {
-				log.Fatal(err)
+				log.Error(err)
+				respondWithError(enc, "could not decode string properly", UNKNOWN_ERROR, err)
+				break
 			}
 			newIdentity(newId, enc)
 
