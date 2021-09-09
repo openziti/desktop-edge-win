@@ -90,7 +90,7 @@ namespace ZitiDesktopEdge {
 							_timer.Interval = 1000;
 							_timer.Tick += TimerTicked;
 							_timer.Start();
-							logger.Info("Timer Started for full timout in "+maxto+" seconds.");
+							logger.Info("Timer Started for full timout in "+maxto+"  seconds from identity "+_identity.Name+".");
 						} else {
 							_identity.MFAInfo.IsAuthenticated = false;
 							ServiceCountArea.Visibility = Visibility.Collapsed;
@@ -104,7 +104,6 @@ namespace ZitiDesktopEdge {
 					float minto = GetMinTimeout(_identity.MinTimeout);
 					if (minto>-1) {
 						//if (_identity.MinTimeout > 0) {
-						if (minto == 0 && maxto > 3) minto = 3; // Give the UI a couple seconds and show the timing out
 						if (minto>0) {
 							if (_timingTimer != null) _timingTimer.Stop();
 							countdown = minto;
@@ -112,7 +111,7 @@ namespace ZitiDesktopEdge {
 							_timingTimer.Interval = 1000;
 							_timingTimer.Tick += TimingTimerTick;
 							_timingTimer.Start();
-							logger.Info("Timer Started for first timout in " + minto + " seconds from identity value with " + _identity.MinTimeout + ".");
+							logger.Info("Timer Started for first timout in " + minto + " seconds from identity "+_identity.Name+" value with " + _identity.MinTimeout + ".");
 						}
 					}
 				} else {
@@ -147,15 +146,8 @@ namespace ZitiDesktopEdge {
 		private void TimingTimerTick(object sender, EventArgs e) {
 			if (countdown>-1) {
 				countdown--;
-				if (countdown<1200) {
-					_identity.IsTimingOut = true;
-					if (!_identity.WasNotified) {
-						_identity.WasNotified = true;
-						ShowMFAToast("The services for " + _identity.Name + " are starting to timeout.", _identity);
-					}
-				}
-
-					if (countdown > 0) {
+				logger.Info("CountDown " + countdown + " seconds from identity " + _identity.Name + ".");
+				if (countdown > 0) {
 						TimeSpan t = TimeSpan.FromSeconds(countdown);
 						string answer = t.Seconds + " seconds";
 						if (t.Days > 0) answer = t.Days + " days " + t.Hours + " hours " + t.Minutes + " minutes " + t.Seconds + " seconds";
@@ -163,6 +155,13 @@ namespace ZitiDesktopEdge {
 							if (t.Hours > 0) answer = t.Hours + " hours " + t.Minutes + " minutes " + t.Seconds + " seconds";
 							else {
 								if (t.Minutes > 0) answer = t.Minutes + " minutes " + t.Seconds + " seconds";
+							}
+						}
+						if (countdown<1200) {
+							_identity.IsTimingOut = true;
+							if (!_identity.WasNotified) {
+								_identity.WasNotified = true;
+								ShowMFAToast("The services for " + _identity.Name + " will start to time out in "+ answer, _identity);
 							}
 						}
 						TimerCountdown.ToolTip = "Some or all of the services will be timing out in " + answer;
