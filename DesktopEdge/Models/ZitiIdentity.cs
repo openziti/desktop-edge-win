@@ -21,6 +21,7 @@ namespace ZitiDesktopEdge.Models {
 		public bool IsTimingOut { get; set; }
 		public string TimeoutMessage { get; set; }
 		public bool WasNotified { get; set; }
+		public bool WasFullNotified { get; set; }
 
 		public MFA MFAInfo { get; set; }
 
