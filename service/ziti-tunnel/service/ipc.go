@@ -467,11 +467,11 @@ func serveIpc(conn net.Conn) {
 					log.Debug("pipe closed. client likely disconnected")
 				} else {
 					log.Errorf("unexpected error while reading line. %v", readErr)
-
-					//try to respond... likely won't work but try...
-					respondWithError(enc, "could not read line properly! exiting loop!", UNKNOWN_ERROR, readErr)
 				}
 			}
+
+			//try to respond... likely won't work but try...
+			respondWithError(enc, "connection closed due to shutdown request for ipc", UNKNOWN_ERROR, readErr)
 			log.Debugf("connection closed due to shutdown request for ipc: %v", readErr)
 			return
 		}
@@ -487,9 +487,12 @@ func serveIpc(conn net.Conn) {
 		dec := json.NewDecoder(strings.NewReader(msg))
 		var cmd dto.CommandMsg
 		if cmdErr := dec.Decode(&cmd); cmdErr == io.EOF {
-			break
+			respondWithError(enc, "could not decode command properly", UNKNOWN_ERROR, cmdErr)
+			continue
 		} else if cmdErr != nil {
-			log.Fatal(cmdErr)
+			log.Error(cmdErr)
+			respondWithError(enc, "could not decode command properly", UNKNOWN_ERROR, cmdErr)
+			continue
 		}
 
 		switch cmd.Function {
@@ -497,16 +500,19 @@ func serveIpc(conn net.Conn) {
 			addIdMsg, addErr := reader.ReadString('\n')
 			if addErr != nil {
 				respondWithError(enc, "could not read string properly", UNKNOWN_ERROR, addErr)
-				return
+				break
 			}
 			log.Debugf("AddIdentity msg received: %s", addIdMsg)
 			addIdDec := json.NewDecoder(strings.NewReader(addIdMsg))
 
 			var newId dto.AddIdentity
 			if err := addIdDec.Decode(&newId); err == io.EOF {
+				respondWithError(enc, "could not decode string properly", UNKNOWN_ERROR, err)
 				break
 			} else if err != nil {
-				log.Fatal(err)
+				log.Error(err)
+				respondWithError(enc, "could not decode string properly", UNKNOWN_ERROR, err)
+				break
 			}
 			newIdentity(newId, enc)
 
