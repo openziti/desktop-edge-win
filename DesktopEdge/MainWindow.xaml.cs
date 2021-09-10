@@ -136,6 +136,7 @@ namespace ZitiDesktopEdge {
 					for (int i=0; i<identities.Count; i++) {
 						if (identities[i].Fingerprint==mfa.Fingerprint) {
 							identities[i].WasNotified = false;
+							identities[i].WasFullNotified = false;
 							identities[i].MFAInfo.IsAuthenticated = mfa.Successful;
 							for (int j=0; j<identities[i].Services.Count; j++) {
 								identities[i].Services[j].TimeoutRemaining = identities[i].Services[j].Timeout;
@@ -627,19 +628,10 @@ namespace ZitiDesktopEdge {
 					logger.Warn($"{e.Op} event for {notification.Fingerprint} but the provided identity fingerprint was not found!");
 					continue;
 				} else {
-					// display notification message, only few services are about to timeout
 					found.TimeoutMessage = notification.Message;
 					found.MaxTimeout = notification.MfaMaximumTimeout;
 					found.MinTimeout = notification.MfaMinimumTimeout;
 
-					if (found.MinTimeout<1200) {
-						if (!found.WasNotified) {
-							found.WasNotified = true;
-							ShowMFAToast(found.TimeoutMessage, found);
-						}
-					}
-
-					// Send Notification
 					if (notification.MfaMinimumTimeout == 0) {
 						found.MFAInfo.IsAuthenticated = false;
 						// display mfa token icon
@@ -761,15 +753,6 @@ namespace ZitiDesktopEdge {
 					// display a tag in UI and a button for the update software
 				}
 			});
-		}
-
-		private void ShowMFAToast(string message, ZitiIdentity identity) {
-			new ToastContentBuilder()
-				.AddText("Important Notice")
-				.AddText(message)
-				.AddArgument("fingerprint", identity.Fingerprint)
-				.SetBackgroundActivation()
-				.Show();
 		}
 
 		private void ShowToast(string message) {
@@ -913,8 +896,6 @@ namespace ZitiDesktopEdge {
 						found.ControllerUrl = zid.ControllerUrl;
 						found.IsEnabled = zid.IsEnabled;
 						found.MFAInfo.IsAuthenticated = !e.Id.MfaNeeded;
-						found.WasNotified = false;
-						found.Services = zid.Services;
 						for (int i=0; i<identities.Count; i++) {
 							if (identities[i].Fingerprint==found.Fingerprint) {
 								identities[i] = found;

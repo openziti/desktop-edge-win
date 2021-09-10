@@ -64,7 +64,7 @@
                     <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/logs.png" Width="Auto" Label="Application Logs" MouseUp="ShowUILogs"></local:MenuItem>
                     <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/advanced.png" Width="Auto" Label="Set Logging Level" MouseUp="SetLogLevel"></local:MenuItem>
                     <local:MenuItem x:Name="ShowReleaseStreamMenuItem" Visibility="Collapsed" HorizontalAlignment="Stretch" Icon="/Assets/Images/update.png" Width="Auto" Label="Set Release Stream" MouseUp="ShowReleaseStreamMenuAction"></local:MenuItem>
-                    <local:StyledButton x:Name="EditFreqButton" OnClick="EditFreqButton_OnClick" Label="Change Notification Frequency" Grid.Row="8" Margin="0,20,0,0"></local:StyledButton>
+                    <local:StyledButton x:Name="EditFreqButton" Visibility="Collapsed" OnClick="EditFreqButton_OnClick" Label="Change Notification Frequency" Grid.Row="8" Margin="0,20,0,0"></local:StyledButton>
                 </StackPanel>
                 <StackPanel Name="LogLevelItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <local:SubOptionItem x:Name="LogFatal" HorizontalAlignment="Stretch" Width="Auto" Label="Fatal" MouseUp="SetLevel"></local:SubOptionItem>

@@ -30,8 +30,6 @@ namespace ZitiDesktopEdge {
 		public event MFAToggled OnMFAToggled;
 		public delegate void Detched(MouseButtonEventArgs e);
 		public event Detched OnDetach;
-		public double MainHeight = 500;
-		public string filter = "";
 		public delegate void Mesage(string message);
 		public event Mesage OnMessage;
 		public delegate void OnAuthenticate(ZitiIdentity identity);
@@ -40,8 +38,12 @@ namespace ZitiDesktopEdge {
 		public event OnRecovery Recovery;
 		public delegate void LoadingEvent(bool isComplete);
 		public event LoadingEvent OnLoading;
-		private System.Windows.Forms.Timer _timer;
+		public delegate void ShowMFAEvent(ZitiIdentity identity);
+		public event ShowMFAEvent OnShowMFA;
 
+		private System.Windows.Forms.Timer _timer;
+		public double MainHeight = 500;
+		public string filter = "";
 		public int Page = 1;
 		public int PerPage = 50;
 		public int TotalPages = 1;
@@ -507,6 +509,10 @@ namespace ZitiDesktopEdge {
 					_services = null;
 				}
 			}
+		}
+
+		private void DoMFA(object sender, MouseButtonEventArgs e) {
+			this.OnShowMFA?.Invoke(this._identity);
 		}
 	}
 }

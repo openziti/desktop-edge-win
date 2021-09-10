@@ -21,6 +21,7 @@ namespace ZitiDesktopEdge.Models {
 		public bool IsTimingOut { get; set; }
 		public string TimeoutMessage { get; set; }
 		public bool WasNotified { get; set; }
+		public bool WasFullNotified { get; set; }
 
 		public MFA MFAInfo { get; set; }
 
@@ -89,6 +90,7 @@ namespace ZitiDesktopEdge.Models {
 				}
 				zid.HasServiceFailingPostureCheck = zid.Services.Any(p => !p.HasFailingPostureCheck());
 			}
+			logger.Info("Identity: {0} updated To {1}", zid.Name, Newtonsoft.Json.JsonConvert.SerializeObject(id));
 			return zid;
 		}
 	}

@@ -163,9 +163,6 @@
     <Compile Include="Models\UIModel.cs" />
     <Compile Include="Native\NativeMethods.cs" />
     <Compile Include="Utils\UIUtils.cs" />
-    <Compile Include="Views\ItemRenderers\ServiceInfo.xaml.cs">
-      <DependentUpon>ServiceInfo.xaml</DependentUpon>
-    </Compile>
     <Compile Include="Views\ItemRenderers\MenuEditItem.xaml.cs">
       <DependentUpon>MenuEditItem.xaml</DependentUpon>
     </Compile>
@@ -237,10 +234,6 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="Views\ItemRenderers\ServiceInfo.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
     <Page Include="Views\ItemRenderers\MenuEditItem.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

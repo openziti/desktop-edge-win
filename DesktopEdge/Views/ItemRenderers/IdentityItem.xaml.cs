@@ -14,6 +14,9 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.ServiceClient;
+using Windows.UI.Notifications;
+using Microsoft.Toolkit.Uwp.Notifications;
+using NLog;
 
 namespace ZitiDesktopEdge {
 	/// <summary>
@@ -21,13 +24,15 @@ namespace ZitiDesktopEdge {
 	/// </summary>
 	public partial class IdentityItem:UserControl {
 
+		private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 		public delegate void StatusChanged(bool attached);
 		public event StatusChanged OnStatusChanged;
 		public delegate void OnAuthenticate(ZitiIdentity identity);
 		public event OnAuthenticate Authenticate;
 		private System.Windows.Forms.Timer _timer;
 		private System.Windows.Forms.Timer _timingTimer;
-		private int countdown = -1;
+		private float countdown = -1;
+		private float countdownComplete = -1;
 
 		public ZitiIdentity _identity;
 		public ZitiIdentity Identity {
@@ -40,12 +45,31 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-		public int GetMaxTimeout() {
-			int maxto = -1;
+		public float GetMaxTimeout() {
+			float maxto = -1;
 			for (int i=0; i<_identity.Services.Count; i++) {
-				if (_identity.Services[i].TimeoutRemaining > maxto) maxto = _identity.Services[i].TimeoutRemaining;
+				ZitiService info = _identity.Services[i];
+				if (info.TimeoutRemaining>-1) {
+					TimeSpan t = (DateTime.Now - info.TimeUpdated);
+					float timeout = info.TimeoutRemaining - (float)Math.Floor(t.TotalSeconds);
+					logger.Info("Max: Service "+info.Name+" Updated " + (float)Math.Floor(t.TotalSeconds) + " seconds ago will timeout in " + timeout + " seconds");
+					if (timeout>-1 && timeout>maxto) maxto = timeout;
+				}
 			}
 			return maxto;
+		}
+		public float GetMinTimeout(int minTimout) {
+			float minto = minTimout;
+			for (int i = 0; i < _identity.Services.Count; i++) {
+				ZitiService info = _identity.Services[i];
+				if (info.TimeoutRemaining > -1) {
+					TimeSpan t = (DateTime.Now - info.TimeUpdated);
+					float timeout = info.TimeoutRemaining - (float)Math.Floor(t.TotalSeconds);
+					logger.Info("Min: Service " + info.Name + " Updated " + (float)Math.Floor(t.TotalSeconds) + " seconds ago will timeout in " + timeout + " seconds");
+					if (timeout > -1 && timeout<minto) minto = timeout;
+				}
+			}
+			return minto;
 		}
 
 		public void RefreshUI () {
@@ -56,29 +80,39 @@ namespace ZitiDesktopEdge {
 					MfaRequired.Visibility = Visibility.Collapsed;
 					ServiceCountAreaLabel.Content = "services";
 					MainArea.Opacity = 1.0;
-					if (_identity.MaxTimeout>0) {
-						int maxto = GetMaxTimeout();
+					//if (_identity.MaxTimeout>0) {
+					float maxto = GetMaxTimeout();
+					if (maxto>-1) {
 						if (maxto > 0) {
 							if (_timer != null) _timer.Stop();
+							countdownComplete = maxto;
 							_timer = new System.Windows.Forms.Timer();
-							_timer.Interval = _identity.MaxTimeout * 1000;
+							_timer.Interval = 1000;
 							_timer.Tick += TimerTicked;
 							_timer.Start();
+							logger.Info("Timer Started for full timout in "+maxto+"  seconds from identity "+_identity.Name+".");
 						} else {
 							_identity.MFAInfo.IsAuthenticated = false;
 							ServiceCountArea.Visibility = Visibility.Collapsed;
 							MfaRequired.Visibility = Visibility.Visible;
 							ServiceCountAreaLabel.Content = "authorize";
 							MainArea.Opacity = 0.6;
+							if (maxto == 0) ShowTimedOut();
 						}
 					}
-					if (_identity.MinTimeout > 0) {
-						if (_timingTimer != null) _timingTimer.Stop();
-						countdown = _identity.MinTimeout;
-						_timingTimer = new System.Windows.Forms.Timer();
-						_timingTimer.Interval = 1000;
-						_timingTimer.Tick += TimingTimerTick; ;
-						_timingTimer.Start();
+					//}
+					float minto = GetMinTimeout(_identity.MinTimeout);
+					if (minto>-1) {
+						//if (_identity.MinTimeout > 0) {
+						if (minto>0) {
+							if (_timingTimer != null) _timingTimer.Stop();
+							countdown = minto;
+							_timingTimer = new System.Windows.Forms.Timer();
+							_timingTimer.Interval = 1000;
+							_timingTimer.Tick += TimingTimerTick;
+							_timingTimer.Start();
+							logger.Info("Timer Started for first timout in " + minto + " seconds from identity "+_identity.Name+" value with " + _identity.MinTimeout + ".");
+						}
 					}
 				} else {
 					ServiceCountArea.Visibility = Visibility.Collapsed;
@@ -112,11 +146,8 @@ namespace ZitiDesktopEdge {
 		private void TimingTimerTick(object sender, EventArgs e) {
 			if (countdown>-1) {
 				countdown--;
-				if (countdown<1260) {
-					_identity.IsTimingOut = true;
-				}
-
-					if (countdown > 0) {
+				logger.Info("CountDown " + countdown + " seconds from identity " + _identity.Name + ".");
+				if (countdown > 0) {
 						TimeSpan t = TimeSpan.FromSeconds(countdown);
 						string answer = t.Seconds + " seconds";
 						if (t.Days > 0) answer = t.Days + " days " + t.Hours + " hours " + t.Minutes + " minutes " + t.Seconds + " seconds";
@@ -124,6 +155,13 @@ namespace ZitiDesktopEdge {
 							if (t.Hours > 0) answer = t.Hours + " hours " + t.Minutes + " minutes " + t.Seconds + " seconds";
 							else {
 								if (t.Minutes > 0) answer = t.Minutes + " minutes " + t.Seconds + " seconds";
+							}
+						}
+						if (countdown<1200) {
+							_identity.IsTimingOut = true;
+							if (!_identity.WasNotified) {
+								_identity.WasNotified = true;
+								ShowMFAToast("The services for " + _identity.Name + " will start to time out in "+ answer, _identity);
 							}
 						}
 						TimerCountdown.ToolTip = "Some or all of the services will be timing out in " + answer;
@@ -136,10 +174,30 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
+		private void ShowTimedOut() {
+			if (!_identity.WasFullNotified) {
+				_identity.WasFullNotified = true;
+				_identity.MFAInfo.IsAuthenticated = false;
+				ShowMFAToast("All of the services with a timeout set for the identity " + _identity.Name + " have timed out", _identity);
+				RefreshUI();
+				if (_timer != null) _timer.Stop();
+			}
+		}
+
 		private void TimerTicked(object sender, EventArgs e) {
-			_identity.MFAInfo.IsAuthenticated = false;
-			RefreshUI();
-			_timer.Stop();
+			if (countdownComplete > -1) {
+				countdownComplete--;
+				if (countdownComplete <= 0) ShowTimedOut();
+			}
+		}
+
+		private void ShowMFAToast(string message, ZitiIdentity identity) {
+			new ToastContentBuilder()
+				.AddText("Service Access Timed Out")
+				.AddText(message)
+				.AddArgument("fingerprint", identity.Fingerprint)
+				.SetBackgroundActivation()
+				.Show();
 		}
 
 		public IdentityItem() {
