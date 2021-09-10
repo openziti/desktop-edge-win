@@ -10,7 +10,7 @@
 * none
 
 ## Dependency Updates
-* none
+* update wintun to 0.13
 
 # Release 1.10.1
 
