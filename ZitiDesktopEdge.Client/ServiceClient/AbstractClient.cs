@@ -8,10 +8,12 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using NLog;
 
 
 using ZitiDesktopEdge.DataStructures;
+using System.Reflection;
 
 namespace ZitiDesktopEdge.ServiceClient {
     public abstract class AbstractClient {
@@ -98,7 +100,11 @@ namespace ZitiDesktopEdge.ServiceClient {
             bool retried = false;
             while (true) {
                 try {
-                    string toSend = JsonConvert.SerializeObject(objToSend, Formatting.None);
+                    var jsonResolver = new ShouldSerializeContractResolver();
+
+                    var serializerSettings = new JsonSerializerSettings();
+                    serializerSettings.ContractResolver = jsonResolver;
+                    string toSend = JsonConvert.SerializeObject(objToSend, serializerSettings);
 
                     if (toSend?.Trim() != null) {
                         debugServiceCommunication(toSend);
@@ -240,6 +246,23 @@ namespace ZitiDesktopEdge.ServiceClient {
             while (Reconnecting || !Connected) {
                 await Task.Delay(100);
             }
+        }
+    }
+
+    public class ShouldSerializeContractResolver : DefaultContractResolver {
+        public new static readonly ShouldSerializeContractResolver Instance = new ShouldSerializeContractResolver();
+        protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization) {
+            JsonProperty property = base.CreateProperty(member, memberSerialization);
+
+            if (property.DeclaringType == typeof(Identity) && property.PropertyName == "MfaLastUpdatedTime") {
+                property.ShouldSerialize =
+                    instance => {
+                        Identity identity = (Identity)instance;
+                        return identity != null && identity.MfaLastUpdatedTime != DateTime.MinValue;
+                    };
+            }
+
+            return property;
         }
     }
 }

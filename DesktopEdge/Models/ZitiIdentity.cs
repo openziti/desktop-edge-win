@@ -15,6 +15,14 @@ namespace ZitiDesktopEdge.Models {
 		public string EnrollmentStatus { get; set; }
 		public string Status { get; set; }
 		public bool IsMFAEnabled { get; set; }
+		public int MinTimeout { get; set; }
+		public int MaxTimeout { get; set; }
+		public DateTime LastUpdatedTime { get; set; }
+		public bool IsTimingOut { get; set; }
+		public string TimeoutMessage { get; set; }
+		public bool WasNotified { get; set; }
+		public bool WasFullNotified { get; set; }
+
 		public MFA MFAInfo { get; set; }
 
 		private bool svcFailingPostureCheck = false;
@@ -41,6 +49,11 @@ namespace ZitiDesktopEdge.Models {
 			this.IsEnabled = IsEnabled;
 			this.EnrollmentStatus = "Enrolled";
 			this.Status = "Available";
+			this.MaxTimeout = -1;
+			this.MinTimeout = -1;
+			this.LastUpdatedTime = DateTime.Now;
+			this.IsTimingOut = false;
+			this.TimeoutMessage = "";
 		}
 
 		public string Fingerprint { get; set; }
@@ -54,20 +67,30 @@ namespace ZitiDesktopEdge.Models {
 				Name = (string.IsNullOrEmpty(id.Name) ? id.FingerPrint : id.Name),
 				Status = id.Status,
 				IsMFAEnabled = id.MfaEnabled,
-				MFAInfo = new MFA() { 
+				MFAInfo = new MFA() {
 					IsAuthenticated = !id.MfaNeeded,
 				},
+				MinTimeout = id.MinTimeout,
+				MaxTimeout = id.MaxTimeout,
+				LastUpdatedTime = id.MfaLastUpdatedTime,
+				TimeoutMessage = ""
 			};
+
+			if (!zid.IsMFAEnabled) zid.IsTimingOut = false;
 
 			if (id.Services != null) {
 				foreach (var svc in id.Services) {
 					if (svc != null) {
 						var zsvc = new ZitiService(svc);
 						zid.Services.Add(zsvc);
+						if (zid.IsMFAEnabled) {
+							if (zsvc.TimeoutRemaining>-1 && zsvc.TimeoutRemaining<1200) zid.IsTimingOut = true;
+						}
 					}
 				}
 				zid.HasServiceFailingPostureCheck = zid.Services.Any(p => !p.HasFailingPostureCheck());
 			}
+			logger.Info("Identity: {0} updated To {1}", zid.Name, Newtonsoft.Json.JsonConvert.SerializeObject(id));
 			return zid;
 		}
 	}

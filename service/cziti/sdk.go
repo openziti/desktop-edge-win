@@ -47,12 +47,15 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/api"
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/constants"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/util/logging"
 	"net"
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
+	"time"
 	"unsafe"
 )
 
@@ -73,11 +76,32 @@ type ServiceChange struct {
 	ZitiContext *ZIdentity
 }
 type BulkServiceChange struct {
+	Fingerprint        string
+	HostnamesToAdd     map[string]bool
+	HostnamesToRemove  map[string]bool
+	ServicesToRemove   []*dto.Service
+	ServicesToAdd      []*dto.Service
+	MfaMinTimeout      int32
+	MfaMaxTimeout      int32
+	MfaMinTimeoutRem   int32
+	MfaMaxTimeoutRem   int32
+	MfaLastUpdatedTime time.Time
+	ServiceUpdatedTime time.Time
+}
+
+type NotificationMessage struct {
+	IdentityName      string
 	Fingerprint       string
-	HostnamesToAdd    map[string]bool
-	HostnamesToRemove map[string]bool
-	ServicesToRemove  []*dto.Service
-	ServicesToAdd     []*dto.Service
+	Message           string
+	MfaMinimumTimeout int32
+	MfaMaximumTimeout int32
+	MfaTimeDuration   int
+	Severity          string
+}
+
+type TunnelNotificationEvent struct {
+	Op           string
+	Notification []NotificationMessage
 }
 
 var _impl sdk
@@ -109,6 +133,8 @@ func (inst *sdk) run(loglevel int) {
 	C.libuv_run(inst.libuvCtx)
 }
 
+type RefreshRequiredCheck func(int32, int32) bool
+
 type ZService struct {
 	Name    string
 	Id      string
@@ -118,27 +144,26 @@ type ZService struct {
 }
 
 type ZIdentity struct {
-	Options       *C.ziti_options
-	czctx         C.ziti_context
-	czid          *C.ziti_identity
-	status        int
-	statusErr     error
-	Loaded        bool
-	Name          string
-	Version       string
-	Services      sync.Map
-	Fingerprint   string
-	Active        bool
-	StatusChanges func(int)
-	MfaNeeded     bool
-	MfaEnabled    bool
-	mfa           *Mfa
-}
-
-type Mfa struct {
-	mfaContext unsafe.Pointer
-	authQuery  *C.ziti_auth_query_mfa
-	responseCb C.ziti_ar_mfa_cb
+	Options            *C.ziti_options
+	czctx              C.ziti_context
+	czid               *C.ziti_identity
+	status             int
+	statusErr          error
+	Loaded             bool
+	Name               string
+	Version            string
+	Services           sync.Map
+	Fingerprint        string
+	Active             bool
+	StatusChanges      func(int)
+	MfaNeeded          bool
+	MfaEnabled         bool
+	MfaMinTimeout      int32
+	MfaMaxTimeout      int32
+	MfaMinTimeoutRem   int32
+	MfaMaxTimeoutRem   int32
+	MfaLastUpdatedTime time.Time
+	ServiceUpdatedTime time.Time
 }
 
 func NewZid(statusChange func(int)) *ZIdentity {
@@ -146,6 +171,12 @@ func NewZid(statusChange func(int)) *ZIdentity {
 	zid.Services = sync.Map{}
 	zid.Options = (*C.ziti_options)(C.calloc(1, C.sizeof_ziti_options))
 	zid.StatusChanges = statusChange
+	zid.MfaMinTimeoutRem = -1
+	zid.MfaMaxTimeoutRem = -1
+	zid.MfaMaxTimeout = -1
+	zid.MfaMinTimeout = -1
+	zid.MfaLastUpdatedTime = time.Now()
+	zid.ServiceUpdatedTime = time.Now()
 	return zid
 }
 
@@ -223,6 +254,72 @@ func (zid *ZIdentity) Shutdown() {
 	log.Debugf("setting up call to ziti_shutdown for context %p using uv_async_t", async.data)
 	C.uv_async_init(_impl.libuvCtx.l, async, C.uv_async_cb(C.doZitiShutdown))
 	C.uv_async_send((*C.uv_async_t)(unsafe.Pointer(async)))
+}
+
+func (zid *ZIdentity) MfaRefreshNeeded() bool {
+	return !(zid.MfaMinTimeoutRem == -1 && zid.MfaMaxTimeoutRem == -1)
+}
+
+func (zid *ZIdentity) GetRemainingTime(timeout int32, timeoutRemaining int32) int32 {
+	var remainingTimeout int32
+
+	// calculate effective timeout remaining from last mfa or service update time
+	if zid.MfaLastUpdatedTime.After(zid.ServiceUpdatedTime) {
+		//calculate svc remaining timeout
+		if (timeout - int32(time.Since(zid.MfaLastUpdatedTime).Seconds())) < 0 {
+			remainingTimeout = 0
+		} else {
+			remainingTimeout = timeout - int32(time.Since(zid.MfaLastUpdatedTime).Seconds())
+		}
+	} else {
+		//calculate svc remaining timeout
+		if (timeoutRemaining - int32(time.Since(zid.ServiceUpdatedTime).Seconds())) < 0 {
+			remainingTimeout = 0
+		} else {
+			remainingTimeout = timeoutRemaining - int32(time.Since(zid.ServiceUpdatedTime).Seconds())
+		}
+	}
+	return remainingTimeout
+
+}
+
+func (zid *ZIdentity) GetMFAState(interval int32) int {
+	var mfaState int
+	if (zid.MfaMaxTimeoutRem > -1) && (zid.MfaMaxTimeoutRem-int32(time.Since(zid.MfaLastUpdatedTime).Seconds())) < 0 {
+		mfaState = constants.MfaAllSvcTimeout
+	} else if (zid.MfaMinTimeoutRem - int32(time.Since(zid.MfaLastUpdatedTime).Seconds())) < 0 {
+		mfaState = constants.MfaFewSvcTimeout
+	} else if (zid.MfaMinTimeoutRem - int32(time.Since(zid.MfaLastUpdatedTime).Seconds())) < interval {
+		mfaState = constants.MfaNearingTimeout
+	} else {
+		mfaState = -1
+	}
+	return mfaState
+}
+
+func (zid *ZIdentity) UpdateMFATime() {
+
+	zid.Services.Range(func(key interface{}, value interface{}) bool {
+		//string, ZService
+		val := value.(*ZService)
+
+		if zid.MfaRefreshNeeded() && val.Service.Timeout > 0 {
+			var svcTimeout int32 = -1
+			for _, pc := range val.Service.PostureChecks {
+				if svcTimeout == -1 || svcTimeout > int32(pc.Timeout) {
+					svcTimeout = int32(pc.Timeout)
+				}
+				break
+			}
+			atomic.StoreInt32(&val.Service.TimeoutRemaining, svcTimeout)
+		}
+
+		return true
+	})
+	zid.MfaLastUpdatedTime = time.Now()
+	zid.MfaMaxTimeoutRem = zid.MfaMaxTimeout
+	zid.MfaMinTimeoutRem = zid.MfaMinTimeout
+	log.Debugf("updated Mfa Maximum Timeout Remaining to %d and Mfa Minimum Timeout Remaining to %d", zid.MfaMaxTimeoutRem, zid.MfaMinTimeoutRem)
 }
 
 //export doZitiShutdown
@@ -316,17 +413,19 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 
 		//if any posture query sets pass - that will grant the user access to that service
 		hasAccess := false
+		timeout := -1
+		timeoutRemaining := -1
 
-		//find all posture checks sets...
-		for setIdx := 0; true; setIdx++ {
-			pqs := C.posture_query_set_get(service.posture_query_set, C.int(setIdx))
-			if unsafe.Pointer(pqs) == C.NULL {
-				break
-			}
+		it := C.model_map_iterator(&service.posture_query_map)
+		for unsafe.Pointer(it) != C.NULL {
+			ptr := C.model_map_it_value(it)
+
+			pqs := (*C.ziti_posture_query_set)(unsafe.Pointer(ptr))
 
 			if C.GoString(pqs.policy_type) == "Bind" {
 				log.Tracef("Posture Query set returned a Bind policy: %s [ignored]", C.GoString(pqs.policy_id))
 				// posture check does not consider bind policies
+				it = C.model_map_it_next(it)
 				continue
 			} else {
 				log.Tracef("Posture Query set returned a %s policy: %s, is_passing %t", C.GoString(pqs.policy_type), C.GoString(pqs.policy_id), pqs.is_passing)
@@ -346,31 +445,68 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 				var pcId string
 				pcId = C.GoString(pq.id)
 
+				var pcTimeoutRemaining int
+				if unsafe.Pointer(pq.timeoutRemaining) != C.NULL {
+					pcTimeoutRemaining = int(*(*C.int)(pq.timeoutRemaining))
+				} else {
+					pcTimeoutRemaining = -1
+				}
+
+				log.Infof("Posture query %s, timeout %d, timeoutRemaining %d", pcId, int(pq.timeout), pcTimeoutRemaining)
+
 				_, found := pcIds[pcId]
 				if found {
 					log.Tracef("posture check with id %s already in failing posture check map", pcId)
+					for _, pc := range postureChecks {
+						if pc.Id == pcId {
+							if timeout == -1 || timeout > int(pq.timeout) {
+								timeout = int(pq.timeout)
+							}
+							if timeoutRemaining == -1 || timeoutRemaining > pcTimeoutRemaining {
+								timeoutRemaining = pcTimeoutRemaining
+							}
+							break
+						}
+					}
 				} else {
 					pcIds[C.GoString(pq.id)] = false
 					pc := dto.PostureCheck{
-						IsPassing: bool(pq.is_passing),
-						QueryType: C.GoString(pq.query_type),
-						Id:        pcId,
+						IsPassing:        bool(pq.is_passing),
+						QueryType:        C.GoString(pq.query_type),
+						Id:               pcId,
+						Timeout:          int(pq.timeout),
+						TimeoutRemaining: pcTimeoutRemaining,
 					}
+					timeout = pc.Timeout
+					timeoutRemaining = pc.TimeoutRemaining
 
 					postureChecks = append(postureChecks, pc)
 				}
 			}
+
+			it = C.model_map_it_next(it)
+		}
+
+		//find all posture checks sets...
+		for setIdx := 0; true; setIdx++ {
+			pqs := C.posture_query_set_get(service.posture_query_set, C.int(setIdx))
+			if unsafe.Pointer(pqs) == C.NULL {
+				break
+			}
+
 		}
 
 		svc = &dto.Service{
-			Name:          name,
-			Id:            svcId,
-			Protocols:     protocols,
-			Addresses:     addresses,
-			Ports:         portRanges,
-			OwnsIntercept: true,
-			PostureChecks: postureChecks,
-			IsAccessable:  hasAccess,
+			Name:             name,
+			Id:               svcId,
+			Protocols:        protocols,
+			Addresses:        addresses,
+			Ports:            portRanges,
+			OwnsIntercept:    true,
+			PostureChecks:    postureChecks,
+			IsAccessable:     hasAccess,
+			Timeout:          int32(timeout),
+			TimeoutRemaining: int32(timeoutRemaining),
 		}
 		added := ZService{
 			Name:    name,
@@ -508,6 +644,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			if unsafe.Pointer(added) == C.NULL {
 				break
 			}
+
 			svcToAdd := serviceCB(ztx, added, C.ZITI_OK, zid)
 			if svcToAdd != nil {
 				addAddys := svcToAdd.Addresses
@@ -519,19 +656,101 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 				servicesToAdd = append(servicesToAdd, svcToAdd)
 			}
 		}
+		var minimumTimeout int32 = -1
+		var maximumTimeout int32 = -1
+		var minimumTimeoutRem int32 = -1
+		var maximumTimeoutRem int32 = -1
+		noTimeoutSvc := false
+		noTimeoutRemSvc := false
+		if len(servicesToAdd) > 0 {
+			zid.Services.Range(func(key interface{}, value interface{}) bool {
+				//string, ZService
+				val := value.(*ZService)
+
+				if val.Service.Timeout >= 0 {
+					if minimumTimeout == -1 || minimumTimeout > val.Service.Timeout {
+						minimumTimeout = val.Service.Timeout
+					}
+					if maximumTimeout == -1 || maximumTimeout < val.Service.Timeout {
+						maximumTimeout = val.Service.Timeout
+					}
+				} else {
+					noTimeoutSvc = true
+				}
+				if val.Service.TimeoutRemaining >= 0 {
+					if minimumTimeoutRem == -1 || minimumTimeoutRem > val.Service.TimeoutRemaining {
+						minimumTimeoutRem = val.Service.TimeoutRemaining
+					}
+					if maximumTimeoutRem == -1 || maximumTimeoutRem < val.Service.TimeoutRemaining {
+						maximumTimeoutRem = val.Service.TimeoutRemaining
+					}
+				} else {
+					noTimeoutRemSvc = true
+				}
+
+				return true
+
+			})
+			if noTimeoutSvc {
+				maximumTimeout = -1
+			}
+			if noTimeoutRemSvc {
+				maximumTimeoutRem = -1
+			}
+		}
+
+		now := time.Now()
+		zid.MfaMinTimeout = minimumTimeout
+		zid.MfaMaxTimeout = maximumTimeout
+		zid.MfaMinTimeoutRem = minimumTimeoutRem
+		zid.MfaMaxTimeoutRem = maximumTimeoutRem
+		zid.ServiceUpdatedTime = now
 
 		svcChange := BulkServiceChange{
-			Fingerprint:       zid.Fingerprint,
-			HostnamesToAdd:    hostnamesToAdd,
-			HostnamesToRemove: hostnamesToRemove,
-			ServicesToAdd:     servicesToAdd,
-			ServicesToRemove:  servicesToRemove,
+			Fingerprint:        zid.Fingerprint,
+			HostnamesToAdd:     hostnamesToAdd,
+			HostnamesToRemove:  hostnamesToRemove,
+			ServicesToAdd:      servicesToAdd,
+			ServicesToRemove:   servicesToRemove,
+			MfaMinTimeout:      minimumTimeout,
+			MfaMaxTimeout:      maximumTimeout,
+			MfaMinTimeoutRem:   minimumTimeoutRem,
+			MfaMaxTimeoutRem:   maximumTimeoutRem,
+			MfaLastUpdatedTime: zid.MfaLastUpdatedTime,
+			ServiceUpdatedTime: now,
 		}
 
 		if len(BulkServiceChanges) == cap(BulkServiceChanges) {
 			log.Warn("Service changes are not being processed fast enough. This client is out of date from the controller! This is unexpected. If you see this warning please report")
 		} else {
 			BulkServiceChanges <- svcChange
+		}
+	case C.ZitiMfaAuthEvent:
+		zid := (*ZIdentity)(appCtx)
+		log.Debugf("mfa auth event for finger print %s", zid.Fingerprint)
+		zid.MfaNeeded = true
+		zid.MfaEnabled = true
+
+		if zid.Fingerprint != "" {
+			var id = dto.Identity{
+				Name:              zid.Name,
+				FingerPrint:       zid.Fingerprint,
+				Active:            zid.Active,
+				ControllerVersion: zid.Version,
+				Status:            "",
+				MfaNeeded:         true,
+				MfaEnabled:        true,
+				Tags:              nil,
+			}
+
+			var m = dto.IdentityEvent{
+				ActionEvent: dto.IDENTITY_ADDED,
+				Id:          id,
+			}
+			goapi.BroadcastEvent(m)
+			log.Debugf("mfa auth event set enabled/needed to true for ziti context [%p]. Identity name:%s [fingerprint: %s]", zid, zid.Name, zid.Fingerprint)
+		} else {
+			log.Debugf("mfa auth event set received with empty finger print, ziti context [%p]", zid)
 		}
 	default:
 		log.Infof("event %d not handled", event._type)
@@ -572,16 +791,14 @@ func LoadZiti(zid *ZIdentity, cfg string, refreshInterval int) {
 	zid.Options.config = C.CString(cfg)
 	zid.Options.refresh_interval = C.long(refreshInterval)
 	zid.Options.metrics_type = C.INSTANT
-	zid.Options.config_types = C.all_configs
+	zid.Options.config_types = C.get_all_configs()
 	zid.Options.pq_domain_cb = C.ziti_pq_domain_cb(C.ziti_pq_domain_go)
 	zid.Options.pq_mac_cb = C.ziti_pq_mac_cb(C.ziti_pq_mac_go)
 	zid.Options.pq_os_cb = C.ziti_pq_os_cb(C.ziti_pq_os_go)
 	zid.Options.pq_process_cb = C.ziti_pq_process_cb(C.ziti_pq_process_go)
 
-	zid.Options.events = C.ZitiContextEvent | C.ZitiServiceEvent | C.ZitiRouterEvent
+	zid.Options.events = C.ZitiContextEvent | C.ZitiServiceEvent | C.ZitiRouterEvent | C.ZitiMfaAuthEvent
 	zid.Options.event_cb = C.ziti_event_cb(C.eventCB)
-
-	zid.Options.aq_mfa_cb = C.ziti_aq_mfa_cb(C.ziti_aq_mfa_cb_go)
 
 	ptr := unsafe.Pointer(zid)
 	zid.Options.app_ctx = ptr

@@ -30,8 +30,6 @@ namespace ZitiDesktopEdge {
 		public event MFAToggled OnMFAToggled;
 		public delegate void Detched(MouseButtonEventArgs e);
 		public event Detched OnDetach;
-		public double MainHeight = 500;
-		public string filter = "";
 		public delegate void Mesage(string message);
 		public event Mesage OnMessage;
 		public delegate void OnAuthenticate(ZitiIdentity identity);
@@ -40,7 +38,12 @@ namespace ZitiDesktopEdge {
 		public event OnRecovery Recovery;
 		public delegate void LoadingEvent(bool isComplete);
 		public event LoadingEvent OnLoading;
+		public delegate void ShowMFAEvent(ZitiIdentity identity);
+		public event ShowMFAEvent OnShowMFA;
 
+		private System.Windows.Forms.Timer _timer;
+		public double MainHeight = 500;
+		public string filter = "";
 		public int Page = 1;
 		public int PerPage = 50;
 		public int TotalPages = 1;
@@ -50,6 +53,7 @@ namespace ZitiDesktopEdge {
 		private double scrolledTo = 0;
 		public int totalServices = 0;
 		private ScrollViewer _scroller;
+		private ZitiService _info;
 
 		public ObservableCollection<ZitiService> _services = new ObservableCollection<ZitiService>();
 		public ObservableCollection<ZitiService> ZitiServices { get { return _services; } }
@@ -177,6 +181,7 @@ namespace ZitiDesktopEdge {
 					total++; 
 					if (index<PerPage) {
 						if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0) {
+							zitiSvc.TimeUpdated = _identity.LastUpdatedTime;
 							_services.Add(zitiSvc);
 							index++;
 						}
@@ -211,11 +216,21 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void ShowDetails(ZitiService info) {
+			_info = info;
 			DetailName.Text = info.Name;
 			DetailProtocols.Text = info.ProtocolString;
 			DetailAddress.Text = info.AddressString;
 			DetailPorts.Text = info.PortString;
 			DetailUrl.Text = info.ToString();
+
+			UpdateClock(info);
+			if (_identity.IsMFAEnabled) {
+				if (_timer != null) _timer.Stop();
+				_timer = new System.Windows.Forms.Timer();
+				_timer.Interval = 1000;
+				_timer.Tick += Ticked; ;
+				_timer.Start();
+			}
 
 			DetailsArea.Visibility = Visibility.Visible;
 			DetailsArea.Opacity = 0;
@@ -226,6 +241,45 @@ namespace ZitiDesktopEdge {
 			DetailsArea.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
 
 			ShowModal();
+		}
+
+		private void Ticked(object sender, EventArgs e) {
+			UpdateClock(_info);
+		}
+
+		private void UpdateClock(ZitiService info) {
+			try {
+				if (_identity.IsMFAEnabled) {
+					if (info.TimeoutRemaining > 0) {
+						TimeSpan t = (DateTime.Now - info.TimeUpdated);
+						int timeout = info.Timeout - (int)Math.Floor(t.TotalSeconds);
+
+						if (timeout > 0) {
+							t = TimeSpan.FromSeconds(timeout);
+							string answer = t.Seconds + " seconds";
+							if (t.Days > 0) answer = t.Days + " days " + t.Hours + " hours " + t.Minutes + " minutes " + t.Seconds + " seconds";
+							else {
+								if (t.Hours > 0) answer = t.Hours + " hours " + t.Minutes + " minutes " + t.Seconds + " seconds";
+								else {
+									if (t.Minutes > 0) answer = t.Minutes + " minutes " + t.Seconds + " seconds";
+								}
+							}
+							TimeoutDetails.Text = answer;
+						} else {
+							TimeoutDetails.Text = "Timed Out";
+						}
+
+					} else {
+						if (info.TimeoutRemaining == 0) TimeoutDetails.Text = "Timed Out";
+						else TimeoutDetails.Text = "Never";
+					}
+				} else {
+					TimeoutDetails.Text = "Never";
+				}
+			} catch (Exception e) {
+				TimeoutDetails.Text = "Never";
+				Console.WriteLine("Error: " + e.ToString());
+			}
 		}
 
 		private void ShowCompleted(object sender, EventArgs e) {
@@ -387,6 +441,7 @@ namespace ZitiDesktopEdge {
 							ZitiService zitiSvc = services[i];
 							if (index < PerPage) {
 								if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0) {
+									zitiSvc.TimeUpdated = _identity.LastUpdatedTime;
 									ZitiServices.Add(zitiSvc);
 									index++;
 								}
@@ -454,6 +509,10 @@ namespace ZitiDesktopEdge {
 					_services = null;
 				}
 			}
+		}
+
+		private void DoMFA(object sender, MouseButtonEventArgs e) {
+			this.OnShowMFA?.Invoke(this._identity);
 		}
 	}
 }

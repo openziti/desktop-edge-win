@@ -20,6 +20,9 @@ namespace ZitiDesktopEdge.Models {
 		public PostureCheck[] PostureChecks { get; set; }
 		public bool OwnsIntercept { get; set; }
 		public string AssignedIP { get; set; }
+		public DateTime TimeUpdated { get; set; }
+		public int Timeout { get; set; }
+		public int TimeoutRemaining { get; set; }
 
 		private bool failingPostureCheck;
 		public bool HasFailingPostureCheck() {
@@ -47,7 +50,10 @@ namespace ZitiDesktopEdge.Models {
 			this.Protocols = svc.Protocols == null ? null : svc.Protocols.Select(p => p.ToUpper()).ToArray();
 			this.Ports = svc.Ports;
 			this.PostureChecks = svc.PostureChecks;
+			this.Timeout = svc.Timeout;
+			this.TimeoutRemaining = svc.TimeoutRemaining;
 			this.OwnsIntercept = svc.OwnsIntercept;
+			this.TimeUpdated = DateTime.Now;
 			if (this.PostureChecks != null) {
 				this.failingPostureCheck = this.PostureChecks.Any(p => !p.IsPassing);
 			}
@@ -103,6 +109,25 @@ namespace ZitiDesktopEdge.Models {
 		public Visibility WarningVisibility { 
 			get {
 				return (HasWarning) ? Visibility.Visible : Visibility.Collapsed;
+			}
+			set { }
+		}
+		public int WarningWidth {
+			get {
+				return (HasWarning) ? 20 : 0;
+			}
+			set { }
+		}
+
+		public Visibility TimerVisibility {
+			get {
+				return (TimeoutRemaining>-1&&TimeoutRemaining<1260) ? Visibility.Visible : Visibility.Collapsed;
+			}
+			set { }
+		}
+		public int TimerWidth {
+			get {
+				return (TimeoutRemaining > -1 && TimeoutRemaining < 1260) ? 20 : 0;
 			}
 			set { }
 		}

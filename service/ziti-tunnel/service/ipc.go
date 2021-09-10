@@ -17,6 +17,7 @@
 
 package service
 
+import "C"
 import (
 	"bufio"
 	"crypto/sha1"
@@ -37,6 +38,7 @@ import (
 	"golang.zx2c4.com/wireguard/tun"
 	"io"
 	"io/ioutil"
+	"math"
 	"math/rand"
 	"net"
 	"os"
@@ -45,6 +47,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -61,8 +64,9 @@ func (p *Pipes) Close() {
 }
 
 var shutdown = make(chan bool, 8) //a channel informing go routines to exit
+var notificationFrequency *time.Ticker
 
-func SubMain(ops chan string, changes chan<- svc.Status) error {
+func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan WindowsEvents) error {
 	log.Info("============================== service begins ==============================")
 	windns.RemoveAllNrptRules()
 	// cleanup old ziti tun profiles
@@ -82,6 +86,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 
 	// a channel to signal the handleEvents that initialization is complete
 	initialized := make(chan struct{})
+	shutdownDelay := make(chan bool)
 
 	// initialize the network interface
 	err := initialize(cLogLevel)
@@ -100,6 +105,35 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 
 	//listen for services that show up
 	go acceptServices()
+
+	// listen for windows power events and call mfa auth func
+	go func() {
+		for {
+			select {
+			case wEvents := <-winEvents:
+				if wEvents.WinPowerEvent == PBT_APMRESUMESUSPEND || wEvents.WinPowerEvent == PBT_APMRESUMEAUTOMATIC {
+					log.Debugf("Received Windows Power Event in tunnel %d", wEvents.WinPowerEvent)
+					for _, id := range rts.ids {
+						if id.CId != nil && id.CId.Loaded {
+							cziti.EndpointStateChanged(id.CId, true, false)
+						}
+					}
+				}
+				if wEvents.WinSessionEvent == WTS_SESSION_UNLOCK {
+					log.Debugf("Received Windows Session Event (device unlocked) in tunnel %d", wEvents.WinSessionEvent)
+					for _, id := range rts.ids {
+						if id.CId != nil && id.CId.Loaded {
+							cziti.EndpointStateChanged(id.CId, false, true)
+						}
+					}
+				}
+				broadcastNotification(true)
+			case <-shutdownDelay:
+				log.Tracef("Exiting windows power events loop")
+				return
+			}
+		}
+	}()
 
 	// open the pipe for business
 	pipes, err := openPipes()
@@ -136,10 +170,9 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 	})
 
 	// wait 1 second for the shutdown to send to clients
-	shutdownDelay := make(chan bool)
 	go func() {
 		time.Sleep(1 * time.Second)
-		shutdownDelay <- true
+		close(shutdownDelay)
 	}()
 	<-shutdownDelay
 
@@ -173,8 +206,7 @@ func SubMain(ops chan string, changes chan<- svc.Status) error {
 
 func requestShutdown(requester string) {
 	log.Infof("shutdown requested by %v", requester)
-	shutdown <- true // stops the metrics ticker
-	shutdown <- true // stops the service change listener
+	close(shutdown) // stops the metrics ticker, service change listener and notification alert loop
 }
 
 func waitForStopRequest(ops <-chan string) {
@@ -435,11 +467,11 @@ func serveIpc(conn net.Conn) {
 					log.Debug("pipe closed. client likely disconnected")
 				} else {
 					log.Errorf("unexpected error while reading line. %v", readErr)
-
-					//try to respond... likely won't work but try...
-					respondWithError(enc, "could not read line properly! exiting loop!", UNKNOWN_ERROR, readErr)
 				}
 			}
+
+			//try to respond... likely won't work but try...
+			respondWithError(enc, "connection closed due to shutdown request for ipc", UNKNOWN_ERROR, readErr)
 			log.Debugf("connection closed due to shutdown request for ipc: %v", readErr)
 			return
 		}
@@ -455,9 +487,12 @@ func serveIpc(conn net.Conn) {
 		dec := json.NewDecoder(strings.NewReader(msg))
 		var cmd dto.CommandMsg
 		if cmdErr := dec.Decode(&cmd); cmdErr == io.EOF {
-			break
+			respondWithError(enc, "could not decode command properly", UNKNOWN_ERROR, cmdErr)
+			continue
 		} else if cmdErr != nil {
-			log.Fatal(cmdErr)
+			log.Error(cmdErr)
+			respondWithError(enc, "could not decode command properly", UNKNOWN_ERROR, cmdErr)
+			continue
 		}
 
 		switch cmd.Function {
@@ -465,16 +500,19 @@ func serveIpc(conn net.Conn) {
 			addIdMsg, addErr := reader.ReadString('\n')
 			if addErr != nil {
 				respondWithError(enc, "could not read string properly", UNKNOWN_ERROR, addErr)
-				return
+				break
 			}
 			log.Debugf("AddIdentity msg received: %s", addIdMsg)
 			addIdDec := json.NewDecoder(strings.NewReader(addIdMsg))
 
 			var newId dto.AddIdentity
 			if err := addIdDec.Decode(&newId); err == io.EOF {
+				respondWithError(enc, "could not decode string properly", UNKNOWN_ERROR, err)
 				break
 			} else if err != nil {
-				log.Fatal(err)
+				log.Error(err)
+				respondWithError(enc, "could not decode string properly", UNKNOWN_ERROR, err)
+				break
 			}
 			newIdentity(newId, enc)
 
@@ -551,6 +589,9 @@ func serveIpc(conn net.Conn) {
 			fingerprint := cmd.Payload["Fingerprint"].(string)
 			code := cmd.Payload["Code"].(string)
 			removeMFA(enc, fingerprint, code)
+		case "UpdateFrequency":
+			notificationFreq := cmd.Payload["NotificationFrequency"].(float64)
+			updateNotificationFrequency(enc, int(notificationFreq))
 		case "Debug":
 			dbg()
 			respond(enc, dto.Response{
@@ -1102,12 +1143,46 @@ func handleBulkServiceChange(sc cziti.BulkServiceChange) {
 		},
 	}
 	rts.BroadcastEvent(m)
+
+	id := rts.Find(sc.Fingerprint)
+	if id != nil && !id.Notified {
+		broadcastNotification(true)
+	}
+
+}
+
+func addUnit(count int, unit string) (result string) {
+	if (count == 1) || (count == 0) {
+		result = strconv.Itoa(count) + " " + unit + " "
+	} else {
+		result = strconv.Itoa(count) + " " + unit + "s "
+	}
+	return
+}
+
+func secondsToReadableFmt(input int32) (result string) {
+	seconds := input % (60 * 60 * 24)
+	hours := math.Floor(float64(seconds) / 60 / 60)
+	seconds = input % (60 * 60)
+	minutes := math.Floor(float64(seconds) / 60)
+	seconds = input % 60
+
+	if hours > 0 {
+		result = addUnit(int(hours), "hour") + addUnit(int(minutes), "minute") + addUnit(int(seconds), "second")
+	} else if minutes > 0 {
+		result = addUnit(int(minutes), "minute") + addUnit(int(seconds), "second")
+	} else {
+		result = addUnit(int(seconds), "second")
+	}
+
+	return
 }
 
 func handleEvents(isInitialized chan struct{}) {
 	events.run()
 	d := 5 * time.Second
 	every5s := time.NewTicker(d)
+	notificationFrequency = time.NewTicker(time.Duration(rts.state.NotificationFrequency) * time.Minute)
 
 	defer log.Debugf("exiting handleEvents. loops were set for %v", d)
 	<-isInitialized
@@ -1119,12 +1194,85 @@ func handleEvents(isInitialized chan struct{}) {
 		case <-every5s.C:
 			s := rts.ToMetrics()
 
+			// broadcast metrics
 			rts.BroadcastEvent(dto.MetricsEvent{
 				StatusEvent: dto.StatusEvent{Op: "metrics"},
 				Identities:  s.Identities,
 			})
+
+		// notification message
+		case <-notificationFrequency.C:
+			broadcastNotification(false)
 		}
 	}
+}
+
+func broadcastNotification(adhoc bool) {
+	changedNotifiedStatus := false
+	cleanNotifications := make([]cziti.NotificationMessage, 0)
+	for _, id := range rts.ids {
+
+		if id.CId == nil || !id.CId.MfaRefreshNeeded() {
+			continue
+		}
+
+		if !id.Notified {
+			rts.SetNotified(id.FingerPrint, true)
+			changedNotifiedStatus = true
+		} else if id.Notified && adhoc {
+			continue
+		}
+
+		notificationMessage := ""
+
+		var notificationMinTimeout int32 = 0
+		var notificationMaxTimeout int32 = -1
+		switch mfaState := id.CId.GetMFAState(int32((constants.MaximumFrequency + rts.state.NotificationFrequency) * 60)); mfaState {
+		case constants.MfaAllSvcTimeout:
+			notificationMessage = fmt.Sprintf("All of the services of identity %s have timed out", id.Name)
+		case constants.MfaFewSvcTimeout:
+			notificationMessage = fmt.Sprintf("Some of the services of identity %s have timed out", id.Name)
+		case constants.MfaNearingTimeout:
+			notificationMinTimeout = id.CId.GetRemainingTime(id.CId.MfaMinTimeout, id.CId.MfaMinTimeoutRem)
+			notificationMessage = fmt.Sprintf("Some of the services of identity %s are timing out in %s", id.Name, secondsToReadableFmt(notificationMinTimeout))
+		default:
+			// do nothing
+		}
+		if len(notificationMessage) > 0 {
+
+			if id.CId.MfaMaxTimeoutRem > -1 {
+				notificationMaxTimeout = id.CId.GetRemainingTime(id.CId.MfaMaxTimeout, id.CId.MfaMaxTimeoutRem)
+			}
+			notificationMinTimeout = id.CId.GetRemainingTime(id.CId.MfaMinTimeout, id.CId.MfaMinTimeoutRem)
+
+			cleanNotifications = append(cleanNotifications, cziti.NotificationMessage{
+				Fingerprint:       id.FingerPrint,
+				IdentityName:      id.Name,
+				Severity:          "major",
+				MfaMinimumTimeout: notificationMinTimeout,
+				MfaMaximumTimeout: notificationMaxTimeout,
+				Message:           notificationMessage,
+				MfaTimeDuration:   int(time.Since(id.CId.MfaLastUpdatedTime).Seconds()),
+			})
+		}
+	}
+
+	if changedNotifiedStatus && adhoc {
+		ResetFrequency(rts.state.NotificationFrequency)
+	}
+
+	if len(cleanNotifications) > 0 {
+		log.Debugf("Sending notification message to UI %v", cleanNotifications)
+
+		rts.BroadcastEvent(cziti.TunnelNotificationEvent{
+			Op:           "notification",
+			Notification: cleanNotifications,
+		})
+	}
+}
+
+func ResetFrequency(newFrequency int) {
+	notificationFrequency.Reset(time.Duration(newFrequency) * time.Minute)
 }
 
 //Removes the Config from the provided identity and returns a 'cleaned' id
@@ -1154,12 +1302,56 @@ func Clean(src *Id) dto.Identity {
 	}
 
 	if src.CId != nil {
+		var mfaMinTimeoutRemaining int32 = -1
+		var mfaMaxTimeoutRemaining int32 = -1
 		src.CId.Services.Range(func(key interface{}, value interface{}) bool {
 			//string, ZService
 			val := value.(*cziti.ZService)
+			var svcMinTimeoutRemaining int32 = -1
+
+			if src.CId.MfaRefreshNeeded() && val.Service.TimeoutRemaining > -1 {
+				var svcTimeout int32 = -1
+				// to save the value from the pc timeout remaining, this value comes from the controller
+				var svcTimeoutRemaining int32 = -1
+				// fetch svc timeout and timeout remaining from pc
+				for _, pc := range val.Service.PostureChecks {
+					if svcTimeout == -1 || svcTimeout > int32(pc.Timeout) {
+						svcTimeout = int32(pc.Timeout)
+					}
+					if svcTimeoutRemaining == -1 || svcTimeoutRemaining > int32(pc.TimeoutRemaining) {
+						svcTimeoutRemaining = int32(pc.TimeoutRemaining)
+					}
+				}
+
+				// calculate effective timeout remaining from last mfa or service update time
+				svcMinTimeoutRemaining = src.CId.GetRemainingTime(svcTimeout, svcTimeoutRemaining)
+				//calculate mfa min remaining timeout
+				if mfaMinTimeoutRemaining == -1 && src.CId.MfaMinTimeoutRem != -1 {
+					mfaMinTimeoutRemaining = src.CId.GetRemainingTime(src.CId.MfaMinTimeout, src.CId.MfaMinTimeoutRem)
+				}
+				//calculate mfa max remaining timeout
+				if mfaMaxTimeoutRemaining == -1 && src.CId.MfaMaxTimeoutRem != -1 {
+					mfaMaxTimeoutRemaining = src.CId.GetRemainingTime(src.CId.MfaMaxTimeout, src.CId.MfaMaxTimeoutRem)
+				}
+
+				atomic.StoreInt32(&val.Service.TimeoutRemaining, svcMinTimeoutRemaining)
+
+			}
+
 			nid.Services = append(nid.Services /*svcToDto(val)*/, val.Service)
 			return true
 		})
+		nid.MfaMinTimeout = src.CId.MfaMinTimeout
+		nid.MfaMaxTimeout = src.CId.MfaMaxTimeout
+		nid.MfaMinTimeoutRem = mfaMinTimeoutRemaining
+		nid.MfaMaxTimeoutRem = mfaMaxTimeoutRemaining
+		nid.ServiceUpdatedTime = src.CId.ServiceUpdatedTime
+		nid.MfaLastUpdatedTime = src.CId.MfaLastUpdatedTime
+		if src.CId.MfaRefreshNeeded() {
+			if (nid.MfaMaxTimeoutRem == 0) && nid.MfaEnabled {
+				nid.MfaNeeded = true
+			}
+		}
 	}
 
 	nid.Config.ZtAPI = src.Config.ZtAPI
@@ -1182,7 +1374,11 @@ func authMfa(out *json.Encoder, fingerprint string, code string) {
 	id := rts.Find(fingerprint)
 	result := cziti.AuthMFA(id.CId, code)
 	if result == nil {
+		// respond with auth success message immediately
 		respond(out, dto.Response{Message: "AuthMFA complete", Code: SUCCESS, Error: "", Payload: fingerprint})
+		rts.SetNotified(fingerprint, false)
+		id.CId.UpdateMFATime()
+		broadcastNotification(true)
 	} else {
 		respondWithError(out, fmt.Sprintf("AuthMFA failed. the supplied code [%s] was not valid: %s", code, result), 1, result)
 	}
@@ -1218,3 +1414,19 @@ func sendIdentityAndNotifyUI(enc *json.Encoder, fingerprint string) {
 	resp := dto.Response{Message: "", Code: ERROR, Error: "Could not find id matching fingerprint " + fingerprint, Payload: ""}
 	respond(enc, resp)
 }
+
+func updateNotificationFrequency(out *json.Encoder, notificationFreq int) {
+
+	if notificationFreq != rts.state.NotificationFrequency {
+		err := rts.UpdateNotificationFrequency(notificationFreq)
+		if err != nil {
+			respondWithError(out, "Could not set notification frequency", UNKNOWN_ERROR, err)
+			return
+		}
+
+		ResetFrequency(notificationFreq)
+	}
+	respond(out, dto.Response{Message: "Notification frequency is set", Code: SUCCESS, Error: "", Payload: ""})
+
+}
+

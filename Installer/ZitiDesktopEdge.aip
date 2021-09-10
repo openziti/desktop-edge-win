@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<DOCUMENT Type="Advanced Installer" CreateVersion="17.4.1" version="18.5" Modules="professional" RootPath="." Language="en" Id="{7315FE7B-0418-4F38-8B12-6C0594276D30}">
+<DOCUMENT Type="Advanced Installer" CreateVersion="17.4.1" version="18.6.1" Modules="professional" RootPath="." Language="en" Id="{7315FE7B-0418-4F38-8B12-6C0594276D30}">
   <COMPONENT cid="caphyon.advinst.msicomp.MsiPropsComponent">
     <ROW Property="AI_BITMAP_DISPLAY_MODE" Value="0"/>
     <ROW Property="AI_BackgroundColor" Value="lightblue" MsiKey="AI_BackgroundColor"/>
@@ -23,10 +23,10 @@
     <ROW Property="CTRLS" Value="2"/>
     <ROW Property="Manufacturer" Value="NetFoundry, Inc."/>
     <ROW Property="MsiLogging" MultiBuildValue="AnyCPU_Release:vp"/>
-    <ROW Property="ProductCode" Value="1033:{823960A0-FBC2-4941-A426-474A5C625859} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{F33933C3-0321-4A31-AB6A-80180368F429} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="Ziti Desktop Edge"/>
-    <ROW Property="ProductVersion" Value="1.9.11" Type="32"/>
+    <ROW Property="ProductVersion" Value="1.10.2" Type="32"/>
     <ROW Property="REBOOT" MultiBuildValue="AnyCPU_Release:Suppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{CB7E173A-663D-4A23-BB22-D1E8D885C2F3}"/>
@@ -45,6 +45,7 @@
     <ROW Directory="APPDIR" Directory_Parent="TARGETDIR" DefaultDir="APPDIR:." IsPseudoRoot="1"/>
     <ROW Directory="DesktopFolder" Directory_Parent="TARGETDIR" DefaultDir="DESKTO~1|DesktopFolder" IsPseudoRoot="1"/>
     <ROW Directory="SHORTCUTDIR" Directory_Parent="TARGETDIR" DefaultDir="SHORTC~1|SHORTCUTDIR" IsPseudoRoot="1"/>
+    <ROW Directory="StartupFolder" Directory_Parent="TARGETDIR" DefaultDir="STARTU~1|StartupFolder" IsPseudoRoot="1"/>
     <ROW Directory="TARGETDIR" DefaultDir="SourceDir"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiCompsComponent">
@@ -52,6 +53,7 @@
     <ROW Component="APPDIR" ComponentId="{B3881A25-6890-4920-9F69-CACA0C9ABA63}" Directory_="APPDIR" Attributes="0"/>
     <ROW Component="App.config" ComponentId="{27FAD46C-8379-4680-8506-4BCBA5A012E8}" Directory_="APPDIR" Attributes="0" KeyPath="ZitiDesktopEdge.exe.config" Type="0"/>
     <ROW Component="DnsClient.dll" ComponentId="{8C789D0B-0EB7-4172-ADB8-11D52C22488C}" Directory_="APPDIR" Attributes="0" KeyPath="DnsClient.dll"/>
+    <ROW Component="Microsoft.Toolkit.Uwp.Notifications.dll" ComponentId="{EA48696A-A312-46C2-B720-6E4AB15406CA}" Directory_="APPDIR" Attributes="0" KeyPath="Microsoft.Toolkit.Uwp.Notifications.dll"/>
     <ROW Component="NLog.dll" ComponentId="{384D38B5-A4A0-4BC6-886A-82153E2687ED}" Directory_="APPDIR" Attributes="0" KeyPath="NLog.dll"/>
     <ROW Component="Newtonsoft.Json.dll" ComponentId="{5D7B59CE-A1B5-4EE9-842E-0206408F8674}" Directory_="APPDIR" Attributes="0" KeyPath="Newtonsoft.Json.dll"/>
     <ROW Component="ProductInformation" ComponentId="{4FC3A7CB-D334-466A-A919-E6A237EF4443}" Directory_="APPDIR" Attributes="260" KeyPath="Version"/>
@@ -94,6 +96,7 @@
     <ROW File="DnsClient.dll" Component_="DnsClient.dll" FileName="DNSCLI~1.DLL|DnsClient.dll" Attributes="0" SourcePath="..\ZitiUpdateService\bin\Release\DnsClient.dll" SelfReg="false"/>
     <ROW File="System.Buffers.dll" Component_="System.Buffers.dll" FileName="SYSTEM~1.DLL|System.Buffers.dll" Attributes="0" SourcePath="..\ZitiUpdateService\bin\Release\System.Buffers.dll" SelfReg="false"/>
     <ROW File="QRCoder.dll" Component_="QRCoder.dll" FileName="QRCoder.dll" Attributes="0" SourcePath="..\DesktopEdge\bin\Release\QRCoder.dll" SelfReg="false"/>
+    <ROW File="Microsoft.Toolkit.Uwp.Notifications.dll" Component_="Microsoft.Toolkit.Uwp.Notifications.dll" FileName="MICROS~1.DLL|Microsoft.Toolkit.Uwp.Notifications.dll" Attributes="0" SourcePath="..\DesktopEdge\bin\Release\Microsoft.Toolkit.Uwp.Notifications.dll" SelfReg="false"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.AiPersistentDataComponent">
     <ROW PersistentRow="ZitiUpdateServicelog.config" Type="0" Condition="OLDPRODUCTS"/>
@@ -260,6 +263,7 @@
     <ROW Feature_="MainFeature" Component_="DnsClient.dll"/>
     <ROW Feature_="MainFeature" Component_="System.Buffers.dll"/>
     <ROW Feature_="MainFeature" Component_="QRCoder.dll"/>
+    <ROW Feature_="MainFeature" Component_="Microsoft.Toolkit.Uwp.Notifications.dll"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiIconsComponent">
     <ROW Name="ziti.exe" SourcePath="ziti.ico" Index="0"/>
@@ -336,6 +340,7 @@
     <ROW ServiceInstall="zititunnel.exe" Name="ziti" DisplayName="Ziti Desktop Edge Service" ServiceType="16" StartType="2" ErrorControl="32769" Component_="zititunnel.exe" Description="Access your Networks Secured by Ziti"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiShortsComponent">
+    <ROW Shortcut="ZitiDesktopEdge" Directory_="StartupFolder" Name="ZITIDE~2|Ziti Desktop Edge" Component_="ZitiDesktopEdge.exe" Target="[#ZitiDesktopEdge.exe]" Description="Ziti Desktop Edge configuration interface" Hotkey="0" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
     <ROW Shortcut="ZitiDesktopEdge.exe" Directory_="SHORTCUTDIR" Name="ZITIDE~1|Ziti Desktop Edge" Component_="ZitiDesktopEdge.exe" Target="[#ZitiDesktopEdge.exe]" Description="Ziti Desktop Edge configuration interface" Hotkey="0" Icon_="ziti.exe" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
     <ROW Shortcut="ZitiDesktopEdge.exe_1" Directory_="DesktopFolder" Name="ZITIDE~1|Ziti Desktop Edge" Component_="ZitiDesktopEdge.exe" Target="[#ZitiDesktopEdge.exe]" Description="Ziti Desktop Edge configuration interface" Hotkey="0" Icon_="ziti.exe" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
   </COMPONENT>

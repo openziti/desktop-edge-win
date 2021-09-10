@@ -11,6 +11,9 @@ using System.Threading.Tasks;
 using System.Windows.Interop;
 
 using NLog;
+using Windows.ApplicationModel.Activation;
+using Microsoft.Toolkit.Uwp.Notifications;
+using ZitiDesktopEdge.ServiceClient;
 
 namespace ZitiDesktopEdge {
     /// <summary>
@@ -30,6 +33,7 @@ namespace ZitiDesktopEdge {
             const string appName = "Ziti Desktop Edge";
 
             bool createdNew;
+
 
             _mutex = new Mutex(true, appName, out createdNew);
 
@@ -58,7 +62,7 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        async public Task StartServer() {
+		async public Task StartServer() {
             logger.Debug("Starting IPC server to listen for other instances of the app");
             while (true) {
                 string text;
