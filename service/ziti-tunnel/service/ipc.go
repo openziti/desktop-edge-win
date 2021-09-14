@@ -127,6 +127,11 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 						}
 					}
 				}
+				rts.BroadcastEvent(dto.TunnelStatusEvent{
+					StatusEvent: dto.StatusEvent{Op: "status"},
+					Status:      rts.ToStatus(true),
+					ApiVersion:  API_VERSION,
+				})
 				broadcastNotification(true)
 			case <-shutdownDelay:
 				log.Tracef("Exiting windows power events loop")

@@ -662,7 +662,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 		var maximumTimeoutRem int32 = -1
 		noTimeoutSvc := false
 		noTimeoutRemSvc := false
-		if len(servicesToAdd) > 0 {
+		if len(servicesToAdd) > 0 || len(servicesToRemove) > 0 {
 			zid.Services.Range(func(key interface{}, value interface{}) bool {
 				//string, ZService
 				val := value.(*ZService)
