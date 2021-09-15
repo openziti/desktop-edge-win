@@ -1251,6 +1251,7 @@ func broadcastNotification(adhoc bool) {
 			if !id.Notified {
 				rts.SetNotified(id.FingerPrint, true)
 				changedNotifiedStatus = true
+				log.Debugf("Generating first notification message for the identity %s - %s", id.Name, id.FingerPrint)
 			}
 
 			if id.CId.MfaMaxTimeoutRem > -1 {
