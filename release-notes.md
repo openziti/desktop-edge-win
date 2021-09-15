@@ -4,13 +4,27 @@
 * none
 
 ## Other changes:
-* [#430](https://github.com/openziti/desktop-edge-win/issues/430) Send notification if WDE receives the service updates with timeout that is less than 5 minutes
+* Send status after the wake or unlock
 
 ## Bugs fixed:
 * none
 
 ## Dependency Updates
 * update wintun to 0.13
+
+# Release 1.10.2
+
+## What's New
+* none
+
+## Other changes:
+* [#430](https://github.com/openziti/desktop-edge-win/issues/430) Send notification if WDE receives the service updates with timeout that is less than 5 minutes
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* none
 
 # Release 1.10.1
 
