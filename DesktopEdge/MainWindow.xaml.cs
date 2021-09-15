@@ -139,6 +139,7 @@ namespace ZitiDesktopEdge {
 							identities[i].WasFullNotified = false;
 							identities[i].MFAInfo.IsAuthenticated = mfa.Successful;
 							for (int j=0; j<identities[i].Services.Count; j++) {
+								// identities[i].Services[j].TimeUpdated = DateTime.Now;
 								identities[i].Services[j].TimeoutRemaining = identities[i].Services[j].Timeout;
 							}
 							break;
@@ -185,12 +186,20 @@ namespace ZitiDesktopEdge {
 			MFASetup.Opacity = 0;
 			MFASetup.Visibility = Visibility.Visible;
 			MFASetup.Margin = new Thickness(0, 0, 0, 0);
-			MFASetup.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
+
+			DoubleAnimation animatin = new DoubleAnimation(1, TimeSpan.FromSeconds(.3));
+			animatin.Completed += Animatin_Completed;
+			MFASetup.BeginAnimation(Grid.OpacityProperty, animatin);
 			MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
 
 			MFASetup.ShowMFA(identity, type);
 
 			ShowModal();
+		}
+
+		private void Animatin_Completed(object sender, EventArgs e) {
+			MFASetup.AuthCode.Focusable = true;
+			MFASetup.AuthCode.Focus();
 		}
 
 		/// <summary>
@@ -270,12 +279,6 @@ namespace ZitiDesktopEdge {
 					for (int i=0; i<identities.Count; i++) {
 						if (identities[i].Fingerprint==MFASetup.Identity.Fingerprint) {
 							identities[i] = MFASetup.Identity;
-
-							// This will set the timout in the UI to not show the timing out icon but as you can see
-							// it is not real and won't properly update until a real timeout is sent via the service
-							// and if someone pages the service list and we have not got an update from the service
-							// this will also be invalid
-							identities[i].IsTimingOut = false;
 							identities[i].LastUpdatedTime = DateTime.Now;
 						}
 					}
@@ -288,7 +291,6 @@ namespace ZitiDesktopEdge {
 					} else if (MFASetup.Type == 3) {
 						IdentityMenu.Identity.IsMFAEnabled = false;
 						IdentityMenu.Identity.MFAInfo.IsAuthenticated = false;
-						IdentityMenu.Identity.IsTimingOut = false;
 
 						await ShowBlurbAsync("MFA Disabled, Service Access Can Be Limited", "");
 					} else if (MFASetup.Type == 4) {
@@ -637,7 +639,6 @@ namespace ZitiDesktopEdge {
 						// display mfa token icon
 						displayMFARequired = true;
 					} else {
-						found.IsTimingOut = true;
 						displayMFATimout = true;
 					}
 
@@ -869,6 +870,10 @@ namespace ZitiDesktopEdge {
 				IdentityMenu.Visibility = Visibility.Collapsed;
 				MFASetup.Visibility = Visibility.Collapsed;
 				HideModal();
+				for (int i = 0; i < IdList.Children.Count; i++) {
+					IdentityItem item = (IdentityItem)IdList.Children[i];
+					item.StopTimers();
+				}
 				IdList.Children.Clear();
 				if (e != null) {
 					logger.Debug(e.ToString());
@@ -1121,6 +1126,10 @@ namespace ZitiDesktopEdge {
 
 		private void LoadIdentities(Boolean repaint) {
 			this.Dispatcher.Invoke(() => {
+				for (int i=0; i<IdList.Children.Count; i++) {
+					IdentityItem item = (IdentityItem)IdList.Children[i];
+					item.StopTimers();
+				}
 				IdList.Children.Clear();
 				IdList.Height = 0;
 				var desktopWorkingArea = SystemParameters.WorkArea;

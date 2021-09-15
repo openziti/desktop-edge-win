@@ -18,11 +18,10 @@ namespace ZitiDesktopEdge.Models {
 		public int MinTimeout { get; set; }
 		public int MaxTimeout { get; set; }
 		public DateTime LastUpdatedTime { get; set; }
-		public bool IsTimingOut { get; set; }
 		public string TimeoutMessage { get; set; }
 		public bool WasNotified { get; set; }
 		public bool WasFullNotified { get; set; }
-
+		public string Fingerprint { get; set; }
 		public MFA MFAInfo { get; set; }
 
 		private bool svcFailingPostureCheck = false;
@@ -36,9 +35,10 @@ namespace ZitiDesktopEdge.Models {
 			}
 		}
 
-		public ZitiIdentity()
-		{
-			//default constructor to support named initialization
+		/// <summary>
+		/// Default constructor to support named initialization
+		/// </summary>
+		public ZitiIdentity() {
 			this.Services = new List<ZitiService>();
 		}
 
@@ -52,11 +52,8 @@ namespace ZitiDesktopEdge.Models {
 			this.MaxTimeout = -1;
 			this.MinTimeout = -1;
 			this.LastUpdatedTime = DateTime.Now;
-			this.IsTimingOut = false;
 			this.TimeoutMessage = "";
 		}
-
-		public string Fingerprint { get; set; }
 
 		public static ZitiIdentity FromClient(DataStructures.Identity id) {
 			ZitiIdentity zid = new ZitiIdentity() {
@@ -76,16 +73,12 @@ namespace ZitiDesktopEdge.Models {
 				TimeoutMessage = ""
 			};
 
-			if (!zid.IsMFAEnabled) zid.IsTimingOut = false;
 
 			if (id.Services != null) {
 				foreach (var svc in id.Services) {
 					if (svc != null) {
 						var zsvc = new ZitiService(svc);
 						zid.Services.Add(zsvc);
-						if (zid.IsMFAEnabled) {
-							if (zsvc.TimeoutRemaining>-1 && zsvc.TimeoutRemaining<1200) zid.IsTimingOut = true;
-						}
 					}
 				}
 				zid.HasServiceFailingPostureCheck = zid.Services.Any(p => !p.HasFailingPostureCheck());

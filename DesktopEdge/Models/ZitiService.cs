@@ -121,13 +121,32 @@ namespace ZitiDesktopEdge.Models {
 
 		public Visibility TimerVisibility {
 			get {
-				return (TimeoutRemaining>-1&&TimeoutRemaining<1260) ? Visibility.Visible : Visibility.Collapsed;
+				return (TimeoutCalculated > -1&& TimeoutCalculated < 1260&& TimeoutCalculated > 0) ? Visibility.Visible : Visibility.Collapsed;
+			}
+			set { }
+		}
+
+		public int TimeoutCalculated { 
+			get {
+				if (this.TimeoutRemaining == -1) return this.TimeoutRemaining;
+				else {
+					TimeSpan t = (DateTime.Now - this.TimeUpdated);
+					int timeout = this.TimeoutRemaining - (int)Math.Floor(t.TotalSeconds);
+					return timeout;
+				}
+			}
+			set { }
+		}
+
+		public Visibility MfaVisibility {
+			get {
+				return (TimeoutCalculated > -1 && TimeoutCalculated == 0) ? Visibility.Visible : Visibility.Collapsed;
 			}
 			set { }
 		}
 		public int TimerWidth {
 			get {
-				return (TimeoutRemaining > -1 && TimeoutRemaining < 1260) ? 20 : 0;
+				return (TimeoutCalculated > -1 && TimeoutCalculated < 1260) ? 20 : 0;
 			}
 			set { }
 		}
