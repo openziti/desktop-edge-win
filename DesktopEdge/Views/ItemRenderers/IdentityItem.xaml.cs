@@ -220,6 +220,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void ShowMFAToast(string message, ZitiIdentity identity) {
+			logger.Info("Shwoing Notification from identity " + _identity.Name + " " + message + ".");
 			new ToastContentBuilder()
 				.AddText("Service Access Timed Out")
 				.AddText(message)
