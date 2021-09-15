@@ -139,7 +139,7 @@ namespace ZitiDesktopEdge {
 							identities[i].WasFullNotified = false;
 							identities[i].MFAInfo.IsAuthenticated = mfa.Successful;
 							for (int j=0; j<identities[i].Services.Count; j++) {
-								// identities[i].Services[j].TimeUpdated = DateTime.Now;
+								identities[i].Services[j].TimeUpdated = DateTime.Now;
 								identities[i].Services[j].TimeoutRemaining = identities[i].Services[j].Timeout;
 							}
 							break;
