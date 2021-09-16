@@ -301,6 +301,7 @@ func (t *RuntimeState) LoadIdentity(id *Id, refreshInterval int) {
 	}
 
 	id.CId = cziti.NewZid(sc)
+	id.CId.Fingerprint = id.FingerPrint
 	id.CId.Active = id.Active
 	cziti.LoadZiti(id.CId, id.Path(), refreshInterval)
 }
