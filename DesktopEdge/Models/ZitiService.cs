@@ -132,6 +132,7 @@ namespace ZitiDesktopEdge.Models {
 				else {
 					TimeSpan t = (DateTime.Now - this.TimeUpdated);
 					int timeout = this.TimeoutRemaining - (int)Math.Floor(t.TotalSeconds);
+					if (timeout < 0) timeout = 0;
 					return timeout;
 				}
 			}
