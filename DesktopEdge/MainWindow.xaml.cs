@@ -558,6 +558,7 @@ namespace ZitiDesktopEdge {
 			serviceClient.OnLogLevelEvent += ServiceClient_OnLogLevelEvent;
 			serviceClient.OnBulkServiceEvent += ServiceClient_OnBulkServiceEvent;
 			serviceClient.OnNotificationEvent += ServiceClient_OnNotificationEvent;
+			serviceClient.OnControllerEvent += ServiceClient_OnControllerEvent;
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
 
 			monitorClient = new MonitorClient();
@@ -661,6 +662,10 @@ namespace ZitiDesktopEdge {
 					}
 				});
 			}
+		}
+
+		private void ServiceClient_OnControllerEvent(object sender, ControllerEvent e) {
+			logger.Debug($"==== ControllerEvent    : action:{e.Action} fingerprint:{e.Fingerprint} name:{e.IdentityName} ");
 		}
 
 

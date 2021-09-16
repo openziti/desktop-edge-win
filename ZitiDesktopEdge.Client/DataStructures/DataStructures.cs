@@ -488,6 +488,12 @@ namespace ZitiDesktopEdge.DataStructures {
         public List<string> RecoveryCodes { get; set; }
     }
 
+    public class ControllerEvent : ActionEvent {
+        public string Fingerprint { get; set; }
+        public string IdentityName { get; set; }
+        public string ControllerVersion { get; set; }
+    }
+
 
     public class MfaRecoveryCodesResponse : SvcResponse {
         public string[] Payload { get; set; }
