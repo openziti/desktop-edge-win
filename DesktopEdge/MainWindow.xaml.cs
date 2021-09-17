@@ -665,7 +665,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void ServiceClient_OnControllerEvent(object sender, ControllerEvent e) {
-			logger.Debug($"==== ControllerEvent    : action:{e.Action} fingerprint:{e.Fingerprint} name:{e.IdentityName} ");
+			logger.Debug($"==== ControllerEvent    : action:{e.Action} fingerprint:{e.Fingerprint}");
 		}
 
 

@@ -490,8 +490,6 @@ namespace ZitiDesktopEdge.DataStructures {
 
     public class ControllerEvent : ActionEvent {
         public string Fingerprint { get; set; }
-        public string IdentityName { get; set; }
-        public string ControllerVersion { get; set; }
     }
 
 

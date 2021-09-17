@@ -771,6 +771,8 @@ func zitiContextEvent(ztx C.ziti_context, status C.int, zid *ZIdentity) {
 
 	cfg := C.GoString(zid.Options.config)
 
+	var controllerEvt = dto.ControllerEvent{}
+
 	if status == C.ZITI_OK {
 		if ztx != nil {
 			zid.czid = C.ziti_get_identity(ztx)
@@ -779,25 +781,15 @@ func zitiContextEvent(ztx C.ziti_context, status C.int, zid *ZIdentity) {
 		zid.Name = zid.setNameFromId()
 		zid.Version = zid.setVersionFromId()
 
-		var controllerEvt = dto.ControllerEvent{
-			Fingerprint: zid.Fingerprint,
-			ControllerVersion: zid.Version,
-			IdentityName: zid.Name,
-			ActionEvent: dto.CONTROLLER_CONNECTED,
-		}
-		goapi.BroadcastEvent(controllerEvt)
+		controllerEvt.ActionEvent = dto.CONTROLLER_CONNECTED
 		log.Debugf("============ controller connected: %s at %v. MFA: %v", zid.Name, zid.Version, zid.MfaEnabled)
 	} else {
-		var controllerEvt = dto.ControllerEvent{
-			Fingerprint: zid.Fingerprint,
-			ControllerVersion: zid.Version,
-			IdentityName: zid.Name,
-			ActionEvent: dto.CONTROLLER_DISCONNECTED,
-		}
-		goapi.BroadcastEvent(controllerEvt)
+		controllerEvt.ActionEvent = dto.CONTROLLER_DISCONNECTED
 		log.Errorf("zitiContextEvent failed to connect[%s] to controller for %s", zid.statusErr, cfg)
 	}
 	zid.StatusChanges(int(status))
+	controllerEvt.Fingerprint = zid.Fingerprint
+	goapi.BroadcastEvent(controllerEvt)
 	idMap.Store(ztx, zid)
 	log.Debugf("zitiContextEvent triggered and stored in ZIdentity with pointer: %p", unsafe.Pointer(ztx))
 }
