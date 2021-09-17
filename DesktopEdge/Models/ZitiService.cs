@@ -121,7 +121,7 @@ namespace ZitiDesktopEdge.Models {
 
 		public Visibility TimerVisibility {
 			get {
-				return (TimeoutCalculated > -1&& TimeoutCalculated < 1260&& TimeoutCalculated > 0) ? Visibility.Visible : Visibility.Collapsed;
+				return (TimeoutCalculated > -1 && TimeoutCalculated <= 1200 && TimeoutCalculated > 0) ? Visibility.Visible : Visibility.Collapsed;
 			}
 			set { }
 		}
