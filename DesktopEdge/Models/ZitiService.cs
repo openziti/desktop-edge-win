@@ -147,7 +147,7 @@ namespace ZitiDesktopEdge.Models {
 		}
 		public int TimerWidth {
 			get {
-				return (TimeoutCalculated > -1 && TimeoutCalculated < 1260) ? 20 : 0;
+				return (TimeoutCalculated > -1 && TimeoutCalculated < 1200) ? 20 : 0;
 			}
 			set { }
 		}
