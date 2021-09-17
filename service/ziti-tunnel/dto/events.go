@@ -33,6 +33,7 @@ const (
 	LOGLEVEL_OP     = "logLevel"
 	FEEDBACK_OP     = "CaptureLogs"
 	MFA_OP          = "mfa"
+	CONTROLLER_OP	= "controller"
 
 	MFAEnrollmentChallengAtion      = "enrollment_challenge"
 	MFAEnrollmentVerificationAction = "enrollment_verification"
@@ -110,4 +111,13 @@ var MFAAuthChallengeEvent = ActionEvent{
 var MFAAuthenticationEvent = ActionEvent{
 	StatusEvent: StatusEvent{Op: MFA_OP},
 	Action:      MFAAuthenticationAction,
+}
+
+var CONTROLLER_CONNECTED = ActionEvent{
+	StatusEvent: StatusEvent{Op: CONTROLLER_OP},
+	Action:		 CONNECTED,
+}
+var CONTROLLER_DISCONNECTED = ActionEvent{
+	StatusEvent: StatusEvent{Op: CONTROLLER_OP},
+	Action:		 DISCONNECTED,
 }
