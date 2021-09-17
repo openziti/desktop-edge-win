@@ -122,17 +122,44 @@ namespace ZitiDesktopEdge {
 				} else if (mfa.Action == "enrollment_verification") {
 					if (mfa.Successful) {
 						ShowMFARecoveryCodes(this.IdentityMenu.Identity);
-						if (this.IdentityMenu.Identity.Fingerprint == mfa.Fingerprint) {
-							this.IdentityMenu.Identity.IsMFAEnabled = true;
-							this.IdentityMenu.Identity.MFAInfo.IsAuthenticated = mfa.Successful;
-							this.IdentityMenu.UpdateView();
+						var found = identities.Find(id => id.Fingerprint == mfa.Fingerprint);
+						for (int i = 0; i < identities.Count; i++) {
+							if (identities[i].Fingerprint == mfa.Fingerprint) {
+								identities[i].WasNotified = false;
+								identities[i].WasFullNotified = false;
+								identities[i].MFAInfo.IsAuthenticated = mfa.Successful;
+								for (int j = 0; j < identities[i].Services.Count; j++) {
+									identities[i].Services[j].TimeUpdated = DateTime.Now;
+									identities[i].Services[j].TimeoutRemaining = identities[i].Services[j].Timeout;
+								}
+								found = identities[i];
+								break;
+							}
 						}
+						if (this.IdentityMenu.Identity.Fingerprint == mfa.Fingerprint) this.IdentityMenu.Identity = found;
 					} else {
 						// ShowBlurb("Provided code could not be verified", ""); - This blurbs on remove MFA and it shouldnt
 					}
 				} else if (mfa.Action == "enrollment_remove") {
-					// ShowBlurb("removed mfa: " + mfa.Successful, "");
+					if (mfa.Successful) {
+						var found = identities.Find(id => id.Fingerprint == mfa.Fingerprint);
+						for (int i = 0; i < identities.Count; i++) {
+							if (identities[i].Fingerprint == mfa.Fingerprint) {
+								identities[i].WasNotified = false;
+								identities[i].WasFullNotified = false;
+								identities[i].MFAInfo.IsAuthenticated = false;
+								for (int j = 0; j < identities[i].Services.Count; j++) {
+									identities[i].Services[j].TimeUpdated = DateTime.Now;
+									identities[i].Services[j].TimeoutRemaining = 0;
+								}
+								found = identities[i];
+								break;
+							}
+						}
+						if (this.IdentityMenu.Identity.Fingerprint == mfa.Fingerprint) this.IdentityMenu.Identity = found;
+					}
 				} else if (mfa.Action == "mfa_auth_status") {
+					var found = identities.Find(id => id.Fingerprint == mfa.Fingerprint);
 					for (int i=0; i<identities.Count; i++) {
 						if (identities[i].Fingerprint==mfa.Fingerprint) {
 							identities[i].WasNotified = false;
@@ -142,9 +169,11 @@ namespace ZitiDesktopEdge {
 								identities[i].Services[j].TimeUpdated = DateTime.Now;
 								identities[i].Services[j].TimeoutRemaining = identities[i].Services[j].Timeout;
 							}
+							found = identities[i];
 							break;
 						}
 					}
+					if (this.IdentityMenu.Identity.Fingerprint == mfa.Fingerprint) this.IdentityMenu.Identity = found;
 					// serviceClient.GetStatusAsync();
 					// ShowBlurb("mfa authenticated: " + mfa.Successful, "");
 				} else {
@@ -273,7 +302,6 @@ namespace ZitiDesktopEdge {
 			MFASetup.BeginAnimation(Grid.OpacityProperty, animation);
 			MFASetup.BeginAnimation(Grid.MarginProperty, animateThick);
 			HideModal();
-			LoadIdentities(true);
 			if (isComplete) {
 				if (MFASetup.Type == 1) {
 					for (int i=0; i<identities.Count; i++) {
@@ -654,7 +682,6 @@ namespace ZitiDesktopEdge {
 			// we may need to display mfa icon, based on the timer in UI, remove found.MFAInfo.IsAuthenticated setting in this function. 
 			// the below function can show mfa icon even after user authenticates successfully, in race conditions
 			if (displayMFARequired || displayMFATimout) {
-				LoadIdentities(true);
 				this.Dispatcher.Invoke(() => {
 					IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
 					if (deets.IsVisible) {
@@ -662,6 +689,7 @@ namespace ZitiDesktopEdge {
 					}
 				});
 			}
+			LoadIdentities(true);
 		}
 
 

@@ -65,10 +65,16 @@ namespace ZitiDesktopEdge {
 				ZitiService info = _identity.Services[i];
 				if (info.Timeout>-1) {
 					TimeSpan t = (DateTime.Now - info.TimeUpdated);
-					int timeout = info.Timeout - (int)Math.Floor(t.TotalSeconds);
-					logger.Trace("Max: Service "+info.Name+" Updated " + Math.Floor(t.TotalSeconds) + " seconds ago will timeout in " + timeout + " seconds");
-					if (timeout>-1 && timeout>maxto) maxto = timeout;
-					if (timeout == 0) available--;
+					int timePast = (int)Math.Floor(t.TotalSeconds);
+					if (timePast > info.Timeout) {
+						available--;
+						maxto = 0;
+					} else {
+						int timeout = info.Timeout - timePast;
+						logger.Trace("Max: Service " + info.Name + " Updated " + timePast + " seconds ago will timeout in " + timeout + " seconds");
+						if (timeout > -1 && timeout > maxto) maxto = timeout;
+						if (timeout == 0) available--;
+					}
 				}
 			}
 			return maxto;
@@ -92,6 +98,7 @@ namespace ZitiDesktopEdge {
 			available = _identity.Services.Count;
 			ToggleSwitch.Enabled = _identity.IsEnabled;
 			ServiceCountAreaLabel.Content = "services";
+			logger.Info("RefreshUI " + _identity.Name + " MFA: "+ _identity.IsMFAEnabled+" Authenticated: "+_identity.MFAInfo.IsAuthenticated);
 			if (_identity.IsMFAEnabled) {
 				if (_identity.MFAInfo.IsAuthenticated) {
 					ServiceCountArea.Visibility = Visibility.Visible;
@@ -135,6 +142,7 @@ namespace ZitiDesktopEdge {
 							}
 						}
 					}
+					logger.Info("RefreshUI " + _identity.Name + " Min: " + minto + " Max: " + maxto);
 				} else {
 					TimerCountdown.Visibility = Visibility.Collapsed;
 					ServiceCountArea.Visibility = Visibility.Collapsed;
@@ -162,6 +170,8 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void TimingTimerTick(object sender, EventArgs e) {
+			available = _identity.Services.Count;
+			GetMaxTimeout();
 			TimerCountdown.Visibility = Visibility.Collapsed;
 			if (countdown>-1) {
 				countdown--;
@@ -184,12 +194,16 @@ namespace ZitiDesktopEdge {
 							ShowMFAToast("The services for " + _identity.Name + " will start to time out in "+ answer, _identity);
 						}
 					}
-					MainArea.ToolTip = "Some or all of the services will be timing out in " + answer;
+					
+					if (available<_identity.Services.Count) MainArea.ToolTip = available + " of " + _identity.Services.Count + " services have timed out.";
+					else MainArea.ToolTip = "Some or all of the services will be timing out in " + answer;
 				} else {
-					MainArea.ToolTip = "Some or all of the services have timed out.";
+					ShowTimeout();
+					MainArea.ToolTip = available + " of " + _identity.Services.Count+" services have timed out.";
 					ServiceCountAreaLabel.Content = available + "/" + _identity.Services.Count;
 				}
 			} else {
+				ShowTimeout();
 				MainArea.ToolTip = "Some or all of the services have timed out.";
 				ServiceCountAreaLabel.Content = available + "/" + _identity.Services.Count;
 			}

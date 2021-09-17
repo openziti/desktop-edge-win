@@ -78,6 +78,7 @@ namespace ZitiDesktopEdge.Models {
 				foreach (var svc in id.Services) {
 					if (svc != null) {
 						var zsvc = new ZitiService(svc);
+						zsvc.TimeUpdated = zid.LastUpdatedTime;
 						zid.Services.Add(zsvc);
 					}
 				}
