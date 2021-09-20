@@ -933,6 +933,7 @@ namespace ZitiDesktopEdge {
 						found.Name = zid.Name;
 						found.ControllerUrl = zid.ControllerUrl;
 						found.IsEnabled = zid.IsEnabled;
+						found.IsMFAEnabled = e.Id.MfaEnabled;
 						found.MFAInfo.IsAuthenticated = !e.Id.MfaNeeded;
 						for (int i=0; i<identities.Count; i++) {
 							if (identities[i].Fingerprint==found.Fingerprint) {
