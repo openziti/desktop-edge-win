@@ -916,6 +916,13 @@ namespace ZitiDesktopEdge {
 			});
 		}
 
+		/// <summary>
+		/// If an identity get added late, execute this.
+		/// 
+		/// Do not update services for identity events
+		/// </summary>
+		/// <param name="sender">The sending service</param>
+		/// <param name="e">The identity event</param>
 		private void ServiceClient_OnIdentityEvent(object sender, IdentityEvent e) {
 			if (e == null) return;
 
@@ -930,8 +937,8 @@ namespace ZitiDesktopEdge {
 						LoadIdentities(true);
 					} else {
 						// means we likely are getting an update for some reason. compare the identities and use the latest info
-						found.Name = zid.Name;
-						found.ControllerUrl = zid.ControllerUrl;
+						if (zid.Name!=null && zid.Name.Length>0) found.Name = zid.Name;
+						if (zid.ControllerUrl != null && zid.ControllerUrl.Length > 0) found.ControllerUrl = zid.ControllerUrl;
 						found.IsEnabled = zid.IsEnabled;
 						found.IsMFAEnabled = e.Id.MfaEnabled;
 						found.MFAInfo.IsAuthenticated = !e.Id.MfaNeeded;
