@@ -127,6 +127,7 @@ namespace ZitiDesktopEdge {
 							if (identities[i].Fingerprint == mfa.Fingerprint) {
 								identities[i].WasNotified = false;
 								identities[i].WasFullNotified = false;
+								identities[i].IsMFAEnabled = mfa.Successful;
 								identities[i].MFAInfo.IsAuthenticated = mfa.Successful;
 								for (int j = 0; j < identities[i].Services.Count; j++) {
 									identities[i].Services[j].TimeUpdated = DateTime.Now;
@@ -138,7 +139,7 @@ namespace ZitiDesktopEdge {
 						}
 						if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Fingerprint == mfa.Fingerprint) this.IdentityMenu.Identity = found;
 					} else {
-						// ShowBlurb("Provided code could not be verified", ""); - This blurbs on remove MFA and it shouldnt
+						await ShowBlurbAsync("Provided code could not be verified", "");
 					}
 				} else if (mfa.Action == "enrollment_remove") {
 					if (mfa.Successful) {
@@ -147,6 +148,7 @@ namespace ZitiDesktopEdge {
 							if (identities[i].Fingerprint == mfa.Fingerprint) {
 								identities[i].WasNotified = false;
 								identities[i].WasFullNotified = false;
+								identities[i].IsMFAEnabled = false;
 								identities[i].MFAInfo.IsAuthenticated = false;
 								for (int j = 0; j < identities[i].Services.Count; j++) {
 									identities[i].Services[j].TimeUpdated = DateTime.Now;
@@ -664,7 +666,7 @@ namespace ZitiDesktopEdge {
 					found.MinTimeout = notification.MfaMinimumTimeout;
 
 					if (notification.MfaMinimumTimeout == 0) {
-						found.MFAInfo.IsAuthenticated = false;
+						// found.MFAInfo.IsAuthenticated = false;
 						// display mfa token icon
 						displayMFARequired = true;
 					} else {
