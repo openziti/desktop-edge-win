@@ -1,3 +1,18 @@
+# Release 1.10.3
+
+## What's New
+* none
+
+## Other changes:
+* [#440](https://github.com/openziti/desktop-edge-win/issues/440) Send status after the wake or unlock
+* [#443](https://github.com/openziti/desktop-edge-win/issues/443) WDE should send 2 new controller events to UI to capture the controller state - connected and disconnected
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* update wintun to 0.13
+
 # Release 1.10.2
 
 ## What's New
@@ -10,7 +25,7 @@
 * none
 
 ## Dependency Updates
-* update wintun to 0.13
+* none
 
 # Release 1.10.1
 

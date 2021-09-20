@@ -298,6 +298,56 @@ func (zid *ZIdentity) GetMFAState(interval int32) int {
 }
 
 func (zid *ZIdentity) UpdateMFATime() {
+	var minimumTimeout int32 = -1
+	var maximumTimeout int32 = -1
+	var minimumTimeoutRem int32 = -1
+	var maximumTimeoutRem int32 = -1
+	noTimeoutSvc := false
+	noTimeoutRemSvc := false
+
+	zid.Services.Range(func(key interface{}, value interface{}) bool {
+		//string, ZService
+		val := value.(*ZService)
+
+		if val.Service.Timeout >= 0 {
+			if minimumTimeout == -1 || minimumTimeout > val.Service.Timeout {
+				minimumTimeout = val.Service.Timeout
+			}
+			if maximumTimeout == -1 || maximumTimeout < val.Service.Timeout {
+				maximumTimeout = val.Service.Timeout
+			}
+		} else {
+			noTimeoutSvc = true
+		}
+		if val.Service.TimeoutRemaining >= 0 {
+			if minimumTimeoutRem == -1 || minimumTimeoutRem > val.Service.TimeoutRemaining {
+				minimumTimeoutRem = val.Service.TimeoutRemaining
+			}
+			if maximumTimeoutRem == -1 || maximumTimeoutRem < val.Service.TimeoutRemaining {
+				maximumTimeoutRem = val.Service.TimeoutRemaining
+			}
+		} else {
+			noTimeoutRemSvc = true
+		}
+
+		return true
+
+	})
+	if noTimeoutSvc {
+		maximumTimeout = -1
+	}
+	if noTimeoutRemSvc {
+		maximumTimeoutRem = -1
+	}
+	zid.MfaMinTimeout = minimumTimeout
+	zid.MfaMaxTimeout = maximumTimeout
+	zid.MfaMinTimeoutRem = minimumTimeoutRem
+	zid.MfaMaxTimeoutRem = maximumTimeoutRem
+
+	log.Debugf("identity : %s : updated Mfa Maximum Timeout: %d, Mfa Maximum Timeout Remaining: %d, Mfa Minimum Timeout:%d and Mfa Minimum Timeout Remaining: %d", zid.Name, zid.MfaMaxTimeout, zid.MfaMaxTimeoutRem, zid.MfaMinTimeout, zid.MfaMinTimeoutRem)
+}
+
+func (zid *ZIdentity) UpdateMFATimeRem() {
 
 	zid.Services.Range(func(key interface{}, value interface{}) bool {
 		//string, ZService
@@ -319,7 +369,7 @@ func (zid *ZIdentity) UpdateMFATime() {
 	zid.MfaLastUpdatedTime = time.Now()
 	zid.MfaMaxTimeoutRem = zid.MfaMaxTimeout
 	zid.MfaMinTimeoutRem = zid.MfaMinTimeout
-	log.Debugf("updated Mfa Maximum Timeout Remaining to %d and Mfa Minimum Timeout Remaining to %d", zid.MfaMaxTimeoutRem, zid.MfaMinTimeoutRem)
+	log.Debugf("identity : %s, updated Mfa Maximum Timeout Remaining to %d and Mfa Minimum Timeout Remaining to %d", zid.Name, zid.MfaMaxTimeoutRem, zid.MfaMinTimeoutRem)
 }
 
 //export doZitiShutdown
@@ -656,55 +706,12 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 				servicesToAdd = append(servicesToAdd, svcToAdd)
 			}
 		}
-		var minimumTimeout int32 = -1
-		var maximumTimeout int32 = -1
-		var minimumTimeoutRem int32 = -1
-		var maximumTimeoutRem int32 = -1
-		noTimeoutSvc := false
-		noTimeoutRemSvc := false
-		if len(servicesToAdd) > 0 {
-			zid.Services.Range(func(key interface{}, value interface{}) bool {
-				//string, ZService
-				val := value.(*ZService)
 
-				if val.Service.Timeout >= 0 {
-					if minimumTimeout == -1 || minimumTimeout > val.Service.Timeout {
-						minimumTimeout = val.Service.Timeout
-					}
-					if maximumTimeout == -1 || maximumTimeout < val.Service.Timeout {
-						maximumTimeout = val.Service.Timeout
-					}
-				} else {
-					noTimeoutSvc = true
-				}
-				if val.Service.TimeoutRemaining >= 0 {
-					if minimumTimeoutRem == -1 || minimumTimeoutRem > val.Service.TimeoutRemaining {
-						minimumTimeoutRem = val.Service.TimeoutRemaining
-					}
-					if maximumTimeoutRem == -1 || maximumTimeoutRem < val.Service.TimeoutRemaining {
-						maximumTimeoutRem = val.Service.TimeoutRemaining
-					}
-				} else {
-					noTimeoutRemSvc = true
-				}
-
-				return true
-
-			})
-			if noTimeoutSvc {
-				maximumTimeout = -1
-			}
-			if noTimeoutRemSvc {
-				maximumTimeoutRem = -1
-			}
+		if len(servicesToAdd) > 0 || len(servicesToRemove) > 0 {
+			zid.UpdateMFATime()
 		}
 
-		now := time.Now()
-		zid.MfaMinTimeout = minimumTimeout
-		zid.MfaMaxTimeout = maximumTimeout
-		zid.MfaMinTimeoutRem = minimumTimeoutRem
-		zid.MfaMaxTimeoutRem = maximumTimeoutRem
-		zid.ServiceUpdatedTime = now
+		zid.ServiceUpdatedTime = time.Now()
 
 		svcChange := BulkServiceChange{
 			Fingerprint:        zid.Fingerprint,
@@ -712,12 +719,12 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			HostnamesToRemove:  hostnamesToRemove,
 			ServicesToAdd:      servicesToAdd,
 			ServicesToRemove:   servicesToRemove,
-			MfaMinTimeout:      minimumTimeout,
-			MfaMaxTimeout:      maximumTimeout,
-			MfaMinTimeoutRem:   minimumTimeoutRem,
-			MfaMaxTimeoutRem:   maximumTimeoutRem,
+			MfaMinTimeout:      zid.MfaMinTimeout,
+			MfaMaxTimeout:      zid.MfaMaxTimeout,
+			MfaMinTimeoutRem:   zid.MfaMinTimeoutRem,
+			MfaMaxTimeoutRem:   zid.MfaMaxTimeoutRem,
 			MfaLastUpdatedTime: zid.MfaLastUpdatedTime,
-			ServiceUpdatedTime: now,
+			ServiceUpdatedTime: zid.ServiceUpdatedTime,
 		}
 
 		if len(BulkServiceChanges) == cap(BulkServiceChanges) {
@@ -764,6 +771,8 @@ func zitiContextEvent(ztx C.ziti_context, status C.int, zid *ZIdentity) {
 
 	cfg := C.GoString(zid.Options.config)
 
+	var controllerEvt = dto.ControllerEvent{}
+
 	if status == C.ZITI_OK {
 		if ztx != nil {
 			zid.czid = C.ziti_get_identity(ztx)
@@ -771,11 +780,16 @@ func zitiContextEvent(ztx C.ziti_context, status C.int, zid *ZIdentity) {
 
 		zid.Name = zid.setNameFromId()
 		zid.Version = zid.setVersionFromId()
+
+		controllerEvt.ActionEvent = dto.CONTROLLER_CONNECTED
 		log.Debugf("============ controller connected: %s at %v. MFA: %v", zid.Name, zid.Version, zid.MfaEnabled)
 	} else {
+		controllerEvt.ActionEvent = dto.CONTROLLER_DISCONNECTED
 		log.Errorf("zitiContextEvent failed to connect[%s] to controller for %s", zid.statusErr, cfg)
 	}
 	zid.StatusChanges(int(status))
+	controllerEvt.Fingerprint = zid.Fingerprint
+	goapi.BroadcastEvent(controllerEvt)
 	idMap.Store(ztx, zid)
 	log.Debugf("zitiContextEvent triggered and stored in ZIdentity with pointer: %p", unsafe.Pointer(ztx))
 }

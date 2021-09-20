@@ -46,6 +46,7 @@ type mfaCodes struct {
 
 var emptyCodes []string
 var mfaAuthResults = make(chan string)
+var mfaAuthVerifyResults = make(chan string)
 
 func EnableMFA(id *ZIdentity) {
 	C.ziti_mfa_enroll(id.czctx, C.ziti_mfa_cb(C.ziti_mfa_enroll_cb_go), unsafe.Pointer(C.CString(id.Fingerprint)))
@@ -80,12 +81,17 @@ func ziti_mfa_enroll_cb_go(_ C.ziti_context, status C.int, enrollment *C.ziti_mf
 }
 
 // requires that the identity already be fully authenticated and used specifically for enrollment
-func VerifyMFA(id *ZIdentity, code string) {
+func VerifyMFA(id *ZIdentity, code string) error {
 	ccode := C.CString(code)
 	defer C.free(unsafe.Pointer(ccode))
 
 	log.Tracef("verifying MFA for fingerprint: %s using code: %s", id.Fingerprint, code)
 	C.ziti_mfa_verify(id.czctx, ccode, C.ziti_mfa_cb(C.ziti_mfa_cb_verify_go), unsafe.Pointer(C.CString(id.Fingerprint)))
+	authVerifyResult := strings.TrimSpace(<-mfaAuthVerifyResults)
+	if authVerifyResult == "" {
+		return nil
+	}
+	return fmt.Errorf("error in verifyMFA: %v", authVerifyResult)
 }
 
 //export ziti_mfa_cb_verify_go
@@ -105,10 +111,12 @@ func ziti_mfa_cb_verify_go(_ C.ziti_context, status C.int, cFingerprint *C.char)
 		ego := C.GoString(e)
 		log.Errorf("Error encounted when verifying mfa: %v", ego)
 		m.Error = ego
+		mfaAuthVerifyResults <- ego
 	} else {
 		log.Infof("mfa successfully verified for fingerprint: %s", fp)
-		goapi.UpdateMfa(fp, false, true)
+		goapi.UpdateMfa(fp, true, false)
 		m.Successful = true
+		mfaAuthVerifyResults <- ""
 	}
 
 	log.Debugf("mfa verify callback. sending ziti_mfa_verify response back to UI for %s. verified: %t. error: %s", fp, m.Successful, m.Error)
