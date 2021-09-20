@@ -60,15 +60,15 @@ namespace ZitiDesktopEdge {
 		}
 
 		public int GetMaxTimeout() {
-			int maxto = -1;
+			int maxto = 0;
 			for (int i=0; i<_identity.Services.Count; i++) {
 				ZitiService info = _identity.Services[i];
+
 				if (info.Timeout>-1) {
 					TimeSpan t = (DateTime.Now - info.TimeUpdated);
 					int timePast = (int)Math.Floor(t.TotalSeconds);
 					if (timePast > info.Timeout) {
 						available--;
-						maxto = 0;
 					} else {
 						int timeout = info.Timeout - timePast;
 						logger.Trace("Max: Service " + info.Name + " Updated " + timePast + " seconds ago will timeout in " + timeout + " seconds");
@@ -76,6 +76,7 @@ namespace ZitiDesktopEdge {
 						if (timeout == 0) available--;
 					}
 				}
+				logger.Trace("Max: " + _identity.Name + " "+maxto+" " + info.Name + " " + info.Timeout + " " + info.TimeoutCalculated + " " + info.TimeoutRemaining + " " + info.TimeUpdated+" "+ DateTime.Now);
 			}
 			return maxto;
 		}
@@ -89,6 +90,8 @@ namespace ZitiDesktopEdge {
 					logger.Trace("Min: Service " + info.Name + " Updated " + Math.Floor(t.TotalSeconds) + " seconds ago will timeout in " + timeout + " seconds");
 					if (timeout > -1 && timeout<minto) minto = timeout;
 				}
+				logger.Trace("Min: " + _identity.Name + " " + minto + " " + info.Name + " " + info.Timeout + " " + info.TimeoutCalculated + " " + info.TimeoutRemaining + " " + info.TimeUpdated+" "+ DateTime.Now);
+
 			}
 			if (minto == int.MaxValue) minto = 0;
 			return minto;
@@ -196,11 +199,11 @@ namespace ZitiDesktopEdge {
 						}
 					}
 					
-					if (available<_identity.Services.Count) MainArea.ToolTip = available + " of " + _identity.Services.Count + " services have timed out.";
+					if (available<_identity.Services.Count) MainArea.ToolTip = (_identity.Services.Count-available) + " of3 " + _identity.Services.Count + " services have timed out.";
 					else MainArea.ToolTip = "Some or all of the services will be timing out in " + answer;
 				} else {
 					ShowTimeout();
-					MainArea.ToolTip = available + " of " + _identity.Services.Count+" services have timed out.";
+					MainArea.ToolTip = (_identity.Services.Count - available) + " of2 " + _identity.Services.Count+" services have timed out.";
 					ServiceCountAreaLabel.Content = available + "/" + _identity.Services.Count;
 				}
 			} else {
@@ -215,6 +218,12 @@ namespace ZitiDesktopEdge {
 			ServiceCountArea.Visibility = Visibility.Collapsed;
 			MfaRequired.Visibility = Visibility.Collapsed;
 			ServiceCountAreaLabel.Content = available + "/" + _identity.Services.Count;
+			if (!_identity.WasNotified) {
+				if (available < _identity.Services.Count) { 
+					_identity.WasNotified = true;
+					ShowMFAToast((_identity.Services.Count - available) + " of1 " + _identity.Services.Count + " services have timed out.", _identity);
+				}
+			}
 		}
 
 		private void ShowTimedOut() {

@@ -121,7 +121,6 @@ namespace ZitiDesktopEdge {
 					await ShowBlurbAsync("Setting Up auth_challenge", "");
 				} else if (mfa.Action == "enrollment_verification") {
 					if (mfa.Successful) {
-						ShowMFARecoveryCodes(this.IdentityMenu.Identity);
 						var found = identities.Find(id => id.Fingerprint == mfa.Fingerprint);
 						for (int i = 0; i < identities.Count; i++) {
 							if (identities[i].Fingerprint == mfa.Fingerprint) {
@@ -129,6 +128,7 @@ namespace ZitiDesktopEdge {
 								identities[i].WasFullNotified = false;
 								identities[i].IsMFAEnabled = mfa.Successful;
 								identities[i].MFAInfo.IsAuthenticated = mfa.Successful;
+								identities[i].LastUpdatedTime = DateTime.Now;
 								for (int j = 0; j < identities[i].Services.Count; j++) {
 									identities[i].Services[j].TimeUpdated = DateTime.Now;
 									identities[i].Services[j].TimeoutRemaining = identities[i].Services[j].Timeout;
@@ -137,6 +137,7 @@ namespace ZitiDesktopEdge {
 								break;
 							}
 						}
+						ShowMFARecoveryCodes(found);
 						if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Fingerprint == mfa.Fingerprint) this.IdentityMenu.Identity = found;
 					} else {
 						await ShowBlurbAsync("Provided code could not be verified", "");
@@ -150,6 +151,7 @@ namespace ZitiDesktopEdge {
 								identities[i].WasFullNotified = false;
 								identities[i].IsMFAEnabled = false;
 								identities[i].MFAInfo.IsAuthenticated = false;
+								identities[i].LastUpdatedTime = DateTime.Now;
 								for (int j = 0; j < identities[i].Services.Count; j++) {
 									identities[i].Services[j].TimeUpdated = DateTime.Now;
 									identities[i].Services[j].TimeoutRemaining = 0;
@@ -159,6 +161,9 @@ namespace ZitiDesktopEdge {
 							}
 						}
 						if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Fingerprint == mfa.Fingerprint) this.IdentityMenu.Identity = found;
+						await ShowBlurbAsync("MFA Disabled, Service Access Can Be Limited", "");
+					} else {
+						await ShowBlurbAsync("MFA Removal Failed", "");
 					}
 				} else if (mfa.Action == "mfa_auth_status") {
 					var found = identities.Find(id => id.Fingerprint == mfa.Fingerprint);
@@ -167,6 +172,7 @@ namespace ZitiDesktopEdge {
 							identities[i].WasNotified = false;
 							identities[i].WasFullNotified = false;
 							identities[i].MFAInfo.IsAuthenticated = mfa.Successful;
+							identities[i].LastUpdatedTime = DateTime.Now;
 							for (int j=0; j<identities[i].Services.Count; j++) {
 								identities[i].Services[j].TimeUpdated = DateTime.Now;
 								identities[i].Services[j].TimeoutRemaining = identities[i].Services[j].Timeout;
@@ -319,10 +325,6 @@ namespace ZitiDesktopEdge {
 					if (MFASetup.Type == 2) {
 						ShowRecovery(IdentityMenu.Identity);
 					} else if (MFASetup.Type == 3) {
-						IdentityMenu.Identity.IsMFAEnabled = false;
-						IdentityMenu.Identity.MFAInfo.IsAuthenticated = false;
-
-						await ShowBlurbAsync("MFA Disabled, Service Access Can Be Limited", "");
 					} else if (MFASetup.Type == 4) {
 						ShowRecovery(IdentityMenu.Identity);
 					}
