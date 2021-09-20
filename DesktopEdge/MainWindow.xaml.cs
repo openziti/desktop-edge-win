@@ -917,7 +917,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		/// <summary>
-		/// If an identity get added late, execute this.
+		/// If an identity gets added late, execute this.
 		/// 
 		/// Do not update services for identity events
 		/// </summary>
@@ -939,6 +939,7 @@ namespace ZitiDesktopEdge {
 						// means we likely are getting an update for some reason. compare the identities and use the latest info
 						if (zid.Name!=null && zid.Name.Length>0) found.Name = zid.Name;
 						if (zid.ControllerUrl != null && zid.ControllerUrl.Length > 0) found.ControllerUrl = zid.ControllerUrl;
+						if (zid.ContollerVersion != null && zid.ContollerVersion.Length > 0) found.ContollerVersion = zid.ContollerVersion;
 						found.IsEnabled = zid.IsEnabled;
 						found.IsMFAEnabled = e.Id.MfaEnabled;
 						found.MFAInfo.IsAuthenticated = !e.Id.MfaNeeded;

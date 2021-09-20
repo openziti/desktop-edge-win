@@ -159,6 +159,7 @@ namespace ZitiDesktopEdge {
 			}
 			IdName.Content = _identity.Name;
 			IdUrl.Content = _identity.ControllerUrl;
+			if (_identity.ContollerVersion != null && _identity.ContollerVersion.Length > 0) IdUrl.Content = _identity.ControllerUrl + " at " + _identity.ContollerVersion;
 
 			if (_identity.IsMFAEnabled && !_identity.MFAInfo.IsAuthenticated) {
 				ServiceCount.Content = "MFA";

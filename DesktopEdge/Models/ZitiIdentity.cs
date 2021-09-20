@@ -11,6 +11,8 @@ namespace ZitiDesktopEdge.Models {
 		public List<ZitiService> Services { get; set; }
 		public string Name { get; set; }
 		public string ControllerUrl { get; set; }
+
+		public string ContollerVersion { get; set; }
 		public bool IsEnabled { get; set; }
 		public string EnrollmentStatus { get; set; }
 		public string Status { get; set; }
@@ -57,7 +59,8 @@ namespace ZitiDesktopEdge.Models {
 
 		public static ZitiIdentity FromClient(DataStructures.Identity id) {
 			ZitiIdentity zid = new ZitiIdentity() {
-				ControllerUrl = id.Config.ztAPI + " at " + id.ControllerVersion,
+				ControllerUrl = id.Config.ztAPI,
+				ContollerVersion = id.ControllerVersion,
 				EnrollmentStatus = "status",
 				Fingerprint = id.FingerPrint,
 				IsEnabled = id.Active,
