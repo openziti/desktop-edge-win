@@ -200,3 +200,8 @@ type MfaChallenge struct {
 
 type MfaResponse struct {
 }
+
+type ControllerEvent struct {
+	ActionEvent
+	Fingerprint 		string
+}

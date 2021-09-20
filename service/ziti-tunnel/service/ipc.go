@@ -127,6 +127,11 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 						}
 					}
 				}
+				rts.BroadcastEvent(dto.TunnelStatusEvent{
+					StatusEvent: dto.StatusEvent{Op: "status"},
+					Status:      rts.ToStatus(true),
+					ApiVersion:  API_VERSION,
+				})
 				broadcastNotification(true)
 			case <-shutdownDelay:
 				log.Tracef("Exiting windows power events loop")
@@ -654,8 +659,15 @@ func enableMfa(out *json.Encoder, fingerprint string) {
 func verifyMfa(out *json.Encoder, fingerprint string, code string) {
 	id := rts.Find(fingerprint)
 	if id != nil {
-		cziti.VerifyMFA(id.CId, code)
-		respond(out, dto.Response{Message: "mfa verify complete", Code: SUCCESS, Error: "", Payload: nil})
+		result := cziti.VerifyMFA(id.CId, code)
+		if result == nil {
+			// respond with auth success message immediately
+			respond(out, dto.Response{Message: "mfa verify complete", Code: SUCCESS, Error: "", Payload: nil})
+			id.CId.MfaEnabled = true
+			rts.SetNotified(id.FingerPrint, false)
+		} else {
+			respondWithError(out, "Could not verify mfa code", UNKNOWN_ERROR, fmt.Errorf("verification failed for fingerprint: %s", fingerprint))
+		}
 	} else {
 		respondWithError(out, "Could not verify mfa code", MFA_FINGERPRINT_NOT_FOUND, fmt.Errorf("id not found with fingerprint: %s", fingerprint))
 	}
@@ -1145,7 +1157,7 @@ func handleBulkServiceChange(sc cziti.BulkServiceChange) {
 	rts.BroadcastEvent(m)
 
 	id := rts.Find(sc.Fingerprint)
-	if id != nil && !id.Notified {
+	if id != nil && !id.Notified && id.MfaEnabled {
 		broadcastNotification(true)
 	}
 
@@ -1212,14 +1224,11 @@ func broadcastNotification(adhoc bool) {
 	cleanNotifications := make([]cziti.NotificationMessage, 0)
 	for _, id := range rts.ids {
 
-		if id.CId == nil || !id.CId.MfaRefreshNeeded() {
+		if id.CId == nil || !id.CId.MfaRefreshNeeded() || !id.MfaEnabled {
 			continue
 		}
 
-		if !id.Notified {
-			rts.SetNotified(id.FingerPrint, true)
-			changedNotifiedStatus = true
-		} else if id.Notified && adhoc {
+		if id.Notified && adhoc {
 			continue
 		}
 
@@ -1239,6 +1248,11 @@ func broadcastNotification(adhoc bool) {
 			// do nothing
 		}
 		if len(notificationMessage) > 0 {
+			if !id.Notified {
+				rts.SetNotified(id.FingerPrint, true)
+				changedNotifiedStatus = true
+				log.Debugf("Generating first notification message for the identity %s - %s", id.Name, id.FingerPrint)
+			}
 
 			if id.CId.MfaMaxTimeoutRem > -1 {
 				notificationMaxTimeout = id.CId.GetRemainingTime(id.CId.MfaMaxTimeout, id.CId.MfaMaxTimeoutRem)
@@ -1377,7 +1391,7 @@ func authMfa(out *json.Encoder, fingerprint string, code string) {
 		// respond with auth success message immediately
 		respond(out, dto.Response{Message: "AuthMFA complete", Code: SUCCESS, Error: "", Payload: fingerprint})
 		rts.SetNotified(fingerprint, false)
-		id.CId.UpdateMFATime()
+		id.CId.UpdateMFATimeRem()
 		broadcastNotification(true)
 	} else {
 		respondWithError(out, fmt.Sprintf("AuthMFA failed. the supplied code [%s] was not valid: %s", code, result), 1, result)
