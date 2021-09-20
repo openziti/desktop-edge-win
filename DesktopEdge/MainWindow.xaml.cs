@@ -136,7 +136,7 @@ namespace ZitiDesktopEdge {
 								break;
 							}
 						}
-						if (this.IdentityMenu.Identity.Fingerprint == mfa.Fingerprint) this.IdentityMenu.Identity = found;
+						if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Fingerprint == mfa.Fingerprint) this.IdentityMenu.Identity = found;
 					} else {
 						// ShowBlurb("Provided code could not be verified", ""); - This blurbs on remove MFA and it shouldnt
 					}
@@ -156,7 +156,7 @@ namespace ZitiDesktopEdge {
 								break;
 							}
 						}
-						if (this.IdentityMenu.Identity.Fingerprint == mfa.Fingerprint) this.IdentityMenu.Identity = found;
+						if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Fingerprint == mfa.Fingerprint) this.IdentityMenu.Identity = found;
 					}
 				} else if (mfa.Action == "mfa_auth_status") {
 					var found = identities.Find(id => id.Fingerprint == mfa.Fingerprint);
@@ -173,7 +173,7 @@ namespace ZitiDesktopEdge {
 							break;
 						}
 					}
-					if (this.IdentityMenu.Identity.Fingerprint == mfa.Fingerprint) this.IdentityMenu.Identity = found;
+					if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Fingerprint == mfa.Fingerprint) this.IdentityMenu.Identity = found;
 					// serviceClient.GetStatusAsync();
 					// ShowBlurb("mfa authenticated: " + mfa.Successful, "");
 				} else {
