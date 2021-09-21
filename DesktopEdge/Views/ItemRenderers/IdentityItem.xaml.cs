@@ -67,11 +67,12 @@ namespace ZitiDesktopEdge {
 				if (info.Timeout>-1) {
 					TimeSpan t = (DateTime.Now - info.TimeUpdated);
 					int timePast = (int)Math.Floor(t.TotalSeconds);
+					int timeout = info.Timeout - timePast;
+					logger.Trace("Max: Service " + info.Name + " Updated " + timePast + " seconds ago will timeout in " + timeout + " seconds");
 					if (timePast > info.Timeout) {
 						available--;
+						if (info.Timeout > -1) maxto = 0;
 					} else {
-						int timeout = info.Timeout - timePast;
-						logger.Trace("Max: Service " + info.Name + " Updated " + timePast + " seconds ago will timeout in " + timeout + " seconds");
 						if (timeout > -1 && timeout > maxto) maxto = timeout;
 						if (timeout == 0) available--;
 					}
