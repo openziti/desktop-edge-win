@@ -145,8 +145,8 @@ namespace ZitiDesktopEdge {
 								break;
 							}
 						}
-						ShowMFARecoveryCodes(found);
 						if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Fingerprint == mfa.Fingerprint) this.IdentityMenu.Identity = found;
+						ShowMFARecoveryCodes(found);
 					} else {
 						await ShowBlurbAsync("Provided code could not be verified", "");
 					}
