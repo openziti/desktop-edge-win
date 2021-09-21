@@ -118,7 +118,15 @@ namespace ZitiDesktopEdge {
 					this.IdentityMenu.Identity.MFAInfo.RecoveryCodes = mfa?.RecoveryCodes?.ToArray();
 					SetupMFA(this.IdentityMenu.Identity, url, secret);
 				} else if (mfa.Action == "auth_challenge") {
-					await ShowBlurbAsync("Setting Up auth_challenge", "");
+					for (int i = 0; i < identities.Count; i++) {
+						if (identities[i].Fingerprint == mfa.Fingerprint) {
+							identities[i].WasNotified = false;
+							identities[i].WasFullNotified = false;
+							identities[i].IsMFAEnabled = true;
+							identities[i].MFAInfo.IsAuthenticated = false;
+							break;
+						}
+					}
 				} else if (mfa.Action == "enrollment_verification") {
 					if (mfa.Successful) {
 						var found = identities.Find(id => id.Fingerprint == mfa.Fingerprint);
