@@ -331,8 +331,10 @@ namespace ZitiDesktopEdge {
 			if (IdentityMenu.IsVisible) {
 				if (isComplete) {
 					if (MFASetup.Type == 2) {
+						ShowRecovery(IdentityMenu.Identity);
 					} else if (MFASetup.Type == 3) {
 					} else if (MFASetup.Type == 4) {
+						ShowRecovery(IdentityMenu.Identity);
 					}
 				}
 				IdentityMenu.UpdateView();
