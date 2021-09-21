@@ -739,20 +739,12 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 		zid.MfaEnabled = true
 
 		if zid.Fingerprint != "" {
-			var id = dto.Identity{
-				Name:              zid.Name,
-				FingerPrint:       zid.Fingerprint,
-				Active:            zid.Active,
-				ControllerVersion: zid.Version,
-				Status:            "",
-				MfaNeeded:         true,
-				MfaEnabled:        true,
-				Tags:              nil,
-			}
-
-			var m = dto.IdentityEvent{
-				ActionEvent: dto.IDENTITY_ADDED,
-				Id:          id,
+			goapi.UpdateMfa(zid.Fingerprint, true, true)
+			var m = dto.MfaEvent{
+				ActionEvent:   dto.MFAAuthChallengeEvent,
+				Fingerprint:   zid.Fingerprint,
+				Successful:    false,
+				RecoveryCodes: nil,
 			}
 			goapi.BroadcastEvent(m)
 			log.Debugf("mfa auth event set enabled/needed to true for ziti context [%p]. Identity name:%s [fingerprint: %s]", zid, zid.Name, zid.Fingerprint)

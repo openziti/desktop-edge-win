@@ -152,6 +152,7 @@ namespace ZitiDesktopEdge {
 			SeperationColor.Visibility = Visibility.Collapsed;
 			MFAAuthArea.Visibility = Visibility.Visible;
 			MFAArea.Height = 220;
+			AuthCode.Focusable = true;
 			AuthCode.Focus();
 		}
 
