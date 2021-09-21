@@ -23,6 +23,7 @@ namespace ZitiDesktopEdge.Models {
 		public DateTime TimeUpdated { get; set; }
 		public int Timeout { get; set; }
 		public int TimeoutRemaining { get; set; }
+		public bool IsMfaReady { get; set; }
 
 		private bool failingPostureCheck;
 		public bool HasFailingPostureCheck() {
@@ -53,6 +54,7 @@ namespace ZitiDesktopEdge.Models {
 			this.Timeout = svc.Timeout;
 			this.TimeoutRemaining = svc.TimeoutRemaining;
 			this.OwnsIntercept = svc.OwnsIntercept;
+			this.IsMfaReady = false;
 			this.TimeUpdated = DateTime.Now;
 			if (this.PostureChecks != null) {
 				this.failingPostureCheck = this.PostureChecks.Any(p => !p.IsPassing);
@@ -121,13 +123,33 @@ namespace ZitiDesktopEdge.Models {
 
 		public Visibility TimerVisibility {
 			get {
-				return (TimeoutRemaining>-1&&TimeoutRemaining<1260) ? Visibility.Visible : Visibility.Collapsed;
+				return (IsMfaReady && TimeoutCalculated > -1 && TimeoutCalculated <= 1200 && TimeoutCalculated > 0) ? Visibility.Visible : Visibility.Collapsed;
+			}
+			set { }
+		}
+
+		public int TimeoutCalculated { 
+			get {
+				if (this.TimeoutRemaining == -1|| TimeoutRemaining == 0) return this.TimeoutRemaining;
+				else {
+					TimeSpan t = (DateTime.Now - this.TimeUpdated);
+					int timeout = this.Timeout - (int)Math.Floor(t.TotalSeconds);
+					if (timeout < 0) timeout = 0;
+					return timeout;
+				}
+			}
+			set { }
+		}
+
+		public Visibility MfaVisibility {
+			get {
+				return (IsMfaReady && TimeoutCalculated > -1 && TimeoutCalculated == 0) ? Visibility.Visible : Visibility.Collapsed;
 			}
 			set { }
 		}
 		public int TimerWidth {
 			get {
-				return (TimeoutRemaining > -1 && TimeoutRemaining < 1260) ? 20 : 0;
+				return (TimeoutCalculated > -1 && TimeoutCalculated < 1200) ? 20 : 0;
 			}
 			set { }
 		}

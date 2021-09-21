@@ -182,6 +182,7 @@ namespace ZitiDesktopEdge {
 					if (index<PerPage) {
 						if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0) {
 							zitiSvc.TimeUpdated = _identity.LastUpdatedTime;
+							zitiSvc.IsMfaReady = _identity.IsMFAEnabled;
 							_services.Add(zitiSvc);
 							index++;
 						}

@@ -553,6 +553,8 @@ func (t *RuntimeState) UpdateMfa(fingerprint string, mfaEnabled bool, mfaNeeded 
 	if id != nil {
 		id.MfaEnabled = mfaEnabled
 		id.MfaNeeded = mfaNeeded
+		id.CId.MfaEnabled = mfaEnabled
+		id.CId.MfaNeeded = mfaNeeded
 	}
 }
 

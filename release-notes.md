@@ -1,3 +1,19 @@
+# Release 1.10.3
+
+## What's New
+Services with multi factor authentication posture checks will give interface queues and windows notifications when the services are timing out for an identity. A timer icon will appear and a message when the services will be timing out under 20 minutes. Once a service times out, the value on the identity list will display the amount of services which are not available and the timer will turn to an actionable lock on the details page to signify that it is not available. A windows notification that can be clicked to re-authenticate, will let the user know when all of the services time out.
+
+## Other changes:
+* [#440](https://github.com/openziti/desktop-edge-win/issues/440) Send status after the wake or unlock
+* [#443](https://github.com/openziti/desktop-edge-win/issues/443) WDE should send 2 new controller events to UI to capture the controller state - connected and disconnected 
+* [#446](https://github.com/openziti/desktop-edge-win/issues/446) Send MFA auth_challenge event when controller is waiting for MFA code. UI should handle the new event and show the MFA lock icon
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* update wintun to 0.13, update t-sdk v0.15.15 and c-sdk 0.26.5
+
 # Release 1.10.2
 
 ## What's New

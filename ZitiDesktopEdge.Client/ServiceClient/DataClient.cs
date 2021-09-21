@@ -37,6 +37,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         public event EventHandler<MfaEvent> OnMfaEvent;
         public event EventHandler<BulkServiceEvent> OnBulkServiceEvent;
         public event EventHandler<NotificationEvent> OnNotificationEvent;
+        public event EventHandler<ControllerEvent> OnControllerEvent;
 
         protected override void ShutdownEvent(StatusEvent e) {
             Logger.Debug("Clean shutdown detected from ziti");
@@ -75,6 +76,10 @@ namespace ZitiDesktopEdge.ServiceClient {
         protected virtual void NotificationEvent(NotificationEvent e) {
             OnNotificationEvent?.Invoke(this, e);
 		}
+
+        protected virtual void ControllerEvent(ControllerEvent e) {
+            OnControllerEvent?.Invoke(this, e);
+        }
 
         protected override void ClientConnected(object e) {
             base.ClientConnected(e);
@@ -377,6 +382,11 @@ namespace ZitiDesktopEdge.ServiceClient {
                         Logger.Debug("Notification event received");
                         NotificationEvent notificationEvent = serializer.Deserialize<NotificationEvent>(jsonReader);
                         NotificationEvent(notificationEvent);
+                        break;
+                    case "controller":
+                        Logger.Debug("Controller event received");
+                        ControllerEvent controllerEvent = serializer.Deserialize<ControllerEvent>(jsonReader);
+                        ControllerEvent(controllerEvent);
                         break;
                     default:
                         Logger.Debug("unexpected operation! " + evt.Op);
