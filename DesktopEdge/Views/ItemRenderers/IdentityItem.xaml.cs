@@ -60,7 +60,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		public int GetMaxTimeout() {
-			int maxto = 0;
+			int maxto = -1;
 			for (int i=0; i<_identity.Services.Count; i++) {
 				ZitiService info = _identity.Services[i];
 
