@@ -199,11 +199,11 @@ namespace ZitiDesktopEdge {
 						}
 					}
 					
-					if (available<_identity.Services.Count) MainArea.ToolTip = (_identity.Services.Count-available) + " of3 " + _identity.Services.Count + " services have timed out.";
+					if (available<_identity.Services.Count) MainArea.ToolTip = (_identity.Services.Count-available) + " of " + _identity.Services.Count + " services have timed out.";
 					else MainArea.ToolTip = "Some or all of the services will be timing out in " + answer;
 				} else {
 					ShowTimeout();
-					MainArea.ToolTip = (_identity.Services.Count - available) + " of2 " + _identity.Services.Count+" services have timed out.";
+					MainArea.ToolTip = (_identity.Services.Count - available) + " of " + _identity.Services.Count+" services have timed out.";
 					ServiceCountAreaLabel.Content = available + "/" + _identity.Services.Count;
 				}
 			} else {
@@ -221,7 +221,7 @@ namespace ZitiDesktopEdge {
 			if (!_identity.WasNotified) {
 				if (available < _identity.Services.Count) { 
 					_identity.WasNotified = true;
-					ShowMFAToast((_identity.Services.Count - available) + " of1 " + _identity.Services.Count + " services have timed out.", _identity);
+					ShowMFAToast((_identity.Services.Count - available) + " of " + _identity.Services.Count + " services have timed out.", _identity);
 				}
 			}
 		}
