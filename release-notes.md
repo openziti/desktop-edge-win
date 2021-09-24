@@ -7,7 +7,7 @@
 * none
 
 ## Bugs fixed:
-* The Auth events were missing for the mfa enabled identity, when user put the laptop to sleep for more than 30 minutes. It is failing only for latest Network controllers.
+* [#451](https://github.com/openziti/desktop-edge-win/issues/451) The Auth events were missing for the mfa enabled identity, when user put the laptop to sleep for more than 30 minutes. It is failing only for latest Network controllers.
 
 ## Dependency Updates
 * update t-sdk v0.15.16 and c-sdk 0.26.6
