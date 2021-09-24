@@ -1,3 +1,17 @@
+# Release 1.10.4
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* update t-sdk v0.15.16 and c-sdk 0.26.6
+
 # Release 1.10.3
 
 ## What's New
