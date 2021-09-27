@@ -35,7 +35,6 @@ import (
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"github.com/openziti/sdk-golang/ziti/enroll"
 	"golang.org/x/sys/windows/svc"
-	"golang.zx2c4.com/wireguard/tun"
 	"io"
 	"io/ioutil"
 	"math"
@@ -189,18 +188,7 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 	log.Infof("shutting down events...")
 	events.shutdown()
 
-	log.Infof("Removing existing interface: %s", TunName)
-	wt, err := tun.WintunPool.OpenAdapter(TunName)
-	if err == nil {
-		// If so, we delete it, in case it has weird residual configuration.
-		_, err = wt.Delete(true)
-		if err != nil {
-			log.Errorf("Error deleting already existing interface: %v", err)
-		}
-	} else {
-		log.Errorf("INTERFACE %s was nil? %v", TunName, err)
-	}
-
+	log.Infof("Closing connections and removing tun interface: %s", TunName)
 	rts.Close()
 
 	log.Info("==============================  service ends  ==============================")
