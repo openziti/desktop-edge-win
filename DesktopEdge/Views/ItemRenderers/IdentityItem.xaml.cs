@@ -29,6 +29,8 @@ namespace ZitiDesktopEdge {
 		public event StatusChanged OnStatusChanged;
 		public delegate void OnAuthenticate(ZitiIdentity identity);
 		public event OnAuthenticate Authenticate;
+		public delegate void OnIdentityChanged(ZitiIdentity identity);
+		public event OnIdentityChanged IdentityChanged;
 		private System.Windows.Forms.Timer _timer;
 		private System.Windows.Forms.Timer _timingTimer;
 		private float countdown = -1;
@@ -99,14 +101,17 @@ namespace ZitiDesktopEdge {
 		}
 
 		public void RefreshUI () {
+			TimerCountdown.Visibility = Visibility.Collapsed;
+			ServiceCountArea.Visibility = Visibility.Collapsed;
+			PostureTimedOut.Visibility = Visibility.Collapsed;
+			MfaRequired.Visibility = Visibility.Collapsed;
 			available = _identity.Services.Count;
 			ToggleSwitch.Enabled = _identity.IsEnabled;
 			ServiceCountAreaLabel.Content = "services";
-			logger.Info("RefreshUI " + _identity.Name + " MFA: "+ _identity.IsMFAEnabled+" Authenticated: "+_identity.MFAInfo.IsAuthenticated);
+			logger.Info("RefreshUI " + _identity.Name + " MFA: "+ _identity.IsMFAEnabled+" Authenticated: "+_identity.IsAuthenticated);
 			if (_identity.IsMFAEnabled) {
-				if (_identity.MFAInfo.IsAuthenticated) {
+				if (_identity.IsAuthenticated) {
 					ServiceCountArea.Visibility = Visibility.Visible;
-					MfaRequired.Visibility = Visibility.Collapsed;
 					ServiceCountAreaLabel.Content = "services";
 					MainArea.Opacity = 1.0;
 					float maxto = GetMaxTimeout();
@@ -120,9 +125,7 @@ namespace ZitiDesktopEdge {
 							_timer.Start();
 							logger.Info("Timer Started for full timout in "+maxto+"  seconds from identity "+_identity.Name+".");
 						} else {
-							_identity.MFAInfo.IsAuthenticated = false;
-							TimerCountdown.Visibility = Visibility.Collapsed;
-							ServiceCountArea.Visibility = Visibility.Collapsed;
+							_identity.IsAuthenticated = false;
 							MfaRequired.Visibility = Visibility.Visible;
 							ServiceCountAreaLabel.Content = "authorize";
 							MainArea.Opacity = 0.6;
@@ -148,16 +151,18 @@ namespace ZitiDesktopEdge {
 					}
 					logger.Info("RefreshUI " + _identity.Name + " Min: " + minto + " Max: " + maxto);
 				} else {
-					TimerCountdown.Visibility = Visibility.Collapsed;
-					ServiceCountArea.Visibility = Visibility.Collapsed;
-					MfaRequired.Visibility = Visibility.Visible;
-					ServiceCountAreaLabel.Content = "authorize";
-					MainArea.Opacity = 0.6;
+					if (_identity.IsTimedOut) {
+						PostureTimedOut.Visibility = Visibility.Visible;
+						ServiceCountAreaLabel.Content = "authorize";
+						MainArea.Opacity = 1.0;
+					} else {
+						MfaRequired.Visibility = Visibility.Visible;
+						ServiceCountAreaLabel.Content = "authenticate";
+						MainArea.Opacity = 0.6;
+					}
 				}
 			} else {
-				TimerCountdown.Visibility = Visibility.Collapsed;
 				ServiceCountArea.Visibility = Visibility.Visible;
-				MfaRequired.Visibility = Visibility.Collapsed;
 				ServiceCountAreaLabel.Content = "services";
 				MainArea.Opacity = 1.0;
 			}
@@ -165,7 +170,7 @@ namespace ZitiDesktopEdge {
 			IdUrl.Content = _identity.ControllerUrl;
 			if (_identity.ContollerVersion != null && _identity.ContollerVersion.Length > 0) IdUrl.Content = _identity.ControllerUrl + " at " + _identity.ContollerVersion;
 
-			if (_identity.IsMFAEnabled && !_identity.MFAInfo.IsAuthenticated) {
+			if (_identity.IsMFAEnabled && !_identity.IsAuthenticated) {
 				ServiceCount.Content = "MFA";
 			} else {
 				ServiceCount.Content = _identity.Services.Count.ToString();
@@ -224,13 +229,17 @@ namespace ZitiDesktopEdge {
 					_identity.WasNotified = true;
 					ShowMFAToast((_identity.Services.Count - available) + " of " + _identity.Services.Count + " services have timed out.", _identity);
 				}
+				_identity.IsTimingOut = true;
+
+				this.IdentityChanged?.Invoke(_identity);
 			}
 		}
 
 		private void ShowTimedOut() {
 			if (!_identity.WasFullNotified) {
 				_identity.WasFullNotified = true;
-				_identity.MFAInfo.IsAuthenticated = false;
+				_identity.IsAuthenticated = false;
+				_identity.IsTimedOut = true;
 				ShowMFAToast("All of the services with a timeout set for the identity " + _identity.Name + " have timed out", _identity);
 				RefreshUI();
 				if (_timer != null) _timer.Stop();
@@ -296,7 +305,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void DoMFAOrOpen(object sender, MouseButtonEventArgs e) {
-			if (MfaRequired.Visibility==Visibility.Visible|| TimerCountdown.Visibility == Visibility.Visible) {
+			if (MfaRequired.Visibility==Visibility.Visible || TimerCountdown.Visibility == Visibility.Visible || PostureTimedOut.Visibility == Visibility.Visible) {
 				MFAAuthenticate(sender, e);
 			} else {
 				OpenDetails(sender, e);

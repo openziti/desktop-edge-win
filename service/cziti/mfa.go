@@ -32,10 +32,11 @@ package cziti
 import "C"
 import (
 	"fmt"
-	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 	"strings"
 	"time"
 	"unsafe"
+
+	"github.com/openziti/desktop-edge-win/service/ziti-tunnel/dto"
 )
 
 type mfaCodes struct {

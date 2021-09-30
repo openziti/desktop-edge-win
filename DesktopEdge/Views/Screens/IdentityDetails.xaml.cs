@@ -143,7 +143,7 @@ namespace ZitiDesktopEdge {
 				IsDisconnected.Visibility = Visibility.Visible;
 			}
 			if (_identity.IsMFAEnabled) {
-				if (_identity.MFAInfo.IsAuthenticated) {
+				if (_identity.IsAuthenticated) {
 					IdentityMFA.ToggleField.IsEnabled = true;
 					IdentityMFA.AuthOn.Visibility = Visibility.Visible;
 					IdentityMFA.AuthOff.Visibility = Visibility.Collapsed;
@@ -202,7 +202,7 @@ namespace ZitiDesktopEdge {
 				NoAuthServices.Visibility = Visibility.Collapsed;
 			} else {
 				MainDetailScroll.Visibility = Visibility.Collapsed;
-				if (this._identity.IsMFAEnabled&&!this._identity.MFAInfo.IsAuthenticated) {
+				if (this._identity.IsMFAEnabled&&!this._identity.IsAuthenticated) {
 					AuthMessageBg.Visibility = Visibility.Visible;
 					AuthMessageLabel.Visibility = Visibility.Visible;
 					NoAuthServices.Visibility = Visibility.Visible;

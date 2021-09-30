@@ -24,7 +24,11 @@ namespace ZitiDesktopEdge.Models {
 		public bool WasNotified { get; set; }
 		public bool WasFullNotified { get; set; }
 		public string Fingerprint { get; set; }
-		public MFA MFAInfo { get; set; }
+		public bool IsAuthenticated { get; set; }
+		public bool IsTimedOut { get; set; }
+		public string[] RecoveryCodes { get; set; }
+		public bool IsTimingOut { get; set; }
+
 
 		private bool svcFailingPostureCheck = false;
 		public bool HasServiceFailingPostureCheck {
@@ -55,6 +59,9 @@ namespace ZitiDesktopEdge.Models {
 			this.MinTimeout = -1;
 			this.LastUpdatedTime = DateTime.Now;
 			this.TimeoutMessage = "";
+			this.RecoveryCodes = new string[0];
+			this.IsTimingOut = false;
+			this.IsTimedOut = false;
 		}
 
 		public static ZitiIdentity FromClient(DataStructures.Identity id) {
@@ -66,10 +73,11 @@ namespace ZitiDesktopEdge.Models {
 				IsEnabled = id.Active,
 				Name = (string.IsNullOrEmpty(id.Name) ? id.FingerPrint : id.Name),
 				Status = id.Status,
+				RecoveryCodes = new string[0],
 				IsMFAEnabled = id.MfaEnabled,
-				MFAInfo = new MFA() {
-					IsAuthenticated = !id.MfaNeeded,
-				},
+				IsAuthenticated = !id.MfaNeeded,
+				IsTimedOut = false,
+				IsTimingOut = false,
 				MinTimeout = id.MinTimeout,
 				MaxTimeout = id.MaxTimeout,
 				LastUpdatedTime = id.MfaLastUpdatedTime,
