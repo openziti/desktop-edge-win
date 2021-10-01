@@ -653,6 +653,11 @@ func verifyMfa(out *json.Encoder, fingerprint string, code string) {
 			respond(out, dto.Response{Message: "mfa verify complete", Code: SUCCESS, Error: "", Payload: nil})
 			id.CId.MfaEnabled = true
 			rts.SetNotified(id.FingerPrint, false)
+			id.CId.UpdateMFATimeRem()
+			rts.BroadcastEvent(dto.IdentityEvent{
+				ActionEvent: dto.IdentityUpdateComplete,
+				Id:          Clean(id),
+			})
 		} else {
 			respondWithError(out, "Could not verify mfa code", UNKNOWN_ERROR, fmt.Errorf("verification failed for fingerprint: %s", fingerprint))
 		}
@@ -1136,15 +1141,13 @@ func handleBulkServiceChange(sc cziti.BulkServiceChange) {
 
 	rts.BroadcastEvent(be)
 
+	id := rts.Find(sc.Fingerprint)
 	var m = dto.IdentityEvent{
 		ActionEvent: dto.IdentityUpdateComplete,
-		Id: dto.Identity{
-			FingerPrint: sc.Fingerprint,
-		},
+		Id: Clean(id),
 	}
 	rts.BroadcastEvent(m)
 
-	id := rts.Find(sc.Fingerprint)
 	if id != nil && !id.Notified && id.MfaEnabled {
 		broadcastNotification(true)
 	}
@@ -1380,6 +1383,11 @@ func authMfa(out *json.Encoder, fingerprint string, code string) {
 		respond(out, dto.Response{Message: "AuthMFA complete", Code: SUCCESS, Error: "", Payload: fingerprint})
 		rts.SetNotified(fingerprint, false)
 		id.CId.UpdateMFATimeRem()
+		rts.BroadcastEvent(dto.IdentityEvent{
+			ActionEvent: dto.IdentityUpdateComplete,
+			Id:          Clean(id),
+		})
+
 		broadcastNotification(true)
 	} else {
 		respondWithError(out, fmt.Sprintf("AuthMFA failed. the supplied code [%s] was not valid: %s", code, result), 1, result)
