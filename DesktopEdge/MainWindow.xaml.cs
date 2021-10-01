@@ -49,6 +49,7 @@ namespace ZitiDesktopEdge {
 		private double _maxHeight = 800d;
 		public string CurrentIcon = "white";
 		private string[] suffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };
+		private string _blurbUrl = "";
 
 		private static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
@@ -1250,8 +1251,7 @@ namespace ZitiDesktopEdge {
 							if (id.Fingerprint==IdentityMenu.Identity.Fingerprint) IdentityMenu.Identity = id;
 						}
 					}
-					//IdList.Height = ;
-					DoubleAnimation animation = new DoubleAnimation((double)(ids.Length * 64), TimeSpan.FromSeconds(.3));
+					DoubleAnimation animation = new DoubleAnimation((double)(ids.Length * 64), TimeSpan.FromSeconds(.2));
 					IdList.BeginAnimation(FrameworkElement.HeightProperty, animation);
 					IdListScroller.Visibility = Visibility.Visible;
 				} else {
@@ -1546,8 +1546,6 @@ namespace ZitiDesktopEdge {
 				ShowError("Error Collecting Feedback", "An error occurred while trying to gather feedback. Is the monitor service running?");
             }
 		}
-
-		private string _blurbUrl = "";
 
 		/// <summary>
 		/// Show the blurb as a growler notification

@@ -13,14 +13,6 @@
              Loaded="OnLoad">
     <StackPanel Orientation="Vertical" Margin="0,0,0,0">
         <Canvas Name="LayoutRoot" Cursor="Hand" MouseUp="OnToggle">
-            <Canvas.Resources>
-                <Storyboard Name="AnimateOnBoard" x:Key="OnAnimate">
-                    <DoubleAnimation Name="OpaqueOnAnimate" Storyboard.TargetName="OnColor" Storyboard.TargetProperty="Opacity" Duration="1" To="1"></DoubleAnimation>
-                </Storyboard>
-                <Storyboard Name="AnimateOffBoard" x:Key="OffAnimate">
-                    <DoubleAnimation Name="OpaqueOffAnimate" Storyboard.TargetName="OnColor" Storyboard.TargetProperty="Opacity" Duration="1" To="1"></DoubleAnimation>
-                </Storyboard>
-            </Canvas.Resources>
             <Border Name="BackColor" Width="35" Height="20" CornerRadius="9" Background="#E5EAED"></Border>
             <Border Name="OnColor" Width="35" Height="20" CornerRadius="9" Background="#34A22B" Opacity="0"></Border>
             <Border Name="ToggleTab" Width="18" Height="18" Canvas.Top="1" Canvas.Left="1" CornerRadius="9,9,9,9" Background="White">
