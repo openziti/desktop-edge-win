@@ -10,7 +10,7 @@
 * [#452](https://github.com/openziti/desktop-edge-win/issues/452) Send identity updated events after mfa verify, mfa auth and service events
 
 ## Dependency Updates
-* none
+* update t-sdk v0.15.17 and c-sdk 0.26.8
 
 # Release 1.10.4
 
