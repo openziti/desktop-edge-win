@@ -1,3 +1,31 @@
+# Release 1.10.5
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* [#452](https://github.com/openziti/desktop-edge-win/issues/452) Send identity updated events after mfa verify, mfa auth and service events
+
+## Dependency Updates
+* update t-sdk v0.15.17 and c-sdk 0.26.8
+
+# Release 1.10.4
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* [#451](https://github.com/openziti/desktop-edge-win/issues/451) The Auth events were missing for the mfa enabled identity, when user put the laptop to sleep for more than 30 minutes. It is failing only for latest Network controllers.
+
+## Dependency Updates
+* update t-sdk v0.15.16 and c-sdk 0.26.6
+
 # Release 1.10.3
 
 ## What's New

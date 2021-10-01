@@ -35,7 +35,6 @@ import (
 	idcfg "github.com/openziti/sdk-golang/ziti/config"
 	"github.com/openziti/sdk-golang/ziti/enroll"
 	"golang.org/x/sys/windows/svc"
-	"golang.zx2c4.com/wireguard/tun"
 	"io"
 	"io/ioutil"
 	"math"
@@ -189,18 +188,7 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 	log.Infof("shutting down events...")
 	events.shutdown()
 
-	log.Infof("Removing existing interface: %s", TunName)
-	wt, err := tun.WintunPool.OpenAdapter(TunName)
-	if err == nil {
-		// If so, we delete it, in case it has weird residual configuration.
-		_, err = wt.Delete(true)
-		if err != nil {
-			log.Errorf("Error deleting already existing interface: %v", err)
-		}
-	} else {
-		log.Errorf("INTERFACE %s was nil? %v", TunName, err)
-	}
-
+	log.Infof("Closing connections and removing tun interface: %s", TunName)
 	rts.Close()
 
 	log.Info("==============================  service ends  ==============================")
@@ -665,6 +653,11 @@ func verifyMfa(out *json.Encoder, fingerprint string, code string) {
 			respond(out, dto.Response{Message: "mfa verify complete", Code: SUCCESS, Error: "", Payload: nil})
 			id.CId.MfaEnabled = true
 			rts.SetNotified(id.FingerPrint, false)
+			id.CId.UpdateMFATimeRem()
+			rts.BroadcastEvent(dto.IdentityEvent{
+				ActionEvent: dto.IdentityUpdateComplete,
+				Id:          Clean(id),
+			})
 		} else {
 			respondWithError(out, "Could not verify mfa code", UNKNOWN_ERROR, fmt.Errorf("verification failed for fingerprint: %s", fingerprint))
 		}
@@ -1148,15 +1141,13 @@ func handleBulkServiceChange(sc cziti.BulkServiceChange) {
 
 	rts.BroadcastEvent(be)
 
+	id := rts.Find(sc.Fingerprint)
 	var m = dto.IdentityEvent{
 		ActionEvent: dto.IdentityUpdateComplete,
-		Id: dto.Identity{
-			FingerPrint: sc.Fingerprint,
-		},
+		Id: Clean(id),
 	}
 	rts.BroadcastEvent(m)
 
-	id := rts.Find(sc.Fingerprint)
 	if id != nil && !id.Notified && id.MfaEnabled {
 		broadcastNotification(true)
 	}
@@ -1392,6 +1383,11 @@ func authMfa(out *json.Encoder, fingerprint string, code string) {
 		respond(out, dto.Response{Message: "AuthMFA complete", Code: SUCCESS, Error: "", Payload: fingerprint})
 		rts.SetNotified(fingerprint, false)
 		id.CId.UpdateMFATimeRem()
+		rts.BroadcastEvent(dto.IdentityEvent{
+			ActionEvent: dto.IdentityUpdateComplete,
+			Id:          Clean(id),
+		})
+
 		broadcastNotification(true)
 	} else {
 		respondWithError(out, fmt.Sprintf("AuthMFA failed. the supplied code [%s] was not valid: %s", code, result), 1, result)
