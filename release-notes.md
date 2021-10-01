@@ -1,3 +1,17 @@
+# Release 1.10.5
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* [#452](https://github.com/openziti/desktop-edge-win/issues/452) Send identity updated events after mfa verify, mfa auth and service events
+
+## Dependency Updates
+* none
+
 # Release 1.10.4
 
 ## What's New
