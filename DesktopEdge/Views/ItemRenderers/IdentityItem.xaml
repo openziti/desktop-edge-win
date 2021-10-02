@@ -18,7 +18,7 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="70"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="60"/>
+                    <ColumnDefinition Width="80"/>
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="40"/>
@@ -29,12 +29,12 @@
                 <Label Name="ToggleStatus" Grid.Column="0" Grid.Row="1" Margin="0,-5,0,0" Content="Enabled" Foreground="White" FontSize="11" Typography.Capitals="AllSmallCaps" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"></Label>
                 <Rectangle Fill="Transparent" Grid.Column="0" Grid.RowSpan="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Cursor="Hand" MouseUp="ToggledSwitch"></Rectangle>
 
-                <Label Name="IdName" MaxWidth="230" Grid.Row="0" Padding="0,0,26,0" Grid.Column="1" VerticalAlignment="Center" Margin="0,11,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" FontSize="16" Foreground="White" HorizontalAlignment="Left">
+                <Label Name="IdName" MaxWidth="210" Grid.Row="0" Padding="0,0,26,0" Grid.Column="1" VerticalAlignment="Center" Margin="0,11,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" FontSize="16" Foreground="White" HorizontalAlignment="Left">
                     <TextBlock TextTrimming="CharacterEllipsis">Identity Name</TextBlock>
                 </Label>
                 <Rectangle Fill="Transparent" Grid.RowSpan="2" Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Cursor="Hand" MouseUp="OpenDetails"></Rectangle>
 
-                <Label Name="IdUrl" Cursor="Hand" MouseUp="OpenDetails" MaxWidth="180" MinWidth="230" Grid.Column="1" Grid.Row="1" FontSize="11" Margin="0,-5,0,0" Padding="0,5,0,0" Typography.Capitals="AllSmallCaps" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" HorizontalAlignment="Left">
+                <Label Name="IdUrl" Cursor="Hand" MouseUp="OpenDetails" MaxWidth="180" MinWidth="210" Grid.Column="1" Grid.Row="1" FontSize="11" Margin="0,-5,0,0" Padding="0,5,0,0" Typography.Capitals="AllSmallCaps" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" HorizontalAlignment="Left">
                     <TextBlock TextTrimming="CharacterEllipsis"></TextBlock>
                 </Label>
                 <Image Name="PostureTimedOut" Visibility="Collapsed" Grid.Column="2" Source="/Assets/Images/lockout.png" VerticalAlignment="Bottom" HorizontalAlignment="Center" RenderOptions.BitmapScalingMode="Fant" Width="26" Height="26" Margin="0,0,0,6" Cursor="Hand" MouseUp="MFAAuthenticate"></Image>
