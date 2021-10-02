@@ -125,6 +125,7 @@ namespace ZitiDesktopEdge {
 							identities[i].WasFullNotified = false;
 							identities[i].IsMFAEnabled = true;
 							identities[i].IsAuthenticated = false;
+							identities[i].IsTimingOut = false;
 							break;
 						}
 					}
@@ -137,6 +138,7 @@ namespace ZitiDesktopEdge {
 								identities[i].WasFullNotified = false;
 								identities[i].IsMFAEnabled = mfa.Successful;
 								identities[i].IsAuthenticated = mfa.Successful;
+								identities[i].IsTimingOut = false;
 								identities[i].LastUpdatedTime = DateTime.Now;
 								for (int j = 0; j < identities[i].Services.Count; j++) {
 									identities[i].Services[j].TimeUpdated = DateTime.Now;
@@ -161,6 +163,7 @@ namespace ZitiDesktopEdge {
 								identities[i].IsMFAEnabled = false;
 								identities[i].IsAuthenticated = false;
 								identities[i].LastUpdatedTime = DateTime.Now;
+								identities[i].IsTimingOut = false;
 								for (int j = 0; j < identities[i].Services.Count; j++) {
 									identities[i].Services[j].TimeUpdated = DateTime.Now;
 									identities[i].Services[j].TimeoutRemaining = 0;
@@ -180,6 +183,7 @@ namespace ZitiDesktopEdge {
 						if (identities[i].Fingerprint==mfa.Fingerprint) {
 							identities[i].WasNotified = false;
 							identities[i].WasFullNotified = false;
+							identities[i].IsTimingOut = false;
 							identities[i].IsAuthenticated = mfa.Successful;
 							identities[i].LastUpdatedTime = DateTime.Now;
 							for (int j=0; j<identities[i].Services.Count; j++) {
