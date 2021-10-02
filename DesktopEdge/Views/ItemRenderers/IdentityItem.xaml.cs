@@ -66,18 +66,12 @@ namespace ZitiDesktopEdge {
 			for (int i=0; i<_identity.Services.Count; i++) {
 				ZitiService info = _identity.Services[i];
 
-				if (info.Timeout>-1) {
-					TimeSpan t = (DateTime.Now - info.TimeUpdated);
-					int timePast = (int)Math.Floor(t.TotalSeconds);
-					int timeout = info.Timeout - timePast;
-					logger.Trace("Max: Service " + info.Name + " Updated " + timePast + " seconds ago will timeout in " + timeout + " seconds");
-					if (timePast > info.Timeout) {
+				if (info.TimeoutCalculated > -1) {
+					if (info.TimeoutCalculated==0) {
 						available--;
-						if (info.Timeout > -1) maxto = 0;
-					} else {
-						if (timeout > -1 && timeout > maxto) maxto = timeout;
-						if (timeout == 0) available--;
 					}
+					if (info.TimeoutCalculated > maxto) maxto = info.TimeoutCalculated;
+
 				}
 				logger.Trace("Max: " + _identity.Name + " "+maxto+" " + info.Name + " " + info.Timeout + " " + info.TimeoutCalculated + " " + info.TimeoutRemaining + " " + info.TimeUpdated+" "+ DateTime.Now);
 			}
@@ -87,14 +81,10 @@ namespace ZitiDesktopEdge {
 			int minto = int.MaxValue;
 			for (int i = 0; i < _identity.Services.Count; i++) {
 				ZitiService info = _identity.Services[i];
-				if (info.Timeout > -1) {
-					TimeSpan t = (DateTime.Now - info.TimeUpdated);
-					int timeout = info.Timeout - (int)Math.Floor(t.TotalSeconds);
-					logger.Trace("Min: Service " + info.Name + " Updated " + Math.Floor(t.TotalSeconds) + " seconds ago will timeout in " + timeout + " seconds");
-					if (timeout > -1 && timeout<minto) minto = timeout;
+				if (info.TimeoutCalculated > -1) {
+					if (info.TimeoutCalculated < minto) minto = info.TimeoutCalculated;
 				}
 				logger.Trace("Min: " + _identity.Name + " " + minto + " " + info.Name + " " + info.Timeout + " " + info.TimeoutCalculated + " " + info.TimeoutRemaining + " " + info.TimeUpdated+" "+ DateTime.Now);
-
 			}
 			if (minto == int.MaxValue) minto = 0;
 			return minto;

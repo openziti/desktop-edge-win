@@ -251,27 +251,19 @@ namespace ZitiDesktopEdge {
 		private void UpdateClock(ZitiService info) {
 			try {
 				if (_identity.IsMFAEnabled) {
-					if (info.TimeoutRemaining > 0) {
-						TimeSpan t = (DateTime.Now - info.TimeUpdated);
-						int timeout = info.Timeout - (int)Math.Floor(t.TotalSeconds);
-
-						if (timeout > 0) {
-							t = TimeSpan.FromSeconds(timeout);
-							string answer = t.Seconds + " seconds";
-							if (t.Days > 0) answer = t.Days + " days " + t.Hours + " hours " + t.Minutes + " minutes " + t.Seconds + " seconds";
+					if (info.TimeoutCalculated > 0) {
+						TimeSpan t = TimeSpan.FromSeconds(info.TimeoutCalculated);
+						string answer = t.Seconds + " seconds";
+						if (t.Days > 0) answer = t.Days + " days " + t.Hours + " hours " + t.Minutes + " minutes " + t.Seconds + " seconds";
+						else {
+							if (t.Hours > 0) answer = t.Hours + " hours " + t.Minutes + " minutes " + t.Seconds + " seconds";
 							else {
-								if (t.Hours > 0) answer = t.Hours + " hours " + t.Minutes + " minutes " + t.Seconds + " seconds";
-								else {
-									if (t.Minutes > 0) answer = t.Minutes + " minutes " + t.Seconds + " seconds";
-								}
+								if (t.Minutes > 0) answer = t.Minutes + " minutes " + t.Seconds + " seconds";
 							}
-							TimeoutDetails.Text = answer;
-						} else {
-							TimeoutDetails.Text = "Timed Out";
 						}
-
+						TimeoutDetails.Text = answer;
 					} else {
-						if (info.TimeoutRemaining == 0) TimeoutDetails.Text = "Timed Out";
+						if (info.TimeoutCalculated == 0) TimeoutDetails.Text = "Timed Out";
 						else TimeoutDetails.Text = "Never";
 					}
 				} else {
