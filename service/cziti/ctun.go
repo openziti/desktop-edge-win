@@ -232,6 +232,10 @@ func (t *tunnel) runWriteLoop() {
 
 			n, err := t.dev.Write(p, 0)
 			if err != nil {
+				if err == io.EOF || err == os.ErrClosed {
+					//that's fine...
+					return
+				}
 				log.Panicf("An unexpected and unrecoverable error has occurred while %s: %v", "writing to tun device", err)
 			}
 

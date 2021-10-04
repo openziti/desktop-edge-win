@@ -499,9 +499,13 @@ func (t *RuntimeState) RemoveRoute(destination net.IPNet, nextHop net.IP) error 
 func (t *RuntimeState) Close() {
 	if t.tun != nil {
 		tu := *t.tun
+		log.Infof("Closing native tun: %s", TunName)
 		err := tu.Close()
+
 		if err != nil {
 			log.Error("problem closing tunnel!")
+		} else {
+			log.Infof("Closed native tun: %s", TunName)
 		}
 	} else {
 		log.Warn("unexpected situation. the TUN was null? ")
@@ -517,6 +521,8 @@ func (t *RuntimeState) RemoveZitiTun() {
 		_, err = wt.Delete(true)
 		if err != nil {
 			log.Errorf("Error deleting already existing interface: %v", err)
+		} else {
+			log.Infof("Removed wintun tun: %s", TunName)
 		}
 	} else {
 		log.Tracef("INTERFACE %s was nil? must have been removed already. %v", TunName, err)

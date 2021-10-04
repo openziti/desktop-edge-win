@@ -474,5 +474,28 @@
       <Version>1.4.1</Version>
     </PackageReference>
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Images\lockout.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Images\ziti-green-timer.png" />
+    <Resource Include="Assets\Images\ziti-red-timer.png" />
+    <Resource Include="Assets\Images\ziti-white-timer.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Images\ziti-white-mfa.ico" />
+    <Resource Include="Assets\Images\ziti-white-mfa.png" />
+    <Resource Include="Assets\Images\ziti-white-timer.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Images\ziti-red-mfa.ico" />
+    <Resource Include="Assets\Images\ziti-red-mfa.png" />
+    <Resource Include="Assets\Images\ziti-red-timer.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Images\ziti-green-mfa.ico" />
+    <Resource Include="Assets\Images\ziti-green-mfa.png" />
+    <Resource Include="Assets\Images\ziti-green-timer.ico" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

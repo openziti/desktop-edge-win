@@ -443,12 +443,25 @@ namespace ZitiDesktopEdge {
 				var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
 				var r = await monitorClient.TriggerUpdate();
 				CheckForUpdateStatus.Content = "Automatic update requested...";
-				checkResponse(r, "Error When Triggering Update", "An error occurred while trying to trigger the update.");
+				if (r == null) {
+					MainWindow.ShowError("Error When Triggering Update", "An error occurred while trying to trigger the update.");
+					TriggerUpdateButton.IsEnabled = true;
+					CheckForUpdate.IsEnabled = true;
+				} else {
+					this.OnShowBlurb?.Invoke("Update Requested");
+					CheckForUpdateStatus.Content = "Updating...";
+					TriggerUpdateButton.Visibility = Visibility.Collapsed;
+					logger.Info(r?.ToString());
+					menuState = "Menu";
+					UpdateState();
+					MainMenuArea.Visibility = Visibility.Collapsed;
+				}
 			} catch (Exception ex) {
 				logger.Error(ex, "unexpected error in update check: {0}", ex.Message);
+				MainWindow.ShowError("Error When Triggering Update", "An error occurred while trying to trigger the update.");
+				TriggerUpdateButton.IsEnabled = true;
+				CheckForUpdate.IsEnabled = true;
 			}
-			TriggerUpdateButton.IsEnabled = true;
-			CheckForUpdate.IsEnabled = true;
 		}
 
 		public void SetupIdList(ZitiIdentity[] ids) {

@@ -130,10 +130,10 @@ namespace ZitiDesktopEdge.Models {
 
 		public int TimeoutCalculated { 
 			get {
-				if (this.TimeoutRemaining == -1|| TimeoutRemaining == 0) return this.TimeoutRemaining;
+				if (this.TimeoutRemaining == -1 || TimeoutRemaining == 0) return this.TimeoutRemaining;
 				else {
 					TimeSpan t = (DateTime.Now - this.TimeUpdated);
-					int timeout = this.Timeout - (int)Math.Floor(t.TotalSeconds);
+					int timeout = this.TimeoutRemaining - (int)Math.Floor(t.TotalSeconds);
 					if (timeout < 0) timeout = 0;
 					return timeout;
 				}

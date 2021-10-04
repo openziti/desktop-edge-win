@@ -57,7 +57,7 @@ namespace ZitiDesktopEdge {
 				_identity = value;
 				if (_identity.IsMFAEnabled) {
 					RecoveryButton.Visibility = Visibility.Visible;
-					if (!_identity.MFAInfo.IsAuthenticated) {
+					if (!_identity.IsAuthenticated) {
 						AuthOff.Visibility = Visibility.Visible;
 						AuthOn.Visibility = Visibility.Collapsed;
 					} else {
