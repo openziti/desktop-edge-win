@@ -49,6 +49,7 @@ namespace ZitiDesktopEdge {
 		private double _maxHeight = 800d;
 		public string CurrentIcon = "white";
 		private string[] suffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };
+		private string _blurbUrl = "";
 
 		private static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
@@ -115,7 +116,7 @@ namespace ZitiDesktopEdge {
 				if (mfa.Action == "enrollment_challenge") {
 					string url = HttpUtility.UrlDecode(mfa.ProvisioningUrl);
 					string secret = HttpUtility.ParseQueryString(url)["secret"];
-					this.IdentityMenu.Identity.MFAInfo.RecoveryCodes = mfa?.RecoveryCodes?.ToArray();
+					this.IdentityMenu.Identity.RecoveryCodes = mfa?.RecoveryCodes?.ToArray();
 					SetupMFA(this.IdentityMenu.Identity, url, secret);
 				} else if (mfa.Action == "auth_challenge") {
 					for (int i = 0; i < identities.Count; i++) {
@@ -123,7 +124,8 @@ namespace ZitiDesktopEdge {
 							identities[i].WasNotified = false;
 							identities[i].WasFullNotified = false;
 							identities[i].IsMFAEnabled = true;
-							identities[i].MFAInfo.IsAuthenticated = false;
+							identities[i].IsAuthenticated = false;
+							identities[i].IsTimingOut = false;
 							break;
 						}
 					}
@@ -135,7 +137,8 @@ namespace ZitiDesktopEdge {
 								identities[i].WasNotified = false;
 								identities[i].WasFullNotified = false;
 								identities[i].IsMFAEnabled = mfa.Successful;
-								identities[i].MFAInfo.IsAuthenticated = mfa.Successful;
+								identities[i].IsAuthenticated = mfa.Successful;
+								identities[i].IsTimingOut = false;
 								identities[i].LastUpdatedTime = DateTime.Now;
 								for (int j = 0; j < identities[i].Services.Count; j++) {
 									identities[i].Services[j].TimeUpdated = DateTime.Now;
@@ -158,8 +161,9 @@ namespace ZitiDesktopEdge {
 								identities[i].WasNotified = false;
 								identities[i].WasFullNotified = false;
 								identities[i].IsMFAEnabled = false;
-								identities[i].MFAInfo.IsAuthenticated = false;
+								identities[i].IsAuthenticated = false;
 								identities[i].LastUpdatedTime = DateTime.Now;
+								identities[i].IsTimingOut = false;
 								for (int j = 0; j < identities[i].Services.Count; j++) {
 									identities[i].Services[j].TimeUpdated = DateTime.Now;
 									identities[i].Services[j].TimeoutRemaining = 0;
@@ -179,7 +183,8 @@ namespace ZitiDesktopEdge {
 						if (identities[i].Fingerprint==mfa.Fingerprint) {
 							identities[i].WasNotified = false;
 							identities[i].WasFullNotified = false;
-							identities[i].MFAInfo.IsAuthenticated = mfa.Successful;
+							identities[i].IsTimingOut = false;
+							identities[i].IsAuthenticated = mfa.Successful;
 							identities[i].LastUpdatedTime = DateTime.Now;
 							for (int j=0; j<identities[i].Services.Count; j++) {
 								identities[i].Services[j].TimeUpdated = DateTime.Now;
@@ -252,15 +257,15 @@ namespace ZitiDesktopEdge {
 		/// </summary>
 		/// <param name="identity">The Ziti Identity to Authenticate</param>
 		async public void ShowMFARecoveryCodes(ZitiIdentity identity) {
-			if (identity.MFAInfo!=null) {
-				if (identity.MFAInfo.IsAuthenticated&& identity.MFAInfo.RecoveryCodes!=null) {
+			if (identity.IsMFAEnabled) {
+				if (identity.IsAuthenticated&& identity.RecoveryCodes!=null) {
 					MFASetup.Opacity = 0;
 					MFASetup.Visibility = Visibility.Visible;
 					MFASetup.Margin = new Thickness(0, 0, 0, 0);
 					MFASetup.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
 					MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
 
-					MFASetup.ShowRecovery(identity.MFAInfo.RecoveryCodes, identity);
+					MFASetup.ShowRecovery(identity.RecoveryCodes, identity);
 
 					ShowModal();
 				} else {
@@ -652,7 +657,7 @@ namespace ZitiDesktopEdge {
 				foreach (var added in e.AddedServices) {
 					addService(found, added);
 				}
-				LoadIdentities(false);
+				LoadIdentities(true);
 				this.Dispatcher.Invoke(() => {
 					IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
 					if (deets.IsVisible) {
@@ -954,7 +959,7 @@ namespace ZitiDesktopEdge {
 						if (zid.ContollerVersion != null && zid.ContollerVersion.Length > 0) found.ContollerVersion = zid.ContollerVersion;
 						found.IsEnabled = zid.IsEnabled;
 						found.IsMFAEnabled = e.Id.MfaEnabled;
-						found.MFAInfo.IsAuthenticated = !e.Id.MfaNeeded;
+						found.IsAuthenticated = !e.Id.MfaNeeded;
 						for (int i=0; i<identities.Count; i++) {
 							if (identities[i].Fingerprint==found.Fingerprint) {
 								identities[i] = found;
@@ -1022,7 +1027,7 @@ namespace ZitiDesktopEdge {
 			} else {
 				removeService(found, e.Service);
 			}
-			LoadIdentities(false);
+			LoadIdentities(true);
 			this.Dispatcher.Invoke(() => {
 				IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
 				if (deets.IsVisible) {
@@ -1035,11 +1040,12 @@ namespace ZitiDesktopEdge {
 			ZitiService zs = new ZitiService(added);
 			var svc = found.Services.Find(s => s.Name == zs.Name);
 			if (svc == null) {
+				logger.Debug("Service Added: " + zs.Name);
 				found.Services.Add(zs);
 				if (zs.HasFailingPostureCheck()) {
 					found.HasServiceFailingPostureCheck = true;
 					if (zs.PostureChecks.Any(p => !p.IsPassing && p.QueryType == "MFA")) {
-						found.MFAInfo.IsAuthenticated = false;
+						found.IsAuthenticated = false;
 					}
 				}
 			} else {
@@ -1169,9 +1175,41 @@ namespace ZitiDesktopEdge {
 			}
 			identities.Add(zid);
 		}
+
+		private bool IsTimingOut() {
+			if (identities!=null) {
+				for (int i = 0; i < identities.Count; i++) {
+					if (identities[i].IsTimingOut) return true;
+				}
+			}
+			return false;
+		}
+
+		private bool IsTimedOut() {
+			if (identities != null) {
+				for (int i = 0; i < identities.Count; i++) {
+					if (identities[i].IsMFAEnabled&&!identities[i].IsAuthenticated) return true;
+				}
+			}
+			return false;
+		}
+
 		private void SetNotifyIcon(string iconPrefix) {
 			if (iconPrefix != "") CurrentIcon = iconPrefix;
-			var iconUri = new Uri("pack://application:,,/Assets/Images/ziti-" + CurrentIcon + ((IsUpdateAvailable)?"-update":"")+".ico");
+			string icon = "pack://application:,,/Assets/Images/ziti-" + CurrentIcon;
+			if (IsUpdateAvailable) {
+				icon += "-update";
+			} else {
+				if (IsTimedOut()) {
+					icon += "-mfa";
+				} else {
+					if (IsTimingOut()) {
+						icon += "-timer";
+					}
+				}
+			}
+			icon += ".ico";
+			var iconUri = new Uri(icon);
 			Stream iconStream = Application.GetResourceStream(iconUri).Stream;
 			notifyIcon.Icon = new Icon(iconStream);
 
@@ -1208,6 +1246,7 @@ namespace ZitiDesktopEdge {
 						idItem.Authenticate += IdItem_Authenticate;
 						idItem.OnStatusChanged += Id_OnStatusChanged;
 						idItem.Identity = id;
+						idItem.IdentityChanged += IdItem_IdentityChanged;
 						if (repaint) idItem.RefreshUI();
 
 						IdList.Children.Add(idItem);
@@ -1216,8 +1255,7 @@ namespace ZitiDesktopEdge {
 							if (id.Fingerprint==IdentityMenu.Identity.Fingerprint) IdentityMenu.Identity = id;
 						}
 					}
-					//IdList.Height = ;
-					DoubleAnimation animation = new DoubleAnimation((double)(ids.Length * 64), TimeSpan.FromSeconds(.3));
+					DoubleAnimation animation = new DoubleAnimation((double)(ids.Length * 64), TimeSpan.FromSeconds(.2));
 					IdList.BeginAnimation(FrameworkElement.HeightProperty, animation);
 					IdListScroller.Visibility = Visibility.Visible;
 				} else {
@@ -1229,7 +1267,18 @@ namespace ZitiDesktopEdge {
 				AddIdAreaButton.Visibility = Visibility.Visible;
 
 				Placement();
+				SetNotifyIcon("");
 			});
+		}
+
+		private void IdItem_IdentityChanged(ZitiIdentity identity) {
+			for (int i=0; i<identities.Count; i++) {
+				if (identities[i].Fingerprint==identity.Fingerprint) {
+					identities[i] = identity;
+					break;
+ 				}
+			}
+			SetNotifyIcon("");
 		}
 
 		private void IdItem_Authenticate(ZitiIdentity identity) {
@@ -1501,8 +1550,6 @@ namespace ZitiDesktopEdge {
 				ShowError("Error Collecting Feedback", "An error occurred while trying to gather feedback. Is the monitor service running?");
             }
 		}
-
-		private string _blurbUrl = "";
 
 		/// <summary>
 		/// Show the blurb as a growler notification
