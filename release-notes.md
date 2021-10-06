@@ -1,3 +1,17 @@
+# Release 1.10.6
+
+## What's New
+* none
+
+## Other changes:
+* Notification Title correction
+
+## Bugs fixed:
+* [#458](https://github.com/openziti/desktop-edge-win/issues/458) When user start tunnel and then immediately stop it, WDE crashes because of null value in the context
+
+## Dependency Updates
+* none
+
 # Release 1.10.5
 
 ## What's New
