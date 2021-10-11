@@ -10,7 +10,7 @@
 * [#458](https://github.com/openziti/desktop-edge-win/issues/458) When user start tunnel and then immediately stop it, WDE crashes because of null value in the context
 
 ## Dependency Updates
-* none
+* update t-sdk v0.15.18 and c-sdk 0.26.9
 
 # Release 1.10.5
 
