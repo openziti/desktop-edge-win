@@ -1142,11 +1142,13 @@ func handleBulkServiceChange(sc cziti.BulkServiceChange) {
 	rts.BroadcastEvent(be)
 
 	id := rts.Find(sc.Fingerprint)
-	var m = dto.IdentityEvent{
-		ActionEvent: dto.IdentityUpdateComplete,
-		Id: Clean(id),
+	if id != nil {
+		var m = dto.IdentityEvent{
+			ActionEvent: dto.IdentityUpdateComplete,
+			Id: Clean(id),
+		}
+		rts.BroadcastEvent(m)
 	}
-	rts.BroadcastEvent(m)
 
 	if id != nil && !id.Notified && id.MfaEnabled {
 		broadcastNotification(true)
