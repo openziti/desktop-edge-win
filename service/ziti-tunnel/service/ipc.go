@@ -160,7 +160,7 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 
 	log.Debug("shutting down. start a ZitiDump")
 	for _, id := range rts.ids {
-		if id.CId != nil {
+		if id.CId != nil && id.CId.Loaded {
 			cziti.ZitiDumpOnShutdown(id.CId)
 		}
 	}

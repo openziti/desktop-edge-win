@@ -246,7 +246,7 @@ namespace ZitiDesktopEdge {
 		private void ShowMFAToast(string message, ZitiIdentity identity) {
 			logger.Info("Shwoing Notification from identity " + _identity.Name + " " + message + ".");
 			new ToastContentBuilder()
-				.AddText(_identity.Name+" Service Access Timed Out")
+				.AddText(_identity.Name+" Service Access Warning")
 				.AddText(message)
 				.AddArgument("fingerprint", identity.Fingerprint)
 				.SetBackgroundActivation()

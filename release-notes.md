@@ -1,3 +1,18 @@
+# Release 1.10.6
+
+## What's New
+* none
+
+## Other changes:
+* Notification Title correction
+
+## Bugs fixed:
+* [#458](https://github.com/openziti/desktop-edge-win/issues/458) When user start tunnel and then immediately stop it, WDE crashes because of null value in the context
+* [#461](https://github.com/openziti/desktop-edge-win/issues/461) ZDEW crashes when controller/router certificate expires
+
+## Dependency Updates
+* update t-sdk v0.15.18 and c-sdk 0.26.9
+
 # Release 1.10.5
 
 ## What's New
