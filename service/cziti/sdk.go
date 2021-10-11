@@ -707,6 +707,11 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 			}
 		}
 
+		if len(servicesToAdd) == 0 && len(servicesToRemove) == 0 && zid.Fingerprint == "" {
+			log.Errorf("Service event is received with nil data")
+			break
+		}
+
 		if len(servicesToAdd) > 0 || len(servicesToRemove) > 0 {
 			zid.UpdateMFATime()
 		}
