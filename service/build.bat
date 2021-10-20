@@ -19,7 +19,7 @@ REM override the c sdk used in the build - leave blank for the same as specified
 SET ZITI_SDK_C_BRANCH=
 REM the number of TCP connections the tunneler sdk can have at any one time
 SET TCP_MAX_CONNECTIONS=256
-SET WINTUN_DL_URL=https://www.wintun.net/builds/wintun-0.13.zip
+SET WINTUN_DL_URL=https://www.wintun.net/builds/wintun-0.14.1.zip
 
 set SVC_ROOT_DIR=%~dp0
 set CURDIR=%CD%

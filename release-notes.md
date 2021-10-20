@@ -1,3 +1,18 @@
+# Release 1.10.7
+
+## What's New
+* none
+
+## Other changes:
+* 
+
+## Bugs fixed:
+* 
+
+## Dependency Updates
+* go mod tidy run - many dependency updates
+* wintun updated from 0.14 to 0.14.1
+
 # Release 1.10.6
 
 ## What's New
