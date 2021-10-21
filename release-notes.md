@@ -1,3 +1,19 @@
+# Release 1.10.7
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* go mod tidy run - many dependency updates
+* wintun updated from 0.14 to 0.14.1
+* update t-sdk v0.15.19 and c-sdk 0.26.9
+
 # Release 1.10.6
 
 ## What's New
