@@ -24,6 +24,8 @@ require (
 	golang.org/x/net v0.0.0-20211013171255-e13a2654a71e // indirect
 	golang.org/x/sys v0.0.0-20211013075003-97ac67df715c
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
+	golang.org/x/text v0.3.7 // indirect
 	golang.zx2c4.com/wireguard v0.0.20201119-0.20201209004655-310ae107c346
-	golang.zx2c4.com/wireguard/windows v0.4.11
+	golang.zx2c4.com/wireguard/windows v0.3.9
+	gopkg.in/Knetic/govaluate.v3 v3.0.0 // indirect
 )
