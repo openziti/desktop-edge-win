@@ -90,6 +90,7 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 	// initialize the network interface
 	err := initialize(cLogLevel)
 	if err != nil {
+		rts.Close()
 		log.Panicf("unexpected err from initialize: %v", err)
 		return err
 	}
