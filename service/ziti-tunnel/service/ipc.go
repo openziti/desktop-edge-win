@@ -143,6 +143,7 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 	// open the pipe for business
 	pipes, err := openPipes()
 	if err != nil {
+		rts.Close()
 		return err
 	}
 	defer pipes.Close()
