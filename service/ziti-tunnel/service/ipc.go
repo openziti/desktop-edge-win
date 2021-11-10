@@ -87,10 +87,10 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 	initialized := make(chan struct{})
 	shutdownDelay := make(chan bool)
 
+	defer rts.Close()
 	// initialize the network interface
 	err := initialize(cLogLevel)
 	if err != nil {
-		rts.Close()
 		log.Panicf("unexpected err from initialize: %v", err)
 		return err
 	}
@@ -143,7 +143,6 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 	// open the pipe for business
 	pipes, err := openPipes()
 	if err != nil {
-		rts.Close()
 		return err
 	}
 	defer pipes.Close()
