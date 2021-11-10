@@ -87,6 +87,7 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 	initialized := make(chan struct{})
 	shutdownDelay := make(chan bool)
 
+	defer rts.Close()
 	// initialize the network interface
 	err := initialize(cLogLevel)
 	if err != nil {
