@@ -189,9 +189,6 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 	log.Infof("shutting down events...")
 	events.shutdown()
 
-	log.Infof("Closing connections and removing tun interface: %s", TunName)
-	rts.Close()
-
 	log.Info("==============================  service ends  ==============================")
 
 	ops <- "done"

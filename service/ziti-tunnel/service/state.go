@@ -505,6 +505,7 @@ func (t *RuntimeState) Close() {
 		if err != nil {
 			log.Error("problem closing tunnel!")
 		} else {
+			t.tun = nil
 			log.Infof("Closed native tun: %s", TunName)
 		}
 	} else {
