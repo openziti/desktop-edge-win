@@ -10,7 +10,7 @@
 * [#476](https://github.com/openziti/desktop-edge-win/issues/476) WDE creates the tun adapter and fails, when the old one is in hung state. It should clean up the adaptors that failed to assign ip
 
 ## Dependency Updates
-* none
+* update t-sdk v0.15.20 and c-sdk 0.26.10
 
 # Release 1.10.7
 
