@@ -40,8 +40,14 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 )
+
+var tun_release atomic.Value
+var running = "running"
+var success = "success"
+var failed = "failed"
 
 type RuntimeState struct {
 	state   *dto.TunnelStatus
@@ -497,6 +503,17 @@ func (t *RuntimeState) RemoveRoute(destination net.IPNet, nextHop net.IP) error 
 }
 
 func (t *RuntimeState) Close() {
+	val := tun_release.Load()
+	if val != nil {
+		if val == running {
+			log.Debugf("Tun is already closing!")
+			return
+		} else if val == success {
+			log.Debugf("Tun is already closed!")
+			return
+		}
+	}
+	tun_release.Store(running)
 	if t.tun != nil {
 		tu := *t.tun
 		log.Infof("Closing native tun: %s", TunName)
@@ -506,12 +523,16 @@ func (t *RuntimeState) Close() {
 			log.Error("problem closing tunnel!")
 		} else {
 			t.tun = nil
+			tun_release.Store(success)
 			log.Infof("Closed native tun: %s", TunName)
 		}
 	} else {
 		log.Warn("unexpected situation. the TUN was null? ")
 	}
 	t.RemoveZitiTun()
+	if tun_release.Load() == running {
+		tun_release.Store(failed)
+	}
 }
 
 func (t *RuntimeState) RemoveZitiTun() {
@@ -523,6 +544,7 @@ func (t *RuntimeState) RemoveZitiTun() {
 		if err != nil {
 			log.Errorf("Error deleting already existing interface: %v", err)
 		} else {
+			tun_release.Store(success)
 			log.Infof("Removed wintun tun: %s", TunName)
 		}
 	} else {
