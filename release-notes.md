@@ -1,3 +1,17 @@
+# Release 1.10.8
+
+## What's New
+* none
+
+## Other changes:
+* UI layout fix : set max size and fix margins for identity list on menu
+
+## Bugs fixed:
+* [#476](https://github.com/openziti/desktop-edge-win/issues/476) WDE creates the tun adapter and fails, when the old one is in hung state. It should clean up the adaptors that failed to assign ip
+
+## Dependency Updates
+* update t-sdk v0.15.20 and c-sdk 0.26.10
+
 # Release 1.10.7
 
 ## What's New

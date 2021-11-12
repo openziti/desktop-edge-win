@@ -40,8 +40,8 @@
                     <ColumnDefinition Width="50"/>
                 </Grid.ColumnDefinitions>
                 <local:Toggler x:Name="ToggleSwitch" Grid.Column="0" Grid.Row="0" Margin="0,00,0,0"></local:Toggler>
-                <Label Name="MainLabel" Grid.Column="1" Content="Main Menu" VerticalAlignment="Center" HorizontalAlignment="Left" MouseUp="ShowIdentity" Cursor="Hand" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
-                <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/nextArrow.png" Width="20" Height="20" Margin="0,0,0,0" />
+                <TextBlock Name="MainLabel" Grid.Column="1" MaxWidth="240" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" HorizontalAlignment="Left" MouseUp="ShowIdentity" Cursor="Hand" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBlock>
+                <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/nextArrow.png" Width="20" Height="20" Margin="20,0,0,0" />
             </Grid>
             <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
         </StackPanel>
