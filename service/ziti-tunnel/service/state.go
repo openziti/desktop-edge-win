@@ -40,14 +40,16 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
 type RuntimeState struct {
-	state   *dto.TunnelStatus
-	tun     *tun.Device
-	tunName string
-	ids     map[string]*Id
+	state     *dto.TunnelStatus
+	tun       *tun.Device
+	tunName   string
+	ids       map[string]*Id
+	tun_state atomic.Value
 }
 
 func (t *RuntimeState) RemoveByFingerprint(fingerprint string) {
@@ -497,6 +499,12 @@ func (t *RuntimeState) RemoveRoute(destination net.IPNet, nextHop net.IP) error 
 }
 
 func (t *RuntimeState) Close() {
+	val := t.tun_state.Load()
+	if val != nil {
+		log.Debugf("Tun is closing or is already closed!")
+		return
+	}
+	t.tun_state.Store("closing")
 	if t.tun != nil {
 		tu := *t.tun
 		log.Infof("Closing native tun: %s", TunName)
@@ -505,6 +513,7 @@ func (t *RuntimeState) Close() {
 		if err != nil {
 			log.Error("problem closing tunnel!")
 		} else {
+			t.tun = nil
 			log.Infof("Closed native tun: %s", TunName)
 		}
 	} else {
@@ -586,4 +595,3 @@ func (t *RuntimeState) UpdateNotificationFrequency(notificationFreq int) error {
 
 	return nil
 }
-
