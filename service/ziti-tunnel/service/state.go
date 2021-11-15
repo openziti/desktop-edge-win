@@ -32,6 +32,7 @@ import (
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
 	"golang.zx2c4.com/wireguard/tun"
+	"golang.zx2c4.com/wireguard/tun/wintun"
 	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
 	"io"
 	"io/ioutil"
@@ -594,4 +595,20 @@ func (t *RuntimeState) UpdateNotificationFrequency(notificationFreq int) error {
 	rts.SaveState()
 
 	return nil
+}
+
+func CleanUpZitiTUNAdapters(tunName string) {
+	log.Trace("Invoking ZitiTun adapter cleanup script")
+	tun.WintunPool.DeleteMatchingAdapters(func(wintun *wintun.Adapter) bool {
+		interfaceName, err := wintun.Name()
+		if err != nil {
+			log.Trace("Could not determine interface name, not removing: %v", err)
+			return false
+		}
+		if strings.HasPrefix(interfaceName, tunName) {
+			log.Trace("Removing old Wintun interface with name : %s", interfaceName)
+			return true
+		}
+		return false
+	}, false)
 }
