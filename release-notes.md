@@ -1,3 +1,17 @@
+# Release 1.10.9
+
+## What's New
+* none
+
+## Other changes:
+* Whitelisting.md is added. The executables for ziti, have to be whitelisted in McAfee, so it will not mark the software as a thread. The steps are mentioned in the whitelisting.md file.
+
+## Bugs fixed:
+* [#480](https://github.com/openziti/desktop-edge-win/issues/480) Clean up old adapters
+
+## Dependency Updates
+* none
+
 # Release 1.10.8
 
 ## What's New

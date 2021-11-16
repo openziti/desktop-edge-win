@@ -70,6 +70,7 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 	windns.RemoveAllNrptRules()
 	// cleanup old ziti tun profiles
 	windns.CleanUpNetworkAdapterProfile()
+	CleanUpZitiTUNAdapters(TunName)
 
 	rts.LoadConfig()
 	l := rts.state.LogLevel
