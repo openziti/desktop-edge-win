@@ -598,15 +598,15 @@ func (t *RuntimeState) UpdateNotificationFrequency(notificationFreq int) error {
 }
 
 func CleanUpZitiTUNAdapters(tunName string) {
-	log.Trace("Invoking ZitiTun adapter cleanup script")
+	log.Info("Invoking ZitiTun adapter cleanup script")
 	tun.WintunPool.DeleteMatchingAdapters(func(wintun *wintun.Adapter) bool {
 		interfaceName, err := wintun.Name()
 		if err != nil {
-			log.Trace("Could not determine interface name, not removing: %v", err)
+			log.Warnf("Could not determine interface name, not removing: %v", err)
 			return false
 		}
 		if strings.HasPrefix(interfaceName, tunName) {
-			log.Trace("Removing old Wintun interface with name : %s", interfaceName)
+			log.Infof("Removing old Wintun interface with name : %s", interfaceName)
 			return true
 		}
 		return false
