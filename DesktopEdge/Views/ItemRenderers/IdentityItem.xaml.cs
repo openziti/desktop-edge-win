@@ -248,7 +248,7 @@ namespace ZitiDesktopEdge {
 			new ToastContentBuilder()
 				.AddText(_identity.Name+" Service Access Warning")
 				.AddText(message)
-				.AddArgument("fingerprint", identity.Fingerprint)
+				.AddArgument("identifier", identity.Identifier)
 				.SetBackgroundActivation()
 				.Show();
 		}
@@ -258,7 +258,7 @@ namespace ZitiDesktopEdge {
 					OnStatusChanged(on);
 				}
 				DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-				DataStructures.Identity id = await client.IdentityOnOffAsync(_identity.Fingerprint, on);
+				DataStructures.Identity id = await client.IdentityOnOffAsync(_identity.Identifier, on);
 				this.Identity.IsEnabled = on;
 				if (on) {
 					ToggleStatus.Content = "ENABLED";

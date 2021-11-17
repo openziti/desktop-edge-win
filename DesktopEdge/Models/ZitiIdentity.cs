@@ -24,6 +24,7 @@ namespace ZitiDesktopEdge.Models {
 		public bool WasNotified { get; set; }
 		public bool WasFullNotified { get; set; }
 		public string Fingerprint { get; set; }
+		public string Identifier { get; set; }
 		public bool IsAuthenticated { get; set; }
 		public bool IsTimedOut { get; set; }
 		public string[] RecoveryCodes { get; set; }
@@ -70,6 +71,7 @@ namespace ZitiDesktopEdge.Models {
 				ContollerVersion = id.ControllerVersion,
 				EnrollmentStatus = "status",
 				Fingerprint = id.FingerPrint,
+				Identifier = id.Identifier,
 				IsEnabled = id.Active,
 				Name = (string.IsNullOrEmpty(id.Name) ? id.FingerPrint : id.Name),
 				Status = id.Status,
