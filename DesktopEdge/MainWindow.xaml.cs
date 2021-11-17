@@ -1065,10 +1065,10 @@ namespace ZitiDesktopEdge {
 			Application.Current.Properties.Add("CurrentTunnelStatus", e.Status);
 			e.Status.Dump(Console.Out);
 			this.Dispatcher.Invoke(() => {
-				if (e.ApiVersion != DataClient.EXPECTED_API_VERSION) {
+				/*if (e.ApiVersion != DataClient.EXPECTED_API_VERSION) {
 					SetCantDisplay("Version mismatch!", "The version of the Service is not compatible", Visibility.Visible);
 					return;
-				}
+				}*/
 				this.MainMenu.LogLevel = e.Status.LogLevel;
 				Ziti.Desktop.Edge.Utils.UIUtils.SetLogLevel(e.Status.LogLevel);
 

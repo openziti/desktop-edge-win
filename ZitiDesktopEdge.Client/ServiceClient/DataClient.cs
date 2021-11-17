@@ -91,9 +91,16 @@ namespace ZitiDesktopEdge.ServiceClient {
             base.ClientDisconnected(e);
         }
 
+        // ziti tunnel
+        /*
         const string ipcPipe = @"OpenZiti\ziti\ipc";
         const string logPipe = @"OpenZiti\ziti\logs";
         const string eventPipe = @"OpenZiti\ziti\events";
+        */
+
+        // ziti edge tunnel
+        const string ipcPipe = @"ziti-edge-tunnel.sock";
+        const string eventPipe = @"ziti-edge-tunnel-event.sock";
 
         public DataClient() : base() {
         }

@@ -794,25 +794,25 @@ namespace ZitiUpdateService {
 		}
 
 		private void StopZiti() {
-			Logger.Info("Stopping the ziti service...");
-			controller = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == "ziti");
+			Logger.Info("Stopping the ziti-edge-tunnel service...");
+			controller = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == "ziti-edge-tunnel");
 			bool cleanStop = false;
 			if (controller != null && controller.Status != ServiceControllerStatus.Stopped) {
 				try {
 					controller.Stop();
-					Logger.Debug("Waiting for the ziti service to stop.");
+					Logger.Debug("Waiting for the ziti-edge-tunnel service to stop.");
 					controller.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
-					Logger.Debug("The ziti service was stopped successfully.");
+					Logger.Debug("The ziti-edge-tunnel service was stopped successfully.");
 					cleanStop = true;
 				} catch (Exception e) {
 					Logger.Error(e, "Timout while trying to stop service!");
 				}
 			} else {
-				Logger.Debug("The ziti has ALREADY been stopped successfully.");
+				Logger.Debug("The ziti-edge-tunnel has ALREADY been stopped successfully.");
 			}
 			if (!cleanStop) {
-				Logger.Debug("Stopping ziti-tunnel forcefully.");
-				stopProcessForcefully("ziti-tunnel", "data service [ziti]");
+				Logger.Debug("Stopping ziti-edge-tunnel forcefully.");
+				stopProcessForcefully("ziti-edge-tunnel", "data service [ziti-edge-tunnel]");
 			}
 		}
 
