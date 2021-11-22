@@ -156,7 +156,7 @@ namespace ZitiDesktopEdge.Server {
                 EventRegistry.MyEvent += eh;
                 try {
                     StreamReader reader = new StreamReader(ss);
-                    
+
                     string line = await reader.ReadLineAsync();
                     while (line != null) {
                         await processMessageAsync(line, writer);

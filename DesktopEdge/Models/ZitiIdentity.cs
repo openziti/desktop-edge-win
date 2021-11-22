@@ -67,7 +67,7 @@ namespace ZitiDesktopEdge.Models {
 
 		public static ZitiIdentity FromClient(DataStructures.Identity id) {
 			ZitiIdentity zid = new ZitiIdentity() {
-				ControllerUrl = id.Config.ztAPI,
+				ControllerUrl = (id.Config == null) ? "": id.Config.ztAPI,
 				ContollerVersion = id.ControllerVersion,
 				EnrollmentStatus = "status",
 				Fingerprint = id.FingerPrint,
