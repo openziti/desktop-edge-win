@@ -146,7 +146,7 @@ namespace ZitiDesktopEdge.DataStructures {
 
     public class AuthMFAFunction : ServiceFunction {
         public AuthMFAFunction(string identifier, string code) {
-            this.Function = "AuthMFA";
+            this.Function = "SubmitMFA";
             this.Payload = new AuthMFAFunctionPayload() {
                 Identifier = identifier,
                 Code = code
