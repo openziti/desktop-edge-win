@@ -50,17 +50,17 @@ namespace ZitiDesktopEdge.DataStructures {
 
     public class IdentityResponse : SvcResponse
     {
-        public Identity data { get; set; }
+        public Identity Payload { get; set; }
     }
 
     public class ServiceFunction
     {
-        public string command { get; set; }
+        public string Function { get; set; }
     }
 
     public class IdentifierFunction : ServiceFunction
     {
-        public IdentifierPayload data { get; set; }
+        public IdentifierPayload Payload { get; set; }
     }
 
     public class BooleanPayload
@@ -72,10 +72,10 @@ namespace ZitiDesktopEdge.DataStructures {
     {
         public BooleanFunction(string functionName, bool theBool)
         {
-            this.command = functionName;
-            this.data = new BooleanPayload() { OnOff = theBool };
+            this.Function = functionName;
+            this.Payload = new BooleanPayload() { OnOff = theBool };
         }
-        public BooleanPayload data { get; set; }
+        public BooleanPayload Payload { get; set; }
     }
 
     public class IdentityTogglePayload
@@ -92,24 +92,24 @@ namespace ZitiDesktopEdge.DataStructures {
     {
         public IdentityToggleFunction(string identifier, bool theBool)
         {
-            this.command = "IdentityOnOff";
-            this.data = new IdentityTogglePayload()
+            this.Function = "IdentityOnOff";
+            this.Payload = new IdentityTogglePayload()
             {
                 OnOff = theBool,
                 Identifier = identifier,
             };
         }
-        public IdentityTogglePayload data { get; set; }
+        public IdentityTogglePayload Payload { get; set; }
     }
 
     public class EnableMFAFunction : ServiceFunction {
         public EnableMFAFunction(string identifier) {
-            this.command = "EnableMFA";
-            this.data = new EnableMFAFunctionPayload() {
+            this.Function = "EnableMFA";
+            this.Payload = new EnableMFAFunctionPayload() {
                 Identifier = identifier
             };
         }
-        public EnableMFAFunctionPayload data { get; set; }
+        public EnableMFAFunctionPayload Payload { get; set; }
     }
     public class EnableMFAFunctionPayload {
         public string Identifier { get; set; }
@@ -117,13 +117,13 @@ namespace ZitiDesktopEdge.DataStructures {
 
     public class VerifyMFAFunction : ServiceFunction {
         public VerifyMFAFunction(string identifier, string code) {
-            this.command = "VerifyMFA";
-            this.data = new VerifyMFAFunctionPayload() {
+            this.Function = "VerifyMFA";
+            this.Payload = new VerifyMFAFunctionPayload() {
                 Identifier = identifier,
                 Code = code
             };
         }
-        public VerifyMFAFunctionPayload data { get; set; }
+        public VerifyMFAFunctionPayload Payload { get; set; }
     }
     public class VerifyMFAFunctionPayload {
         public string Identifier { get; set; }
@@ -131,13 +131,13 @@ namespace ZitiDesktopEdge.DataStructures {
     }
     public class RemoveMFAFunction : ServiceFunction {
         public RemoveMFAFunction(string identifier, string code) {
-            this.command = "RemoveMFA";
-            this.data = new RemoveMFAFunctionPayload() {
+            this.Function = "RemoveMFA";
+            this.Payload = new RemoveMFAFunctionPayload() {
                 Identifier = identifier,
                 Code = code
             };
         }
-        public RemoveMFAFunctionPayload data { get; set; }
+        public RemoveMFAFunctionPayload Payload { get; set; }
     }
     public class RemoveMFAFunctionPayload {
         public string Identifier { get; set; }
@@ -146,13 +146,13 @@ namespace ZitiDesktopEdge.DataStructures {
 
     public class AuthMFAFunction : ServiceFunction {
         public AuthMFAFunction(string identifier, string code) {
-            this.command = "AuthMFA";
-            this.data = new AuthMFAFunctionPayload() {
+            this.Function = "AuthMFA";
+            this.Payload = new AuthMFAFunctionPayload() {
                 Identifier = identifier,
                 Code = code
             };
         }
-        public AuthMFAFunctionPayload data { get; set; }
+        public AuthMFAFunctionPayload Payload { get; set; }
     }
     public class AuthMFAFunctionPayload {
         public string Identifier { get; set; }
@@ -161,13 +161,13 @@ namespace ZitiDesktopEdge.DataStructures {
 
     public class ReturnMFACodesFunction : ServiceFunction {
         public ReturnMFACodesFunction(string identifier, string code) {
-            this.command = "ReturnMFACodes";
-            this.data = new ReturnMFACodesFunctionPayload() {
+            this.Function = "ReturnMFACodes";
+            this.Payload = new ReturnMFACodesFunctionPayload() {
                 Identifier = identifier,
                 Code = code,
             };
         }
-        public ReturnMFACodesFunctionPayload data { get; set; }
+        public ReturnMFACodesFunctionPayload Payload { get; set; }
     }
     public class ReturnMFACodesFunctionPayload {
         public string Identifier { get; set; }
@@ -176,13 +176,13 @@ namespace ZitiDesktopEdge.DataStructures {
 
     public class GenerateMFACodesFunction : ServiceFunction {
         public GenerateMFACodesFunction(string identifier, string code) {
-            this.command = "GenerateMFACodes";
-            this.data = new GenerateMFACodesFunctionPayload() {
+            this.Function = "GenerateMFACodes";
+            this.Payload = new GenerateMFACodesFunctionPayload() {
                 Identifier = identifier,
                 Code = code,
             };
         }
-        public GenerateMFACodesFunctionPayload data { get; set; }
+        public GenerateMFACodesFunctionPayload Payload { get; set; }
     }
     public class GenerateMFACodesFunctionPayload {
         public string Identifier { get; set; }
@@ -191,17 +191,17 @@ namespace ZitiDesktopEdge.DataStructures {
 
     public class SetLogLevelFunction : ServiceFunction {
         public SetLogLevelFunction(string level) {
-            this.command = "SetLogLevel";
-            this.data = new SetLogLevelPayload() {
+            this.Function = "SetLogLevel";
+            this.Payload = new SetLogLevelPayload() {
                 Level = level
             };
         }
-        public SetLogLevelPayload data { get; set; }
+        public SetLogLevelPayload Payload { get; set; }
     }
 
     public class ZitiDumpFunction : ServiceFunction {
         public ZitiDumpFunction(string level) {
-            this.command = "ZitiDump";
+            this.Function = "ZitiDump";
             //this.Payload = null;//nothing for now
         }
         //public SetLogLevelPayload Payload { get; set; }
@@ -510,15 +510,15 @@ namespace ZitiDesktopEdge.DataStructures {
     {
         public ConfigUpdateFunction(string tunIPv4, int tunIPv4Mask, bool addDns)
         {
-            this.command = "UpdateTunIpv4";
-            this.data = new ConfigPayload()
+            this.Function = "UpdateTunIpv4";
+            this.Payload = new ConfigPayload()
             {
                 TunIPv4 = tunIPv4,
                 TunIPv4Mask = tunIPv4Mask,
                 AddDns = addDns
             };
         }
-        public ConfigPayload data { get; set; }
+        public ConfigPayload Payload { get; set; }
     }
 
     public class NotificationFrequencyPayload {
@@ -527,13 +527,13 @@ namespace ZitiDesktopEdge.DataStructures {
 
     public class NotificationFrequencyFunction: ServiceFunction {
         public NotificationFrequencyFunction(int notificationFrequency) {
-            this.command = "UpdateFrequency";
-            this.data = new NotificationFrequencyPayload() {
+            this.Function = "UpdateFrequency";
+            this.Payload = new NotificationFrequencyPayload() {
                 NotificationFrequency = notificationFrequency
             };
         }
 		
-        public NotificationFrequencyPayload data { get; set; }
+        public NotificationFrequencyPayload Payload { get; set; }
 	}
 
 

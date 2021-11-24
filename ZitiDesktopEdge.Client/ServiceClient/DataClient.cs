@@ -133,7 +133,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         async public Task<ZitiTunnelStatus> GetStatusAsync() {
             try {
-                await sendAsync(new ServiceFunction() { command = "Status" });
+                await sendAsync(new ServiceFunction() { Function = "Status" });
                 var rtn = await readAsync<ZitiTunnelStatus>(ipcReader);
                 return rtn;
             } catch (Exception ioe) {
@@ -145,7 +145,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
 
-        ServiceFunction AddIdentityFunction = new ServiceFunction() { command = "AddIdentity" };
+        ServiceFunction AddIdentityFunction = new ServiceFunction() { Function = "AddIdentity" };
 
         async public Task<Identity> AddIdentityAsync(string identityName, bool activate, string jwt) {
             IdentityResponse resp = null;
@@ -178,7 +178,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 Logger.Warn("failed to enroll. {0} {1}", resp.Message, resp.Error);
                 throw new ServiceException("Failed to Enroll", resp.Code, !string.IsNullOrEmpty(resp.Error) ? resp.Error : "The provided token was invalid. This usually is because the token has already been used or it has expired.");
             }
-            return resp.data;
+            return resp.Payload;
         }
 
 
@@ -190,8 +190,8 @@ namespace ZitiDesktopEdge.ServiceClient {
 
             try {
                 IdentifierFunction removeFunction = new IdentifierFunction() {
-                    command = "RemoveIdentity",
-                    data = new IdentifierPayload() { Identifier = identifier }
+                    Function = "RemoveIdentity",
+                    Payload = new IdentifierPayload() { Identifier = identifier }
                 };
                 Logger.Info("Removing Identity with identifier {0}", identifier);
                 await sendAsync(removeFunction);
@@ -225,7 +225,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             try {
                 await sendAsync(new IdentityToggleFunction(identifier, onOff));
                 IdentityResponse idr = await readAsync<IdentityResponse>(ipcReader);
-                return idr.data;
+                return idr.Payload;
             } catch (Exception ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //setupPipe();
@@ -406,7 +406,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         async public Task zitiDump() {
             try {
-                await sendAsync(new ServiceFunction() { command = "ZitiDump" });
+                await sendAsync(new ServiceFunction() { Function = "ZitiDump" });
                 var rtn = await readAsync<SvcResponse>(ipcReader);
                 return; // rtn;
             } catch (Exception ioe) {
@@ -469,7 +469,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         async public Task<ZitiTunnelStatus> debugAsync() {
             try {
-                await sendAsync(new ServiceFunction() { command = "Debug" });
+                await sendAsync(new ServiceFunction() { Function = "Debug" });
                 var rtn = await readAsync<ZitiTunnelStatus>(ipcReader);
                 return rtn;
             } catch (Exception ioe) {
