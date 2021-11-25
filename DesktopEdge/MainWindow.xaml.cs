@@ -651,11 +651,15 @@ namespace ZitiDesktopEdge {
 				logger.Warn($"{e.Action} service event for {e.Identifier} but the provided identity identifier was not found!");
 				return;
 			} else {
-				foreach (var removed in e.RemovedServices) {
-					removeService(found, removed);
+				if (e.RemovedServices != null) {
+					foreach (var removed in e.RemovedServices) {
+						removeService(found, removed);
+					}
 				}
-				foreach (var added in e.AddedServices) {
-					addService(found, added);
+				if (e.AddedServices != null) {
+					foreach (var added in e.AddedServices) {
+						addService(found, added);
+					}
 				}
 				LoadIdentities(true);
 				this.Dispatcher.Invoke(() => {
