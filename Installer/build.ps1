@@ -7,8 +7,7 @@ $scriptPath = Split-Path $invocation.MyCommand.Path
 
 echo "the branch is $env:GIT_BRANCH"
 
-$zipLocal = "ziti-tunnel-service.zip"
-$zipLocal = "${scriptPath}/../service/ziti-tunnel-win.zip"
+$zipLocal = "${scriptPath}/../ziti-edge-tunnel/ziti-edge-tunnel-win.zip"
 
 echo ""
 echo "unzipping $zipLocal to ${scriptPath}\build\service\"
@@ -24,7 +23,7 @@ msbuild ZitiDesktopEdge.sln /property:Configuration=Release
 
 Pop-Location
 
-$ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer 18.8.1"
+$ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer 18.9"
 $ADVINST = "${ADV_INST_HOME}\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
 $installerVersion=(Get-Content -Path ${scriptPath}\..\version)
@@ -48,7 +47,7 @@ if($gituser -eq "ziti-ci") {
   $b="$env:GIT_BRANCH"
   if( $b -match '(^main$|^release-next|^release-[0-9]*\.[0-9]*\.[0-9]*)' ) {
     echo "branch $b matches the required regex - adding committing and pushing"
-    git add service/ziti-tunnel/version.go
+    git add ziti-edge-tunnel/version.go
     git add DesktopEdge/Properties/AssemblyInfo.cs
     git add ZitiUpdateService/Properties/AssemblyInfo.cs
     git add Installer/ZitiDesktopEdge.aip
