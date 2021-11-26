@@ -321,7 +321,7 @@
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiServCtrlComponent">
     <ROW ServiceControl="ZitiUpdateService.exe" Name="ziti-monitor" Event="161" Wait="0" Component_="ZitiUpdateService.exe"/>
-    <ROW ServiceControl="zitiedgetunnel.exe" Name="ziti-edge-tunnel" Event="161" Wait="1" Component_="zitiedgetunnel.exe"/>
+    <ROW ServiceControl="zitiedgetunnel.exe" Name="ziti-edge-tunnel" Event="161" Wait="0" Component_="zitiedgetunnel.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiServInstComponent">
     <ROW ServiceInstall="ZitiUpdateService.exe" Name="ziti-monitor" DisplayName="Ziti Desktop Monitor Service" ServiceType="16" StartType="2" ErrorControl="32769" Component_="ZitiUpdateService.exe" Description="Monitors and updates the Ziti Access Service"/>
