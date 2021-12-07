@@ -1,3 +1,17 @@
+# Release 1.10.10
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* TSDK updated to 0.15.21
+
 # Release 1.10.9
 
 ## What's New
