@@ -212,6 +212,17 @@ namespace ZitiDesktopEdge.DataStructures {
         public string Identifier { get; set; }
     }
 
+    public class EnrollIdentifierPayload 
+    {
+        public string JwtFileName { get; set; }
+        public string JwtContent { get; set; }
+	}
+
+    public class EnrollIdentifierFunction : ServiceFunction 
+    {
+        public EnrollIdentifierPayload Payload { get; set; }
+    }
+
     public class Id
     {
         public string key { get; set; }
@@ -258,7 +269,7 @@ namespace ZitiDesktopEdge.DataStructures {
         public bool OwnsIntercept { get; set; }
         public string AssignedIP { get; set; }
         public PostureCheck[] PostureChecks { get; set; }
-        public bool IsAccessable { get; set; }
+        public bool IsAccessible { get; set; }
 		public int Timeout { get; set; }
 		public int TimeoutRemaining { get; set; }
 	}

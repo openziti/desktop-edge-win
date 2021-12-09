@@ -1222,7 +1222,7 @@ namespace ZitiDesktopEdge {
 
 		private void LoadIdentities(Boolean repaint) {
 			this.Dispatcher.Invoke(() => {
-				for (int i=0; i<IdList.Children.Count; i++) {
+				for (int i = 0; i < IdList.Children.Count; i++) {
 					IdentityItem item = (IdentityItem)IdList.Children[i];
 					item.StopTimers();
 				}
@@ -1232,7 +1232,7 @@ namespace ZitiDesktopEdge {
 				if (_maxHeight > (desktopWorkingArea.Height - 10)) _maxHeight = desktopWorkingArea.Height - 10;
 				if (_maxHeight < 100) _maxHeight = 100;
 				IdList.MaxHeight = _maxHeight - 520;
-				ZitiIdentity[] ids = identities.OrderBy(i => i.Name.ToLower()).ToArray();
+				ZitiIdentity[] ids = identities.OrderBy(i => (i.Name != null) ? i.Name.ToLower() : i.Name).ToArray();
 				MainMenu.SetupIdList(ids);
 				if (ids.Length > 0 && serviceClient.Connected) {
 					double height = 490 + (ids.Length * 60);
@@ -1386,6 +1386,7 @@ namespace ZitiDesktopEdge {
 			UIModel.HideOnLostFocus = true;
 			jwtDialog.DefaultExt = ".jwt";
 			jwtDialog.Filter = "Ziti Identities (*.jwt)|*.jwt";
+
 			if (jwtDialog.ShowDialog() == true) {
 				ShowLoad("Adding Identity", "Please wait while the identity is added");
 				string fileContent = File.ReadAllText(jwtDialog.FileName);
@@ -1397,10 +1398,10 @@ namespace ZitiDesktopEdge {
 						var zid = ZitiIdentity.FromClient(createdId);
 						AddIdentity(zid);
 						LoadIdentities(true);
-					} else {
+						await serviceClient.IdentityOnOffAsync(createdId.Identifier, true);
+					}/* else {
 						ShowError("Identity Error", "Identity Id was null, please try again");
-					}
-					await serviceClient.IdentityOnOffAsync(createdId.Identifier, true);
+					}*/
 				} catch (ServiceException se) {
 					ShowError(se.Message, se.AdditionalInfo);
 				} catch (Exception ex) {

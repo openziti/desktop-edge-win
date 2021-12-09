@@ -147,23 +147,19 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         ServiceFunction AddIdentityFunction = new ServiceFunction() { Function = "AddIdentity" };
 
-        async public Task<Identity> AddIdentityAsync(string identityName, bool activate, string jwt) {
+        async public Task<Identity> AddIdentityAsync(string jwtFileName, bool activate, string jwtContent) {
             IdentityResponse resp = null;
             try {
-                Identity id = new Identity {
-                    Active = activate,
-                    Name = identityName
-                };
 
-                NewIdentity newId = new NewIdentity() {
-                    Id = id,
-                    Flags = new EnrollmentFlags() {
-                        JwtString = jwt
+                EnrollIdentifierFunction enrollIdentifierFunction = new EnrollIdentifierFunction() {
+                    Function = "AddIdentity",
+                    Payload = new EnrollIdentifierPayload() {
+                        JwtFileName = jwtFileName,
+                        JwtContent = jwtContent
                     }
                 };
 
-                await sendAsync(AddIdentityFunction);
-                await sendAsync(newId);
+                await sendAsync(enrollIdentifierFunction);
                 resp = await readAsync<IdentityResponse>(ipcReader);
                 Logger.Debug(resp.ToString());
             } catch (Exception ex) {

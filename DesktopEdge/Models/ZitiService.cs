@@ -29,7 +29,7 @@ namespace ZitiDesktopEdge.Models {
 		public bool HasFailingPostureCheck() {
 			return failingPostureCheck;
 		}
-		public bool IsAccessable { get; set; }
+		public bool IsAccessible { get; set; }
 
 		public string Warning {
 			get {
@@ -59,7 +59,7 @@ namespace ZitiDesktopEdge.Models {
 			if (this.PostureChecks != null) {
 				this.failingPostureCheck = this.PostureChecks.Any(p => !p.IsPassing);
 			}
-			this.IsAccessable = svc.IsAccessable;
+			this.IsAccessible = svc.IsAccessible;
 			//commented out for now logger.Warn("SERVICE: " + this.Name + " HAS FAILING POSTURE CHECK: " + failingPostureCheck);
 		}
 
@@ -158,7 +158,7 @@ namespace ZitiDesktopEdge.Models {
 			get {
 				if (!this.OwnsIntercept) return true;
 				else {
-					if (this.IsAccessable) {
+					if (this.IsAccessible) {
 						return false;
 					} else {
 						if (this.PostureChecks==null) {
