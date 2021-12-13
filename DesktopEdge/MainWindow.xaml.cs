@@ -1530,11 +1530,11 @@ namespace ZitiDesktopEdge {
 		}
 
 		int cur = 0;
-		LogLevelEnum[] levels = new LogLevelEnum[] { LogLevelEnum.FATAL, LogLevelEnum.ERROR, LogLevelEnum.WARN, LogLevelEnum.INFO, LogLevelEnum.DEBUG, LogLevelEnum.TRACE, LogLevelEnum.VERBOSE };
+		LogLevelEnum[] levels = new LogLevelEnum[] { LogLevelEnum.ERROR, LogLevelEnum.WARN, LogLevelEnum.INFO, LogLevelEnum.DEBUG, LogLevelEnum.TRACE, LogLevelEnum.VERBOSE };
 		public LogLevelEnum NextLevel() {
 			cur++;
 			if (cur > 6) {
-				cur = 0;
+				cur = 1;
 			}
 			return levels[cur];
 		}

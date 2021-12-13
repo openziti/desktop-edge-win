@@ -8,7 +8,6 @@ using System.Collections.Generic;
 /// </summary>
 namespace ZitiDesktopEdge.DataStructures {
     public enum LogLevelEnum {
-        FATAL = 0,
         ERROR = 1,
         WARN = 2,
         INFO = 3,
