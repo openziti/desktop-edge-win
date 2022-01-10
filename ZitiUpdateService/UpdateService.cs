@@ -293,14 +293,18 @@ namespace ZitiUpdateService {
 		}
 
 		private void outputExternalIP(string destinationFolder) {
-			Logger.Info("capturing external IP address using eth0.me");
+			Logger.Info("capturing external IP address using dig command");
 			try {
+				Process process = new Process();
+				ProcessStartInfo startInfo = new ProcessStartInfo();
+				startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+				startInfo.FileName = "cmd.exe";
 				var extIpFile = Path.Combine(destinationFolder, "externalIP.txt");
-				System.Net.Http.HttpClient httpClient = new System.Net.Http.HttpClient();
-				var resp = httpClient.GetAsync("http://eth0.me").Result;
-				resp.EnsureSuccessStatusCode();
-				string responseBody = resp.Content.ReadAsStringAsync().Result;
-				File.WriteAllText(extIpFile, responseBody);
+				Logger.Debug("running dig +short myip.opendns.com @resolver1.opendns.com to {0}", extIpFile);
+				startInfo.Arguments = $"/C dig +short myip.opendns.com @resolver1.opendns.com > \"{extIpFile}\"";
+				process.StartInfo = startInfo;
+				process.Start();
+				process.WaitForExit();
 			} catch (Exception ex) {
 				Logger.Error(ex, "Unexpected error in outputExternalIP {0}", ex.Message);
 			}

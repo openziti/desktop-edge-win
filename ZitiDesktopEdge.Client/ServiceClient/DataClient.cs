@@ -322,6 +322,10 @@ namespace ZitiDesktopEdge.ServiceClient {
                 StatusEvent evt = serializer.Deserialize<StatusEvent>(jsonReaderEvt);
                 var jsonReader = new JsonTextReader(new StringReader(respAsString));
 
+                if (evt == null) {
+                    return;
+				}
+
                 switch (evt.Op) {
                     case "metrics":
                         MetricsEvent m = serializer.Deserialize<MetricsEvent>(jsonReader);
