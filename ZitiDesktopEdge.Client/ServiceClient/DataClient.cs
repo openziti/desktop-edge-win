@@ -324,7 +324,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
                 if (evt == null) {
                     return;
-				}
+                }
 
                 switch (evt.Op) {
                     case "metrics":
