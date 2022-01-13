@@ -293,15 +293,15 @@ namespace ZitiUpdateService {
 		}
 
 		private void outputExternalIP(string destinationFolder) {
-			Logger.Info("capturing external IP address using dig command");
+			Logger.Info("capturing external IP address using nslookup command");
 			try {
 				Process process = new Process();
 				ProcessStartInfo startInfo = new ProcessStartInfo();
 				startInfo.WindowStyle = ProcessWindowStyle.Hidden;
 				startInfo.FileName = "cmd.exe";
 				var extIpFile = Path.Combine(destinationFolder, "externalIP.txt");
-				Logger.Debug("running dig +short myip.opendns.com @resolver1.opendns.com to {0}", extIpFile);
-				startInfo.Arguments = $"/C dig +short myip.opendns.com @resolver1.opendns.com > \"{extIpFile}\"";
+				Logger.Debug("running nslookup myip.opendns.com. resolver1.opendns.com to {0}", extIpFile);
+				startInfo.Arguments = $"/C nslookup myip.opendns.com. resolver1.opendns.com > \"{extIpFile}\"";
 				process.StartInfo = startInfo;
 				process.Start();
 				process.WaitForExit();
