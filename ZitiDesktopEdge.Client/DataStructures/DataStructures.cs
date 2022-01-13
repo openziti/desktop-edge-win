@@ -513,19 +513,19 @@ namespace ZitiDesktopEdge.DataStructures {
     public class ConfigPayload
     {
         public string TunIPv4 { get; set; }
-        public int TunIPv4Mask { get; set; }
+        public int TunPrefixLength { get; set; }
         public bool AddDns { get; set; }
     }
 
     public class ConfigUpdateFunction : ServiceFunction
     {
-        public ConfigUpdateFunction(string tunIPv4, int tunIPv4Mask, bool addDns)
+        public ConfigUpdateFunction(string tunIPv4, int tunPrefixLength, bool addDns)
         {
             this.Function = "UpdateTunIpv4";
             this.Payload = new ConfigPayload()
             {
                 TunIPv4 = tunIPv4,
-                TunIPv4Mask = tunIPv4Mask,
+                TunPrefixLength = tunPrefixLength,
                 AddDns = addDns
             };
         }
