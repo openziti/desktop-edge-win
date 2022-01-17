@@ -130,6 +130,7 @@ func (t *RuntimeState) ToStatus(onlyInitialized bool) dto.TunnelStatus {
 		TunIpv4Mask:           t.state.TunIpv4Mask,
 		AddDns:                t.state.AddDns,
 		NotificationFrequency: t.state.NotificationFrequency,
+		ApiPageSize:           t.state.ApiPageSize,
 	}
 
 	i := 0
@@ -305,7 +306,8 @@ func (t *RuntimeState) LoadIdentity(id *Id, refreshInterval int) {
 
 	id.CId = cziti.NewZid(sc)
 	id.CId.Active = id.Active
-	cziti.LoadZiti(id.CId, id.Path(), refreshInterval)
+	log.Debugf("Default API PAGE SIZE set to: %d", rts.state.ApiPageSize)
+	cziti.LoadZiti(id.CId, id.Path(), refreshInterval, rts.state.ApiPageSize)
 }
 
 func (t *RuntimeState) LoadConfig() {
