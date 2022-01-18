@@ -182,7 +182,7 @@ namespace ZitiDesktopEdge {
 			if (getcodes.Code != 0) {
 				Logger.Error("AuthMFA failed. " + getcodes.Error);
 			}
-			Logger.Error("PAYLOAD: {0}", getcodes.Payload);
+			Logger.Error("DATA: {0}", getcodes.Data);
 		}
 		async private void GenerateMFACodes(object sender, MouseButtonEventArgs e) {
 			DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
@@ -191,7 +191,7 @@ namespace ZitiDesktopEdge {
 			if (gencodes.Code != 0) {
 				Logger.Error("AuthMFA failed. " + gencodes.Error);
 			}
-			Logger.Error("PAYLOAD: {0}", gencodes.Payload);
+			Logger.Error("DATA: {0}", gencodes.Data);
 		}
 
 		private void SaveCodes() {
@@ -258,7 +258,7 @@ namespace ZitiDesktopEdge {
 						this.OnError?.Invoke("Authentication Failed");
 						this._executing = false;
 					} else {
-						this._identity.RecoveryCodes = codeResponse.Payload;
+						this._identity.RecoveryCodes = codeResponse.Data;
 						this.OnClose?.Invoke(true);
 						this._executing = false;
 					}
@@ -283,7 +283,7 @@ namespace ZitiDesktopEdge {
 						this.OnError?.Invoke("Authentication Failed");
 						this._executing = false;
 					} else {
-						this._identity.RecoveryCodes = codeResponse.Payload;
+						this._identity.RecoveryCodes = codeResponse.Data;
 						this.OnClose?.Invoke(true);
 						this._executing = false;
 					}

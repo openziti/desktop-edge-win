@@ -133,7 +133,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         async public Task<ZitiTunnelStatus> GetStatusAsync() {
             try {
-                await sendAsync(new ServiceFunction() { Function = "Status" });
+                await sendAsync(new ServiceFunction() { Command = "Status" });
                 var rtn = await readAsync<ZitiTunnelStatus>(ipcReader);
                 return rtn;
             } catch (Exception ioe) {
@@ -145,15 +145,15 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
 
-        ServiceFunction AddIdentityFunction = new ServiceFunction() { Function = "AddIdentity" };
+        ServiceFunction AddIdentityFunction = new ServiceFunction() { Command = "AddIdentity" };
 
         async public Task<Identity> AddIdentityAsync(string jwtFileName, bool activate, string jwtContent) {
             IdentityResponse resp = null;
             try {
 
                 EnrollIdentifierFunction enrollIdentifierFunction = new EnrollIdentifierFunction() {
-                    Function = "AddIdentity",
-                    Payload = new EnrollIdentifierPayload() {
+                    Command = "AddIdentity",
+                    Data = new EnrollIdentifierPayload() {
                         JwtFileName = jwtFileName,
                         JwtContent = jwtContent
                     }
@@ -174,7 +174,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 Logger.Warn("failed to enroll. {0} {1}", resp.Message, resp.Error);
                 throw new ServiceException("Failed to Enroll", resp.Code, !string.IsNullOrEmpty(resp.Error) ? resp.Error : "The provided token was invalid. This usually is because the token has already been used or it has expired.");
             }
-            return resp.Payload;
+            return resp.Data;
         }
 
 
@@ -186,8 +186,8 @@ namespace ZitiDesktopEdge.ServiceClient {
 
             try {
                 IdentifierFunction removeFunction = new IdentifierFunction() {
-                    Function = "RemoveIdentity",
-                    Payload = new IdentifierPayload() { Identifier = identifier }
+                    Command = "RemoveIdentity",
+                    Data = new IdentifierPayload() { Identifier = identifier }
                 };
                 Logger.Info("Removing Identity with identifier {0}", identifier);
                 await sendAsync(removeFunction);
@@ -221,7 +221,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             try {
                 await sendAsync(new IdentityToggleFunction(identifier, onOff));
                 IdentityResponse idr = await readAsync<IdentityResponse>(ipcReader);
-                return idr.Payload;
+                return idr.Data;
             } catch (Exception ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //setupPipe();
@@ -406,7 +406,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         async public Task zitiDump() {
             try {
-                await sendAsync(new ServiceFunction() { Function = "ZitiDump" });
+                await sendAsync(new ServiceFunction() { Command = "ZitiDump" });
                 var rtn = await readAsync<SvcResponse>(ipcReader);
                 return; // rtn;
             } catch (Exception ioe) {
@@ -469,7 +469,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         async public Task<ZitiTunnelStatus> debugAsync() {
             try {
-                await sendAsync(new ServiceFunction() { Function = "Debug" });
+                await sendAsync(new ServiceFunction() { Command = "Debug" });
                 var rtn = await readAsync<ZitiTunnelStatus>(ipcReader);
                 return rtn;
             } catch (Exception ioe) {
