@@ -78,8 +78,11 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 
 	rts.state.LogLevel = parsedLevel.String()
 	logging.InitLogger(parsedLevel)
-
 	_ = logging.Elog.Info(InformationEvent, SvcName+" starting. log file located at "+config.LogFile())
+
+	if rts.state.ApiPageSize < 25 { //don't allow values less than 25
+		rts.state.ApiPageSize = constants.DefaultApiPageSize
+	}
 
 	// create a channel for notifying any connections that they are to be interrupted
 	interrupt = make(chan struct{}, 8)
@@ -1147,7 +1150,7 @@ func handleBulkServiceChange(sc cziti.BulkServiceChange) {
 	if id != nil {
 		var m = dto.IdentityEvent{
 			ActionEvent: dto.IdentityUpdateComplete,
-			Id: Clean(id),
+			Id:          Clean(id),
 		}
 		rts.BroadcastEvent(m)
 	}
@@ -1443,4 +1446,3 @@ func updateNotificationFrequency(out *json.Encoder, notificationFreq int) {
 	respond(out, dto.Response{Message: "Notification frequency is set", Code: SUCCESS, Error: "", Payload: ""})
 
 }
-
