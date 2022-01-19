@@ -411,11 +411,11 @@ namespace ZitiDesktopEdge.ServiceClient {
             return;
         }
 
-        async public Task<SvcResponse> UpdateConfigAsync(string tunIPv4, int tunIPv4Mask, bool addDns) {
+        async public Task<SvcResponse> UpdateConfigAsync(string tunIPv4, int tunIPv4Mask, bool addDns, int apiPageSize) {
             SvcResponse resp = null;
             try {
 
-                ConfigUpdateFunction configPayload = new ConfigUpdateFunction(tunIPv4, tunIPv4Mask, addDns);
+                ConfigUpdateFunction configPayload = new ConfigUpdateFunction(tunIPv4, tunIPv4Mask, addDns, apiPageSize);
 
                 await sendAsync(configPayload);
                 resp = await readAsync<SvcResponse>(ipcReader);

@@ -504,7 +504,7 @@ namespace ZitiDesktopEdge {
 				var newMaskVar = Int32.Parse(item.Tag.ToString());
 				var addDnsNewVar = Convert.ToBoolean(AddDnsNew.IsChecked);
 
-				var r = await client.UpdateConfigAsync(ConfigIpNew.Text, newMaskVar, addDnsNewVar);
+				var r = await client.UpdateConfigAsync(ConfigIpNew.Text, newMaskVar, addDnsNewVar, 50);
 				if (r.Code != 0) {
 					this.OnShowBlurb?.Invoke("Error: " + r.Error);
 					logger.Debug("ERROR: {0} : {1}", r.Message, r.Error);
