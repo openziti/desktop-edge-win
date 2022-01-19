@@ -223,7 +223,7 @@
         <local:IdentityDetails x:Name="IdentityMenu" Visibility="Collapsed" OnMFAToggled="MFAToggled" Authenticate="ShowAuthenticate" Recovery="ShowRecovery" OnLoading="DoLoading" OnShowMFA="ShowAuthenticate"></local:IdentityDetails>
 
         <!-- Modal Background -->
-        <Rectangle x:Name="ModalBg" Margin="10,10,10,10" Fill="Black" RadiusY="10" RadiusX="10" Opacity="0" Visibility="Collapsed"></Rectangle>
+        <Rectangle x:Name="ModalBg" MouseDown="Window_MouseDown" Margin="10,10,10,10" Fill="Black" RadiusY="10" RadiusX="10" Opacity="0" Visibility="Collapsed"></Rectangle>
         <!-- MFA Setup Prompt -->
         <local:MFAScreen x:Name="MFASetup" Visibility="Collapsed" Margin="0,0,0,0" OnClose="DoClose"></local:MFAScreen>
 

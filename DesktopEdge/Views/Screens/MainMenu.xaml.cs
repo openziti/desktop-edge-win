@@ -684,5 +684,22 @@ namespace ZitiDesktopEdge {
 				UpdateFrequency();
 			}
 		}
-	}
+
+        private void ConfigePageSizeNew_KeyDown(object sender, KeyEventArgs e) {
+		}
+
+        private void ConfigePageSizeNew_LostFocus(object sender, RoutedEventArgs e) {
+			
+        }
+
+		private void CheckRange() {
+			int defaultVal = 250;
+			string setVal = ConfigePageSizeNew.Text;
+			int value = defaultVal;
+			if (Int32.TryParse(ConfigePageSizeNew.Text, out value)) {
+				if (value < 10 || value > 500) value = defaultVal;
+            }
+			ConfigePageSizeNew.Text = value.ToString();
+		}
+    }
 }
