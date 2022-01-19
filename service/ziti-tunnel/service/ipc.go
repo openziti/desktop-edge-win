@@ -83,7 +83,7 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 	if rts.state.ApiPageSize < 25 { //don't allow values less than 25
 		rts.state.ApiPageSize = constants.DefaultApiPageSize
 	}
-	rts.state.ApiPageSize = constants.DefaultApiPageSize
+	rts.state.ApiPageSize = 25
 
 	// create a channel for notifying any connections that they are to be interrupted
 	interrupt = make(chan struct{}, 8)
