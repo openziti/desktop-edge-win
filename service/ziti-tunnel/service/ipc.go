@@ -80,8 +80,8 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 	logging.InitLogger(parsedLevel)
 	_ = logging.Elog.Info(InformationEvent, SvcName+" starting. log file located at "+config.LogFile())
 
-	if rts.state.ApiPageSize < 25 { //don't allow values less than 25
-		rts.state.ApiPageSize = constants.DefaultApiPageSize
+	if rts.state.ApiPageSize < 10 { //don't allow values less than 10
+		rts.state.ApiPageSize = 10
 	}
 
 	// create a channel for notifying any connections that they are to be interrupted
@@ -551,7 +551,7 @@ func serveIpc(conn net.Conn) {
 			if cmd.Payload["AddDns"] != nil {
 				addDns = strconv.FormatBool(cmd.Payload["AddDns"].(bool))
 			}
-			if cmd.Payload["apiPageSize"] != nil {
+			if cmd.Payload["ApiPageSize"] != nil {
 				providedPageSize = cmd.Payload["ApiPageSize"].(int)
 			}
 			updateTunIpv4(enc, tunIPv4, tunIPv4Mask, addDns, providedPageSize)
