@@ -434,9 +434,9 @@ func (t *RuntimeState) UpdateIpv4(ipv4 string) {
 	rts.SaveState()
 }
 
-func UpdateRuntimeStateIpv4(ip string, ipv4Mask int, addDns string) error {
+func UpdateRuntimeStateIpv4(ip string, ipv4Mask int, addDns string, apiPageSize int) error {
 
-	log.Infof("updating configuration ip: %s, mask: %d, dns: %t", ip, ipv4Mask, addDns)
+	log.Infof("updating configuration ip: %s, mask: %d, dns: %t, apiPageSize: %d", ip, ipv4Mask, addDns, apiPageSize)
 
 	if ipv4Mask < constants.Ipv4MaxMask || ipv4Mask > constants.Ipv4MinMask {
 		return errors.New(fmt.Sprintf("ipv4Mask should be between %d and %d", constants.Ipv4MaxMask, constants.Ipv4MinMask))
@@ -457,6 +457,8 @@ func UpdateRuntimeStateIpv4(ip string, ipv4Mask int, addDns string) error {
 		rts.state.TunIpv4 = ip
 		rts.state.TunIpv4Mask = ipv4Mask
 	}
+
+	rts.state.ApiPageSize = apiPageSize
 
 	rts.SaveState()
 
