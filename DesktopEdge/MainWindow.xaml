@@ -297,8 +297,8 @@
                 </Grid>
             </Grid>
         </Grid>
-        
-        <Grid x:Name="LoadingScreen" Visibility="Collapsed" Margin="10,10,10,10">
+
+        <Grid x:Name="LoadingScreen" MouseDown="Window_MouseDown" Visibility="Collapsed" Margin="10,10,10,10">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="Black" Opacity="0.9"/>
@@ -323,7 +323,7 @@
             </Grid>
         </Grid>
 
-        <Grid x:Name="ErrorView" Visibility="Collapsed" Margin="10,10,10,10">
+        <Grid x:Name="ErrorView" MouseDown="Window_MouseDown" Visibility="Collapsed" Margin="10,10,10,10">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="Black" Opacity="0.9"/>
