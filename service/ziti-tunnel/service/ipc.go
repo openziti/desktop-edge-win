@@ -552,7 +552,8 @@ func serveIpc(conn net.Conn) {
 				addDns = strconv.FormatBool(cmd.Payload["AddDns"].(bool))
 			}
 			if cmd.Payload["ApiPageSize"] != nil {
-				providedPageSize = cmd.Payload["ApiPageSize"].(int)
+				ps := cmd.Payload["ApiPageSize"].(float64)
+				providedPageSize = int(ps)
 			}
 			updateTunIpv4(enc, tunIPv4, tunIPv4Mask, addDns, providedPageSize)
 		case "NotifyLogLevelUIAndUpdateService":
