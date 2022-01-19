@@ -1156,6 +1156,13 @@ namespace ZitiDesktopEdge {
 					Application.Current.Properties["dnsenabled"] = status?.AddDns;
 				}
 
+				string key = "ApiPageSize";
+				if (!Application.Current.Properties.Contains(key)) {
+					Application.Current.Properties.Add(key, status?.ApiPageSize);
+				} else {
+					Application.Current.Properties[key] = status?.ApiPageSize;
+				}
+
 				foreach (var id in status.Identities) {
 					updateViewWithIdentity(id);
 				}
