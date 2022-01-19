@@ -1,3 +1,17 @@
+# Release 1.10.13
+
+## What's New
+* The UI can now specify the api page size via the "Tunnel Configuration" page
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* none
+
 # Release 1.10.11
 
 ## What's New
