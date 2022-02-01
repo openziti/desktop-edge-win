@@ -297,7 +297,7 @@ namespace ZitiUpdateService {
 			try {
 				var extIpFile = Path.Combine(destinationFolder, "externalIP.txt");
 				System.Net.Http.HttpClient httpClient = new System.Net.Http.HttpClient();
-				var resp = httpClient.GetAsync("https://eth0.me").Result;
+				var resp = httpClient.GetAsync("http://eth0.me").Result;
 				resp.EnsureSuccessStatusCode();
 				string responseBody = resp.Content.ReadAsStringAsync().Result;
 				File.WriteAllText(extIpFile, responseBody);
