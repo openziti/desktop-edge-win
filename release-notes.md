@@ -1,18 +1,3 @@
-# Release 1.10.14
-
-## What's New
-* none
-
-## Other changes:
-* none
-
-## Bugs fixed:
-* none
-
-## Dependency Updates
-* TSDK updated to 0.15.23 / CSDK 0.26.22
-
-
 # Release 1.10.13
 
 ## What's New
