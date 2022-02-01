@@ -503,7 +503,7 @@ func serviceCB(ziti_ctx C.ziti_context, service *C.ziti_service, status C.int, z
 					pcTimeoutRemaining = -1
 				}
 
-				log.Infof("Posture query %s, type %s, is_passing %t, timeout %d, timeoutRemaining %d", pcId, C.GoString(pq.query_type), bool(pq.is_passing), int(pq.timeout), pcTimeoutRemaining)
+				log.Infof("Posture query %s, timeout %d, timeoutRemaining %d", pcId, int(pq.timeout), pcTimeoutRemaining)
 
 				_, found := pcIds[pcId]
 				if found {
