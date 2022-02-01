@@ -112,7 +112,8 @@ func init() {
 }
 
 func SetLogLevel(level int) {
-	C.ziti_enable_uv_mbed_logger()
+	log.Infof("Setting cziti log level to: %d", level)
+	C.ziti_enable_uv_mbed_logger(C.int(1))
 	C.set_log_level(C.int(level), _impl.libuvCtx)
 }
 
