@@ -14,9 +14,10 @@ REM See the License for the specific language governing permissions and
 REM limitations under the License.
 REM
 SET REPO_URL=https://github.com/openziti/ziti-tunnel-sdk-c.git
-SET ZITI_TUNNEL_REPO_BRANCH=events-ipc-command-names-fix
+SET ZITI_TUNNEL_REPO_BRANCH=
 REM override the c sdk used in the build - leave blank for the same as specified in the tunneler sdk
 SET ZITI_SDK_C_BRANCH=
+SET ZITI_TUNNEL_REPO_URL=https://github.com/openziti/ziti-tunnel-sdk-c/releases/latest/download/ziti-edge-tunnel-Windows_x86_64.zip
 SET WINTUN_DL_URL=https://www.wintun.net/builds/wintun-0.13.zip
 
 set SVC_ROOT_DIR=%~dp0
@@ -104,6 +105,20 @@ if not exist %SVC_ROOT_DIR%wintun.dll (
 
 echo changing to service folder: %SVC_ROOT_DIR%
 cd %SVC_ROOT_DIR%
+
+if "%ZITI_TUNNEL_REPO_BRANCH%" == "" (
+    echo ------------------------------------------------------------------------------
+    echo DOWNLOADING ziti-edge-tunnel-Windows_x86_64.zip using powershell
+    echo       from: %ZITI_TUNNEL_REPO_URL%
+    echo ------------------------------------------------------------------------------
+	echo REMOVING ziti-edge-tunnel-Windows_x86_64.zip at %SVC_ROOT_DIR%ziti-edge-tunnel-Windows_x86_64.zip
+	del /q %SVC_ROOT_DIR%ziti-edge-tunnel-Windows_x86_64.zip
+    powershell "Invoke-WebRequest %ZITI_TUNNEL_REPO_URL% -OutFile %SVC_ROOT_DIR%ziti-edge-tunnel-Windows_x86_64.zip"
+    powershell "Expand-Archive -Path %SVC_ROOT_DIR%ziti-edge-tunnel-Windows_x86_64.zip -Force -DestinationPath %SVC_ROOT_DIR%ziti-edge-tunnel-Windows_x86_64"
+	echo copying: %SVC_ROOT_DIR%ziti-edge-tunnel-Windows_x86_64\ziti-edge-tunnel.exe %SVC_ROOT_DIR%ziti-edge-tunnel.exe
+    copy %SVC_ROOT_DIR%ziti-edge-tunnel-Windows_x86_64\ziti-edge-tunnel.exe %SVC_ROOT_DIR%ziti-edge-tunnel.exe
+	GOTO COMPRESS_FILES
+)
 
 echo ------------------------------------------------------------------------------
 echo BUILDING ziti-edge-tunnel begins
@@ -208,6 +223,8 @@ cd %SVC_ROOT_DIR%
 echo    copying ziti-edge-tunnel.exe to service root (for zip creation)
 echo copy /y %TUNNELER_SDK_DIR%build\programs\ziti-edge-tunnel\ziti-edge-tunnel.exe %SVC_ROOT_DIR%
 copy /y %TUNNELER_SDK_DIR%build\programs\ziti-edge-tunnel\ziti-edge-tunnel.exe %SVC_ROOT_DIR%
+
+:COMPRESS_FILES
 
 echo building the windows ziti-edge-tunnel distribution zip file
 powershell "Compress-Archive -Force -path *.dll, *.exe -DestinationPath .\ziti-edge-tunnel-win.zip"
