@@ -583,13 +583,13 @@ func (t *RuntimeState) UpdateAddress(configFile string, newAddress string) {
 
 	f, fe := ioutil.ReadFile(configFile)
 	if fe != nil {
-		log.Warnf("Could not update address for identity file: %s to newAddress: %s", configFile, newAddress)
+		log.Warnf("Could not read identity file: %s", configFile)
 		return
 	}
 	c := idcfg.Config{}
 	err := json.Unmarshal(f, &c)
 	if err != nil {
-		log.Warnf("Could not update address for identity file: %s to newAddress: %s", configFile, newAddress)
+		log.Warnf("Could not unmarshal config file for identity file: %s to newAddress: %s", configFile, newAddress)
 		return
 	}
 
@@ -612,7 +612,7 @@ func (t *RuntimeState) UpdateAddress(configFile string, newAddress string) {
 	} else {
 		newAddy = "https://" + newAddress
 	}
-	log.Errorf("writing identity file %s with new address from %s to %s", configFile, c.ZtAPI, c.ZtAPI)
+	log.Infof("updating identity file %s with new address. chaning from %s to %s", configFile, c.ZtAPI, newAddy)
 	c.ZtAPI = newAddy
 
 	idFile, err := os.OpenFile(configFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
