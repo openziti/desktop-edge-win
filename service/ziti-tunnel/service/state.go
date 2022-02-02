@@ -578,6 +578,61 @@ func (t *RuntimeState) UpdateMfa(fingerprint string, mfaEnabled bool, mfaNeeded 
 	}
 }
 
+func (t *RuntimeState) UpdateAddress(configFile string, newAddress string) {
+	log.Debugf("request to update config file %s with new address: %s", configFile, newAddress)
+
+	f, fe := ioutil.ReadFile(configFile)
+	if fe != nil {
+		log.Warnf("Could not update address for identity file: %s to newAddress: %s", configFile, newAddress)
+		return
+	}
+	c := idcfg.Config{}
+	err := json.Unmarshal(f, &c)
+	if err != nil {
+		log.Warnf("Could not update address for identity file: %s to newAddress: %s", configFile, newAddress)
+		return
+	}
+
+	if strings.Compare(c.ZtAPI, newAddress) == 0 {
+		log.Debugf("not updating config for identity file %s. address already set to: %s", newAddress)
+		return
+	}
+
+	newConfigFileName := configFile + ".address.update"
+	defer func() {
+		log.Debugf("removing original file: %s", newConfigFileName)
+		os.Remove(newConfigFileName)
+	}()
+	log.Debugf("renaming identity file %s as: %s", configFile, newConfigFileName)
+	_ = os.Rename(configFile, newConfigFileName)
+
+	var newAddy string
+	if strings.HasPrefix(newAddress, "https://") {
+		newAddy = newAddress
+	} else {
+		newAddy = "https://" + newAddress
+	}
+	log.Errorf("writing identity file %s with new address from %s to %s", configFile, c.ZtAPI, c.ZtAPI)
+	c.ZtAPI = newAddy
+
+	idFile, err := os.OpenFile(configFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+	defer idFile.Close()
+	if err != nil {
+		log.Warnf("An unexpected error has occurred while trying to update identity file %s with newAddress %s. %v", configFile, newAddress, err)
+		return
+	}
+
+	w := bufio.NewWriter(bufio.NewWriter(idFile))
+	enc := json.NewEncoder(w)
+	_ = enc.Encode(c)
+	_ = w.Flush()
+
+	err = idFile.Close()
+	if err != nil {
+		log.Warnf("An unexpected error has occurred while closing the identity file %s with newAddress %s. %v", configFile, newAddress, err)
+	}
+}
+
 func (t *RuntimeState) SetNotified(fingerprint string, notified bool) {
 	id := t.Find(fingerprint)
 
