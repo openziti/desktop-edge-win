@@ -578,7 +578,7 @@ func (t *RuntimeState) UpdateMfa(fingerprint string, mfaEnabled bool, mfaNeeded 
 	}
 }
 
-func (t *RuntimeState) UpdateAddress(configFile string, newAddress string) {
+func (t *RuntimeState) UpdateControllerAddress(configFile string, newAddress string) {
 	log.Debugf("request to update config file %s with new address: %s", configFile, newAddress)
 
 	f, fe := ioutil.ReadFile(configFile)

@@ -761,7 +761,7 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 		apiEvent := C.ziti_event_api_event(event)
 		newAddress := C.GoString(apiEvent.new_ctrl_address)
 		cfgPath := C.GoString(zid.Options.config)
-		goapi.UpdateAddress(cfgPath, newAddress)
+		goapi.UpdateControllerAddress(cfgPath, newAddress)
 	default:
 		log.Infof("event %d not handled", event._type)
 	}
