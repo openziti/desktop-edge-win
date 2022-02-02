@@ -78,8 +78,11 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 
 	rts.state.LogLevel = parsedLevel.String()
 	logging.InitLogger(parsedLevel)
-
 	_ = logging.Elog.Info(InformationEvent, SvcName+" starting. log file located at "+config.LogFile())
+
+	if rts.state.ApiPageSize < 10 { //don't allow values less than 10
+		rts.state.ApiPageSize = 10
+	}
 
 	// create a channel for notifying any connections that they are to be interrupted
 	interrupt = make(chan struct{}, 8)
@@ -537,6 +540,7 @@ func serveIpc(conn net.Conn) {
 			var tunIPv4 string
 			var tunIPv4Mask int
 			var addDns string
+			var providedPageSize int
 			if cmd.Payload["TunIPv4"] != nil {
 				tunIPv4 = cmd.Payload["TunIPv4"].(string)
 			}
@@ -547,7 +551,11 @@ func serveIpc(conn net.Conn) {
 			if cmd.Payload["AddDns"] != nil {
 				addDns = strconv.FormatBool(cmd.Payload["AddDns"].(bool))
 			}
-			updateTunIpv4(enc, tunIPv4, tunIPv4Mask, addDns)
+			if cmd.Payload["ApiPageSize"] != nil {
+				ps := cmd.Payload["ApiPageSize"].(float64)
+				providedPageSize = int(ps)
+			}
+			updateTunIpv4(enc, tunIPv4, tunIPv4Mask, addDns, providedPageSize)
 		case "NotifyLogLevelUIAndUpdateService":
 			sendLogLevelAndNotify(enc, cmd.Payload["Level"].(string))
 		case "NotifyIdentityUI":
@@ -687,9 +695,9 @@ func setLogLevel(out *json.Encoder, level string) {
 	respond(out, dto.Response{Message: "log level set", Code: SUCCESS, Error: "", Payload: nil})
 }
 
-func updateTunIpv4(out *json.Encoder, ip string, ipMask int, addDns string) {
+func updateTunIpv4(out *json.Encoder, ip string, ipMask int, addDns string, apiPageSize int) {
 
-	err := UpdateRuntimeStateIpv4(ip, ipMask, addDns)
+	err := UpdateRuntimeStateIpv4(ip, ipMask, addDns, apiPageSize)
 	if err != nil {
 		respondWithError(out, "Could not set Tun ip and mask", UNKNOWN_ERROR, err)
 		return
@@ -1147,7 +1155,7 @@ func handleBulkServiceChange(sc cziti.BulkServiceChange) {
 	if id != nil {
 		var m = dto.IdentityEvent{
 			ActionEvent: dto.IdentityUpdateComplete,
-			Id: Clean(id),
+			Id:          Clean(id),
 		}
 		rts.BroadcastEvent(m)
 	}
@@ -1443,4 +1451,3 @@ func updateNotificationFrequency(out *json.Encoder, notificationFreq int) {
 	respond(out, dto.Response{Message: "Notification frequency is set", Code: SUCCESS, Error: "", Payload: ""})
 
 }
-

@@ -113,6 +113,7 @@ func init() {
 
 func SetLogLevel(level int) {
 	log.Infof("Setting cziti log level to: %d", level)
+	C.ziti_enable_uv_mbed_logger(C.int(1))
 	C.set_log_level(C.int(level), _impl.libuvCtx)
 }
 
@@ -798,7 +799,7 @@ func zitiError(code C.int) error {
 	return nil
 }
 
-func LoadZiti(zid *ZIdentity, cfg string, refreshInterval int) {
+func LoadZiti(zid *ZIdentity, cfg string, refreshInterval int, apiPageSize int) {
 	zid.Options.config = C.CString(cfg)
 	zid.Options.refresh_interval = C.long(refreshInterval)
 	zid.Options.metrics_type = C.INSTANT
@@ -807,7 +808,7 @@ func LoadZiti(zid *ZIdentity, cfg string, refreshInterval int) {
 	zid.Options.pq_mac_cb = C.ziti_pq_mac_cb(C.ziti_pq_mac_go)
 	zid.Options.pq_os_cb = C.ziti_pq_os_cb(C.ziti_pq_os_go)
 	zid.Options.pq_process_cb = C.ziti_pq_process_cb(C.ziti_pq_process_go)
-
+	zid.Options.api_page_size = C.uint32_t(apiPageSize)
 	zid.Options.events = C.ZitiContextEvent | C.ZitiServiceEvent | C.ZitiRouterEvent | C.ZitiMfaAuthEvent
 	zid.Options.event_cb = C.ziti_event_cb(C.eventCB)
 

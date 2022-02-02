@@ -1,3 +1,63 @@
+# Release 1.10.14
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* TSDK updated to 0.15.23 / CSDK 0.26.22
+
+
+# Release 1.10.13
+
+## What's New
+* The UI can now specify the api page size via the "Tunnel Configuration" page
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* none
+
+# Release 1.10.11
+
+## What's New
+* updated dependencies per below to enable a new setting in the config file: ApiPageSize.
+  ApiPageSize is used to determin how many results will be returned in pagination operations.
+  Currently this is most useful for users who have many hundreds of services for any given
+  identity. Default is set to 250.
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* TSDK updated to 0.15.22 / CSDK 0.26.11
+
+# Release 1.10.10
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* TSDK updated to 0.15.21
+
 # Release 1.10.9
 
 ## What's New

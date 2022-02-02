@@ -369,6 +369,7 @@ namespace ZitiDesktopEdge.DataStructures {
 
         public ServiceVersion ServiceVersion { get; set; }
         public bool AddDns { get; set; }
+        public int ApiPageSize { get; set; }
 
         public void Dump(System.IO.TextWriter writer)
         {
@@ -515,18 +516,20 @@ namespace ZitiDesktopEdge.DataStructures {
         public string TunIPv4 { get; set; }
         public int TunPrefixLength { get; set; }
         public bool AddDns { get; set; }
+        public int ApiPageSize { get; set; }
     }
 
     public class ConfigUpdateFunction : ServiceFunction
     {
-        public ConfigUpdateFunction(string tunIPv4, int tunPrefixLength, bool addDns)
+        public ConfigUpdateFunction(string tunIPv4, int tunPrefixLength, bool addDns, int apiPageSize)
         {
             this.Command = "UpdateTunIpv4";
             this.Data = new ConfigPayload()
             {
                 TunIPv4 = tunIPv4,
                 TunPrefixLength = tunPrefixLength,
-                AddDns = addDns
+                AddDns = addDns,
+                ApiPageSize = apiPageSize,
             };
         }
         public ConfigPayload Data { get; set; }

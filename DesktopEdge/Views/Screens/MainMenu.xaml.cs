@@ -238,7 +238,8 @@ namespace ZitiDesktopEdge {
 				ConfigItems.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
 
-				ConfigIp.Value = Application.Current.Properties["ip"]?.ToString();
+				ConfigPageSize.Value = ((Application.Current.Properties.Contains("ApiPageSize"))?Application.Current.Properties["ApiPageSize"].ToString(): "250");
+                ConfigIp.Value = Application.Current.Properties["ip"]?.ToString();
 				ConfigSubnet.Value = Application.Current.Properties["subnet"]?.ToString();
 				ConfigMtu.Value = Application.Current.Properties["mtu"]?.ToString();
 				ConfigDns.Value = (bool)Application.Current.Properties["dnsenabled"] ? Application.Current.Properties["dns"]?.ToString() : "disabled";
@@ -501,8 +502,11 @@ namespace ZitiDesktopEdge {
 				ComboBoxItem item = (ComboBoxItem)ConfigMaskNew.SelectedValue;
 				var newMaskVar = Int32.Parse(item.Tag.ToString());
 				var addDnsNewVar = Convert.ToBoolean(AddDnsNew.IsChecked);
+				CheckRange();
+				int pageSize = Int32.Parse(ConfigePageSizeNew.Text);
+				ConfigPageSize.Value = ConfigePageSizeNew.Text;
 
-				var r = await client.UpdateConfigAsync(ConfigIpNew.Text, newMaskVar, addDnsNewVar);
+				var r = await client.UpdateConfigAsync(ConfigIpNew.Text, newMaskVar, addDnsNewVar, pageSize);
 				if (r.Code != 0) {
 					this.OnShowBlurb?.Invoke("Error: " + r.Error);
 					logger.Debug("ERROR: {0} : {1}", r.Message, r.Error);
@@ -553,6 +557,8 @@ namespace ZitiDesktopEdge {
 		/// </summary>
 		private void ShowEdit() {
 			ConfigIpNew.Text = ConfigIp.Value;
+			ConfigePageSizeNew.Text = ConfigPageSize.Value;
+			CheckRange();
 			for (int i=0; i<ConfigMaskNew.Items.Count; i++) {
 				ComboBoxItem item = (ComboBoxItem)ConfigMaskNew.Items.GetItemAt(i);
 				if (item.Content.ToString().IndexOf(ConfigSubnet.Value)>0) {
@@ -682,5 +688,22 @@ namespace ZitiDesktopEdge {
 				UpdateFrequency();
 			}
 		}
-	}
+
+        private void ConfigePageSizeNew_KeyDown(object sender, KeyEventArgs e) {
+		}
+
+        private void ConfigePageSizeNew_LostFocus(object sender, RoutedEventArgs e) {
+			CheckRange();
+        }
+
+		private void CheckRange() {
+			int defaultVal = 250;
+			string setVal = ConfigePageSizeNew.Text;
+			int value = defaultVal;
+			if (Int32.TryParse(ConfigePageSizeNew.Text, out value)) {
+			}
+			if (value < 10 || value > 500) value = defaultVal;
+			ConfigePageSizeNew.Text = value.ToString();
+		}
+    }
 }

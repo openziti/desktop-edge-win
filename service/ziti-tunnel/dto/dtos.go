@@ -90,8 +90,7 @@ type Identity struct {
 	MfaMaxTimeoutRem   int32
 	MfaLastUpdatedTime time.Time
 	ServiceUpdatedTime time.Time
-	Notified		   bool
-
+	Notified           bool
 }
 type Metrics struct {
 	Up   int64
@@ -134,6 +133,7 @@ type TunnelStatus struct {
 	Status                string
 	AddDns                bool
 	NotificationFrequency int
+	ApiPageSize           int
 }
 
 type ServiceVersion struct {
@@ -203,5 +203,5 @@ type MfaResponse struct {
 
 type ControllerEvent struct {
 	ActionEvent
-	Fingerprint 		string
+	Fingerprint string
 }

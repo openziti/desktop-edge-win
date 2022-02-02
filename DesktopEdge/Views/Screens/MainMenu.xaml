@@ -102,6 +102,7 @@
                     <local:MenuEditItem x:Name="ConfigSubnet" HorizontalAlignment="Stretch" Width="Auto" Label="Subnet Mask:"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigMtu" HorizontalAlignment="Stretch" Width="Auto" Label="MTU:"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigDns" HorizontalAlignment="Stretch" Width="Auto" Label="DNS Servers:"></local:MenuEditItem>
+                    <local:MenuEditItem x:Name="ConfigPageSize" HorizontalAlignment="Stretch" Width="Auto" Label="Api Page Size (10-500):"></local:MenuEditItem>
                     <local:StyledButton x:Name="EditButton" OnClick="ShowEdit" Label="Edit Values" Grid.Row="8" Margin="0,20,0,0"></local:StyledButton>
                 </StackPanel>
                 <ScrollViewer Name="IdListScrollView" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" CanContentScroll="True" ClipToBounds="True" Visibility="Collapsed">
@@ -121,10 +122,10 @@
         </Grid>
         
         <!-- Modal for Menu Items: Next revision make one global modal -->
-        <Rectangle x:Name="ModalBg" Margin="10,10,10,10" Fill="Black" RadiusY="10" RadiusX="10" Opacity="0" Visibility="Collapsed"></Rectangle>
+        <Rectangle x:Name="ModalBg" MouseDown="Window_MouseDown" Margin="10,10,10,10" Fill="Black" RadiusY="10" RadiusX="10" Opacity="0" Visibility="Collapsed"></Rectangle>
 
         <!-- Modal For modifying the config data -->
-        <Grid x:Name="EditArea" Visibility="Collapsed" Height="300" Margin="0,0,0,0">
+        <Grid x:Name="EditArea" Visibility="Collapsed" Height="400" Margin="0,0,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"></ColumnDefinition>
             </Grid.ColumnDefinitions>
@@ -184,6 +185,15 @@
                     <ComboBoxItem Content="/31 - 255.255.255.254" Tag="31"/>
                     <ComboBoxItem Content="/32 - 255.255.255.255" Tag="32"/>
                 </ComboBox>
+
+                <Label Content="Api Page Size (50-500)" Padding="10,0,0,0"  FontWeight="Bold" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
+                <TextBox x:Name="ConfigePageSizeNew" Padding="10" Margin="10,10,10,10" Height="40" BorderThickness="1" TextAlignment="Left" FontSize="14" Foreground="Black" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" KeyDown="ConfigePageSizeNew_KeyDown" LostFocus="ConfigePageSizeNew_LostFocus">
+                    <TextBox.Resources>
+                        <Style TargetType="{x:Type Border}">
+                            <Setter Property="CornerRadius" Value="7"/>
+                        </Style>
+                    </TextBox.Resources>
+                </TextBox>
 
                 <CheckBox x:Name="AddDnsNew" Content="Add DNS" IsChecked="True" Margin="10"/>
 
