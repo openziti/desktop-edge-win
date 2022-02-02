@@ -598,6 +598,12 @@ func (t *RuntimeState) UpdateAddress(configFile string, newAddress string) {
 		return
 	}
 
+	err = saveOriginalIdentity(configFile)
+	if err != nil {
+		log.Warnf("unexpected error when saving original identity. cannot change controller address. %v", err)
+		return
+	}
+
 	newConfigFileName := configFile + ".address.update"
 	defer func() {
 		log.Debugf("removing original file after update: %s", newConfigFileName)
@@ -631,6 +637,27 @@ func (t *RuntimeState) UpdateAddress(configFile string, newAddress string) {
 	if err != nil {
 		log.Warnf("An unexpected error has occurred while closing the identity file %s with newAddress %s. %v", configFile, newAddress, err)
 	}
+}
+
+// if a change address header is ever processed - archive the original identity used. it will never be overwritten once created
+// it will be deleted when the identity is forgotten
+func saveOriginalIdentity(configFile string) error {
+	originalFileName := configFile + ".original"
+
+	_, err := os.Stat(originalFileName)
+	if err != nil {
+		if os.IsNotExist(err) {
+			//file does not exist. good...
+		} else {
+			return err
+		}
+	} else {
+		log.Debugf("original identity already exists. not overwriting")
+		return nil
+	}
+
+	log.Debugf("renaming original identity file from %s to %s", configFile, originalFileName)
+	return os.Rename(configFile, originalFileName)
 }
 
 func (t *RuntimeState) SetNotified(fingerprint string, notified bool) {

@@ -1079,6 +1079,26 @@ func removeIdentity(out *json.Encoder, fingerprint string) {
 		log.Debugf("identity file removed: %s", id.Path())
 	}
 
+	//remove any ".original" file from the filesystem if there is one...
+	originalFileName := id.Path() + ".original"
+	_, err = os.Stat(originalFileName)
+	if err != nil {
+		if os.IsNotExist(err) {
+			//file does not exist. good... don't do anything...
+		} else {
+			// just ignore any other errors
+		}
+	} else {
+		// file does exist. remove it.
+		log.Debugf("removing .original file %s", originalFileName)
+		err = os.Remove(originalFileName)
+		if err != nil {
+			log.Warnf("could not remove file: %s", originalFileName)
+		} else {
+			log.Debugf("identity file removed: %s", originalFileName)
+		}
+	}
+
 	resp := dto.Response{Message: "success", Code: SUCCESS, Error: anyErrs, Payload: nil}
 	respond(out, resp)
 	// call shutdown some day id.CId.Shutdown()
