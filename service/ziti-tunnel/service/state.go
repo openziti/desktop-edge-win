@@ -600,7 +600,7 @@ func (t *RuntimeState) UpdateAddress(configFile string, newAddress string) {
 
 	newConfigFileName := configFile + ".address.update"
 	defer func() {
-		log.Debugf("removing original file: %s", newConfigFileName)
+		log.Debugf("removing original file after update: %s", newConfigFileName)
 		os.Remove(newConfigFileName)
 	}()
 	log.Debugf("renaming identity file %s as: %s", configFile, newConfigFileName)
@@ -612,7 +612,7 @@ func (t *RuntimeState) UpdateAddress(configFile string, newAddress string) {
 	} else {
 		newAddy = "https://" + newAddress
 	}
-	log.Infof("updating identity file %s with new address. chaning from %s to %s", configFile, c.ZtAPI, newAddy)
+	log.Infof("updating identity file %s with new address. changing from %s to %s", configFile, c.ZtAPI, newAddy)
 	c.ZtAPI = newAddy
 
 	idFile, err := os.OpenFile(configFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
