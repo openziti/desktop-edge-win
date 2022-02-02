@@ -67,6 +67,7 @@ void ziti_dump_go_to_log_cb(void *stringsBuffer, char *line);
 struct ziti_context_event* ziti_event_context_event(ziti_event_t *ev);
 struct ziti_router_event* ziti_event_router_event(ziti_event_t *ev);
 struct ziti_service_event* ziti_event_service_event(ziti_event_t *ev);
+struct ziti_api_event* ziti_event_api_event(ziti_event_t *ev);
 
 ziti_service* ziti_service_array_get(ziti_service_array arr, int idx);
 
