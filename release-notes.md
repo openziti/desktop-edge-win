@@ -1,3 +1,17 @@
+# Release 1.11.1
+
+## What's New
+* supports reconfiguring an endpoint to point to a new controller address via ziti_api_event
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* none
+
 # Release 1.10.14
 
 ## What's New

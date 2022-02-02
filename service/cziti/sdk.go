@@ -757,6 +757,11 @@ func eventCB(ztx C.ziti_context, event *C.ziti_event_t) {
 		} else {
 			log.Debugf("mfa auth event set received with empty finger print, ziti context [%p]", zid)
 		}
+	case C.ZitiAPIEvent:
+		apiEvent := C.ziti_event_api_event(event)
+		newAddress := C.GoString(apiEvent.new_ctrl_address)
+		cfgPath := C.GoString(zid.Options.config)
+		goapi.UpdateControllerAddress(cfgPath, newAddress)
 	default:
 		log.Infof("event %d not handled", event._type)
 	}
@@ -809,7 +814,7 @@ func LoadZiti(zid *ZIdentity, cfg string, refreshInterval int, apiPageSize int) 
 	zid.Options.pq_os_cb = C.ziti_pq_os_cb(C.ziti_pq_os_go)
 	zid.Options.pq_process_cb = C.ziti_pq_process_cb(C.ziti_pq_process_go)
 	zid.Options.api_page_size = C.uint32_t(apiPageSize)
-	zid.Options.events = C.ZitiContextEvent | C.ZitiServiceEvent | C.ZitiRouterEvent | C.ZitiMfaAuthEvent
+	zid.Options.events = C.ZitiContextEvent | C.ZitiServiceEvent | C.ZitiRouterEvent | C.ZitiMfaAuthEvent | C.ZitiAPIEvent
 	zid.Options.event_cb = C.ziti_event_cb(C.eventCB)
 
 	ptr := unsafe.Pointer(zid)

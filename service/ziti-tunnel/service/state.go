@@ -578,6 +578,88 @@ func (t *RuntimeState) UpdateMfa(fingerprint string, mfaEnabled bool, mfaNeeded 
 	}
 }
 
+func (t *RuntimeState) UpdateControllerAddress(configFile string, newAddress string) {
+	log.Debugf("request to update config file %s with new address: %s", configFile, newAddress)
+
+	f, fe := ioutil.ReadFile(configFile)
+	if fe != nil {
+		log.Warnf("Could not read identity file: %s", configFile)
+		return
+	}
+	c := idcfg.Config{}
+	err := json.Unmarshal(f, &c)
+	if err != nil {
+		log.Warnf("Could not unmarshal config file for identity file: %s to newAddress: %s", configFile, newAddress)
+		return
+	}
+
+	if strings.Compare(c.ZtAPI, newAddress) == 0 {
+		log.Debugf("not updating config for identity file %s. address already set to: %s", newAddress)
+		return
+	}
+
+	err = saveOriginalIdentity(configFile)
+	if err != nil {
+		log.Warnf("unexpected error when saving original identity. cannot change controller address. %v", err)
+		return
+	}
+
+	newConfigFileName := configFile + ".address.update"
+	defer func() {
+		log.Debugf("removing original file after update: %s", newConfigFileName)
+		os.Remove(newConfigFileName)
+	}()
+	log.Debugf("renaming identity file %s as: %s", configFile, newConfigFileName)
+	_ = os.Rename(configFile, newConfigFileName)
+
+	var newAddy string
+	if strings.HasPrefix(newAddress, "https://") {
+		newAddy = newAddress
+	} else {
+		newAddy = "https://" + newAddress
+	}
+	log.Infof("updating identity file %s with new address. changing from %s to %s", configFile, c.ZtAPI, newAddy)
+	c.ZtAPI = newAddy
+
+	idFile, err := os.OpenFile(configFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+	defer idFile.Close()
+	if err != nil {
+		log.Warnf("An unexpected error has occurred while trying to update identity file %s with newAddress %s. %v", configFile, newAddress, err)
+		return
+	}
+
+	w := bufio.NewWriter(bufio.NewWriter(idFile))
+	enc := json.NewEncoder(w)
+	_ = enc.Encode(c)
+	_ = w.Flush()
+
+	err = idFile.Close()
+	if err != nil {
+		log.Warnf("An unexpected error has occurred while closing the identity file %s with newAddress %s. %v", configFile, newAddress, err)
+	}
+}
+
+// if a change address header is ever processed - archive the original identity used. it will never be overwritten once created
+// it will be deleted when the identity is forgotten
+func saveOriginalIdentity(configFile string) error {
+	originalFileName := configFile + ".original"
+
+	_, err := os.Stat(originalFileName)
+	if err != nil {
+		if os.IsNotExist(err) {
+			//file does not exist. good...
+		} else {
+			return err
+		}
+	} else {
+		log.Debugf("original identity already exists. not overwriting")
+		return nil
+	}
+
+	log.Debugf("renaming original identity file from %s to %s", configFile, originalFileName)
+	return os.Rename(configFile, originalFileName)
+}
+
 func (t *RuntimeState) SetNotified(fingerprint string, notified bool) {
 	id := t.Find(fingerprint)
 
