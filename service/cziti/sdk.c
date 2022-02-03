@@ -95,6 +95,10 @@ struct ziti_service_event* ziti_event_service_event(ziti_event_t *ev) {
     return &ev->event.service;
 }
 
+struct ziti_api_event* ziti_event_api_event(ziti_event_t *ev) {
+    return &ev->event.api;
+}
+
 ziti_service* ziti_service_array_get(ziti_service_array arr, int idx) {
     return arr ? arr[idx] : NULL;
 }
