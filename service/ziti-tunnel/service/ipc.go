@@ -80,8 +80,9 @@ func SubMain(ops chan string, changes chan<- svc.Status, winEvents <-chan Window
 	logging.InitLogger(parsedLevel)
 	_ = logging.Elog.Info(InformationEvent, SvcName+" starting. log file located at "+config.LogFile())
 
-	if rts.state.ApiPageSize < 10 { //don't allow values less than 10
-		rts.state.ApiPageSize = 10
+	if rts.state.ApiPageSize < constants.MinimumApiPageSize {
+		log.Debugf("page size value was smaller than the minimim %d. using default page size: %d", constants.MinimumApiPageSize, constants.DefaultApiPageSize)
+		rts.state.ApiPageSize = constants.DefaultApiPageSize
 	}
 
 	// create a channel for notifying any connections that they are to be interrupted
