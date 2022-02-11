@@ -29,5 +29,6 @@ const (
 	MfaFewSvcTimeout  = 1
 	MfaNearingTimeout = 2
 
-	DefaultApiPageSize = 250
+	DefaultApiPageSize = 25
+	MinimumApiPageSize = 10
 )
