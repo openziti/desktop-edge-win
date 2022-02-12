@@ -133,7 +133,11 @@ namespace ZitiDesktopEdge {
 				}
 				RecoveryList.Visibility = Visibility.Visible;
 				NoRecovery.Visibility = Visibility.Collapsed;
+				SaveButton.Visibility = Visibility.Visible;
 			} else {
+
+				ShowMFA(this._identity, 2);
+				SaveButton.Visibility = Visibility.Collapsed;
 				RecoveryList.Visibility = Visibility.Collapsed;
 				NoRecovery.Visibility = Visibility.Visible;
 			}
@@ -201,10 +205,9 @@ namespace ZitiDesktopEdge {
 			System.Windows.Forms.SaveFileDialog dialog = new System.Windows.Forms.SaveFileDialog();
 			dialog.Filter = "Text Files(*.txt)|*.txt|All(*.*)|*";
 			dialog.Title = "Save Recovery Codes";
-			dialog.FileName = name+"RecoveryCodes.txt";
-			dialog.ShowDialog();
+			dialog.FileName = name + "RecoveryCodes.txt";
 
-			if (dialog.FileName != "") {
+			if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.Cancel) {
 				File.WriteAllText(dialog.FileName, fileText);
 			}
 		}
@@ -236,58 +239,60 @@ namespace ZitiDesktopEdge {
 				this._executing = true;
 				string code = AuthCode.Text;
 
-				DataClient serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
-				this.OnLoad?.Invoke(false, "Authentication", "One Moment Please...");
-				if (this.Type == 1) {
-					SvcResponse authResult = await serviceClient.AuthMFA(this._identity.Identifier, code);
-					if (authResult?.Code != 0) {
-						Logger.Error("AuthMFA failed. " + authResult.Error);
-						this.OnError?.Invoke("Authentication Failed");
+				if (code.Trim().Length>0) {
+
+					DataClient serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
+					this.OnLoad?.Invoke(false, "Authentication", "One Moment Please...");
+					if (this.Type == 1) {
+						SvcResponse authResult = await serviceClient.AuthMFA(this._identity.Identifier, code);
+						if (authResult?.Code != 0) {
+							Logger.Error("AuthMFA failed. " + authResult.Error);
+							this.OnError?.Invoke("Authentication Failed");
+							this._executing = false;
+						} else {
+							this._identity.IsAuthenticated = true;
+							this.OnClose?.Invoke(true);
+							this._executing = false;
+						}
+						this.OnLoad?.Invoke(true, "", "");
+					} else if (this.Type == 2) {
+						MfaRecoveryCodesResponse codeResponse = await serviceClient.ReturnMFACodes(this._identity.Identifier, code);
+						if (codeResponse?.Code != 0) {
+							Logger.Error("AuthMFA failed. " + codeResponse.Error);
+							AuthCode.Text = "";
+							this.OnError?.Invoke("Authentication Failed");
+							this._executing = false;
+						} else {
+							this._identity.RecoveryCodes = codeResponse.Data;
+							this.OnClose?.Invoke(true);
+							this._executing = false;
+						}
+						this.OnLoad?.Invoke(true, "", "");
+					} else if (this.Type == 3) {
+						SvcResponse authResult = await serviceClient.RemoveMFA(this._identity.Identifier, code);
+						if (authResult?.Code != 0) {
+							Logger.Error("AuthMFA failed. " + authResult.Error);
+							AuthCode.Text = "";
+							this.OnError?.Invoke("Authentication Failed");
+							this._executing = false;
+						} else {
+							this.OnClose?.Invoke(true);
+							this._executing = false;
+						}
+						this.OnLoad?.Invoke(true, "", "");
+					} else if (this.Type == 4) {
+						MfaRecoveryCodesResponse codeResponse = await serviceClient.GenerateMFACodes(this._identity.Identifier, code);
+						if (codeResponse?.Code != 0) {
+							Logger.Error("AuthMFA failed. " + codeResponse?.Error);
+							AuthCode.Text = "";
+							this.OnError?.Invoke("Authentication Failed");
+						} else {
+							this._identity.RecoveryCodes = codeResponse.Data;
+							this.OnClose?.Invoke(true);
+						}
 						this._executing = false;
-					} else {
-						this._identity.IsAuthenticated = true;
-						this.OnClose?.Invoke(true);
-						this._executing = false;
+						this.OnLoad?.Invoke(true, "", "");
 					}
-					this.OnLoad?.Invoke(true, "", "");
-				} else if (this.Type == 2) {
-					MfaRecoveryCodesResponse codeResponse = await serviceClient.ReturnMFACodes(this._identity.Identifier, code);
-					if (codeResponse?.Code != 0) {
-						Logger.Error("AuthMFA failed. " + codeResponse.Error);
-						AuthCode.Text = "";
-						this.OnError?.Invoke("Authentication Failed");
-						this._executing = false;
-					} else {
-						this._identity.RecoveryCodes = codeResponse.Data;
-						this.OnClose?.Invoke(true);
-						this._executing = false;
-					}
-					this.OnLoad?.Invoke(true, "", "");
-				} else if (this.Type == 3) {
-					SvcResponse authResult = await serviceClient.RemoveMFA(this._identity.Identifier, code);
-					if (authResult?.Code != 0) {
-						Logger.Error("AuthMFA failed. " + authResult.Error);
-						AuthCode.Text = "";
-						this.OnError?.Invoke("Authentication Failed");
-						this._executing = false;
-					} else {
-						this.OnClose?.Invoke(true);
-						this._executing = false;
-					}
-					this.OnLoad?.Invoke(true, "", "");
-				} else if (this.Type == 4) {
-					MfaRecoveryCodesResponse codeResponse = await serviceClient.GenerateMFACodes(this._identity.Identifier, code);
-					if (codeResponse?.Code != 0) {
-						Logger.Error("AuthMFA failed. " + codeResponse.Error);
-						AuthCode.Text = "";
-						this.OnError?.Invoke("Authentication Failed");
-						this._executing = false;
-					} else {
-						this._identity.RecoveryCodes = codeResponse.Data;
-						this.OnClose?.Invoke(true);
-						this._executing = false;
-					}
-					this.OnLoad?.Invoke(true, "", "");
 				}
 			}
 		}

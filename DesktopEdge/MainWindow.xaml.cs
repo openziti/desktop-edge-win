@@ -429,7 +429,12 @@ namespace ZitiDesktopEdge {
 
 			this.PreviewKeyDown += KeyPressed;
 			MFASetup.OnLoad += MFASetup_OnLoad;
+			MFASetup.OnError += MFASetup_OnError;
 			IdentityMenu.OnMessage += IdentityMenu_OnMessage;
+		}
+
+		private void MFASetup_OnError(string message) {
+			ShowBlurbAsync(message, "", "error");
 		}
 
 		private void ToastNotificationManagerCompat_OnActivated(ToastNotificationActivatedEventArgsCompat e) {
@@ -613,6 +618,7 @@ namespace ZitiDesktopEdge {
 			monitorClient.OnNotificationEvent += MonitorClient_OnInstallationNotificationEvent;
             monitorClient.OnServiceStatusEvent += MonitorClient_OnServiceStatusEvent;
             monitorClient.OnShutdownEvent += MonitorClient_OnShutdownEvent;
+			monitorClient.OnCommunicationError += MonitorClient_OnCommunicationError;
             monitorClient.OnReconnectFailure += MonitorClient_OnReconnectFailure;
 			Application.Current.Properties.Add("MonitorClient", monitorClient);
 
@@ -639,6 +645,10 @@ namespace ZitiDesktopEdge {
 
 			IdentityMenu.OnForgot += IdentityForgotten;
 			Placement();
+		}
+
+		private void MonitorClient_OnCommunicationError(object sender, Exception e) {
+			ShowError("Communication Error", e.Message);
 		}
 
 		private void MainMenu_OnShowBlurb(string message) {
@@ -872,7 +882,7 @@ namespace ZitiDesktopEdge {
 				CloseErrorButton.IsEnabled = true;
 			}
 			CloseErrorButton.IsEnabled = true;
-			HideLoad();
+			// HideLoad();
 		}
 
 		private void ShowServiceNotStarted() {
@@ -910,7 +920,7 @@ namespace ZitiDesktopEdge {
 
 		private void ServiceClient_OnClientConnected(object sender, object e) {
 			this.Dispatcher.Invoke(() => {
-				//e is _ALWAYS_ null at this time use this to display something if you want
+				MainMenu.Connected();
 				NoServiceView.Visibility = Visibility.Collapsed;
 				_isServiceInError = false;
 				UpdateServiceView();
@@ -924,6 +934,7 @@ namespace ZitiDesktopEdge {
 				IdentityMenu.Visibility = Visibility.Collapsed;
 				MFASetup.Visibility = Visibility.Collapsed;
 				HideModal();
+				MainMenu.Disconnected();
 				for (int i = 0; i < IdList.Children.Count; i++) {
 					IdentityItem item = (IdentityItem)IdList.Children[i];
 					item.StopTimers();
@@ -964,6 +975,7 @@ namespace ZitiDesktopEdge {
 						found.IsEnabled = zid.IsEnabled;
 						found.IsMFAEnabled = e.Id.MfaEnabled;
 						found.IsAuthenticated = !e.Id.MfaNeeded;
+						found.IsConnected = true;
 						for (int i=0; i<identities.Count; i++) {
 							if (identities[i].Identifier == found.Identifier) {
 								identities[i] = found;
@@ -975,12 +987,27 @@ namespace ZitiDesktopEdge {
 				} else if (e.Action == "updated") {
 					//this indicates that all updates have been sent to the UI... wait for 2 seconds then trigger any ui updates needed
 					await Task.Delay(2000);
+					LoadIdentities(true);
 				} else if (e.Action == "connected") {
-					//this indicates that all updates have been sent to the UI... wait for 2 seconds then trigger any ui updates needed
-					await Task.Delay(2000);
+					var found = identities.Find(i => i.Identifier == e.Id.Identifier);
+					found.IsConnected = true;
+					for (int i = 0; i < identities.Count; i++) {
+						if (identities[i].Identifier == found.Identifier) {
+							identities[i] = found;
+							break;
+						}
+					}
+					LoadIdentities(true);
 				} else if (e.Action == "disconnected") {
-					//this indicates that all updates have been sent to the UI... wait for 2 seconds then trigger any ui updates needed
-					await Task.Delay(2000);
+					var found = identities.Find(i => i.Identifier == e.Id.Identifier);
+					found.IsConnected = false;
+					for (int i = 0; i < identities.Count; i++) {
+						if (identities[i].Identifier == found.Identifier) {
+							identities[i] = found;
+							break;
+						}
+					}
+					LoadIdentities(true);
 				} else {
 					IdentityForgotten(ZitiIdentity.FromClient(e.Id));
 				}
@@ -1258,6 +1285,7 @@ namespace ZitiDesktopEdge {
 						idItem.OnStatusChanged += Id_OnStatusChanged;
 						idItem.Identity = id;
 						idItem.IdentityChanged += IdItem_IdentityChanged;
+						
 						if (repaint) idItem.RefreshUI();
 
 						IdList.Children.Add(idItem);
@@ -1308,12 +1336,17 @@ namespace ZitiDesktopEdge {
 				if (isConnected) {
 					ConnectButton.Visibility = Visibility.Collapsed;
 					DisconnectButton.Visibility = Visibility.Visible;
+					MainMenu.Connected();
+					HideLoad();
 				} else {
 					ConnectButton.Visibility = Visibility.Visible;
 					DisconnectButton.Visibility = Visibility.Collapsed;
 					IdentityMenu.Visibility = Visibility.Collapsed;
 					MainMenu.Visibility = Visibility.Collapsed;
 					HideBlurb();
+					MainMenu.Disconnected();
+					DownloadSpeed.Content = "0.0";
+					UploadSpeed.Content = "0.0";
 				}
 			});
 		}
