@@ -93,7 +93,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         protected virtual void CommunicationError(Exception e) {
-            OnCommunicationError(this, e);
+            OnCommunicationError?.Invoke(this, e);
         }
 
         async protected Task sendAsync(object objToSend) {

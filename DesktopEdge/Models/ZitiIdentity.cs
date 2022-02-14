@@ -29,6 +29,7 @@ namespace ZitiDesktopEdge.Models {
 		public bool IsTimedOut { get; set; }
 		public string[] RecoveryCodes { get; set; }
 		public bool IsTimingOut { get; set; }
+		public bool IsConnected { get; set; }
 
 
 		private bool svcFailingPostureCheck = false;
@@ -46,6 +47,7 @@ namespace ZitiDesktopEdge.Models {
 		/// Default constructor to support named initialization
 		/// </summary>
 		public ZitiIdentity() {
+			this.IsConnected = true;
 			this.Services = new List<ZitiService>();
 		}
 
@@ -63,6 +65,7 @@ namespace ZitiDesktopEdge.Models {
 			this.RecoveryCodes = new string[0];
 			this.IsTimingOut = false;
 			this.IsTimedOut = false;
+			this.IsConnected = true;
 		}
 
 		public static ZitiIdentity FromClient(DataStructures.Identity id) {
@@ -83,7 +86,8 @@ namespace ZitiDesktopEdge.Models {
 				MinTimeout = id.MinTimeout,
 				MaxTimeout = id.MaxTimeout,
 				LastUpdatedTime = id.MfaLastUpdatedTime,
-				TimeoutMessage = ""
+				TimeoutMessage = "",
+				IsConnected = true
 			};
 
 
