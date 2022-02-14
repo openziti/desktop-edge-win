@@ -506,9 +506,14 @@ namespace ZitiDesktopEdge.DataStructures {
         public string Identifier { get; set; }
     }
 
+    public class MfaRecoveryCodes {
+        public string[] RecoveryCodes { get; set; }
+        public string Identifier { get; set; }
+
+    }
 
     public class MfaRecoveryCodesResponse : SvcResponse {
-        public string[] Data { get; set; }
+        public MfaRecoveryCodes Data { get; set; }
     }
 
     public class ConfigPayload

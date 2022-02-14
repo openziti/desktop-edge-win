@@ -258,7 +258,7 @@ namespace ZitiDesktopEdge {
 						this.OnError?.Invoke("Authentication Failed");
 						this._executing = false;
 					} else {
-						this._identity.RecoveryCodes = codeResponse.Data;
+						this._identity.RecoveryCodes = codeResponse.Data.RecoveryCodes;
 						this.OnClose?.Invoke(true);
 						this._executing = false;
 					}
@@ -283,7 +283,7 @@ namespace ZitiDesktopEdge {
 						this.OnError?.Invoke("Authentication Failed");
 						this._executing = false;
 					} else {
-						this._identity.RecoveryCodes = codeResponse.Data;
+						this._identity.RecoveryCodes = codeResponse.Data.RecoveryCodes;
 						this.OnClose?.Invoke(true);
 						this._executing = false;
 					}
