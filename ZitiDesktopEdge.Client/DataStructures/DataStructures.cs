@@ -159,17 +159,17 @@ namespace ZitiDesktopEdge.DataStructures {
         public string Code { get; set; }
     }
 
-    public class ReturnMFACodesFunction : ServiceFunction {
-        public ReturnMFACodesFunction(string identifier, string code) {
-            this.Command = "ReturnMFACodes";
-            this.Data = new ReturnMFACodesFunctionPayload() {
+    public class GetMFACodesFunction : ServiceFunction {
+        public GetMFACodesFunction(string identifier, string code) {
+            this.Command = "GetMFACodes";
+            this.Data = new GetMFACodesFunctionPayload() {
                 Identifier = identifier,
                 Code = code,
             };
         }
-        public ReturnMFACodesFunctionPayload Data { get; set; }
+        public GetMFACodesFunctionPayload Data { get; set; }
     }
-    public class ReturnMFACodesFunctionPayload {
+    public class GetMFACodesFunctionPayload {
         public string Identifier { get; set; }
         public string Code { get; set; }
     }
