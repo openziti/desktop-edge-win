@@ -70,7 +70,7 @@ namespace Ziti.Desktop.Edge.Views.Screens {
         }
 
         async private void btn5_Click(object sender, RoutedEventArgs e) {
-            await client.ReturnMFACodes(FingerPrint.Text, TheMFACode.Text);
+            await client.GetMFACodes(FingerPrint.Text, TheMFACode.Text);
         }
 
         async private void btn6_Click(object sender, RoutedEventArgs e) {

@@ -274,9 +274,9 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
 
-        async public Task<MfaRecoveryCodesResponse> ReturnMFACodes(string identifier, string totpOrRecoveryCode) {
+        async public Task<MfaRecoveryCodesResponse> GetMFACodes(string identifier, string totpOrRecoveryCode) {
             try {
-                await sendAsync(new ReturnMFACodesFunction(identifier, totpOrRecoveryCode));
+                await sendAsync(new GetMFACodesFunction(identifier, totpOrRecoveryCode));
                 MfaRecoveryCodesResponse mfa = await readAsync<MfaRecoveryCodesResponse>(ipcReader);
                 return mfa;
             } catch (Exception ioe) {
