@@ -726,6 +726,27 @@ namespace ZitiDesktopEdge {
 
 		private void ServiceClient_OnControllerEvent(object sender, ControllerEvent e) {
 			logger.Debug($"==== ControllerEvent    : action:{e.Action} identifier:{e.Identifier}");
+			if (e.Action == "connected") {
+				var found = identities.Find(i => i.Identifier == e.Identifier);
+				found.IsConnected = true;
+				for (int i = 0; i < identities.Count; i++) {
+					if (identities[i].Identifier == found.Identifier) {
+						identities[i] = found;
+						break;
+					}
+				}
+				LoadIdentities(true);
+			} else if (e.Action == "disconnected") {
+				var found = identities.Find(i => i.Identifier == e.Identifier);
+				found.IsConnected = false;
+				for (int i = 0; i < identities.Count; i++) {
+					if (identities[i].Identifier == found.Identifier) {
+						identities[i] = found;
+						break;
+					}
+				}
+				LoadIdentities(true);
+			}
 		}
 
 
