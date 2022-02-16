@@ -404,9 +404,9 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
         }
 
-        async public Task zitiDump() {
+        async public Task zitiDump(string dumpPath) {
             try {
-                await sendAsync(new ServiceFunction() { Command = "ZitiDump" });
+                await sendAsync(new ZitiDumpFunction(dumpPath));
                 var rtn = await readAsync<SvcResponse>(ipcReader);
                 return; // rtn;
             } catch (Exception ioe) {

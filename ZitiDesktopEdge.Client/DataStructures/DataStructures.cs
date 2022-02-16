@@ -199,12 +199,19 @@ namespace ZitiDesktopEdge.DataStructures {
         public SetLogLevelPayload Data { get; set; }
     }
 
+    public class ZitiDumpPayloadFunction {
+        public string DumpPath { get; set; }
+
+    }
+
     public class ZitiDumpFunction : ServiceFunction {
-        public ZitiDumpFunction(string level) {
+        public ZitiDumpFunction(string dumpPath) {
             this.Command = "ZitiDump";
-            //this.Payload = null;//nothing for now
+            this.Data = new ZitiDumpPayloadFunction() {
+                DumpPath = dumpPath
+            };
         }
-        //public SetLogLevelPayload Payload { get; set; }
+        public ZitiDumpPayloadFunction Data { get; set; }
     }
 
     public class IdentifierPayload

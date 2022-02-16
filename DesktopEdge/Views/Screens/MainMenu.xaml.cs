@@ -314,7 +314,11 @@ namespace ZitiDesktopEdge {
 				string timestamp = DateTime.Now.ToFileTime().ToString();
 
 				var dataClient = (DataClient)Application.Current.Properties["ServiceClient"];
-				await dataClient.zitiDump();
+
+				string exeLocation = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+				string logLocation = Path.Combine(exeLocation, "logs");
+				string serviceLogsLocation = Path.Combine(logLocation, "service");
+				await dataClient.zitiDump(serviceLogsLocation);
 
 				var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
 				MonitorServiceStatusEvent resp = await monitorClient.CaptureLogsAsync();
