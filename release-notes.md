@@ -1,7 +1,7 @@
 # Release 1.12.1
 
 ## What's New
-* The ziti tunnel service is changed to ziti-edge-tunnel service. This service uses the 0.17.x t-sdk version, so the new capabilities like srv support that are added to the tunnel sdk will be available in ziti-edge-tunnel service.
+* The ziti tunnel service is changed to ziti-edge-tunnel service. This service uses the 0.17.x t-sdk version, so the new capabilities that are added to the tunnel sdk will be available in ziti-edge-tunnel service.
 
 ## Other changes:
 * none
