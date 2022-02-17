@@ -159,17 +159,17 @@ namespace ZitiDesktopEdge.DataStructures {
         public string Code { get; set; }
     }
 
-    public class ReturnMFACodesFunction : ServiceFunction {
-        public ReturnMFACodesFunction(string identifier, string code) {
-            this.Command = "ReturnMFACodes";
-            this.Data = new ReturnMFACodesFunctionPayload() {
+    public class GetMFACodesFunction : ServiceFunction {
+        public GetMFACodesFunction(string identifier, string code) {
+            this.Command = "GetMFACodes";
+            this.Data = new GetMFACodesFunctionPayload() {
                 Identifier = identifier,
                 Code = code,
             };
         }
-        public ReturnMFACodesFunctionPayload Data { get; set; }
+        public GetMFACodesFunctionPayload Data { get; set; }
     }
-    public class ReturnMFACodesFunctionPayload {
+    public class GetMFACodesFunctionPayload {
         public string Identifier { get; set; }
         public string Code { get; set; }
     }
@@ -199,12 +199,19 @@ namespace ZitiDesktopEdge.DataStructures {
         public SetLogLevelPayload Data { get; set; }
     }
 
+    public class ZitiDumpPayloadFunction {
+        public string DumpPath { get; set; }
+
+    }
+
     public class ZitiDumpFunction : ServiceFunction {
-        public ZitiDumpFunction(string level) {
+        public ZitiDumpFunction(string dumpPath) {
             this.Command = "ZitiDump";
-            //this.Payload = null;//nothing for now
+            this.Data = new ZitiDumpPayloadFunction() {
+                DumpPath = dumpPath
+            };
         }
-        //public SetLogLevelPayload Payload { get; set; }
+        public ZitiDumpPayloadFunction Data { get; set; }
     }
 
     public class IdentifierPayload
@@ -506,9 +513,14 @@ namespace ZitiDesktopEdge.DataStructures {
         public string Identifier { get; set; }
     }
 
+    public class MfaRecoveryCodes {
+        public string[] RecoveryCodes { get; set; }
+        public string Identifier { get; set; }
+
+    }
 
     public class MfaRecoveryCodesResponse : SvcResponse {
-        public string[] Data { get; set; }
+        public MfaRecoveryCodes Data { get; set; }
     }
 
     public class ConfigPayload

@@ -274,9 +274,9 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
 
-        async public Task<MfaRecoveryCodesResponse> ReturnMFACodes(string identifier, string totpOrRecoveryCode) {
+        async public Task<MfaRecoveryCodesResponse> GetMFACodes(string identifier, string totpOrRecoveryCode) {
             try {
-                await sendAsync(new ReturnMFACodesFunction(identifier, totpOrRecoveryCode));
+                await sendAsync(new GetMFACodesFunction(identifier, totpOrRecoveryCode));
                 MfaRecoveryCodesResponse mfa = await readAsync<MfaRecoveryCodesResponse>(ipcReader);
                 return mfa;
             } catch (Exception ioe) {
@@ -404,9 +404,9 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
         }
 
-        async public Task zitiDump() {
+        async public Task zitiDump(string dumpPath) {
             try {
-                await sendAsync(new ServiceFunction() { Command = "ZitiDump" });
+                await sendAsync(new ZitiDumpFunction(dumpPath));
                 var rtn = await readAsync<SvcResponse>(ipcReader);
                 return; // rtn;
             } catch (Exception ioe) {
