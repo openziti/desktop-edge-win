@@ -1,3 +1,17 @@
+# Release 1.11.3
+
+## What's New
+* none - this is a bugfix release
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* TSDK updated to 0.15.25 / CSDK 0.26.26
+
 # Release 1.11.2
 
 ## What's New
