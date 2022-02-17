@@ -726,7 +726,10 @@ namespace ZitiDesktopEdge {
 
 		private void ServiceClient_OnControllerEvent(object sender, ControllerEvent e) {
 			logger.Debug($"==== ControllerEvent    : action:{e.Action} identifier:{e.Identifier}");
-			if (e.Action == "connected") {
+			// commenting this block, because when it receives the disconnected events, identities are disabled and
+			// it is not allowing me to click/perform any operation on the identity
+			// the color of the title is also too dark, and it is not clearly visible, when the identity is disconnected 
+			/* if (e.Action == "connected") {
 				var found = identities.Find(i => i.Identifier == e.Identifier);
 				found.IsConnected = true;
 				for (int i = 0; i < identities.Count; i++) {
@@ -746,7 +749,7 @@ namespace ZitiDesktopEdge {
 					}
 				}
 				LoadIdentities(true);
-			}
+			} */
 		}
 
 
