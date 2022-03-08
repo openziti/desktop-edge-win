@@ -1,3 +1,19 @@
+# Release 1.12.2
+
+## What's New
+* none.
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* Fix for the asynchronous calls
+* [#515](https://github.com/openziti/desktop-edge-win/issues/515) UI logs are GIGANTIC on 1.12.x branch
+* [#516](https://github.com/openziti/desktop-edge-win/issues/516) NUL chars passed to UI via ipc
+
+## Dependency Updates
+* TSDK updated to 0.17.24 / CSDK 0.26.27
+
 # Release 1.12.1
 
 ## What's New
