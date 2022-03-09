@@ -196,6 +196,18 @@ if "%ZITI_SDK_C_BRANCH%"=="" (
 )
 
 cmake -G "MinGW Makefiles" -S %TUNNELER_SDK_DIR% -B %TUNNELER_SDK_DIR%build -DCMAKE_INSTALL_PREFIX=%TUNNELER_SDK_DIR%install -DCMAKE_TOOLCHAIN_FILE=%TUNNELER_SDK_DIR%\toolchains\default.cmake %ZITI_SDK_C_BRANCH_CMD% %ZITI_DEBUG_CMAKE%
+
+SET ACTUAL_ERR=%ERRORLEVEL%
+if %ACTUAL_ERR% NEQ 0 (
+    echo.
+    echo Compilation of %TUNNELER_SDK_DIR% failed
+    echo.
+    goto FAIL
+) else (
+    echo.
+    echo result of mingw build: %ACTUAL_ERR%
+)
+
 cmake --build %TUNNELER_SDK_DIR%build --target bundle --verbose
 
 SET ACTUAL_ERR=%ERRORLEVEL%
@@ -223,6 +235,17 @@ cd %SVC_ROOT_DIR%
 echo    copying ziti-edge-tunnel.exe to service root (for zip creation)
 echo copy /y %TUNNELER_SDK_DIR%build\programs\ziti-edge-tunnel\ziti-edge-tunnel.exe %SVC_ROOT_DIR%
 copy /y %TUNNELER_SDK_DIR%build\programs\ziti-edge-tunnel\ziti-edge-tunnel.exe %SVC_ROOT_DIR%
+
+SET ACTUAL_ERR=%ERRORLEVEL%
+if %ACTUAL_ERR% NEQ 0 (
+    echo.
+    echo Could not copy %TUNNELER_SDK_DIR%build\programs\ziti-edge-tunnel\ziti-edge-tunnel.exe
+    echo.
+    goto FAIL
+) else (
+    echo.
+    echo result of copy build\programs\ziti-edge-tunnel\ziti-edge-tunnel.exe: %ACTUAL_ERR%
+)
 
 :COMPRESS_FILES
 
