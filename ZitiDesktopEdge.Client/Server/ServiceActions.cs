@@ -6,7 +6,7 @@ namespace ZitiDesktopEdge.Server {
     public static class ServiceActions {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         
-        private static ServiceController sc = new ServiceController("ziti-edge-tunnel");
+        private static ServiceController sc = new ServiceController("ziti");
         public static string ServiceStatus() {
             var status = sc.Status;
             Logger.Debug("service status set to: {0}", sc.Status);
