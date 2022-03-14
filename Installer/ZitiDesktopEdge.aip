@@ -325,16 +325,16 @@
     <ROW MsiServiceConfig="ServiceName" Name="ziti-monitor" Event="1" ConfigType="3" Argument="1" Component_="ZitiUpdateService.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiServConfigFailureActionsComponent">
-    <ROW MsiServiceConfigFailureActions="ServiceName" Name="ziti-edge-tunnel" Event="5" ResetPeriod="7" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="zitiedgetunnel.exe"/>
+    <ROW MsiServiceConfigFailureActions="ServiceName" Name="ziti" Event="5" ResetPeriod="7" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="zitiedgetunnel.exe"/>
     <ROW MsiServiceConfigFailureActions="ServiceName_1" Name="ziti-monitor" Event="5" ResetPeriod="7" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="ZitiUpdateService.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiServCtrlComponent">
     <ROW ServiceControl="ZitiUpdateService.exe" Name="ziti-monitor" Event="161" Wait="0" Component_="ZitiUpdateService.exe"/>
-    <ROW ServiceControl="zitiedgetunnel.exe" Name="ziti-edge-tunnel" Event="161" Wait="0" Component_="zitiedgetunnel.exe"/>
+    <ROW ServiceControl="zitiedgetunnel.exe" Name="ziti" Event="161" Wait="0" Component_="zitiedgetunnel.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiServInstComponent">
     <ROW ServiceInstall="ZitiUpdateService.exe" Name="ziti-monitor" DisplayName="Ziti Desktop Monitor Service" ServiceType="16" StartType="2" ErrorControl="32769" Component_="ZitiUpdateService.exe" Description="Monitors and updates the Ziti Access Service"/>
-    <ROW ServiceInstall="zitiedgetunnel.exe" Name="ziti-edge-tunnel" DisplayName="Ziti Desktop Edge Service" ServiceType="16" StartType="2" ErrorControl="32769" Component_="zitiedgetunnel.exe" Description="Access your networks secured by ziti"/>
+    <ROW ServiceInstall="zitiedgetunnel.exe" Name="ziti" DisplayName="Ziti Desktop Edge Service" ServiceType="16" StartType="2" ErrorControl="32769" Component_="zitiedgetunnel.exe" Description="Access your networks secured by ziti"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiShortsComponent">
     <ROW Shortcut="ZitiDesktopEdge" Directory_="StartupFolder" Name="ZITIDE~2|Ziti Desktop Edge" Component_="ZitiDesktopEdge.exe" Target="[#ZitiDesktopEdge.exe]" Description="Ziti Desktop Edge configuration interface" Hotkey="0" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
