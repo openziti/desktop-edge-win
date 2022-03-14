@@ -195,7 +195,7 @@ if "%ZITI_SDK_C_BRANCH%"=="" (
     SET ZITI_SDK_C_BRANCH_CMD=-DZITI_SDK_C_BRANCH=%ZITI_SDK_C_BRANCH%
 )
 
-cmake -G "MinGW Makefiles" -S %TUNNELER_SDK_DIR% -B %TUNNELER_SDK_DIR%build -DCMAKE_INSTALL_PREFIX=%TUNNELER_SDK_DIR%install -DCMAKE_TOOLCHAIN_FILE=%TUNNELER_SDK_DIR%\toolchains\default.cmake %ZITI_SDK_C_BRANCH_CMD% %ZITI_DEBUG_CMAKE%
+cmake -G Ninja -S %TUNNELER_SDK_DIR% -B %TUNNELER_SDK_DIR%build -DCMAKE_INSTALL_PREFIX=%TUNNELER_SDK_DIR%install -DCMAKE_TOOLCHAIN_FILE=%TUNNELER_SDK_DIR%\toolchains\default.cmake %ZITI_SDK_C_BRANCH_CMD% %ZITI_DEBUG_CMAKE%
 
 SET ACTUAL_ERR=%ERRORLEVEL%
 if %ACTUAL_ERR% NEQ 0 (
@@ -205,7 +205,7 @@ if %ACTUAL_ERR% NEQ 0 (
     goto FAIL
 ) else (
     echo.
-    echo result of mingw build: %ACTUAL_ERR%
+    echo result of ninja build: %ACTUAL_ERR%
 )
 
 cmake --build %TUNNELER_SDK_DIR%build --target bundle --verbose
@@ -213,12 +213,12 @@ cmake --build %TUNNELER_SDK_DIR%build --target bundle --verbose
 SET ACTUAL_ERR=%ERRORLEVEL%
 if %ACTUAL_ERR% NEQ 0 (
     echo.
-    echo Build of %TUNNELER_SDK_DIR%build failed
+    echo Bundle command of %TUNNELER_SDK_DIR%build failed
     echo.
     goto FAIL
 ) else (
     echo.
-    echo result of ninja build: %ACTUAL_ERR%
+    echo result of cmake bundle: %ACTUAL_ERR%
 )
 
 echo checking the CSDK
