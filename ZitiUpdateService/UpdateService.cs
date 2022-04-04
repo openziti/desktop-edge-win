@@ -20,6 +20,7 @@ using NLog;
 using Newtonsoft.Json;
 using System.Net;
 using DnsClient;
+using DnsClient.Protocol;
 using ZitiUpdateService.Checkers.PeFile;
 using ZitiUpdateService.Utils;
 
@@ -448,27 +449,37 @@ namespace ZitiUpdateService {
 					DnsQuestion q = new DnsQuestion("dew-dns-probe.openziti.org", QueryType.A);
 					var dnsEp = new IPEndPoint(dnsIpAddress, 53);
 					var dnsProbe = new LookupClient(dnsEp);
-
-					foreach (DnsClient.Protocol.ARecord arec in dnsProbe.Query(q).AllRecords) {
-						if (arec.Address.Equals(lh)) {
-							dnsProbeFailCount = 0;
-							Logger.Debug("dns probe success");
-						} else {
-							dnsProbeFailCount++;
-							logDnsProbeFailure(null);
+					IDnsQueryResponse resp = dnsProbe.Query(q);
+					if (resp != null && resp.Answers?.Count > 0) {
+						foreach (DnsResourceRecord dnsrec in resp.Answers) {
+							if (dnsrec.GetType() == typeof(ARecord)) {
+								ARecord arec = (ARecord) dnsrec;
+								if (arec.Address.Equals(lh)) {
+									dnsProbeFailCount = 0;
+									Logger.Debug("dns probe success");
+								} else {
+									logDnsProbeFailure(null);
+								}
+							} else {
+								Logger.Debug("dns probe returned an answer but response was not an ARecord? [" + dnsrec.GetType().Name + "]");
+							}
 						}
+					} else
+					{
+						Logger.Debug("dns probe failed. no answer found for dew-dns-probe.openziti.org");
+						logDnsProbeFailure(null);
 					}
 				}
 			} catch(Exception dnse) {
 				//don't really care but it probably means a timeout happened.  but might as well log a trace error anyway...
 				//it's expected that this is due to the service shutting down...
-				dnsProbeFailCount++;
 				logDnsProbeFailure(dnse);
 			}
 			dnsProbeStarted = false;
 		}
 
 		private void logDnsProbeFailure(Exception e) {
+			dnsProbeFailCount++;
 			bool logit = false;
 			if (dnsProbeFailCount <= 4) {
 				logit = true;
