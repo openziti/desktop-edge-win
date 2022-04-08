@@ -1,3 +1,17 @@
+# Release 1.11.5
+
+## What's New
+* none - this is a bugfix release
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* UDP intercepts fix seems to have somehow affected DNS for some. reverting
+
+## Dependency Updates
+* TSDK updated to 0.15.25 / CSDK 0.26.26
+
 # Release 1.11.4
 
 ## What's New
