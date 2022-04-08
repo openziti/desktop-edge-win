@@ -1,3 +1,19 @@
+# Release 1.11.4
+
+## What's New
+* none - this is a bugfix release
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* UDP intercepts would never release the port. This fix adds a 30s timer to UDP traffic. If no traffic arrives at the port after 30s it will be closed. This addresses this error:
+
+     unable to allocate UDP pcb - UDP connection limit is 512
+
+## Dependency Updates
+* TSDK updated to 0.15.26 / CSDK 0.26.29
+
 # Release 1.11.3
 
 ## What's New
