@@ -17,7 +17,7 @@ jobs:
     runs-on: windows-latest
     if: "!contains(github.event.head_commit.message, 'ci skip')"
     env:
-      SIGNING_CERT: ${{ secrets.SIGNING_CERT }}
+      SIGNING_CERT: ${{ secrets.SIGNING_CERT_2022_b64 }}
       ADV_INST_KEY: ${{ secrets.ADV_INST_KEY }}
       JFROG_ACCESS_TOKEN: ${{ secrets.JFROG_ACCESS_TOKEN }}
       gh_ci_key: ${{ secrets.GH_CI_KEY }}
