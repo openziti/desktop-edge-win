@@ -1,7 +1,7 @@
-# Release 1.12.2
+# Release 2.0.0
 
 ## What's New
-* none.
+* The data service which was go-based: `ziti-tunnel`, has been totally replaced with the C-based `ziti-edge-tunnel`
 
 ## Other changes:
 * none
@@ -14,10 +14,28 @@
 ## Dependency Updates
 * TSDK updated to 0.17.24 / CSDK 0.26.27
 
-# Release 1.12.1
+---
+
+# Release 1.11.4
 
 ## What's New
-* The ziti tunnel service is changed to ziti-edge-tunnel service. This service uses the 0.17.x t-sdk version, so the new capabilities that are added to the tunnel sdk will be available in ziti-edge-tunnel service.
+* none - this is a bugfix release
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* UDP intercepts would never release the port. This fix adds a 30s timer to UDP traffic. If no traffic arrives at the port after 30s it will be closed. This addresses this error:
+
+     unable to allocate UDP pcb - UDP connection limit is 512
+
+## Dependency Updates
+* TSDK updated to 0.15.26 / CSDK 0.26.29
+
+# Release 1.11.3
+
+## What's New
+* none - this is a bugfix release
 
 ## Other changes:
 * none
@@ -26,7 +44,7 @@
 * none
 
 ## Dependency Updates
-* TSDK updated to 0.17.23 / CSDK 0.26.25
+* TSDK updated to 0.15.25 / CSDK 0.26.26
 
 # Release 1.11.2
 
