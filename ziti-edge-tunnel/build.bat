@@ -18,6 +18,9 @@ SET ZITI_TUNNEL_REPO_BRANCH=v0.18.10
 REM override the c sdk used in the build - leave blank for the same as specified in the tunneler sdk
 SET ZITI_SDK_C_BRANCH=
 SET ZITI_TUNNEL_REPO_URL=https://github.com/openziti/ziti-tunnel-sdk-c/releases/latest/download/ziti-edge-tunnel-Windows_x86_64.zip
+
+REM the number of TCP connections the tunneler sdk can have at any one time
+SET TCP_MAX_CONNECTIONS=256
 SET WINTUN_DL_URL=https://www.wintun.net/builds/wintun-0.13.zip
 
 set SVC_ROOT_DIR=%~dp0
