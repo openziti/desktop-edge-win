@@ -52,7 +52,7 @@ namespace ZitiDesktopEdge {
 		async private void ToggleIdentity(bool on) {
 			try {
 				DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-				DataStructures.Identity id = await client.IdentityOnOffAsync(_identity.Fingerprint, on);
+				DataStructures.Identity id = await client.IdentityOnOffAsync(_identity.Identifier, on);
 				this.Identity.IsEnabled = on;
 			} catch (DataStructures.ServiceException se) {
 				MessageBox.Show(se.AdditionalInfo, se.Message);

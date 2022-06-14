@@ -91,9 +91,16 @@ namespace ZitiDesktopEdge.ServiceClient {
             base.ClientDisconnected(e);
         }
 
+        // ziti tunnel
+        /*
         const string ipcPipe = @"OpenZiti\ziti\ipc";
         const string logPipe = @"OpenZiti\ziti\logs";
         const string eventPipe = @"OpenZiti\ziti\events";
+        */
+
+        // ziti edge tunnel
+        const string ipcPipe = @"ziti-edge-tunnel.sock";
+        const string eventPipe = @"ziti-edge-tunnel-event.sock";
 
         public DataClient() : base() {
         }
@@ -126,7 +133,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         async public Task<ZitiTunnelStatus> GetStatusAsync() {
             try {
-                await sendAsync(new ServiceFunction() { Function = "Status" });
+                await sendAsync(new ServiceFunction() { Command = "Status" });
                 var rtn = await readAsync<ZitiTunnelStatus>(ipcReader);
                 return rtn;
             } catch (Exception ioe) {
@@ -138,25 +145,21 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
 
-        ServiceFunction AddIdentityFunction = new ServiceFunction() { Function = "AddIdentity" };
+        ServiceFunction AddIdentityFunction = new ServiceFunction() { Command = "AddIdentity" };
 
-        async public Task<Identity> AddIdentityAsync(string identityName, bool activate, string jwt) {
+        async public Task<Identity> AddIdentityAsync(string jwtFileName, bool activate, string jwtContent) {
             IdentityResponse resp = null;
             try {
-                Identity id = new Identity {
-                    Active = activate,
-                    Name = identityName
-                };
 
-                NewIdentity newId = new NewIdentity() {
-                    Id = id,
-                    Flags = new EnrollmentFlags() {
-                        JwtString = jwt
+                EnrollIdentifierFunction enrollIdentifierFunction = new EnrollIdentifierFunction() {
+                    Command = "AddIdentity",
+                    Data = new EnrollIdentifierPayload() {
+                        JwtFileName = jwtFileName,
+                        JwtContent = jwtContent
                     }
                 };
 
-                await sendAsync(AddIdentityFunction);
-                await sendAsync(newId);
+                await sendAsync(enrollIdentifierFunction);
                 resp = await readAsync<IdentityResponse>(ipcReader);
                 Logger.Debug(resp.ToString());
             } catch (Exception ex) {
@@ -171,22 +174,22 @@ namespace ZitiDesktopEdge.ServiceClient {
                 Logger.Warn("failed to enroll. {0} {1}", resp.Message, resp.Error);
                 throw new ServiceException("Failed to Enroll", resp.Code, !string.IsNullOrEmpty(resp.Error) ? resp.Error : "The provided token was invalid. This usually is because the token has already been used or it has expired.");
             }
-            return resp.Payload;
+            return resp.Data;
         }
 
 
-        async public Task RemoveIdentityAsync(string fingerPrint) {
-            if (string.IsNullOrEmpty(fingerPrint)) {
+        async public Task RemoveIdentityAsync(string identifier) {
+            if (string.IsNullOrEmpty(identifier)) {
                 //nothing to do...
                 return;
             }
 
             try {
-                FingerprintFunction removeFunction = new FingerprintFunction() {
-                    Function = "RemoveIdentity",
-                    Payload = new FingerprintPayload() { Fingerprint = fingerPrint }
+                IdentifierFunction removeFunction = new IdentifierFunction() {
+                    Command = "RemoveIdentity",
+                    Data = new IdentifierPayload() { Identifier = identifier }
                 };
-                Logger.Info("Removing Identity with fingerprint {0}", fingerPrint);
+                Logger.Info("Removing Identity with identifier {0}", identifier);
                 await sendAsync(removeFunction);
                 var r = await readAsync<SvcResponse>(ipcReader);
             } catch (Exception ioe) {
@@ -214,11 +217,11 @@ namespace ZitiDesktopEdge.ServiceClient {
             return;
         }
 
-        async public Task<Identity> IdentityOnOffAsync(string fingerprint, bool onOff) {
+        async public Task<Identity> IdentityOnOffAsync(string identifier, bool onOff) {
             try {
-                await sendAsync(new IdentityToggleFunction(fingerprint, onOff));
+                await sendAsync(new IdentityToggleFunction(identifier, onOff));
                 IdentityResponse idr = await readAsync<IdentityResponse>(ipcReader);
-                return idr.Payload;
+                return idr.Data;
             } catch (Exception ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //setupPipe();
@@ -229,9 +232,9 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
 
-        async public Task<SvcResponse> EnableMFA(string fingerprint) {
+        async public Task<SvcResponse> EnableMFA(string identifier) {
             try {
-                await sendAsync(new EnableMFAFunction(fingerprint));
+                await sendAsync(new EnableMFAFunction(identifier));
                 SvcResponse mfa = await readAsync<SvcResponse>(ipcReader);
                 return mfa;
             } catch (Exception ioe) {
@@ -243,9 +246,9 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
 
-        async public Task<SvcResponse> VerifyMFA(string fingerprint, string totp) {
+        async public Task<SvcResponse> VerifyMFA(string identifier, string totp) {
             try {
-                await sendAsync(new VerifyMFAFunction(fingerprint, totp));
+                await sendAsync(new VerifyMFAFunction(identifier, totp));
                 SvcResponse mfa = await readAsync<SvcResponse>(ipcReader);
                 return mfa;
             } catch (Exception ioe) {
@@ -257,9 +260,9 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
 
-        async public Task<SvcResponse> AuthMFA(string fingerprint, string totp) {
+        async public Task<SvcResponse> AuthMFA(string identifier, string totp) {
             try {
-                await sendAsync(new AuthMFAFunction(fingerprint, totp));
+                await sendAsync(new AuthMFAFunction(identifier, totp));
                 SvcResponse mfa = await readAsync<SvcResponse>(ipcReader);
                 return mfa;
             } catch (Exception ioe) {
@@ -271,9 +274,9 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
 
-        async public Task<MfaRecoveryCodesResponse> ReturnMFACodes(string fingerprint, string totpOrRecoveryCode) {
+        async public Task<MfaRecoveryCodesResponse> GetMFACodes(string identifier, string totpOrRecoveryCode) {
             try {
-                await sendAsync(new ReturnMFACodesFunction(fingerprint, totpOrRecoveryCode));
+                await sendAsync(new GetMFACodesFunction(identifier, totpOrRecoveryCode));
                 MfaRecoveryCodesResponse mfa = await readAsync<MfaRecoveryCodesResponse>(ipcReader);
                 return mfa;
             } catch (Exception ioe) {
@@ -285,9 +288,9 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
 
-        async public Task<MfaRecoveryCodesResponse> GenerateMFACodes(string fingerprint, string totpOrRecoveryCode) {
+        async public Task<MfaRecoveryCodesResponse> GenerateMFACodes(string identifier, string totpOrRecoveryCode) {
             try {
-                await sendAsync(new GenerateMFACodesFunction(fingerprint, totpOrRecoveryCode));
+                await sendAsync(new GenerateMFACodesFunction(identifier, totpOrRecoveryCode));
                 MfaRecoveryCodesResponse mfa = await readAsync<MfaRecoveryCodesResponse>(ipcReader);
                 return mfa;
             } catch (Exception ioe) {
@@ -298,9 +301,9 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
             return null;
         }
-        async public Task<SvcResponse> RemoveMFA(string fingerprint, string totp) {
+        async public Task<SvcResponse> RemoveMFA(string identifier, string totp) {
             try {
-                await sendAsync(new RemoveMFAFunction(fingerprint, totp));
+                await sendAsync(new RemoveMFAFunction(identifier, totp));
                 SvcResponse mfa = await readAsync<SvcResponse>(ipcReader);
                 return mfa;
             } catch (Exception ioe) {
@@ -318,6 +321,10 @@ namespace ZitiDesktopEdge.ServiceClient {
                 var jsonReaderEvt = new JsonTextReader(new StringReader(respAsString));
                 StatusEvent evt = serializer.Deserialize<StatusEvent>(jsonReaderEvt);
                 var jsonReader = new JsonTextReader(new StringReader(respAsString));
+
+                if (evt == null) {
+                    return;
+                }
 
                 switch (evt.Op) {
                     case "metrics":
@@ -397,9 +404,9 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
         }
 
-        async public Task zitiDump() {
+        async public Task zitiDump(string dumpPath) {
             try {
-                await sendAsync(new ServiceFunction() { Function = "ZitiDump" });
+                await sendAsync(new ZitiDumpFunction(dumpPath));
                 var rtn = await readAsync<SvcResponse>(ipcReader);
                 return; // rtn;
             } catch (Exception ioe) {
@@ -462,7 +469,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         async public Task<ZitiTunnelStatus> debugAsync() {
             try {
-                await sendAsync(new ServiceFunction() { Function = "Debug" });
+                await sendAsync(new ServiceFunction() { Command = "Debug" });
                 var rtn = await readAsync<ZitiTunnelStatus>(ipcReader);
                 return rtn;
             } catch (Exception ioe) {

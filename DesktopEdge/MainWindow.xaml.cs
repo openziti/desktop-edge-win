@@ -97,7 +97,7 @@ namespace ZitiDesktopEdge {
 			if (isOn) {
 				ShowLoad("Generating MFA", "MFA Setup Commencing, please wait");
 
-				await serviceClient.EnableMFA(this.IdentityMenu.Identity.Fingerprint);
+				await serviceClient.EnableMFA(this.IdentityMenu.Identity.Identifier);
 			} else {
 				this.ShowMFA(IdentityMenu.Identity, 3);
 			}
@@ -120,7 +120,7 @@ namespace ZitiDesktopEdge {
 					SetupMFA(this.IdentityMenu.Identity, url, secret);
 				} else if (mfa.Action == "auth_challenge") {
 					for (int i = 0; i < identities.Count; i++) {
-						if (identities[i].Fingerprint == mfa.Fingerprint) {
+						if (identities[i].Identifier == mfa.Identifier) {
 							identities[i].WasNotified = false;
 							identities[i].WasFullNotified = false;
 							identities[i].IsMFAEnabled = true;
@@ -131,9 +131,9 @@ namespace ZitiDesktopEdge {
 					}
 				} else if (mfa.Action == "enrollment_verification") {
 					if (mfa.Successful) {
-						var found = identities.Find(id => id.Fingerprint == mfa.Fingerprint);
+						var found = identities.Find(id => id.Identifier == mfa.Identifier);
 						for (int i = 0; i < identities.Count; i++) {
-							if (identities[i].Fingerprint == mfa.Fingerprint) {
+							if (identities[i].Identifier == mfa.Identifier) {
 								identities[i].WasNotified = false;
 								identities[i].WasFullNotified = false;
 								identities[i].IsMFAEnabled = mfa.Successful;
@@ -148,16 +148,16 @@ namespace ZitiDesktopEdge {
 								break;
 							}
 						}
-						if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Fingerprint == mfa.Fingerprint) this.IdentityMenu.Identity = found;
+						if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Identifier == mfa.Identifier) this.IdentityMenu.Identity = found;
 						ShowMFARecoveryCodes(found);
 					} else {
 						await ShowBlurbAsync("Provided code could not be verified", "");
 					}
 				} else if (mfa.Action == "enrollment_remove") {
 					if (mfa.Successful) {
-						var found = identities.Find(id => id.Fingerprint == mfa.Fingerprint);
+						var found = identities.Find(id => id.Identifier == mfa.Identifier);
 						for (int i = 0; i < identities.Count; i++) {
-							if (identities[i].Fingerprint == mfa.Fingerprint) {
+							if (identities[i].Identifier == mfa.Identifier) {
 								identities[i].WasNotified = false;
 								identities[i].WasFullNotified = false;
 								identities[i].IsMFAEnabled = false;
@@ -172,15 +172,15 @@ namespace ZitiDesktopEdge {
 								break;
 							}
 						}
-						if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Fingerprint == mfa.Fingerprint) this.IdentityMenu.Identity = found;
+						if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Identifier == mfa.Identifier) this.IdentityMenu.Identity = found;
 						await ShowBlurbAsync("MFA Disabled, Service Access Can Be Limited", "");
 					} else {
 						await ShowBlurbAsync("MFA Removal Failed", "");
 					}
 				} else if (mfa.Action == "mfa_auth_status") {
-					var found = identities.Find(id => id.Fingerprint == mfa.Fingerprint);
+					var found = identities.Find(id => id.Identifier == mfa.Identifier);
 					for (int i=0; i<identities.Count; i++) {
-						if (identities[i].Fingerprint==mfa.Fingerprint) {
+						if (identities[i].Identifier == mfa.Identifier) {
 							identities[i].WasNotified = false;
 							identities[i].WasFullNotified = false;
 							identities[i].IsTimingOut = false;
@@ -194,7 +194,7 @@ namespace ZitiDesktopEdge {
 							break;
 						}
 					}
-					if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Fingerprint == mfa.Fingerprint) this.IdentityMenu.Identity = found;
+					if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Identifier == mfa.Identifier) this.IdentityMenu.Identity = found;
 					// serviceClient.GetStatusAsync();
 					// ShowBlurb("mfa authenticated: " + mfa.Successful, "");
 				} else {
@@ -326,7 +326,7 @@ namespace ZitiDesktopEdge {
 			if (isComplete) {
 				if (MFASetup.Type == 1) {
 					for (int i=0; i<identities.Count; i++) {
-						if (identities[i].Fingerprint==MFASetup.Identity.Fingerprint) {
+						if (identities[i].Identifier == MFASetup.Identity.Identifier) {
 							identities[i] = MFASetup.Identity;
 							identities[i].LastUpdatedTime = DateTime.Now;
 						}
@@ -349,7 +349,7 @@ namespace ZitiDesktopEdge {
 
 		private void AddIdentity(ZitiIdentity id) {
 			semaphoreSlim.Wait();
-			if (!identities.Any(i => id.Fingerprint == i.Fingerprint)) {
+			if (!identities.Any(i => id.Identifier == i.Identifier)) {
 				identities.Add(id);
 			}
 			semaphoreSlim.Release();
@@ -429,7 +429,12 @@ namespace ZitiDesktopEdge {
 
 			this.PreviewKeyDown += KeyPressed;
 			MFASetup.OnLoad += MFASetup_OnLoad;
+			MFASetup.OnError += MFASetup_OnError;
 			IdentityMenu.OnMessage += IdentityMenu_OnMessage;
+		}
+
+		private void MFASetup_OnError(string message) {
+			ShowBlurbAsync(message, "", "error");
 		}
 
 		private void ToastNotificationManagerCompat_OnActivated(ToastNotificationActivatedEventArgsCompat e) {
@@ -439,9 +444,9 @@ namespace ZitiDesktopEdge {
 					if (items.Length > 0) {
 						string[] values = items[0].Split('=');
 						if (values.Length == 2) {
-							string fingerprint = values[1];
+							string identifier = values[1];
 							for (int i = 0; i < identities.Count; i++) {
-								if (identities[i].Fingerprint == fingerprint) {
+								if (identities[i].Identifier == identifier) {
 									ShowMFA(identities[i], 1);
 									break;
 								}
@@ -613,6 +618,7 @@ namespace ZitiDesktopEdge {
 			monitorClient.OnNotificationEvent += MonitorClient_OnInstallationNotificationEvent;
             monitorClient.OnServiceStatusEvent += MonitorClient_OnServiceStatusEvent;
             monitorClient.OnShutdownEvent += MonitorClient_OnShutdownEvent;
+			monitorClient.OnCommunicationError += MonitorClient_OnCommunicationError;
             monitorClient.OnReconnectFailure += MonitorClient_OnReconnectFailure;
 			Application.Current.Properties.Add("MonitorClient", monitorClient);
 
@@ -641,21 +647,29 @@ namespace ZitiDesktopEdge {
 			Placement();
 		}
 
+		private void MonitorClient_OnCommunicationError(object sender, Exception e) {
+			ShowError("Communication Error", e.Message);
+		}
+
 		private void MainMenu_OnShowBlurb(string message) {
 			_ = ShowBlurbAsync(message, "", "info");
 		}
 
 		private void ServiceClient_OnBulkServiceEvent(object sender, BulkServiceEvent e) {
-			var found = identities.Find(id => id.Fingerprint == e.Fingerprint);
+			var found = identities.Find(id => id.Identifier == e.Identifier);
 			if (found == null) {
-				logger.Warn($"{e.Action} service event for {e.Fingerprint} but the provided identity fingerprint was not found!");
+				logger.Warn($"{e.Action} service event for {e.Identifier} but the provided identity identifier was not found!");
 				return;
 			} else {
-				foreach (var removed in e.RemovedServices) {
-					removeService(found, removed);
+				if (e.RemovedServices != null) {
+					foreach (var removed in e.RemovedServices) {
+						removeService(found, removed);
+					}
 				}
-				foreach (var added in e.AddedServices) {
-					addService(found, added);
+				if (e.AddedServices != null) {
+					foreach (var added in e.AddedServices) {
+						addService(found, added);
+					}
 				}
 				LoadIdentities(true);
 				this.Dispatcher.Invoke(() => {
@@ -671,9 +685,9 @@ namespace ZitiDesktopEdge {
 			var displayMFARequired = false;
 			var displayMFATimout = false;
 			foreach (var notification in e.Notification) {
-				var found = identities.Find(id => id.Fingerprint == notification.Fingerprint);
+				var found = identities.Find(id => id.Identifier == notification.Identifier);
 				if (found == null) {
-					logger.Warn($"{e.Op} event for {notification.Fingerprint} but the provided identity fingerprint was not found!");
+					logger.Warn($"{e.Op} event for {notification.Identifier} but the provided identity identifier was not found!");
 					continue;
 				} else {
 					found.TimeoutMessage = notification.Message;
@@ -689,7 +703,7 @@ namespace ZitiDesktopEdge {
 					}
 
 					for (int i = 0; i < identities.Count; i++) {
-						if (identities[i].Fingerprint==found.Fingerprint) {
+						if (identities[i].Identifier == found.Identifier) {
 							identities[i] = found;
 							break;
 						}
@@ -711,7 +725,31 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void ServiceClient_OnControllerEvent(object sender, ControllerEvent e) {
-			logger.Debug($"==== ControllerEvent    : action:{e.Action} fingerprint:{e.Fingerprint}");
+			logger.Debug($"==== ControllerEvent    : action:{e.Action} identifier:{e.Identifier}");
+			// commenting this block, because when it receives the disconnected events, identities are disabled and
+			// it is not allowing me to click/perform any operation on the identity
+			// the color of the title is also too dark, and it is not clearly visible, when the identity is disconnected 
+			/* if (e.Action == "connected") {
+				var found = identities.Find(i => i.Identifier == e.Identifier);
+				found.IsConnected = true;
+				for (int i = 0; i < identities.Count; i++) {
+					if (identities[i].Identifier == found.Identifier) {
+						identities[i] = found;
+						break;
+					}
+				}
+				LoadIdentities(true);
+			} else if (e.Action == "disconnected") {
+				var found = identities.Find(i => i.Identifier == e.Identifier);
+				found.IsConnected = false;
+				for (int i = 0; i < identities.Count; i++) {
+					if (identities[i].Identifier == found.Identifier) {
+						identities[i] = found;
+						break;
+					}
+				}
+				LoadIdentities(true);
+			} */
 		}
 
 
@@ -868,7 +906,7 @@ namespace ZitiDesktopEdge {
 				CloseErrorButton.IsEnabled = true;
 			}
 			CloseErrorButton.IsEnabled = true;
-			HideLoad();
+			// HideLoad();
 		}
 
 		private void ShowServiceNotStarted() {
@@ -906,7 +944,7 @@ namespace ZitiDesktopEdge {
 
 		private void ServiceClient_OnClientConnected(object sender, object e) {
 			this.Dispatcher.Invoke(() => {
-				//e is _ALWAYS_ null at this time use this to display something if you want
+				MainMenu.Connected();
 				NoServiceView.Visibility = Visibility.Collapsed;
 				_isServiceInError = false;
 				UpdateServiceView();
@@ -920,6 +958,7 @@ namespace ZitiDesktopEdge {
 				IdentityMenu.Visibility = Visibility.Collapsed;
 				MFASetup.Visibility = Visibility.Collapsed;
 				HideModal();
+				MainMenu.Disconnected();
 				for (int i = 0; i < IdList.Children.Count; i++) {
 					IdentityItem item = (IdentityItem)IdList.Children[i];
 					item.StopTimers();
@@ -944,11 +983,11 @@ namespace ZitiDesktopEdge {
 			if (e == null) return;
 
 			ZitiIdentity zid = ZitiIdentity.FromClient(e.Id);
-			logger.Debug($"==== IdentityEvent    : action:{e.Action} fingerprint:{e.Id.FingerPrint} name:{e.Id.Name} ");
+			logger.Debug($"==== IdentityEvent    : action:{e.Action} identifer:{e.Id.Identifier} name:{e.Id.Name} ");
 
 			this.Dispatcher.Invoke(async () => {
 				if (e.Action == "added") {
-					var found = identities.Find(i => i.Fingerprint == e.Id.FingerPrint);
+					var found = identities.Find(i => i.Identifier == e.Id.Identifier);
 					if (found == null) {
 						AddIdentity(zid);
 						LoadIdentities(true);
@@ -960,8 +999,9 @@ namespace ZitiDesktopEdge {
 						found.IsEnabled = zid.IsEnabled;
 						found.IsMFAEnabled = e.Id.MfaEnabled;
 						found.IsAuthenticated = !e.Id.MfaNeeded;
+						found.IsConnected = true;
 						for (int i=0; i<identities.Count; i++) {
-							if (identities[i].Fingerprint==found.Fingerprint) {
+							if (identities[i].Identifier == found.Identifier) {
 								identities[i] = found;
 								break;
 							}
@@ -971,17 +1011,32 @@ namespace ZitiDesktopEdge {
 				} else if (e.Action == "updated") {
 					//this indicates that all updates have been sent to the UI... wait for 2 seconds then trigger any ui updates needed
 					await Task.Delay(2000);
+					LoadIdentities(true);
 				} else if (e.Action == "connected") {
-					//this indicates that all updates have been sent to the UI... wait for 2 seconds then trigger any ui updates needed
-					await Task.Delay(2000);
+					var found = identities.Find(i => i.Identifier == e.Id.Identifier);
+					found.IsConnected = true;
+					for (int i = 0; i < identities.Count; i++) {
+						if (identities[i].Identifier == found.Identifier) {
+							identities[i] = found;
+							break;
+						}
+					}
+					LoadIdentities(true);
 				} else if (e.Action == "disconnected") {
-					//this indicates that all updates have been sent to the UI... wait for 2 seconds then trigger any ui updates needed
-					await Task.Delay(2000);
+					var found = identities.Find(i => i.Identifier == e.Id.Identifier);
+					found.IsConnected = false;
+					for (int i = 0; i < identities.Count; i++) {
+						if (identities[i].Identifier == found.Identifier) {
+							identities[i] = found;
+							break;
+						}
+					}
+					LoadIdentities(true);
 				} else {
 					IdentityForgotten(ZitiIdentity.FromClient(e.Id));
 				}
 			});
-			logger.Debug($"IDENTITY EVENT. Action: {e.Action} fingerprint: {zid.Fingerprint}");
+			logger.Debug($"IDENTITY EVENT. Action: {e.Action} identifier: {zid.Identifier}");
 		}
 
 		private void ServiceClient_OnMetricsEvent(object sender, List<Identity> ids) {
@@ -1015,10 +1070,10 @@ namespace ZitiDesktopEdge {
 		private void ServiceClient_OnServiceEvent(object sender, ServiceEvent e) {
 			if (e == null) return;
 
-			logger.Debug($"==== ServiceEvent     : action:{e.Action} fingerprint:{e.Fingerprint} name:{e.Service.Name} ");
-			var found = identities.Find(id => id.Fingerprint == e.Fingerprint);
+			logger.Debug($"==== ServiceEvent     : action:{e.Action} identifier:{e.Identifier} name:{e.Service.Name} ");
+			var found = identities.Find(id => id.Identifier == e.Identifier);
 			if (found == null) {
-				logger.Debug($"{e.Action} service event for {e.Service.Name} but the provided identity fingerprint {e.Fingerprint} is not found!");
+				logger.Debug($"{e.Action} service event for {e.Service.Name} but the provided identity identifier {e.Identifier} is not found!");
 				return;
 			}
 
@@ -1065,10 +1120,10 @@ namespace ZitiDesktopEdge {
 			Application.Current.Properties.Add("CurrentTunnelStatus", e.Status);
 			e.Status.Dump(Console.Out);
 			this.Dispatcher.Invoke(() => {
-				if (e.ApiVersion != DataClient.EXPECTED_API_VERSION) {
+				/*if (e.ApiVersion != DataClient.EXPECTED_API_VERSION) {
 					SetCantDisplay("Version mismatch!", "The version of the Service is not compatible", Visibility.Visible);
 					return;
-				}
+				}*/
 				this.MainMenu.LogLevel = e.Status.LogLevel;
 				Ziti.Desktop.Edge.Utils.UIUtils.SetLogLevel(e.Status.LogLevel);
 
@@ -1099,7 +1154,7 @@ namespace ZitiDesktopEdge {
 		private void IdentityForgotten(ZitiIdentity forgotten) {
 			ZitiIdentity idToRemove = null;
 			foreach (var id in identities) {
-				if (id.Fingerprint == forgotten.Fingerprint) {
+				if (id.Identifier == forgotten.Identifier) {
 					idToRemove = id;
 					break;
 				}
@@ -1175,7 +1230,7 @@ namespace ZitiDesktopEdge {
 		private void updateViewWithIdentity(Identity id) {
 			var zid = ZitiIdentity.FromClient(id);
 			foreach (var i in identities) {
-				if (i.Fingerprint == zid.Fingerprint) {
+				if (i.Identifier == zid.Identifier) {
 					identities.Remove(i);
 					break;
 				}
@@ -1225,7 +1280,7 @@ namespace ZitiDesktopEdge {
 
 		private void LoadIdentities(Boolean repaint) {
 			this.Dispatcher.Invoke(() => {
-				for (int i=0; i<IdList.Children.Count; i++) {
+				for (int i = 0; i < IdList.Children.Count; i++) {
 					IdentityItem item = (IdentityItem)IdList.Children[i];
 					item.StopTimers();
 				}
@@ -1235,7 +1290,7 @@ namespace ZitiDesktopEdge {
 				if (_maxHeight > (desktopWorkingArea.Height - 10)) _maxHeight = desktopWorkingArea.Height - 10;
 				if (_maxHeight < 100) _maxHeight = 100;
 				IdList.MaxHeight = _maxHeight - 520;
-				ZitiIdentity[] ids = identities.OrderBy(i => i.Name.ToLower()).ToArray();
+				ZitiIdentity[] ids = identities.OrderBy(i => (i.Name != null) ? i.Name.ToLower() : i.Name).ToArray();
 				MainMenu.SetupIdList(ids);
 				if (ids.Length > 0 && serviceClient.Connected) {
 					double height = 490 + (ids.Length * 60);
@@ -1254,12 +1309,13 @@ namespace ZitiDesktopEdge {
 						idItem.OnStatusChanged += Id_OnStatusChanged;
 						idItem.Identity = id;
 						idItem.IdentityChanged += IdItem_IdentityChanged;
+						
 						if (repaint) idItem.RefreshUI();
 
 						IdList.Children.Add(idItem);
 
 						if (IdentityMenu.Visibility==Visibility.Visible) {
-							if (id.Fingerprint==IdentityMenu.Identity.Fingerprint) IdentityMenu.Identity = id;
+							if (id.Identifier == IdentityMenu.Identity.Identifier) IdentityMenu.Identity = id;
 						}
 					}
 					DoubleAnimation animation = new DoubleAnimation((double)(ids.Length * 64), TimeSpan.FromSeconds(.2));
@@ -1280,7 +1336,7 @@ namespace ZitiDesktopEdge {
 
 		private void IdItem_IdentityChanged(ZitiIdentity identity) {
 			for (int i=0; i<identities.Count; i++) {
-				if (identities[i].Fingerprint==identity.Fingerprint) {
+				if (identities[i].Identifier == identity.Identifier) {
 					identities[i] = identity;
 					break;
  				}
@@ -1304,12 +1360,17 @@ namespace ZitiDesktopEdge {
 				if (isConnected) {
 					ConnectButton.Visibility = Visibility.Collapsed;
 					DisconnectButton.Visibility = Visibility.Visible;
+					MainMenu.Connected();
+					HideLoad();
 				} else {
 					ConnectButton.Visibility = Visibility.Visible;
 					DisconnectButton.Visibility = Visibility.Collapsed;
 					IdentityMenu.Visibility = Visibility.Collapsed;
 					MainMenu.Visibility = Visibility.Collapsed;
 					HideBlurb();
+					MainMenu.Disconnected();
+					DownloadSpeed.Content = "0.0";
+					UploadSpeed.Content = "0.0";
 				}
 			});
 		}
@@ -1389,6 +1450,7 @@ namespace ZitiDesktopEdge {
 			UIModel.HideOnLostFocus = true;
 			jwtDialog.DefaultExt = ".jwt";
 			jwtDialog.Filter = "Ziti Identities (*.jwt)|*.jwt";
+
 			if (jwtDialog.ShowDialog() == true) {
 				ShowLoad("Adding Identity", "Please wait while the identity is added");
 				string fileContent = File.ReadAllText(jwtDialog.FileName);
@@ -1400,10 +1462,10 @@ namespace ZitiDesktopEdge {
 						var zid = ZitiIdentity.FromClient(createdId);
 						AddIdentity(zid);
 						LoadIdentities(true);
-					} else {
+						await serviceClient.IdentityOnOffAsync(createdId.Identifier, true);
+					}/* else {
 						ShowError("Identity Error", "Identity Id was null, please try again");
-					}
-					await serviceClient.IdentityOnOffAsync(createdId.FingerPrint, true);
+					}*/
 				} catch (ServiceException se) {
 					ShowError(se.Message, se.AdditionalInfo);
 				} catch (Exception ex) {
@@ -1439,7 +1501,7 @@ namespace ZitiDesktopEdge {
 				TunnelConnected(true);
 
 				for (int i = 0; i < identities.Count; i++) {
-					await serviceClient.IdentityOnOffAsync(identities[i].Fingerprint, true);
+					await serviceClient.IdentityOnOffAsync(identities[i].Identifier, true);
 				}
 				for (int i = 0; i < IdList.Children.Count; i++) {
 					IdentityItem item = IdList.Children[i] as IdentityItem;

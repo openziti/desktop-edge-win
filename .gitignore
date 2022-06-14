@@ -275,3 +275,7 @@ WinSign.*
 ADV_INST_KEY.key
 WinSign.b64
 Installer/ZitiDesktopEdge.back.aip
+ziti-edge-tunnel/deps/
+ziti-edge-tunnel/*.dll
+ziti-edge-tunnel/*.exe
+ziti-edge-tunnel/*.zip

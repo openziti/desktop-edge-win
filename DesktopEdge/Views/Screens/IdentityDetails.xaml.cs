@@ -327,11 +327,11 @@ namespace ZitiDesktopEdge {
 			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
 			try {
 				ConfirmView.Visibility = Visibility.Collapsed;
-				await client.RemoveIdentityAsync(_identity.Fingerprint);
+				await client.RemoveIdentityAsync(_identity.Identifier);
 
 				ZitiIdentity forgotten = new ZitiIdentity();
 				foreach (var id in identities) {
-					if (id.Fingerprint == _identity.Fingerprint) {
+					if (id.Identifier == _identity.Identifier) {
 						forgotten = id;
 						identities.Remove(id);
 						break;
@@ -463,7 +463,7 @@ namespace ZitiDesktopEdge {
 		async private void DoConnect(object sender, MouseButtonEventArgs e) {
 			this.OnLoading?.Invoke(false);
 			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-			await client.IdentityOnOffAsync(_identity.Fingerprint, true);
+			await client.IdentityOnOffAsync(_identity.Identifier, true);
 			if (SelectedIdentity != null) SelectedIdentity.ToggleSwitch.Enabled = true;
 			if (SelectedIdentityMenu != null) SelectedIdentityMenu.ToggleSwitch.Enabled = true;
 			_identity.IsEnabled = true;
@@ -475,7 +475,7 @@ namespace ZitiDesktopEdge {
 		async private void DoDisconnect(object sender, MouseButtonEventArgs e) {
 			this.OnLoading?.Invoke(false);
 			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-			await client.IdentityOnOffAsync(_identity.Fingerprint, false);
+			await client.IdentityOnOffAsync(_identity.Identifier, false);
 			if (SelectedIdentity != null) SelectedIdentity.ToggleSwitch.Enabled = false;
 			if (SelectedIdentityMenu != null) SelectedIdentityMenu.ToggleSwitch.Enabled = false;
 			_identity.IsEnabled = false;

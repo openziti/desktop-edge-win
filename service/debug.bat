@@ -1,1 +1,0 @@
-cls & "c:\Program Files\JetBrains\GoLand 2021.3.1\plugins\go\lib\dlv\windows\dlv.exe" --listen=localhost:50000 --headless=true --api-version=2 --check-go-version=false --only-same-user=false exec ziti-tunnel.exe debug

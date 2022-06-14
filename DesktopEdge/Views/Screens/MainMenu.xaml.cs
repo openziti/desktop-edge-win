@@ -242,7 +242,13 @@ namespace ZitiDesktopEdge {
                 ConfigIp.Value = Application.Current.Properties["ip"]?.ToString();
 				ConfigSubnet.Value = Application.Current.Properties["subnet"]?.ToString();
 				ConfigMtu.Value = Application.Current.Properties["mtu"]?.ToString();
-				ConfigDns.Value = (bool)Application.Current.Properties["dnsenabled"] ? Application.Current.Properties["dns"]?.ToString() : "disabled";
+				string dnsValue = "disabled";
+				if (Application.Current.Properties.Contains("dnsenabled")) {
+					if ((bool)Application.Current.Properties["dnsenabled"] && Application.Current.Properties.Contains("dns")) {
+						dnsValue = Application.Current.Properties["dns"].ToString();
+					}
+				}
+				ConfigDns.Value = dnsValue;
 			} else if (menuState == "Identities") {
 				MenuTitle.Content = "Identities";
 				IdListScrollView.Visibility = Visibility.Visible;
@@ -308,7 +314,11 @@ namespace ZitiDesktopEdge {
 				string timestamp = DateTime.Now.ToFileTime().ToString();
 
 				var dataClient = (DataClient)Application.Current.Properties["ServiceClient"];
-				await dataClient.zitiDump();
+
+				string exeLocation = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+				string logLocation = Path.Combine(exeLocation, "logs");
+				string serviceLogsLocation = Path.Combine(logLocation, "service");
+				await dataClient.zitiDump(serviceLogsLocation);
 
 				var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
 				MonitorServiceStatusEvent resp = await monitorClient.CaptureLogsAsync();
@@ -389,14 +399,12 @@ namespace ZitiDesktopEdge {
 			LogDebug.IsSelected = false;
 			LogInfo.IsSelected = false;
 			LogError.IsSelected = false;
-			LogFatal.IsSelected = false;
 			LogWarn.IsSelected = false;
 			LogTrace.IsSelected = false;
 			if (this.LogLevel == "verbose") LogVerbose.IsSelected = true;
 			else if (this.LogLevel == "debug") LogDebug.IsSelected = true;
 			else if (this.LogLevel == "info") LogInfo.IsSelected = true;
 			else if (this.LogLevel == "error") LogError.IsSelected = true;
-			else if (this.LogLevel == "fatal") LogFatal.IsSelected = true;
 			else if (this.LogLevel == "warn") LogWarn.IsSelected = true;
 			else if (this.LogLevel == "trace") LogTrace.IsSelected = true;
 		}
@@ -494,6 +502,20 @@ namespace ZitiDesktopEdge {
 			});
 		}
 
+		public void Disconnected() {
+			ConfigItems.IsEnabled = false;
+			ConfigItems.Opacity = 0.3;
+			LogLevelItems.IsEnabled = false;
+			LogLevelItems.Opacity = 0.3;
+        }
+
+		public void Connected() {
+			ConfigItems.IsEnabled = true;
+			ConfigItems.Opacity = 1.0;
+			LogLevelItems.IsEnabled = true;
+			LogLevelItems.Opacity = 1.0;
+		}
+
 		/// <summary>
 		/// Save the config information to the properties and queue for update.
 		/// </summary>
@@ -568,7 +590,10 @@ namespace ZitiDesktopEdge {
 					break;
 				}
 			}
-			AddDnsNew.IsChecked = (bool)Application.Current.Properties["dnsenabled"];
+			AddDnsNew.IsChecked = false;
+			if (Application.Current.Properties.Contains("dnsenabled")) {
+				AddDnsNew.IsChecked = (bool)Application.Current.Properties["dnsenabled"];
+			}
 			EditArea.Opacity = 0;
 			EditArea.Visibility = Visibility.Visible;
 			EditArea.Margin = new Thickness(0, 0, 0, 0);

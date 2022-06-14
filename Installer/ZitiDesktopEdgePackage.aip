@@ -1,0 +1,598 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<DOCUMENT Type="Advanced Installer" CreateVersion="19.2" version="19.2" Modules="professional" RootPath="." Language="en" Id="{7259542D-36BC-4075-BA01-7A849A944DA0}">
+  <COMPONENT cid="caphyon.advinst.msicomp.ProjectOptionsComponent">
+    <ROW Name="Application_1_AssetGenDestFolderPath" Value="Generated Assets" ValueType="1"/>
+    <ROW Name="Application_2_AssetGenDestFolderPath" Value="Generated Assets" ValueType="1"/>
+    <ROW Name="Application_AssetGenDestFolderPath" Value="Generated Assets" ValueType="1"/>
+    <ROW Name="Application_WorkingDir" Value="APPDIR"/>
+    <ROW Name="AssetGenPkgDestFolderPath" Value="Generated Assets" ValueType="1"/>
+    <ROW Name="MigrationUninstallCode" Value="{7C2ABB7D-8FC5-432B-9AB0-2E0BB364FC6A}"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiPropsComponent">
+    <ROW Property="AI_BITMAP_DISPLAY_MODE" Value="0"/>
+    <ROW Property="AI_CURRENT_YEAR" Value="2022" ValueLocId="-"/>
+    <ROW Property="ALLUSERS" Value="1"/>
+    <ROW Property="ARPCOMMENTS" Value="This installer database contains the logic and data required to install [|ProductName]." ValueLocId="*"/>
+    <ROW Property="Manufacturer" Value="NetFoundry, Inc"/>
+    <ROW Property="ProductCode" Value="1033:{5FD8BFD2-1990-4E3C-AC96-0F7CA0765B7C} " Type="16"/>
+    <ROW Property="ProductLanguage" Value="1033"/>
+    <ROW Property="ProductName" Value="Ziti Desktop Edge"/>
+    <ROW Property="ProductVersion" Value="1.12.2"/>
+    <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND"/>
+    <ROW Property="UpgradeCode" Value="{7C2ABB7D-8FC5-432B-9AB0-2E0BB364FC6A}"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiDirsComponent">
+    <ROW Directory="APPDIR" Directory_Parent="TARGETDIR" DefaultDir="APPDIR:." IsPseudoRoot="1"/>
+    <ROW Directory="Assets" Directory_Parent="TARGETDIR" DefaultDir="Assets" IsPseudoRoot="1"/>
+    <ROW Directory="DesktopFolder" Directory_Parent="TARGETDIR" DefaultDir="DESKTO~1|DesktopFolder" IsPseudoRoot="1"/>
+    <ROW Directory="SHORTCUTDIR" Directory_Parent="TARGETDIR" DefaultDir="SHORTC~1|SHORTCUTDIR" IsPseudoRoot="1"/>
+    <ROW Directory="StartupFolder" Directory_Parent="TARGETDIR" DefaultDir="STARTU~1|StartupFolder" IsPseudoRoot="1"/>
+    <ROW Directory="TARGETDIR" DefaultDir="SourceDir"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiCompsComponent">
+    <ROW Component="APPDIR" ComponentId="{D3E7EA26-2218-4662-8157-162F336A4CDC}" Directory_="APPDIR" Attributes="0"/>
+    <ROW Component="DnsClient.dll" ComponentId="{D618ED56-B896-42A7-A16D-18137271A2B6}" Directory_="APPDIR" Attributes="0" KeyPath="DnsClient.dll"/>
+    <ROW Component="Microsoft.Toolkit.Uwp.Notifications.dll" ComponentId="{75D48BB8-B16C-46F8-AD21-33323D5C4697}" Directory_="APPDIR" Attributes="0" KeyPath="Microsoft.Toolkit.Uwp.Notifications.dll"/>
+    <ROW Component="NLog.dll" ComponentId="{571A9696-E564-4146-A4BA-F2FC9E6711B9}" Directory_="APPDIR" Attributes="0" KeyPath="NLog.dll"/>
+    <ROW Component="Newtonsoft.Json.dll" ComponentId="{CF405828-8059-4FC3-8F97-0310E5CF343B}" Directory_="APPDIR" Attributes="0" KeyPath="Newtonsoft.Json.dll"/>
+    <ROW Component="ProductInformation" ComponentId="{FC1A2A5C-854C-4D3C-AFBC-9A30AAAB0564}" Directory_="APPDIR" Attributes="4" KeyPath="Version"/>
+    <ROW Component="QRCoder.dll" ComponentId="{3770C527-2D13-4986-BC2D-2BEDFB2322FA}" Directory_="APPDIR" Attributes="0" KeyPath="QRCoder.dll"/>
+    <ROW Component="SHORTCUTDIR" ComponentId="{7EEACA6B-3B5A-4A21-8180-1D9885487117}" Directory_="SHORTCUTDIR" Attributes="0"/>
+    <ROW Component="Store50x50Logo.scale100.png" ComponentId="{314DE50D-B276-4954-AC36-5954F5C6B7F9}" Directory_="Assets" Attributes="0" KeyPath="Store50x50Logo.scale100.png" Type="0"/>
+    <ROW Component="System.Buffers.dll" ComponentId="{F385CEA0-07DE-4DBB-AE06-6B4ECA9E9182}" Directory_="APPDIR" Attributes="0" KeyPath="System.Buffers.dll"/>
+    <ROW Component="WpfMouseWheelLib.dll" ComponentId="{5E83F795-8D71-4924-A175-C24A08A34389}" Directory_="APPDIR" Attributes="0" KeyPath="WpfMouseWheelLib.dll"/>
+    <ROW Component="ZitiDesktopEdge.Client.dll" ComponentId="{583F8046-C899-4B3C-91E5-9AF109FC161F}" Directory_="APPDIR" Attributes="0" KeyPath="ZitiDesktopEdge.Client.dll"/>
+    <ROW Component="ZitiDesktopEdge.exe.config" ComponentId="{68C386F0-D94B-48C2-8FFC-3F253F856E79}" Directory_="APPDIR" Attributes="0" KeyPath="ZitiDesktopEdge.exe.config" Type="0"/>
+    <ROW Component="ZitiDesktopEdge.exe_1" ComponentId="{B5EA1B8F-41E5-46A3-A3B4-5CF24A91FA39}" Directory_="APPDIR" Attributes="256" KeyPath="ZitiDesktopEdge.exe_1"/>
+    <ROW Component="ZitiUpdateService.exe" ComponentId="{AE478D03-405E-49A3-A466-0CA841464822}" Directory_="APPDIR" Attributes="256" KeyPath="ZitiUpdateService.exe"/>
+    <ROW Component="wintun.dll" ComponentId="{835CEBD2-7E2C-4538-87AF-02DC5EDB0D6D}" Directory_="APPDIR" Attributes="256" KeyPath="wintun.dll"/>
+    <ROW Component="zitiedgetunnel.exe" ComponentId="{9622B418-23FE-4370-A59B-27D7DF529634}" Directory_="APPDIR" Attributes="256" KeyPath="zitiedgetunnel.exe"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiFeatsComponent">
+    <ROW Feature="AiAppXAssets" Title="AiAppXAssets" Description="Description" Display="3" Level="0" Directory_="APPDIR" Attributes="0" Options="271" Builds="Build_MSIX_APPX"/>
+    <ROW Feature="MainFeature" Title="MainFeature" Description="Description" Display="1" Level="1" Directory_="APPDIR" Attributes="0"/>
+    <ATTRIBUTE name="CurrentFeature" value="MainFeature"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiFilesComponent">
+    <ROW File="Store50x50Logo.scale100.png" Component_="Store50x50Logo.scale100.png" FileName="STORE5~2.PNG|Store50x50Logo.scale-100.png" Attributes="0" SourcePath="Generated Assets\ziti.scale-100.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare71x71Logo.scale100.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITIDE~1.PNG|ZitiDesktopEdge.exeSquare71x71Logo.scale-100.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare71x71Logo.scale-100.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare71x71Logo.scale120.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITIDE~2.PNG|ZitiDesktopEdge.exeSquare71x71Logo.scale-120.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare71x71Logo.scale-120.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare71x71Logo.scale125.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITIDE~3.PNG|ZitiDesktopEdge.exeSquare71x71Logo.scale-125.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare71x71Logo.scale-125.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare71x71Logo.scale140.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITIDE~4.PNG|ZitiDesktopEdge.exeSquare71x71Logo.scale-140.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare71x71Logo.scale-140.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare71x71Logo.scale150.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITIDE~5.PNG|ZitiDesktopEdge.exeSquare71x71Logo.scale-150.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare71x71Logo.scale-150.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare71x71Logo.scale160.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITIDE~6.PNG|ZitiDesktopEdge.exeSquare71x71Logo.scale-160.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare71x71Logo.scale-160.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare71x71Logo.scale180.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITIDE~7.PNG|ZitiDesktopEdge.exeSquare71x71Logo.scale-180.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare71x71Logo.scale-180.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare71x71Logo.scale200.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITIDE~8.PNG|ZitiDesktopEdge.exeSquare71x71Logo.scale-200.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare71x71Logo.scale-200.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare71x71Logo.scale220.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITIDE~9.PNG|ZitiDesktopEdge.exeSquare71x71Logo.scale-220.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare71x71Logo.scale-220.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare71x71Logo.scale225.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~10.PNG|ZitiDesktopEdge.exeSquare71x71Logo.scale-225.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare71x71Logo.scale-225.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare71x71Logo.scale240.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~11.PNG|ZitiDesktopEdge.exeSquare71x71Logo.scale-240.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare71x71Logo.scale-240.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare71x71Logo.scale250.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~12.PNG|ZitiDesktopEdge.exeSquare71x71Logo.scale-250.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare71x71Logo.scale-250.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare71x71Logo.scale300.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~13.PNG|ZitiDesktopEdge.exeSquare71x71Logo.scale-300.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare71x71Logo.scale-300.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare71x71Logo.scale400.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~14.PNG|ZitiDesktopEdge.exeSquare71x71Logo.scale-400.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare71x71Logo.scale-400.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare71x71Logo.scale500.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~15.PNG|ZitiDesktopEdge.exeSquare71x71Logo.scale-500.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare71x71Logo.scale-500.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare150x150Logo.scale100.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~16.PNG|ZitiDesktopEdge.exeSquare150x150Logo.scale-100.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare150x150Logo.scale-100.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare150x150Logo.scale120.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~17.PNG|ZitiDesktopEdge.exeSquare150x150Logo.scale-120.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare150x150Logo.scale-120.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare150x150Logo.scale125.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~18.PNG|ZitiDesktopEdge.exeSquare150x150Logo.scale-125.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare150x150Logo.scale-125.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare150x150Logo.scale140.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~19.PNG|ZitiDesktopEdge.exeSquare150x150Logo.scale-140.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare150x150Logo.scale-140.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare150x150Logo.scale150.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~20.PNG|ZitiDesktopEdge.exeSquare150x150Logo.scale-150.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare150x150Logo.scale-150.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare150x150Logo.scale160.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~21.PNG|ZitiDesktopEdge.exeSquare150x150Logo.scale-160.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare150x150Logo.scale-160.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare150x150Logo.scale180.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~22.PNG|ZitiDesktopEdge.exeSquare150x150Logo.scale-180.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare150x150Logo.scale-180.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare150x150Logo.scale200.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~23.PNG|ZitiDesktopEdge.exeSquare150x150Logo.scale-200.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare150x150Logo.scale-200.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare150x150Logo.scale220.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~24.PNG|ZitiDesktopEdge.exeSquare150x150Logo.scale-220.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare150x150Logo.scale-220.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare150x150Logo.scale225.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~25.PNG|ZitiDesktopEdge.exeSquare150x150Logo.scale-225.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare150x150Logo.scale-225.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare150x150Logo.scale240.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~26.PNG|ZitiDesktopEdge.exeSquare150x150Logo.scale-240.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare150x150Logo.scale-240.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare150x150Logo.scale250.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~27.PNG|ZitiDesktopEdge.exeSquare150x150Logo.scale-250.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare150x150Logo.scale-250.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare150x150Logo.scale300.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~28.PNG|ZitiDesktopEdge.exeSquare150x150Logo.scale-300.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare150x150Logo.scale-300.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare150x150Logo.scale400.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~29.PNG|ZitiDesktopEdge.exeSquare150x150Logo.scale-400.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare150x150Logo.scale-400.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare150x150Logo.scale500.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~30.PNG|ZitiDesktopEdge.exeSquare150x150Logo.scale-500.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare150x150Logo.scale-500.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeWide310x150Logo.scale100.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~31.PNG|ZitiDesktopEdge.exeWide310x150Logo.scale-100.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeWide310x150Logo.scale-100.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeWide310x150Logo.scale120.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~32.PNG|ZitiDesktopEdge.exeWide310x150Logo.scale-120.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeWide310x150Logo.scale-120.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeWide310x150Logo.scale125.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~33.PNG|ZitiDesktopEdge.exeWide310x150Logo.scale-125.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeWide310x150Logo.scale-125.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeWide310x150Logo.scale140.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~34.PNG|ZitiDesktopEdge.exeWide310x150Logo.scale-140.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeWide310x150Logo.scale-140.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeWide310x150Logo.scale150.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~35.PNG|ZitiDesktopEdge.exeWide310x150Logo.scale-150.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeWide310x150Logo.scale-150.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeWide310x150Logo.scale160.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~36.PNG|ZitiDesktopEdge.exeWide310x150Logo.scale-160.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeWide310x150Logo.scale-160.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeWide310x150Logo.scale180.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~37.PNG|ZitiDesktopEdge.exeWide310x150Logo.scale-180.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeWide310x150Logo.scale-180.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeWide310x150Logo.scale200.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~38.PNG|ZitiDesktopEdge.exeWide310x150Logo.scale-200.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeWide310x150Logo.scale-200.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeWide310x150Logo.scale220.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~39.PNG|ZitiDesktopEdge.exeWide310x150Logo.scale-220.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeWide310x150Logo.scale-220.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeWide310x150Logo.scale225.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~40.PNG|ZitiDesktopEdge.exeWide310x150Logo.scale-225.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeWide310x150Logo.scale-225.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeWide310x150Logo.scale240.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~41.PNG|ZitiDesktopEdge.exeWide310x150Logo.scale-240.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeWide310x150Logo.scale-240.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeWide310x150Logo.scale250.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~42.PNG|ZitiDesktopEdge.exeWide310x150Logo.scale-250.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeWide310x150Logo.scale-250.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeWide310x150Logo.scale300.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~43.PNG|ZitiDesktopEdge.exeWide310x150Logo.scale-300.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeWide310x150Logo.scale-300.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeWide310x150Logo.scale400.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~44.PNG|ZitiDesktopEdge.exeWide310x150Logo.scale-400.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeWide310x150Logo.scale-400.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeWide310x150Logo.scale500.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~45.PNG|ZitiDesktopEdge.exeWide310x150Logo.scale-500.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeWide310x150Logo.scale-500.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare310x310Logo.scale100.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~46.PNG|ZitiDesktopEdge.exeSquare310x310Logo.scale-100.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare310x310Logo.scale-100.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare310x310Logo.scale120.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~47.PNG|ZitiDesktopEdge.exeSquare310x310Logo.scale-120.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare310x310Logo.scale-120.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare310x310Logo.scale125.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~48.PNG|ZitiDesktopEdge.exeSquare310x310Logo.scale-125.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare310x310Logo.scale-125.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare310x310Logo.scale140.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~49.PNG|ZitiDesktopEdge.exeSquare310x310Logo.scale-140.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare310x310Logo.scale-140.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare310x310Logo.scale150.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~50.PNG|ZitiDesktopEdge.exeSquare310x310Logo.scale-150.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare310x310Logo.scale-150.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare310x310Logo.scale160.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~51.PNG|ZitiDesktopEdge.exeSquare310x310Logo.scale-160.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare310x310Logo.scale-160.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare310x310Logo.scale180.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~52.PNG|ZitiDesktopEdge.exeSquare310x310Logo.scale-180.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare310x310Logo.scale-180.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare310x310Logo.scale200.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~53.PNG|ZitiDesktopEdge.exeSquare310x310Logo.scale-200.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare310x310Logo.scale-200.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare310x310Logo.scale220.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~54.PNG|ZitiDesktopEdge.exeSquare310x310Logo.scale-220.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare310x310Logo.scale-220.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare310x310Logo.scale225.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~55.PNG|ZitiDesktopEdge.exeSquare310x310Logo.scale-225.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare310x310Logo.scale-225.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare310x310Logo.scale240.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~56.PNG|ZitiDesktopEdge.exeSquare310x310Logo.scale-240.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare310x310Logo.scale-240.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare310x310Logo.scale250.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~57.PNG|ZitiDesktopEdge.exeSquare310x310Logo.scale-250.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare310x310Logo.scale-250.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare310x310Logo.scale300.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~58.PNG|ZitiDesktopEdge.exeSquare310x310Logo.scale-300.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare310x310Logo.scale-300.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare310x310Logo.scale400.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~59.PNG|ZitiDesktopEdge.exeSquare310x310Logo.scale-400.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare310x310Logo.scale-400.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare310x310Logo.scale500.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~60.PNG|ZitiDesktopEdge.exeSquare310x310Logo.scale-500.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare310x310Logo.scale-500.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.scale100.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~61.PNG|ZitiDesktopEdge.exeSquare44x44Logo.scale-100.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.scale-100.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.targetsize16.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~62.PNG|ZitiDesktopEdge.exeSquare44x44Logo.targetsize-16.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.targetsize-16.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.targetsize16_altformunplated.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~63.PNG|ZitiDesktopEdge.exeSquare44x44Logo.targetsize-16_altform-unplated.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.targetsize-16_altform-unplated.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.targetsize16_altformlightunplate_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~64.PNG|ZitiDesktopEdge.exeSquare44x44Logo.targetsize-16_altform-lightunplated.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.targetsize-16_altform-lightunplated.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.scale120.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~65.PNG|ZitiDesktopEdge.exeSquare44x44Logo.scale-120.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.scale-120.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.scale125.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~66.PNG|ZitiDesktopEdge.exeSquare44x44Logo.scale-125.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.scale-125.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.targetsize24.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~67.PNG|ZitiDesktopEdge.exeSquare44x44Logo.targetsize-24.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.targetsize-24.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.targetsize24_altformunplated.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~68.PNG|ZitiDesktopEdge.exeSquare44x44Logo.targetsize-24_altform-unplated.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.targetsize-24_altform-unplated.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.targetsize24_altformlightunplate_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~69.PNG|ZitiDesktopEdge.exeSquare44x44Logo.targetsize-24_altform-lightunplated.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.targetsize-24_altform-lightunplated.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.scale140.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~70.PNG|ZitiDesktopEdge.exeSquare44x44Logo.scale-140.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.scale-140.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.scale150.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~71.PNG|ZitiDesktopEdge.exeSquare44x44Logo.scale-150.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.scale-150.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.targetsize32.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~72.PNG|ZitiDesktopEdge.exeSquare44x44Logo.targetsize-32.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.targetsize-32.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.targetsize32_altformunplated.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~73.PNG|ZitiDesktopEdge.exeSquare44x44Logo.targetsize-32_altform-unplated.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.targetsize-32_altform-unplated.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.targetsize32_altformlightunplate_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~74.PNG|ZitiDesktopEdge.exeSquare44x44Logo.targetsize-32_altform-lightunplated.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.targetsize-32_altform-lightunplated.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.scale160.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~75.PNG|ZitiDesktopEdge.exeSquare44x44Logo.scale-160.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.scale-160.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.scale180.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~76.PNG|ZitiDesktopEdge.exeSquare44x44Logo.scale-180.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.scale-180.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.scale200.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~77.PNG|ZitiDesktopEdge.exeSquare44x44Logo.scale-200.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.scale-200.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.targetsize48.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~78.PNG|ZitiDesktopEdge.exeSquare44x44Logo.targetsize-48.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.targetsize-48.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.targetsize48_altformunplated.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~79.PNG|ZitiDesktopEdge.exeSquare44x44Logo.targetsize-48_altform-unplated.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.targetsize-48_altform-unplated.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.targetsize48_altformlightunplate_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~80.PNG|ZitiDesktopEdge.exeSquare44x44Logo.targetsize-48_altform-lightunplated.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.targetsize-48_altform-lightunplated.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.scale220.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~81.PNG|ZitiDesktopEdge.exeSquare44x44Logo.scale-220.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.scale-220.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.scale225.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~82.PNG|ZitiDesktopEdge.exeSquare44x44Logo.scale-225.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.scale-225.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.scale240.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~83.PNG|ZitiDesktopEdge.exeSquare44x44Logo.scale-240.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.scale-240.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.scale250.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~84.PNG|ZitiDesktopEdge.exeSquare44x44Logo.scale-250.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.scale-250.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.scale300.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~85.PNG|ZitiDesktopEdge.exeSquare44x44Logo.scale-300.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.scale-300.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.scale400.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~86.PNG|ZitiDesktopEdge.exeSquare44x44Logo.scale-400.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.scale-400.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.targetsize256.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~87.PNG|ZitiDesktopEdge.exeSquare44x44Logo.targetsize-256.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.targetsize-256.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.targetsize256_altformunplated.pn_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~88.PNG|ZitiDesktopEdge.exeSquare44x44Logo.targetsize-256_altform-unplated.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.targetsize-256_altform-unplated.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.targetsize256_altformlightunplat_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~89.PNG|ZitiDesktopEdge.exeSquare44x44Logo.targetsize-256_altform-lightunplated.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.targetsize-256_altform-lightunplated.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSquare44x44Logo.scale500.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~90.PNG|ZitiDesktopEdge.exeSquare44x44Logo.scale-500.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSquare44x44Logo.scale-500.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSplashScreen.scale100.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~91.PNG|ZitiDesktopEdge.exeSplashScreen.scale-100.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSplashScreen.scale-100.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSplashScreen.scale120.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~92.PNG|ZitiDesktopEdge.exeSplashScreen.scale-120.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSplashScreen.scale-120.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSplashScreen.scale125.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~93.PNG|ZitiDesktopEdge.exeSplashScreen.scale-125.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSplashScreen.scale-125.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSplashScreen.scale140.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~94.PNG|ZitiDesktopEdge.exeSplashScreen.scale-140.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSplashScreen.scale-140.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSplashScreen.scale150.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~95.PNG|ZitiDesktopEdge.exeSplashScreen.scale-150.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSplashScreen.scale-150.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSplashScreen.scale160.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~96.PNG|ZitiDesktopEdge.exeSplashScreen.scale-160.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSplashScreen.scale-160.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSplashScreen.scale180.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~97.PNG|ZitiDesktopEdge.exeSplashScreen.scale-180.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSplashScreen.scale-180.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSplashScreen.scale200.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~98.PNG|ZitiDesktopEdge.exeSplashScreen.scale-200.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSplashScreen.scale-200.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSplashScreen.scale220.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITID~99.PNG|ZitiDesktopEdge.exeSplashScreen.scale-220.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSplashScreen.scale-220.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSplashScreen.scale225.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITI~100.PNG|ZitiDesktopEdge.exeSplashScreen.scale-225.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSplashScreen.scale-225.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSplashScreen.scale240.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITI~101.PNG|ZitiDesktopEdge.exeSplashScreen.scale-240.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSplashScreen.scale-240.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSplashScreen.scale250.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITI~102.PNG|ZitiDesktopEdge.exeSplashScreen.scale-250.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSplashScreen.scale-250.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSplashScreen.scale300.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITI~103.PNG|ZitiDesktopEdge.exeSplashScreen.scale-300.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSplashScreen.scale-300.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSplashScreen.scale400.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITI~104.PNG|ZitiDesktopEdge.exeSplashScreen.scale-400.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSplashScreen.scale-400.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeSplashScreen.scale500.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITI~105.PNG|ZitiDesktopEdge.exeSplashScreen.scale-500.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeSplashScreen.scale-500.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeBadgeLogo.scale100.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITI~106.PNG|ZitiDesktopEdge.exeBadgeLogo.scale-100.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeBadgeLogo.scale-100.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeBadgeLogo.scale120.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITI~107.PNG|ZitiDesktopEdge.exeBadgeLogo.scale-120.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeBadgeLogo.scale-120.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeBadgeLogo.scale125.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITI~108.PNG|ZitiDesktopEdge.exeBadgeLogo.scale-125.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeBadgeLogo.scale-125.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeBadgeLogo.scale140.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITI~109.PNG|ZitiDesktopEdge.exeBadgeLogo.scale-140.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeBadgeLogo.scale-140.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeBadgeLogo.scale150.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITI~110.PNG|ZitiDesktopEdge.exeBadgeLogo.scale-150.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeBadgeLogo.scale-150.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeBadgeLogo.scale160.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITI~111.PNG|ZitiDesktopEdge.exeBadgeLogo.scale-160.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeBadgeLogo.scale-160.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeBadgeLogo.scale180.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITI~112.PNG|ZitiDesktopEdge.exeBadgeLogo.scale-180.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeBadgeLogo.scale-180.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeBadgeLogo.scale200.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITI~113.PNG|ZitiDesktopEdge.exeBadgeLogo.scale-200.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeBadgeLogo.scale-200.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeBadgeLogo.scale220.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITI~114.PNG|ZitiDesktopEdge.exeBadgeLogo.scale-220.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeBadgeLogo.scale-220.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeBadgeLogo.scale225.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITI~115.PNG|ZitiDesktopEdge.exeBadgeLogo.scale-225.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeBadgeLogo.scale-225.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeBadgeLogo.scale240.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITI~116.PNG|ZitiDesktopEdge.exeBadgeLogo.scale-240.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeBadgeLogo.scale-240.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeBadgeLogo.scale250.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITI~117.PNG|ZitiDesktopEdge.exeBadgeLogo.scale-250.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeBadgeLogo.scale-250.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeBadgeLogo.scale300.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITI~118.PNG|ZitiDesktopEdge.exeBadgeLogo.scale-300.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeBadgeLogo.scale-300.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeBadgeLogo.scale400.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITI~119.PNG|ZitiDesktopEdge.exeBadgeLogo.scale-400.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeBadgeLogo.scale-400.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exeBadgeLogo.scale500.png_1" Component_="Store50x50Logo.scale100.png" FileName="ZITI~120.PNG|ZitiDesktopEdge.exeBadgeLogo.scale-500.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdge.exeBadgeLogo.scale-500.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exe_1" Component_="ZitiDesktopEdge.exe_1" FileName="ZITIDE~1.EXE|ZitiDesktopEdge.exe" Attributes="0" SourcePath="..\DesktopEdge\bin\Release\ZitiDesktopEdge.exe" SelfReg="false"/>
+    <ROW File="Microsoft.Toolkit.Uwp.Notifications.dll" Component_="Microsoft.Toolkit.Uwp.Notifications.dll" FileName="MICROS~1.DLL|Microsoft.Toolkit.Uwp.Notifications.dll" Attributes="0" SourcePath="..\DesktopEdge\bin\Release\Microsoft.Toolkit.Uwp.Notifications.dll" SelfReg="false"/>
+    <ROW File="QRCoder.dll" Component_="QRCoder.dll" FileName="QRCoder.dll" Attributes="0" SourcePath="..\DesktopEdge\bin\Release\QRCoder.dll" SelfReg="false"/>
+    <ROW File="WpfMouseWheelLib.dll" Component_="WpfMouseWheelLib.dll" FileName="WPFMOU~1.DLL|WpfMouseWheelLib.dll" Attributes="0" SourcePath="..\DesktopEdge\bin\Release\WpfMouseWheelLib.dll" SelfReg="false"/>
+    <ROW File="Newtonsoft.Json.dll" Component_="Newtonsoft.Json.dll" FileName="NEWTON~1.DLL|Newtonsoft.Json.dll" Attributes="0" SourcePath="..\DesktopEdge\bin\Release\Newtonsoft.Json.dll" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exe.config" Component_="ZitiDesktopEdge.exe.config" FileName="ZITIDE~1.CON|ZitiDesktopEdge.exe.config" Attributes="0" SourcePath="..\DesktopEdge\bin\Release\ZitiDesktopEdge.exe.config" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgelog.config" Component_="ZitiDesktopEdge.exe.config" FileName="ZITIDE~2.CON|ZitiDesktopEdge-log.config" Attributes="0" SourcePath="..\DesktopEdge\bin\Release\ZitiDesktopEdge-log.config" SelfReg="false"/>
+    <ROW File="ziti.ico" Component_="ZitiDesktopEdge.exe.config" FileName="ziti.ico" Attributes="0" SourcePath="ziti.ico" SelfReg="false"/>
+    <ROW File="zitiedgetunnel.exe" Component_="zitiedgetunnel.exe" FileName="ZITI-E~1.EXE|ziti-edge-tunnel.exe" Attributes="0" SourcePath="build\service\ziti-edge-tunnel.exe" SelfReg="false"/>
+    <ROW File="wintun.dll" Component_="wintun.dll" FileName="wintun.dll" Attributes="0" SourcePath="build\service\wintun.dll" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.Client.dll" Component_="ZitiDesktopEdge.Client.dll" FileName="ZITIDE~1.DLL|ZitiDesktopEdge.Client.dll" Attributes="0" SourcePath="..\ZitiDesktopEdge.Client\bin\Release\ZitiDesktopEdge.Client.dll" SelfReg="false"/>
+    <ROW File="NLog.dll" Component_="NLog.dll" FileName="NLog.dll" Attributes="0" SourcePath="..\ZitiUpdateService\bin\Release\NLog.dll" SelfReg="false"/>
+    <ROW File="DnsClient.dll" Component_="DnsClient.dll" FileName="DNSCLI~1.DLL|DnsClient.dll" Attributes="0" SourcePath="..\ZitiUpdateService\bin\Release\DnsClient.dll" SelfReg="false"/>
+    <ROW File="System.Buffers.dll" Component_="System.Buffers.dll" FileName="SYSTEM~1.DLL|System.Buffers.dll" Attributes="0" SourcePath="..\ZitiUpdateService\bin\Release\System.Buffers.dll" SelfReg="false"/>
+    <ROW File="ZitiUpdateServicelog.config" Component_="ZitiDesktopEdge.exe.config" FileName="ZITIUP~1.CON|ZitiUpdateService-log.config" Attributes="0" SourcePath="..\ZitiUpdateService\bin\Release\ZitiUpdateService-log.config" SelfReg="false"/>
+    <ROW File="ZitiUpdateService.exe.config" Component_="ZitiDesktopEdge.exe.config" FileName="ZITIUP~2.CON|ZitiUpdateService.exe.config" Attributes="0" SourcePath="..\ZitiUpdateService\bin\Release\ZitiUpdateService.exe.config" SelfReg="false"/>
+    <ROW File="ZitiUpdateService.exe" Component_="ZitiUpdateService.exe" FileName="ZITIUP~1.EXE|ZitiUpdateService.exe" Attributes="0" SourcePath="..\ZitiUpdateService\bin\Release\ZitiUpdateService.exe" SelfReg="false"/>
+    <ROW File="YourServiceHostedServiceSquare44x44Logo.scale100.png" Component_="Store50x50Logo.scale100.png" FileName="YOURSE~1.PNG|YourServiceHostedServiceSquare44x44Logo.scale-100.png" Attributes="0" SourcePath="&lt;AI_RES&gt;appx\SmallLogo10.png" SelfReg="false"/>
+    <ROW File="YourServiceHostedServiceSquare150x150Logo.scale100.png" Component_="Store50x50Logo.scale100.png" FileName="YOURSE~2.PNG|YourServiceHostedServiceSquare150x150Logo.scale-100.png" Attributes="0" SourcePath="&lt;AI_RES&gt;appx\Logo.png" SelfReg="false"/>
+    <ROW File="YourServiceHostedService1Square44x44Logo.scale100.png" Component_="Store50x50Logo.scale100.png" FileName="YOURSE~3.PNG|YourServiceHostedService1Square44x44Logo.scale-100.png" Attributes="0" SourcePath="&lt;AI_RES&gt;appx\SmallLogo10.png" SelfReg="false"/>
+    <ROW File="YourServiceHostedService1Square150x150Logo.scale100.png" Component_="Store50x50Logo.scale100.png" FileName="YOURSE~4.PNG|YourServiceHostedService1Square150x150Logo.scale-100.png" Attributes="0" SourcePath="&lt;AI_RES&gt;appx\Logo.png" SelfReg="false"/>
+    <ROW File="Store50x50Logo.scale125.png" Component_="Store50x50Logo.scale100.png" FileName="STORE5~1.PNG|Store50x50Logo.scale-125.png" Attributes="0" SourcePath="Generated Assets\ziti.scale-125.png" SelfReg="false"/>
+    <ROW File="Store50x50Logo.scale150.png" Component_="Store50x50Logo.scale100.png" FileName="STORE5~3.PNG|Store50x50Logo.scale-150.png" Attributes="0" SourcePath="Generated Assets\ziti.scale-150.png" SelfReg="false"/>
+    <ROW File="Store50x50Logo.scale200.png" Component_="Store50x50Logo.scale100.png" FileName="STORE5~4.PNG|Store50x50Logo.scale-200.png" Attributes="0" SourcePath="Generated Assets\ziti.scale-200.png" SelfReg="false"/>
+    <ROW File="Store50x50Logo.scale400.png" Component_="Store50x50Logo.scale100.png" FileName="STORE5~5.PNG|Store50x50Logo.scale-400.png" Attributes="0" SourcePath="Generated Assets\ziti.scale-400.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare71x71Logo.scale100.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~121.PNG|ZitiDesktopEdgeSquare71x71Logo.scale-100.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare71x71Logo.scale-100.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare71x71Logo.scale120.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~122.PNG|ZitiDesktopEdgeSquare71x71Logo.scale-120.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare71x71Logo.scale-120.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare71x71Logo.scale125.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~123.PNG|ZitiDesktopEdgeSquare71x71Logo.scale-125.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare71x71Logo.scale-125.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare71x71Logo.scale140.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~124.PNG|ZitiDesktopEdgeSquare71x71Logo.scale-140.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare71x71Logo.scale-140.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare71x71Logo.scale150.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~125.PNG|ZitiDesktopEdgeSquare71x71Logo.scale-150.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare71x71Logo.scale-150.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare71x71Logo.scale160.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~126.PNG|ZitiDesktopEdgeSquare71x71Logo.scale-160.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare71x71Logo.scale-160.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare71x71Logo.scale180.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~127.PNG|ZitiDesktopEdgeSquare71x71Logo.scale-180.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare71x71Logo.scale-180.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare71x71Logo.scale200.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~128.PNG|ZitiDesktopEdgeSquare71x71Logo.scale-200.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare71x71Logo.scale-200.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare71x71Logo.scale220.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~129.PNG|ZitiDesktopEdgeSquare71x71Logo.scale-220.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare71x71Logo.scale-220.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare71x71Logo.scale225.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~130.PNG|ZitiDesktopEdgeSquare71x71Logo.scale-225.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare71x71Logo.scale-225.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare71x71Logo.scale240.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~131.PNG|ZitiDesktopEdgeSquare71x71Logo.scale-240.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare71x71Logo.scale-240.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare71x71Logo.scale250.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~132.PNG|ZitiDesktopEdgeSquare71x71Logo.scale-250.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare71x71Logo.scale-250.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare71x71Logo.scale300.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~133.PNG|ZitiDesktopEdgeSquare71x71Logo.scale-300.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare71x71Logo.scale-300.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare71x71Logo.scale400.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~134.PNG|ZitiDesktopEdgeSquare71x71Logo.scale-400.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare71x71Logo.scale-400.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare71x71Logo.scale500.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~135.PNG|ZitiDesktopEdgeSquare71x71Logo.scale-500.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare71x71Logo.scale-500.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare150x150Logo.scale100.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~136.PNG|ZitiDesktopEdgeSquare150x150Logo.scale-100.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare150x150Logo.scale-100.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare150x150Logo.scale120.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~137.PNG|ZitiDesktopEdgeSquare150x150Logo.scale-120.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare150x150Logo.scale-120.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare150x150Logo.scale125.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~138.PNG|ZitiDesktopEdgeSquare150x150Logo.scale-125.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare150x150Logo.scale-125.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare150x150Logo.scale140.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~139.PNG|ZitiDesktopEdgeSquare150x150Logo.scale-140.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare150x150Logo.scale-140.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare150x150Logo.scale150.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~140.PNG|ZitiDesktopEdgeSquare150x150Logo.scale-150.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare150x150Logo.scale-150.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare150x150Logo.scale160.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~141.PNG|ZitiDesktopEdgeSquare150x150Logo.scale-160.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare150x150Logo.scale-160.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare150x150Logo.scale180.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~142.PNG|ZitiDesktopEdgeSquare150x150Logo.scale-180.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare150x150Logo.scale-180.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare150x150Logo.scale200.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~143.PNG|ZitiDesktopEdgeSquare150x150Logo.scale-200.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare150x150Logo.scale-200.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare150x150Logo.scale220.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~144.PNG|ZitiDesktopEdgeSquare150x150Logo.scale-220.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare150x150Logo.scale-220.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare150x150Logo.scale225.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~145.PNG|ZitiDesktopEdgeSquare150x150Logo.scale-225.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare150x150Logo.scale-225.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare150x150Logo.scale240.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~146.PNG|ZitiDesktopEdgeSquare150x150Logo.scale-240.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare150x150Logo.scale-240.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare150x150Logo.scale250.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~147.PNG|ZitiDesktopEdgeSquare150x150Logo.scale-250.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare150x150Logo.scale-250.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare150x150Logo.scale300.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~148.PNG|ZitiDesktopEdgeSquare150x150Logo.scale-300.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare150x150Logo.scale-300.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare150x150Logo.scale400.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~149.PNG|ZitiDesktopEdgeSquare150x150Logo.scale-400.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare150x150Logo.scale-400.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare150x150Logo.scale500.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~150.PNG|ZitiDesktopEdgeSquare150x150Logo.scale-500.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare150x150Logo.scale-500.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeWide310x150Logo.scale100.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~151.PNG|ZitiDesktopEdgeWide310x150Logo.scale-100.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeWide310x150Logo.scale-100.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeWide310x150Logo.scale120.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~152.PNG|ZitiDesktopEdgeWide310x150Logo.scale-120.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeWide310x150Logo.scale-120.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeWide310x150Logo.scale125.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~153.PNG|ZitiDesktopEdgeWide310x150Logo.scale-125.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeWide310x150Logo.scale-125.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeWide310x150Logo.scale140.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~154.PNG|ZitiDesktopEdgeWide310x150Logo.scale-140.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeWide310x150Logo.scale-140.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeWide310x150Logo.scale150.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~155.PNG|ZitiDesktopEdgeWide310x150Logo.scale-150.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeWide310x150Logo.scale-150.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeWide310x150Logo.scale160.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~156.PNG|ZitiDesktopEdgeWide310x150Logo.scale-160.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeWide310x150Logo.scale-160.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeWide310x150Logo.scale180.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~157.PNG|ZitiDesktopEdgeWide310x150Logo.scale-180.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeWide310x150Logo.scale-180.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeWide310x150Logo.scale200.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~158.PNG|ZitiDesktopEdgeWide310x150Logo.scale-200.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeWide310x150Logo.scale-200.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeWide310x150Logo.scale220.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~159.PNG|ZitiDesktopEdgeWide310x150Logo.scale-220.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeWide310x150Logo.scale-220.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeWide310x150Logo.scale225.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~160.PNG|ZitiDesktopEdgeWide310x150Logo.scale-225.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeWide310x150Logo.scale-225.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeWide310x150Logo.scale240.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~161.PNG|ZitiDesktopEdgeWide310x150Logo.scale-240.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeWide310x150Logo.scale-240.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeWide310x150Logo.scale250.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~162.PNG|ZitiDesktopEdgeWide310x150Logo.scale-250.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeWide310x150Logo.scale-250.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeWide310x150Logo.scale300.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~163.PNG|ZitiDesktopEdgeWide310x150Logo.scale-300.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeWide310x150Logo.scale-300.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeWide310x150Logo.scale400.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~164.PNG|ZitiDesktopEdgeWide310x150Logo.scale-400.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeWide310x150Logo.scale-400.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeWide310x150Logo.scale500.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~165.PNG|ZitiDesktopEdgeWide310x150Logo.scale-500.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeWide310x150Logo.scale-500.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare310x310Logo.scale100.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~166.PNG|ZitiDesktopEdgeSquare310x310Logo.scale-100.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare310x310Logo.scale-100.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare310x310Logo.scale120.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~167.PNG|ZitiDesktopEdgeSquare310x310Logo.scale-120.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare310x310Logo.scale-120.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare310x310Logo.scale125.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~168.PNG|ZitiDesktopEdgeSquare310x310Logo.scale-125.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare310x310Logo.scale-125.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare310x310Logo.scale140.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~169.PNG|ZitiDesktopEdgeSquare310x310Logo.scale-140.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare310x310Logo.scale-140.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare310x310Logo.scale150.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~170.PNG|ZitiDesktopEdgeSquare310x310Logo.scale-150.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare310x310Logo.scale-150.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare310x310Logo.scale160.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~171.PNG|ZitiDesktopEdgeSquare310x310Logo.scale-160.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare310x310Logo.scale-160.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare310x310Logo.scale180.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~172.PNG|ZitiDesktopEdgeSquare310x310Logo.scale-180.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare310x310Logo.scale-180.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare310x310Logo.scale200.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~173.PNG|ZitiDesktopEdgeSquare310x310Logo.scale-200.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare310x310Logo.scale-200.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare310x310Logo.scale220.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~174.PNG|ZitiDesktopEdgeSquare310x310Logo.scale-220.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare310x310Logo.scale-220.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare310x310Logo.scale225.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~175.PNG|ZitiDesktopEdgeSquare310x310Logo.scale-225.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare310x310Logo.scale-225.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare310x310Logo.scale240.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~176.PNG|ZitiDesktopEdgeSquare310x310Logo.scale-240.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare310x310Logo.scale-240.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare310x310Logo.scale250.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~177.PNG|ZitiDesktopEdgeSquare310x310Logo.scale-250.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare310x310Logo.scale-250.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare310x310Logo.scale300.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~178.PNG|ZitiDesktopEdgeSquare310x310Logo.scale-300.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare310x310Logo.scale-300.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare310x310Logo.scale400.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~179.PNG|ZitiDesktopEdgeSquare310x310Logo.scale-400.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare310x310Logo.scale-400.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare310x310Logo.scale500.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~180.PNG|ZitiDesktopEdgeSquare310x310Logo.scale-500.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare310x310Logo.scale-500.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.scale100.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~181.PNG|ZitiDesktopEdgeSquare44x44Logo.scale-100.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.scale-100.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.targetsize16.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~182.PNG|ZitiDesktopEdgeSquare44x44Logo.targetsize-16.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.targetsize-16.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.targetsize16_altformunplated.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~183.PNG|ZitiDesktopEdgeSquare44x44Logo.targetsize-16_altform-unplated.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.targetsize-16_altform-unplated.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.targetsize16_altformlightunplated.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~184.PNG|ZitiDesktopEdgeSquare44x44Logo.targetsize-16_altform-lightunplated.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.targetsize-16_altform-lightunplated.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.scale120.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~185.PNG|ZitiDesktopEdgeSquare44x44Logo.scale-120.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.scale-120.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.scale125.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~186.PNG|ZitiDesktopEdgeSquare44x44Logo.scale-125.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.scale-125.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.targetsize24.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~187.PNG|ZitiDesktopEdgeSquare44x44Logo.targetsize-24.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.targetsize-24.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.targetsize24_altformunplated.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~188.PNG|ZitiDesktopEdgeSquare44x44Logo.targetsize-24_altform-unplated.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.targetsize-24_altform-unplated.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.targetsize24_altformlightunplated.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~189.PNG|ZitiDesktopEdgeSquare44x44Logo.targetsize-24_altform-lightunplated.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.targetsize-24_altform-lightunplated.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.scale140.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~190.PNG|ZitiDesktopEdgeSquare44x44Logo.scale-140.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.scale-140.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.scale150.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~191.PNG|ZitiDesktopEdgeSquare44x44Logo.scale-150.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.scale-150.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.targetsize32.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~192.PNG|ZitiDesktopEdgeSquare44x44Logo.targetsize-32.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.targetsize-32.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.targetsize32_altformunplated.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~193.PNG|ZitiDesktopEdgeSquare44x44Logo.targetsize-32_altform-unplated.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.targetsize-32_altform-unplated.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.targetsize32_altformlightunplated.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~194.PNG|ZitiDesktopEdgeSquare44x44Logo.targetsize-32_altform-lightunplated.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.targetsize-32_altform-lightunplated.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.scale160.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~195.PNG|ZitiDesktopEdgeSquare44x44Logo.scale-160.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.scale-160.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.scale180.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~196.PNG|ZitiDesktopEdgeSquare44x44Logo.scale-180.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.scale-180.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.scale200.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~197.PNG|ZitiDesktopEdgeSquare44x44Logo.scale-200.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.scale-200.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.targetsize48.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~198.PNG|ZitiDesktopEdgeSquare44x44Logo.targetsize-48.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.targetsize-48.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.targetsize48_altformunplated.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~199.PNG|ZitiDesktopEdgeSquare44x44Logo.targetsize-48_altform-unplated.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.targetsize-48_altform-unplated.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.targetsize48_altformlightunplated.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~200.PNG|ZitiDesktopEdgeSquare44x44Logo.targetsize-48_altform-lightunplated.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.targetsize-48_altform-lightunplated.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.scale220.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~201.PNG|ZitiDesktopEdgeSquare44x44Logo.scale-220.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.scale-220.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.scale225.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~202.PNG|ZitiDesktopEdgeSquare44x44Logo.scale-225.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.scale-225.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.scale240.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~203.PNG|ZitiDesktopEdgeSquare44x44Logo.scale-240.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.scale-240.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.scale250.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~204.PNG|ZitiDesktopEdgeSquare44x44Logo.scale-250.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.scale-250.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.scale300.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~205.PNG|ZitiDesktopEdgeSquare44x44Logo.scale-300.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.scale-300.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.scale400.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~206.PNG|ZitiDesktopEdgeSquare44x44Logo.scale-400.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.scale-400.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.targetsize256.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~207.PNG|ZitiDesktopEdgeSquare44x44Logo.targetsize-256.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.targetsize-256.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.targetsize256_altformunplated.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~208.PNG|ZitiDesktopEdgeSquare44x44Logo.targetsize-256_altform-unplated.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.targetsize-256_altform-unplated.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.targetsize256_altformlightunplated.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~209.PNG|ZitiDesktopEdgeSquare44x44Logo.targetsize-256_altform-lightunplated.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.targetsize-256_altform-lightunplated.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSquare44x44Logo.scale500.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~210.PNG|ZitiDesktopEdgeSquare44x44Logo.scale-500.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSquare44x44Logo.scale-500.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSplashScreen.scale100.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~211.PNG|ZitiDesktopEdgeSplashScreen.scale-100.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSplashScreen.scale-100.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSplashScreen.scale120.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~212.PNG|ZitiDesktopEdgeSplashScreen.scale-120.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSplashScreen.scale-120.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSplashScreen.scale125.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~213.PNG|ZitiDesktopEdgeSplashScreen.scale-125.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSplashScreen.scale-125.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSplashScreen.scale140.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~214.PNG|ZitiDesktopEdgeSplashScreen.scale-140.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSplashScreen.scale-140.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSplashScreen.scale150.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~215.PNG|ZitiDesktopEdgeSplashScreen.scale-150.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSplashScreen.scale-150.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSplashScreen.scale160.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~216.PNG|ZitiDesktopEdgeSplashScreen.scale-160.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSplashScreen.scale-160.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSplashScreen.scale180.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~217.PNG|ZitiDesktopEdgeSplashScreen.scale-180.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSplashScreen.scale-180.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSplashScreen.scale200.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~218.PNG|ZitiDesktopEdgeSplashScreen.scale-200.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSplashScreen.scale-200.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSplashScreen.scale220.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~219.PNG|ZitiDesktopEdgeSplashScreen.scale-220.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSplashScreen.scale-220.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSplashScreen.scale225.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~220.PNG|ZitiDesktopEdgeSplashScreen.scale-225.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSplashScreen.scale-225.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSplashScreen.scale240.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~221.PNG|ZitiDesktopEdgeSplashScreen.scale-240.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSplashScreen.scale-240.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSplashScreen.scale250.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~222.PNG|ZitiDesktopEdgeSplashScreen.scale-250.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSplashScreen.scale-250.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSplashScreen.scale300.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~223.PNG|ZitiDesktopEdgeSplashScreen.scale-300.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSplashScreen.scale-300.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSplashScreen.scale400.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~224.PNG|ZitiDesktopEdgeSplashScreen.scale-400.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSplashScreen.scale-400.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeSplashScreen.scale500.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~225.PNG|ZitiDesktopEdgeSplashScreen.scale-500.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeSplashScreen.scale-500.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeBadgeLogo.scale100.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~226.PNG|ZitiDesktopEdgeBadgeLogo.scale-100.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeBadgeLogo.scale-100.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeBadgeLogo.scale120.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~227.PNG|ZitiDesktopEdgeBadgeLogo.scale-120.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeBadgeLogo.scale-120.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeBadgeLogo.scale125.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~228.PNG|ZitiDesktopEdgeBadgeLogo.scale-125.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeBadgeLogo.scale-125.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeBadgeLogo.scale140.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~229.PNG|ZitiDesktopEdgeBadgeLogo.scale-140.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeBadgeLogo.scale-140.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeBadgeLogo.scale150.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~230.PNG|ZitiDesktopEdgeBadgeLogo.scale-150.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeBadgeLogo.scale-150.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeBadgeLogo.scale160.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~231.PNG|ZitiDesktopEdgeBadgeLogo.scale-160.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeBadgeLogo.scale-160.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeBadgeLogo.scale180.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~232.PNG|ZitiDesktopEdgeBadgeLogo.scale-180.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeBadgeLogo.scale-180.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeBadgeLogo.scale200.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~233.PNG|ZitiDesktopEdgeBadgeLogo.scale-200.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeBadgeLogo.scale-200.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeBadgeLogo.scale220.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~234.PNG|ZitiDesktopEdgeBadgeLogo.scale-220.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeBadgeLogo.scale-220.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeBadgeLogo.scale225.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~235.PNG|ZitiDesktopEdgeBadgeLogo.scale-225.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeBadgeLogo.scale-225.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeBadgeLogo.scale240.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~236.PNG|ZitiDesktopEdgeBadgeLogo.scale-240.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeBadgeLogo.scale-240.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeBadgeLogo.scale250.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~237.PNG|ZitiDesktopEdgeBadgeLogo.scale-250.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeBadgeLogo.scale-250.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeBadgeLogo.scale300.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~238.PNG|ZitiDesktopEdgeBadgeLogo.scale-300.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeBadgeLogo.scale-300.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeBadgeLogo.scale400.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~239.PNG|ZitiDesktopEdgeBadgeLogo.scale-400.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeBadgeLogo.scale-400.png" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdgeBadgeLogo.scale500.png" Component_="Store50x50Logo.scale100.png" FileName="ZITI~240.PNG|ZitiDesktopEdgeBadgeLogo.scale-500.png" Attributes="0" SourcePath="Generated Assets\ZitiDesktopEdgeBadgeLogo.scale-500.png" SelfReg="false"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.AppXCfgComponent">
+    <ROW ID="Configuration" Order="1" ManifestFile="AppxManifest.xml" TargetOs="4" AutoUpdatesFrequency="0" AutoUpdatesOptions="0" ManifestBundleFile="AppxBundleManifest.xml"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.BootstrOptComponent">
+    <ROW BootstrOptKey="GlobalOptions" DownloadFolder="[AppDataFolder][|Manufacturer]\[|ProductName]\prerequisites" Options="2"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.BuildComponent">
+    <ROW BuildKey="Build_MSIX_APPX" BuildName="Build_MSIX_APPX" BuildOrder="1" BuildType="7" PackageFolder="Build_MSIX_APPXSetupFiles" PackageFileName="Ziti Desktop Edge" Languages="en" UwpTargetDesktop="TargetDeviceFamily" UwpAppXBuildUploadFile="true"/>
+    <ROW BuildKey="Build_MSIX_APPXSubBuild" BuildName="x64" BuildOrder="2" BuildType="8" ParentBuild="Build_MSIX_APPX"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.DictionaryComponent">
+    <ROW Path="&lt;AI_DICTS&gt;ui.ail"/>
+    <ROW Path="&lt;AI_DICTS&gt;ui_en.ail"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.DigCertStoreComponent">
+    <ROW DigitalCertificate="WinSign.p12" TimeStampUrl="http://timestamp.digicert.com" SignerDescription="[|ProductName]" SignOptions="0" SignTool="0" UseSha256="1" Password="7699ECA4D093C4035580B953B142A311C9FB727A" Subject="CN=NetFoundry Inc., O=NetFoundry Inc., L=Herndon, S=Virginia, C=US"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.FragmentComponent">
+    <ROW Fragment="CommonUI.aip" Path="&lt;AI_FRAGS&gt;CommonUI.aip"/>
+    <ROW Fragment="FolderDlg.aip" Path="&lt;AI_THEMES&gt;classic\fragments\FolderDlg.aip"/>
+    <ROW Fragment="MaintenanceTypeDlg.aip" Path="&lt;AI_THEMES&gt;classic\fragments\MaintenanceTypeDlg.aip"/>
+    <ROW Fragment="MaintenanceWelcomeDlg.aip" Path="&lt;AI_THEMES&gt;classic\fragments\MaintenanceWelcomeDlg.aip"/>
+    <ROW Fragment="SequenceDialogs.aip" Path="&lt;AI_THEMES&gt;classic\fragments\SequenceDialogs.aip"/>
+    <ROW Fragment="Sequences.aip" Path="&lt;AI_FRAGS&gt;Sequences.aip"/>
+    <ROW Fragment="StaticUIStrings.aip" Path="&lt;AI_FRAGS&gt;StaticUIStrings.aip"/>
+    <ROW Fragment="Themes.aip" Path="&lt;AI_FRAGS&gt;Themes.aip"/>
+    <ROW Fragment="UI.aip" Path="&lt;AI_THEMES&gt;classic\fragments\UI.aip"/>
+    <ROW Fragment="Validation.aip" Path="&lt;AI_FRAGS&gt;Validation.aip"/>
+    <ROW Fragment="VerifyRemoveDlg.aip" Path="&lt;AI_THEMES&gt;classic\fragments\VerifyRemoveDlg.aip"/>
+    <ROW Fragment="VerifyRepairDlg.aip" Path="&lt;AI_THEMES&gt;classic\fragments\VerifyRepairDlg.aip"/>
+    <ROW Fragment="WelcomeDlg.aip" Path="&lt;AI_THEMES&gt;classic\fragments\WelcomeDlg.aip"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.GenericXmlAttributeComponent">
+    <ROW XmlAttribute="AppListEntry" XmlElement="VisualElements_1" Name="AppListEntry" Flags="0" Order="0" Value="default"/>
+    <ROW XmlAttribute="AppListEntry_1" XmlElement="VisualElements_2" Name="AppListEntry" Flags="0" Order="0" Value="default"/>
+    <ROW XmlAttribute="BackgroundColor" XmlElement="VisualElements" Name="BackgroundColor" Flags="0" Order="0" Value="transparent"/>
+    <ROW XmlAttribute="BackgroundColor_1" XmlElement="VisualElements_1" Name="BackgroundColor" Flags="0" Order="0" Value="transparent"/>
+    <ROW XmlAttribute="BackgroundColor_2" XmlElement="VisualElements_2" Name="BackgroundColor" Flags="0" Order="0" Value="transparent"/>
+    <ROW XmlAttribute="BadgeLogo" XmlElement="LockScreen" Name="BadgeLogo" Flags="0" Order="0" FileId="ZitiDesktopEdge.exeBadgeLogo.scale100.png_1"/>
+    <ROW XmlAttribute="Category" XmlElement="Extension" Name="Category" Flags="0" Order="0" Value="windows.desktopAppMigration"/>
+    <ROW XmlAttribute="Category_1" XmlElement="Extension_1" Name="Category" Flags="0" Order="0" Value="windows.service"/>
+    <ROW XmlAttribute="Category_2" XmlElement="Extension_2" Name="Category" Flags="0" Order="0" Value="windows.service"/>
+    <ROW XmlAttribute="Category_3" XmlElement="Extension_3" Name="Category" Flags="0" Order="0" Value="windows.startupTask"/>
+    <ROW XmlAttribute="Description" XmlElement="VisualElements" Name="Description" Flags="0" Order="0" Value="Ziti Desktop Edge"/>
+    <ROW XmlAttribute="Description_1" XmlElement="VisualElements_1" Name="Description" Flags="0" Order="0" Value="Ziti Edge Tunnel"/>
+    <ROW XmlAttribute="Description_2" XmlElement="VisualElements_2" Name="Description" Flags="0" Order="0" Value="Ziti Update Service"/>
+    <ROW XmlAttribute="DisplayName" XmlElement="VisualElements" Name="DisplayName" Flags="0" Order="0" Value="Ziti Desktop Edge"/>
+    <ROW XmlAttribute="DisplayName_1" XmlElement="VisualElements_1" Name="DisplayName" Flags="0" Order="0" Value="Ziti Edge Tunnel (Hosted Service)"/>
+    <ROW XmlAttribute="DisplayName_2" XmlElement="VisualElements_2" Name="DisplayName" Flags="0" Order="0" Value="Ziti Update Service (Hosted Service)"/>
+    <ROW XmlAttribute="DisplayName_3" XmlElement="StartupTask" Name="DisplayName" Flags="0" Order="0" Value="Ziti Desktop Edge"/>
+    <ROW XmlAttribute="Enabled" XmlElement="StartupTask" Name="Enabled" Flags="0" Order="0" Value="true"/>
+    <ROW XmlAttribute="EntryPoint" XmlElement="Application" Name="EntryPoint" Flags="0" Order="0" Value="Windows.FullTrustApplication"/>
+    <ROW XmlAttribute="EntryPoint_1" XmlElement="Extension" Name="EntryPoint" Flags="0" Order="0" Value="Windows.FullTrustApplication"/>
+    <ROW XmlAttribute="EntryPoint_2" XmlElement="Application_1" Name="EntryPoint" Flags="0" Order="0" Value="Windows.FullTrustApplication"/>
+    <ROW XmlAttribute="EntryPoint_3" XmlElement="Extension_1" Name="EntryPoint" Flags="0" Order="0" Value="Windows.FullTrustApplication"/>
+    <ROW XmlAttribute="EntryPoint_4" XmlElement="Application_2" Name="EntryPoint" Flags="0" Order="0" Value="Windows.FullTrustApplication"/>
+    <ROW XmlAttribute="EntryPoint_5" XmlElement="Extension_2" Name="EntryPoint" Flags="0" Order="0" Value="Windows.FullTrustApplication"/>
+    <ROW XmlAttribute="EntryPoint_6" XmlElement="Extension_3" Name="EntryPoint" Flags="0" Order="0" Value="Windows.FullTrustApplication"/>
+    <ROW XmlAttribute="Executable" XmlElement="Application" Name="Executable" Flags="0" Order="0" FileId="ZitiDesktopEdge.exe_1"/>
+    <ROW XmlAttribute="Executable_1" XmlElement="Extension" Name="Executable" Flags="0" Order="0" FileId="ZitiDesktopEdge.exe_1"/>
+    <ROW XmlAttribute="Executable_2" XmlElement="Application_1" Name="Executable" Flags="0" Order="0" FileId="zitiedgetunnel.exe"/>
+    <ROW XmlAttribute="Executable_3" XmlElement="Extension_1" Name="Executable" Flags="0" Order="0" FileId="zitiedgetunnel.exe"/>
+    <ROW XmlAttribute="Executable_4" XmlElement="Application_2" Name="Executable" Flags="0" Order="0" FileId="ZitiUpdateService.exe"/>
+    <ROW XmlAttribute="Executable_5" XmlElement="Extension_2" Name="Executable" Flags="0" Order="0" FileId="ZitiUpdateService.exe"/>
+    <ROW XmlAttribute="Executable_6" XmlElement="Extension_3" Name="Executable" Flags="0" Order="0" FileId="ZitiDesktopEdge.exe_1"/>
+    <ROW XmlAttribute="Id" XmlElement="Application" Name="Id" Flags="0" Order="0" Value="ZitiDesktopEdge"/>
+    <ROW XmlAttribute="Id_1" XmlElement="Application_1" Name="Id" Flags="0" Order="0" Value="ZitiEdgeTunnel"/>
+    <ROW XmlAttribute="Id_2" XmlElement="Application_2" Name="Id" Flags="0" Order="0" Value="ZitiUpdateService"/>
+    <ROW XmlAttribute="Image" XmlElement="SplashScreen" Name="Image" Flags="0" Order="0" FileId="ZitiDesktopEdge.exeSplashScreen.scale100.png_1"/>
+    <ROW XmlAttribute="Language" XmlElement="Resource" Name="Language" Flags="0" Order="0" Value="en-US"/>
+    <ROW XmlAttribute="MaxVersionTested" XmlElement="TargetDeviceFamily" Name="MaxVersionTested" Flags="0" Order="0" Value="10.0.22000.0"/>
+    <ROW XmlAttribute="MinVersion" XmlElement="TargetDeviceFamily" Name="MinVersion" Flags="0" Order="0" Value="10.0.17763.0"/>
+    <ROW XmlAttribute="Name" XmlElement="Identity" Name="Name" Flags="0" Order="0" Value="NetFoundryInc.WindowsDesktopEdge"/>
+    <ROW XmlAttribute="Name_1" XmlElement="Capability" Name="Name" Flags="0" Order="0" Value="runFullTrust"/>
+    <ROW XmlAttribute="Name_2" XmlElement="TargetDeviceFamily" Name="Name" Flags="0" Order="0" Value="Windows.Desktop"/>
+    <ROW XmlAttribute="Name_3" XmlElement="Service" Name="Name" Flags="0" Order="0" Value="ziti-edge-tunnel"/>
+    <ROW XmlAttribute="Name_4" XmlElement="Capability_1" Name="Name" Flags="0" Order="0" Value="localSystemServices"/>
+    <ROW XmlAttribute="Name_5" XmlElement="Capability_2" Name="Name" Flags="0" Order="0" Value="packagedServices"/>
+    <ROW XmlAttribute="Name_6" XmlElement="Service_1" Name="Name" Flags="0" Order="0" Value="ziti-monitor"/>
+    <ROW XmlAttribute="Notification" XmlElement="LockScreen" Name="Notification" Flags="0" Order="0" Value="badge"/>
+    <ROW XmlAttribute="Preference" XmlElement="Rotation" Name="Preference" Flags="0" Order="0" Value="portrait"/>
+    <ROW XmlAttribute="Preference_1" XmlElement="Rotation_1" Name="Preference" Flags="0" Order="0" Value="landscape"/>
+    <ROW XmlAttribute="ProcessorArchitecture" XmlElement="Identity" Name="ProcessorArchitecture" Flags="0" Order="0" Value="x64"/>
+    <ROW XmlAttribute="Publisher" XmlElement="Identity" Name="Publisher" Flags="0" Order="0" Value="CN=793EB682-E668-4D33-984F-2399413F3801"/>
+    <ROW XmlAttribute="Scale" XmlElement="Resource_1" Name="Scale" Flags="0" Order="0" Value="100"/>
+    <ROW XmlAttribute="ShortcutPath" XmlElement="DesktopApp" Name="ShortcutPath" Flags="0" Order="0" Value="%APPDATA%\Microsoft\Windows\Start Menu\Programs\ZitiDesktopEdgeMSIX\ZitiDesktopEdge.exe.lnk"/>
+    <ROW XmlAttribute="ShortcutPath_1" XmlElement="DesktopApp_1" Name="ShortcutPath" Flags="0" Order="0" Value="%PROGRAMDATA%\Microsoft\Windows\Start Menu\Programs\ZitiDesktopEdgeMSIX\ZitiDesktopEdge.exe.lnk"/>
+    <ROW XmlAttribute="ShortcutPath_3" XmlElement="DesktopApp_3" Name="ShortcutPath" Flags="0" Order="0" Value="%USERPROFILE%\Desktop\Ziti Desktop Edge.lnk"/>
+    <ROW XmlAttribute="Square150x150Logo" XmlElement="VisualElements" Name="Square150x150Logo" Flags="0" Order="0" FileId="ZitiDesktopEdge.exeSquare150x150Logo.scale100.png_1"/>
+    <ROW XmlAttribute="Square150x150Logo_1" XmlElement="VisualElements_1" Name="Square150x150Logo" Flags="0" Order="0" FileId="YourServiceHostedServiceSquare150x150Logo.scale100.png"/>
+    <ROW XmlAttribute="Square150x150Logo_2" XmlElement="VisualElements_2" Name="Square150x150Logo" Flags="0" Order="0" FileId="YourServiceHostedService1Square150x150Logo.scale100.png"/>
+    <ROW XmlAttribute="Square310x310Logo" XmlElement="DefaultTile" Name="Square310x310Logo" Flags="0" Order="0" FileId="ZitiDesktopEdge.exeSquare310x310Logo.scale100.png_1"/>
+    <ROW XmlAttribute="Square44x44Logo" XmlElement="VisualElements" Name="Square44x44Logo" Flags="0" Order="0" FileId="ZitiDesktopEdge.exeSquare44x44Logo.scale100.png_1"/>
+    <ROW XmlAttribute="Square44x44Logo_1" XmlElement="VisualElements_1" Name="Square44x44Logo" Flags="0" Order="0" FileId="YourServiceHostedServiceSquare44x44Logo.scale100.png"/>
+    <ROW XmlAttribute="Square44x44Logo_2" XmlElement="VisualElements_2" Name="Square44x44Logo" Flags="0" Order="0" FileId="YourServiceHostedService1Square44x44Logo.scale100.png"/>
+    <ROW XmlAttribute="Square71x71Logo" XmlElement="DefaultTile" Name="Square71x71Logo" Flags="0" Order="0" FileId="ZitiDesktopEdge.exeSquare71x71Logo.scale100.png_1"/>
+    <ROW XmlAttribute="StartAccount" XmlElement="Service" Name="StartAccount" Flags="0" Order="0" Value="localSystem"/>
+    <ROW XmlAttribute="StartAccount_1" XmlElement="Service_1" Name="StartAccount" Flags="0" Order="0" Value="localSystem"/>
+    <ROW XmlAttribute="StartupType" XmlElement="Service" Name="StartupType" Flags="0" Order="0" Value="auto"/>
+    <ROW XmlAttribute="StartupType_1" XmlElement="Service_1" Name="StartupType" Flags="0" Order="0" Value="auto"/>
+    <ROW XmlAttribute="TaskId" XmlElement="StartupTask" Name="TaskId" Flags="0" Order="0" Value="Ziti Desktop Edge"/>
+    <ROW XmlAttribute="Version" XmlElement="Identity" Name="Version" Flags="0" Order="0" Value="1.12.2.0"/>
+    <ROW XmlAttribute="Wide310x150Logo" XmlElement="DefaultTile" Name="Wide310x150Logo" Flags="0" Order="0" FileId="ZitiDesktopEdge.exeWide310x150Logo.scale100.png_1"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.GenericXmlElementComponent">
+    <ROW XmlElement="Application" ParentElement="Applications" Name="Application" Order="0" Flags="0" Type="4"/>
+    <ROW XmlElement="Application_1" ParentElement="Applications" Name="Application" Order="1" Flags="0" Type="4"/>
+    <ROW XmlElement="Application_2" ParentElement="Applications" Name="Application" Order="2" Flags="0" Type="4"/>
+    <ROW XmlElement="Applications" ParentElement="Package" Name="Applications" Order="3" Flags="0" Type="3"/>
+    <ROW XmlElement="Bundle" Name="Bundle" Order="0" Flags="0" Type="0"/>
+    <ROW XmlElement="Capabilities" ParentElement="Package" Name="Capabilities" Order="4" Flags="0" Type="0"/>
+    <ROW XmlElement="Capability" ParentElement="Capabilities" Name="Capability" Order="0" Flags="0" Type="0"/>
+    <ROW XmlElement="Capability_1" ParentElement="Capabilities" Name="Capability" Order="1" Flags="0" Type="0"/>
+    <ROW XmlElement="Capability_2" ParentElement="Capabilities" Name="Capability" Order="2" Flags="0" Type="0"/>
+    <ROW XmlElement="DefaultTile" ParentElement="VisualElements" Name="DefaultTile" Order="1" Flags="0" Type="0"/>
+    <ROW XmlElement="Dependencies" ParentElement="Package" Name="Dependencies" Order="5" Flags="0" Type="0"/>
+    <ROW XmlElement="DesktopApp" ParentElement="DesktopAppMigration" Name="DesktopApp" Order="0" Flags="0" Type="0"/>
+    <ROW XmlElement="DesktopAppMigration" ParentElement="Extension" Name="DesktopAppMigration" Order="0" Flags="0" Type="0"/>
+    <ROW XmlElement="DesktopApp_1" ParentElement="DesktopAppMigration" Name="DesktopApp" Order="1" Flags="0" Type="0"/>
+    <ROW XmlElement="DesktopApp_3" ParentElement="DesktopAppMigration" Name="DesktopApp" Order="3" Flags="0" Type="0"/>
+    <ROW XmlElement="DisplayName" ParentElement="Properties" Name="DisplayName" Order="1" Flags="0" Text="Ziti Desktop Edge" Type="0"/>
+    <ROW XmlElement="Extension" ParentElement="Extensions" Name="Extension" Order="0" Flags="0" Type="55"/>
+    <ROW XmlElement="Extension_1" ParentElement="Extensions_1" Name="Extension" Order="0" Flags="0" Type="110"/>
+    <ROW XmlElement="Extension_2" ParentElement="Extensions_2" Name="Extension" Order="0" Flags="0" Type="110"/>
+    <ROW XmlElement="Extension_3" ParentElement="Extensions" Name="Extension" Order="1" Flags="0" Type="34"/>
+    <ROW XmlElement="Extensions" ParentElement="Application" Name="Extensions" Order="1" Flags="0" Type="0"/>
+    <ROW XmlElement="Extensions_1" ParentElement="Application_1" Name="Extensions" Order="1" Flags="0" Type="0"/>
+    <ROW XmlElement="Extensions_2" ParentElement="Application_2" Name="Extensions" Order="1" Flags="0" Type="0"/>
+    <ROW XmlElement="Identity" ParentElement="Package" Name="Identity" Order="0" Flags="0" Type="0"/>
+    <ROW XmlElement="InitialRotationPreference" ParentElement="VisualElements" Name="InitialRotationPreference" Order="0" Flags="0" Type="0"/>
+    <ROW XmlElement="LockScreen" ParentElement="VisualElements" Name="LockScreen" Order="3" Flags="0" Type="0"/>
+    <ROW XmlElement="Logo" ParentElement="Properties" Name="Logo" Order="2" Flags="0" FileId="Store50x50Logo.scale100.png" Type="0"/>
+    <ROW XmlElement="Package" Name="Package" Order="0" Flags="0" Type="6"/>
+    <ROW XmlElement="Properties" ParentElement="Package" Name="Properties" Order="2" Flags="0" Type="0"/>
+    <ROW XmlElement="PublisherDisplayName" ParentElement="Properties" Name="PublisherDisplayName" Order="0" Flags="0" Text="NetFoundry, Inc" Type="0"/>
+    <ROW XmlElement="Resource" ParentElement="Resources" Name="Resource" Order="0" Flags="0" Type="0"/>
+    <ROW XmlElement="Resource_1" ParentElement="Resources" Name="Resource" Order="1" Flags="0" Type="0"/>
+    <ROW XmlElement="Resources" ParentElement="Package" Name="Resources" Order="1" Flags="0" Type="0"/>
+    <ROW XmlElement="Rotation" ParentElement="InitialRotationPreference" Name="Rotation" Order="0" Flags="0" Type="0"/>
+    <ROW XmlElement="Rotation_1" ParentElement="InitialRotationPreference" Name="Rotation" Order="1" Flags="0" Type="0"/>
+    <ROW XmlElement="Service" ParentElement="Extension_1" Name="Service" Order="0" Flags="0" Type="0"/>
+    <ROW XmlElement="Service_1" ParentElement="Extension_2" Name="Service" Order="0" Flags="0" Type="0"/>
+    <ROW XmlElement="SplashScreen" ParentElement="VisualElements" Name="SplashScreen" Order="2" Flags="0" Type="0"/>
+    <ROW XmlElement="StartupTask" ParentElement="Extension_3" Name="StartupTask" Order="0" Flags="0" Type="0"/>
+    <ROW XmlElement="TargetDeviceFamily" ParentElement="Dependencies" Name="TargetDeviceFamily" Order="0" Flags="0" Type="28"/>
+    <ROW XmlElement="VisualElements" ParentElement="Application" Name="VisualElements" Order="0" Flags="0" Type="0"/>
+    <ROW XmlElement="VisualElements_1" ParentElement="Application_1" Name="VisualElements" Order="0" Flags="0" Type="0"/>
+    <ROW XmlElement="VisualElements_2" ParentElement="Application_2" Name="VisualElements" Order="0" Flags="0" Type="0"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.GenericXmlFileComponent">
+    <ROW XmlFile="AppxBundleManifest.xml" FileName="AppxBundleManifest.xml" RootElement="Bundle" Flags="89" Version="1.0" Encoding="UTF-8" IndentUnits="2"/>
+    <ROW XmlFile="AppxManifest.xml" FileName="AppxManifest.xml" RootElement="Package" Flags="89" Version="1.0" Encoding="UTF-8" IndentUnits="2"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiActionTextComponent">
+    <ROW Action="AI_ConfigFailActions" Description="Configure service failure actions" DescriptionLocId="ActionText.Description.AI_ConfigFailActions" Template="Service: [1]" TemplateLocId="ActionText.Template.AI_ConfigFailActions"/>
+    <ROW Action="AI_ProcessFailActions" Description="Generating actions to configure service failure actions" DescriptionLocId="ActionText.Description.AI_ProcessFailActions" Template="Service: [1]" TemplateLocId="ActionText.Template.AI_ProcessFailActions"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiBinaryComponent">
+    <ROW Name="aicustact.dll" SourcePath="&lt;AI_CUSTACTS&gt;aicustact.dll"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiControlEventComponent">
+    <ROW Dialog_="WelcomeDlg" Control_="Next" Event="NewDialog" Argument="FolderDlg" Condition="AI_INSTALL" Ordering="1"/>
+    <ROW Dialog_="FolderDlg" Control_="Next" Event="NewDialog" Argument="VerifyReadyDlg" Condition="AI_INSTALL" Ordering="201"/>
+    <ROW Dialog_="FolderDlg" Control_="Back" Event="NewDialog" Argument="WelcomeDlg" Condition="AI_INSTALL" Ordering="1"/>
+    <ROW Dialog_="MaintenanceWelcomeDlg" Control_="Next" Event="NewDialog" Argument="MaintenanceTypeDlg" Condition="AI_MAINT" Ordering="99"/>
+    <ROW Dialog_="VerifyReadyDlg" Control_="Install" Event="EndDialog" Argument="Return" Condition="AI_MAINT" Ordering="198"/>
+    <ROW Dialog_="VerifyReadyDlg" Control_="Back" Event="NewDialog" Argument="CustomizeDlg" Condition="AI_MAINT" Ordering="202"/>
+    <ROW Dialog_="VerifyReadyDlg" Control_="Install" Event="EndDialog" Argument="Return" Condition="AI_INSTALL" Ordering="197"/>
+    <ROW Dialog_="VerifyReadyDlg" Control_="Back" Event="NewDialog" Argument="FolderDlg" Condition="AI_INSTALL" Ordering="201"/>
+    <ROW Dialog_="CustomizeDlg" Control_="Next" Event="NewDialog" Argument="VerifyReadyDlg" Condition="AI_MAINT" Ordering="101"/>
+    <ROW Dialog_="CustomizeDlg" Control_="Back" Event="NewDialog" Argument="MaintenanceTypeDlg" Condition="AI_MAINT" Ordering="1"/>
+    <ROW Dialog_="MaintenanceTypeDlg" Control_="ChangeButton" Event="NewDialog" Argument="CustomizeDlg" Condition="AI_MAINT" Ordering="501"/>
+    <ROW Dialog_="MaintenanceTypeDlg" Control_="Back" Event="NewDialog" Argument="MaintenanceWelcomeDlg" Condition="AI_MAINT" Ordering="1"/>
+    <ROW Dialog_="MaintenanceTypeDlg" Control_="RemoveButton" Event="NewDialog" Argument="VerifyRemoveDlg" Condition="AI_MAINT AND InstallMode=&quot;Remove&quot;" Ordering="601"/>
+    <ROW Dialog_="VerifyRemoveDlg" Control_="Back" Event="NewDialog" Argument="MaintenanceTypeDlg" Condition="AI_MAINT AND InstallMode=&quot;Remove&quot;" Ordering="1"/>
+    <ROW Dialog_="MaintenanceTypeDlg" Control_="RepairButton" Event="NewDialog" Argument="VerifyRepairDlg" Condition="AI_MAINT AND InstallMode=&quot;Repair&quot;" Ordering="601"/>
+    <ROW Dialog_="VerifyRepairDlg" Control_="Back" Event="NewDialog" Argument="MaintenanceTypeDlg" Condition="AI_MAINT AND InstallMode=&quot;Repair&quot;" Ordering="1"/>
+    <ROW Dialog_="VerifyRepairDlg" Control_="Repair" Event="EndDialog" Argument="Return" Condition="AI_MAINT AND InstallMode=&quot;Repair&quot;" Ordering="399" Options="1"/>
+    <ROW Dialog_="VerifyRemoveDlg" Control_="Remove" Event="EndDialog" Argument="Return" Condition="AI_MAINT AND InstallMode=&quot;Remove&quot;" Ordering="299" Options="1"/>
+    <ROW Dialog_="PatchWelcomeDlg" Control_="Next" Event="NewDialog" Argument="VerifyReadyDlg" Condition="AI_PATCH" Ordering="201"/>
+    <ROW Dialog_="ResumeDlg" Control_="Install" Event="EndDialog" Argument="Return" Condition="AI_RESUME" Ordering="299"/>
+    <ROW Dialog_="VerifyReadyDlg" Control_="Install" Event="EndDialog" Argument="Return" Condition="AI_PATCH" Ordering="199"/>
+    <ROW Dialog_="VerifyReadyDlg" Control_="Back" Event="NewDialog" Argument="PatchWelcomeDlg" Condition="AI_PATCH" Ordering="203"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiCreateFolderComponent">
+    <ROW Directory_="APPDIR" Component_="APPDIR" ManualDelete="true"/>
+    <ROW Directory_="SHORTCUTDIR" Component_="SHORTCUTDIR" ManualDelete="false"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiCustActComponent">
+    <ROW Action="AI_ConfigFailActions" Type="11265" Source="aicustact.dll" Target="ConfigureServFailActions" WithoutSeq="true"/>
+    <ROW Action="AI_DATA_SETTER" Type="51" Source="CustomActionData" Target="[~]"/>
+    <ROW Action="AI_DOWNGRADE" Type="19" Target="4010"/>
+    <ROW Action="AI_DpiContentScale" Type="1" Source="aicustact.dll" Target="DpiContentScale"/>
+    <ROW Action="AI_EnableDebugLog" Type="321" Source="aicustact.dll" Target="EnableDebugLog"/>
+    <ROW Action="AI_InstallModeCheck" Type="1" Source="aicustact.dll" Target="UpdateInstallMode" WithoutSeq="true"/>
+    <ROW Action="AI_PREPARE_UPGRADE" Type="65" Source="aicustact.dll" Target="PrepareUpgrade"/>
+    <ROW Action="AI_ProcessFailActions" Type="1" Source="aicustact.dll" Target="ProcessFailActions" AdditionalSeq="AI_DATA_SETTER"/>
+    <ROW Action="AI_RESTORE_LOCATION" Type="65" Source="aicustact.dll" Target="RestoreLocation"/>
+    <ROW Action="AI_ResolveKnownFolders" Type="1" Source="aicustact.dll" Target="AI_ResolveKnownFolders"/>
+    <ROW Action="AI_SHOW_LOG" Type="65" Source="aicustact.dll" Target="LaunchLogFile" WithoutSeq="true"/>
+    <ROW Action="AI_STORE_LOCATION" Type="51" Source="ARPINSTALLLOCATION" Target="[APPDIR]"/>
+    <ROW Action="SET_APPDIR" Type="307" Source="APPDIR" Target="[ProgramFilesFolder][Manufacturer]\[ProductName]" MultiBuildTarget="Build_MSIX_APPX:"/>
+    <ROW Action="SET_SHORTCUTDIR" Type="307" Source="SHORTCUTDIR" Target="[ProgramMenuFolder][ProductName]"/>
+    <ROW Action="SET_TARGETDIR_TO_APPDIR" Type="51" Source="TARGETDIR" Target="[APPDIR]"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiFeatCompsComponent">
+    <ROW Feature_="MainFeature" Component_="APPDIR"/>
+    <ROW Feature_="MainFeature" Component_="ProductInformation"/>
+    <ROW Feature_="AiAppXAssets" Component_="Store50x50Logo.scale100.png"/>
+    <ROW Feature_="MainFeature" Component_="Microsoft.Toolkit.Uwp.Notifications.dll"/>
+    <ROW Feature_="MainFeature" Component_="ZitiDesktopEdge.exe_1"/>
+    <ROW Feature_="MainFeature" Component_="QRCoder.dll"/>
+    <ROW Feature_="MainFeature" Component_="WpfMouseWheelLib.dll"/>
+    <ROW Feature_="MainFeature" Component_="Newtonsoft.Json.dll"/>
+    <ROW Feature_="MainFeature" Component_="ZitiDesktopEdge.exe.config"/>
+    <ROW Feature_="MainFeature" Component_="zitiedgetunnel.exe"/>
+    <ROW Feature_="MainFeature" Component_="wintun.dll"/>
+    <ROW Feature_="MainFeature" Component_="ZitiDesktopEdge.Client.dll"/>
+    <ROW Feature_="MainFeature" Component_="NLog.dll"/>
+    <ROW Feature_="MainFeature" Component_="DnsClient.dll"/>
+    <ROW Feature_="MainFeature" Component_="System.Buffers.dll"/>
+    <ROW Feature_="MainFeature" Component_="ZitiUpdateService.exe"/>
+    <ROW Feature_="MainFeature" Component_="SHORTCUTDIR"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiInstExSeqComponent">
+    <ROW Action="AI_DOWNGRADE" Condition="AI_NEWERPRODUCTFOUND AND (UILevel &lt;&gt; 5)" Sequence="210"/>
+    <ROW Action="AI_RESTORE_LOCATION" Condition="APPDIR=&quot;&quot;" Sequence="749"/>
+    <ROW Action="AI_STORE_LOCATION" Condition="(Not Installed) OR REINSTALL" Sequence="1501"/>
+    <ROW Action="AI_PREPARE_UPGRADE" Condition="AI_UPGRADE=&quot;No&quot; AND (Not Installed)" Sequence="1399"/>
+    <ROW Action="AI_ResolveKnownFolders" Sequence="52"/>
+    <ROW Action="AI_EnableDebugLog" Sequence="51"/>
+    <ROW Action="AI_ProcessFailActions" Sequence="5848"/>
+    <ROW Action="AI_DATA_SETTER" Sequence="5847"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiInstallUISequenceComponent">
+    <ROW Action="AI_RESTORE_LOCATION" Condition="APPDIR=&quot;&quot;" Sequence="749"/>
+    <ROW Action="AI_ResolveKnownFolders" Sequence="53"/>
+    <ROW Action="AI_DpiContentScale" Sequence="52"/>
+    <ROW Action="AI_EnableDebugLog" Sequence="51"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiRegsComponent">
+    <ROW Registry="Manufacturer" Root="-1" Key="Software\[Manufacturer]" Name="\"/>
+    <ROW Registry="Path" Root="-1" Key="Software\[Manufacturer]\[ProductName]" Name="Path" Value="[APPDIR]" Component_="ProductInformation"/>
+    <ROW Registry="ProductName" Root="-1" Key="Software\[Manufacturer]\[ProductName]" Name="\"/>
+    <ROW Registry="Software" Root="-1" Key="Software" Name="\"/>
+    <ROW Registry="Version" Root="-1" Key="Software\[Manufacturer]\[ProductName]" Name="Version" Value="[ProductVersion]" Component_="ProductInformation"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiServConfigComponent">
+    <ROW MsiServiceConfig="ServiceName" Name="ziti-monitor" Event="1" ConfigType="3" Argument="1" Component_="ZitiUpdateService.exe"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiServConfigFailureActionsComponent">
+    <ROW MsiServiceConfigFailureActions="ServiceName" Name="ziti-monitor" Event="1" ResetPeriod="7" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="ZitiUpdateService.exe"/>
+    <ROW MsiServiceConfigFailureActions="ServiceName_1" Name="ziti-edge-tunnel" Event="1" ResetPeriod="7" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="zitiedgetunnel.exe"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiServCtrlComponent">
+    <ROW ServiceControl="ZitiUpdateService.exe" Name="ziti-monitor" Event="161" Wait="1" Component_="ZitiUpdateService.exe"/>
+    <ROW ServiceControl="zitiedgetunnel.exe" Name="ziti-edge-tunnel" Event="161" Wait="1" Component_="zitiedgetunnel.exe"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiServInstComponent">
+    <ROW ServiceInstall="ZitiUpdateService.exe" Name="ziti-monitor" DisplayName="Ziti Desktop Monitor Service" ServiceType="16" StartType="2" ErrorControl="32769" Component_="ZitiUpdateService.exe" Description="Monitors and updates the Ziti Access Service"/>
+    <ROW ServiceInstall="zitiedgetunnel.exe" Name="ziti-edge-tunnel" DisplayName="Ziti Desktop Edge Service" ServiceType="16" StartType="2" ErrorControl="32769" Component_="zitiedgetunnel.exe" Description="Access your networks secured by ziti"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiShortsComponent">
+    <ROW Shortcut="ZitiDesktopEdge" Directory_="SHORTCUTDIR" Name="ZITIDE~1|Ziti Desktop Edge" Component_="ZitiDesktopEdge.exe_1" Target="[#ZitiDesktopEdge.exe_1]" Description="Ziti Desktop Edge" Hotkey="0" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
+    <ROW Shortcut="ZitiDesktopEdge_1" Directory_="DesktopFolder" Name="ZITIDE~1|Ziti Desktop Edge" Component_="ZitiDesktopEdge.exe_1" Target="[#ZitiDesktopEdge.exe_1]" Description="Ziti Desktop Edge" Hotkey="0" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
+    <ROW Shortcut="ZitiDesktopEdge_2" Directory_="StartupFolder" Name="ZITIDE~1|Ziti Desktop Edge" Component_="ZitiDesktopEdge.exe_1" Target="[#ZitiDesktopEdge.exe_1]" Description="Ziti Desktop Edge" Hotkey="0" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiThemeComponent">
+    <ATTRIBUTE name="UsedTheme" value="classic"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiUpgradeComponent">
+    <ROW UpgradeCode="[|UpgradeCode]" VersionMin="0.0.1" VersionMax="[|ProductVersion]" Attributes="257" ActionProperty="OLDPRODUCTS"/>
+    <ROW UpgradeCode="[|UpgradeCode]" VersionMin="[|ProductVersion]" Attributes="2" ActionProperty="AI_NEWERPRODUCTFOUND"/>
+  </COMPONENT>
+</DOCUMENT>

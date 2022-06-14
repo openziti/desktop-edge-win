@@ -31,7 +31,7 @@ namespace ZitiDesktopEdge.DataStructures {
 
     public class StatusUpdateResponse : SvcResponse
     {
-        public StatusUpdate Payload { get; set; }
+        public StatusUpdate Data { get; set; }
     }
 
     public class StatusUpdate
@@ -50,17 +50,17 @@ namespace ZitiDesktopEdge.DataStructures {
 
     public class IdentityResponse : SvcResponse
     {
-        public Identity Payload { get; set; }
+        public Identity Data { get; set; }
     }
 
     public class ServiceFunction
     {
-        public string Function { get; set; }
+        public string Command { get; set; }
     }
 
-    public class FingerprintFunction : ServiceFunction
+    public class IdentifierFunction : ServiceFunction
     {
-        public FingerprintPayload Payload { get; set; }
+        public IdentifierPayload Data { get; set; }
     }
 
     public class BooleanPayload
@@ -70,18 +70,18 @@ namespace ZitiDesktopEdge.DataStructures {
 
     public class BooleanFunction : ServiceFunction
     {
-        public BooleanFunction(string functionName, bool theBool)
+        public BooleanFunction(string commandName, bool theBool)
         {
-            this.Function = functionName;
-            this.Payload = new BooleanPayload() { OnOff = theBool };
+            this.Command = commandName;
+            this.Data = new BooleanPayload() { OnOff = theBool };
         }
-        public BooleanPayload Payload { get; set; }
+        public BooleanPayload Data { get; set; }
     }
 
     public class IdentityTogglePayload
     {
         public bool OnOff { get; set; }
-        public string Fingerprint { get; set; }
+        public string Identifier { get; set; }
     }
     public class SetLogLevelPayload
     {
@@ -90,126 +90,144 @@ namespace ZitiDesktopEdge.DataStructures {
 
     public class IdentityToggleFunction : ServiceFunction
     {
-        public IdentityToggleFunction(string fingerprint, bool theBool)
+        public IdentityToggleFunction(string identifier, bool theBool)
         {
-            this.Function = "IdentityOnOff";
-            this.Payload = new IdentityTogglePayload()
+            this.Command = "IdentityOnOff";
+            this.Data = new IdentityTogglePayload()
             {
                 OnOff = theBool,
-                Fingerprint = fingerprint
+                Identifier = identifier,
             };
         }
-        public IdentityTogglePayload Payload { get; set; }
+        public IdentityTogglePayload Data { get; set; }
     }
 
     public class EnableMFAFunction : ServiceFunction {
-        public EnableMFAFunction(string fingerprint) {
-            this.Function = "EnableMFA";
-            this.Payload = new EnableMFAFunctionPayload() {
-                Fingerprint = fingerprint
+        public EnableMFAFunction(string identifier) {
+            this.Command = "EnableMFA";
+            this.Data = new EnableMFAFunctionPayload() {
+                Identifier = identifier
             };
         }
-        public EnableMFAFunctionPayload Payload { get; set; }
+        public EnableMFAFunctionPayload Data { get; set; }
     }
     public class EnableMFAFunctionPayload {
-        public string Fingerprint { get; set; }
+        public string Identifier { get; set; }
     }
 
     public class VerifyMFAFunction : ServiceFunction {
-        public VerifyMFAFunction(string fingerprint, string code) {
-            this.Function = "VerifyMFA";
-            this.Payload = new VerifyMFAFunctionPayload() {
-                Fingerprint = fingerprint,
+        public VerifyMFAFunction(string identifier, string code) {
+            this.Command = "VerifyMFA";
+            this.Data = new VerifyMFAFunctionPayload() {
+                Identifier = identifier,
                 Code = code
             };
         }
-        public VerifyMFAFunctionPayload Payload { get; set; }
+        public VerifyMFAFunctionPayload Data { get; set; }
     }
     public class VerifyMFAFunctionPayload {
-        public string Fingerprint { get; set; }
+        public string Identifier { get; set; }
         public string Code { get; set; }
     }
     public class RemoveMFAFunction : ServiceFunction {
-        public RemoveMFAFunction(string fingerprint, string code) {
-            this.Function = "RemoveMFA";
-            this.Payload = new RemoveMFAFunctionPayload() {
-                Fingerprint = fingerprint,
+        public RemoveMFAFunction(string identifier, string code) {
+            this.Command = "RemoveMFA";
+            this.Data = new RemoveMFAFunctionPayload() {
+                Identifier = identifier,
                 Code = code
             };
         }
-        public RemoveMFAFunctionPayload Payload { get; set; }
+        public RemoveMFAFunctionPayload Data { get; set; }
     }
     public class RemoveMFAFunctionPayload {
-        public string Fingerprint { get; set; }
+        public string Identifier { get; set; }
         public string Code { get; set; }
     }
 
     public class AuthMFAFunction : ServiceFunction {
-        public AuthMFAFunction(string fingerprint, string code) {
-            this.Function = "AuthMFA";
-            this.Payload = new AuthMFAFunctionPayload() {
-                Fingerprint = fingerprint,
+        public AuthMFAFunction(string identifier, string code) {
+            this.Command = "SubmitMFA";
+            this.Data = new AuthMFAFunctionPayload() {
+                Identifier = identifier,
                 Code = code
             };
         }
-        public AuthMFAFunctionPayload Payload { get; set; }
+        public AuthMFAFunctionPayload Data { get; set; }
     }
     public class AuthMFAFunctionPayload {
-        public string Fingerprint { get; set; }
+        public string Identifier { get; set; }
         public string Code { get; set; }
     }
 
-    public class ReturnMFACodesFunction : ServiceFunction {
-        public ReturnMFACodesFunction(string fingerprint, string code) {
-            this.Function = "ReturnMFACodes";
-            this.Payload = new ReturnMFACodesFunctionPayload() {
-                Fingerprint = fingerprint,
+    public class GetMFACodesFunction : ServiceFunction {
+        public GetMFACodesFunction(string identifier, string code) {
+            this.Command = "GetMFACodes";
+            this.Data = new GetMFACodesFunctionPayload() {
+                Identifier = identifier,
                 Code = code,
             };
         }
-        public ReturnMFACodesFunctionPayload Payload { get; set; }
+        public GetMFACodesFunctionPayload Data { get; set; }
     }
-    public class ReturnMFACodesFunctionPayload {
-        public string Fingerprint { get; set; }
+    public class GetMFACodesFunctionPayload {
+        public string Identifier { get; set; }
         public string Code { get; set; }
     }
 
     public class GenerateMFACodesFunction : ServiceFunction {
-        public GenerateMFACodesFunction(string fingerprint, string code) {
-            this.Function = "GenerateMFACodes";
-            this.Payload = new GenerateMFACodesFunctionPayload() {
-                Fingerprint = fingerprint,
+        public GenerateMFACodesFunction(string identifier, string code) {
+            this.Command = "GenerateMFACodes";
+            this.Data = new GenerateMFACodesFunctionPayload() {
+                Identifier = identifier,
                 Code = code,
             };
         }
-        public GenerateMFACodesFunctionPayload Payload { get; set; }
+        public GenerateMFACodesFunctionPayload Data { get; set; }
     }
     public class GenerateMFACodesFunctionPayload {
-        public string Fingerprint { get; set; }
+        public string Identifier { get; set; }
         public string Code { get; set; }
     }
 
     public class SetLogLevelFunction : ServiceFunction {
         public SetLogLevelFunction(string level) {
-            this.Function = "SetLogLevel";
-            this.Payload = new SetLogLevelPayload() {
+            this.Command = "SetLogLevel";
+            this.Data = new SetLogLevelPayload() {
                 Level = level
             };
         }
-        public SetLogLevelPayload Payload { get; set; }
+        public SetLogLevelPayload Data { get; set; }
+    }
+
+    public class ZitiDumpPayloadFunction {
+        public string DumpPath { get; set; }
+
     }
 
     public class ZitiDumpFunction : ServiceFunction {
-        public ZitiDumpFunction(string level) {
-            this.Function = "ZitiDump";
-            //this.Payload = null;//nothing for now
+        public ZitiDumpFunction(string dumpPath) {
+            this.Command = "ZitiDump";
+            this.Data = new ZitiDumpPayloadFunction() {
+                DumpPath = dumpPath
+            };
         }
-        //public SetLogLevelPayload Payload { get; set; }
+        public ZitiDumpPayloadFunction Data { get; set; }
     }
 
-    public class FingerprintPayload
+    public class IdentifierPayload
     {
-        public string Fingerprint { get; set; }
+        public string Identifier { get; set; }
+    }
+
+    public class EnrollIdentifierPayload 
+    {
+        public string JwtFileName { get; set; }
+        public string JwtContent { get; set; }
+	}
+
+    public class EnrollIdentifierFunction : ServiceFunction 
+    {
+        public EnrollIdentifierPayload Data { get; set; }
     }
 
     public class Id
@@ -235,6 +253,7 @@ namespace ZitiDesktopEdge.DataStructures {
     public class Identity {
         public string Name { get; set; }
         public string FingerPrint { get; set; }
+        public string Identifier { get; set; }
         public bool Active { get; set; }
         public Config Config { get; set; }
         public string Status { get; set; }
@@ -257,7 +276,7 @@ namespace ZitiDesktopEdge.DataStructures {
         public bool OwnsIntercept { get; set; }
         public string AssignedIP { get; set; }
         public PostureCheck[] PostureChecks { get; set; }
-        public bool IsAccessable { get; set; }
+        public bool IsAccessible { get; set; }
 		public int Timeout { get; set; }
 		public int TimeoutRemaining { get; set; }
 	}
@@ -328,6 +347,7 @@ namespace ZitiDesktopEdge.DataStructures {
 
     public class Notification {
         public string IdentityName { get; set; }
+        public string Identifier { get; set; }
         public string Fingerprint { get; set; }
         public string Message { get; set; }
         public int MfaMinimumTimeout { get; set; }
@@ -365,7 +385,7 @@ namespace ZitiDesktopEdge.DataStructures {
                 writer.WriteLine($"     LogLevel         : {LogLevel}");
                 writer.WriteLine($"     EvaluatedLogLevel: {EvaluateLogLevel()}");
                 foreach (Identity id in Identities) {
-                    writer.WriteLine($"  FingerPrint: {id.FingerPrint}");
+                    writer.WriteLine($"  Identifier: {id.Identifier}");
                     writer.WriteLine($"    Name    : {id.Name}");
                     writer.WriteLine($"    Active  : {id.Active}");
                     writer.WriteLine($"    Status  : {id.Status}");
@@ -438,12 +458,12 @@ namespace ZitiDesktopEdge.DataStructures {
     }
 
     public class ServiceEvent : ActionEvent {
-        public string Fingerprint { get; set; }
+        public string Identifier { get; set; }
         public Service Service { get; set; }
     }
 
     public class BulkServiceEvent : ActionEvent {
-        public string Fingerprint { get; set; }
+        public string Identifier { get; set; }
         public List<Service> AddedServices { get; set; }
         public List<Service> RemovedServices { get; set; }
     }
@@ -483,58 +503,63 @@ namespace ZitiDesktopEdge.DataStructures {
     }
 
     public class MfaEvent : ActionEvent {
-        public string Fingerprint { get; set; }
+        public string Identifier { get; set; }
         public bool Successful { get; set; }
         public string ProvisioningUrl { get; set; }
         public List<string> RecoveryCodes { get; set; }
     }
 
     public class ControllerEvent : ActionEvent {
-        public string Fingerprint { get; set; }
+        public string Identifier { get; set; }
     }
 
+    public class MfaRecoveryCodes {
+        public string[] RecoveryCodes { get; set; }
+        public string Identifier { get; set; }
+
+    }
 
     public class MfaRecoveryCodesResponse : SvcResponse {
-        public string[] Payload { get; set; }
+        public MfaRecoveryCodes Data { get; set; }
     }
 
     public class ConfigPayload
     {
         public string TunIPv4 { get; set; }
-        public int TunIPv4Mask { get; set; }
+        public int TunPrefixLength { get; set; }
         public bool AddDns { get; set; }
         public int ApiPageSize { get; set; }
     }
 
     public class ConfigUpdateFunction : ServiceFunction
     {
-        public ConfigUpdateFunction(string tunIPv4, int tunIPv4Mask, bool addDns, int apiPageSize)
+        public ConfigUpdateFunction(string tunIPv4, int tunPrefixLength, bool addDns, int apiPageSize)
         {
-            this.Function = "UpdateTunIpv4";
-            this.Payload = new ConfigPayload()
+            this.Command = "UpdateTunIpv4";
+            this.Data = new ConfigPayload()
             {
                 TunIPv4 = tunIPv4,
-                TunIPv4Mask = tunIPv4Mask,
+                TunPrefixLength = tunPrefixLength,
                 AddDns = addDns,
                 ApiPageSize = apiPageSize,
             };
         }
-        public ConfigPayload Payload { get; set; }
+        public ConfigPayload Data { get; set; }
     }
 
     public class NotificationFrequencyPayload {
         public int NotificationFrequency { get; set; }
     }
 
-    public class NotificationFrequencyFunction: ServiceFunction {
+    public class NotificationFrequencyFunction : ServiceFunction {
         public NotificationFrequencyFunction(int notificationFrequency) {
-            this.Function = "UpdateFrequency";
-            this.Payload = new NotificationFrequencyPayload() {
+            this.Command = "UpdateFrequency";
+            this.Data = new NotificationFrequencyPayload() {
                 NotificationFrequency = notificationFrequency
             };
         }
 		
-        public NotificationFrequencyPayload Payload { get; set; }
+        public NotificationFrequencyPayload Data { get; set; }
 	}
 
 
