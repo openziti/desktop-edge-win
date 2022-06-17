@@ -20,6 +20,7 @@ using NLog;
 using Newtonsoft.Json;
 using System.Net;
 using DnsClient;
+using DnsClient.Protocol;
 using ZitiUpdateService.Checkers.PeFile;
 using ZitiUpdateService.Utils;
 
@@ -293,14 +294,18 @@ namespace ZitiUpdateService {
 		}
 
 		private void outputExternalIP(string destinationFolder) {
-			Logger.Info("capturing external IP address using eth0.me");
+			Logger.Info("capturing external IP address using nslookup command");
 			try {
+				Process process = new Process();
+				ProcessStartInfo startInfo = new ProcessStartInfo();
+				startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+				startInfo.FileName = "cmd.exe";
 				var extIpFile = Path.Combine(destinationFolder, "externalIP.txt");
-				System.Net.Http.HttpClient httpClient = new System.Net.Http.HttpClient();
-				var resp = httpClient.GetAsync("http://eth0.me").Result;
-				resp.EnsureSuccessStatusCode();
-				string responseBody = resp.Content.ReadAsStringAsync().Result;
-				File.WriteAllText(extIpFile, responseBody);
+				Logger.Debug("running nslookup myip.opendns.com. resolver1.opendns.com to {0}", extIpFile);
+				startInfo.Arguments = $"/C nslookup myip.opendns.com. resolver1.opendns.com > \"{extIpFile}\"";
+				process.StartInfo = startInfo;
+				process.Start();
+				process.WaitForExit();
 			} catch (Exception ex) {
 				Logger.Error(ex, "Unexpected error in outputExternalIP {0}", ex.Message);
 			}
@@ -444,27 +449,37 @@ namespace ZitiUpdateService {
 					DnsQuestion q = new DnsQuestion("dew-dns-probe.openziti.org", QueryType.A);
 					var dnsEp = new IPEndPoint(dnsIpAddress, 53);
 					var dnsProbe = new LookupClient(dnsEp);
-
-					foreach (DnsClient.Protocol.ARecord arec in dnsProbe.Query(q).AllRecords) {
-						if (arec.Address.Equals(lh)) {
-							dnsProbeFailCount = 0;
-							Logger.Debug("dns probe success");
-						} else {
-							dnsProbeFailCount++;
-							logDnsProbeFailure(null);
+					IDnsQueryResponse resp = dnsProbe.Query(q);
+					if (resp != null && resp.Answers?.Count > 0) {
+						foreach (DnsResourceRecord dnsrec in resp.Answers) {
+							if (dnsrec.GetType() == typeof(ARecord)) {
+								ARecord arec = (ARecord) dnsrec;
+								if (arec.Address.Equals(lh)) {
+									dnsProbeFailCount = 0;
+									Logger.Debug("dns probe success");
+								} else {
+									logDnsProbeFailure(null);
+								}
+							} else {
+								Logger.Debug("dns probe returned an answer but response was not an ARecord? [" + dnsrec.GetType().Name + "]");
+							}
 						}
+					} else
+					{
+						Logger.Debug("dns probe failed. no answer found for dew-dns-probe.openziti.org");
+						logDnsProbeFailure(null);
 					}
 				}
 			} catch(Exception dnse) {
 				//don't really care but it probably means a timeout happened.  but might as well log a trace error anyway...
 				//it's expected that this is due to the service shutting down...
-				dnsProbeFailCount++;
 				logDnsProbeFailure(dnse);
 			}
 			dnsProbeStarted = false;
 		}
 
 		private void logDnsProbeFailure(Exception e) {
+			dnsProbeFailCount++;
 			bool logit = false;
 			if (dnsProbeFailCount <= 4) {
 				logit = true;
@@ -811,8 +826,8 @@ namespace ZitiUpdateService {
 				Logger.Debug("The ziti has ALREADY been stopped successfully.");
 			}
 			if (!cleanStop) {
-				Logger.Debug("Stopping ziti-tunnel forcefully.");
-				stopProcessForcefully("ziti-tunnel", "data service [ziti]");
+				Logger.Debug("Stopping ziti-edge-tunnel forcefully.");
+				stopProcessForcefully("ziti-edge-tunnel", "data service [ziti]");
 			}
 		}
 

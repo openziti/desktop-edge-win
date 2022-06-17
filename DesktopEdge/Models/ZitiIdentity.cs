@@ -24,10 +24,12 @@ namespace ZitiDesktopEdge.Models {
 		public bool WasNotified { get; set; }
 		public bool WasFullNotified { get; set; }
 		public string Fingerprint { get; set; }
+		public string Identifier { get; set; }
 		public bool IsAuthenticated { get; set; }
 		public bool IsTimedOut { get; set; }
 		public string[] RecoveryCodes { get; set; }
 		public bool IsTimingOut { get; set; }
+		public bool IsConnected { get; set; }
 
 
 		private bool svcFailingPostureCheck = false;
@@ -45,6 +47,7 @@ namespace ZitiDesktopEdge.Models {
 		/// Default constructor to support named initialization
 		/// </summary>
 		public ZitiIdentity() {
+			this.IsConnected = true;
 			this.Services = new List<ZitiService>();
 		}
 
@@ -62,14 +65,16 @@ namespace ZitiDesktopEdge.Models {
 			this.RecoveryCodes = new string[0];
 			this.IsTimingOut = false;
 			this.IsTimedOut = false;
+			this.IsConnected = true;
 		}
 
 		public static ZitiIdentity FromClient(DataStructures.Identity id) {
 			ZitiIdentity zid = new ZitiIdentity() {
-				ControllerUrl = id.Config.ztAPI,
+				ControllerUrl = (id.Config == null) ? "": id.Config.ztAPI,
 				ContollerVersion = id.ControllerVersion,
 				EnrollmentStatus = "status",
 				Fingerprint = id.FingerPrint,
+				Identifier = id.Identifier,
 				IsEnabled = id.Active,
 				Name = (string.IsNullOrEmpty(id.Name) ? id.FingerPrint : id.Name),
 				Status = id.Status,
@@ -81,7 +86,8 @@ namespace ZitiDesktopEdge.Models {
 				MinTimeout = id.MinTimeout,
 				MaxTimeout = id.MaxTimeout,
 				LastUpdatedTime = id.MfaLastUpdatedTime,
-				TimeoutMessage = ""
+				TimeoutMessage = "",
+				IsConnected = true
 			};
 
 

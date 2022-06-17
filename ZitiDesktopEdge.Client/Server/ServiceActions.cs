@@ -15,10 +15,10 @@ namespace ZitiDesktopEdge.Server {
                 //ServiceControllerStatus is reporting 'stop pending' when the service crashes or is terminated by a user
                 //this is INCORRECT as the service is dead - it is not pending. Test for the process by name and if there's
                 //still a process - cool. if NOT - send the 'stopped' message...
-                var procs = System.Diagnostics.Process.GetProcessesByName("ziti-tunnel");
+                var procs = System.Diagnostics.Process.GetProcessesByName("ziti-edge-tunnel");
                 if (procs != null && procs.Length == 1) {
-                    // if there's more than one ziti-tunnel that'd be bad too but we can't account for that here
-                    Logger.Warn("ServiceControllerStatus is StopPending but there is NO ziti-tunnel process! report service is stopped");
+                    // if there's more than one ziti-edge-tunnel that'd be bad too but we can't account for that here
+                    Logger.Warn("ServiceControllerStatus is StopPending but there is NO ziti-edge-tunnel process! report service is stopped");
                     return ServiceControllerStatus.Stopped.ToString();
                 }
             }

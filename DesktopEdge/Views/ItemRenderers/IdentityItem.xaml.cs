@@ -84,13 +84,20 @@ namespace ZitiDesktopEdge {
 				if (info.TimeoutCalculated > -1) {
 					if (info.TimeoutCalculated < minto) minto = info.TimeoutCalculated;
 				}
-				logger.Trace("Min: " + _identity.Name + " " + minto + " " + info.Name + " " + info.Timeout + " " + info.TimeoutCalculated + " " + info.TimeoutRemaining + " " + info.TimeUpdated+" "+ DateTime.Now);
+				// logger.Trace("Min: " + _identity.Name + " " + minto + " " + info.Name + " " + info.Timeout + " " + info.TimeoutCalculated + " " + info.TimeoutRemaining + " " + info.TimeUpdated+" "+ DateTime.Now);
 			}
 			if (minto == int.MaxValue) minto = 0;
 			return minto;
 		}
 
 		public void RefreshUI () {
+			if (_identity.IsConnected) {
+				this.IsEnabled = true;
+				this.Opacity = 1.0;
+			} else {
+				this.IsEnabled = false;
+				this.Opacity = 0.3;
+			}
 			TimerCountdown.Visibility = Visibility.Collapsed;
 			ServiceCountArea.Visibility = Visibility.Collapsed;
 			PostureTimedOut.Visibility = Visibility.Collapsed;
@@ -98,7 +105,7 @@ namespace ZitiDesktopEdge {
 			available = _identity.Services.Count;
 			ToggleSwitch.Enabled = _identity.IsEnabled;
 			ServiceCountAreaLabel.Content = "services";
-			logger.Info("RefreshUI " + _identity.Name + " MFA: "+ _identity.IsMFAEnabled+" Authenticated: "+_identity.IsAuthenticated);
+			// logger.Info("RefreshUI " + _identity.Name + " MFA: "+ _identity.IsMFAEnabled+" Authenticated: "+_identity.IsAuthenticated);
 			if (_identity.IsMFAEnabled) {
 				if (_identity.IsAuthenticated) {
 					ServiceCountArea.Visibility = Visibility.Visible;
@@ -244,11 +251,11 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void ShowMFAToast(string message, ZitiIdentity identity) {
-			logger.Info("Shwoing Notification from identity " + _identity.Name + " " + message + ".");
+			logger.Info("Showing Notification from identity " + _identity.Name + " " + message + ".");
 			new ToastContentBuilder()
 				.AddText(_identity.Name+" Service Access Warning")
 				.AddText(message)
-				.AddArgument("fingerprint", identity.Fingerprint)
+				.AddArgument("identifier", identity.Identifier)
 				.SetBackgroundActivation()
 				.Show();
 		}
@@ -258,7 +265,7 @@ namespace ZitiDesktopEdge {
 					OnStatusChanged(on);
 				}
 				DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-				DataStructures.Identity id = await client.IdentityOnOffAsync(_identity.Fingerprint, on);
+				DataStructures.Identity id = await client.IdentityOnOffAsync(_identity.Identifier, on);
 				this.Identity.IsEnabled = on;
 				if (on) {
 					ToggleStatus.Content = "ENABLED";

@@ -156,7 +156,7 @@ namespace ZitiDesktopEdge.Server {
                 EventRegistry.MyEvent += eh;
                 try {
                     StreamReader reader = new StreamReader(ss);
-                    
+
                     string line = await reader.ReadLineAsync();
                     while (line != null) {
                         await processMessageAsync(line, writer);
@@ -183,7 +183,7 @@ namespace ZitiDesktopEdge.Server {
                         if (ae.Action == "Force") {
                             // attempt to forcefully find the process and terminate it...
                             Logger.Warn("User has requested a FORCEFUL termination of the service. It must be stuck. Current status: {0}", ServiceActions.ServiceStatus());
-                            var procs = System.Diagnostics.Process.GetProcessesByName("ziti-tunnel");
+                            var procs = System.Diagnostics.Process.GetProcessesByName("ziti-edge-tunnel");
                             if (procs == null || procs.Length == 0) {
                                 Logger.Error("Process not found! Cannot terminate!");
                                 rr.Code = -20;

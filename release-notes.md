@@ -1,3 +1,21 @@
+# Release 2.0.0
+
+## What's New
+* The data service which was go-based: `ziti-tunnel`, has been totally replaced with the C-based `ziti-edge-tunnel`
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* Fix for the asynchronous calls
+* [#515](https://github.com/openziti/desktop-edge-win/issues/515) UI logs are GIGANTIC on 1.12.x branch
+* [#516](https://github.com/openziti/desktop-edge-win/issues/516) NUL chars passed to UI via ipc
+
+## Dependency Updates
+* TSDK updated to 0.17.24 / CSDK 0.26.27
+
+---
+
 # Release 1.11.5
 
 ## What's New

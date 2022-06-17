@@ -14,9 +14,11 @@ REM See the License for the specific language governing permissions and
 REM limitations under the License.
 REM
 SET REPO_URL=https://github.com/openziti/ziti-tunnel-sdk-c.git
-SET ZITI_TUNNEL_REPO_BRANCH=v0.15.25
+SET ZITI_TUNNEL_REPO_BRANCH=v0.18.10
 REM override the c sdk used in the build - leave blank for the same as specified in the tunneler sdk
 SET ZITI_SDK_C_BRANCH=
+SET ZITI_TUNNEL_REPO_URL=https://github.com/openziti/ziti-tunnel-sdk-c/releases/latest/download/ziti-edge-tunnel-Windows_x86_64.zip
+
 REM the number of TCP connections the tunneler sdk can have at any one time
 SET TCP_MAX_CONNECTIONS=256
 SET WINTUN_DL_URL=https://www.wintun.net/builds/wintun-0.13.zip
@@ -73,7 +75,7 @@ ziti-ci version 2>&1
 echo ""
 
 echo generating version info - this will get pushed from publish.bat in CI _if_ publish.bat started build.bat 2>&1
-ziti-ci generate-build-info --noAddNoCommit --useVersion=false %SVC_ROOT_DIR%/ziti-tunnel/version.go main --verbose 2>&1
+ziti-ci generate-build-info --noAddNoCommit --useVersion=false %SVC_ROOT_DIR%/version.go main --verbose 2>&1
 
 echo calling powershell script to update versions in UI and Installer 2>&1
 powershell -file %ZITI_TUNNEL_WIN_ROOT%update-versions.ps1 2>&1
@@ -83,8 +85,6 @@ goto QUICK
 :CLEAN
 echo REMOVING old build folder if it exists at %TUNNELER_SDK_DIR%build
 rmdir /s /q %TUNNELER_SDK_DIR%build
-echo REMOVING ziti.dll at %SVC_ROOT_DIR%ziti.dll
-del /q %SVC_ROOT_DIR%ziti.dll
 echo REMOVING wintun.dll at %SVC_ROOT_DIR%wintun.dll
 del /q %SVC_ROOT_DIR%wintun.dll
 
@@ -101,7 +101,7 @@ if not exist %SVC_ROOT_DIR%wintun.dll (
     copy %SVC_ROOT_DIR%wintun-extracted\wintun\bin\amd64\wintun.dll %SVC_ROOT_DIR%wintun.dll
     echo   removing: %SVC_ROOT_DIR%wintun-extracted
     del /s /q %SVC_ROOT_DIR%wintun-extracted\
-    rmdir %SVC_ROOT_DIR%wintun-extracted\
+    rmdir /s /q %SVC_ROOT_DIR%wintun-extracted\
     echo   removing: %SVC_ROOT_DIR%wintun.zip
     del /s %SVC_ROOT_DIR%wintun.zip
 )
@@ -109,15 +109,22 @@ if not exist %SVC_ROOT_DIR%wintun.dll (
 echo changing to service folder: %SVC_ROOT_DIR%
 cd %SVC_ROOT_DIR%
 
-if exist %SVC_ROOT_DIR%ziti.dll (
+if "%ZITI_TUNNEL_REPO_BRANCH%" == "" (
     echo ------------------------------------------------------------------------------
-    echo SKIPPED BUILDING ziti.dll because ziti.dll was found at %SVC_ROOT_DIR%ziti.dll
+    echo DOWNLOADING ziti-edge-tunnel-Windows_x86_64.zip using powershell
+    echo       from: %ZITI_TUNNEL_REPO_URL%
     echo ------------------------------------------------------------------------------
-    GOTO GOBUILD
+	echo REMOVING ziti-edge-tunnel-Windows_x86_64.zip at %SVC_ROOT_DIR%ziti-edge-tunnel-Windows_x86_64.zip
+	del /q %SVC_ROOT_DIR%ziti-edge-tunnel-Windows_x86_64.zip
+    powershell "Invoke-WebRequest %ZITI_TUNNEL_REPO_URL% -OutFile %SVC_ROOT_DIR%ziti-edge-tunnel-Windows_x86_64.zip"
+    powershell "Expand-Archive -Path %SVC_ROOT_DIR%ziti-edge-tunnel-Windows_x86_64.zip -Force -DestinationPath %SVC_ROOT_DIR%ziti-edge-tunnel-Windows_x86_64"
+	echo copying: %SVC_ROOT_DIR%ziti-edge-tunnel-Windows_x86_64\ziti-edge-tunnel.exe %SVC_ROOT_DIR%ziti-edge-tunnel.exe
+    copy %SVC_ROOT_DIR%ziti-edge-tunnel-Windows_x86_64\ziti-edge-tunnel.exe %SVC_ROOT_DIR%ziti-edge-tunnel.exe
+	GOTO COMPRESS_FILES
 )
 
 echo ------------------------------------------------------------------------------
-echo BUILDING ziti.dll begins
+echo BUILDING ziti-edge-tunnel begins
 echo ------------------------------------------------------------------------------
 
 if exist %TUNNELER_SDK_DIR% (
@@ -191,18 +198,30 @@ if "%ZITI_SDK_C_BRANCH%"=="" (
     SET ZITI_SDK_C_BRANCH_CMD=-DZITI_SDK_C_BRANCH=%ZITI_SDK_C_BRANCH%
 )
 
-cmake -G Ninja -S %TUNNELER_SDK_DIR% -B %TUNNELER_SDK_DIR%build -DCMAKE_INSTALL_PREFIX=%TUNNELER_SDK_DIR%install %ZITI_SDK_C_BRANCH_CMD% -DTCP_MAX_CONNECTIONS=%TCP_MAX_CONNECTIONS% %ZITI_DEBUG_CMAKE%
-cmake --build %TUNNELER_SDK_DIR%build --target install
+cmake -G Ninja -S %TUNNELER_SDK_DIR% -B %TUNNELER_SDK_DIR%build -DCMAKE_INSTALL_PREFIX=%TUNNELER_SDK_DIR%install -DCMAKE_TOOLCHAIN_FILE=%TUNNELER_SDK_DIR%\toolchains\default.cmake %ZITI_SDK_C_BRANCH_CMD% %ZITI_DEBUG_CMAKE%
 
 SET ACTUAL_ERR=%ERRORLEVEL%
 if %ACTUAL_ERR% NEQ 0 (
     echo.
-    echo Build of %TUNNELER_SDK_DIR%build failed
+    echo Compilation of %TUNNELER_SDK_DIR% failed
     echo.
     goto FAIL
 ) else (
     echo.
     echo result of ninja build: %ACTUAL_ERR%
+)
+
+cmake --build %TUNNELER_SDK_DIR%build --target bundle --verbose
+
+SET ACTUAL_ERR=%ERRORLEVEL%
+if %ACTUAL_ERR% NEQ 0 (
+    echo.
+    echo Bundle command of %TUNNELER_SDK_DIR%build failed
+    echo.
+    goto FAIL
+) else (
+    echo.
+    echo result of cmake bundle: %ACTUAL_ERR%
 )
 
 echo checking the CSDK
@@ -216,41 +235,25 @@ del /q hash.txt
 
 cd %SVC_ROOT_DIR%
 
-IF "%ZITI_DEBUG%"=="" (
-    SET ZITI_LIB_UV_DLL=%TUNNELER_SDK_DIR%install\lib\libuv.dll
-) else (
-    SET ZITI_DEBUG_CMAKE=-DCMAKE_BUILD_TYPE=Debug
-    echo ZITI_DEBUG detected. Copying debug lib into install...
-    SET ZITI_LIB_UV_DLL=%TUNNELER_SDK_DIR%install\lib\Debug\libuv.dll
-)
+echo    copying ziti-edge-tunnel.exe to service root (for zip creation)
+echo copy /y %TUNNELER_SDK_DIR%build\programs\ziti-edge-tunnel\ziti-edge-tunnel.exe %SVC_ROOT_DIR%
+copy /y %TUNNELER_SDK_DIR%build\programs\ziti-edge-tunnel\ziti-edge-tunnel.exe %SVC_ROOT_DIR%
 
-echo    copying libuv.dll to install folder (for go build) and to service root (for zip creation)
-echo    copy /y %ZITI_LIB_UV_DLL% to %SVC_ROOT_DIR%
-copy /y %ZITI_LIB_UV_DLL% %TUNNELER_SDK_DIR%install\lib\libuv.dll
-copy /y %ZITI_LIB_UV_DLL% %SVC_ROOT_DIR%
-
-echo    copying ziti.dll to service root (for zip creation)
-echo copy /y %TUNNELER_SDK_DIR%install\lib\ziti.dll %SVC_ROOT_DIR%
-copy /y %TUNNELER_SDK_DIR%install\lib\ziti.dll %SVC_ROOT_DIR%
-
-echo COPIED libuv and ziti dlls to %SVC_ROOT_DIR%
-
-:GOBUILD
-echo building the go program
-REM go build -race -a ./ziti-tunnel
-go build -a ./ziti-tunnel
 SET ACTUAL_ERR=%ERRORLEVEL%
 if %ACTUAL_ERR% NEQ 0 (
     echo.
-    echo Building ziti-tunnel failed
+    echo Could not copy %TUNNELER_SDK_DIR%build\programs\ziti-edge-tunnel\ziti-edge-tunnel.exe
     echo.
     goto FAIL
 ) else (
-    echo go build complete
+    echo.
+    echo result of copy build\programs\ziti-edge-tunnel\ziti-edge-tunnel.exe: %ACTUAL_ERR%
 )
 
-echo creating the distribution zip file
-powershell "Compress-Archive -Force -path *.dll, *.exe -DestinationPath .\ziti-tunnel-win.zip"
+:COMPRESS_FILES
+
+echo building the windows ziti-edge-tunnel distribution zip file
+powershell "Compress-Archive -Force -path *.dll, *.exe -DestinationPath .\ziti-edge-tunnel-win.zip"
 
 GOTO END
 
