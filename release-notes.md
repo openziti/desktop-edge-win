@@ -1,3 +1,18 @@
+# Release 2.0.1
+
+## What's New
+* nothing - bug fix release
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* Change the way NRPT rules test rules are counted
+
+## Dependency Updates
+* TSDK updated to 0.18.14 / CSDK 0.28.9
+
+
 # Release 2.0.0
 
 ## What's New
