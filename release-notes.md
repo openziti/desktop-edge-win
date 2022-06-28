@@ -1,3 +1,19 @@
+# Release 2.0.1
+
+## What's New
+* nothing - bug fix release
+
+## Other changes:
+* ZDEW no longer captures and tries to use "Primary Dns Suffix", "Primary Dns Suffix" and "Connection-specific DNS Suffix". 
+  All intercepts must be fully qualified now (they must contain a period. e.g. "myserver." or "myserver.ziti" not "myserver"
+
+## Bugs fixed:
+* Change the way NRPT rules test rules are counted to determine if NRPT is active
+
+## Dependency Updates
+* TSDK updated to 0.18.15 / CSDK 0.28.9
+
+
 # Release 2.0.0
 
 ## What's New
