@@ -1,4 +1,18 @@
-# Release 2.0.1
+# Release 2.1.2
+
+## What's New
+* nothing - bug fix release
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* fixes a problem where the data service would crash on certain hosted services
+
+## Dependency Updates
+* TSDK updated to 0.18.16 / CSDK 0.28.11
+
+# Release 2.0.1/2.1.1
 
 ## What's New
 * nothing - bug fix release
