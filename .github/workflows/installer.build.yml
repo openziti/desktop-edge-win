@@ -72,3 +72,4 @@ jobs:
         with:
           name: ZitiDesktopEdgeClient-${{ env.VERSION }}
           path: "Installer/Output/Ziti Desktop Edge Client-*"
+      - uses: stefanzweifel/git-auto-commit-action@v4
