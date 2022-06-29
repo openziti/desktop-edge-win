@@ -78,6 +78,7 @@ $action = '/build'
 echo "Assembling installer using AdvancedInstaller at: $ADVINST $action $ADVPROJECT"
 & $ADVINST $action $ADVPROJECT
 
+ziti-ci configure-git
 $gituser=$(git config user.name)
 if($gituser -eq "ziti-ci") {
   if(Test-Path ${scriptPath}\..\service\github_deploy_key) {
@@ -88,7 +89,6 @@ if($gituser -eq "ziti-ci") {
 
   $b="$env:GIT_BRANCH"
   if( $b -match '(^main$|^release-next|^release-[0-9]*\.[0-9]*\.[0-9]*)' ) {
-    ziti-ci configure-git
     echo "branch $b matches the required regex - adding committing and pushing"
     git add DesktopEdge/Properties/AssemblyInfo.cs
     git add ZitiUpdateService/Properties/AssemblyInfo.cs
