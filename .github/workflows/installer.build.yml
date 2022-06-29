@@ -24,7 +24,7 @@ jobs:
       ZITI_DEBUG: "yes_please"
       OPENZITI_P12_PASS: ${{ secrets.OPENZITI_P12_PASS }}
       OPENZITI_P12: ${{ secrets.OPENZITI_P12 }}
-      GOPATH: /home/runner/work/woodpecker/go
+
     steps:
       - uses: actions/checkout@master
       - uses: microsoft/setup-msbuild@v1
