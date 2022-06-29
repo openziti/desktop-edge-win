@@ -78,7 +78,6 @@ $action = '/build'
 echo "Assembling installer using AdvancedInstaller at: $ADVINST $action $ADVPROJECT"
 & $ADVINST $action $ADVPROJECT
 
-ziti-ci configure-git
 $gituser=$(git config user.name)
 if($gituser -eq "ziti-ci") {
   if(Test-Path ${scriptPath}\..\service\github_deploy_key) {

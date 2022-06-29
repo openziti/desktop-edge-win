@@ -70,7 +70,9 @@ jobs:
           $key=(Get-Content .\ADV_INST_KEY.key)
           .\Installer\reg.bat $key
       - name: Build UI and Assemble Installer
-        run: powershell -File .\Installer\build.ps1
+        run: 
+          $(go env GOPATH)/bin/ziti-ci configure-git
+          powershell -File .\Installer\build.ps1
       - name: Upload installer onto job
         uses: actions/upload-artifact@v2
         with:
