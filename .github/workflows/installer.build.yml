@@ -24,12 +24,12 @@ jobs:
       ZITI_DEBUG: "yes_please"
       OPENZITI_P12_PASS: ${{ secrets.OPENZITI_P12_PASS }}
       OPENZITI_P12: ${{ secrets.OPENZITI_P12 }}
-
+      GOPATH: /home/runner/work/woodpecker/go
     steps:
       - uses: actions/checkout@master
       - uses: microsoft/setup-msbuild@v1
       - name: Set up Go 
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v3
       - name: install ziti-ci
         run: go install github.com/netfoundry/ziti-ci@v0.5.92
       - if: github.event_name == 'push'
