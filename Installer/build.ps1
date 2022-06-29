@@ -88,8 +88,8 @@ if($gituser -eq "ziti-ci") {
 
   $b="$env:GIT_BRANCH"
   if( $b -match '(^main$|^release-next|^release-[0-9]*\.[0-9]*\.[0-9]*)' ) {
+    ziti-ci configure-git
     echo "branch $b matches the required regex - adding committing and pushing"
-    git add ziti-edge-tunnel/version.go
     git add DesktopEdge/Properties/AssemblyInfo.cs
     git add ZitiUpdateService/Properties/AssemblyInfo.cs
     git add Installer/ZitiDesktopEdge.aip

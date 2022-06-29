@@ -28,6 +28,10 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - uses: microsoft/setup-msbuild@v1
+      - name: Set up Go 
+        uses: actions/setup-go@v1
+      - name: install ziti-ci
+        run: go install github.com/netfoundry/ziti-ci@v0.5.92
       - if: github.event_name == 'push'
         run: echo "GIT_BRANCH=$($env:GITHUB_REF.replace('refs/heads/', ''))" >> $env:GITHUB_ENV
       - if: github.event_name == 'pull_request'
@@ -72,4 +76,3 @@ jobs:
         with:
           name: ZitiDesktopEdgeClient-${{ env.VERSION }}
           path: "Installer/Output/Ziti Desktop Edge Client-*"
-      - uses: stefanzweifel/git-auto-commit-action@v4
