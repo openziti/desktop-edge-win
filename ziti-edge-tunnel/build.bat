@@ -14,9 +14,9 @@ REM See the License for the specific language governing permissions and
 REM limitations under the License.
 REM
 SET REPO_URL=https://github.com/openziti/ziti-tunnel-sdk-c.git
-SET ZITI_TUNNEL_REPO_BRANCH=issue-444-elevate-access-token
+SET ZITI_TUNNEL_REPO_BRANCH=v0.19.0
 REM override the c sdk used in the build - leave blank for the same as specified in the tunneler sdk
-SET ZITI_SDK_C_BRANCH=issue-430-proc-posture-check
+SET ZITI_SDK_C_BRANCH=
 SET ZITI_TUNNEL_REPO_URL=https://github.com/openziti/ziti-tunnel-sdk-c/releases/latest/download/ziti-edge-tunnel-Windows_x86_64.zip
 
 REM the number of TCP connections the tunneler sdk can have at any one time
