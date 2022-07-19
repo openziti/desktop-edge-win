@@ -6,7 +6,6 @@ on:
       - main
       - 'release-*'
       - 'beta-release-*'
-      - 'issue-551-cannot-eval-all-procs'
 
 env:
   BUILD_CONFIG: "Release"
