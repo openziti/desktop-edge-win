@@ -7,7 +7,7 @@
 * none
 
 ## Bugs fixed:
-* address an issue where not every process was allowed to be enumerated
+* [bug 551](https://github.com/openziti/desktop-edge-win/issues/551) address an issue where not every process was allowed to be enumerated
 
 ## Dependency Updates
 * TSDK updated to 0.19.0 / CSDK 0.29.1
