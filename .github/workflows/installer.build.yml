@@ -28,6 +28,10 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - uses: microsoft/setup-msbuild@v1
+      - name: Set up Go 
+        uses: actions/setup-go@v3
+      - name: Install Ziti CI
+        uses: netfoundry/ziti-ci@v1
       - if: github.event_name == 'push'
         run: echo "GIT_BRANCH=$($env:GITHUB_REF.replace('refs/heads/', ''))" >> $env:GITHUB_ENV
       - if: github.event_name == 'pull_request'
@@ -41,8 +45,8 @@ jobs:
           C:\Windows\System32\certutil.exe -decode OPENZITI_P12.b64 Installer/openziti.p12
       - name: Trying to run choco install.
         run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-      - name: "Install Choco needs: advanced-installer wixtoolset zip ninja"
-        run: choco install advanced-installer wixtoolset zip ninja --yes
+      - name: "Install Choco needs: advanced-installer wixtoolset ninja"
+        run: choco install advanced-installer wixtoolset ninja --yes
       - name: Build the ziti-edge-tunnel (for now, will download later)
         run: ziti-edge-tunnel\build.bat quick
       - name: Setting up version env var
@@ -66,9 +70,21 @@ jobs:
           $key=(Get-Content .\ADV_INST_KEY.key)
           .\Installer\reg.bat $key
       - name: Build UI and Assemble Installer
-        run: powershell -File .\Installer\build.ps1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ziti_ci_gpg_key: ${{ secrets.ZITI_CI_GPG_KEY }}
+          ziti_ci_gpg_key_id: ${{ secrets.ZITI_CI_GPG_KEY_ID }}
+        run: 
+          C:\Users\runneradmin\go\bin\ziti-ci.exe configure-git;
+          powershell -File .\Installer\build.ps1
       - name: Upload installer onto job
         uses: actions/upload-artifact@v2
         with:
           name: ZitiDesktopEdgeClient-${{ env.VERSION }}
           path: "Installer/Output/Ziti Desktop Edge Client-*"
+      - if: github.ref == 'refs/heads/release-next'
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: './DesktopEdge/Properties/AssemblyInfo.cs ./ZitiDesktopEdge.Client/Properties/AssemblyInfo.cs ./ZitiUpdateService/Properties/AssemblyInfo.cs'
+          default_author: github_actions
+          committer_name: ziti-ci

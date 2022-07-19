@@ -33,7 +33,7 @@ if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
     
     if($null -eq $env:WINTUN_DL_URL) {
         echo "========================== fetching wintun.dll =========================="
-        $WINTUN_DL_URL="https://www.wintun.net/builds/wintun-0.14.1.zip"
+        $WINTUN_DL_URL="https://www.wintun.net/builds/wintun-0.13.zip"
         echo "Beginning to download wintun from ${WINTUN_DL_URL}"
         echo ""
         Invoke-WebRequest $WINTUN_DL_URL -OutFile "${scriptPath}\wintun.zip"
@@ -65,7 +65,7 @@ msbuild ZitiDesktopEdge.sln /property:Configuration=Release
 
 Pop-Location
 
-$ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer 19.6"
+$ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer 19.7"
 $ADVINST = "${ADV_INST_HOME}\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
 $installerVersion=(Get-Content -Path ${scriptPath}\..\version)
@@ -89,7 +89,6 @@ if($gituser -eq "ziti-ci") {
   $b="$env:GIT_BRANCH"
   if( $b -match '(^main$|^release-next|^release-[0-9]*\.[0-9]*\.[0-9]*)' ) {
     echo "branch $b matches the required regex - adding committing and pushing"
-    git add ziti-edge-tunnel/version.go
     git add DesktopEdge/Properties/AssemblyInfo.cs
     git add ZitiUpdateService/Properties/AssemblyInfo.cs
     git add Installer/ZitiDesktopEdge.aip

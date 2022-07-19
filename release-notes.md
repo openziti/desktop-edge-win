@@ -1,3 +1,17 @@
+# Release 2.1.3
+
+## What's New
+* nothing - bug fix release
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* [bug 551](https://github.com/openziti/desktop-edge-win/issues/551) address an issue where not every process was allowed to be enumerated
+
+## Dependency Updates
+* TSDK updated to 0.19.0 / CSDK 0.29.1
+
 # Release 2.1.2
 
 ## What's New
