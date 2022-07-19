@@ -82,3 +82,9 @@ jobs:
         with:
           name: ZitiDesktopEdgeClient-${{ env.VERSION }}
           path: "Installer/Output/Ziti Desktop Edge Client-*"
+      - if: github.ref == 'refs/heads/release-next'
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: './DesktopEdge/Properties/AssemblyInfo.cs ./ZitiDesktopEdge.Client/Properties/AssemblyInfo.cs ./ZitiUpdateService/Properties/AssemblyInfo.cs'
+          default_author: github_actions
+          committer_name: ziti-ci
