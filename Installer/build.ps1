@@ -33,7 +33,7 @@ if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
     
     if($null -eq $env:WINTUN_DL_URL) {
         echo "========================== fetching wintun.dll =========================="
-        $WINTUN_DL_URL="https://www.wintun.net/builds/wintun-0.14.1.zip"
+        $WINTUN_DL_URL="https://www.wintun.net/builds/wintun-0.13.zip"
         echo "Beginning to download wintun from ${WINTUN_DL_URL}"
         echo ""
         Invoke-WebRequest $WINTUN_DL_URL -OutFile "${scriptPath}\wintun.zip"
