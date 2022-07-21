@@ -66,7 +66,5 @@ namespace ZitiUpdateService.Utils {
     }
 
     class TimerState {
-        public CustomTimer _timer;
-        public Checkers.ZDEInstallerInfo zdeInstallerInfo;
     }
 }

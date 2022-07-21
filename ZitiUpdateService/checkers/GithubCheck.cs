@@ -20,13 +20,12 @@ namespace ZitiUpdateService.Checkers {
 		string downloadUrl = null;
 		string downloadFileName = null;
 		Version nextVersion = null;
-		string publishedDateTime = null;
-		Version versionAfterCurrent = null;
-		DateTime publishedDateAfterCurrent = DateTime.Now;
+		
 
-		public GithubCheck(string url, string releasesUrl) {
+		public GithubCheck(Version compareTo, string url, string releasesUrl) : base(compareTo) {
 			this.url = url;
 			this.releasesUrl = releasesUrl;
+			Avail = CheckUpdate(compareTo);
 		}
 
 		override public bool AlreadyDownloaded(string destinationFolder, string destinationName) {
@@ -41,11 +40,7 @@ namespace ZitiUpdateService.Checkers {
 			Logger.Info("download complete to: {0}", dest);
 		}
 
-		override public string FileName() {
-			return downloadFileName;
-		}
-
-		override public void CheckUpdate(Version currentVersion, out int avail, out string publishedDate) {
+		private int CheckUpdate(Version currentVersion) {
 			Logger.Debug("checking for update begins. current version detected as {0}", currentVersion);
 			Logger.Debug("issuing http get to url: {0}", url);
 			JObject json = GithubAPI.GetJson(url);
@@ -64,20 +59,18 @@ namespace ZitiUpdateService.Checkers {
 
 			if (downloadUrl == null) {
 				Logger.Error("DOWNLOAD URL not found at: {0}", url);
-				avail = 0;
-				publishedDate = null;
-				return;
+				return 0;
 			}
 			Logger.Debug("download url detected: {0}", downloadUrl);
-			downloadFileName = downloadUrl.Substring(downloadUrl.LastIndexOf('/') + 1);
+			FileName = downloadUrl.Substring(downloadUrl.LastIndexOf('/') + 1);
 			Logger.Debug("download file name: {0}", downloadFileName);
 
 			string releaseVersion = json.Property("tag_name").Value.ToString();
 			string releaseName = json.Property("name").Value.ToString();
 			nextVersion = VersionUtil.NormalizeVersion(new Version(releaseVersion));
 			string isoPublishedDate = json.Property("published_at").Value.ToString();
-			publishedDate = convertISOToDateTimeString(isoPublishedDate);
-			publishedDateTime = publishedDate;
+			PublishDate = DateTime.Parse(isoPublishedDate, null, System.Globalization.DateTimeStyles.RoundtripKind);
+
 
 			int compare = currentVersion.CompareTo(nextVersion);
 			if (compare < 0) {
@@ -85,7 +78,7 @@ namespace ZitiUpdateService.Checkers {
 			} else if (compare > 0) {
 				Logger.Info("the version installed: {0} is newer than the released version: {1}", currentVersion, nextVersion);
 			}
-			avail = compare;
+			return compare;
 		}
 
 		override public bool HashIsValid(string destinationFolder, string destinationName) {
@@ -149,61 +142,6 @@ namespace ZitiUpdateService.Checkers {
 			}
 			_versionAfterCurrent = publishedReleaseVersion;
 
-		}
-
-		override public ZDEInstallerInfo GetZDEInstallerInfo(string fileDestination) {
-			ZDEInstallerInfo info = new ZDEInstallerInfo();
-			try {
-
-				info.Version = nextVersion;
-				
-				string assemblyVersionStr = Assembly.GetExecutingAssembly().GetName().Version.ToString(); //fetch from ziti?
-				Version assemblyVersion = new Version(assemblyVersionStr);
-				// fetch the _publishedDateAfterCurrent only if the last versionAfterCurrent is same or older than the current assembly version
-				if (versionAfterCurrent == null || assemblyVersion.CompareTo(versionAfterCurrent) >= 0 ) {
-					DateTime _publishedDateAfterCurrent = DateTime.Now;
-					Version _versionAfterCurrent = null;
-					try {
-						getReleaseInfoAfterCurrent(releasesUrl, assemblyVersion, out _publishedDateAfterCurrent, out _versionAfterCurrent);
-						versionAfterCurrent = _versionAfterCurrent;
-						publishedDateAfterCurrent = _publishedDateAfterCurrent;
-					} catch (Exception err) {
-						Logger.Error("Could not fetch the installer information after current one - {0}", err.Message);
-					}
-				}
-
-				info.CreationTime = getCreationTime((versionAfterCurrent != null) ? publishedDateAfterCurrent.ToString() : publishedDateTime, fileDestination);
-				Logger.Trace("File after the current one is created/published at {0}", info.CreationTime.ToString());
-
-				if (info.CreationTime.Date.AddDays(7).CompareTo(DateTime.Now) <= 0) {
-					info.IsCritical = true;
-					Logger.Info("ZDEInstaller is marked as critical, because the user has not installed the new installer for a week");
-				} else {
-					Logger.Debug("Comparing Version {0}, with current {1}", info.Version.ToString(), assemblyVersion.ToString());
-
-					if ((info.Version.Major - assemblyVersion.Major >= 1) || (info.Version.Minor - assemblyVersion.Minor >= 1)) {
-						info.IsCritical = true;
-						Logger.Info("ZDEInstaller is marked as critical because the major/minor version has changed");
-					} else {
-						info.IsCritical = false;
-					}
-				}
-
-			} catch (Exception e) {
-				Logger.Error("Could not fetch the installer information due to - {0}", e.Message);
-			}
-
-			return info;
-		}
-
-		private string convertISOToDateTimeString(string publishedDateISO) {
-			try {
-				DateTime publishedDate = DateTime.Parse(publishedDateISO, null, System.Globalization.DateTimeStyles.RoundtripKind);
-				return publishedDate.ToString();
-			} catch (Exception e) {
-				Logger.Error("Could not convert published date of the installer - input string : {0} due to {1}. Fetching download time instead.", publishedDateISO, e.Message);
-				return null;
-			}
 		}
 
 		private DateTime getCreationTime(string publishedDateStr, string fileDestination) {

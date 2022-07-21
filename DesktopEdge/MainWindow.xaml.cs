@@ -316,7 +316,7 @@ namespace ZitiDesktopEdge {
 		/// <summary>
 		/// Close the MFA Screen with animation
 		/// </summary>
-		async private void DoClose(bool isComplete) {
+		private void DoClose(bool isComplete) {
 			DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
 			ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
 			animation.Completed += CloseComplete;
@@ -433,8 +433,8 @@ namespace ZitiDesktopEdge {
 			IdentityMenu.OnMessage += IdentityMenu_OnMessage;
 		}
 
-		private void MFASetup_OnError(string message) {
-			ShowBlurbAsync(message, "", "error");
+		async private void MFASetup_OnError(string message) {
+			await ShowBlurbAsync(message, "", "error");
 		}
 
 		private void ToastNotificationManagerCompat_OnActivated(ToastNotificationActivatedEventArgsCompat e) {
@@ -835,7 +835,8 @@ namespace ZitiDesktopEdge {
 				if ("installationupdate".Equals(evt.Message?.ToLower())) {
 					logger.Debug("Installation Update is available - {0}", evt.ZDEVersion);
 					IsUpdateAvailable = true;
-					MainMenu.ShowUpdateAvailable(evt.TimeRemaining, evt.InstallTime);
+					var remaining = evt.InstallTime - DateTime.Now;
+					MainMenu.ShowUpdateAvailable(remaining.TotalSeconds, evt.InstallTime);
 					AlertCanvas.Visibility = Visibility.Visible;
 					ShowToast("An Update is Available for Ziti Desktop Edge, will initiate auto installation by " + evt.InstallTime);
 					SetNotifyIcon("");
@@ -1559,7 +1560,7 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-		public void ShowError(String title, String message) {
+		public void ShowError(string title, string message) {
 			this.Dispatcher.Invoke(() => {
 				ErrorTitle.Content = title;
 				ErrorDetails.Text = message;

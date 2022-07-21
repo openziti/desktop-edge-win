@@ -197,7 +197,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         protected void debugServiceCommunication(string msg) {
-#if DEBUG
+#if DEBUGSVCCOM
             Logger.Debug(msg);
 #else
             Logger.Trace(msg);
@@ -250,7 +250,7 @@ namespace ZitiDesktopEdge.ServiceClient {
     }
 
     public class ShouldSerializeContractResolver : DefaultContractResolver {
-        public new static readonly ShouldSerializeContractResolver Instance = new ShouldSerializeContractResolver();
+        public static readonly ShouldSerializeContractResolver Instance = new ShouldSerializeContractResolver();
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization) {
             JsonProperty property = base.CreateProperty(member, memberSerialization);
 

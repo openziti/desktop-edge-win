@@ -302,14 +302,10 @@ namespace ZitiDesktopEdge {
 		async private void ShowFeedback(object sender, MouseButtonEventArgs e) {
 			try {
 				MainWindow.ShowLoad("Collecting Information", "Please wait while we run some commands\nand collect some diagnostic information");
-				var mailMessage = new MailMessage("help@openziti.org", "help@openziti.org");
-				mailMessage.Subject = "Ziti Support";
-				mailMessage.IsBodyHtml = false;
+				
 				System.Text.StringBuilder sb = new System.Text.StringBuilder();
 				sb.Append("Logs collected at : " + DateTime.Now.ToString());
 				sb.Append(". client version : " + appVersion);
-
-				mailMessage.Body = sb.ToString();
 
 				string timestamp = DateTime.Now.ToFileTime().ToString();
 
@@ -330,32 +326,10 @@ namespace ZitiDesktopEdge {
 				}
 				string pathToLogs = resp.Message;
 				logger.Info("Log files found at : {0}", resp.Message);
-				mailMessage.Attachments.Add(new Attachment(pathToLogs));
+				string args = string.Format("/Select, \"{0}\"", pathToLogs);
 
-				string emlFile = Path.Combine(Path.GetTempPath(), timestamp + "-ziti.eml");
-
-				using (var filestream = File.Open(emlFile, FileMode.Create)) {
-					var binaryWriter = new BinaryWriter(filestream);
-					binaryWriter.Write(System.Text.Encoding.UTF8.GetBytes("X-Unsent: 1" + Environment.NewLine));
-					var assembly = typeof(SmtpClient).Assembly;
-					var mailWriterType = assembly.GetType("System.Net.Mail.MailWriter");
-					var mailWriterContructor = mailWriterType.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null, new[] { typeof(Stream) }, null);
-					var mailWriter = mailWriterContructor.Invoke(new object[] { filestream });
-					var sendMethod = typeof(MailMessage).GetMethod("Send", BindingFlags.Instance | BindingFlags.NonPublic);
-					sendMethod.Invoke(mailMessage, BindingFlags.Instance | BindingFlags.NonPublic, null, new object[] { mailWriter, true, true }, null);
-					var closeMethod = mailWriter.GetType().GetMethod("Close", BindingFlags.Instance | BindingFlags.NonPublic);
-					closeMethod.Invoke(mailWriter, BindingFlags.Instance | BindingFlags.NonPublic, null, new object[] { }, null);
-				}
-				var p = Process.Start(emlFile);
-				if (p != null) {
-					p.Exited += (object lambdaSender, EventArgs lambdaEventArgs) => {
-						logger.Info("Removing temp file: {0}", emlFile);
-						File.Delete(emlFile);
-					};
-					p.EnableRaisingEvents = true;
-				} else {
-					logger.Debug("process was null. most likely the email file format was not known when the process tried to start");
-				}
+				ProcessStartInfo pfi = new ProcessStartInfo("Explorer.exe", args);
+				Process.Start(pfi);
 			} catch (Exception ex) {
 				logger.Warn(ex, "An unexpected error has occurred when submitting feedback? {0}", ex.Message);
 			}

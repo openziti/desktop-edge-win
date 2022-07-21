@@ -23,6 +23,7 @@ using DnsClient;
 using DnsClient.Protocol;
 using ZitiUpdateService.Checkers.PeFile;
 using ZitiUpdateService.Utils;
+using ZitiUpdateService.Checkers;
 
 namespace ZitiUpdateService {
 	public partial class UpdateService : ServiceBase {
@@ -34,8 +35,6 @@ namespace ZitiUpdateService {
 			}
 			private set { }
 		}
-
-		public bool useGithubCheck { get; private set; }
 
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -56,7 +55,6 @@ namespace ZitiUpdateService {
 		IPCServer svr = new IPCServer();
 		Task ipcServer = null;
 		Task eventServer = null;
-		Checkers.UpdateCheck check = null;
 
 		private System.Timers.Timer dnsProbeTimer = new System.Timers.Timer();
 		private IPAddress dnsIpAddress = null;
@@ -64,8 +62,6 @@ namespace ZitiUpdateService {
 		public UpdateService() {
 			InitializeComponent();
 			base.CanHandlePowerEvent = true;
-
-			useGithubCheck = true; //set this to false if you want to use the FileCheck test class instead of Github
 
 			exeLocation = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
@@ -81,6 +77,14 @@ namespace ZitiUpdateService {
 			svr.DoUpdateCheck = DoUpdateCheck;
 			svr.TriggerUpdate = TriggerUpdate;
 
+			string assemblyVersionStr = Assembly.GetExecutingAssembly().GetName().Version.ToString(); //fetch from ziti?
+			assemblyVersion = new Version(assemblyVersionStr);
+			asmDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+			updateFolder = Path.Combine(asmDir, "updates");
+			if (!Directory.Exists(updateFolder))
+			{
+				Directory.CreateDirectory(updateFolder);
+			}
 		}
 
 
@@ -91,12 +95,6 @@ namespace ZitiUpdateService {
 			return r;
 		}
 
-		private void TriggerUpdateEvent(Object state) {
-			TimerState timerState = (TimerState)state;
-			Logger.Debug("Timer initiating installation of {0}, exhausted allowed waiting time - {1}", timerState.zdeInstallerInfo.Version.ToString(), timerState._timer.Period);
-			checkUpdateImmediately();
-			Logger.Warn("If installation didnt complete, then the timer will initiate this function again at the next interval - {0}", timerState._timer.Period);
-		}
 
 		private void checkUpdateImmediately() {
 			try {
@@ -108,16 +106,16 @@ namespace ZitiUpdateService {
 
 		private StatusCheck DoUpdateCheck() {
 			StatusCheck r = new StatusCheck();
-			int updateAvailable;
-			string publishedDate;
-			check.CheckUpdate(assemblyVersion, out updateAvailable, out publishedDate);
-			r.Code = updateAvailable;
+
+			UpdateCheck check = getCheck(assemblyVersion);
+			
+			r.Code = check.Avail;
 			r.ReleaseStream = IsBeta ? "beta" : "stable";
 			switch (r.Code) {
 				case -1:
 					r.Message = $"An update is available: {check.GetNextVersion()}";
 					r.UpdateAvailable = true;
-					Logger.Debug("Update {0} is published on {1}", check.GetNextVersion(), publishedDate);
+					Logger.Debug("Update {0} is published on {1}", check.GetNextVersion(), check.PublishDate);
 					break;
 				case 0:
 					r.Message = $"The current version [{assemblyVersion}] is the latest";
@@ -159,7 +157,6 @@ namespace ZitiUpdateService {
 					}
 					AccessUtils.GrantAccessToFile(markerFile); //allow anyone to delete this manually if need be...
 					Logger.Debug("added marker file: {0}", markerFile);
-					ConfigureCheck();
 				}
 			} else {
 				if (!IsBeta) {
@@ -170,7 +167,6 @@ namespace ZitiUpdateService {
 						File.Delete(markerFile);
 						Logger.Debug("removed marker file: {0}", markerFile);
 					}
-					ConfigureCheck();
 				}
 			}
 		}
@@ -416,7 +412,7 @@ namespace ZitiUpdateService {
 			AccessUtils.GrantAccessToFile(Path.Combine(exeLocation, "ZitiDesktopEdge.exe.config")); //allow anyone to change the config file
 			AccessUtils.GrantAccessToFile(Path.Combine(exeLocation, "ZitiDesktopEdge-log.config")); //allow anyone to change the log file config
 
-			dnsProbeTimer.Elapsed += DnsProbe_Elapsed;
+			//dnsProbeTimer.Elapsed += DnsProbe_Elapsed; disable the dns probe for now
 			dnsProbeTimer.Interval = dnsProbeIntervalInSeconds * 1000;
 
 			Logger.Info("starting ipc server");
@@ -511,9 +507,12 @@ namespace ZitiUpdateService {
 			await writer.FlushAsync();
 			if (_installationReminder != null) {
 				TimerState state = _installationReminder.State;
-				InstallationNotificationEvent notificationMsg = logAndNotifyInstallationUpdates(state.zdeInstallerInfo, true);
+				//why is this even here... InstallationNotificationEvent notificationMsg = logAndNotifyInstallationUpdates(state.zdeInstallerInfo, true);
+				/*
 				await writer.WriteLineAsync(JsonConvert.SerializeObject(notificationMsg));
 				await writer.FlushAsync();
+				*/
+				//why not just use the same effing function.....
 			}
 		}
 
@@ -578,7 +577,17 @@ namespace ZitiUpdateService {
 			var updateTimerInterval = ConfigurationManager.AppSettings.Get("UpdateTimer");
 			var upInt = TimeSpan.Zero;
 			if (!TimeSpan.TryParse(updateTimerInterval, out upInt)) {
-				upInt = new TimeSpan(0, 1, 0);
+				upInt = new TimeSpan(0, 10, 0);
+			}
+
+			if (upInt.TotalMilliseconds < 10 * 60 * 60 * 1000)
+            {
+				Logger.Warn("provided time [{0}] is too small. Using 10 minutes.", updateTimerInterval);
+#if MOCKUPDATE
+				Logger.Info("MOCKUPDATE detected. Not limiting check to 10 minutes");
+#else
+				upInt = TimeSpan.Parse("0:10:0");
+#endif
 			}
 
 			_updateTimer = new System.Timers.Timer();
@@ -591,18 +600,8 @@ namespace ZitiUpdateService {
 			//on startup - see if the old wintun software was installed and if so ... try to remove it
 			UninstallOpenZitiWintun.DetectAndUninstallOpenZitiWintun();
 
-			string assemblyVersionStr = Assembly.GetExecutingAssembly().GetName().Version.ToString(); //fetch from ziti?
-			assemblyVersion = new Version(assemblyVersionStr);
-			asmDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-			updateFolder = Path.Combine(asmDir, "updates");
-			if (!Directory.Exists(updateFolder)) {
-				Directory.CreateDirectory(updateFolder);
-			}
-
 			cleanOldLogs(asmDir);
 			scanForStaleDownloads(updateFolder);
-
-			ConfigureCheck();
 
 			checkUpdateImmediately();
 
@@ -613,23 +612,6 @@ namespace ZitiUpdateService {
 			}
 
 			dataClient.WaitForConnectionAsync().Wait();
-		}
-
-		private void ConfigureCheck() {
-			string updateUrl = null;
-			string releasesUrl = null;
-			if (!IsBeta) {
-				updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win/releases/latest"; //hardcoded on purpose
-				releasesUrl = GithubAPI.ProdReleasesUrl;
-			} else {
-				updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win-beta/releases/latest";
-				releasesUrl = GithubAPI.BetaReleasesUrl;
-			}
-			if (useGithubCheck) {
-				check = new Checkers.GithubCheck(updateUrl, releasesUrl);
-			} else {
-				check = new Checkers.FilesystemCheck(1);
-			}
 		}
 
 		private void cleanOldLogs(string whereToScan) {
@@ -649,23 +631,40 @@ namespace ZitiUpdateService {
 			}
 		}
 
+#if MOCKUPDATE
+		static DateTime mockDate = DateTime.Now;
+#endif
+		private UpdateCheck getCheck(Version v)
+        {
+#if MOCKUPDATE
+			//run with MOCKUPDATE to enable debugging/mocking the update check
+			var check = new FilesystemCheck(v, -1, mockDate, "FilesysteCheck.download.mock.txt", new Version("2.1.4"));
+#else
+			string updateUrl = null;
+			string releasesUrl = null;
+			if (!IsBeta) {
+				updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win/releases/latest"; //hardcoded on purpose
+				releasesUrl = GithubAPI.ProdReleasesUrl;
+			} else {
+				updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win-beta/releases/latest";
+				releasesUrl = GithubAPI.BetaReleasesUrl;
+			}
+			var check = new GithubCheck(v, updateUrl, releasesUrl);
+#endif
+			return check;
+		}
+
 		private void CheckUpdate(object sender, ElapsedEventArgs e) {
 			if (e != null) {
 				Logger.Debug("Timer triggered CheckUpdate at {0}", e.SignalTime);
-			}
-			if (check == null) {
-				Logger.Warn("update check object is not ready. This is abnormal. Please report if you see this warning");
-				return;
 			}
 			semaphore.Wait();
 
 			try {
 				Logger.Debug("checking for update");
-				String publishedDate;
-				int avail;
+				var check = getCheck(assemblyVersion);
 
-				check.CheckUpdate(assemblyVersion, out avail, out publishedDate);
-				if (avail >= 0) {
+				if (check.Avail >= 0) {
 					Logger.Debug("update check complete. no update available");
 					semaphore.Release();
 					return;
@@ -677,7 +676,7 @@ namespace ZitiUpdateService {
 				}
 
 				Logger.Info("copying update package");
-				string filename = check.FileName();
+				string filename = check.FileName;
 
 				string fileDestination = Path.Combine(updateFolder, filename);
 
@@ -689,41 +688,21 @@ namespace ZitiUpdateService {
 					Logger.Info("copying update package complete");
 				}
 
-				if (sender == null && e == null) {
-					installZDE(fileDestination, filename);
-				} else {
-					Checkers.ZDEInstallerInfo info = check.GetZDEInstallerInfo(fileDestination);
 
-					if (info.IsCritical) {
-						info.TimeRemaining = 0;
-						info.InstallTime = DateTime.Now;
-						NotifyInstallationUpdates(info, 0, "");
-						installZDE(fileDestination, filename);
-					} else if (!info.IsCritical && _installationReminder == null) {
-						// Timer for installation reminder
-						var installationReminderInterval = ConfigurationManager.AppSettings.Get("InstallationReminder");
-						var instInt = TimeSpan.Zero;
-						if (!TimeSpan.TryParse(installationReminderInterval, out instInt)) {
-							// if InstallationReminder value is not configured, set it to 1 hour
-							instInt = new TimeSpan(1, 0, 0);
-						}
-						TimerState state = new TimerState();
-						state.zdeInstallerInfo = info;
-						System.Threading.TimerCallback callback = new System.Threading.TimerCallback(TriggerUpdateEvent);
-						// waits for the time updated in instInt field and then triggers at every interval
-						_installationReminder = new CustomTimer(callback, state, instInt, instInt);
-						state._timer = _installationReminder;
+				InstallationNotificationEvent info = new InstallationNotificationEvent();
+				info.ZDEVersion = check.GetNextVersion().ToString();
+				info.InstallTime = check.PublishDate;
 
-						info.TimeRemaining = _installationReminder.DueTime.TotalMilliseconds / 1000; // converting to seconds
-						info.InstallTime = DateTime.Now.AddMilliseconds(_installationReminder.DueTime.TotalMilliseconds);
-						Logger.Info("Installation reminder for ZDE version {0} is set to {1}, TimeRemaining - {2}, approximate install time - {3}", info.Version, instInt, info.TimeRemaining, info.InstallTime);
-
-						NotifyInstallationUpdates(info, 0, "");
-					}
-
-					if (_installationReminder != null) {
-						logAndNotifyInstallationUpdates(info, false);
-					}
+				if (InstallationIsCritical(check.PublishDate))
+				{
+					info.InstallTime = check.PublishDate;
+					NotifyInstallationUpdates(info, 0, "");
+					installZDE(check, fileDestination, filename);
+				}
+				else
+				{
+					Logger.Info("Installation reminder for ZDE version {0}, approximate install time - {1}", info.ZDEVersion, info.InstallTime);
+					NotifyInstallationUpdates(info, 0, "");
 				}
 			} catch (Exception ex) {
 				Logger.Error(ex, "Unexpected error has occurred during the check for ZDE updates");
@@ -731,17 +710,7 @@ namespace ZitiUpdateService {
 			semaphore.Release();
 		}
 
-		private InstallationNotificationEvent logAndNotifyInstallationUpdates(Checkers.ZDEInstallerInfo info, bool newClient) {
-			info.TimeRemaining = _installationReminder.DueTime.TotalMilliseconds / 1000; // converting to seconds
-			info.InstallTime = DateTime.Now.AddMilliseconds(_installationReminder.DueTime.TotalMilliseconds);
-			Logger.Info("Installation of ZDE version {0} will be initiated in {1} seconds, approximately at {2}", info.Version, info.TimeRemaining, info.InstallTime);
-			if (newClient || (info.TimeRemaining > 0 && (info.TimeRemaining / 1000) < 1)) {
-				return NotifyInstallationUpdates(info, 0, "");
-			}
-			return null;
-		}
-
-		private void installZDE(string fileDestination, string filename) {
+		private void installZDE(UpdateCheck check, string fileDestination, string filename) {
 			Logger.Info("package is in {0} - moving to install phase", fileDestination);
 
 			if (!check.HashIsValid(updateFolder, filename)) {
@@ -784,23 +753,27 @@ namespace ZitiUpdateService {
 				}
 				Logger.Info("Scanning for stale downloads");
 				foreach (var f in Directory.EnumerateFiles(folder)) {
-					FileInfo fi = new FileInfo(f);
-					if (fi.Exists) {
-						if (fi.Name.StartsWith(filePrefix)) {
-							Logger.Debug("scanning for staleness: " + f);
-							string ver = Path.GetFileNameWithoutExtension(f).Substring(filePrefix.Length);
-							Version fileVersion = VersionUtil.NormalizeVersion(new Version(ver));
-							if (isOlder(fileVersion)) {
-								Logger.Info("Removing old download: " + fi.Name);
-								fi.Delete();
+					try {
+						FileInfo fi = new FileInfo(f);
+						if (fi.Exists) {
+							if (fi.Name.StartsWith(filePrefix)) {
+								Logger.Debug("scanning for staleness: " + f);
+								string ver = Path.GetFileNameWithoutExtension(f).Substring(filePrefix.Length);
+								Version fileVersion = VersionUtil.NormalizeVersion(new Version(ver));
+								if (isOlder(fileVersion)) {
+									Logger.Info("Removing old download: " + fi.Name);
+									fi.Delete();
+								} else {
+									Logger.Debug("Retaining file. {1} is the same or newer than {1}", fi.Name, assemblyVersion);
+								}
 							} else {
-								Logger.Debug("Retaining file. {1} is the same or newer than {1}", fi.Name, assemblyVersion);
+								Logger.Debug("skipping file named {0}", f);
 							}
 						} else {
-							Logger.Debug("skipping file named {0}", f);
+							Logger.Debug("file named {0} did not exist?", f);
 						}
-					} else {
-						Logger.Debug("file named {0} did not exist?", f);
+					} catch (Exception ex) {
+						Logger.Error(ex, "Unexpected exception processing {0}", f);
 					}
 				}
 			} catch (Exception ex) {
@@ -949,28 +922,50 @@ namespace ZitiUpdateService {
 				Logger.Info("DNS RESULTS:\n{0}", sw.ToString());
 			}
 		}
+		DateTime lastNotification = new DateTime();
 
-		private InstallationNotificationEvent NotifyInstallationUpdates(Checkers.ZDEInstallerInfo info, int code, string error) {
-			try {
-				InstallationNotificationEvent installationNotificationEvent = new InstallationNotificationEvent() {
-					Code = code,
-					Error = error,
-					Message = "InstallationUpdate",
-					Type = "Notification",
-					CreationDate = info.CreationTime,
-					ZDEVersion = info.Version.ToString(),
-					IsCritical = info.IsCritical,
-					TimeRemaining = info.TimeRemaining,
-					InstallTime = info.InstallTime
-				};
-				EventRegistry.SendEventToConsumers(installationNotificationEvent);
-				Logger.Debug("The installation updates for version {0} is sent to the events pipe...", info.Version);
-				return installationNotificationEvent;
-			} catch (Exception e) {
-				Logger.Error("The notification for the installation updates for version {0} has failed", info.Version);
+		private TimeSpan InstallationReminder()
+		{
+			var installationReminderIntervalStr = ConfigurationManager.AppSettings.Get("InstallationReminder");
+			var reminderInt = TimeSpan.Zero;
+			if (!TimeSpan.TryParse(installationReminderIntervalStr, out reminderInt))
+			{
+				reminderInt = new TimeSpan(0, 1, 0);
 			}
-			return null;
+			return reminderInt;
+		}
 
+		private bool InstallationIsCritical(DateTime publishDate)
+        {
+			var installationReminderIntervalStr = ConfigurationManager.AppSettings.Get("InstallationCritical");
+			var instCritTimespan = TimeSpan.Zero;
+			if (!TimeSpan.TryParse(installationReminderIntervalStr, out instCritTimespan))
+			{
+				instCritTimespan = TimeSpan.Parse("7:0:0:0");
+			}
+			return DateTime.Now > publishDate + instCritTimespan;
+
+		}
+
+		private void NotifyInstallationUpdates(InstallationNotificationEvent evt, int code, string error) {
+			try {
+				var now = DateTime.Now;
+				if (now > lastNotification + InstallationReminder())
+				{
+					evt.Code = code;
+					evt.Error = error;
+					evt.Message = "InstallationUpdate";
+					evt.Type = "Notification";
+					EventRegistry.SendEventToConsumers(evt);
+					Logger.Debug("The installation updates for version {0} is sent to the events pipe...", evt.ZDEVersion);
+					lastNotification = DateTime.Now;
+					return;
+				} else {
+					Logger.Debug("Not sending another notification reminder");
+				}
+			} catch (Exception e) {
+				Logger.Error("The notification for the installation updates for version {0} has failed: {1}", evt.ZDEVersion, e);
+			}
 		}
 	}
 }
