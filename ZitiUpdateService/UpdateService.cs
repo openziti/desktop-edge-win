@@ -22,7 +22,6 @@ using System.Net;
 using DnsClient;
 using DnsClient.Protocol;
 using ZitiUpdateService.Checkers.PeFile;
-using ZitiUpdateService.Utils;
 using ZitiUpdateService.Checkers;
 
 namespace ZitiUpdateService {
@@ -39,7 +38,6 @@ namespace ZitiUpdateService {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		private System.Timers.Timer _updateTimer = new System.Timers.Timer();
-		private CustomTimer _installationReminder = null;
 		private static SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
 
 		private string exeLocation = null;
@@ -505,15 +503,6 @@ namespace ZitiUpdateService {
 			};
 			await writer.WriteLineAsync(JsonConvert.SerializeObject(status));
 			await writer.FlushAsync();
-			if (_installationReminder != null) {
-				TimerState state = _installationReminder.State;
-				//why is this even here... InstallationNotificationEvent notificationMsg = logAndNotifyInstallationUpdates(state.zdeInstallerInfo, true);
-				/*
-				await writer.WriteLineAsync(JsonConvert.SerializeObject(notificationMsg));
-				await writer.FlushAsync();
-				*/
-				//why not just use the same effing function.....
-			}
 		}
 
 #pragma warning disable 1998 //This async method lacks 'await'
@@ -566,10 +555,6 @@ namespace ZitiUpdateService {
 
 		protected override bool OnPowerEvent(PowerBroadcastStatus powerStatus) {
 			Logger.Info("ziti-monitor OnPowerEvent was called {0}", powerStatus);
-			if (_installationReminder != null) {
-				Logger.Info("Installation timer - Power event");
-				_installationReminder.UpdateTimer(powerStatus);
-			}
 			return base.OnPowerEvent(powerStatus);
 		}
 
@@ -688,21 +673,19 @@ namespace ZitiUpdateService {
 					Logger.Info("copying update package complete");
 				}
 
-
 				InstallationNotificationEvent info = new InstallationNotificationEvent();
 				info.ZDEVersion = check.GetNextVersion().ToString();
-				info.InstallTime = check.PublishDate;
-
+				info.InstallTime = InstallDate(check.PublishDate);
 				if (InstallationIsCritical(check.PublishDate))
 				{
 					info.InstallTime = check.PublishDate;
-					NotifyInstallationUpdates(info, 0, "");
+					NotifyInstallationUpdates(info);
 					installZDE(check, fileDestination, filename);
 				}
 				else
 				{
 					Logger.Info("Installation reminder for ZDE version {0}, approximate install time - {1}", info.ZDEVersion, info.InstallTime);
-					NotifyInstallationUpdates(info, 0, "");
+					NotifyInstallationUpdates(info);
 				}
 			} catch (Exception ex) {
 				Logger.Error(ex, "Unexpected error has occurred during the check for ZDE updates");
@@ -720,7 +703,7 @@ namespace ZitiUpdateService {
 			}
 			Logger.Debug("downloaded file hash was correct. update can continue.");
 			new SignedFileValidator(fileDestination).Verify();
-
+#if !SKIPUPDATE
 			try {
                 StopZiti();
                 StopUI().Wait();
@@ -731,6 +714,12 @@ namespace ZitiUpdateService {
 		    } catch (Exception ex) {
 		        Logger.Error(ex, "Unexpected error during installation");
 		    }
+#else
+			Logger.Warn("SKIPUPDATE IS SET - NOT PERFORMING UPDATE");
+			Logger.Warn("SKIPUPDATE IS SET - NOT PERFORMING UPDATE");
+			Logger.Warn("SKIPUPDATE IS SET - NOT PERFORMING UPDATE");
+			Logger.Warn("SKIPUPDATE IS SET - NOT PERFORMING UPDATE");
+#endif
 		}
 
 		private bool isOlder(Version current) {
@@ -935,6 +924,17 @@ namespace ZitiUpdateService {
 			return reminderInt;
 		}
 
+		private DateTime InstallDate(DateTime publishDate)
+		{
+			var installationReminderIntervalStr = ConfigurationManager.AppSettings.Get("InstallationCritical");
+			var instCritTimespan = TimeSpan.Zero;
+			if (!TimeSpan.TryParse(installationReminderIntervalStr, out instCritTimespan))
+			{
+				instCritTimespan = TimeSpan.Parse("7:0:0:0");
+			}
+			return publishDate + instCritTimespan;
+		}
+
 		private bool InstallationIsCritical(DateTime publishDate)
         {
 			var installationReminderIntervalStr = ConfigurationManager.AppSettings.Get("InstallationCritical");
@@ -944,16 +944,13 @@ namespace ZitiUpdateService {
 				instCritTimespan = TimeSpan.Parse("7:0:0:0");
 			}
 			return DateTime.Now > publishDate + instCritTimespan;
-
 		}
 
-		private void NotifyInstallationUpdates(InstallationNotificationEvent evt, int code, string error) {
+		private void NotifyInstallationUpdates(InstallationNotificationEvent evt) {
 			try {
 				var now = DateTime.Now;
 				if (now > lastNotification + InstallationReminder())
 				{
-					evt.Code = code;
-					evt.Error = error;
 					evt.Message = "InstallationUpdate";
 					evt.Type = "Notification";
 					EventRegistry.SendEventToConsumers(evt);
