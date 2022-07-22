@@ -693,6 +693,7 @@ namespace ZitiUpdateService {
 				if (InstallationIsCritical(check.PublishDate))
 				{
 					info.InstallTime = DateTime.Now + TimeSpan.Parse("0:0:30");
+					Logger.Warn("Installation is critical! for ZDE version: {0}. update published at: {1}. approximate install time: {2}", info.ZDEVersion, check.PublishDate, info.InstallTime);
 					NotifyInstallationUpdates(info);
 					Thread.Sleep(30);
 					installZDE(check, fileDestination, filename);
@@ -701,7 +702,6 @@ namespace ZitiUpdateService {
 				{
 					info.InstallTime = InstallDate(check.PublishDate);
 					Logger.Info("Installation reminder for ZDE version: {0}. update published at: {1}. approximate install time: {2}", info.ZDEVersion, check.PublishDate, info.InstallTime);
-					
 					NotifyInstallationUpdates(info);
 				}
 				lastUpdateCheck = info;
