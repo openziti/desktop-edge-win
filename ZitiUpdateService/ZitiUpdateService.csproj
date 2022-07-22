@@ -36,7 +36,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;MOCKUPDATE SKIPUPDATE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;SKIPUPDATE ALLOWFASTINTERVAL</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -78,7 +78,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DebugUpdates|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\DebugUpdates\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;MOCKUPDATE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;MOCKUPDATE SKIPUPDATE</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>x64</PlatformTarget>
     <LangVersion>7.3</LangVersion>

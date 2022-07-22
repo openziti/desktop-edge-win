@@ -42,7 +42,7 @@ namespace ZitiUpdateService {
 
 		private string exeLocation = null;
 
-		private DataClient dataClient = new DataClient();
+		private DataClient dataClient = new DataClient("monitor service");
 		private bool running = false;
 		private string asmDir = null;
 		private string updateFolder = null;
@@ -68,6 +68,8 @@ namespace ZitiUpdateService {
 			dataClient.OnTunnelStatusEvent += Svc_OnTunnelStatusEvent;
 			dataClient.OnClientDisconnected += Svc_OnClientDisconnected;
 			dataClient.OnShutdownEvent += Svc_OnShutdownEvent;
+			dataClient.OnLogLevelEvent += ServiceClient_OnLogLevelEvent;
+			dataClient.OnNotificationEvent += ServiceClient_OnNotificationEvent;
 
 			svr.CaptureLogs = CaptureLogs;
 			svr.SetLogLevel = SetLogLevel;
@@ -85,8 +87,7 @@ namespace ZitiUpdateService {
 			}
 		}
 
-
-		private SvcResponse TriggerUpdate() {
+        private SvcResponse TriggerUpdate() {
 			SvcResponse r = new SvcResponse();
 			r.Message = "Initiating Update Check";
 			checkUpdateImmediately();
@@ -131,6 +132,11 @@ namespace ZitiUpdateService {
 		private void SetLogLevel(string level) {
 			try {
 				Logger.Info("request to change log level received: {0}", level);
+				if (("" + level).ToLower() == "verbose")
+				{
+					level = "trace";
+					Logger.Info("request to change log level to verbose - but using trace instead");
+				}
 				var l = LogLevel.FromString(level);
 				foreach (var rule in LogManager.Configuration.LoggingRules) {
 					rule.EnableLoggingForLevel(l);
@@ -498,6 +504,7 @@ namespace ZitiUpdateService {
 				Code = 0,
 				Error = null,
 				Message = "Success",
+				Type = "Status",
 				Status = ServiceActions.ServiceStatus(),
 				ReleaseStream = IsBeta ? "beta" : "stable"
 			};
@@ -568,7 +575,7 @@ namespace ZitiUpdateService {
 			if (upInt.TotalMilliseconds < 10 * 60 * 60 * 1000)
             {
 				Logger.Warn("provided time [{0}] is too small. Using 10 minutes.", updateTimerInterval);
-#if MOCKUPDATE
+#if MOCKUPDATE || ALLOWFASTINTERVAL
 				Logger.Info("MOCKUPDATE detected. Not limiting check to 10 minutes");
 #else
 				upInt = TimeSpan.Parse("0:10:0");
@@ -675,16 +682,18 @@ namespace ZitiUpdateService {
 
 				InstallationNotificationEvent info = new InstallationNotificationEvent();
 				info.ZDEVersion = check.GetNextVersion().ToString();
-				info.InstallTime = InstallDate(check.PublishDate);
 				if (InstallationIsCritical(check.PublishDate))
 				{
-					info.InstallTime = check.PublishDate;
+					info.InstallTime = DateTime.Now + TimeSpan.Parse("0:0:30");
 					NotifyInstallationUpdates(info);
+					Thread.Sleep(30);
 					installZDE(check, fileDestination, filename);
 				}
 				else
 				{
-					Logger.Info("Installation reminder for ZDE version {0}, approximate install time - {1}", info.ZDEVersion, info.InstallTime);
+					info.InstallTime = InstallDate(check.PublishDate);
+					Logger.Info("Installation reminder for ZDE version: {0}. update published at: {1}. approximate install time: {2}", info.ZDEVersion, check.PublishDate, info.InstallTime);
+					
 					NotifyInstallationUpdates(info);
 				}
 			} catch (Exception ex) {
@@ -702,8 +711,8 @@ namespace ZitiUpdateService {
 				return;
 			}
 			Logger.Debug("downloaded file hash was correct. update can continue.");
-			new SignedFileValidator(fileDestination).Verify();
 #if !SKIPUPDATE
+			new SignedFileValidator(fileDestination).Verify();
 			try {
                 StopZiti();
                 StopUI().Wait();
@@ -847,6 +856,16 @@ namespace ZitiUpdateService {
 			EventRegistry.SendEventToConsumers(status);
 		}
 
+		private void ServiceClient_OnLogLevelEvent(object sender, LogLevelEvent e)
+		{
+			SetLogLevel(e.LogLevel);
+		}
+
+		private void ServiceClient_OnNotificationEvent(object sender, NotificationEvent e)
+		{
+			Logger.Trace("Notification event but not acting: {0}", e.Op);
+		}
+
 		private void Svc_OnTunnelStatusEvent(object sender, TunnelStatusEvent e) {
 			string dns = e?.Status?.IpInfo?.DNS;
 			string version = e?.Status?.ServiceVersion.Version;
@@ -858,6 +877,7 @@ namespace ZitiUpdateService {
 			} catch {
 				//ignore it
 			}
+			SetLogLevel(e.Status.LogLevel);
 		}
 
 		private void Svc_OnClientConnected(object sender, object e) {

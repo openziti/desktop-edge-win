@@ -18,7 +18,6 @@ namespace ZitiUpdateService.Checkers {
 		string url;
 		string releasesUrl;
 		string downloadUrl = null;
-		string downloadFileName = null;
 		Version nextVersion = null;
 		
 
@@ -63,7 +62,7 @@ namespace ZitiUpdateService.Checkers {
 			}
 			Logger.Debug("download url detected: {0}", downloadUrl);
 			FileName = downloadUrl.Substring(downloadUrl.LastIndexOf('/') + 1);
-			Logger.Debug("download file name: {0}", downloadFileName);
+			Logger.Debug("download file name: {0}", FileName);
 
 			string releaseVersion = json.Property("tag_name").Value.ToString();
 			string releaseName = json.Property("name").Value.ToString();

@@ -444,7 +444,6 @@ namespace ZitiDesktopEdge.DataStructures {
     public class TunnelStatusEvent : StatusEvent
     {
         public TunnelStatus Status { get; set; }
-        public int ApiVersion { get; set; }
     }
 
     public class MetricsEvent : StatusEvent

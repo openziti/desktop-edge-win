@@ -599,7 +599,7 @@ namespace ZitiDesktopEdge {
 			app.ReceiveString += App_ReceiveString;
 
 			// add a new service client
-			serviceClient = new DataClient();
+			serviceClient = new DataClient("ui");
 			serviceClient.OnClientConnected += ServiceClient_OnClientConnected;
 			serviceClient.OnClientDisconnected += ServiceClient_OnClientDisconnected;
 			serviceClient.OnIdentityEvent += ServiceClient_OnIdentityEvent;
@@ -613,7 +613,7 @@ namespace ZitiDesktopEdge {
 			serviceClient.OnControllerEvent += ServiceClient_OnControllerEvent;
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
 
-			monitorClient = new MonitorClient();
+			monitorClient = new MonitorClient("ui");
 			monitorClient.OnClientConnected += MonitorClient_OnClientConnected;
 			monitorClient.OnNotificationEvent += MonitorClient_OnInstallationNotificationEvent;
             monitorClient.OnServiceStatusEvent += MonitorClient_OnServiceStatusEvent;
@@ -838,7 +838,15 @@ namespace ZitiDesktopEdge {
 					var remaining = evt.InstallTime - DateTime.Now;
 					MainMenu.ShowUpdateAvailable(remaining.TotalSeconds, evt.InstallTime);
 					AlertCanvas.Visibility = Visibility.Visible;
-					ShowToast("An Update is Available for Ziti Desktop Edge, will initiate auto installation by " + evt.InstallTime);
+
+					if (remaining.TotalSeconds < 60) {
+						//this is an immediate update - show a different message
+						ShowToast("Ziti Desktop Edge will initiate auto installation in the next minute!");
+					}
+					else
+					{
+						ShowToast("An Update is Available for Ziti Desktop Edge, will initiate auto installation by " + evt.InstallTime);
+					}
 					SetNotifyIcon("");
 					// display a tag in UI and a button for the update software
 				}
