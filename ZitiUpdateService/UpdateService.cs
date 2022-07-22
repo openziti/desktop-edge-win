@@ -510,6 +510,13 @@ namespace ZitiUpdateService {
 			};
 			await writer.WriteLineAsync(JsonConvert.SerializeObject(status));
 			await writer.FlushAsync();
+
+			//if a new client attaches - send the last update check status
+			if (lastUpdateCheck != null)
+			{
+				await writer.WriteLineAsync(JsonConvert.SerializeObject(lastUpdateCheck));
+				await writer.FlushAsync();
+			}
 		}
 
 #pragma warning disable 1998 //This async method lacks 'await'
@@ -646,6 +653,7 @@ namespace ZitiUpdateService {
 			return check;
 		}
 
+		InstallationNotificationEvent lastUpdateCheck = null;
 		private void CheckUpdate(object sender, ElapsedEventArgs e) {
 			if (e != null) {
 				Logger.Debug("Timer triggered CheckUpdate at {0}", e.SignalTime);
@@ -696,6 +704,7 @@ namespace ZitiUpdateService {
 					
 					NotifyInstallationUpdates(info);
 				}
+				lastUpdateCheck = info;
 			} catch (Exception ex) {
 				Logger.Error(ex, "Unexpected error has occurred during the check for ZDE updates");
 			}
@@ -974,11 +983,11 @@ namespace ZitiUpdateService {
 					evt.Message = "InstallationUpdate";
 					evt.Type = "Notification";
 					EventRegistry.SendEventToConsumers(evt);
-					Logger.Debug("The installation updates for version {0} is sent to the events pipe...", evt.ZDEVersion);
+					Logger.Debug("NotifyInstallationUpdates: sent for version {0} is sent to the events pipe...", evt.ZDEVersion);
 					lastNotification = DateTime.Now;
 					return;
 				} else {
-					Logger.Debug("Not sending another notification reminder");
+					Logger.Debug("NotifyInstallationUpdates: Not sending another notification reminder yet");
 				}
 			} catch (Exception e) {
 				Logger.Error("The notification for the installation updates for version {0} has failed: {1}", evt.ZDEVersion, e);
