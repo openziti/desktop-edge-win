@@ -6,7 +6,6 @@ on:
       - main
       - 'release-*'
       - 'beta-release-*'
-			- 'zdew-improvements'
 
 env:
   BUILD_CONFIG: "Release"
