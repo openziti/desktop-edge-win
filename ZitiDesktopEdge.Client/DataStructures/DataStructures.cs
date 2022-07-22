@@ -495,9 +495,6 @@ namespace ZitiDesktopEdge.DataStructures {
     public class InstallationNotificationEvent : MonitorServiceStatusEvent
     {
         public string ZDEVersion { get; set; }
-        /*public DateTime CreationDate { get; set; }
-        public bool IsCritical { get; set; }
-        public double TimeRemaining { get; set; }*/
         public DateTime InstallTime { get; set; }
     }
 

@@ -12,8 +12,7 @@ namespace Ziti.Desktop.Edge.Utils {
 			try
 			{
 				Logger.Info("request to change log level received: {0}", level);
-				if ((""+level).ToLower() == "verbose")
-                {
+				if ((""+level).ToLower() == "verbose") {
 					level = "trace";
 					Logger.Info("request to change log level to verbose - but using trace instead");
 				}

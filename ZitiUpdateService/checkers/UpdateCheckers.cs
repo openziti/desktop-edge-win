@@ -1,14 +1,10 @@
 ﻿using System;
-using System.IO;
-using System.Reflection;
 using NLog;
 
 namespace ZitiUpdateService.Checkers {
 
     abstract class UpdateCheck
 	{
-		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-
 		public DateTime PublishDate { get; set; }
 		public string FileName { get; set; }
 		public int Avail { get; set; }
