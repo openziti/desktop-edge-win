@@ -40,7 +40,8 @@ namespace ZitiDesktopEdge.ServiceClient {
             OnNotificationEvent?.Invoke(this, e);
         }
 
-        public MonitorClient() : base() {
+        public MonitorClient(string id) : base(id) {
+            
         }
 
         async protected override Task ConnectPipesAsync() {
@@ -59,13 +60,11 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         protected override void ProcessLine(string line) {
-            var jsonReader = new JsonTextReader(new StringReader(line));
-            MonitorServiceStatusEvent evt = serializer.Deserialize<MonitorServiceStatusEvent>(jsonReader);
+            var evt = serializer.Deserialize<MonitorServiceStatusEvent>(new JsonTextReader(new StringReader(line)));
             switch(evt.Type)
             {
                 case "Notification":
-                    jsonReader = new JsonTextReader(new StringReader(line));
-                    InstallationNotificationEvent instEvt = serializer.Deserialize<InstallationNotificationEvent>(jsonReader);
+                    var instEvt = serializer.Deserialize<InstallationNotificationEvent>(new JsonTextReader(new StringReader(line)));
                     InstallationNotificationEvent(instEvt);
                     break;
                 default:
