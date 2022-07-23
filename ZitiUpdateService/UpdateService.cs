@@ -144,7 +144,7 @@ namespace ZitiUpdateService {
 				var l = LogLevel.FromString(level);
 				foreach (var rule in LogManager.Configuration.LoggingRules) {
 					rule.EnableLoggingForLevel(l);
-					rule.SetLoggingLevels(l, LogLevel.Error);
+					rule.SetLoggingLevels(l, LogLevel.Fatal);
 				}
 
 				LogManager.ReconfigExistingLoggers();
