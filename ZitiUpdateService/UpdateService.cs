@@ -824,13 +824,13 @@ namespace ZitiUpdateService {
 				}
 				foreach (Process worker in workers) {
 					try {
-						Logger.Info("Kiling: {0}", worker);
+						Logger.Info("Killing: {0}", worker);
 						if (!worker.CloseMainWindow()) {
 							//don't care right now because when called on the UI it just gets 'hidden'
 						}
 						worker.Kill();
 						worker.WaitForExit(5000);
-						Logger.Info("Stopping the {description} process exited cleanly");
+						Logger.Info("Stopping the {description} process exited cleanly", description);
 						worker.Dispose();
 					} catch (Exception e) {
 						Logger.Error(e, "Unexpected error when closing the {description}!", description);
