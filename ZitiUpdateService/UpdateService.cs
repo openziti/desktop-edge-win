@@ -57,6 +57,9 @@ namespace ZitiUpdateService {
 		private System.Timers.Timer dnsProbeTimer = new System.Timers.Timer();
 		private IPAddress dnsIpAddress = null;
 
+		private UpdateCheck lastUpdateCheck;
+		private InstallationNotificationEvent lastInstallationNotification;
+
 		public UpdateService() {
 			InitializeComponent();
 			base.CanHandlePowerEvent = true;
@@ -89,8 +92,9 @@ namespace ZitiUpdateService {
 
         private SvcResponse TriggerUpdate() {
 			SvcResponse r = new SvcResponse();
-			r.Message = "Initiating Update Check";
-			checkUpdateImmediately();
+			r.Message = "Initiating Update";
+
+			installZDE(lastUpdateCheck);
 			return r;
 		}
 
@@ -514,7 +518,7 @@ namespace ZitiUpdateService {
 			//if a new client attaches - send the last update check status
 			if (lastUpdateCheck != null)
 			{
-				await writer.WriteLineAsync(JsonConvert.SerializeObject(lastUpdateCheck));
+				await writer.WriteLineAsync(JsonConvert.SerializeObject(lastInstallationNotification));
 				await writer.FlushAsync();
 			}
 		}
@@ -653,7 +657,6 @@ namespace ZitiUpdateService {
 			return check;
 		}
 
-		InstallationNotificationEvent lastUpdateCheck = null;
 		private void CheckUpdate(object sender, ElapsedEventArgs e) {
 			if (e != null) {
 				Logger.Debug("Timer triggered CheckUpdate at {0}", e.SignalTime);
@@ -676,17 +679,6 @@ namespace ZitiUpdateService {
 				}
 
 				Logger.Info("copying update package");
-				string filename = check.FileName;
-
-				string fileDestination = Path.Combine(updateFolder, filename);
-
-				if (check.AlreadyDownloaded(updateFolder, filename)) {
-					Logger.Trace("package has already been downloaded to {0}", fileDestination);
-				} else {
-					Logger.Info("copying update package begins");
-					check.CopyUpdatePackage(updateFolder, filename);
-					Logger.Info("copying update package complete");
-				}
 
 				InstallationNotificationEvent info = new InstallationNotificationEvent();
 				info.ZDEVersion = check.GetNextVersion().ToString();
@@ -696,7 +688,7 @@ namespace ZitiUpdateService {
 					Logger.Warn("Installation is critical! for ZDE version: {0}. update published at: {1}. approximate install time: {2}", info.ZDEVersion, check.PublishDate, info.InstallTime);
 					NotifyInstallationUpdates(info);
 					Thread.Sleep(30);
-					installZDE(check, fileDestination, filename);
+					installZDE(check);
 				}
 				else
 				{
@@ -704,17 +696,28 @@ namespace ZitiUpdateService {
 					Logger.Info("Installation reminder for ZDE version: {0}. update published at: {1}. approximate install time: {2}", info.ZDEVersion, check.PublishDate, info.InstallTime);
 					NotifyInstallationUpdates(info);
 				}
-				lastUpdateCheck = info;
+				lastUpdateCheck = check;
+				lastInstallationNotification = info;
 			} catch (Exception ex) {
 				Logger.Error(ex, "Unexpected error has occurred during the check for ZDE updates");
 			}
 			semaphore.Release();
 		}
 
-		private void installZDE(UpdateCheck check, string fileDestination, string filename) {
+		private void installZDE(UpdateCheck check/*, string fileDestination, string filename*/) {
+			string fileDestination = Path.Combine(updateFolder, check.FileName);
+
+			if (check.AlreadyDownloaded(updateFolder, check.FileName)) {
+				Logger.Trace("package has already been downloaded to {0}", fileDestination);
+			} else {
+				Logger.Info("copying update package begins");
+				check.CopyUpdatePackage(updateFolder, check.FileName);
+				Logger.Info("copying update package complete");
+			}
+
 			Logger.Info("package is in {0} - moving to install phase", fileDestination);
 
-			if (!check.HashIsValid(updateFolder, filename)) {
+			if (!check.HashIsValid(updateFolder, check.FileName)) {
 				Logger.Warn("The file was downloaded but the hash is not valid. The file will be removed: {0}", fileDestination);
 				File.Delete(fileDestination);
 				return;
