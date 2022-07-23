@@ -94,7 +94,7 @@ namespace ZitiUpdateService {
 			SvcResponse r = new SvcResponse();
 			r.Message = "Initiating Update";
 
-			installZDE(lastUpdateCheck);
+			Task.Run(() => { installZDE(lastUpdateCheck); });
 			return r;
 		}
 
@@ -704,7 +704,7 @@ namespace ZitiUpdateService {
 			semaphore.Release();
 		}
 
-		private void installZDE(UpdateCheck check/*, string fileDestination, string filename*/) {
+		async private void installZDE(UpdateCheck check/*, string fileDestination, string filename*/) {
 			string fileDestination = Path.Combine(updateFolder, check.FileName);
 
 			if (check.AlreadyDownloaded(updateFolder, check.FileName)) {
