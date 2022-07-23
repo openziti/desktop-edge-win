@@ -704,7 +704,7 @@ namespace ZitiUpdateService {
 			semaphore.Release();
 		}
 
-		async private void installZDE(UpdateCheck check/*, string fileDestination, string filename*/) {
+		private void installZDE(UpdateCheck check/*, string fileDestination, string filename*/) {
 			string fileDestination = Path.Combine(updateFolder, check.FileName);
 
 			if (check.AlreadyDownloaded(updateFolder, check.FileName)) {
