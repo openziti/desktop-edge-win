@@ -14,7 +14,7 @@ REM See the License for the specific language governing permissions and
 REM limitations under the License.
 REM
 SET REPO_URL=https://github.com/openziti/ziti-tunnel-sdk-c.git
-SET ZITI_TUNNEL_REPO_BRANCH=v0.19.2
+SET ZITI_TUNNEL_REPO_BRANCH=v0.19.3
 REM override the c sdk used in the build - leave blank for the same as specified in the tunneler sdk
 SET ZITI_SDK_C_BRANCH=
 SET ZITI_TUNNEL_REPO_URL=https://github.com/openziti/ziti-tunnel-sdk-c/releases/latest/download/ziti-edge-tunnel-Windows_x86_64.zip
@@ -25,6 +25,7 @@ SET WINTUN_DL_URL=https://www.wintun.net/builds/wintun-0.13.zip
 
 set SVC_ROOT_DIR=%~dp0
 set CURDIR=%CD%
+set /P VERSION=<%SVC_ROOT_DIR%\..\version
 
 call %SVC_ROOT_DIR%set-env.bat
 
@@ -198,7 +199,7 @@ if "%ZITI_SDK_C_BRANCH%"=="" (
     SET ZITI_SDK_C_BRANCH_CMD=-DZITI_SDK_C_BRANCH=%ZITI_SDK_C_BRANCH%
 )
 
-cmake -G Ninja -S %TUNNELER_SDK_DIR% -B %TUNNELER_SDK_DIR%build -DCMAKE_INSTALL_PREFIX=%TUNNELER_SDK_DIR%install -DCMAKE_TOOLCHAIN_FILE=%TUNNELER_SDK_DIR%\toolchains\default.cmake %ZITI_SDK_C_BRANCH_CMD% %ZITI_DEBUG_CMAKE%
+cmake -G Ninja -S %TUNNELER_SDK_DIR% -B %TUNNELER_SDK_DIR%build -DGIT_VERSION=%VERSION% -DCMAKE_INSTALL_PREFIX=%TUNNELER_SDK_DIR%install -DCMAKE_TOOLCHAIN_FILE=%TUNNELER_SDK_DIR%\toolchains\default.cmake %ZITI_SDK_C_BRANCH_CMD% %ZITI_DEBUG_CMAKE%
 
 SET ACTUAL_ERR=%ERRORLEVEL%
 if %ACTUAL_ERR% NEQ 0 (
@@ -211,7 +212,7 @@ if %ACTUAL_ERR% NEQ 0 (
     echo result of ninja build: %ACTUAL_ERR%
 )
 
-cmake --build %TUNNELER_SDK_DIR%build --target bundle --verbose
+cmake --build %TUNNELER_SDK_DIR%build --target bundle --verbose 
 
 SET ACTUAL_ERR=%ERRORLEVEL%
 if %ACTUAL_ERR% NEQ 0 (
