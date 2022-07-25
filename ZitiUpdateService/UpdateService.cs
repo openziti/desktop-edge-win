@@ -601,9 +601,6 @@ namespace ZitiUpdateService {
 			_updateTimer.Start();
 			Logger.Info("Version Checker is running every {0} minutes", upInt.TotalMinutes);
 
-			//on startup - see if the old wintun software was installed and if so ... try to remove it
-			UninstallOpenZitiWintun.DetectAndUninstallOpenZitiWintun();
-
 			cleanOldLogs(asmDir);
 			scanForStaleDownloads(updateFolder);
 

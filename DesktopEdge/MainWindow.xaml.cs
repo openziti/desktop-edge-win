@@ -779,7 +779,7 @@ namespace ZitiDesktopEdge {
 
         private void MonitorClient_OnShutdownEvent(object sender, StatusEvent e)
 		{
-			this.Dispatcher.Invoke(async () => {
+			this.Dispatcher.Invoke(() => {
 				Application.Current.Shutdown();
 			});
 		}
