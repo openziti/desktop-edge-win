@@ -30,8 +30,8 @@ jobs:
       - uses: microsoft/setup-msbuild@v1
       - name: Set up Go 
         uses: actions/setup-go@v3
-      - name: Install Ziti CI
-        uses: netfoundry/ziti-ci@v1
+      #- name: Install Ziti CI
+      #  uses: netfoundry/ziti-ci@v1
       - if: github.event_name == 'push'
         run: echo "GIT_BRANCH=$($env:GITHUB_REF.replace('refs/heads/', ''))" >> $env:GITHUB_ENV
       - if: github.event_name == 'pull_request'
@@ -74,17 +74,19 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ziti_ci_gpg_key: ${{ secrets.ZITI_CI_GPG_KEY }}
           ziti_ci_gpg_key_id: ${{ secrets.ZITI_CI_GPG_KEY_ID }}
-        run: 
-          C:\Users\runneradmin\go\bin\ziti-ci.exe configure-git;
-          powershell -File .\Installer\build.ps1
+        run: powershell -File .\Installer\build.ps1
       - name: Upload installer onto job
         uses: actions/upload-artifact@v2
         with:
           name: ZitiDesktopEdgeClient-${{ env.VERSION }}
           path: "Installer/Output/Ziti Desktop Edge Client-*"
+      - name: Git Status
+        run: git status
+      - name: git diff
+        run: git diff DesktopEdge/Properties/AssemblyInfo.cs ZitiDesktopEdge.Client/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip
       - if: github.ref == 'refs/heads/release-next'
         uses: EndBug/add-and-commit@v9
         with:
-          add: './DesktopEdge/Properties/AssemblyInfo.cs ./ZitiDesktopEdge.Client/Properties/AssemblyInfo.cs ./ZitiUpdateService/Properties/AssemblyInfo.cs'
+          add: 'DesktopEdge/Properties/AssemblyInfo.cs ZitiDesktopEdge.Client/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip'
           default_author: github_actions
           committer_name: ziti-ci

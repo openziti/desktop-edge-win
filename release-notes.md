@@ -1,3 +1,19 @@
+# Release 2.1.4
+
+## What's New
+* nothing - bug fix release
+
+## Other changes:
+* [issue 545](https://github.com/openziti/desktop-edge-win/issues/545) incorrect reporting of app version
+* [issue 298](https://github.com/openziti/desktop-edge-win/issues/298) removed legacy code to remove legacy wintun installer
+* [issue 396](https://github.com/openziti/desktop-edge-win/issues/396) feedback.zip no longer tries to email itself
+
+## Bugs fixed:
+* [bug 541](https://github.com/openziti/desktop-edge-win/issues/541) and [issue 474](https://github.com/openziti/desktop-edge-win/issues/474) no warning when upgrading
+
+## Dependency Updates
+* TSDK updated to 0.19.7 / CSDK 0.29.4
+
 # Release 2.1.3
 
 ## What's New
@@ -10,7 +26,7 @@
 * [bug 551](https://github.com/openziti/desktop-edge-win/issues/551) address an issue where not every process was allowed to be enumerated
 
 ## Dependency Updates
-* TSDK updated to 0.19.0 / CSDK 0.29.1
+* TSDK updated to 0.19.2 / CSDK 0.29.2
 
 # Release 2.1.2
 

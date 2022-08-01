@@ -316,7 +316,7 @@ namespace ZitiDesktopEdge {
 		/// <summary>
 		/// Close the MFA Screen with animation
 		/// </summary>
-		async private void DoClose(bool isComplete) {
+		private void DoClose(bool isComplete) {
 			DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
 			ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
 			animation.Completed += CloseComplete;
@@ -433,8 +433,8 @@ namespace ZitiDesktopEdge {
 			IdentityMenu.OnMessage += IdentityMenu_OnMessage;
 		}
 
-		private void MFASetup_OnError(string message) {
-			ShowBlurbAsync(message, "", "error");
+		async private void MFASetup_OnError(string message) {
+			await ShowBlurbAsync(message, "", "error");
 		}
 
 		private void ToastNotificationManagerCompat_OnActivated(ToastNotificationActivatedEventArgsCompat e) {
@@ -599,7 +599,7 @@ namespace ZitiDesktopEdge {
 			app.ReceiveString += App_ReceiveString;
 
 			// add a new service client
-			serviceClient = new DataClient();
+			serviceClient = new DataClient("ui");
 			serviceClient.OnClientConnected += ServiceClient_OnClientConnected;
 			serviceClient.OnClientDisconnected += ServiceClient_OnClientDisconnected;
 			serviceClient.OnIdentityEvent += ServiceClient_OnIdentityEvent;
@@ -613,7 +613,7 @@ namespace ZitiDesktopEdge {
 			serviceClient.OnControllerEvent += ServiceClient_OnControllerEvent;
 			Application.Current.Properties.Add("ServiceClient", serviceClient);
 
-			monitorClient = new MonitorClient();
+			monitorClient = new MonitorClient("ui");
 			monitorClient.OnClientConnected += MonitorClient_OnClientConnected;
 			monitorClient.OnNotificationEvent += MonitorClient_OnInstallationNotificationEvent;
             monitorClient.OnServiceStatusEvent += MonitorClient_OnServiceStatusEvent;
@@ -777,8 +777,11 @@ namespace ZitiDesktopEdge {
 			}
         }
 
-        private void MonitorClient_OnShutdownEvent(object sender, StatusEvent e) {
-			Application.Current.Shutdown();
+        private void MonitorClient_OnShutdownEvent(object sender, StatusEvent e)
+		{
+			this.Dispatcher.Invoke(() => {
+				Application.Current.Shutdown();
+			});
 		}
 
 		private void MonitorClient_OnServiceStatusEvent(object sender, MonitorServiceStatusEvent evt) {
@@ -835,9 +838,18 @@ namespace ZitiDesktopEdge {
 				if ("installationupdate".Equals(evt.Message?.ToLower())) {
 					logger.Debug("Installation Update is available - {0}", evt.ZDEVersion);
 					IsUpdateAvailable = true;
-					MainMenu.ShowUpdateAvailable(evt.TimeRemaining, evt.InstallTime);
+					var remaining = evt.InstallTime - DateTime.Now;
+					MainMenu.ShowUpdateAvailable(remaining.TotalSeconds, evt.InstallTime);
 					AlertCanvas.Visibility = Visibility.Visible;
-					ShowToast("An Update is Available for Ziti Desktop Edge, will initiate auto installation by " + evt.InstallTime);
+
+					if (remaining.TotalSeconds < 60) {
+						//this is an immediate update - show a different message
+						ShowToast("Ziti Desktop Edge will initiate auto installation in the next minute!");
+					}
+					else
+					{
+						ShowToast("An Update is Available for Ziti Desktop Edge, will initiate auto installation by " + evt.InstallTime);
+					}
 					SetNotifyIcon("");
 					// display a tag in UI and a button for the update software
 				}
@@ -1559,7 +1571,7 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-		public void ShowError(String title, String message) {
+		public void ShowError(string title, string message) {
 			this.Dispatcher.Invoke(() => {
 				ErrorTitle.Content = title;
 				ErrorDetails.Text = message;

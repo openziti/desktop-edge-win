@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<DOCUMENT Type="Advanced Installer" CreateVersion="17.4.1" version="19.6" Modules="professional" RootPath="." Language="en" Id="{7315FE7B-0418-4F38-8B12-6C0594276D30}">
+<DOCUMENT Type="Advanced Installer" CreateVersion="17.4.1" version="19.7.1" Modules="professional" RootPath="." Language="en" Id="{7315FE7B-0418-4F38-8B12-6C0594276D30}">
   <COMPONENT cid="caphyon.advinst.msicomp.ProjectOptionsComponent">
     <ROW Name="HiddenItems" Value="ActSyncAppComponent;CPLAppletComponent"/>
   </COMPONENT>
@@ -11,7 +11,7 @@
     <ROW Property="AI_FrameBtnsColor" Value="powderblue" MultiBuildValue="AnyCPU_Release:mediumorchid" MsiKey="AI_FrameBtnsColor"/>
     <ROW Property="AI_FrameColor" Value="powderblue" MultiBuildValue="AnyCPU_Release:deepskyblue" MsiKey="AI_FrameColor"/>
     <ROW Property="AI_ImagesColor" Value="powderblue" MsiKey="AI_ImagesColor"/>
-    <ROW Property="AI_PACKAGING_TOOL" Value="Advanced Installer 19.6 build bf52c98e" ValueLocId="-"/>
+    <ROW Property="AI_PACKAGING_TOOL" Value="Advanced Installer 19.7.1 build e09f3004" ValueLocId="-"/>
     <ROW Property="AI_PREDEF_LCONDS_PROPS" Value="AI_DETECTED_INTERNET_CONNECTION"/>
     <ROW Property="AI_PROPPATH_PERBUILD_ZitiDesktopEdge.exe" Value="..\DesktopEdge\bin\Release\ZitiDesktopEdge.exe"/>
     <ROW Property="AI_PROPPATH_PERBUILD_ZitiDesktopEdge.exe.config" Value="..\DesktopEdge\bin\Release\ZitiDesktopEdge.exe.config"/>
@@ -27,10 +27,10 @@
     <ROW Property="CTRLS" Value="2"/>
     <ROW Property="Manufacturer" Value="NetFoundry, Inc."/>
     <ROW Property="MsiLogging" MultiBuildValue="AnyCPU_Release:vp"/>
-    <ROW Property="ProductCode" Value="1033:{3CC92EF2-32A4-4EF5-AE9E-A38CA9848133} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{FF15ADA4-C080-4994-9DC0-F04E39606A24} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="Ziti Desktop Edge"/>
-    <ROW Property="ProductVersion" Value="2.1.1"/>
+    <ROW Property="ProductVersion" Value="2.1.4"/>
     <ROW Property="REBOOT" MultiBuildValue="AnyCPU_Release:Suppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{CB7E173A-663D-4A23-BB22-D1E8D885C2F3}"/>

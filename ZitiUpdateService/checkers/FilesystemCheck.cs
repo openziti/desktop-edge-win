@@ -6,11 +6,14 @@ using NLog;
 namespace ZitiUpdateService.Checkers {
 	internal class FilesystemCheck : UpdateCheck {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-		string dest = null;
+		
+		Version version = new Version("0.0.0");
 
-		int isUpdateAvailable = 1;
-		public FilesystemCheck(int updateAvailable) {
-			this.isUpdateAvailable = updateAvailable;
+		public FilesystemCheck(Version current, int updateAvailable, DateTime publishedDate, string fileNameToReturn, Version versionToReturn) : base(current) {
+			Avail = updateAvailable;
+			PublishDate = publishedDate;
+			FileName = fileNameToReturn;
+			version = versionToReturn;
 		}
 
 		override public bool AlreadyDownloaded(string destinationFolder, string destinationName) {
@@ -18,17 +21,8 @@ namespace ZitiUpdateService.Checkers {
 		}
 
 		override public void CopyUpdatePackage(string destinationFolder, string destinationName) {
-			dest = Path.Combine(destinationFolder, destinationName);
-			File.Copy(@"C:\git\github\openziti\desktop-edge-win\Installer\Output\" + FileName(), dest);
-		}
-
-		override public string FileName() {
-			return "Ziti Desktop Edge Client-1.3.0.exe";
-		}
-
-		override public void CheckUpdate(Version current, out int avail, out string publishedDate) {
-			avail = isUpdateAvailable;
-			publishedDate = File.GetCreationTime(dest).ToString();
+			var dest = Path.Combine(destinationFolder, destinationName);
+			File.WriteAllText(dest, "file check test file");
 		}
 
 		override public bool HashIsValid(string destinationFolder, string destinationName) {
@@ -36,11 +30,7 @@ namespace ZitiUpdateService.Checkers {
 		}
 
 		override public Version GetNextVersion() {
-			throw new NotImplementedException();
-		}
-
-		override public ZDEInstallerInfo GetZDEInstallerInfo(string fileDestination) {
-			return new ZDEInstallerInfo() { IsCritical = true, TimeRemaining = 60 };
+			return version;
 		}
 	}
 }

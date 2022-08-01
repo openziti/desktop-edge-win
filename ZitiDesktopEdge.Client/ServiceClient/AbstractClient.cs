@@ -30,6 +30,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         protected abstract Task ConnectPipesAsync();
         protected abstract void ProcessLine(string line);
         protected abstract Logger Logger { get; }
+        protected string Id { get; set; }
 
         protected const string localPipeServer = ".";
         protected const int ServiceConnectTimeout = 500;
@@ -136,7 +137,8 @@ namespace ZitiDesktopEdge.ServiceClient {
         public bool Connected { get; set; }
         public bool CleanShutdown { get; set; }
 
-        public AbstractClient() {
+        public AbstractClient(string id) {
+            this.Id = id;
         }
 
         async public Task ConnectAsync() {
@@ -197,7 +199,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         protected void debugServiceCommunication(string msg) {
-#if DEBUG
+#if DEBUGSVCCOM
             Logger.Debug(msg);
 #else
             Logger.Trace(msg);
@@ -250,7 +252,7 @@ namespace ZitiDesktopEdge.ServiceClient {
     }
 
     public class ShouldSerializeContractResolver : DefaultContractResolver {
-        public new static readonly ShouldSerializeContractResolver Instance = new ShouldSerializeContractResolver();
+        public static readonly ShouldSerializeContractResolver Instance = new ShouldSerializeContractResolver();
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization) {
             JsonProperty property = base.CreateProperty(member, memberSerialization);
 

@@ -21,7 +21,11 @@ namespace ZitiUpdateService {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         public static void GrantAccessToDirectory(string path) {
-            try {
+            try
+            {
+                if (!Directory.Exists(path)) {
+                    return;
+                }
                 Logger.Debug("granting access permissions to folder: {path}", path);
                 DirectorySecurity sec = Directory.GetAccessControl(path);
                 // Using this instead of the "Everyone" string means we work on non-English systems.
@@ -35,6 +39,9 @@ namespace ZitiUpdateService {
 
         public static void GrantAccessToFile(string path) {
             try {
+                if (!File.Exists(path)) {
+                    return;
+                }
                 Logger.Debug("granting access permissions to file: {path}", path);
                 FileSecurity sec = File.GetAccessControl(path);
                 // Using this instead of the "Everyone" string means we work on non-English systems.

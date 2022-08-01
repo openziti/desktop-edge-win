@@ -102,7 +102,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         const string ipcPipe = @"ziti-edge-tunnel.sock";
         const string eventPipe = @"ziti-edge-tunnel-event.sock";
 
-        public DataClient() : base() {
+        public DataClient(string id) : base(id) {
         }
 
         PipeSecurity CreateSystemIOPipeSecurity() {
@@ -337,7 +337,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                     case "status": //break here to see status on startup
                         //dbg comment Logger.Warn("STATUS EVENT: \n" + respAsString);
                         TunnelStatusEvent tse = serializer.Deserialize<TunnelStatusEvent>(jsonReader);
-
+                        
                         if (tse != null) {
                             TunnelStatusEvent(tse);
                         }

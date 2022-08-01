@@ -444,7 +444,6 @@ namespace ZitiDesktopEdge.DataStructures {
     public class TunnelStatusEvent : StatusEvent
     {
         public TunnelStatus Status { get; set; }
-        public int ApiVersion { get; set; }
     }
 
     public class MetricsEvent : StatusEvent
@@ -495,10 +494,7 @@ namespace ZitiDesktopEdge.DataStructures {
 
     public class InstallationNotificationEvent : MonitorServiceStatusEvent
     {
-        public String ZDEVersion { get; set; }
-        public DateTime CreationDate { get; set; }
-        public bool IsCritical { get; set; }
-        public double TimeRemaining { get; set; }
+        public string ZDEVersion { get; set; }
         public DateTime InstallTime { get; set; }
     }
 
