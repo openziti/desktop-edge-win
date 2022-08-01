@@ -684,7 +684,7 @@ namespace ZitiUpdateService {
 				{
 					info.InstallTime = DateTime.Now + TimeSpan.Parse("0:0:30");
 					Logger.Warn("Installation is critical! for ZDE version: {0}. update published at: {1}. approximate install time: {2}", info.ZDEVersion, check.PublishDate, info.InstallTime);
-					NotifyInstallationUpdates(info);
+					NotifyInstallationUpdates(info, true);
 					Thread.Sleep(30);
 					installZDE(check);
 				}
@@ -977,9 +977,13 @@ namespace ZitiUpdateService {
 		}
 
 		private void NotifyInstallationUpdates(InstallationNotificationEvent evt) {
+			NotifyInstallationUpdates(evt, false);
+		}
+
+		private void NotifyInstallationUpdates(InstallationNotificationEvent evt, bool force) {
 			try {
 				var now = DateTime.Now;
-				if (now > lastNotification + InstallationReminder())
+				if (now > lastNotification + InstallationReminder() || force)
 				{
 					evt.Message = "InstallationUpdate";
 					evt.Type = "Notification";

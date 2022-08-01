@@ -422,7 +422,6 @@ namespace ZitiDesktopEdge {
 		{
 			var src = sender as Button;
 			try {
-				src.IsEnabled = false;
 				CheckForUpdateStatus.Content = "Requesting automatic update...";
 				var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
 				var r = await monitorClient.TriggerUpdate();
@@ -432,7 +431,8 @@ namespace ZitiDesktopEdge {
 					src.IsEnabled = true;
 				} else {
 					this.OnShowBlurb?.Invoke("Update Requested");
-					src.Content = "Updating...";
+					src.Content = "Request Update Again";
+					UpdateTimeLeft.Content = "Update Requested at " + DateTime.Now;
 					TriggerUpdateButton.Visibility = Visibility.Collapsed;
 					logger.Info(r?.ToString());
 					menuState = "Menu";
