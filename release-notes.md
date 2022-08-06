@@ -5,6 +5,7 @@
 * It is no longer possible to have the DNS server overlap the IP assigned to the interface
 
 ## Other changes:
+*
 
 ## Bugs fixed:
 * [bug 560](https://github.com/openziti/desktop-edge-win/issues/560) - fix IP display on tunnel config page.
