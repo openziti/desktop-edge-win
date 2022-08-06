@@ -6,6 +6,7 @@ on:
       - main
       - 'release-*'
       - 'beta-release-*'
+      - 'fix-tun-ip-reporting'
 
 env:
   BUILD_CONFIG: "Release"

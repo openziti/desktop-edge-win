@@ -242,13 +242,8 @@ namespace ZitiDesktopEdge {
                 ConfigIp.Value = Application.Current.Properties["ip"]?.ToString();
 				ConfigSubnet.Value = Application.Current.Properties["subnet"]?.ToString();
 				ConfigMtu.Value = Application.Current.Properties["mtu"]?.ToString();
-				string dnsValue = "disabled";
-				if (Application.Current.Properties.Contains("dnsenabled")) {
-					if ((bool)Application.Current.Properties["dnsenabled"] && Application.Current.Properties.Contains("dns")) {
-						dnsValue = Application.Current.Properties["dns"].ToString();
-					}
-				}
-				ConfigDns.Value = dnsValue;
+				ConfigDns.Value = Application.Current.Properties["dns"]?.ToString();
+				ConfigDnsEnabled.Value = Application.Current.Properties["dnsenabled"]?.ToString();
 			} else if (menuState == "Identities") {
 				MenuTitle.Content = "Identities";
 				IdListScrollView.Visibility = Visibility.Visible;
