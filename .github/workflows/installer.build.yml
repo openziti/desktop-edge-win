@@ -6,7 +6,6 @@ on:
       - main
       - 'release-*'
       - 'beta-release-*'
-      - 'issue-560-report-ip-dns-correctly'
 
 env:
   BUILD_CONFIG: "Release"
