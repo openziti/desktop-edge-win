@@ -11,7 +11,7 @@
 * [bug 560](https://github.com/openziti/desktop-edge-win/issues/560) - fix IP display on tunnel config page.
 
 ## Dependency Updates
-* TSDK updated to 0.19.7 / CSDK 0.29.4
+* TSDK updated to 0.19.8 / CSDK 0.29.4
 
 # Release 2.1.4
 
