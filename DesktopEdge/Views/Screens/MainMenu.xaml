@@ -101,8 +101,9 @@
                     <local:MenuEditItem x:Name="ConfigIp" HorizontalAlignment="Stretch" Width="Auto" Label="IPv4 Address:"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigSubnet" HorizontalAlignment="Stretch" Width="Auto" Label="Subnet Mask:"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigMtu" HorizontalAlignment="Stretch" Width="Auto" Label="MTU:"></local:MenuEditItem>
-                    <local:MenuEditItem x:Name="ConfigDns" HorizontalAlignment="Stretch" Width="Auto" Label="DNS Servers:"></local:MenuEditItem>
+                    <local:MenuEditItem x:Name="ConfigDns" HorizontalAlignment="Stretch" Width="Auto" Label="DNS Server:"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigPageSize" HorizontalAlignment="Stretch" Width="Auto" Label="Api Page Size (10-500):"></local:MenuEditItem>
+                    <local:MenuEditItem x:Name="ConfigDnsEnabled" HorizontalAlignment="Stretch" Width="Auto" Label="Add Dns:"></local:MenuEditItem>
                     <local:StyledButton x:Name="EditButton" OnClick="ShowEdit" Label="Edit Values" Grid.Row="8" Margin="0,20,0,0"></local:StyledButton>
                 </StackPanel>
                 <ScrollViewer Name="IdListScrollView" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" CanContentScroll="True" ClipToBounds="True" Visibility="Collapsed">
