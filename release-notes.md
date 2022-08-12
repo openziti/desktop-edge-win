@@ -1,3 +1,21 @@
+# Release 2.1.5
+
+## What's New
+* DNS server IP has changed!!! If you expect the DNS server to be at 100.64.0.3 (or IP + 2) it will now be IP + 1. 
+  You can also find the DNS IP by going to Main Menu -> Advanced Settings -> Tunnel Configuration
+  
+* It is no longer possible to have the DNS server overlap the IP assigned to the interface
+
+## Other changes:
+*
+
+## Bugs fixed:
+* [bug 560](https://github.com/openziti/desktop-edge-win/issues/560) - fix IP display on tunnel config page.
+* [bug 562](https://github.com/openziti/desktop-edge-win/issues/562) - fix mfa incorrectly reported when administratively deleted.
+
+## Dependency Updates
+* TSDK updated to 0.19.9 / CSDK 0.29.4
+
 # Release 2.1.4
 
 ## What's New
