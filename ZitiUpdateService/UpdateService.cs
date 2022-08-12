@@ -584,7 +584,7 @@ namespace ZitiUpdateService {
 				upInt = new TimeSpan(0, 10, 0);
 			}
 
-			if (upInt.TotalMilliseconds < 10 * 60 * 60 * 1000)
+			if (upInt.TotalMilliseconds < 10 * 60 * 1000)
             {
 				Logger.Warn("provided time [{0}] is too small. Using 10 minutes.", updateTimerInterval);
 #if MOCKUPDATE || ALLOWFASTINTERVAL
