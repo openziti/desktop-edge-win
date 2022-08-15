@@ -168,7 +168,7 @@ namespace ZitiDesktopEdge {
 
 		async private void SetAutomaticUpgradesMenuAction(object sender, MouseButtonEventArgs e) {
 			bool disableAutomaticUpgrades = false;
-			if(sender == AutomaticUpgradesItemOff) {
+			if (sender == AutomaticUpgradesItemOff) {
 				disableAutomaticUpgrades = true;
             }
 			var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
@@ -180,7 +180,6 @@ namespace ZitiDesktopEdge {
 				Application.Current.Properties["AutomaticUpgradeDisabled"] = disableAutomaticUpgrades;
 			}
 			SetAutomaticUpgradesState(disableAutomaticUpgrades);
-			UpdateState();
 		}
 
 		private void checkResponse(SvcResponse r, string titleOnErr, string msgOnErr) {
@@ -266,9 +265,9 @@ namespace ZitiDesktopEdge {
 				MenuTitle.Content = "Set Release Stream";
 				ReleaseStreamItems.Visibility = allowReleaseSelect ? Visibility.Visible : Visibility.Collapsed;
 				BackArrow.Visibility = Visibility.Visible;
-			} else if (menuState == "ConfigureAutomaticUpgrades")
-			{
+			} else if (menuState == "ConfigureAutomaticUpgrades") {
 				SetAutomaticUpgradesState(automaticUpgradeDisabled);
+
 				MenuTitle.Content = "Automatic Upgrades";
 				AutomaticUpgradesItems.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
@@ -317,7 +316,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void GoBack(object sender, MouseButtonEventArgs e) {
-			if (menuState == "Config" || menuState == "LogLevel" || menuState == "UILogs" || menuState == "SetReleaseStream") {
+			if (menuState == "Config" || menuState == "LogLevel" || menuState == "UILogs" || menuState == "SetReleaseStream" || menuState == "ConfigureAutomaticUpgrades") {
 				menuState = "Advanced";
 			} else if (menuState == "Licenses") {
 				menuState = "About";

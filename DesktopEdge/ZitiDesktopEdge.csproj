@@ -473,5 +473,8 @@
     <Resource Include="Assets\Images\ziti-green-mfa.png" />
     <Resource Include="Assets\Images\ziti-green-timer.ico" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Images\processing.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
