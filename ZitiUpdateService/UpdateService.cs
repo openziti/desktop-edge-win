@@ -24,6 +24,10 @@ using DnsClient.Protocol;
 using ZitiUpdateService.Utils;
 using ZitiUpdateService.Checkers;
 
+#if !SKIPUPDATE
+using ZitiUpdateService.Checkers.PeFile;
+#endif
+
 namespace ZitiUpdateService {
 	public partial class UpdateService : ServiceBase {
 		private string betaStreamMarkerFile = "use-beta-stream.txt";
