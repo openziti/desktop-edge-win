@@ -185,8 +185,8 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
             return null;
         }
-        async public Task<SvcResponse> SetAutomaticUpgradeDisabledAsync(bool enabled) {
-            ActionEvent action = new ActionEvent() { Op = "SetAutomaticUpgradeDisabled", Action = (enabled ? "true" : "false")};
+        async public Task<SvcResponse> SetAutomaticUpgradeDisabledAsync(bool disabled) {
+            ActionEvent action = new ActionEvent() { Op = "SetAutomaticUpgradeDisabled", Action = (disabled ? "true" : "false")};
             try {
                 await sendAsync(action);
                 return await readAsync<SvcResponse>(ipcReader);
