@@ -714,12 +714,14 @@ namespace ZitiUpdateService {
 					Directory.CreateDirectory(updateFolder);
 				}
 
-				Logger.Info("copying update package");
-
 				InstallationNotificationEvent info = new InstallationNotificationEvent();
 				info.ZDEVersion = check.GetNextVersion().ToString();
 				if (InstallationIsCritical(check.PublishDate))
 				{
+					if (CurrentSettings.AutomaticUpdatesDisabled) {
+						Logger.Debug("AutomaticUpdatesDisabled is set to true. Automatic update is disabled.");
+						return;
+					}
 					info.InstallTime = DateTime.Now + TimeSpan.Parse("0:0:30");
 					Logger.Warn("Installation is critical! for ZDE version: {0}. update published at: {1}. approximate install time: {2}", info.ZDEVersion, check.PublishDate, info.InstallTime);
 					NotifyInstallationUpdates(info, true);
@@ -740,7 +742,8 @@ namespace ZitiUpdateService {
 			semaphore.Release();
 		}
 
-		private void installZDE(UpdateCheck check/*, string fileDestination, string filename*/) {
+		private void installZDE(UpdateCheck check)
+		{
 			string fileDestination = Path.Combine(updateFolder, check.FileName);
 
 			if (check.AlreadyDownloaded(updateFolder, check.FileName)) {
