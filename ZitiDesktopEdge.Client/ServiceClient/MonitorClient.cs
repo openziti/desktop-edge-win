@@ -67,6 +67,11 @@ namespace ZitiDesktopEdge.ServiceClient {
                     var instEvt = serializer.Deserialize<InstallationNotificationEvent>(new JsonTextReader(new StringReader(line)));
                     InstallationNotificationEvent(instEvt);
                     break;
+                case "Config":
+                    var cfg = serializer.Deserialize<MonitorConfigEvent>(new JsonTextReader(new StringReader(line)));
+                    
+                    Logger.Error("CONFIG EVENT: " + cfg.AutomaticUpdatesDisabled);
+                    break;
                 default:
                     ServiceStatusEvent(evt);
                     break;
@@ -135,6 +140,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
             return null;
         }
+
         async public Task<SvcResponse> SetReleaseStreamAsync(string stream) {
             ActionEvent action = new ActionEvent() { Op = "SetReleaseStream", Action = stream };
             try {
@@ -171,6 +177,16 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
         async public Task<SvcResponse> TriggerUpdate() {
             ActionEvent action = new ActionEvent() { Op = "TriggerUpdate", Action = "" };
+            try {
+                await sendAsync(action);
+                return await readAsync<SvcResponse>(ipcReader);
+            } catch (Exception ex) {
+                Logger.Error(ex, "Unexpected error");
+            }
+            return null;
+        }
+        async public Task<SvcResponse> SetAutomaticUpgradeDisabledAsync(bool enabled) {
+            ActionEvent action = new ActionEvent() { Op = "SetAutomaticUpgradeDisabled", Action = (enabled ? "true" : "false")};
             try {
                 await sendAsync(action);
                 return await readAsync<SvcResponse>(ipcReader);
