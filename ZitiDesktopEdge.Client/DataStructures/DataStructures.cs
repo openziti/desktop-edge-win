@@ -478,9 +478,16 @@ namespace ZitiDesktopEdge.DataStructures {
     }
 
 
+    public class MonitorConfigEvent : ActionEvent
+    {
+        public bool AutomaticUpdatesDisabled { get; set; }
+    }
+
+
     public class MonitorServiceStatusEvent : SvcResponse {
         public string Status { get; set; }
         public string ReleaseStream { get; set; }
+        public string AutomaticUpgradeDisabled { get; set; }
 
         public bool IsStopped() {
             return "Stopped" == this.Status;

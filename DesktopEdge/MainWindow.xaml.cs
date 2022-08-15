@@ -648,7 +648,9 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void MonitorClient_OnCommunicationError(object sender, Exception e) {
-			ShowError("Communication Error", e.Message);
+			string msg = "Communication Error with monitor?";
+			logger.Warn(msg);
+			ShowError(msg, e.Message);
 		}
 
 		private void MainMenu_OnShowBlurb(string message) {
@@ -755,7 +757,8 @@ namespace ZitiDesktopEdge {
 
 		string nextVersionStr  = null;
         private void MonitorClient_OnReconnectFailure(object sender, object e) {
-            if (nextVersionStr == null) {
+			logger.Debug("OnReconnectFailure triggered");
+			if (nextVersionStr == null) {
 				// check for the current version
 				nextVersionStr = "checking for update";
 				Version nextVersion = VersionUtil.NormalizeVersion(GithubAPI.GetVersion(GithubAPI.GetJson(GithubAPI.ProdUrl)));
@@ -779,6 +782,7 @@ namespace ZitiDesktopEdge {
 
         private void MonitorClient_OnShutdownEvent(object sender, StatusEvent e)
 		{
+			logger.Info("The monitor has indicated the application should shut down.");
 			this.Dispatcher.Invoke(() => {
 				Application.Current.Shutdown();
 			});
@@ -795,6 +799,7 @@ namespace ZitiDesktopEdge {
 				}
 				logger.Debug("MonitorClient_OnServiceStatusEvent: {0}", evt.Status);
 				Application.Current.Properties["ReleaseStream"] = evt.ReleaseStream;
+				Application.Current.Properties["AutomaticUpgradeDisabled"] = evt.AutomaticUpgradeDisabled;
 				ServiceControllerStatus status = (ServiceControllerStatus)Enum.Parse(typeof(ServiceControllerStatus), evt.Status);
 
 				switch (status) {

@@ -64,6 +64,7 @@
                     <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/logs.png" Width="Auto" Label="Application Logs" MouseUp="ShowUILogs"></local:MenuItem>
                     <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/advanced.png" Width="Auto" Label="Set Logging Level" MouseUp="SetLogLevel"></local:MenuItem>
                     <local:MenuItem x:Name="ShowReleaseStreamMenuItem" Visibility="Collapsed" HorizontalAlignment="Stretch" Icon="/Assets/Images/update.png" Width="Auto" Label="Set Release Stream" MouseUp="ShowReleaseStreamMenuAction"></local:MenuItem>
+                    <local:MenuItem x:Name="SetAutomaticUpgradeMenuItem" HorizontalAlignment="Stretch" Icon="/Assets/Images/update.png" Width="Auto" Label="Configure Automatic Upgrades" MouseUp="ShowAutomaticUpgradesMenuAction"></local:MenuItem>
                     <local:StyledButton x:Name="EditFreqButton" Visibility="Collapsed" OnClick="EditFreqButton_OnClick" Label="Change Notification Frequency" Grid.Row="8" Margin="0,20,0,0"></local:StyledButton>
                 </StackPanel>
                 <StackPanel Name="LogLevelItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
@@ -96,6 +97,10 @@
                             </Button.Resources>
                         </Button>
                     </StackPanel>
+                </StackPanel>
+                <StackPanel Name="AutomaticUpgradesItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
+                    <local:SubOptionItem x:Name="AutomaticUpgradesItemOn" HorizontalAlignment="Stretch" Width="Auto" Label="Enabled" MouseUp="SetAutomaticUpgradesMenuAction"></local:SubOptionItem>
+                    <local:SubOptionItem x:Name="AutomaticUpgradesItemOff" HorizontalAlignment="Stretch" Width="Auto" Label="Disabled" MouseUp="SetAutomaticUpgradesMenuAction"></local:SubOptionItem>
                 </StackPanel>
                 <StackPanel Name="ConfigItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <local:MenuEditItem x:Name="ConfigIp" HorizontalAlignment="Stretch" Width="Auto" Label="IPv4 Address:"></local:MenuEditItem>

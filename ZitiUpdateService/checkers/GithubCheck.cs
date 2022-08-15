@@ -97,6 +97,7 @@ namespace ZitiUpdateService.Checkers {
 				string computed = BitConverter.ToString(sha256bytes).Replace("-", "");
 
 				File.Delete(sha256dest);
+				Logger.Info("comparing computed hash: {0} to downloaded hash: {1}", computed, hash);
 				return computed.ToLower().Trim() == hash.ToLower().Trim();
 			}
         }
