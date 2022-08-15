@@ -39,7 +39,7 @@ namespace ZitiDesktopEdge.Server {
         public delegate SvcResponse TriggerUpdateDelegate();
         public TriggerUpdateDelegate TriggerUpdate { get; set; }
 
-        public delegate SvcResponse SetAutomaticUpdateDisabledDelegate(bool enabled);
+        public delegate SvcResponse SetAutomaticUpdateDisabledDelegate(bool disabled);
         public SetAutomaticUpdateDisabledDelegate SetAutomaticUpdateDisabled { get; set; }
 
         public IPCServer() {

@@ -756,8 +756,7 @@ namespace ZitiDesktopEdge {
 
 
 		string nextVersionStr  = null;
-        private void MonitorClient_OnReconnectFailure(object sender, object e)
-		{
+        private void MonitorClient_OnReconnectFailure(object sender, object e) {
 			logger.Debug("OnReconnectFailure triggered");
 			if (nextVersionStr == null) {
 				// check for the current version

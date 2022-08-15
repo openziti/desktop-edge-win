@@ -104,8 +104,7 @@ namespace ZitiUpdateService {
 
 		private void CurrentSettings_OnConfigurationChange(object sender, ControllerEvent e)
 		{
-			MonitorServiceStatusEvent status = new MonitorServiceStatusEvent()
-			{
+			MonitorServiceStatusEvent status = new MonitorServiceStatusEvent() {
 				Code = 0,
 				Error = "",
 				Message = "Configuration Changed",
@@ -116,8 +115,7 @@ namespace ZitiUpdateService {
 			EventRegistry.SendEventToConsumers(status);
 		}
 
-		private SvcResponse SetAutomaticUpdateDisabled(bool disabled)
-		{
+		private SvcResponse SetAutomaticUpdateDisabled(bool disabled) {
 			CurrentSettings.AutomaticUpdatesDisabled = disabled;
 			CurrentSettings.Write();
 			SvcResponse r = new SvcResponse();

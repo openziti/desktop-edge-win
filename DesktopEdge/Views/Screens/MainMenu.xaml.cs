@@ -170,7 +170,7 @@ namespace ZitiDesktopEdge {
 			bool disableAutomaticUpgrades = false;
 			if (sender == AutomaticUpgradesItemOff) {
 				disableAutomaticUpgrades = true;
-            }
+			}
 			var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
 
 			SvcResponse r = await monitorClient.SetAutomaticUpgradeDisabledAsync(disableAutomaticUpgrades);
@@ -429,8 +429,7 @@ namespace ZitiDesktopEdge {
 			this.ReleaseStreamItemBeta.IsSelected = isBeta;
 			this.ReleaseStreamItemStable.IsSelected = !isBeta;
 		}
-		private void SetAutomaticUpgradesState(bool yesNo)
-		{
+		private void SetAutomaticUpgradesState(bool yesNo) {
 			this.AutomaticUpgradesItemOn.IsSelected = !yesNo;
 			this.AutomaticUpgradesItemOff.IsSelected = yesNo;
 		}
