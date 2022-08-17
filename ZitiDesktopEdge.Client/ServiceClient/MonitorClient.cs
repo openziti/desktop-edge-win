@@ -121,7 +121,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
         async public Task<MonitorServiceStatusEvent> StatusAsync() {
-            ActionEvent action = new ActionEvent() { Op = "MonitorStatus", Action = "" };
+            ActionEvent action = new ActionEvent() { Op = "Status", Action = "" };
             try {
                 await sendAsync(action);
                 return await readAsync<MonitorServiceStatusEvent>(ipcReader);

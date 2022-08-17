@@ -79,14 +79,6 @@ namespace ZitiDesktopEdge {
 
 		}
 
-		private bool autoUpgradeEnabled_
-		{
-			get
-			{
-				return bool.TrueString.ToLower() != Application.Current.Properties["AutomaticUpgradeDisabled"]?.ToString();
-			}
-		}
-
 		async private void IdentityMenu_OnMessage(string message) {
 			await ShowBlurbAsync(message, "");
 		}
@@ -812,7 +804,6 @@ namespace ZitiDesktopEdge {
 				logger.Debug("MonitorClient_OnServiceStatusEvent: {0}", evt.Status);
 				Application.Current.Properties["ReleaseStream"] = evt.ReleaseStream;
 
-				//Application.Current.Properties["AutomaticUpgradeDisabled"] = evt.AutomaticUpgradeDisabled?.ToLower();
 				ServiceControllerStatus status = (ServiceControllerStatus)Enum.Parse(typeof(ServiceControllerStatus), evt.Status);
 
 				switch (status) {
@@ -882,8 +873,7 @@ namespace ZitiDesktopEdge {
 			});
 		}
 
-		private bool isToastEnabled()
-        {
+		private bool isToastEnabled() {
 			bool result;
 			//only show notifications once if automatic updates are disabled
 			if (NotificationsShownCount == 0) {
