@@ -61,6 +61,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         protected override void ProcessLine(string line) {
             var evt = serializer.Deserialize<MonitorServiceStatusEvent>(new JsonTextReader(new StringReader(line)));
+
             switch(evt.Type)
             {
                 case "Notification":

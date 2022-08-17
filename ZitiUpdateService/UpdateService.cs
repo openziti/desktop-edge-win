@@ -39,12 +39,6 @@ namespace ZitiUpdateService {
 			}
 			private set { }
 		}
-		public bool AutomaticUpgradeDisabled {
-			get {
-				return CurrentSettings.AutomaticUpdatesDisabled;
-			}
-			private set { }
-		}
 
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -108,18 +102,28 @@ namespace ZitiUpdateService {
 
 		private void CurrentSettings_OnConfigurationChange(object sender, ControllerEvent e)
 		{
-			MonitorServiceStatusEvent status = new MonitorServiceStatusEvent() {
-				Code = 0,
-				Error = "",
-				Message = "Configuration Changed",
-				Status = ServiceActions.ServiceStatus(),
-				ReleaseStream = IsBeta ? "beta" : "stable",
-				AutomaticUpgradeDisabled = AutomaticUpgradeDisabled.ToString()
-			};
+			InstallationNotificationEvent status;
+			if (lastInstallationNotification != null) {
+				status = lastInstallationNotification;
+			} else {
+				status = new InstallationNotificationEvent() {
+					Code = 0,
+					Error = "",
+					Message = "Configuration Changed",
+					Type = "Notification",
+					Status = ServiceActions.ServiceStatus(),
+					ReleaseStream = IsBeta ? "beta" : "stable",
+					AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString(),
+					InstallTime = lastInstallationNotification.InstallTime
+				};
+			}
 			EventRegistry.SendEventToConsumers(status);
 		}
 
 		private SvcResponse SetAutomaticUpdateDisabled(bool disabled) {
+			if (lastInstallationNotification != null) {
+				lastInstallationNotification.AutomaticUpgradeDisabled = disabled.ToString();
+			}
 			CurrentSettings.AutomaticUpdatesDisabled = disabled;
 			CurrentSettings.Write();
 			SvcResponse r = new SvcResponse();
@@ -549,7 +553,7 @@ namespace ZitiUpdateService {
 				Type = "Status",
 				Status = ServiceActions.ServiceStatus(),
 				ReleaseStream = IsBeta ? "beta" : "stable",
-				AutomaticUpgradeDisabled = AutomaticUpgradeDisabled.ToString()
+				AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString()
 			};
 			await writer.WriteLineAsync(JsonConvert.SerializeObject(status));
 			await writer.FlushAsync();
@@ -693,6 +697,20 @@ namespace ZitiUpdateService {
 			return check;
 		}
 
+		private InstallationNotificationEvent newInstallationNotificationEvent(string version) {
+			InstallationNotificationEvent info = new InstallationNotificationEvent() {
+				Code = 0,
+				Error = "",
+				Message = "Configuration Changed",
+				Type = "Notification",
+				Status = ServiceActions.ServiceStatus(),
+				ReleaseStream = IsBeta ? "beta" : "stable",
+				AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString().ToLower(),
+				ZDEVersion = version
+			};
+			return info;
+		}
+
 		private void CheckUpdate(object sender, ElapsedEventArgs e) {
 			if (e != null) {
 				Logger.Debug("Timer triggered CheckUpdate at {0}", e.SignalTime);
@@ -706,27 +724,27 @@ namespace ZitiUpdateService {
 				if (check.Avail >= 0) {
 					Logger.Debug("update check complete. no update available");
 					semaphore.Release();
-					return;
+					return; 
 				}
 
 				Logger.Info("update is available.");
 				if (!Directory.Exists(updateFolder)) {
 					Directory.CreateDirectory(updateFolder);
 				}
+				InstallationNotificationEvent info = newInstallationNotificationEvent(check.GetNextVersion().ToString());
 
-				InstallationNotificationEvent info = new InstallationNotificationEvent();
-				info.ZDEVersion = check.GetNextVersion().ToString();
 				if (InstallationIsCritical(check.PublishDate))
 				{
-					if (CurrentSettings.AutomaticUpdatesDisabled) {
-						Logger.Debug("AutomaticUpdatesDisabled is set to true. Automatic update is disabled.");
-						return;
-					}
 					info.InstallTime = DateTime.Now + TimeSpan.Parse("0:0:30");
 					Logger.Warn("Installation is critical! for ZDE version: {0}. update published at: {1}. approximate install time: {2}", info.ZDEVersion, check.PublishDate, info.InstallTime);
 					NotifyInstallationUpdates(info, true);
-					Thread.Sleep(30);
-					installZDE(check);
+					if (CurrentSettings.AutomaticUpdatesDisabled)
+					{
+						Logger.Debug("AutomaticUpdatesDisabled is set to true. Automatic update is disabled.");
+					} else {
+						Thread.Sleep(30);
+						installZDE(check);
+					}
 				}
 				else
 				{
@@ -952,7 +970,7 @@ namespace ZitiUpdateService {
 					Error = "SERVICE DOWN",
 					Message = "SERVICE DOWN",
 					Status = ServiceActions.ServiceStatus(),
-					AutomaticUpgradeDisabled = AutomaticUpgradeDisabled.ToString()
+					AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString()
 				};
 				EventRegistry.SendEventToConsumers(status);
 			} else {
@@ -962,9 +980,10 @@ namespace ZitiUpdateService {
 					Code = 10,
 					Error = "SERVICE DOWN",
 					Message = "SERVICE DOWN",
+					Type = "Status",
 					Status = ServiceActions.ServiceStatus(),
 					ReleaseStream = IsBeta ? "beta" : "stable",
-					AutomaticUpgradeDisabled = AutomaticUpgradeDisabled.ToString()
+					AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString()
 				};
 				EventRegistry.SendEventToConsumers(status);
 			}
@@ -984,7 +1003,6 @@ namespace ZitiUpdateService {
 				Logger.Info("DNS RESULTS:\n{0}", sw.ToString());
 			}
 		}
-		DateTime lastNotification = new DateTime();
 
 		private TimeSpan InstallationReminder()
 		{
@@ -1026,13 +1044,13 @@ namespace ZitiUpdateService {
 		private void NotifyInstallationUpdates(InstallationNotificationEvent evt, bool force) {
 			try {
 				var now = DateTime.Now;
-				if (now > lastNotification + InstallationReminder() || force)
+				if (now > evt.InstallTime + InstallationReminder() || force)
 				{
 					evt.Message = "InstallationUpdate";
 					evt.Type = "Notification";
 					EventRegistry.SendEventToConsumers(evt);
 					Logger.Debug("NotifyInstallationUpdates: sent for version {0} is sent to the events pipe...", evt.ZDEVersion);
-					lastNotification = DateTime.Now;
+					evt.InstallTime = DateTime.Now;
 					return;
 				} else {
 					Logger.Debug("NotifyInstallationUpdates: Not sending another notification reminder yet");

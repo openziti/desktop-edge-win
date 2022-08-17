@@ -27,6 +27,7 @@ using Microsoft.Win32;
 using System.Windows.Interop;
 using Windows.UI.Notifications;
 using Windows.Data.Xml.Dom;
+using Ziti.Desktop.Edge.Models;
 
 namespace ZitiDesktopEdge {
 
@@ -46,6 +47,7 @@ namespace ZitiDesktopEdge {
 		private int _left = 75;
 		private int _top = 30;
 		public bool IsUpdateAvailable = false;
+		public int NotificationsShownCount = 0;
 		private double _maxHeight = 800d;
 		public string CurrentIcon = "white";
 		private string[] suffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };
@@ -61,9 +63,11 @@ namespace ZitiDesktopEdge {
 		public static string ExpectedLogPathUI;
 		public static string ExpectedLogPathServices;
 
+		private static ZDEWViewState state;
 		static MainWindow() {
 			asm = System.Reflection.Assembly.GetExecutingAssembly();
 			ThisAssemblyName = asm.GetName().Name;
+			state = (ZDEWViewState)Application.Current.Properties["ZDEWViewState"];
 #if DEBUG
 			ExecutionDirectory = @"C:\Program Files (x86)\NetFoundry, Inc\Ziti Desktop Edge";
 #else
@@ -799,7 +803,7 @@ namespace ZitiDesktopEdge {
 				}
 				logger.Debug("MonitorClient_OnServiceStatusEvent: {0}", evt.Status);
 				Application.Current.Properties["ReleaseStream"] = evt.ReleaseStream;
-				Application.Current.Properties["AutomaticUpgradeDisabled"] = evt.AutomaticUpgradeDisabled;
+
 				ServiceControllerStatus status = (ServiceControllerStatus)Enum.Parse(typeof(ServiceControllerStatus), evt.Status);
 
 				switch (status) {
@@ -840,25 +844,44 @@ namespace ZitiDesktopEdge {
 			this.Dispatcher.Invoke(() => {
 				logger.Debug("MonitorClient_OnInstallationNotificationEvent: {0}", evt.Message);
 
-				if ("installationupdate".Equals(evt.Message?.ToLower())) {
+				if ("installationupdate".Equals(evt.Message?.ToLower()) || "Configuration Changed" == evt.Message) {
 					logger.Debug("Installation Update is available - {0}", evt.ZDEVersion);
 					IsUpdateAvailable = true;
 					var remaining = evt.InstallTime - DateTime.Now;
-					MainMenu.ShowUpdateAvailable(remaining.TotalSeconds, evt.InstallTime);
+
+					state.AutomaticUpdatesEnabledFromString(evt.AutomaticUpgradeDisabled);
+					state.PendingUpdate.Version = evt.ZDEVersion;
+					state.PendingUpdate.InstallTime = evt.InstallTime;
+					MainMenu.ShowUpdateAvailable();
 					AlertCanvas.Visibility = Visibility.Visible;
 
-					if (remaining.TotalSeconds < 60) {
-						//this is an immediate update - show a different message
-						ShowToast("Ziti Desktop Edge will initiate auto installation in the next minute!");
+					if (isToastEnabled()) {
+						if (!state.AutomaticUpdatesDisabled) {
+							if (remaining.TotalSeconds < 60) {
+								//this is an immediate update - show a different message
+								ShowToast("Ziti Desktop Edge will initiate auto installation in the next minute!");
+							} else {
+								ShowToast($"Update {evt.ZDEVersion} is available for Ziti Desktop Edge and will be automatically installed by " + evt.InstallTime);
+							}
+						} else {
+							ShowToast($"Version {evt.ZDEVersion} is available for Ziti Desktop Edge");
+						}
+						SetNotifyIcon("");
+						// display a tag in UI and a button for the update software
 					}
-					else
-					{
-						ShowToast("An Update is Available for Ziti Desktop Edge, will initiate auto installation by " + evt.InstallTime);
-					}
-					SetNotifyIcon("");
-					// display a tag in UI and a button for the update software
 				}
 			});
+		}
+
+		private bool isToastEnabled() {
+			bool result;
+			//only show notifications once if automatic updates are disabled
+			if (NotificationsShownCount == 0) {
+				result = true; //regardless - if never notified, always return true
+			} else {
+				result = !state.AutomaticUpdatesDisabled;
+			}
+			return result;
 		}
 
 		private void ShowToast(string message) {
@@ -867,6 +890,7 @@ namespace ZitiDesktopEdge {
 				.AddText(message)
 				.SetBackgroundActivation()
 				.Show();
+			NotificationsShownCount++;
 		}
 
 		async private Task WaitForServiceToStop(DateTime until) {

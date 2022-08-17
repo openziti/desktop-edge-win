@@ -133,6 +133,7 @@
     <Compile Include="Models\FilterData.cs" />
     <Compile Include="Models\MessageCount.cs" />
     <Compile Include="Models\MFA.cs" />
+    <Compile Include="Models\ViewState.cs" />
     <Compile Include="Views\Controls\StyledButton.xaml.cs">
       <DependentUpon>StyledButton.xaml</DependentUpon>
     </Compile>
