@@ -890,8 +890,8 @@ namespace ZitiDesktopEdge {
 		private bool isToastEnabled()
         {
 			//only show notifications once if automatic updates are disabled
-			if (NotificationsShownCount > 0) {
-				return false;
+			if (NotificationsShownCount == 0) {
+				return true; //regardless - if never notified, always return true
 			}
 
 			return !state.AutomaticUpdatesDisabled;
