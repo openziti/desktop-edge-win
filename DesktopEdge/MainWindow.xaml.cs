@@ -891,7 +891,6 @@ namespace ZitiDesktopEdge {
 			} else {
 				result = !state.AutomaticUpdatesDisabled;
 			}
-			logger.Error($"isToastEnabled: {result}");
 			return result;
 		}
 

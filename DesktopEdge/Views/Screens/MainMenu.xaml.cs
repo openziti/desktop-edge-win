@@ -180,8 +180,6 @@ namespace ZitiDesktopEdge {
 			SvcResponse r = await monitorClient.SetAutomaticUpgradeDisabledAsync(disableAutomaticUpgrades);
 			if(r.Code != 0) {
 				logger.Error(r?.Error);
-			} else {
-				//Application.Current.Properties["AutomaticUpgradeDisabled"] = disableAutomaticUpgrades;
 			}
 			SetAutomaticUpgradesState();
 		}
@@ -270,7 +268,7 @@ namespace ZitiDesktopEdge {
 				ReleaseStreamItems.Visibility = allowReleaseSelect ? Visibility.Visible : Visibility.Collapsed;
 				BackArrow.Visibility = Visibility.Visible;
 			} else if (menuState == "ConfigureAutomaticUpgrades") {
-				SetAutomaticUpgradesState();// automaticUpgradeDisabled);
+				SetAutomaticUpgradesState();
 
 				MenuTitle.Content = "Automatic Upgrades";
 				AutomaticUpgradesItems.Visibility = Visibility.Visible;
