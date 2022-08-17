@@ -13,6 +13,7 @@ using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.ServiceClient;
 using System.Configuration;
+using Ziti.Desktop.Edge.Models;
 
 namespace ZitiDesktopEdge {
 	/// <summary>
@@ -35,24 +36,31 @@ namespace ZitiDesktopEdge {
 		private string appVersion = null;
 		private bool allowReleaseSelect = false;
 		public double MainHeight = 500;
-		
+
+		private ZDEWViewState state;
+
 		private bool isBeta {
 			get {
 				return Application.Current.Properties["ReleaseStream"]?.ToString() == "beta";
 			}
 		}
-		private bool automaticUpgradeDisabled {
+		private bool automaticUpgradeDisabled__ {
 			get
 			{
-				return bool.TrueString.ToLower() == ("" + Application.Current.Properties["AutomaticUpgradeDisabled"]?.ToString()).ToLower().Trim();
+				return bool.TrueString.ToLower() == Application.Current.Properties["AutomaticUpgradeDisabled"]?.ToString();
 			}
 		}
 
-		public void ShowUpdateAvailable(double timeLeft, DateTime updateTime) {
+		public void ShowUpdateAvailable() {
 			ForceUpdate.Visibility = Visibility.Visible;
-			if (timeLeft>0) {
+			if (state.PendingUpdate.TimeLeft>0) {
 				UpdateTimeLeft.Visibility = Visibility.Visible;
-				UpdateTimeLeft.Content = "Update will occur "+updateTime.ToString("g");
+				if (!state.AutomaticUpdatesDisabled) {
+					UpdateTimeLeft.Content = $"Automatic update to {state.PendingUpdate.Version} will occur on or after {state.PendingUpdate.InstallTime.ToString("g")}";
+				} else
+				{
+					UpdateTimeLeft.Content = "";
+				}
 			}
 		}
 
@@ -61,6 +69,7 @@ namespace ZitiDesktopEdge {
 		public MainMenu() {
 			InitializeComponent();
 			Application.Current.MainWindow.Title = "Ziti Desktop Edge";
+			state = (ZDEWViewState)Application.Current.Properties["ZDEWViewState"];
 
 			try {
 				allowReleaseSelect = bool.Parse(ConfigurationManager.AppSettings.Get("ReleaseStreamSelect"));
@@ -177,9 +186,9 @@ namespace ZitiDesktopEdge {
 			if(r.Code != 0) {
 				logger.Error(r?.Error);
 			} else {
-				Application.Current.Properties["AutomaticUpgradeDisabled"] = disableAutomaticUpgrades;
+				//Application.Current.Properties["AutomaticUpgradeDisabled"] = disableAutomaticUpgrades;
 			}
-			SetAutomaticUpgradesState(disableAutomaticUpgrades);
+			SetAutomaticUpgradesState();
 		}
 
 		private void checkResponse(SvcResponse r, string titleOnErr, string msgOnErr) {
@@ -266,7 +275,7 @@ namespace ZitiDesktopEdge {
 				ReleaseStreamItems.Visibility = allowReleaseSelect ? Visibility.Visible : Visibility.Collapsed;
 				BackArrow.Visibility = Visibility.Visible;
 			} else if (menuState == "ConfigureAutomaticUpgrades") {
-				SetAutomaticUpgradesState(automaticUpgradeDisabled);
+				SetAutomaticUpgradesState();// automaticUpgradeDisabled);
 
 				MenuTitle.Content = "Automatic Upgrades";
 				AutomaticUpgradesItems.Visibility = Visibility.Visible;
@@ -292,6 +301,8 @@ namespace ZitiDesktopEdge {
 				MainItemsButton.Visibility = Visibility.Visible;
 				ReleaseStreamItems.Visibility = Visibility.Collapsed;
 			}
+
+			ShowUpdateAvailable();
 		}
 
 		private void OpenLogFile(string which, string logFile) {
@@ -429,9 +440,10 @@ namespace ZitiDesktopEdge {
 			this.ReleaseStreamItemBeta.IsSelected = isBeta;
 			this.ReleaseStreamItemStable.IsSelected = !isBeta;
 		}
-		private void SetAutomaticUpgradesState(bool yesNo) {
-			this.AutomaticUpgradesItemOn.IsSelected = !yesNo;
-			this.AutomaticUpgradesItemOff.IsSelected = yesNo;
+		private void SetAutomaticUpgradesState() {
+			bool disabled = state.AutomaticUpdatesDisabled;
+			this.AutomaticUpgradesItemOn.IsSelected = !disabled;
+			this.AutomaticUpgradesItemOff.IsSelected = disabled;
 		}
 
 		async private void CheckForUpdate_Click(object sender, RoutedEventArgs e) {

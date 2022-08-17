@@ -706,7 +706,7 @@ namespace ZitiUpdateService {
 				if (check.Avail >= 0) {
 					Logger.Debug("update check complete. no update available");
 					semaphore.Release();
-					return;
+					return; 
 				}
 
 				Logger.Info("update is available.");
@@ -716,17 +716,19 @@ namespace ZitiUpdateService {
 
 				InstallationNotificationEvent info = new InstallationNotificationEvent();
 				info.ZDEVersion = check.GetNextVersion().ToString();
+				info.AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString().ToLower();
 				if (InstallationIsCritical(check.PublishDate))
 				{
-					if (CurrentSettings.AutomaticUpdatesDisabled) {
-						Logger.Debug("AutomaticUpdatesDisabled is set to true. Automatic update is disabled.");
-						return;
-					}
 					info.InstallTime = DateTime.Now + TimeSpan.Parse("0:0:30");
 					Logger.Warn("Installation is critical! for ZDE version: {0}. update published at: {1}. approximate install time: {2}", info.ZDEVersion, check.PublishDate, info.InstallTime);
 					NotifyInstallationUpdates(info, true);
-					Thread.Sleep(30);
-					installZDE(check);
+					if (CurrentSettings.AutomaticUpdatesDisabled)
+					{
+						Logger.Debug("AutomaticUpdatesDisabled is set to true. Automatic update is disabled.");
+					} else {
+						Thread.Sleep(30);
+						installZDE(check);
+					}
 				}
 				else
 				{

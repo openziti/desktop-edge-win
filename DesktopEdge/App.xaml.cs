@@ -11,9 +11,7 @@ using System.Threading.Tasks;
 using System.Windows.Interop;
 
 using NLog;
-using Windows.ApplicationModel.Activation;
-using Microsoft.Toolkit.Uwp.Notifications;
-using ZitiDesktopEdge.ServiceClient;
+using Ziti.Desktop.Edge.Models;
 
 namespace ZitiDesktopEdge {
     /// <summary>
@@ -30,6 +28,8 @@ namespace ZitiDesktopEdge {
 		}
 
 		protected override void OnStartup(StartupEventArgs e) {
+            Application.Current.Properties["ZDEWViewState"] = new ZDEWViewState();
+
             const string appName = "Ziti Desktop Edge";
 
             bool createdNew;
