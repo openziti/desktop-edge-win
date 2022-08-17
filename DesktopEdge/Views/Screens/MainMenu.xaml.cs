@@ -56,6 +56,7 @@ namespace ZitiDesktopEdge {
 					UpdateTimeLeft.Content = "";
 				}
 			}
+			SetAutomaticUpgradesState();
 		}
 
 		internal MainWindow MainWindow { get; set; }

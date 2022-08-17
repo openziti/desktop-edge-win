@@ -121,13 +121,13 @@ namespace ZitiUpdateService {
 		}
 
 		private SvcResponse SetAutomaticUpdateDisabled(bool disabled) {
+			if (lastInstallationNotification != null) {
+				lastInstallationNotification.AutomaticUpgradeDisabled = disabled.ToString();
+			}
 			CurrentSettings.AutomaticUpdatesDisabled = disabled;
 			CurrentSettings.Write();
 			SvcResponse r = new SvcResponse();
 			r.Message = "Success";
-			if(lastInstallationNotification != null) {
-				lastInstallationNotification.AutomaticUpgradeDisabled = disabled.ToString();
-			}
 			return r;
 		}
 
