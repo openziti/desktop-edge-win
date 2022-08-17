@@ -68,10 +68,6 @@ namespace ZitiDesktopEdge.ServiceClient {
                     var instEvt = serializer.Deserialize<InstallationNotificationEvent>(new JsonTextReader(new StringReader(line)));
                     InstallationNotificationEvent(instEvt);
                     break;
-                case "Config":
-                    var cfg = serializer.Deserialize<MonitorConfigEvent>(new JsonTextReader(new StringReader(line)));
-                    Logger.Debug("CONFIG EVENT: " + cfg.AutomaticUpdatesDisabled);
-                    break;
                 default:
                     ServiceStatusEvent(evt);
                     break;

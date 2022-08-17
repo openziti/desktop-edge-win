@@ -738,8 +738,7 @@ namespace ZitiUpdateService {
 					info.InstallTime = DateTime.Now + TimeSpan.Parse("0:0:30");
 					Logger.Warn("Installation is critical! for ZDE version: {0}. update published at: {1}. approximate install time: {2}", info.ZDEVersion, check.PublishDate, info.InstallTime);
 					NotifyInstallationUpdates(info, true);
-					if (CurrentSettings.AutomaticUpdatesDisabled)
-					{
+					if (CurrentSettings.AutomaticUpdatesDisabled) {
 						Logger.Debug("AutomaticUpdatesDisabled is set to true. Automatic update is disabled.");
 					} else {
 						Thread.Sleep(30);
@@ -760,8 +759,7 @@ namespace ZitiUpdateService {
 			semaphore.Release();
 		}
 
-		private void installZDE(UpdateCheck check)
-		{
+		private void installZDE(UpdateCheck check) {
 			string fileDestination = Path.Combine(updateFolder, check.FileName);
 
 			if (check.AlreadyDownloaded(updateFolder, check.FileName)) {

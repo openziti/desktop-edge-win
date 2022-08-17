@@ -653,7 +653,6 @@ namespace ZitiDesktopEdge {
 
 		private void MonitorClient_OnCommunicationError(object sender, Exception e) {
 			string msg = "Communication Error with monitor?";
-			logger.Warn(msg);
 			ShowError(msg, e.Message);
 		}
 

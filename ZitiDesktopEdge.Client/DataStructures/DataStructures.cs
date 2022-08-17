@@ -477,13 +477,6 @@ namespace ZitiDesktopEdge.DataStructures {
         public string LogLevel { get; set; }
     }
 
-
-    public class MonitorConfigEvent : ActionEvent
-    {
-        public bool AutomaticUpdatesDisabled { get; set; }
-    }
-
-
     public class MonitorServiceStatusEvent : SvcResponse {
         public string Status { get; set; }
         public string ReleaseStream { get; set; }
