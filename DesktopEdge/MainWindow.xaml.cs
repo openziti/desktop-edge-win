@@ -811,7 +811,7 @@ namespace ZitiDesktopEdge {
 				}
 				logger.Debug("MonitorClient_OnServiceStatusEvent: {0}", evt.Status);
 				Application.Current.Properties["ReleaseStream"] = evt.ReleaseStream;
-				state.AutomaticUpdatesEnabledFromString(evt.AutomaticUpgradeDisabled);
+
 				//Application.Current.Properties["AutomaticUpgradeDisabled"] = evt.AutomaticUpgradeDisabled?.ToLower();
 				ServiceControllerStatus status = (ServiceControllerStatus)Enum.Parse(typeof(ServiceControllerStatus), evt.Status);
 
@@ -853,7 +853,7 @@ namespace ZitiDesktopEdge {
 			this.Dispatcher.Invoke(() => {
 				logger.Debug("MonitorClient_OnInstallationNotificationEvent: {0}", evt.Message);
 
-				if ("installationupdate".Equals(evt.Message?.ToLower())) {
+				if ("installationupdate".Equals(evt.Message?.ToLower()) || "Configuration Changed" == evt.Message) {
 					logger.Debug("Installation Update is available - {0}", evt.ZDEVersion);
 					IsUpdateAvailable = true;
 					var remaining = evt.InstallTime - DateTime.Now;
@@ -864,20 +864,15 @@ namespace ZitiDesktopEdge {
 					MainMenu.ShowUpdateAvailable();
 					AlertCanvas.Visibility = Visibility.Visible;
 
-					if(isToastEnabled()) {
-						if (!state.AutomaticUpdatesDisabled)
-						{
-							if (remaining.TotalSeconds < 60)
-							{
+					if (isToastEnabled()) {
+						if (!state.AutomaticUpdatesDisabled) {
+							if (remaining.TotalSeconds < 60) {
 								//this is an immediate update - show a different message
 								ShowToast("Ziti Desktop Edge will initiate auto installation in the next minute!");
-							}
-							else
-							{
+							} else {
 								ShowToast($"Update {evt.ZDEVersion} is available for Ziti Desktop Edge and will be automatically installed by " + evt.InstallTime);
 							}
-						} else
-						{
+						} else {
 							ShowToast($"Version {evt.ZDEVersion} is available for Ziti Desktop Edge");
 						}
 						SetNotifyIcon("");
@@ -889,12 +884,15 @@ namespace ZitiDesktopEdge {
 
 		private bool isToastEnabled()
         {
+			bool result;
 			//only show notifications once if automatic updates are disabled
 			if (NotificationsShownCount == 0) {
-				return true; //regardless - if never notified, always return true
+				result = true; //regardless - if never notified, always return true
+			} else {
+				result = !state.AutomaticUpdatesDisabled;
 			}
-
-			return !state.AutomaticUpdatesDisabled;
+			logger.Error($"isToastEnabled: {result}");
+			return result;
 		}
 
 		private void ShowToast(string message) {

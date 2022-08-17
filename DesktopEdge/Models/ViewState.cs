@@ -21,7 +21,7 @@ namespace Ziti.Desktop.Edge.Models
             }
             set
             {
-                Logger.Debug($"Setting AutomaticUpdatesDisabled to {value}");
+                Logger.Error($"\n\nSetting AutomaticUpdatesDisabled to {value}\n");
                 automaticUpdatesDisabled = value;
             }
         }

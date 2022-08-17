@@ -44,12 +44,6 @@ namespace ZitiDesktopEdge {
 				return Application.Current.Properties["ReleaseStream"]?.ToString() == "beta";
 			}
 		}
-		private bool automaticUpgradeDisabled__ {
-			get
-			{
-				return bool.TrueString.ToLower() == Application.Current.Properties["AutomaticUpgradeDisabled"]?.ToString();
-			}
-		}
 
 		public void ShowUpdateAvailable() {
 			ForceUpdate.Visibility = Visibility.Visible;

@@ -61,6 +61,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         protected override void ProcessLine(string line) {
             var evt = serializer.Deserialize<MonitorServiceStatusEvent>(new JsonTextReader(new StringReader(line)));
+            Logger.Error($"\n\n{line}\n");
             switch(evt.Type)
             {
                 case "Notification":
@@ -120,7 +121,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
         async public Task<MonitorServiceStatusEvent> StatusAsync() {
-            ActionEvent action = new ActionEvent() { Op = "Status", Action = "" };
+            ActionEvent action = new ActionEvent() { Op = "MonitorStatus", Action = "" };
             try {
                 await sendAsync(action);
                 return await readAsync<MonitorServiceStatusEvent>(ipcReader);
