@@ -13,6 +13,7 @@ using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.ServiceClient;
 using System.Configuration;
+using Ziti.Desktop.Edge.Models;
 
 namespace ZitiDesktopEdge {
 	/// <summary>
@@ -36,18 +37,26 @@ namespace ZitiDesktopEdge {
 		private bool allowReleaseSelect = false;
 		public double MainHeight = 500;
 
+		private ZDEWViewState state;
+
 		private bool isBeta {
 			get {
 				return Application.Current.Properties["ReleaseStream"]?.ToString() == "beta";
 			}
 		}
 
-		public void ShowUpdateAvailable(double timeLeft, DateTime updateTime) {
+		public void ShowUpdateAvailable() {
 			ForceUpdate.Visibility = Visibility.Visible;
-			if (timeLeft>0) {
+			if (state.PendingUpdate.TimeLeft>0) {
 				UpdateTimeLeft.Visibility = Visibility.Visible;
-				UpdateTimeLeft.Content = "Update will occur "+updateTime.ToString("g");
+				if (!state.AutomaticUpdatesDisabled) {
+					UpdateTimeLeft.Content = $"Automatic update to {state.PendingUpdate.Version} will occur on or after {state.PendingUpdate.InstallTime.ToString("g")}";
+				} else
+				{
+					UpdateTimeLeft.Content = "";
+				}
 			}
+			SetAutomaticUpgradesState();
 		}
 
 		internal MainWindow MainWindow { get; set; }
@@ -55,6 +64,7 @@ namespace ZitiDesktopEdge {
 		public MainMenu() {
 			InitializeComponent();
 			Application.Current.MainWindow.Title = "Ziti Desktop Edge";
+			state = (ZDEWViewState)Application.Current.Properties["ZDEWViewState"];
 
 			try {
 				allowReleaseSelect = bool.Parse(ConfigurationManager.AppSettings.Get("ReleaseStreamSelect"));
@@ -124,6 +134,12 @@ namespace ZitiDesktopEdge {
 			UpdateState();
 		}
 
+		private void ShowAutomaticUpgradesMenuAction(object sender, MouseButtonEventArgs e)
+		{
+			menuState = "ConfigureAutomaticUpgrades";
+			UpdateState();
+		}
+
 		async private void SetReleaseStreamMenuAction(object sender, MouseButtonEventArgs e) {
 			CheckForUpdateStatus.Visibility = Visibility.Collapsed;
 			TriggerUpdateButton.Visibility = Visibility.Collapsed;
@@ -154,6 +170,20 @@ namespace ZitiDesktopEdge {
 			UpdateState();
 		}
 
+		async private void SetAutomaticUpgradesMenuAction(object sender, MouseButtonEventArgs e) {
+			bool disableAutomaticUpgrades = false;
+			if (sender == AutomaticUpgradesItemOff) {
+				disableAutomaticUpgrades = true;
+			}
+			var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
+
+			SvcResponse r = await monitorClient.SetAutomaticUpgradeDisabledAsync(disableAutomaticUpgrades);
+			if(r.Code != 0) {
+				logger.Error(r?.Error);
+			}
+			SetAutomaticUpgradesState();
+		}
+
 		private void checkResponse(SvcResponse r, string titleOnErr, string msgOnErr) {
 			if (r == null) {
 				MainWindow.ShowError(titleOnErr, msgOnErr);
@@ -168,7 +198,10 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void UpdateState() {
-			IdListScrollView.Height = this.ActualHeight-100.00;
+			double h = this.ActualHeight - 100.00;
+			if (h > 0) {
+				IdListScrollView.Height = h;
+			}
 			IdListScrollView.Visibility = Visibility.Collapsed;
 			MainItems.Visibility = Visibility.Collapsed;
 			AboutItems.Visibility = Visibility.Collapsed;
@@ -181,7 +214,8 @@ namespace ZitiDesktopEdge {
 			ConfigItems.Visibility = Visibility.Collapsed;
 			LogLevelItems.Visibility = Visibility.Collapsed;
 			ReleaseStreamItems.Visibility = Visibility.Collapsed;
-
+			AutomaticUpgradesItems.Visibility = Visibility.Collapsed;
+			
 			if (menuState == "About") {
 				MenuTitle.Content = "About";
 				AboutItemsArea.Visibility = Visibility.Visible;
@@ -233,12 +267,18 @@ namespace ZitiDesktopEdge {
 				MenuTitle.Content = "Set Release Stream";
 				ReleaseStreamItems.Visibility = allowReleaseSelect ? Visibility.Visible : Visibility.Collapsed;
 				BackArrow.Visibility = Visibility.Visible;
+			} else if (menuState == "ConfigureAutomaticUpgrades") {
+				SetAutomaticUpgradesState();
+
+				MenuTitle.Content = "Automatic Upgrades";
+				AutomaticUpgradesItems.Visibility = Visibility.Visible;
+				BackArrow.Visibility = Visibility.Visible;
 			} else if (menuState == "Config") {
 				MenuTitle.Content = "Tunnel Configuration";
 				ConfigItems.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
 
-				ConfigPageSize.Value = ((Application.Current.Properties.Contains("ApiPageSize"))?Application.Current.Properties["ApiPageSize"].ToString(): "250");
+				ConfigPageSize.Value = ((Application.Current.Properties.Contains("ApiPageSize"))?Application.Current.Properties["ApiPageSize"].ToString(): "25");
                 ConfigIp.Value = Application.Current.Properties["ip"]?.ToString();
 				ConfigSubnet.Value = Application.Current.Properties["subnet"]?.ToString();
 				ConfigMtu.Value = Application.Current.Properties["mtu"]?.ToString();
@@ -254,6 +294,8 @@ namespace ZitiDesktopEdge {
 				MainItemsButton.Visibility = Visibility.Visible;
 				ReleaseStreamItems.Visibility = Visibility.Collapsed;
 			}
+
+			ShowUpdateAvailable();
 		}
 
 		private void OpenLogFile(string which, string logFile) {
@@ -278,7 +320,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void GoBack(object sender, MouseButtonEventArgs e) {
-			if (menuState == "Config" || menuState == "LogLevel" || menuState == "UILogs" || menuState == "SetReleaseStream") {
+			if (menuState == "Config" || menuState == "LogLevel" || menuState == "UILogs" || menuState == "SetReleaseStream" || menuState == "ConfigureAutomaticUpgrades") {
 				menuState = "Advanced";
 			} else if (menuState == "Licenses") {
 				menuState = "About";
@@ -390,6 +432,11 @@ namespace ZitiDesktopEdge {
 		private void SetReleaseStream() {
 			this.ReleaseStreamItemBeta.IsSelected = isBeta;
 			this.ReleaseStreamItemStable.IsSelected = !isBeta;
+		}
+		private void SetAutomaticUpgradesState() {
+			bool disabled = state.AutomaticUpdatesDisabled;
+			this.AutomaticUpgradesItemOn.IsSelected = !disabled;
+			this.AutomaticUpgradesItemOff.IsSelected = disabled;
 		}
 
 		async private void CheckForUpdate_Click(object sender, RoutedEventArgs e) {

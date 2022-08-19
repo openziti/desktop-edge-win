@@ -21,12 +21,17 @@ using Newtonsoft.Json;
 using System.Net;
 using DnsClient;
 using DnsClient.Protocol;
-using ZitiUpdateService.Checkers.PeFile;
+using ZitiUpdateService.Utils;
 using ZitiUpdateService.Checkers;
+
+#if !SKIPUPDATE
+using ZitiUpdateService.Checkers.PeFile;
+#endif
 
 namespace ZitiUpdateService {
 	public partial class UpdateService : ServiceBase {
 		private string betaStreamMarkerFile = "use-beta-stream.txt";
+		private static Settings CurrentSettings = new Settings(true);
 
 		public bool IsBeta {
 			get {
@@ -62,6 +67,10 @@ namespace ZitiUpdateService {
 
 		public UpdateService() {
 			InitializeComponent();
+
+			CurrentSettings.Load();
+			CurrentSettings.OnConfigurationChange += CurrentSettings_OnConfigurationChange;
+
 			base.CanHandlePowerEvent = true;
 
 			exeLocation = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
@@ -79,6 +88,7 @@ namespace ZitiUpdateService {
 			svr.SetReleaseStream = SetReleaseStream;
 			svr.DoUpdateCheck = DoUpdateCheck;
 			svr.TriggerUpdate = TriggerUpdate;
+			svr.SetAutomaticUpdateDisabled = SetAutomaticUpdateDisabled;
 
 			string assemblyVersionStr = Assembly.GetExecutingAssembly().GetName().Version.ToString(); //fetch from ziti?
 			assemblyVersion = new Version(assemblyVersionStr);
@@ -90,7 +100,38 @@ namespace ZitiUpdateService {
 			}
 		}
 
-        private SvcResponse TriggerUpdate() {
+		private void CurrentSettings_OnConfigurationChange(object sender, ControllerEvent e)
+		{
+			InstallationNotificationEvent status;
+			if (lastInstallationNotification != null) {
+				status = lastInstallationNotification;
+			} else {
+				status = new InstallationNotificationEvent() {
+					Code = 0,
+					Error = "",
+					Message = "Configuration Changed",
+					Type = "Notification",
+					Status = ServiceActions.ServiceStatus(),
+					ReleaseStream = IsBeta ? "beta" : "stable",
+					AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString(),
+					InstallTime = lastInstallationNotification.InstallTime
+				};
+			}
+			EventRegistry.SendEventToConsumers(status);
+		}
+
+		private SvcResponse SetAutomaticUpdateDisabled(bool disabled) {
+			if (lastInstallationNotification != null) {
+				lastInstallationNotification.AutomaticUpgradeDisabled = disabled.ToString();
+			}
+			CurrentSettings.AutomaticUpdatesDisabled = disabled;
+			CurrentSettings.Write();
+			SvcResponse r = new SvcResponse();
+			r.Message = "Success";
+			return r;
+		}
+
+		private SvcResponse TriggerUpdate() {
 			SvcResponse r = new SvcResponse();
 			r.Message = "Initiating Update";
 
@@ -136,7 +177,7 @@ namespace ZitiUpdateService {
 		private void SetLogLevel(string level) {
 			try {
 				Logger.Info("request to change log level received: {0}", level);
-				if (("" + level).ToLower() == "verbose")
+				if (("" + level).ToLower().Trim() == "verbose")
 				{
 					level = "trace";
 					Logger.Info("request to change log level to verbose - but using trace instead");
@@ -445,7 +486,7 @@ namespace ZitiUpdateService {
 		int dnsProbeIntervalInSeconds = 60;
 		bool dnsProbeStarted = false;
 
-        private void DnsProbe_Elapsed(object sender, ElapsedEventArgs e) {
+		private void DnsProbe_Elapsed(object sender, ElapsedEventArgs e) {
 			if (dnsProbeStarted) return; //skip out if it's already going...
 			dnsProbeStarted = true;
 			Logger.Trace("dns probe started");
@@ -501,7 +542,7 @@ namespace ZitiUpdateService {
 			}
 		}
 
-        async private Task onEventsClientAsync(StreamWriter writer) {
+		async private Task onEventsClientAsync(StreamWriter writer) {
 			Logger.Info("a new events client was connected");
 			//reset to release stream
 			//initial status when connecting the event stream
@@ -511,7 +552,8 @@ namespace ZitiUpdateService {
 				Message = "Success",
 				Type = "Status",
 				Status = ServiceActions.ServiceStatus(),
-				ReleaseStream = IsBeta ? "beta" : "stable"
+				ReleaseStream = IsBeta ? "beta" : "stable",
+				AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString()
 			};
 			await writer.WriteLineAsync(JsonConvert.SerializeObject(status));
 			await writer.FlushAsync();
@@ -584,8 +626,8 @@ namespace ZitiUpdateService {
 				upInt = new TimeSpan(0, 10, 0);
 			}
 
-			if (upInt.TotalMilliseconds < 10 * 60 * 60 * 1000)
-            {
+			if (upInt.TotalMilliseconds < 10 * 60 * 1000)
+			{
 				Logger.Warn("provided time [{0}] is too small. Using 10 minutes.", updateTimerInterval);
 #if MOCKUPDATE || ALLOWFASTINTERVAL
 				Logger.Info("MOCKUPDATE detected. Not limiting check to 10 minutes");
@@ -636,7 +678,7 @@ namespace ZitiUpdateService {
 		static DateTime mockDate = DateTime.Now;
 #endif
 		private UpdateCheck getCheck(Version v)
-        {
+		{
 #if MOCKUPDATE
 			//run with MOCKUPDATE to enable debugging/mocking the update check
 			var check = new FilesystemCheck(v, -1, mockDate, "FilesysteCheck.download.mock.txt", new Version("2.1.4"));
@@ -655,6 +697,20 @@ namespace ZitiUpdateService {
 			return check;
 		}
 
+		private InstallationNotificationEvent newInstallationNotificationEvent(string version) {
+			InstallationNotificationEvent info = new InstallationNotificationEvent() {
+				Code = 0,
+				Error = "",
+				Message = "Configuration Changed",
+				Type = "Notification",
+				Status = ServiceActions.ServiceStatus(),
+				ReleaseStream = IsBeta ? "beta" : "stable",
+				AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString().ToLower(),
+				ZDEVersion = version
+			};
+			return info;
+		}
+
 		private void CheckUpdate(object sender, ElapsedEventArgs e) {
 			if (e != null) {
 				Logger.Debug("Timer triggered CheckUpdate at {0}", e.SignalTime);
@@ -668,25 +724,26 @@ namespace ZitiUpdateService {
 				if (check.Avail >= 0) {
 					Logger.Debug("update check complete. no update available");
 					semaphore.Release();
-					return;
+					return; 
 				}
 
 				Logger.Info("update is available.");
 				if (!Directory.Exists(updateFolder)) {
 					Directory.CreateDirectory(updateFolder);
 				}
+				InstallationNotificationEvent info = newInstallationNotificationEvent(check.GetNextVersion().ToString());
 
-				Logger.Info("copying update package");
-
-				InstallationNotificationEvent info = new InstallationNotificationEvent();
-				info.ZDEVersion = check.GetNextVersion().ToString();
 				if (InstallationIsCritical(check.PublishDate))
 				{
 					info.InstallTime = DateTime.Now + TimeSpan.Parse("0:0:30");
 					Logger.Warn("Installation is critical! for ZDE version: {0}. update published at: {1}. approximate install time: {2}", info.ZDEVersion, check.PublishDate, info.InstallTime);
 					NotifyInstallationUpdates(info, true);
-					Thread.Sleep(30);
-					installZDE(check);
+					if (CurrentSettings.AutomaticUpdatesDisabled) {
+						Logger.Debug("AutomaticUpdatesDisabled is set to true. Automatic update is disabled.");
+					} else {
+						Thread.Sleep(30);
+						installZDE(check);
+					}
 				}
 				else
 				{
@@ -702,7 +759,7 @@ namespace ZitiUpdateService {
 			semaphore.Release();
 		}
 
-		private void installZDE(UpdateCheck check/*, string fileDestination, string filename*/) {
+		private void installZDE(UpdateCheck check) {
 			string fileDestination = Path.Combine(updateFolder, check.FileName);
 
 			if (check.AlreadyDownloaded(updateFolder, check.FileName)) {
@@ -724,15 +781,15 @@ namespace ZitiUpdateService {
 #if !SKIPUPDATE
 			new SignedFileValidator(fileDestination).Verify();
 			try {
-                StopZiti();
-                StopUI().Wait();
+				StopZiti();
+				StopUI().Wait();
 
-                Logger.Info("Running update package: " + fileDestination);
-                // shell out to a new process and run the uninstall, reinstall steps which SHOULD stop this current process as well
-                Process.Start(fileDestination, "/passive");
-		    } catch (Exception ex) {
-		        Logger.Error(ex, "Unexpected error during installation");
-		    }
+				Logger.Info("Running update package: " + fileDestination);
+				// shell out to a new process and run the uninstall, reinstall steps which SHOULD stop this current process as well
+				Process.Start(fileDestination, "/passive");
+			} catch (Exception ex) {
+				Logger.Error(ex, "Unexpected error during installation");
+			}
 #else
 			Logger.Warn("SKIPUPDATE IS SET - NOT PERFORMING UPDATE");
 			Logger.Warn("SKIPUPDATE IS SET - NOT PERFORMING UPDATE");
@@ -910,7 +967,8 @@ namespace ZitiUpdateService {
 					Code = 0,
 					Error = "SERVICE DOWN",
 					Message = "SERVICE DOWN",
-					Status = ServiceActions.ServiceStatus()
+					Status = ServiceActions.ServiceStatus(),
+					AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString()
 				};
 				EventRegistry.SendEventToConsumers(status);
 			} else {
@@ -920,8 +978,10 @@ namespace ZitiUpdateService {
 					Code = 10,
 					Error = "SERVICE DOWN",
 					Message = "SERVICE DOWN",
+					Type = "Status",
 					Status = ServiceActions.ServiceStatus(),
-					ReleaseStream = IsBeta ? "beta" : "stable"
+					ReleaseStream = IsBeta ? "beta" : "stable",
+					AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString()
 				};
 				EventRegistry.SendEventToConsumers(status);
 			}
@@ -941,7 +1001,6 @@ namespace ZitiUpdateService {
 				Logger.Info("DNS RESULTS:\n{0}", sw.ToString());
 			}
 		}
-		DateTime lastNotification = new DateTime();
 
 		private TimeSpan InstallationReminder()
 		{
@@ -966,7 +1025,7 @@ namespace ZitiUpdateService {
 		}
 
 		private bool InstallationIsCritical(DateTime publishDate)
-        {
+		{
 			var installationReminderIntervalStr = ConfigurationManager.AppSettings.Get("InstallationCritical");
 			var instCritTimespan = TimeSpan.Zero;
 			if (!TimeSpan.TryParse(installationReminderIntervalStr, out instCritTimespan))
@@ -983,13 +1042,13 @@ namespace ZitiUpdateService {
 		private void NotifyInstallationUpdates(InstallationNotificationEvent evt, bool force) {
 			try {
 				var now = DateTime.Now;
-				if (now > lastNotification + InstallationReminder() || force)
+				if (now > evt.InstallTime + InstallationReminder() || force)
 				{
 					evt.Message = "InstallationUpdate";
 					evt.Type = "Notification";
 					EventRegistry.SendEventToConsumers(evt);
 					Logger.Debug("NotifyInstallationUpdates: sent for version {0} is sent to the events pipe...", evt.ZDEVersion);
-					lastNotification = DateTime.Now;
+					evt.InstallTime = DateTime.Now;
 					return;
 				} else {
 					Logger.Debug("NotifyInstallationUpdates: Not sending another notification reminder yet");

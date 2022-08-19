@@ -477,10 +477,10 @@ namespace ZitiDesktopEdge.DataStructures {
         public string LogLevel { get; set; }
     }
 
-
     public class MonitorServiceStatusEvent : SvcResponse {
         public string Status { get; set; }
         public string ReleaseStream { get; set; }
+        public string AutomaticUpgradeDisabled { get; set; }
 
         public bool IsStopped() {
             return "Stopped" == this.Status;

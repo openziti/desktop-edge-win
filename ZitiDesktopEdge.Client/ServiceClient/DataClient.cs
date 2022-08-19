@@ -4,14 +4,12 @@ using System.IO;
 using System.IO.Pipes;
 using System.Security.Principal;
 using System.Security.AccessControl;
-using System.Threading;
 using System.Threading.Tasks;
 
 using Newtonsoft.Json;
 using NLog;
 
 using ZitiDesktopEdge.DataStructures;
-using ZitiDesktopEdge.Server;
 
 /// <summary>
 /// The implementation will abstract away the setup of the communication to
@@ -413,7 +411,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //setupPipe();
                 //throw ioe;
-                Logger.Error(ioe, "Unexpected error");
+                Logger.Error(ioe, "Could not perform ziti dump. Unexpected error. Is ziti running?");
             }
             return;
         }

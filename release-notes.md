@@ -1,3 +1,17 @@
+# Release 2.1.6
+
+## What's New
+* Automatic updates are now able to be disabled entirely. The user will still be notified updates exist
+
+## Other changes:
+*
+
+## Bugs fixed:
+*
+
+## Dependency Updates
+* TSDK updated to 0.19.9 / CSDK 0.29.4
+
 # Release 2.1.5
 
 ## What's New
@@ -1554,3 +1568,4 @@ skipped - 1.3.6 superseded this release
 
 Changelog tracking began with 0.0.15 - all previous changes were not tracked. If interested please
 review the commit history.
+

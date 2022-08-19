@@ -61,6 +61,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         protected override void ProcessLine(string line) {
             var evt = serializer.Deserialize<MonitorServiceStatusEvent>(new JsonTextReader(new StringReader(line)));
+
             switch(evt.Type)
             {
                 case "Notification":
@@ -135,6 +136,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
             return null;
         }
+
         async public Task<SvcResponse> SetReleaseStreamAsync(string stream) {
             ActionEvent action = new ActionEvent() { Op = "SetReleaseStream", Action = stream };
             try {
@@ -171,6 +173,16 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
         async public Task<SvcResponse> TriggerUpdate() {
             ActionEvent action = new ActionEvent() { Op = "TriggerUpdate", Action = "" };
+            try {
+                await sendAsync(action);
+                return await readAsync<SvcResponse>(ipcReader);
+            } catch (Exception ex) {
+                Logger.Error(ex, "Unexpected error");
+            }
+            return null;
+        }
+        async public Task<SvcResponse> SetAutomaticUpgradeDisabledAsync(bool disabled) {
+            ActionEvent action = new ActionEvent() { Op = "SetAutomaticUpgradeDisabled", Action = (disabled ? "true" : "false")};
             try {
                 await sendAsync(action);
                 return await readAsync<SvcResponse>(ipcReader);
