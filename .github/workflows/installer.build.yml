@@ -70,8 +70,10 @@ jobs:
           $key=(Get-Content .\ADV_INST_KEY.key)
           .\Installer\reg.bat $key
       - if: github.ref == 'refs/heads/release-next'
-        name: Install Ziti CI
+        name: Install ziti-ci
         uses: netfoundry/ziti-ci@v1
+      - if: github.ref == 'refs/heads/release-next'
+        name: Configure ziti-ci
         run: $(go env GOPATH)/bin/ziti-ci configure-git
       - name: Build UI and Assemble Installer
         env:
