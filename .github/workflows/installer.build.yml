@@ -74,7 +74,7 @@ jobs:
         uses: netfoundry/ziti-ci@v1
       - if: github.ref == 'refs/heads/release-next'
         name: Configure ziti-ci
-        run: $(go env GOPATH)/bin/ziti-ci configure-git
+        run: $(go env GOPATH)\bin\ziti-ci configure-git
       - name: Build UI and Assemble Installer
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
