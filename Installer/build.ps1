@@ -81,6 +81,9 @@ echo "Assembling installer using AdvancedInstaller at: $ADVINST $action $ADVPROJ
 $gituser=$(git config user.name)
 if($gituser -eq "ziti-ci") {
   echo "detected user [${gituser}]"
+  git add DesktopEdge/Properties/AssemblyInfo.cs ZitiDesktopEdge.Client/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip
+  git commit -m "committing any version changes via ziti-ci"
+  git push
 } else {
   echo "detected user [${gituser}] which is not ziti-ci - skipping installer commit"
 }
