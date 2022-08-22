@@ -30,12 +30,6 @@ jobs:
       - uses: microsoft/setup-msbuild@v1
       - name: Set up Go 
         uses: actions/setup-go@v3
-      - if: github.ref == 'refs/heads/release-next'
-        name: Install ziti-ci
-        uses: netfoundry/ziti-ci@v1
-      - if: github.ref == 'refs/heads/release-next'
-        name: Find ziti-ci
-        run: find / -name ziti-ci
       - if: github.event_name == 'push'
         run: echo "GIT_BRANCH=$($env:GITHUB_REF.replace('refs/heads/', ''))" >> $env:GITHUB_ENV
       - if: github.event_name == 'pull_request'
@@ -77,11 +71,8 @@ jobs:
         name: Install ziti-ci
         uses: netfoundry/ziti-ci@v1
       - if: github.ref == 'refs/heads/release-next'
-        name: Find ziti-ci
-        run: find / -name ziti-ci
-      - if: github.ref == 'refs/heads/release-next'
         name: Configure ziti-ci
-        run: $(go env GOPATH)\bin\ziti-ci configure-git
+        run: C:\Users\runneradmin\go\bin\ziti-ci configure-git
       - name: Build UI and Assemble Installer
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
