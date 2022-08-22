@@ -800,6 +800,8 @@ namespace ZitiDesktopEdge {
 					notifyIcon.Dispose();
 					Application.Current.Shutdown();
 				}
+				state.AutomaticUpdatesEnabledFromString(evt.AutomaticUpgradeDisabled);
+				MainMenu.ShowUpdateAvailable();
 				logger.Debug("MonitorClient_OnServiceStatusEvent: {0}", evt.Status);
 				Application.Current.Properties["ReleaseStream"] = evt.ReleaseStream;
 
