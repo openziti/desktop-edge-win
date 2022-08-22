@@ -102,22 +102,22 @@ namespace ZitiUpdateService {
 
 		private void CurrentSettings_OnConfigurationChange(object sender, ControllerEvent e)
 		{
-			InstallationNotificationEvent status;
+			MonitorServiceStatusEvent evt;
 			if (lastInstallationNotification != null) {
-				status = lastInstallationNotification;
+				evt = lastInstallationNotification;
 			} else {
-				status = new InstallationNotificationEvent() {
+				evt = new MonitorServiceStatusEvent() {
 					Code = 0,
 					Error = "",
 					Message = "Configuration Changed",
-					Type = "Notification",
+					Type = "Status",
 					Status = ServiceActions.ServiceStatus(),
 					ReleaseStream = IsBeta ? "beta" : "stable",
 					AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString(),
-					InstallTime = lastInstallationNotification.InstallTime
 				};
 			}
-			EventRegistry.SendEventToConsumers(status);
+			Logger.Debug($"notifying consumers of change to CurrentSettings. AutomaticUpdates status = {(CurrentSettings.AutomaticUpdatesDisabled ? "disabled" : "enabled")}");
+			EventRegistry.SendEventToConsumers(evt);
 		}
 
 		private SvcResponse SetAutomaticUpdateDisabled(bool disabled) {
@@ -548,7 +548,7 @@ namespace ZitiUpdateService {
 			//initial status when connecting the event stream
 			MonitorServiceStatusEvent status = new MonitorServiceStatusEvent() {
 				Code = 0,
-				Error = null,
+				Error = "",
 				Message = "Success",
 				Type = "Status",
 				Status = ServiceActions.ServiceStatus(),

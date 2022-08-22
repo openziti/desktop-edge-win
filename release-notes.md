@@ -1,3 +1,17 @@
+# Release 2.1.7
+
+## What's New
+* none
+
+## Other changes:
+*
+
+## Bugs fixed:
+* [bug 571](https://github.com/openziti/desktop-edge-win/issues/571) - fix configuring automatic updates when no release is available
+
+## Dependency Updates
+* TSDK updated to 0.19.9 / CSDK 0.29.4
+
 # Release 2.1.6
 
 ## What's New
