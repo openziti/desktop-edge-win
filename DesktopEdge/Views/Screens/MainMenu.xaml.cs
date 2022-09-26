@@ -51,8 +51,7 @@ namespace ZitiDesktopEdge {
 				UpdateTimeLeft.Visibility = Visibility.Visible;
 				if (!state.AutomaticUpdatesDisabled) {
 					UpdateTimeLeft.Content = $"Automatic update to {state.PendingUpdate.Version} will occur on or after {state.PendingUpdate.InstallTime.ToString("g")}";
-				} else
-				{
+				} else {
 					UpdateTimeLeft.Content = "";
 				}
 			}
@@ -295,7 +294,7 @@ namespace ZitiDesktopEdge {
 				ReleaseStreamItems.Visibility = Visibility.Collapsed;
 			}
 
-			ShowUpdateAvailable();
+			// ShowUpdateAvailable();
 		}
 
 		private void OpenLogFile(string which, string logFile) {
