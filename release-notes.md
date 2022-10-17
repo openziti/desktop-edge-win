@@ -1,4 +1,4 @@
-# Release 2.1.7
+# Release 2.1.8
 
 ## What's New
 * TSDK updated to 0.20.2 / CSDK 0.30.1
