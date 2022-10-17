@@ -1,3 +1,17 @@
+# Release 2.1.8
+
+## What's New
+* none
+
+## Other changes:
+*
+
+## Bugs fixed:
+*
+
+## Dependency Updates
+* TSDK updated to 0.20.2 / CSDK 0.30.1
+
 # Release 2.1.7
 
 ## What's New
