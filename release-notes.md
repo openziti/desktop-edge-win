@@ -10,7 +10,7 @@
 *
 
 ## Dependency Updates
-* TSDK updated to 0.20.2 / CSDK 0.30.1
+* TSDK updated to 0.20.3 / CSDK 0.30.2
 
 # Release 2.1.7
 
