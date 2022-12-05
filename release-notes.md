@@ -7,7 +7,7 @@
 *
 
 ## Bugs fixed:
-* [TSDK bug 566](https://github.com/openziti/ziti-tunnel-sdk-c/issues/566)
+* [TSDK bug 566](https://github.com/openziti/ziti-tunnel-sdk-c/issues/566) - use case-insensitive comparision when looking up queried hostnames for DNS wildcard domains 
 
 ## Dependency Updates
 * TSDK updated to 0.20.11 / CSDK 0.30.8
