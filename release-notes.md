@@ -1,3 +1,17 @@
+# Release 2.1.10
+
+## What's New
+* none
+
+## Other changes:
+*
+
+## Bugs fixed:
+* [TSDK bug 566](https://github.com/openziti/ziti-tunnel-sdk-c/issues/566)
+
+## Dependency Updates
+* TSDK updated to 0.20.11 / CSDK 0.30.8
+
 # Release 2.1.9
 
 ## What's New
