@@ -10,7 +10,7 @@
 * [TSDK bug 578](https://github.com/openziti/ziti-tunnel-sdk-c/issues/578) - interception for services with wildcard domain addresses could be connected to the wrong ziti service.
 
 ## Dependency Updates
-* TSDK updated to 0.20.11 / CSDK 0.30.8
+* TSDK updated to 0.20.14 / CSDK 0.30.8
 
 # Release 2.1.10
 
