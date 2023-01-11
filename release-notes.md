@@ -7,6 +7,20 @@
 * none
 
 ## Bugs fixed:
+* [TSDK bug 585](https://github.com/openziti/ziti-tunnel-sdk-c/issues/585) - fix dns queries that contain '_', e.g. SRV lookups
+
+## Dependency Updates
+* TSDK updated to 0.20.16 / CSDK 0.30.8
+
+# Release 2.1.11
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
 * [TSDK bug 578](https://github.com/openziti/ziti-tunnel-sdk-c/issues/578) - interception for services with wildcard domain addresses could be connected to the wrong ziti service.
 
 ## Dependency Updates
