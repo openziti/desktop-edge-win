@@ -1,3 +1,18 @@
+# Release 2.1.13
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* [TSDK bug 585](https://github.com/openziti/ziti-tunnel-sdk-c/issues/585) - fix dns queries that contain '_', e.g. SRV lookups
+* [CSDK bug 478](https://github.com/openziti/ziti-sdk-c/issues/478) - avoid disconnecting active channel due to latency timeout
+
+## Dependency Updates
+* TSDK updated to 0.20.18 / CSDK 0.30.9
+
 # Release 2.1.12
 
 ## What's New
