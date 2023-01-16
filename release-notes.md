@@ -12,6 +12,7 @@
 
 ## Dependency Updates
 * TSDK updated to 0.20.18 / CSDK 0.30.9
+* uv-mbed updated to 0.14.12
 
 # Release 2.1.12
 
