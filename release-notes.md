@@ -4,13 +4,14 @@
 * Ziti Desktop Edge for Windows can now be installed in an air-gapped (offline) environment
 
 ## Other changes:
-* none
+* adds DNS flushing to tunneler
 
 ## Bugs fixed:
 * none
 
 ## Dependency Updates
 * Advanced Installer updated to 20.3
+* ziti-tunnel-sdk-c updated to v0.20.19/c sdk v0.31.0
 
 # Release 2.1.13
 
