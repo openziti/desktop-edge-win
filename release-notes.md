@@ -1,6 +1,20 @@
 # Release 2.1.13
 
 ## What's New
+* Ziti Desktop Edge for Windows can now be installed in an air-gapped (offline) environment
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* Advanced Installer updated to 20.3
+
+# Release 2.1.13
+
+## What's New
 * none
 
 ## Other changes:
