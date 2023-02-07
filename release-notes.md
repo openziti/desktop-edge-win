@@ -10,7 +10,7 @@
 * none
 
 ## Dependency Updates
-* Advanced Installer updated to 20.3
+* Advanced Installer updated to 20.3.1
 * ziti-tunnel-sdk-c updated to v0.20.20/c sdk v0.31.0
 
 # Release 2.1.13
