@@ -1,4 +1,4 @@
-# Release 2.1.13
+# Release 2.1.14
 
 ## What's New
 * Ziti Desktop Edge for Windows can now be installed in an air-gapped (offline) environment
@@ -11,7 +11,7 @@
 
 ## Dependency Updates
 * Advanced Installer updated to 20.3
-* ziti-tunnel-sdk-c updated to v0.20.19/c sdk v0.31.0
+* ziti-tunnel-sdk-c updated to v0.20.20/c sdk v0.31.0
 
 # Release 2.1.13
 
