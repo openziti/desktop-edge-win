@@ -1,3 +1,21 @@
+# Release 2.1.15
+
+## What's New
+* none
+
+## Other changes:
+* TCP retransmissions from intercepted clients are now much less likely, thanks to TSDK changes that limit the number of
+  pending written bytes (to the ziti connection) to 128k. TCP clients now experience back-pressure through the TCP receive
+  window for proper flow control.
+
+## Bugs fixed:
+* [TSDK bug 611](https://github.com/openziti/ziti-tunnel-sdk-c/issues/611) - Release packet buffers for unparsable dns queries. This bug would eventually result in "pbuf_alloc" failures, which prevented the tunneler from intercepting packets.
+* [CSDK PR 491](https://github.com/openziti/ziti-sdk-c/pull/491) - Avoid crash when writing to closed ziti connections.
+
+## Dependency Updates
+* Advanced Installer updated to 20.4.1
+* ziti-tunnel-sdk-c updated to v0.20.22/c sdk v0.31.2
+
 # Release 2.1.14
 
 ## What's New
