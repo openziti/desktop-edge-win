@@ -1,3 +1,19 @@
+# Release 2.1.16
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* ziti-tunnel-sdk-c updated to v0.20.23/c sdk v0.31.4
+  - fixes packet buffer leaks when ziti_write fails
+  - fixes several memory leaks
+
 # Release 2.1.15
 
 ## What's New
