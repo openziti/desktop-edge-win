@@ -25,7 +25,7 @@
     <ROW Property="ARPPRODUCTICON" Value="ziti.exe" Type="8"/>
     <ROW Property="ARPURLINFOABOUT" Value="https://openenziti.io"/>
     <ROW Property="CTRLS" Value="2"/>
-    <ROW Property="Manufacturer" Value="NetFoundry, Inc."/>
+    <ROW Property="Manufacturer" Value="NetFoundry Inc."/>
     <ROW Property="MsiLogging" MultiBuildValue="AnyCPU_Release:vp"/>
     <ROW Property="ProductCode" Value="1033:{DAFE3B69-51CE-4C63-BFCD-EED15246E72E} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
