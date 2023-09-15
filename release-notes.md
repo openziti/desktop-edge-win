@@ -1,4 +1,18 @@
-# Release 2.2.17
+# Release 2.1.18
+
+## What's New
+* none
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* ziti-edge-tunnel updated to v0.22.8/c sdk v0.34.1
+
+# Release 2.1.17 (pre-release)
 
 ## What's New
 * none
@@ -12,7 +26,7 @@
 ## Dependency Updates
 * ziti-edge-tunnel updated to v0.22.1/c sdk v0.33.2
 
-# Release 2.2.16
+# Release 2.1.16
 
 ## What's New
 * none
