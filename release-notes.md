@@ -10,7 +10,7 @@
 * none
 
 ## Dependency Updates
-* ziti-edge-tunnel updated to v0.22.8/c sdk v0.34.1
+* ziti-edge-tunnel updated to v0.22.9/c sdk v0.34.3
 
 # Release 2.1.17 (pre-release)
 
