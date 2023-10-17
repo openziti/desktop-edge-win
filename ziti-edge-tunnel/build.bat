@@ -14,7 +14,7 @@ REM See the License for the specific language governing permissions and
 REM limitations under the License.
 REM
 SET REPO_URL=https://github.com/openziti/ziti-tunnel-sdk-c.git
-SET ZITI_TUNNEL_REPO_BRANCH=v0.22.1
+SET ZITI_TUNNEL_REPO_BRANCH=v0.22.11
 REM override the c sdk used in the build - leave blank for the same as specified in the tunneler sdk
 SET ZITI_SDK_C_BRANCH=
 SET ZITI_TUNNEL_REPO_URL=https://github.com/openziti/ziti-tunnel-sdk-c/releases/download/%ZITI_TUNNEL_REPO_BRANCH%/ziti-edge-tunnel-Windows_x86_64.zip
