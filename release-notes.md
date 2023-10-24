@@ -10,7 +10,7 @@
 * none
 
 ## Dependency Updates
-* none
+* System.Security.Cryptography.Pkcs from 6.0.1 to 6.0.3
 
 # Release 2.1.18
 
