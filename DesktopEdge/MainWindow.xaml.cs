@@ -386,11 +386,11 @@ namespace ZitiDesktopEdge {
 				};
 				var logconsole = new ConsoleTarget("logconsole");
 
-				// Rules for mapping loggers to targets            
+				// Rules for mapping loggers to targets
 				config.AddRule(LogLevel.Debug, LogLevel.Fatal, logconsole);
 				config.AddRule(LogLevel.Debug, LogLevel.Fatal, logfile);
 
-				// Apply config           
+				// Apply config
 				LogManager.Configuration = config;
 			}
 			logger.Info("============================== UI started ==============================");
@@ -509,13 +509,13 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-        private void NotifyIcon_BalloonTipClosed(object sender, EventArgs e) {
+		private void NotifyIcon_BalloonTipClosed(object sender, EventArgs e) {
 			var thisIcon = (System.Windows.Forms.NotifyIcon)sender;
 			thisIcon.Visible = false;
 			thisIcon.Dispose();
 		}
 
-        private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
+		private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
 			OnDetach(e);
 		}
 
@@ -620,10 +620,10 @@ namespace ZitiDesktopEdge {
 			monitorClient = new MonitorClient("ui");
 			monitorClient.OnClientConnected += MonitorClient_OnClientConnected;
 			monitorClient.OnNotificationEvent += MonitorClient_OnInstallationNotificationEvent;
-            monitorClient.OnServiceStatusEvent += MonitorClient_OnServiceStatusEvent;
-            monitorClient.OnShutdownEvent += MonitorClient_OnShutdownEvent;
+			monitorClient.OnServiceStatusEvent += MonitorClient_OnServiceStatusEvent;
+			monitorClient.OnShutdownEvent += MonitorClient_OnShutdownEvent;
 			monitorClient.OnCommunicationError += MonitorClient_OnCommunicationError;
-            monitorClient.OnReconnectFailure += MonitorClient_OnReconnectFailure;
+			monitorClient.OnReconnectFailure += MonitorClient_OnReconnectFailure;
 			Application.Current.Properties.Add("MonitorClient", monitorClient);
 
 			Application.Current.Properties.Add("Identities", new List<ZitiIdentity>());
@@ -759,7 +759,7 @@ namespace ZitiDesktopEdge {
 
 
 		string nextVersionStr  = null;
-        private void MonitorClient_OnReconnectFailure(object sender, object e) {
+		private void MonitorClient_OnReconnectFailure(object sender, object e) {
 			logger.Debug("OnReconnectFailure triggered");
 			if (nextVersionStr == null) {
 				// check for the current version
@@ -781,9 +781,9 @@ namespace ZitiDesktopEdge {
 					MainMenu.SetAppUpgradeAvailableText("");
 				}
 			}
-        }
+		}
 
-        private void MonitorClient_OnShutdownEvent(object sender, StatusEvent e)
+		private void MonitorClient_OnShutdownEvent(object sender, StatusEvent e)
 		{
 			logger.Info("The monitor has indicated the application should shut down.");
 			this.Dispatcher.Invoke(() => {
@@ -792,53 +792,55 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void MonitorClient_OnServiceStatusEvent(object sender, MonitorServiceStatusEvent evt) {
-			try {
-				if (evt.Message?.ToLower() == "upgrading") {
-					logger.Info("The monitor has indicated an upgrade is in progress. Shutting down the UI");
-					notifyIcon.Visible = false;
-					notifyIcon.Icon.Dispose();
-					notifyIcon.Dispose();
-					Application.Current.Shutdown();
+			this.Dispatcher.Invoke(() => {
+				try {
+					if (evt.Message?.ToLower() == "upgrading") {
+						logger.Info("The monitor has indicated an upgrade is in progress. Shutting down the UI");
+						notifyIcon.Visible = false;
+						notifyIcon.Icon.Dispose();
+						notifyIcon.Dispose();
+						Application.Current.Shutdown();
+					}
+					state.AutomaticUpdatesEnabledFromString(evt.AutomaticUpgradeDisabled);
+					MainMenu.ShowUpdateAvailable();
+					logger.Debug("MonitorClient_OnServiceStatusEvent: {0}", evt.Status);
+					Application.Current.Properties["ReleaseStream"] = evt.ReleaseStream;
+
+					ServiceControllerStatus status = (ServiceControllerStatus)Enum.Parse(typeof(ServiceControllerStatus), evt.Status);
+
+					switch (status) {
+						case ServiceControllerStatus.Running:
+							logger.Info("Service is started");
+							break;
+						case ServiceControllerStatus.Stopped:
+							logger.Info("Service is stopped");
+							ShowServiceNotStarted();
+							break;
+						case ServiceControllerStatus.StopPending:
+							logger.Info("Service is stopping...");
+
+							this.Dispatcher.Invoke(async () => {
+								SetCantDisplay("The Service is Stopping", "Please wait while the service stops", Visibility.Hidden);
+								await WaitForServiceToStop(DateTime.Now + TimeSpan.FromSeconds(30));
+							});
+							break;
+						case ServiceControllerStatus.StartPending:
+							logger.Info("Service is starting...");
+							break;
+						case ServiceControllerStatus.PausePending:
+							logger.Warn("UNEXPECTED STATUS: PausePending");
+							break;
+						case ServiceControllerStatus.Paused:
+							logger.Warn("UNEXPECTED STATUS: Paused");
+							break;
+						default:
+							logger.Warn("UNEXPECTED STATUS: {0}", evt.Status);
+							break;
+					}
+				} catch (Exception ex) {
+					logger.Warn(ex, "unexpected exception in MonitorClient_OnServiceStatusEvent? {0}", ex.Message);
 				}
-				state.AutomaticUpdatesEnabledFromString(evt.AutomaticUpgradeDisabled);
-				MainMenu.ShowUpdateAvailable();
-				logger.Debug("MonitorClient_OnServiceStatusEvent: {0}", evt.Status);
-				Application.Current.Properties["ReleaseStream"] = evt.ReleaseStream;
-
-				ServiceControllerStatus status = (ServiceControllerStatus)Enum.Parse(typeof(ServiceControllerStatus), evt.Status);
-
-				switch (status) {
-					case ServiceControllerStatus.Running:
-						logger.Info("Service is started");
-						break;
-					case ServiceControllerStatus.Stopped:
-						logger.Info("Service is stopped");
-						ShowServiceNotStarted();
-						break;
-					case ServiceControllerStatus.StopPending:
-						logger.Info("Service is stopping...");
-
-						this.Dispatcher.Invoke(async () => {
-							SetCantDisplay("The Service is Stopping", "Please wait while the service stops", Visibility.Hidden);
-							await WaitForServiceToStop(DateTime.Now + TimeSpan.FromSeconds(30));
-						});
-						break;
-					case ServiceControllerStatus.StartPending:
-						logger.Info("Service is starting...");
-						break;
-					case ServiceControllerStatus.PausePending:
-						logger.Warn("UNEXPECTED STATUS: PausePending");
-						break;
-					case ServiceControllerStatus.Paused:
-						logger.Warn("UNEXPECTED STATUS: Paused");
-						break;
-					default:
-						logger.Warn("UNEXPECTED STATUS: {0}", evt.Status);
-						break;
-				}
-			} catch (Exception ex) {
-				logger.Warn(ex, "unexpected exception in MonitorClient_OnShutdownEvent? {0}", ex.Message);
-			}
+			});
 		}
 
 		private void MonitorClient_OnInstallationNotificationEvent(object sender, InstallationNotificationEvent evt) {
@@ -1178,20 +1180,20 @@ namespace ZitiDesktopEdge {
 				}
 			});
 		}
-        
-        private void ServiceClient_OnLogLevelEvent(object sender, LogLevelEvent e) {
-            if (e.LogLevel != null) {
-                SetLogLevel_monitor(e.LogLevel);
-                this.Dispatcher.Invoke(() =>  {
-                    this.MainMenu.LogLevel = e.LogLevel;
-                    Ziti.Desktop.Edge.Utils.UIUtils.SetLogLevel(e.LogLevel);
-                });
-            }
-        }
 
-        async private void SetLogLevel_monitor(string loglevel)  {
-            await monitorClient.SetLogLevelAsync(loglevel);
-        }
+		private void ServiceClient_OnLogLevelEvent(object sender, LogLevelEvent e) {
+			if (e.LogLevel != null) {
+				SetLogLevel_monitor(e.LogLevel);
+				this.Dispatcher.Invoke(() => {
+					this.MainMenu.LogLevel = e.LogLevel;
+					Ziti.Desktop.Edge.Utils.UIUtils.SetLogLevel(e.LogLevel);
+				});
+			}
+		}
+
+		async private void SetLogLevel_monitor(string loglevel) {
+			await monitorClient.SetLogLevelAsync(loglevel);
+		}
 
 		private void IdentityForgotten(ZitiIdentity forgotten) {
 			ZitiIdentity idToRemove = null;
@@ -1659,7 +1661,7 @@ namespace ZitiDesktopEdge {
 				logger.Info("response: {0}", resp.Message);
 			} else {
 				ShowError("Error Collecting Feedback", "An error occurred while trying to gather feedback. Is the monitor service running?");
-            }
+			}
 		}
 
 		/// <summary>
@@ -1757,12 +1759,12 @@ namespace ZitiDesktopEdge {
 							DebugForm.Visibility = Visibility.Visible;
 						} else {
 							DebugForm.Visibility = Visibility.Hidden;
-						} 
+						}
 					}));
 			}
-            set {
+			set {
 				someCommand = value;
-            }
+			}
 		}
 
 		private void DoLoading(bool isComplete) {
