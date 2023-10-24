@@ -1,3 +1,17 @@
+# Release 2.1.19
+
+## What's New
+* none
+
+## Other changes:
+* Removed C++ redistributable prerequisites from installer
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* none
+
 # Release 2.1.18
 
 ## What's New
