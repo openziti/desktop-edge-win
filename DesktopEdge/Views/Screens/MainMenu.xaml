@@ -109,7 +109,7 @@
                     <Label>URL used to discover new upgrades</Label>
                     <Label>Do not change unless you understand</Label>
                     <TextBox x:Name="UpdateUrl" Padding="10" Margin="10,10,10,10" Height="40" BorderThickness="1" TextAlignment="Left" FontSize="14" Foreground="Black" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></TextBox>
-                    <Button x:Name="SetUpdateUrlButton" Content="Set Update URL" MouseUp="SetUpdateUrlButton_FocusableChanged"/>
+                    <Button x:Name="SetUpdateUrlButton" Content="Set Update URL" Click="SetUpdateUrlButton_Click"/>
                 </StackPanel>
 
                 <StackPanel Name="AutomaticUpgradeUrl" Visibility="Visible" Orientation="Vertical" HorizontalAlignment="Stretch">
@@ -131,7 +131,7 @@
                 <TextBox Name="LogsItems" Height="400" Width="{Binding ActualWidth, ElementName=MainStack}" TextWrapping="Wrap" Visibility="Collapsed" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"></TextBox>
 
                 <StackPanel Name="AboutItemsArea" Orientation="Vertical" HorizontalAlignment="Stretch" Visibility="Collapsed">
-                    <Label Name="VersionInfo" HorizontalAlignment="Center" FontSize="10" Height="50" Padding="0,30,0,0" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
+                    <Label Name="VersionInfo" HorizontalAlignment="Center" FontSize="10" Height="50" Padding="0,30,0,0" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack:Up//application:,,,/Assets/Fonts/#Open Sans"></Label>
 
                     <Label Name="VersionOlder" Content=" checking version information " HorizontalAlignment="Center" FontSize="10" Height="50" Padding="0,30,0,0" Foreground="#F4044D" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                     <Label Name="VersionNewer" Content="" HorizontalAlignment="Center" FontSize="10" Height="50" Padding="0,30,0,0" Foreground="#0069FF" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
