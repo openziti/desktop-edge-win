@@ -109,7 +109,7 @@
                     <Label>URL used to discover new upgrades</Label>
                     <Label>Do not change unless you understand</Label>
                     <TextBox x:Name="UpdateUrl" Padding="10" Margin="10,10,10,10" Height="40" BorderThickness="1" TextAlignment="Left" FontSize="14" Foreground="Black" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></TextBox>
-                    <Button x:Name="SetUpdateUrlButton" Content="Set Update URL" MouseUp="SetUpdateURL" FocusableChanged="SetUpdateUrlButton_FocusableChanged"/>
+                    <Button x:Name="SetUpdateUrlButton" Content="Set Update URL" MouseUp="SetUpdateUrlButton_FocusableChanged"/>
                 </StackPanel>
 
                 <StackPanel Name="AutomaticUpgradeUrl" Visibility="Visible" Orientation="Vertical" HorizontalAlignment="Stretch">

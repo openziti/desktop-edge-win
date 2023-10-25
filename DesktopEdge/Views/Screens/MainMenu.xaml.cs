@@ -747,7 +747,7 @@ namespace ZitiDesktopEdge {
 			ConfigePageSizeNew.Text = value.ToString();
 		}
 
-        private void SetUpdateUrlButton_FocusableChanged(object sender, DependencyPropertyChangedEventArgs e) {
+        private void SetUpdateUrlButton_FocusableChanged(object sender, MouseEventArgs e) {
 			Console.WriteLine("here we go");
         }
     }
