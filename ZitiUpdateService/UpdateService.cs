@@ -23,6 +23,7 @@ using DnsClient;
 using DnsClient.Protocol;
 using ZitiUpdateService.Utils;
 using ZitiUpdateService.Checkers;
+using System.Security.Policy;
 
 #if !SKIPUPDATE
 using ZitiUpdateService.Checkers.PeFile;
@@ -677,22 +678,26 @@ namespace ZitiUpdateService {
 #if MOCKUPDATE
 		static DateTime mockDate = DateTime.Now;
 #endif
-		private UpdateCheck getCheck(Version v)
-		{
+		private UpdateCheck getCheck(Version v) {
 #if MOCKUPDATE
 			//run with MOCKUPDATE to enable debugging/mocking the update check
 			var check = new FilesystemCheck(v, -1, mockDate, "FilesysteCheck.download.mock.txt", new Version("2.1.4"));
 #else
 			string updateUrl = null;
-			string releasesUrl = null;
-			if (!IsBeta) {
-				updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win/releases/latest"; //hardcoded on purpose
-				releasesUrl = GithubAPI.ProdReleasesUrl;
+
+			var updateCheckUrl = ConfigurationManager.AppSettings.Get("UpdateCheckURL");
+			if (updateCheckUrl != null) {
+				updateUrl = updateCheckUrl;
 			} else {
-				updateUrl = "https://api.github.com/repos/openziti/desktop-edge-win-beta/releases/latest";
-				releasesUrl = GithubAPI.BetaReleasesUrl;
+				if (!IsBeta) {
+					updateUrl = GithubAPI.ProdUrl;
+				} else {
+					updateUrl = GithubAPI.BetaUrl;
+				}
 			}
-			var check = new GithubCheck(v, updateUrl, releasesUrl);
+
+
+			var check = new GithubCheck(v, updateUrl);
 #endif
 			return check;
 		}

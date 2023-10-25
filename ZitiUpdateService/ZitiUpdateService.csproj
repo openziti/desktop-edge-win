@@ -175,6 +175,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Resource Include="ziti.ico" />
+    <None Include="UpdateJsonExample.json" />
     <None Include="ZitiUpdateService-log.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

@@ -620,6 +620,7 @@ namespace ZitiDesktopEdge {
 			monitorClient = new MonitorClient("ui");
 			monitorClient.OnClientConnected += MonitorClient_OnClientConnected;
 			monitorClient.OnNotificationEvent += MonitorClient_OnInstallationNotificationEvent;
+			monitorClient.OnUrlUpdateEvent += MonitorClient_OnUrlUpdateEvent;
 			monitorClient.OnServiceStatusEvent += MonitorClient_OnServiceStatusEvent;
 			monitorClient.OnShutdownEvent += MonitorClient_OnShutdownEvent;
 			monitorClient.OnCommunicationError += MonitorClient_OnCommunicationError;
@@ -649,6 +650,10 @@ namespace ZitiDesktopEdge {
 
 			IdentityMenu.OnForgot += IdentityForgotten;
 			Placement();
+		}
+
+		private void MonitorClient_OnUrlUpdateEvent(object sender, UrlUpdateEvent e) {
+			throw new NotImplementedException();
 		}
 
 		private void MonitorClient_OnCommunicationError(object sender, Exception e) {

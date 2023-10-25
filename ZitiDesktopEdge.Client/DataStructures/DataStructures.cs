@@ -492,10 +492,13 @@ namespace ZitiDesktopEdge.DataStructures {
         public bool UpdateAvailable { get; set; }
     }
 
-    public class InstallationNotificationEvent : MonitorServiceStatusEvent
-    {
+    public class InstallationNotificationEvent : MonitorServiceStatusEvent {
         public string ZDEVersion { get; set; }
         public DateTime InstallTime { get; set; }
+    }
+
+    public class UrlUpdateEvent : MonitorServiceStatusEvent {
+        public string URL { get; set; }
     }
 
     public class MfaEvent : ActionEvent {

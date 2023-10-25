@@ -11,8 +11,6 @@ namespace ZitiDesktopEdge.Utility {
 
 		public const string ProdUrl = "https://api.github.com/repos/openziti/desktop-edge-win/releases/latest";
 		public const string BetaUrl = "https://api.github.com/repos/openziti/desktop-edge-win-beta/releases/latest";
-		public const string ProdReleasesUrl = "https://api.github.com/repos/openziti/desktop-edge-win/releases";
-		public const string BetaReleasesUrl = "https://api.github.com/repos/openziti/desktop-edge-win-beta/releases";
 
 		public static JObject GetJson(string url) {
 			HttpWebRequest httpWebRequest = WebRequest.CreateHttp(url);

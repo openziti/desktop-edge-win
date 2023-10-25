@@ -31,6 +31,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         public event EventHandler<MonitorServiceStatusEvent> OnServiceStatusEvent;
         public event EventHandler<InstallationNotificationEvent> OnNotificationEvent;
+        public event EventHandler<UrlUpdateEvent> OnUrlUpdateEvent;
 
         protected virtual void ServiceStatusEvent(MonitorServiceStatusEvent e) {
             OnServiceStatusEvent?.Invoke(this, e);
@@ -41,7 +42,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         public MonitorClient(string id) : base(id) {
-            
+
         }
 
         async protected override Task ConnectPipesAsync() {
@@ -62,8 +63,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         protected override void ProcessLine(string line) {
             var evt = serializer.Deserialize<MonitorServiceStatusEvent>(new JsonTextReader(new StringReader(line)));
 
-            switch(evt.Type)
-            {
+            switch (evt.Type) {
                 case "Notification":
                     var instEvt = serializer.Deserialize<InstallationNotificationEvent>(new JsonTextReader(new StringReader(line)));
                     InstallationNotificationEvent(instEvt);
@@ -182,7 +182,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
         async public Task<SvcResponse> SetAutomaticUpgradeDisabledAsync(bool disabled) {
-            ActionEvent action = new ActionEvent() { Op = "SetAutomaticUpgradeDisabled", Action = (disabled ? "true" : "false")};
+            ActionEvent action = new ActionEvent() { Op = "SetAutomaticUpgradeDisabled", Action = (disabled ? "true" : "false") };
             try {
                 await sendAsync(action);
                 return await readAsync<SvcResponse>(ipcReader);

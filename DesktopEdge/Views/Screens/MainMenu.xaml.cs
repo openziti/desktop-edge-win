@@ -746,5 +746,9 @@ namespace ZitiDesktopEdge {
 			if (value < 10 || value > 500) value = defaultVal;
 			ConfigePageSizeNew.Text = value.ToString();
 		}
+
+        private void SetUpdateUrlButton_FocusableChanged(object sender, DependencyPropertyChangedEventArgs e) {
+			Console.WriteLine("here we go");
+        }
     }
 }

@@ -99,9 +99,22 @@
                     </StackPanel>
                 </StackPanel>
                 <StackPanel Name="AutomaticUpgradesItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
+                    <Label>Automatic upgrades are:</Label>
                     <local:SubOptionItem x:Name="AutomaticUpgradesItemOn" HorizontalAlignment="Stretch" Width="Auto" Label="Enabled" MouseUp="SetAutomaticUpgradesMenuAction"></local:SubOptionItem>
                     <local:SubOptionItem x:Name="AutomaticUpgradesItemOff" HorizontalAlignment="Stretch" Width="Auto" Label="Disabled" MouseUp="SetAutomaticUpgradesMenuAction"></local:SubOptionItem>
+
+                    <Rectangle Height="20" />
+                    <Rectangle Height="2" Fill="Black" />
+                    <Rectangle Height="20" />
+                    <Label>URL used to discover new upgrades</Label>
+                    <Label>Do not change unless you understand</Label>
+                    <TextBox x:Name="UpdateUrl" Padding="10" Margin="10,10,10,10" Height="40" BorderThickness="1" TextAlignment="Left" FontSize="14" Foreground="Black" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></TextBox>
+                    <Button x:Name="SetUpdateUrlButton" Content="Set Update URL" MouseUp="SetUpdateURL" FocusableChanged="SetUpdateUrlButton_FocusableChanged"/>
                 </StackPanel>
+
+                <StackPanel Name="AutomaticUpgradeUrl" Visibility="Visible" Orientation="Vertical" HorizontalAlignment="Stretch">
+                </StackPanel>
+
                 <StackPanel Name="ConfigItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <local:MenuEditItem x:Name="ConfigIp" HorizontalAlignment="Stretch" Width="Auto" Label="IPv4 Address:"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigSubnet" HorizontalAlignment="Stretch" Width="Auto" Label="Subnet Mask:"></local:MenuEditItem>
