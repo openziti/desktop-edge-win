@@ -99,16 +99,23 @@
                     </StackPanel>
                 </StackPanel>
                 <StackPanel Name="AutomaticUpgradesItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
-                    <Label>Automatic upgrades are:</Label>
+                    <Label FontWeight="Bold" FontSize="16" Margin="0,20,0,0">Automatic upgrades are:</Label>
+                    <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
                     <local:SubOptionItem x:Name="AutomaticUpgradesItemOn" HorizontalAlignment="Stretch" Width="Auto" Label="Enabled" MouseUp="SetAutomaticUpgradesMenuAction"></local:SubOptionItem>
                     <local:SubOptionItem x:Name="AutomaticUpgradesItemOff" HorizontalAlignment="Stretch" Width="Auto" Label="Disabled" MouseUp="SetAutomaticUpgradesMenuAction"></local:SubOptionItem>
 
-                    <Rectangle Height="20" />
-                    <Rectangle Height="2" Fill="Black" />
-                    <Rectangle Height="20" />
-                    <Label>URL used to discover new upgrades</Label>
-                    <Label>Do not change unless you understand</Label>
-                    <TextBox x:Name="UpdateUrl" Padding="10" Margin="10,10,10,10" Height="40" BorderThickness="1" TextAlignment="Left" FontSize="14" Foreground="Black" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></TextBox>
+                    <Label FontWeight="Bold" FontSize="16" Margin="0,20,0,0">URL used to discover new upgrades</Label>
+
+                    <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
+                    <Label Opacity="0.6">Do not change unless you understand the result</Label>
+
+                    <TextBox x:Name="UpdateUrl" Padding="10" Margin="10,10,10,10" Height="40" BorderThickness="1" TextAlignment="Left" FontSize="14" Foreground="Black" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                        <TextBox.Resources>
+                            <Style TargetType="{x:Type Border}">
+                                <Setter Property="CornerRadius" Value="7"/>
+                            </Style>
+                        </TextBox.Resources>
+                    </TextBox>
                     <local:StyledButton x:Name="SetUpdateUrlButton" OnClick="SetUpdateUrlButton_Click" Label="Set Update URL" Grid.Row="8"></local:StyledButton>
                 </StackPanel>
 
