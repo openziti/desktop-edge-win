@@ -481,6 +481,7 @@ namespace ZitiDesktopEdge.DataStructures {
         public string Status { get; set; }
         public string ReleaseStream { get; set; }
         public string AutomaticUpgradeDisabled { get; set; }
+        public string AutomaticUpgradeURL { get; set; }
 
         public bool IsStopped() {
             return "Stopped" == this.Status;

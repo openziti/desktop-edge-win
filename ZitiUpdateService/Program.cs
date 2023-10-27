@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Reflection;
 using System.ServiceProcess;
 using NLog;
@@ -50,22 +51,26 @@ namespace ZitiUpdateService {
 			Logger.Info("    - using file: {0}", byFile);
 			Logger.Info("========================================================================");
 
-			UpdateService updateSvc = new UpdateService();
+            UpdateService updateSvc = new UpdateService();
 			updateSvc.AutoLog = true;
+			try {
 #if DEBUG
-			bool nosvc = true;
-			//bool nosvc = false;
+				bool nosvc = true;
+				//bool nosvc = false;
 
-			if (nosvc) {
-				updateSvc.Debug();
-				updateSvc.WaitForCompletion();
-			} else {
-				ServiceBase[] ServicesToRun = new ServiceBase[]
-				{
-				updateSvc
-				};
-				ServiceBase.Run(ServicesToRun);
-			}
+				if (nosvc) {
+					Logger.Info("  - RUNNING AS DEBUG");
+					updateSvc.Debug();
+					updateSvc.WaitForCompletion();
+					Logger.Info("  - RUNNING AS DEBUG COMPLETE");
+				} else {
+					ServiceBase[] ServicesToRun = new ServiceBase[]
+					{
+						updateSvc
+					};
+					Logger.Info("RUNNING AS DEBUG SERVICE");
+					ServiceBase.Run(ServicesToRun);
+				}
 #else
 			ServiceBase[] ServicesToRun = new ServiceBase[]
 			{
@@ -73,6 +78,8 @@ namespace ZitiUpdateService {
 			};
 			ServiceBase.Run(ServicesToRun);
 #endif
-		}
-	}
+			} catch {
+			}
+        }
+    }
 }

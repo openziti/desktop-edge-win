@@ -47,7 +47,7 @@ namespace ZitiDesktopEdge {
 
 		public void ShowUpdateAvailable() {
 			ForceUpdate.Visibility = Visibility.Visible;
-			if (state.PendingUpdate.TimeLeft>0) {
+			if (state.PendingUpdate.TimeLeft > 0) {
 				UpdateTimeLeft.Visibility = Visibility.Visible;
 				if (!state.AutomaticUpdatesDisabled) {
 					UpdateTimeLeft.Content = $"Automatic update to {state.PendingUpdate.Version} will occur on or after {state.PendingUpdate.InstallTime.ToString("g")}";
@@ -177,7 +177,7 @@ namespace ZitiDesktopEdge {
 			var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
 
 			SvcResponse r = await monitorClient.SetAutomaticUpgradeDisabledAsync(disableAutomaticUpgrades);
-			if(r.Code != 0) {
+			if (r.Code != 0) {
 				logger.Error(r?.Error);
 			}
 			SetAutomaticUpgradesState();
@@ -214,7 +214,7 @@ namespace ZitiDesktopEdge {
 			LogLevelItems.Visibility = Visibility.Collapsed;
 			ReleaseStreamItems.Visibility = Visibility.Collapsed;
 			AutomaticUpgradesItems.Visibility = Visibility.Collapsed;
-			
+
 			if (menuState == "About") {
 				MenuTitle.Content = "About";
 				AboutItemsArea.Visibility = Visibility.Visible;
@@ -277,8 +277,8 @@ namespace ZitiDesktopEdge {
 				ConfigItems.Visibility = Visibility.Visible;
 				BackArrow.Visibility = Visibility.Visible;
 
-				ConfigPageSize.Value = ((Application.Current.Properties.Contains("ApiPageSize"))?Application.Current.Properties["ApiPageSize"].ToString(): "25");
-                ConfigIp.Value = Application.Current.Properties["ip"]?.ToString();
+				ConfigPageSize.Value = ((Application.Current.Properties.Contains("ApiPageSize")) ? Application.Current.Properties["ApiPageSize"].ToString() : "25");
+				ConfigIp.Value = Application.Current.Properties["ip"]?.ToString();
 				ConfigSubnet.Value = Application.Current.Properties["subnet"]?.ToString();
 				ConfigMtu.Value = Application.Current.Properties["mtu"]?.ToString();
 				ConfigDns.Value = Application.Current.Properties["dns"]?.ToString();
@@ -436,7 +436,8 @@ namespace ZitiDesktopEdge {
 			bool disabled = state.AutomaticUpdatesDisabled;
 			this.AutomaticUpgradesItemOn.IsSelected = !disabled;
 			this.AutomaticUpgradesItemOff.IsSelected = disabled;
-		}
+            this.UpdateUrl.Text = state.AutomaticUpdateURL;
+        }
 
 		async private void CheckForUpdate_Click(object sender, RoutedEventArgs e) {
 			logger.Info("checking for update...");
@@ -745,10 +746,16 @@ namespace ZitiDesktopEdge {
 			}
 			if (value < 10 || value > 500) value = defaultVal;
 			ConfigePageSizeNew.Text = value.ToString();
-		}
+        }
 
-        private void SetUpdateUrlButton_Click() {
-            Console.WriteLine("here we go");
+        private async void SetUpdateUrlButton_Click() {
+            var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
+
+            SvcResponse r = await monitorClient.SetAutomaticUpgradeURLAsync(UpdateUrl.Text);
+            if (r.Code != 0) {
+                logger.Error(r?.Error);
+                MainWindow.ShowError("Could not set url", r?.Error);
+            }
         }
     }
 }

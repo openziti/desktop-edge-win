@@ -34,7 +34,6 @@ namespace ZitiDesktopEdge {
 
 			bool createdNew;
 
-
 			_mutex = new Mutex(true, appName, out createdNew);
 
 			if (!createdNew) {
@@ -59,8 +58,8 @@ namespace ZitiDesktopEdge {
 #pragma warning disable 4014 //This async method lacks 'await'
 				StartServer();
 #pragma warning restore 4014 //This async method lacks 'await'
-			}
-		}
+            }
+        }
 
 		async public Task StartServer() {
 			logger.Debug("Starting IPC server to listen for other instances of the app");

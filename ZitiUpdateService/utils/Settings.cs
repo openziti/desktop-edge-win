@@ -13,9 +13,10 @@ namespace ZitiUpdateService.Utils
 		[JsonIgnore]
 		private string Location { get; set; }
 
-		public bool AutomaticUpdatesDisabled { get; set; }
+        public bool AutomaticUpdatesDisabled { get; set; }
+        public string AutomaticUpdateURL { get; set; }
 
-		public event System.EventHandler<ControllerEvent> OnConfigurationChange;
+        public event System.EventHandler<ControllerEvent> OnConfigurationChange;
 
 		internal Settings(bool doInit)
 		{
@@ -109,11 +110,12 @@ namespace ZitiUpdateService.Utils
 		{
 			Logger.Info("Settings file changed. Reloading...");
 			this.Load();
-		}
+            this.OnConfigurationChange?.Invoke(null, null);
+        }
 
-		private void Update(Settings source)
-		{
-			this.AutomaticUpdatesDisabled = source.AutomaticUpdatesDisabled;
-		}
+		private void Update(Settings source) {
+            this.AutomaticUpdatesDisabled = source.AutomaticUpdatesDisabled;
+            this.AutomaticUpdateURL = source.AutomaticUpdateURL;
+        }
 	}
 }

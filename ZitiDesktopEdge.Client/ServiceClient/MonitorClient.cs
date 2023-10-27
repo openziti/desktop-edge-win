@@ -31,7 +31,6 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         public event EventHandler<MonitorServiceStatusEvent> OnServiceStatusEvent;
         public event EventHandler<InstallationNotificationEvent> OnNotificationEvent;
-        public event EventHandler<UrlUpdateEvent> OnUrlUpdateEvent;
 
         protected virtual void ServiceStatusEvent(MonitorServiceStatusEvent e) {
             OnServiceStatusEvent?.Invoke(this, e);
@@ -183,6 +182,16 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
         async public Task<SvcResponse> SetAutomaticUpgradeDisabledAsync(bool disabled) {
             ActionEvent action = new ActionEvent() { Op = "SetAutomaticUpgradeDisabled", Action = (disabled ? "true" : "false") };
+            try {
+                await sendAsync(action);
+                return await readAsync<SvcResponse>(ipcReader);
+            } catch (Exception ex) {
+                Logger.Error(ex, "Unexpected error");
+            }
+            return null;
+        }
+        async public Task<SvcResponse> SetAutomaticUpgradeURLAsync(string url) {
+            ActionEvent action = new ActionEvent() { Op = "SetAutomaticUpgradeURL", Action = (url) };
             try {
                 await sendAsync(action);
                 return await readAsync<SvcResponse>(ipcReader);

@@ -11,7 +11,7 @@ namespace Ziti.Desktop.Edge.Models {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private bool automaticUpdatesDisabled = false;
-        private string updateUrl = "";
+        private string updateUrl = "not set yet";
         public bool AutomaticUpdatesDisabled {
             get {
                 return automaticUpdatesDisabled;
@@ -20,7 +20,7 @@ namespace Ziti.Desktop.Edge.Models {
                 automaticUpdatesDisabled = value;
             }
         }
-        public string UpdateUrl {
+        public string AutomaticUpdateURL {
             get {
                 return updateUrl;
             }

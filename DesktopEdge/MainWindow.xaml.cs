@@ -620,7 +620,6 @@ namespace ZitiDesktopEdge {
 			monitorClient = new MonitorClient("ui");
 			monitorClient.OnClientConnected += MonitorClient_OnClientConnected;
 			monitorClient.OnNotificationEvent += MonitorClient_OnInstallationNotificationEvent;
-			monitorClient.OnUrlUpdateEvent += MonitorClient_OnUrlUpdateEvent;
 			monitorClient.OnServiceStatusEvent += MonitorClient_OnServiceStatusEvent;
 			monitorClient.OnShutdownEvent += MonitorClient_OnShutdownEvent;
 			monitorClient.OnCommunicationError += MonitorClient_OnCommunicationError;
@@ -650,10 +649,6 @@ namespace ZitiDesktopEdge {
 
 			IdentityMenu.OnForgot += IdentityForgotten;
 			Placement();
-		}
-
-		private void MonitorClient_OnUrlUpdateEvent(object sender, UrlUpdateEvent e) {
-			throw new NotImplementedException();
 		}
 
 		private void MonitorClient_OnCommunicationError(object sender, Exception e) {
@@ -805,8 +800,9 @@ namespace ZitiDesktopEdge {
 						notifyIcon.Icon.Dispose();
 						notifyIcon.Dispose();
 						Application.Current.Shutdown();
-					}
+                    }
 					state.AutomaticUpdatesEnabledFromString(evt.AutomaticUpgradeDisabled);
+					state.AutomaticUpdateURL = evt.AutomaticUpgradeURL;
 					MainMenu.ShowUpdateAvailable();
 					logger.Debug("MonitorClient_OnServiceStatusEvent: {0}", evt.Status);
 					Application.Current.Properties["ReleaseStream"] = evt.ReleaseStream;
@@ -961,19 +957,6 @@ namespace ZitiDesktopEdge {
 		private void ShowServiceNotStarted() {
 			TunnelConnected(false);
 			LoadIdentities(true);
-			/*
-			this.Dispatcher.Invoke(() => {
-				semaphoreSlim.Wait(); //make sure the event is only added to the button once
-				CloseErrorButton.Click -= CloseError;
-				if (!startZitiButtonVisible) {
-					CloseErrorButton.Content = "Start Service";
-					startZitiButtonVisible = true;
-					CloseErrorButton.Click += StartZitiService;
-				}
-				semaphoreSlim.Release();
-				SetCantDisplay("Service Not Started", "Do you want to start the data service now?", Visibility.Visible);
-			});
-			*/
 		}
 
 		private void MonitorClient_OnClientConnected(object sender, object e) {

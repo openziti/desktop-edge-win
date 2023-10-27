@@ -90,8 +90,9 @@ namespace ZitiUpdateService {
 			svr.DoUpdateCheck = DoUpdateCheck;
 			svr.TriggerUpdate = TriggerUpdate;
 			svr.SetAutomaticUpdateDisabled = SetAutomaticUpdateDisabled;
+			svr.SetAutomaticUpdateURL = SetAutomaticUpdateURL;
 
-			string assemblyVersionStr = Assembly.GetExecutingAssembly().GetName().Version.ToString(); //fetch from ziti?
+            string assemblyVersionStr = Assembly.GetExecutingAssembly().GetName().Version.ToString(); //fetch from ziti?
 			assemblyVersion = new Version(assemblyVersionStr);
 			asmDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 			updateFolder = Path.Combine(asmDir, "updates");
@@ -101,7 +102,22 @@ namespace ZitiUpdateService {
 			}
 		}
 
-		private void CurrentSettings_OnConfigurationChange(object sender, ControllerEvent e)
+		private SvcResponse SetAutomaticUpdateURL(string url) {
+			SvcResponse r = new SvcResponse();
+			if (url == null || !url.StartsWith("http")) {
+				r.Code = (int)ErrorCodes.URL_INVALID;
+				r.Error = $"The url supplied is invalid: \n{url}\n";
+				r.Message = "Failure";
+				return r;
+			} else {
+				CurrentSettings.AutomaticUpdateURL = url;
+				CurrentSettings.Write();
+				r.Message = "Success";
+			}
+			return r;
+		}
+
+        private void CurrentSettings_OnConfigurationChange(object sender, ControllerEvent e)
 		{
 			MonitorServiceStatusEvent evt;
 			if (lastInstallationNotification != null) {
@@ -115,6 +131,7 @@ namespace ZitiUpdateService {
 					Status = ServiceActions.ServiceStatus(),
 					ReleaseStream = IsBeta ? "beta" : "stable",
 					AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString(),
+					AutomaticUpgradeURL = CurrentSettings.AutomaticUpdateURL,
 				};
 			}
 			Logger.Debug($"notifying consumers of change to CurrentSettings. AutomaticUpdates status = {(CurrentSettings.AutomaticUpdatesDisabled ? "disabled" : "enabled")}");
@@ -554,8 +571,9 @@ namespace ZitiUpdateService {
 				Type = "Status",
 				Status = ServiceActions.ServiceStatus(),
 				ReleaseStream = IsBeta ? "beta" : "stable",
-				AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString()
-			};
+                AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString(),
+                AutomaticUpgradeURL = CurrentSettings.AutomaticUpdateURL,
+            };
 			await writer.WriteLineAsync(JsonConvert.SerializeObject(status));
 			await writer.FlushAsync();
 
@@ -683,21 +701,16 @@ namespace ZitiUpdateService {
 			//run with MOCKUPDATE to enable debugging/mocking the update check
 			var check = new FilesystemCheck(v, -1, mockDate, "FilesysteCheck.download.mock.txt", new Version("2.1.4"));
 #else
-			string updateUrl = null;
 
-			var updateCheckUrl = ConfigurationManager.AppSettings.Get("UpdateCheckURL");
-			if (updateCheckUrl != null) {
-				updateUrl = updateCheckUrl;
-			} else {
-				if (!IsBeta) {
-					updateUrl = GithubAPI.ProdUrl;
-				} else {
-					updateUrl = GithubAPI.BetaUrl;
-				}
+			if(string.IsNullOrEmpty(CurrentSettings.AutomaticUpdateURL)) {
+                CurrentSettings.AutomaticUpdateURL = GithubAPI.ProdUrl;
+                Logger.Info("Settings does not contain update url. Setting to: {}", CurrentSettings.AutomaticUpdateURL);
+				CurrentSettings.Write();
+            } else {
+                Logger.Info("Settings contained a value for update url. Using: {}", CurrentSettings.AutomaticUpdateURL);
 			}
 
-
-			var check = new GithubCheck(v, updateUrl);
+            var check = new GithubCheck(v, CurrentSettings.AutomaticUpdateURL);
 #endif
 			return check;
 		}
@@ -711,7 +724,8 @@ namespace ZitiUpdateService {
 				Status = ServiceActions.ServiceStatus(),
 				ReleaseStream = IsBeta ? "beta" : "stable",
 				AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString().ToLower(),
-				ZDEVersion = version
+                AutomaticUpgradeURL = CurrentSettings.AutomaticUpdateURL,
+                ZDEVersion = version
 			};
 			return info;
 		}
@@ -973,8 +987,9 @@ namespace ZitiUpdateService {
 					Error = "SERVICE DOWN",
 					Message = "SERVICE DOWN",
 					Status = ServiceActions.ServiceStatus(),
-					AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString()
-				};
+					AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString(),
+                    AutomaticUpgradeURL = CurrentSettings.AutomaticUpdateURL,
+                };
 				EventRegistry.SendEventToConsumers(status);
 			} else {
 				Logger.Error("SERVICE IS DOWN and did not exit cleanly.");
@@ -986,7 +1001,8 @@ namespace ZitiUpdateService {
 					Type = "Status",
 					Status = ServiceActions.ServiceStatus(),
 					ReleaseStream = IsBeta ? "beta" : "stable",
-					AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString()
+					AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString(),
+                    AutomaticUpgradeURL = CurrentSettings.AutomaticUpdateURL,
 				};
 				EventRegistry.SendEventToConsumers(status);
 			}

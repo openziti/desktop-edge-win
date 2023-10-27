@@ -99,12 +99,12 @@
                     </StackPanel>
                 </StackPanel>
                 <StackPanel Name="AutomaticUpgradesItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
-                    <Label FontWeight="Bold" FontSize="16" Margin="0,20,0,0">Automatic upgrades are:</Label>
+                    <Label FontWeight="Bold" FontSize="16" Margin="0,20,0,0">Automatic upgrades:</Label>
                     <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
                     <local:SubOptionItem x:Name="AutomaticUpgradesItemOn" HorizontalAlignment="Stretch" Width="Auto" Label="Enabled" MouseUp="SetAutomaticUpgradesMenuAction"></local:SubOptionItem>
                     <local:SubOptionItem x:Name="AutomaticUpgradesItemOff" HorizontalAlignment="Stretch" Width="Auto" Label="Disabled" MouseUp="SetAutomaticUpgradesMenuAction"></local:SubOptionItem>
 
-                    <Label FontWeight="Bold" FontSize="16" Margin="0,20,0,0">URL used to discover new upgrades</Label>
+                    <Label FontWeight="Bold" FontSize="16" Margin="0,20,0,0">URL used to discover new upgrades:</Label>
 
                     <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
                     <Label Opacity="0.6">Do not change unless you understand the result</Label>
@@ -117,9 +117,6 @@
                         </TextBox.Resources>
                     </TextBox>
                     <local:StyledButton x:Name="SetUpdateUrlButton" OnClick="SetUpdateUrlButton_Click" Label="Set Update URL" Grid.Row="8"></local:StyledButton>
-                </StackPanel>
-
-                <StackPanel Name="AutomaticUpgradeUrl" Visibility="Visible" Orientation="Vertical" HorizontalAlignment="Stretch">
                 </StackPanel>
 
                 <StackPanel Name="ConfigItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
