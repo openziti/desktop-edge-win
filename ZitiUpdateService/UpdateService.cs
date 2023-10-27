@@ -702,15 +702,15 @@ namespace ZitiUpdateService {
 			var check = new FilesystemCheck(v, -1, mockDate, "FilesysteCheck.download.mock.txt", new Version("2.1.4"));
 #else
 
-			if(string.IsNullOrEmpty(CurrentSettings.AutomaticUpdateURL)) {
-                CurrentSettings.AutomaticUpdateURL = GithubAPI.ProdUrl;
-                Logger.Info("Settings does not contain update url. Setting to: {}", CurrentSettings.AutomaticUpdateURL);
+			if (string.IsNullOrEmpty(CurrentSettings.AutomaticUpdateURL)) {
+				CurrentSettings.AutomaticUpdateURL = GithubAPI.ProdUrl;
+				Logger.Info("Settings does not contain update url. Setting to: {}", CurrentSettings.AutomaticUpdateURL);
 				CurrentSettings.Write();
-            } else {
-                Logger.Info("Settings contained a value for update url. Using: {}", CurrentSettings.AutomaticUpdateURL);
+			} else {
+				Logger.Info("Settings contained a value for update url. Using: {}", CurrentSettings.AutomaticUpdateURL);
 			}
 
-            var check = new GithubCheck(v, CurrentSettings.AutomaticUpdateURL);
+			var check = new GithubCheck(v, CurrentSettings.AutomaticUpdateURL);
 #endif
 			return check;
 		}
