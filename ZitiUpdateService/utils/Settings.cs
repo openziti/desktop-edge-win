@@ -3,35 +3,29 @@ using Newtonsoft.Json;
 using NLog;
 using ZitiDesktopEdge.DataStructures;
 
-namespace ZitiUpdateService.Utils
-{
-	internal class Settings
-	{
+namespace ZitiUpdateService.Utils {
+	internal class Settings {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 		private FileSystemWatcher watcher;
 
 		[JsonIgnore]
 		private string Location { get; set; }
 
-        public bool AutomaticUpdatesDisabled { get; set; }
-        public string AutomaticUpdateURL { get; set; }
+		public bool AutomaticUpdatesDisabled { get; set; }
+		public string AutomaticUpdateURL { get; set; }
 
-        public event System.EventHandler<ControllerEvent> OnConfigurationChange;
+		public event System.EventHandler<ControllerEvent> OnConfigurationChange;
 
-		internal Settings(bool doInit)
-		{
-			if (doInit)
-			{
+		internal Settings(bool doInit) {
+			if (doInit) {
 				init();
 			}
 		}
 
-		public Settings()
-		{
+		public Settings() {
 		}
 
-		private void init()
-		{
+		private void init() {
 			string folder = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData), "NetFoundry", "ZitiUpdateService");
 			string file = "settings.json";
 			Location = Path.Combine(folder, file);
@@ -55,67 +49,53 @@ namespace ZitiUpdateService.Utils
 		}
 
 		private static JsonSerializer serializer = new JsonSerializer() { Formatting = Formatting.Indented };
-		internal void Load()
-		{
-			try
-			{
+		internal void Load() {
+			try {
 				string json = File.ReadAllText(Location);
 				var jsonReaderEvt = new JsonTextReader(new StringReader(json));
 				Settings s = serializer.Deserialize<Settings>(jsonReaderEvt);
 				Update(s);
-			}
-			catch
-			{
+			} catch {
 				// do nothing
 			}
 		}
-		internal void Write()
-		{
-			try
-			{
-				using (StreamWriter file = File.CreateText(Location))
-				{
+		internal void Write() {
+			try {
+				using (StreamWriter file = File.CreateText(Location)) {
 					serializer.Serialize(file, this);
 				}
 				this.OnConfigurationChange?.Invoke(null, null);
-			}
-			catch
-			{
+			} catch {
 				// do nothing
 			}
 		}
 
 
-		private static void OnError(object sender, ErrorEventArgs e)
-		{
+		private static void OnError(object sender, ErrorEventArgs e) {
 		}
 
-		private void OnRenamed(object sender, RenamedEventArgs e)
-		{
+		private void OnRenamed(object sender, RenamedEventArgs e) {
 			Logger.Info("Settings file renamed. Resetting to defaults...");
 			this.Update(new Settings());
 		}
 
-		private void OnDeleted(object sender, FileSystemEventArgs e)
-		{
+		private void OnDeleted(object sender, FileSystemEventArgs e) {
 			Logger.Info("Settings file deleted. Resetting to defaults...");
 			this.Update(new Settings());
 		}
 
-		private void OnCreated(object sender, FileSystemEventArgs e)
-		{
+		private void OnCreated(object sender, FileSystemEventArgs e) {
 		}
 
-		private void OnChanged(object sender, FileSystemEventArgs e)
-		{
+		private void OnChanged(object sender, FileSystemEventArgs e) {
 			Logger.Info("Settings file changed. Reloading...");
 			this.Load();
-            this.OnConfigurationChange?.Invoke(null, null);
-        }
+			this.OnConfigurationChange?.Invoke(null, null);
+		}
 
 		private void Update(Settings source) {
-            this.AutomaticUpdatesDisabled = source.AutomaticUpdatesDisabled;
-            this.AutomaticUpdateURL = source.AutomaticUpdateURL;
-        }
+			this.AutomaticUpdatesDisabled = source.AutomaticUpdatesDisabled;
+			this.AutomaticUpdateURL = source.AutomaticUpdateURL;
+		}
 	}
 }
