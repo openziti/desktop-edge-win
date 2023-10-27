@@ -92,12 +92,11 @@ namespace ZitiUpdateService {
 			svr.SetAutomaticUpdateDisabled = SetAutomaticUpdateDisabled;
 			svr.SetAutomaticUpdateURL = SetAutomaticUpdateURL;
 
-            string assemblyVersionStr = Assembly.GetExecutingAssembly().GetName().Version.ToString(); //fetch from ziti?
+			string assemblyVersionStr = Assembly.GetExecutingAssembly().GetName().Version.ToString(); //fetch from ziti?
 			assemblyVersion = new Version(assemblyVersionStr);
 			asmDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 			updateFolder = Path.Combine(asmDir, "updates");
-			if (!Directory.Exists(updateFolder))
-			{
+			if (!Directory.Exists(updateFolder)) {
 				Directory.CreateDirectory(updateFolder);
 			}
 		}
