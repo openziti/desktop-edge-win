@@ -42,7 +42,7 @@ namespace ZitiUpdateService.Checkers {
 			Logger.Debug("checking for update begins. current version detected as {0}", currentVersion);
 			Logger.Debug("issuing http get to url: {0}", updateCheckUrl);
 
-      JObject json = GithubAPI.GetJson(updateCheckUrl);
+			JObject json = GithubAPI.GetJson(updateCheckUrl);
 			JArray assets = JArray.Parse(json.Property("assets").Value.ToString());
 			foreach (JObject asset in assets.Children<JObject>()) {
 				string assetName = asset.Property("name").Value.ToString();

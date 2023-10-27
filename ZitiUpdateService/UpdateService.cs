@@ -724,8 +724,8 @@ namespace ZitiUpdateService {
 				Status = ServiceActions.ServiceStatus(),
 				ReleaseStream = IsBeta ? "beta" : "stable",
 				AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString().ToLower(),
-                AutomaticUpgradeURL = CurrentSettings.AutomaticUpdateURL,
-                ZDEVersion = version
+				AutomaticUpgradeURL = CurrentSettings.AutomaticUpdateURL,
+				ZDEVersion = version
 			};
 			return info;
 		}
