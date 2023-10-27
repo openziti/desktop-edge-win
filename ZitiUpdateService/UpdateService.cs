@@ -571,15 +571,14 @@ namespace ZitiUpdateService {
 				Type = "Status",
 				Status = ServiceActions.ServiceStatus(),
 				ReleaseStream = IsBeta ? "beta" : "stable",
-                AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString(),
-                AutomaticUpgradeURL = CurrentSettings.AutomaticUpdateURL,
-            };
+				AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString(),
+				AutomaticUpgradeURL = CurrentSettings.AutomaticUpdateURL,
+			};
 			await writer.WriteLineAsync(JsonConvert.SerializeObject(status));
 			await writer.FlushAsync();
 
 			//if a new client attaches - send the last update check status
-			if (lastUpdateCheck != null)
-			{
+			if (lastUpdateCheck != null) {
 				await writer.WriteLineAsync(JsonConvert.SerializeObject(lastInstallationNotification));
 				await writer.FlushAsync();
 			}
