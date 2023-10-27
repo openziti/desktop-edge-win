@@ -755,6 +755,8 @@ namespace ZitiDesktopEdge {
             if (r.Code != 0) {
                 logger.Error(r?.Error);
                 MainWindow.ShowError("Could not set url", r?.Error);
+            } else {
+                this.OnShowBlurb?.Invoke("Config Saved.");
             }
         }
     }
