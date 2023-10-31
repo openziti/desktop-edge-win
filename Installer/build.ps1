@@ -62,8 +62,8 @@ echo "========================== fetching vc++ redist ==========================
 $VC_REDIST_URL="https://aka.ms/vs/17/release/vc_redist.x64.exe"
 echo "Beginning to download vc++ redist from MS at ${VC_REDIST_URL}"
 echo ""
-Invoke-WebRequest $VC_REDIST_URL -OutFile "${scriptPath}\VC_redist.x64.exe"
-verifyFile("${scriptPath}\VC_redist.x64.exe")
+Invoke-WebRequest $VC_REDIST_URL -OutFile "${buildPath}\VC_redist.x64.exe"
+verifyFile("${buildPath}\VC_redist.x64.exe")
 echo "========================== fetching vc++ redist complete =========================="
 
 echo "Updating the version for UI and Installer"
