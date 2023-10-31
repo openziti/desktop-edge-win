@@ -7,7 +7,7 @@ function verifyFile($path) {
 }
 
 echo "========================== build.ps1 begins =========================="
-
+$ProgressPreference = 'SilentlyContinue'
 $invocation = (Get-Variable MyInvocation).Value
 $scriptPath = Split-Path $invocation.MyCommand.Path
 $buildPath = "${scriptPath}\build"
@@ -59,11 +59,11 @@ if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
 Push-Location ${scriptPath}\..
 
 echo "========================== fetching vc++ redist =========================="
-$VC_REDIST_URL="https://aka.ms/vs/17/release/VC_redist.x64.exe"
+$VC_REDIST_URL="https://aka.ms/vs/17/release/vc_redist.x64.exe"
 echo "Beginning to download vc++ redist from MS at ${VC_REDIST_URL}"
 echo ""
-$ProgressPreference = 'SilentlyContinue'
-Invoke-WebRequest $VC_REDIST_URL -OutFile "${scriptPath}\vc_redist.x64.exe"
+Invoke-WebRequest $VC_REDIST_URL -OutFile "${scriptPath}\VC_redist.x64.exe"
+verifyFile("${scriptPath}\VC_redist.x64.exe")
 echo "========================== fetching vc++ redist complete =========================="
 
 echo "Updating the version for UI and Installer"
