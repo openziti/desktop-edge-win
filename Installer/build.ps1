@@ -60,7 +60,7 @@ Push-Location ${scriptPath}\..
 
 
 echo "========================== fetching vc++ redist =========================="
-$VC_REDIST_URL="https://aka.ms/vs/17/release/vc_redist.x64.exe"
+$VC_REDIST_URL="https://aka.ms/vs/17/release/VC_redist.x64.exe"
 echo "Beginning to download vc++ redist from MS at ${VC_REDIST_URL}"
 echo ""
 $ProgressPreference = 'SilentlyContinue'
