@@ -51,7 +51,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>ziti.ico</ApplicationIcon>
+    <ApplicationIcon>ziti-v2-new.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
     <ManifestCertificateThumbprint>189AAD422A106DC81E8E79C7E0D2118CEB2E6321</ManifestCertificateThumbprint>
@@ -191,6 +191,7 @@
   <ItemGroup>
     <Resource Include="ziti-green.ico" />
     <EmbeddedResource Include="checkers\PeFile\openziti.rootCA.rsa.pem.txt" />
+    <Content Include="ziti-v2-new.ico" />
     <Content Include="ziti-white.ico" />
   </ItemGroup>
   <ItemGroup>

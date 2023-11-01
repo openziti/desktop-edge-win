@@ -382,6 +382,7 @@ namespace ZitiDesktopEdge {
 					ArchiveEvery = FileArchivePeriod.Day,
 					ArchiveNumbering = ArchiveNumberingMode.Rolling,
 					MaxArchiveFiles = 7,
+					AutoFlush = true,
 					Layout = "[${date:format=yyyy-MM-ddTHH:mm:ss.fff}Z] ${level:uppercase=true:padding=5}\t${logger}\t${message}\t${exception:format=tostring}",
 				};
 				var logconsole = new ConsoleTarget("logconsole");
@@ -397,6 +398,7 @@ namespace ZitiDesktopEdge {
 			logger.Info("logger initialized");
 			logger.Info("    - version   : {0}", asm.GetName().Version.ToString());
 			logger.Info("    - using file: {0}", byFile);
+			logger.Info("    -       file: {0}", nlogFile);
 			logger.Info("========================================================================");
 
 			App.Current.MainWindow.WindowState = WindowState.Normal;
