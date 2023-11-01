@@ -798,7 +798,9 @@ namespace ZitiUpdateService {
 			}
 			Logger.Debug("downloaded file hash was correct. update can continue.");
 #if !SKIPUPDATE
+			Logger.Info("verifying file [{}]", fileDestination);
 			new SignedFileValidator(fileDestination).Verify();
+			Logger.Info("SignedFileValidator complete");
 			try {
 				StopZiti();
 				StopUI().Wait();

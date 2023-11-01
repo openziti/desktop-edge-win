@@ -26,7 +26,9 @@ if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
     }
     echo "Beginning to download ziti-edge-tunnel from ${zet_dl}"
     echo ""
-    Invoke-WebRequest $zet_dl -OutFile "${scriptPath}\zet.zip"
+    $response = Invoke-WebRequest $zet_dl -OutFile "${scriptPath}\zet.zip"
+    verifyFile("${scriptPath}\zet.zip")
+
     echo "Expanding downloaded file..."
     Expand-Archive -Path "${scriptPath}\zet.zip" -Force -DestinationPath "${buildPath}\service"
     echo "expanded zet.zip file to ${buildPath}\service"
@@ -37,6 +39,7 @@ if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
         echo "Beginning to download wintun from ${WINTUN_DL_URL}"
         echo ""
         Invoke-WebRequest $WINTUN_DL_URL -OutFile "${scriptPath}\wintun.zip"
+        verifyFile("${scriptPath}\wintun.zip")
         echo "Expanding downloaded file..."
         Expand-Archive -Path "${scriptPath}\wintun.zip" -Force -DestinationPath "${buildPath}\service"
         echo "expanded wintun.zip file to ${buildPath}\service"

@@ -34,6 +34,7 @@ namespace ZitiUpdateService {
 					ArchiveEvery = FileArchivePeriod.Day,
 					ArchiveNumbering = ArchiveNumberingMode.Rolling,
 					MaxArchiveFiles = 7,
+					AutoFlush = true,
 					Layout = "[${date:universalTime=true:format=yyyy-MM-ddTHH:mm:ss.fff}Z] ${level:uppercase=true:padding=5}\t${logger}\t${message}\t${exception:format=tostring}",
 				};
 				var logconsole = new ConsoleTarget("logconsole");
@@ -49,6 +50,7 @@ namespace ZitiUpdateService {
 			Logger.Info("logger initialized");
 			Logger.Info("    - version   : {0}", asm.GetName().Version.ToString());
 			Logger.Info("    - using file: {0}", byFile);
+			Logger.Info("    -       file: {0}", nlogFile);
 			Logger.Info("========================================================================");
 
             UpdateService updateSvc = new UpdateService();
