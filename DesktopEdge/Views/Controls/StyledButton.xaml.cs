@@ -20,8 +20,8 @@ namespace ZitiDesktopEdge {
 	/// </summary>
 	public partial class StyledButton : UserControl {
 
-		public delegate void ClickAction();
-		public event ClickAction OnClick;
+		public delegate void ClickAction(object sender, MouseButtonEventArgs e);
+		public event ClickAction OnClickEvt;
 		private string _label = "";
 		private string bgColor = "#0069FF";
 
@@ -82,7 +82,7 @@ namespace ZitiDesktopEdge {
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
 		private void DoClick(object sender, MouseButtonEventArgs e) {
-			this.OnClick?.Invoke();
+			this.OnClickEvt?.Invoke(sender, e);
 		}
 	}
 }

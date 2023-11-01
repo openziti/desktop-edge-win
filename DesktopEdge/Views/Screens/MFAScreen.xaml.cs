@@ -198,7 +198,7 @@ namespace ZitiDesktopEdge {
 			Logger.Error("DATA: {0}", gencodes.Data);
 		}
 
-		private void SaveCodes() {
+		private void SaveCodes(object sender, MouseButtonEventArgs e) {
 			string fileText = string.Join("\n", _codes);
 			string name = Regex.Replace(this._identity.Name, "[^a-zA-Z0-9]", String.Empty);
 
@@ -212,7 +212,7 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-		async private void DoSetupAuthenticate() {
+		async private void DoSetupAuthenticate(object sender, MouseButtonEventArgs e) {
 			string code = SetupCode.Text;
 
 			DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
@@ -233,7 +233,7 @@ namespace ZitiDesktopEdge {
 		/// 3 = Remove MFA
 		/// 4 = Generate New MFA Codes
 		/// </summary>
-		async private void DoAuthenticate() {
+		async private void DoAuthenticate(object sender, MouseButtonEventArgs e) {
 			if (!this._executing) {
 
 				this._executing = true;
@@ -315,13 +315,13 @@ namespace ZitiDesktopEdge {
 
 		private void HandleKey(object sender, KeyEventArgs e) {
 			if (e.Key == Key.Return) {
-				DoSetupAuthenticate();
+				DoSetupAuthenticate(sender, null);
 			}
 		}
 
 		private void AuthCode_KeyUp(object sender, KeyEventArgs e) {
 			if (e.Key == Key.Return) {
-				DoAuthenticate();
+				DoAuthenticate(sender, null);
 			}
 		}
 	}

@@ -19,6 +19,9 @@
         <Rectangle Margin="10,10,10,10" Fill="White" RadiusY="10" RadiusX="10" ClipToBounds="True"></Rectangle>
 
         <Grid Margin="20,20,20,-20">
+            <Grid.Resources>
+                <CornerRadius x:Key="ControlCornerRadius">8</CornerRadius>
+            </Grid.Resources>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
@@ -46,7 +49,7 @@
                     <local:MenuItem x:Name="DetachButton" Label="Detach App" Icon="/Assets/Images/detach.png" MouseUp="DetachWindow"></local:MenuItem>
                     <local:MenuItem x:Name="AttachButton" Label="Attach App" Icon="/Assets/Images/detach.png" MouseUp="RetachWindow" Visibility="Collapsed"></local:MenuItem>
                     <Label Name="UpdateTimeLeft" Visibility="Collapsed" Content="" HorizontalAlignment="Center" FontSize="10" Height="50" Padding="0,30,0,0" Foreground="#F4044D" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
-                    <Button Name="ForceUpdate" Visibility="Collapsed" Height="40" Grid.Column="1" Margin="20,20,40,0" Width="260" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#dc252c" Content="Update Now" Click="TriggerUpdate_Click" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                    <Button Name="ForceUpdate" Visibility="Collapsed" Height="40" Grid.Column="1" Margin="20,20,40,0" Width="260" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#9c252c" Content="Update Now" Click="TriggerUpdate_RoutedEventArgs_Click">
                         <Button.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="5"/>
@@ -63,9 +66,8 @@
                     <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/logs.png" Width="Auto" Label="Service Logs" MouseUp="ShowLogs"></local:MenuItem>
                     <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/logs.png" Width="Auto" Label="Application Logs" MouseUp="ShowUILogs"></local:MenuItem>
                     <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/advanced.png" Width="Auto" Label="Set Logging Level" MouseUp="SetLogLevel"></local:MenuItem>
-                    <local:MenuItem x:Name="ShowReleaseStreamMenuItem" Visibility="Collapsed" HorizontalAlignment="Stretch" Icon="/Assets/Images/update.png" Width="Auto" Label="Set Release Stream" MouseUp="ShowReleaseStreamMenuAction"></local:MenuItem>
                     <local:MenuItem x:Name="SetAutomaticUpgradeMenuItem" HorizontalAlignment="Stretch" Icon="/Assets/Images/processing.png" Width="Auto" Label="Configure Automatic Upgrades" MouseUp="ShowAutomaticUpgradesMenuAction"></local:MenuItem>
-                    <local:StyledButton x:Name="EditFreqButton" Visibility="Collapsed" OnClick="EditFreqButton_OnClick" Label="Change Notification Frequency" Grid.Row="8" Margin="0,20,0,0"></local:StyledButton>
+                    <local:StyledButton x:Name="EditFreqButton" Visibility="Collapsed" OnClickEvt="EditFreqButton_OnClick" Label="Change Notification Frequency" Grid.Row="8" Margin="0,20,0,0"></local:StyledButton>
                 </StackPanel>
                 <StackPanel Name="LogLevelItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <local:SubOptionItem x:Name="LogError" HorizontalAlignment="Stretch" Width="Auto" Label="Error" MouseUp="SetLevel"></local:SubOptionItem>
@@ -74,29 +76,6 @@
                     <local:SubOptionItem x:Name="LogDebug" HorizontalAlignment="Stretch" Width="Auto" Label="Debug" MouseUp="SetLevel"></local:SubOptionItem>
                     <local:SubOptionItem x:Name="LogVerbose" HorizontalAlignment="Stretch" Width="Auto" Label="Verbose" MouseUp="SetLevel"></local:SubOptionItem>
                     <local:SubOptionItem x:Name="LogTrace" HorizontalAlignment="Stretch" Width="Auto" Label="Trace" MouseUp="SetLevel"></local:SubOptionItem>
-                </StackPanel>
-                <StackPanel Name="ReleaseStreamItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
-                    <local:SubOptionItem x:Name="ReleaseStreamItemStable" HorizontalAlignment="Stretch" Width="Auto" Label="Stable" MouseUp="SetReleaseStreamMenuAction"></local:SubOptionItem>
-                    <local:SubOptionItem x:Name="ReleaseStreamItemBeta" HorizontalAlignment="Stretch" Width="Auto" Label="Beta" MouseUp="SetReleaseStreamMenuAction"></local:SubOptionItem>
-                    <StackPanel Name="UpdateNowPanel" HorizontalAlignment="Center" Margin="0, 20, 0, 0">
-                        <Button Name="CheckForUpdate" Height="40" Grid.Column="1" Margin="20,0,40,0" Width="260" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#0069FF" Content="Check for Update" Click="CheckForUpdate_Click" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
-                            <Button.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="5"/>
-                                </Style>
-                            </Button.Resources>
-                        </Button>
-
-                        <Label HorizontalAlignment="Center" Name="CheckForUpdateStatus" Content=""></Label>
-
-                        <Button Name="TriggerUpdateButton" Visibility="Collapsed" Height="40" Width="260" Grid.Column="1" Margin="20,0,40,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#0069FF" Content="Perform Update" Click="TriggerUpdate_Click" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
-                            <Button.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="5"/>
-                                </Style>
-                            </Button.Resources>
-                        </Button>
-                    </StackPanel>
                 </StackPanel>
                 <StackPanel Name="AutomaticUpgradesItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <Label FontWeight="Bold" FontSize="16" Margin="0,20,0,0">Automatic upgrades:</Label>
@@ -109,14 +88,17 @@
                     <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
                     <Label Opacity="0.6">Do not change unless you understand the result</Label>
 
-                    <TextBox x:Name="UpdateUrl" Padding="10" Margin="10,10,10,10" Width="325" BorderThickness="1" TextAlignment="Left" FontSize="14" Foreground="Black" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                    <TextBox x:Name="UpdateUrl" TextChanged="UpdateUrl_TextChanged" Padding="10" Margin="10,10,10,10" Width="325" BorderThickness="1" TextAlignment="Left" FontSize="14" Foreground="Black" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
                         <TextBox.Resources>
                             <Style TargetType="{x:Type Border}">
-                                <Setter Property="CornerRadius" Value="7"/>
+                                <Setter Property="CornerRadius" Value="5"/>
                             </Style>
                         </TextBox.Resources>
                     </TextBox>
-                    <local:StyledButton x:Name="SetUpdateUrlButton" OnClick="SetUpdateUrlButton_Click" Label="Set Update URL" Grid.Row="8"></local:StyledButton>
+                    <local:StyledButton x:Name="SetUpdateUrlButton" OnClickEvt="SetUpdateUrlButton_Click" Label="Set Update URL"></local:StyledButton>
+                    <local:StyledButton x:Name="CheckForUpdate" OnClickEvt="CheckForUpdate_OnClick" Label="Check for Updates Now" Margin="0,20,0,0"></local:StyledButton>
+                    <Label HorizontalAlignment="Center" x:Name="CheckForUpdateStatus" Content=""></Label>
+                    <local:StyledButton x:Name="TriggerUpdateButton" OnClickEvt="TriggerUpdate_MouseEventArgs_Click" Label="Perform Update" BgColor="#9c252c" Visibility="Collapsed" ></local:StyledButton>
                 </StackPanel>
 
                 <StackPanel Name="ConfigItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
@@ -126,7 +108,7 @@
                     <local:MenuEditItem x:Name="ConfigDns" HorizontalAlignment="Stretch" Width="Auto" Label="DNS Server:"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigPageSize" HorizontalAlignment="Stretch" Width="Auto" Label="Api Page Size (10-500):"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigDnsEnabled" HorizontalAlignment="Stretch" Width="Auto" Label="Add Dns:"></local:MenuEditItem>
-                    <local:StyledButton x:Name="EditButton" OnClick="ShowEdit" Label="Edit Values" Grid.Row="8" Margin="0,20,0,0"></local:StyledButton>
+                    <local:StyledButton x:Name="EditButton" OnClickEvt="ShowEdit_Click" Label="Edit Values" Grid.Row="8" Margin="0,20,0,0"></local:StyledButton>
                 </StackPanel>
                 <ScrollViewer Name="IdListScrollView" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" CanContentScroll="True" ClipToBounds="True" Visibility="Collapsed">
                     <StackPanel Name="IdListView" Orientation="Vertical" IsItemsHost="False"></StackPanel>
@@ -220,7 +202,7 @@
 
                 <CheckBox x:Name="AddDnsNew" Content="Add DNS" IsChecked="True" Margin="10"/>
 
-                <local:StyledButton x:Name="SaveConfigButton" OnClick="SaveConfig" Label="Save" Grid.Row="8"></local:StyledButton>
+                <local:StyledButton x:Name="SaveConfigButton" OnClickEvt="SaveConfig_Click" Label="Save" Grid.Row="8"></local:StyledButton>
 
             </StackPanel>
             <Image Source="/Assets/Images/closeBlack.png" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,40,40,0" Width="10" Height="10" Cursor="Hand" MouseUp="CloseEditConfig"></Image>
@@ -252,7 +234,7 @@
                     </TextBox.Resources>
                 </TextBox>
 
-                <local:StyledButton x:Name="SaveFrequencyButton" OnClick="SaveFrequencyButton_OnClick" Label="Save" Grid.Row="8"></local:StyledButton>
+                <local:StyledButton x:Name="SaveFrequencyButton" OnClickEvt="SaveFrequencyButton_OnClick" Label="Save" Grid.Row="8"></local:StyledButton>
 
             </StackPanel>
             <Image Source="/Assets/Images/closeBlack.png" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,30,30,0" Width="10" Height="10" Cursor="Hand" MouseUp="CloseFrequencyArea"></Image>

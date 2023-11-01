@@ -29,6 +29,7 @@ namespace Ziti.Desktop.Edge.Models {
             }
         }
 
+        public bool UpdateAvailable { get; set; }
         public UpdateInfo PendingUpdate { get; set; } = new UpdateInfo();
 
         internal void AutomaticUpdatesEnabledFromString(string automaticUpgradeDisabled) {

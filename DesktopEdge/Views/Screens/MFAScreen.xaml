@@ -66,7 +66,7 @@
                     </Style>
                 </TextBox.Resources>
             </TextBox>
-            <local:StyledButton x:Name="AuthSetupButton" OnClick="DoSetupAuthenticate" Label="Authenticate" Grid.Row="8"></local:StyledButton>
+            <local:StyledButton x:Name="AuthSetupButton" OnClickEvt="DoSetupAuthenticate" Label="Authenticate" Grid.Row="8"></local:StyledButton>
         </Grid>
 
         <!-- MFA Recovery Codes -->
@@ -89,7 +89,7 @@
                     <ColumnDefinition Width="*"></ColumnDefinition>
                 </Grid.ColumnDefinitions>
                 <Label HorizontalAlignment="Center" Content="Regenerate" Foreground="#0069FF" Cursor="Hand" Grid.Column="0" MouseUp="RegenerateCodes"></Label>
-                <local:StyledButton x:Name="SaveButton" Label="Save Codes" Grid.Column="1" OnClick="SaveCodes"></local:StyledButton>
+                <local:StyledButton x:Name="SaveButton" Label="Save Codes" Grid.Column="1" OnClickEvt="SaveCodes"></local:StyledButton>
             </Grid>
         </Grid>
 
@@ -113,7 +113,7 @@
                     </Style>
                 </TextBox.Resources>
             </TextBox>
-            <local:StyledButton x:Name="AuthButton" OnClick="DoAuthenticate" Label="Authenticate" Grid.Row="7"></local:StyledButton>
+            <local:StyledButton x:Name="AuthButton" OnClickEvt="DoAuthenticate" Label="Authenticate" Grid.Row="7"></local:StyledButton>
         </Grid>
 
         <Image x:Name="CloseBlack" Source="/Assets/Images/closeBlack.png" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,40,40,0" Width="10" Height="10" Cursor="Hand" MouseUp="ExecuteClose"></Image>

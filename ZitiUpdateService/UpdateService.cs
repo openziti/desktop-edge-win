@@ -39,9 +39,9 @@ namespace ZitiUpdateService {
 				return File.Exists(Path.Combine(exeLocation, betaStreamMarkerFile));
 			}
 			private set { }
-		}
+        }
 
-		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		private System.Timers.Timer _updateTimer = new System.Timers.Timer();
 		private static SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
@@ -99,7 +99,7 @@ namespace ZitiUpdateService {
 			if (!Directory.Exists(updateFolder)) {
 				Directory.CreateDirectory(updateFolder);
 			}
-		}
+        }
 
 		private SvcResponse SetAutomaticUpdateURL(string url) {
 			SvcResponse r = new SvcResponse();
@@ -717,8 +717,8 @@ namespace ZitiUpdateService {
 			InstallationNotificationEvent info = new InstallationNotificationEvent() {
 				Code = 0,
 				Error = "",
-				Message = "Configuration Changed",
-				Type = "Notification",
+                Message = "InstallationUpdate",
+                Type = "Notification",
 				Status = ServiceActions.ServiceStatus(),
 				ReleaseStream = IsBeta ? "beta" : "stable",
 				AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString().ToLower(),
@@ -750,7 +750,9 @@ namespace ZitiUpdateService {
 				}
 				InstallationNotificationEvent info = newInstallationNotificationEvent(check.GetNextVersion().ToString());
 
-				if (InstallationIsCritical(check.PublishDate))
+                info.PublishTime = check.PublishDate;
+				info.NotificationDuration = InstallationReminder();
+                if (InstallationIsCritical(check.PublishDate))
 				{
 					info.InstallTime = DateTime.Now + TimeSpan.Parse("0:0:30");
 					Logger.Warn("Installation is critical! for ZDE version: {0}. update published at: {1}. approximate install time: {2}", info.ZDEVersion, check.PublishDate, info.InstallTime);
@@ -764,7 +766,7 @@ namespace ZitiUpdateService {
 				}
 				else
 				{
-					info.InstallTime = InstallDate(check.PublishDate);
+					info.InstallTime = InstallDateFromPublishDate(check.PublishDate);
 					Logger.Info("Installation reminder for ZDE version: {0}. update published at: {1}. approximate install time: {2}", info.ZDEVersion, check.PublishDate, info.InstallTime);
 					NotifyInstallationUpdates(info);
 				}
@@ -777,7 +779,7 @@ namespace ZitiUpdateService {
 		}
 
 		private void installZDE(UpdateCheck check) {
-			string fileDestination = Path.Combine(updateFolder, check.FileName);
+			string fileDestination = Path.Combine(updateFolder, check?.FileName);
 
 			if (check.AlreadyDownloaded(updateFolder, check.FileName)) {
 				Logger.Trace("package has already been downloaded to {0}", fileDestination);
@@ -1032,7 +1034,7 @@ namespace ZitiUpdateService {
 			return reminderInt;
 		}
 
-		private DateTime InstallDate(DateTime publishDate)
+		private DateTime InstallDateFromPublishDate(DateTime publishDate)
 		{
 			var installationReminderIntervalStr = ConfigurationManager.AppSettings.Get("InstallationCritical");
 			var instCritTimespan = TimeSpan.Zero;
@@ -1060,19 +1062,12 @@ namespace ZitiUpdateService {
 
 		private void NotifyInstallationUpdates(InstallationNotificationEvent evt, bool force) {
 			try {
-				var now = DateTime.Now;
-				if (now > evt.InstallTime + InstallationReminder() || force)
-				{
-					evt.Message = "InstallationUpdate";
-					evt.Type = "Notification";
-					EventRegistry.SendEventToConsumers(evt);
-					Logger.Debug("NotifyInstallationUpdates: sent for version {0} is sent to the events pipe...", evt.ZDEVersion);
-					evt.InstallTime = DateTime.Now;
-					return;
-				} else {
-					Logger.Debug("NotifyInstallationUpdates: Not sending another notification reminder yet");
-				}
-			} catch (Exception e) {
+                evt.Message = "InstallationUpdate";
+                evt.Type = "Notification";
+                EventRegistry.SendEventToConsumers(evt);
+                Logger.Debug("NotifyInstallationUpdates: sent for version {0} is sent to the events pipe...", evt.ZDEVersion);
+                return;
+            } catch (Exception e) {
 				Logger.Error("The notification for the installation updates for version {0} has failed: {1}", evt.ZDEVersion, e);
 			}
 		}

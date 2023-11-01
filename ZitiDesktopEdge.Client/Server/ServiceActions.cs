@@ -9,7 +9,7 @@ namespace ZitiDesktopEdge.Server {
         private static ServiceController sc = new ServiceController("ziti");
         public static string ServiceStatus() {
             var status = sc.Status;
-            Logger.Debug("service status set to: {0}", sc.Status);
+            Logger.Debug("service status asked for. current value: {0}", sc.Status);
 
             if (sc.Status == ServiceControllerStatus.StopPending) {
                 //ServiceControllerStatus is reporting 'stop pending' when the service crashes or is terminated by a user
