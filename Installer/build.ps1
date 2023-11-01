@@ -36,6 +36,7 @@ if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
     if($null -eq $env:WINTUN_DL_URL) {
         echo "========================== fetching wintun.dll =========================="
         $WINTUN_DL_URL="https://www.wintun.net/builds/wintun-0.13.zip"
+        #for local debugging speed: $WINTUN_DL_URL="http://localhost:8000/wintun.zip"
         echo "Beginning to download wintun from ${WINTUN_DL_URL}"
         echo ""
         Invoke-WebRequest $WINTUN_DL_URL -OutFile "${scriptPath}\wintun.zip"
@@ -133,6 +134,7 @@ $jsonTemplate = @"
   "name": "${installerVersion} Override",
   "tag_name": "${installerVersion}",
   "published_at": "${published_at}",
+  "installation_critical": false,
   "assets": [
     {
       "name": "Ziti.Desktop.Edge.Client-${installerVersion}.exe",

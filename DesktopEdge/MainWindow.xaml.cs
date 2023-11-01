@@ -488,7 +488,9 @@ namespace ZitiDesktopEdge {
 		private void Current_Exit(object sender, ExitEventArgs e) {
 			if (notifyIcon != null) {
 				notifyIcon.Visible = false;
-				notifyIcon.Icon.Dispose();
+				if (notifyIcon.Icon != null) {
+					notifyIcon.Icon.Dispose();
+				}
 				notifyIcon.Dispose();
 				notifyIcon = null;
 			}
@@ -798,11 +800,14 @@ namespace ZitiDesktopEdge {
 				try {
 					if (evt.Message?.ToLower() == "upgrading") {
 						logger.Info("The monitor has indicated an upgrade is in progress. Shutting down the UI");
+						App.Current.Exit -= Current_Exit;
+						logger.Info("Removed Current_Exit handler");
 						notifyIcon.Visible = false;
 						notifyIcon.Icon.Dispose();
 						notifyIcon.Dispose();
 						Application.Current.Shutdown();
-                    }
+						return;
+					}
 					state.AutomaticUpdatesEnabledFromString(evt.AutomaticUpgradeDisabled);
 					state.AutomaticUpdateURL = evt.AutomaticUpgradeURL;
 					MainMenu.ShowUpdateAvailable();
@@ -901,14 +906,20 @@ namespace ZitiDesktopEdge {
 			return result;
 		}
 
-        private void ShowToast(string header, string message) {
-            new ToastContentBuilder()
-                .AddText(header)
-                .AddText(message)
-                .SetBackgroundActivation()
-                .Show();
-            NotificationsShownCount++;
-        }
+		private void ShowToast(string header, string message) {
+			try {
+				logger.Info("showing toast: {} {}", header, message);
+				new ToastContentBuilder()
+					.AddText(header)
+					.AddText(message)
+					.SetBackgroundActivation()
+					.Show();
+				NotificationsShownCount++;
+			} catch {
+				logger.Warn("couldn't show toast: {} {}", header, message);
+			}
+		}
+
         private void ShowToast(string message) {
 			ShowToast("Important Notice", message);
 		}
