@@ -88,6 +88,11 @@ jobs:
         with:
           name: ZitiDesktopEdgeClient-${{ env.VERSION }}
           path: "Installer/Output/Ziti Desktop Edge Client-*"
+      - name: Upload update json to job
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ env.VERSION }}.json
+          path: "./"
       - name: Git Status
         run: git status
       - name: git diff
