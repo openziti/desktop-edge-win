@@ -70,10 +70,10 @@ namespace ZitiUpdateService.Utils {
 					}
 					this.OnConfigurationChange?.Invoke(null, null);
 				} catch {
-                    // do nothing
-                }
-                this.watcher.Changed += OnChanged;
-            }
+					// do nothing
+				}
+				this.watcher.Changed += OnChanged;
+			}
 		}
 
 
