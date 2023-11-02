@@ -1,6 +1,8 @@
 # Sample invocations:
 # .\build-test-release.ps1 -jsonOnly $true -version 1.1.1
 # .\build-test-release.ps1 -jsonOnly $true -version 1.1.1 -stream "dev" -revertGitAfter $true
+# .\build-test-release.ps1 -version 2.2.5 -stream "dev" -revertGitAfter $true
+# .\build-test-release.ps1 -jsonOnly $true -version 2.2.5 -url https://lnxiskqx49x4.share.zrok.io/local -stream "dev" -revertGitAfter $true
 # .\build-test-release.ps1 -version 1.2.3 -url https://lnxiskqx49x4.share.zrok.io/local -stream "dev" -published_at (Get-Date)
 # .\build-test-release.ps1 -version 1.2.3 -url https://lnxiskqx49x4.share.zrok.io/local -stream "dev" -published_at "2023-11-02T14:30:00"
 param(

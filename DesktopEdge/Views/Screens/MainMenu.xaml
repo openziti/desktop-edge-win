@@ -86,15 +86,32 @@
                     <Label FontWeight="Bold" FontSize="16" Margin="0,20,0,0">URL used to discover new upgrades:</Label>
 
                     <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
-                    <Label Opacity="0.6">Change only if you understand the associated risks</Label>
-
-                    <TextBox x:Name="UpdateUrl" TextChanged="UpdateUrl_TextChanged" Padding="10" Margin="10,10,10,10" Width="325" BorderThickness="1" TextAlignment="Left" FontSize="14" Foreground="Black" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
-                        <TextBox.Resources>
-                            <Style TargetType="{x:Type Border}">
-                                <Setter Property="CornerRadius" Value="5"/>
-                            </Style>
-                        </TextBox.Resources>
-                    </TextBox>
+                    <StackPanel Orientation="Horizontal">
+                        <Label Opacity="0.6">Change only if you understand the associated risks</Label>
+                    </StackPanel>
+                    <StackPanel Margin="0,0,0,0">
+                        <TextBox x:Name="UpdateUrl" Padding="5" TextChanged="UpdateUrl_TextChanged" Width="325" BorderThickness="1" TextAlignment="Left" FontSize="13" Foreground="Black" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                            <TextBox.Resources>
+                                <Style TargetType="{x:Type Border}">
+                                    <Setter Property="CornerRadius" Value="5"/>
+                                </Style>
+                            </TextBox.Resources>
+                        </TextBox>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0">
+                            <Label Content=""/>
+                            <Button Click="ResetUrlButton_Click" Content="Reset URL" VerticalAlignment="Top" BorderThickness="1,0,1,1" Opacity=".6">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="0,0,5,5"/>
+                                        <Setter Property="Height" Value="20"/>
+                                        <Setter Property="Padding" Value="15,0,15,0"/>
+                                        <Setter Property="BorderThickness" Value="15"/>
+                                    </Style>
+                                </Button.Resources>
+                            </Button>
+                            <Label Content=""/>
+                        </StackPanel>
+                    </StackPanel>
                     <local:StyledButton x:Name="SetUpdateUrlButton" OnClick="SetUpdateUrlButton_Click" Label="Set Update URL"></local:StyledButton>
                     <local:StyledButton x:Name="CheckForUpdate" OnClick="CheckForUpdate_OnClick" Label="Check for Updates Now" Margin="0,20,0,0"></local:StyledButton>
                     <Label HorizontalAlignment="Center" x:Name="CheckForUpdateStatus" Content=""></Label>

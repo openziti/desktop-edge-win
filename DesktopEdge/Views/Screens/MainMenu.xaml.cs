@@ -16,6 +16,7 @@ using System.Configuration;
 using Ziti.Desktop.Edge.Models;
 using System.Threading;
 using System.Threading.Tasks;
+using ZitiDesktopEdge.Utility;
 
 namespace ZitiDesktopEdge {
 	/// <summary>
@@ -724,6 +725,11 @@ namespace ZitiDesktopEdge {
 			}
 			if (value < 10 || value > 500) value = defaultVal;
 			ConfigePageSizeNew.Text = value.ToString();
+		}
+
+
+		private void ResetUrlButton_Click(object sender, RoutedEventArgs e) {
+			UpdateUrl.Text = GithubAPI.ProdUrl;
 		}
 
 		private async void SetUpdateUrlButton_Click(object sender, MouseButtonEventArgs e) {
