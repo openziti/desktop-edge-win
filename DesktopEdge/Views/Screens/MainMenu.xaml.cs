@@ -52,7 +52,7 @@ namespace ZitiDesktopEdge {
 				ForceUpdate.Visibility = Visibility.Visible;
 			}
 
-            if (state.PendingUpdate.TimeLeft > 0) {
+			if (state.PendingUpdate.TimeLeft > 0) {
 				UpdateTimeLeft.Visibility = Visibility.Visible;
 				if (!state.AutomaticUpdatesDisabled) {
 					UpdateTimeLeft.Content = $"Automatic update to {state.PendingUpdate.Version} will occur on or after {state.PendingUpdate.InstallTime.ToString("g")}";
@@ -138,8 +138,7 @@ namespace ZitiDesktopEdge {
 			UpdateState();
 		}
 
-		private void ShowAutomaticUpgradesMenuAction(object sender, MouseButtonEventArgs e)
-		{
+		private void ShowAutomaticUpgradesMenuAction(object sender, MouseButtonEventArgs e) {
 			menuState = "ConfigureAutomaticUpgrades";
 			UpdateState();
 		}
@@ -188,12 +187,12 @@ namespace ZitiDesktopEdge {
 			ConfigItems.Visibility = Visibility.Collapsed;
 			LogLevelItems.Visibility = Visibility.Collapsed;
 			AutomaticUpgradesItems.Visibility = Visibility.Collapsed;
-            Visibility visibilityFromUpdateAvail = state.UpdateAvailable ? Visibility.Visible : Visibility.Collapsed;
+			Visibility visibilityFromUpdateAvail = state.UpdateAvailable ? Visibility.Visible : Visibility.Collapsed;
 			TriggerUpdateButton.Visibility = visibilityFromUpdateAvail;
 			ForceUpdate.Visibility = visibilityFromUpdateAvail;
 			CheckForUpdateStatus.Visibility = visibilityFromUpdateAvail;
 
-            if (menuState == "About") {
+			if (menuState == "About") {
 				MenuTitle.Content = "About";
 				AboutItemsArea.Visibility = Visibility.Visible;
 				AboutItems.Visibility = Visibility.Visible;
@@ -308,7 +307,7 @@ namespace ZitiDesktopEdge {
 		async private void ShowFeedback(object sender, MouseButtonEventArgs e) {
 			try {
 				MainWindow.ShowLoad("Collecting Information", "Please wait while we run some commands\nand collect some diagnostic information");
-				
+
 				System.Text.StringBuilder sb = new System.Text.StringBuilder();
 				sb.Append("Logs collected at : " + DateTime.Now.ToString());
 				sb.Append(". client version : " + appVersion);
@@ -405,11 +404,11 @@ namespace ZitiDesktopEdge {
 			this.UpdateUrl.Text = state.AutomaticUpdateURL;
 		}
 
-        async private void CheckForUpdate_OnClick(object sender, MouseButtonEventArgs e) {
-            logger.Info("checking for update...");
-            CheckForUpdateStatus.Content = "Checking for updates...";
-            await Task.Delay(1000);
-            if (state.AutomaticUpdateURL != this.UpdateUrl.Text) {
+		async private void CheckForUpdate_OnClick(object sender, MouseButtonEventArgs e) {
+			logger.Info("checking for update...");
+			CheckForUpdateStatus.Content = "Checking for updates...";
+			await Task.Delay(1000);
+			if (state.AutomaticUpdateURL != this.UpdateUrl.Text) {
 				SetUpdateUrlButton_Click(sender, e);
 			}
 			try {
@@ -421,8 +420,8 @@ namespace ZitiDesktopEdge {
 				CheckForUpdateStatus.Content = r.Message;
 				if (r.UpdateAvailable) {
 					TriggerUpdateButton.Visibility = Visibility.Visible;
-                    ForceUpdate.Visibility = Visibility.Visible;
-                } else {
+					ForceUpdate.Visibility = Visibility.Visible;
+				} else {
 					TriggerUpdateButton.Visibility = Visibility.Collapsed;
 					ForceUpdate.Visibility = Visibility.Collapsed;
 				}
@@ -433,11 +432,11 @@ namespace ZitiDesktopEdge {
 		}
 
 
-        private void TriggerUpdate_MouseEventArgs_Click(object sender, MouseButtonEventArgs e) {
-            TriggerUpdate_RoutedEventArgs_Click(sender, e);
+		private void TriggerUpdate_MouseEventArgs_Click(object sender, MouseButtonEventArgs e) {
+			TriggerUpdate_RoutedEventArgs_Click(sender, e);
 		}
 
-        async private void TriggerUpdate_RoutedEventArgs_Click(object sender, RoutedEventArgs e) {
+		async private void TriggerUpdate_RoutedEventArgs_Click(object sender, RoutedEventArgs e) {
 			var src = sender as Button;
 			try {
 				CheckForUpdateStatus.Content = "Requesting automatic update...";
@@ -466,7 +465,7 @@ namespace ZitiDesktopEdge {
 
 		public void SetupIdList(ZitiIdentity[] ids) {
 			IdListView.Children.Clear();
-			for (int i=0; i<ids.Length; i++) {
+			for (int i = 0; i < ids.Length; i++) {
 				MenuIdentityItem item = new MenuIdentityItem();
 				item.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
 				item.Label = ids[i].Name;
@@ -498,7 +497,7 @@ namespace ZitiDesktopEdge {
 			ConfigItems.Opacity = 0.3;
 			LogLevelItems.IsEnabled = false;
 			LogLevelItems.Opacity = 0.3;
-        }
+		}
 
 		public void Connected() {
 			ConfigItems.IsEnabled = true;
@@ -574,9 +573,9 @@ namespace ZitiDesktopEdge {
 			ConfigIpNew.Text = ConfigIp.Value;
 			ConfigePageSizeNew.Text = ConfigPageSize.Value;
 			CheckRange();
-			for (int i=0; i<ConfigMaskNew.Items.Count; i++) {
+			for (int i = 0; i < ConfigMaskNew.Items.Count; i++) {
 				ComboBoxItem item = (ComboBoxItem)ConfigMaskNew.Items.GetItemAt(i);
-				if (item.Content.ToString().IndexOf(ConfigSubnet.Value)>0) {
+				if (item.Content.ToString().IndexOf(ConfigSubnet.Value) > 0) {
 					ConfigMaskNew.SelectedIndex = i;
 					break;
 				}
@@ -707,12 +706,12 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-        private void ConfigePageSizeNew_KeyDown(object sender, KeyEventArgs e) {
+		private void ConfigePageSizeNew_KeyDown(object sender, KeyEventArgs e) {
 		}
 
-        private void ConfigePageSizeNew_LostFocus(object sender, RoutedEventArgs e) {
+		private void ConfigePageSizeNew_LostFocus(object sender, RoutedEventArgs e) {
 			CheckRange();
-        }
+		}
 
 		private void CheckRange() {
 			int defaultVal = 250;
@@ -722,30 +721,30 @@ namespace ZitiDesktopEdge {
 			}
 			if (value < 10 || value > 500) value = defaultVal;
 			ConfigePageSizeNew.Text = value.ToString();
-        }
+		}
 
-        private async void SetUpdateUrlButton_Click(object sender, MouseButtonEventArgs e) {
-            var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
+		private async void SetUpdateUrlButton_Click(object sender, MouseButtonEventArgs e) {
+			var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
 
-            SvcResponse r = await monitorClient.SetAutomaticUpgradeURLAsync(UpdateUrl.Text);
+			SvcResponse r = await monitorClient.SetAutomaticUpgradeURLAsync(UpdateUrl.Text);
 			if (r == null) {
-                logger.Error("Failed to set automatic upgrade url! SvcResponse was null?!?!?");
-                MainWindow.ShowError("Could not set url!", "Is the monitor service running?");
-            } else if (r.Code != 0) {
-                logger.Error(r?.Error);
-                MainWindow.ShowError("Could not set url", r?.Error);
-            } else {
-                this.OnShowBlurb?.Invoke("Config Saved.");
-            }
-        }
+				logger.Error("Failed to set automatic upgrade url! SvcResponse was null?!?!?");
+				MainWindow.ShowError("Could not set url!", "Is the monitor service running?");
+			} else if (r.Code != 0) {
+				logger.Error(r?.Error);
+				MainWindow.ShowError("Could not set url", r?.Error);
+			} else {
+				this.OnShowBlurb?.Invoke("Config Saved.");
+			}
+		}
 
-        private void UpdateUrl_TextChanged(object sender, TextChangedEventArgs e) {
+		private void UpdateUrl_TextChanged(object sender, TextChangedEventArgs e) {
 			logger.Info("url: {}", state.AutomaticUpdateURL);
-        }
+		}
 
-        private void Button_Click(object sender, RoutedEventArgs e) {
+		private void Button_Click(object sender, RoutedEventArgs e) {
 			logger.Info("sender name: {}", sender);
 
-        }
-    }
+		}
+	}
 }

@@ -9,8 +9,8 @@
       d:DesignHeight="450" d:DesignWidth="400" IsVisibleChanged="UserControl_IsVisibleChanged"
 >
     <StackPanel>
-        <Expander Header="MFA" Background="Fuchsia">
-            <StackPanel Background="Pink">
+        <Expander Header="MFA" Background="AliceBlue">
+            <StackPanel Background="AliceBlue">
                 <Button x:Name="btn1" Content="Add Fingerprint and click to enable mfa" Click="btn1_Click"/>
                 <TextBox x:Name="FingerPrint"/>
                 <TextBox x:Name="MfaActionOp"/>
