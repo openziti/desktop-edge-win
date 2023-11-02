@@ -39,9 +39,9 @@ namespace ZitiUpdateService {
 				return File.Exists(Path.Combine(exeLocation, betaStreamMarkerFile));
 			}
 			private set { }
-        }
+		}
 
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		private System.Timers.Timer _updateTimer = new System.Timers.Timer();
 		private static SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
@@ -99,7 +99,7 @@ namespace ZitiUpdateService {
 			if (!Directory.Exists(updateFolder)) {
 				Directory.CreateDirectory(updateFolder);
 			}
-        }
+		}
 
 		private SvcResponse SetAutomaticUpdateURL(string url) {
 			SvcResponse r = new SvcResponse();
@@ -116,8 +116,7 @@ namespace ZitiUpdateService {
 			return r;
 		}
 
-        private void CurrentSettings_OnConfigurationChange(object sender, ControllerEvent e)
-		{
+		private void CurrentSettings_OnConfigurationChange(object sender, ControllerEvent e) {
 			MonitorServiceStatusEvent evt;
 			if (lastInstallationNotification != null) {
 				evt = lastInstallationNotification;
@@ -169,7 +168,7 @@ namespace ZitiUpdateService {
 			StatusCheck r = new StatusCheck();
 
 			UpdateCheck check = getCheck(assemblyVersion);
-			
+
 			r.Code = check.Avail;
 			r.ReleaseStream = IsBeta ? "beta" : "stable";
 			switch (r.Code) {
@@ -194,8 +193,7 @@ namespace ZitiUpdateService {
 		private void SetLogLevel(string level) {
 			try {
 				Logger.Info("request to change log level received: {0}", level);
-				if (("" + level).ToLower().Trim() == "verbose")
-				{
+				if (("" + level).ToLower().Trim() == "verbose") {
 					level = "trace";
 					Logger.Info("request to change log level to verbose - but using trace instead");
 				}
@@ -516,7 +514,7 @@ namespace ZitiUpdateService {
 					if (resp != null && resp.Answers?.Count > 0) {
 						foreach (DnsResourceRecord dnsrec in resp.Answers) {
 							if (dnsrec.GetType() == typeof(ARecord)) {
-								ARecord arec = (ARecord) dnsrec;
+								ARecord arec = (ARecord)dnsrec;
 								if (arec.Address.Equals(lh)) {
 									dnsProbeFailCount = 0;
 									Logger.Debug("dns probe success");
@@ -527,13 +525,12 @@ namespace ZitiUpdateService {
 								Logger.Debug("dns probe returned an answer but response was not an ARecord? [" + dnsrec.GetType().Name + "]");
 							}
 						}
-					} else
-					{
+					} else {
 						Logger.Debug("dns probe failed. no answer found for dew-dns-probe.openziti.org");
 						logDnsProbeFailure(null);
 					}
 				}
-			} catch(Exception dnse) {
+			} catch (Exception dnse) {
 				//don't really care but it probably means a timeout happened.  but might as well log a trace error anyway...
 				//it's expected that this is due to the service shutting down...
 				logDnsProbeFailure(dnse);
@@ -643,8 +640,7 @@ namespace ZitiUpdateService {
 				upInt = new TimeSpan(0, 10, 0);
 			}
 
-			if (upInt.TotalMilliseconds < 10 * 60 * 1000)
-			{
+			if (upInt.TotalMilliseconds < 10 * 60 * 1000) {
 				Logger.Warn("provided time [{0}] is too small. Using 10 minutes.", updateTimerInterval);
 #if MOCKUPDATE || ALLOWFASTINTERVAL
 				Logger.Info("MOCKUPDATE detected. Not limiting check to 10 minutes");
@@ -717,8 +713,8 @@ namespace ZitiUpdateService {
 			InstallationNotificationEvent info = new InstallationNotificationEvent() {
 				Code = 0,
 				Error = "",
-                Message = "InstallationUpdate",
-                Type = "Notification",
+				Message = "InstallationUpdate",
+				Type = "Notification",
 				Status = ServiceActions.ServiceStatus(),
 				ReleaseStream = IsBeta ? "beta" : "stable",
 				AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString().ToLower(),
@@ -741,7 +737,7 @@ namespace ZitiUpdateService {
 				if (check.Avail >= 0) {
 					Logger.Debug("update check complete. no update available");
 					semaphore.Release();
-					return; 
+					return;
 				}
 
 				Logger.Info("update is available.");
@@ -750,10 +746,9 @@ namespace ZitiUpdateService {
 				}
 				InstallationNotificationEvent info = newInstallationNotificationEvent(check.GetNextVersion().ToString());
 
-                info.PublishTime = check.PublishDate;
+				info.PublishTime = check.PublishDate;
 				info.NotificationDuration = InstallationReminder();
-                if (InstallationIsCritical(check.PublishDate))
-				{
+				if (InstallationIsCritical(check.PublishDate)) {
 					info.InstallTime = DateTime.Now + TimeSpan.Parse("0:0:30");
 					Logger.Warn("Installation is critical! for ZDE version: {0}. update published at: {1}. approximate install time: {2}", info.ZDEVersion, check.PublishDate, info.InstallTime);
 					NotifyInstallationUpdates(info, true);
@@ -763,9 +758,7 @@ namespace ZitiUpdateService {
 						Thread.Sleep(30);
 						installZDE(check);
 					}
-				}
-				else
-				{
+				} else {
 					info.InstallTime = InstallDateFromPublishDate(check.PublishDate);
 					Logger.Info("Installation reminder for ZDE version: {0}. update published at: {1}. approximate install time: {2}", info.ZDEVersion, check.PublishDate, info.InstallTime);
 					NotifyInstallationUpdates(info);
@@ -944,13 +937,11 @@ namespace ZitiUpdateService {
 			EventRegistry.SendEventToConsumers(status);
 		}
 
-		private void ServiceClient_OnLogLevelEvent(object sender, LogLevelEvent e)
-		{
+		private void ServiceClient_OnLogLevelEvent(object sender, LogLevelEvent e) {
 			SetLogLevel(e.LogLevel);
 		}
 
-		private void ServiceClient_OnNotificationEvent(object sender, NotificationEvent e)
-		{
+		private void ServiceClient_OnNotificationEvent(object sender, NotificationEvent e) {
 			Logger.Trace("Notification event but not acting: {0}", e.Op);
 		}
 
@@ -990,8 +981,8 @@ namespace ZitiUpdateService {
 					Message = "SERVICE DOWN",
 					Status = ServiceActions.ServiceStatus(),
 					AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString(),
-                    AutomaticUpgradeURL = CurrentSettings.AutomaticUpdateURL,
-                };
+					AutomaticUpgradeURL = CurrentSettings.AutomaticUpdateURL,
+				};
 				EventRegistry.SendEventToConsumers(status);
 			} else {
 				Logger.Error("SERVICE IS DOWN and did not exit cleanly.");
@@ -1004,7 +995,7 @@ namespace ZitiUpdateService {
 					Status = ServiceActions.ServiceStatus(),
 					ReleaseStream = IsBeta ? "beta" : "stable",
 					AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString(),
-                    AutomaticUpgradeURL = CurrentSettings.AutomaticUpdateURL,
+					AutomaticUpgradeURL = CurrentSettings.AutomaticUpdateURL,
 				};
 				EventRegistry.SendEventToConsumers(status);
 			}
@@ -1025,34 +1016,28 @@ namespace ZitiUpdateService {
 			}
 		}
 
-		private TimeSpan InstallationReminder()
-		{
+		private TimeSpan InstallationReminder() {
 			var installationReminderIntervalStr = ConfigurationManager.AppSettings.Get("InstallationReminder");
 			var reminderInt = TimeSpan.Zero;
-			if (!TimeSpan.TryParse(installationReminderIntervalStr, out reminderInt))
-			{
+			if (!TimeSpan.TryParse(installationReminderIntervalStr, out reminderInt)) {
 				reminderInt = new TimeSpan(0, 1, 0);
 			}
 			return reminderInt;
 		}
 
-		private DateTime InstallDateFromPublishDate(DateTime publishDate)
-		{
+		private DateTime InstallDateFromPublishDate(DateTime publishDate) {
 			var installationReminderIntervalStr = ConfigurationManager.AppSettings.Get("InstallationCritical");
 			var instCritTimespan = TimeSpan.Zero;
-			if (!TimeSpan.TryParse(installationReminderIntervalStr, out instCritTimespan))
-			{
+			if (!TimeSpan.TryParse(installationReminderIntervalStr, out instCritTimespan)) {
 				instCritTimespan = TimeSpan.Parse("7:0:0:0");
 			}
 			return publishDate + instCritTimespan;
 		}
 
-		private bool InstallationIsCritical(DateTime publishDate)
-		{
+		private bool InstallationIsCritical(DateTime publishDate) {
 			var installationReminderIntervalStr = ConfigurationManager.AppSettings.Get("InstallationCritical");
 			var instCritTimespan = TimeSpan.Zero;
-			if (!TimeSpan.TryParse(installationReminderIntervalStr, out instCritTimespan))
-			{
+			if (!TimeSpan.TryParse(installationReminderIntervalStr, out instCritTimespan)) {
 				instCritTimespan = TimeSpan.Parse("7:0:0:0");
 			}
 			return DateTime.Now > publishDate + instCritTimespan;
@@ -1064,12 +1049,12 @@ namespace ZitiUpdateService {
 
 		private void NotifyInstallationUpdates(InstallationNotificationEvent evt, bool force) {
 			try {
-                evt.Message = "InstallationUpdate";
-                evt.Type = "Notification";
-                EventRegistry.SendEventToConsumers(evt);
-                Logger.Debug("NotifyInstallationUpdates: sent for version {0} is sent to the events pipe...", evt.ZDEVersion);
-                return;
-            } catch (Exception e) {
+				evt.Message = "InstallationUpdate";
+				evt.Type = "Notification";
+				EventRegistry.SendEventToConsumers(evt);
+				Logger.Debug("NotifyInstallationUpdates: sent for version {0} is sent to the events pipe...", evt.ZDEVersion);
+				return;
+			} catch (Exception e) {
 				Logger.Error("The notification for the installation updates for version {0} has failed: {1}", evt.ZDEVersion, e);
 			}
 		}
