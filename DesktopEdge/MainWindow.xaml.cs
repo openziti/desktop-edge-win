@@ -53,7 +53,7 @@ namespace ZitiDesktopEdge {
 		private string _blurbUrl = "";
 
 		private DateTime NextNotificationTime;
-        private static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
+		private static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
 		static System.Reflection.Assembly asm = System.Reflection.Assembly.GetExecutingAssembly();
 
@@ -363,8 +363,8 @@ namespace ZitiDesktopEdge {
 		private System.ComponentModel.IContainer components;
 		public MainWindow() {
 			InitializeComponent();
-            NextNotificationTime = DateTime.Now;
-            SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
+			NextNotificationTime = DateTime.Now;
+			SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
 			string nlogFile = Path.Combine(ExecutionDirectory, ThisAssemblyName + "-log.config");
 
 
@@ -856,42 +856,42 @@ namespace ZitiDesktopEdge {
 				logger.Debug("MonitorClient_OnInstallationNotificationEvent: {0}", evt.Message);
 				switch (evt.Message?.ToLower()) {
 					case "installationupdate":
-                        logger.Debug("Installation Update is available - {0}", evt.ZDEVersion);
-                        var remaining = evt.InstallTime - DateTime.Now;
+						logger.Debug("Installation Update is available - {0}", evt.ZDEVersion);
+						var remaining = evt.InstallTime - DateTime.Now;
 
-                        state.AutomaticUpdatesEnabledFromString(evt.AutomaticUpgradeDisabled);
-                        state.PendingUpdate.Version = evt.ZDEVersion;
-                        state.PendingUpdate.InstallTime = evt.InstallTime;
+						state.AutomaticUpdatesEnabledFromString(evt.AutomaticUpgradeDisabled);
+						state.PendingUpdate.Version = evt.ZDEVersion;
+						state.PendingUpdate.InstallTime = evt.InstallTime;
 						state.UpdateAvailable = true;
-                        MainMenu.ShowUpdateAvailable();
-                        AlertCanvas.Visibility = Visibility.Visible;
+						MainMenu.ShowUpdateAvailable();
+						AlertCanvas.Visibility = Visibility.Visible;
 
-                        if (isToastEnabled()) {
-                            if (!state.AutomaticUpdatesDisabled) {
-                                if (remaining.TotalSeconds < 60) {
-                                    //this is an immediate update - show a different message
-                                    ShowToast("Ziti Desktop Edge will initiate auto installation in the next minute!");
-                                } else {
-                                    if (DateTime.Now > NextNotificationTime) {
-                                        ShowToast($"Update {evt.ZDEVersion} is available for Ziti Desktop Edge and will be automatically installed by " + evt.InstallTime);
-                                        NextNotificationTime = DateTime.Now + evt.NotificationDuration;
-                                    } else {
-                                        logger.Debug("Skipping notification. Time until next notification {} seconds which is at {}", (int)((NextNotificationTime - DateTime.Now).TotalSeconds), NextNotificationTime);
-                                    }
-                                }
-                            } else {
-                                ShowToast("New version available", $"Version {evt.ZDEVersion} is available for Ziti Desktop Edge");
-                            }
-                            SetNotifyIcon("");
-                            // display a tag in UI and a button for the update software
-                        }
-                        break;
+						if (isToastEnabled()) {
+							if (!state.AutomaticUpdatesDisabled) {
+								if (remaining.TotalSeconds < 60) {
+									//this is an immediate update - show a different message
+									ShowToast("Ziti Desktop Edge will initiate auto installation in the next minute!");
+								} else {
+									if (DateTime.Now > NextNotificationTime) {
+										ShowToast($"Update {evt.ZDEVersion} is available for Ziti Desktop Edge and will be automatically installed by " + evt.InstallTime);
+										NextNotificationTime = DateTime.Now + evt.NotificationDuration;
+									} else {
+										logger.Debug("Skipping notification. Time until next notification {} seconds which is at {}", (int)((NextNotificationTime - DateTime.Now).TotalSeconds), NextNotificationTime);
+									}
+								}
+							} else {
+								ShowToast("New version available", $"Version {evt.ZDEVersion} is available for Ziti Desktop Edge");
+							}
+							SetNotifyIcon("");
+							// display a tag in UI and a button for the update software
+						}
+						break;
 					case "configuration changed":
 						break;
 					default:
-                        logger.Debug("unexpected event type?");
+						logger.Debug("unexpected event type?");
 						break;
-                }
+				}
 			});
 		}
 
