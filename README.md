@@ -85,5 +85,5 @@ Build the application using the same step "Building a release" above, it will ge
 ## Testing Automatic Upgrades
 
 When updating the ZitiUpdateService (aka ZitiMonitorService), it's important to ensure the upgrade solution continues to work.
-For information about this testing, see [./ZitiUpdateService/upgradeTesting/README.md](./ZitiUpdateService/upgradeTesting/README.md)
+For information about this testing, see [./release-streams/README.md](./release-streams/README.md)
 

@@ -17,8 +17,8 @@ if($exitCode -gt 0) {
   exit $exitCode
 }
 
-mkdir .\ZitiUpdateService\upgradeTesting\ZitiDesktopEdgeClient\${env:ZITI_DESKTOP_EDGE_VERSION} -ErrorAction Ignore > $null
-move -Force "./Installer/Output/Ziti Desktop Edge Client-${env:ZITI_DESKTOP_EDGE_VERSION}.exe" ".\ZitiUpdateService\upgradeTesting\ZitiDesktopEdgeClient\${env:ZITI_DESKTOP_EDGE_VERSION}\Ziti.Desktop.Edge.Client-${env:ZITI_DESKTOP_EDGE_VERSION}.exe"
-move -Force "./Installer/Output/Ziti Desktop Edge Client-${env:ZITI_DESKTOP_EDGE_VERSION}.exe.sha256" ".\ZitiUpdateService\upgradeTesting\ZitiDesktopEdgeClient\${env:ZITI_DESKTOP_EDGE_VERSION}\Ziti.Desktop.Edge.Client-${env:ZITI_DESKTOP_EDGE_VERSION}.exe.sha256"
-move -Force "${env:ZITI_DESKTOP_EDGE_VERSION}.json" ".\ZitiUpdateService\upgradeTesting\version-check.json"
+mkdir .\release-streams\local\${env:ZITI_DESKTOP_EDGE_VERSION} -ErrorAction Ignore > $null
+Move-Item -Force "./Installer/Output/Ziti Desktop Edge Client-${env:ZITI_DESKTOP_EDGE_VERSION}.exe" ".\release-streams\local\${env:ZITI_DESKTOP_EDGE_VERSION}\Ziti.Desktop.Edge.Client-${env:ZITI_DESKTOP_EDGE_VERSION}.exe"
+Move-Item -Force "./Installer/Output/Ziti Desktop Edge Client-${env:ZITI_DESKTOP_EDGE_VERSION}.exe.sha256" ".\release-streams\local\${env:ZITI_DESKTOP_EDGE_VERSION}\Ziti.Desktop.Edge.Client-${env:ZITI_DESKTOP_EDGE_VERSION}.exe.sha256"
+Move-Item -Force "${env:ZITI_DESKTOP_EDGE_VERSION}.json" ".\release-streams\local.json"
 
