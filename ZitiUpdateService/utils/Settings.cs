@@ -60,14 +60,20 @@ namespace ZitiUpdateService.Utils {
 			}
 		}
 		internal void Write() {
-			try {
-				using (StreamWriter file = File.CreateText(Location)) {
-					serializer.Serialize(file, this);
-				}
-				this.OnConfigurationChange?.Invoke(null, null);
-			} catch {
-				// do nothing
-			}
+			lock (this) {
+				this.watcher.Changed -= OnChanged;
+				try {
+					using (StreamWriter file = File.CreateText(Location)) {
+						serializer.Serialize(file, this);
+						file.Flush();
+						file.Close();
+					}
+					this.OnConfigurationChange?.Invoke(null, null);
+				} catch {
+                    // do nothing
+                }
+                this.watcher.Changed += OnChanged;
+            }
 		}
 
 

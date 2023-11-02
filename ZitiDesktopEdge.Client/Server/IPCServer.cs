@@ -72,6 +72,7 @@ namespace ZitiDesktopEdge.Server {
                         pipeSecurity);
 
                     await ipcPipeServer.WaitForConnectionAsync();
+                    
                     Logger.Debug("Total ipc clients now at: {0}", ++idx);
                     _ = Task.Run(async () => {
                         try {
@@ -151,8 +152,8 @@ namespace ZitiDesktopEdge.Server {
 
         async public Task handleEventClientAsync(NamedPipeServerStream ss, OnClientAsync onClient) {
             using (ss) {
-
                 StreamWriter writer = new StreamWriter(ss);
+
                 EventHandler eh = async (object sender, EventArgs e) => {
                     await writer.WriteLineAsync(sender.ToString());
                     await writer.FlushAsync();

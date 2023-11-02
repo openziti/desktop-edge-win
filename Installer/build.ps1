@@ -26,7 +26,9 @@ if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
     }
     echo "Beginning to download ziti-edge-tunnel from ${zet_dl}"
     echo ""
-    Invoke-WebRequest $zet_dl -OutFile "${scriptPath}\zet.zip"
+    $response = Invoke-WebRequest $zet_dl -OutFile "${scriptPath}\zet.zip"
+    verifyFile("${scriptPath}\zet.zip")
+
     echo "Expanding downloaded file..."
     Expand-Archive -Path "${scriptPath}\zet.zip" -Force -DestinationPath "${buildPath}\service"
     echo "expanded zet.zip file to ${buildPath}\service"
@@ -34,9 +36,11 @@ if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
     if($null -eq $env:WINTUN_DL_URL) {
         echo "========================== fetching wintun.dll =========================="
         $WINTUN_DL_URL="https://www.wintun.net/builds/wintun-0.13.zip"
+        #for local debugging speed: $WINTUN_DL_URL="http://localhost:8000/wintun.zip"
         echo "Beginning to download wintun from ${WINTUN_DL_URL}"
         echo ""
         Invoke-WebRequest $WINTUN_DL_URL -OutFile "${scriptPath}\wintun.zip"
+        verifyFile("${scriptPath}\wintun.zip")
         echo "Expanding downloaded file..."
         Expand-Archive -Path "${scriptPath}\wintun.zip" -Force -DestinationPath "${buildPath}\service"
         echo "expanded wintun.zip file to ${buildPath}\service"
@@ -77,7 +81,13 @@ Pop-Location
 $ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer 21.1"
 $ADVINST = "${ADV_INST_HOME}\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
+
 $installerVersion=(Get-Content -Path ${scriptPath}\..\version)
+if($null -ne $env:ZITI_DESKTOP_EDGE_VERSION) {
+    echo "ZITI_DESKTOP_EDGE_VERSION is set. Using that: ${env:ZITI_DESKTOP_EDGE_VERSION} instead of version found in file ${installerVersion}"
+    $installerVersion=$env:ZITI_DESKTOP_EDGE_VERSION
+    echo "Version set to: ${installerVersion}"
+}
 $action = '/SetVersion'
 
 echo "issuing $ADVINST /edit $ADVPROJECT $action $installerVersion (service version: $serviceVersion) - see https://www.advancedinstaller.com/user-guide/set-version.html"
@@ -110,3 +120,33 @@ if($null -eq $env:OPENZITI_P12_PASS) {
 }
 (Get-FileHash "${exeAbsPath}").Hash > "${scriptPath}\Output\Ziti Desktop Edge Client-${installerVersion}.exe.sha256"
 echo "========================== build.ps1 competed =========================="
+
+echo "=========== emitting a json file that represents this build ============"
+if($null -eq $env:ZITI_DESKTOP_EDGE_DOWNLOAD_URL) {
+    $dlUrlRoot="https://github.com/openziti/desktop-edge-win/releases/download/"
+} else {
+    $dlUrlRoot=$env:ZITI_DESKTOP_EDGE_DOWNLOAD_URL
+}
+$dlUrlRoot = $dlUrlRoot.TrimEnd(" ", "/")
+$published_at = Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ"
+$jsonTemplate = @"
+{
+  "name": "${installerVersion} Override",
+  "tag_name": "${installerVersion}",
+  "published_at": "${published_at}",
+  "installation_critical": false,
+  "assets": [
+    {
+      "name": "Ziti.Desktop.Edge.Client-${installerVersion}.exe",
+      "browser_download_url": "${dlUrlRoot}/${installerVersion}/Ziti.Desktop.Edge.Client-${installerVersion}.exe"
+    }
+  ]
+}
+"@
+
+$jsonBlob = $jsonTemplate -replace '\$\{installerVersion\}', $installerVersion
+$jsonBlob = $jsonBlob -replace '\$\{published_at\}', $published_at
+$outputFilePath = "${installerVersion}.json"
+$jsonBlob | Set-Content -Path $outputFilePath
+
+echo "====== emitting a json file that represents this build: complete ======="

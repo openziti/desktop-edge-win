@@ -282,3 +282,4 @@ ziti-edge-tunnel/*.zip
 OPENZITI_P12.b64
 Installer/wintun.zip
 Installer/zet.zip
+ZitiUpdateService/upgradeTesting/ZitiDesktopEdgeClient-*
