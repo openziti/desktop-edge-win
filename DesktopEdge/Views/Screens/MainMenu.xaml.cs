@@ -437,7 +437,10 @@ namespace ZitiDesktopEdge {
 		}
 
 		async private void TriggerUpdate_RoutedEventArgs_Click(object sender, RoutedEventArgs e) {
-			var src = sender as Button;
+			Button src = null;
+			if (sender is Button) {
+				src = sender as Button;
+			}
 			try {
 				CheckForUpdateStatus.Content = "Requesting automatic update...";
 				var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
@@ -445,10 +448,10 @@ namespace ZitiDesktopEdge {
 				CheckForUpdateStatus.Content = "Automatic update requested...";
 				if (r == null) {
 					MainWindow.ShowError("Error When Triggering Update", "An error occurred while trying to trigger the update.");
-					src.IsEnabled = true;
+					if (src != null) src.IsEnabled = true;
 				} else {
 					this.OnShowBlurb?.Invoke("Update Requested");
-					src.Content = "Request Update Again";
+					if (src != null) src.Content = "Request Update Again";
 					UpdateTimeLeft.Content = "Update Requested at " + DateTime.Now;
 					TriggerUpdateButton.Visibility = Visibility.Collapsed;
 					logger.Info(r?.ToString());
@@ -459,7 +462,7 @@ namespace ZitiDesktopEdge {
 			} catch (Exception ex) {
 				logger.Error(ex, "unexpected error in update check: {0}", ex.Message);
 				MainWindow.ShowError("Error When Triggering Update", "An error occurred while trying to trigger the update.");
-				src.IsEnabled = true;
+				if (src != null) src.IsEnabled = true;
 			}
 		}
 

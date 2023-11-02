@@ -2,7 +2,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$version,
 
-    [string]$url = "http://localhost:8000/ZitiDesktopEdgeClient"
+    [string]$url = "http://localhost:8000/local"
 )
 
 #$env:ZITI_DESKTOP_EDGE_DOWNLOAD_URL="http://localhost:8000"

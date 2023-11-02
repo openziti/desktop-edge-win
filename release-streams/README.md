@@ -31,4 +31,4 @@ you want to test 2.2.1, you would run:
 * `.\build-test-release.ps1 -version 2.2.1`
 * cd `${project_root}/release-streams/local`
 * `python -m http.server 8000`
-
+* open the ZDEW, change the update url to http://localhost:8000/local.json and check for updates

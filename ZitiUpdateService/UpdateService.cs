@@ -176,6 +176,7 @@ namespace ZitiUpdateService {
 					r.Message = $"An update is available: {check.GetNextVersion()}";
 					r.UpdateAvailable = true;
 					Logger.Debug("Update {0} is published on {1}", check.GetNextVersion(), check.PublishDate);
+					checkUpdateImmediately();
 					break;
 				case 0:
 					r.Message = $"The current version [{assemblyVersion}] is the latest";
@@ -719,7 +720,7 @@ namespace ZitiUpdateService {
 				ReleaseStream = IsBeta ? "beta" : "stable",
 				AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString().ToLower(),
 				AutomaticUpgradeURL = CurrentSettings.AutomaticUpdateURL,
-				ZDEVersion = version
+				ZDEVersion = version,
 			};
 			return info;
 		}
@@ -745,7 +746,6 @@ namespace ZitiUpdateService {
 					Directory.CreateDirectory(updateFolder);
 				}
 				InstallationNotificationEvent info = newInstallationNotificationEvent(check.GetNextVersion().ToString());
-
 				info.PublishTime = check.PublishDate;
 				info.NotificationDuration = InstallationReminder();
 				if (InstallationIsCritical(check.PublishDate)) {
