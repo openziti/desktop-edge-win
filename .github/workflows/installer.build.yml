@@ -6,7 +6,6 @@ on:
       - main
       - 'release-*'
       - 'beta-release-*'
-      - '*url*'
 
 env:
   BUILD_CONFIG: "Release"
