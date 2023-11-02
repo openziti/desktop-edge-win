@@ -119,34 +119,10 @@ if($null -eq $env:OPENZITI_P12_PASS) {
     & "$ADV_INST_HOME\third-party\winsdk\x64\signtool" sign /f "${scriptPath}\openziti.p12" /p "${env:OPENZITI_P12_PASS}" /tr http://ts.ssl.com /fd sha512 /td sha512 /as "${exeAbsPath}"
 }
 (Get-FileHash "${exeAbsPath}").Hash > "${scriptPath}\Output\Ziti Desktop Edge Client-${installerVersion}.exe.sha256"
-echo "========================== build.ps1 competed =========================="
+echo "========================== build.ps1 completed =========================="
 
-echo "=========== emitting a json file that represents this build ============"
-if($null -eq $env:ZITI_DESKTOP_EDGE_DOWNLOAD_URL) {
-    $dlUrlRoot="https://github.com/openziti/desktop-edge-win/releases/download/"
-} else {
-    $dlUrlRoot=$env:ZITI_DESKTOP_EDGE_DOWNLOAD_URL
-}
-$dlUrlRoot = $dlUrlRoot.TrimEnd(" ", "/")
-$published_at = Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ"
-$jsonTemplate = @"
-{
-  "name": "${installerVersion} Override",
-  "tag_name": "${installerVersion}",
-  "published_at": "${published_at}",
-  "installation_critical": false,
-  "assets": [
-    {
-      "name": "Ziti.Desktop.Edge.Client-${installerVersion}.exe",
-      "browser_download_url": "${dlUrlRoot}/${installerVersion}/Ziti.Desktop.Edge.Client-${installerVersion}.exe"
-    }
-  ]
-}
-"@
-
-$jsonBlob = $jsonTemplate -replace '\$\{installerVersion\}', $installerVersion
-$jsonBlob = $jsonBlob -replace '\$\{published_at\}', $published_at
-$outputFilePath = "${installerVersion}.json"
-$jsonBlob | Set-Content -Path $outputFilePath
-
-echo "====== emitting a json file that represents this build: complete ======="
+$defaultRootUrl = "https://github.com/openziti/desktop-edge-win/releases/download/"
+$defaultStream = "beta"
+$defaultPublishedAt = Get-Date
+$outputPath = "${installerVersion}.json"
+& .\Installer\output-build-json.ps1 -version $installerVersion -url $defaultRootUrl -stream $defaultStream -published_at $defaultPublishedAt -outputPath $outputPath

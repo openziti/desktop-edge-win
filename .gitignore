@@ -284,4 +284,4 @@ Installer/wintun.zip
 Installer/zet.zip
 release-streams/local/*
 release-streams/local.json
-
+release-streams/dev.json

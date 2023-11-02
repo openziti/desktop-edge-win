@@ -32,3 +32,10 @@ you want to test 2.2.1, you would run:
 * cd `${project_root}/release-streams/local`
 * `python -m http.server 8000`
 * open the ZDEW, change the update url to http://localhost:8000/local.json and check for updates
+
+For automatic upgrade testing, you will need to have the signing keys available and set the
+$env:OPENZITI_P12_PASS. If you see errors indicating something like this:
+```
+ZitiUpdateService.Checkers.PeFile.SignedFileValidator   Could not verify certificate. ......
+```
+Then the binary is not signed properly. 
