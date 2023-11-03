@@ -57,10 +57,12 @@ namespace ZitiDesktopEdge {
 				UpdateTimeLeft.Visibility = Visibility.Visible;
 				if (!state.AutomaticUpdatesDisabled) {
 					UpdateTimeLeft.Content = $"Automatic update to {state.PendingUpdate.Version} will occur on or after {state.PendingUpdate.InstallTime.ToString("g")}";
-				} else {
+                    CheckForUpdateStatus.Content = $"update {state.PendingUpdate.Version} is available";
+                } else {
 					UpdateTimeLeft.Content = "";
-				}
-			}
+                }
+                CheckForUpdateStatus.Visibility = UpdateTimeLeft.Visibility;
+            }
 			SetAutomaticUpgradesState();
 		}
 
@@ -430,11 +432,6 @@ namespace ZitiDesktopEdge {
 				logger.Error(ex, "unexpected error in update check: {0}", ex.Message);
 			}
 			CheckForUpdate.IsEnabled = true;
-		}
-
-
-		private void TriggerUpdate_MouseEventArgs_Click(object sender, MouseButtonEventArgs e) {
-			TriggerUpdate_RoutedEventArgs_Click(sender, e);
 		}
 
 		async private void TriggerUpdate_RoutedEventArgs_Click(object sender, RoutedEventArgs e) {

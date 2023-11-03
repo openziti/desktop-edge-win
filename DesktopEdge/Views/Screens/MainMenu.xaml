@@ -78,6 +78,122 @@
                     <local:SubOptionItem x:Name="LogTrace" HorizontalAlignment="Stretch" Width="Auto" Label="Trace" MouseUp="SetLevel"></local:SubOptionItem>
                 </StackPanel>
                 <StackPanel Name="AutomaticUpgradesItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
+                    <StackPanel.Resources>
+                        <Style TargetType="{x:Type Button}" x:Key="BasicButton">
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="BorderThickness" Value="0" />
+                            <Setter Property="Cursor" Value="Hand" />
+                        </Style>
+                        <Style x:Key="RoundedButton" TargetType="Border">
+                            <Setter Property="CornerRadius" Value="5"/>
+                            <Setter Property="Padding" Value="5"/>
+                        </Style>
+                        <Style x:Key="RedButton" TargetType="Button" BasedOn="{StaticResource BasicButton}">
+                            <Setter Property="Background" Value="#B05257" />
+                            <Setter Property="Margin" Value="40,0,40,0"/>
+                            <Setter Property="Padding" Value="5"/>
+                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Background" Value="{x:Static SystemColors.ControlLightBrush}" />
+                                    <Setter Property="Foreground" Value="{x:Static SystemColors.GrayTextBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Trigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ColorAnimation Storyboard.TargetProperty="(Button.Background).(SolidColorBrush.Color)"
+                                                        To="#8D4246" Duration="0:0:1"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.EnterActions>
+                                    <Trigger.ExitActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ColorAnimation Storyboard.TargetProperty="(Button.Background).(SolidColorBrush.Color)"
+                                                        To="#B05257" Duration="0:0:.25"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.ExitActions>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                        <Style x:Key="RoundedRedButton" TargetType="Button" BasedOn="{StaticResource RedButton}">
+                            <Setter Property="Background" Value="#B05257" />
+                            <Setter Property="Margin" Value="40,0,40,0"/>
+                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="{x:Type Button}">
+                                        <Border Style="{StaticResource RoundedButton}">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Resources>
+                                <Style TargetType="Border" BasedOn="{StaticResource RoundedButton}"/>
+                            </Style.Resources>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Trigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ColorAnimation Storyboard.TargetProperty="(Button.Background).(SolidColorBrush.Color)"
+                                                        To="#8D4246" Duration="0:0:.25"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.EnterActions>
+                                    <Trigger.ExitActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ColorAnimation Storyboard.TargetProperty="(Button.Background).(SolidColorBrush.Color)"
+                                                        To="#B05257" Duration="0:0:.25"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.ExitActions>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                        <Style x:Key="TestButton" TargetType="Button" BasedOn="{StaticResource RedButton}">
+                            <Style.Resources>
+                                <Style TargetType="Border" BasedOn="{StaticResource RoundedButton}"/>
+                            </Style.Resources>
+                            <Setter Property="Background" Value="#B05257"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="{x:Type Button}">
+                                        <Border Background="{TemplateBinding Background}">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Trigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ColorAnimation Storyboard.TargetProperty="(Button.Background).(SolidColorBrush.Color)"
+                                                        To="#8D4246" Duration="0:0:.25"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.EnterActions>
+                                    <Trigger.ExitActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ColorAnimation Storyboard.TargetProperty="(Button.Background).(SolidColorBrush.Color)"
+                                                        To="#B05257" Duration="0:0:.25"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.ExitActions>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Resources>
+
                     <Label FontWeight="Bold" FontSize="16" Margin="0,20,0,0">Automatic upgrades:</Label>
                     <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
                     <local:SubOptionItem x:Name="AutomaticUpgradesItemOn" HorizontalAlignment="Stretch" Width="Auto" Label="Enabled" MouseUp="SetAutomaticUpgradesMenuAction"></local:SubOptionItem>
@@ -99,7 +215,9 @@
                         </TextBox>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0">
                             <Label Content=""/>
-                            <Button Click="ResetUrlButton_Click" Content="Reset" VerticalAlignment="Top" BorderThickness="1,0,1,1" Opacity=".6">
+                            <Button Click="ResetUrlButton_Click" Content="Reset" VerticalAlignment="Top"
+                                    BorderThickness="1,0,1,1" Opacity=".6"
+                                    >
                                 <Button.Resources>
                                     <Style TargetType="Border">
                                         <Setter Property="CornerRadius" Value="0,0,5,5"/>
@@ -115,7 +233,13 @@
                     <local:StyledButton x:Name="SetUpdateUrlButton" OnClick="SetUpdateUrlButton_Click" Label="Set Update URL"></local:StyledButton>
                     <local:StyledButton x:Name="CheckForUpdate" OnClick="CheckForUpdate_OnClick" Label="Check for Updates Now" Margin="0,20,0,0"></local:StyledButton>
                     <Label HorizontalAlignment="Center" x:Name="CheckForUpdateStatus" Content=""></Label>
-                    <local:StyledButton x:Name="TriggerUpdateButton" OnClick="TriggerUpdate_MouseEventArgs_Click" Label="Perform Update" BgColor="#9c252c" Visibility="Collapsed" ></local:StyledButton>
+
+                    <Button x:Name="TriggerUpdateButton" 
+                            Click="TriggerUpdate_RoutedEventArgs_Click" 
+                            Visibility="Collapsed" 
+                            Content="Perform Update" 
+                            Style="{StaticResource TestButton}"/>
+
                 </StackPanel>
 
                 <StackPanel Name="ConfigItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
@@ -135,7 +259,6 @@
 
                 <StackPanel Name="AboutItemsArea" Orientation="Vertical" HorizontalAlignment="Stretch" Visibility="Collapsed">
                     <Label Name="VersionInfo" HorizontalAlignment="Center" FontSize="10" Height="50" Padding="0,30,0,0" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack:Up//application:,,,/Assets/Fonts/#Open Sans"></Label>
-
                     <Label Name="VersionOlder" Content=" checking version information " HorizontalAlignment="Center" FontSize="10" Height="50" Padding="0,30,0,0" Foreground="#F4044D" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                     <Label Name="VersionNewer" Content="" HorizontalAlignment="Center" FontSize="10" Height="50" Padding="0,30,0,0" Foreground="#0069FF" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                 </StackPanel>
