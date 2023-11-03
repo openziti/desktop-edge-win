@@ -38,7 +38,6 @@ $outputPath = "${version}.json"
 Move-Item -Force "${version}.json" "$scriptDirectory\release-streams\${stream}.json"
 echo "json file written to: $scriptDirectory\release-streams\${stream}.json"
 
-echo "well: $revertGitAfter"
 if($revertGitAfter) {
   git checkout DesktopEdge/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip
 }

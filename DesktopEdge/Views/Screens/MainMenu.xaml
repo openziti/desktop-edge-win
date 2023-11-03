@@ -99,12 +99,12 @@
                         </TextBox>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0">
                             <Label Content=""/>
-                            <Button Click="ResetUrlButton_Click" Content="Reset URL" VerticalAlignment="Top" BorderThickness="1,0,1,1" Opacity=".6">
+                            <Button Click="ResetUrlButton_Click" Content="Reset" VerticalAlignment="Top" BorderThickness="1,0,1,1" Opacity=".6">
                                 <Button.Resources>
                                     <Style TargetType="Border">
                                         <Setter Property="CornerRadius" Value="0,0,5,5"/>
                                         <Setter Property="Height" Value="20"/>
-                                        <Setter Property="Padding" Value="15,0,15,0"/>
+                                        <Setter Property="Padding" Value="10,0,10,0"/>
                                         <Setter Property="BorderThickness" Value="15"/>
                                     </Style>
                                 </Button.Resources>
