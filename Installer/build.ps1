@@ -33,19 +33,23 @@ if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
     Expand-Archive -Path "${scriptPath}\zet.zip" -Force -DestinationPath "${buildPath}\service"
     echo "expanded zet.zip file to ${buildPath}\service"
     
-    if($null -eq $env:WINTUN_DL_URL) {
-        echo "========================== fetching wintun.dll =========================="
-        $WINTUN_DL_URL="https://www.wintun.net/builds/wintun-0.13.zip"
-        #for local debugging speed: $WINTUN_DL_URL="http://localhost:8000/wintun.zip"
-        echo "Beginning to download wintun from ${WINTUN_DL_URL}"
-        echo ""
-        Invoke-WebRequest $WINTUN_DL_URL -OutFile "${scriptPath}\wintun.zip"
-        verifyFile("${scriptPath}\wintun.zip")
-        echo "Expanding downloaded file..."
-        Expand-Archive -Path "${scriptPath}\wintun.zip" -Force -DestinationPath "${buildPath}\service"
-        echo "expanded wintun.zip file to ${buildPath}\service"
+    if (Test-Path -Path "${scriptPath}\wintun.zip") {
+        echo "using wintun.zip found at ${scriptPath}\wintun.zip"
     } else {
-        echo "WINTUN_DL_URL WAS SET"
+        echo "wintun.zip not found. attempting to download."       
+        if($null -eq $env:WINTUN_DL_URL) {
+            echo "========================== fetching wintun.dll =========================="
+            $WINTUN_DL_URL="https://www.wintun.net/builds/wintun-0.13.zip"
+            echo "Beginning to download wintun from ${WINTUN_DL_URL}"
+            echo ""
+            Invoke-WebRequest $WINTUN_DL_URL -OutFile "${scriptPath}\wintun.zip"
+            verifyFile("${scriptPath}\wintun.zip")
+            echo "Expanding downloaded file..."
+            Expand-Archive -Path "${scriptPath}\wintun.zip" -Force -DestinationPath "${buildPath}\service"
+            echo "expanded wintun.zip file to ${buildPath}\service"
+        } else {
+            echo "WINTUN_DL_URL WAS SET"
+        }
     }
 } else {
     echo "========================== using locally defined ziti-edge-tunnel =========================="
