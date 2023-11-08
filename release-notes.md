@@ -1,3 +1,18 @@
+# Release 2.2.1
+
+## What's New
+* Added the ability to configure the URL from which updates are retrieved.
+* The installer now silently installs Microsoft Visual C++ Redistributable libraries.
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* ziti-edge-tunnel updated to v0.22.12/c-sdk v0.35.4
+
 # Release 2.1.19
 
 ## What's New
