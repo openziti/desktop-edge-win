@@ -109,9 +109,13 @@ namespace ZitiDesktopEdge.ServiceClient {
 
                     if (toSend?.Trim() != null) {
                         debugServiceCommunication(toSend);
-                        await ipcWriter.WriteAsync(toSend);
-                        await ipcWriter.WriteAsync('\n');
-                        await ipcWriter.FlushAsync();
+                        if (ipcWriter != null) {
+                            await ipcWriter.WriteAsync(toSend);
+                            await ipcWriter.WriteAsync('\n');
+                            await ipcWriter.FlushAsync();
+                        } else {
+                            throw new Exception("the monitor service appears to be offline?");
+                        }
                     } else {
                         Logger.Debug("NOT sending empty object??? " + objToSend?.ToString());
                     }

@@ -46,13 +46,14 @@ namespace ZitiDesktopEdge {
 		private int _right = 75;
 		private int _left = 75;
 		private int _top = 30;
-		public bool IsUpdateAvailable = false;
+		private int defaultHeight = 490;
 		public int NotificationsShownCount = 0;
 		private double _maxHeight = 800d;
 		public string CurrentIcon = "white";
 		private string[] suffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };
 		private string _blurbUrl = "";
 
+		private DateTime NextNotificationTime;
 		private static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
 		static System.Reflection.Assembly asm = System.Reflection.Assembly.GetExecutingAssembly();
@@ -76,7 +77,6 @@ namespace ZitiDesktopEdge {
 			ExpectedLogPathRoot = Path.Combine(ExecutionDirectory, "logs");
 			ExpectedLogPathUI = Path.Combine(ExpectedLogPathRoot, "UI", $"{ThisAssemblyName}.log");
 			ExpectedLogPathServices = Path.Combine(ExpectedLogPathRoot, "service", $"ziti-tunneler.log");
-
 		}
 
 		async private void IdentityMenu_OnMessage(string message) {
@@ -183,14 +183,14 @@ namespace ZitiDesktopEdge {
 					}
 				} else if (mfa.Action == "mfa_auth_status") {
 					var found = identities.Find(id => id.Identifier == mfa.Identifier);
-					for (int i=0; i<identities.Count; i++) {
+					for (int i = 0; i < identities.Count; i++) {
 						if (identities[i].Identifier == mfa.Identifier) {
 							identities[i].WasNotified = false;
 							identities[i].WasFullNotified = false;
 							identities[i].IsTimingOut = false;
 							identities[i].IsAuthenticated = mfa.Successful;
 							identities[i].LastUpdatedTime = DateTime.Now;
-							for (int j=0; j<identities[i].Services.Count; j++) {
+							for (int j = 0; j < identities[i].Services.Count; j++) {
 								identities[i].Services[j].TimeUpdated = DateTime.Now;
 								identities[i].Services[j].TimeoutRemaining = identities[i].Services[j].Timeout;
 							}
@@ -202,7 +202,7 @@ namespace ZitiDesktopEdge {
 					// serviceClient.GetStatusAsync();
 					// ShowBlurb("mfa authenticated: " + mfa.Successful, "");
 				} else {
-					await ShowBlurbAsync ("Unexpected error when processing MFA", "");
+					await ShowBlurbAsync("Unexpected error when processing MFA", "");
 					logger.Error("unexpected action: " + mfa.Action);
 				}
 				LoadIdentities(true);
@@ -262,7 +262,7 @@ namespace ZitiDesktopEdge {
 		/// <param name="identity">The Ziti Identity to Authenticate</param>
 		async public void ShowMFARecoveryCodes(ZitiIdentity identity) {
 			if (identity.IsMFAEnabled) {
-				if (identity.IsAuthenticated&& identity.RecoveryCodes!=null) {
+				if (identity.IsAuthenticated && identity.RecoveryCodes != null) {
 					MFASetup.Opacity = 0;
 					MFASetup.Visibility = Visibility.Visible;
 					MFASetup.Margin = new Thickness(0, 0, 0, 0);
@@ -329,7 +329,7 @@ namespace ZitiDesktopEdge {
 			HideModal();
 			if (isComplete) {
 				if (MFASetup.Type == 1) {
-					for (int i=0; i<identities.Count; i++) {
+					for (int i = 0; i < identities.Count; i++) {
 						if (identities[i].Identifier == MFASetup.Identity.Identifier) {
 							identities[i] = MFASetup.Identity;
 							identities[i].LastUpdatedTime = DateTime.Now;
@@ -364,6 +364,7 @@ namespace ZitiDesktopEdge {
 		private System.ComponentModel.IContainer components;
 		public MainWindow() {
 			InitializeComponent();
+			NextNotificationTime = DateTime.Now;
 			SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
 			string nlogFile = Path.Combine(ExecutionDirectory, ThisAssemblyName + "-log.config");
 
@@ -382,6 +383,7 @@ namespace ZitiDesktopEdge {
 					ArchiveEvery = FileArchivePeriod.Day,
 					ArchiveNumbering = ArchiveNumberingMode.Rolling,
 					MaxArchiveFiles = 7,
+					AutoFlush = true,
 					Layout = "[${date:format=yyyy-MM-ddTHH:mm:ss.fff}Z] ${level:uppercase=true:padding=5}\t${logger}\t${message}\t${exception:format=tostring}",
 				};
 				var logconsole = new ConsoleTarget("logconsole");
@@ -397,6 +399,7 @@ namespace ZitiDesktopEdge {
 			logger.Info("logger initialized");
 			logger.Info("    - version   : {0}", asm.GetName().Version.ToString());
 			logger.Info("    - using file: {0}", byFile);
+			logger.Info("    -       file: {0}", nlogFile);
 			logger.Info("========================================================================");
 
 			App.Current.MainWindow.WindowState = WindowState.Normal;
@@ -486,7 +489,9 @@ namespace ZitiDesktopEdge {
 		private void Current_Exit(object sender, ExitEventArgs e) {
 			if (notifyIcon != null) {
 				notifyIcon.Visible = false;
-				notifyIcon.Icon.Dispose();
+				if (notifyIcon.Icon != null) {
+					notifyIcon.Icon.Dispose();
+				}
 				notifyIcon.Dispose();
 				notifyIcon = null;
 			}
@@ -758,7 +763,7 @@ namespace ZitiDesktopEdge {
 		}
 
 
-		string nextVersionStr  = null;
+		string nextVersionStr = null;
 		private void MonitorClient_OnReconnectFailure(object sender, object e) {
 			logger.Debug("OnReconnectFailure triggered");
 			if (nextVersionStr == null) {
@@ -783,8 +788,7 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
-		private void MonitorClient_OnShutdownEvent(object sender, StatusEvent e)
-		{
+		private void MonitorClient_OnShutdownEvent(object sender, StatusEvent e) {
 			logger.Info("The monitor has indicated the application should shut down.");
 			this.Dispatcher.Invoke(() => {
 				Application.Current.Shutdown();
@@ -796,13 +800,15 @@ namespace ZitiDesktopEdge {
 				try {
 					if (evt.Message?.ToLower() == "upgrading") {
 						logger.Info("The monitor has indicated an upgrade is in progress. Shutting down the UI");
+						App.Current.Exit -= Current_Exit;
+						logger.Info("Removed Current_Exit handler");
 						notifyIcon.Visible = false;
 						notifyIcon.Icon.Dispose();
 						notifyIcon.Dispose();
 						Application.Current.Shutdown();
+						return;
 					}
 					state.AutomaticUpdatesEnabledFromString(evt.AutomaticUpgradeDisabled);
-					MainMenu.ShowUpdateAvailable();
 					logger.Debug("MonitorClient_OnServiceStatusEvent: {0}", evt.Status);
 					Application.Current.Properties["ReleaseStream"] = evt.ReleaseStream;
 
@@ -846,32 +852,44 @@ namespace ZitiDesktopEdge {
 		private void MonitorClient_OnInstallationNotificationEvent(object sender, InstallationNotificationEvent evt) {
 			this.Dispatcher.Invoke(() => {
 				logger.Debug("MonitorClient_OnInstallationNotificationEvent: {0}", evt.Message);
+				switch (evt.Message?.ToLower()) {
+					case "installationupdate":
+						logger.Debug("Installation Update is available - {0}", evt.ZDEVersion);
+						var remaining = evt.InstallTime - DateTime.Now;
 
-				if ("installationupdate".Equals(evt.Message?.ToLower()) || "Configuration Changed" == evt.Message) {
-					logger.Debug("Installation Update is available - {0}", evt.ZDEVersion);
-					IsUpdateAvailable = true;
-					var remaining = evt.InstallTime - DateTime.Now;
+						state.AutomaticUpdatesEnabledFromString(evt.AutomaticUpgradeDisabled);
+						state.AutomaticUpdateURL = evt.AutomaticUpgradeURL;
+						state.PendingUpdate.Version = evt.ZDEVersion;
+						state.PendingUpdate.InstallTime = evt.InstallTime;
+						state.UpdateAvailable = true;
+						MainMenu.ShowUpdateAvailable();
+						AlertCanvas.Visibility = Visibility.Visible;
 
-					state.AutomaticUpdatesEnabledFromString(evt.AutomaticUpgradeDisabled);
-					state.PendingUpdate.Version = evt.ZDEVersion;
-					state.PendingUpdate.InstallTime = evt.InstallTime;
-					MainMenu.ShowUpdateAvailable();
-					AlertCanvas.Visibility = Visibility.Visible;
-
-					if (isToastEnabled()) {
-						if (!state.AutomaticUpdatesDisabled) {
-							if (remaining.TotalSeconds < 60) {
-								//this is an immediate update - show a different message
-								ShowToast("Ziti Desktop Edge will initiate auto installation in the next minute!");
+						if (isToastEnabled()) {
+							if (!state.AutomaticUpdatesDisabled) {
+								if (remaining.TotalSeconds < 60) {
+									//this is an immediate update - show a different message
+									ShowToast("Ziti Desktop Edge will initiate auto installation in the next minute!");
+								} else {
+									if (DateTime.Now > NextNotificationTime) {
+										ShowToast($"Update {evt.ZDEVersion} is available for Ziti Desktop Edge and will be automatically installed by " + evt.InstallTime);
+										NextNotificationTime = DateTime.Now + evt.NotificationDuration;
+									} else {
+										logger.Debug("Skipping notification. Time until next notification {} seconds which is at {}", (int)((NextNotificationTime - DateTime.Now).TotalSeconds), NextNotificationTime);
+									}
+								}
 							} else {
-								ShowToast($"Update {evt.ZDEVersion} is available for Ziti Desktop Edge and will be automatically installed by " + evt.InstallTime);
+								ShowToast("New version available", $"Version {evt.ZDEVersion} is available for Ziti Desktop Edge");
 							}
-						} else {
-							ShowToast($"Version {evt.ZDEVersion} is available for Ziti Desktop Edge");
+							SetNotifyIcon("");
+							// display a tag in UI and a button for the update software
 						}
-						SetNotifyIcon("");
-						// display a tag in UI and a button for the update software
-					}
+						break;
+					case "configuration changed":
+						break;
+					default:
+						logger.Debug("unexpected event type?");
+						break;
 				}
 			});
 		}
@@ -887,13 +905,22 @@ namespace ZitiDesktopEdge {
 			return result;
 		}
 
+		private void ShowToast(string header, string message) {
+			try {
+				logger.Info("showing toast: {} {}", header, message);
+				new ToastContentBuilder()
+					.AddText(header)
+					.AddText(message)
+					.SetBackgroundActivation()
+					.Show();
+				NotificationsShownCount++;
+			} catch {
+				logger.Warn("couldn't show toast: {} {}", header, message);
+			}
+		}
+
 		private void ShowToast(string message) {
-			new ToastContentBuilder()
-				.AddText("Important Notice")
-				.AddText(message)
-				.SetBackgroundActivation()
-				.Show();
-			NotificationsShownCount++;
+			ShowToast("Important Notice", message);
 		}
 
 		async private Task WaitForServiceToStop(DateTime until) {
@@ -956,19 +983,6 @@ namespace ZitiDesktopEdge {
 		private void ShowServiceNotStarted() {
 			TunnelConnected(false);
 			LoadIdentities(true);
-			/*
-			this.Dispatcher.Invoke(() => {
-				semaphoreSlim.Wait(); //make sure the event is only added to the button once
-				CloseErrorButton.Click -= CloseError;
-				if (!startZitiButtonVisible) {
-					CloseErrorButton.Content = "Start Service";
-					startZitiButtonVisible = true;
-					CloseErrorButton.Click += StartZitiService;
-				}
-				semaphoreSlim.Release();
-				SetCantDisplay("Service Not Started", "Do you want to start the data service now?", Visibility.Visible);
-			});
-			*/
 		}
 
 		private void MonitorClient_OnClientConnected(object sender, object e) {
@@ -1037,14 +1051,14 @@ namespace ZitiDesktopEdge {
 						LoadIdentities(true);
 					} else {
 						// means we likely are getting an update for some reason. compare the identities and use the latest info
-						if (zid.Name!=null && zid.Name.Length>0) found.Name = zid.Name;
+						if (zid.Name != null && zid.Name.Length > 0) found.Name = zid.Name;
 						if (zid.ControllerUrl != null && zid.ControllerUrl.Length > 0) found.ControllerUrl = zid.ControllerUrl;
 						if (zid.ContollerVersion != null && zid.ContollerVersion.Length > 0) found.ContollerVersion = zid.ContollerVersion;
 						found.IsEnabled = zid.IsEnabled;
 						found.IsMFAEnabled = e.Id.MfaEnabled;
 						found.IsAuthenticated = !e.Id.MfaNeeded;
 						found.IsConnected = true;
-						for (int i=0; i<identities.Count; i++) {
+						for (int i = 0; i < identities.Count; i++) {
 							if (identities[i].Identifier == found.Identifier) {
 								identities[i] = found;
 								break;
@@ -1283,7 +1297,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		private bool IsTimingOut() {
-			if (identities!=null) {
+			if (identities != null) {
 				for (int i = 0; i < identities.Count; i++) {
 					if (identities[i].IsTimingOut) return true;
 				}
@@ -1294,7 +1308,7 @@ namespace ZitiDesktopEdge {
 		private bool IsTimedOut() {
 			if (identities != null) {
 				for (int i = 0; i < identities.Count; i++) {
-					if (identities[i].IsMFAEnabled&&!identities[i].IsAuthenticated) return true;
+					if (identities[i].IsMFAEnabled && !identities[i].IsAuthenticated) return true;
 				}
 			}
 			return false;
@@ -1303,7 +1317,7 @@ namespace ZitiDesktopEdge {
 		private void SetNotifyIcon(string iconPrefix) {
 			if (iconPrefix != "") CurrentIcon = iconPrefix;
 			string icon = "pack://application:,,/Assets/Images/ziti-" + CurrentIcon;
-			if (IsUpdateAvailable) {
+			if (state.UpdateAvailable) {
 				icon += "-update";
 			} else {
 				if (IsTimedOut()) {
@@ -1337,7 +1351,7 @@ namespace ZitiDesktopEdge {
 				ZitiIdentity[] ids = identities.OrderBy(i => (i.Name != null) ? i.Name.ToLower() : i.Name).ToArray();
 				MainMenu.SetupIdList(ids);
 				if (ids.Length > 0 && serviceClient.Connected) {
-					double height = 490 + (ids.Length * 60);
+					double height = defaultHeight + (ids.Length * 60);
 					if (height > _maxHeight) height = _maxHeight;
 					this.Height = height;
 					IdentityMenu.SetHeight(this.Height - 160);
@@ -1353,12 +1367,12 @@ namespace ZitiDesktopEdge {
 						idItem.OnStatusChanged += Id_OnStatusChanged;
 						idItem.Identity = id;
 						idItem.IdentityChanged += IdItem_IdentityChanged;
-						
+
 						if (repaint) idItem.RefreshUI();
 
 						IdList.Children.Add(idItem);
 
-						if (IdentityMenu.Visibility==Visibility.Visible) {
+						if (IdentityMenu.Visibility == Visibility.Visible) {
 							if (id.Identifier == IdentityMenu.Identity.Identifier) IdentityMenu.Identity = id;
 						}
 					}
@@ -1366,7 +1380,7 @@ namespace ZitiDesktopEdge {
 					IdList.BeginAnimation(FrameworkElement.HeightProperty, animation);
 					IdListScroller.Visibility = Visibility.Visible;
 				} else {
-					this.Height = 490;
+					this.Height = defaultHeight;
 					MainMenu.IdentitiesButton.Visibility = Visibility.Collapsed;
 					IdListScroller.Visibility = Visibility.Collapsed;
 				}
@@ -1379,11 +1393,11 @@ namespace ZitiDesktopEdge {
 		}
 
 		private void IdItem_IdentityChanged(ZitiIdentity identity) {
-			for (int i=0; i<identities.Count; i++) {
+			for (int i = 0; i < identities.Count; i++) {
 				if (identities[i].Identifier == identity.Identifier) {
 					identities[i] = identity;
 					break;
- 				}
+				}
 			}
 			SetNotifyIcon("");
 		}
@@ -1568,7 +1582,7 @@ namespace ZitiDesktopEdge {
 				} else {
 					logger.Info("Service stopped!");
 				}
-			} catch(Exception ex) {
+			} catch (Exception ex) {
 				logger.Error(ex, "unexpected error: {0}", ex.Message);
 				ShowError("Error Disabling Service", "An error occurred while trying to disable the data service. Is the monitor service running?");
 			}
@@ -1669,10 +1683,10 @@ namespace ZitiDesktopEdge {
 		/// </summary>
 		/// <param name="message">The message to show</param>
 		/// <param name="url">The url or action name to execute</param>
-		public async Task ShowBlurbAsync(string message, string url, string level="error") {
+		public async Task ShowBlurbAsync(string message, string url, string level = "error") {
 			RedBlurb.Visibility = Visibility.Collapsed;
 			InfoBlurb.Visibility = Visibility.Collapsed;
-			if (level=="error") {
+			if (level == "error") {
 				RedBlurb.Visibility = Visibility.Visible;
 			} else {
 				InfoBlurb.Visibility = Visibility.Visible;
@@ -1725,9 +1739,9 @@ namespace ZitiDesktopEdge {
 		/// <param name="sender">The object that was clicked</param>
 		/// <param name="e">The click event</param>
 		private void BlurbAction(object sender, MouseButtonEventArgs e) {
-			if (_blurbUrl.Length>0) {
+			if (_blurbUrl.Length > 0) {
 				// So this simply execute a url but you could do like if (_blurbUrl=="DoSomethingNifty") CallNifyFunction();
-				if (_blurbUrl== this.RECOVER) {
+				if (_blurbUrl == this.RECOVER) {
 					this.ShowMFA(IdentityMenu.Identity, 4);
 				} else {
 					Process.Start(new ProcessStartInfo(_blurbUrl) { UseShellExecute = true });

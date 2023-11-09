@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Reflection;
 using System.ServiceProcess;
 using NLog;
@@ -33,6 +34,7 @@ namespace ZitiUpdateService {
 					ArchiveEvery = FileArchivePeriod.Day,
 					ArchiveNumbering = ArchiveNumberingMode.Rolling,
 					MaxArchiveFiles = 7,
+					AutoFlush = true,
 					Layout = "[${date:universalTime=true:format=yyyy-MM-ddTHH:mm:ss.fff}Z] ${level:uppercase=true:padding=5}\t${logger}\t${message}\t${exception:format=tostring}",
 				};
 				var logconsole = new ConsoleTarget("logconsole");
@@ -48,31 +50,39 @@ namespace ZitiUpdateService {
 			Logger.Info("logger initialized");
 			Logger.Info("    - version   : {0}", asm.GetName().Version.ToString());
 			Logger.Info("    - using file: {0}", byFile);
+			Logger.Info("    -       file: {0}", nlogFile);
 			Logger.Info("========================================================================");
 
-			UpdateService updateSvc = new UpdateService();
+            UpdateService updateSvc = new UpdateService();
 			updateSvc.AutoLog = true;
+			try {
 #if DEBUG
-			bool nosvc = true;
-			//bool nosvc = false;
+				bool nosvc = true;
+				//bool nosvc = false;
 
-			if (nosvc) {
-				updateSvc.Debug();
-				updateSvc.WaitForCompletion();
-			} else {
+				if (nosvc) {
+					Logger.Info("  - RUNNING AS DEBUG");
+					updateSvc.Debug();
+					updateSvc.WaitForCompletion();
+					Logger.Info("  - RUNNING AS DEBUG COMPLETE");
+				} else {
+					ServiceBase[] ServicesToRun = new ServiceBase[]
+					{
+						updateSvc
+					};
+					Logger.Info("RUNNING AS DEBUG SERVICE");
+					ServiceBase.Run(ServicesToRun);
+				}
+#else
 				ServiceBase[] ServicesToRun = new ServiceBase[]
 				{
-				updateSvc
+					updateSvc
 				};
 				ServiceBase.Run(ServicesToRun);
-			}
-#else
-			ServiceBase[] ServicesToRun = new ServiceBase[]
-			{
-				updateSvc
-			};
-			ServiceBase.Run(ServicesToRun);
 #endif
-		}
-	}
+			} catch (Exception e) {
+				Logger.Error("Unexpected exception: {0}", e);
+			}
+        }
+    }
 }

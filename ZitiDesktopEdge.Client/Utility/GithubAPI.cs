@@ -9,11 +9,8 @@ namespace ZitiDesktopEdge.Utility {
     public static class GithubAPI {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-		public const string ProdUrl = "https://api.github.com/repos/openziti/desktop-edge-win/releases/latest";
-		public const string BetaUrl = "https://api.github.com/repos/openziti/desktop-edge-win-beta/releases/latest";
-		public const string ProdReleasesUrl = "https://api.github.com/repos/openziti/desktop-edge-win/releases";
-		public const string BetaReleasesUrl = "https://api.github.com/repos/openziti/desktop-edge-win-beta/releases";
-
+		public const string ProdUrl = "https://get.openziti.io/zdew/latest.json";
+		
 		public static JObject GetJson(string url) {
 			HttpWebRequest httpWebRequest = WebRequest.CreateHttp(url);
 			httpWebRequest.Method = "GET";
