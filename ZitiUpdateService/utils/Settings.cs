@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using Newtonsoft.Json;
 using NLog;
 using ZitiDesktopEdge.DataStructures;
@@ -54,9 +55,14 @@ namespace ZitiUpdateService.Utils {
 				string json = File.ReadAllText(Location);
 				var jsonReaderEvt = new JsonTextReader(new StringReader(json));
 				Settings s = serializer.Deserialize<Settings>(jsonReaderEvt);
-				Update(s);
-			} catch {
-				// do nothing
+				if (s != null) {
+					Update(s);
+				} else {
+					Logger.Debug("settings file was null? file doesn't exist or file was garbage?");
+				}
+			} catch (Exception ex) {
+				// do nothing, probably means the file is just or doesn't exist etc.
+				Logger.Debug("unexpected error loading settings. file was null? file doesn't exist or file was garbage? {0}", ex);
 			}
 		}
 		internal void Write() {

@@ -809,8 +809,6 @@ namespace ZitiDesktopEdge {
 						return;
 					}
 					state.AutomaticUpdatesEnabledFromString(evt.AutomaticUpgradeDisabled);
-					state.AutomaticUpdateURL = evt.AutomaticUpgradeURL;
-					MainMenu.ShowUpdateAvailable();
 					logger.Debug("MonitorClient_OnServiceStatusEvent: {0}", evt.Status);
 					Application.Current.Properties["ReleaseStream"] = evt.ReleaseStream;
 
@@ -860,6 +858,7 @@ namespace ZitiDesktopEdge {
 						var remaining = evt.InstallTime - DateTime.Now;
 
 						state.AutomaticUpdatesEnabledFromString(evt.AutomaticUpgradeDisabled);
+						state.AutomaticUpdateURL = evt.AutomaticUpgradeURL;
 						state.PendingUpdate.Version = evt.ZDEVersion;
 						state.PendingUpdate.InstallTime = evt.InstallTime;
 						state.UpdateAvailable = true;
