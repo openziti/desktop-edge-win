@@ -7,6 +7,7 @@ function verifyFile($path) {
 }
 
 echo "========================== build.ps1 begins =========================="
+nuget restore .\ZitiDesktopEdge.sln
 $invocation = (Get-Variable MyInvocation).Value
 $scriptPath = Split-Path $invocation.MyCommand.Path
 $buildPath = "${scriptPath}\build"
