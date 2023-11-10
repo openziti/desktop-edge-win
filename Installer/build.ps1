@@ -7,7 +7,6 @@ function verifyFile($path) {
 }
 
 echo "========================== build.ps1 begins =========================="
-$ProgressPreference = 'SilentlyContinue'
 $invocation = (Get-Variable MyInvocation).Value
 $scriptPath = Split-Path $invocation.MyCommand.Path
 $buildPath = "${scriptPath}\build"
@@ -26,6 +25,7 @@ if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
     }
     echo "Beginning to download ziti-edge-tunnel from ${zet_dl}"
     echo ""
+    $ProgressPreference = 'SilentlyContinue'
     $response = Invoke-WebRequest $zet_dl -OutFile "${scriptPath}\zet.zip"
     verifyFile("${scriptPath}\zet.zip")
 
@@ -42,6 +42,7 @@ if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
             $WINTUN_DL_URL="https://www.wintun.net/builds/wintun-0.13.zip"
             echo "Beginning to download wintun from ${WINTUN_DL_URL}"
             echo ""
+            $ProgressPreference = 'SilentlyContinue'
             Invoke-WebRequest $WINTUN_DL_URL -OutFile "${scriptPath}\wintun.zip"
             verifyFile("${scriptPath}\wintun.zip")
             echo "Expanding downloaded file..."
@@ -70,6 +71,7 @@ echo "========================== fetching vc++ redist ==========================
 $VC_REDIST_URL="https://aka.ms/vs/17/release/vc_redist.x64.exe"
 echo "Beginning to download vc++ redist from MS at ${VC_REDIST_URL}"
 echo ""
+$ProgressPreference = 'SilentlyContinue'
 Invoke-WebRequest $VC_REDIST_URL -OutFile "${buildPath}\VC_redist.x64.exe"
 verifyFile("${buildPath}\VC_redist.x64.exe")
 echo "========================== fetching vc++ redist complete =========================="
@@ -82,7 +84,7 @@ msbuild ZitiDesktopEdge.sln /property:Configuration=Release
 
 Pop-Location
 
-$ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer 21.1"
+$ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer 21.2.1"
 $ADVINST = "${ADV_INST_HOME}\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
 
