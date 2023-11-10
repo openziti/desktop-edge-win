@@ -46,7 +46,7 @@ namespace ZitiDesktopEdge {
 		private int _right = 75;
 		private int _left = 75;
 		private int _top = 30;
-		private int defaultHeight = 490;
+		private int defaultHeight = 540;
 		public int NotificationsShownCount = 0;
 		private double _maxHeight = 800d;
 		public string CurrentIcon = "white";
@@ -1389,8 +1389,9 @@ namespace ZitiDesktopEdge {
 				} else {
 					this.Height = defaultHeight;
 					MainMenu.IdentitiesButton.Visibility = Visibility.Collapsed;
-					IdListScroller.Visibility = Visibility.Collapsed;
-				}
+					IdListScroller.Visibility = Visibility.Visible;
+
+                }
 				AddIdButton.Visibility = Visibility.Visible;
 				AddIdAreaButton.Visibility = Visibility.Visible;
 
