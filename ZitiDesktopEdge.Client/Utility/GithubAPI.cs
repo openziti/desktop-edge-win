@@ -9,7 +9,7 @@ namespace ZitiDesktopEdge.Utility {
     public static class GithubAPI {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-		public const string ProdUrl = "https://get.openziti.io/zdew/latest.json";
+		public const string ProdUrl = "https://get.openziti.io/zdew/stable.json";
 		
 		public static JObject GetJson(string url) {
 			HttpWebRequest httpWebRequest = WebRequest.CreateHttp(url);
