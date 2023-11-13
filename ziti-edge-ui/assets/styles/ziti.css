@@ -1730,6 +1730,18 @@ input, select {
     height: 454px;
 }
 
+.buttonArea.two {
+    display: grid;
+    grid-template-columns: auto 300px;
+}
+
+#ResetButton {
+    width: 100%;
+    line-height: 45px;
+    text-align: left;
+
+}
+
 .buttonArea {
     text-align: right;
     margin-top: 15px;

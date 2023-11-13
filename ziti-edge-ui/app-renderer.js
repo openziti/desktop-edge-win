@@ -69,6 +69,7 @@ var app = {
         $("#SaveUrlButton").click(app.setUpdateUrl);
         $("#CloseUrlForm").click(app.hideUrlForm);
         $("#EditUrlButton").click(app.showUrlForm);
+        $("#ResetButton").click(app.resetUrl);
         $(".sort").click((e) => {
             var options = $(e.currentTarget).find(".options");
             if (options) {
@@ -123,6 +124,9 @@ var app = {
                 $("#ReleaseStream").show();
             }
         } );
+    },
+    resetUrl: (e) => {
+        $("#EditReleaseUrl").val(githubUrl);
     },
     releaseStream: (e) => {
         app.sendMonitorMessage({
