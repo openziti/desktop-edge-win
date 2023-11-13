@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base href="./">
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self' data: gap: https://ssl.gstatic.com; style-src 'self' 'unsafe-inline' ; media-src *; img-src 'self' data: content:;">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
+    <meta name="viewport" content="initial-scale=1, width=device-width, height=device-height, viewport-fit=cover">
+    <meta name="color-scheme" content="light dark">
+    <link rel="stylesheet" href="assets/styles/ziti.css">
+    <link rel="stylesheet" href="assets/styles/fonts.css">
+    <link rel="stylesheet" href="assets/styles/grids.css">
+    <link rel="stylesheet" href="assets/styles/growler.css">
+    <link rel="stylesheet" href="assets/styles/3dmouseover.css">
+    <title id="AppTitle" data-i18n>Ziti Desktop Edge</title>
+    <script src="assets/scripts/log.js"></script>
+    <script src="assets/scripts/lottie.min.js"></script>
+    <script src="assets/scripts/moment.js"></script>
+    <script src="assets/scripts/qrcode.min.js"></script>
+    <script src="assets/scripts/growler.js"></script>
+    <script src="assets/scripts/menu.js"></script>
+    <script src="assets/scripts/modal.js"></script>
+    <script src="assets/scripts/mfa.js"></script>
+    <script src="assets/scripts/ui.js"></script>
+    <script src="assets/scripts/settings.js"></script>
+    <script src="assets/scripts/service.js"></script>
+    <script src="assets/scripts/identity.js"></script>
+    <script src="assets/scripts/dragger.js"></script>
+    <script src="assets/scripts/locale.js"></script>
+    <script src="app-renderer.js"></script>
+</head>
+
+<body>
+    <main class="missionBg">
+
+        <div id="MacActionsArea" class="mac" style="display: none;">
+            <div class="screenActions closeApp"></div>
+            <div class="screenActions minimize"></div>
+            <div class="screenActions maximize"></div>
+        </div>
+
+        <div id="WindowsActionsArea" class="windows linux" style="display: none;">
+            <div class="screenActions minimize"></div>
+            <div class="screenActions maximize"></div>
+            <div class="screenActions closeApp"></div>
+        </div>
+
+        <!-- Header Area -->
+        <div id="HeaderArea" class="container">
+            <div class="gridrow mt50">
+                <div class="col-sm-3">
+                    <div id="AddButton" data-action="add" class="serviceon unselectable" data-i18n></div>
+                    <div id="BackButton" data-i18n></div>
+                </div>
+                <div id="SearchArea" class="col-sm-offset-5 col-sm-4 serviceon">
+                    <input id="Search" placeholder="Search" class="search" />
+                    <div id="GlobalResults"></div>
+                    <div id="ClearSearch" class="clear"></div>
+                </div>
+            </div>
+            <div id="HeadDrag" class="draggHead"></div>
+        </div>
+        <!-- End Header Area -->
+
+        <!-- Mission Controls Screen -->
+        <div id="MissionControl" class="area gridrow open">
+            <div id="MainTitle" class="globetitle unselectable" data-i18n></div>
+
+            <div id="NoIdentityState" class="missions" style="display: none;">
+                <div id="WelcomeBadge" class="staticmodal inline" style="display: none;">
+                    <div class="icon close"></div>
+                    <div id="WelcomeTitle" class="title unselectable" data-i18n></div>
+                    <div class="grid split">
+                        <div id="Greetings" class="howdy" data-i18n></div>
+                        <div id="HelloZiggy" class="helloziggy"></div>
+                    </div>
+                    <div id="GetStarted" class="subTitle serviceon" data-i18n></div>
+                    <div id="GetStartedOff" class="subTitle serviceoff" data-i18n></div>
+                    <div id="WelcomeAddId" class="button serviceon" data-action="add" data-i18n></div>
+                </div>
+            </div>
+
+            <div id="ConnectedState" class="missions" style="display: none;">
+                <div class="pod">
+                    <div class="header">
+                        <div id="DownloadActivity" class="title download">Download Activity</div>
+                    </div>
+                    <div id="DownloadSpeed" class="count">-</div>
+                    <div id="DownloadMeasure" class="note" data-i18n="mbps"></div>
+                    <div id="DownloadGraph" class="graph"></div>
+                </div>
+                <div class="pod">
+                    <div class="header">
+                        <div id="UploadActivity" class="title upload">Upload Activity</div>
+                    </div>
+                    <div id="UploadSpeed" class="count">-</div>
+                    <div id="UploadMeasure" class="note" data-i18n="mbps"></div>
+                    <div id="UploadGraph" class="graph"></div>
+                </div>
+                <div class="pod serviceon">
+                    <div class="title" data-i18n="Identities"></div>
+                    <div id="IdentityCount" class="count">0</div>
+                    <div class="button" data-screen="IdentityScreen" data-i18n="ViewAll"></div>
+                </div>
+                <div class="pod serviceon">
+                    <div class="title" data-i18n="Services"></div>
+                    <div id="ServiceCount" class="count">0</div>
+                    <div class="button" data-screen="ServiceScreen" data-i18n="ViewAll"></div>
+                </div>
+                <div id="MfaAlert" class="mainalert" style="display: none;" data-screen="IdentityScreen">
+                    <div class="icon"></div>
+                    <div class="info" data-i18n="MfaAlert"></div>
+                </div>
+                <div id="PostureAlert" class="posturealert" style="display: none;" data-screen="IdentityScreen">
+                    <div class="icon"></div>
+                    <div class="info" data-i18n="PostureAlert"></div>
+                </div>
+            </div>
+
+            <div id="DisconnectedState" class="missions">
+                <div id="WelcomeBadge" class="staticmodal inline">
+                    <div id="NotConnected" class="title unselectable" data-i18n></div>
+                    <div class="grid split">
+                        <div id="UhOh" class="howdy" data-i18n></div>
+                        <div class="confusedziggy"></div>
+                    </div>
+                    <div id="GetConnected" class="subTitle" data-i18n></div>
+                </div>
+            </div>
+        </div>
+        <!-- End Mission Controls Screen -->
+
+        <!-- Identity Details Screen -->
+        <div id="IdentityScreen" class="area">
+            <div id="NoDataIdentityScreen" class="forceHide">
+                <div class="col-sm-offset-3 col-sm-6 noimage">
+                    <div class="image atvImg">
+                        <div class="atvImg-layer" data-img="assets/images/Identities-Color-3D.svg"></div>
+                    </div>
+                    <div id="NoIdentitiesMessage" class="nomessage" data-i18n></div>
+                </div>
+            </div>
+            <div id="IdentityScreenArea" class="gridrow scrollParent ids forceHide">
+                <div class="col-sm-5 verticalscroll">
+                    <div class="sortLine">
+                        <div></div>
+                        <div class="sort">
+                            <span data-i18n="SortBy"></span>
+                            <span id="IdSort" data-i18n="Name"></span>
+                            <span class="options">
+                                <div class="option" data-sort="Name" data-what="identity" data-i18n="Name"></div>
+                                <div class="option" data-sort="Status" data-what="identity" data-i18n="Status"></div>
+                                <div class="option" data-sort="Total Services" data-what="identity"
+                                    data-i18n="TotalServices"></div>
+                            </span>
+                        </div>
+                        <div class="sort">
+                            <span data-i18n="SortHow"></span>
+                            <span id="IdSortHowMain" data-i18n="ASC"></span>
+                            <span class="options">
+                                <div class="option" data-how="ASC" data-what="identity" data-i18n="ASC"></div>
+                                <div class="option" data-how="DESC" data-what="identity" data-i18n="DESC"></div>
+                            </span>
+                        </div>
+                    </div>
+                    <div id="IdentityList"></div>
+                </div>
+                <div class="col-sm-7">
+                    <div class="nameValues mb16">
+                        <div class="nameValue">
+                            <label data-i18n="Name"></label>
+                            <input id="IdName" class="invisible details" readonly />
+                        </div>
+                        <div class="nameValue">
+                            <label data-i18n="Network"></label>
+                            <input id="IdNetwork" class="invisible details" readonly />
+                        </div>
+                        <div class="nameValue">
+                            <label data-i18n="Controller"></label>
+                            <input id="IdControllerVersion" class="invisible details" readonly />
+                        </div>
+                    </div>
+                    <div id="IdServiceFilterArea" class="filtering">
+                        <div>
+                            <input id="FilterId" class="filter" placeholder="Filter" />
+                        </div>
+                        <div class="right">
+                            <div class="sort">
+                                <div id="SortHow" class="sortHow" data-i18n="Ascending"></div>
+
+                                <span class="options">
+                                    <div class="option" data-how="ASC" data-what="service" data-i18n="Ascending"></div>
+                                    <div class="option" data-how="DESC" data-what="service" data-i18n="Descending">
+                                    </div>
+                                </span>
+                            </div>
+                            <div class="sort" style="margin-right: 20px;">
+                                <span data-i18n="SortBy" data-i18n></span>
+                                <span id="IdServiceSort" data-i18n="Name"></span>
+
+                                <span class="options">
+                                    <div class="option" data-sort="Name" data-what="service" data-i18n="Name"></div>
+                                    <div class="option" data-sort="Address" data-what="service" data-i18n="Address">
+                                    </div>
+                                    <div class="option" data-sort="Port" data-what="service" data-i18n="Port"></div>
+                                    <div class="option" data-sort="Protocol" data-what="service" data-i18n="Protocol">
+                                    </div>
+                                    <div class="option" data-sort="Posture Checks" data-what="service"
+                                        data-i18n="PostureChecks"></div>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="ServiceList" class="verticalscroll"></div>
+                    <div class="controls">
+                        <div id="MfaStatus" class="blurArea">
+                            <div class="icon connected"></div>
+                            <div class="label authsmall" data-i18n="Authorize"></div>
+                        </div>
+                        <div id="MfaTimeout" class="blurArea reversed" title="Click to Renew Authentication">
+                            <div class="icon timer"></div>
+                            <div class="label">-/-</div>
+                        </div>
+                        <div>
+                            <div class="mfatext"><span data-i18n="MFA"></span></div>
+                            <div id="MfaToggle" class="toggle" data-call="mfa">
+                                <div class="handle"></div>
+                                <div class="onLabel" data-i18n="On"></div>
+                                <div class="offLabel" data-i18n="Off"></div>
+                            </div>
+                        </div>
+                        <div id="ForgetButton" class="button red" data-i18n></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End Identity Details Screen -->
+
+        <!-- Service Details Screen -->
+        <div id="ServiceScreen" class="area">
+            <div id="NoDataServiceScreen" class="forceHide">
+                <div class="col-sm-offset-3 col-sm-6 noimage">
+                    <div class="image atvImg">
+                        <div class="atvImg-layer" data-img="assets/images/Services-Color-3D.svg"></div>
+                    </div>
+                    <div id="NoServicesMessage" class="nomessage" data-i18n></div>
+                </div>
+            </div>
+            <div id="ServiceScreenArea" class="gridrow scrollParent forceHide">
+                <div class="col-sm-6 verticalscroll">
+                    <div class="row">
+                        <div class="input col-sm-12">
+                            <input id="FilterServices" class="filter" placeholder="Filter" />
+                        </div>
+                        <div class="sort col-sm-4 forceHide">
+                            <span data-i18n="SortBy"></span>
+                            <span id="ServiceSort" data-i18n="Name"></span>
+
+                            <span class="options">
+                                <div class="option" data-sort="Name" data-what="service" data-how="ASC" data-i18n="Name"></div>
+                                <div class="option" data-sort="Address" data-what="service" data-how="ASC" data-i18n="Address"></div>
+                                <div class="option" data-sort="Port" data-what="service" data-how="ASC" data-i18n="Port"></div>
+                                <div class="option" data-sort="Protocol" data-what="service" data-how="ASC" data-i18n="Protocol"></div>
+                                <div class="option" data-sort="Total Posture Checks" data-what="service" data-how="ASC" data-i18n="PostureChecks"></div>
+                            </span>
+                        </div>
+                    </div>
+                    <div id="FullServiceList" class="pb50"></div>
+                </div>
+                <div class="col-sm-6 verticalscroll">
+                    <div class="nameValues mb16">
+                        <div class="nameValue">
+                            <label data-i18n="Name"></label>
+                            <input id="ServiceName" class="invisible details" readonly />
+                        </div>
+                        <div class="nameValue">
+                            <label data-i18n="Url"></label>
+                            <input id="ServiceUrl" class="invisible details click" readonly />
+                        </div>
+                        <div class="nameValue">
+                            <label data-i18n="Identity"></label>
+                            <input id="ServiceIdentity" class="invisible details" readonly />
+                        </div>
+                    </div>
+                    <div class="gridrow pr10">
+
+                        <!-- Hide these until tunnel send service level metrics -->
+                        <div class="col-sm-6" style="display: none;">
+                            <div class="pod">
+                                <div class="header">
+                                    <div class="title download" data-i18n="DownloadSpeed"></div>
+                                </div>
+                                <div id="DownloadServiceSpeed" class="count">0</div>
+                                <div id="DownloadServiceMeasure" class="note" data-i18n="mbps"></div>
+                                <div id="DownloadServiceGraph" class="graph"></div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6" style="display: none;">
+                            <div class="pod">
+                                <div class="header">
+                                    <div class="title upload" data-i18n="UploadSpeed"></div>
+                                </div>
+                                <div id="UploadServiceSpeed" class="count">0</div>
+                                <div id="UploadServiceMeasure" class="note" data-i18n="mbps"></div>
+                                <div id="UploadServiceGraph" class="graph"></div>
+                            </div>
+                        </div>
+                        <!-- End Hid Metrics -->
+
+                        <div class="grid address">
+                            <div class="pod">
+                                <div class="nameValue">
+                                    <label data-i18n="Addresses"></label>
+                                    <div id="ServiceAddresses" class="value"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid splitValues">
+                            <div class="pod">
+                                <div class="nameValue">
+                                    <label data-i18n="Ports"></label>
+                                    <div id="ServicePorts" class="value"></div>
+                                </div>
+                                <div class="nameValue mt20">
+                                    <label data-i18n="Protocols"></label>
+                                    <div id="ServiceProtocols" class="value"></div>
+                                </div>
+                            </div>
+                            <div class="pod">
+                                <div class="nameValue">
+                                    <label data-i18n="PostureChecks"></label>
+                                    <div id="PostureChecks" class="value"></div>
+                                </div>
+                                <div id="PassFail"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End Service Details Screen -->
+
+        <!-- Advanced Screen -->
+        <div id="AdvancedScreen" class="area gridrow">
+            <div class="col-sm-4">
+                <div class="fullNav advancedNav selected" data-sub="ConfigInfo">
+                    <div class="icon train"></div>
+                    <span data-i18n="TunnelConfiguration" class="navLabel"></span>
+                </div>
+                <div class="fullNav advancedNav" data-sub="ServiceLogs">
+                    <div class="icon serviceLog"></div>
+                    <span data-i18n="ServiceLogs" class="navLabel"></span>
+                </div>
+                <div class="fullNav advancedNav" data-sub="AppLogs">
+                    <div class="icon appLog"></div>
+                    <span data-i18n="ApplicationLogs" class="navLabel"></span>
+                </div>
+                <div class="fullNav advancedNav serviceon" data-sub="LogLevel">
+                    <div class="icon level"></div>
+                    <span data-i18n="SetLoggingLevel" class="navLabel"></span>
+                </div>
+                <div class="fullNav advancedNav serviceon windows" data-sub="Updates">
+                    <div class="icon update"></div>
+                    <span data-i18n="AutomaticUpdates" class="navLabel"></span>
+                </div>
+            </div>
+            <div class="col-sm-8">
+                <div id="ConfigInfo" class="sub open">
+                    <div class="title" data-i18n="AdvancedTitle"></div>
+                    <div data-i18n="AdvancedDescription"></div>
+                    <div class="iconNameValue">
+                        <div class="icon ip"></div>
+                        <div class="name" data-i18n="IPv4Address"></div>
+                        <div id="SettingIp" class="value">-</div>
+                    </div>
+                    <div class="iconNameValue">
+                        <div class="icon subnet"></div>
+                        <div class="name" data-i18n="SubnetMask"></div>
+                        <div id="SettingSubnet" class="value">-</div>
+                    </div>
+                    <div class="iconNameValue">
+                        <div class="icon mtu"></div>
+                        <div class="name" data-i18n="MTU"></div>
+                        <div id="SettingMTU" class="value">-</div>
+                    </div>
+                    <div class="iconNameValue">
+                        <div class="icon dns"></div>
+                        <div class="name" data-i18n="DNSServers"></div>
+                        <div id="SettingDNS" class="value">-</div>
+                    </div>
+                    <div class="iconNameValue">
+                        <div class="icon api"></div>
+                        <div class="name" data-i18n="APIPageSize"></div>
+                        <div id="SettingAPI" class="value">-</div>
+                    </div>
+                    <div class="controls">
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div class="right">
+                            <div id="EditButton" class="button edit serviceon" data-i18n></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="ServiceLogs" class="sub">
+                    <div class="title" data-i18n="ServiceLogs"></div>
+                    <div data-i18n="ServiceLogSubTitle"></div>
+                    <div class="grid boxes">
+                        <div class="pod">
+                            <div class="iconHeader">
+                                <div class="title" data-i18n="ViewTheServiceLogs"></div>
+                                <div class="icon serviceLog"></div>
+                            </div>
+                            <div id="ServiceLogButton" class="button" data-i18n="OpenLogs"></div>
+                        </div>
+                        <div id="ServiceLogs" class="logs"></div>
+                    </div>
+                </div>
+
+                <div id="AppLogs" class="sub">
+                    <div class="title" data-i18n="ApplicationLogs"></div>
+                    <div data-i18n="ApplicationLogsSubTitle"></div>
+                    <div class="grid boxes">
+                        <div class="pod">
+                            <div class="iconHeader">
+                                <div class="title" data-i18n="ViewTheAppLogs"></div>
+                                <div class="icon appLog"></div>
+                            </div>
+                            <div id="AppLogButton" class="button" data-i18n="OpenLogs"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="LogLevel" class="sub">
+                    <div class="title" data-i18n="SetLoggingLevel"></div>
+                    <div data-i18n="LoggingLevelSubTitle"></div>
+                    <div id="LevelError" class="levelSelect" data-level="error">
+                        <div class="icon error"></div>
+                        <div class="name" data-i18n="Error"></div>
+                        <div>
+                            <div class="radio serviceon">
+                                <div class="dot"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="LevelWarn" class="levelSelect" data-level="warn">
+                        <div class="icon warn"></div>
+                        <div class="name" data-i18n="Warn"></div>
+                        <div>
+                            <div class="radio serviceon">
+                                <div class="dot"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="LevelInfo" class="levelSelect" data-level="info">
+                        <div class="icon info"></div>
+                        <div class="name" data-i18n="Info"></div>
+                        <div>
+                            <div class="radio serviceon">
+                                <div class="dot"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="LevelDebug" class="levelSelect" data-level="debug">
+                        <div class="icon debug"></div>
+                        <div class="name" data-i18n="Debug"></div>
+                        <div>
+                            <div class="radio serviceon">
+                                <div class="dot"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="LevelVerbose" class="levelSelect" data-level="verbose">
+                        <div class="icon verbose"></div>
+                        <div class="name" data-i18n="Verbose"></div>
+                        <div>
+                            <div class="radio serviceon">
+                                <div class="dot"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="LevelTrace" class="levelSelect" data-level="trace">
+                        <div class="icon trace"></div>
+                        <div class="name" data-i18n="Trace"></div>
+                        <div>
+                            <div class="radio serviceon">
+                                <div class="dot"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="Updates" class="sub">
+                    <div class="title" data-i18n="AutomaticUpdates"></div>
+                    <div data-i18n="AutomaticSubTitle"></div>
+                    <div class="iconNameValue">
+                        <div class="icon update noback"></div>
+                        <div class="name" data-i18n="AutomaticUpdates"></div>
+                        <div class="row">
+                            <div id="UpdateOn" class="toggle" data-call="updates">
+                                <div class="handle"></div>
+                                <div class="onLabel" data-i18n="On"></div>
+                                <div class="row"></div>
+                                <div class="offLabel" data-i18n="Off"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="ReleaseStream" class="iconNameValue switched" style="display: none;">
+                        <div class="icon release noback"></div>
+                        <div class="name" data-i18n="ReleaseStream"></div>
+                        <div>
+                            <label class="left" data-i18n="Normal"></label>
+                            <div data-id="Normal" class="radio selected left releaseStream">
+                                <div class="dot"></div>
+                            </div>
+                            <label class="left" data-i18n="Beta"></label>
+                            <div data-id="Beta" class="radio left releaseStream">
+                                <div class="dot"></div>
+                            </div>
+                        </div>
+                        <div class="controls">
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                            <div class="right">
+                                <div id="EditUrlButton" class="button edit serviceon" data-i18n></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="EditUrlForm" class="form popover">
+                <div class="title" data-i18n="EditUrlConfiguration"></div>
+                <div id="CloseUrlForm" class="close" data-i18n="Close"></div>
+                <label for="EditReleaseUrl" data-i18n="EditReleaseUrl"></label>
+                <input id="EditReleaseUrl" type="text" placeholder="e.g. https://domain.com/path" />
+                <div class="buttonArea">
+                    <div id="SaveUrlButton" class="button">Save</div>
+                </div>
+            </div>
+            <div id="EditForm" class="form popover">
+                <div class="title" data-i18n="EditTunnelConfiguration"></div>
+                <div id="CloseForm" class="close" data-i18n="Close"></div>
+                <label for="EditIP" data-i18n="IPAddress"></label>
+                <input id="EditIP" type="text" placeholder="0.0.0.0" />
+                <label for="EditSubnet" data-i18n="SubnetMask"></label>
+                <select id="EditSubnet">
+                    <option value="10" selected>/10 - 255.192.0.0</option>
+                    <option value="11">/11 - 255.224.0.0</option>
+                    <option value="12">/12 - 255.240.0.0</option>
+                    <option value="13">/13 - 255.248.0.0</option>
+                    <option value="14">/14 - 255.252.0.0</option>
+                    <option value="15">/15 - 255.254.0.0</option>
+                    <option value="16">/16 - 255.255.0.0</option>
+                    <option value="17">/17 - 255.255.128.0</option>
+                    <option value="18">/18 - 255.255.192.0</option>
+                    <option value="19">/19 - 255.255.224.0</option>
+                    <option value="20">/20 - 255.255.240.0</option>
+                    <option value="21">/21 - 255.255.248.0</option>
+                    <option value="22">/22 - 255.255.252.0</option>
+                    <option value="23">/23 - 255.255.254.0</option>
+                    <option value="24">/24 - 255.255.255.0</option>
+                </select>
+                <label data-i18n="PageSize"></label>
+                <input id="EditAPI" type="text" placeholder="50-500" />
+                <div class="toggleArea">
+                    <label data-i18n="AddDNS"></label>
+                    <div id="EditDNS" class="toggle">
+                        <div class="handle"></div>
+                        <div class="onLabel" data-i18n="On"></div>
+                        <div class="offLabel" data-i18n="Off"></div>
+                    </div>
+                </div>
+                <div class="buttonArea">
+                    <div id="SaveConfigButton" class="button">Save</div>
+                </div>
+            </div>
+        </div>
+        <!-- End Advanced Screen -->
+
+        <!-- Support Screen -->
+        <div id="SupportScreen" class="area gridrow">
+            <div class="col-sm-4 verticalscroll">
+                <div class="supportNav selected" data-sub="GetSupport">
+                    <div class="icon support"></div>
+                    <span data-i18n="GetSupport" class="navLabel"></span>
+                </div>
+                <div class="supportNav" data-sub="ReadDocs">
+                    <div class="icon docs"></div>
+                    <span data-i18n="ReadTheDocs" class="navLabel"></span>
+                </div>
+                <div class="supportNav windows serviceon" data-sub="GiveFeedback" style="display: none;">
+                    <div class="icon feedback"></div>
+                    <span data-i18n="GiveFeedback" class="navLabel"></span>
+                </div>
+                <div class="supportNav" data-sub="Terms">
+                    <div class="icon privacy"></div>
+                    <span data-i18n="PrivacyTerms" class="navLabel"></span>
+                </div>
+            </div>
+            <div class="col-sm-8 verticalscroll">
+
+                <div id="GetSupport" class="sub open">
+                    <div class="title" id="JoinTheConversation" data-i18n></div>
+                    <div id="JoinDescription" data-i18n></div>
+                    <div class="grid boxes">
+                        <div class="pod">
+                            <div class="iconHeader">
+                                <div class="title" id="ConnectDiscourse" data-i18n></div>
+                                <div class="icon discourse"></div>
+                            </div>
+                            <div id="AskQuestions" class="button" data-url="https://openziti.discourse.group" data-i18n>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="ReadDocs" class="sub">
+                    <div class="title" id="ReadTheDocs" data-i18n></div>
+                    <div id="DocsDescription"></div>
+                    <div class="grid boxes">
+                        <div class="pod">
+                            <div class="iconHeader">
+                                <div id="ReadUp" class="title" data-i18n></div>
+                                <div class="icon ziticon"></div>
+                            </div>
+                            <div class="button" data-url="https://openziti.org" data-i18n="ReadTheDocs"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="GiveFeedback" class="sub">
+                    <div class="title" data-i18n="GiveFeedback"></div>
+                    <div id="FeedbackDescription" data-i18n></div>
+                    <div class="grid boxes">
+                        <div class="pod" style="display: none;">
+                            <div class="iconHeader">
+                                <div class="title" data-i18n="ReportIssue"></div>
+                                <div class="icon feedback"></div>
+                            </div>
+                            <div id="FeedbackButton" class="button" data-i18n="ContactUs"></div>
+                        </div>
+                        <div class="pod">
+                            <div class="iconHeader">
+                                <div class="title" data-i18n="Package"></div>
+                                <div class="icon package"></div>
+                            </div>
+                            <div id="GenerateButton" class="button actionPending" data-i18n="Generate"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="Terms" class="sub">
+                    <div class="title" data-i18n="PrivacyPolicy"></div>
+                    <div id="PrivacyDescription" data-i18n></div>
+                    <div class="grid boxes">
+                        <div class="pod">
+                            <div class="iconHeader">
+                                <div class="title" data-i18n="PrivacyPolicyButton"></div>
+                                <div class="icon termsandprivacy"></div>
+                            </div>
+                            <div class="button" data-url="https://netfoundry.io/privacy" data-i18n="Open"></div>
+                        </div>
+                        <div class="pod">
+                            <div class="iconHeader">
+                                <div class="title" data-i18n="Terms"></div>
+                                <div class="icon termsandprivacy"></div>
+                            </div>
+                            <div class="button" data-url="https://netfoundry.io/terms" data-i18n="Open"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <!-- End Support Screen -->
+
+        <!-- Overlays -->
+        <span class="loader" style="display: none;"></span>
+
+    </main>
+
+    <!-- Navigation -->
+    <nav class="missionBg">
+        <div class="navItem selected" data-screen="MissionControl">
+            <div class="icon control"></div>
+            <div class="label unselectable" data-i18n="MainTitle"></div>
+        </div>
+        <div class="title unselectable" data-i18n="IdentitiesServices"></div>
+        <div class="navItem" data-screen="IdentityScreen">
+            <div class="icon identitiy"></div>
+            <div class="label unselectable" data-i18n="Identities"></div>
+            <div id="NavIdentityCount" class="count serviceon">0</div>
+        </div>
+        <div class="navItem" data-screen="ServiceScreen">
+            <div class="icon service"></div>
+            <div class="label unselectable" data-i18n="Services"></div>
+            <div id="NavServiceCount" class="count serviceon">0</div>
+        </div>
+        <div class="title unselectable" data-i18n="Others"></div>
+        <div class="navItem" data-screen="AdvancedScreen">
+            <div class="icon advanced"></div>
+            <div class="label unselectable" data-i18n="AdvancedSettings"></div>
+        </div>
+        <div class="navItem" data-screen="SupportScreen">
+            <div class="icon support"></div>
+            <div class="label unselectable" data-i18n="Support"></div>
+        </div>
+        <div class="nav-z"></div>
+        <div id="UpdateAvailable" class="updateavailable" style="display: none;">
+            <span data-i18n="UpdateAvailable" data-i18n></span>
+            <div class="downloadupdate"></div>
+        </div>
+        <div id="OnOffButton">
+            <div class="ring"></div>
+            <div id="Timer" class="unselectable">00:00:00</div>
+            <div class="power"></div>
+            <div id="Stop" data-i18n></div>
+        </div>
+    </nav>
+
+    <!-- Repeater Templates -->
+    <div id="IdentityItem" class="identities template">
+        <div class="status {{status}}"></div>
+        <div class="name">
+            <input class="invisible" value="{{Name}}" readonly />
+        </div>
+        <div>
+            <div class="servicecount">{{count}}</div>
+            <div class="servicetag">Services</div>
+        </div>
+        <div>
+            <div class="toggle {{toggled}}" data-id="{{Identifier}}" data-fingerprint="{{FingerPrint}}">
+                <div class="handle"></div>
+                <div class="onLabel" data-i18n="On"></div>
+                <div class="offLabel" data-i18n="Off"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="ServiceItem" class="services template">
+        <div class="icon"></div>
+        <div>
+            <input type="text" class="invisible details {{postureStyle}}" value="{{Name}}" readonly />
+        </div>
+        <div>
+            <div class="dragger"></div>
+            <input type="text" class="invisible details" value="{{address}}" readonly />
+        </div>
+        <div class="right">
+            <div class="dragger"></div>
+            <input type="text" class="invisible details" value="{{ports}}" readonly />
+        </div>
+        <div class="right">
+            <div class="dragger"></div>
+            <input type="text" class="invisible details" value="{{protocols}}" readonly />
+        </div>
+    </div>
+
+    <div id="FullServiceItem" class="fullservices template">
+        <div class="icon {{postureStyle}}" title="{{postureStatus}}"></div>
+        <div>
+            <input class="invisible" value="{{Name}}" readonly />
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="MfaSetupModal" class="modal">
+        <div data-action="mfasetup" class="close"></div>
+        <div class="title">Setup MFA</div>
+        <div id="MfaSetupId" class="subTitle"></div>
+        <div id="MfaSecret" class="secret" style="display: none !important;"></div>
+        <div id="QrCode"></div>
+        <div class="links">
+            <span id="MfaLinkButton" class="link" data-i18n="GoToLink"></span>
+            <span data-i18n="or">or</span>
+            <span id="MfaSecretButton" class="link" data-i18n="ShowSecret"></span>
+            <span id="MfaQrButton" class="link" style="display: none !important;" data-i18n="ShowQR"></span>
+        </div>
+        <div data-i18n="EnterAuthenticate"></div>
+        <div class="row">
+            <div id="SetupAuthCode" class="code">
+                <input id="MfaSetupCode" type="number" maxlength="8" placeholder="######" data-enter="AuthenticateButton" />
+            </div>
+        </div>
+        <div id="AuthenticateButton" class="button" data-i18n="Authenticate"></div>
+    </div>
+
+    <div id="MfaAuthModal" class="modal">
+        <div class="close"></div>
+        <div class="title" data-i18n="Reauthenticate"></div>
+        <div data-i18n="EnterCode"></div>
+        <div class="row">
+            <div id="AuthCodeArea" class="code">
+                <input id="AuthCode" type="number" maxlength="8" placeholder="######" data-enter="ReAuthenticateButton" />
+            </div>
+        </div>
+        <div id="ReAuthenticateButton" class="button" data-i18n="Authenticate"></div>
+    </div>
+
+    <div id="MfaRemoveModal" class="modal">
+        <div class="close" data-action="mfaremove"></div>
+        <div class="title" data-i18n="RemoveMFA"></div>
+        <div data-i18n="EnterCode"></div>
+        <div class="row">
+            <div id="RemoveCodeArea" class="code">
+                <input id="RemoveCode" type="number" maxlength="8" placeholder="######" data-enter="RemoveMfaButton" />
+            </div>
+        </div>
+        <div id="RemoveMfaButton" class="button" data-i18n="Remove"></div>
+    </div>
+
+    <div id="MfaRecoveryAuthModal" class="modal">
+        <div class="close" data-action="mfaremove"></div>
+        <div class="title" data-i18n="Authenticate"></div>
+        <div data-i18n="EnterAuthenticate"></div>
+        <div class="row">
+            <div id="RecoveryCodeArea" class="code">
+                <input id="RecoveryCode" type="number" maxlength="8" placeholder="######" data-enter="RecoveryMfaButton" />
+            </div>
+        </div>
+        <div id="RecoveryMfaButton" class="button" data-i18n="Authenticate"></div>
+    </div>
+
+    <div id="MfaRecoveryModal" class="modal">
+        <div class="close"></div>
+        <div class="title" data-i18n="MFARecoveryCodes"></div>
+        <div id="RecoveryCodeList"></div>
+        <div class="buttons">
+            <div class="left">
+                <div id="RegenerateButton" class="button red" data-i18n="Regenerate"></div>
+            </div>
+            <div id="SaveCodesButton" class="button" data-i18n="Save"></div>
+        </div>
+    </div>
+
+    <div id="ConfirmModal" class="modal">
+        <div id="ConfirmTitle" class="title"></div>
+        <div id="ConfirmMessage"></div>
+        <div class="buttons">
+            <div class="left">
+                <div id="NoButton" class="button secondary"></div>
+            </div>
+            <div id="YesButton" class="button"></div>
+        </div>
+    </div>
+
+    <div class="version" style="display: none;">
+        <span data-i18n="App"></span>:
+        <span id="AppVersion"></span>
+        <span data-i18n="Service"></span>:
+        <span id="ServiceVersion"></span>
+    </div>
+
+    <div class="sliderLeft"></div>
+    <div class="sliderLeft" style="z-index: 5010; width: 40px"></div>
+
+</body>
+
+</html>
+
+<script src="assets/scripts/3dmouseover.js"></script>
+<script src="assets/scripts/missioncontrol.js"></script>

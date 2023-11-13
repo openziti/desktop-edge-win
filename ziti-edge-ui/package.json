@@ -1,0 +1,62 @@
+{
+  "name": "zitidesktopedge",
+  "productName": "Ziti Desktop Edge (Preview)",
+  "version": "3.2.8",
+  "homepage": "openziti.io",
+  "description": "Ziti Desktop Edge Client",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron app.js",
+    "build": "electron-packager . Ziti-Desktop-Edge --overwrite --asar --electron-version=21.4.3 --platform=win32 --arch=x64 --prune=true --out=release-builds --icon=./app.ico"
+  },
+  "keywords": [
+    "Ziti",
+    "NetFoundry",
+    "Edge",
+    "Zero",
+    "Trust"
+  ],
+  "author": {
+    "name": "NetFoundry",
+    "email": "ziggy@openziti.io",
+    "url": "https://openziti.io"
+  },
+  "icon": "app.ico",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^24.2.0",
+    "electron-packager": "^16.0.0"
+  },
+  "dependencies": {
+    "auto-launch": "^5.0.6",
+    "electron-context-menu": "^3.6.1",
+    "electron-root-path": "^1.0.16",
+    "find-remove": "^4.1.0",
+    "fs": "0.0.1-security",
+    "highcharts": "^10.2.1",
+    "moment": "^2.29.4",
+    "node-ipc": "^10.1.0",
+    "path": "^0.12.7",
+    "sudo-prompt": "^9.2.1"
+  },
+  "build": {
+    "linux": {
+      "artifactName": "ziti-desktop-edge-${version}.${ext}",
+      "category": "Utility"
+    },
+    "win": {
+      "artifactName": "ziti-desktop-edge-${version}.${ext}"
+    },
+    "deb": {
+      "depends": [
+        "ziti-edge-tunnel"
+      ]
+    },
+    "rpm": {
+      "depends": [
+        "ziti-edge-tunnel"
+      ]
+    }
+  }
+}

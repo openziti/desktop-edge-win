@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<DOCUMENT Type="Advanced Installer" CreateVersion="17.4.1" version="21.1" Modules="professional" RootPath="." Language="en" Id="{7315FE7B-0418-4F38-8B12-6C0594276D30}">
+<DOCUMENT Type="Advanced Installer" CreateVersion="17.4.1" version="21.2.1" Modules="professional" RootPath="." Language="en" Id="{7315FE7B-0418-4F38-8B12-6C0594276D30}">
   <COMPONENT cid="caphyon.advinst.msicomp.ProjectOptionsComponent">
     <ROW Name="HiddenItems" Value="ActSyncAppComponent;CPLAppletComponent;AppXAppDetailsComponent;FixupComponent;AppXCapabilitiesComponent;AppXDependenciesComponent;AppXProductDetailsComponent;AppXVisualAssetsComponent;AppXAppDeclarationsComponent;AppXUriRulesComponent;MsiXDiffComponent;MsixManifestEditorComponent"/>
   </COMPONENT>
@@ -38,8 +38,6 @@
     <ROW Property="AI_ImagesColor" Value="powderblue" MsiKey="AI_ImagesColor"/>
     <ROW Property="AI_PREDEF_LCONDS_PROPS" Value="AI_DETECTED_INTERNET_CONNECTION"/>
     <ROW Property="AI_PREREQ_REPAIR_ENABLED" MultiBuildValue="DefaultBuild:1#AnyCPU_Release:1"/>
-    <ROW Property="AI_PROPPATH_PERBUILD_ZitiDesktopEdge.exe" Value="..\DesktopEdge\bin\Release\ZitiDesktopEdge.exe"/>
-    <ROW Property="AI_PROPPATH_PERBUILD_ZitiDesktopEdge.exe.config" Value="..\DesktopEdge\bin\Release\ZitiDesktopEdge.exe.config"/>
     <ROW Property="AI_PROPPATH_PERBUILD_ZitiUpdateService.exe" Value="..\ZitiUpdateService\bin\Release\ZitiUpdateService.exe"/>
     <ROW Property="AI_PROPPATH_PERBUILD_ZitiUpdateService.exe.config" Value="..\ZitiUpdateService\bin\Release\ZitiUpdateService.exe.config"/>
     <ROW Property="AI_ThemeStyle" Value="head" MsiKey="AI_ThemeStyle"/>
@@ -73,15 +71,15 @@
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiDirsComponent">
     <ROW Directory="APPDIR" Directory_Parent="TARGETDIR" DefaultDir="APPDIR:." IsPseudoRoot="1"/>
-    <ROW Directory="DesktopFolder" Directory_Parent="TARGETDIR" DefaultDir="DESKTO~1|DesktopFolder" IsPseudoRoot="1"/>
     <ROW Directory="SHORTCUTDIR" Directory_Parent="TARGETDIR" DefaultDir="SHORTC~1|SHORTCUTDIR" IsPseudoRoot="1"/>
-    <ROW Directory="StartupFolder" Directory_Parent="TARGETDIR" DefaultDir="STARTU~1|StartupFolder" IsPseudoRoot="1"/>
     <ROW Directory="TARGETDIR" DefaultDir="SourceDir"/>
+    <ROW Directory="locales_Dir" Directory_Parent="APPDIR" DefaultDir="locales"/>
+    <ROW Directory="resources_Dir" Directory_Parent="APPDIR" DefaultDir="RESOUR~1|resources"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiCompsComponent">
     <ROW Component="AI_ExePath" ComponentId="{F9B15650-F37D-424A-B159-B54B9F36EC2C}" Directory_="APPDIR" Attributes="260" KeyPath="AI_ExePath"/>
     <ROW Component="APPDIR" ComponentId="{B3881A25-6890-4920-9F69-CACA0C9ABA63}" Directory_="APPDIR" Attributes="0"/>
-    <ROW Component="App.config" ComponentId="{27FAD46C-8379-4680-8506-4BCBA5A012E8}" Directory_="APPDIR" Attributes="0" KeyPath="ZitiDesktopEdge.exe.config" Type="0"/>
+    <ROW Component="App.config" ComponentId="{27FAD46C-8379-4680-8506-4BCBA5A012E8}" Directory_="APPDIR" Attributes="0" KeyPath="ZitiUpdateService.exe.config" Type="0"/>
     <ROW Component="C4FE6FD5B7C4D07B3A313E754A9A6A8" ComponentId="{176292BC-A705-4FA9-90B0-13CEB1DDF17D}" Directory_="APPDIR" Attributes="260" KeyPath="C4FE6FD5B7C4D07B3A313E754A9A6A8" Options="2"/>
     <ROW Component="DnsClient.dll" ComponentId="{8C789D0B-0EB7-4172-ADB8-11D52C22488C}" Directory_="APPDIR" Attributes="0" KeyPath="DnsClient.dll"/>
     <ROW Component="Microsoft.Toolkit.Uwp.Notifications.dll" ComponentId="{EA48696A-A312-46C2-B720-6E4AB15406CA}" Directory_="APPDIR" Attributes="0" KeyPath="Microsoft.Toolkit.Uwp.Notifications.dll"/>
@@ -89,12 +87,19 @@
     <ROW Component="Newtonsoft.Json.dll" ComponentId="{5D7B59CE-A1B5-4EE9-842E-0206408F8674}" Directory_="APPDIR" Attributes="0" KeyPath="Newtonsoft.Json.dll"/>
     <ROW Component="ProductInformation" ComponentId="{4FC3A7CB-D334-466A-A919-E6A237EF4443}" Directory_="APPDIR" Attributes="260" KeyPath="Version"/>
     <ROW Component="QRCoder.dll" ComponentId="{4FE1F9B5-1948-4D04-AFB1-3A4CE374A0D8}" Directory_="APPDIR" Attributes="0" KeyPath="QRCoder.dll"/>
-    <ROW Component="SHORTCUTDIR" ComponentId="{3A88A759-A3FE-443F-A6D9-0D97BA424B2E}" Directory_="SHORTCUTDIR" Attributes="0"/>
+    <ROW Component="SHORTCUTDIR" ComponentId="{6C6787D0-645B-430A-9B17-A5EF0706E45A}" Directory_="SHORTCUTDIR" Attributes="0"/>
     <ROW Component="System.Buffers.dll" ComponentId="{337A28A5-0EA0-420C-8CC3-84FBC3EF7BE2}" Directory_="APPDIR" Attributes="0" KeyPath="System.Buffers.dll"/>
     <ROW Component="WpfMouseWheelLib.dll" ComponentId="{8CFD4E8C-7E6E-4797-A38A-02B7794BFF5F}" Directory_="APPDIR" Attributes="0" KeyPath="WpfMouseWheelLib.dll"/>
     <ROW Component="ZitiDesktopEdge.Client.dll" ComponentId="{7834CBFB-BA9A-4337-9603-507C71135B01}" Directory_="APPDIR" Attributes="0" KeyPath="ZitiDesktopEdge.Client.dll"/>
-    <ROW Component="ZitiDesktopEdge.exe" ComponentId="{FDDCF14B-4FAF-469F-810E-0877A0DD5F3B}" Directory_="APPDIR" Attributes="0" KeyPath="ZitiDesktopEdge.exe"/>
+    <ROW Component="ZitiDesktopEdge.exe" ComponentId="{060572A3-09DB-4609-AD63-0AC89F6B6B52}" Directory_="APPDIR" Attributes="256" KeyPath="ZitiDesktopEdge.exe"/>
     <ROW Component="ZitiUpdateService.exe" ComponentId="{01B4F535-D4A3-44CD-BB2D-A3A905A095D6}" Directory_="APPDIR" Attributes="0" KeyPath="ZitiUpdateService.exe"/>
+    <ROW Component="af.pak" ComponentId="{39187139-807A-477A-9500-CB3CF3A4E2BB}" Directory_="locales_Dir" Attributes="0" KeyPath="af.pak" Type="0"/>
+    <ROW Component="app.asar" ComponentId="{EE57CC11-31EE-4844-B4AA-34E08D37F837}" Directory_="resources_Dir" Attributes="0" KeyPath="app.asar" Type="0"/>
+    <ROW Component="d3dcompiler_47.dll" ComponentId="{9D0F3289-94CD-41D6-86B0-1BF5607C6707}" Directory_="APPDIR" Attributes="256" KeyPath="d3dcompiler_47.dll"/>
+    <ROW Component="ffmpeg.dll" ComponentId="{133ED84E-D590-49FC-802C-2DB47FC96E9F}" Directory_="APPDIR" Attributes="256" KeyPath="ffmpeg.dll"/>
+    <ROW Component="libEGL.dll" ComponentId="{236E29BF-3C32-4A8F-9E9F-9F433A559BC4}" Directory_="APPDIR" Attributes="256" KeyPath="libEGL.dll"/>
+    <ROW Component="libGLESv2.dll" ComponentId="{5B7E24AD-8B80-4B61-B9B4-220D3EE19E01}" Directory_="APPDIR" Attributes="256" KeyPath="libGLESv2.dll"/>
+    <ROW Component="vk_swiftshader.dll" ComponentId="{4148A131-3E8B-46E5-8C95-294D92FB6FAF}" Directory_="APPDIR" Attributes="256" KeyPath="vk_swiftshader.dll"/>
     <ROW Component="wintun.dll" ComponentId="{9A0B9D43-D06F-4456-BBCF-C99A90D19D8C}" Directory_="APPDIR" Attributes="256" KeyPath="wintun.dll"/>
     <ROW Component="zitiedgetunnel.exe" ComponentId="{53505232-48E9-44C1-B2FB-77472C1C4732}" Directory_="APPDIR" Attributes="256" KeyPath="zitiedgetunnel.exe"/>
   </COMPONENT>
@@ -104,8 +109,6 @@
     <ATTRIBUTE name="CurrentFeature" value="MainFeature"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiFilesComponent">
-    <ROW File="ZitiDesktopEdge.exe" Component_="ZitiDesktopEdge.exe" FileName="ZITIDE~1.EXE|ZitiDesktopEdge.exe" Attributes="0" SourcePath="&lt;AI_APPPATH_PERBUILD_ZitiDesktopEdge.exe&gt;" SelfReg="false" DigSign="true"/>
-    <ROW File="ZitiDesktopEdge.exe.config" Component_="App.config" FileName="ZITIDE~1.CON|ZitiDesktopEdge.exe.config" Attributes="0" SourcePath="&lt;AI_APPPATH_PERBUILD_ZitiDesktopEdge.exe.config&gt;" SelfReg="false"/>
     <ROW File="ZitiUpdateService.exe" Component_="ZitiUpdateService.exe" FileName="ZITIUP~1.EXE|ZitiUpdateService.exe" Attributes="0" SourcePath="&lt;AI_APPPATH_PERBUILD_ZitiUpdateService.exe&gt;" SelfReg="false" DigSign="true"/>
     <ROW File="ZitiUpdateService.exe.config" Component_="App.config" FileName="ZITIUP~1.CON|ZitiUpdateService.exe.config" Attributes="0" SourcePath="&lt;AI_APPPATH_PERBUILD_ZitiUpdateService.exe.config&gt;" SelfReg="false"/>
     <ROW File="ziti.ico" Component_="App.config" FileName="ziti.ico" Attributes="0" SourcePath="ziti.ico" SelfReg="false"/>
@@ -121,16 +124,80 @@
     <ROW File="QRCoder.dll" Component_="QRCoder.dll" FileName="QRCoder.dll" Attributes="0" SourcePath="..\DesktopEdge\bin\Release\QRCoder.dll" SelfReg="false"/>
     <ROW File="Microsoft.Toolkit.Uwp.Notifications.dll" Component_="Microsoft.Toolkit.Uwp.Notifications.dll" FileName="MICROS~1.DLL|Microsoft.Toolkit.Uwp.Notifications.dll" Attributes="0" SourcePath="..\DesktopEdge\bin\Release\Microsoft.Toolkit.Uwp.Notifications.dll" SelfReg="false"/>
     <ROW File="zitiedgetunnel.exe" Component_="zitiedgetunnel.exe" FileName="ZITI-E~1.EXE|ziti-edge-tunnel.exe" Attributes="0" SourcePath="build\service\ziti-edge-tunnel.exe" SelfReg="false" DigSign="true"/>
+    <ROW File="chrome_100_percent.pak" Component_="App.config" FileName="CHROME~1.PAK|chrome_100_percent.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\chrome_100_percent.pak" SelfReg="false"/>
+    <ROW File="chrome_200_percent.pak" Component_="App.config" FileName="CHROME~2.PAK|chrome_200_percent.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\chrome_200_percent.pak" SelfReg="false"/>
+    <ROW File="d3dcompiler_47.dll" Component_="d3dcompiler_47.dll" FileName="D3DCOM~1.DLL|d3dcompiler_47.dll" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\d3dcompiler_47.dll" SelfReg="false"/>
+    <ROW File="ffmpeg.dll" Component_="ffmpeg.dll" FileName="ffmpeg.dll" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\ffmpeg.dll" SelfReg="false"/>
+    <ROW File="icudtl.dat" Component_="App.config" FileName="icudtl.dat" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\icudtl.dat" SelfReg="false"/>
+    <ROW File="libEGL.dll" Component_="libEGL.dll" FileName="libEGL.dll" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\libEGL.dll" SelfReg="false"/>
+    <ROW File="libGLESv2.dll" Component_="libGLESv2.dll" FileName="LIBGLE~1.DLL|libGLESv2.dll" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\libGLESv2.dll" SelfReg="false"/>
+    <ROW File="resources.pak" Component_="App.config" FileName="RESOUR~1.PAK|resources.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\resources.pak" SelfReg="false"/>
+    <ROW File="v8_context_snapshot.bin" Component_="App.config" FileName="V8_CON~1.BIN|v8_context_snapshot.bin" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\v8_context_snapshot.bin" SelfReg="false"/>
+    <ROW File="vk_swiftshader.dll" Component_="vk_swiftshader.dll" FileName="VK_SWI~1.DLL|vk_swiftshader.dll" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\vk_swiftshader.dll" SelfReg="false"/>
+    <ROW File="ZitiDesktopEdge.exe" Component_="ZitiDesktopEdge.exe" FileName="ZITI-D~1.EXE|Ziti-Desktop-Edge.exe" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\Ziti-Desktop-Edge.exe" SelfReg="false" DigSign="true"/>
+    <ROW File="af.pak" Component_="af.pak" FileName="af.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\af.pak" SelfReg="false"/>
+    <ROW File="am.pak" Component_="af.pak" FileName="am.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\am.pak" SelfReg="false"/>
+    <ROW File="ar.pak" Component_="af.pak" FileName="ar.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\ar.pak" SelfReg="false"/>
+    <ROW File="bg.pak" Component_="af.pak" FileName="bg.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\bg.pak" SelfReg="false"/>
+    <ROW File="bn.pak" Component_="af.pak" FileName="bn.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\bn.pak" SelfReg="false"/>
+    <ROW File="ca.pak" Component_="af.pak" FileName="ca.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\ca.pak" SelfReg="false"/>
+    <ROW File="cs.pak" Component_="af.pak" FileName="cs.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\cs.pak" SelfReg="false"/>
+    <ROW File="da.pak" Component_="af.pak" FileName="da.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\da.pak" SelfReg="false"/>
+    <ROW File="de.pak" Component_="af.pak" FileName="de.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\de.pak" SelfReg="false"/>
+    <ROW File="el.pak" Component_="af.pak" FileName="el.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\el.pak" SelfReg="false"/>
+    <ROW File="enGB.pak" Component_="af.pak" FileName="en-GB.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\en-GB.pak" SelfReg="false"/>
+    <ROW File="enUS.pak" Component_="af.pak" FileName="en-US.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\en-US.pak" SelfReg="false"/>
+    <ROW File="es419.pak" Component_="af.pak" FileName="es-419.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\es-419.pak" SelfReg="false"/>
+    <ROW File="es.pak" Component_="af.pak" FileName="es.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\es.pak" SelfReg="false"/>
+    <ROW File="et.pak" Component_="af.pak" FileName="et.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\et.pak" SelfReg="false"/>
+    <ROW File="fa.pak" Component_="af.pak" FileName="fa.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\fa.pak" SelfReg="false"/>
+    <ROW File="fi.pak" Component_="af.pak" FileName="fi.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\fi.pak" SelfReg="false"/>
+    <ROW File="fil.pak" Component_="af.pak" FileName="fil.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\fil.pak" SelfReg="false"/>
+    <ROW File="fr.pak" Component_="af.pak" FileName="fr.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\fr.pak" SelfReg="false"/>
+    <ROW File="gu.pak" Component_="af.pak" FileName="gu.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\gu.pak" SelfReg="false"/>
+    <ROW File="he.pak" Component_="af.pak" FileName="he.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\he.pak" SelfReg="false"/>
+    <ROW File="hi.pak" Component_="af.pak" FileName="hi.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\hi.pak" SelfReg="false"/>
+    <ROW File="hr.pak" Component_="af.pak" FileName="hr.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\hr.pak" SelfReg="false"/>
+    <ROW File="hu.pak" Component_="af.pak" FileName="hu.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\hu.pak" SelfReg="false"/>
+    <ROW File="id.pak" Component_="af.pak" FileName="id.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\id.pak" SelfReg="false"/>
+    <ROW File="it.pak" Component_="af.pak" FileName="it.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\it.pak" SelfReg="false"/>
+    <ROW File="ja.pak" Component_="af.pak" FileName="ja.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\ja.pak" SelfReg="false"/>
+    <ROW File="kn.pak" Component_="af.pak" FileName="kn.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\kn.pak" SelfReg="false"/>
+    <ROW File="ko.pak" Component_="af.pak" FileName="ko.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\ko.pak" SelfReg="false"/>
+    <ROW File="lt.pak" Component_="af.pak" FileName="lt.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\lt.pak" SelfReg="false"/>
+    <ROW File="lv.pak" Component_="af.pak" FileName="lv.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\lv.pak" SelfReg="false"/>
+    <ROW File="ml.pak" Component_="af.pak" FileName="ml.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\ml.pak" SelfReg="false"/>
+    <ROW File="mr.pak" Component_="af.pak" FileName="mr.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\mr.pak" SelfReg="false"/>
+    <ROW File="ms.pak" Component_="af.pak" FileName="ms.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\ms.pak" SelfReg="false"/>
+    <ROW File="nb.pak" Component_="af.pak" FileName="nb.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\nb.pak" SelfReg="false"/>
+    <ROW File="nl.pak" Component_="af.pak" FileName="nl.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\nl.pak" SelfReg="false"/>
+    <ROW File="pl.pak" Component_="af.pak" FileName="pl.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\pl.pak" SelfReg="false"/>
+    <ROW File="ptBR.pak" Component_="af.pak" FileName="pt-BR.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\pt-BR.pak" SelfReg="false"/>
+    <ROW File="ptPT.pak" Component_="af.pak" FileName="pt-PT.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\pt-PT.pak" SelfReg="false"/>
+    <ROW File="ro.pak" Component_="af.pak" FileName="ro.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\ro.pak" SelfReg="false"/>
+    <ROW File="ru.pak" Component_="af.pak" FileName="ru.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\ru.pak" SelfReg="false"/>
+    <ROW File="sk.pak" Component_="af.pak" FileName="sk.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\sk.pak" SelfReg="false"/>
+    <ROW File="sl.pak" Component_="af.pak" FileName="sl.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\sl.pak" SelfReg="false"/>
+    <ROW File="sr.pak" Component_="af.pak" FileName="sr.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\sr.pak" SelfReg="false"/>
+    <ROW File="sv.pak" Component_="af.pak" FileName="sv.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\sv.pak" SelfReg="false"/>
+    <ROW File="sw.pak" Component_="af.pak" FileName="sw.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\sw.pak" SelfReg="false"/>
+    <ROW File="ta.pak" Component_="af.pak" FileName="ta.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\ta.pak" SelfReg="false"/>
+    <ROW File="te.pak" Component_="af.pak" FileName="te.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\te.pak" SelfReg="false"/>
+    <ROW File="th.pak" Component_="af.pak" FileName="th.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\th.pak" SelfReg="false"/>
+    <ROW File="tr.pak" Component_="af.pak" FileName="tr.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\tr.pak" SelfReg="false"/>
+    <ROW File="uk.pak" Component_="af.pak" FileName="uk.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\uk.pak" SelfReg="false"/>
+    <ROW File="ur.pak" Component_="af.pak" FileName="ur.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\ur.pak" SelfReg="false"/>
+    <ROW File="vi.pak" Component_="af.pak" FileName="vi.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\vi.pak" SelfReg="false"/>
+    <ROW File="zhCN.pak" Component_="af.pak" FileName="zh-CN.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\zh-CN.pak" SelfReg="false"/>
+    <ROW File="zhTW.pak" Component_="af.pak" FileName="zh-TW.pak" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\locales\zh-TW.pak" SelfReg="false"/>
+    <ROW File="app.asar" Component_="app.asar" FileName="APP~1.ASA|app.asar" Attributes="0" SourcePath="..\..\..\desktop-edge-win-beta\release-builds\Ziti-Desktop-Edge-win32-x64\resources\app.asar" SelfReg="false"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.AiPersistentDataComponent">
     <ROW PersistentRow="ZitiUpdateServicelog.config" Type="0" Condition="OLDPRODUCTS"/>
     <ROW PersistentRow="ZitiDesktopEdgelog.config" Type="0" Condition="OLDPRODUCTS"/>
-    <ROW PersistentRow="ZitiDesktopEdge.exe.config" Type="0" Condition="OLDPRODUCTS"/>
     <ROW PersistentRow="ZitiUpdateService.exe.config" Type="0" Condition="OLDPRODUCTS"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.AppPathsComponent">
-    <ROW Name="AI_APPPATH_PERBUILD_ZitiDesktopEdge.exe" Path="[|AI_PROPPATH_PERBUILD_ZitiDesktopEdge.exe]" Type="2" Content="0"/>
-    <ROW Name="AI_APPPATH_PERBUILD_ZitiDesktopEdge.exe.config" Path="[|AI_PROPPATH_PERBUILD_ZitiDesktopEdge.exe.config]" Type="2" Content="0"/>
     <ROW Name="AI_APPPATH_PERBUILD_ZitiUpdateService.exe" Path="[|AI_PROPPATH_PERBUILD_ZitiUpdateService.exe]" Type="2" Content="0"/>
     <ROW Name="AI_APPPATH_PERBUILD_ZitiUpdateService.exe.config" Path="[|AI_PROPPATH_PERBUILD_ZitiUpdateService.exe.config]" Type="2" Content="0"/>
   </COMPONENT>
@@ -330,10 +397,8 @@
   <COMPONENT cid="caphyon.advinst.msicomp.MsiFeatCompsComponent">
     <ROW Feature_="MainFeature" Component_="APPDIR"/>
     <ROW Feature_="MainFeature" Component_="ProductInformation"/>
-    <ROW Feature_="MainFeature" Component_="ZitiDesktopEdge.exe"/>
     <ROW Feature_="MainFeature" Component_="App.config"/>
     <ROW Feature_="MainFeature" Component_="ZitiUpdateService.exe"/>
-    <ROW Feature_="MainFeature" Component_="SHORTCUTDIR"/>
     <ROW Feature_="MainFeature" Component_="AI_ExePath"/>
     <ROW Feature_="MainFeature" Component_="Newtonsoft.Json.dll"/>
     <ROW Feature_="MainFeature" Component_="ZitiDesktopEdge.Client.dll"/>
@@ -346,8 +411,18 @@
     <ROW Feature_="MainFeature" Component_="Microsoft.Toolkit.Uwp.Notifications.dll"/>
     <ROW Feature_="MainFeature" Component_="zitiedgetunnel.exe"/>
     <ROW Feature_="C4FE6FD5B7C4D07B3A313E754A9A6A8" Component_="C4FE6FD5B7C4D07B3A313E754A9A6A8"/>
+    <ROW Feature_="MainFeature" Component_="d3dcompiler_47.dll"/>
+    <ROW Feature_="MainFeature" Component_="ffmpeg.dll"/>
+    <ROW Feature_="MainFeature" Component_="libEGL.dll"/>
+    <ROW Feature_="MainFeature" Component_="libGLESv2.dll"/>
+    <ROW Feature_="MainFeature" Component_="vk_swiftshader.dll"/>
+    <ROW Feature_="MainFeature" Component_="ZitiDesktopEdge.exe"/>
+    <ROW Feature_="MainFeature" Component_="SHORTCUTDIR"/>
+    <ROW Feature_="MainFeature" Component_="af.pak"/>
+    <ROW Feature_="MainFeature" Component_="app.asar"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiIconsComponent">
+    <ROW Name="ZitiDesktopEdge.exe" SourcePath="..\..\..\desktop-edge-win-beta\ziti-edge-ui\app.ico" Index="0"/>
     <ROW Name="zitiv2new.exe" SourcePath="ziti-v2.ico" Index="0"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiInstExSeqComponent">
@@ -442,9 +517,7 @@
     <ROW ServiceInstall="zitiedgetunnel.exe" Name="ziti" DisplayName="Ziti Desktop Edge Service" ServiceType="16" StartType="2" ErrorControl="32769" Component_="zitiedgetunnel.exe" Description="Access your networks secured by ziti"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiShortsComponent">
-    <ROW Shortcut="ZitiDesktopEdge" Directory_="StartupFolder" Name="ZITIDE~2|Ziti Desktop Edge" Component_="ZitiDesktopEdge.exe" Target="[#ZitiDesktopEdge.exe]" Description="Ziti Desktop Edge configuration interface" Hotkey="0" Icon_="zitiv2new.exe" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
-    <ROW Shortcut="ZitiDesktopEdge.exe" Directory_="SHORTCUTDIR" Name="ZITIDE~1|Ziti Desktop Edge" Component_="ZitiDesktopEdge.exe" Target="[#ZitiDesktopEdge.exe]" Description="Ziti Desktop Edge configuration interface" Hotkey="0" Icon_="zitiv2new.exe" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
-    <ROW Shortcut="ZitiDesktopEdge.exe_1" Directory_="DesktopFolder" Name="ZITIDE~1|Ziti Desktop Edge" Component_="ZitiDesktopEdge.exe" Target="[#ZitiDesktopEdge.exe]" Description="Ziti Desktop Edge configuration interface" Hotkey="0" Icon_="zitiv2new.exe" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
+    <ROW Shortcut="ZitiDesktopEdge" Directory_="SHORTCUTDIR" Name="ZITIDE~1|Ziti Desktop Edge" Component_="ZitiDesktopEdge.exe" Target="[#ZitiDesktopEdge.exe]" Hotkey="0" Icon_="ZitiDesktopEdge.exe" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiThemeComponent">
     <ATTRIBUTE name="UsedTheme" value="azure"/>

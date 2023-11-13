@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 26.5.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 18.1 18.1" style="enable-background:new 0 0 18.1 18.1;" xml:space="preserve">
+<style type="text/css">
+	.st0{filter:url(#clear);}
+	.st1{fill:#FFFFFF;}
+</style>
+<filter  filterUnits="userSpaceOnUse" height="85.523" id="clear" width="85.523" x="0" y="0">
+	<feOffset  dy="10" input="SourceAlpha"></feOffset>
+	<feGaussianBlur  result="blur" stdDeviation="10"></feGaussianBlur>
+	<feFlood  flood-color="#fff" flood-opacity="0.341"></feFlood>
+	<feComposite  in2="blur" operator="in"></feComposite>
+	<feComposite  in="SourceGraphic" operator="over"></feComposite>
+</filter>
+<g transform="matrix(1, 0, 0, 1, 0, 0)" class="st0">
+	<path id="clear-2_00000046311368774903923270000012037869185791728522_" class="st1" d="M2.4,2.9C-1,6.5-0.8,12.2,2.9,15.6
+		s9.4,3.2,12.8-0.4s3.2-9.4-0.4-12.8C11.5-1,5.8-0.8,2.4,2.9z M12.3,6.6L10.1,9l2.3,2.2c0.3,0.3,0.3,0.8,0,1.1c-0.3,0.3-0.7,0.3-1,0
+		l-2.3-2.2l-2.2,2.3c-0.3,0.3-0.8,0.3-1.1,0c-0.3-0.3-0.3-0.7,0-1L8,9.1L5.6,6.9C5.3,6.6,5.3,6.1,5.5,5.8c0.3-0.3,0.7-0.4,1.1-0.1
+		c0,0,0.1,0,0.1,0.1L9,8l2.2-2.3c0.3-0.3,0.8-0.3,1.1,0C12.5,5.9,12.5,6.4,12.3,6.6z"/>
+</g>
+</svg>
