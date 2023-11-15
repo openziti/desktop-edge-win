@@ -30,7 +30,6 @@ var ui = {
         else $("#UpdateOn").removeClass("on");
     },
     slideOpen: function(e) {
-        console.log("Over It");
         if (!$("body").hasClass("max")) {
             $("main").addClass("slid");
         }

@@ -20,6 +20,7 @@
     "EditUrlConfiguration": "Set Release Url",
     "EditReleaseUrl": "Update Url",
     "Checking": "Checking for Update, please wait...",
+    "TriggerUpdate": "Updating, Please wait....",
     "SaveUrlButton": "Save",
     "EditUrlButton": "Edit Release Url",
     "ResetButton": "Reset",

@@ -71,6 +71,7 @@ var app = {
         $("#CloseUrlForm").click(app.hideUrlForm);
         $("#EditUrlButton").click(app.showUrlForm);
         $("#ResetButton").click(app.resetUrl);
+        $("#UpdateAvailable").click(app.triggerUpdate);
         $(".sort").click((e) => {
             var options = $(e.currentTarget).find(".options");
             if (options) {
@@ -125,6 +126,17 @@ var app = {
                 $("#ReleaseStream").show();
             }
         } );
+    },
+    triggerUpdate: function(e) {
+        ui.showLoad();
+        app.sendMonitorMessage({
+            Op: "TriggerUpdate",
+            Action: ""
+        });
+        growler.info(locale.get("TriggerUpdate")); 
+        setTimeout(() => {
+            ui.showLoad();
+        }, 1000);
     },
     checkUpdate: function(e) {
         app.sendMonitorMessage({
