@@ -451,90 +451,94 @@ var app = {
                     }
                     $("#CheckUpdates").removeClass("disabled");
                 } else {
-                    if (message.Message&&message.Message=="Stopped") {
-                        ui.hideLoad();
-                        ui.state({Active: false, from: "Message"});
-                        ZitiIdentity.data = [];
-                        ZitiService.data = [];
-                        $("#NavServiceCount").html("0");
-                        $("#NavIdentityCount").html("0");
-                        ZitiIdentity.refresh();
+                    if ((message.Code==2 || message.Code==-2) && message.Error!=null) {
+                        growler.error(message.Error);
                     } else {
-                        if (message.Type=="Status") {
-                            ui.updates(message);
-                            if (message.Status&&message.Status=="Stopped") {
-                                ui.hideLoad();
-                                ui.state({Active: false, from: "Message"});
-                                ZitiIdentity.data = [];
-                                ZitiService.data = [];
-                                $("#NavServiceCount").html("0");
-                                $("#NavIdentityCount").html("0");
-                                ZitiIdentity.refresh();
-                            } else {
-                                ui.hideLoad();
-                                if (message.Operation=="OnOff") {
-                                    ui.state(message);
-                                }
-                            }
-                            if (message.Message&&message.Message=="Running") {
-                                ui.hideLoad();
-                                ui.state({Active: true, from: "Message"});
-                                ZitiIdentity.data = [];
-                                ZitiService.data = [];
-                                $("#NavServiceCount").html("0");
-                                $("#NavIdentityCount").html("0");
-                                ZitiIdentity.refresh();
-                            }
-                        } else if (message.Type=="Notification") {
-                            ui.notification(message);
-                         } else {
-                            if (message.Success != null) {
-                                if (message.Error) growler.error(message.Error); 
-        
-                                if (message.Data != null) {
-                                    if (message.Data.Command !=null) {
-                                        if (message.Data.Command=="RemoveIdentity") {
-                                            $(".loader").hide();
-                                            ZitiIdentity.forgotten(message.Data.Data.Identifier);
-                                            growler.success(locale.get("IdentityForgotten"));
-                                        } 
-                                    } else {
-                                        if (app.actionId=="GetMFACodes") {
-                                            app.actionId = null;
-                                            if (message.Data.RecoveryCodes!=null && message.Data.RecoveryCodes.length>0) {
-                                                ui.hideLoad();
-                                                let identity = ZitiIdentity.selected();
-                                                mfa.MfaCodes[identity.FingerPrint] = message.Data.RecoveryCodes;
-                                                modal.hide();
-                                                setTimeout(() => {
-                                                    mfa.recoveryCodes();
-                                                }, 1000);
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    if (app.actionId=="SaveConfig") {
-                                        growler.warning(locale.get("ConfigSaved"));
-                                        $("#EditForm").removeClass("open");
-                                    }
-                                }
-                            } else {
-                                if (app.actionId!=null) {
-                                    if (message.Error!=null && message.Error.trim().length>0) {
-                                        growler.error(message.Error);
-                                        $(".loader").hide();
-                                        $(".actionPending").removeClass("disabled");
-                                    } else if (message.Message!=null && message.Message.trim().length>0) {
-                                        $(".loader").hide();
-                                        $(".actionPending").removeClass("disabled");
-                                        if (app.actionId=="CaptureLogs") {
-                                            shell.showItemInFolder(message.Message);
-                                            growler.success("Package Generated");
-                                        }
-                                        app.actionId = null;
-                                    }
+                        if (message.Message&&message.Message=="Stopped") {
+                            ui.hideLoad();
+                            ui.state({Active: false, from: "Message"});
+                            ZitiIdentity.data = [];
+                            ZitiService.data = [];
+                            $("#NavServiceCount").html("0");
+                            $("#NavIdentityCount").html("0");
+                            ZitiIdentity.refresh();
+                        } else {
+                            if (message.Type=="Status") {
+                                ui.updates(message);
+                                if (message.Status&&message.Status=="Stopped") {
+                                    ui.hideLoad();
+                                    ui.state({Active: false, from: "Message"});
+                                    ZitiIdentity.data = [];
+                                    ZitiService.data = [];
+                                    $("#NavServiceCount").html("0");
+                                    $("#NavIdentityCount").html("0");
+                                    ZitiIdentity.refresh();
                                 } else {
                                     ui.hideLoad();
+                                    if (message.Operation=="OnOff") {
+                                        ui.state(message);
+                                    }
+                                }
+                                if (message.Message&&message.Message=="Running") {
+                                    ui.hideLoad();
+                                    ui.state({Active: true, from: "Message"});
+                                    ZitiIdentity.data = [];
+                                    ZitiService.data = [];
+                                    $("#NavServiceCount").html("0");
+                                    $("#NavIdentityCount").html("0");
+                                    ZitiIdentity.refresh();
+                                }
+                            } else if (message.Type=="Notification") {
+                                ui.notification(message);
+                             } else {
+                                if (message.Success != null) {
+                                    if (message.Error) growler.error(message.Error); 
+            
+                                    if (message.Data != null) {
+                                        if (message.Data.Command !=null) {
+                                            if (message.Data.Command=="RemoveIdentity") {
+                                                $(".loader").hide();
+                                                ZitiIdentity.forgotten(message.Data.Data.Identifier);
+                                                growler.success(locale.get("IdentityForgotten"));
+                                            } 
+                                        } else {
+                                            if (app.actionId=="GetMFACodes") {
+                                                app.actionId = null;
+                                                if (message.Data.RecoveryCodes!=null && message.Data.RecoveryCodes.length>0) {
+                                                    ui.hideLoad();
+                                                    let identity = ZitiIdentity.selected();
+                                                    mfa.MfaCodes[identity.FingerPrint] = message.Data.RecoveryCodes;
+                                                    modal.hide();
+                                                    setTimeout(() => {
+                                                        mfa.recoveryCodes();
+                                                    }, 1000);
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        if (app.actionId=="SaveConfig") {
+                                            growler.warning(locale.get("ConfigSaved"));
+                                            $("#EditForm").removeClass("open");
+                                        }
+                                    }
+                                } else {
+                                    if (app.actionId!=null) {
+                                        if (message.Error!=null && message.Error.trim().length>0) {
+                                            growler.error(message.Error);
+                                            $(".loader").hide();
+                                            $(".actionPending").removeClass("disabled");
+                                        } else if (message.Message!=null && message.Message.trim().length>0) {
+                                            $(".loader").hide();
+                                            $(".actionPending").removeClass("disabled");
+                                            if (app.actionId=="CaptureLogs") {
+                                                shell.showItemInFolder(message.Message);
+                                                growler.success("Package Generated");
+                                            }
+                                            app.actionId = null;
+                                        }
+                                    } else {
+                                        ui.hideLoad();
+                                    }
                                 }
                             }
                         }
