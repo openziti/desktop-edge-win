@@ -198,6 +198,18 @@ nav:hover {
     background-position: center center;
 }
 
+.dualButtons {
+    display: grid;
+    grid-template-columns: 40% auto;
+    column-gap: 20%;
+}
+
+.dualButtons .button {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    width: auto;
+}
+
 .screenActions:hover {
     filter: brightness(90%);
     transform: scale3d(1.1, 1.1, 1);
