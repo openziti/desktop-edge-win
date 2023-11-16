@@ -430,6 +430,11 @@ ipcMain.on('call', function(event, arg) {
     var params = arg.params;
 });
 
+ipcMain.on('shutdown', () => {
+    Log.debug("Close", "Hide Window");
+    app.quit();
+});
+
 ipcMain.on('close', () => {
     Log.debug("Close", "Hide Window");
     mainWindow.hide();

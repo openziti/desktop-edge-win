@@ -466,7 +466,12 @@ var app = {
                     if ((message.Code==2 || message.Code==-2) && message.Error!=null) {
                         growler.error(message.Error);
                     } else {
-                        if (message.Message&&message.Message=="Stopped") {
+                        if (message.Message&&message.Message=="Upgrading") {
+                            growler.info(locale.get("Upgrading"));
+                            setTimeout(() => {
+                                ipcRenderer.invoke("shutdown", {});
+                            }, 800);
+                        } else if (message.Message&&message.Message=="Stopped") {
                             ui.hideLoad();
                             ui.state({Active: false, from: "Message"});
                             ZitiIdentity.data = [];

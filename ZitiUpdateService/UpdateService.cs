@@ -922,7 +922,7 @@ namespace ZitiUpdateService {
 
 			await Task.Delay(1000); //wait for the event to send and give the UI time to close...
 
-			stopProcessForcefully("ZitiDesktopEdge", "UI");
+			stopProcessForcefully("Ziti-Desktop-Edge", "UI");
 		}
 
 		private static void Svc_OnShutdownEvent(object sender, StatusEvent e) {
