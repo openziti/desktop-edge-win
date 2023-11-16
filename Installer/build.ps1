@@ -18,7 +18,7 @@ echo "Install Node Dependencies"
 if (test-path 'node_modules') {
     Remove-Item node_modules -Recurse -Force -Confirm:$false
 }
-if (test-path 'node_modules') {
+if (test-path 'package-lock.json') {
     Remove-Item package-lock.json -Force -Confirm:$false
 }
 npm cache clean --force
