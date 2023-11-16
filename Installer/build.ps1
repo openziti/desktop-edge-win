@@ -16,9 +16,11 @@ echo "Setup Node Project"
 cd ./ziti-edge-ui
 echo "Install Node Dependencies"
 if (test-path 'node_modules') {
+    echo "Modues Exists, Removing"
     Remove-Item node_modules -Recurse -Force -Confirm:$false
 }
 if (test-path 'package-lock.json') {
+    echo "Package Lock Exists, Removing"
     Remove-Item package-lock.json -Force -Confirm:$false
 }
 npm cache clean --force
