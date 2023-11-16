@@ -830,6 +830,7 @@ namespace ZitiUpdateService {
 					Error = "Upgrade Error, Check Monitor Logs For Details",
 					Message = ""
 				};
+				Logger.Info(e.Message);
 				EventRegistry.SendEventToConsumers(status);
 			}
 #else
