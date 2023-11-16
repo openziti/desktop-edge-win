@@ -824,13 +824,12 @@ namespace ZitiUpdateService {
 				} catch (Exception ex) {
 					Logger.Error(ex, "Unexpected error during installation");
 				}
-			} catch (Exception e) {
+			} catch {
 				MonitorServiceStatusEvent status = new MonitorServiceStatusEvent() {
 					Code = 2,
 					Error = "Upgrade Error, Check Monitor Logs For Details",
 					Message = ""
 				};
-				Logger.Info(e.Message);
 				EventRegistry.SendEventToConsumers(status);
 			}
 #else
