@@ -465,6 +465,7 @@ var app = {
                 } else {
                     if ((message.Code==2 || message.Code==-2) && message.Error!=null) {
                         growler.error(message.Error);
+                        ui.hideLoad();
                     } else {
                         if (message.Message&&message.Message=="Upgrading") {
                             growler.info(locale.get("Upgrading"));

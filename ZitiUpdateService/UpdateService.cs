@@ -792,17 +792,26 @@ namespace ZitiUpdateService {
 			Logger.Debug("downloaded file hash was correct. update can continue.");
 #if !SKIPUPDATE
 			Logger.Info("verifying file [{}]", fileDestination);
-			new SignedFileValidator(fileDestination).Verify();
-			Logger.Info("SignedFileValidator complete");
 			try {
-				StopZiti();
-				StopUI().Wait();
+				new SignedFileValidator(fileDestination).Verify();
+				Logger.Info("SignedFileValidator complete");
+				try {
+					StopZiti();
+					StopUI().Wait();
 
-				Logger.Info("Running update package: " + fileDestination);
-				// shell out to a new process and run the uninstall, reinstall steps which SHOULD stop this current process as well
-				Process.Start(fileDestination, "/passive");
-			} catch (Exception ex) {
-				Logger.Error(ex, "Unexpected error during installation");
+					Logger.Info("Running update package: " + fileDestination);
+					// shell out to a new process and run the uninstall, reinstall steps which SHOULD stop this current process as well
+					Process.Start(fileDestination, "/passive");
+				} catch (Exception ex) {
+					Logger.Error(ex, "Unexpected error during installation");
+				}
+			} catch (Exception e) {
+				MonitorServiceStatusEvent status = new MonitorServiceStatusEvent() {
+					Code = 2,
+					Error = "Upgrade Error, Check Monitor Logs For Details",
+					Message = ""
+				};
+				EventRegistry.SendEventToConsumers(status);
 			}
 #else
 			Logger.Warn("SKIPUPDATE IS SET - NOT PERFORMING UPDATE");
