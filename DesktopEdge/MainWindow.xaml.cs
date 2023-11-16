@@ -46,7 +46,7 @@ namespace ZitiDesktopEdge {
 		private int _right = 75;
 		private int _left = 75;
 		private int _top = 30;
-		private int defaultHeight = 490;
+		private int defaultHeight = 540;
 		public int NotificationsShownCount = 0;
 		private double _maxHeight = 800d;
 		public string CurrentIcon = "white";
@@ -808,8 +808,7 @@ namespace ZitiDesktopEdge {
 						Application.Current.Shutdown();
 						return;
 					}
-					state.AutomaticUpdatesEnabledFromString(evt.AutomaticUpgradeDisabled);
-					state.AutomaticUpdateURL = evt.AutomaticUpgradeURL;
+					SetAutomaticUpdateEnabled(evt.AutomaticUpgradeDisabled, evt.AutomaticUpgradeURL);
 					MainMenu.ShowUpdateAvailable();
 					logger.Debug("MonitorClient_OnServiceStatusEvent: {0}", evt.Status);
 					Application.Current.Properties["ReleaseStream"] = evt.ReleaseStream;
@@ -851,6 +850,13 @@ namespace ZitiDesktopEdge {
 			});
 		}
 
+		public void SetAutomaticUpdateEnabled(string enabled, string url) {
+			this.Dispatcher.Invoke(() => {
+				state.AutomaticUpdatesDisabled = bool.Parse(enabled);
+				state.AutomaticUpdateURL = url;
+			});
+		}
+
 		private void MonitorClient_OnInstallationNotificationEvent(object sender, InstallationNotificationEvent evt) {
 			this.Dispatcher.Invoke(() => {
 				logger.Debug("MonitorClient_OnInstallationNotificationEvent: {0}", evt.Message);
@@ -859,10 +865,10 @@ namespace ZitiDesktopEdge {
 						logger.Debug("Installation Update is available - {0}", evt.ZDEVersion);
 						var remaining = evt.InstallTime - DateTime.Now;
 
-						state.AutomaticUpdatesEnabledFromString(evt.AutomaticUpgradeDisabled);
 						state.PendingUpdate.Version = evt.ZDEVersion;
 						state.PendingUpdate.InstallTime = evt.InstallTime;
 						state.UpdateAvailable = true;
+						SetAutomaticUpdateEnabled(evt.AutomaticUpgradeDisabled, evt.AutomaticUpgradeURL);
 						MainMenu.ShowUpdateAvailable();
 						AlertCanvas.Visibility = Visibility.Visible;
 
@@ -1383,8 +1389,9 @@ namespace ZitiDesktopEdge {
 				} else {
 					this.Height = defaultHeight;
 					MainMenu.IdentitiesButton.Visibility = Visibility.Collapsed;
-					IdListScroller.Visibility = Visibility.Collapsed;
-				}
+					IdListScroller.Visibility = Visibility.Visible;
+
+                }
 				AddIdButton.Visibility = Visibility.Visible;
 				AddIdAreaButton.Visibility = Visibility.Visible;
 

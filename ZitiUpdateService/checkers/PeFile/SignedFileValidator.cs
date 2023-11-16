@@ -199,7 +199,6 @@ namespace ZitiUpdateService.Checkers.PeFile {
                         Logger.Info("Download verification complete. Certificate [{0}] {1} was verified signed by [{2}] {3}", cert.Thumbprint, cert.Subject, expectedRootCa.Thumbprint, expectedRootCa.Subject);
                         return; //yes!
                     } catch (Exception e) {
-                        //empty on purpose. keep checking...
                         Logger.Debug("Could not verify certificate. Exception encountered: {}", e);
                     }
 	            } else {

@@ -724,7 +724,6 @@ namespace ZitiDesktopEdge {
 			ConfigePageSizeNew.Text = value.ToString();
 		}
 
-
 		private void ResetUrlButton_Click(object sender, RoutedEventArgs e) {
 			UpdateUrl.Text = GithubAPI.ProdUrl;
 		}

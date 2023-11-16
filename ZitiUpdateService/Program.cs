@@ -74,13 +74,14 @@ namespace ZitiUpdateService {
 					ServiceBase.Run(ServicesToRun);
 				}
 #else
-			ServiceBase[] ServicesToRun = new ServiceBase[]
-			{
-				updateSvc
-			};
-			ServiceBase.Run(ServicesToRun);
+				ServiceBase[] ServicesToRun = new ServiceBase[]
+				{
+					updateSvc
+				};
+				ServiceBase.Run(ServicesToRun);
 #endif
-			} catch {
+			} catch (Exception e) {
+				Logger.Error("Unexpected exception: {0}", e);
 			}
         }
     }

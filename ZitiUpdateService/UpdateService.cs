@@ -102,13 +102,32 @@ namespace ZitiUpdateService {
 		}
 
 		private SvcResponse SetAutomaticUpdateURL(string url) {
+			SvcResponse failure = new SvcResponse();
+			failure.Code = (int)ErrorCodes.URL_INVALID;
+			failure.Error = $"The url supplied is invalid: \n{url}\n";
+			failure.Message = "Failure";
+
+
 			SvcResponse r = new SvcResponse();
 			if (url == null || !url.StartsWith("http")) {
-				r.Code = (int)ErrorCodes.URL_INVALID;
-				r.Error = $"The url supplied is invalid: \n{url}\n";
-				r.Message = "Failure";
-				return r;
+				return failure;
 			} else {
+				// check the url exists and appears correct...
+				var check = new GithubCheck(assemblyVersion, url);
+
+				if (check != null) {
+					var v = check.GetNextVersion();
+
+					if (v == null) {
+						return failure;
+					}
+					if (v.Revision.ToString().Trim() == "") {
+						return failure;
+					}
+				}
+
+				checkUpdateImmediately();
+
 				CurrentSettings.AutomaticUpdateURL = url;
 				CurrentSettings.Write();
 				r.Message = "Success";
@@ -814,10 +833,9 @@ namespace ZitiUpdateService {
 				EventRegistry.SendEventToConsumers(status);
 			}
 #else
-			Logger.Warn("SKIPUPDATE IS SET - NOT PERFORMING UPDATE");
-			Logger.Warn("SKIPUPDATE IS SET - NOT PERFORMING UPDATE");
-			Logger.Warn("SKIPUPDATE IS SET - NOT PERFORMING UPDATE");
-			Logger.Warn("SKIPUPDATE IS SET - NOT PERFORMING UPDATE");
+			Logger.Warn("SKIPUPDATE IS SET - NOT PERFORMING UPDATE of version: {} published at {}", check.GetNextVersion(), check.PublishDate);
+			Logger.Warn("SKIPUPDATE IS SET - NOT PERFORMING UPDATE of version: {} published at {}", check.GetNextVersion(), check.PublishDate);
+			Logger.Warn("SKIPUPDATE IS SET - NOT PERFORMING UPDATE of version: {} published at {}", check.GetNextVersion(), check.PublishDate);
 #endif
 		}
 
