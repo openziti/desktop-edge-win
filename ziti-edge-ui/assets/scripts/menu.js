@@ -22,9 +22,8 @@ var menu = {
         app.sendMonitorMessage(action);
     },
     OpenServiceLogs: function(e) {
-        if (app.os=="win32") shell.showItemInFolder(rootPath+path.sep+"logs"+path.sep+"Service"+path.sep+"ZitiDesktopEdge"+moment().format("YYYYMMDD")+".log");
-        else if (app.os=="linux") ipcRenderer.invoke("logger-message", {});
-        else if (app.os=="darwin") shell.showItemInFolder(rootPath+path.sep+"logs"+path.sep+"Service"+path.sep+"ZitiDesktopEdge"+moment().format("YYYYMMDD")+".log");
+        if (app.os=="win32") ipcRenderer.invoke("open-service-logs");
+        else ipcRenderer.invoke("logger-message", {});
     },
     OpenAppLogs: function(e) {
         ipcRenderer.invoke("open-logs");

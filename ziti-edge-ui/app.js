@@ -443,6 +443,11 @@ ipcMain.handle("message", (event, data) => {
     Application.SendMessage(data);
     return "";
 });
+ipcMain.handle("open-service-logs", (event, data) => {
+    var logFile = path.join(process.cwd(), "logs", "service", "ziti-tunneler.log");
+    Log.debug("Open Logs", "Opening Service Log File:"+logFile);
+    shell.showItemInFolder(logFile);
+});
 ipcMain.handle("open-logs", (event, data) => {
     var logFile = path.join(logDirectory, Log.file+moment().format("YYYYMMDD")+".log");
     Log.debug("Open Logs", "Opening Log File:"+logFile);
