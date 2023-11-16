@@ -15,8 +15,12 @@ $buildPath = "${scriptPath}\build"
 echo "Setup Node Project"
 cd ./ziti-edge-ui
 echo "Install Node Dependencies"
-Remove-Item node_modules -Recurse -Force -Confirm:$false
-Remove-Item package-lock.json -Force -Confirm:$false
+if (test-path 'node_modules') {
+    Remove-Item node_modules -Recurse -Force -Confirm:$false
+}
+if (test-path 'node_modules') {
+    Remove-Item package-lock.json -Force -Confirm:$false
+}
 npm cache clean --force
 npm install
 npm i -g electron-packager
