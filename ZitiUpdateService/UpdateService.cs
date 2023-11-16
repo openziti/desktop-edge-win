@@ -810,11 +810,12 @@ namespace ZitiUpdateService {
 			}
 			Logger.Debug("downloaded file hash was correct. update can continue.");
 #if !SKIPUPDATE
-			Logger.Info("verifying file [{}]", fileDestination);
-			new SignedFileValidator(fileDestination).Verify();
-			Logger.Info("SignedFileValidator complete");
 			try {
-				StopZiti();
+                Logger.Info("verifying file [{}]", fileDestination);
+                new SignedFileValidator(fileDestination).Verify();
+                Logger.Info("SignedFileValidator complete");
+
+                StopZiti();
 				StopUI().Wait();
 
 				Logger.Info("Running update package: " + fileDestination);
