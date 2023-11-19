@@ -48,6 +48,8 @@ jobs:
         run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
       - name: "Install Choco needs: advanced-installer wixtoolset ninja"
         run: choco install advanced-installer wixtoolset ninja --yes
+      - name: "Install Choco needs: Node JS"
+        run: choco install -y --force nodejs
       - name: Build the ziti-edge-tunnel (for now, will download later)
         run: ziti-edge-tunnel\build.bat quick
       - name: Setting up version env var
@@ -96,4 +98,38 @@ jobs:
         run: git status
       - name: git diff
         run: git diff DesktopEdge/Properties/AssemblyInfo.cs ZitiDesktopEdge.Client/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip
+  linux-build: 
+    name: Build the Ziti Desktop Edge for Linux Deb & Rpm Installer Package
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./ziti-edge-ui
+    steps: 
+      - uses: actions/checkout@v3
+      - name: Set up Node.js version
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16.15.0'
+      - uses: pCYSl5EDgo/cat@1.0.1
+        id: vars
+        with:
+          path: ./version
+      - run: echo ${{ steps.vars.outputs.text }}
+        env:
+          APPVER: ${{ steps.vars.outputs.text }}
+      - name: Show Version
+        run: echo $APPVER
+      - run: npm install
+      - run: npm i -g electron-builder
+      - run: electron-builder --linux deb rpm
+      - name: Upload Linux Deb installer
+        uses: actions/upload-artifact@v2
+        with:
+          name: ZitiDesktopEdge-Deb-${{ steps.vars.outputs.text }}
+          path: "dist/ziti-desktop-edge-${{ steps.vars.outputs.text }}.deb"
+      - name: Upload Linux Rpm installer
+        uses: actions/upload-artifact@v2
+        with:
+          name: ZitiDesktopEdge-Rpm-${{ steps.vars.outputs.text }}
+          path: "dist/ziti-desktop-edge-${{ steps.vars.outputs.text }}.rpm"
 

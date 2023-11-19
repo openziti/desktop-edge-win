@@ -12,6 +12,24 @@ $invocation = (Get-Variable MyInvocation).Value
 $scriptPath = Split-Path $invocation.MyCommand.Path
 $buildPath = "${scriptPath}\build"
 
+echo "Setup Node Project"
+cd ./ziti-edge-ui
+echo "Install Node Dependencies"
+if (test-path 'node_modules') {
+    echo "Modues Exists, Removing"
+    Remove-Item node_modules -Recurse -Force -Confirm:$false
+}
+if (test-path 'package-lock.json') {
+    echo "Package Lock Exists, Removing"
+    Remove-Item package-lock.json -Force -Confirm:$false
+}
+npm cache clean --force
+npm install
+npm i -g electron-packager
+echo "Build Electron Packageg"
+electron-packager ./ Ziti-Desktop-Edge --overwrite --asar --electron-version=26.2.4 --platform=win32 --arch=x64 --prune=true  --out=../release-builds --icon=./app.ico
+cd ../
+
 echo "Cleaning previous build folder if it exists"
 rm "${buildPath}" -r -fo -ErrorAction Ignore
 mkdir "${buildPath}" -ErrorAction Ignore > $null
@@ -85,7 +103,7 @@ msbuild ZitiDesktopEdge.sln /property:Configuration=Release
 
 Pop-Location
 
-$ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer 21.2.1"
+$ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer 21.2.2"
 $ADVINST = "${ADV_INST_HOME}\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
 

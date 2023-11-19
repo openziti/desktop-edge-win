@@ -28,6 +28,7 @@ using System.Windows.Interop;
 using Windows.UI.Notifications;
 using Windows.Data.Xml.Dom;
 using Ziti.Desktop.Edge.Models;
+using System.Reflection;
 
 namespace ZitiDesktopEdge {
 
@@ -800,6 +801,32 @@ namespace ZitiDesktopEdge {
 				try {
 					if (evt.Message?.ToLower() == "upgrading") {
 						logger.Info("The monitor has indicated an upgrade is in progress. Shutting down the UI");
+
+						//start the sentinel process...
+						using (Process process = new Process()) {
+							string executablePath = Assembly.GetEntryAssembly().Location;
+							string executableDirectory = Path.GetDirectoryName(executablePath);
+							var sentinelSource = executableDirectory + @"\UpgradeSentinel.exe";
+
+							if (File.Exists(sentinelSource)) {
+                                string sentinelTempSource = Path.Combine(Path.GetTempPath(), "UpgradeSentinel.exe");
+								try {
+									File.Copy(executableDirectory + @"\UpgradeSentinel.exe", sentinelTempSource);
+									logger.Info("starting sentinel process: {}", sentinelTempSource);
+									process.StartInfo.FileName = sentinelTempSource;
+									process.StartInfo.Arguments = "version";
+									process.StartInfo.RedirectStandardOutput = true;
+									process.StartInfo.UseShellExecute = false;
+									process.StartInfo.CreateNoWindow = true;
+									process.Start();
+								} catch(Exception ex) {
+                                    logger.Error("cannot start sentinel service. {}", ex);
+                                }
+                            } else {
+                                logger.Warn("cannot start sentinel service. source file doesn't exist? {}", sentinelSource);
+                            }
+						}
+
 						App.Current.Exit -= Current_Exit;
 						logger.Info("Removed Current_Exit handler");
 						notifyIcon.Visible = false;
