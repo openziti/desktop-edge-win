@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<DOCUMENT Type="Advanced Installer" CreateVersion="17.4.1" version="21.2.1" Modules="professional" RootPath="." Language="en" Id="{7315FE7B-0418-4F38-8B12-6C0594276D30}">
+<DOCUMENT Type="Advanced Installer" CreateVersion="17.4.1" version="21.2.2" Modules="professional" RootPath="." Language="en" Id="{7315FE7B-0418-4F38-8B12-6C0594276D30}">
   <COMPONENT cid="caphyon.advinst.msicomp.ProjectOptionsComponent">
     <ROW Name="HiddenItems" Value="ActSyncAppComponent;CPLAppletComponent;AppXAppDetailsComponent;FixupComponent;AppXCapabilitiesComponent;AppXDependenciesComponent;AppXProductDetailsComponent;AppXVisualAssetsComponent;AppXAppDeclarationsComponent;AppXUriRulesComponent;MsiXDiffComponent;MsixManifestEditorComponent"/>
   </COMPONENT>
@@ -51,7 +51,7 @@
     <ROW Property="CTRLS" Value="2"/>
     <ROW Property="Manufacturer" Value="NetFoundry Inc"/>
     <ROW Property="MsiLogging" MultiBuildValue="AnyCPU_Release:vp"/>
-    <ROW Property="ProductCode" Value="1033:{7E7568D2-31A7-4841-B767-CDDD57C6859A} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{57030390-2272-4074-97A6-6F9007DBF602} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="Ziti Desktop Edge"/>
     <ROW Property="ProductVersion" Value="2.2.1" Options="32"/>
@@ -89,6 +89,7 @@
     <ROW Component="QRCoder.dll" ComponentId="{4FE1F9B5-1948-4D04-AFB1-3A4CE374A0D8}" Directory_="APPDIR" Attributes="0" KeyPath="QRCoder.dll"/>
     <ROW Component="SHORTCUTDIR" ComponentId="{22DFD094-1066-4376-AAF5-A4F974CD7F2A}" Directory_="SHORTCUTDIR" Attributes="0"/>
     <ROW Component="System.Buffers.dll" ComponentId="{337A28A5-0EA0-420C-8CC3-84FBC3EF7BE2}" Directory_="APPDIR" Attributes="0" KeyPath="System.Buffers.dll"/>
+    <ROW Component="UpgradeSentinel.exe" ComponentId="{9C87C05E-2E44-4CF7-896D-E37030BE67CB}" Directory_="APPDIR" Attributes="0" KeyPath="UpgradeSentinel.exe"/>
     <ROW Component="WpfMouseWheelLib.dll" ComponentId="{8CFD4E8C-7E6E-4797-A38A-02B7794BFF5F}" Directory_="APPDIR" Attributes="0" KeyPath="WpfMouseWheelLib.dll"/>
     <ROW Component="ZitiDesktopEdge.Client.dll" ComponentId="{7834CBFB-BA9A-4337-9603-507C71135B01}" Directory_="APPDIR" Attributes="0" KeyPath="ZitiDesktopEdge.Client.dll"/>
     <ROW Component="ZitiDesktopEdge.exe" ComponentId="{42BA3B21-4EC3-4C05-B6A6-D0FA5E85A50E}" Directory_="APPDIR" Attributes="256" KeyPath="ZitiDesktopEdge.exe"/>
@@ -198,6 +199,7 @@
     <ROW File="vi.pak" Component_="af.pak" FileName="vi.pak" Attributes="0" SourcePath="..\release-builds\Ziti-Desktop-Edge-win32-x64\locales\vi.pak" SelfReg="false"/>
     <ROW File="zhCN.pak" Component_="af.pak" FileName="zh-CN.pak" Attributes="0" SourcePath="..\release-builds\Ziti-Desktop-Edge-win32-x64\locales\zh-CN.pak" SelfReg="false"/>
     <ROW File="zhTW.pak" Component_="af.pak" FileName="zh-TW.pak" Attributes="0" SourcePath="..\release-builds\Ziti-Desktop-Edge-win32-x64\locales\zh-TW.pak" SelfReg="false"/>
+    <ROW File="UpgradeSentinel.exe" Component_="UpgradeSentinel.exe" FileName="UPGRAD~1.EXE|UpgradeSentinel.exe" Attributes="0" SourcePath="..\UpgradeSentinel\bin\Release\UpgradeSentinel.exe" SelfReg="false" DigSign="true"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.AiPersistentDataComponent">
     <ROW PersistentRow="ZitiUpdateServicelog.config" Type="0" Condition="OLDPRODUCTS"/>
@@ -212,6 +214,7 @@
     <ROW BootstrOptKey="GlobalOptions" DownloadFolder="[AppDataFolder][|Manufacturer]\[|ProductName]\prerequisites" Options="2"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BootstrapperUISequenceComponent">
+    <ROW Action="AI_AppSearchEx" Condition="AI_BOOTSTRAPPER" Sequence="251"/>
     <ROW Action="AI_DetectSoftware" Sequence="151"/>
     <ROW Action="AI_DownloadPrereq" Condition="AI_BOOTSTRAPPER AND (NOT AI_PrereqsFulfilled)" Sequence="647"/>
     <ROW Action="AI_ExtractPrereq" Condition="AI_BOOTSTRAPPER AND (NOT AI_PrereqsFulfilled)" Sequence="648"/>
@@ -428,6 +431,7 @@
     <ROW Feature_="MainFeature" Component_="app.asar"/>
     <ROW Feature_="MainFeature" Component_="af.pak"/>
     <ROW Feature_="MainFeature" Component_="SHORTCUTDIR"/>
+    <ROW Feature_="MainFeature" Component_="UpgradeSentinel.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiIconsComponent">
     <ROW Name="ZitiDesktopEdge.exe" SourcePath="ziti.ico" Index="0"/>
