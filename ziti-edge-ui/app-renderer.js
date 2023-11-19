@@ -464,6 +464,7 @@ var app = {
                     $("#CheckUpdates").removeClass("disabled");
                 } else {
                     if ((message.Code==2 || message.Code==-2) && message.Error!=null) {
+                        $("#CheckUpdates").removeClass("disabled");
                         growler.error(message.Error);
                         ui.hideLoad();
                     } else {
