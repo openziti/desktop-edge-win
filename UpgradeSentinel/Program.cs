@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading;
+using static System.Net.Mime.MediaTypeNames;
 
 class FileWatcher {
 	static SemaphoreSlim semaphore = new SemaphoreSlim(0, 1);
 	static string lockFilePath = Path.Combine(Path.GetTempPath(), "ZitiDesktopEdgeUpdateSentinelLock.txt");
-	static string pathToWatch = @"C:\Program Files (x86)\NetFoundry, Inc\Ziti Desktop Edge\ZitiDesktopEdge.exe";
+	static string pathToWatch = System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location) + @"\Ziti-Desktop-Edge.exe";
 
 	static void Main() {
 		Console.CancelKeyPress += OnCancelKeyPress;
