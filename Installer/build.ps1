@@ -1,8 +1,30 @@
+$ErrorActionPreference = "Stop"
+
 function verifyFile($path) {
     if (Test-Path -Path "$path") {
         "OK: $path exists!"
     } else {
         throw [System.IO.FileNotFoundException] "$path not found"
+    }
+}
+
+function downloadWintunZip() {
+    if (Test-Path -Path "${scriptPath}\wintun.zip") {
+        echo "using wintun.zip found at ${scriptPath}\wintun.zip"
+    } else {
+        echo "wintun.zip not found. attempting to download."       
+        if($null -eq $env:WINTUN_DL_URL) {
+            echo "========================== fetching wintun.zip =========================="
+            $WINTUN_DL_URL="https://www.wintun.net/builds/wintun-0.13.zip"
+            echo "Beginning to download wintun from ${WINTUN_DL_URL}"
+            echo ""
+            $ProgressPreference = 'SilentlyContinue'
+            Invoke-WebRequest $WINTUN_DL_URL -OutFile "${scriptPath}\wintun.zip"
+            verifyFile("${scriptPath}\wintun.zip")
+            echo "Expanding downloaded file..."
+        } else {
+            echo "WINTUN_DL_URL WAS SET"
+        }
     }
 }
 
@@ -15,6 +37,11 @@ $buildPath = "${scriptPath}\build"
 echo "Cleaning previous build folder if it exists"
 rm "${buildPath}" -r -fo -ErrorAction Ignore
 mkdir "${buildPath}" -ErrorAction Ignore > $null
+    
+downloadWintunZip
+
+Expand-Archive -Path "${scriptPath}\wintun.zip" -Force -DestinationPath "${buildPath}\service"
+echo "expanded wintun.zip file to ${buildPath}\service"
 
 $zet_binary="${buildPath}"
 if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
@@ -33,26 +60,6 @@ if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
     echo "Expanding downloaded file..."
     Expand-Archive -Path "${scriptPath}\zet.zip" -Force -DestinationPath "${buildPath}\service"
     echo "expanded zet.zip file to ${buildPath}\service"
-    
-    if (Test-Path -Path "${scriptPath}\wintun.zip") {
-        echo "using wintun.zip found at ${scriptPath}\wintun.zip"
-    } else {
-        echo "wintun.zip not found. attempting to download."       
-        if($null -eq $env:WINTUN_DL_URL) {
-            echo "========================== fetching wintun.dll =========================="
-            $WINTUN_DL_URL="https://www.wintun.net/builds/wintun-0.13.zip"
-            echo "Beginning to download wintun from ${WINTUN_DL_URL}"
-            echo ""
-            $ProgressPreference = 'SilentlyContinue'
-            Invoke-WebRequest $WINTUN_DL_URL -OutFile "${scriptPath}\wintun.zip"
-            verifyFile("${scriptPath}\wintun.zip")
-            echo "Expanding downloaded file..."
-            Expand-Archive -Path "${scriptPath}\wintun.zip" -Force -DestinationPath "${buildPath}\service"
-            echo "expanded wintun.zip file to ${buildPath}\service"
-        } else {
-            echo "WINTUN_DL_URL WAS SET"
-        }
-    }
 } else {
     echo "========================== using locally defined ziti-edge-tunnel =========================="
     $zet_folder=$env:ZITI_EDGE_TUNNEL_BUILD
@@ -63,7 +70,6 @@ if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
     echo ""
     mkdir "${buildPath}\service" -ErrorAction Ignore > $null
     copy "$zet_folder\ziti-edge-tunnel.exe" -Destination "$buildPath\service" -Force
-    copy "$zet_folder\wintun.dll" -Destination "$buildPath\service" -Force
 }
 
 Push-Location ${scriptPath}\..
@@ -85,7 +91,7 @@ msbuild ZitiDesktopEdge.sln /property:Configuration=Release
 
 Pop-Location
 
-$ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer 21.2.1"
+$ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer 21.2.2"
 $ADVINST = "${ADV_INST_HOME}\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
 
