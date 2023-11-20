@@ -48,17 +48,8 @@ jobs:
         run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
       - name: "Install Choco needs: advanced-installer wixtoolset ninja"
         run: choco install advanced-installer wixtoolset ninja --yes
-      - name: Build the ziti-edge-tunnel (for now, will download later)
-        run: ziti-edge-tunnel\build.bat quick
       - name: Setting up version env var
         run: echo "VERSION=$(cat .\version)" >> $env:GITHUB_ENV
-      - name: Upload service zip onto job
-        uses: actions/upload-artifact@v2
-        with:
-          name: ziti-edge-tunnel-win.zip-${{ env.VERSION }}
-          path: "ziti-edge-tunnel/ziti-edge-tunnel-win.zip"
-      - name: Setting up ZITI_EDGE_TUNNEL_BUILD env var
-        run: echo "ZITI_EDGE_TUNNEL_BUILD=.\ziti-edge-tunnel" >> $env:GITHUB_ENV
       - uses: nuget/setup-nuget@v1
         with:
           nuget-api-key: ${{ secrets.NuGetAPIKey }}
