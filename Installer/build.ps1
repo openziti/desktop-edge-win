@@ -1,3 +1,5 @@
+$ErrorActionPreference = "Stop"
+
 function verifyFile($path) {
     if (Test-Path -Path "$path") {
         "OK: $path exists!"
@@ -6,34 +8,7 @@ function verifyFile($path) {
     }
 }
 
-echo "========================== build.ps1 begins =========================="
-nuget restore .\ZitiDesktopEdge.sln
-$invocation = (Get-Variable MyInvocation).Value
-$scriptPath = Split-Path $invocation.MyCommand.Path
-$buildPath = "${scriptPath}\build"
-
-echo "Cleaning previous build folder if it exists"
-rm "${buildPath}" -r -fo -ErrorAction Ignore
-mkdir "${buildPath}" -ErrorAction Ignore > $null
-
-$zet_binary="${buildPath}"
-if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
-    echo "========================== fetching ziti-edge-tunnel =========================="
-    if($null -eq $env:ZITI_EDGE_TUNNEL_VERSION) {
-        $zet_dl="https://github.com/openziti/ziti-tunnel-sdk-c/releases/latest/download/ziti-edge-tunnel-Windows_x86_64.zip"
-    } else {
-        $zet_dl="https://github.com/openziti/ziti-tunnel-sdk-c/releases/download/${env:ZITI_EDGE_TUNNEL_VERSION}/ziti-edge-tunnel-Windows_x86_64.zip"
-    }
-    echo "Beginning to download ziti-edge-tunnel from ${zet_dl}"
-    echo ""
-    $ProgressPreference = 'SilentlyContinue'
-    $response = Invoke-WebRequest $zet_dl -OutFile "${scriptPath}\zet.zip"
-    verifyFile("${scriptPath}\zet.zip")
-
-    echo "Expanding downloaded file..."
-    Expand-Archive -Path "${scriptPath}\zet.zip" -Force -DestinationPath "${buildPath}\service"
-    echo "expanded zet.zip file to ${buildPath}\service"
-    
+function downloadWintun() {
     if (Test-Path -Path "${scriptPath}\wintun.zip") {
         echo "using wintun.zip found at ${scriptPath}\wintun.zip"
     } else {
@@ -53,6 +28,37 @@ if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
             echo "WINTUN_DL_URL WAS SET"
         }
     }
+}
+
+echo "========================== build.ps1 begins =========================="
+nuget restore .\ZitiDesktopEdge.sln
+$invocation = (Get-Variable MyInvocation).Value
+$scriptPath = Split-Path $invocation.MyCommand.Path
+$buildPath = "${scriptPath}\build"
+
+echo "Cleaning previous build folder if it exists"
+rm "${buildPath}" -r -fo -ErrorAction Ignore
+mkdir "${buildPath}" -ErrorAction Ignore > $null
+    
+downloadWintun
+
+$zet_binary="${buildPath}"
+if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
+    echo "========================== fetching ziti-edge-tunnel =========================="
+    if($null -eq $env:ZITI_EDGE_TUNNEL_VERSION) {
+        $zet_dl="https://github.com/openziti/ziti-tunnel-sdk-c/releases/latest/download/ziti-edge-tunnel-Windows_x86_64.zip"
+    } else {
+        $zet_dl="https://github.com/openziti/ziti-tunnel-sdk-c/releases/download/${env:ZITI_EDGE_TUNNEL_VERSION}/ziti-edge-tunnel-Windows_x86_64.zip"
+    }
+    echo "Beginning to download ziti-edge-tunnel from ${zet_dl}"
+    echo ""
+    $ProgressPreference = 'SilentlyContinue'
+    $response = Invoke-WebRequest $zet_dl -OutFile "${scriptPath}\zet.zip"
+    verifyFile("${scriptPath}\zet.zip")
+
+    echo "Expanding downloaded file..."
+    Expand-Archive -Path "${scriptPath}\zet.zip" -Force -DestinationPath "${buildPath}\service"
+    echo "expanded zet.zip file to ${buildPath}\service"
 } else {
     echo "========================== using locally defined ziti-edge-tunnel =========================="
     $zet_folder=$env:ZITI_EDGE_TUNNEL_BUILD
