@@ -818,12 +818,12 @@ namespace ZitiDesktopEdge {
 									process.StartInfo.UseShellExecute = false;
 									process.StartInfo.CreateNoWindow = true;
 									process.Start();
-								} catch(Exception ex) {
-                                    logger.Error("cannot start sentinel service. {}", ex);
-                                }
-                            } else {
-                                logger.Warn("cannot start sentinel service. source file doesn't exist? {}", sentinelSource);
-                            }
+								} catch (Exception ex) {
+									logger.Error("cannot start sentinel service. {}", ex);
+								}
+							} else {
+								logger.Warn("cannot start sentinel service. source file doesn't exist? {}", sentinelSource);
+							}
 						}
 
 						App.Current.Exit -= Current_Exit;
@@ -1417,7 +1417,7 @@ namespace ZitiDesktopEdge {
 					MainMenu.IdentitiesButton.Visibility = Visibility.Collapsed;
 					IdListScroller.Visibility = Visibility.Visible;
 
-                }
+				}
 				AddIdButton.Visibility = Visibility.Visible;
 				AddIdAreaButton.Visibility = Visibility.Visible;
 
