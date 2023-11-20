@@ -809,11 +809,10 @@ namespace ZitiDesktopEdge {
 							var sentinelSource = executableDirectory + @"\UpgradeSentinel.exe";
 
 							if (File.Exists(sentinelSource)) {
-                                string sentinelTempSource = Path.Combine(Path.GetTempPath(), "UpgradeSentinel.exe");
 								try {
-									File.Copy(executableDirectory + @"\UpgradeSentinel.exe", sentinelTempSource);
-									logger.Info("starting sentinel process: {}", sentinelTempSource);
-									process.StartInfo.FileName = sentinelTempSource;
+									File.Copy(executableDirectory + @"\UpgradeSentinel.exe", App.SentinelTempSource, true);
+									logger.Info("starting sentinel process: {}", App.SentinelTempSource);
+									process.StartInfo.FileName = App.SentinelTempSource;
 									process.StartInfo.Arguments = "version";
 									process.StartInfo.RedirectStandardOutput = true;
 									process.StartInfo.UseShellExecute = false;
