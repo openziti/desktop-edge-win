@@ -12,6 +12,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.github\workflows\mattermost-ziti-webhook.yml = .github\workflows\mattermost-ziti-webhook.yml
 		README.md = README.md
 		Installer\reg.bat = Installer\reg.bat
+		releasing.md = releasing.md
 		update-versions.ps1 = update-versions.ps1
 		ziti.ico = ziti.ico
 	EndProjectSection
@@ -23,6 +24,14 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZitiUpdateService", "ZitiUpdateService\ZitiUpdateService.csproj", "{9AB81609-F5DD-40A6-87B5-F3279D48514D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UpgradeSentinel", "UpgradeSentinel\UpgradeSentinel.csproj", "{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "release-streams", "release-streams", "{36C30126-C9DC-4233-835E-9E036BCD1A29}"
+	ProjectSection(SolutionItems) = preProject
+		release-streams\beta.json = release-streams\beta.json
+		release-streams\dev.json = release-streams\dev.json
+		release-streams\latest.json = release-streams\latest.json
+		release-streams\stable.json = release-streams\stable.json
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -211,6 +220,9 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{36C30126-C9DC-4233-835E-9E036BCD1A29} = {D66B1C6A-ADFE-437E-B037-C4C849A6CA97}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {3E499EAC-C1BA-41A0-8076-D660F8ACC977}
