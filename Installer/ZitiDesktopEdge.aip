@@ -49,7 +49,7 @@
     <ROW Property="ARPNOREPAIR" MultiBuildValue="DefaultBuild:1#AnyCPU_Release:1"/>
     <ROW Property="ARPPRODUCTICON" Value="ziti.exe" Type="8"/>
     <ROW Property="ARPURLINFOABOUT" Value="https://openenziti.io"/>
-    <ROW Property="AppLogoIcon" Value="applogoicon" MultiBuildValue="DefaultBuild:ziti.ico_1#AnyCPU_Release:ziti.ico_1" Type="1" MsiKey="AppLogoIcon"/>
+    <ROW Property="AppLogoIcon" Value="applogoicon" MultiBuildValue="DefaultBuild:ziti.ico#AnyCPU_Release:ziti.ico" Type="1" MsiKey="AppLogoIcon"/>
     <ROW Property="CTRLS" Value="2"/>
     <ROW Property="Manufacturer" Value="NetFoundry, Inc."/>
     <ROW Property="MsiLogging" MultiBuildValue="AnyCPU_Release:vp"/>
@@ -235,7 +235,7 @@
     <ROW Name="sys_min_hot.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;sys_min_hot.bmp"/>
     <ROW Name="sys_min_inactive.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;sys_min_inactive.bmp"/>
     <ROW Name="sys_min_normal.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;sys_min_normal.bmp"/>
-    <ROW Name="ziti.ico_1" SourcePath="..\ziti.ico"/>
+    <ROW Name="ziti.ico" SourcePath="Generated Images\ziti.ico"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiControlEventComponent">
     <ROW Dialog_="WelcomeDlg" Control_="Next" Event="NewDialog" Argument="FolderDlg" Condition="AI_INSTALL" Ordering="1"/>
