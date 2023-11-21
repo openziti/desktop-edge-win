@@ -19,6 +19,9 @@
         <Rectangle Margin="10,10,10,10" Fill="White" RadiusY="10" RadiusX="10" ClipToBounds="True"></Rectangle>
 
         <Grid Margin="20,20,20,-20">
+            <Grid.Resources>
+                <CornerRadius x:Key="ControlCornerRadius">8</CornerRadius>
+            </Grid.Resources>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
@@ -46,7 +49,7 @@
                     <local:MenuItem x:Name="DetachButton" Label="Detach App" Icon="/Assets/Images/detach.png" MouseUp="DetachWindow"></local:MenuItem>
                     <local:MenuItem x:Name="AttachButton" Label="Attach App" Icon="/Assets/Images/detach.png" MouseUp="RetachWindow" Visibility="Collapsed"></local:MenuItem>
                     <Label Name="UpdateTimeLeft" Visibility="Collapsed" Content="" HorizontalAlignment="Center" FontSize="10" Height="50" Padding="0,30,0,0" Foreground="#F4044D" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
-                    <Button Name="ForceUpdate" Visibility="Collapsed" Height="40" Grid.Column="1" Margin="20,20,40,0" Width="260" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#dc252c" Content="Update Now" Click="TriggerUpdate_Click" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                    <Button Name="ForceUpdate" Visibility="Collapsed" Height="40" Grid.Column="1" Margin="20,20,40,0" Width="260" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#9c252c" Content="Update Now" Click="TriggerUpdate_RoutedEventArgs_Click">
                         <Button.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="5"/>
@@ -63,7 +66,6 @@
                     <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/logs.png" Width="Auto" Label="Service Logs" MouseUp="ShowLogs"></local:MenuItem>
                     <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/logs.png" Width="Auto" Label="Application Logs" MouseUp="ShowUILogs"></local:MenuItem>
                     <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/advanced.png" Width="Auto" Label="Set Logging Level" MouseUp="SetLogLevel"></local:MenuItem>
-                    <local:MenuItem x:Name="ShowReleaseStreamMenuItem" Visibility="Collapsed" HorizontalAlignment="Stretch" Icon="/Assets/Images/update.png" Width="Auto" Label="Set Release Stream" MouseUp="ShowReleaseStreamMenuAction"></local:MenuItem>
                     <local:MenuItem x:Name="SetAutomaticUpgradeMenuItem" HorizontalAlignment="Stretch" Icon="/Assets/Images/processing.png" Width="Auto" Label="Configure Automatic Upgrades" MouseUp="ShowAutomaticUpgradesMenuAction"></local:MenuItem>
                     <local:StyledButton x:Name="EditFreqButton" Visibility="Collapsed" OnClick="EditFreqButton_OnClick" Label="Change Notification Frequency" Grid.Row="8" Margin="0,20,0,0"></local:StyledButton>
                 </StackPanel>
@@ -75,33 +77,171 @@
                     <local:SubOptionItem x:Name="LogVerbose" HorizontalAlignment="Stretch" Width="Auto" Label="Verbose" MouseUp="SetLevel"></local:SubOptionItem>
                     <local:SubOptionItem x:Name="LogTrace" HorizontalAlignment="Stretch" Width="Auto" Label="Trace" MouseUp="SetLevel"></local:SubOptionItem>
                 </StackPanel>
-                <StackPanel Name="ReleaseStreamItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
-                    <local:SubOptionItem x:Name="ReleaseStreamItemStable" HorizontalAlignment="Stretch" Width="Auto" Label="Stable" MouseUp="SetReleaseStreamMenuAction"></local:SubOptionItem>
-                    <local:SubOptionItem x:Name="ReleaseStreamItemBeta" HorizontalAlignment="Stretch" Width="Auto" Label="Beta" MouseUp="SetReleaseStreamMenuAction"></local:SubOptionItem>
-                    <StackPanel Name="UpdateNowPanel" HorizontalAlignment="Center" Margin="0, 20, 0, 0">
-                        <Button Name="CheckForUpdate" Height="40" Grid.Column="1" Margin="20,0,40,0" Width="260" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#0069FF" Content="Check for Update" Click="CheckForUpdate_Click" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
-                            <Button.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="5"/>
-                                </Style>
-                            </Button.Resources>
-                        </Button>
-
-                        <Label HorizontalAlignment="Center" Name="CheckForUpdateStatus" Content=""></Label>
-
-                        <Button Name="TriggerUpdateButton" Visibility="Collapsed" Height="40" Width="260" Grid.Column="1" Margin="20,0,40,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#0069FF" Content="Perform Update" Click="TriggerUpdate_Click" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
-                            <Button.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="5"/>
-                                </Style>
-                            </Button.Resources>
-                        </Button>
-                    </StackPanel>
-                </StackPanel>
                 <StackPanel Name="AutomaticUpgradesItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
+                    <StackPanel.Resources>
+                        <Style TargetType="{x:Type Button}" x:Key="BasicButton">
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="BorderThickness" Value="0" />
+                            <Setter Property="Cursor" Value="Hand" />
+                        </Style>
+                        <Style x:Key="RoundedButton" TargetType="Border">
+                            <Setter Property="CornerRadius" Value="5"/>
+                            <Setter Property="Padding" Value="5"/>
+                        </Style>
+                        <Style x:Key="RedButton" TargetType="Button" BasedOn="{StaticResource BasicButton}">
+                            <Setter Property="Background" Value="#B05257" />
+                            <Setter Property="Margin" Value="40,0,40,0"/>
+                            <Setter Property="Padding" Value="5"/>
+                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Background" Value="{x:Static SystemColors.ControlLightBrush}" />
+                                    <Setter Property="Foreground" Value="{x:Static SystemColors.GrayTextBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Trigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ColorAnimation Storyboard.TargetProperty="(Button.Background).(SolidColorBrush.Color)"
+                                                        To="#8D4246" Duration="0:0:1"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.EnterActions>
+                                    <Trigger.ExitActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ColorAnimation Storyboard.TargetProperty="(Button.Background).(SolidColorBrush.Color)"
+                                                        To="#B05257" Duration="0:0:.25"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.ExitActions>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                        <Style x:Key="RoundedRedButton" TargetType="Button" BasedOn="{StaticResource RedButton}">
+                            <Setter Property="Background" Value="#B05257" />
+                            <Setter Property="Margin" Value="40,0,40,0"/>
+                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="{x:Type Button}">
+                                        <Border Style="{StaticResource RoundedButton}">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Resources>
+                                <Style TargetType="Border" BasedOn="{StaticResource RoundedButton}"/>
+                            </Style.Resources>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Trigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ColorAnimation Storyboard.TargetProperty="(Button.Background).(SolidColorBrush.Color)"
+                                                        To="#8D4246" Duration="0:0:.25"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.EnterActions>
+                                    <Trigger.ExitActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ColorAnimation Storyboard.TargetProperty="(Button.Background).(SolidColorBrush.Color)"
+                                                        To="#B05257" Duration="0:0:.25"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.ExitActions>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                        <Style x:Key="TestButton" TargetType="Button" BasedOn="{StaticResource RedButton}">
+                            <Style.Resources>
+                                <Style TargetType="Border" BasedOn="{StaticResource RoundedButton}"/>
+                            </Style.Resources>
+                            <Setter Property="Background" Value="#B05257"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="{x:Type Button}">
+                                        <Border Background="{TemplateBinding Background}">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Trigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ColorAnimation Storyboard.TargetProperty="(Button.Background).(SolidColorBrush.Color)"
+                                                        To="#8D4246" Duration="0:0:.25"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.EnterActions>
+                                    <Trigger.ExitActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <ColorAnimation Storyboard.TargetProperty="(Button.Background).(SolidColorBrush.Color)"
+                                                        To="#B05257" Duration="0:0:.25"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.ExitActions>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Resources>
+
+                    <Label FontWeight="Bold" FontSize="16" Margin="0,20,0,0">Automatic upgrades:</Label>
+                    <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
                     <local:SubOptionItem x:Name="AutomaticUpgradesItemOn" HorizontalAlignment="Stretch" Width="Auto" Label="Enabled" MouseUp="SetAutomaticUpgradesMenuAction"></local:SubOptionItem>
                     <local:SubOptionItem x:Name="AutomaticUpgradesItemOff" HorizontalAlignment="Stretch" Width="Auto" Label="Disabled" MouseUp="SetAutomaticUpgradesMenuAction"></local:SubOptionItem>
+
+                    <Label FontWeight="Bold" FontSize="16" Margin="0,20,0,0">URL used to discover new upgrades:</Label>
+
+                    <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
+                    <StackPanel Orientation="Horizontal">
+                        <Label Opacity="0.6">Change only if you understand the associated risks</Label>
+                    </StackPanel>
+                    <StackPanel Margin="0,0,0,0">
+                        <TextBox x:Name="UpdateUrl" Padding="5" TextChanged="UpdateUrl_TextChanged" Width="325" BorderThickness="1" TextAlignment="Left" FontSize="13" Foreground="Black" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                            <TextBox.Resources>
+                                <Style TargetType="{x:Type Border}">
+                                    <Setter Property="CornerRadius" Value="5"/>
+                                </Style>
+                            </TextBox.Resources>
+                        </TextBox>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0">
+                            <Label Content=""/>
+                            <Button Click="ResetUrlButton_Click" Content="Reset" VerticalAlignment="Top"
+                                    BorderThickness="1,0,1,1" Opacity=".6"
+                                    >
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="0,0,5,5"/>
+                                        <Setter Property="Height" Value="20"/>
+                                        <Setter Property="Padding" Value="10,0,10,0"/>
+                                        <Setter Property="BorderThickness" Value="15"/>
+                                    </Style>
+                                </Button.Resources>
+                            </Button>
+                            <Label Content=""/>
+                        </StackPanel>
+                    </StackPanel>
+                    <local:StyledButton x:Name="SetUpdateUrlButton" OnClick="SetUpdateUrlButton_Click" Label="Set Update URL"></local:StyledButton>
+                    <local:StyledButton x:Name="CheckForUpdate" OnClick="CheckForUpdate_OnClick" Label="Check for Updates Now" Margin="0,20,0,0"></local:StyledButton>
+                    <Label HorizontalAlignment="Center" x:Name="CheckForUpdateStatus" Content=""></Label>
+
+                    <Button x:Name="TriggerUpdateButton" 
+                            Click="TriggerUpdate_RoutedEventArgs_Click" 
+                            Visibility="Collapsed" 
+                            Content="Perform Update" 
+                            Style="{StaticResource TestButton}"/>
+
                 </StackPanel>
+
                 <StackPanel Name="ConfigItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <local:MenuEditItem x:Name="ConfigIp" HorizontalAlignment="Stretch" Width="Auto" Label="IPv4 Address:"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigSubnet" HorizontalAlignment="Stretch" Width="Auto" Label="Subnet Mask:"></local:MenuEditItem>
@@ -109,7 +249,7 @@
                     <local:MenuEditItem x:Name="ConfigDns" HorizontalAlignment="Stretch" Width="Auto" Label="DNS Server:"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigPageSize" HorizontalAlignment="Stretch" Width="Auto" Label="Api Page Size (10-500):"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigDnsEnabled" HorizontalAlignment="Stretch" Width="Auto" Label="Add Dns:"></local:MenuEditItem>
-                    <local:StyledButton x:Name="EditButton" OnClick="ShowEdit" Label="Edit Values" Grid.Row="8" Margin="0,20,0,0"></local:StyledButton>
+                    <local:StyledButton x:Name="EditButton" OnClick="ShowEdit_Click" Label="Edit Values" Grid.Row="8" Margin="0,20,0,0"></local:StyledButton>
                 </StackPanel>
                 <ScrollViewer Name="IdListScrollView" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" CanContentScroll="True" ClipToBounds="True" Visibility="Collapsed">
                     <StackPanel Name="IdListView" Orientation="Vertical" IsItemsHost="False"></StackPanel>
@@ -118,8 +258,7 @@
                 <TextBox Name="LogsItems" Height="400" Width="{Binding ActualWidth, ElementName=MainStack}" TextWrapping="Wrap" Visibility="Collapsed" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"></TextBox>
 
                 <StackPanel Name="AboutItemsArea" Orientation="Vertical" HorizontalAlignment="Stretch" Visibility="Collapsed">
-                    <Label Name="VersionInfo" HorizontalAlignment="Center" FontSize="10" Height="50" Padding="0,30,0,0" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
-
+                    <Label Name="VersionInfo" HorizontalAlignment="Center" FontSize="10" Height="50" Padding="0,30,0,0" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack:Up//application:,,,/Assets/Fonts/#Open Sans"></Label>
                     <Label Name="VersionOlder" Content=" checking version information " HorizontalAlignment="Center" FontSize="10" Height="50" Padding="0,30,0,0" Foreground="#F4044D" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                     <Label Name="VersionNewer" Content="" HorizontalAlignment="Center" FontSize="10" Height="50" Padding="0,30,0,0" Foreground="#0069FF" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                 </StackPanel>
@@ -203,7 +342,7 @@
 
                 <CheckBox x:Name="AddDnsNew" Content="Add DNS" IsChecked="True" Margin="10"/>
 
-                <local:StyledButton x:Name="SaveConfigButton" OnClick="SaveConfig" Label="Save" Grid.Row="8"></local:StyledButton>
+                <local:StyledButton x:Name="SaveConfigButton" OnClick="SaveConfig_Click" Label="Save" Grid.Row="8"></local:StyledButton>
 
             </StackPanel>
             <Image Source="/Assets/Images/closeBlack.png" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,40,40,0" Width="10" Height="10" Cursor="Hand" MouseUp="CloseEditConfig"></Image>

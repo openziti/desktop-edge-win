@@ -312,7 +312,7 @@ namespace ZitiDesktopEdge {
 			MainDetailScroll.Height = height;
 		}
 
-		private void ForgetIdentity() {
+		private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
 			if (this.Visibility==Visibility.Visible&&ConfirmView.Visibility==Visibility.Collapsed) {
 				ConfirmView.Visibility = Visibility.Visible;
 			}

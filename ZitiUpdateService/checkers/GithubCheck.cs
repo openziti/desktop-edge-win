@@ -10,20 +10,19 @@ using Newtonsoft.Json.Linq;
 
 using ZitiDesktopEdge.Utility;
 using ZitiUpdateService.Checkers.PeFile;
+using System.Configuration;
 
 namespace ZitiUpdateService.Checkers {
 
 	internal class GithubCheck : UpdateCheck {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-		string url;
-		string releasesUrl;
+		string updateCheckUrl;
 		string downloadUrl = null;
 		Version nextVersion = null;
 		
 
-		public GithubCheck(Version compareTo, string url, string releasesUrl) : base(compareTo) {
-			this.url = url;
-			this.releasesUrl = releasesUrl;
+		public GithubCheck(Version compareTo, string url) : base(compareTo) {
+			this.updateCheckUrl = url;
 			Avail = CheckUpdate(compareTo);
 		}
 
@@ -41,9 +40,9 @@ namespace ZitiUpdateService.Checkers {
 
 		private int CheckUpdate(Version currentVersion) {
 			Logger.Debug("checking for update begins. current version detected as {0}", currentVersion);
-			Logger.Debug("issuing http get to url: {0}", url);
-			JObject json = GithubAPI.GetJson(url);
+			Logger.Debug("issuing http get to url: {0}", updateCheckUrl);
 
+			JObject json = GithubAPI.GetJson(updateCheckUrl);
 			JArray assets = JArray.Parse(json.Property("assets").Value.ToString());
 			foreach (JObject asset in assets.Children<JObject>()) {
 				string assetName = asset.Property("name").Value.ToString();
@@ -57,7 +56,7 @@ namespace ZitiUpdateService.Checkers {
 			}
 
 			if (downloadUrl == null) {
-				Logger.Error("DOWNLOAD URL not found at: {0}", url);
+				Logger.Error("DOWNLOAD URL not found at: {0}", updateCheckUrl);
 				return 0;
 			}
 			Logger.Debug("download url detected: {0}", downloadUrl);
@@ -69,7 +68,6 @@ namespace ZitiUpdateService.Checkers {
 			nextVersion = VersionUtil.NormalizeVersion(new Version(releaseVersion));
 			string isoPublishedDate = json.Property("published_at").Value.ToString();
 			PublishDate = DateTime.Parse(isoPublishedDate, null, System.Globalization.DateTimeStyles.RoundtripKind);
-
 
 			int compare = currentVersion.CompareTo(nextVersion);
 			if (compare < 0) {

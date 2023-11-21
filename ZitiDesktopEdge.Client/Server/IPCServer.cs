@@ -40,7 +40,11 @@ namespace ZitiDesktopEdge.Server {
         public TriggerUpdateDelegate TriggerUpdate { get; set; }
 
         public delegate SvcResponse SetAutomaticUpdateDisabledDelegate(bool disabled);
+
+        public delegate SvcResponse SetAutomaticUpdateURLDelegate(string url);
+
         public SetAutomaticUpdateDisabledDelegate SetAutomaticUpdateDisabled { get; set; }
+        public SetAutomaticUpdateURLDelegate SetAutomaticUpdateURL { get; set; }
 
         public IPCServer() {
             ipcPipeName = PipeName;
@@ -68,6 +72,7 @@ namespace ZitiDesktopEdge.Server {
                         pipeSecurity);
 
                     await ipcPipeServer.WaitForConnectionAsync();
+                    
                     Logger.Debug("Total ipc clients now at: {0}", ++idx);
                     _ = Task.Run(async () => {
                         try {
@@ -147,8 +152,8 @@ namespace ZitiDesktopEdge.Server {
 
         async public Task handleEventClientAsync(NamedPipeServerStream ss, OnClientAsync onClient) {
             using (ss) {
-
                 StreamWriter writer = new StreamWriter(ss);
+
                 EventHandler eh = async (object sender, EventArgs e) => {
                     await writer.WriteLineAsync(sender.ToString());
                     await writer.FlushAsync();
@@ -240,6 +245,9 @@ namespace ZitiDesktopEdge.Server {
                     case "setautomaticupgradedisabled":
                         r = SetAutomaticUpdateDisabled(bool.TrueString.ToLower() == ("" + ae.Action).ToLower().Trim());
                         break;
+                    case "setautomaticupgradeurl":
+                        r = SetAutomaticUpdateURL(ae.Action);
+                        break;
                     default:
                         r.Message = "FAILURE";
                         r.Code = -3;
@@ -249,7 +257,7 @@ namespace ZitiDesktopEdge.Server {
                 }
             } catch (Exception e) {
                 Logger.Error(e, "Unexpected error in processMessage!");
-                r.Message = "FAILURE";
+                r.Message = "FAILURE: " + e.Message;
                 r.Code = -2;
                 r.Error = e.Message + ":" + e?.InnerException?.Message;
             }
@@ -257,5 +265,11 @@ namespace ZitiDesktopEdge.Server {
             await writer.WriteLineAsync(JsonConvert.SerializeObject(r));
             await writer.FlushAsync();
         }
+    }
+
+    public enum ErrorCodes {
+        NO_ERROR = 0,
+        COULD_NOT_SET_URL,
+        URL_INVALID,
     }
 }

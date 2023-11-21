@@ -1,16 +1,18 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29318.209
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34031.279
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D66B1C6A-ADFE-437E-B037-C4C849A6CA97}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		build-test-release.ps1 = build-test-release.ps1
 		Installer\build.ps1 = Installer\build.ps1
 		.github\workflows\installer.build.yml = .github\workflows\installer.build.yml
 		.github\workflows\mattermost-ziti-webhook.yml = .github\workflows\mattermost-ziti-webhook.yml
 		README.md = README.md
 		Installer\reg.bat = Installer\reg.bat
+		update-versions.ps1 = update-versions.ps1
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZitiDesktopEdge", "DesktopEdge\ZitiDesktopEdge.csproj", "{FA4291EA-A97E-4854-959F-91EE7B330B37}"
@@ -18,6 +20,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZitiDesktopEdge.Client", "ZitiDesktopEdge.Client\ZitiDesktopEdge.Client.csproj", "{26B30979-99B5-4102-BD0B-129BEDFF0057}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZitiUpdateService", "ZitiUpdateService\ZitiUpdateService.csproj", "{9AB81609-F5DD-40A6-87B5-F3279D48514D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UpgradeSentinel", "UpgradeSentinel\UpgradeSentinel.csproj", "{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -163,6 +167,46 @@ Global
 		{9AB81609-F5DD-40A6-87B5-F3279D48514D}.Releases|x64.Build.0 = Releases|Any CPU
 		{9AB81609-F5DD-40A6-87B5-F3279D48514D}.Releases|x86.ActiveCfg = Releases|Any CPU
 		{9AB81609-F5DD-40A6-87B5-F3279D48514D}.Releases|x86.Build.0 = Releases|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Debug|ARM.Build.0 = Debug|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Debug|ARM64.Build.0 = Debug|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Debug|x64.Build.0 = Debug|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Debug|x86.Build.0 = Debug|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.DebugUpdates|Any CPU.ActiveCfg = Debug|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.DebugUpdates|Any CPU.Build.0 = Debug|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.DebugUpdates|ARM.ActiveCfg = Debug|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.DebugUpdates|ARM.Build.0 = Debug|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.DebugUpdates|ARM64.ActiveCfg = Debug|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.DebugUpdates|ARM64.Build.0 = Debug|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.DebugUpdates|x64.ActiveCfg = Debug|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.DebugUpdates|x64.Build.0 = Debug|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.DebugUpdates|x86.ActiveCfg = Debug|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.DebugUpdates|x86.Build.0 = Debug|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Release|ARM.ActiveCfg = Release|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Release|ARM.Build.0 = Release|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Release|ARM64.Build.0 = Release|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Release|x64.ActiveCfg = Release|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Release|x64.Build.0 = Release|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Release|x86.ActiveCfg = Release|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Release|x86.Build.0 = Release|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Releases|Any CPU.ActiveCfg = Release|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Releases|Any CPU.Build.0 = Release|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Releases|ARM.ActiveCfg = Release|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Releases|ARM.Build.0 = Release|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Releases|ARM64.ActiveCfg = Release|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Releases|ARM64.Build.0 = Release|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Releases|x64.ActiveCfg = Release|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Releases|x64.Build.0 = Release|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Releases|x86.ActiveCfg = Release|Any CPU
+		{3904DEC1-ED7A-49D8-BA4D-D88F3B419248}.Releases|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

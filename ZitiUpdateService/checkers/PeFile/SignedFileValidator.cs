@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
+using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
@@ -191,19 +192,20 @@ namespace ZitiUpdateService.Checkers.PeFile {
             foreach (X509Certificate2 cert in list) {
 	            Logger.Info("Checking certificate: [{0}] {1}", cert.Thumbprint, cert);
 	            if (IsCertificateOpenZitiVerifies(cert)) {
-		            //verify this certificate was issued from the known CA
-		            try {
-			            Logger.Info("Verifying trust of certificate: [{0}] {1}", cert, cert.Thumbprint);
-			            VerifyTrust(empty, expectedRootCa, cert, true).Wait();
-			            Logger.Info("Certificate [{0}] {1} was verified signed by [{2}] {3}", cert.Thumbprint, cert.Subject, expectedRootCa.Thumbprint, expectedRootCa.Subject);
-			            return; //yes!
-		            }
-		            catch {
-			            //empty on purpose. keep checking...
-		            }
-	            }
+                    //verify this certificate was issued from the known CA
+                    try {
+                        Logger.Info("Verifying trust of certificate: [{0}] {1}", cert, cert.Thumbprint);
+                        VerifyTrust(empty, expectedRootCa, cert, true).Wait();
+                        Logger.Info("Download verification complete. Certificate [{0}] {1} was verified signed by [{2}] {3}", cert.Thumbprint, cert.Subject, expectedRootCa.Thumbprint, expectedRootCa.Subject);
+                        return; //yes!
+                    } catch (Exception e) {
+                        Logger.Debug("Could not verify certificate. Exception encountered: {}", e);
+                    }
+	            } else {
+                    Logger.Debug("Certificate {} from {} is not one needed to be verified", cert.SubjectName, cert.Issuer);
+                }
             }
-
+            Logger.Debug("verify did not succeed. throwing exception");
             throw new CryptographicException("Executable not signed by an appropriate certificate");
         }
 

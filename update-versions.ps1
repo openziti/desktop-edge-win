@@ -16,8 +16,15 @@ function  NormalizeVersion([System.Version] $v) {
 
 echo "==================================== update-versions.ps1 begins ===================================="
 echo "Obtaining version information from .\version"
-$rawVersion=(Get-Content -Path .\version)
-$v=NormalizeVersion($rawVersion)
+#$rawVersion=(Get-Content -Path .\version)
+$installerVersion=(Get-Content -Path ${scriptPath}\..\version)
+if($null -ne $env:ZITI_DESKTOP_EDGE_VERSION) {
+    echo "ZITI_DESKTOP_EDGE_VERSION is set. Using that: ${env:ZITI_DESKTOP_EDGE_VERSION} instead of version found in file ${installerVersion}"
+    $installerVersion=$env:ZITI_DESKTOP_EDGE_VERSION
+    echo "Version set to: ${installerVersion}"
+}
+
+$v=NormalizeVersion($installerVersion)
 echo "          version: $v"
 echo ""
 

@@ -1,7 +1,7 @@
 name: Build Installer
 
 on:
-  push:
+  pull_request:
     branches: 
       - main
       - 'release-*'
@@ -26,12 +26,13 @@ jobs:
       OPENZITI_P12: ${{ secrets.OPENZITI_P12 }}
 
     steps:
-      - uses: actions/checkout@master
+      - name: Git Checkout
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false
       - uses: microsoft/setup-msbuild@v1
       - name: Set up Go 
         uses: actions/setup-go@v3
-      #- name: Install Ziti CI
-      #  uses: netfoundry/ziti-ci@v1
       - if: github.event_name == 'push'
         run: echo "GIT_BRANCH=$($env:GITHUB_REF.replace('refs/heads/', ''))" >> $env:GITHUB_ENV
       - if: github.event_name == 'pull_request'
@@ -47,17 +48,8 @@ jobs:
         run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
       - name: "Install Choco needs: advanced-installer wixtoolset ninja"
         run: choco install advanced-installer wixtoolset ninja --yes
-      - name: Build the ziti-edge-tunnel (for now, will download later)
-        run: ziti-edge-tunnel\build.bat quick
       - name: Setting up version env var
         run: echo "VERSION=$(cat .\version)" >> $env:GITHUB_ENV
-      - name: Upload service zip onto job
-        uses: actions/upload-artifact@v2
-        with:
-          name: ziti-edge-tunnel-win.zip-${{ env.VERSION }}
-          path: "ziti-edge-tunnel/ziti-edge-tunnel-win.zip"
-      - name: Setting up ZITI_EDGE_TUNNEL_BUILD env var
-        run: echo "ZITI_EDGE_TUNNEL_BUILD=.\ziti-edge-tunnel" >> $env:GITHUB_ENV
       - uses: nuget/setup-nuget@v1
         with:
           nuget-api-key: ${{ secrets.NuGetAPIKey }}
@@ -69,6 +61,12 @@ jobs:
         run: |
           $key=(Get-Content .\ADV_INST_KEY.key)
           .\Installer\reg.bat $key
+      - if: github.ref == 'refs/heads/release-next'
+        name: Install ziti-ci
+        uses: netfoundry/ziti-ci@v1
+      - if: github.ref == 'refs/heads/release-next'
+        name: Configure ziti-ci
+        run: C:\Users\runneradmin\go\bin\ziti-ci configure-git
       - name: Build UI and Assemble Installer
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -76,17 +74,17 @@ jobs:
           ziti_ci_gpg_key_id: ${{ secrets.ZITI_CI_GPG_KEY_ID }}
         run: powershell -File .\Installer\build.ps1
       - name: Upload installer onto job
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ZitiDesktopEdgeClient-${{ env.VERSION }}
           path: "Installer/Output/Ziti Desktop Edge Client-*"
+      - name: Upload update json to job
+        uses: actions/upload-artifact@v2
+        with:
+          name: ZitiDesktopEdgeClient-${{ env.VERSION }}
+          path: ${{ env.VERSION }}.json
       - name: Git Status
         run: git status
       - name: git diff
         run: git diff DesktopEdge/Properties/AssemblyInfo.cs ZitiDesktopEdge.Client/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip
-      - if: github.ref == 'refs/heads/release-next'
-        uses: EndBug/add-and-commit@v9
-        with:
-          add: 'DesktopEdge/Properties/AssemblyInfo.cs ZitiDesktopEdge.Client/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip'
-          default_author: github_actions
-          committer_name: ziti-ci
+

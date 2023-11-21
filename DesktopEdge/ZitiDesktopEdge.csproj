@@ -85,7 +85,7 @@
     <OutputPath>bin\Releases\</OutputPath>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>ziti.ico</ApplicationIcon>
+    <ApplicationIcon>ziti-v2.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DebugUpdates|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
@@ -476,6 +476,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Assets\Images\processing.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="ziti-v2.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

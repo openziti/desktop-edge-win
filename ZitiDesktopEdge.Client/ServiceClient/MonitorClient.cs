@@ -41,7 +41,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         public MonitorClient(string id) : base(id) {
-            
+
         }
 
         async protected override Task ConnectPipesAsync() {
@@ -62,8 +62,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         protected override void ProcessLine(string line) {
             var evt = serializer.Deserialize<MonitorServiceStatusEvent>(new JsonTextReader(new StringReader(line)));
 
-            switch(evt.Type)
-            {
+            switch (evt.Type) {
                 case "Notification":
                     var instEvt = serializer.Deserialize<InstallationNotificationEvent>(new JsonTextReader(new StringReader(line)));
                     InstallationNotificationEvent(instEvt);
@@ -182,7 +181,17 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
         async public Task<SvcResponse> SetAutomaticUpgradeDisabledAsync(bool disabled) {
-            ActionEvent action = new ActionEvent() { Op = "SetAutomaticUpgradeDisabled", Action = (disabled ? "true" : "false")};
+            ActionEvent action = new ActionEvent() { Op = "SetAutomaticUpgradeDisabled", Action = (disabled ? "true" : "false") };
+            try {
+                await sendAsync(action);
+                return await readAsync<SvcResponse>(ipcReader);
+            } catch (Exception ex) {
+                Logger.Error(ex, "Unexpected error");
+            }
+            return null;
+        }
+        async public Task<SvcResponse> SetAutomaticUpgradeURLAsync(string url) {
+            ActionEvent action = new ActionEvent() { Op = "SetAutomaticUpgradeURL", Action = (url) };
             try {
                 await sendAsync(action);
                 return await readAsync<SvcResponse>(ipcReader);
