@@ -47,16 +47,16 @@
     <ROW Property="ARPCOMMENTS" Value="This installer database contains the logic and data required to install [|ProductName]." ValueLocId="*"/>
     <ROW Property="ARPHELPTELEPHONE" Value="support@openziti.io"/>
     <ROW Property="ARPNOREPAIR" MultiBuildValue="DefaultBuild:1#AnyCPU_Release:1"/>
-    <ROW Property="ARPPRODUCTICON" Value="zitiv2new.exe" Type="8"/>
+    <ROW Property="ARPPRODUCTICON" Value="ziti.exe" Type="8"/>
     <ROW Property="ARPURLINFOABOUT" Value="https://openenziti.io"/>
-    <ROW Property="AppLogoIcon" Value="applogoicon" MultiBuildValue="DefaultBuild:zitiv2.ico#AnyCPU_Release:zitiv2.ico" Type="1" MsiKey="AppLogoIcon"/>
+    <ROW Property="AppLogoIcon" Value="applogoicon" MultiBuildValue="DefaultBuild:ziti.ico#AnyCPU_Release:ziti.ico" Type="1" MsiKey="AppLogoIcon"/>
     <ROW Property="CTRLS" Value="2"/>
     <ROW Property="Manufacturer" Value="NetFoundry, Inc."/>
     <ROW Property="MsiLogging" MultiBuildValue="AnyCPU_Release:vp"/>
-    <ROW Property="ProductCode" Value="1033:{57030390-2272-4074-97A6-6F9007DBF602} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{AA051589-666A-4144-B9D2-E95FB08DE3BF} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="Ziti Desktop Edge"/>
-    <ROW Property="ProductVersion" Value="2.2.1" Options="32"/>
+    <ROW Property="ProductVersion" Value="2.2.1.5" Options="32"/>
     <ROW Property="REBOOT" MultiBuildValue="AnyCPU_Release:Suppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{CB7E173A-663D-4A23-BB22-D1E8D885C2F3}"/>
@@ -109,7 +109,7 @@
     <ROW File="ZitiDesktopEdge.exe.config" Component_="App.config" FileName="ZITIDE~1.CON|ZitiDesktopEdge.exe.config" Attributes="0" SourcePath="&lt;AI_APPPATH_PERBUILD_ZitiDesktopEdge.exe.config&gt;" SelfReg="false"/>
     <ROW File="ZitiUpdateService.exe" Component_="ZitiUpdateService.exe" FileName="ZITIUP~1.EXE|ZitiUpdateService.exe" Attributes="0" SourcePath="&lt;AI_APPPATH_PERBUILD_ZitiUpdateService.exe&gt;" SelfReg="false" DigSign="true"/>
     <ROW File="ZitiUpdateService.exe.config" Component_="App.config" FileName="ZITIUP~1.CON|ZitiUpdateService.exe.config" Attributes="0" SourcePath="&lt;AI_APPPATH_PERBUILD_ZitiUpdateService.exe.config&gt;" SelfReg="false"/>
-    <ROW File="ziti.ico" Component_="App.config" FileName="ziti.ico" Attributes="0" SourcePath="ziti.ico" SelfReg="false"/>
+    <ROW File="ziti.ico" Component_="App.config" FileName="ziti.ico" Attributes="0" SourcePath="..\ziti.ico" SelfReg="false"/>
     <ROW File="Newtonsoft.Json.dll" Component_="Newtonsoft.Json.dll" FileName="NEWTON~1.DLL|Newtonsoft.Json.dll" Attributes="0" SourcePath="..\DesktopEdge\bin\Release\Newtonsoft.Json.dll" SelfReg="false"/>
     <ROW File="ZitiDesktopEdge.Client.dll" Component_="ZitiDesktopEdge.Client.dll" FileName="ZITIDE~1.DLL|ZitiDesktopEdge.Client.dll" Attributes="0" SourcePath="..\ZitiDesktopEdge.Client\bin\Release\ZitiDesktopEdge.Client.dll" SelfReg="false"/>
     <ROW File="NLog.dll" Component_="NLog.dll" FileName="NLog.dll" Attributes="0" SourcePath="..\ZitiUpdateService\bin\Release\NLog.dll" SelfReg="false"/>
@@ -149,8 +149,8 @@
     <ROW Action="AI_CleanPrePrereq" Condition="AI_BOOTSTRAPPER AND (NOT AI_PrereqsFulfilled)" Sequence="652"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BuildComponent">
-    <ROW BuildKey="AnyCPU_Release" BuildName="AnyCPU_Release" BuildOrder="2" BuildType="0" PackageFolder="Output" PackageFileName="Ziti Desktop Edge Client-[|ProductVersion]" Languages="en" InstallationType="4" CabsLocation="1" PackageType="1" FilesInsideExe="true" ExeIconPath="ziti-v2.ico" ExtractionFolder="[AppDataFolder][|Manufacturer]\[|ProductName] [|ProductVersion]\install" ExtUI="true" UseLargeSchema="true" ExeName="Ziti Desktop Edge Client-[|ProductVersion]"/>
-    <ROW BuildKey="DefaultBuild" BuildName="DefaultBuild" BuildOrder="1" BuildType="0" PackageFolder="Output" PackageFileName="Ziti Desktop Edge Client-[|ProductVersion]" Languages="en" InstallationType="4" CabsLocation="1" PackageType="1" FilesInsideExe="true" ExeIconPath="ziti-v2.ico" ExtractionFolder="[AppDataFolder][|Manufacturer]\[|ProductName] [|ProductVersion]\install" ExtUI="true" UseLargeSchema="true" ExeName="Ziti Desktop Edge Client-[|ProductVersion]" MsiPackageType="x64"/>
+    <ROW BuildKey="AnyCPU_Release" BuildName="AnyCPU_Release" BuildOrder="2" BuildType="0" PackageFolder="Output" PackageFileName="Ziti Desktop Edge Client-[|ProductVersion]" Languages="en" InstallationType="4" CabsLocation="1" PackageType="1" FilesInsideExe="true" ExeIconPath="ziti.ico" ExtractionFolder="[AppDataFolder][|Manufacturer]\[|ProductName] [|ProductVersion]\install" ExtUI="true" UseLargeSchema="true" ExeName="Ziti Desktop Edge Client-[|ProductVersion]"/>
+    <ROW BuildKey="DefaultBuild" BuildName="DefaultBuild" BuildOrder="1" BuildType="0" PackageFolder="Output" PackageFileName="Ziti Desktop Edge Client-[|ProductVersion]" Languages="en" InstallationType="4" CabsLocation="1" PackageType="1" FilesInsideExe="true" ExeIconPath="ziti.ico" ExtractionFolder="[AppDataFolder][|Manufacturer]\[|ProductName] [|ProductVersion]\install" ExtUI="true" UseLargeSchema="true" ExeName="Ziti Desktop Edge Client-[|ProductVersion]" MsiPackageType="x64"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.DictionaryComponent">
     <ROW Path="&lt;AI_DICTS&gt;ui.ail"/>
@@ -236,7 +236,7 @@
     <ROW Name="sys_min_hot.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;sys_min_hot.bmp"/>
     <ROW Name="sys_min_inactive.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;sys_min_inactive.bmp"/>
     <ROW Name="sys_min_normal.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;sys_min_normal.bmp"/>
-    <ROW Name="zitiv2.ico" SourcePath="ziti-v2.png"/>
+    <ROW Name="ziti.ico" SourcePath="../ziti.ico"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiControlEventComponent">
     <ROW Dialog_="WelcomeDlg" Control_="Next" Event="NewDialog" Argument="FolderDlg" Condition="AI_INSTALL" Ordering="1"/>
@@ -352,7 +352,7 @@
     <ROW Feature_="MainFeature" Component_="UpgradeSentinel.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiIconsComponent">
-    <ROW Name="zitiv2new.exe" SourcePath="ziti-v2.ico" Index="0"/>
+    <ROW Name="ziti.exe" SourcePath="../ziti.ico" Index="0"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiInstExSeqComponent">
     <ROW Action="AI_DOWNGRADE" Condition="AI_NEWERPRODUCTFOUND AND (UILevel &lt;&gt; 5)" Sequence="210"/>
@@ -446,15 +446,15 @@
     <ROW ServiceInstall="zitiedgetunnel.exe" Name="ziti" DisplayName="Ziti Desktop Edge Service" ServiceType="16" StartType="2" ErrorControl="32769" Component_="zitiedgetunnel.exe" Description="Access your networks secured by ziti"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiShortsComponent">
-    <ROW Shortcut="ZitiDesktopEdge" Directory_="StartupFolder" Name="ZITIDE~2|Ziti Desktop Edge" Component_="ZitiDesktopEdge.exe" Target="[#ZitiDesktopEdge.exe]" Description="Ziti Desktop Edge configuration interface" Hotkey="0" Icon_="zitiv2new.exe" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
-    <ROW Shortcut="ZitiDesktopEdge.exe" Directory_="SHORTCUTDIR" Name="ZITIDE~1|Ziti Desktop Edge" Component_="ZitiDesktopEdge.exe" Target="[#ZitiDesktopEdge.exe]" Description="Ziti Desktop Edge configuration interface" Hotkey="0" Icon_="zitiv2new.exe" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
-    <ROW Shortcut="ZitiDesktopEdge.exe_1" Directory_="DesktopFolder" Name="ZITIDE~1|Ziti Desktop Edge" Component_="ZitiDesktopEdge.exe" Target="[#ZitiDesktopEdge.exe]" Description="Ziti Desktop Edge configuration interface" Hotkey="0" Icon_="zitiv2new.exe" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
+    <ROW Shortcut="ZitiDesktopEdge" Directory_="StartupFolder" Name="ZITIDE~2|Ziti Desktop Edge" Component_="ZitiDesktopEdge.exe" Target="[#ZitiDesktopEdge.exe]" Description="Ziti Desktop Edge configuration interface" Hotkey="0" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
+    <ROW Shortcut="ZitiDesktopEdge.exe" Directory_="SHORTCUTDIR" Name="ZITIDE~1|Ziti Desktop Edge" Component_="ZitiDesktopEdge.exe" Target="[#ZitiDesktopEdge.exe]" Description="Ziti Desktop Edge configuration interface" Hotkey="0" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
+    <ROW Shortcut="ZitiDesktopEdge.exe_1" Directory_="DesktopFolder" Name="ZITIDE~1|Ziti Desktop Edge" Component_="ZitiDesktopEdge.exe" Target="[#ZitiDesktopEdge.exe]" Description="Ziti Desktop Edge configuration interface" Hotkey="0" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiThemeComponent">
     <ATTRIBUTE name="UsedTheme" value="azure"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiUpgradeComponent">
-    <ROW UpgradeCode="[|UpgradeCode]" VersionMin="0.0.1" VersionMax="[|ProductVersion]" Attributes="257" ActionProperty="OLDPRODUCTS"/>
+    <ROW UpgradeCode="[|UpgradeCode]" VersionMin="0.0.1" VersionMax="[|ProductVersion]" Attributes="769" ActionProperty="OLDPRODUCTS"/>
     <ROW UpgradeCode="[|UpgradeCode]" VersionMin="[|ProductVersion]" Attributes="2" ActionProperty="AI_NEWERPRODUCTFOUND"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.PreReqComponent">

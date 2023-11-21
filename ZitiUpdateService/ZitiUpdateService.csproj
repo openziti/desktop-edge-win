@@ -51,9 +51,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>ziti-v2-new.ico</ApplicationIcon>
-  </PropertyGroup>
-  <PropertyGroup>
     <ManifestCertificateThumbprint>189AAD422A106DC81E8E79C7E0D2118CEB2E6321</ManifestCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup>
@@ -83,6 +80,9 @@
     <PlatformTarget>x64</PlatformTarget>
     <LangVersion>7.3</LangVersion>
     <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>..\ziti.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="DnsClient, Version=1.7.0.0, Culture=neutral, PublicKeyToken=4574bb5573c51424, processorArchitecture=MSIL">
@@ -174,7 +174,6 @@
     <Content Include="App.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Resource Include="ziti.ico" />
     <None Include="UpdateJsonExample.json" />
     <None Include="ZitiUpdateService-log.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -193,6 +192,7 @@
     <EmbeddedResource Include="checkers\PeFile\openziti.rootCA.rsa.pem.txt" />
     <Content Include="ziti-v2-new.ico" />
     <Content Include="ziti-white.ico" />
+    <Content Include="..\ziti.ico" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.8">
