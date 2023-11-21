@@ -35,7 +35,7 @@ $scriptPath = Split-Path $invocation.MyCommand.Path
 $buildPath = "${scriptPath}\build"
 
 echo "Cleaning previous build folder if it exists"
-rm "${buildPath}" -r -fo -ErrorAction Ignore
+Remove-Item "${buildPath}" -r -ErrorAction Ignore
 mkdir "${buildPath}" -ErrorAction Ignore > $null
     
 downloadWintunZip
