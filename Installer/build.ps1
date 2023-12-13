@@ -35,23 +35,16 @@ $scriptPath = Split-Path $invocation.MyCommand.Path
 $buildPath = "${scriptPath}\build"
 
 echo "Getting latest UI Build"
-git clone https://github.com/openziti/desktop-edge-ui
-cd ./desktop-edge-ui/ziti-edge-ui
-echo "Install Node Dependencies"
-if (test-path 'node_modules') {
-    echo "Modues Exists, Removing"
-    Remove-Item node_modules -Recurse -Force -Confirm:$false
+if (test-path 'ziti-edge-ui') {
+    echo "UI Exists, Removing"
+    Remove-Item ziti-edge-ui -Recurse -Force -Confirm:$false
 }
-if (test-path 'package-lock.json') {
-    echo "Package Lock Exists, Removing"
-    Remove-Item package-lock.json -Force -Confirm:$false
+if (test-path 'ZitiUI.zip') {
+    echo "UI Exists, Removing"
+    Remove-Item ZitiUI.zip -Recurse -Force -Confirm:$false
 }
-npm cache clean --force
-npm install
-npm i -g electron-packager
-echo "Build Electron Packageg"
-electron-packager ./ Ziti-Desktop-Edge --overwrite --asar --electron-version=26.2.4 --platform=win32 --arch=x64 --prune=true  --out=../release-builds --icon=./app.ico
-cd ../../
+Invoke-WebRequest "https://github.com/openziti/desktop-edge-ui/releases/latest/download/ZitiUI.zip" -OutFile "ZitiUI.zip"
+Expand-Archive -Path "ZitiUI.zip" -DestinationPath "ziti-edge-ui"
 
 echo "Cleaning previous build folder if it exists"
 Remove-Item "${buildPath}" -r -ErrorAction Ignore
