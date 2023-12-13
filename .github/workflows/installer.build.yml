@@ -48,8 +48,10 @@ jobs:
         run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
       - name: "Install Choco needs: advanced-installer wixtoolset ninja"
         run: choco install advanced-installer wixtoolset ninja --yes
-      - name: Setting up version env var
+      - name: Setting up VERSION env var
         run: echo "VERSION=$(cat .\version)" >> $env:GITHUB_ENV
+      - name: Setting up ADV_INST_VERSION env var
+        run: echo "ADV_INST_VERSION=$(cat .\adv-inst-version)" >> $env:GITHUB_ENV
       - uses: nuget/setup-nuget@v1
         with:
           nuget-api-key: ${{ secrets.NuGetAPIKey }}
@@ -60,7 +62,7 @@ jobs:
         name: Register Advanced Installer
         run: |
           $key=(Get-Content .\ADV_INST_KEY.key)
-          .\Installer\reg.bat $key
+          .\Installer\reg.ps1 $key
       - if: github.ref == 'refs/heads/release-next'
         name: Install ziti-ci
         uses: netfoundry/ziti-ci@v1

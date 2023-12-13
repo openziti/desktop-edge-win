@@ -8,37 +8,18 @@ function verifyFile($path) {
     }
 }
 
-function downloadWintunZip() {
-    if (Test-Path -Path "${scriptPath}\wintun.zip") {
-        echo "using wintun.zip found at ${scriptPath}\wintun.zip"
-    } else {
-        echo "wintun.zip not found. attempting to download."       
-        if($null -eq $env:WINTUN_DL_URL) {
-            echo "========================== fetching wintun.zip =========================="
-            $WINTUN_DL_URL="https://www.wintun.net/builds/wintun-0.13.zip"
-            echo "Beginning to download wintun from ${WINTUN_DL_URL}"
-            echo ""
-            $ProgressPreference = 'SilentlyContinue'
-            Invoke-WebRequest $WINTUN_DL_URL -OutFile "${scriptPath}\wintun.zip"
-            verifyFile("${scriptPath}\wintun.zip")
-            echo "Expanding downloaded file..."
-        } else {
-            echo "WINTUN_DL_URL WAS SET"
-        }
-    }
-}
-
 echo "========================== build.ps1 begins =========================="
 nuget restore .\ZitiDesktopEdge.sln
 $invocation = (Get-Variable MyInvocation).Value
 $scriptPath = Split-Path $invocation.MyCommand.Path
 $buildPath = "${scriptPath}\build"
+$ADV_INST_VERSION = Get-Content -Path "${scriptPath}\..\adv-inst-version"
+$ZITI_EDGE_TUNNEL_VERSION="0.22.12"
 
 echo "Cleaning previous build folder if it exists"
 Remove-Item "${buildPath}" -r -ErrorAction Ignore
 mkdir "${buildPath}" -ErrorAction Ignore > $null
-    
-downloadWintunZip
+
 
 Expand-Archive -Path "${scriptPath}\wintun.zip" -Force -DestinationPath "${buildPath}\service"
 echo "expanded wintun.zip file to ${buildPath}\service"
@@ -91,7 +72,7 @@ msbuild ZitiDesktopEdge.sln /property:Configuration=Release
 
 Pop-Location
 
-$ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer 21.2.2"
+$ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer ${env:ADV_INST_VERSION}"
 $ADVINST = "${ADV_INST_HOME}\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
 
