@@ -6,6 +6,7 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D66B1C6A-ADFE-437E-B037-C4C849A6CA97}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		adv-inst-version = adv-inst-version
 		build-test-release.ps1 = build-test-release.ps1
 		Installer\build.ps1 = Installer\build.ps1
 		.github\workflows\installer.build.yml = .github\workflows\installer.build.yml
