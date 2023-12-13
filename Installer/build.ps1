@@ -34,6 +34,7 @@ $invocation = (Get-Variable MyInvocation).Value
 $scriptPath = Split-Path $invocation.MyCommand.Path
 $buildPath = "${scriptPath}\build"
 
+cd ./Installer
 echo "Getting latest UI Build"
 if (test-path 'ziti-edge-ui') {
     echo "UI Exists, Removing"
@@ -45,6 +46,7 @@ if (test-path 'ZitiUI.zip') {
 }
 Invoke-WebRequest "https://github.com/openziti/desktop-edge-ui/releases/latest/download/ZitiUI.zip" -OutFile "ZitiUI.zip"
 Expand-Archive -Path "ZitiUI.zip" -DestinationPath "ziti-edge-ui"
+cd ..
 
 echo "Cleaning previous build folder if it exists"
 Remove-Item "${buildPath}" -r -ErrorAction Ignore
@@ -151,3 +153,15 @@ $defaultStream = "beta"
 $defaultPublishedAt = Get-Date
 $outputPath = "${installerVersion}.json"
 & .\Installer\output-build-json.ps1 -version $installerVersion -url $defaultRootUrl -stream $defaultStream -published_at $defaultPublishedAt -outputPath $outputPath
+
+echo "Clean Up Files"
+cd ./Installer
+if (test-path 'ziti-edge-ui') {
+    echo "UI Exists, Removing"
+    Remove-Item ziti-edge-ui -Recurse -Force -Confirm:$false
+}
+if (test-path 'ZitiUI.zip') {
+    echo "UI Exists, Removing"
+    Remove-Item ZitiUI.zip -Recurse -Force -Confirm:$false
+}
+cd ..
