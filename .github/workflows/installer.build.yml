@@ -62,7 +62,7 @@ jobs:
         name: Register Advanced Installer
         run: |
           $key=(Get-Content .\ADV_INST_KEY.key)
-          .\Installer\reg.ps1 $key
+          .\Installer\reg.ps1 --key="$key"
       - if: github.ref == 'refs/heads/release-next'
         name: Install ziti-ci
         uses: netfoundry/ziti-ci@v1
