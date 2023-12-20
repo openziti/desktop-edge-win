@@ -40,7 +40,6 @@ jobs:
       - name: Setup secrets
         run: |
           echo "${env:SIGNING_CERT}" > WinSign.b64
-          echo "${env:ADV_INST_KEY}" > ADV_INST_KEY.key
           echo "${env:OPENZITI_P12}" > OPENZITI_P12.b64
           C:\Windows\System32\certutil.exe -decode WinSign.b64 Installer/WinSign.p12
           C:\Windows\System32\certutil.exe -decode OPENZITI_P12.b64 Installer/openziti.p12
@@ -61,8 +60,7 @@ jobs:
       - shell: pwsh
         name: Register Advanced Installer
         run: |
-          $key=(Get-Content .\ADV_INST_KEY.key)
-          .\Installer\reg.ps1 --key="$key"
+          .\Installer\reg.ps1 --key="${env:ADV_INST_KEY}"
       - if: github.ref == 'refs/heads/release-next'
         name: Install ziti-ci
         uses: netfoundry/ziti-ci@v1
