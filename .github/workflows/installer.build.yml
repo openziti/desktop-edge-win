@@ -60,7 +60,7 @@ jobs:
       - shell: pwsh
         name: Register Advanced Installer
         run: |
-          .\Installer\reg.ps1 --key="${env:ADV_INST_KEY}"
+          .\Installer\reg.ps1 -key="${env:ADV_INST_KEY}"
       - if: github.ref == 'refs/heads/release-next'
         name: Install ziti-ci
         uses: netfoundry/ziti-ci@v1
