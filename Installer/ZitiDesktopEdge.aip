@@ -84,8 +84,8 @@
     <ROW Component="AI_ExePath" ComponentId="{F9B15650-F37D-424A-B159-B54B9F36EC2C}" Directory_="APPDIR" Attributes="260" KeyPath="AI_ExePath"/>
     <ROW Component="APPDIR" ComponentId="{B3881A25-6890-4920-9F69-CACA0C9ABA63}" Directory_="APPDIR" Attributes="0"/>
     <ROW Component="App.config" ComponentId="{27FAD46C-8379-4680-8506-4BCBA5A012E8}" Directory_="APPDIR" Attributes="0" KeyPath="ZitiDesktopEdge.exe.config" Type="0"/>
+    <ROW Component="C4FE6FD5B7C4D07B3A313E754A9A6A8" ComponentId="{91D2A987-596A-4913-896A-22BF3F2DEC14}" Directory_="APPDIR" Attributes="260" KeyPath="C4FE6FD5B7C4D07B3A313E754A9A6A8" Options="2"/>
     <ROW Component="DnsClient.dll" ComponentId="{8C789D0B-0EB7-4172-ADB8-11D52C22488C}" Directory_="APPDIR" Attributes="0" KeyPath="DnsClient.dll"/>
-    <ROW Component="MICROSOFTVISUALC" ComponentId="{3259B478-1B9C-4FC2-8508-D161DC9C1128}" Directory_="APPDIR" Attributes="260" KeyPath="MICROSOFTVISUALC" Options="2"/>
     <ROW Component="Microsoft.Toolkit.Uwp.Notifications.dll" ComponentId="{EA48696A-A312-46C2-B720-6E4AB15406CA}" Directory_="APPDIR" Attributes="0" KeyPath="Microsoft.Toolkit.Uwp.Notifications.dll"/>
     <ROW Component="NLog.dll" ComponentId="{384D38B5-A4A0-4BC6-886A-82153E2687ED}" Directory_="APPDIR" Attributes="0" KeyPath="NLog.dll"/>
     <ROW Component="Newtonsoft.Json.dll" ComponentId="{5D7B59CE-A1B5-4EE9-842E-0206408F8674}" Directory_="APPDIR" Attributes="0" KeyPath="Newtonsoft.Json.dll"/>
@@ -102,7 +102,7 @@
     <ROW Component="zitiedgetunnel.exe" ComponentId="{53505232-48E9-44C1-B2FB-77472C1C4732}" Directory_="APPDIR" Attributes="256" KeyPath="zitiedgetunnel.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiFeatsComponent">
-    <ROW Feature="MICROSOFTVISUALC" Title="Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.38.33130" Description="Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.38.33130" Display="3" Level="1" Attributes="0"/>
+    <ROW Feature="C4FE6FD5B7C4D07B3A313E754A9A6A8" Title="Visual C++ Redistributable for Visual Studio 2015-2022 x64" Description="Visual C++ Redistributable for Visual Studio 2015-2022 x64" Display="3" Level="1" Attributes="0"/>
     <ROW Feature="MainFeature" Title="MainFeature" Description="Description" Display="1" Level="1" Directory_="APPDIR" Attributes="0"/>
     <ATTRIBUTE name="CurrentFeature" value="MainFeature"/>
   </COMPONENT>
@@ -138,7 +138,7 @@
     <ROW Name="AI_APPPATH_PERBUILD_ZitiUpdateService.exe.config" Path="[|AI_PROPPATH_PERBUILD_ZitiUpdateService.exe.config]" Type="2" Content="0"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BootstrOptComponent">
-    <ROW BootstrOptKey="GlobalOptions" DownloadFolder="[AppDataFolder][|Manufacturer]\[|ProductName]\prerequisites" Options="2"/>
+    <ROW BootstrOptKey="GlobalOptions" GeneralOptions="o" DownloadFolder="[AppDataFolder][|Manufacturer]\[|ProductName]\prerequisites" Options="2"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BootstrapperUISequenceComponent">
     <ROW Action="AI_AppSearchEx" Condition="AI_BOOTSTRAPPER" Sequence="252"/>
@@ -351,7 +351,7 @@
     <ROW Feature_="MainFeature" Component_="Microsoft.Toolkit.Uwp.Notifications.dll"/>
     <ROW Feature_="MainFeature" Component_="zitiedgetunnel.exe"/>
     <ROW Feature_="MainFeature" Component_="UpgradeSentinel.exe"/>
-    <ROW Feature_="MICROSOFTVISUALC" Component_="MICROSOFTVISUALC"/>
+    <ROW Feature_="C4FE6FD5B7C4D07B3A313E754A9A6A8" Component_="C4FE6FD5B7C4D07B3A313E754A9A6A8"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiIconsComponent">
     <ROW Name="ziti.exe" SourcePath="..\ziti.ico" Index="0"/>
@@ -419,9 +419,9 @@
   <COMPONENT cid="caphyon.advinst.msicomp.MsiRegsComponent">
     <ROW Registry="AI_ExePath" Root="-1" Key="Software\Caphyon\Advanced Installer\LZMA\[ProductCode]\[ProductVersion]" Name="AI_ExePath" Value="[AI_SETUPEXEPATH]" Component_="AI_ExePath"/>
     <ROW Registry="AdvancedInstaller" Root="-1" Key="Software\Caphyon\Advanced Installer" Name="\"/>
+    <ROW Registry="C4FE6FD5B7C4D07B3A313E754A9A6A8" Root="-1" Key="Software\Caphyon\Advanced Installer\Prereqs\[ProductCode]\[ProductVersion]" Name="C4FE6FD5B7C4D07B3A313E754A9A6A8" Value="1" Component_="C4FE6FD5B7C4D07B3A313E754A9A6A8"/>
     <ROW Registry="Caphyon" Root="-1" Key="Software\Caphyon" Name="\"/>
     <ROW Registry="LZMA" Root="-1" Key="Software\Caphyon\Advanced Installer\LZMA" Name="\"/>
-    <ROW Registry="MICROSOFTVISUALC" Root="-1" Key="Software\Caphyon\Advanced Installer\Prereqs\[ProductCode]\[ProductVersion]" Name="MICROSOFTVISUALC" Value="1" Component_="MICROSOFTVISUALC"/>
     <ROW Registry="Manufacturer" Root="-1" Key="Software\[Manufacturer]" Name="\"/>
     <ROW Registry="Path" Root="-1" Key="Software\[Manufacturer]\[ProductName]" Name="Path" Value="[APPDIR]" Component_="ProductInformation"/>
     <ROW Registry="Prereqs" Root="-1" Key="Software\Caphyon\Advanced Installer\Prereqs" Name="\"/>
@@ -462,11 +462,11 @@
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.PreReqComponent">
     <ROW PrereqKey="BF9259651485FB4F316A40CB01E7B" DisplayName=".NET Framework 4.8 (web installer)" SetupFileUrl="https://download.visualstudio.microsoft.com/download/pr/7afca223-55d2-470a-8edc-6a1739ae3252/c9b8749dd99fc0d4453b2a3e4c37ba16/ndp48-web.exe" Location="1" ExactSize="1486376" WinNTVersions="Windows 7 RTM x86, Windows 8 x86, Windows 10 version 1507 x86, Windows 10 version 1511 x86, Windows 10 version 1903 x86, Windows 10 version 1909 x86, Windows 10 version 2004 x86" WinNT64Versions="Windows 7 RTM x64, Windows Server 2008 R2 RTM x64, Windows 8 x64, Windows 10 version 1507 x64, Windows 10 version 1511 x64, Windows 10 version 1903 x64, Windows 10 version 1909 x64, Windows 10 version 2004 x64" Operator="1" NoUiComLine="/q /norestart" Options="xkqQ" MD5="86482f2f623a52b8344b00968adc7b43" TargetName=".NET Framework 4.8"/>
-    <ROW PrereqKey="MICROSOFTVISUALC" DisplayName="Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.38.33130" VersionMin="14.38.33130.0" SetupFileUrl="build\VC_redist.x64.exe" Location="0" ExactSize="0" Operator="1" Options="fi" TargetName="Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.38.33130\VC_redist.x64.exe" Feature="MICROSOFTVISUALC"/>
-    <ATTRIBUTE name="PrereqsOrder" value="MICROSOFTVISUALC BF9259651485FB4F316A40CB01E7B"/>
+    <ROW PrereqKey="C4FE6FD5B7C4D07B3A313E754A9A6A8" DisplayName="Visual C++ Redistributable for Visual Studio 2015-2022 x64" VersionMin="14.30" SetupFileUrl="Prerequisites\Visual C++ Redistributable for Visual Studio 2015-2022\VC_redist.x64.exe" Location="0" ExactSize="0" WinNTVersions="Windows 9x/ME/NT/2000/XP/Vista/Windows 7/Windows 8 x86/Windows 8.1 x86/Windows 10 x86" WinNT64Versions="Windows 7 RTM x64, Windows Server 2008 R2 RTM x64" Operator="1" NoUiComLine="/q /norestart" Options="xf" TargetName="Visual C++ Redistributable for Visual Studio 2015-2022\VC_redist.x64.exe" Feature="C4FE6FD5B7C4D07B3A313E754A9A6A8"/>
+    <ATTRIBUTE name="PrereqsOrder" value="C4FE6FD5B7C4D07B3A313E754A9A6A8 BF9259651485FB4F316A40CB01E7B"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.PreReqSearchComponent">
     <ROW SearchKey="BF9259651485FB4F316A40CB01E7BReleas" Prereq="BF9259651485FB4F316A40CB01E7B" SearchType="9" SearchString="HKLM\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full\Release" RefContent="G528048" Order="1" Property="PreReqSearch_BF9259651485FB4F316A40"/>
-    <ROW SearchKey="SystemFolderfile.dll" Prereq="MICROSOFTVISUALC" SearchType="0" SearchString="[SystemFolder]file.dll" VerMin="1.0" Order="1" Property="PreReqSearch"/>
+    <ROW SearchKey="C4FE6FD5B7C4D07B3A313E754A9A6A8Vers" Prereq="C4FE6FD5B7C4D07B3A313E754A9A6A8" SearchType="2" SearchString="HKLM\SOFTWARE\Microsoft\DevDiv\VC\Servicing\14.0\RuntimeMinimum\Version" VerMin="14.30.30704" Order="1" Property="PreReqSearch_C4FE6FD5B7C4D07B3A313E"/>
   </COMPONENT>
 </DOCUMENT>
