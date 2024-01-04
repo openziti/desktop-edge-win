@@ -51,11 +51,9 @@ jobs:
       - name: Setting up ADV_INST_VERSION env var from adv-inst-version
         run: echo "ADV_INST_VERSION=$(cat .\adv-inst-version)" >> $env:GITHUB_ENV
       - name: "Install Choco needs: advanced-installer "
-        run: choco install advanced-installer --version=$env:GITHUB_ENV --yes
+        run: choco install advanced-installer --version="$(cat .\adv-inst-version)" --yes
       - name: Setting up VERSION env var
         run: echo "VERSION=$(cat .\version)" >> $env:GITHUB_ENV
-      - name: Setting up ADV_INST_VERSION env var
-        run: echo "ADV_INST_VERSION=$(cat .\adv-inst-version)" >> $env:GITHUB_ENV
       - uses: nuget/setup-nuget@v1
         with:
           nuget-api-key: ${{ secrets.NuGetAPIKey }}
