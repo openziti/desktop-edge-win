@@ -45,8 +45,10 @@ jobs:
           C:\Windows\System32\certutil.exe -decode OPENZITI_P12.b64 Installer/openziti.p12
       - name: Trying to run choco install.
         run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-      - name: "Install Choco needs: advanced-installer wixtoolset ninja"
-        run: choco install advanced-installer wixtoolset ninja --yes
+      - name: "Install Choco needs: wixtoolset ninja"
+        run: choco install wixtoolset ninja --yes
+      - name: "Install Choco needs: advanced-installer "
+        run: choco install advanced-installer --version=20.4.1 --yes
       - name: Setting up VERSION env var
         run: echo "VERSION=$(cat .\version)" >> $env:GITHUB_ENV
       - name: Setting up ADV_INST_VERSION env var
