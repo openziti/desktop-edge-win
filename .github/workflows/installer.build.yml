@@ -6,7 +6,6 @@ on:
       - main
       - 'release-*'
       - 'beta-release-*'
-      - 'try-using-specific-adv-inst'
 
 env:
   BUILD_CONFIG: "Release"
