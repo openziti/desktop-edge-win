@@ -24,8 +24,6 @@ Remove-Item "${buildPath}" -r -ErrorAction Ignore
 mkdir "${buildPath}" -ErrorAction Ignore > $null
 
 $global:ProgressPreference = "SilentlyContinue"
-Expand-Archive -Path "${scriptPath}\wintun.zip" -Force -DestinationPath "${buildPath}\service"
-echo "expanded wintun.zip file to ${buildPath}\service"
 
 $zet_binary="${buildPath}"
 if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
