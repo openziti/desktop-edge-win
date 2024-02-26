@@ -1,44 +1,17 @@
-# Release 2.1.19
+# Release 2.1.17
 
 ## What's New
 * none
 
 ## Other changes:
-* Removed C++ redistributable prerequisites from installer
+* none
 
 ## Bugs fixed:
 * none
 
 ## Dependency Updates
+* ziti-edge-tunnel updated to v0.22.23/c sdk v0.36.6
 * System.Security.Cryptography.Pkcs from 6.0.1 to 6.0.3
-
-# Release 2.1.18
-
-## What's New
-* none
-
-## Other changes:
-* none
-
-## Bugs fixed:
-* none
-
-## Dependency Updates
-* ziti-edge-tunnel updated to v0.22.11/c sdk v0.35.2
-
-# Release 2.1.17 (pre-release)
-
-## What's New
-* none
-
-## Other changes:
-* none
-
-## Bugs fixed:
-* none
-
-## Dependency Updates
-* ziti-edge-tunnel updated to v0.22.1/c sdk v0.33.2
 
 # Release 2.1.16
 
