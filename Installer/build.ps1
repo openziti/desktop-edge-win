@@ -14,7 +14,6 @@ $scriptPath = Split-Path $invocation.MyCommand.Path
 $checkoutRoot = (Resolve-Path '${scriptPath}\..')
 $buildPath = "${scriptPath}\build"
 $ADV_INST_VERSION = Get-Content -Path "${checkoutRoot}\adv-inst-version"
-$ZITI_EDGE_TUNNEL_VERSION="0.22.23"
 $ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer ${ADV_INST_VERSION}"
 $ADVINST = "${ADV_INST_HOME}\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
@@ -25,14 +24,14 @@ mkdir "${buildPath}" -ErrorAction Ignore > $null
 
 $global:ProgressPreference = "SilentlyContinue"
 
-$zet_binary="${buildPath}"
 if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
-    echo "========================== fetching ziti-edge-tunnel =========================="
     if($null -eq $env:ZITI_EDGE_TUNNEL_VERSION) {
-        $zet_dl="https://github.com/openziti/ziti-tunnel-sdk-c/releases/latest/download/ziti-edge-tunnel-Windows_x86_64.zip"
+        $ZITI_EDGE_TUNNEL_VERSION="0.22.23"
     } else {
-        $zet_dl="https://github.com/openziti/ziti-tunnel-sdk-c/releases/download/${env:ZITI_EDGE_TUNNEL_VERSION}/ziti-edge-tunnel-Windows_x86_64.zip"
+        $ZITI_EDGE_TUNNEL_VERSION=$env:ZITI_EDGE_TUNNEL_VERSION
     }
+    echo "========================== fetching ziti-edge-tunnel =========================="
+    $zet_dl="https://github.com/openziti/ziti-tunnel-sdk-c/releases/download/${ZITI_EDGE_TUNNEL_VERSION}/ziti-edge-tunnel-Windows_x86_64.zip"
     echo "Beginning to download ziti-edge-tunnel from ${zet_dl}"
     echo ""
     $response = Invoke-WebRequest $zet_dl -OutFile "${scriptPath}\zet.zip"
