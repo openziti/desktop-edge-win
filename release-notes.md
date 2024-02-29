@@ -10,7 +10,7 @@
 * none
 
 ## Dependency Updates
-* ziti-edge-tunnel updated to v0.22.23/c sdk v0.36.6
+* ziti-edge-tunnel updated to v0.22.24/c sdk v0.36.7 / tlsuv v0.28.3
 * System.Security.Cryptography.Pkcs from 6.0.1 to 6.0.3
 
 # Release 2.1.16
