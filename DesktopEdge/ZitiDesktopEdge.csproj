@@ -84,9 +84,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Releases|AnyCPU'">
     <OutputPath>bin\Releases\</OutputPath>
   </PropertyGroup>
-  <PropertyGroup>
-    <ApplicationIcon>ziti-v2.ico</ApplicationIcon>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DebugUpdates|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\DebugUpdates\</OutputPath>
@@ -96,6 +93,9 @@
     <LangVersion>7.3</LangVersion>
     <ErrorReport>prompt</ErrorReport>
     <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>..\ziti.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="PresentationFramework.Aero2" />
@@ -366,9 +366,6 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="ziti.ico" />
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="Assets\Images\server.png" />
   </ItemGroup>
   <ItemGroup>
@@ -479,6 +476,7 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="ziti-v2.ico" />
+    <Content Include="..\ziti.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
