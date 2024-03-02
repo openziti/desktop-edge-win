@@ -4,9 +4,11 @@
 
 The automatic update process has changed! Prior to version 2.2.x, automatic upgrades were accomplished exclusively
 through the `ziti-monitor` service making a REST request to the GitHub API url. With 2.2.x this process will change.
-Now, users are able to define the endpoint which they want to pull releases from. 
+Now, users are able to define the endpoint which they want to pull releases from. One can always download and install
+directly from the /releases page, however the release marked "latest" by GitHub will no longer be deployed to ZDEW
+endpoints automatically.
 
-The OpenZiti project will maintain two release streams:
+Instead, the OpenZiti project will maintain two release streams:
 * stable: https://get.openziti.io/zdew/stable.json
 * latest: https://get.openziti.io/zdew/latest.json
 
@@ -14,8 +16,8 @@ The latest stream will always be the very latest build which consider a candidat
 This branch is not to be considered "experimental", it is simply the latest candidate branch we have available. If 
 there are other streams that are needed, we may publish other streams.
 
-After an undisclosed period of time and there are no critical bugs, the build will be marked as the latest "stable" 
-release.
+After a period of demonstrated stability and no critical bugs, the build will be promoted to the "stable" release 
+stream.
 
 A frequent question is around the administration of the URL. At this time, the URL is in control of the end-user 
 entirely and not able to be centrally managed by the overlay network itself. It is the user's responsibility to update
@@ -41,7 +43,7 @@ If a different URL is supplied, the URL must be available to the client or the s
 As has always been the case, the executable supplied via the update URL, MUST be a binary signed and produced by 
 OpenZiti. Random binaries/executables will are not acceptable. Only binaries signed by the expected OpenZiti signing 
 certificate will be considered as genuine, and able to trigger the automatic update. These downloads can be obtained 
-from GitHub via the /releases URL, produced by the OpenZiti ZDEW build infrastructure
+from GitHub via the /releases URL produced by the OpenZiti ZDEW build infrastructure
 
 ## Other changes:
 * none
