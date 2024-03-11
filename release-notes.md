@@ -1,7 +1,49 @@
 # Release 2.2.2
 
 ## What's New
-* none
+
+The automatic update process has changed! Prior to version 2.2.x, automatic upgrades were accomplished exclusively
+through the `ziti-monitor` service making a REST request to the GitHub API url. With 2.2.x this process will change.
+Now, users are able to define the endpoint which they want to pull releases from. One can always download and install
+directly from the /releases page, however the release marked "latest" by GitHub will no longer be deployed to ZDEW
+endpoints automatically.
+
+Instead, the OpenZiti project will maintain two release streams:
+* stable: https://get.openziti.io/zdew/stable.json
+* latest: https://get.openziti.io/zdew/latest.json
+
+The latest stream will always be the very latest build which consider a candidate to be moved to the stable branch. 
+This branch is not to be considered "experimental", it is simply the latest candidate branch we have available. If 
+there are other streams that are needed, we may publish other streams.
+
+After a period of demonstrated stability and no critical bugs, the build will be promoted to the "stable" release 
+stream.
+
+A frequent question is around the administration of the URL. At this time, the URL is in control of the end-user 
+entirely and not able to be centrally managed by the overlay network itself. It is the user's responsibility to update
+the URL accordingly. The URL is controlled by the ZDEW UI, or by updating a file in the SYSTEM profile, by default 
+located at: `%SystemRoot%\System32\config\systemprofile\AppData\Roaming\NetFoundry\ZitiUpdateService\settings.json`
+
+Example contents of the file are as follows. Modify this file as needed and restart the `ziti-monitor` service for the 
+changes to be effective, or use the UI to modify the file.
+```
+{
+"AutomaticUpdatesDisabled": false,
+"AutomaticUpdateURL": "https://get.openziti.io/zdew/latest.json"
+}
+```
+
+The UI has been updated to contain a text box users can use to change the update url. If needed, users can reset the 
+update URL to the default (`https://get.openziti.io/zdew/stable.json`) by clicking the 'reset' button on that form.
+
+Using the UI will cause a check to be performed which will validate the supplied URL. An incorrect URL will result 
+in updates not being found/applied. 
+
+If a different URL is supplied, the URL must be available to the client or the save/commit will not succeed
+As has always been the case, the executable supplied via the update URL, MUST be a binary signed and produced by 
+OpenZiti. Random binaries/executables will are not acceptable. Only binaries signed by the expected OpenZiti signing 
+certificate will be considered as genuine, and able to trigger the automatic update. These downloads can be obtained 
+from GitHub via the /releases URL produced by the OpenZiti ZDEW build infrastructure
 
 ## Other changes:
 * none
@@ -10,7 +52,7 @@
 * none
 
 ## Dependency Updates
-* ziti-edge-tunnel updated to v0.22.24/c sdk v0.36.7 / tlsuv v0.28.3
+* ziti-edge-tunnel updated to v0.22.25/c sdk v0.36.7 / tlsuv v0.28.3
 * System.Security.Cryptography.Pkcs from 6.0.1 to 6.0.3
 
 # Release 2.1.16
