@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<DOCUMENT Type="Advanced Installer" CreateVersion="17.4.1" version="21.5.1" Modules="professional" RootPath="." Language="en" Id="{7315FE7B-0418-4F38-8B12-6C0594276D30}">
+<DOCUMENT Type="Advanced Installer" CreateVersion="17.4.1" version="21.2.2" Modules="professional" RootPath="." Language="en" Id="{7315FE7B-0418-4F38-8B12-6C0594276D30}">
   <COMPONENT cid="caphyon.advinst.msicomp.ProjectOptionsComponent">
     <ROW Name="HiddenItems" Value="ActSyncAppComponent;CPLAppletComponent;AppXAppDetailsComponent;FixupComponent;AppXCapabilitiesComponent;AppXDependenciesComponent;AppXProductDetailsComponent;AppXVisualAssetsComponent;AppXAppDeclarationsComponent;AppXUriRulesComponent;MsiXDiffComponent;MsixManifestEditorComponent"/>
   </COMPONENT>
@@ -53,10 +53,10 @@
     <ROW Property="CTRLS" Value="2"/>
     <ROW Property="Manufacturer" Value="NetFoundry, Inc."/>
     <ROW Property="MsiLogging" MultiBuildValue="AnyCPU_Release:vp"/>
-    <ROW Property="ProductCode" Value="1033:{0AB37E8D-70B2-4D34-8048-EC4615C2CD23} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{77A030C1-45C8-4E46-A2FD-026748B7BA04} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="Ziti Desktop Edge"/>
-    <ROW Property="ProductVersion" Value="2.2.7" Options="32"/>
+    <ROW Property="ProductVersion" Value="2.2.4" Options="32"/>
     <ROW Property="REBOOT" MultiBuildValue="AnyCPU_Release:Suppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{CB7E173A-663D-4A23-BB22-D1E8D885C2F3}"/>
