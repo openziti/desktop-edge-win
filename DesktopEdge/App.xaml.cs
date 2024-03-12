@@ -34,7 +34,6 @@ namespace ZitiDesktopEdge {
 	/// Interaction logic for App.xaml
 	/// </summary>
 	public partial class App : Application {
-        public static string SentinelTempSource = Path.Combine(Path.GetTempPath(), "UpgradeSentinel.exe");
         private const string NamedPipeName = "ZitiDesktopEdgePipe";
 
 		private static readonly Logger logger = LogManager.GetCurrentClassLogger();
@@ -45,11 +44,6 @@ namespace ZitiDesktopEdge {
 		}
 
 		protected override void OnStartup(StartupEventArgs e) {
-			if(File.Exists(SentinelTempSource)) {
-				// if the temp file exists, clear it out
-				File.Delete(SentinelTempSource);
-				logger.Debug("found and removed upgrade sentinel at: {}", SentinelTempSource);
-			}
 			Current.Properties["ZDEWViewState"] = new ZDEWViewState();
 
 			const string appName = "Ziti Desktop Edge";

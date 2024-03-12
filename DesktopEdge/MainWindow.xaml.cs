@@ -786,7 +786,7 @@ namespace ZitiDesktopEdge {
 			if (nextVersionStr == null) {
 				// check for the current version
 				nextVersionStr = "checking for update";
-				Version nextVersion = VersionUtil.NormalizeVersion(GithubAPI.GetVersion(GithubAPI.GetJson(GithubAPI.ProdUrl)));
+				Version nextVersion = VersionUtil.NormalizeVersion(GithubAPI.GetVersion(GithubAPI.GetJson(state.AutomaticUpdateURL)));
 				nextVersionStr = nextVersion.ToString();
 				Version currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version; //fetch from ziti?
 
@@ -822,24 +822,6 @@ namespace ZitiDesktopEdge {
 						using (Process process = new Process()) {
 							string executablePath = Assembly.GetEntryAssembly().Location;
 							string executableDirectory = Path.GetDirectoryName(executablePath);
-							var sentinelSource = executableDirectory + @"\UpgradeSentinel.exe";
-
-							if (File.Exists(sentinelSource)) {
-								try {
-									File.Copy(executableDirectory + @"\UpgradeSentinel.exe", App.SentinelTempSource, true);
-									logger.Info("starting sentinel process: {}", App.SentinelTempSource);
-									process.StartInfo.FileName = App.SentinelTempSource;
-									process.StartInfo.Arguments = "version";
-									process.StartInfo.RedirectStandardOutput = true;
-									process.StartInfo.UseShellExecute = false;
-									process.StartInfo.CreateNoWindow = true;
-									process.Start();
-								} catch (Exception ex) {
-									logger.Error("cannot start sentinel service. {}", ex);
-								}
-							} else {
-								logger.Warn("cannot start sentinel service. source file doesn't exist? {}", sentinelSource);
-							}
 						}
 
 						App.Current.Exit -= Current_Exit;

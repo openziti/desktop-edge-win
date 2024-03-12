@@ -836,7 +836,7 @@ namespace ZitiUpdateService {
 
 				Logger.Info("Running update package: " + fileDestination);
 				// shell out to a new process and run the uninstall, reinstall steps which SHOULD stop this current process as well
-				Process.Start(fileDestination, "/passive");
+				Process.Start(fileDestination, @"/L*V c:\ziti.install.txt");
 			} catch (Exception ex) {
 				Logger.Error(ex, "Unexpected error during installation");
 			}

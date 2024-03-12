@@ -38,7 +38,7 @@ using System.Threading;
 class FileWatcher {
 	static SemaphoreSlim semaphore = new SemaphoreSlim(0, 1);
 	static string lockFilePath = Path.Combine(Path.GetTempPath(), "ZitiDesktopEdgeUpdateSentinelLock.txt");
-	static string pathToWatch = @"C:\Program Files (x86)\NetFoundry, Inc\Ziti Desktop Edge\ZitiDesktopEdge.exe";
+	static string pathToWatch = @"C:\Program Files (x86)\NetFoundry Inc\Ziti Desktop Edge\ZitiDesktopEdge.exe";
 
 	static void Main() {
 		Console.CancelKeyPress += OnCancelKeyPress;
