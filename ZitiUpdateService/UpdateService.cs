@@ -787,9 +787,11 @@ namespace ZitiUpdateService {
 				StopZiti();
 				StopUI().Wait();
 
-				string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-				string logFilePath = Path.Combine(desktopPath, check.FileName + ".install.log");
+				//string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+				string tempPath = Path.Combine(Environment.GetEnvironmentVariable("TEMP"));
+				string logFilePath = Path.Combine($"{tempPath}", check.FileName + ".install.log");
 				string installerOpts = $@"/L*V {logFilePath}";
+				Logger.Info($"opts: {installerOpts}");
 				Logger.Info($"Running update package: {installerExe} {installerOpts}");
 				// shell out to a new process and run the uninstall, reinstall steps which SHOULD stop this current process as well
 				Process.Start(installerExe, installerOpts);
