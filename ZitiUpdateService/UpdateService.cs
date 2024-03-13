@@ -790,9 +790,9 @@ namespace ZitiUpdateService {
 				string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 				string logFilePath = Path.Combine(desktopPath, check.FileName + ".install.log");
 				string installerOpts = $@"/L*V {logFilePath}";
-				Logger.Info("Running update package: " + installerExe + " " + installerOpts);
+				Logger.Info($"Running update package: {installerExe} {installerOpts}");
 				// shell out to a new process and run the uninstall, reinstall steps which SHOULD stop this current process as well
-				Process.Start(installerExe, @"/L*V c:\ziti.install.txt");
+				Process.Start(installerExe, installerOpts);
 			} catch (Exception ex) {
 				Logger.Error(ex, "Unexpected error during installation");
 			}
