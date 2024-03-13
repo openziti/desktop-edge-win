@@ -760,33 +760,39 @@ namespace ZitiUpdateService {
 		}
 
 		private void installZDE(UpdateCheck check) {
-			string fileDestination = Path.Combine(updateFolder, check.FileName);
+			string installerExe = Path.Combine(updateFolder, check?.FileName);
 
 			if (check.AlreadyDownloaded(updateFolder, check.FileName)) {
-				Logger.Trace("package has already been downloaded to {0}", fileDestination);
+				Logger.Trace("package has already been downloaded to {0}", installerExe);
 			} else {
 				Logger.Info("copying update package begins");
 				check.CopyUpdatePackage(updateFolder, check.FileName);
 				Logger.Info("copying update package complete");
 			}
 
-			Logger.Info("package is in {0} - moving to install phase", fileDestination);
+			Logger.Info("package is in {0} - moving to install phase", installerExe);
 
 			if (!check.HashIsValid(updateFolder, check.FileName)) {
-				Logger.Warn("The file was downloaded but the hash is not valid. The file will be removed: {0}", fileDestination);
-				File.Delete(fileDestination);
+				Logger.Warn("The file was downloaded but the hash is not valid. The file will be removed: {0}", installerExe);
+				File.Delete(installerExe);
 				return;
 			}
 			Logger.Debug("downloaded file hash was correct. update can continue.");
 #if !SKIPUPDATE
-			new SignedFileValidator(fileDestination).Verify();
 			try {
+				Logger.Info("verifying file [{}]", installerExe);
+				new SignedFileValidator(installerExe).Verify();
+				Logger.Info("SignedFileValidator complete");
+
 				StopZiti();
 				StopUI().Wait();
 
-				Logger.Info("Running update package: " + fileDestination);
+				string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+				string logFilePath = Path.Combine(desktopPath, check.FileName + ".install.log");
+				string installerOpts = $@"/L*V {logFilePath}";
+				Logger.Info("Running update package: " + installerExe + " " + installerOpts);
 				// shell out to a new process and run the uninstall, reinstall steps which SHOULD stop this current process as well
-				Process.Start(fileDestination, "/passive");
+				Process.Start(installerExe, @"/L*V c:\ziti.install.txt");
 			} catch (Exception ex) {
 				Logger.Error(ex, "Unexpected error during installation");
 			}
