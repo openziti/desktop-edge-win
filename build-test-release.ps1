@@ -41,3 +41,7 @@ echo "json file written to: $scriptDirectory\release-streams\${stream}.json"
 if($revertGitAfter) {
   git checkout DesktopEdge/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip
 }
+
+cd $scriptDirectory
+echo "run: python3 -m http.server -d $(pwd)/release-streams"
+echo "use url: http://localhost:8000/beta.json as the upgrade url"
