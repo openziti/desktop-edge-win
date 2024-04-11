@@ -52,10 +52,10 @@
     <ROW Property="CTRLS" Value="2"/>
     <ROW Property="Manufacturer" Value="NetFoundry Inc."/>
     <ROW Property="MsiLogging" MultiBuildValue="AnyCPU_Release:vp"/>
-    <ROW Property="ProductCode" Value="1033:{E0EC5E25-2D61-44D9-B6F0-DEC0B1C886A0} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{BB6D8A76-E9DB-4704-B892-CBB47317A176} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="Ziti Desktop Edge"/>
-    <ROW Property="ProductVersion" Value="2.2.1.6" Options="32"/>
+    <ROW Property="ProductVersion" Value="2.2.2" Options="32"/>
     <ROW Property="REBOOT" MultiBuildValue="AnyCPU_Release:Suppress"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="UpgradeCode" Value="{CB7E173A-663D-4A23-BB22-D1E8D885C2F3}"/>
@@ -150,9 +150,6 @@
   <COMPONENT cid="caphyon.advinst.msicomp.DictionaryComponent">
     <ROW Path="&lt;AI_DICTS&gt;ui.ail"/>
     <ROW Path="&lt;AI_DICTS&gt;ui_en.ail"/>
-  </COMPONENT>
-  <COMPONENT cid="caphyon.advinst.msicomp.DigCertStoreComponent">
-	<ROW DigitalCertificate="WinSign.p12" TimeStampUrl="http://timestamp.digicert.com" SignerDescription="[|ProductName]" SignOptions="7" SignTool="0" UseSha256="1" Password="7699ECA4D093C4035580B953B142A311C9FB727A" Subject="E=support@netfoundry.io, CN=NetFoundry Inc., O=NetFoundry Inc., STREET=101 S Tryon St Ste 2700, L=Charlotte, S=North Carolina, C=US, OID.1.3.6.1.4.1.311.60.2.1.2=DELAWARE, OID.1.3.6.1.4.1.311.60.2.1.3=US, SERIALNUMBER=7292094, OID.2.5.4.15=Private Organization"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.FragmentComponent">
     <ROW Fragment="CommonUI.aip" Path="&lt;AI_FRAGS&gt;CommonUI.aip"/>
