@@ -7,6 +7,16 @@ function verifyFile($path) {
         throw [System.IO.FileNotFoundException] "$path not found"
     }
 }
+function signFile($path) {
+    jsign --storetype AWS `
+		--keystore "$env:AWS_REGION" `
+		--alias "$env:AWS_KEY_ID" `
+		--certfile "${scriptPath}\OpenZitiSigner-2022-2044.cert" `
+		--alg SHA-512 `
+		--tsaurl http://ts.ssl.com `
+		--tsmode RFC3161 `
+		$path
+}
 
 echo "========================== build.ps1 begins =========================="
 $invocation = (Get-Variable MyInvocation).Value
@@ -26,7 +36,7 @@ $global:ProgressPreference = "SilentlyContinue"
 
 if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
     if($null -eq $env:ZITI_EDGE_TUNNEL_VERSION) {
-        $ZITI_EDGE_TUNNEL_VERSION="v0.22.27"
+        $ZITI_EDGE_TUNNEL_VERSION="v0.22.28"
     } else {
         $ZITI_EDGE_TUNNEL_VERSION=$env:ZITI_EDGE_TUNNEL_VERSION
     }
@@ -74,6 +84,17 @@ msbuild ZitiDesktopEdge.sln /property:Configuration=Release
 
 Pop-Location
 
+if (Get-Command -Name "jsign.exe" -ErrorAction SilentlyContinue) {
+    signFile "${checkoutRoot}\DesktopEdge\bin\Release\ZitiDesktopEdge.exe"
+    signFile "${checkoutRoot}\UpgradeSentinel\bin\Release\UpgradeSentinel.exe"
+    signFile "${checkoutRoot}\ZitiUpdateService\bin\Release\ZitiUpdateService.exe"
+    signFile "${checkoutRoot}\Installer\build\service\ziti-edge-tunnel.exe"
+} else {
+    echo ""
+	echo "jsign not on path. __THE BINARY WILL NOT BE SIGNED!__"
+    echo ""
+}
+
 $installerVersion=(Get-Content -Path ${checkoutRoot}\version)
 if($null -ne $env:ZITI_DESKTOP_EDGE_VERSION) {
     echo "ZITI_DESKTOP_EDGE_VERSION is set. Using that: ${env:ZITI_DESKTOP_EDGE_VERSION} instead of version found in file ${installerVersion}"
@@ -101,6 +122,15 @@ if($gituser -eq "ziti-ci") {
 
 $exeAbsPath="${scriptPath}\Output\Ziti Desktop Edge Client-${installerVersion}.exe"
 
+
+if (Get-Command -Name "jsign.exe" -ErrorAction SilentlyContinue) {
+    signFile "$exeAbsPath"
+} else {
+    echo ""
+	echo "jsign not on path. __THE BINARY WILL NOT BE SIGNED!__"
+    echo ""
+}
+
 if($null -eq $env:OPENZITI_P12_PASS) {
     echo ""
     echo "Not calling signtool - env:OPENZITI_P12_PASS is not set"
@@ -110,6 +140,7 @@ if($null -eq $env:OPENZITI_P12_PASS) {
     echo "RUNNING: $ADV_INST_HOME\third-party\winsdk\x64\signtool" sign /f "${scriptPath}\openziti.p12" /p "${env:OPENZITI_P12_PASS}" /tr http://ts.ssl.com /fd sha512 /td sha512 /as "${exeAbsPath}"
     & "$ADV_INST_HOME\third-party\winsdk\x64\signtool" sign /f "${scriptPath}\openziti.p12" /p "${env:OPENZITI_P12_PASS}" /tr http://ts.ssl.com /fd sha512 /td sha512 /as "${exeAbsPath}"
 }
+
 (Get-FileHash "${exeAbsPath}").Hash > "${scriptPath}\Output\Ziti Desktop Edge Client-${installerVersion}.exe.sha256"
 echo "========================== build.ps1 completed =========================="
 
