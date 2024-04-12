@@ -26,7 +26,7 @@ $global:ProgressPreference = "SilentlyContinue"
 
 if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
     if($null -eq $env:ZITI_EDGE_TUNNEL_VERSION) {
-        $ZITI_EDGE_TUNNEL_VERSION="v0.22.27"
+        $ZITI_EDGE_TUNNEL_VERSION="v0.22.28"
     } else {
         $ZITI_EDGE_TUNNEL_VERSION=$env:ZITI_EDGE_TUNNEL_VERSION
     }

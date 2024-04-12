@@ -52,7 +52,7 @@ from GitHub via the /releases URL produced by the OpenZiti ZDEW build infrastruc
 * none
 
 ## Dependency Updates
-* ziti-edge-tunnel updated to v0.22.27/c sdk v0.36.9 / tlsuv v0.28.4
+* ziti-edge-tunnel updated to v0.22.28/c sdk v0.36.10 / tlsuv v0.28.4
 * System.Security.Cryptography.Pkcs from 6.0.1 to 6.0.3
 
 # Release 2.1.16
