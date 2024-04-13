@@ -84,16 +84,16 @@ msbuild ZitiDesktopEdge.sln /property:Configuration=Release
 
 Pop-Location
 
-if (Get-Command -Name "jsign.exe" -ErrorAction SilentlyContinue) {
-    signFile "${checkoutRoot}\DesktopEdge\bin\Release\ZitiDesktopEdge.exe"
-    signFile "${checkoutRoot}\UpgradeSentinel\bin\Release\UpgradeSentinel.exe"
-    signFile "${checkoutRoot}\ZitiUpdateService\bin\Release\ZitiUpdateService.exe"
-    signFile "${checkoutRoot}\Installer\build\service\ziti-edge-tunnel.exe"
-} else {
-    echo ""
-	echo "jsign not on path. __THE BINARY WILL NOT BE SIGNED!__"
-    echo ""
-}
+#if (Get-Command -Name "jsign.exe" -ErrorAction SilentlyContinue) {
+#    signFile "${checkoutRoot}\DesktopEdge\bin\Release\ZitiDesktopEdge.exe"
+#    signFile "${checkoutRoot}\UpgradeSentinel\bin\Release\UpgradeSentinel.exe"
+#    signFile "${checkoutRoot}\ZitiUpdateService\bin\Release\ZitiUpdateService.exe"
+#    signFile "${checkoutRoot}\Installer\build\service\ziti-edge-tunnel.exe"
+#} else {
+#    echo ""
+#	echo "jsign not on path. __THE BINARY WILL NOT BE SIGNED!__"
+#    echo ""
+#}
 
 $installerVersion=(Get-Content -Path ${checkoutRoot}\version)
 if($null -ne $env:ZITI_DESKTOP_EDGE_VERSION) {
@@ -123,13 +123,13 @@ if($gituser -eq "ziti-ci") {
 $exeAbsPath="${scriptPath}\Output\Ziti Desktop Edge Client-${installerVersion}.exe"
 
 
-if (Get-Command -Name "jsign.exe" -ErrorAction SilentlyContinue) {
-    signFile "$exeAbsPath"
-} else {
-    echo ""
-	echo "jsign not on path. __THE BINARY WILL NOT BE SIGNED!__"
-    echo ""
-}
+#if (Get-Command -Name "jsign.exe" -ErrorAction SilentlyContinue) {
+#    signFile "$exeAbsPath"
+#} else {
+#    echo ""
+#	echo "jsign not on path. __THE BINARY WILL NOT BE SIGNED!__"
+#    echo ""
+#}
 
 if($null -eq $env:OPENZITI_P12_PASS) {
     echo ""
