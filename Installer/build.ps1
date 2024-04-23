@@ -7,15 +7,25 @@ function verifyFile($path) {
         throw [System.IO.FileNotFoundException] "$path not found"
     }
 }
-function signFile($path) {
-    jsign --storetype AWS `
-		--keystore "$env:AWS_REGION" `
-		--alias "$env:AWS_KEY_ID" `
-		--certfile "${scriptPath}\GlobalSign-SigningCert-2024-2027.cert" `
-		--alg SHA-512 `
-		--tsaurl http://ts.ssl.com `
-		--tsmode RFC3161 `
-		$path
+function signFile($loc, $name) {
+	$cert="${scriptPath}\GlobalSign-SigningCert-2024-2027.cert"
+	$exeAbsPath="$loc\$name"
+	echo "----- signFile: producing digest to send to AWS KMS -----"
+	signtool sign /dg $loc /fd sha256 /f $cert $exeAbsPath
+	$tosign = Get-Content "${exeAbsPath}.dig" -Raw
+	echo "----- signFile: sending digest to AWS KMS for signing -----"
+	$signature = aws kms sign --key-id $env:AWS_KEY_ID `
+		--message $tosign `
+		--message-type DIGEST `
+		--signing-algorithm "RSASSA_PKCS1_V1_5_SHA_256" `
+		--output text `
+		--query "Signature"
+	Set-Content -Path "${exeAbsPath}.dig.signed" -Value $signature
+	echo "----- signFile: adding signature -----"
+	signtool sign /di $loc $exeAbsPath
+	echo "----- signFile: adding timestamp -----"
+	signtool timestamp /tr "http://timestamp.digicert.com" /td sha256 $exeAbsPath
+	signtool verify /pa $exeAbsPath
 }
 
 echo "========================== build.ps1 begins =========================="
@@ -84,17 +94,6 @@ msbuild ZitiDesktopEdge.sln /property:Configuration=Release
 
 Pop-Location
 
-#if (Get-Command -Name "jsign.exe" -ErrorAction SilentlyContinue) {
-#    signFile "${checkoutRoot}\DesktopEdge\bin\Release\ZitiDesktopEdge.exe"
-#    signFile "${checkoutRoot}\UpgradeSentinel\bin\Release\UpgradeSentinel.exe"
-#    signFile "${checkoutRoot}\ZitiUpdateService\bin\Release\ZitiUpdateService.exe"
-#    signFile "${checkoutRoot}\Installer\build\service\ziti-edge-tunnel.exe"
-#} else {
-#    echo ""
-#	echo "jsign not on path. __THE BINARY WILL NOT BE SIGNED!__"
-#    echo ""
-#}
-
 $installerVersion=(Get-Content -Path ${checkoutRoot}\version)
 if($null -ne $env:ZITI_DESKTOP_EDGE_VERSION) {
     echo "ZITI_DESKTOP_EDGE_VERSION is set. Using that: ${env:ZITI_DESKTOP_EDGE_VERSION} instead of version found in file ${installerVersion}"
@@ -120,15 +119,16 @@ if($gituser -eq "ziti-ci") {
   echo "detected user [${gituser}] which is not ziti-ci - skipping installer commit"
 }
 
-$exeAbsPath="${scriptPath}\Output\Ziti Desktop Edge Client-${installerVersion}.exe"
+$exePath="${scriptPath}\Output\"
+$exeName="Ziti Desktop Edge Client-${installerVersion}.exe"
+$exeAbsPath="${exePath}\${exeName}"
 
-
-if (Get-Command -Name "jsign.exe" -ErrorAction SilentlyContinue) {
-    signFile "$exeAbsPath"
+if($null -eq $env:AWS_KEY_ID) {
+    echo ""
+	echo "AWS_KEY_ID not set. __THE BINARY WILL NOT BE SIGNED!__"
+    echo ""
 } else {
-    echo ""
-	echo "jsign not on path. __THE BINARY WILL NOT BE SIGNED!__"
-    echo ""
+    signFile -loc $exePath -name $exeName
 }
 
 if($null -eq $env:OPENZITI_P12_PASS_2024) {
@@ -137,7 +137,7 @@ if($null -eq $env:OPENZITI_P12_PASS_2024) {
     echo ""
 } else {
     echo "adding additional signature to executable with openziti.org signing certificate"\
-    echo "Using ${ADV_INST_HOME}\third-party\winsdk\x64\signtool to sign the executable with the OpenZiti signing cert"
+    echo "Using ${ADV_INST_HOME}\third-party\winsdk\x64\signtool to sign executable with the additional OpenZiti signature"
     & "$ADV_INST_HOME\third-party\winsdk\x64\signtool" sign /f "${scriptPath}\openziti_2024.p12" /p "${env:OPENZITI_P12_PASS_2024}" /tr http://ts.ssl.com /fd sha512 /td sha512 /as "${exeAbsPath}"
 }
 
