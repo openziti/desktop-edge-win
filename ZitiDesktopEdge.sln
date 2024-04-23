@@ -37,6 +37,18 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "release-streams", "release-
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZitiDesktopEdgeTests", "ZitiDesktopEdgeTests\ZitiDesktopEdgeTests.csproj", "{1E738484-60E0-4153-8C84-FB0637478916}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{472A2C6C-6AAB-405A-82CF-6126B47F0361}"
+	ProjectSection(SolutionItems) = preProject
+		.github\CODEOWNERS = .github\CODEOWNERS
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{DB005713-0237-4719-9F7B-A239879B290D}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\installer.build.yml = .github\workflows\installer.build.yml
+		.github\workflows\mattermost-ziti-webhook.yml = .github\workflows\mattermost-ziti-webhook.yml
+		.github\workflows\release-drafter.yml = .github\workflows\release-drafter.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -267,6 +279,8 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{36C30126-C9DC-4233-835E-9E036BCD1A29} = {D66B1C6A-ADFE-437E-B037-C4C849A6CA97}
+		{472A2C6C-6AAB-405A-82CF-6126B47F0361} = {D66B1C6A-ADFE-437E-B037-C4C849A6CA97}
+		{DB005713-0237-4719-9F7B-A239879B290D} = {472A2C6C-6AAB-405A-82CF-6126B47F0361}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {3E499EAC-C1BA-41A0-8076-D660F8ACC977}
