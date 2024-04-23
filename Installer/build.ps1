@@ -8,10 +8,11 @@ function verifyFile($path) {
     }
 }
 function signFile($loc, $name) {
+	echo "Using signtool: '$SIGNTOOL'"
 	$cert="${scriptPath}\GlobalSign-SigningCert-2024-2027.cert"
 	$exeAbsPath="$loc\$name"
 	echo "----- signFile: producing digest to send to AWS KMS -----"
-	signtool sign /dg $loc /fd sha256 /f $cert $exeAbsPath
+	& "$SIGNTOOL" sign /dg $loc /fd sha256 /f $cert $exeAbsPath
 	$tosign = Get-Content "${exeAbsPath}.dig" -Raw
 	echo "----- signFile: sending digest to AWS KMS for signing -----"
 	$signature = aws kms sign --key-id $env:AWS_KEY_ID `
@@ -22,10 +23,10 @@ function signFile($loc, $name) {
 		--query "Signature"
 	Set-Content -Path "${exeAbsPath}.dig.signed" -Value $signature
 	echo "----- signFile: adding signature -----"
-	signtool sign /di $loc $exeAbsPath
+	& "$SIGNTOOL" sign /di $loc $exeAbsPath
 	echo "----- signFile: adding timestamp -----"
-	signtool timestamp /tr "http://timestamp.digicert.com" /td sha256 $exeAbsPath
-	signtool verify /pa $exeAbsPath
+	& "$SIGNTOOL" timestamp /tr "http://timestamp.digicert.com" /td sha256 $exeAbsPath
+	& "$SIGNTOOL" verify /pa $exeAbsPath
 }
 
 echo "========================== build.ps1 begins =========================="
@@ -35,6 +36,7 @@ $checkoutRoot = (Resolve-Path '${scriptPath}\..')
 $buildPath = "${scriptPath}\build"
 $ADV_INST_VERSION = Get-Content -Path "${checkoutRoot}\adv-inst-version"
 $ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer ${ADV_INST_VERSION}"
+$SIGNTOOL="${ADV_INST_HOME}\third-party\winsdk\x64\signtool"
 $ADVINST = "${ADV_INST_HOME}\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
 
@@ -119,7 +121,7 @@ if($gituser -eq "ziti-ci") {
   echo "detected user [${gituser}] which is not ziti-ci - skipping installer commit"
 }
 
-$exePath="${scriptPath}\Output\"
+$exePath="${scriptPath}\Output"
 $exeName="Ziti Desktop Edge Client-${installerVersion}.exe"
 $exeAbsPath="${exePath}\${exeName}"
 
@@ -137,8 +139,8 @@ if($null -eq $env:OPENZITI_P12_PASS_2024) {
     echo ""
 } else {
     echo "adding additional signature to executable with openziti.org signing certificate"\
-    echo "Using ${ADV_INST_HOME}\third-party\winsdk\x64\signtool to sign executable with the additional OpenZiti signature"
-    & "$ADV_INST_HOME\third-party\winsdk\x64\signtool" sign /f "${scriptPath}\openziti_2024.p12" /p "${env:OPENZITI_P12_PASS_2024}" /tr http://ts.ssl.com /fd sha512 /td sha512 /as "${exeAbsPath}"
+    echo "Using ${SIGNTOOL} to sign executable with the additional OpenZiti signature"
+    & "$SIGNTOOL" sign /f "${scriptPath}\openziti_2024.p12" /p "${env:OPENZITI_P12_PASS_2024}" /tr http://ts.ssl.com /fd sha512 /td sha512 /as "${exeAbsPath}"
 }
 
 (Get-FileHash "${exeAbsPath}").Hash > "${scriptPath}\Output\Ziti Desktop Edge Client-${installerVersion}.exe.sha256"
