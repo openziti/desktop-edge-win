@@ -45,18 +45,23 @@ namespace ZitiDesktopEdge {
 		}
 
 		protected override void OnStartup(StartupEventArgs e) {
-			if(File.Exists(SentinelTempSource)) {
-				// if the temp file exists, clear it out
-				File.Delete(SentinelTempSource);
-				logger.Debug("found and removed upgrade sentinel at: {}", SentinelTempSource);
+			try {
+				if (File.Exists(SentinelTempSource)) {
+					// if the temp file exists, clear it out
+					File.Delete(SentinelTempSource);
+					logger.Debug("found and removed upgrade sentinel at: {}", SentinelTempSource);
+				}
+			} catch (Exception ex) {
+				logger.Error($"OnStartup FAILED to delete the UpgradeSentinel at {SentinelTempSource}", ex);
 			}
-			Current.Properties["ZDEWViewState"] = new ZDEWViewState();
+			try {
+				Current.Properties["ZDEWViewState"] = new ZDEWViewState();
 
-			const string appName = "Ziti Desktop Edge";
+				const string appName = "Ziti Desktop Edge";
 
-			bool createdNew;
+				bool createdNew;
 
-			_mutex = new Mutex(true, appName, out createdNew);
+				_mutex = new Mutex(true, appName, out createdNew);
 
 			if (!createdNew) {
 				using (var client = new NamedPipeClientStream(NamedPipeName)) {
@@ -80,8 +85,12 @@ namespace ZitiDesktopEdge {
 #pragma warning disable 4014 //This async method lacks 'await'
 				StartServer();
 #pragma warning restore 4014 //This async method lacks 'await'
-            }
-        }
+				}
+			} catch (Exception ex) {
+				logger.Error($"OnStartup FAILED unexpectedly. Exiting", ex);
+				Application.Current.Shutdown();
+			}
+		}
 
 		async public Task StartServer() {
 			logger.Debug("Starting IPC server to listen for other instances of the app");
