@@ -132,14 +132,14 @@ if (Get-Command -Name "jsign.exe" -ErrorAction SilentlyContinue) {
     echo ""
 }
 
-if($null -eq $env:OPENZITI_P12_PASS) {
+if($null -eq $env:OPENZITI_P12_PASS_2024) {
     echo ""
-    echo "Not calling signtool - env:OPENZITI_P12_PASS is not set"
+    echo "Not calling signtool - env:OPENZITI_P12_PASS_2024 is not set"
     echo ""
 } else {
     echo "adding additional signature to executable with openziti.org signing certificate"\
     echo "Using ${ADV_INST_HOME}\third-party\winsdk\x64\signtool to sign the executable with the OpenZiti signing cert"
-    & "$ADV_INST_HOME\third-party\winsdk\x64\signtool" sign /f "${scriptPath}\openziti.p12" /p "${env:OPENZITI_P12_PASS}" /tr http://ts.ssl.com /fd sha512 /td sha512 /as "${exeAbsPath}"
+    & "$ADV_INST_HOME\third-party\winsdk\x64\signtool" sign /f "${scriptPath}\openziti_2024.p12" /p "${env:OPENZITI_P12_PASS_2024}" /tr http://ts.ssl.com /fd sha512 /td sha512 /as "${exeAbsPath}"
 }
 
 (Get-FileHash "${exeAbsPath}").Hash > "${scriptPath}\Output\Ziti Desktop Edge Client-${installerVersion}.exe.sha256"
