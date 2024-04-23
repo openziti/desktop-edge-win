@@ -11,7 +11,7 @@ function signFile($path) {
     jsign --storetype AWS `
 		--keystore "$env:AWS_REGION" `
 		--alias "$env:AWS_KEY_ID" `
-		--certfile "${scriptPath}\OpenZitiSigner-2022-2044.cert" `
+		--certfile "${scriptPath}\GlobalSign-SigningCert-2024-2027.cert" `
 		--alg SHA-512 `
 		--tsaurl http://ts.ssl.com `
 		--tsmode RFC3161 `
@@ -123,13 +123,14 @@ if($gituser -eq "ziti-ci") {
 $exeAbsPath="${scriptPath}\Output\Ziti Desktop Edge Client-${installerVersion}.exe"
 
 
-#if (Get-Command -Name "jsign.exe" -ErrorAction SilentlyContinue) {
-#    signFile "$exeAbsPath"
-#} else {
-#    echo ""
-#	echo "jsign not on path. __THE BINARY WILL NOT BE SIGNED!__"
-#    echo ""
-#}
+if (Get-Command -Name "jsign.exe" -ErrorAction SilentlyContinue) {
+    signtool remove /s 'D:\git\github\openziti\desktop-edge-win\Installer\Output\Ziti Desktop Edge Client-2.2.2.exe'
+    signFile "$exeAbsPath"
+} else {
+    echo ""
+	echo "jsign not on path. __THE BINARY WILL NOT BE SIGNED!__"
+    echo ""
+}
 
 if($null -eq $env:OPENZITI_P12_PASS) {
     echo ""
@@ -137,7 +138,7 @@ if($null -eq $env:OPENZITI_P12_PASS) {
     echo ""
 } else {
     echo "adding additional signature to executable with openziti.org signing certificate"\
-    echo "RUNNING: $ADV_INST_HOME\third-party\winsdk\x64\signtool" sign /f "${scriptPath}\openziti.p12" /p "${env:OPENZITI_P12_PASS}" /tr http://ts.ssl.com /fd sha512 /td sha512 /as "${exeAbsPath}"
+    echo "Using ${ADV_INST_HOME}\third-party\winsdk\x64\signtool to sign the executable with the OpenZiti signing cert"
     & "$ADV_INST_HOME\third-party\winsdk\x64\signtool" sign /f "${scriptPath}\openziti.p12" /p "${env:OPENZITI_P12_PASS}" /tr http://ts.ssl.com /fd sha512 /td sha512 /as "${exeAbsPath}"
 }
 

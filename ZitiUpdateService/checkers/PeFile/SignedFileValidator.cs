@@ -1,17 +1,17 @@
 /*
-	Copyright NetFoundry Inc.
+    Copyright NetFoundry Inc.
 
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-	https://www.apache.org/licenses/LICENSE-2.0
+    https://www.apache.org/licenses/LICENSE-2.0
 
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 ﻿using System;
@@ -170,7 +170,7 @@ namespace ZitiUpdateService.Checkers.PeFile {
                                             Logger.Warn("Ignoring timestamp validity issue for the existing code signing certificate. Subject: {0}, Thumbprint: {1}", innerSignerInfo.Certificate.Subject, innerSignerInfo.Certificate.Thumbprint);
                                         } else {
                                             if (IsCertificateOpenZitiVerifies(innerSignerInfo.Certificate)) {
-                                                Logger.Debug("Signature could not be verified. This is expected for the certificates issued by openziti/netfoundry.");
+                                                Logger.Debug("Certificate {} from {} is not one needed to be verified", innerSignerInfo.Certificate.SubjectName, innerSignerInfo.Certificate.Issuer);
                                             } else {
                                                 throw;
                                             }
@@ -206,18 +206,18 @@ namespace ZitiUpdateService.Checkers.PeFile {
             List<X509Certificate2> list = ExtractVerifiedSignatureCertificates();
             Logger.Info("Certificates extracted: {0}", list.Count);
             foreach (X509Certificate2 cert in list) {
-	            Logger.Info("Checking certificate: [{0}] {1}", cert.Thumbprint, cert);
-	            if (IsCertificateOpenZitiVerifies(cert)) {
+                Logger.Info("Checking certificate: [{0}] {1}", cert.Thumbprint, cert.Subject);
+                if (IsCertificateOpenZitiVerifies(cert)) {
                     //verify this certificate was issued from the known CA
                     try {
-                        Logger.Info("Verifying trust of certificate: [{0}] {1}", cert, cert.Thumbprint);
+                        Logger.Info("Verifying trust of certificate: [{0}] {1}", cert.Subject, cert.Thumbprint);
                         VerifyTrust(empty, expectedRootCa, cert, true).Wait();
                         Logger.Info("Download verification complete. Certificate [{0}] {1} was verified signed by [{2}] {3}", cert.Thumbprint, cert.Subject, expectedRootCa.Thumbprint, expectedRootCa.Subject);
                         return; //yes!
                     } catch (Exception e) {
                         Logger.Debug("Could not verify certificate. Exception encountered: {}", e);
                     }
-	            } else {
+                } else {
                     Logger.Debug("Certificate {} from {} is not one needed to be verified", cert.SubjectName, cert.Issuer);
                 }
             }
@@ -352,7 +352,7 @@ namespace ZitiUpdateService.Checkers.PeFile {
                 }
 
                 /*
-                14.	Create a value called FILE_SIZE, which is not part of the signature. Set this value to the 
+                14. Create a value called FILE_SIZE, which is not part of the signature. Set this value to the 
                     image’s file size, acquired from the underlying file system. If FILE_SIZE is greater than 
                     SUM_OF_BYTES_HASHED, the file contains extra data that must be added to the hash. This data 
                     begins at the SUM_OF_BYTES_HASHED file offset, and its length is:
@@ -397,44 +397,44 @@ namespace ZitiUpdateService.Checkers.PeFile {
              *
              * Relevant section copied from that document:
              * To calculate the hash value:
-                1.	Load the image header into memory.
-                2.	Initialize a hash algorithm context.
-                3.	Hash the image header from its base to immediately before the start of the 
+                1.  Load the image header into memory.
+                2.  Initialize a hash algorithm context.
+                3.  Hash the image header from its base to immediately before the start of the 
                     checksum address, as specified in Optional Header Windows-Specific Fields.
-                4.	Skip over the checksum, which is a 4-byte field.
-                5.	Hash everything from the end of the checksum field to immediately before the start of 
+                4.  Skip over the checksum, which is a 4-byte field.
+                5.  Hash everything from the end of the checksum field to immediately before the start of 
                     the Certificate Table entry, as specified in Optional Header Data Directories.
-                6.	Get the Attribute Certificate Table address and size from the Certificate Table entry. 
+                6.  Get the Attribute Certificate Table address and size from the Certificate Table entry. 
                     For details, see section 5.7 of the PE/COFF specification.
-                7.	Exclude the Certificate Table entry from the calculation and hash everything from the 
+                7.  Exclude the Certificate Table entry from the calculation and hash everything from the 
                     end of the Certificate Table entry to the end of image header, including Section Table 
                     (headers).The Certificate Table entry is 8 bytes long, as specified in Optional Header 
                     Data Directories. 
-                8.	Create a counter called SUM_OF_BYTES_HASHED, which is not part of the signature. Set 
+                8.  Create a counter called SUM_OF_BYTES_HASHED, which is not part of the signature. Set 
                     this counter to the SizeOfHeaders field, as specified in Optional Header Windows-Specific 
                     Field.
-                9.	Build a temporary table of pointers to all of the section headers in the image. The 
+                9.  Build a temporary table of pointers to all of the section headers in the image. The 
                     NumberOfSections field of COFF File Header indicates how big the table should be. Do not 
                     include any section headers in the table whose SizeOfRawData field is zero. 
-                10.	Using the PointerToRawData field (offset 20) in the referenced SectionHeader structure as 
+                10. Using the PointerToRawData field (offset 20) in the referenced SectionHeader structure as 
                     a key, arrange the table's elements in ascending order. In other words, sort the section 
                     headers in ascending order according to the disk-file offset of the sections.
-                11.	Walk through the sorted table, load the corresponding section into memory, and hash the entire 
+                11. Walk through the sorted table, load the corresponding section into memory, and hash the entire 
                     section. Use the SizeOfRawData field in the SectionHeader structure to determine the amount 
                     of data to hash.
-                12.	Add the section’s SizeOfRawData value to SUM_OF_BYTES_HASHED.
-                13.	Repeat steps 11 and 12 for all of the sections in the sorted table.
-                14.	Create a value called FILE_SIZE, which is not part of the signature. Set this value to the 
+                12. Add the section’s SizeOfRawData value to SUM_OF_BYTES_HASHED.
+                13. Repeat steps 11 and 12 for all of the sections in the sorted table.
+                14. Create a value called FILE_SIZE, which is not part of the signature. Set this value to the 
                     image’s file size, acquired from the underlying file system. If FILE_SIZE is greater than 
                     SUM_OF_BYTES_HASHED, the file contains extra data that must be added to the hash. This data 
                     begins at the SUM_OF_BYTES_HASHED file offset, and its length is:
-                         (File Size) – ((Size of AttributeCertificateTable) + SUM_OF_BYTES_HASHED)
+                        (File Size) – ((Size of AttributeCertificateTable) + SUM_OF_BYTES_HASHED)
                     Note: The size of Attribute Certificate Table is specified in the second ULONG value in the 
                     Certificate Table entry (32 bit: offset 132, 64 bit: offset 148) in Optional Header Data 
                     Directories.
-                15.	Finalize the hash algorithm context.
-                        Note: This procedure uses offset values from the PE/COFF specification, version 8.1 . 
-                        For authoritative offset values, refer to the most recent version of the PE/COFF specification.
+                15. Finalize the hash algorithm context.
+                    Note: This procedure uses offset values from the PE/COFF specification, version 8.1 . 
+                    For authoritative offset values, refer to the most recent version of the PE/COFF specification.
              */
 
             public List<IMAGE_SECTION_HEADER> SectionTableHeaders { get; private set; }
@@ -446,8 +446,8 @@ namespace ZitiUpdateService.Checkers.PeFile {
             /// Chunk1 End is defined to be: "immediately before the start of the checksum address"
             ///
             /// Relevant step: 
-            /// 3.	Hash the image header from its base to immediately before the start of the
-            ///     checksum address, as specified in Optional Header Windows-Specific Fields.
+            /// 3. Hash the image header from its base to immediately before the start of the
+            ///    checksum address, as specified in Optional Header Windows-Specific Fields.
             /// </summary>
             public Range Chunk1 { get; private set; }
 
@@ -456,8 +456,8 @@ namespace ZitiUpdateService.Checkers.PeFile {
             /// Chunk2 End is defined to be: "immediately before the start of the Certificate Table entry"
             /// 
             /// Relevant step: 
-            /// 5.	Hash everything from the end of the checksum field to immediately before the start of
-            ///     the Certificate Table entry, as specified in Optional Header Data Directories.
+            /// 5. Hash everything from the end of the checksum field to immediately before the start of
+            ///    the Certificate Table entry, as specified in Optional Header Data Directories.
             /// </summary>
             public Range Chunk2 { get; private set; }
 
@@ -468,10 +468,10 @@ namespace ZitiUpdateService.Checkers.PeFile {
             ///     the SizeOfHeaders field
             /// 
             /// Relevant step: 
-            /// 7.	Exclude the Certificate Table entry from the calculation and hash everything from the
-            ///     end of the Certificate Table entry to the end of image header, including Section Table
-            ///     (headers).The Certificate Table entry is 8 bytes long, as specified in Optional Header
-            ///     Data Directories.
+            /// 7. Exclude the Certificate Table entry from the calculation and hash everything from the
+            ///    end of the Certificate Table entry to the end of image header, including Section Table
+            ///    (headers).The Certificate Table entry is 8 bytes long, as specified in Optional Header
+            ///    Data Directories.
             /// </summary>
             public Range Chunk3 { get; private set; }
 
