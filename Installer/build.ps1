@@ -124,7 +124,6 @@ $exeAbsPath="${scriptPath}\Output\Ziti Desktop Edge Client-${installerVersion}.e
 
 
 if (Get-Command -Name "jsign.exe" -ErrorAction SilentlyContinue) {
-    signtool remove /s 'D:\git\github\openziti\desktop-edge-win\Installer\Output\Ziti Desktop Edge Client-2.2.2.exe'
     signFile "$exeAbsPath"
 } else {
     echo ""
