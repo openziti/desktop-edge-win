@@ -28,6 +28,15 @@ function signFile($loc, $name) {
 	& "$SIGNTOOL" timestamp /tr "http://timestamp.digicert.com" /td sha256 $exeAbsPath
 	& "$SIGNTOOL" verify /pa $exeAbsPath
 }
+function fetchCRedis() {	
+	echo "========================== fetching vc++ redist =========================="
+	$VC_REDIST_URL="https://aka.ms/vs/17/release/vc_redist.x64.exe"
+	echo "Beginning to download vc++ redist from MS at ${VC_REDIST_URL}"
+	echo ""
+	Invoke-WebRequest $VC_REDIST_URL -OutFile "${buildPath}\VC_redist.x64.exe"
+	verifyFile("${buildPath}\VC_redist.x64.exe")
+	echo "========================== fetching vc++ redist complete =========================="
+}
 
 echo "========================== build.ps1 begins =========================="
 $invocation = (Get-Variable MyInvocation).Value
@@ -77,13 +86,6 @@ if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
 
 Push-Location ${checkoutRoot}
 
-echo "========================== fetching vc++ redist =========================="
-$VC_REDIST_URL="https://aka.ms/vs/17/release/vc_redist.x64.exe"
-echo "Beginning to download vc++ redist from MS at ${VC_REDIST_URL}"
-echo ""
-Invoke-WebRequest $VC_REDIST_URL -OutFile "${buildPath}\VC_redist.x64.exe"
-verifyFile("${buildPath}\VC_redist.x64.exe")
-echo "========================== fetching vc++ redist complete =========================="
 
 echo "Updating the version for UI and Installer"
 .\update-versions.ps1

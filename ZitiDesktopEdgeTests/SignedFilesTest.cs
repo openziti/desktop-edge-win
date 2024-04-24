@@ -8,7 +8,9 @@ namespace ZitiDesktopEdgeTests {
 		static SignedFilesTest() {
 			TestUtils.ConfigureNLog();
 		}
+#pragma warning disable CS8601 // Possible null reference assignment.
 		private string exeloc = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+#pragma warning restore CS8601 // Possible null reference assignment.
 
 		[TestMethod]
 		public void TestOlderFiles() {

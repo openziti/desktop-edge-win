@@ -6,11 +6,15 @@ internal static class TestUtils {
 	private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
 	public static async Task DownloadFileAsync(string url, string destination) {
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
+#pragma warning disable CS8604 // Possible null reference argument.
 		string directory = Path.GetDirectoryName(destination);
 		if (!Directory.Exists(directory)) {
 			Directory.CreateDirectory(directory);
 			logger.Info($"Created directory: {directory}");
 		}
+#pragma warning restore CS8604 // Possible null reference argument.
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
 
 		if (!File.Exists(destination)) {
 			using (HttpClient httpClient = new HttpClient()) {

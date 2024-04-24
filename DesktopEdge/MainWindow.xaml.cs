@@ -216,12 +216,12 @@ namespace ZitiDesktopEdge {
 						}
 					}
 					if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Identifier == mfa.Identifier) this.IdentityMenu.Identity = found;
-					// serviceClient.GetStatusAsync();
 					// ShowBlurb("mfa authenticated: " + mfa.Successful, "");
 				} else {
 					await ShowBlurbAsync("Unexpected error when processing MFA", "");
 					logger.Error("unexpected action: " + mfa.Action);
 				}
+
 				LoadIdentities(true);
 			});
 		}
