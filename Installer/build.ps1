@@ -27,6 +27,10 @@ function signFile($loc, $name) {
 	echo "----- signFile: adding timestamp -----"
 	& "$SIGNTOOL" timestamp /tr "http://timestamp.digicert.com" /td sha256 $exeAbsPath
 	& "$SIGNTOOL" verify /pa $exeAbsPath
+	echo "removing any ifles leftover from signing"
+	Remove-Item "${exeAbsPath}.dig" -ErrorAction SilentlyContinue
+	Remove-Item "${exeAbsPath}.dig.signed" -ErrorAction SilentlyContinue
+	Remove-Item "${exeAbsPath}.p7u" -ErrorAction SilentlyContinue
 }
 function fetchCRedis() {	
 	echo "========================== fetching vc++ redist =========================="
@@ -123,16 +127,16 @@ if($gituser -eq "ziti-ci") {
   echo "detected user [${gituser}] which is not ziti-ci - skipping installer commit"
 }
 
-$exePath="${scriptPath}\Output"
+$outputPath="${scriptPath}\Output"
 $exeName="Ziti Desktop Edge Client-${installerVersion}.exe"
-$exeAbsPath="${exePath}\${exeName}"
+$exeAbsPath="${outputPath}\${exeName}"
 
 if($null -eq $env:AWS_KEY_ID) {
     echo ""
 	echo "AWS_KEY_ID not set. __THE BINARY WILL NOT BE SIGNED!__"
     echo ""
 } else {
-    signFile -loc $exePath -name $exeName
+    signFile -loc $outputPath -name $exeName
 }
 
 if($null -eq $env:OPENZITI_P12_PASS_2024) {
@@ -140,7 +144,7 @@ if($null -eq $env:OPENZITI_P12_PASS_2024) {
     echo "Not calling signtool - env:OPENZITI_P12_PASS_2024 is not set"
     echo ""
 } else {
-    echo "adding additional signature to executable with openziti.org signing certificate"\
+    echo "adding additional signature to executable with openziti.org signing certificate"
     echo "Using ${SIGNTOOL} to sign executable with the additional OpenZiti signature"
     & "$SIGNTOOL" sign /f "${scriptPath}\openziti_2024.p12" /p "${env:OPENZITI_P12_PASS_2024}" /tr http://ts.ssl.com /fd sha512 /td sha512 /as "${exeAbsPath}"
 }
@@ -151,5 +155,5 @@ echo "========================== build.ps1 completed =========================="
 $defaultRootUrl = "https://github.com/openziti/desktop-edge-win/releases/download/"
 $defaultStream = "beta"
 $defaultPublishedAt = Get-Date
-$outputPath = "${installerVersion}.json"
-& .\Installer\output-build-json.ps1 -version $installerVersion -url $defaultRootUrl -stream $defaultStream -published_at $defaultPublishedAt -outputPath $outputPath
+$updateJson = "${installerVersion}.json"
+& .\Installer\output-build-json.ps1 -version $installerVersion -url $defaultRootUrl -stream $defaultStream -published_at $defaultPublishedAt -outputPath $updateJson
