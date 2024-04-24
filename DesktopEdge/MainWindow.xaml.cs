@@ -822,11 +822,11 @@ namespace ZitiDesktopEdge {
 						using (Process process = new Process()) {
 							string executablePath = Assembly.GetEntryAssembly().Location;
 							string executableDirectory = Path.GetDirectoryName(executablePath);
-							var sentinelSource = executableDirectory + @"\UpgradeSentinel.exe";
+							var sentinelSource = Path.Combine(executableDirectory, App.ZitiUpgradeSentinelExeName);
 
 							if (File.Exists(sentinelSource)) {
 								try {
-									File.Copy(executableDirectory + @"\UpgradeSentinel.exe", App.SentinelTempSource, true);
+									File.Copy(sentinelSource, App.SentinelTempSource, true);
 									logger.Info("starting sentinel process: {}", App.SentinelTempSource);
 									process.StartInfo.FileName = App.SentinelTempSource;
 									process.StartInfo.Arguments = "version";

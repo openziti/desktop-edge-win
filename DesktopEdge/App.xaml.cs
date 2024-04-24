@@ -34,7 +34,8 @@ namespace ZitiDesktopEdge {
 	/// Interaction logic for App.xaml
 	/// </summary>
 	public partial class App : Application {
-        public static string SentinelTempSource = Path.Combine(Path.GetTempPath(), "UpgradeSentinel.exe");
+        public const string ZitiUpgradeSentinelExeName = "ZitiUpgradeSentinel.exe";
+        public static string SentinelTempSource = Path.Combine(Path.GetTempPath(), ZitiUpgradeSentinelExeName);
         private const string NamedPipeName = "ZitiDesktopEdgePipe";
 
 		private static readonly Logger logger = LogManager.GetCurrentClassLogger();
