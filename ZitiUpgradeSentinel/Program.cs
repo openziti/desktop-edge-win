@@ -73,6 +73,7 @@ class FileWatcher {
 
 				try {
 					startTime = GetCurrentStartTime(writer, reader);
+					Log($"initial start time {startTime}");
 				} catch {
 					Log("Could not obtain current time. The service is expected to be down. Using 'now' as current time.");
 				}

@@ -28,14 +28,14 @@ using System.Windows.Interop;
 
 using NLog;
 using Ziti.Desktop.Edge.Models;
+using System.Reflection;
+using ZitiDesktopEdge.Utility;
 
 namespace ZitiDesktopEdge {
 	/// <summary>
 	/// Interaction logic for App.xaml
 	/// </summary>
 	public partial class App : Application {
-        public const string ZitiUpgradeSentinelExeName = "ZitiUpgradeSentinel.exe";
-        public static string SentinelTempSource = Path.Combine(Path.GetTempPath(), ZitiUpgradeSentinelExeName);
         private const string NamedPipeName = "ZitiDesktopEdgePipe";
 
 		private static readonly Logger logger = LogManager.GetCurrentClassLogger();
@@ -46,15 +46,7 @@ namespace ZitiDesktopEdge {
 		}
 
 		protected override void OnStartup(StartupEventArgs e) {
-			try {
-				if (File.Exists(SentinelTempSource)) {
-					// if the temp file exists, clear it out
-					File.Delete(SentinelTempSource);
-					logger.Debug("found and removed upgrade sentinel at: {}", SentinelTempSource);
-				}
-			} catch (Exception ex) {
-				logger.Error($"OnStartup FAILED to delete the UpgradeSentinel at {SentinelTempSource}", ex);
-			}
+			UpgradeSentinel.RemoveUpgradeSentinelExe();
 			try {
 				Current.Properties["ZDEWViewState"] = new ZDEWViewState();
 
@@ -109,7 +101,7 @@ namespace ZitiDesktopEdge {
 				OnReceivedString(text);
 			}
 		}
-
+		
 		public event Action<string> ReceiveString;
 		protected virtual void OnReceivedString(string text) => ReceiveString?.Invoke(text);
 
