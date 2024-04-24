@@ -14,31 +14,16 @@
 	limitations under the License.
 */
 
-/*
-   Copyright NetFoundry Inc.
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-   https://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Text.Json;
-using System.Runtime.Remoting.Messaging;
 using System.Collections.Generic;
-using System.Linq;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Json;
+using System.Text;
 
 class FileWatcher {
 	private static string processName = Process.GetCurrentProcess().ProcessName;
@@ -67,19 +52,14 @@ class FileWatcher {
 		string statusCommand = "{\"Command\":\"Status\"}";
 		writer.WriteLine(statusCommand);
 		writer.Flush();
-		var response = reader.ReadLine();
-#pragma warning disable CS8604 // Possible null reference argument.
-#pragma warning disable CS8600 // Possible null reference argument.
-		using (JsonDocument document = JsonDocument.Parse(response)) {
-			JsonElement root = document.RootElement;
-			JsonElement startTimeElement = root.GetProperty("Data").GetProperty("StartTime");
-			string startTimeStr = startTimeElement.GetString();
-			DateTime startTime = DateTime.Parse(startTimeStr).ToLocalTime();
-			Log($"StartTime: {startTime}");
-			return startTime;
-		}
-#pragma warning restore CS8600 // Possible null reference argument.
-#pragma warning restore CS8604 // Possible null reference argument.
+		var statusResponse = reader.ReadLine();
+		DataContractJsonSerializer serializer = new DataContractJsonSerializer(typeof(Response));
+		MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(statusResponse));
+		Response response = (Response)serializer.ReadObject(ms);
+		
+		DateTime startTime = DateTime.Parse(response.Data.StartTime).ToLocalTime();
+		Log($"StartTime: {startTime}");
+		return startTime;
 		throw new Exception("could not obtain current time from data service");
 	}
 
@@ -165,4 +145,41 @@ class FileWatcher {
 			}
 		}
 	}
+}
+
+
+[DataContract]
+public class Response {
+	[DataMember]
+	public bool Success { get; set; }
+
+	[DataMember]
+	public Data Data { get; set; }
+
+	[DataMember]
+	public int Code { get; set; }
+}
+
+[DataContract]
+public class Data {
+	[DataMember]
+	public bool Active { get; set; }
+
+	[DataMember]
+	public long Duration { get; set; }
+
+	[DataMember]
+	public string StartTime { get; set; }
+
+	[DataMember]
+	public List<Identity> Identities { get; set; }
+}
+
+[DataContract]
+public class Identity {
+	[DataMember]
+	public string Name { get; set; }
+
+	[DataMember]
+	public string Identifier { get; set; }
 }
