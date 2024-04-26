@@ -35,7 +35,8 @@ if(! $jsonOnly) {
 
 $outputPath = "${version}.json"
 & .\Installer\output-build-json.ps1 -version $version -url $url -stream $stream -published_at $published_at -outputPath $outputPath
-Move-Item -Force "${version}.json" "$scriptDirectory\release-streams\${stream}.json"
+Copy-Item -Force "$outputPath" "$scriptDirectory\release-streams\local\${version}"
+Copy-Item -Force "${version}.json" "$scriptDirectory\release-streams\${stream}.json"
 echo "json file written to: $scriptDirectory\release-streams\${stream}.json"
 
 if($revertGitAfter) {
