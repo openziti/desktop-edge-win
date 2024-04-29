@@ -28,13 +28,14 @@ using System.Windows.Interop;
 
 using NLog;
 using Ziti.Desktop.Edge.Models;
+using System.Reflection;
+using ZitiDesktopEdge.Utility;
 
 namespace ZitiDesktopEdge {
 	/// <summary>
 	/// Interaction logic for App.xaml
 	/// </summary>
 	public partial class App : Application {
-        public static string SentinelTempSource = Path.Combine(Path.GetTempPath(), "UpgradeSentinel.exe");
         private const string NamedPipeName = "ZitiDesktopEdgePipe";
 
 		private static readonly Logger logger = LogManager.GetCurrentClassLogger();
@@ -45,18 +46,15 @@ namespace ZitiDesktopEdge {
 		}
 
 		protected override void OnStartup(StartupEventArgs e) {
-			if(File.Exists(SentinelTempSource)) {
-				// if the temp file exists, clear it out
-				File.Delete(SentinelTempSource);
-				logger.Debug("found and removed upgrade sentinel at: {}", SentinelTempSource);
-			}
-			Current.Properties["ZDEWViewState"] = new ZDEWViewState();
+			UpgradeSentinel.RemoveUpgradeSentinelExe();
+			try {
+				Current.Properties["ZDEWViewState"] = new ZDEWViewState();
 
-			const string appName = "Ziti Desktop Edge";
+				const string appName = "Ziti Desktop Edge";
 
-			bool createdNew;
+				bool createdNew;
 
-			_mutex = new Mutex(true, appName, out createdNew);
+				_mutex = new Mutex(true, appName, out createdNew);
 
 			if (!createdNew) {
 				using (var client = new NamedPipeClientStream(NamedPipeName)) {
@@ -80,8 +78,12 @@ namespace ZitiDesktopEdge {
 #pragma warning disable 4014 //This async method lacks 'await'
 				StartServer();
 #pragma warning restore 4014 //This async method lacks 'await'
-            }
-        }
+				}
+			} catch (Exception ex) {
+				logger.Error($"OnStartup FAILED unexpectedly. Exiting", ex);
+				Application.Current.Shutdown();
+			}
+		}
 
 		async public Task StartServer() {
 			logger.Debug("Starting IPC server to listen for other instances of the app");
@@ -99,7 +101,7 @@ namespace ZitiDesktopEdge {
 				OnReceivedString(text);
 			}
 		}
-
+		
 		public event Action<string> ReceiveString;
 		protected virtual void OnReceivedString(string text) => ReceiveString?.Invoke(text);
 

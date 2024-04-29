@@ -216,12 +216,12 @@ namespace ZitiDesktopEdge {
 						}
 					}
 					if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Identifier == mfa.Identifier) this.IdentityMenu.Identity = found;
-					// serviceClient.GetStatusAsync();
 					// ShowBlurb("mfa authenticated: " + mfa.Successful, "");
 				} else {
 					await ShowBlurbAsync("Unexpected error when processing MFA", "");
 					logger.Error("unexpected action: " + mfa.Action);
 				}
+
 				LoadIdentities(true);
 			});
 		}
@@ -817,30 +817,7 @@ namespace ZitiDesktopEdge {
 				try {
 					if (evt.Message?.ToLower() == "upgrading") {
 						logger.Info("The monitor has indicated an upgrade is in progress. Shutting down the UI");
-
-						//start the sentinel process...
-						using (Process process = new Process()) {
-							string executablePath = Assembly.GetEntryAssembly().Location;
-							string executableDirectory = Path.GetDirectoryName(executablePath);
-							var sentinelSource = executableDirectory + @"\UpgradeSentinel.exe";
-
-							if (File.Exists(sentinelSource)) {
-								try {
-									File.Copy(executableDirectory + @"\UpgradeSentinel.exe", App.SentinelTempSource, true);
-									logger.Info("starting sentinel process: {}", App.SentinelTempSource);
-									process.StartInfo.FileName = App.SentinelTempSource;
-									process.StartInfo.Arguments = "version";
-									process.StartInfo.RedirectStandardOutput = true;
-									process.StartInfo.UseShellExecute = false;
-									process.StartInfo.CreateNoWindow = true;
-									process.Start();
-								} catch (Exception ex) {
-									logger.Error("cannot start sentinel service. {}", ex);
-								}
-							} else {
-								logger.Warn("cannot start sentinel service. source file doesn't exist? {}", sentinelSource);
-							}
-						}
+						UpgradeSentinel.StartUpgradeSentinel();
 
 						App.Current.Exit -= Current_Exit;
 						logger.Info("Removed Current_Exit handler");

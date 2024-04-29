@@ -7,6 +7,40 @@ function verifyFile($path) {
         throw [System.IO.FileNotFoundException] "$path not found"
     }
 }
+function signFile($loc, $name) {
+	echo "Using signtool: '$SIGNTOOL'"
+	$cert="${scriptPath}\GlobalSign-SigningCert-2024-2027.cert"
+	$exeAbsPath="$loc\$name"
+	echo "----- signFile: producing digest to send to AWS KMS -----"
+	& "$SIGNTOOL" sign /dg $loc /fd sha256 /f $cert $exeAbsPath
+	$tosign = Get-Content "${exeAbsPath}.dig" -Raw
+	echo "----- signFile: sending digest to AWS KMS for signing -----"
+	$signature = aws kms sign --key-id $env:AWS_KEY_ID `
+		--message $tosign `
+		--message-type DIGEST `
+		--signing-algorithm "RSASSA_PKCS1_V1_5_SHA_256" `
+		--output text `
+		--query "Signature"
+	Set-Content -Path "${exeAbsPath}.dig.signed" -Value $signature
+	echo "----- signFile: adding signature -----"
+	& "$SIGNTOOL" sign /di $loc $exeAbsPath
+	echo "----- signFile: adding timestamp -----"
+	& "$SIGNTOOL" timestamp /tr "http://timestamp.digicert.com" /td sha256 $exeAbsPath
+	& "$SIGNTOOL" verify /pa $exeAbsPath
+	echo "removing any ifles leftover from signing"
+	Remove-Item "${exeAbsPath}.dig" -ErrorAction SilentlyContinue
+	Remove-Item "${exeAbsPath}.dig.signed" -ErrorAction SilentlyContinue
+	Remove-Item "${exeAbsPath}.p7u" -ErrorAction SilentlyContinue
+}
+function fetchCRedis() {	
+	echo "========================== fetching vc++ redist =========================="
+	$VC_REDIST_URL="https://aka.ms/vs/17/release/vc_redist.x64.exe"
+	echo "Beginning to download vc++ redist from MS at ${VC_REDIST_URL}"
+	echo ""
+	Invoke-WebRequest $VC_REDIST_URL -OutFile "${buildPath}\VC_redist.x64.exe"
+	verifyFile("${buildPath}\VC_redist.x64.exe")
+	echo "========================== fetching vc++ redist complete =========================="
+}
 
 echo "========================== build.ps1 begins =========================="
 $invocation = (Get-Variable MyInvocation).Value
@@ -15,6 +49,7 @@ $checkoutRoot = (Resolve-Path '${scriptPath}\..')
 $buildPath = "${scriptPath}\build"
 $ADV_INST_VERSION = Get-Content -Path "${checkoutRoot}\adv-inst-version"
 $ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer ${ADV_INST_VERSION}"
+$SIGNTOOL="${ADV_INST_HOME}\third-party\winsdk\x64\signtool"
 $ADVINST = "${ADV_INST_HOME}\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
 
@@ -26,7 +61,7 @@ $global:ProgressPreference = "SilentlyContinue"
 
 if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
     if($null -eq $env:ZITI_EDGE_TUNNEL_VERSION) {
-        $ZITI_EDGE_TUNNEL_VERSION="v0.22.25"
+        $ZITI_EDGE_TUNNEL_VERSION="v0.22.28"
     } else {
         $ZITI_EDGE_TUNNEL_VERSION=$env:ZITI_EDGE_TUNNEL_VERSION
     }
@@ -55,13 +90,6 @@ if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
 
 Push-Location ${checkoutRoot}
 
-echo "========================== fetching vc++ redist =========================="
-$VC_REDIST_URL="https://aka.ms/vs/17/release/vc_redist.x64.exe"
-echo "Beginning to download vc++ redist from MS at ${VC_REDIST_URL}"
-echo ""
-Invoke-WebRequest $VC_REDIST_URL -OutFile "${buildPath}\VC_redist.x64.exe"
-verifyFile("${buildPath}\VC_redist.x64.exe")
-echo "========================== fetching vc++ redist complete =========================="
 
 echo "Updating the version for UI and Installer"
 .\update-versions.ps1
@@ -99,22 +127,33 @@ if($gituser -eq "ziti-ci") {
   echo "detected user [${gituser}] which is not ziti-ci - skipping installer commit"
 }
 
-$exeAbsPath="${scriptPath}\Output\Ziti Desktop Edge Client-${installerVersion}.exe"
+$outputPath="${scriptPath}\Output"
+$exeName="Ziti Desktop Edge Client-${installerVersion}.exe"
+$exeAbsPath="${outputPath}\${exeName}"
 
-if($null -eq $env:OPENZITI_P12_PASS) {
+if($null -eq $env:AWS_KEY_ID) {
     echo ""
-    echo "Not calling signtool - env:OPENZITI_P12_PASS is not set"
+	echo "AWS_KEY_ID not set. __THE BINARY WILL NOT BE SIGNED!__"
     echo ""
 } else {
-    echo "adding additional signature to executable with openziti.org signing certificate"\
-    echo "RUNNING: $ADV_INST_HOME\third-party\winsdk\x64\signtool" sign /f "${scriptPath}\openziti.p12" /p "${env:OPENZITI_P12_PASS}" /tr http://ts.ssl.com /fd sha512 /td sha512 /as "${exeAbsPath}"
-    & "$ADV_INST_HOME\third-party\winsdk\x64\signtool" sign /f "${scriptPath}\openziti.p12" /p "${env:OPENZITI_P12_PASS}" /tr http://ts.ssl.com /fd sha512 /td sha512 /as "${exeAbsPath}"
+    signFile -loc $outputPath -name $exeName
 }
+
+if($null -eq $env:OPENZITI_P12_PASS_2024) {
+    echo ""
+    echo "Not calling signtool - env:OPENZITI_P12_PASS_2024 is not set"
+    echo ""
+} else {
+    echo "adding additional signature to executable with openziti.org signing certificate"
+    echo "Using ${SIGNTOOL} to sign executable with the additional OpenZiti signature"
+    & "$SIGNTOOL" sign /f "${scriptPath}\openziti_2024.p12" /p "${env:OPENZITI_P12_PASS_2024}" /tr http://ts.ssl.com /fd sha512 /td sha512 /as "${exeAbsPath}"
+}
+
 (Get-FileHash "${exeAbsPath}").Hash > "${scriptPath}\Output\Ziti Desktop Edge Client-${installerVersion}.exe.sha256"
 echo "========================== build.ps1 completed =========================="
 
 $defaultRootUrl = "https://github.com/openziti/desktop-edge-win/releases/download/"
 $defaultStream = "beta"
 $defaultPublishedAt = Get-Date
-$outputPath = "${installerVersion}.json"
-& .\Installer\output-build-json.ps1 -version $installerVersion -url $defaultRootUrl -stream $defaultStream -published_at $defaultPublishedAt -outputPath $outputPath
+$updateJson = "${installerVersion}.json"
+& .\Installer\output-build-json.ps1 -version $installerVersion -url $defaultRootUrl -stream $defaultStream -published_at $defaultPublishedAt -outputPath $updateJson

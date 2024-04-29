@@ -28,6 +28,9 @@ using NLog;
 
 using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.Server;
+using System.Diagnostics;
+using System.Reflection;
+using ZitiDesktopEdge.Utility;
 
 /// <summary>
 /// The implementation will abstract away the setup of the communication to
@@ -186,8 +189,10 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
             return null;
         }
-        async public Task<SvcResponse> TriggerUpdate() {
-            ActionEvent action = new ActionEvent() { Op = "TriggerUpdate", Action = "" };
+
+		async public Task<SvcResponse> TriggerUpdate() {
+			UpgradeSentinel.StartUpgradeSentinel();
+			ActionEvent action = new ActionEvent() { Op = "TriggerUpdate", Action = "" };
             try {
                 await sendAsync(action);
                 return await readAsync<SvcResponse>(ipcReader);

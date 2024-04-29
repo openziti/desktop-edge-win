@@ -1,12 +1,12 @@
 {
-  "name": "2.1.35 Override",
-  "tag_name": "2.1.35",
-  "published_at": "2023-11-01T19:33:11Z",
+  "name": "2.2.2",
+  "tag_name": "2.2.2",
+  "published_at": "2024-03-11T17:10:08Z",
   "installation_critical": false,
   "assets": [
     {
-      "name": "Ziti.Desktop.Edge.Client-2.1.35.exe",
-      "browser_download_url": "http://localhost:8000/ZitiDesktopEdgeClient/2.1.35/Ziti.Desktop.Edge.Client-2.1.35.exe"
+      "name": "Ziti.Desktop.Edge.Client-2.2.2.exe",
+      "browser_download_url": "https://github.com/openziti/desktop-edge-win/releases/download/2.2.2/Ziti.Desktop.Edge.Client-2.2.2.exe"
     }
   ]
 }

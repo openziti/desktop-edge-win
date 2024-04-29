@@ -72,6 +72,7 @@
     <Compile Include="DataStructures\DataStructures.cs" />
     <Compile Include="ServiceClient\MonitorClient.cs" />
     <Compile Include="Utility\GithubAPI.cs" />
+    <Compile Include="Utility\UpgradeSentinel.cs" />
     <Compile Include="Utility\VersionUtil.cs" />
   </ItemGroup>
   <ItemGroup>

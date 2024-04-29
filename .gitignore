@@ -269,7 +269,7 @@ Installer/build/
 Installer/ziti-tunnel-service.zip
 ziti-tunnel-service.zip
 WinSign.*
-*.p12
+*.p12*
 *.pfx
 *.pem
 ADV_INST_KEY.key
@@ -284,3 +284,4 @@ Installer/zet.zip
 release-streams/local/*
 release-streams/local.json
 release-streams/dev.json
+tosign.exe
