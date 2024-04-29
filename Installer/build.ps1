@@ -17,7 +17,7 @@ function signFile($loc, $name) {
 	echo "----- signFile: sending digest to AWS KMS for signing. -----"
 	$signature = aws kms sign --key-id $env:AWS_KEY_ID --message $tosign --message-type DIGEST --signing-algorithm "RSASSA_PKCS1_V1_5_SHA_256" --output text --query "Signature"
 	Set-Content -Path "${exeAbsPath}.dig.signed" -Value $signature
-	echo "----- signature len: ${signature.Count} ----"
+	echo "----- signature len: $($signature.Length) ----"
 	dir $loc
 	echo "----- done signing digest -----"
 	
