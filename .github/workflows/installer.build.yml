@@ -1,9 +1,11 @@
 name: Build Installer
 
 on:
-  pull_request:
-    branches: 
+  push:
+    branches:
       - main
+  pull_request:
+    branches:
       - 'release-*'
       - 'beta-release-*'
 
