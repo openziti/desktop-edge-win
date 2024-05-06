@@ -1,6 +1,7 @@
 name: Build Installer
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
