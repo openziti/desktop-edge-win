@@ -1,9 +1,11 @@
 name: Build Installer
 
 on:
-  pull_request:
-    branches: 
+  push:
+    branches:
       - main
+  pull_request:
+    branches:
       - 'release-*'
       - 'beta-release-*'
 
@@ -17,13 +19,19 @@ jobs:
     runs-on: windows-latest
     if: "!contains(github.event.head_commit.message, 'ci skip')"
     env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWSKMS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWSKMS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWSKMS_REGION }}
+      AWS_KEY_ID: ${{ secrets.AWSKMS_KEY_ID }}
       SIGNING_CERT: ${{ secrets.SIGNING_CERT_2022_b64 }}
       ADV_INST_KEY: ${{ secrets.ADV_INST_KEY }}
       JFROG_ACCESS_TOKEN: ${{ secrets.JFROG_ACCESS_TOKEN }}
       gh_ci_key: ${{ secrets.GH_CI_KEY }}
       ZITI_DEBUG: "yes_please"
       OPENZITI_P12_PASS: ${{ secrets.OPENZITI_P12_PASS }}
+      OPENZITI_P12_PASS_2024: ${{ secrets.OPENZITI_P12_PASS_2024 }}
       OPENZITI_P12: ${{ secrets.OPENZITI_P12 }}
+      OPENZITI_P12_2024: ${{ secrets.OPENZITI_P12_2024 }}
 
     steps:
       - name: Git Checkout
@@ -40,25 +48,21 @@ jobs:
       - name: Setup secrets
         run: |
           echo "${env:SIGNING_CERT}" > WinSign.b64
-          echo "${env:ADV_INST_KEY}" > ADV_INST_KEY.key
           echo "${env:OPENZITI_P12}" > OPENZITI_P12.b64
+          echo "${env:OPENZITI_P12_2024}" > OPENZITI_P12_2024.b64
           C:\Windows\System32\certutil.exe -decode WinSign.b64 Installer/WinSign.p12
           C:\Windows\System32\certutil.exe -decode OPENZITI_P12.b64 Installer/openziti.p12
+          C:\Windows\System32\certutil.exe -decode OPENZITI_P12_2024.b64 Installer/openziti_2024.p12
       - name: Trying to run choco install.
         run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-      - name: "Install Choco needs: advanced-installer wixtoolset ninja"
-        run: choco install advanced-installer wixtoolset ninja --yes
-      - name: Build the ziti-edge-tunnel (for now, will download later)
-        run: ziti-edge-tunnel\build.bat quick
-      - name: Setting up version env var
+      - name: "Install Choco needs: wixtoolset ninja"
+        run: choco install wixtoolset ninja --yes
+      - name: Setting up ADV_INST_VERSION env var from adv-inst-version
+        run: echo "ADV_INST_VERSION=$(cat .\adv-inst-version)" >> $env:GITHUB_ENV
+      - name: "Install Choco needs: advanced-installer "
+        run: choco install advanced-installer --version="$(cat .\adv-inst-version)" --yes
+      - name: Setting up VERSION env var
         run: echo "VERSION=$(cat .\version)" >> $env:GITHUB_ENV
-      - name: Upload service zip onto job
-        uses: actions/upload-artifact@v2
-        with:
-          name: ziti-edge-tunnel-win.zip-${{ env.VERSION }}
-          path: "ziti-edge-tunnel/ziti-edge-tunnel-win.zip"
-      - name: Setting up ZITI_EDGE_TUNNEL_BUILD env var
-        run: echo "ZITI_EDGE_TUNNEL_BUILD=.\ziti-edge-tunnel" >> $env:GITHUB_ENV
       - uses: nuget/setup-nuget@v1
         with:
           nuget-api-key: ${{ secrets.NuGetAPIKey }}
@@ -68,8 +72,7 @@ jobs:
       - shell: pwsh
         name: Register Advanced Installer
         run: |
-          $key=(Get-Content .\ADV_INST_KEY.key)
-          .\Installer\reg.bat $key
+          .\Installer\reg.ps1 -key "${env:ADV_INST_KEY}"
       - if: github.ref == 'refs/heads/release-next'
         name: Install ziti-ci
         uses: netfoundry/ziti-ci@v1
@@ -83,10 +86,15 @@ jobs:
           ziti_ci_gpg_key_id: ${{ secrets.ZITI_CI_GPG_KEY_ID }}
         run: powershell -File .\Installer\build.ps1
       - name: Upload installer onto job
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ZitiDesktopEdgeClient-${{ env.VERSION }}
           path: "Installer/Output/Ziti Desktop Edge Client-*"
+      - name: Upload update json to job
+        uses: actions/upload-artifact@v2
+        with:
+          name: ZitiDesktopEdgeClient-${{ env.VERSION }}
+          path: ${{ env.VERSION }}.json
       - name: Git Status
         run: git status
       - name: git diff
