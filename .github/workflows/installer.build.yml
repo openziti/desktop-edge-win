@@ -24,15 +24,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWSKMS_SECRET_ACCESS_KEY }}
       AWS_REGION: ${{ secrets.AWSKMS_REGION }}
       AWS_KEY_ID: ${{ secrets.AWSKMS_KEY_ID }}
-      SIGNING_CERT: ${{ secrets.SIGNING_CERT_2022_b64 }}
       ADV_INST_KEY: ${{ secrets.ADV_INST_KEY }}
-      JFROG_ACCESS_TOKEN: ${{ secrets.JFROG_ACCESS_TOKEN }}
-      gh_ci_key: ${{ secrets.GH_CI_KEY }}
-      ZITI_DEBUG: "yes_please"
-      OPENZITI_P12_PASS: ${{ secrets.OPENZITI_P12_PASS }}
-      OPENZITI_P12_PASS_2024: ${{ secrets.OPENZITI_P12_PASS_2024 }}
-      OPENZITI_P12: ${{ secrets.OPENZITI_P12 }}
-      OPENZITI_P12_2024: ${{ secrets.OPENZITI_P12_2024 }}
 
     steps:
       - name: Git Checkout
@@ -46,14 +38,6 @@ jobs:
         run: echo "GIT_BRANCH=$($env:GITHUB_REF.replace('refs/heads/', ''))" >> $env:GITHUB_ENV
       - if: github.event_name == 'pull_request'
         run: echo "GIT_BRANCH=$env:GITHUB_HEAD_REF" >> $env:GITHUB_ENV
-      - name: Setup secrets
-        run: |
-          echo "${env:SIGNING_CERT}" > WinSign.b64
-          echo "${env:OPENZITI_P12}" > OPENZITI_P12.b64
-          echo "${env:OPENZITI_P12_2024}" > OPENZITI_P12_2024.b64
-          C:\Windows\System32\certutil.exe -decode WinSign.b64 Installer/WinSign.p12
-          C:\Windows\System32\certutil.exe -decode OPENZITI_P12.b64 Installer/openziti.p12
-          C:\Windows\System32\certutil.exe -decode OPENZITI_P12_2024.b64 Installer/openziti_2024.p12
       - name: Trying to run choco install.
         run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
       - name: "Install Choco needs: wixtoolset ninja"
