@@ -96,6 +96,12 @@ jobs:
         with:
           name: ZitiDesktopEdgeClient-${{ env.VERSION }}
           path: ${{ env.VERSION }}.json
+      - name: Job Failure - Upload the signing log job
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: SigningLogs
+          path: '**/*AWSSigner.log*'
       - name: Git Status
         run: git status
       - name: git diff
