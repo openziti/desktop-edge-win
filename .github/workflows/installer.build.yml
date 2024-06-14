@@ -2,6 +2,11 @@ name: Build Installer
 
 on:
   workflow_dispatch:
+    inputs:
+      zet:
+        description: 'A link to a ziti-edge-tunnel to use'
+        required: false
+        default: 'https://github.com/openziti/ziti/releases'
   push:
     branches:
       - main
@@ -35,6 +40,8 @@ jobs:
       OPENZITI_P12_2024: ${{ secrets.OPENZITI_P12_2024 }}
 
     steps:
+      - name: Set up environment variable
+        run: echo "ZITI_EDGE_TUNNEL_BUILD=${{ github.event.inputs.zet }}" >> $GITHUB_ENV
       - name: Git Checkout
         uses: actions/checkout@v2
         with:
