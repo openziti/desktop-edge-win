@@ -51,7 +51,6 @@ $ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer ${ADV_INST_V
 $SIGNTOOL="${ADV_INST_HOME}\third-party\winsdk\x64\signtool"
 $ADVINST = "${ADV_INST_HOME}\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
-$env:SIGNING_CERT="${scriptPath}\GlobalSign-SigningCert-2024-2027.cert"
 
 echo "Cleaning previous build folder if it exists"
 Remove-Item "${buildPath}" -r -ErrorAction Ignore
@@ -94,6 +93,8 @@ Remove-Item "${scriptPath}\AWSSigner.NET" -Recurse -ErrorAction SilentlyContinue
 $signerTargetDir="${scriptPath}\AWSSigner.NET"
 echo $signerTargetDir
 move "${checkoutRoot}/AWSSigner.NET\bin\Release\" "${signerTargetDir}\"
+$env:SIGNING_CERT="${scriptPath}\GlobalSign-SigningCert-2024-2027.cert"
+$env:SIGNTOOL_PATH="${scriptPath}\AWSSigner.NET\AWSSigner.NET.exe"
 
 Push-Location ${checkoutRoot}
 

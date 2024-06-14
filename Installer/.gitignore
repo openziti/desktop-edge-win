@@ -6,3 +6,4 @@ build/
 ziti-tunnel-service.zip
 *.old
 AWSSigner.NET
+*back*
