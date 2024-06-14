@@ -94,6 +94,7 @@ $signerTargetDir="${scriptPath}\AWSSigner.NET"
 echo $signerTargetDir
 move "${checkoutRoot}/AWSSigner.NET\bin\Release\" "${signerTargetDir}\"
 $env:SIGNING_CERT="${scriptPath}\GlobalSign-SigningCert-2024-2027.cert"
+$env:SIGNTOOL_PATH="${SIGNTOOL}"
 
 Push-Location ${checkoutRoot}
 
