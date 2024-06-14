@@ -103,9 +103,9 @@ namespace AWSSigner {
 			string awsKeyId = Environment.GetEnvironmentVariable("AWS_KEY_ID");
 
 			if (!File.Exists(signToolPath)) {
-				string signToolPathEnv = Environment.GetEnvironmentVariable("SIGNTOOL_PATH");
+				string signToolPathEnv = Environment.GetEnvironmentVariable("SIGNTOOL");
 				if (!File.Exists(signToolPathEnv)) {
-					Logger.Info("ERROR: Signtool not found on path and SIGNTOOL_PATH environment variable not set!");
+					Logger.Info("ERROR: Signtool not found on path and SIGNTOOL environment variable not set!");
 					return;
 				} else {
 					Logger.Info($"Using signtool found via environment variable at: {signToolPathEnv}");
