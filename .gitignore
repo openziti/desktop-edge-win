@@ -285,3 +285,6 @@ release-streams/local/*
 release-streams/local.json
 release-streams/dev.json
 tosign.exe
+[0-9]*.[0-9]*.[0-9]*.json
+
+

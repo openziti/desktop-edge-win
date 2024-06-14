@@ -51,6 +51,7 @@ $ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer ${ADV_INST_V
 $SIGNTOOL="${ADV_INST_HOME}\third-party\winsdk\x64\signtool"
 $ADVINST = "${ADV_INST_HOME}\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
+$env:SIGNING_CERT="${scriptPath}\GlobalSign-SigningCert-2024-2027.cert"
 
 echo "Cleaning previous build folder if it exists"
 Remove-Item "${buildPath}" -r -ErrorAction Ignore
@@ -87,8 +88,14 @@ if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
     copy "$zet_folder\wintun.dll" -Destination "$buildPath\service" -Force
 }
 
-Push-Location ${checkoutRoot}
+echo "========================== building and moving the custom signing tool =========================="
+dotnet build -c Release "${checkoutRoot}/AWSSigner.NET\AWSSigner.NET.csproj"
+Remove-Item "${scriptPath}\AWSSigner.NET" -Recurse -ErrorAction SilentlyContinue
+$signerTargetDir="${scriptPath}\AWSSigner.NET"
+echo $signerTargetDir
+move "${checkoutRoot}/AWSSigner.NET\bin\Release\" "${signerTargetDir}\"
 
+Push-Location ${checkoutRoot}
 
 echo "Updating the version for UI and Installer"
 .\update-versions.ps1
@@ -134,8 +141,6 @@ if($null -eq $env:AWS_KEY_ID) {
     echo ""
 	echo "AWS_KEY_ID not set. __THE BINARY WILL NOT BE SIGNED!__"
     echo ""
-} else {
-    signFile -loc $outputPath -name $exeName
 }
 
 if($null -eq $env:OPENZITI_P12_PASS_2024) {
