@@ -48,7 +48,7 @@ $checkoutRoot = (Resolve-Path '${scriptPath}\..')
 $buildPath = "${scriptPath}\build"
 $ADV_INST_VERSION = Get-Content -Path "${checkoutRoot}\adv-inst-version"
 $ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer ${ADV_INST_VERSION}"
-$SIGNTOOL="${ADV_INST_HOME}\third-party\winsdk\x64\signtool"
+$SIGNTOOL="${ADV_INST_HOME}\third-party\winsdk\x64\signtool.exe"
 $ADVINST = "${ADV_INST_HOME}\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
 
