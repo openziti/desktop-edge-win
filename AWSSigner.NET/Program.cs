@@ -109,6 +109,7 @@ namespace AWSSigner {
 					return;
 				} else {
 					Logger.Info($"Using signtool found via environment variable at: {signToolPathEnv}");
+					signToolPath= signToolPathEnv;
 				}
 			}
 
