@@ -14,15 +14,19 @@
 	limitations under the License.
 */
 
-﻿using System.ServiceProcess;
+using System;
+using System.Diagnostics;
+using System.Linq;
+using System.ServiceProcess;
 
 using NLog;
 
 namespace ZitiDesktopEdge.Server {
     public static class ServiceActions {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-        
-        private static ServiceController sc = new ServiceController("ziti");
+        private static int serviceWaitTime = 300;
+
+		private static ServiceController sc = new ServiceController("ziti");
         public static string ServiceStatus() {
             var status = sc.Status;
             Logger.Debug("service status asked for. current value: {0}", sc.Status);
@@ -42,19 +46,39 @@ namespace ZitiDesktopEdge.Server {
         }
 
         public static string StartService() {
-            Logger.Info("request to start ziti service received... processing...");
+            Logger.Info($"request to start ziti service received... waiting up to {serviceWaitTime}s for service start...");
             sc.Start();
-            sc.WaitForStatus(ServiceControllerStatus.Running, new System.TimeSpan(0,0,30));
+            sc.WaitForStatus(ServiceControllerStatus.Running, new System.TimeSpan(0,0, serviceWaitTime));
             Logger.Info("request to start ziti service received... complete...");
             return ServiceStatus();
         }
 
         public static string StopService() {
-            Logger.Info("request to stop ziti service received... processing...");
-            sc.Stop();
-            sc.WaitForStatus(ServiceControllerStatus.Stopped, new System.TimeSpan(0, 0, 30));
-            Logger.Info("request to stop ziti service received... complete...");
-            return ServiceStatus();
+            try {
+                Logger.Info($"request to stop ziti service received... waiting up to {serviceWaitTime}s for service stop...");
+				sc.Stop();
+                sc.WaitForStatus(ServiceControllerStatus.Stopped, new System.TimeSpan(0, 0, serviceWaitTime));
+                Logger.Info("request to stop ziti service received... complete...");
+                return ServiceStatus();
+            } catch (Exception e) {
+				Logger.Error("failed to stop service using ServiceController. Attempting to find and kill the ziti process directly");
+
+				var zetProcesses = Process.GetProcesses()
+						  .Where(p => p.ProcessName == "ziti-edge-tunnel");
+
+				foreach (var process in zetProcesses) {
+					try {
+						Logger.Warn($"Attempting to forcefully terminate process: {process.Id}");
+						process.Kill(); // true forces the process to terminate
+						process.WaitForExit(); // Optional: Waits for the process to exit
+						Logger.Warn($"Successfully terminated process forcefully: {process.Id}");
+					} catch (Exception ex) {
+						Logger.Error($"Failed to forcefully terminate process: {process.Id}: {ex.Message}");
+					}
+				}
+
+				throw e;
+            }
         }
     }
 }
