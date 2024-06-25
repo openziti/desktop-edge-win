@@ -103,10 +103,10 @@ namespace ZitiDesktopEdge.Server {
             nrptRuleProcess.StartInfo = nrptRuleStartInfo;
             nrptRuleProcess.Start();
             if (nrptRuleProcess.WaitForExit(60 * 1000)) { // wait for 60s
-				Logger.Debug("NRPT rules have been removed");
-			} else {
-				Logger.Error($"waited 60s, could not remove NRPT rules?!");
-			}
+                Logger.Debug("NRPT rules have been removed");
+            } else {
+                Logger.Error($"waited 60s, could not remove NRPT rules?!");
+            }
         }
 
         static void RemoveZitiTunInterfaces() {
