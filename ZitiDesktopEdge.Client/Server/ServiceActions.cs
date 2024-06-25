@@ -73,8 +73,11 @@ namespace ZitiDesktopEdge.Server {
                     try {
                         Logger.Warn($"attempting to forcefully terminate process: {process.Id}");
                         process.Kill();
-                        process.WaitForExit(); // Optional: Waits for the process to exit
-                        Logger.Warn($"terminated process forcefully: {process.Id}");
+                        if (process.WaitForExit(30 * 1000)) { // wait for 30s
+                            Logger.Warn($"terminated process forcefully: {process.Id}");
+                        } else {
+                            Logger.Error($"waited 30s, could not terminate process: {process.Id}");
+                        }
                     } catch (Exception ex) {
                         Logger.Error($"failed to forcefully terminate process: {process.Id}!!! Error Msg: {ex.Message}");
                     }
@@ -99,8 +102,11 @@ namespace ZitiDesktopEdge.Server {
             Logger.Info("Running: {0}", nrptRuleStartInfo.Arguments);
             nrptRuleProcess.StartInfo = nrptRuleStartInfo;
             nrptRuleProcess.Start();
-            nrptRuleProcess.WaitForExit(1000 * 60);
-            Logger.Debug("NRPT rules have been removed");
+            if (nrptRuleProcess.WaitForExit(60 * 1000)) { // wait for 60s
+				Logger.Debug("NRPT rules have been removed");
+			} else {
+				Logger.Error($"waited 60s, could not remove NRPT rules?!");
+			}
         }
 
         static void RemoveZitiTunInterfaces() {
