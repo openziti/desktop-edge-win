@@ -16,14 +16,10 @@
 
 using System;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Management;
 using System.ServiceProcess;
-using System.Text.RegularExpressions;
-using System.Threading;
 using NLog;
-using NLog.Fluent;
 
 namespace ZitiDesktopEdge.Server {
     public static class ServiceActions {
