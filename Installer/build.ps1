@@ -48,7 +48,7 @@ $checkoutRoot = (Resolve-Path '${scriptPath}\..')
 $buildPath = "${scriptPath}\build"
 $ADV_INST_VERSION = Get-Content -Path "${checkoutRoot}\adv-inst-version"
 $ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer ${ADV_INST_VERSION}"
-$SIGNTOOL="${ADV_INST_HOME}\third-party\winsdk\x64\signtool"
+$SIGNTOOL="${ADV_INST_HOME}\third-party\winsdk\x64\signtool.exe"
 $ADVINST = "${ADV_INST_HOME}\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
 
@@ -57,6 +57,7 @@ Remove-Item "${buildPath}" -r -ErrorAction Ignore
 mkdir "${buildPath}" -ErrorAction Ignore > $null
 
 $global:ProgressPreference = "SilentlyContinue"
+$destination="${scriptPath}\zet.zip"
 
 if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
     if($null -eq $env:ZITI_EDGE_TUNNEL_VERSION) {
@@ -68,27 +69,34 @@ if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
     $zet_dl="https://github.com/openziti/ziti-tunnel-sdk-c/releases/download/${ZITI_EDGE_TUNNEL_VERSION}/ziti-edge-tunnel-Windows_x86_64.zip"
     echo "Beginning to download ziti-edge-tunnel from ${zet_dl}"
     echo ""
-    $response = Invoke-WebRequest $zet_dl -OutFile "${scriptPath}\zet.zip"
-    verifyFile("${scriptPath}\zet.zip")
-
-    echo "Expanding downloaded file..."
-    Expand-Archive -Path "${scriptPath}\zet.zip" -Force -DestinationPath "${buildPath}\service"
-    echo "expanded zet.zip file to ${buildPath}\service"
+    $response = Invoke-WebRequest $zet_dl -OutFile "${destination}"
 } else {
     echo "========================== using locally defined ziti-edge-tunnel =========================="
-    $zet_folder=$env:ZITI_EDGE_TUNNEL_BUILD
-    echo "local build folder set to: $zet_folder"
+    $zet_dl="${env:ZITI_EDGE_TUNNEL_BUILD}"
+
+    echo "Sourcing ziti-edge-tunnel from ${zet_dl}"
     echo ""
-    verifyFile("$zet_folder\ziti-edge-tunnel.exe")
-    verifyFile("$zet_folder\wintun.dll")
-    echo ""
-    mkdir "${buildPath}\service" -ErrorAction Ignore > $null
-    copy "$zet_folder\ziti-edge-tunnel.exe" -Destination "$buildPath\service" -Force
-    copy "$zet_folder\wintun.dll" -Destination "$buildPath\service" -Force
+    if ($SourcePath -match "^https?://") {
+        $response = Invoke-WebRequest -Uri "${zet_dl}" -OutFile "${destination}"
+    } else {
+        $response = Copy-Item -Path "${zet_dl}" -Destination "${destination}" -ErrorAction Stop
+    }
 }
 
-Push-Location ${checkoutRoot}
+verifyFile("${destination}")
+echo "Expanding downloaded file..."
+Expand-Archive -Path "${destination}" -Force -DestinationPath "${buildPath}\service"
+echo "expanded ${destination} file to ${buildPath}\service"
 
+echo "========================== building and moving the custom signing tool =========================="
+dotnet build -c Release "${checkoutRoot}/AWSSigner.NET\AWSSigner.NET.csproj"
+Remove-Item "${scriptPath}\AWSSigner.NET" -Recurse -ErrorAction SilentlyContinue
+$signerTargetDir="${scriptPath}\AWSSigner.NET"
+move "${checkoutRoot}/AWSSigner.NET\bin\Release\" "${signerTargetDir}\"
+$env:SIGNING_CERT="${scriptPath}\GlobalSign-SigningCert-2024-2027.cert"
+$env:SIGNTOOL_PATH="${SIGNTOOL}"
+
+Push-Location ${checkoutRoot}
 
 echo "Updating the version for UI and Installer"
 .\update-versions.ps1
@@ -134,8 +142,6 @@ if($null -eq $env:AWS_KEY_ID) {
     echo ""
 	echo "AWS_KEY_ID not set. __THE BINARY WILL NOT BE SIGNED!__"
     echo ""
-} else {
-    signFile -loc $outputPath -name $exeName
 }
 
 if($null -eq $env:OPENZITI_P12_PASS_2024) {
