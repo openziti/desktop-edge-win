@@ -1,3 +1,14 @@
+# Release 2.4.0.0(?)
+
+## What's New
+
+## Other changes:
+
+## Bugs fixed:
+
+## Dependency Updates
+* ziti-edge-tunnel updated to v1.0.3/c sdk v1.0.4 / tlsuv v0.29.5
+
 # Release 2.2.2
 
 ## What's New
