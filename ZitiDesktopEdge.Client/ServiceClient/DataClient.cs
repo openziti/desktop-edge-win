@@ -175,7 +175,6 @@ namespace ZitiDesktopEdge.ServiceClient {
 
                 await sendAsync(enrollIdentifierFunction);
                 resp = await readAsync<IdentityResponse>(ipcReader);
-                Logger.Debug(resp.ToString());
             } catch (Exception ex) {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //setupPipe();
