@@ -123,6 +123,9 @@ namespace ZitiDesktopEdge {
 			ServiceCountAreaLabel.Content = "services";
 			// logger.Info("RefreshUI " + _identity.Name + " MFA: "+ _identity.IsMFAEnabled+" Authenticated: "+_identity.IsAuthenticated);
 			if (_identity.IsMFAEnabled) {
+#if DEBUG
+				_identity.MFADebug("c01");
+#endif
 				if (_identity.IsAuthenticated) {
 					ServiceCountArea.Visibility = Visibility.Visible;
 					ServiceCountAreaLabel.Content = "services";
@@ -183,7 +186,10 @@ namespace ZitiDesktopEdge {
 			IdUrl.Content = _identity.ControllerUrl;
 			if (_identity.ContollerVersion != null && _identity.ContollerVersion.Length > 0) IdUrl.Content = _identity.ControllerUrl + " at " + _identity.ContollerVersion;
 
-			if (_identity.IsMFAEnabled && !_identity.IsAuthenticated) {
+#if DEBUG
+			_identity.MFADebug("c01");
+#endif
+			if (!_identity.IsMFAEnabled && !_identity.IsAuthenticated) {
 				ServiceCount.Content = "MFA";
 			} else {
 				ServiceCount.Content = _identity.Services.Count.ToString();
