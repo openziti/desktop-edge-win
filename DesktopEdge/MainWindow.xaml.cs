@@ -45,6 +45,7 @@ using Windows.UI.Notifications;
 using Windows.Data.Xml.Dom;
 using Ziti.Desktop.Edge.Models;
 using System.Reflection;
+using System.Windows.Threading;
 
 namespace ZitiDesktopEdge {
 
@@ -144,8 +145,9 @@ namespace ZitiDesktopEdge {
 						if (identities[i].Identifier == mfa.Identifier) {
 							identities[i].WasNotified = false;
 							identities[i].WasFullNotified = false;
-							identities[i].IsMFAEnabled = true;
-							identities[i].IsAuthenticated = false;
+				    //identities[i].IsMFAEnabled = true;
+				    identities[i].IsMFANeeded = true;
+				    identities[i].IsAuthenticated = false;
 							identities[i].IsTimingOut = false;
 							break;
 						}
@@ -157,7 +159,7 @@ namespace ZitiDesktopEdge {
 							if (identities[i].Identifier == mfa.Identifier) {
 								identities[i].WasNotified = false;
 								identities[i].WasFullNotified = false;
-								identities[i].IsMFAEnabled = mfa.Successful;
+								//identities[i].IsMFAEnabled = mfa.Successful;
 								identities[i].IsAuthenticated = mfa.Successful;
 								identities[i].IsTimingOut = false;
 								identities[i].LastUpdatedTime = DateTime.Now;
@@ -166,6 +168,7 @@ namespace ZitiDesktopEdge {
 									identities[i].Services[j].TimeoutRemaining = identities[i].Services[j].Timeout;
 								}
 								found = identities[i];
+								found.IsMFAEnabled = true;
 								break;
 							}
 						}
@@ -416,7 +419,7 @@ namespace ZitiDesktopEdge {
 			logger.Info("logger initialized");
 			logger.Info("    - version   : {0}", asm.GetName().Version.ToString());
 			logger.Info("    - using file: {0}", byFile);
-			logger.Info("    -       file: {0}", nlogFile);
+			logger.Info("    -	 file: {0}", nlogFile);
 			logger.Info("========================================================================");
 
 			App.Current.MainWindow.WindowState = WindowState.Normal;
@@ -1334,7 +1337,7 @@ namespace ZitiDesktopEdge {
 		private bool IsTimedOut() {
 			if (identities != null) {
 				for (int i = 0; i < identities.Count; i++) {
-					if (identities[i].IsMFAEnabled && !identities[i].IsAuthenticated) return true;
+					if (identities[i].IsMFANeeded && !identities[i].IsAuthenticated) return true;
 				}
 			}
 			return false;
@@ -1386,8 +1389,11 @@ namespace ZitiDesktopEdge {
 						IdentityItem idItem = new IdentityItem();
 
 						idItem.ToggleStatus.IsEnabled = id.IsEnabled;
-						if (id.IsEnabled) idItem.ToggleStatus.Content = "ENABLED";
-						else idItem.ToggleStatus.Content = "DISABLED";
+						if (id.IsEnabled) {
+						    idItem.ToggleStatus.Content = "ENABLED";
+						} else {
+						    idItem.ToggleStatus.Content = "DISABLED";
+						}
 
 						idItem.Authenticate += IdItem_Authenticate;
 						idItem.OnStatusChanged += Id_OnStatusChanged;
@@ -1618,12 +1624,37 @@ namespace ZitiDesktopEdge {
 
 		internal void ShowLoad(string title, string msg) {
 			this.Dispatcher.Invoke(() => {
+				//TimerLabel.Content = "this is content";
+				//TimerLabel.Visibility = Visibility.Visible;
 				LoadingDetails.Text = msg;
 				LoadingTitle.Content = title;
 				LoadProgress.IsIndeterminate = true;
 				LoadingScreen.Visibility = Visibility.Visible;
+				StartTimer();
 				UpdateLayout();
 			});
+		}
+
+
+		private TimeSpan _remainingTime;
+
+		private void StartTimer() {
+			DispatcherTimer dispatcherTimer = new DispatcherTimer();
+			dispatcherTimer.Interval = TimeSpan.FromMilliseconds(100);
+			dispatcherTimer.Tick += (sender, args) => UpdateTimer(sender as DispatcherTimer);
+			dispatcherTimer.Start();
+			_remainingTime = TimeSpan.FromMinutes(5);
+		}
+
+		private void UpdateTimer(DispatcherTimer timer) {
+			if (_remainingTime.TotalSeconds > 0) {
+				_remainingTime = _remainingTime.Add(TimeSpan.FromSeconds(-1));
+				//TimerLabel.Content = _remainingTime.ToString(@"mm\:ss");
+			} else {
+				timer.Stop();
+				//TimerLabel.Content = "00:00";
+				// Optionally, you can hide the loading screen or perform any other action after the timer ends
+			}
 		}
 
 		internal void HideLoad() {

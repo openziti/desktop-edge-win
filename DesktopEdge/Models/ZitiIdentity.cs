@@ -32,7 +32,21 @@ namespace ZitiDesktopEdge.Models {
 		public bool IsEnabled { get; set; }
 		public string EnrollmentStatus { get; set; }
 		public string Status { get; set; }
-		public bool IsMFAEnabled { get; set; }
+		private bool isMfaEnabled = false;
+		public bool IsMFAEnabled {
+		get {
+		    return isMfaEnabled;
+		}
+		set {
+		    isMfaEnabled = value;
+		}
+	  }
+
+	  public void MFADebug(string where) {
+		logger.Info($"{where}\n\tIsMFAEnabled    : {IsMFAEnabled}\n\tIsAuthenticated : {IsAuthenticated}\n\tIsMFANeeded     : {IsMFANeeded}");
+	  }
+
+	  public bool IsMFANeeded { get; set; }
 		public int MinTimeout { get; set; }
 		public int MaxTimeout { get; set; }
 		public DateTime LastUpdatedTime { get; set; }
@@ -96,6 +110,7 @@ namespace ZitiDesktopEdge.Models {
 				Status = id.Status,
 				RecoveryCodes = new string[0],
 				IsMFAEnabled = id.MfaEnabled,
+				IsMFANeeded = id.MfaNeeded,
 				IsAuthenticated = !id.MfaNeeded,
 				IsTimedOut = false,
 				IsTimingOut = false,
@@ -105,8 +120,9 @@ namespace ZitiDesktopEdge.Models {
 				TimeoutMessage = "",
 				IsConnected = true
 			};
-
-
+#if DEBUG
+		zid.MFADebug("002");
+#endif
 			if (id.Services != null) {
 				foreach (var svc in id.Services) {
 					if (svc != null) {
