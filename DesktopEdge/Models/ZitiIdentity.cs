@@ -32,15 +32,7 @@ namespace ZitiDesktopEdge.Models {
 		public bool IsEnabled { get; set; }
 		public string EnrollmentStatus { get; set; }
 		public string Status { get; set; }
-		private bool isMfaEnabled = false;
-		public bool IsMFAEnabled {
-		get {
-			return isMfaEnabled;
-		}
-		set {
-			isMfaEnabled = value;
-		}
-	  }
+		public bool IsMFAEnabled { get; set; }
 
 		public void MFADebug(string where) {
 			logger.Info($"{where}\n\tIdentifiter  : {Identifier}\n\tIsMFAEnabled : {IsMFAEnabled}\n\tIsMFANeeded  : {IsMFANeeded}\n\tShowMFA\t     : {ShowMFA}");

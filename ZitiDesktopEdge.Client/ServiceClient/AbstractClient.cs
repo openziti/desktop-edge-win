@@ -201,7 +201,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                         }
                         var now = DateTime.Now;
                         if (now > logAgainAfter) {
-                            Logger.Debug("Reconnect failed. Trying again...");
+                            Logger.Trace("Reconnect failed. Trying again...");
                             var duration = now - reconnectStart;
                             if (duration > TimeSpan.FromHours(1)) {
                                 Logger.Info("reconnect has not completed and has been running for {0} hours", duration.TotalHours);

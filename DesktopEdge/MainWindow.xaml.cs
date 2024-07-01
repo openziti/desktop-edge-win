@@ -145,7 +145,6 @@ namespace ZitiDesktopEdge {
 						if (identities[i].Identifier == mfa.Identifier) {
 							identities[i].WasNotified = false;
 							identities[i].WasFullNotified = false;
-							//identities[i].IsMFAEnabled = true;
 							identities[i].IsMFANeeded = true;
 							identities[i].ShowMFA = false;
 							identities[i].IsTimingOut = false;
@@ -725,7 +724,6 @@ namespace ZitiDesktopEdge {
 					found.MinTimeout = notification.MfaMinimumTimeout;
 
 					if (notification.MfaMinimumTimeout == 0) {
-						// found.MFAInfo.ShowMFA = false;
 						// display mfa token icon
 						displayMFARequired = true;
 					} else {
@@ -785,7 +783,7 @@ namespace ZitiDesktopEdge {
 
 		string nextVersionStr = null;
 		private void MonitorClient_OnReconnectFailure(object sender, object e) {
-			//logger.Debug("OnReconnectFailure triggered");
+			logger.Trace("OnReconnectFailure triggered");
 			if (nextVersionStr == null) {
 				// check for the current version
 				nextVersionStr = "checking for update";
@@ -1085,7 +1083,6 @@ namespace ZitiDesktopEdge {
 						if (zid.ContollerVersion != null && zid.ContollerVersion.Length > 0) found.ContollerVersion = zid.ContollerVersion;
 						found.IsEnabled = zid.IsEnabled;
 						found.IsMFAEnabled = e.Id.MfaEnabled;
-						//xx questionable found.ShowMFA = !e.Id.MfaNeeded;
 						found.IsConnected = true;
 						for (int i = 0; i < identities.Count; i++) {
 							if (identities[i].Identifier == found.Identifier) {
@@ -1131,7 +1128,7 @@ namespace ZitiDesktopEdge {
 				long totalUp = 0;
 				long totalDown = 0;
 				foreach (var id in ids) {
-					//logger.Debug($"==== MetricsEvent	 : id {id.Name} down: {id.Metrics.Down} up:{id.Metrics.Up}");
+					//logger.Debug($"==== MetricsEvent : id {id.Name} down: {id.Metrics.Down} up:{id.Metrics.Up}");
 					if (id?.Metrics != null) {
 						totalDown += id.Metrics.Down;
 						totalUp += id.Metrics.Up;
@@ -1157,7 +1154,7 @@ namespace ZitiDesktopEdge {
 		private void ServiceClient_OnServiceEvent(object sender, ServiceEvent e) {
 			if (e == null) return;
 
-			logger.Debug($"==== ServiceEvent	 : action:{e.Action} identifier:{e.Identifier} name:{e.Service.Name} ");
+			logger.Debug($"==== ServiceEvent : action:{e.Action} identifier:{e.Identifier} name:{e.Service.Name} ");
 			var found = identities.Find(id => id.Identifier == e.Identifier);
 			if (found == null) {
 				logger.Debug($"{e.Action} service event for {e.Service.Name} but the provided identity identifier {e.Identifier} is not found!");
@@ -1389,11 +1386,8 @@ namespace ZitiDesktopEdge {
 						IdentityItem idItem = new IdentityItem();
 
 						idItem.ToggleStatus.IsEnabled = id.IsEnabled;
-						if (id.IsEnabled) {
-							idItem.ToggleStatus.Content = "ENABLED";
-						} else {
-							idItem.ToggleStatus.Content = "DISABLED";
-						}
+						if (id.IsEnabled) idItem.ToggleStatus.Content = "ENABLED";
+						else idItem.ToggleStatus.Content = "DISABLED";
 
 						idItem.Authenticate += IdItem_Authenticate;
 						idItem.OnStatusChanged += Id_OnStatusChanged;
@@ -1624,8 +1618,6 @@ namespace ZitiDesktopEdge {
 
 		internal void ShowLoad(string title, string msg) {
 			this.Dispatcher.Invoke(() => {
-				//TimerLabel.Content = "this is content";
-				//TimerLabel.Visibility = Visibility.Visible;
 				LoadingDetails.Text = msg;
 				LoadingTitle.Content = title;
 				LoadProgress.IsIndeterminate = true;
@@ -1633,28 +1625,6 @@ namespace ZitiDesktopEdge {
 				StartTimer();
 				UpdateLayout();
 			});
-		}
-
-
-		private TimeSpan _remainingTime;
-
-		private void StartTimer() {
-			DispatcherTimer dispatcherTimer = new DispatcherTimer();
-			dispatcherTimer.Interval = TimeSpan.FromMilliseconds(100);
-			dispatcherTimer.Tick += (sender, args) => UpdateTimer(sender as DispatcherTimer);
-			dispatcherTimer.Start();
-			_remainingTime = TimeSpan.FromMinutes(5);
-		}
-
-		private void UpdateTimer(DispatcherTimer timer) {
-			if (_remainingTime.TotalSeconds > 0) {
-				_remainingTime = _remainingTime.Add(TimeSpan.FromSeconds(-1));
-				//TimerLabel.Content = _remainingTime.ToString(@"mm\:ss");
-			} else {
-				timer.Stop();
-				//TimerLabel.Content = "00:00";
-				// Optionally, you can hide the loading screen or perform any other action after the timer ends
-			}
 		}
 
 		internal void HideLoad() {

@@ -319,7 +319,6 @@
                     <RowDefinition Height="*"></RowDefinition>
                 </Grid.RowDefinitions>
                 <Label x:Name="LoadingTitle" Foreground="White" Content="Loading" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
-                <!-- Label x:Name="TimerLabel" Foreground="White" Content="05:00" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="16"/ -->
                 <TextBlock x:Name="LoadingDetails" TextWrapping="WrapWithOverflow" Foreground="LightGray" Padding="10" Text="${x:DefaultLoadText}" Grid.Row="3" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
                 <ProgressBar x:Name="LoadProgress" Width="100" Grid.Row="4" IsEnabled="True" />
             </Grid>
