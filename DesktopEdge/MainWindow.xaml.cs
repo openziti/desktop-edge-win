@@ -147,7 +147,7 @@ namespace ZitiDesktopEdge {
 							identities[i].WasFullNotified = false;
 							//identities[i].IsMFAEnabled = true;
 							identities[i].IsMFANeeded = true;
-							identities[i].IsMfaed = false;
+							identities[i].ShowMFA = false;
 							identities[i].IsTimingOut = false;
 							break;
 						}
@@ -160,7 +160,7 @@ namespace ZitiDesktopEdge {
 								identities[i].WasNotified = false;
 								identities[i].WasFullNotified = false;
 								//identities[i].IsMFAEnabled = mfa.Successful;
-								identities[i].IsMfaed = mfa.Successful;
+								identities[i].ShowMFA = mfa.Successful;
 								identities[i].IsTimingOut = false;
 								identities[i].LastUpdatedTime = DateTime.Now;
 								for (int j = 0; j < identities[i].Services.Count; j++) {
@@ -185,7 +185,7 @@ namespace ZitiDesktopEdge {
 								identities[i].WasNotified = false;
 								identities[i].WasFullNotified = false;
 								identities[i].IsMFAEnabled = false;
-								identities[i].IsMfaed = false;
+								identities[i].ShowMFA = false;
 								identities[i].LastUpdatedTime = DateTime.Now;
 								identities[i].IsTimingOut = false;
 								for (int j = 0; j < identities[i].Services.Count; j++) {
@@ -208,7 +208,7 @@ namespace ZitiDesktopEdge {
 							identities[i].WasNotified = false;
 							identities[i].WasFullNotified = false;
 							identities[i].IsTimingOut = false;
-							identities[i].IsMfaed = mfa.Successful;
+							identities[i].ShowMFA = mfa.Successful;
 							identities[i].LastUpdatedTime = DateTime.Now;
 							for (int j = 0; j < identities[i].Services.Count; j++) {
 								identities[i].Services[j].TimeUpdated = DateTime.Now;
@@ -282,7 +282,7 @@ namespace ZitiDesktopEdge {
 		/// <param name="identity">The Ziti Identity to Authenticate</param>
 		async public void ShowMFARecoveryCodes(ZitiIdentity identity) {
 			if (identity.IsMFAEnabled) {
-				if (identity.IsMfaed && identity.RecoveryCodes != null) {
+				if (identity.ShowMFA && identity.RecoveryCodes != null) {
 					MFASetup.Opacity = 0;
 					MFASetup.Visibility = Visibility.Visible;
 					MFASetup.Margin = new Thickness(0, 0, 0, 0);
@@ -725,7 +725,7 @@ namespace ZitiDesktopEdge {
 					found.MinTimeout = notification.MfaMinimumTimeout;
 
 					if (notification.MfaMinimumTimeout == 0) {
-						// found.MFAInfo.IsMfaed = false;
+						// found.MFAInfo.ShowMFA = false;
 						// display mfa token icon
 						displayMFARequired = true;
 					} else {
@@ -741,7 +741,7 @@ namespace ZitiDesktopEdge {
 				}
 			}
 
-			// we may need to display mfa icon, based on the timer in UI, remove found.MFAInfo.IsMfaed setting in this function. 
+			// we may need to display mfa icon, based on the timer in UI, remove found.MFAInfo.ShowMFA setting in this function. 
 			// the below function can show mfa icon even after user authenticates successfully, in race conditions
 			if (displayMFARequired || displayMFATimout) {
 				this.Dispatcher.Invoke(() => {
@@ -1085,7 +1085,7 @@ namespace ZitiDesktopEdge {
 						if (zid.ContollerVersion != null && zid.ContollerVersion.Length > 0) found.ContollerVersion = zid.ContollerVersion;
 						found.IsEnabled = zid.IsEnabled;
 						found.IsMFAEnabled = e.Id.MfaEnabled;
-						//xx questionable found.IsMfaed = !e.Id.MfaNeeded;
+						//xx questionable found.ShowMFA = !e.Id.MfaNeeded;
 						found.IsConnected = true;
 						for (int i = 0; i < identities.Count; i++) {
 							if (identities[i].Identifier == found.Identifier) {
@@ -1187,7 +1187,7 @@ namespace ZitiDesktopEdge {
 				if (zs.HasFailingPostureCheck()) {
 					found.HasServiceFailingPostureCheck = true;
 					if (zs.PostureChecks.Any(p => !p.IsPassing && p.QueryType == "MFA")) {
-						found.IsMfaed = false;
+						found.ShowMFA = false;
 					}
 				}
 			} else {
@@ -1337,7 +1337,7 @@ namespace ZitiDesktopEdge {
 		private bool IsTimedOut() {
 			if (identities != null) {
 				for (int i = 0; i < identities.Count; i++) {
-					if (identities[i].IsMFANeeded && !identities[i].IsMfaed) return true;
+					if (identities[i].IsMFANeeded && !identities[i].ShowMFA) return true;
 				}
 			}
 			return false;

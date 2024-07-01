@@ -159,7 +159,7 @@ namespace ZitiDesktopEdge {
 				IsDisconnected.Visibility = Visibility.Visible;
 			}
 			if (_identity.IsMFAEnabled) {
-				if (_identity.IsMfaed) {
+				if (_identity.ShowMFA) {
 #if DEBUG
 					_identity.MFADebug("a01");
 #endif
@@ -229,7 +229,7 @@ namespace ZitiDesktopEdge {
 #if DEBUG
 				this._identity.MFADebug("B00");
 #endif
-				if (this._identity.IsMFAEnabled&&!this._identity.IsMfaed) {
+				if (this._identity.IsMFAEnabled&&!this._identity.ShowMFA) {
 					AuthMessageBg.Visibility = Visibility.Visible;
 					AuthMessageLabel.Visibility = Visibility.Visible;
 					NoAuthServices.Visibility = Visibility.Visible;

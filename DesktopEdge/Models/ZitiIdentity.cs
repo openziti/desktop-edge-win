@@ -42,11 +42,11 @@ namespace ZitiDesktopEdge.Models {
 		}
 	  }
 
-	  public void MFADebug(string where) {
-		logger.Info($"{where}\n\tIdentifiter	 : {Identifier}\n\tIsMFAEnabled	: {IsMFAEnabled}\n\tIsMfaed		 : {IsMfaed}\n\tIsMFANeeded	 : {IsMFANeeded}");
-	  }
+		public void MFADebug(string where) {
+			logger.Info($"{where}\n\tIdentifiter  : {Identifier}\n\tIsMFAEnabled : {IsMFAEnabled}\n\tIsMFANeeded  : {IsMFANeeded}\n\tShowMFA\t     : {ShowMFA}");
+		}
 
-	  public bool IsMFANeeded { get; set; }
+		public bool IsMFANeeded { get; set; }
 		public int MinTimeout { get; set; }
 		public int MaxTimeout { get; set; }
 		public DateTime LastUpdatedTime { get; set; }
@@ -55,7 +55,7 @@ namespace ZitiDesktopEdge.Models {
 		public bool WasFullNotified { get; set; }
 		public string Fingerprint { get; set; }
 		public string Identifier { get; set; }
-		public bool IsMfaed { get; set; }
+		public bool ShowMFA { get; set; }
 		public bool IsTimedOut { get; set; }
 		public string[] RecoveryCodes { get; set; }
 		public bool IsTimingOut { get; set; }
@@ -111,7 +111,7 @@ namespace ZitiDesktopEdge.Models {
 				RecoveryCodes = new string[0],
 				IsMFAEnabled = id.MfaEnabled,
 				IsMFANeeded = id.MfaNeeded,
-				IsMfaed = !id.MfaEnabled && id.MfaNeeded,
+				ShowMFA = id.MfaNeeded && !id.MfaEnabled,
 				IsTimedOut = false,
 				IsTimingOut = false,
 				MinTimeout = id.MinTimeout,
