@@ -159,19 +159,27 @@ namespace ZitiDesktopEdge {
 				IsDisconnected.Visibility = Visibility.Visible;
 			}
 			if (_identity.IsMFAEnabled) {
-				if (_identity.IsAuthenticated) {
-					IdentityMFA.ToggleField.IsEnabled = true;
+				if (_identity.ShowMFA) {
+#if DEBUG
+					_identity.MFADebug("a01");
+#endif
+					//IdentityMFA.ToggleField.IsEnabled = true;
 					IdentityMFA.AuthOn.Visibility = Visibility.Visible;
 					IdentityMFA.AuthOff.Visibility = Visibility.Collapsed;
 					IdentityMFA.RecoveryButton.Visibility = Visibility.Visible;
 				} else {
-					IdentityMFA.ToggleField.Opacity = 0.2;
-					IdentityMFA.ToggleField.IsEnabled = false;
+#if DEBUG
+					_identity.MFADebug("a02");
+#endif
+					//IdentityMFA.ToggleField.IsEnabled = true;
 					IdentityMFA.AuthOn.Visibility = Visibility.Collapsed;
 					IdentityMFA.AuthOff.Visibility = Visibility.Visible;
 					IdentityMFA.RecoveryButton.Visibility = Visibility.Collapsed;
 				}
 			} else {
+#if DEBUG
+				_identity.MFADebug("a03");
+#endif
 				IdentityMFA.AuthOn.Visibility = Visibility.Collapsed;
 				IdentityMFA.AuthOff.Visibility = Visibility.Collapsed;
 				IdentityMFA.RecoveryButton.Visibility = Visibility.Collapsed;
@@ -218,7 +226,10 @@ namespace ZitiDesktopEdge {
 				NoAuthServices.Visibility = Visibility.Collapsed;
 			} else {
 				MainDetailScroll.Visibility = Visibility.Collapsed;
-				if (this._identity.IsMFAEnabled&&!this._identity.IsAuthenticated) {
+#if DEBUG
+				this._identity.MFADebug("B00");
+#endif
+				if (this._identity.IsMFAEnabled&&!this._identity.ShowMFA) {
 					AuthMessageBg.Visibility = Visibility.Visible;
 					AuthMessageLabel.Visibility = Visibility.Visible;
 					NoAuthServices.Visibility = Visibility.Visible;

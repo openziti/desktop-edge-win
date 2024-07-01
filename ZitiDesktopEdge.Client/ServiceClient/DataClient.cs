@@ -159,8 +159,6 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
 
-        ServiceFunction AddIdentityFunction = new ServiceFunction() { Command = "AddIdentity" };
-
         async public Task<Identity> AddIdentityAsync(string jwtFileName, bool activate, string jwtContent) {
             IdentityResponse resp = null;
             try {
@@ -175,7 +173,6 @@ namespace ZitiDesktopEdge.ServiceClient {
 
                 await sendAsync(enrollIdentifierFunction);
                 resp = await readAsync<IdentityResponse>(ipcReader);
-                Logger.Debug(resp.ToString());
             } catch (Exception ex) {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //setupPipe();

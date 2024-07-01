@@ -24,6 +24,6 @@ namespace ZitiDesktopEdge.Models {
 	public class MFA {
 		public string Url { get; set; }
 		public string[] RecoveryCodes { get; set; }
-		public bool IsAuthenticated { get; set; }
+		public bool IsAuthenticateda { get; set; }
 	}
 }

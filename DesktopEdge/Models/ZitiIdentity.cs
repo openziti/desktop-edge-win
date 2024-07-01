@@ -33,6 +33,12 @@ namespace ZitiDesktopEdge.Models {
 		public string EnrollmentStatus { get; set; }
 		public string Status { get; set; }
 		public bool IsMFAEnabled { get; set; }
+
+		public void MFADebug(string where) {
+			logger.Info($"{where}\n\tIdentifiter  : {Identifier}\n\tIsMFAEnabled : {IsMFAEnabled}\n\tIsMFANeeded  : {IsMFANeeded}\n\tShowMFA\t     : {ShowMFA}");
+		}
+
+		public bool IsMFANeeded { get; set; }
 		public int MinTimeout { get; set; }
 		public int MaxTimeout { get; set; }
 		public DateTime LastUpdatedTime { get; set; }
@@ -41,7 +47,7 @@ namespace ZitiDesktopEdge.Models {
 		public bool WasFullNotified { get; set; }
 		public string Fingerprint { get; set; }
 		public string Identifier { get; set; }
-		public bool IsAuthenticated { get; set; }
+		public bool ShowMFA { get; set; }
 		public bool IsTimedOut { get; set; }
 		public string[] RecoveryCodes { get; set; }
 		public bool IsTimingOut { get; set; }
@@ -86,7 +92,7 @@ namespace ZitiDesktopEdge.Models {
 
 		public static ZitiIdentity FromClient(DataStructures.Identity id) {
 			ZitiIdentity zid = new ZitiIdentity() {
-				ControllerUrl = (id.Config == null) ? "": id.Config.ztAPI,
+				ControllerUrl = (id.Config == null) ? "" : id.Config.ztAPI,
 				ContollerVersion = id.ControllerVersion,
 				EnrollmentStatus = "status",
 				Fingerprint = id.FingerPrint,
@@ -96,7 +102,8 @@ namespace ZitiDesktopEdge.Models {
 				Status = id.Status,
 				RecoveryCodes = new string[0],
 				IsMFAEnabled = id.MfaEnabled,
-				IsAuthenticated = !id.MfaNeeded,
+				IsMFANeeded = id.MfaNeeded,
+				ShowMFA = id.MfaNeeded && !id.MfaEnabled,
 				IsTimedOut = false,
 				IsTimingOut = false,
 				MinTimeout = id.MinTimeout,
@@ -105,8 +112,10 @@ namespace ZitiDesktopEdge.Models {
 				TimeoutMessage = "",
 				IsConnected = true
 			};
-
-
+		
+#if DEBUG
+			zid.MFADebug("002");
+#endif
 			if (id.Services != null) {
 				foreach (var svc in id.Services) {
 					if (svc != null) {

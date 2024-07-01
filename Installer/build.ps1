@@ -61,7 +61,7 @@ $destination="${scriptPath}\zet.zip"
 
 if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
     if($null -eq $env:ZITI_EDGE_TUNNEL_VERSION) {
-        $ZITI_EDGE_TUNNEL_VERSION="v0.22.28"
+        $ZITI_EDGE_TUNNEL_VERSION="v1.0.4"
     } else {
         $ZITI_EDGE_TUNNEL_VERSION=$env:ZITI_EDGE_TUNNEL_VERSION
     }

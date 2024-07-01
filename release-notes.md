@@ -1,4 +1,24 @@
-# Release 2.2.2
+# Release 2.4.0.0
+
+## What's New
+* nothing
+
+## Other changes:
+* `ziti-monitor` service will now forcefully terminate `ziti-edge-tunnel` if it doesn't respond within
+  the timeout period (60s). If a timeout occurs, the process will be terminated, any `ziti-tun` devices
+  will be removed (removing any routes along with it), and the NRPT will be cleaned up. This should 
+  fix [issue 674](https://github.com/openziti/desktop-edge-win/issues/674).
+
+## Bugs fixed:
+* [issue 674](https://github.com/openziti/desktop-edge-win/issues/674) - `ziti-edge-tunnel` never stops and
+  the any attempts to stop the service fail.
+
+## Dependency Updates
+* ziti-tunnel-sdk-c updated to v1.0.4/c sdk v1.0.5
+  - fixes file:/ handling in identity files
+
+
+# Release 2.3.1
 
 ## What's New
 
