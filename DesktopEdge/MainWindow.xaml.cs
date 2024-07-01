@@ -1621,7 +1621,6 @@ namespace ZitiDesktopEdge {
 				LoadingTitle.Content = title;
 				LoadProgress.IsIndeterminate = true;
 				LoadingScreen.Visibility = Visibility.Visible;
-				StartTimer();
 				UpdateLayout();
 			});
 		}
