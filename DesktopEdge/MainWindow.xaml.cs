@@ -145,9 +145,9 @@ namespace ZitiDesktopEdge {
 						if (identities[i].Identifier == mfa.Identifier) {
 							identities[i].WasNotified = false;
 							identities[i].WasFullNotified = false;
-				    //identities[i].IsMFAEnabled = true;
-				    identities[i].IsMFANeeded = true;
-				    identities[i].IsAuthenticated = false;
+							//identities[i].IsMFAEnabled = true;
+							identities[i].IsMFANeeded = true;
+							identities[i].IsMfaed = false;
 							identities[i].IsTimingOut = false;
 							break;
 						}
@@ -160,7 +160,7 @@ namespace ZitiDesktopEdge {
 								identities[i].WasNotified = false;
 								identities[i].WasFullNotified = false;
 								//identities[i].IsMFAEnabled = mfa.Successful;
-								identities[i].IsAuthenticated = mfa.Successful;
+								identities[i].IsMfaed = mfa.Successful;
 								identities[i].IsTimingOut = false;
 								identities[i].LastUpdatedTime = DateTime.Now;
 								for (int j = 0; j < identities[i].Services.Count; j++) {
@@ -185,7 +185,7 @@ namespace ZitiDesktopEdge {
 								identities[i].WasNotified = false;
 								identities[i].WasFullNotified = false;
 								identities[i].IsMFAEnabled = false;
-								identities[i].IsAuthenticated = false;
+								identities[i].IsMfaed = false;
 								identities[i].LastUpdatedTime = DateTime.Now;
 								identities[i].IsTimingOut = false;
 								for (int j = 0; j < identities[i].Services.Count; j++) {
@@ -208,7 +208,7 @@ namespace ZitiDesktopEdge {
 							identities[i].WasNotified = false;
 							identities[i].WasFullNotified = false;
 							identities[i].IsTimingOut = false;
-							identities[i].IsAuthenticated = mfa.Successful;
+							identities[i].IsMfaed = mfa.Successful;
 							identities[i].LastUpdatedTime = DateTime.Now;
 							for (int j = 0; j < identities[i].Services.Count; j++) {
 								identities[i].Services[j].TimeUpdated = DateTime.Now;
@@ -282,7 +282,7 @@ namespace ZitiDesktopEdge {
 		/// <param name="identity">The Ziti Identity to Authenticate</param>
 		async public void ShowMFARecoveryCodes(ZitiIdentity identity) {
 			if (identity.IsMFAEnabled) {
-				if (identity.IsAuthenticated && identity.RecoveryCodes != null) {
+				if (identity.IsMfaed && identity.RecoveryCodes != null) {
 					MFASetup.Opacity = 0;
 					MFASetup.Visibility = Visibility.Visible;
 					MFASetup.Margin = new Thickness(0, 0, 0, 0);
@@ -419,7 +419,7 @@ namespace ZitiDesktopEdge {
 			logger.Info("logger initialized");
 			logger.Info("    - version   : {0}", asm.GetName().Version.ToString());
 			logger.Info("    - using file: {0}", byFile);
-			logger.Info("    -	 file: {0}", nlogFile);
+			logger.Info("    -       file: {0}", nlogFile);
 			logger.Info("========================================================================");
 
 			App.Current.MainWindow.WindowState = WindowState.Normal;
@@ -725,7 +725,7 @@ namespace ZitiDesktopEdge {
 					found.MinTimeout = notification.MfaMinimumTimeout;
 
 					if (notification.MfaMinimumTimeout == 0) {
-						// found.MFAInfo.IsAuthenticated = false;
+						// found.MFAInfo.IsMfaed = false;
 						// display mfa token icon
 						displayMFARequired = true;
 					} else {
@@ -741,7 +741,7 @@ namespace ZitiDesktopEdge {
 				}
 			}
 
-			// we may need to display mfa icon, based on the timer in UI, remove found.MFAInfo.IsAuthenticated setting in this function. 
+			// we may need to display mfa icon, based on the timer in UI, remove found.MFAInfo.IsMfaed setting in this function. 
 			// the below function can show mfa icon even after user authenticates successfully, in race conditions
 			if (displayMFARequired || displayMFATimout) {
 				this.Dispatcher.Invoke(() => {
@@ -785,7 +785,7 @@ namespace ZitiDesktopEdge {
 
 		string nextVersionStr = null;
 		private void MonitorClient_OnReconnectFailure(object sender, object e) {
-			logger.Debug("OnReconnectFailure triggered");
+			//logger.Debug("OnReconnectFailure triggered");
 			if (nextVersionStr == null) {
 				// check for the current version
 				nextVersionStr = "checking for update";
@@ -1085,7 +1085,7 @@ namespace ZitiDesktopEdge {
 						if (zid.ContollerVersion != null && zid.ContollerVersion.Length > 0) found.ContollerVersion = zid.ContollerVersion;
 						found.IsEnabled = zid.IsEnabled;
 						found.IsMFAEnabled = e.Id.MfaEnabled;
-						found.IsAuthenticated = !e.Id.MfaNeeded;
+						//xx questionable found.IsMfaed = !e.Id.MfaNeeded;
 						found.IsConnected = true;
 						for (int i = 0; i < identities.Count; i++) {
 							if (identities[i].Identifier == found.Identifier) {
@@ -1131,7 +1131,7 @@ namespace ZitiDesktopEdge {
 				long totalUp = 0;
 				long totalDown = 0;
 				foreach (var id in ids) {
-					//logger.Debug($"==== MetricsEvent     : id {id.Name} down: {id.Metrics.Down} up:{id.Metrics.Up}");
+					//logger.Debug($"==== MetricsEvent	 : id {id.Name} down: {id.Metrics.Down} up:{id.Metrics.Up}");
 					if (id?.Metrics != null) {
 						totalDown += id.Metrics.Down;
 						totalUp += id.Metrics.Up;
@@ -1157,7 +1157,7 @@ namespace ZitiDesktopEdge {
 		private void ServiceClient_OnServiceEvent(object sender, ServiceEvent e) {
 			if (e == null) return;
 
-			logger.Debug($"==== ServiceEvent     : action:{e.Action} identifier:{e.Identifier} name:{e.Service.Name} ");
+			logger.Debug($"==== ServiceEvent	 : action:{e.Action} identifier:{e.Identifier} name:{e.Service.Name} ");
 			var found = identities.Find(id => id.Identifier == e.Identifier);
 			if (found == null) {
 				logger.Debug($"{e.Action} service event for {e.Service.Name} but the provided identity identifier {e.Identifier} is not found!");
@@ -1187,7 +1187,7 @@ namespace ZitiDesktopEdge {
 				if (zs.HasFailingPostureCheck()) {
 					found.HasServiceFailingPostureCheck = true;
 					if (zs.PostureChecks.Any(p => !p.IsPassing && p.QueryType == "MFA")) {
-						found.IsAuthenticated = false;
+						found.IsMfaed = false;
 					}
 				}
 			} else {
@@ -1337,7 +1337,7 @@ namespace ZitiDesktopEdge {
 		private bool IsTimedOut() {
 			if (identities != null) {
 				for (int i = 0; i < identities.Count; i++) {
-					if (identities[i].IsMFANeeded && !identities[i].IsAuthenticated) return true;
+					if (identities[i].IsMFANeeded && !identities[i].IsMfaed) return true;
 				}
 			}
 			return false;
@@ -1390,9 +1390,9 @@ namespace ZitiDesktopEdge {
 
 						idItem.ToggleStatus.IsEnabled = id.IsEnabled;
 						if (id.IsEnabled) {
-						    idItem.ToggleStatus.Content = "ENABLED";
+							idItem.ToggleStatus.Content = "ENABLED";
 						} else {
-						    idItem.ToggleStatus.Content = "DISABLED";
+							idItem.ToggleStatus.Content = "DISABLED";
 						}
 
 						idItem.Authenticate += IdItem_Authenticate;

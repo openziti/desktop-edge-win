@@ -126,7 +126,7 @@ namespace ZitiDesktopEdge {
 #if DEBUG
 				_identity.MFADebug("c01");
 #endif
-				if (_identity.IsAuthenticated) {
+				if (_identity.IsMfaed) {
 					ServiceCountArea.Visibility = Visibility.Visible;
 					ServiceCountAreaLabel.Content = "services";
 					MainArea.Opacity = 1.0;
@@ -141,7 +141,7 @@ namespace ZitiDesktopEdge {
 							_timer.Start();
 							logger.Info("Timer Started for full timout in "+maxto+"  seconds from identity "+_identity.Name+".");
 						} else {
-							_identity.IsAuthenticated = false;
+							//xx questionable? _identity.IsMfaed = false;
 							MfaRequired.Visibility = Visibility.Visible;
 							ServiceCountAreaLabel.Content = "authorize";
 							MainArea.Opacity = 0.6;
@@ -187,9 +187,9 @@ namespace ZitiDesktopEdge {
 			if (_identity.ContollerVersion != null && _identity.ContollerVersion.Length > 0) IdUrl.Content = _identity.ControllerUrl + " at " + _identity.ContollerVersion;
 
 #if DEBUG
-			_identity.MFADebug("c01");
+			_identity.MFADebug("refreshui: c02");
 #endif
-			if (!_identity.IsMFAEnabled && !_identity.IsAuthenticated) {
+			if (!_identity.IsMFAEnabled && !_identity.IsMfaed) {
 				ServiceCount.Content = "MFA";
 			} else {
 				ServiceCount.Content = _identity.Services.Count.ToString();
@@ -257,7 +257,7 @@ namespace ZitiDesktopEdge {
 		private void ShowTimedOut() {
 			if (!_identity.WasFullNotified) {
 				_identity.WasFullNotified = true;
-				_identity.IsAuthenticated = false;
+				//xx questionable _identity.IsMfaed = false;
 				_identity.IsTimedOut = true;
 				ShowMFAToast("All of the services with a timeout set for the identity " + _identity.Name + " have timed out", _identity);
 				RefreshUI();

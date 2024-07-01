@@ -159,8 +159,6 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
 
-        ServiceFunction AddIdentityFunction = new ServiceFunction() { Command = "AddIdentity" };
-
         async public Task<Identity> AddIdentityAsync(string jwtFileName, bool activate, string jwtContent) {
             IdentityResponse resp = null;
             try {

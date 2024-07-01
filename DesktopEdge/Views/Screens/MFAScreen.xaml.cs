@@ -266,7 +266,7 @@ namespace ZitiDesktopEdge {
 							this.OnError?.Invoke("Authentication Failed");
 							this._executing = false;
 						} else {
-							this._identity.IsAuthenticated = true;
+							this._identity.IsMfaed = true;
 							this.OnClose?.Invoke(true);
 							this._executing = false;
 						}
