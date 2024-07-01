@@ -15,24 +15,14 @@
 */
 
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.ServiceClient;
-using Windows.UI.Notifications;
 using Microsoft.Toolkit.Uwp.Notifications;
 using NLog;
+using SWM = System.Windows.Media;
 
 namespace ZitiDesktopEdge {
 	/// <summary>
@@ -52,6 +42,11 @@ namespace ZitiDesktopEdge {
 		private float countdown = -1;
 		private float countdownComplete = -1;
 		private int available = 0;
+
+		private static SWM.Color mfaOrange = SWM.Color.FromRgb(0xA1, 0x8B, 0x10);
+		private static SWM.Color defaultBlue = SWM.Color.FromRgb(0x00, 0x68, 0xF9);
+		private static SWM.Brush MFANeededBrush = new SWM.SolidColorBrush(mfaOrange);
+		private static SWM.Brush DefaultBrush = new SWM.SolidColorBrush(defaultBlue);
 
 		public ZitiIdentity _identity;
 		public ZitiIdentity Identity {
@@ -123,7 +118,7 @@ namespace ZitiDesktopEdge {
 			ServiceCountAreaLabel.Content = "services";
 			// logger.Info("RefreshUI " + _identity.Name + " MFA: "+ _identity.IsMFAEnabled+" Authenticated: "+_identity.IsAuthenticated);
 			if (_identity.IsMFAEnabled) {
-				if (_identity.IsAuthenticated) {
+				if (_identity.ShowMFA) {
 					ServiceCountArea.Visibility = Visibility.Visible;
 					ServiceCountAreaLabel.Content = "services";
 					MainArea.Opacity = 1.0;
@@ -138,7 +133,6 @@ namespace ZitiDesktopEdge {
 							_timer.Start();
 							logger.Info("Timer Started for full timout in "+maxto+"  seconds from identity "+_identity.Name+".");
 						} else {
-							_identity.IsAuthenticated = false;
 							MfaRequired.Visibility = Visibility.Visible;
 							ServiceCountAreaLabel.Content = "authorize";
 							MainArea.Opacity = 0.6;
@@ -183,10 +177,13 @@ namespace ZitiDesktopEdge {
 			IdUrl.Content = _identity.ControllerUrl;
 			if (_identity.ContollerVersion != null && _identity.ContollerVersion.Length > 0) IdUrl.Content = _identity.ControllerUrl + " at " + _identity.ContollerVersion;
 
-			if (_identity.IsMFAEnabled && !_identity.IsAuthenticated) {
+			if (!_identity.IsMFAEnabled && _identity.ShowMFA) {
 				ServiceCount.Content = "MFA";
+				ServiceCountBorder.Background = MFANeededBrush;
+				ServiceCountAreaLabel.Content = "disabled";
 			} else {
 				ServiceCount.Content = _identity.Services.Count.ToString();
+				ServiceCountBorder.Background = DefaultBrush;
 			}
 
 			ToggleStatus.Content = ((ToggleSwitch.Enabled) ? "ENABLED" : "DISABLED");
@@ -251,7 +248,6 @@ namespace ZitiDesktopEdge {
 		private void ShowTimedOut() {
 			if (!_identity.WasFullNotified) {
 				_identity.WasFullNotified = true;
-				_identity.IsAuthenticated = false;
 				_identity.IsTimedOut = true;
 				ShowMFAToast("All of the services with a timeout set for the identity " + _identity.Name + " have timed out", _identity);
 				RefreshUI();
