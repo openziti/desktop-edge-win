@@ -40,7 +40,7 @@
                 <Image Name="PostureTimedOut" Visibility="Collapsed" Grid.Column="2" Source="/Assets/Images/lockout.png" VerticalAlignment="Bottom" HorizontalAlignment="Center" RenderOptions.BitmapScalingMode="Fant" Width="26" Height="26" Margin="0,0,0,6" Cursor="Hand" MouseUp="MFAAuthenticate"></Image>
                 <Image Name="MfaRequired" Source="/Assets/Images/mfaoff.png" Grid.Column="2" Cursor="Hand" Width="50" Height="26" VerticalAlignment="Bottom" RenderOptions.BitmapScalingMode="Fant" Stretch="Uniform" Visibility="Visible" MouseUp="MFAAuthenticate"></Image>
                 <Canvas Name="ServiceCountArea" Grid.Column="2" Grid.Row="0" Width="50" Height="40" Cursor="Hand" Visibility="Collapsed">
-                    <Border Name="ServiceCountBorder" Width="44" Height="26" Background="#006800" CornerRadius="12" Canvas.Top="10" Canvas.Left="3"></Border>
+					<Border Name="ServiceCountBorder" Width="44" Height="26" Background="#0068F9" CornerRadius="12" Canvas.Top="10" Canvas.Left="3"></Border>
                     <Label Name="ServiceCount" Width="50" Height="26" Canvas.Top="9" Padding="0,0,0,0" FontSize="14" Content="23" Foreground="White" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"></Label>
                 </Canvas>
                 <Image Name="TimerCountdown" Visibility="Collapsed" Grid.Column="2" Source="/Assets/Images/timer.png" VerticalAlignment="Bottom" HorizontalAlignment="Center" Width="26" Height="26" Margin="0,0,0,6" Cursor="Hand" MouseUp="MFAAuthenticate"></Image>
