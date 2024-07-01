@@ -158,7 +158,6 @@ namespace ZitiDesktopEdge {
 							if (identities[i].Identifier == mfa.Identifier) {
 								identities[i].WasNotified = false;
 								identities[i].WasFullNotified = false;
-								//identities[i].IsMFAEnabled = mfa.Successful;
 								identities[i].ShowMFA = mfa.Successful;
 								identities[i].IsTimingOut = false;
 								identities[i].LastUpdatedTime = DateTime.Now;
