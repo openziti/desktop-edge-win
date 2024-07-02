@@ -146,7 +146,6 @@ namespace ZitiDesktopEdge {
 							identities[i].WasNotified = false;
 							identities[i].WasFullNotified = false;
 							identities[i].IsMFANeeded = true;
-							identities[i].ShowMFA = false;
 							identities[i].IsTimingOut = false;
 							break;
 						}
@@ -158,7 +157,7 @@ namespace ZitiDesktopEdge {
 							if (identities[i].Identifier == mfa.Identifier) {
 								identities[i].WasNotified = false;
 								identities[i].WasFullNotified = false;
-								identities[i].ShowMFA = mfa.Successful;
+								identities[i].ShowMFA = !mfa.Successful;
 								identities[i].IsTimingOut = false;
 								identities[i].LastUpdatedTime = DateTime.Now;
 								for (int j = 0; j < identities[i].Services.Count; j++) {
