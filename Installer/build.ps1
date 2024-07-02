@@ -7,39 +7,6 @@ function verifyFile($path) {
         throw [System.IO.FileNotFoundException] "$path not found"
     }
 }
-function signFile($loc, $name) {
-	echo "Using signtool: '$SIGNTOOL'"
-	$cert="${scriptPath}\GlobalSign-SigningCert-2024-2027.cert"
-	$exeAbsPath="$loc\$name"
-	echo "----- signFile: producing digest to send to AWS KMS -----"
-	& "$SIGNTOOL" sign /dg $loc /fd sha256 /f $cert $exeAbsPath
-	$tosign = Get-Content "${exeAbsPath}.dig" -Raw
-	echo "----- signFile: sending digest to AWS KMS for signing. -----"
-	$signature = aws kms sign --key-id $env:AWS_KEY_ID --message $tosign --message-type DIGEST --signing-algorithm "RSASSA_PKCS1_V1_5_SHA_256" --output text --query "Signature"
-	Set-Content -Path "${exeAbsPath}.dig.signed" -Value $signature
-	echo "----- signature len: $($signature.Length) ----"
-	dir $loc
-	echo "----- done signing digest -----"
-	
-	echo "----- signFile: adding signature -----"
-	& "$SIGNTOOL" sign /di $loc $exeAbsPath
-	echo "----- signFile: adding timestamp -----"
-	& "$SIGNTOOL" timestamp /tr "http://timestamp.digicert.com" /td sha256 $exeAbsPath
-	& "$SIGNTOOL" verify /pa $exeAbsPath
-	echo "removing any ifles leftover from signing"
-	Remove-Item "${exeAbsPath}.dig" -ErrorAction SilentlyContinue
-	Remove-Item "${exeAbsPath}.dig.signed" -ErrorAction SilentlyContinue
-	Remove-Item "${exeAbsPath}.p7u" -ErrorAction SilentlyContinue
-}
-function fetchCRedis() {	
-	echo "========================== fetching vc++ redist =========================="
-	$VC_REDIST_URL="https://aka.ms/vs/17/release/vc_redist.x64.exe"
-	echo "Beginning to download vc++ redist from MS at ${VC_REDIST_URL}"
-	echo ""
-	Invoke-WebRequest $VC_REDIST_URL -OutFile "${buildPath}\VC_redist.x64.exe"
-	verifyFile("${buildPath}\VC_redist.x64.exe")
-	echo "========================== fetching vc++ redist complete =========================="
-}
 
 echo "========================== build.ps1 begins =========================="
 $invocation = (Get-Variable MyInvocation).Value
@@ -51,6 +18,7 @@ $ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer ${ADV_INST_V
 $SIGNTOOL="${ADV_INST_HOME}\third-party\winsdk\x64\signtool.exe"
 $ADVINST = "${ADV_INST_HOME}\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
+$ZITI_EDGE_TUNNEL_VERSION="v1.0.6"
 
 echo "Cleaning previous build folder if it exists"
 Remove-Item "${buildPath}" -r -ErrorAction Ignore
@@ -61,7 +29,7 @@ $destination="${scriptPath}\zet.zip"
 
 if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
     if($null -eq $env:ZITI_EDGE_TUNNEL_VERSION) {
-        $ZITI_EDGE_TUNNEL_VERSION="v1.0.4"
+        // use the default $ZITI_EDGE_TUNNEL_VERSION
     } else {
         $ZITI_EDGE_TUNNEL_VERSION=$env:ZITI_EDGE_TUNNEL_VERSION
     }
