@@ -196,8 +196,10 @@ namespace ZitiDesktopEdge.Models {
 		public string ProtocolString {
 			get {
 				string toReturn = "";
-				for (int i = 0; i < this.Protocols.Length; i++) {
-					toReturn += ((i > 0) ? "," : "") + this.Protocols[i];
+				if (this.Protocols != null) {
+					for (int i = 0; i < this.Protocols.Length; i++) {
+						toReturn += ((i > 0) ? "," : "") + this.Protocols[i];
+					}
 				}
 				return toReturn;
 			}
@@ -207,8 +209,10 @@ namespace ZitiDesktopEdge.Models {
 		public string PortString {
 			get {
 				string toReturn = "";
-				for (int i = 0; i < this.Ports.Length; i++) {
-					toReturn += ((i > 0) ? "," : "") + this.Ports[i].ToString();
+				if (this.Ports != null) {
+					for (int i = 0; i < this.Ports.Length; i++) {
+						toReturn += ((i > 0) ? "," : "") + this.Ports[i].ToString();
+					}
 				}
 				return toReturn;
 			}
@@ -218,8 +222,10 @@ namespace ZitiDesktopEdge.Models {
 		public string AddressString { 
 			get {
 				string toReturn = "";
-				for (int i = 0; i < this.Addresses.Length; i++) {
-					toReturn += ((i > 0) ? "," : "") + this.Addresses[i].ToString();
+				if (this.Addresses != null) {
+					for (int i = 0; i < this.Addresses.Length; i++) {
+						toReturn += ((i > 0) ? "," : "") + this.Addresses[i].ToString();
+					}
 				}
 				return toReturn;
 			}

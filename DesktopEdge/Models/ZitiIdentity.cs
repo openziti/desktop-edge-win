@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ZitiDesktopEdge.Models {
@@ -35,10 +36,23 @@ namespace ZitiDesktopEdge.Models {
 		public bool IsMFAEnabled { get; set; }
 
 		public void MFADebug(string where) {
-			logger.Info($"{where}\n\tIdentifiter  : {Identifier}\n\tIsMFAEnabled : {IsMFAEnabled}\n\tIsMFANeeded  : {IsMFANeeded}\n\tShowMFA\t     : {ShowMFA}");
+			logger.Info($"{where}\n\tIdentifiter  : {Identifier}\n\tIsMFAEnabled : {IsMFAEnabled}\n\tIsMFANeeded  : {IsMFANeeded}");
+			//logger.Info($"{where}\n\tIdentifiter  : {Identifier}\n\tIsMFAEnabled : {IsMFAEnabled}\n\tIsMFANeeded  : {IsMFANeeded}\n\tShowMFA\t     : {ShowMFA}");
 		}
 
-		public bool IsMFANeeded { get; set; }
+		private bool mfaNeeded = false;
+		public bool IsMFANeeded {
+			get { return mfaNeeded; }
+			set {
+				mfaNeeded = value;
+				if (!mfaNeeded) {
+					IsTimingOut = false;
+					IsTimedOut = false;
+					WasFullNotified = false;
+					WasNotified = false;
+				}
+			}
+		}
 		public int MinTimeout { get; set; }
 		public int MaxTimeout { get; set; }
 		public DateTime LastUpdatedTime { get; set; }
@@ -47,8 +61,16 @@ namespace ZitiDesktopEdge.Models {
 		public bool WasFullNotified { get; set; }
 		public string Fingerprint { get; set; }
 		public string Identifier { get; set; }
-		public bool ShowMFA { get; set; }
-		public bool IsTimedOut { get; set; }
+		private bool isTimedOut = false;
+
+		public SemaphoreSlim Mutex { get; } = new SemaphoreSlim(1);
+		public bool IsTimedOut {
+			get { return isTimedOut; }
+			set {
+				isTimedOut = value;
+				WasFullNotified = false;
+			}
+		}
 		public string[] RecoveryCodes { get; set; }
 		public bool IsTimingOut { get; set; }
 		public bool IsConnected { get; set; }
@@ -62,6 +84,9 @@ namespace ZitiDesktopEdge.Models {
 			set {
 				logger.Info("Identity: {0} posture change. is a posture check failing: {1}", Name, !value);
 				svcFailingPostureCheck = value;
+				if (!value) {
+					IsMFANeeded = true;
+				}
 			}
 		}
 
@@ -103,7 +128,6 @@ namespace ZitiDesktopEdge.Models {
 				RecoveryCodes = new string[0],
 				IsMFAEnabled = id.MfaEnabled,
 				IsMFANeeded = id.MfaNeeded,
-				ShowMFA = id.MfaNeeded && !id.MfaEnabled,
 				IsTimedOut = false,
 				IsTimingOut = false,
 				MinTimeout = id.MinTimeout,
@@ -128,6 +152,16 @@ namespace ZitiDesktopEdge.Models {
 			}
 			logger.Info("Identity: {0} updated To {1}", zid.Name, Newtonsoft.Json.JsonConvert.SerializeObject(id));
 			return zid;
+		}
+
+		public void ShowMFAToast(string message) {
+			logger.Info("Showing Notification from identity " + Name + " " + message + ".");
+			new Microsoft.Toolkit.Uwp.Notifications.ToastContentBuilder()
+				.AddText(Name + " Service Access Warning")
+				.AddText(message)
+				.AddArgument("identifier", Identifier)
+				.SetBackgroundActivation()
+				.Show();
 		}
 	}
 }

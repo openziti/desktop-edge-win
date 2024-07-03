@@ -146,7 +146,6 @@ namespace ZitiDesktopEdge {
 							identities[i].WasNotified = false;
 							identities[i].WasFullNotified = false;
 							identities[i].IsMFANeeded = true;
-							identities[i].ShowMFA = false;
 							identities[i].IsTimingOut = false;
 							break;
 						}
@@ -158,7 +157,8 @@ namespace ZitiDesktopEdge {
 							if (identities[i].Identifier == mfa.Identifier) {
 								identities[i].WasNotified = false;
 								identities[i].WasFullNotified = false;
-								identities[i].ShowMFA = mfa.Successful;
+								identities[i].IsMFANeeded = false;
+								identities[i].IsMFAEnabled = true;
 								identities[i].IsTimingOut = false;
 								identities[i].LastUpdatedTime = DateTime.Now;
 								for (int j = 0; j < identities[i].Services.Count; j++) {
@@ -183,7 +183,7 @@ namespace ZitiDesktopEdge {
 								identities[i].WasNotified = false;
 								identities[i].WasFullNotified = false;
 								identities[i].IsMFAEnabled = false;
-								identities[i].ShowMFA = false;
+								identities[i].IsMFANeeded = false;
 								identities[i].LastUpdatedTime = DateTime.Now;
 								identities[i].IsTimingOut = false;
 								for (int j = 0; j < identities[i].Services.Count; j++) {
@@ -206,7 +206,7 @@ namespace ZitiDesktopEdge {
 							identities[i].WasNotified = false;
 							identities[i].WasFullNotified = false;
 							identities[i].IsTimingOut = false;
-							identities[i].ShowMFA = mfa.Successful;
+							identities[i].IsMFANeeded = !mfa.Successful;
 							identities[i].LastUpdatedTime = DateTime.Now;
 							for (int j = 0; j < identities[i].Services.Count; j++) {
 								identities[i].Services[j].TimeUpdated = DateTime.Now;
@@ -280,7 +280,7 @@ namespace ZitiDesktopEdge {
 		/// <param name="identity">The Ziti Identity to Authenticate</param>
 		async public void ShowMFARecoveryCodes(ZitiIdentity identity) {
 			if (identity.IsMFAEnabled) {
-				if (identity.ShowMFA && identity.RecoveryCodes != null) {
+				if (identity.IsMFAEnabled && identity.RecoveryCodes != null) {
 					MFASetup.Opacity = 0;
 					MFASetup.Visibility = Visibility.Visible;
 					MFASetup.Margin = new Thickness(0, 0, 0, 0);
@@ -846,7 +846,7 @@ namespace ZitiDesktopEdge {
 							logger.Info("Service is stopping...");
 
 							this.Dispatcher.Invoke(async () => {
-								SetCantDisplay("The Service is Stopping", "Please wait while the service stops", Visibility.Hidden);
+								SetCantDisplay("The Service is Stopping", "Please wait while the service stops", Visibility.Visible);
 								await WaitForServiceToStop(DateTime.Now + TimeSpan.FromSeconds(30));
 							});
 							break;
@@ -1183,7 +1183,7 @@ namespace ZitiDesktopEdge {
 				if (zs.HasFailingPostureCheck()) {
 					found.HasServiceFailingPostureCheck = true;
 					if (zs.PostureChecks.Any(p => !p.IsPassing && p.QueryType == "MFA")) {
-						found.ShowMFA = false;
+						found.IsMFANeeded = true;
 					}
 				}
 			} else {
@@ -1332,9 +1332,7 @@ namespace ZitiDesktopEdge {
 
 		private bool IsTimedOut() {
 			if (identities != null) {
-				for (int i = 0; i < identities.Count; i++) {
-					if (identities[i].IsMFANeeded && !identities[i].ShowMFA) return true;
-				}
+				return identities.Any(i => i.IsTimedOut);
 			}
 			return false;
 		}

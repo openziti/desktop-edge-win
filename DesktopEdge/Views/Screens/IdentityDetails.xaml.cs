@@ -29,6 +29,7 @@ using NLog;
 using System.Web;
 using System.Windows.Media;
 using System.Windows.Data;
+using System.Diagnostics.Eventing.Reader;
 
 namespace ZitiDesktopEdge {
 	/// <summary>
@@ -93,7 +94,7 @@ namespace ZitiDesktopEdge {
 				FilterServices.Clear();
 				scrolledTo = 0;
 				_identity = value;
-				ServiceCount.Content = _identity.Services.Count + " service"+((_identity.Services.Count>1)?"s":"");
+				ServiceCount.Content = _identity.Services.Count + " service"+((_identity.Services.Count!=1)?"s":"");
 				Page = 1;
 				SortBy = "Name";
 				SortWay = "Asc";
@@ -132,6 +133,39 @@ namespace ZitiDesktopEdge {
 			}
 		}
 
+
+		private void MFAEnabledAndNeeded() {
+			if (_identity.Services.Count > 0) {
+				MainDetailScroll.Visibility = Visibility.Visible;
+			} else {
+				IdentityMFA.AuthOff.Visibility = Visibility.Visible;
+				AuthMessageBg.Visibility = Visibility.Visible;
+				AuthMessageLabel.Visibility = Visibility.Visible;
+				NoAuthServices.Visibility = Visibility.Visible;
+				NoAuthServices.Text = "You must authenticate to access services";
+			}
+		}
+
+		private void MFAEnabledAndNotNeeded() {
+			MainDetailScroll.Visibility = Visibility.Visible;
+			IdentityMFA.AuthOn.Visibility = Visibility.Visible;
+		}
+
+		private void MFANotEnabledAndNotNeeded() {
+			MainDetailScroll.Visibility = Visibility.Visible;
+		}
+
+		private void MFANotEnabledAndNeeded() {
+			if (_identity.Services.Count > 0) {
+				MainDetailScroll.Visibility = Visibility.Visible;
+			} else {
+				AuthMessageLabel.Visibility = Visibility.Visible;
+				NoAuthServices.Visibility = Visibility.Visible;
+				NoAuthServices.Text = "You must enabled MFA to access services";
+				ServiceCount.Visibility = Visibility.Collapsed;
+			}
+		}
+
 		public void UpdateView() {
 			if (_scroller==null) {
 				_scroller = GetScrollViewer(ServiceList) as ScrollViewer;
@@ -141,50 +175,55 @@ namespace ZitiDesktopEdge {
 				_scroller.ScrollToVerticalOffset(0);
 				_scroller.InvalidateScrollInfo();
 			}
+
+			IsConnected.Visibility = Visibility.Collapsed;
+			IsDisconnected.Visibility = Visibility.Collapsed;
+			IsConnected.Visibility = Visibility.Collapsed;
+			IsDisconnected.Visibility = Visibility.Collapsed;
+			MainDetailScroll.Visibility = Visibility.Collapsed;
+			AuthMessageBg.Visibility = Visibility.Collapsed;
+			AuthMessageLabel.Visibility = Visibility.Collapsed;
+			NoAuthServices.Visibility = Visibility.Collapsed;
+			IdentityMFA.AuthOn.Visibility = Visibility.Collapsed;
+			IdentityMFA.AuthOff.Visibility = Visibility.Collapsed;
+			IdentityMFA.RecoveryButton.Visibility = Visibility.Collapsed;
+			ServiceCount.Visibility = Visibility.Visible;
+
 			scrolledTo = 0;
 			IdDetailName.Text = _identity.Name;
 			IdDetailName.ToolTip = _identity.Name;
 			IdentityMFA.IsOn = _identity.IsMFAEnabled;
 			IdentityMFA.ToggleField.IsEnabled = true;
 			IdentityMFA.ToggleField.Opacity = 1;
-			IsConnected.Visibility = Visibility.Collapsed;
-			IsDisconnected.Visibility = Visibility.Collapsed;
 			IsConnected.ToolTip = "Enabled - Click To Disable";
 			IsDisconnected.ToolTip = "Disabled - Click to Enable";
 			IdServer.Value = _identity.ControllerUrl;
 			IdName.Value = _identity.Name;
-			if (_identity.IsEnabled) {
-				IsConnected.Visibility = Visibility.Visible;
-			} else {
-				IsDisconnected.Visibility = Visibility.Visible;
-			}
+
+
+#if DEBUG
+			_identity.MFADebug("UpdateView");
+#endif
 			if (_identity.IsMFAEnabled) {
-				if (_identity.ShowMFA) {
-#if DEBUG
-					_identity.MFADebug("a01");
-#endif
-					//IdentityMFA.ToggleField.IsEnabled = true;
-					IdentityMFA.AuthOn.Visibility = Visibility.Visible;
-					IdentityMFA.AuthOff.Visibility = Visibility.Collapsed;
-					IdentityMFA.RecoveryButton.Visibility = Visibility.Visible;
+				if (_identity.IsMFANeeded) {
+					// enabled and needed = needs to be authorized. show the lock icon and tell the user to auth
+					MFAEnabledAndNeeded();
 				} else {
-#if DEBUG
-					_identity.MFADebug("a02");
-#endif
-					//IdentityMFA.ToggleField.IsEnabled = true;
-					IdentityMFA.AuthOn.Visibility = Visibility.Collapsed;
-					IdentityMFA.AuthOff.Visibility = Visibility.Visible;
-					IdentityMFA.RecoveryButton.Visibility = Visibility.Collapsed;
+					// enabled and not needed = authorized. show the services should be enabled and authorized
+					MFAEnabledAndNotNeeded();
 				}
 			} else {
-#if DEBUG
-				_identity.MFADebug("a03");
-#endif
-				IdentityMFA.AuthOn.Visibility = Visibility.Collapsed;
-				IdentityMFA.AuthOff.Visibility = Visibility.Collapsed;
-				IdentityMFA.RecoveryButton.Visibility = Visibility.Collapsed;
+				if (_identity.IsMFANeeded) {
+					// not enabled and needed = show the user the MFA disabled so they can enable it
+					MFANotEnabledAndNeeded();
+				} else {
+					// normal case. means no lock icon needs to be shown
+					MFANotEnabledAndNotNeeded();
+				}
 			}
-			//ServiceList.Children.Clear();
+
+			//change icon to timed out if it's timed out
+
 
 			totalServices = _identity.Services.Count;
 
@@ -200,10 +239,10 @@ namespace ZitiDesktopEdge {
 				else if (SortBy == "Port") services = _identity.Services.OrderBy(s => s.Ports.ToString()).ToArray();
 				if (SortWay == "Desc") services = services.Reverse().ToArray();
 				int startIndex = (Page - 1) * PerPage;
-				for (int i= startIndex; i<services.Length; i++) {
+				for (int i = startIndex; i < services.Length; i++) {
 					ZitiService zitiSvc = services[i];
-					total++; 
-					if (index<PerPage) {
+					total++;
+					if (index < PerPage) {
 						if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0) {
 							zitiSvc.TimeUpdated = _identity.LastUpdatedTime;
 							zitiSvc.IsMfaReady = _identity.IsMFAEnabled;
@@ -219,25 +258,8 @@ namespace ZitiDesktopEdge {
 				double newHeight = MainHeight - 330;
 				MainDetailScroll.MaxHeight = newHeight;
 				MainDetailScroll.Height = newHeight;
-				MainDetailScroll.Visibility = Visibility.Visible;
 
-				AuthMessageBg.Visibility = Visibility.Collapsed;
-				AuthMessageLabel.Visibility = Visibility.Collapsed;
-				NoAuthServices.Visibility = Visibility.Collapsed;
-			} else {
-				MainDetailScroll.Visibility = Visibility.Collapsed;
-#if DEBUG
-				this._identity.MFADebug("B00");
-#endif
-				if (this._identity.IsMFAEnabled&&!this._identity.ShowMFA) {
-					AuthMessageBg.Visibility = Visibility.Visible;
-					AuthMessageLabel.Visibility = Visibility.Visible;
-					NoAuthServices.Visibility = Visibility.Visible;
-				} else {
-					AuthMessageBg.Visibility = Visibility.Collapsed;
-					AuthMessageLabel.Visibility = Visibility.Collapsed;
-					NoAuthServices.Visibility = Visibility.Collapsed;
-				}
+
 			}
 			ConfirmView.Visibility = Visibility.Collapsed;
 			_loaded = true;
