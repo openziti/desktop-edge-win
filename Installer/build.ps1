@@ -18,7 +18,7 @@ $ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer ${ADV_INST_V
 $SIGNTOOL="${ADV_INST_HOME}\third-party\winsdk\x64\signtool.exe"
 $ADVINST = "${ADV_INST_HOME}\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
-$ZITI_EDGE_TUNNEL_VERSION="v1.0.6"
+$ZITI_EDGE_TUNNEL_VERSION="v1.0.7"
 
 echo "Cleaning previous build folder if it exists"
 Remove-Item "${buildPath}" -r -ErrorAction Ignore
