@@ -161,7 +161,7 @@ namespace ZitiDesktopEdge {
 			} else {
 				AuthMessageLabel.Visibility = Visibility.Visible;
 				NoAuthServices.Visibility = Visibility.Visible;
-				NoAuthServices.Text = "You must enabled MFA to access services";
+				NoAuthServices.Text = "You must enable MFA to access services";
 				ServiceCount.Visibility = Visibility.Collapsed;
 			}
 		}
