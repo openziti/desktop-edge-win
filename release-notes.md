@@ -1,18 +1,3 @@
-# Release 2.5.0.1
-
-## What's New
-* updated c-sdk/tunneler to work with HA controllers
-
-## Other changes:
-* none
-
-## Bugs fixed:
-* n/a
-
-## Dependency Updates
-* ziti-tunnel-sdk-c v2.0.0-alpha9/c sdk 2.0.0-alpha6
-
-
 # Release 2.4.0.0
 
 ## What's New
