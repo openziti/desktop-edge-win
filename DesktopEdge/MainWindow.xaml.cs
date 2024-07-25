@@ -786,7 +786,7 @@ namespace ZitiDesktopEdge {
 			if (nextVersionStr == null) {
 				// check for the current version
 				nextVersionStr = "checking for update";
-				Version nextVersion = VersionUtil.NormalizeVersion(GithubAPI.GetVersion(GithubAPI.GetJson(GithubAPI.ProdUrl)));
+				Version nextVersion = GithubAPI.GetVersion(GithubAPI.GetJson(GithubAPI.ProdUrl));
 				nextVersionStr = nextVersion.ToString();
 				Version currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version; //fetch from ziti?
 

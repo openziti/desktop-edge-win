@@ -873,7 +873,7 @@ namespace ZitiUpdateService {
 							if (fi.Name.StartsWith(filePrefix)) {
 								Logger.Debug("scanning for staleness: " + f);
 								string ver = Path.GetFileNameWithoutExtension(f).Substring(filePrefix.Length);
-								Version fileVersion = VersionUtil.NormalizeVersion(new Version(ver));
+								Version fileVersion = Version.Parse(ver);
 								if (isOlder(fileVersion)) {
 									Logger.Info("Removing old download: " + fi.Name);
 									fi.Delete();

@@ -137,11 +137,11 @@ namespace ZitiUpdateService.Checkers {
 					string releaseVersion = json.Property("name").Value.ToString();
 					Version normalizedReleaseVersion = null;
 					try {
-						normalizedReleaseVersion = VersionUtil.NormalizeVersion(new Version(releaseVersion));
+						normalizedReleaseVersion = Version.Parse(releaseVersion);
 					} catch (Exception e) {
 						try {
 							releaseVersion = json.Property("tag_name").Value.ToString();
-							normalizedReleaseVersion = VersionUtil.NormalizeVersion(new Version(releaseVersion));
+							normalizedReleaseVersion = Version.Parse(releaseVersion);
 						} catch (Exception err) {
 							Logger.Error("Cound not fetch version from name due to {0} and tag_name due to {1}", e.Message, err.Message);
 							continue;
