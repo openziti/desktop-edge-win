@@ -81,7 +81,13 @@ namespace ZitiUpdateService.Checkers {
 
 			string releaseVersion = json.Property("tag_name").Value.ToString();
 			string releaseName = json.Property("name").Value.ToString();
-			nextVersion = VersionUtil.NormalizeVersion(new Version(releaseVersion));
+			
+			if(!Version.TryParse(releaseVersion, out nextVersion)) {
+				string msg = $"Could not parse version: {releaseVersion}";
+				Logger.Error(msg);
+				throw new Exception(msg);
+			}
+
 			string isoPublishedDate = json.Property("published_at").Value.ToString();
 			PublishDate = DateTime.Parse(isoPublishedDate, null, System.Globalization.DateTimeStyles.RoundtripKind);
 
