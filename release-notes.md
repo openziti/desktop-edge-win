@@ -26,6 +26,21 @@
 ## Dependency Updates
 * ziti-tunnel-sdk-c v2.0.0-alpha9/c sdk 2.0.0-alpha6
 
+# Release 2.4.0.1
+
+## What's New
+* nothing
+
+## Other changes
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+* ziti-tunnel-sdk-c updated to v1.1.0/c sdk v1.0.7
+  - fixes tight loops that could happen when connectivity to the controller is lost
+
 
 # Release 2.4.0.0
 

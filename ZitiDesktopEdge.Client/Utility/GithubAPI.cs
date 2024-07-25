@@ -53,7 +53,7 @@ namespace ZitiDesktopEdge.Utility {
 		public static Version GetVersion(JObject json) {
 			string releaseVersion = json.Property("tag_name").Value.ToString();
 			string releaseName = json.Property("name").Value.ToString();
-			return VersionUtil.NormalizeVersion(new Version(releaseVersion));
+			return Version.Parse(releaseVersion);
 		}
 	}
 }
