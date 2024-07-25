@@ -1,4 +1,4 @@
-# Release 2.5.0.1
+# Release 2.5.0.2
 
 ## What's New
 * updated c-sdk/tunneler to work with HA controllers
