@@ -9,10 +9,10 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$version,
     [string]$url = "http://localhost:8000/local",
-    [string]$stream = "beta",
+    [string]$stream = "local",
     [datetime]$published_at = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ"),
     [bool]$jsonOnly = $false,
-    [bool]$revertGitAfter = $false
+    [switch]$keepGitAfter
 )
 echo ""
 $env:ZITI_DESKTOP_EDGE_DOWNLOAD_URL="$url"
@@ -36,9 +36,12 @@ if(! $jsonOnly) {
 $outputPath = "${version}.json"
 & .\Installer\output-build-json.ps1 -version $version -url $url -stream $stream -published_at $published_at -outputPath $outputPath
 Copy-Item -Force "$outputPath" "$scriptDirectory\release-streams\local\${version}"
+Copy-Item -Force "$outputPath" "$scriptDirectory\release-streams\local\${version}\test.json"
 Copy-Item -Force "${version}.json" "$scriptDirectory\release-streams\${stream}.json"
-echo "json file written to: $scriptDirectory\release-streams\${stream}.json"
 
-if($revertGitAfter) {
+if(!$keepGitAfter) {
   git checkout DesktopEdge/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip
 }
+echo "Done"
+echo "json file written to: $scriptDirectory\release-streams\${stream}.json"
+echo "run a python server to test: python -m http.server 8000 -d .\release-streams"
