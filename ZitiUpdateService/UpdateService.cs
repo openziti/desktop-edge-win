@@ -1009,16 +1009,6 @@ namespace ZitiUpdateService {
 			if (svc.CleanShutdown) {
 				//then this is fine and expected - the service is shutting down
 				Logger.Info("client disconnected due to clean service shutdown");
-
-				MonitorServiceStatusEvent status = new MonitorServiceStatusEvent() {
-					Code = 0,
-					Error = "SERVICE DOWN",
-					Message = "SERVICE DOWN",
-					Status = ServiceActions.ServiceStatus(),
-					AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString(),
-					AutomaticUpgradeURL = CurrentSettings.AutomaticUpdateURL,
-				};
-				EventRegistry.SendEventToConsumers(status);
 			} else {
 				Logger.Error("SERVICE IS DOWN and did not exit cleanly.");
 
