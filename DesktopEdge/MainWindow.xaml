@@ -182,7 +182,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="40"/>
                         </Grid.ColumnDefinitions>
-                        <Label Grid.Column="0" Content="Download Speed" Foreground="White" HorizontalAlignment="Right" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" MouseDoubleClick="Label_MouseDoubleClick_1"></Label>
+                        <Label Grid.Column="0" Content="Download Speed" Foreground="White" HorizontalAlignment="Right" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                         <Image Grid.Column="1" Source="/Assets/Images/down.png" Width="20" HorizontalAlignment="Left" Height="20"></Image>
                     </Grid>
                     <Label Name="DownloadSpeed" Margin="0,-16,0,0" Foreground="#0069FF" Content="0" FontSize="40" HorizontalAlignment="Center" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" />
