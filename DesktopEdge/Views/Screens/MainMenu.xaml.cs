@@ -53,16 +53,11 @@ namespace ZitiDesktopEdge {
 		public string licenseData = "it's open source.";
 		public string LogLevel = "";
 		private string appVersion = null;
-		private bool allowReleaseSelect = false;
 		public double MainHeight = 500;
 
 		private ZDEWViewState state;
 
-		private bool isBeta {
-			get {
-				return Application.Current.Properties["ReleaseStream"]?.ToString() == "beta";
-			}
-		}
+		public bool ShowUnexpectedFailure { get; set; }
 
 		public void ShowUpdateAvailable() {
 			if (state.UpdateAvailable) {
@@ -90,15 +85,12 @@ namespace ZitiDesktopEdge {
 			state = (ZDEWViewState)Application.Current.Properties["ZDEWViewState"];
 
 			try {
-				allowReleaseSelect = bool.Parse(ConfigurationManager.AppSettings.Get("ReleaseStreamSelect"));
+				ShowUnexpectedFailure = bool.Parse(ConfigurationManager.AppSettings.Get("ShowUnexpectedFailure"));
 			} catch {
 				//if we can't parse the config - leave it as false...
-				allowReleaseSelect = false; //setting it here in case anyone changes the default above
+				ShowUnexpectedFailure = false; //setting it here in case anyone changes the default above
 			}
-#if DEBUG
-			Debug.WriteLine("OVERRIDING allowReleaseSelect to true!");
-			allowReleaseSelect = true;
-#endif
+
 			appVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 			LicensesItems.Text = licenseData;
 			// don't check from the UI any more... CheckUpdates();
@@ -323,7 +315,7 @@ namespace ZitiDesktopEdge {
 			Process.Start(new ProcessStartInfo("https://netfoundry.io/terms") { UseShellExecute = true });
 		}
 
-		async private void ShowFeedback(object sender, MouseButtonEventArgs e) {
+		async public void CollectFeedbackLogs(object sender, MouseButtonEventArgs e) {
 			try {
 				MainWindow.ShowLoad("Collecting Information", "Please wait while we run some commands\nand collect some diagnostic information");
 
