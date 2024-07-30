@@ -479,6 +479,10 @@ namespace ZitiDesktopEdge {
 						}
 					}
 				}
+
+				ToastArguments args = ToastArguments.Parse(e.Argument);
+				this.Show();
+				this.Activate();
 			});
 		}
 
@@ -828,6 +832,10 @@ namespace ZitiDesktopEdge {
 						return;
 					}
 					SetAutomaticUpdateEnabled(evt.AutomaticUpgradeDisabled, evt.AutomaticUpgradeURL);
+					if(evt.Code != 0) {
+						logger.Error("CODE: " + evt.Code);
+						ShowToast($"The data channel has stopped unexpectedly. If this keeps happening please report an issue.");
+					}
 					MainMenu.ShowUpdateAvailable();
 					logger.Debug("MonitorClient_OnServiceStatusEvent: {0}", evt.Status);
 					Application.Current.Properties["ReleaseStream"] = evt.ReleaseStream;
@@ -935,9 +943,24 @@ namespace ZitiDesktopEdge {
 			try {
 				logger.Info("showing toast: {} {}", header, message);
 				new ToastContentBuilder()
+					.AddArgument("notbutton", "click")
 					.AddText(header)
 					.AddText(message)
-					.SetBackgroundActivation()
+					.AddButton(new ToastButton()
+						.SetContent("Open Link")
+						.AddArgument("action", "openLink")
+						.AddArgument("action2", "openLink2")
+						)
+					.AddButton(new ToastButton()
+						.SetContent("Open Link2")
+						.AddArgument("btn2.a", "btn2.a.value")
+						.AddArgument("btn2.b", "btn2.b.value")
+						)
+					.AddButton(new ToastButton()
+						.SetContent("Open Link3")
+						.AddArgument("btn3.a", "btn3.a.value")
+						.AddArgument("btn3.b", "btn3.b.value")
+						)
 					.Show();
 				NotificationsShownCount++;
 			} catch {
@@ -1601,7 +1624,7 @@ namespace ZitiDesktopEdge {
 			try {
 				ShowLoad("Disabling Service", "Please wait for the service to stop.");
 				var r = await monitorClient.StopServiceAsync();
-				if (r.Code != 0) {
+				if (r != null && r.Code != 0) {
 					logger.Warn("ERROR: Error:{0}, Message:{1}", r.Error, r.Message);
 				} else {
 					logger.Info("Service stopped!");
@@ -1808,6 +1831,10 @@ namespace ZitiDesktopEdge {
 		private void DoLoading(bool isComplete) {
 			if (isComplete) HideLoad();
 			else ShowLoad("Loading", "Please Wait.");
+		}
+
+		private void Label_MouseDoubleClick_1(object sender, MouseButtonEventArgs e) {
+			ShowToast("here's a toast all rightddd...");
 		}
 	}
 
