@@ -462,6 +462,10 @@ namespace ZitiDesktopEdge {
 			await ShowBlurbAsync(message, "", "error");
 		}
 
+		private static ToastButton feedbackToastButton = new ToastButton()
+						.SetContent("Click here to collect logs")
+						.AddArgument("action", "feedback");
+
 		private void ToastNotificationManagerCompat_OnActivated(ToastNotificationActivatedEventArgsCompat e) {
 			this.Dispatcher.Invoke(() => {
 				if (e.Argument != null && e.Argument.Length > 0) {
@@ -479,6 +483,16 @@ namespace ZitiDesktopEdge {
 						}
 					}
 				}
+
+				ToastArguments args = ToastArguments.Parse(e.Argument);
+				string value = null;
+				if(args.TryGetValue("action", out value)) {
+					this.Dispatcher.Invoke(() => {
+						MainMenu.CollectFeedbackLogs(e, null);
+					});
+				}
+				this.Show();
+				this.Activate();
 			});
 		}
 
@@ -828,6 +842,12 @@ namespace ZitiDesktopEdge {
 						return;
 					}
 					SetAutomaticUpdateEnabled(evt.AutomaticUpgradeDisabled, evt.AutomaticUpgradeURL);
+					if(evt.Code != 0) {
+						logger.Error("CODE: " + evt.Code);
+						if (MainMenu.ShowUnexpectedFailure) {
+							ShowToast("The data channel has stopped unexpectedly", $"If this keeps happening please collect logs and report the issue.", feedbackToastButton);
+						}
+					}
 					MainMenu.ShowUpdateAvailable();
 					logger.Debug("MonitorClient_OnServiceStatusEvent: {0}", evt.Status);
 					Application.Current.Properties["ReleaseStream"] = evt.ReleaseStream;
@@ -905,7 +925,7 @@ namespace ZitiDesktopEdge {
 									}
 								}
 							} else {
-								ShowToast("New version available", $"Version {evt.ZDEVersion} is available for Ziti Desktop Edge");
+								ShowToast("New version available", $"Version {evt.ZDEVersion} is available for Ziti Desktop Edge", null);
 							}
 							SetNotifyIcon("");
 							// display a tag in UI and a button for the update software
@@ -931,22 +951,26 @@ namespace ZitiDesktopEdge {
 			return result;
 		}
 
-		private void ShowToast(string header, string message) {
+		private void ShowToast(string header, string message, ToastButton button) {
 			try {
-				logger.Info("showing toast: {} {}", header, message);
-				new ToastContentBuilder()
+				logger.Debug("showing toast: {} {}", header, message);
+				var builder = new ToastContentBuilder()
+					.AddArgument("notbutton", "click")
 					.AddText(header)
-					.AddText(message)
-					.SetBackgroundActivation()
-					.Show();
+					.AddText(message);
+				if (button != null) {
+					builder.AddButton(button);
+				}
+				builder.Show();
 				NotificationsShownCount++;
 			} catch {
 				logger.Warn("couldn't show toast: {} {}", header, message);
 			}
 		}
 
+
 		private void ShowToast(string message) {
-			ShowToast("Important Notice", message);
+			ShowToast("Important Notice", message, null);
 		}
 
 		async private Task WaitForServiceToStop(DateTime until) {
@@ -1601,7 +1625,7 @@ namespace ZitiDesktopEdge {
 			try {
 				ShowLoad("Disabling Service", "Please wait for the service to stop.");
 				var r = await monitorClient.StopServiceAsync();
-				if (r.Code != 0) {
+				if (r != null && r.Code != 0) {
 					logger.Warn("ERROR: Error:{0}, Message:{1}", r.Error, r.Message);
 				} else {
 					logger.Info("Service stopped!");
@@ -1808,6 +1832,10 @@ namespace ZitiDesktopEdge {
 		private void DoLoading(bool isComplete) {
 			if (isComplete) HideLoad();
 			else ShowLoad("Loading", "Please Wait.");
+		}
+
+		private void Label_MouseDoubleClick_1(object sender, MouseButtonEventArgs e) {
+			ShowToast("here's a toast all rightddd...");
 		}
 	}
 
