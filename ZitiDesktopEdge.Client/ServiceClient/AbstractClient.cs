@@ -130,7 +130,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                             await ipcWriter.WriteAsync('\n');
                             await ipcWriter.FlushAsync();
                         } else {
-                            throw new Exception("the monitor service appears to be offline?");
+                            throw new MonitorServiceException("the monitor service appears to be offline?");
                         }
                     } else {
                         Logger.Debug("NOT sending empty object??? " + objToSend?.ToString());
@@ -145,7 +145,9 @@ namespace ZitiDesktopEdge.ServiceClient {
                     } else {
                         retried = true; //fall back through to the while and try again
                     }
-                } catch (Exception ex) {
+				} catch (MonitorServiceException) {
+					throw;
+				} catch (Exception ex) {
                     //if this fails it's usually because the writer is null/invalid. throwing IOException
                     //will trigger the pipe to rebuild
                     throw new IOException("Unexpected error when sending data to service. " + ex.Message);
@@ -287,4 +289,13 @@ namespace ZitiDesktopEdge.ServiceClient {
             return property;
         }
     }
+
+	public class MonitorServiceException : Exception {
+		public MonitorServiceException() { }
+		public MonitorServiceException(string message) : base(message) {
+			
+		}
+		public MonitorServiceException(string message, Exception source) : base(message, source) {
+		}
+	}
 }
