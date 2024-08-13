@@ -1287,11 +1287,6 @@ namespace ZitiDesktopEdge {
 				_isServiceInError = false;
 				UpdateServiceView();
 				NoServiceView.Visibility = Visibility.Collapsed;
-				if (status.Active) {
-					SetNotifyIcon("green");
-				} else {
-					SetNotifyIcon("white");
-				}
 				if (!Application.Current.Properties.Contains("ip")) {
 					Application.Current.Properties.Add("ip", status?.IpInfo?.Ip);
 				} else {
@@ -1468,6 +1463,7 @@ namespace ZitiDesktopEdge {
 					DisconnectButton.Visibility = Visibility.Visible;
 					MainMenu.Connected();
 					HideLoad();
+					SetNotifyIcon("green");
 				} else {
 					ConnectButton.Visibility = Visibility.Visible;
 					DisconnectButton.Visibility = Visibility.Collapsed;
@@ -1477,6 +1473,7 @@ namespace ZitiDesktopEdge {
 					MainMenu.Disconnected();
 					DownloadSpeed.Content = "0.0";
 					UploadSpeed.Content = "0.0";
+					SetNotifyIcon("white");
 				}
 			});
 		}

@@ -380,8 +380,6 @@ namespace ZitiDesktopEdge.DataStructures {
 
     public class TunnelStatus
     {
-        public bool Active { get; set; }
-
         public long Duration { get; set; }
 
         public List<Identity> Identities { get; set; }
@@ -397,7 +395,6 @@ namespace ZitiDesktopEdge.DataStructures {
         public void Dump(System.IO.TextWriter writer)
         {
             try {
-                writer.WriteLine($"Tunnel Active: {Active}");
                 writer.WriteLine($"     LogLevel         : {LogLevel}");
                 writer.WriteLine($"     EvaluatedLogLevel: {EvaluateLogLevel()}");
                 foreach (Identity id in Identities) {
