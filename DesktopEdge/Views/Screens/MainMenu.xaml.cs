@@ -43,7 +43,7 @@ namespace ZitiDesktopEdge {
 
 		public delegate void AttachementChanged(bool attached);
 		public event AttachementChanged OnAttachmentChange;
-		public delegate void LogLevelChanged(string level);
+		public delegate Task<bool> LogLevelChanged(string level);
 		public event LogLevelChanged OnLogLevelChanged;
 		public delegate void Detched(MouseButtonEventArgs e);
 		public event Detched OnDetach;
@@ -160,10 +160,15 @@ namespace ZitiDesktopEdge {
 				disableAutomaticUpgrades = true;
 			}
 			var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
-
-			SvcResponse r = await monitorClient.SetAutomaticUpgradeDisabledAsync(disableAutomaticUpgrades);
-			if (r.Code != 0) {
-				logger.Error(r?.Error);
+			try {
+				SvcResponse r = await monitorClient.SetAutomaticUpgradeDisabledAsync(disableAutomaticUpgrades);
+				if (r.Code != 0) {
+					logger.Error(r?.Error);
+				}
+			} catch (MonitorServiceException) {
+				MainWindow.ShowError("Could Not Set Automatic Update", "The monitor service is offline");
+			} catch (Exception ex) {
+				logger.Error("unexpected error when setting automatic upgrade enabled", ex);
 			}
 			SetAutomaticUpgradesState();
 		}
@@ -346,8 +351,11 @@ namespace ZitiDesktopEdge {
 
 				ProcessStartInfo pfi = new ProcessStartInfo("Explorer.exe", args);
 				Process.Start(pfi);
+			} catch (MonitorServiceException) {
+				MainWindow.ShowError("Could Not Collect Feedback", "The monitor service is offline");
 			} catch (Exception ex) {
 				logger.Warn(ex, "An unexpected error has occurred when submitting feedback? {0}", ex.Message);
+				MainWindow.ShowError("Could Not Collect Feedback", "The monitor service is offline");
 			}
 			MainWindow.HideLoad();
 		}
@@ -399,11 +407,12 @@ namespace ZitiDesktopEdge {
 			else if (this.LogLevel == "trace") LogTrace.IsSelected = true;
 		}
 
-		private void SetLevel(object sender, MouseButtonEventArgs e) {
+		async private void SetLevel(object sender, MouseButtonEventArgs e) {
 			SubOptionItem item = (SubOptionItem)sender;
-			this.LogLevel = item.Label.ToLower();
 			if (OnLogLevelChanged != null) {
-				OnLogLevelChanged(this.LogLevel);
+				if(await OnLogLevelChanged(this.LogLevel)) {
+					this.LogLevel = item.Label.ToLower();
+				}
 			}
 			ResetLevels();
 		}
@@ -436,8 +445,11 @@ namespace ZitiDesktopEdge {
 					TriggerUpdateButton.Visibility = Visibility.Collapsed;
 					ForceUpdate.Visibility = Visibility.Collapsed;
 				}
+			} catch (MonitorServiceException me) {
+				CheckForUpdateStatus.Content = "Monitor service is offline";
 			} catch (Exception ex) {
 				logger.Error(ex, "unexpected error in update check: {0}", ex.Message);
+				CheckForUpdateStatus.Content = "Error checking for updates. See logs.";
 			}
 			CheckForUpdate.IsEnabled = true;
 		}
@@ -737,17 +749,23 @@ namespace ZitiDesktopEdge {
 		}
 
 		private async void SetUpdateUrlButton_Click(object sender, MouseButtonEventArgs e) {
-			var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
+			try {
+				var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
 
-			SvcResponse r = await monitorClient.SetAutomaticUpgradeURLAsync(UpdateUrl.Text);
-			if (r == null) {
-				logger.Error("Failed to set automatic upgrade url! SvcResponse was null?!?!?");
-				MainWindow.ShowError("Could not set url!", "Is the monitor service running?");
-			} else if (r.Code != 0) {
-				logger.Error(r?.Error);
-				MainWindow.ShowError("Could not set url", r?.Error);
-			} else {
-				this.OnShowBlurb?.Invoke("Config Saved.");
+				SvcResponse r = await monitorClient.SetAutomaticUpgradeURLAsync(UpdateUrl.Text);
+				if (r == null) {
+					logger.Error("Failed to set automatic upgrade url! SvcResponse was null?!?!?");
+					MainWindow.ShowError("Could not set url!", "Is the monitor service running?");
+				} else if (r.Code != 0) {
+					logger.Error(r?.Error);
+					MainWindow.ShowError("Could not set url", r?.Error);
+				} else {
+					this.OnShowBlurb?.Invoke("Config Saved.");
+				}
+			} catch (MonitorServiceException) {
+				MainWindow.ShowError("Could Not Set URL", "The monitor service is offline");
+			} catch (Exception ex) {
+				logger.Error("unexpected error when setting automatic upgrade enabled", ex);
 			}
 		}
 
