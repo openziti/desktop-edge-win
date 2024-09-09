@@ -972,7 +972,7 @@ namespace ZitiDesktopEdge {
 			//continually poll for the service to stop. If it is stuck - ask the user if they want to try to force
 			//close the service
 			while (DateTime.Now < until) {
-				await Task.Delay(2000);
+				await Task.Delay(250);
 				MonitorServiceStatusEvent resp = await monitorClient.StatusAsync();
 				if (resp.IsStopped()) {
 					// good - that's what we are waiting for...
@@ -1091,6 +1091,7 @@ namespace ZitiDesktopEdge {
 					logger.Debug(e.ToString());
 				}
 				//SetCantDisplay("Start the Ziti Tunnel Service to continue");
+				SetNotifyIcon("red");
 				ShowServiceNotStarted();
 			});
 		}
@@ -1302,6 +1303,7 @@ namespace ZitiDesktopEdge {
 				_isServiceInError = false;
 				UpdateServiceView();
 				NoServiceView.Visibility = Visibility.Collapsed;
+				SetNotifyIcon("green");
 				if (!Application.Current.Properties.Contains("ip")) {
 					Application.Current.Properties.Add("ip", status?.IpInfo?.Ip);
 				} else {
@@ -1641,6 +1643,7 @@ namespace ZitiDesktopEdge {
 					logger.Warn("ERROR: Error:{0}, Message:{1}", r.Error, r.Message);
 				} else {
 					logger.Info("Service stopped!");
+					SetNotifyIcon("white");
 				}
 			} catch (MonitorServiceException me) {
 				logger.Warn("the monitor service appears offline. {0}", me);
