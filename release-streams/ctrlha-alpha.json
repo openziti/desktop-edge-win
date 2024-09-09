@@ -6,7 +6,7 @@
   "assets": [
     {
       "name": "Ziti.Desktop.Edge.Client-2.5.0.4.exe",
-      "browser_download_url": "https://github.com/openziti/desktop-edge-win/releases/download/2.5.0.3-alpha/Ziti.Desktop.Edge.Client-2.5.0.3.exe"
+      "browser_download_url": "https://github.com/openziti/desktop-edge-win/releases/download/2.5.0.4-alpha/Ziti.Desktop.Edge.Client-2.5.0.4.exe"
     }
   ]
 }

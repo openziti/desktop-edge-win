@@ -1490,7 +1490,6 @@ namespace ZitiDesktopEdge {
 					MainMenu.Disconnected();
 					DownloadSpeed.Content = "0.0";
 					UploadSpeed.Content = "0.0";
-					SetNotifyIcon("white");
 				}
 			});
 		}
