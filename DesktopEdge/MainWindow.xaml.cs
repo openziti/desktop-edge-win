@@ -40,12 +40,7 @@ using NLog.Config;
 using NLog.Targets;
 using Microsoft.Win32;
 
-using System.Windows.Interop;
-using Windows.UI.Notifications;
-using Windows.Data.Xml.Dom;
 using Ziti.Desktop.Edge.Models;
-using System.Reflection;
-using System.Windows.Threading;
 
 namespace ZitiDesktopEdge {
 
@@ -977,7 +972,7 @@ namespace ZitiDesktopEdge {
 			//continually poll for the service to stop. If it is stuck - ask the user if they want to try to force
 			//close the service
 			while (DateTime.Now < until) {
-				await Task.Delay(2000);
+				await Task.Delay(250);
 				MonitorServiceStatusEvent resp = await monitorClient.StatusAsync();
 				if (resp.IsStopped()) {
 					// good - that's what we are waiting for...
@@ -1016,15 +1011,19 @@ namespace ZitiDesktopEdge {
 					logger.Debug("ERROR: {0} : {1}", r.Message, r.Error);
 				} else {
 					logger.Info("Service started!");
-					//no longer used: startZitiButtonVisible = false;
 					CloseErrorButton.Click -= StartZitiService;
 					CloseError(null, null);
 				}
-			} catch (Exception ex) {
-				logger.Info(ex, "UNEXPECTED ERROR!");
-				//no longer used: startZitiButtonVisible = false;
-				//CloseErrorButton.Click += StartZitiService;
+			} catch (MonitorServiceException me) {
+				logger.Warn("the monitor service appears offline. {0}", me);
 				CloseErrorButton.IsEnabled = true;
+				HideLoad();
+				ShowError("Error Starting Service", "The monitor service is offline");
+			} catch (Exception ex) {
+				logger.Error(ex, "UNEXPECTED ERROR!");
+				CloseErrorButton.IsEnabled = true;
+				HideLoad();
+				ShowError("Unexpected Error", "Code 2:" + ex.Message);
 			}
 			CloseErrorButton.IsEnabled = true;
 			// HideLoad();
@@ -1040,10 +1039,26 @@ namespace ZitiDesktopEdge {
 			MainMenu.SetAppUpgradeAvailableText("");
 		}
 
-		async private void LogLevelChanged(string level) {
-			await serviceClient.SetLogLevelAsync(level);
-			await monitorClient.SetLogLevelAsync(level);
-			Ziti.Desktop.Edge.Utils.UIUtils.SetLogLevel(level);
+		async private Task<bool> LogLevelChanged(string level) {
+			int logsSet = 0;
+			try {
+				await serviceClient.SetLogLevelAsync(level);
+				logsSet++;
+				await monitorClient.SetLogLevelAsync(level);
+				logsSet++;
+				Ziti.Desktop.Edge.Utils.UIUtils.SetLogLevel(level);
+				return true;
+			} catch (Exception ex) {
+				logger.Error(ex, "Unexpected error. logsSet: {0}", logsSet);
+				if (logsSet > 1) {
+					await ShowBlurbAsync("Unexpected error setting logs?", "");
+				} else if (logsSet > 0) {
+					await ShowBlurbAsync("Failed to set monitor client log level", "");
+				} else {
+					await ShowBlurbAsync("Failed to set log levels", "");
+				}
+			}
+			return false;
 		}
 
 		private void IdentityMenu_OnError(string message) {
@@ -1076,6 +1091,7 @@ namespace ZitiDesktopEdge {
 					logger.Debug(e.ToString());
 				}
 				//SetCantDisplay("Start the Ziti Tunnel Service to continue");
+				SetNotifyIcon("red");
 				ShowServiceNotStarted();
 			});
 		}
@@ -1287,6 +1303,7 @@ namespace ZitiDesktopEdge {
 				_isServiceInError = false;
 				UpdateServiceView();
 				NoServiceView.Visibility = Visibility.Collapsed;
+				SetNotifyIcon("green");
 				if (!Application.Current.Properties.Contains("ip")) {
 					Application.Current.Properties.Add("ip", status?.IpInfo?.Ip);
 				} else {
@@ -1622,11 +1639,15 @@ namespace ZitiDesktopEdge {
 			try {
 				ShowLoad("Disabling Service", "Please wait for the service to stop.");
 				var r = await monitorClient.StopServiceAsync();
-				if (r != null && r.Code != 0) {
+				if (r.Code != 0) {
 					logger.Warn("ERROR: Error:{0}, Message:{1}", r.Error, r.Message);
 				} else {
 					logger.Info("Service stopped!");
+					SetNotifyIcon("white");
 				}
+			} catch (MonitorServiceException me) {
+				logger.Warn("the monitor service appears offline. {0}", me);
+				ShowError("Error Disabling Service", "The monitor service is offline");
 			} catch (Exception ex) {
 				logger.Error(ex, "unexpected error: {0}", ex.Message);
 				ShowError("Error Disabling Service", "An error occurred while trying to disable the data service. Is the monitor service running?");
@@ -1716,7 +1737,6 @@ namespace ZitiDesktopEdge {
 		async private Task CollectLogFiles() {
 			MonitorServiceStatusEvent resp = await monitorClient.CaptureLogsAsync();
 			if (resp != null) {
-
 				logger.Info("response: {0}", resp.Message);
 			} else {
 				ShowError("Error Collecting Feedback", "An error occurred while trying to gather feedback. Is the monitor service running?");
