@@ -1373,7 +1373,6 @@ namespace ZitiDesktopEdge {
 				}
 			}
 			icon += ".ico";
-			logger.Warn("INON: {}", icon);
 			var iconUri = new Uri(icon);
 			Stream iconStream = Application.GetResourceStream(iconUri).Stream;
 			notifyIcon.Icon = new Icon(iconStream);
