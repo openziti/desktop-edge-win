@@ -146,17 +146,9 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         async public Task<ZitiTunnelStatus> GetStatusAsync() {
-            try {
-                await sendAsync(new ServiceFunction() { Command = "Status" });
-                var rtn = await readAsync<ZitiTunnelStatus>(ipcReader);
-                return rtn;
-            } catch (Exception ioe) {
-                //almost certainly a problem with the pipe - recreate the pipe...
-                //setupPipe();
-                //throw ioe;
-                Logger.Error(ioe, "Unexpected error in GetStatusAsync");
-            }
-            return null;
+            await sendAsync(new ServiceFunction() { Command = "Status" });
+            var rtn = await readAsync<ZitiTunnelStatus>(ipcReader);
+            return rtn;
         }
 
         async public Task<Identity> AddIdentityAsync(string jwtFileName, bool activate, string jwtContent) {
