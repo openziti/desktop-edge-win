@@ -140,7 +140,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 ClientConnected(null);
             } catch (Exception ex) {
                 semaphoreSlim.Release();
-                throw new ServiceException("Could not connect to the service.", 1, ex.Message);
+                throw new ServiceException("Could not connect to the data service.", 1, ex.Message);
             }
             semaphoreSlim.Release();
         }
