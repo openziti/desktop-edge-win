@@ -542,12 +542,12 @@ namespace ZitiUpdateService {
 					dataClient.GetStatusAsync().Wait();
 					zetSemaphore.Release();
 					Interlocked.Exchange(ref zetFailedCheckCounter, 0);
-					Logger.Info("ziti-edge-tunnel aliveness check ends successfully");
+					Logger.Trace("ziti-edge-tunnel aliveness check ends successfully");
 				} else {
 					Interlocked.Add(ref zetFailedCheckCounter, 1);
 					Logger.Warn("ziti-edge-tunnel aliveness check appears blocked and has been for {} times", zetFailedCheckCounter);
 					if (zetFailedCheckCounter > 2) {
-						//after 10 seconds, just terminate ziti-edge-tunnel
+						//after 3 failures, just terminate ziti-edge-tunnel
 						Logger.Warn("forcefully stopping ziti-edge-tunnel as it has been blocked for too long");
 						stopProcessForcefully("ziti-edge-tunnel", "data service [ziti]");
 
