@@ -183,7 +183,6 @@ namespace ZitiDesktopEdge.Server {
                     await onClient(writer);
 
                     EventRegistry.MyEvent += eh;
-                    //try {
                     StreamReader reader = new StreamReader(ss);
 
                     string line = await reader.ReadLineAsync();
@@ -193,9 +192,6 @@ namespace ZitiDesktopEdge.Server {
                     }
 
                     Logger.Debug("handleEventClientAsync is complete");
-                    //} catch (Exception e) {
-                    //    Logger.Error(e, "Unexpected error when reading from or writing to a client pipe.");
-                    //}
                     EventRegistry.MyEvent -= eh;
                 }
             } catch (Exception e) {
