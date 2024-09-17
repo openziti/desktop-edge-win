@@ -66,21 +66,22 @@ namespace ZitiDesktopEdge.ServiceClient {
             ipcReader = new StreamReader(pipeClient);
             Task.Run(async () => { //hack for now until it's async...
                 try {
-                    StreamReader eventReader = new StreamReader(eventClient);
-                    while (true) {
-                        if (eventReader.EndOfStream) {
-                            break;
-                        }
-                        string respAsString = null;
-                        try {
-                            respAsString = await readMessageAsync(eventReader);
-                            try {
-                                ProcessLine(respAsString);
-                            } catch (Exception ex) {
-                                Logger.Warn(ex, "ERROR caught in ProcessLine: {0}", respAsString);
+                    using (StreamReader eventReader = new StreamReader(eventClient)) {
+                        while (true) {
+                            if (eventReader.EndOfStream) {
+                                break;
                             }
-                        } catch (Exception ex) {
-                            Logger.Warn(ex, "ERROR caught in readMessageAsync: {0}", respAsString);
+                            string respAsString = null;
+                            try {
+                                respAsString = await readMessageAsync(eventReader);
+                                try {
+                                    ProcessLine(respAsString);
+                                } catch (Exception ex) {
+                                    Logger.Warn(ex, "ERROR caught in ProcessLine: {0}", respAsString);
+                                }
+                            } catch (Exception ex) {
+                                Logger.Warn(ex, "ERROR caught in readMessageAsync: {0}", respAsString);
+                            }
                         }
                     }
                 } catch (Exception ex) {
@@ -130,7 +131,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                             await ipcWriter.WriteAsync('\n');
                             await ipcWriter.FlushAsync();
                         } else {
-                            throw new MonitorServiceException("the monitor service appears to be offline?");
+                            throw new IPCException("ipcWriter is null. the target appears to be offline?");
                         }
                     } else {
                         Logger.Debug("NOT sending empty object??? " + objToSend?.ToString());
@@ -292,10 +293,14 @@ namespace ZitiDesktopEdge.ServiceClient {
 
 	public class MonitorServiceException : Exception {
 		public MonitorServiceException() { }
-		public MonitorServiceException(string message) : base(message) {
-			
-		}
-		public MonitorServiceException(string message, Exception source) : base(message, source) {
-		}
+		public MonitorServiceException(string message) : base(message) { }
+		public MonitorServiceException(string message, Exception source) : base(message, source) { }
+	}
+
+	public class IPCException : Exception {
+		public IPCException() { }
+		public IPCException(string message) : base(message) { }
+		public IPCException(string message, Exception source) : base(message, source) { }
+
 	}
 }

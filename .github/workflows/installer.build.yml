@@ -94,18 +94,18 @@ jobs:
           ziti_ci_gpg_key_id: ${{ secrets.ZITI_CI_GPG_KEY_ID }}
         run: powershell -File .\Installer\build.ps1
       - name: Upload installer onto job
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ZitiDesktopEdgeClient-${{ env.VERSION }}
           path: "Installer/Output/Ziti Desktop Edge Client-*"
       - name: Upload update json to job
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: ZitiDesktopEdgeClient-${{ env.VERSION }}
+          name: ZitiDesktopEdgeClient-${{ env.VERSION }}.json
           path: ${{ env.VERSION }}.json
       - name: Job Failure - Upload the signing log job
         if: failure()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: SigningLogs
           path: '**/*AWSSigner.log*'

@@ -1,3 +1,30 @@
+# Release 2.5.0.5
+
+## What's New
+* Added stalled ziti-edge-tunnel detection. If the process doesn't respond for 15 seconds the monitor service will
+  administratively terminate the process. Example log output shown below:
+
+      [2024-09-17T22:27:20.980Z]  INFO	ZitiUpdateService.UpdateService	ziti-edge-tunnel aliveness check ends successfully	
+      [2024-09-17T22:27:35.974Z]  WARN	ZitiUpdateService.UpdateService	ziti-edge-tunnel aliveness check appears blocked and has been for 1 times	
+      [2024-09-17T22:27:40.975Z]  WARN	ZitiUpdateService.UpdateService	ziti-edge-tunnel aliveness check appears blocked and has been for 2 times	
+      [2024-09-17T22:27:45.975Z]  WARN	ZitiUpdateService.UpdateService	ziti-edge-tunnel aliveness check appears blocked and has been for 3 times	
+      [2024-09-17T22:27:45.975Z]  WARN	ZitiUpdateService.UpdateService	forcefully stopping ziti-edge-tunnel as it has been blocked for too long	
+      [2024-09-17T22:27:45.975Z]  INFO	ZitiUpdateService.UpdateService	Closing the "data service [ziti]" process	
+      [2024-09-17T22:27:45.975Z]  INFO	ZitiUpdateService.UpdateService	Killing: System.Diagnostics.Process (ziti-edge-tunnel)	
+
+## Other changes:
+* n/a
+
+## Bugs fixed:
+* n/a
+
+## Dependency Updates
+
+ziti-edge-tunnel.exe version -v:
+* ziti-tunneler: v2.0.0-alpha19
+* *ziti-sdk:      2.0.0-alpha21
+* *tlsuv:         v0.31.4[OpenSSL 3.3.1 4 Jun 2024]
+
 # Release 2.5.0.3
 
 ## What's New

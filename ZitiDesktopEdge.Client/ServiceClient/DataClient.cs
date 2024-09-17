@@ -140,23 +140,15 @@ namespace ZitiDesktopEdge.ServiceClient {
                 ClientConnected(null);
             } catch (Exception ex) {
                 semaphoreSlim.Release();
-                throw new ServiceException("Could not connect to the service.", 1, ex.Message);
+                throw new ServiceException("Could not connect to the data service.", 1, ex.Message);
             }
             semaphoreSlim.Release();
         }
 
         async public Task<ZitiTunnelStatus> GetStatusAsync() {
-            try {
-                await sendAsync(new ServiceFunction() { Command = "Status" });
-                var rtn = await readAsync<ZitiTunnelStatus>(ipcReader);
-                return rtn;
-            } catch (Exception ioe) {
-                //almost certainly a problem with the pipe - recreate the pipe...
-                //setupPipe();
-                //throw ioe;
-                Logger.Error(ioe, "Unexpected error");
-            }
-            return null;
+            await sendAsync(new ServiceFunction() { Command = "Status" });
+            var rtn = await readAsync<ZitiTunnelStatus>(ipcReader);
+            return rtn;
         }
 
         async public Task<Identity> AddIdentityAsync(string jwtFileName, bool activate, string jwtContent) {

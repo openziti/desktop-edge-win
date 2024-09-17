@@ -445,7 +445,7 @@ namespace ZitiDesktopEdge {
 					TriggerUpdateButton.Visibility = Visibility.Collapsed;
 					ForceUpdate.Visibility = Visibility.Collapsed;
 				}
-			} catch (MonitorServiceException me) {
+			} catch (MonitorServiceException) {
 				CheckForUpdateStatus.Content = "Monitor service is offline";
 			} catch (Exception ex) {
 				logger.Error(ex, "unexpected error in update check: {0}", ex.Message);
