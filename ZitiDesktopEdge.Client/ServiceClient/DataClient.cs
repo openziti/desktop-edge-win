@@ -154,7 +154,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //setupPipe();
                 //throw ioe;
-                Logger.Error(ioe, "Unexpected error");
+                Logger.Error(ioe, "Unexpected error in GetStatusAsync");
             }
             return null;
         }

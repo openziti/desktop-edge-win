@@ -542,7 +542,7 @@ namespace ZitiUpdateService {
 					dataClient.GetStatusAsync().Wait();
 					zetSemaphore.Release();
 					Interlocked.Exchange(ref zetFailedCheckCounter, 0);
-					Logger.Info("ziti-edge-tunnel aliveness check ends {}", zetFailedCheckCounter);
+					Logger.Info("ziti-edge-tunnel aliveness check ends successfully");
 				} else {
 					Interlocked.Add(ref zetFailedCheckCounter, 1);
 					Logger.Warn("ziti-edge-tunnel aliveness check appears blocked and has been for {} times", zetFailedCheckCounter);
@@ -561,27 +561,31 @@ namespace ZitiUpdateService {
 		}
 
 		async private Task onEventsClientAsync(StreamWriter writer) {
-			Logger.Info("a new events client was connected");
-			//reset to release stream
-			//initial status when connecting the event stream
-			MonitorServiceStatusEvent status = new MonitorServiceStatusEvent() {
-				Code = 0,
-				Error = "",
-				Message = "Success",
-				Type = "Status",
-				Status = ServiceActions.ServiceStatus(),
-				ReleaseStream = IsBeta ? "beta" : "stable",
-				AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString(),
-				AutomaticUpgradeURL = CurrentSettings.AutomaticUpdateURL,
-			};
-			await writer.WriteLineAsync(JsonConvert.SerializeObject(status));
-			await writer.FlushAsync();
+            try {
+                Logger.Info("a new events client was connected");
+                //reset to release stream
+                //initial status when connecting the event stream
+                MonitorServiceStatusEvent status = new MonitorServiceStatusEvent() {
+                    Code = 0,
+                    Error = "",
+                    Message = "Success",
+                    Type = "Status",
+                    Status = ServiceActions.ServiceStatus(),
+                    ReleaseStream = IsBeta ? "beta" : "stable",
+                    AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString(),
+                    AutomaticUpgradeURL = CurrentSettings.AutomaticUpdateURL,
+                };
+                await writer.WriteLineAsync(JsonConvert.SerializeObject(status));
+                await writer.FlushAsync();
 
-			//if a new client attaches - send the last update check status
-			if (lastUpdateCheck != null) {
-				await writer.WriteLineAsync(JsonConvert.SerializeObject(lastInstallationNotification));
-				await writer.FlushAsync();
-			}
+                //if a new client attaches - send the last update check status
+                if (lastUpdateCheck != null) {
+                    await writer.WriteLineAsync(JsonConvert.SerializeObject(lastInstallationNotification));
+                    await writer.FlushAsync();
+                }
+            } catch (Exception ex) {
+                Logger.Error("UNEXPECTED ERROR: {}", ex);
+            }
 		}
 
 #pragma warning disable 1998 //This async method lacks 'await'
@@ -902,7 +906,7 @@ namespace ZitiUpdateService {
 						}
 						worker.Kill();
 						worker.WaitForExit(5000);
-						Logger.Info("Stopping the {description} process exited cleanly", description);
+						Logger.Info("Stopping the {description} process killed", description);
 						worker.Dispose();
 					} catch (Exception e) {
 						Logger.Error(e, "Unexpected error when closing the {description}!", description);
