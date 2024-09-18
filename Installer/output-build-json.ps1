@@ -5,8 +5,8 @@
 param(
     [Parameter(Mandatory = $true)]
     [string]$version,
-    [string]$url = "http://localhost:8000/local",
-    [string]$stream = "beta",
+    [string]$url = "http://localhost:8000/release-streams/local",
+    [string]$stream = "local",
     [string]$outputPath = "${version}.json",
     [datetime]$published_at
 )

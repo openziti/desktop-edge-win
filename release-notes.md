@@ -1,4 +1,4 @@
-# Release 2.5.0.5
+# Release 2.5.0.6
 
 ## What's New
 * Added stalled ziti-edge-tunnel detection. If the process doesn't respond for 15 seconds the monitor service will

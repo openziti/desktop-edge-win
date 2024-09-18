@@ -128,5 +128,5 @@ echo "========================== build.ps1 completed =========================="
 $defaultRootUrl = "https://github.com/openziti/desktop-edge-win/releases/download/"
 $defaultStream = "beta"
 $defaultPublishedAt = Get-Date
-$updateJson = "${installerVersion}.json"
+$updateJson = "${scriptPath}\Output\Ziti Desktop Edge Client-${installerVersion}.exe.json"
 & .\Installer\output-build-json.ps1 -version $installerVersion -url $defaultRootUrl -stream $defaultStream -published_at $defaultPublishedAt -outputPath $updateJson
