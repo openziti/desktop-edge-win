@@ -23,11 +23,9 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ZitiDesktopEdge.Native
-{
+namespace ZitiDesktopEdge.Native {
 
-    public static class NativeMethods
-    {
+    public static class NativeMethods {
         private static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
 
         private const uint FILE_READ_EA = 0x0008;
@@ -50,8 +48,7 @@ namespace ZitiDesktopEdge.Native
                 [MarshalAs(UnmanagedType.U4)] uint flagsAndAttributes,
                 IntPtr templateFile);
 
-        public static string GetFinalPathName(string path)
-        {
+        public static string GetFinalPathName(string path) {
             var h = CreateFile(path,
                 FILE_READ_EA,
                 FileShare.ReadWrite | FileShare.Delete,
@@ -62,8 +59,7 @@ namespace ZitiDesktopEdge.Native
             if (h == INVALID_HANDLE_VALUE)
                 throw new Win32Exception();
 
-            try
-            {
+            try {
                 var sb = new StringBuilder(1024);
                 var res = GetFinalPathNameByHandle(h, sb, 1024, 0);
                 if (res == 0)
@@ -71,8 +67,7 @@ namespace ZitiDesktopEdge.Native
 
                 return sb.ToString();
             }
-            finally
-            {
+            finally {
                 CloseHandle(h);
             }
         }

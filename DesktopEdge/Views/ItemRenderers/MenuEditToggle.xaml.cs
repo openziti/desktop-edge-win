@@ -15,13 +15,11 @@ using System.Windows.Shapes;
 using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.ServiceClient;
 
-namespace ZitiDesktopEdge
-{
+namespace ZitiDesktopEdge {
     /// <summary>
     /// Interaction logic for MenuItem.xaml
     /// </summary>
-    public partial class MenuEditToggle : UserControl
-    {
+    public partial class MenuEditToggle : UserControl {
 
         public delegate void OnToggle(bool isOn);
         public event OnToggle Toggle;
@@ -33,60 +31,47 @@ namespace ZitiDesktopEdge
 
         private string _label = "";
 
-        public string Label
-        {
-            get
-            {
+        public string Label {
+            get {
                 return _label;
             }
-            set
-            {
+            set {
                 this._label = value;
                 this.MainLabel.Text = this._label;
             }
         }
-        public bool IsOn
-        {
-            get
-            {
+        public bool IsOn {
+            get {
                 return ToggleField.Enabled;
             }
-            set
-            {
+            set {
                 ToggleField.Enabled = value;
             }
         }
 
-        public ZitiIdentity Identity
-        {
-            get
-            {
+        public ZitiIdentity Identity {
+            get {
                 return _identity;
             }
-            set
-            {
+            set {
                 _identity = value;
             }
         }
 
-        public MenuEditToggle()
-        {
+        public MenuEditToggle() {
             InitializeComponent();
         }
 
-        public void Toggled(Boolean isOn)
-        {
+        public void Toggled(Boolean isOn) {
             this.ToggleField.Enabled = isOn;
             this.Toggle?.Invoke(isOn);
         }
 
-        private void MFAAuthenticate(object sender, MouseButtonEventArgs e)
-        {
+        private void MFAAuthenticate(object sender, MouseButtonEventArgs e) {
             this.Authenticate?.Invoke();
         }
 
-        private void MFARecovery(object sender, MouseButtonEventArgs e)
-        {
+        private void MFARecovery(object sender, MouseButtonEventArgs e) {
             this.Recovery?.Invoke();
         }
     }

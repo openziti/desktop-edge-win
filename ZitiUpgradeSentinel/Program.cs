@@ -25,39 +25,32 @@ using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Text;
 
-class FileWatcher
-{
+class FileWatcher {
     private static string processName = Process.GetCurrentProcess().ProcessName;
     private static string tempDir = $"{Environment.GetEnvironmentVariable("TEMP")}";
     private static string fileName = $"{processName}_{DateTime.Now:yyyyMMddHHmmss}.log";
     private static string logFilePath = Path.Combine(tempDir, fileName);
 
-    public static async Task Main(string[] args)
-    {
+    public static async Task Main(string[] args) {
         Log($"{processName} started");
-        try
-        {
-            if (Process.GetProcessesByName(processName).Length > 1)
-            {
+        try {
+            if (Process.GetProcessesByName(processName).Length > 1) {
                 Log("Another instance is already running. Exiting...");
                 return;
             }
             await RunWithTimeout(task: WaitForStartupChange(), timeout: TimeSpan.FromMinutes(5));
             StartZitiDesktopEdgeUI();
         }
-        catch (Exception e)
-        {
+        catch (Exception e) {
             Log($"{processName} completed exceptionally: ");
             Log(e.ToString());
         }
-        finally
-        {
+        finally {
             Log($"{processName} completed");
         }
     }
 
-    public static DateTime GetCurrentStartTime(StreamWriter writer, StreamReader reader)
-    {
+    public static DateTime GetCurrentStartTime(StreamWriter writer, StreamReader reader) {
         string statusCommand = "{\"Command\":\"Status\"}";
         writer.WriteLine(statusCommand);
         writer.Flush();
@@ -72,108 +65,85 @@ class FileWatcher
         throw new Exception("could not obtain current time from data service");
     }
 
-    public static async Task WaitForStartupChange()
-    {
+    public static async Task WaitForStartupChange() {
         DateTime startTime = DateTime.Now;
-        try
-        {
-            using (NamedPipeClientStream pipeClient = new NamedPipeClientStream(".", "ziti-edge-tunnel.sock", PipeDirection.InOut))
-            {
+        try {
+            using (NamedPipeClientStream pipeClient = new NamedPipeClientStream(".", "ziti-edge-tunnel.sock", PipeDirection.InOut)) {
                 pipeClient.Connect();
                 StreamWriter writer = new StreamWriter(pipeClient);
                 StreamReader reader = new StreamReader(pipeClient);
 
-                try
-                {
+                try {
                     startTime = GetCurrentStartTime(writer, reader);
                     Log($"initial start time {startTime}");
                 }
-                catch
-                {
+                catch {
                     Log("Could not obtain current time. The service is expected to be down. Using 'now' as current time.");
                 }
             }
         }
-        catch (Exception ex)
-        {
+        catch (Exception ex) {
             Log($"Error: {ex.Message}");
         }
 
-        while (true)
-        {
-            try
-            {
-                using (NamedPipeClientStream pipeClient = new NamedPipeClientStream(".", "ziti-edge-tunnel.sock", PipeDirection.InOut))
-                {
+        while (true) {
+            try {
+                using (NamedPipeClientStream pipeClient = new NamedPipeClientStream(".", "ziti-edge-tunnel.sock", PipeDirection.InOut)) {
                     pipeClient.Connect();
                     StreamWriter writer = new StreamWriter(pipeClient);
                     StreamReader reader = new StreamReader(pipeClient);
                     DateTime nextStartTime = GetCurrentStartTime(writer, reader);
-                    if (startTime == nextStartTime)
-                    {
+                    if (startTime == nextStartTime) {
                         Log($"{startTime} is equal to {nextStartTime}");
                     }
-                    else
-                    {
+                    else {
                         Log($"{startTime} has changed to {nextStartTime}");
                         return;
                     }
                     await Task.Delay(TimeSpan.FromMilliseconds(500)); // wait for the serice to start and return a result
                 }
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 Log($"Error: {ex.Message}");
             }
             await Task.Delay(TimeSpan.FromMilliseconds(500)); // try again...
         }
     }
 
-    public static async Task RunWithTimeout(Task task, TimeSpan timeout)
-    {
-        using (var cancellationTokenSource = new CancellationTokenSource())
-        {
-            if (await Task.WhenAny(task, Task.Delay(timeout)) == task)
-            {
+    public static async Task RunWithTimeout(Task task, TimeSpan timeout) {
+        using (var cancellationTokenSource = new CancellationTokenSource()) {
+            if (await Task.WhenAny(task, Task.Delay(timeout)) == task) {
                 cancellationTokenSource.Cancel();
                 await task;
             }
-            else
-            {
+            else {
                 throw new TimeoutException("The operation has timed out.");
             }
         }
     }
-    public static void Log(string message)
-    {
+    public static void Log(string message) {
         Console.WriteLine(message);
         File.AppendAllText(logFilePath, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - {message}\n");
     }
 
-    public static void StartZitiDesktopEdgeUI()
-    {
+    public static void StartZitiDesktopEdgeUI() {
         Log($"trying to find the UI to start");
         string programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
 
         List<string> dirs = new List<string>(Directory.EnumerateDirectories(programFilesX86, "NetFoundry*"));
 
-        if (dirs.Count > 1)
-        {
+        if (dirs.Count > 1) {
             Log($"cannot start the UI. too many directories to search??? Found: {dirs.Count} {string.Join(",", dirs)}");
         }
-        else if (dirs.Count < 1)
-        {
+        else if (dirs.Count < 1) {
             Log($"cannot start the UI. No ZitiDesktopEdge.exe found");
         }
-        else
-        {
+        else {
             var zitiFiles = Directory.GetFiles(dirs[0], "ZitiDesktopEdge.exe", SearchOption.AllDirectories);
 
-            foreach (var file in zitiFiles)
-            {
+            foreach (var file in zitiFiles) {
                 Console.WriteLine($"Found ZitiDesktopEdge at: {file}");
-                using (Process process = new Process())
-                {
+                using (Process process = new Process()) {
                     process.StartInfo.FileName = file;
                     process.StartInfo.Arguments = "version";
                     process.StartInfo.RedirectStandardOutput = true;
@@ -189,8 +159,7 @@ class FileWatcher
 
 
 [DataContract]
-public class Response
-{
+public class Response {
     [DataMember]
     public bool Success { get; set; }
 
@@ -202,8 +171,7 @@ public class Response
 }
 
 [DataContract]
-public class Data
-{
+public class Data {
     [DataMember]
     public bool Active { get; set; }
 
@@ -218,8 +186,7 @@ public class Data
 }
 
 [DataContract]
-public class Identity
-{
+public class Identity {
     [DataMember]
     public string Name { get; set; }
 

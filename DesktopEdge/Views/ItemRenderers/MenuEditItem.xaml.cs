@@ -13,58 +13,45 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace ZitiDesktopEdge
-{
+namespace ZitiDesktopEdge {
     /// <summary>
     /// Interaction logic for MenuItem.xaml
     /// </summary>
-    public partial class MenuEditItem : UserControl
-    {
+    public partial class MenuEditItem : UserControl {
 
         private string _label = "";
 
-        public string Label
-        {
-            get
-            {
+        public string Label {
+            get {
                 return _label;
             }
-            set
-            {
+            set {
                 this._label = value;
                 MainLabel.Text = this._label;
             }
         }
-        public string Value
-        {
-            get
-            {
+        public string Value {
+            get {
                 return MainEdit.Text;
             }
-            set
-            {
+            set {
                 MainEdit.Text = value;
             }
         }
-        public bool IsLocked
-        {
-            get
-            {
+        public bool IsLocked {
+            get {
                 return MainEdit.IsReadOnly;
             }
-            set
-            {
+            set {
                 MainEdit.IsReadOnly = value;
             }
         }
 
-        public MenuEditItem()
-        {
+        public MenuEditItem() {
             InitializeComponent();
         }
 
-        private void MainEdit_PreviewMouseUp(object sender, MouseButtonEventArgs e)
-        {
+        private void MainEdit_PreviewMouseUp(object sender, MouseButtonEventArgs e) {
             var textbox = (sender as TextBox);
             textbox.SelectAll();
 

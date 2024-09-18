@@ -13,70 +13,56 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace ZitiDesktopEdge
-{
+namespace ZitiDesktopEdge {
     /// <summary>
     /// Interaction logic for MenuItem.xaml
     /// </summary>
-    public partial class MenuEditSearch : UserControl
-    {
+    public partial class MenuEditSearch : UserControl {
 
         public delegate void OnFilter(string filter);
         public event OnFilter Filter;
 
         private string _label = "";
 
-        public string Label
-        {
-            get
-            {
+        public string Label {
+            get {
                 return _label;
             }
-            set
-            {
+            set {
                 this._label = value;
                 MainLabel.Text = this._label;
             }
         }
-        public string Value
-        {
-            get
-            {
+        public string Value {
+            get {
                 return MainEdit.Text;
             }
-            set
-            {
+            set {
                 MainEdit.Text = value;
             }
         }
 
-        public MenuEditSearch()
-        {
+        public MenuEditSearch() {
             InitializeComponent();
         }
 
-        private void MainEdit_KeyUp(object sender, KeyEventArgs e)
-        {
-            if (MainEdit.Text.Trim().Length > 0)
-            {
+        private void MainEdit_KeyUp(object sender, KeyEventArgs e) {
+            if (MainEdit.Text.Trim().Length > 0) {
                 ClearButton.Content = "clear";
             }
-            else
-            {
+            else {
                 ClearButton.Content = "search";
             }
             Filter(MainEdit.Text);
         }
 
-        private void Label_MouseUp(object sender, MouseButtonEventArgs e)
-        {
+        private void Label_MouseUp(object sender, MouseButtonEventArgs e) {
             MainEdit.Text = "";
             ClearButton.Content = "search";
             Filter(MainEdit.Text);
         }
 
-        public void Clear()
-        {
+        public void Clear() {
             MainEdit.Text = "";
             ClearButton.Content = "search";
             Filter(MainEdit.Text);

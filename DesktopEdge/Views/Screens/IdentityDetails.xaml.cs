@@ -31,13 +31,11 @@ using System.Windows.Media;
 using System.Windows.Data;
 using System.Diagnostics.Eventing.Reader;
 
-namespace ZitiDesktopEdge
-{
+namespace ZitiDesktopEdge {
     /// <summary>
     /// Interaction logic for IdentityDetails.xaml
     /// </summary> 
-    public partial class IdentityDetails : UserControl
-    {
+    public partial class IdentityDetails : UserControl {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private bool _isAttached = true;
@@ -79,24 +77,19 @@ namespace ZitiDesktopEdge
 
         internal MainWindow MainWindow { get; set; }
 
-        private List<ZitiIdentity> identities
-        {
-            get
-            {
+        private List<ZitiIdentity> identities {
+            get {
                 return (List<ZitiIdentity>)Application.Current.Properties["Identities"];
             }
         }
 
         private ZitiIdentity _identity;
 
-        public ZitiIdentity Identity
-        {
-            get
-            {
+        public ZitiIdentity Identity {
+            get {
                 return _identity;
             }
-            set
-            {
+            set {
                 _loaded = false;
                 FilterServices.Clear();
                 scrolledTo = 0;
@@ -116,32 +109,25 @@ namespace ZitiDesktopEdge
         public IdentityItem SelectedIdentity { get; set; }
         public MenuIdentityItem SelectedIdentityMenu { get; set; }
 
-        private void Window_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (e.ChangedButton == MouseButton.Left)
-            {
+        private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
+            if (e.ChangedButton == MouseButton.Left) {
                 _isAttached = false;
                 OnDetach(e);
             }
         }
 
 
-        public bool IsAttached
-        {
-            get
-            {
+        public bool IsAttached {
+            get {
                 return _isAttached;
             }
-            set
-            {
+            set {
                 _isAttached = value;
-                if (_isAttached)
-                {
+                if (_isAttached) {
                     Arrow.Visibility = Visibility.Visible;
                     ConfirmArrow.Visibility = Visibility.Visible;
                 }
-                else
-                {
+                else {
                     Arrow.Visibility = Visibility.Collapsed;
                     ConfirmArrow.Visibility = Visibility.Collapsed;
                 }
@@ -149,14 +135,11 @@ namespace ZitiDesktopEdge
         }
 
 
-        private void MFAEnabledAndNeeded()
-        {
-            if (_identity.Services.Count > 0)
-            {
+        private void MFAEnabledAndNeeded() {
+            if (_identity.Services.Count > 0) {
                 MainDetailScroll.Visibility = Visibility.Visible;
             }
-            else
-            {
+            else {
                 IdentityMFA.AuthOff.Visibility = Visibility.Visible;
                 AuthMessageBg.Visibility = Visibility.Visible;
                 AuthMessageLabel.Visibility = Visibility.Visible;
@@ -165,25 +148,20 @@ namespace ZitiDesktopEdge
             }
         }
 
-        private void MFAEnabledAndNotNeeded()
-        {
+        private void MFAEnabledAndNotNeeded() {
             MainDetailScroll.Visibility = Visibility.Visible;
             IdentityMFA.AuthOn.Visibility = Visibility.Visible;
         }
 
-        private void MFANotEnabledAndNotNeeded()
-        {
+        private void MFANotEnabledAndNotNeeded() {
             MainDetailScroll.Visibility = Visibility.Visible;
         }
 
-        private void MFANotEnabledAndNeeded()
-        {
-            if (_identity.Services.Count > 0)
-            {
+        private void MFANotEnabledAndNeeded() {
+            if (_identity.Services.Count > 0) {
                 MainDetailScroll.Visibility = Visibility.Visible;
             }
-            else
-            {
+            else {
                 AuthMessageLabel.Visibility = Visibility.Visible;
                 NoAuthServices.Visibility = Visibility.Visible;
                 NoAuthServices.Text = "You must enable MFA to access services";
@@ -191,14 +169,11 @@ namespace ZitiDesktopEdge
             }
         }
 
-        public void UpdateView()
-        {
-            if (_scroller == null)
-            {
+        public void UpdateView() {
+            if (_scroller == null) {
                 _scroller = GetScrollViewer(ServiceList) as ScrollViewer;
             }
-            if (_scroller != null)
-            {
+            if (_scroller != null) {
                 _scroller.InvalidateScrollInfo();
                 _scroller.ScrollToVerticalOffset(0);
                 _scroller.InvalidateScrollInfo();
@@ -232,28 +207,22 @@ namespace ZitiDesktopEdge
 #if DEBUG
             _identity.MFADebug("UpdateView");
 #endif
-            if (_identity.IsMFAEnabled)
-            {
-                if (_identity.IsMFANeeded)
-                {
+            if (_identity.IsMFAEnabled) {
+                if (_identity.IsMFANeeded) {
                     // enabled and needed = needs to be authorized. show the lock icon and tell the user to auth
                     MFAEnabledAndNeeded();
                 }
-                else
-                {
+                else {
                     // enabled and not needed = authorized. show the services should be enabled and authorized
                     MFAEnabledAndNotNeeded();
                 }
             }
-            else
-            {
-                if (_identity.IsMFANeeded)
-                {
+            else {
+                if (_identity.IsMFANeeded) {
                     // not enabled and needed = show the user the MFA disabled so they can enable it
                     MFANotEnabledAndNeeded();
                 }
-                else
-                {
+                else {
                     // normal case. means no lock icon needs to be shown
                     MFANotEnabledAndNotNeeded();
                 }
@@ -264,8 +233,7 @@ namespace ZitiDesktopEdge
 
             totalServices = _identity.Services.Count;
 
-            if (_identity.Services.Count > 0)
-            {
+            if (_identity.Services.Count > 0) {
                 int index = 0;
                 int total = 0;
                 ZitiService[] services = new ZitiService[0];
@@ -277,14 +245,11 @@ namespace ZitiDesktopEdge
                 else if (SortBy == "Port") services = _identity.Services.OrderBy(s => s.Ports.ToString()).ToArray();
                 if (SortWay == "Desc") services = services.Reverse().ToArray();
                 int startIndex = (Page - 1) * PerPage;
-                for (int i = startIndex; i < services.Length; i++)
-                {
+                for (int i = startIndex; i < services.Length; i++) {
                     ZitiService zitiSvc = services[i];
                     total++;
-                    if (index < PerPage)
-                    {
-                        if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0)
-                        {
+                    if (index < PerPage) {
+                        if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0) {
                             zitiSvc.TimeUpdated = _identity.LastUpdatedTime;
                             zitiSvc.IsMfaReady = _identity.IsMFAEnabled;
                             _services.Add(zitiSvc);
@@ -306,8 +271,7 @@ namespace ZitiDesktopEdge
             _loaded = true;
         }
 
-        private void ShowDetails(ZitiService info)
-        {
+        private void ShowDetails(ZitiService info) {
             _info = info;
             DetailName.Text = info.Name;
             DetailProtocols.Text = info.ProtocolString;
@@ -316,8 +280,7 @@ namespace ZitiDesktopEdge
             DetailUrl.Text = info.ToString();
 
             UpdateClock(info);
-            if (_identity.IsMFAEnabled)
-            {
+            if (_identity.IsMFAEnabled) {
                 if (_timer != null) _timer.Stop();
                 _timer = new System.Windows.Forms.Timer();
                 _timer.Interval = 1000;
@@ -336,59 +299,47 @@ namespace ZitiDesktopEdge
             ShowModal();
         }
 
-        private void Ticked(object sender, EventArgs e)
-        {
+        private void Ticked(object sender, EventArgs e) {
             UpdateClock(_info);
         }
 
-        private void UpdateClock(ZitiService info)
-        {
-            try
-            {
-                if (_identity.IsMFAEnabled)
-                {
-                    if (info.TimeoutCalculated > 0)
-                    {
+        private void UpdateClock(ZitiService info) {
+            try {
+                if (_identity.IsMFAEnabled) {
+                    if (info.TimeoutCalculated > 0) {
                         TimeSpan t = TimeSpan.FromSeconds(info.TimeoutCalculated);
                         string answer = t.Seconds + " seconds";
                         if (t.Days > 0) answer = t.Days + " days " + t.Hours + " hours " + t.Minutes + " minutes " + t.Seconds + " seconds";
-                        else
-                        {
+                        else {
                             if (t.Hours > 0) answer = t.Hours + " hours " + t.Minutes + " minutes " + t.Seconds + " seconds";
-                            else
-                            {
+                            else {
                                 if (t.Minutes > 0) answer = t.Minutes + " minutes " + t.Seconds + " seconds";
                             }
                         }
                         TimeoutDetails.Text = answer;
                     }
-                    else
-                    {
+                    else {
                         if (info.TimeoutCalculated == 0) TimeoutDetails.Text = "Timed Out";
                         else TimeoutDetails.Text = "Never";
                     }
                 }
-                else
-                {
+                else {
                     TimeoutDetails.Text = "Never";
                 }
             }
-            catch (Exception e)
-            {
+            catch (Exception e) {
                 TimeoutDetails.Text = "Never";
                 Console.WriteLine("Error: " + e.ToString());
             }
         }
 
-        private void ShowCompleted(object sender, EventArgs e)
-        {
+        private void ShowCompleted(object sender, EventArgs e) {
             DoubleAnimation animation = new DoubleAnimation(DetailPanel.ActualHeight + 60, TimeSpan.FromSeconds(.3));
             DetailsArea.BeginAnimation(Grid.HeightProperty, animation);
             //DetailsArea.Height = DetailPanel.ActualHeight + 60;
         }
 
-        private void CloseDetails(object sender, MouseButtonEventArgs e)
-        {
+        private void CloseDetails(object sender, MouseButtonEventArgs e) {
             DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
             ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
             DoubleAnimation animation2 = new DoubleAnimation(DetailPanel.ActualHeight + 100, TimeSpan.FromSeconds(.3));
@@ -399,58 +350,46 @@ namespace ZitiDesktopEdge
             HideModal();
         }
 
-        private void HideComplete(object sender, EventArgs e)
-        {
+        private void HideComplete(object sender, EventArgs e) {
             DetailsArea.Visibility = Visibility.Collapsed;
             ModalBg.Visibility = Visibility.Collapsed;
         }
 
-        private void Info_OnMessage(string message)
-        {
+        private void Info_OnMessage(string message) {
             OnMessage?.Invoke(message);
         }
 
-        public IdentityDetails()
-        {
+        public IdentityDetails() {
             InitializeComponent();
         }
-        private void HideMenu(object sender, MouseButtonEventArgs e)
-        {
+        private void HideMenu(object sender, MouseButtonEventArgs e) {
             this.Visibility = Visibility.Collapsed;
         }
 
-        public void SetHeight(double height)
-        {
+        public void SetHeight(double height) {
             MainDetailScroll.Height = height;
         }
 
-        private void ForgetIdentity(object sender, MouseButtonEventArgs e)
-        {
-            if (this.Visibility == Visibility.Visible && ConfirmView.Visibility == Visibility.Collapsed)
-            {
+        private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
+            if (this.Visibility == Visibility.Visible && ConfirmView.Visibility == Visibility.Collapsed) {
                 ConfirmView.Visibility = Visibility.Visible;
             }
         }
 
-        private void CancelConfirmButton_Click(object sender, RoutedEventArgs e)
-        {
+        private void CancelConfirmButton_Click(object sender, RoutedEventArgs e) {
             ConfirmView.Visibility = Visibility.Collapsed;
         }
 
-        async private void ConfirmButton_Click(object sender, RoutedEventArgs e)
-        {
+        async private void ConfirmButton_Click(object sender, RoutedEventArgs e) {
             this.Visibility = Visibility.Collapsed;
             DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-            try
-            {
+            try {
                 ConfirmView.Visibility = Visibility.Collapsed;
                 await client.RemoveIdentityAsync(_identity.Identifier);
 
                 ZitiIdentity forgotten = new ZitiIdentity();
-                foreach (var id in identities)
-                {
-                    if (id.Identifier == _identity.Identifier)
-                    {
+                foreach (var id in identities) {
+                    if (id.Identifier == _identity.Identifier) {
                         forgotten = id;
                         identities.Remove(id);
                         break;
@@ -459,20 +398,17 @@ namespace ZitiDesktopEdge
 
                 OnForgot?.Invoke(forgotten);
             }
-            catch (DataStructures.ServiceException se)
-            {
+            catch (DataStructures.ServiceException se) {
                 Logger.Error(se, se.Message);
                 OnError(se.Message);
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 Logger.Error(ex, "Unexpected: " + ex.Message);
                 OnError("An unexpected error has occured while removing the identity. Please verify the service is still running and try again.");
             }
         }
 
-        private void ToggleMFA(bool isOn)
-        {
+        private void ToggleMFA(bool isOn) {
             this.OnMFAToggled?.Invoke(isOn);
         }
 
@@ -481,8 +417,7 @@ namespace ZitiDesktopEdge
         /// <summary>
         /// Show the modal, aniimating opacity
         /// </summary>
-        private void ShowModal()
-        {
+        private void ShowModal() {
             ModalBg.Visibility = Visibility.Visible;
             ModalBg.Opacity = 0;
             ModalBg.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(.8, TimeSpan.FromSeconds(.3)));
@@ -491,8 +426,7 @@ namespace ZitiDesktopEdge
         /// <summary>
         /// Hide the modal animating the opacity
         /// </summary>
-        private void HideModal()
-        {
+        private void HideModal() {
             DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
             animation.Completed += ModalHideComplete;
             ModalBg.BeginAnimation(Grid.OpacityProperty, animation);
@@ -503,60 +437,47 @@ namespace ZitiDesktopEdge
         /// </summary>
         /// <param name="sender">The animation</param>
         /// <param name="e">The event</param>
-        private void ModalHideComplete(object sender, EventArgs e)
-        {
+        private void ModalHideComplete(object sender, EventArgs e) {
             ModalBg.Visibility = Visibility.Collapsed;
         }
 
-        private void MFARecovery()
-        {
+        private void MFARecovery() {
             this.Recovery?.Invoke(this.Identity);
         }
 
-        private void MFAAuthenticate()
-        {
+        private void MFAAuthenticate() {
             this.Authenticate.Invoke(this.Identity);
         }
 
-        private void AuthFromMessage(object sender, MouseButtonEventArgs e)
-        {
+        private void AuthFromMessage(object sender, MouseButtonEventArgs e) {
             this.Authenticate.Invoke(this.Identity);
         }
 
-        public static DependencyObject GetScrollViewer(DependencyObject o)
-        {
+        public static DependencyObject GetScrollViewer(DependencyObject o) {
             if (o is ScrollViewer) { return o; }
-            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(o); i++)
-            {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(o); i++) {
                 var child = VisualTreeHelper.GetChild(o, i);
                 var result = GetScrollViewer(child);
-                if (result == null)
-                {
+                if (result == null) {
                     continue;
                 }
-                else
-                {
+                else {
                     return result;
                 }
             }
             return null;
         }
 
-        private void Scrolled(object sender, ScrollChangedEventArgs e)
-        {
-            if (_loaded)
-            {
-                if (_scroller == null)
-                {
+        private void Scrolled(object sender, ScrollChangedEventArgs e) {
+            if (_loaded) {
+                if (_scroller == null) {
                     _scroller = GetScrollViewer(ServiceList) as ScrollViewer;
                 }
                 var verticalOffset = _scroller.VerticalOffset;
                 var maxVerticalOffset = _scroller.ScrollableHeight;
 
-                if ((maxVerticalOffset < 0 || verticalOffset == maxVerticalOffset) && verticalOffset > 0 && scrolledTo < verticalOffset)
-                {
-                    if (Page < TotalPages)
-                    {
+                if ((maxVerticalOffset < 0 || verticalOffset == maxVerticalOffset) && verticalOffset > 0 && scrolledTo < verticalOffset) {
+                    if (Page < TotalPages) {
                         scrolledTo = verticalOffset;
                         // scrollViewer.ScrollChanged -= Scrolled;
                         Logger.Trace("Paging: " + Page);
@@ -570,13 +491,10 @@ namespace ZitiDesktopEdge
                         else if (SortBy == "Port") services = _identity.Services.OrderBy(s => s.Ports.ToString()).ToArray();
                         if (SortWay == "Desc") services = services.Reverse().ToArray();
                         int startIndex = (Page - 1) * PerPage;
-                        for (int i = startIndex; i < services.Length; i++)
-                        {
+                        for (int i = startIndex; i < services.Length; i++) {
                             ZitiService zitiSvc = services[i];
-                            if (index < PerPage)
-                            {
-                                if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0)
-                                {
+                            if (index < PerPage) {
+                                if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0) {
                                     zitiSvc.TimeUpdated = _identity.LastUpdatedTime;
                                     ZitiServices.Add(zitiSvc);
                                     index++;
@@ -596,16 +514,14 @@ namespace ZitiDesktopEdge
             }
         }
 
-        private void DoFilter(FilterData filterData)
-        {
+        private void DoFilter(FilterData filterData) {
             filter = filterData.SearchFor;
             SortBy = filterData.SortBy;
             SortWay = filterData.SortHow;
             UpdateView();
         }
 
-        async private void DoConnect(object sender, MouseButtonEventArgs e)
-        {
+        async private void DoConnect(object sender, MouseButtonEventArgs e) {
             this.OnLoading?.Invoke(false);
             DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
             await client.IdentityOnOffAsync(_identity.Identifier, true);
@@ -617,8 +533,7 @@ namespace ZitiDesktopEdge
             this.OnLoading?.Invoke(true);
         }
 
-        async private void DoDisconnect(object sender, MouseButtonEventArgs e)
-        {
+        async private void DoDisconnect(object sender, MouseButtonEventArgs e) {
             this.OnLoading?.Invoke(false);
             DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
             await client.IdentityOnOffAsync(_identity.Identifier, false);
@@ -630,33 +545,27 @@ namespace ZitiDesktopEdge
             this.OnLoading?.Invoke(true);
         }
 
-        private void WarnClicked(object sender, MouseButtonEventArgs e)
-        {
+        private void WarnClicked(object sender, MouseButtonEventArgs e) {
             ZitiService item = (ZitiService)(sender as FrameworkElement).DataContext;
             OnMessage?.Invoke(item.WarningMessage);
         }
 
-        private void DetailsClicked(object sender, MouseButtonEventArgs e)
-        {
+        private void DetailsClicked(object sender, MouseButtonEventArgs e) {
             ZitiService item = (ZitiService)(sender as FrameworkElement).DataContext;
             ShowDetails(item);
         }
 
-        private void VisibilityChanged(object sender, DependencyPropertyChangedEventArgs e)
-        {
-            if (this.Visibility == Visibility.Collapsed)
-            {
+        private void VisibilityChanged(object sender, DependencyPropertyChangedEventArgs e) {
+            if (this.Visibility == Visibility.Collapsed) {
                 ServiceList.DataContext = null;
-                if (_services != null)
-                {
+                if (_services != null) {
                     _services.Clear();
                     _services = null;
                 }
             }
         }
 
-        private void DoMFA(object sender, MouseButtonEventArgs e)
-        {
+        private void DoMFA(object sender, MouseButtonEventArgs e) {
             this.OnShowMFA?.Invoke(this._identity);
         }
     }

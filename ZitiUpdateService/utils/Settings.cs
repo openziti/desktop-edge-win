@@ -20,10 +20,8 @@ using Newtonsoft.Json;
 using NLog;
 using ZitiDesktopEdge.DataStructures;
 
-namespace ZitiUpdateService.Utils
-{
-    internal class Settings
-    {
+namespace ZitiUpdateService.Utils {
+    internal class Settings {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private FileSystemWatcher watcher;
 
@@ -35,20 +33,16 @@ namespace ZitiUpdateService.Utils
 
         public event System.EventHandler<ControllerEvent> OnConfigurationChange;
 
-        internal Settings(bool doInit)
-        {
-            if (doInit)
-            {
+        internal Settings(bool doInit) {
+            if (doInit) {
                 init();
             }
         }
 
-        public Settings()
-        {
+        public Settings() {
         }
 
-        private void init()
-        {
+        private void init() {
             string folder = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData), "NetFoundry", "ZitiUpdateService");
             string file = "settings.json";
             Location = Path.Combine(folder, file);
@@ -72,45 +66,35 @@ namespace ZitiUpdateService.Utils
         }
 
         private static JsonSerializer serializer = new JsonSerializer() { Formatting = Formatting.Indented };
-        internal void Load()
-        {
-            try
-            {
+        internal void Load() {
+            try {
                 string json = File.ReadAllText(Location);
                 var jsonReaderEvt = new JsonTextReader(new StringReader(json));
                 Settings s = serializer.Deserialize<Settings>(jsonReaderEvt);
-                if (s != null)
-                {
+                if (s != null) {
                     Update(s);
                 }
-                else
-                {
+                else {
                     Logger.Debug("settings file was null? file doesn't exist or file was garbage?");
                 }
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 // do nothing, probably means the file is just or doesn't exist etc.
                 Logger.Debug("unexpected error loading settings. file was null? file doesn't exist or file was garbage? {0}", ex);
             }
         }
-        internal void Write()
-        {
-            lock (this)
-            {
+        internal void Write() {
+            lock (this) {
                 this.watcher.Changed -= OnChanged;
-                try
-                {
-                    using (StreamWriter file = File.CreateText(Location))
-                    {
+                try {
+                    using (StreamWriter file = File.CreateText(Location)) {
                         serializer.Serialize(file, this);
                         file.Flush();
                         file.Close();
                     }
                     this.OnConfigurationChange?.Invoke(null, null);
                 }
-                catch
-                {
+                catch {
                     // do nothing
                 }
                 this.watcher.Changed += OnChanged;
@@ -118,35 +102,29 @@ namespace ZitiUpdateService.Utils
         }
 
 
-        private static void OnError(object sender, ErrorEventArgs e)
-        {
+        private static void OnError(object sender, ErrorEventArgs e) {
         }
 
-        private void OnRenamed(object sender, RenamedEventArgs e)
-        {
+        private void OnRenamed(object sender, RenamedEventArgs e) {
             Logger.Info("Settings file renamed. Resetting to defaults...");
             this.Update(new Settings());
         }
 
-        private void OnDeleted(object sender, FileSystemEventArgs e)
-        {
+        private void OnDeleted(object sender, FileSystemEventArgs e) {
             Logger.Info("Settings file deleted. Resetting to defaults...");
             this.Update(new Settings());
         }
 
-        private void OnCreated(object sender, FileSystemEventArgs e)
-        {
+        private void OnCreated(object sender, FileSystemEventArgs e) {
         }
 
-        private void OnChanged(object sender, FileSystemEventArgs e)
-        {
+        private void OnChanged(object sender, FileSystemEventArgs e) {
             Logger.Info("Settings file changed. Reloading...");
             this.Load();
             this.OnConfigurationChange?.Invoke(null, null);
         }
 
-        private void Update(Settings source)
-        {
+        private void Update(Settings source) {
             this.AutomaticUpdatesDisabled = source.AutomaticUpdatesDisabled;
             this.AutomaticUpdateURL = source.AutomaticUpdateURL;
         }

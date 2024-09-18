@@ -23,18 +23,15 @@ using NLog.Config;
 using NLog.Targets;
 
 
-namespace ZitiUpdateService
-{
-    static class Program
-    {
+namespace ZitiUpdateService {
+    static class Program {
 
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
-        static void Main()
-        {
+        static void Main() {
             var asm = Assembly.GetExecutingAssembly();
             var logname = asm.GetName().Name;
 
@@ -42,17 +39,14 @@ namespace ZitiUpdateService
             string nlogFile = Path.Combine(curdir, $"{logname}-log.config");
 
             bool byFile = false;
-            if (File.Exists(nlogFile))
-            {
+            if (File.Exists(nlogFile)) {
                 LogManager.Configuration = new XmlLoggingConfiguration(nlogFile);
                 byFile = true;
             }
-            else
-            {
+            else {
                 var config = new LoggingConfiguration();
                 // Targets where to log to: File and Console
-                var logfile = new FileTarget("logfile")
-                {
+                var logfile = new FileTarget("logfile") {
                     FileName = $"logs\\ZitiMonitorService\\{logname}.log",
                     ArchiveEvery = FileArchivePeriod.Day,
                     ArchiveNumbering = ArchiveNumberingMode.Rolling,
@@ -78,21 +72,18 @@ namespace ZitiUpdateService
 
             UpdateService updateSvc = new UpdateService();
             updateSvc.AutoLog = true;
-            try
-            {
+            try {
 #if DEBUG
                 bool nosvc = true;
                 //bool nosvc = false;
 
-                if (nosvc)
-                {
+                if (nosvc) {
                     Logger.Info("  - RUNNING AS DEBUG");
                     updateSvc.Debug();
                     updateSvc.WaitForCompletion();
                     Logger.Info("  - RUNNING AS DEBUG COMPLETE");
                 }
-                else
-                {
+                else {
                     ServiceBase[] ServicesToRun = new ServiceBase[]
                     {
                         updateSvc
@@ -108,8 +99,7 @@ namespace ZitiUpdateService
 				ServiceBase.Run(ServicesToRun);
 #endif
             }
-            catch (Exception e)
-            {
+            catch (Exception e) {
                 Logger.Error("Unexpected exception: {0}", e);
             }
         }

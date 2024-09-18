@@ -17,13 +17,11 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace ZitiUpdateService.Checkers.PeFile
-{
+namespace ZitiUpdateService.Checkers.PeFile {
 
     //defined by http://www.pinvoke.net/default.aspx/Structures/IMAGE_FILE_HEADER.html
     [StructLayout(LayoutKind.Sequential)]
-    public struct IMAGE_FILE_HEADER
-    {
+    public struct IMAGE_FILE_HEADER {
         public UInt16 Machine;
         public UInt16 NumberOfSections;
         public UInt32 TimeDateStamp;
@@ -36,28 +34,24 @@ namespace ZitiUpdateService.Checkers.PeFile
     //see http://www.pinvoke.net/default.aspx/Structures/IMAGE_OPTIONAL_HEADER32.html
     //defined by http://www.pinvoke.net/default.aspx/Structures/IMAGE_OPTIONAL_HEADER32.html
     [StructLayout(LayoutKind.Sequential)]
-    public struct IMAGE_DATA_DIRECTORY
-    {
+    public struct IMAGE_DATA_DIRECTORY {
         public UInt32 VirtualAddress;
         public UInt32 Size;
     }
 
-    public enum MachineType : ushort
-    {
+    public enum MachineType : ushort {
         Native = 0,
         I386 = 0x014c,
         Itanium = 0x0200,
         x64 = 0x8664
     }
 
-    public sealed class MagicType
-    {
+    public sealed class MagicType {
         public const Int16 IMAGE_NT_OPTIONAL_HDR32_MAGIC = 0x10b;
         public const Int16 IMAGE_NT_OPTIONAL_HDR64_MAGIC = 0x20b;
     }
 
-    public enum SubSystemType : ushort
-    {
+    public enum SubSystemType : ushort {
         IMAGE_SUBSYSTEM_UNKNOWN = 0,
         IMAGE_SUBSYSTEM_NATIVE = 1,
         IMAGE_SUBSYSTEM_WINDOWS_GUI = 2,
@@ -72,8 +66,7 @@ namespace ZitiUpdateService.Checkers.PeFile
 
     }
 
-    public enum DllCharacteristicsType : ushort
-    {
+    public enum DllCharacteristicsType : ushort {
         RES_0 = 0x0001,
         RES_1 = 0x0002,
         RES_2 = 0x0004,
@@ -90,8 +83,7 @@ namespace ZitiUpdateService.Checkers.PeFile
     }
 
     [StructLayout(LayoutKind.Explicit)]
-    public struct IMAGE_OPTIONAL_HEADER32
-    {
+    public struct IMAGE_OPTIONAL_HEADER32 {
         [FieldOffset(0)] public ushort Magic;
 
         [FieldOffset(2)] public byte MajorLinkerVersion;
@@ -187,8 +179,7 @@ namespace ZitiUpdateService.Checkers.PeFile
     }
 
     [StructLayout(LayoutKind.Explicit)]
-    public struct IMAGE_OPTIONAL_HEADER64
-    {
+    public struct IMAGE_OPTIONAL_HEADER64 {
         [FieldOffset(0)] public ushort Magic;
 
         [FieldOffset(2)] public byte MajorLinkerVersion;
@@ -282,8 +273,7 @@ namespace ZitiUpdateService.Checkers.PeFile
 
 
     [StructLayout(LayoutKind.Explicit)]
-    public struct IMAGE_SECTION_HEADER
-    {
+    public struct IMAGE_SECTION_HEADER {
         //FROM: http://www.pinvoke.net/default.aspx/Structures/IMAGE_SECTION_HEADER.html
         [FieldOffset(0)]
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
@@ -307,15 +297,13 @@ namespace ZitiUpdateService.Checkers.PeFile
 
         [FieldOffset(36)] public DataSectionFlags Characteristics;
 
-        public string Section
-        {
+        public string Section {
             get { return new string(Name); }
         }
     }
 
     [Flags]
-    public enum DataSectionFlags : uint
-    {
+    public enum DataSectionFlags : uint {
         //FROM: http://www.pinvoke.net/default.aspx/Structures/IMAGE_SECTION_HEADER.html
         /// <summary>
         /// Reserved for future use.
@@ -529,53 +517,40 @@ namespace ZitiUpdateService.Checkers.PeFile
     }
 
 
-    public class ImageOptionalHeaderWrapper
-    {
+    public class ImageOptionalHeaderWrapper {
         public IMAGE_OPTIONAL_HEADER32 h32;
         public IMAGE_OPTIONAL_HEADER64 h64;
         public bool IsPe;
 
 
-        public uint CertificateTableVirtualAddress
-        {
-            get
-            {
-                if (IsPe)
-                {
+        public uint CertificateTableVirtualAddress {
+            get {
+                if (IsPe) {
                     return h32.CertificateTable.VirtualAddress;
                 }
-                else
-                {
+                else {
                     return h64.CertificateTable.VirtualAddress;
                 }
             }
         }
 
-        public uint CertificateTableSize
-        {
-            get
-            {
-                if (IsPe)
-                {
+        public uint CertificateTableSize {
+            get {
+                if (IsPe) {
                     return h32.CertificateTable.Size;
                 }
-                else
-                {
+                else {
                     return h64.CertificateTable.Size;
                 }
             }
         }
 
-        public uint SizeOfHeaders
-        {
-            get
-            {
-                if (IsPe)
-                {
+        public uint SizeOfHeaders {
+            get {
+                if (IsPe) {
                     return h32.SizeOfHeaders;
                 }
-                else
-                {
+                else {
                     return h64.SizeOfHeaders;
                 }
             }

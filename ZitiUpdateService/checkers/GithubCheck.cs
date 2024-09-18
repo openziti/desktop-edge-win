@@ -28,30 +28,25 @@ using ZitiDesktopEdge.Utility;
 using ZitiUpdateService.Checkers.PeFile;
 using System.Configuration;
 
-namespace ZitiUpdateService.Checkers
-{
+namespace ZitiUpdateService.Checkers {
 
-    internal class GithubCheck : UpdateCheck
-    {
+    internal class GithubCheck : UpdateCheck {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         string updateCheckUrl;
         string downloadUrl = null;
         Version nextVersion = null;
 
 
-        public GithubCheck(Version compareTo, string url) : base(compareTo)
-        {
+        public GithubCheck(Version compareTo, string url) : base(compareTo) {
             this.updateCheckUrl = url;
             Avail = CheckUpdate(compareTo);
         }
 
-        override public bool AlreadyDownloaded(string destinationFolder, string destinationName)
-        {
+        override public bool AlreadyDownloaded(string destinationFolder, string destinationName) {
             return File.Exists(Path.Combine(destinationFolder, destinationName));
         }
 
-        override public void CopyUpdatePackage(string destinationFolder, string destinationName)
-        {
+        override public void CopyUpdatePackage(string destinationFolder, string destinationName) {
             WebClient webClient = new WebClient();
             string dest = Path.Combine(destinationFolder, destinationName);
             Logger.Info("download started for: {0} to {1}", downloadUrl, dest);
@@ -59,30 +54,25 @@ namespace ZitiUpdateService.Checkers
             Logger.Info("download complete to: {0}", dest);
         }
 
-        private int CheckUpdate(Version currentVersion)
-        {
+        private int CheckUpdate(Version currentVersion) {
             Logger.Debug("checking for update begins. current version detected as {0}", currentVersion);
             Logger.Debug("issuing http get to url: {0}", updateCheckUrl);
 
             JObject json = GithubAPI.GetJson(updateCheckUrl);
             JArray assets = JArray.Parse(json.Property("assets").Value.ToString());
-            foreach (JObject asset in assets.Children<JObject>())
-            {
+            foreach (JObject asset in assets.Children<JObject>()) {
                 string assetName = asset.Property("name").Value.ToString();
 
-                if (assetName.StartsWith("Ziti.Desktop.Edge.Client-"))
-                {
+                if (assetName.StartsWith("Ziti.Desktop.Edge.Client-")) {
                     downloadUrl = asset.Property("browser_download_url").Value.ToString();
                     break;
                 }
-                else
-                {
+                else {
                     Logger.Debug("skipping asset with name: {assetName}", assetName);
                 }
             }
 
-            if (downloadUrl == null)
-            {
+            if (downloadUrl == null) {
                 Logger.Error("DOWNLOAD URL not found at: {0}", updateCheckUrl);
                 return 0;
             }
@@ -93,8 +83,7 @@ namespace ZitiUpdateService.Checkers
             string releaseVersion = json.Property("tag_name").Value.ToString();
             string releaseName = json.Property("name").Value.ToString();
 
-            if (!Version.TryParse(releaseVersion, out nextVersion))
-            {
+            if (!Version.TryParse(releaseVersion, out nextVersion)) {
                 string msg = $"Could not parse version: {releaseVersion}";
                 Logger.Error(msg);
                 throw new Exception(msg);
@@ -104,19 +93,16 @@ namespace ZitiUpdateService.Checkers
             PublishDate = DateTime.Parse(isoPublishedDate, null, System.Globalization.DateTimeStyles.RoundtripKind);
 
             int compare = currentVersion.CompareTo(nextVersion);
-            if (compare < 0)
-            {
+            if (compare < 0) {
                 Logger.Info("upgrade {} is available. Published version: {} is newer than the current version: {}", releaseName, nextVersion, currentVersion);
             }
-            else if (compare > 0)
-            {
+            else if (compare > 0) {
                 Logger.Info("the version installed: {0} is newer than the released version: {1}", currentVersion, nextVersion);
             }
             return compare;
         }
 
-        override public bool HashIsValid(string destinationFolder, string destinationName)
-        {
+        override public bool HashIsValid(string destinationFolder, string destinationName) {
             WebClient webClient = new WebClient();
             string sha256dest = Path.Combine(destinationFolder, destinationName + ".sha256");
             string downloadUrlsha256 = downloadUrl + ".sha256";
@@ -128,8 +114,7 @@ namespace ZitiUpdateService.Checkers
             string hash = File.ReadAllText(sha256dest);
 
             using (SHA256 hasher = SHA256.Create())
-            using (FileStream stream = File.OpenRead(dest))
-            {
+            using (FileStream stream = File.OpenRead(dest)) {
                 byte[] sha256bytes = hasher.ComputeHash(stream);
                 string computed = BitConverter.ToString(sha256bytes).Replace("-", "");
 
@@ -139,82 +124,65 @@ namespace ZitiUpdateService.Checkers
             }
         }
 
-        override public Version GetNextVersion()
-        {
+        override public Version GetNextVersion() {
             return nextVersion;
         }
 
-        private void getReleaseInfoAfterCurrent(string releaseUrl, Version currentVersion, out DateTime _publishedDateAfterCurrent, out Version _versionAfterCurrent)
-        {
+        private void getReleaseInfoAfterCurrent(string releaseUrl, Version currentVersion, out DateTime _publishedDateAfterCurrent, out Version _versionAfterCurrent) {
             Logger.Debug("Fetching the releases info from {0}", releaseUrl);
             JArray jArray = GithubAPI.GetJsonArray(releaseUrl);
             string isoPublishedDate = null;
             Version publishedReleaseVersion = null;
 
-            if (jArray.HasValues)
-            {
-                foreach (JObject json in jArray.Children<JObject>())
-                {
+            if (jArray.HasValues) {
+                foreach (JObject json in jArray.Children<JObject>()) {
                     string releaseVersion = json.Property("name").Value.ToString();
                     Version normalizedReleaseVersion = null;
-                    try
-                    {
+                    try {
                         normalizedReleaseVersion = Version.Parse(releaseVersion);
                     }
-                    catch (Exception e)
-                    {
-                        try
-                        {
+                    catch (Exception e) {
+                        try {
                             releaseVersion = json.Property("tag_name").Value.ToString();
                             normalizedReleaseVersion = Version.Parse(releaseVersion);
                         }
-                        catch (Exception err)
-                        {
+                        catch (Exception err) {
                             Logger.Error("Cound not fetch version from name due to {0} and tag_name due to {1}", e.Message, err.Message);
                             continue;
                         }
                     }
 
-                    if (normalizedReleaseVersion.CompareTo(currentVersion) <= 0)
-                    {
+                    if (normalizedReleaseVersion.CompareTo(currentVersion) <= 0) {
                         break;
                     }
                     isoPublishedDate = json.Property("published_at").Value.ToString();
                     publishedReleaseVersion = normalizedReleaseVersion;
                 }
             }
-            if (isoPublishedDate != null)
-            {
+            if (isoPublishedDate != null) {
                 _publishedDateAfterCurrent = DateTime.Parse(isoPublishedDate, null, System.Globalization.DateTimeStyles.RoundtripKind);
             }
-            else
-            {
+            else {
                 _publishedDateAfterCurrent = DateTime.Now;
             }
             _versionAfterCurrent = publishedReleaseVersion;
 
         }
 
-        private DateTime getCreationTime(string publishedDateStr, string fileDestination)
-        {
+        private DateTime getCreationTime(string publishedDateStr, string fileDestination) {
             DateTime publishedDate = DateTime.Now;
 
-            try
-            {
+            try {
                 DateTime.TryParse(publishedDateStr, out publishedDate);
             }
-            catch (Exception e)
-            {
+            catch (Exception e) {
                 Logger.Error("Could not convert published date of the installer - input string : {0} due to {1}. Fetching download time instead.", publishedDateStr, e.Message);
-                try
-                {
-                    if (fileDestination != null)
-                    {
+                try {
+                    if (fileDestination != null) {
                         publishedDate = File.GetCreationTime(fileDestination);
                     }
                 }
-                catch (Exception err)
-                {
+                catch (Exception err) {
                     Logger.Error("Could not fetch creation date of the installer due to {0}.", err.Message);
                 }
 

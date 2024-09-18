@@ -31,28 +31,23 @@ using Ziti.Desktop.Edge.Models;
 using System.Reflection;
 using ZitiDesktopEdge.Utility;
 
-namespace ZitiDesktopEdge
-{
+namespace ZitiDesktopEdge {
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
-    public partial class App : Application
-    {
+    public partial class App : Application {
         private const string NamedPipeName = "ZitiDesktopEdgePipe";
 
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         private static Mutex _mutex = null;
 
-        protected override void OnSessionEnding(SessionEndingCancelEventArgs e)
-        {
+        protected override void OnSessionEnding(SessionEndingCancelEventArgs e) {
             base.OnSessionEnding(e);
         }
 
-        protected override void OnStartup(StartupEventArgs e)
-        {
+        protected override void OnStartup(StartupEventArgs e) {
             UpgradeSentinel.RemoveUpgradeSentinelExe();
-            try
-            {
+            try {
                 Current.Properties["ZDEWViewState"] = new ZDEWViewState();
 
                 const string appName = "Ziti Desktop Edge";
@@ -61,57 +56,46 @@ namespace ZitiDesktopEdge
 
                 _mutex = new Mutex(true, appName, out createdNew);
 
-                if (!createdNew)
-                {
-                    using (var client = new NamedPipeClientStream(NamedPipeName))
-                    {
+                if (!createdNew) {
+                    using (var client = new NamedPipeClientStream(NamedPipeName)) {
                         logger.Info("Another instance exists. Attempting to notify it to open");
-                        try
-                        {
+                        try {
                             client.Connect(1000);
                         }
-                        catch
-                        {
+                        catch {
                             return;
                         }
 
                         if (!client.IsConnected)
                             return;
 
-                        using (StreamWriter writer = new StreamWriter(client))
-                        {
+                        using (StreamWriter writer = new StreamWriter(client)) {
                             writer.Write("showscreen");
                             writer.Flush();
                         }
                     }
                     Application.Current.Shutdown();
                 }
-                else
-                {
+                else {
 #pragma warning disable 4014 //This async method lacks 'await'
                     StartServer();
 #pragma warning restore 4014 //This async method lacks 'await'
                 }
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 logger.Error($"OnStartup FAILED unexpectedly. Exiting", ex);
                 Application.Current.Shutdown();
             }
         }
 
-        async public Task StartServer()
-        {
+        async public Task StartServer() {
             logger.Debug("Starting IPC server to listen for other instances of the app");
-            while (true)
-            {
+            while (true) {
                 string text;
-                using (var server = new NamedPipeServerStream(NamedPipeName))
-                {
+                using (var server = new NamedPipeServerStream(NamedPipeName)) {
                     await server.WaitForConnectionAsync();
                     logger.Debug("Another instance opened and connected.");
-                    using (StreamReader reader = new StreamReader(server))
-                    {
+                    using (StreamReader reader = new StreamReader(server)) {
                         text = await reader.ReadToEndAsync();
                     }
                 }

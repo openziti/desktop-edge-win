@@ -13,54 +13,43 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace ZitiDesktopEdge
-{
+namespace ZitiDesktopEdge {
     /// <summary>
     /// Interaction logic for MenuItem.xaml
     /// </summary>
-    public partial class MenuItem : UserControl
-    {
+    public partial class MenuItem : UserControl {
 
         private string _label = "";
         private string _icon = "";
 
-        public string Label
-        {
-            get
-            {
+        public string Label {
+            get {
                 return _label;
             }
-            set
-            {
+            set {
                 this._label = value;
                 MainLabel.Content = this._label;
             }
         }
-        public string Icon
-        {
-            get
-            {
+        public string Icon {
+            get {
                 return _icon;
             }
-            set
-            {
+            set {
                 this._icon = value;
                 MainSource.Source = new BitmapImage(new Uri(this._icon, UriKind.Relative));
             }
         }
 
-        public MenuItem()
-        {
+        public MenuItem() {
             InitializeComponent();
         }
 
-        private void UserControl_MouseEnter(object sender, MouseEventArgs e)
-        {
+        private void UserControl_MouseEnter(object sender, MouseEventArgs e) {
 
         }
 
-        private void UserControl_MouseLeave(object sender, MouseEventArgs e)
-        {
+        private void UserControl_MouseLeave(object sender, MouseEventArgs e) {
 
         }
     }

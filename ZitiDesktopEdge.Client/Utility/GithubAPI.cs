@@ -21,16 +21,13 @@ using System.IO;
 using NLog;
 using Newtonsoft.Json.Linq;
 
-namespace ZitiDesktopEdge.Utility
-{
-    public static class GithubAPI
-    {
+namespace ZitiDesktopEdge.Utility {
+    public static class GithubAPI {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         public const string ProdUrl = "https://get.openziti.io/zdew/stable.json";
 
-        public static JObject GetJson(string url)
-        {
+        public static JObject GetJson(string url) {
             HttpWebRequest httpWebRequest = WebRequest.CreateHttp(url);
             httpWebRequest.Method = "GET";
             httpWebRequest.ContentType = "application/json";
@@ -41,8 +38,7 @@ namespace ZitiDesktopEdge.Utility
             Logger.Trace("response received: {0}", currentResponse);
             return JObject.Parse(currentResponse);
         }
-        public static JArray GetJsonArray(string url)
-        {
+        public static JArray GetJsonArray(string url) {
             HttpWebRequest httpWebRequest = WebRequest.CreateHttp(url);
             httpWebRequest.Method = "GET";
             httpWebRequest.ContentType = "application/json";
@@ -54,8 +50,7 @@ namespace ZitiDesktopEdge.Utility
             return JArray.Parse(currentResponse);
         }
 
-        public static Version GetVersion(JObject json)
-        {
+        public static Version GetVersion(JObject json) {
             string releaseVersion = json.Property("tag_name").Value.ToString();
             string releaseName = json.Property("name").Value.ToString();
             return Version.Parse(releaseVersion);

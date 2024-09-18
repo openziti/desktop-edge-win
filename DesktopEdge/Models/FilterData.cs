@@ -20,15 +20,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ZitiDesktopEdge.Models
-{
-    public class FilterData
-    {
+namespace ZitiDesktopEdge.Models {
+    public class FilterData {
 
         public FilterData() : this("", "", "asc") { }
 
-        public FilterData(string searchFor, string sortBy, string sortHow)
-        {
+        public FilterData(string searchFor, string sortBy, string sortHow) {
             SearchFor = searchFor;
             SortBy = sortBy;
             SortHow = sortHow;

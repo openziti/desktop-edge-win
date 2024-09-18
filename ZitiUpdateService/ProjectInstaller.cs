@@ -22,18 +22,14 @@ using System.Configuration.Install;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace ZitiUpdateService
-{
+namespace ZitiUpdateService {
     [RunInstaller(true)]
-    public partial class ProjectInstaller : System.Configuration.Install.Installer
-    {
-        public ProjectInstaller()
-        {
+    public partial class ProjectInstaller : System.Configuration.Install.Installer {
+        public ProjectInstaller() {
             InitializeComponent();
         }
 
-        private void ZitiUpdateServiceInstaller_AfterInstall(object sender, InstallEventArgs e)
-        {
+        private void ZitiUpdateServiceInstaller_AfterInstall(object sender, InstallEventArgs e) {
 
         }
     }

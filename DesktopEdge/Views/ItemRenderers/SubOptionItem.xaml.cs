@@ -13,46 +13,37 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace ZitiDesktopEdge
-{
+namespace ZitiDesktopEdge {
     /// <summary>
     /// Interaction logic for MenuItem.xaml
     /// </summary>
-    public partial class SubOptionItem : UserControl
-    {
+    public partial class SubOptionItem : UserControl {
 
         private string _label = "";
         private bool _isSelected = false;
 
-        public string Label
-        {
-            get
-            {
+        public string Label {
+            get {
                 return _label;
             }
-            set
-            {
+            set {
                 this._label = value;
                 MainLabel.Content = this._label;
             }
         }
 
-        public bool IsSelected
-        {
-            get
-            {
+        public bool IsSelected {
+            get {
                 return _isSelected;
             }
-            set
-            {
+            set {
                 this._isSelected = value;
                 if (this._isSelected) SelectedCheck.Visibility = Visibility.Visible;
                 else SelectedCheck.Visibility = Visibility.Collapsed;
             }
         }
 
-        public SubOptionItem()
-        {
+        public SubOptionItem() {
             InitializeComponent();
         }
     }

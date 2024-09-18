@@ -14,41 +14,33 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Media.Animation;
 
-namespace ZitiDesktopEdge
-{
+namespace ZitiDesktopEdge {
     /// <summary>
     /// Interaction logic for Toggler.xaml
     /// </summary>
-    public partial class Toggler : UserControl
-    {
+    public partial class Toggler : UserControl {
 
         public delegate void Toggled(bool on);
         public event Toggled OnToggled;
         private bool _isEnabled = false;
-        public Toggler()
-        {
+        public Toggler() {
             InitializeComponent();
         }
 
-        public Boolean Enabled
-        {
-            get
-            {
+        public Boolean Enabled {
+            get {
                 return _isEnabled;
             }
-            set
-            {
+            set {
                 _isEnabled = value;
-                if (_isEnabled)
-                {
+                if (_isEnabled) {
                     // ToggleTab.BeginAnimation(Canvas.LeftProperty, new DoubleAnimation(16, TimeSpan.FromSeconds(.3)));
                     // OnColor.BeginAnimation(Border.OpacityProperty, new DoubleAnimation(1.0, TimeSpan.FromSeconds(.3)));
 
                     OnColor.Opacity = 1;
                     Canvas.SetLeft(ToggleTab, 16);
                 }
-                else
-                {
+                else {
                     // ToggleTab.BeginAnimation(Canvas.LeftProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
                     // OnColor.BeginAnimation(Border.OpacityProperty, new DoubleAnimation(0, TimeSpan.FromSeconds(.3)));
 
@@ -58,33 +50,26 @@ namespace ZitiDesktopEdge
             }
         }
 
-        public void Toggle()
-        {
+        public void Toggle() {
             Enabled = !Enabled;
-            if (OnToggled != null)
-            {
+            if (OnToggled != null) {
                 OnToggled(Enabled);
             }
         }
 
-        private void OnToggle(object sender, RoutedEventArgs e)
-        {
+        private void OnToggle(object sender, RoutedEventArgs e) {
             e.Handled = true;
             Enabled = !Enabled;
-            if (OnToggled != null)
-            {
+            if (OnToggled != null) {
                 OnToggled(Enabled);
             }
         }
 
-        private void OnLoad(object sender, RoutedEventArgs e)
-        {
-            if (_isEnabled)
-            {
+        private void OnLoad(object sender, RoutedEventArgs e) {
+            if (_isEnabled) {
 
             }
-            else
-            {
+            else {
 
             }
         }

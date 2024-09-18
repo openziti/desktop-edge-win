@@ -14,44 +14,36 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace ZitiDesktopEdge
-{
+namespace ZitiDesktopEdge {
     /// <summary>
     /// Interaction logic for StyledButton.xaml
     /// </summary>
-    public partial class StyledButton : UserControl
-    {
+    public partial class StyledButton : UserControl {
 
         public delegate void ClickAction(object sender, MouseButtonEventArgs e);
         public event ClickAction OnClick;
         private string _label = "";
         private string bgColor = "#0069FF";
 
-        public string BgColor
-        {
+        public string BgColor {
             get { return bgColor; }
-            set
-            {
+            set {
                 bgColor = value;
                 ButtonBgColor.Color = (Color)ColorConverter.ConvertFromString(bgColor);
             }
         }
 
-        public string Label
-        {
-            get
-            {
+        public string Label {
+            get {
                 return _label;
             }
-            set
-            {
+            set {
                 this._label = value;
                 ButtonLabel.Content = this._label;
             }
         }
 
-        public StyledButton()
-        {
+        public StyledButton() {
             InitializeComponent();
         }
 
@@ -60,8 +52,7 @@ namespace ZitiDesktopEdge
         /// </summary>
         /// <param name="sender">The button object</param>
         /// <param name="e">The mouse event</param>
-        private void Hover(object sender, MouseEventArgs e)
-        {
+        private void Hover(object sender, MouseEventArgs e) {
             ButtonBgDarken.Opacity = 0.0;
             ButtonBgDarken.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(0.2, TimeSpan.FromSeconds(.3)));
         }
@@ -71,8 +62,7 @@ namespace ZitiDesktopEdge
         /// </summary>
         /// <param name="sender">The button object</param>
         /// <param name="e">The mouse event</param>
-        private void Leave(object sender, MouseEventArgs e)
-        {
+        private void Leave(object sender, MouseEventArgs e) {
             ButtonBgDarken.Opacity = 0.2;
             ButtonBgDarken.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(0.0, TimeSpan.FromSeconds(.3)));
         }
@@ -82,8 +72,7 @@ namespace ZitiDesktopEdge
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void Down(object sender, MouseButtonEventArgs e)
-        {
+        private void Down(object sender, MouseButtonEventArgs e) {
             // ButtonBgColor.Color = Color.FromRgb(126, 180, 255);
         }
 
@@ -92,8 +81,7 @@ namespace ZitiDesktopEdge
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void DoClick(object sender, MouseButtonEventArgs e)
-        {
+        private void DoClick(object sender, MouseButtonEventArgs e) {
             this.OnClick?.Invoke(sender, e);
         }
     }

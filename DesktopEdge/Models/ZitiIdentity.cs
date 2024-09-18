@@ -22,10 +22,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ZitiDesktopEdge.Models
-{
-    public class ZitiIdentity
-    {
+namespace ZitiDesktopEdge.Models {
+    public class ZitiIdentity {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         public List<ZitiService> Services { get; set; }
         public string Name { get; set; }
@@ -37,21 +35,17 @@ namespace ZitiDesktopEdge.Models
         public string Status { get; set; }
         public bool IsMFAEnabled { get; set; }
 
-        public void MFADebug(string where)
-        {
+        public void MFADebug(string where) {
             logger.Info($"{where}\n\tIdentifiter  : {Identifier}\n\tIsMFAEnabled : {IsMFAEnabled}\n\tIsMFANeeded  : {IsMFANeeded}");
             //logger.Info($"{where}\n\tIdentifiter  : {Identifier}\n\tIsMFAEnabled : {IsMFAEnabled}\n\tIsMFANeeded  : {IsMFANeeded}\n\tShowMFA\t     : {ShowMFA}");
         }
 
         private bool mfaNeeded = false;
-        public bool IsMFANeeded
-        {
+        public bool IsMFANeeded {
             get { return mfaNeeded; }
-            set
-            {
+            set {
                 mfaNeeded = value;
-                if (!mfaNeeded)
-                {
+                if (!mfaNeeded) {
                     IsTimingOut = false;
                     IsTimedOut = false;
                     WasFullNotified = false;
@@ -70,11 +64,9 @@ namespace ZitiDesktopEdge.Models
         private bool isTimedOut = false;
 
         public SemaphoreSlim Mutex { get; } = new SemaphoreSlim(1);
-        public bool IsTimedOut
-        {
+        public bool IsTimedOut {
             get { return isTimedOut; }
-            set
-            {
+            set {
                 isTimedOut = value;
                 WasFullNotified = false;
             }
@@ -85,18 +77,14 @@ namespace ZitiDesktopEdge.Models
 
 
         private bool svcFailingPostureCheck = false;
-        public bool HasServiceFailingPostureCheck
-        {
-            get
-            {
+        public bool HasServiceFailingPostureCheck {
+            get {
                 return svcFailingPostureCheck;
             }
-            set
-            {
+            set {
                 logger.Info("Identity: {0} posture change. is a posture check failing: {1}", Name, !value);
                 svcFailingPostureCheck = value;
-                if (!value)
-                {
+                if (!value) {
                     IsMFANeeded = true;
                 }
             }
@@ -105,14 +93,12 @@ namespace ZitiDesktopEdge.Models
         /// <summary>
         /// Default constructor to support named initialization
         /// </summary>
-        public ZitiIdentity()
-        {
+        public ZitiIdentity() {
             this.IsConnected = true;
             this.Services = new List<ZitiService>();
         }
 
-        public ZitiIdentity(string Name, string ControllerUrl, bool IsEnabled, List<ZitiService> Services)
-        {
+        public ZitiIdentity(string Name, string ControllerUrl, bool IsEnabled, List<ZitiService> Services) {
             this.Name = Name;
             this.Services = Services;
             this.ControllerUrl = ControllerUrl;
@@ -129,10 +115,8 @@ namespace ZitiDesktopEdge.Models
             this.IsConnected = true;
         }
 
-        public static ZitiIdentity FromClient(DataStructures.Identity id)
-        {
-            ZitiIdentity zid = new ZitiIdentity()
-            {
+        public static ZitiIdentity FromClient(DataStructures.Identity id) {
+            ZitiIdentity zid = new ZitiIdentity() {
                 ControllerUrl = (id.Config == null) ? "" : id.Config.ztAPI,
                 ContollerVersion = id.ControllerVersion,
                 EnrollmentStatus = "status",
@@ -156,12 +140,9 @@ namespace ZitiDesktopEdge.Models
 #if DEBUG
             zid.MFADebug("002");
 #endif
-            if (id.Services != null)
-            {
-                foreach (var svc in id.Services)
-                {
-                    if (svc != null)
-                    {
+            if (id.Services != null) {
+                foreach (var svc in id.Services) {
+                    if (svc != null) {
                         var zsvc = new ZitiService(svc);
                         zsvc.TimeUpdated = zid.LastUpdatedTime;
                         zid.Services.Add(zsvc);
@@ -173,8 +154,7 @@ namespace ZitiDesktopEdge.Models
             return zid;
         }
 
-        public void ShowMFAToast(string message)
-        {
+        public void ShowMFAToast(string message) {
             logger.Info("Showing Notification from identity " + Name + " " + message + ".");
             new Microsoft.Toolkit.Uwp.Notifications.ToastContentBuilder()
                 .AddText(Name + " Service Access Warning")
