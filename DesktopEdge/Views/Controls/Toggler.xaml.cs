@@ -39,8 +39,7 @@ namespace ZitiDesktopEdge {
 
                     OnColor.Opacity = 1;
                     Canvas.SetLeft(ToggleTab, 16);
-                }
-                else {
+                } else {
                     // ToggleTab.BeginAnimation(Canvas.LeftProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
                     // OnColor.BeginAnimation(Border.OpacityProperty, new DoubleAnimation(0, TimeSpan.FromSeconds(.3)));
 
@@ -68,8 +67,7 @@ namespace ZitiDesktopEdge {
         private void OnLoad(object sender, RoutedEventArgs e) {
             if (_isEnabled) {
 
-            }
-            else {
+            } else {
 
             }
         }

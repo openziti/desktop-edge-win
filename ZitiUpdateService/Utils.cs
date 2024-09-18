@@ -47,8 +47,7 @@ namespace ZitiUpdateService {
                 SecurityIdentifier everyone = new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null);
                 sec.AddAccessRule(new FileSystemAccessRule(everyone, FileSystemRights.Modify | FileSystemRights.Synchronize, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
                 Directory.SetAccessControl(path, sec);
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 Logger.Error(e, "Unexpected error when setting directory security: {0}", e.Message);
             }
         }
@@ -64,8 +63,7 @@ namespace ZitiUpdateService {
                 SecurityIdentifier everyone = new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null);
                 sec.AddAccessRule(new FileSystemAccessRule(everyone, FileSystemRights.Modify | FileSystemRights.Delete | FileSystemRights.Synchronize, InheritanceFlags.None, PropagationFlags.None, AccessControlType.Allow));
                 File.SetAccessControl(path, sec);
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 Logger.Error(e, "Unexpected error when setting directory security: {0}", e.Message);
             }
         }

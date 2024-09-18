@@ -66,8 +66,7 @@ namespace ZitiDesktopEdge.Native {
                     throw new Win32Exception();
 
                 return sb.ToString();
-            }
-            finally {
+            } finally {
                 CloseHandle(h);
             }
         }

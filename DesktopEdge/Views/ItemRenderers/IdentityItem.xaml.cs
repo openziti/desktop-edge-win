@@ -118,8 +118,7 @@ namespace ZitiDesktopEdge {
                     _timer.Tick += TimerTicked;
                     _timer.Start();
                     logger.Info("Timer Started for full timout in " + maxto + "  seconds from identity " + _identity.Name + ".");
-                }
-                else {
+                } else {
                     //if (maxto == 0) ShowTimedOut();
                 }
             }
@@ -134,8 +133,7 @@ namespace ZitiDesktopEdge {
                     _timingTimer.Tick += TimingTimerTick;
                     _timingTimer.Start();
                     logger.Info("Timer Started for first timout in " + minto + " seconds from identity " + _identity.Name + " value with " + _identity.MinTimeout + ".");
-                }
-                else {
+                } else {
                     if (maxto > 0) {
                         ShowTimeout();
                     }
@@ -149,8 +147,7 @@ namespace ZitiDesktopEdge {
                 PostureTimedOut.Visibility = Visibility.Visible;
                 ServiceCountAreaLabel.Content = "authorize2";
                 MainArea.Opacity = 1.0;
-            }
-            else {
+            } else {
                 //MfaRequired.Visibility = Visibility.Visible;
                 //ServiceCountAreaLabel.Content = "authenticate1";
                 //MainArea.Opacity = 0.6;
@@ -174,8 +171,7 @@ namespace ZitiDesktopEdge {
             if (_identity.IsConnected) {
                 this.IsEnabled = true;
                 this.Opacity = 1.0;
-            }
-            else {
+            } else {
                 this.IsEnabled = false;
                 this.Opacity = 0.3;
             }
@@ -196,18 +192,15 @@ namespace ZitiDesktopEdge {
                 if (_identity.IsMFANeeded) {
                     // enabled and needed = needs to be authorized. show the lock icon and tell the user to auth
                     MFAEnabledAndNeeded();
-                }
-                else {
+                } else {
                     // enabled and not needed = authorized. show the services should be enabled and authorized
                     MFAEnabledAndNotNeeded();
                 }
-            }
-            else {
+            } else {
                 if (_identity.IsMFANeeded) {
                     // not enabled and needed = show the user the MFA disabled so they can enable it
                     MFANotEnabledAndNeeded();
-                }
-                else {
+                } else {
                     // normal case. means no lock icon needs to be shown
                     MFANotEnabledAndNotNeeded();
                 }
@@ -248,14 +241,12 @@ namespace ZitiDesktopEdge {
 
                     if (available < _identity.Services.Count) MainArea.ToolTip = (_identity.Services.Count - available) + " of " + _identity.Services.Count + " services have timed out.";
                     else MainArea.ToolTip = "Some or all of the services will be timing out in " + answer;
-                }
-                else {
+                } else {
                     ShowTimeout();
                     MainArea.ToolTip = (_identity.Services.Count - available) + " of " + _identity.Services.Count + " services have timed out.";
                     ServiceCountAreaLabel.Content = available + "/" + _identity.Services.Count;
                 }
-            }
-            else {
+            } else {
                 ShowTimeout();
                 MainArea.ToolTip = "Some or all of the services have timed out.";
                 ServiceCountAreaLabel.Content = available + "/" + _identity.Services.Count;
@@ -307,15 +298,12 @@ namespace ZitiDesktopEdge {
                 this.Identity.IsEnabled = on;
                 if (on) {
                     ToggleStatus.Content = "ENABLED";
-                }
-                else {
+                } else {
                     ToggleStatus.Content = "DISABLED";
                 }
-            }
-            catch (DataStructures.ServiceException se) {
+            } catch (DataStructures.ServiceException se) {
                 MessageBox.Show(se.AdditionalInfo, se.Message);
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 MessageBox.Show("Error", ex.Message);
             }
         }
@@ -345,8 +333,7 @@ namespace ZitiDesktopEdge {
         private void DoMFAOrOpen(object sender, MouseButtonEventArgs e) {
             if (MfaRequired.Visibility == Visibility.Visible || TimerCountdown.Visibility == Visibility.Visible || PostureTimedOut.Visibility == Visibility.Visible) {
                 MFAAuthenticate(sender, e);
-            }
-            else {
+            } else {
                 OpenDetails(sender, e);
             }
         }

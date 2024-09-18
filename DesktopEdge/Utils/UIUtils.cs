@@ -39,8 +39,7 @@ namespace Ziti.Desktop.Edge.Utils {
 
                 LogManager.ReconfigExistingLoggers();
                 Logger.Info("logger reconfigured to log at level: {0}", l);
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 Logger.Error(e, "Failed to set log level: {0}", e.Message);
             }
         }

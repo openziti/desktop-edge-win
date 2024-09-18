@@ -54,11 +54,9 @@ namespace ZitiDesktopEdge {
                 DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
                 DataStructures.Identity id = await client.IdentityOnOffAsync(_identity.Identifier, on);
                 this.Identity.IsEnabled = on;
-            }
-            catch (DataStructures.ServiceException se) {
+            } catch (DataStructures.ServiceException se) {
                 MessageBox.Show(se.AdditionalInfo, se.Message);
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 MessageBox.Show("Error", ex.Message);
             }
         }

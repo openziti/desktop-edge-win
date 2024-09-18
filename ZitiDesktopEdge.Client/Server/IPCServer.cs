@@ -93,15 +93,13 @@ namespace ZitiDesktopEdge.Server {
                     _ = Task.Run(async () => {
                         try {
                             await handleIpcClientAsync(ipcPipeServer, onClient);
-                        }
-                        catch (Exception icpe) {
+                        } catch (Exception icpe) {
                             Logger.Error(icpe, "Unexpected error in handleIpcClientAsync");
                         }
                         idx--;
                         Logger.Debug("Total ipc clients now at: {0}", idx);
                     });
-                }
-                catch (Exception pe) {
+                } catch (Exception pe) {
                     Logger.Error(pe, "Unexpected error when connecting a client pipe.");
                 }
             }
@@ -132,20 +130,17 @@ namespace ZitiDesktopEdge.Server {
                     _ = Task.Run(async () => {
                         try {
                             await handleEventClientAsync(eventPipeServer, onClient);
-                        }
-                        catch (Exception icpe) {
+                        } catch (Exception icpe) {
                             if (icpe.Message.StartsWith("Service ziti was not found on computer")) {
                                 //ignore this for now...
-                            }
-                            else {
+                            } else {
                                 Logger.Error(icpe, "Unexpected error in handleEventClientAsync");
                             }
                         }
                         idx--;
                         Logger.Debug("Total event clients now at: {0}", idx);
                     });
-                }
-                catch (Exception pe) {
+                } catch (Exception pe) {
                     Logger.Error(pe, "Unexpected error when connecting a client pipe.");
                 }
             }
@@ -165,8 +160,7 @@ namespace ZitiDesktopEdge.Server {
                     }
 
                     Logger.Debug("handleIpcClientAsync is complete");
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     Logger.Error(e, "Unexpected error when reading from or writing to a client pipe.");
                 }
             }
@@ -181,8 +175,7 @@ namespace ZitiDesktopEdge.Server {
                         try {
                             await writer.WriteLineAsync(sender.ToString());
                             await writer.FlushAsync();
-                        }
-                        catch (Exception ex) {
+                        } catch (Exception ex) {
                             Logger.Error("problem with event handler in handleEventClientAsync: {}", ex.Message);
                         }
                     };
@@ -201,8 +194,7 @@ namespace ZitiDesktopEdge.Server {
                     Logger.Debug("handleEventClientAsync is complete");
                     EventRegistry.MyEvent -= eh;
                 }
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 Logger.Error(e, "Unexpected error when reading from or writing to a client pipe.");
             }
         }
@@ -235,8 +227,7 @@ namespace ZitiDesktopEdge.Server {
                             rr.Message = "Service has been terminated";
                             rr.Status = ServiceActions.ServiceStatus();
                             r = rr;
-                        }
-                        else {
+                        } else {
                             r.Message = ServiceActions.StopService();
                         }
                         break;
@@ -251,8 +242,7 @@ namespace ZitiDesktopEdge.Server {
                         try {
                             string results = CaptureLogs();
                             r.Message = results;
-                        }
-                        catch (Exception ex) {
+                        } catch (Exception ex) {
                             string err = string.Format("UNKNOWN ERROR : {0}", ex.Message);
                             Logger.Error(ex, err);
                             r.Code = -5;
@@ -285,8 +275,7 @@ namespace ZitiDesktopEdge.Server {
                         Logger.Error(r.Message);
                         break;
                 }
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 Logger.Error(e, "Unexpected error in processMessage!");
                 r.Message = "FAILURE: " + e.Message;
                 r.Code = -2;

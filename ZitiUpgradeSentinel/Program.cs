@@ -40,12 +40,10 @@ class FileWatcher {
             }
             await RunWithTimeout(task: WaitForStartupChange(), timeout: TimeSpan.FromMinutes(5));
             StartZitiDesktopEdgeUI();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             Log($"{processName} completed exceptionally: ");
             Log(e.ToString());
-        }
-        finally {
+        } finally {
             Log($"{processName} completed");
         }
     }
@@ -76,13 +74,11 @@ class FileWatcher {
                 try {
                     startTime = GetCurrentStartTime(writer, reader);
                     Log($"initial start time {startTime}");
-                }
-                catch {
+                } catch {
                     Log("Could not obtain current time. The service is expected to be down. Using 'now' as current time.");
                 }
             }
-        }
-        catch (Exception ex) {
+        } catch (Exception ex) {
             Log($"Error: {ex.Message}");
         }
 
@@ -95,15 +91,13 @@ class FileWatcher {
                     DateTime nextStartTime = GetCurrentStartTime(writer, reader);
                     if (startTime == nextStartTime) {
                         Log($"{startTime} is equal to {nextStartTime}");
-                    }
-                    else {
+                    } else {
                         Log($"{startTime} has changed to {nextStartTime}");
                         return;
                     }
                     await Task.Delay(TimeSpan.FromMilliseconds(500)); // wait for the serice to start and return a result
                 }
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 Log($"Error: {ex.Message}");
             }
             await Task.Delay(TimeSpan.FromMilliseconds(500)); // try again...
@@ -115,8 +109,7 @@ class FileWatcher {
             if (await Task.WhenAny(task, Task.Delay(timeout)) == task) {
                 cancellationTokenSource.Cancel();
                 await task;
-            }
-            else {
+            } else {
                 throw new TimeoutException("The operation has timed out.");
             }
         }
@@ -134,11 +127,9 @@ class FileWatcher {
 
         if (dirs.Count > 1) {
             Log($"cannot start the UI. too many directories to search??? Found: {dirs.Count} {string.Join(",", dirs)}");
-        }
-        else if (dirs.Count < 1) {
+        } else if (dirs.Count < 1) {
             Log($"cannot start the UI. No ZitiDesktopEdge.exe found");
-        }
-        else {
+        } else {
             var zitiFiles = Directory.GetFiles(dirs[0], "ZitiDesktopEdge.exe", SearchOption.AllDirectories);
 
             foreach (var file in zitiFiles) {

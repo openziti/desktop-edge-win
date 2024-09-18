@@ -51,8 +51,7 @@ namespace ZitiDesktopEdge.Models {
             get {
                 if (this.OwnsIntercept) {
                     return "";
-                }
-                else {
+                } else {
                     return "this won't trigger right now"; //$"Another identity already mapped the specified hostname: {Host}.\nThis service is only available via IP";
                 }
             }
@@ -97,10 +96,8 @@ namespace ZitiDesktopEdge.Models {
                         }
                         message = message + " Posture Check Failing: " + checks;
                         return message.Trim();
-                    }
-                    else return message;
-                }
-                else return message;
+                    } else return message;
+                } else return message;
             }
         }
         private List<MessageCount> AppendMessage(List<MessageCount> items, string message) {
@@ -179,12 +176,10 @@ namespace ZitiDesktopEdge.Models {
                 else {
                     if (this.IsAccessible) {
                         return false;
-                    }
-                    else {
+                    } else {
                         if (this.PostureChecks == null) {
                             return false;
-                        }
-                        else {
+                        } else {
                             for (int i = 0; i < this.PostureChecks.Length; i++) {
                                 if (!this.PostureChecks[i].IsPassing) {
                                     return true;
@@ -268,8 +263,7 @@ namespace ZitiDesktopEdge.Models {
             if (Protocols?.Length > 0) {
                 if (Protocols.Length > 1) {
                     protos = "[" + string.Join(",", Protocols.Select(p => p.ToString())) + "]";
-                }
-                else {
+                } else {
                     protos = Protocols[0];
                 }
             }
@@ -277,8 +271,7 @@ namespace ZitiDesktopEdge.Models {
             if (Addresses?.Length > 0) {
                 if (Addresses.Length > 1) {
                     addys = "[" + string.Join(",", Addresses.Select(a => a.ToString()).OrderBy(o => o)) + "]";
-                }
-                else {
+                } else {
                     addys = Addresses[0].ToString();
                 }
             }
@@ -286,8 +279,7 @@ namespace ZitiDesktopEdge.Models {
             if (Ports?.Length > 0) {
                 if (Ports.Length > 1) {
                     ranges = "[" + string.Join(",", Ports.Select(a => a.ToString()).OrderBy(o => o)) + "]";
-                }
-                else {
+                } else {
                     ranges = Ports[0].ToString();
                 }
             }

@@ -47,12 +47,10 @@ namespace ZitiDesktopEdge.Utility {
                         process.StartInfo.UseShellExecute = false;
                         process.StartInfo.CreateNoWindow = true;
                         process.Start();
-                    }
-                    catch (Exception ex) {
+                    } catch (Exception ex) {
                         logger.Error("cannot start sentinel service. {}", ex);
                     }
-                }
-                else {
+                } else {
                     logger.Warn("cannot start sentinel service. source file doesn't exist? {}", sentinelSource);
                 }
             }
@@ -64,12 +62,10 @@ namespace ZitiDesktopEdge.Utility {
                     // if the temp file exists, clear it out
                     File.Delete(SentinelTempSource);
                     logger.Debug("found and removed upgrade sentinel at: {}", SentinelTempSource);
-                }
-                else {
+                } else {
                     logger.Debug("no upgrade sentinel exe at {} found to remove", SentinelTempSource);
                 }
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 logger.Error($"OnStartup FAILED to delete the UpgradeSentinel at {SentinelTempSource}", ex);
             }
         }

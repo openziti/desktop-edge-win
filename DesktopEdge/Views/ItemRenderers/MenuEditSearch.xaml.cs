@@ -49,8 +49,7 @@ namespace ZitiDesktopEdge {
         private void MainEdit_KeyUp(object sender, KeyEventArgs e) {
             if (MainEdit.Text.Trim().Length > 0) {
                 ClearButton.Content = "clear";
-            }
-            else {
+            } else {
                 ClearButton.Content = "search";
             }
             Filter(MainEdit.Text);

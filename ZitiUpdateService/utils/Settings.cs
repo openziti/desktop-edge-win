@@ -73,12 +73,10 @@ namespace ZitiUpdateService.Utils {
                 Settings s = serializer.Deserialize<Settings>(jsonReaderEvt);
                 if (s != null) {
                     Update(s);
-                }
-                else {
+                } else {
                     Logger.Debug("settings file was null? file doesn't exist or file was garbage?");
                 }
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 // do nothing, probably means the file is just or doesn't exist etc.
                 Logger.Debug("unexpected error loading settings. file was null? file doesn't exist or file was garbage? {0}", ex);
             }
@@ -93,8 +91,7 @@ namespace ZitiUpdateService.Utils {
                         file.Close();
                     }
                     this.OnConfigurationChange?.Invoke(null, null);
-                }
-                catch {
+                } catch {
                     // do nothing
                 }
                 this.watcher.Changed += OnChanged;

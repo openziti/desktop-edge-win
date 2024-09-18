@@ -126,8 +126,7 @@ namespace ZitiDesktopEdge {
                 if (_isAttached) {
                     Arrow.Visibility = Visibility.Visible;
                     ConfirmArrow.Visibility = Visibility.Visible;
-                }
-                else {
+                } else {
                     Arrow.Visibility = Visibility.Collapsed;
                     ConfirmArrow.Visibility = Visibility.Collapsed;
                 }
@@ -138,8 +137,7 @@ namespace ZitiDesktopEdge {
         private void MFAEnabledAndNeeded() {
             if (_identity.Services.Count > 0) {
                 MainDetailScroll.Visibility = Visibility.Visible;
-            }
-            else {
+            } else {
                 IdentityMFA.AuthOff.Visibility = Visibility.Visible;
                 AuthMessageBg.Visibility = Visibility.Visible;
                 AuthMessageLabel.Visibility = Visibility.Visible;
@@ -160,8 +158,7 @@ namespace ZitiDesktopEdge {
         private void MFANotEnabledAndNeeded() {
             if (_identity.Services.Count > 0) {
                 MainDetailScroll.Visibility = Visibility.Visible;
-            }
-            else {
+            } else {
                 AuthMessageLabel.Visibility = Visibility.Visible;
                 NoAuthServices.Visibility = Visibility.Visible;
                 NoAuthServices.Text = "You must enable MFA to access services";
@@ -211,18 +208,15 @@ namespace ZitiDesktopEdge {
                 if (_identity.IsMFANeeded) {
                     // enabled and needed = needs to be authorized. show the lock icon and tell the user to auth
                     MFAEnabledAndNeeded();
-                }
-                else {
+                } else {
                     // enabled and not needed = authorized. show the services should be enabled and authorized
                     MFAEnabledAndNotNeeded();
                 }
-            }
-            else {
+            } else {
                 if (_identity.IsMFANeeded) {
                     // not enabled and needed = show the user the MFA disabled so they can enable it
                     MFANotEnabledAndNeeded();
-                }
-                else {
+                } else {
                     // normal case. means no lock icon needs to be shown
                     MFANotEnabledAndNotNeeded();
                 }
@@ -317,17 +311,14 @@ namespace ZitiDesktopEdge {
                             }
                         }
                         TimeoutDetails.Text = answer;
-                    }
-                    else {
+                    } else {
                         if (info.TimeoutCalculated == 0) TimeoutDetails.Text = "Timed Out";
                         else TimeoutDetails.Text = "Never";
                     }
-                }
-                else {
+                } else {
                     TimeoutDetails.Text = "Never";
                 }
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 TimeoutDetails.Text = "Never";
                 Console.WriteLine("Error: " + e.ToString());
             }
@@ -397,12 +388,10 @@ namespace ZitiDesktopEdge {
                 }
 
                 OnForgot?.Invoke(forgotten);
-            }
-            catch (DataStructures.ServiceException se) {
+            } catch (DataStructures.ServiceException se) {
                 Logger.Error(se, se.Message);
                 OnError(se.Message);
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 Logger.Error(ex, "Unexpected: " + ex.Message);
                 OnError("An unexpected error has occured while removing the identity. Please verify the service is still running and try again.");
             }
@@ -460,8 +449,7 @@ namespace ZitiDesktopEdge {
                 var result = GetScrollViewer(child);
                 if (result == null) {
                     continue;
-                }
-                else {
+                } else {
                     return result;
                 }
             }

@@ -61,8 +61,7 @@ namespace ZitiDesktopEdge {
                         logger.Info("Another instance exists. Attempting to notify it to open");
                         try {
                             client.Connect(1000);
-                        }
-                        catch {
+                        } catch {
                             return;
                         }
 
@@ -75,14 +74,12 @@ namespace ZitiDesktopEdge {
                         }
                     }
                     Application.Current.Shutdown();
-                }
-                else {
+                } else {
 #pragma warning disable 4014 //This async method lacks 'await'
                     StartServer();
 #pragma warning restore 4014 //This async method lacks 'await'
                 }
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 logger.Error($"OnStartup FAILED unexpectedly. Exiting", ex);
                 Application.Current.Shutdown();
             }

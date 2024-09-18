@@ -79,8 +79,7 @@ namespace Ziti.Desktop.Edge.Views.Screens {
                 MfaProvisioningUrl.Text = mfa.ProvisioningUrl;
                 if (mfa.RecoveryCodes != null) {
                     MfaRecoveryCodes.Text = string.Join(",", mfa.RecoveryCodes);
-                }
-                else {
+                } else {
                     MfaRecoveryCodes.Text = "";
                 }
             });

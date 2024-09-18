@@ -71,8 +71,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 await eventClient.ConnectAsync(ServiceConnectTimeout);
                 await pipeClient.ConnectAsync(ServiceConnectTimeout);
                 ClientConnected(null);
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 semaphoreSlim.Release();
                 throw new ServiceException("Could not connect to the monitor service.", 1, ex.Message);
             }
@@ -110,8 +109,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             try {
                 await sendAsync(action);
                 return await readAsync<MonitorServiceStatusEvent>(ipcReader);
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 Logger.Error(ex, "Unexpected error");
             }
             return null;
@@ -122,8 +120,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             try {
                 await sendAsync(action);
                 return await readAsync<MonitorServiceStatusEvent>(ipcReader);
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 Logger.Error(ex, "Unexpected error");
             }
             return null;

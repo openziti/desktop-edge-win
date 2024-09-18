@@ -76,18 +76,15 @@ namespace ZitiDesktopEdge.ServiceClient {
                                 respAsString = await readMessageAsync(eventReader);
                                 try {
                                     ProcessLine(respAsString);
-                                }
-                                catch (Exception ex) {
+                                } catch (Exception ex) {
                                     Logger.Warn(ex, "ERROR caught in ProcessLine: {0}", respAsString);
                                 }
-                            }
-                            catch (Exception ex) {
+                            } catch (Exception ex) {
                                 Logger.Warn(ex, "ERROR caught in readMessageAsync: {0}", respAsString);
                             }
                         }
                     }
-                }
-                catch (Exception ex) {
+                } catch (Exception ex) {
                     Logger.Debug("unepxected error: " + ex.ToString());
                 }
 
@@ -133,31 +130,25 @@ namespace ZitiDesktopEdge.ServiceClient {
                             await ipcWriter.WriteAsync(toSend);
                             await ipcWriter.WriteAsync('\n');
                             await ipcWriter.FlushAsync();
-                        }
-                        else {
+                        } else {
                             throw new IPCException("ipcWriter is null. the target appears to be offline?");
                         }
-                    }
-                    else {
+                    } else {
                         Logger.Debug("NOT sending empty object??? " + objToSend?.ToString());
                     }
                     break;
-                }
-                catch (IOException ioe) {
+                } catch (IOException ioe) {
                     //almost certainly a problem with the pipe - recreate the pipe... try one more time.
                     await ConnectPipesAsync();
                     if (retried) {
                         //we tried - throw the error...
                         throw ioe;
-                    }
-                    else {
+                    } else {
                         retried = true; //fall back through to the while and try again
                     }
-                }
-                catch (MonitorServiceException) {
+                } catch (MonitorServiceException) {
                     throw;
-                }
-                catch (Exception ex) {
+                } catch (Exception ex) {
                     //if this fails it's usually because the writer is null/invalid. throwing IOException
                     //will trigger the pipe to rebuild
                     throw new IOException("Unexpected error when sending data to service. " + ex.Message);
@@ -182,8 +173,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             if (Reconnecting) {
                 Logger.Debug("Already in reconnect mode.");
                 return;
-            }
-            else {
+            } else {
                 Reconnecting = true;
             }
 
@@ -203,16 +193,13 @@ namespace ZitiDesktopEdge.ServiceClient {
                             Connected = true;
                             Reconnecting = false;
                             return;
-                        }
-                        else {
+                        } else {
                             //ClientDisconnected(null);
                         }
-                    }
-                    catch (Exception) {
+                    } catch (Exception) {
                         try {
                             ReconnectFailureEvent("reconnect failure");
-                        }
-                        catch (Exception) {
+                        } catch (Exception) {
                             // don't care - just catch it and continue... it's a timeout...
                         }
                         var now = DateTime.Now;
@@ -222,12 +209,10 @@ namespace ZitiDesktopEdge.ServiceClient {
                             if (duration > TimeSpan.FromHours(1)) {
                                 Logger.Info("reconnect has not completed and has been running for {0} hours", duration.TotalHours);
                                 logAgainAfter += TimeSpan.FromHours(1);
-                            }
-                            else if (duration > TimeSpan.FromMinutes(1)) {
+                            } else if (duration > TimeSpan.FromMinutes(1)) {
                                 Logger.Info("reconnect has not completed and has been running for {0} minutes", duration.TotalMinutes);
                                 logAgainAfter += TimeSpan.FromMinutes(1);
-                            }
-                            else {
+                            } else {
                                 logAgainAfter += TimeSpan.FromSeconds(1);
                             }
                         }
@@ -269,14 +254,12 @@ namespace ZitiDesktopEdge.ServiceClient {
                     }
                 }
                 return respAsString;
-            }
-            catch (IOException ioe) {
+            } catch (IOException ioe) {
                 //almost certainly a problem with the pipe
                 Logger.Error(ioe, "io error in read: " + ioe.Message);
                 ClientDisconnected(null);
                 throw ioe;
-            }
-            catch (Exception ee) {
+            } catch (Exception ee) {
                 //almost certainly a problem with the pipe
                 Logger.Error(ee, "unexpected error in read: " + ee.Message);
                 ClientDisconnected(null);

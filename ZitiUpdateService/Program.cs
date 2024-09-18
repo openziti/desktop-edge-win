@@ -42,8 +42,7 @@ namespace ZitiUpdateService {
             if (File.Exists(nlogFile)) {
                 LogManager.Configuration = new XmlLoggingConfiguration(nlogFile);
                 byFile = true;
-            }
-            else {
+            } else {
                 var config = new LoggingConfiguration();
                 // Targets where to log to: File and Console
                 var logfile = new FileTarget("logfile") {
@@ -82,8 +81,7 @@ namespace ZitiUpdateService {
                     updateSvc.Debug();
                     updateSvc.WaitForCompletion();
                     Logger.Info("  - RUNNING AS DEBUG COMPLETE");
-                }
-                else {
+                } else {
                     ServiceBase[] ServicesToRun = new ServiceBase[]
                     {
                         updateSvc
@@ -98,8 +96,7 @@ namespace ZitiUpdateService {
 				};
 				ServiceBase.Run(ServicesToRun);
 #endif
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 Logger.Error("Unexpected exception: {0}", e);
             }
         }

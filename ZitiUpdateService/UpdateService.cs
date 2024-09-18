@@ -131,8 +131,7 @@ namespace ZitiUpdateService {
             SvcResponse r = new SvcResponse();
             if (url == null || !url.StartsWith("http")) {
                 return failure;
-            }
-            else {
+            } else {
                 // check the url exists and appears correct...
                 var check = new GithubCheck(assemblyVersion, url);
 
@@ -160,8 +159,7 @@ namespace ZitiUpdateService {
             MonitorServiceStatusEvent evt;
             if (lastInstallationNotification != null) {
                 evt = lastInstallationNotification;
-            }
-            else {
+            } else {
                 evt = new MonitorServiceStatusEvent() {
                     Code = 0,
                     Error = "",
@@ -200,8 +198,7 @@ namespace ZitiUpdateService {
         private void checkUpdateImmediately() {
             try {
                 CheckUpdate(null, null);
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 Logger.Error(ex, "Unexpected error in CheckUpdate");
             }
         }
@@ -248,8 +245,7 @@ namespace ZitiUpdateService {
 
                 LogManager.ReconfigExistingLoggers();
                 Logger.Info("logger reconfigured to log at level: {0}", l);
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 Logger.Error(e, "Could NOT set the log level for loggers??? {0}", e.Message);
             }
         }
@@ -259,8 +255,7 @@ namespace ZitiUpdateService {
             if (stream == "beta") {
                 if (IsBeta) {
                     Logger.Debug("already using beta stream. No action taken");
-                }
-                else {
+                } else {
                     Logger.Info("Setting update service to use beta stream!");
                     using (File.Create(markerFile)) {
 
@@ -268,12 +263,10 @@ namespace ZitiUpdateService {
                     AccessUtils.GrantAccessToFile(markerFile); //allow anyone to delete this manually if need be...
                     Logger.Debug("added marker file: {0}", markerFile);
                 }
-            }
-            else {
+            } else {
                 if (!IsBeta) {
                     Logger.Debug("already using release stream. No action taken");
-                }
-                else {
+                } else {
                     Logger.Info("Setting update service to use release stream!");
                     if (File.Exists(markerFile)) {
                         File.Delete(markerFile);
@@ -293,8 +286,7 @@ namespace ZitiUpdateService {
                 Logger.Debug("removing leftover temp folder: {0}", destinationLocation);
                 try {
                     Directory.Delete(destinationLocation, true);
-                }
-                catch {
+                } catch {
                     //means it doesn't exist
                 }
 
@@ -338,13 +330,11 @@ namespace ZitiUpdateService {
                 Logger.Debug("cleaning up temp folder: {0}", destinationLocation);
                 try {
                     Directory.Delete(destinationLocation, true);
-                }
-                catch {
+                } catch {
                     //means it doesn't exist
                 }
                 return zipName;
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 Logger.Error(ex, "Unexpected error in generating system files {0}", ex.Message);
                 return null;
             }
@@ -363,8 +353,7 @@ namespace ZitiUpdateService {
                 process.StartInfo = startInfo;
                 process.Start();
                 process.WaitForExit();
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 Logger.Error(ex, "Unexpected error in outputIpconfigInfo {0}", ex.Message);
             }
         }
@@ -382,8 +371,7 @@ namespace ZitiUpdateService {
                 process.StartInfo = startInfo;
                 process.Start();
                 process.WaitForExit();
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 Logger.Error(ex, "Unexpected error in outputSystemInfo {0}", ex.Message);
             }
         }
@@ -401,8 +389,7 @@ namespace ZitiUpdateService {
                 process.StartInfo = startInfo;
                 process.Start();
                 process.WaitForExit();
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 Logger.Error(ex, "Unexpected error in outputDnsCache {0}", ex.Message);
             }
         }
@@ -420,8 +407,7 @@ namespace ZitiUpdateService {
                 process.StartInfo = startInfo;
                 process.Start();
                 process.WaitForExit();
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 Logger.Error(ex, "Unexpected error in outputExternalIP {0}", ex.Message);
             }
         }
@@ -439,8 +425,7 @@ namespace ZitiUpdateService {
                 process.StartInfo = startInfo;
                 process.Start();
                 process.WaitForExit();
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 Logger.Error(ex, "Unexpected error {0}", ex.Message);
             }
         }
@@ -458,8 +443,7 @@ namespace ZitiUpdateService {
                 process.StartInfo = startInfo;
                 process.Start();
                 process.WaitForExit();
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 Logger.Error(ex, "Unexpected error {0}", ex.Message);
             }
         }
@@ -477,8 +461,7 @@ namespace ZitiUpdateService {
                 process.StartInfo = startInfo;
                 process.Start();
                 process.WaitForExit();
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 Logger.Error(ex, "Unexpected error {0}", ex.Message);
             }
         }
@@ -509,8 +492,7 @@ namespace ZitiUpdateService {
                 process.StartInfo = startInfo;
                 process.Start();
                 process.WaitForExit();
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 Logger.Error(ex, "Unexpected error {0}", ex.Message);
             }
         }
@@ -562,8 +544,7 @@ namespace ZitiUpdateService {
                     zetSemaphore.Release();
                     Interlocked.Exchange(ref zetFailedCheckCounter, 0);
                     Logger.Trace("ziti-edge-tunnel aliveness check ends successfully");
-                }
-                else {
+                } else {
                     Interlocked.Add(ref zetFailedCheckCounter, 1);
                     Logger.Warn("ziti-edge-tunnel aliveness check appears blocked and has been for {} times", zetFailedCheckCounter);
                     if (zetFailedCheckCounter > 2) {
@@ -576,8 +557,7 @@ namespace ZitiUpdateService {
                         ServiceActions.StartService(); //attempt to start the service
                     }
                 }
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 Logger.Error("ziti-edge-tunnel aliveness check ends exceptionally: {}", ex.Message);
             }
         }
@@ -605,8 +585,7 @@ namespace ZitiUpdateService {
                     await writer.WriteLineAsync(JsonConvert.SerializeObject(lastInstallationNotification));
                     await writer.FlushAsync();
                 }
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 Logger.Error("UNEXPECTED ERROR: {}", ex);
             }
         }
@@ -694,8 +673,7 @@ namespace ZitiUpdateService {
 
             try {
                 dataClient.ConnectAsync().Wait();
-            }
-            catch {
+            } catch {
                 dataClient.Reconnect();
             }
 
@@ -714,8 +692,7 @@ namespace ZitiUpdateService {
                         logFile.Delete();
                     }
                 }
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 Logger.Error(ex, "Unexpected error has occurred");
             }
         }
@@ -733,8 +710,7 @@ namespace ZitiUpdateService {
                 CurrentSettings.AutomaticUpdateURL = GithubAPI.ProdUrl;
                 Logger.Info("Settings does not contain update url. Setting to: {}", CurrentSettings.AutomaticUpdateURL);
                 CurrentSettings.Write();
-            }
-            else {
+            } else {
                 Logger.Info("Settings contained a value for update url. Using: {}", CurrentSettings.AutomaticUpdateURL);
             }
 
@@ -787,21 +763,18 @@ namespace ZitiUpdateService {
                     NotifyInstallationUpdates(info, true);
                     if (CurrentSettings.AutomaticUpdatesDisabled) {
                         Logger.Debug("AutomaticUpdatesDisabled is set to true. Automatic update is disabled.");
-                    }
-                    else {
+                    } else {
                         Thread.Sleep(30);
                         installZDE(check);
                     }
-                }
-                else {
+                } else {
                     info.InstallTime = InstallDateFromPublishDate(check.PublishDate);
                     Logger.Info("Installation reminder for ZDE version: {0}. update published at: {1}. approximate install time: {2}", info.ZDEVersion, check.PublishDate, info.InstallTime);
                     NotifyInstallationUpdates(info);
                 }
                 lastUpdateCheck = check;
                 lastInstallationNotification = info;
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 Logger.Error(ex, "Unexpected error has occurred during the check for ZDE updates");
             }
             semaphore.Release();
@@ -812,8 +785,7 @@ namespace ZitiUpdateService {
 
             if (check.AlreadyDownloaded(updateFolder, check.FileName)) {
                 Logger.Trace("package has already been downloaded to {0}", fileDestination);
-            }
-            else {
+            } else {
                 Logger.Info("copying update package begins");
                 check.CopyUpdatePackage(updateFolder, check.FileName);
                 Logger.Info("copying update package complete");
@@ -854,11 +826,9 @@ namespace ZitiUpdateService {
             Logger.Info("comparing current[{0}] to compare[{1}]: {2}", current.ToString(), assemblyVersion.ToString(), compare);
             if (compare < 0) {
                 return true;
-            }
-            else if (compare > 0) {
+            } else if (compare > 0) {
                 return false;
-            }
-            else {
+            } else {
                 return false;
             }
         }
@@ -881,25 +851,20 @@ namespace ZitiUpdateService {
                                 if (isOlder(fileVersion)) {
                                     Logger.Info("Removing old download: " + fi.Name);
                                     fi.Delete();
-                                }
-                                else {
+                                } else {
                                     Logger.Debug("Retaining file. {1} is the same or newer than {1}", fi.Name, assemblyVersion);
                                 }
-                            }
-                            else {
+                            } else {
                                 Logger.Debug("skipping file named {0}", f);
                             }
-                        }
-                        else {
+                        } else {
                             Logger.Debug("file named {0} did not exist?", f);
                         }
-                    }
-                    catch (Exception ex) {
+                    } catch (Exception ex) {
                         Logger.Error(ex, "Unexpected exception processing {0}", f);
                     }
                 }
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 Logger.Error(ex, "Unexpected exception");
             }
         }
@@ -915,12 +880,10 @@ namespace ZitiUpdateService {
                     controller.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
                     Logger.Debug("The ziti service was stopped successfully.");
                     cleanStop = true;
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     Logger.Error(e, "Timout while trying to stop service!");
                 }
-            }
-            else {
+            } else {
                 Logger.Debug("The ziti has ALREADY been stopped successfully.");
             }
             if (!cleanStop) {
@@ -952,13 +915,11 @@ namespace ZitiUpdateService {
                         worker.WaitForExit(5000);
                         Logger.Info("Stopping the {description} process killed", description);
                         worker.Dispose();
-                    }
-                    catch (Exception e) {
+                    } catch (Exception e) {
                         Logger.Error(e, "Unexpected error when closing the {description}!", description);
                     }
                 }
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 Logger.Error(e, "Unexpected error when closing the {description}!", description);
             }
         }
@@ -1023,8 +984,7 @@ namespace ZitiUpdateService {
                 Logger.Info("client disconnected due to clean service shutdown");
                 zetHealthcheck.Stop();
                 zetHealthcheck.Enabled = false;
-            }
-            else {
+            } else {
                 Logger.Error("SERVICE IS DOWN and did not exit cleanly.");
 
                 MonitorServiceStatusEvent status = new MonitorServiceStatusEvent() {
@@ -1094,8 +1054,7 @@ namespace ZitiUpdateService {
                 EventRegistry.SendEventToConsumers(evt);
                 Logger.Debug("NotifyInstallationUpdates: sent for version {0} is sent to the events pipe...", evt.ZDEVersion);
                 return;
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 Logger.Error("The notification for the installation updates for version {0} has failed: {1}", evt.ZDEVersion, e);
             }
         }

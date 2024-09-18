@@ -66,8 +66,7 @@ namespace ZitiUpdateService.Checkers {
                 if (assetName.StartsWith("Ziti.Desktop.Edge.Client-")) {
                     downloadUrl = asset.Property("browser_download_url").Value.ToString();
                     break;
-                }
-                else {
+                } else {
                     Logger.Debug("skipping asset with name: {assetName}", assetName);
                 }
             }
@@ -95,8 +94,7 @@ namespace ZitiUpdateService.Checkers {
             int compare = currentVersion.CompareTo(nextVersion);
             if (compare < 0) {
                 Logger.Info("upgrade {} is available. Published version: {} is newer than the current version: {}", releaseName, nextVersion, currentVersion);
-            }
-            else if (compare > 0) {
+            } else if (compare > 0) {
                 Logger.Info("the version installed: {0} is newer than the released version: {1}", currentVersion, nextVersion);
             }
             return compare;
@@ -140,13 +138,11 @@ namespace ZitiUpdateService.Checkers {
                     Version normalizedReleaseVersion = null;
                     try {
                         normalizedReleaseVersion = Version.Parse(releaseVersion);
-                    }
-                    catch (Exception e) {
+                    } catch (Exception e) {
                         try {
                             releaseVersion = json.Property("tag_name").Value.ToString();
                             normalizedReleaseVersion = Version.Parse(releaseVersion);
-                        }
-                        catch (Exception err) {
+                        } catch (Exception err) {
                             Logger.Error("Cound not fetch version from name due to {0} and tag_name due to {1}", e.Message, err.Message);
                             continue;
                         }
@@ -161,8 +157,7 @@ namespace ZitiUpdateService.Checkers {
             }
             if (isoPublishedDate != null) {
                 _publishedDateAfterCurrent = DateTime.Parse(isoPublishedDate, null, System.Globalization.DateTimeStyles.RoundtripKind);
-            }
-            else {
+            } else {
                 _publishedDateAfterCurrent = DateTime.Now;
             }
             _versionAfterCurrent = publishedReleaseVersion;
@@ -174,15 +169,13 @@ namespace ZitiUpdateService.Checkers {
 
             try {
                 DateTime.TryParse(publishedDateStr, out publishedDate);
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 Logger.Error("Could not convert published date of the installer - input string : {0} due to {1}. Fetching download time instead.", publishedDateStr, e.Message);
                 try {
                     if (fileDestination != null) {
                         publishedDate = File.GetCreationTime(fileDestination);
                     }
-                }
-                catch (Exception err) {
+                } catch (Exception err) {
                     Logger.Error("Could not fetch creation date of the installer due to {0}.", err.Message);
                 }
 

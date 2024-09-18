@@ -107,8 +107,7 @@ namespace AWSSigner {
                 if (!File.Exists(signToolPathEnv)) {
                     Logger.Info($"ERROR: Signtool not found on path and SIGNTOOL_PATH environment variable not set or file doesn't exist: {signToolPathEnv}!");
                     return;
-                }
-                else {
+                } else {
                     Logger.Info($"Using signtool found via environment variable at: {signToolPathEnv}");
                     signToolPath = signToolPathEnv;
                 }

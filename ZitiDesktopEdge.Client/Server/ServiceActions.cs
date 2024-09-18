@@ -60,8 +60,7 @@ namespace ZitiDesktopEdge.Server {
                 sc.WaitForStatus(ServiceControllerStatus.Stopped, new System.TimeSpan(0, 0, serviceWaitTime));
                 Logger.Info("request to stop ziti service received... complete...");
                 return ServiceStatus();
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 Logger.Error("failed to stop service using ServiceController. Attempting to find and kill the ziti process directly");
 
                 var zetProcesses = Process.GetProcesses().Where(p => p.ProcessName == "ziti-edge-tunnel");
@@ -72,12 +71,10 @@ namespace ZitiDesktopEdge.Server {
                         process.Kill();
                         if (process.WaitForExit(30 * 1000)) { // wait for 30s
                             Logger.Warn($"terminated process forcefully: {process.Id}");
-                        }
-                        else {
+                        } else {
                             Logger.Error($"waited 30s, could not terminate process: {process.Id}");
                         }
-                    }
-                    catch (Exception ex) {
+                    } catch (Exception ex) {
                         Logger.Error($"failed to forcefully terminate process: {process.Id}!!! Error Msg: {ex.Message}");
                     }
                 }
@@ -103,8 +100,7 @@ namespace ZitiDesktopEdge.Server {
             nrptRuleProcess.Start();
             if (nrptRuleProcess.WaitForExit(60 * 1000)) { // wait for 60s
                 Logger.Debug("NRPT rules have been removed");
-            }
-            else {
+            } else {
                 Logger.Error($"waited 60s, could not remove NRPT rules?!");
             }
         }
@@ -118,8 +114,7 @@ namespace ZitiDesktopEdge.Server {
                 try {
                     obj.InvokeMethod("Disable", null);
                     Console.WriteLine("Disabled interface: " + obj["Name"]);
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     Console.WriteLine("Error disabling interface: " + obj["Name"] + " - " + e.Message);
                 }
             }

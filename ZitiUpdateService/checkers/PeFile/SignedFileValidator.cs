@@ -98,8 +98,7 @@ namespace ZitiUpdateService.Checkers.PeFile {
                 if (Type == PeType.Pe32) {
                     byte[] headerBytes = reader.ReadBytes(Marshal.SizeOf(typeof(IMAGE_OPTIONAL_HEADER32)));
                     StandardFieldsPe32 = StructHelper.FromBytes<IMAGE_OPTIONAL_HEADER32>(headerBytes);
-                }
-                else {
+                } else {
                     byte[] headerBytes = reader.ReadBytes(Marshal.SizeOf(typeof(IMAGE_OPTIONAL_HEADER64)));
                     StandardFieldsPe32Plus = StructHelper.FromBytes<IMAGE_OPTIONAL_HEADER64>(headerBytes);
                 }
@@ -124,8 +123,7 @@ namespace ZitiUpdateService.Checkers.PeFile {
             X509Certificate2 cert = si.Certificate;
             if (list.Find(x => x.Thumbprint == cert.Thumbprint) == null) {
                 list.Add(cert);
-            }
-            else {
+            } else {
                 Logger.Debug("Certificate with Thumbprint {0} already in list. skipping.", cert.Thumbprint);
             }
         }
@@ -163,19 +161,16 @@ namespace ZitiUpdateService.Checkers.PeFile {
                                     SignerInfo innerSignerInfo = innerCms.SignerInfos[0];
                                     try {
                                         innerSignerInfo.CheckSignature(false);
-                                    }
-                                    catch (CryptographicException) {
+                                    } catch (CryptographicException) {
                                         if (innerSignerInfo.Certificate.Thumbprint == oldKnownThumbprint) {
                                             //special handling for the known 'old' NetFoundry signing certificate, now expired...
                                             //TODO: remove this code after 2021
                                             //just allow this one error
                                             Logger.Warn("Ignoring timestamp validity issue for the existing code signing certificate. Subject: {0}, Thumbprint: {1}", innerSignerInfo.Certificate.Subject, innerSignerInfo.Certificate.Thumbprint);
-                                        }
-                                        else {
+                                        } else {
                                             if (IsCertificateOpenZitiVerifies(innerSignerInfo.Certificate)) {
                                                 Logger.Debug("Certificate {} from {} is not one needed to be verified", innerSignerInfo.Certificate.SubjectName, innerSignerInfo.Certificate.Issuer);
-                                            }
-                                            else {
+                                            } else {
                                                 throw;
                                             }
                                         }
@@ -199,8 +194,7 @@ namespace ZitiUpdateService.Checkers.PeFile {
             bool yesOrNo = cert.Subject.ToLower().Contains("netfoundry") || cert.Subject.ToLower().Contains("openziti");
             if (yesOrNo) {
                 Logger.Debug("Certificate does     need verification: {0}", cert.Subject);
-            }
-            else {
+            } else {
                 Logger.Debug("Certificate does not need verification: {0}", cert.Subject);
             }
             return yesOrNo;
@@ -219,12 +213,10 @@ namespace ZitiUpdateService.Checkers.PeFile {
                         VerifyTrust(empty, expectedRootCa, cert, true).Wait();
                         Logger.Info("Download verification complete. Certificate [{0}] {1} was verified signed by [{2}] {3}", cert.Thumbprint, cert.Subject, expectedRootCa.Thumbprint, expectedRootCa.Subject);
                         return; //yes!
-                    }
-                    catch (Exception e) {
+                    } catch (Exception e) {
                         Logger.Debug("Could not verify certificate. Exception encountered: {}", e);
                     }
-                }
-                else {
+                } else {
                     Logger.Debug("Certificate {} from {} is not one needed to be verified", cert.SubjectName, cert.Issuer);
                 }
             }
@@ -263,13 +255,11 @@ namespace ZitiUpdateService.Checkers.PeFile {
             foreach (X509ChainStatus status in chain.ChainStatus) {
                 if (status.Status == X509ChainStatusFlags.NoError || status.Status == X509ChainStatusFlags.UntrustedRoot) {
                     //X509ChainStatusFlags.UntrustedRoot simply means it was not found in the computer/user's trust store.... that's fine...
-                }
-                else {
+                } else {
                     if (status.Status == X509ChainStatusFlags.NotTimeValid && certificate.Thumbprint == oldKnownThumbprint) {
                         //X509ChainStatusFlags.NotTimeValid means the certificate has expired - we're allowing this for now (summer 2021) to allow older clients to update
                         Logger.Warn("Executable is signed using the old signing certificate. Allowing this certificate to report as expired");
-                    }
-                    else {
+                    } else {
                         exceptions.Add(new CryptographicException("Could not verify trust: " + status.StatusInformation));
                     }
                 }
@@ -298,18 +288,15 @@ namespace ZitiUpdateService.Checkers.PeFile {
                                         if (info.RevokedSerialNumbers.Contains(certificate.SerialNumber)) {
                                             exceptions.Add(new CryptographicException("Serial number " + certificate.SerialNumber + " has been revoked."));
                                         }
-                                    }
-                                    else {
+                                    } else {
                                         exceptions.Add(new CryptographicException("Could not retrieve revocation list from " + url + "- cannot verify trust"));
                                     }
-                                }
-                                catch (Exception innerException) {
+                                } catch (Exception innerException) {
                                     exceptions.Add(new CryptographicException("crl at " + url + " could not be used", innerException));
                                 }
                             }
                         }
-                    }
-                    catch (Exception ex) {
+                    } catch (Exception ex) {
                         exceptions.Add(ex);
                     }
                 }
@@ -343,8 +330,7 @@ namespace ZitiUpdateService.Checkers.PeFile {
                     if (h.SizeOfRawData <= blockSize) {
                         //just read the full block as one
                         alg.AppendData(reader.ReadBytes((int)h.SizeOfRawData));
-                    }
-                    else {
+                    } else {
                         long pos = stream.Position;
                         long end = h.PointerToRawData + h.SizeOfRawData - blockSize;
                         //process the data into blocks
@@ -381,8 +367,7 @@ namespace ZitiUpdateService.Checkers.PeFile {
                     stream.Seek(ImportantHashPositions.SumOfBytesHashed, SeekOrigin.Begin);
                     byte[] leftoverBytes = reader.ReadBytes((int)leftoverBytesToHash);
                     alg.AppendData(leftoverBytes);
-                }
-                else {
+                } else {
                     //no more bytes to hash...
                 }
                 //alg.TransformFinalBlock(new byte[0], 0, 0);
@@ -502,8 +487,7 @@ namespace ZitiUpdateService.Checkers.PeFile {
 
                 if (lastAddress < sectionTableHeader.PointerToRawData) {
                     //good - it's in order...
-                }
-                else {
+                } else {
                     reorderNeeded = true;
                 }
                 lastAddress = sectionTableHeader.PointerToRawData;

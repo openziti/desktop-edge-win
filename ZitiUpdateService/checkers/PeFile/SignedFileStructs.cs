@@ -527,8 +527,7 @@ namespace ZitiUpdateService.Checkers.PeFile {
             get {
                 if (IsPe) {
                     return h32.CertificateTable.VirtualAddress;
-                }
-                else {
+                } else {
                     return h64.CertificateTable.VirtualAddress;
                 }
             }
@@ -538,8 +537,7 @@ namespace ZitiUpdateService.Checkers.PeFile {
             get {
                 if (IsPe) {
                     return h32.CertificateTable.Size;
-                }
-                else {
+                } else {
                     return h64.CertificateTable.Size;
                 }
             }
@@ -549,8 +547,7 @@ namespace ZitiUpdateService.Checkers.PeFile {
             get {
                 if (IsPe) {
                     return h32.SizeOfHeaders;
-                }
-                else {
+                } else {
                     return h64.SizeOfHeaders;
                 }
             }

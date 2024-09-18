@@ -284,11 +284,9 @@ namespace ZitiDesktopEdge.DataStructures {
         public override string ToString() {
             if (IsHost) {
                 return Hostname;
-            }
-            else if (Prefix == 0) {
+            } else if (Prefix == 0) {
                 return IP;
-            }
-            else {
+            } else {
                 return IP + "/" + Prefix;
             }
         }
@@ -301,8 +299,7 @@ namespace ZitiDesktopEdge.DataStructures {
         public override string ToString() {
             if (Low == High) {
                 return Low.ToString();
-            }
-            else {
+            } else {
                 return Low + "-" + High;
             }
         }
@@ -384,8 +381,7 @@ namespace ZitiDesktopEdge.DataStructures {
                     }
                     writer.WriteLine("=============================================");
                 }
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 if (writer != null) writer.WriteLine(e.ToString());
             }
 
@@ -395,8 +391,7 @@ namespace ZitiDesktopEdge.DataStructures {
             try {
                 LogLevelEnum l = (LogLevelEnum)Enum.Parse(typeof(LogLevelEnum), LogLevel.ToUpper());
                 return l;
-            }
-            catch {
+            } catch {
                 return LogLevelEnum.INFO;
             }
         }

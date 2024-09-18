@@ -53,8 +53,7 @@ namespace ZitiDesktopEdge {
 
                 if (e.Key == Key.Enter) {
                     OnFilter?.Invoke(filter);
-                }
-                else {
+                } else {
                     if (timeout != null && timeout.Enabled) {
                         timeout.Close();
                     }

@@ -150,8 +150,7 @@ namespace ZitiDesktopEdge {
                 RecoveryList.Visibility = Visibility.Visible;
                 NoRecovery.Visibility = Visibility.Collapsed;
                 SaveButton.Visibility = Visibility.Visible;
-            }
-            else {
+            } else {
 
                 ShowMFA(this.zid, 2);
                 SaveButton.Visibility = Visibility.Collapsed;
@@ -190,8 +189,7 @@ namespace ZitiDesktopEdge {
         private void GoTo(object sender, MouseButtonEventArgs e) {
             if (_url != null && _url.Length > 0) {
                 Process.Start(new ProcessStartInfo(_url) { UseShellExecute = true });
-            }
-            else {
+            } else {
                 this.OnError?.Invoke("Invalid MFA Url");
             }
         }
@@ -237,8 +235,7 @@ namespace ZitiDesktopEdge {
             SvcResponse resp = await serviceClient.VerifyMFA(this.zid.Identifier, code);
             if (resp.Code != 0) {
                 this.OnClose?.Invoke(false);
-            }
-            else {
+            } else {
                 this.OnClose?.Invoke(false);
             }
         }
@@ -268,51 +265,44 @@ namespace ZitiDesktopEdge {
                             Logger.Error("AuthMFA failed. " + authResult.Error);
                             this.OnError?.Invoke("Authentication Failed");
                             this._executing = false;
-                        }
-                        else {
+                        } else {
                             this.zid.IsMFANeeded = true;
                             this.OnClose?.Invoke(true);
                             this._executing = false;
                         }
                         this.OnLoad?.Invoke(true, "", "");
-                    }
-                    else if (this.Type == 2) {
+                    } else if (this.Type == 2) {
                         MfaRecoveryCodesResponse codeResponse = await serviceClient.GetMFACodes(this.zid.Identifier, code);
                         if (codeResponse?.Code != 0) {
                             Logger.Error("AuthMFA failed. " + codeResponse.Error);
                             AuthCode.Text = "";
                             this.OnError?.Invoke("Authentication Failed");
                             this._executing = false;
-                        }
-                        else {
+                        } else {
                             this.zid.RecoveryCodes = codeResponse.Data.RecoveryCodes;
                             this.OnClose?.Invoke(true);
                             this._executing = false;
                         }
                         this.OnLoad?.Invoke(true, "", "");
-                    }
-                    else if (this.Type == 3) {
+                    } else if (this.Type == 3) {
                         SvcResponse authResult = await serviceClient.RemoveMFA(this.zid.Identifier, code);
                         if (authResult?.Code != 0) {
                             Logger.Error("AuthMFA failed. " + authResult.Error);
                             AuthCode.Text = "";
                             this.OnError?.Invoke("Authentication Failed");
                             this._executing = false;
-                        }
-                        else {
+                        } else {
                             this.OnClose?.Invoke(true);
                             this._executing = false;
                         }
                         this.OnLoad?.Invoke(true, "", "");
-                    }
-                    else if (this.Type == 4) {
+                    } else if (this.Type == 4) {
                         MfaRecoveryCodesResponse codeResponse = await serviceClient.GenerateMFACodes(this.zid.Identifier, code);
                         if (codeResponse?.Code != 0) {
                             Logger.Error("AuthMFA failed. " + codeResponse?.Error);
                             AuthCode.Text = "";
                             this.OnError?.Invoke("Authentication Failed");
-                        }
-                        else {
+                        } else {
                             this.zid.RecoveryCodes = codeResponse.Data.RecoveryCodes;
                             this.OnClose?.Invoke(true);
                         }
@@ -332,8 +322,7 @@ namespace ZitiDesktopEdge {
                 MFAImage.Visibility = Visibility.Visible;
                 SecretCode.Visibility = Visibility.Collapsed;
                 SecretButton.Content = "Show Secret";
-            }
-            else {
+            } else {
                 MFAImage.Visibility = Visibility.Collapsed;
                 SecretCode.Visibility = Visibility.Visible;
                 SecretButton.Content = "Show QR Code";

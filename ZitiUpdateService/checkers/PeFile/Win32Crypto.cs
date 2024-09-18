@@ -203,8 +203,7 @@ namespace VerifyingFiles.PInvoke {
             try {
                 Marshal.StructureToPtr(fileTime, int64Ptr, true);
                 dateTime = DateTime.FromFileTime(Marshal.ReadInt64(int64Ptr));
-            }
-            finally {
+            } finally {
                 Marshal.FreeHGlobal(int64Ptr);
             }
 
@@ -248,8 +247,7 @@ namespace VerifyingFiles.PInvoke {
                 info.RevokedSerialNumbers = GetRevokedSerialNumbers(stCrlInfo);
 
                 return info;
-            }
-            finally {
+            } finally {
                 if (hCrlData.IsAllocated) hCrlData.Free();
                 if (hCryptBlob.IsAllocated) hCryptBlob.Free();
                 if (!pvContext.Equals(IntPtr.Zero)) {
