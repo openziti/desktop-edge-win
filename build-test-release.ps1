@@ -15,8 +15,6 @@ param(
     [bool]$revertGitAfter = $true
 )
 echo ""
-$env:ZITI_DESKTOP_EDGE_DOWNLOAD_URL="$url"
-$env:ZITI_DESKTOP_EDGE_VERSION="$version"
 $scriptDirectory = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
 
 $outputPath = "$scriptDirectory\release-streams\${version}.json"

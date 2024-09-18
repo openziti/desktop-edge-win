@@ -87,13 +87,14 @@ Pop-Location
 
 if ($version -eq "") {
     $version=(Get-Content -Path ${checkoutRoot}\version)
-} else {
-    echo "VERSION set to $version"
 }
+
+echo "Building VERSION $version"
+
 if($null -ne $env:ZITI_DESKTOP_EDGE_VERSION) {
-    echo "ZITI_DESKTOP_EDGE_VERSION is set. Using that: ${env:ZITI_DESKTOP_EDGE_VERSION} instead of version found in file ${installerVersion}"
-    $installerVersion=$env:ZITI_DESKTOP_EDGE_VERSION
-    echo "Version set to: ${installerVersion}"
+    echo "ZITI_DESKTOP_EDGE_VERSION is set. Using that: ${env:ZITI_DESKTOP_EDGE_VERSION} instead of version found in file ${version}"
+    $version=$env:ZITI_DESKTOP_EDGE_VERSION
+    echo "Version set to: ${version}"
 }
 $action = '/SetVersion'
 
@@ -115,7 +116,7 @@ if($gituser -eq "ziti-ci") {
 }
 
 $outputPath="${scriptPath}\Output"
-$exeName="Ziti Desktop Edge Client-${installerVersion}.exe"
+$exeName="Ziti Desktop Edge Client-${version}.exe"
 $exeAbsPath="${outputPath}\${exeName}"
 
 if($null -eq $env:AWS_KEY_ID) {
@@ -130,14 +131,14 @@ if($null -eq $env:OPENZITI_P12_PASS_2024) {
     echo ""
 } else {
     echo "adding additional signature to executable with openziti.org signing certificate"
-    echo "Using ${SIGNTOOL} to sign executable with the additional OpenZiti signature"
+    echo "Using ${SIGNTOOL} to sign executable with the additional OpenZiti signature: ${exeAbsPath}"
     & "$SIGNTOOL" sign /f "${scriptPath}\openziti_2024.p12" /p "${env:OPENZITI_P12_PASS_2024}" /tr http://ts.ssl.com /fd sha512 /td sha512 /as "${exeAbsPath}"
 }
 
-(Get-FileHash "${exeAbsPath}").Hash > "${scriptPath}\Output\Ziti Desktop Edge Client-${installerVersion}.exe.sha256"
+(Get-FileHash "${exeAbsPath}").Hash > "${scriptPath}\Output\Ziti Desktop Edge Client-${version}.exe.sha256"
 echo "========================== build.ps1 completed =========================="
 
-$outputPath = "${scriptPath}\Output\Ziti Desktop Edge Client-${installerVersion}.exe.json"
+$outputPath = "${scriptPath}\Output\Ziti Desktop Edge Client-${version}.exe.json"
 & .\Installer\output-build-json.ps1 -version $version -url $url -stream $stream -published_at $published_at -outputPath $outputPath
 
 echo "REMOVING .back files: ${scriptPath}\*back*"
