@@ -1,3 +1,22 @@
+# Release 2.5.0.7
+
+## What's New
+* n/a
+
+## Other changes:
+* n/a
+
+## Bugs fixed:
+* n/a
+
+## Dependency Updates
+
+ziti-edge-tunnel.exe version -v:
+* ziti-tunneler: v2.0.0-alpha20
+* ziti-sdk:      2.0.0-alpha22
+* tlsuv:         v0.31.4[OpenSSL 3.3.1 4 Jun 2024]
+
+
 # Release 2.5.0.6
 
 ## What's New
