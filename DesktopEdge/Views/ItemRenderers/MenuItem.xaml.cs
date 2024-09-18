@@ -19,38 +19,38 @@ namespace ZitiDesktopEdge {
     /// </summary>
     public partial class MenuItem : UserControl {
 
-		private string _label = "";
-		private string _icon = "";
+        private string _label = "";
+        private string _icon = "";
 
-		public string Label {
-			get {
-				return _label;
-			}
-			set {
-				this._label = value;
-				MainLabel.Content = this._label;
-			}
-		}
-		public string Icon {
-			get {
-				return _icon;
-			}
-			set {
-				this._icon = value;
-				MainSource.Source = new BitmapImage(new Uri(this._icon, UriKind.Relative));
-			}
-		}
+        public string Label {
+            get {
+                return _label;
+            }
+            set {
+                this._label = value;
+                MainLabel.Content = this._label;
+            }
+        }
+        public string Icon {
+            get {
+                return _icon;
+            }
+            set {
+                this._icon = value;
+                MainSource.Source = new BitmapImage(new Uri(this._icon, UriKind.Relative));
+            }
+        }
 
-		public MenuItem() {
+        public MenuItem() {
             InitializeComponent();
         }
 
-		private void UserControl_MouseEnter(object sender, MouseEventArgs e) {
+        private void UserControl_MouseEnter(object sender, MouseEventArgs e) {
 
-		}
+        }
 
-		private void UserControl_MouseLeave(object sender, MouseEventArgs e) {
+        private void UserControl_MouseLeave(object sender, MouseEventArgs e) {
 
-		}
-	}
+        }
+    }
 }

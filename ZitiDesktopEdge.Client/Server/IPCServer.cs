@@ -14,7 +14,7 @@
 	limitations under the License.
 */
 
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using System.IO;
 using System.IO.Pipes;
@@ -88,12 +88,12 @@ namespace ZitiDesktopEdge.Server {
                         pipeSecurity);
 
                     await ipcPipeServer.WaitForConnectionAsync();
-                    
+
                     Logger.Debug("Total ipc clients now at: {0}", ++idx);
                     _ = Task.Run(async () => {
                         try {
                             await handleIpcClientAsync(ipcPipeServer, onClient);
-                        } catch(Exception icpe) {
+                        } catch (Exception icpe) {
                             Logger.Error(icpe, "Unexpected error in handleIpcClientAsync");
                         }
                         idx--;
@@ -220,7 +220,7 @@ namespace ZitiDesktopEdge.Server {
                                 break;
                             }
 
-                            foreach(var p in procs) {
+                            foreach (var p in procs) {
                                 Logger.Warn("Forcefully terminating process: {0}", p.Id);
                                 p.Kill();
                             }

@@ -19,31 +19,31 @@ namespace ZitiDesktopEdge {
     /// </summary>
     public partial class SubOptionItem : UserControl {
 
-		private string _label = "";
-		private bool _isSelected = false;
+        private string _label = "";
+        private bool _isSelected = false;
 
-		public string Label {
-			get {
-				return _label;
-			}
-			set {
-				this._label = value;
-				MainLabel.Content = this._label;
-			}
-		}
+        public string Label {
+            get {
+                return _label;
+            }
+            set {
+                this._label = value;
+                MainLabel.Content = this._label;
+            }
+        }
 
-		public bool IsSelected {
-			get {
-				return _isSelected;
-			}
-			set {
-				this._isSelected = value;
-				if (this._isSelected) SelectedCheck.Visibility = Visibility.Visible;
-				else SelectedCheck.Visibility = Visibility.Collapsed;
-			}
-		}
+        public bool IsSelected {
+            get {
+                return _isSelected;
+            }
+            set {
+                this._isSelected = value;
+                if (this._isSelected) SelectedCheck.Visibility = Visibility.Visible;
+                else SelectedCheck.Visibility = Visibility.Collapsed;
+            }
+        }
 
-		public SubOptionItem() {
+        public SubOptionItem() {
             InitializeComponent();
         }
     }

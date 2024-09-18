@@ -14,7 +14,7 @@
 	limitations under the License.
 */
 
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipes;
@@ -146,9 +146,9 @@ namespace ZitiDesktopEdge.ServiceClient {
                     } else {
                         retried = true; //fall back through to the while and try again
                     }
-				} catch (MonitorServiceException) {
-					throw;
-				} catch (Exception ex) {
+                } catch (MonitorServiceException) {
+                    throw;
+                } catch (Exception ex) {
                     //if this fails it's usually because the writer is null/invalid. throwing IOException
                     //will trigger the pipe to rebuild
                     throw new IOException("Unexpected error when sending data to service. " + ex.Message);
@@ -199,7 +199,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                     } catch (Exception) {
                         try {
                             ReconnectFailureEvent("reconnect failure");
-                        } catch (Exception){
+                        } catch (Exception) {
                             // don't care - just catch it and continue... it's a timeout...
                         }
                         var now = DateTime.Now;
@@ -291,16 +291,16 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
     }
 
-	public class MonitorServiceException : Exception {
-		public MonitorServiceException() { }
-		public MonitorServiceException(string message) : base(message) { }
-		public MonitorServiceException(string message, Exception source) : base(message, source) { }
-	}
+    public class MonitorServiceException : Exception {
+        public MonitorServiceException() { }
+        public MonitorServiceException(string message) : base(message) { }
+        public MonitorServiceException(string message, Exception source) : base(message, source) { }
+    }
 
-	public class IPCException : Exception {
-		public IPCException() { }
-		public IPCException(string message) : base(message) { }
-		public IPCException(string message, Exception source) : base(message, source) { }
+    public class IPCException : Exception {
+        public IPCException() { }
+        public IPCException(string message) : base(message) { }
+        public IPCException(string message, Exception source) : base(message, source) { }
 
-	}
+    }
 }

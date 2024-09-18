@@ -14,7 +14,7 @@
 	limitations under the License.
 */
 
-﻿using NLog;
+using NLog;
 using System;
 
 namespace Ziti.Desktop.Edge.Models {

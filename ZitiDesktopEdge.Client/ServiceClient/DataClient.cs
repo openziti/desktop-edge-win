@@ -89,7 +89,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         protected virtual void NotificationEvent(NotificationEvent e) {
             OnNotificationEvent?.Invoke(this, e);
-		}
+        }
 
         protected virtual void ControllerEvent(ControllerEvent e) {
             OnControllerEvent?.Invoke(this, e);
@@ -340,7 +340,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                     case "status": //break here to see status on startup
                         //dbg comment Logger.Warn("STATUS EVENT: \n" + respAsString);
                         TunnelStatusEvent tse = serializer.Deserialize<TunnelStatusEvent>(jsonReader);
-                        
+
                         if (tse != null) {
                             TunnelStatusEvent(tse);
                         }
