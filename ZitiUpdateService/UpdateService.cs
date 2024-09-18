@@ -41,6 +41,7 @@ using ZitiUpdateService.Utils;
 using ZitiUpdateService.Checkers;
 using System.Security.Policy;
 using Newtonsoft.Json.Linq;
+using System.Runtime.Remoting.Messaging;
 
 #if !SKIPUPDATE
 using ZitiUpdateService.Checkers.PeFile;
@@ -548,6 +549,7 @@ namespace ZitiUpdateService {
 					Logger.Warn("ziti-edge-tunnel aliveness check appears blocked and has been for {} times", zetFailedCheckCounter);
 					if (zetFailedCheckCounter > 2) {
 						//after 3 failures, just terminate ziti-edge-tunnel
+						Interlocked.Exchange(ref zetFailedCheckCounter, 0); //reset the counter back to 0
 						Logger.Warn("forcefully stopping ziti-edge-tunnel as it has been blocked for too long");
 						stopProcessForcefully("ziti-edge-tunnel", "data service [ziti]");
 
@@ -561,31 +563,31 @@ namespace ZitiUpdateService {
 		}
 
 		async private Task onEventsClientAsync(StreamWriter writer) {
-            try {
-                Logger.Info("a new events client was connected");
-                //reset to release stream
-                //initial status when connecting the event stream
-                MonitorServiceStatusEvent status = new MonitorServiceStatusEvent() {
-                    Code = 0,
-                    Error = "",
-                    Message = "Success",
-                    Type = "Status",
-                    Status = ServiceActions.ServiceStatus(),
-                    ReleaseStream = IsBeta ? "beta" : "stable",
-                    AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString(),
-                    AutomaticUpgradeURL = CurrentSettings.AutomaticUpdateURL,
-                };
-                await writer.WriteLineAsync(JsonConvert.SerializeObject(status));
-                await writer.FlushAsync();
+			try {
+				Logger.Info("a new events client was connected");
+				//reset to release stream
+				//initial status when connecting the event stream
+				MonitorServiceStatusEvent status = new MonitorServiceStatusEvent() {
+					Code = 0,
+					Error = "",
+					Message = "Success",
+					Type = "Status",
+					Status = ServiceActions.ServiceStatus(),
+					ReleaseStream = IsBeta ? "beta" : "stable",
+					AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString(),
+					AutomaticUpgradeURL = CurrentSettings.AutomaticUpdateURL,
+				};
+				await writer.WriteLineAsync(JsonConvert.SerializeObject(status));
+				await writer.FlushAsync();
 
-                //if a new client attaches - send the last update check status
-                if (lastUpdateCheck != null) {
-                    await writer.WriteLineAsync(JsonConvert.SerializeObject(lastInstallationNotification));
-                    await writer.FlushAsync();
-                }
-            } catch (Exception ex) {
-                Logger.Error("UNEXPECTED ERROR: {}", ex);
-            }
+				//if a new client attaches - send the last update check status
+				if (lastUpdateCheck != null) {
+					await writer.WriteLineAsync(JsonConvert.SerializeObject(lastInstallationNotification));
+					await writer.FlushAsync();
+				}
+			} catch (Exception ex) {
+				Logger.Error("UNEXPECTED ERROR: {}", ex);
+			}
 		}
 
 #pragma warning disable 1998 //This async method lacks 'await'
@@ -898,6 +900,11 @@ namespace ZitiUpdateService {
 					Logger.Info("No {description} process found to close.", description);
 					return;
 				}
+				// though strange, because we're about to kill the process, this is still
+				// considered 'expected' since the monitor service is shutting it down (forcefully).
+				// not clean is to indicate the process ended unexpectedly
+				dataClient.ExpectedShutdown = true;
+
 				foreach (Process worker in workers) {
 					try {
 						Logger.Info("Killing: {0}", worker);
@@ -972,7 +979,7 @@ namespace ZitiUpdateService {
 
 		private void Svc_OnClientDisconnected(object sender, object e) {
 			DataClient svc = (DataClient)sender;
-			if (svc.CleanShutdown) {
+			if (svc.ExpectedShutdown) {
 				//then this is fine and expected - the service is shutting down
 				Logger.Info("client disconnected due to clean service shutdown");
 				zetHealthcheck.Stop();

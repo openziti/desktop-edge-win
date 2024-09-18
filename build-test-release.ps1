@@ -19,15 +19,14 @@ $env:ZITI_DESKTOP_EDGE_DOWNLOAD_URL="$url"
 $env:ZITI_DESKTOP_EDGE_VERSION="$version"
 $scriptDirectory = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
 
-$outputPath = "${version}.json"
+$outputPath = "$scriptDirectory\release-streams\${version}.json"
 & .\Installer\output-build-json.ps1 -version $version -url $url -stream $stream -published_at $published_at -outputPath $outputPath
 
-Copy-Item -Force "${version}.json" "$scriptDirectory\release-streams\${stream}.json"
+Copy-Item -Force "$scriptDirectory\release-streams\${version}.json" "$scriptDirectory\release-streams\${stream}.json"
 echo "json file written to: $scriptDirectory\release-streams\${stream}.json"
 
 if(! $jsonOnly) {
-  $scriptToExecute = Join-Path -Path $scriptDirectory -ChildPath "Installer\build.ps1"
-  & $scriptToExecute
+  & .\Installer\build.ps1 -version $version -url $url -stream $stream -published_at $published_at -jsonOnly $jsonOnly -revertGitAfter $revertGitAfter
   $exitCode = $LASTEXITCODE
   if($exitCode -gt 0) {
     Write-Host "build.ps1 failed!"
@@ -46,3 +45,10 @@ if(! $jsonOnly) {
 if($revertGitAfter) {
   git checkout DesktopEdge/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip
 }
+
+Write-Host "Start a python server in this location with:"
+Write-Host "" 
+Write-Host "  python -m http.server 8000"
+Write-Host "" 
+Write-Host "Set the automatic upgrade url to http://localhost:8000/release-streams/local.json"
+Write-Host "" 

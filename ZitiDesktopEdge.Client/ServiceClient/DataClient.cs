@@ -55,7 +55,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         protected override void ShutdownEvent(StatusEvent e) {
             Logger.Debug("Clean shutdown detected from ziti");
-            CleanShutdown = true;
+            ExpectedShutdown = true;
             base.ShutdownEvent(e);
         }
 

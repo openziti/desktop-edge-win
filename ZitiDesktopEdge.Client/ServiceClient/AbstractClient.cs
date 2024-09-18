@@ -59,8 +59,8 @@ namespace ZitiDesktopEdge.ServiceClient {
         protected virtual void ClientConnected(object e) {
             Connected = true;
             Reconnecting = false;
-            CleanShutdown = false;
-            Logger.Debug("Client connected successfully. Setting CleanShutdown set to false.");
+            ExpectedShutdown = false;
+            Logger.Debug("Client connected successfully. Setting UnexpectedShutdown set to false.");
 
             ipcWriter = new StreamWriter(pipeClient);
             ipcReader = new StreamReader(pipeClient);
@@ -102,7 +102,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         protected virtual void ShutdownEvent(StatusEvent e) {
-            CleanShutdown = true;
+            ExpectedShutdown = true;
             OnShutdownEvent?.Invoke(this, e);
         }
 
@@ -158,7 +158,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         public bool Reconnecting { get; set; }
         public bool Connected { get; set; }
-        public bool CleanShutdown { get; set; }
+        public bool ExpectedShutdown { get; set; }
 
         public AbstractClient(string id) {
             this.Id = id;
