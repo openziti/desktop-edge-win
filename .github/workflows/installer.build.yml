@@ -98,11 +98,6 @@ jobs:
         with:
           name: ZitiDesktopEdgeClient-${{ env.VERSION }}
           path: "Installer/Output/Ziti Desktop Edge Client-*"
-      - name: Upload update json to job
-        uses: actions/upload-artifact@v4
-        with:
-          name: ZitiDesktopEdgeClient-${{ env.VERSION }}.json
-          path: ${{ env.VERSION }}.json
       - name: Job Failure - Upload the signing log job
         if: failure()
         uses: actions/upload-artifact@v4
