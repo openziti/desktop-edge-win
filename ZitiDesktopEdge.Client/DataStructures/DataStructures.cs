@@ -14,7 +14,7 @@
 	limitations under the License.
 */
 
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 
@@ -22,8 +22,10 @@ using System.Collections.Generic;
 /// These classes represent the data structures that are passed back and forth
 /// between the service and the client.
 /// </summary>
-namespace ZitiDesktopEdge.DataStructures {
-    public enum LogLevelEnum {
+namespace ZitiDesktopEdge.DataStructures
+{
+    public enum LogLevelEnum
+    {
         FATAL = 0,
         ERROR = 1,
         WARN = 2,
@@ -118,112 +120,143 @@ namespace ZitiDesktopEdge.DataStructures {
         public IdentityTogglePayload Data { get; set; }
     }
 
-    public class EnableMFAFunction : ServiceFunction {
-        public EnableMFAFunction(string identifier) {
+    public class EnableMFAFunction : ServiceFunction
+    {
+        public EnableMFAFunction(string identifier)
+        {
             this.Command = "EnableMFA";
-            this.Data = new EnableMFAFunctionPayload() {
+            this.Data = new EnableMFAFunctionPayload()
+            {
                 Identifier = identifier
             };
         }
         public EnableMFAFunctionPayload Data { get; set; }
     }
-    public class EnableMFAFunctionPayload {
+    public class EnableMFAFunctionPayload
+    {
         public string Identifier { get; set; }
     }
 
-    public class VerifyMFAFunction : ServiceFunction {
-        public VerifyMFAFunction(string identifier, string code) {
+    public class VerifyMFAFunction : ServiceFunction
+    {
+        public VerifyMFAFunction(string identifier, string code)
+        {
             this.Command = "VerifyMFA";
-            this.Data = new VerifyMFAFunctionPayload() {
+            this.Data = new VerifyMFAFunctionPayload()
+            {
                 Identifier = identifier,
                 Code = code
             };
         }
         public VerifyMFAFunctionPayload Data { get; set; }
     }
-    public class VerifyMFAFunctionPayload {
+    public class VerifyMFAFunctionPayload
+    {
         public string Identifier { get; set; }
         public string Code { get; set; }
     }
-    public class RemoveMFAFunction : ServiceFunction {
-        public RemoveMFAFunction(string identifier, string code) {
+    public class RemoveMFAFunction : ServiceFunction
+    {
+        public RemoveMFAFunction(string identifier, string code)
+        {
             this.Command = "RemoveMFA";
-            this.Data = new RemoveMFAFunctionPayload() {
+            this.Data = new RemoveMFAFunctionPayload()
+            {
                 Identifier = identifier,
                 Code = code
             };
         }
         public RemoveMFAFunctionPayload Data { get; set; }
     }
-    public class RemoveMFAFunctionPayload {
+    public class RemoveMFAFunctionPayload
+    {
         public string Identifier { get; set; }
         public string Code { get; set; }
     }
 
-    public class AuthMFAFunction : ServiceFunction {
-        public AuthMFAFunction(string identifier, string code) {
+    public class AuthMFAFunction : ServiceFunction
+    {
+        public AuthMFAFunction(string identifier, string code)
+        {
             this.Command = "SubmitMFA";
-            this.Data = new AuthMFAFunctionPayload() {
+            this.Data = new AuthMFAFunctionPayload()
+            {
                 Identifier = identifier,
                 Code = code
             };
         }
         public AuthMFAFunctionPayload Data { get; set; }
     }
-    public class AuthMFAFunctionPayload {
+    public class AuthMFAFunctionPayload
+    {
         public string Identifier { get; set; }
         public string Code { get; set; }
     }
 
-    public class GetMFACodesFunction : ServiceFunction {
-        public GetMFACodesFunction(string identifier, string code) {
+    public class GetMFACodesFunction : ServiceFunction
+    {
+        public GetMFACodesFunction(string identifier, string code)
+        {
             this.Command = "GetMFACodes";
-            this.Data = new GetMFACodesFunctionPayload() {
+            this.Data = new GetMFACodesFunctionPayload()
+            {
                 Identifier = identifier,
                 Code = code,
             };
         }
         public GetMFACodesFunctionPayload Data { get; set; }
     }
-    public class GetMFACodesFunctionPayload {
+    public class GetMFACodesFunctionPayload
+    {
         public string Identifier { get; set; }
         public string Code { get; set; }
     }
 
-    public class GenerateMFACodesFunction : ServiceFunction {
-        public GenerateMFACodesFunction(string identifier, string code) {
+    public class GenerateMFACodesFunction : ServiceFunction
+    {
+        public GenerateMFACodesFunction(string identifier, string code)
+        {
             this.Command = "GenerateMFACodes";
-            this.Data = new GenerateMFACodesFunctionPayload() {
+            this.Data = new GenerateMFACodesFunctionPayload()
+            {
                 Identifier = identifier,
                 Code = code,
             };
         }
         public GenerateMFACodesFunctionPayload Data { get; set; }
     }
-    public class GenerateMFACodesFunctionPayload {
+    public class GenerateMFACodesFunctionPayload
+    {
         public string Identifier { get; set; }
         public string Code { get; set; }
     }
 
-    public class SetLogLevelFunction : ServiceFunction {
-        public SetLogLevelFunction(string level) {
+    public class SetLogLevelFunction : ServiceFunction
+    {
+        public SetLogLevelFunction(string level)
+        {
             this.Command = "SetLogLevel";
-            this.Data = new SetLogLevelPayload() {
+            this.Data = new SetLogLevelPayload()
+            {
                 Level = level
             };
         }
         public SetLogLevelPayload Data { get; set; }
     }
 
-    public class ZitiDumpPayloadFunction {
+    public class ZitiDumpPayloadFunction
+    {
         public string DumpPath { get; set; }
 
     }
 
-    public class ZitiDumpFunction : ServiceFunction {
-        public ZitiDumpFunction(string dumpPath) {
+    public class ZitiDumpFunction : ServiceFunction
+    {
+        public ZitiDumpFunction(string dumpPath)
+        {
             this.Command = "ZitiDump";
-            this.Data = new ZitiDumpPayloadFunction() {
+            this.Data = new ZitiDumpPayloadFunction()
+            {
                 DumpPath = dumpPath
             };
         }
@@ -235,13 +268,13 @@ namespace ZitiDesktopEdge.DataStructures {
         public string Identifier { get; set; }
     }
 
-    public class EnrollIdentifierPayload 
+    public class EnrollIdentifierPayload
     {
         public string JwtFileName { get; set; }
         public string JwtContent { get; set; }
-	}
+    }
 
-    public class EnrollIdentifierFunction : ServiceFunction 
+    public class EnrollIdentifierFunction : ServiceFunction
     {
         public EnrollIdentifierPayload Data { get; set; }
     }
@@ -266,7 +299,8 @@ namespace ZitiDesktopEdge.DataStructures {
         public long Down { get; set; }
     }
 
-    public class Identity {
+    public class Identity
+    {
         public string Name { get; set; }
         public string FingerPrint { get; set; }
         public string Identifier { get; set; }
@@ -284,7 +318,8 @@ namespace ZitiDesktopEdge.DataStructures {
 
     }
 
-    public class Service {
+    public class Service
+    {
         public string Name { get; set; }
         public string[] Protocols { get; set; }
         public Address[] Addresses { get; set; }
@@ -293,41 +328,54 @@ namespace ZitiDesktopEdge.DataStructures {
         public string AssignedIP { get; set; }
         public PostureCheck[] PostureChecks { get; set; }
         public bool IsAccessible { get; set; }
-		public int Timeout { get; set; }
-		public int TimeoutRemaining { get; set; }
-	}
+        public int Timeout { get; set; }
+        public int TimeoutRemaining { get; set; }
+    }
 
-    public class Address {
+    public class Address
+    {
         public bool IsHost { get; set; }
         public string Hostname { get; set; }
         public string IP { get; set; }
         public int Prefix { get; set; }
 
-        public override string ToString() {
-            if (IsHost) {
+        public override string ToString()
+        {
+            if (IsHost)
+            {
                 return Hostname;
-            } else if (Prefix == 0) {
+            }
+            else if (Prefix == 0)
+            {
                 return IP;
-            } else {
+            }
+            else
+            {
                 return IP + "/" + Prefix;
             }
         }
     }
 
-    public class PortRange {
+    public class PortRange
+    {
         public int High { get; set; }
         public int Low { get; set; }
 
-        public override string ToString() {
-            if (Low == High) {
+        public override string ToString()
+        {
+            if (Low == High)
+            {
                 return Low.ToString();
-            } else {
+            }
+            else
+            {
                 return Low + "-" + High;
             }
         }
     }
 
-    public class PostureCheck {
+    public class PostureCheck
+    {
         public bool IsPassing { get; set; }
         public string QueryType { get; set; }
         public string Id { get; set; }
@@ -361,7 +409,8 @@ namespace ZitiDesktopEdge.DataStructures {
         }
     }
 
-    public class Notification {
+    public class Notification
+    {
         public string IdentityName { get; set; }
         public string Identifier { get; set; }
         public string Fingerprint { get; set; }
@@ -394,10 +443,12 @@ namespace ZitiDesktopEdge.DataStructures {
 
         public void Dump(System.IO.TextWriter writer)
         {
-            try {
+            try
+            {
                 writer.WriteLine($"     LogLevel         : {LogLevel}");
                 writer.WriteLine($"     EvaluatedLogLevel: {EvaluateLogLevel()}");
-                foreach (Identity id in Identities) {
+                foreach (Identity id in Identities)
+                {
                     writer.WriteLine($"  Identifier: {id.Identifier}");
                     writer.WriteLine($"    Name    : {id.Name}");
                     writer.WriteLine($"    Active  : {id.Active}");
@@ -407,22 +458,24 @@ namespace ZitiDesktopEdge.DataStructures {
                     {
                         foreach (Service s in id?.Services)
                         {
-                           //xxfix writer.WriteLine($"      Name: {s.Name} Protocols: {string.Join(",", s.Protocols)} Addresses: {string.Join(",", s.Addresses)} Ports: {string.Join(",", s.Ports)}");
+                            //xxfix writer.WriteLine($"      Name: {s.Name} Protocols: {string.Join(",", s.Protocols)} Addresses: {string.Join(",", s.Addresses)} Ports: {string.Join(",", s.Ports)}");
                         }
                     }
                     writer.WriteLine("=============================================");
                 }
-            } catch (Exception e) {
-                if (writer!=null) writer.WriteLine(e.ToString());
-            }   
-        
+            }
+            catch (Exception e)
+            {
+                if (writer != null) writer.WriteLine(e.ToString());
+            }
+
         }
 
         public LogLevelEnum EvaluateLogLevel()
         {
             try
             {
-                LogLevelEnum l = (LogLevelEnum) Enum.Parse(typeof(LogLevelEnum), LogLevel.ToUpper());
+                LogLevelEnum l = (LogLevelEnum)Enum.Parse(typeof(LogLevelEnum), LogLevel.ToUpper());
                 return l;
             }
             catch
@@ -464,17 +517,20 @@ namespace ZitiDesktopEdge.DataStructures {
         public List<Identity> Identities { get; set; }
     }
 
-    public class NotificationEvent : StatusEvent {
+    public class NotificationEvent : StatusEvent
+    {
         public List<Notification> Notification { get; set; }
 
     }
 
-    public class ServiceEvent : ActionEvent {
+    public class ServiceEvent : ActionEvent
+    {
         public string Identifier { get; set; }
         public Service Service { get; set; }
     }
 
-    public class BulkServiceEvent : ActionEvent {
+    public class BulkServiceEvent : ActionEvent
+    {
         public string Identifier { get; set; }
         public List<Service> AddedServices { get; set; }
         public List<Service> RemovedServices { get; set; }
@@ -484,57 +540,66 @@ namespace ZitiDesktopEdge.DataStructures {
     {
         public Identity Id { get; set; }
     }
-    
+
     public class LogLevelEvent : ActionEvent
     {
         public string LogLevel { get; set; }
     }
 
-    public class MonitorServiceStatusEvent : SvcResponse {
+    public class MonitorServiceStatusEvent : SvcResponse
+    {
         public string Status { get; set; }
         public string ReleaseStream { get; set; }
         public string AutomaticUpgradeDisabled { get; set; }
         public string AutomaticUpgradeURL { get; set; }
 
-        public bool IsStopped() {
+        public bool IsStopped()
+        {
             return "Stopped" == this.Status;
         }
         public string Type { get; set; }
     }
 
-    public class StatusCheck : MonitorServiceStatusEvent {
+    public class StatusCheck : MonitorServiceStatusEvent
+    {
         public bool UpdateAvailable { get; set; }
     }
 
-    public class InstallationNotificationEvent : MonitorServiceStatusEvent {
+    public class InstallationNotificationEvent : MonitorServiceStatusEvent
+    {
         public string ZDEVersion { get; set; }
         public DateTime InstallTime { get; set; }
         public DateTime PublishTime { get; set; }
         public TimeSpan NotificationDuration { get; set; }
     }
 
-    public class UrlUpdateEvent : MonitorServiceStatusEvent {
+    public class UrlUpdateEvent : MonitorServiceStatusEvent
+    {
         public string URL { get; set; }
     }
 
-    public class MfaEvent : ActionEvent {
+    public class MfaEvent : ActionEvent
+    {
         public string Identifier { get; set; }
         public bool Successful { get; set; }
         public string ProvisioningUrl { get; set; }
         public List<string> RecoveryCodes { get; set; }
     }
 
-    public class ControllerEvent : ActionEvent {
+    public class ControllerEvent : ActionEvent
+    {
         public string Identifier { get; set; }
     }
 
-    public class MfaRecoveryCodes {
+    public class MfaRecoveryCodes
+    {
         public string[] RecoveryCodes { get; set; }
         public string Identifier { get; set; }
 
     }
 
-    public class MfaRecoveryCodesResponse : SvcResponse {
+    public class MfaRecoveryCodesResponse : SvcResponse
+    {
         public MfaRecoveryCodes Data { get; set; }
     }
 
@@ -562,20 +627,24 @@ namespace ZitiDesktopEdge.DataStructures {
         public ConfigPayload Data { get; set; }
     }
 
-    public class NotificationFrequencyPayload {
+    public class NotificationFrequencyPayload
+    {
         public int NotificationFrequency { get; set; }
     }
 
-    public class NotificationFrequencyFunction : ServiceFunction {
-        public NotificationFrequencyFunction(int notificationFrequency) {
+    public class NotificationFrequencyFunction : ServiceFunction
+    {
+        public NotificationFrequencyFunction(int notificationFrequency)
+        {
             this.Command = "UpdateFrequency";
-            this.Data = new NotificationFrequencyPayload() {
+            this.Data = new NotificationFrequencyPayload()
+            {
                 NotificationFrequency = notificationFrequency
             };
         }
-		
+
         public NotificationFrequencyPayload Data { get; set; }
-	}
+    }
 
 
 }

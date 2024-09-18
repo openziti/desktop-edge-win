@@ -16,55 +16,71 @@ using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.ServiceClient;
 
-namespace ZitiDesktopEdge {
+namespace ZitiDesktopEdge
+{
     /// <summary>
     /// Interaction logic for MenuItem.xaml
     /// </summary>
-    public partial class MenuIdentityItem : UserControl {
+    public partial class MenuIdentityItem : UserControl
+    {
 
-		private string _label = "";
-		private ZitiIdentity _identity;
+        private string _label = "";
+        private ZitiIdentity _identity;
 
-		public string Label {
-			get {
-				return _label;
-			}
-			set {
-				this._label = value;
-				MainLabel.Text = this._label;
-			}
-		}
+        public string Label
+        {
+            get
+            {
+                return _label;
+            }
+            set
+            {
+                this._label = value;
+                MainLabel.Text = this._label;
+            }
+        }
 
-		public ZitiIdentity Identity {
-			get {
-				return _identity;
-			}
-			set {
-				_identity = value;
-			}
-		}
+        public ZitiIdentity Identity
+        {
+            get
+            {
+                return _identity;
+            }
+            set
+            {
+                _identity = value;
+            }
+        }
 
-		public MenuIdentityItem() {
+        public MenuIdentityItem()
+        {
             InitializeComponent();
-			ToggleSwitch.OnToggled += ToggleIdentity;
-		}
+            ToggleSwitch.OnToggled += ToggleIdentity;
+        }
 
-		async private void ToggleIdentity(bool on) {
-			try {
-				DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-				DataStructures.Identity id = await client.IdentityOnOffAsync(_identity.Identifier, on);
-				this.Identity.IsEnabled = on;
-			} catch (DataStructures.ServiceException se) {
-				MessageBox.Show(se.AdditionalInfo, se.Message);
-			} catch (Exception ex) {
-				MessageBox.Show("Error", ex.Message);
-			}
-		}
+        async private void ToggleIdentity(bool on)
+        {
+            try
+            {
+                DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+                DataStructures.Identity id = await client.IdentityOnOffAsync(_identity.Identifier, on);
+                this.Identity.IsEnabled = on;
+            }
+            catch (DataStructures.ServiceException se)
+            {
+                MessageBox.Show(se.AdditionalInfo, se.Message);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error", ex.Message);
+            }
+        }
 
-		private void ShowIdentity(object sender, MouseButtonEventArgs e) {
-			IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
-			deets.SelectedIdentityMenu = this;
-			deets.Identity = this.Identity;
-		}
-	}
+        private void ShowIdentity(object sender, MouseButtonEventArgs e)
+        {
+            IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
+            deets.SelectedIdentityMenu = this;
+            deets.Identity = this.Identity;
+        }
+    }
 }

@@ -36,8 +36,10 @@ using ZitiDesktopEdge.DataStructures;
 /// one or more messages returned.
 /// 
 /// </summary>
-namespace ZitiDesktopEdge.ServiceClient {
-    public class DataClient : AbstractClient {
+namespace ZitiDesktopEdge.ServiceClient
+{
+    public class DataClient : AbstractClient
+    {
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
         protected override Logger Logger { get { return _logger; } }
 
@@ -53,53 +55,65 @@ namespace ZitiDesktopEdge.ServiceClient {
         public event EventHandler<NotificationEvent> OnNotificationEvent;
         public event EventHandler<ControllerEvent> OnControllerEvent;
 
-        protected override void ShutdownEvent(StatusEvent e) {
+        protected override void ShutdownEvent(StatusEvent e)
+        {
             Logger.Debug("Clean shutdown detected from ziti");
             ExpectedShutdown = true;
             base.ShutdownEvent(e);
         }
 
-        protected virtual void TunnelStatusEvent(TunnelStatusEvent e) {
+        protected virtual void TunnelStatusEvent(TunnelStatusEvent e)
+        {
             OnTunnelStatusEvent?.Invoke(this, e);
         }
 
-        protected virtual void MetricsEvent(List<Identity> e) {
+        protected virtual void MetricsEvent(List<Identity> e)
+        {
             OnMetricsEvent?.Invoke(this, e);
         }
 
-        protected virtual void IdentityEvent(IdentityEvent e) {
+        protected virtual void IdentityEvent(IdentityEvent e)
+        {
             OnIdentityEvent?.Invoke(this, e);
         }
 
-        protected virtual void ServiceEvent(ServiceEvent e) {
+        protected virtual void ServiceEvent(ServiceEvent e)
+        {
             OnServiceEvent?.Invoke(this, e);
         }
 
-        protected virtual void BulkServiceEvent(BulkServiceEvent e) {
+        protected virtual void BulkServiceEvent(BulkServiceEvent e)
+        {
             OnBulkServiceEvent?.Invoke(this, e);
         }
 
-        protected virtual void LogLevelEvent(LogLevelEvent e) {
+        protected virtual void LogLevelEvent(LogLevelEvent e)
+        {
             OnLogLevelEvent?.Invoke(this, e);
         }
 
-        protected virtual void MfaEvent(MfaEvent e) {
+        protected virtual void MfaEvent(MfaEvent e)
+        {
             OnMfaEvent?.Invoke(this, e);
         }
 
-        protected virtual void NotificationEvent(NotificationEvent e) {
+        protected virtual void NotificationEvent(NotificationEvent e)
+        {
             OnNotificationEvent?.Invoke(this, e);
-		}
+        }
 
-        protected virtual void ControllerEvent(ControllerEvent e) {
+        protected virtual void ControllerEvent(ControllerEvent e)
+        {
             OnControllerEvent?.Invoke(this, e);
         }
 
-        protected override void ClientConnected(object e) {
+        protected override void ClientConnected(object e)
+        {
             base.ClientConnected(e);
         }
 
-        protected override void ClientDisconnected(object e) {
+        protected override void ClientDisconnected(object e)
+        {
             Reconnect();
             Connected = false;
             base.ClientDisconnected(e);
@@ -116,10 +130,12 @@ namespace ZitiDesktopEdge.ServiceClient {
         const string ipcPipe = @"ziti-edge-tunnel.sock";
         const string eventPipe = @"ziti-edge-tunnel-event.sock";
 
-        public DataClient(string id) : base(id) {
+        public DataClient(string id) : base(id)
+        {
         }
 
-        PipeSecurity CreateSystemIOPipeSecurity() {
+        PipeSecurity CreateSystemIOPipeSecurity()
+        {
             PipeSecurity pipeSecurity = new PipeSecurity();
 
             var id = new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null);
@@ -130,34 +146,43 @@ namespace ZitiDesktopEdge.ServiceClient {
             return pipeSecurity;
         }
 
-        async protected override Task ConnectPipesAsync() {
+        async protected override Task ConnectPipesAsync()
+        {
             await semaphoreSlim.WaitAsync();
-            try {
+            try
+            {
                 pipeClient = new NamedPipeClientStream(localPipeServer, ipcPipe, PipeDirection.InOut);
                 eventClient = new NamedPipeClientStream(localPipeServer, eventPipe, PipeDirection.In);
                 await eventClient.ConnectAsync(ServiceConnectTimeout);
                 await pipeClient.ConnectAsync(ServiceConnectTimeout);
                 ClientConnected(null);
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 semaphoreSlim.Release();
                 throw new ServiceException("Could not connect to the data service.", 1, ex.Message);
             }
             semaphoreSlim.Release();
         }
 
-        async public Task<ZitiTunnelStatus> GetStatusAsync() {
+        async public Task<ZitiTunnelStatus> GetStatusAsync()
+        {
             await sendAsync(new ServiceFunction() { Command = "Status" });
             var rtn = await readAsync<ZitiTunnelStatus>(ipcReader);
             return rtn;
         }
 
-        async public Task<Identity> AddIdentityAsync(string jwtFileName, bool activate, string jwtContent) {
+        async public Task<Identity> AddIdentityAsync(string jwtFileName, bool activate, string jwtContent)
+        {
             IdentityResponse resp = null;
-            try {
+            try
+            {
 
-                EnrollIdentifierFunction enrollIdentifierFunction = new EnrollIdentifierFunction() {
+                EnrollIdentifierFunction enrollIdentifierFunction = new EnrollIdentifierFunction()
+                {
                     Command = "AddIdentity",
-                    Data = new EnrollIdentifierPayload() {
+                    Data = new EnrollIdentifierPayload()
+                    {
                         JwtFileName = jwtFileName,
                         JwtContent = jwtContent
                     }
@@ -165,7 +190,9 @@ namespace ZitiDesktopEdge.ServiceClient {
 
                 await sendAsync(enrollIdentifierFunction);
                 resp = await readAsync<IdentityResponse>(ipcReader);
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //setupPipe();
                 //throw;
@@ -173,7 +200,8 @@ namespace ZitiDesktopEdge.ServiceClient {
                 CommunicationError(ex);
                 throw ex;
             }
-            if (resp?.Code != 0) {
+            if (resp?.Code != 0)
+            {
                 Logger.Warn("failed to enroll. {0} {1}", resp.Message, resp.Error);
                 throw new ServiceException("Failed to Enroll", resp.Code, !string.IsNullOrEmpty(resp.Error) ? resp.Error : "The provided token was invalid. This usually is because the token has already been used or it has expired.");
             }
@@ -181,21 +209,27 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
 
-        async public Task RemoveIdentityAsync(string identifier) {
-            if (string.IsNullOrEmpty(identifier)) {
+        async public Task RemoveIdentityAsync(string identifier)
+        {
+            if (string.IsNullOrEmpty(identifier))
+            {
                 //nothing to do...
                 return;
             }
 
-            try {
-                IdentifierFunction removeFunction = new IdentifierFunction() {
+            try
+            {
+                IdentifierFunction removeFunction = new IdentifierFunction()
+                {
                     Command = "RemoveIdentity",
                     Data = new IdentifierPayload() { Identifier = identifier }
                 };
                 Logger.Info("Removing Identity with identifier {0}", identifier);
                 await sendAsync(removeFunction);
                 var r = await readAsync<SvcResponse>(ipcReader);
-            } catch (Exception ioe) {
+            }
+            catch (Exception ioe)
+            {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //setupPipe();
                 //throw ioe;
@@ -205,12 +239,16 @@ namespace ZitiDesktopEdge.ServiceClient {
             return;
         }
 
-        async public Task SetLogLevelAsync(string level) {
-            try {
+        async public Task SetLogLevelAsync(string level)
+        {
+            try
+            {
                 await sendAsync(new SetLogLevelFunction(level));
                 SvcResponse resp = await readAsync<SvcResponse>(ipcReader);
                 return;
-            } catch (Exception ioe) {
+            }
+            catch (Exception ioe)
+            {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //setupPipe();
                 //throw ioe;
@@ -220,12 +258,16 @@ namespace ZitiDesktopEdge.ServiceClient {
             return;
         }
 
-        async public Task<Identity> IdentityOnOffAsync(string identifier, bool onOff) {
-            try {
+        async public Task<Identity> IdentityOnOffAsync(string identifier, bool onOff)
+        {
+            try
+            {
                 await sendAsync(new IdentityToggleFunction(identifier, onOff));
                 IdentityResponse idr = await readAsync<IdentityResponse>(ipcReader);
                 return idr.Data;
-            } catch (Exception ioe) {
+            }
+            catch (Exception ioe)
+            {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //setupPipe();
                 //throw ioe;
@@ -235,12 +277,16 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
 
-        async public Task<SvcResponse> EnableMFA(string identifier) {
-            try {
+        async public Task<SvcResponse> EnableMFA(string identifier)
+        {
+            try
+            {
                 await sendAsync(new EnableMFAFunction(identifier));
                 SvcResponse mfa = await readAsync<SvcResponse>(ipcReader);
                 return mfa;
-            } catch (Exception ioe) {
+            }
+            catch (Exception ioe)
+            {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //throw ioe;
                 Logger.Error(ioe, "Unexpected error");
@@ -249,12 +295,16 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
 
-        async public Task<SvcResponse> VerifyMFA(string identifier, string totp) {
-            try {
+        async public Task<SvcResponse> VerifyMFA(string identifier, string totp)
+        {
+            try
+            {
                 await sendAsync(new VerifyMFAFunction(identifier, totp));
                 SvcResponse mfa = await readAsync<SvcResponse>(ipcReader);
                 return mfa;
-            } catch (Exception ioe) {
+            }
+            catch (Exception ioe)
+            {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //throw ioe;
                 Logger.Error(ioe, "Unexpected error");
@@ -263,12 +313,16 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
 
-        async public Task<SvcResponse> AuthMFA(string identifier, string totp) {
-            try {
+        async public Task<SvcResponse> AuthMFA(string identifier, string totp)
+        {
+            try
+            {
                 await sendAsync(new AuthMFAFunction(identifier, totp));
                 SvcResponse mfa = await readAsync<SvcResponse>(ipcReader);
                 return mfa;
-            } catch (Exception ioe) {
+            }
+            catch (Exception ioe)
+            {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //throw ioe;
                 Logger.Error(ioe, "Unexpected error");
@@ -277,12 +331,16 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
 
-        async public Task<MfaRecoveryCodesResponse> GetMFACodes(string identifier, string totpOrRecoveryCode) {
-            try {
+        async public Task<MfaRecoveryCodesResponse> GetMFACodes(string identifier, string totpOrRecoveryCode)
+        {
+            try
+            {
                 await sendAsync(new GetMFACodesFunction(identifier, totpOrRecoveryCode));
                 MfaRecoveryCodesResponse mfa = await readAsync<MfaRecoveryCodesResponse>(ipcReader);
                 return mfa;
-            } catch (Exception ioe) {
+            }
+            catch (Exception ioe)
+            {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //throw ioe;
                 Logger.Error(ioe, "Unexpected error");
@@ -291,12 +349,16 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
 
-        async public Task<MfaRecoveryCodesResponse> GenerateMFACodes(string identifier, string totpOrRecoveryCode) {
-            try {
+        async public Task<MfaRecoveryCodesResponse> GenerateMFACodes(string identifier, string totpOrRecoveryCode)
+        {
+            try
+            {
                 await sendAsync(new GenerateMFACodesFunction(identifier, totpOrRecoveryCode));
                 MfaRecoveryCodesResponse mfa = await readAsync<MfaRecoveryCodesResponse>(ipcReader);
                 return mfa;
-            } catch (Exception ioe) {
+            }
+            catch (Exception ioe)
+            {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //throw ioe;
                 Logger.Error(ioe, "Unexpected error");
@@ -304,12 +366,16 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
             return null;
         }
-        async public Task<SvcResponse> RemoveMFA(string identifier, string totp) {
-            try {
+        async public Task<SvcResponse> RemoveMFA(string identifier, string totp)
+        {
+            try
+            {
                 await sendAsync(new RemoveMFAFunction(identifier, totp));
                 SvcResponse mfa = await readAsync<SvcResponse>(ipcReader);
                 return mfa;
-            } catch (Exception ioe) {
+            }
+            catch (Exception ioe)
+            {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //throw ioe;
                 Logger.Error(ioe, "Unexpected error");
@@ -318,30 +384,36 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
 
-        protected override void ProcessLine(string line) {
-            try {
+        protected override void ProcessLine(string line)
+        {
+            try
+            {
                 string respAsString = line;
                 var jsonReaderEvt = new JsonTextReader(new StringReader(respAsString));
                 StatusEvent evt = serializer.Deserialize<StatusEvent>(jsonReaderEvt);
                 var jsonReader = new JsonTextReader(new StringReader(respAsString));
 
-                if (evt == null) {
+                if (evt == null)
+                {
                     return;
                 }
 
-                switch (evt.Op) {
+                switch (evt.Op)
+                {
                     case "metrics":
                         MetricsEvent m = serializer.Deserialize<MetricsEvent>(jsonReader);
 
-                        if (m != null) {
+                        if (m != null)
+                        {
                             MetricsEvent(m.Identities);
                         }
                         break;
                     case "status": //break here to see status on startup
                         //dbg comment Logger.Warn("STATUS EVENT: \n" + respAsString);
                         TunnelStatusEvent tse = serializer.Deserialize<TunnelStatusEvent>(jsonReader);
-                        
-                        if (tse != null) {
+
+                        if (tse != null)
+                        {
                             TunnelStatusEvent(tse);
                         }
                         break;
@@ -349,7 +421,8 @@ namespace ZitiDesktopEdge.ServiceClient {
                         //dbg comment Logger.Warn("IDENTITY EVENT: \n" + respAsString);
                         IdentityEvent id = serializer.Deserialize<IdentityEvent>(jsonReader);
 
-                        if (id != null) {
+                        if (id != null)
+                        {
                             IdentityEvent(id);
                         }
                         break;
@@ -357,7 +430,8 @@ namespace ZitiDesktopEdge.ServiceClient {
                         //dbg comment Logger.Warn("SERVICE EVENT: \n" + respAsString);
                         ServiceEvent svc = serializer.Deserialize<ServiceEvent>(jsonReader);
 
-                        if (svc != null) {
+                        if (svc != null)
+                        {
                             ServiceEvent(svc);
                         }
                         break;
@@ -365,14 +439,16 @@ namespace ZitiDesktopEdge.ServiceClient {
                         //dbg comment Logger.Warn("BULKSERVICE EVENT: \n" + respAsString);
                         BulkServiceEvent bsvc = serializer.Deserialize<BulkServiceEvent>(jsonReader);
 
-                        if (bsvc != null) {
+                        if (bsvc != null)
+                        {
                             BulkServiceEvent(bsvc);
                         }
                         break;
                     case "logLevel":
                         LogLevelEvent ll = serializer.Deserialize<LogLevelEvent>(jsonReader);
 
-                        if (ll != null) {
+                        if (ll != null)
+                        {
                             LogLevelEvent(ll);
                         }
                         break;
@@ -402,17 +478,23 @@ namespace ZitiDesktopEdge.ServiceClient {
                         Logger.Debug("unexpected operation! " + evt.Op);
                         break;
                 }
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 Logger.Debug(e.Message);
             }
         }
 
-        async public Task zitiDump(string dumpPath) {
-            try {
+        async public Task zitiDump(string dumpPath)
+        {
+            try
+            {
                 await sendAsync(new ZitiDumpFunction(dumpPath));
                 var rtn = await readAsync<SvcResponse>(ipcReader);
                 return; // rtn;
-            } catch (Exception ioe) {
+            }
+            catch (Exception ioe)
+            {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //setupPipe();
                 //throw ioe;
@@ -421,16 +503,20 @@ namespace ZitiDesktopEdge.ServiceClient {
             return;
         }
 
-        async public Task<SvcResponse> UpdateConfigAsync(string tunIPv4, int tunIPv4Mask, bool addDns, int apiPageSize) {
+        async public Task<SvcResponse> UpdateConfigAsync(string tunIPv4, int tunIPv4Mask, bool addDns, int apiPageSize)
+        {
             SvcResponse resp = null;
-            try {
+            try
+            {
 
                 ConfigUpdateFunction configPayload = new ConfigUpdateFunction(tunIPv4, tunIPv4Mask, addDns, apiPageSize);
 
                 await sendAsync(configPayload);
                 resp = await readAsync<SvcResponse>(ipcReader);
                 Logger.Debug("config update payload is sent to the ziti tunnel");
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //setupPipe();
                 //throw;
@@ -438,23 +524,28 @@ namespace ZitiDesktopEdge.ServiceClient {
                 CommunicationError(ex);
                 throw ex;
             }
-            if (resp?.Code != 0) {
+            if (resp?.Code != 0)
+            {
                 Logger.Warn("failed to update the config. {0} {1}", resp.Message, resp.Error);
                 throw new ServiceException("Failed to update the config", resp.Code, "Un expected error.");
             }
             return resp;
         }
 
-        async public Task<SvcResponse> NotificationFrequencyPayloadAsync(int frequency) {
+        async public Task<SvcResponse> NotificationFrequencyPayloadAsync(int frequency)
+        {
             SvcResponse resp = null;
-            try {
+            try
+            {
 
                 NotificationFrequencyFunction frequencyPayload = new NotificationFrequencyFunction(frequency);
 
                 await sendAsync(frequencyPayload);
                 resp = await readAsync<SvcResponse>(ipcReader);
                 Logger.Debug("frequency update payload is sent to the ziti tunnel");
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //setupPipe();
                 //throw;
@@ -462,7 +553,8 @@ namespace ZitiDesktopEdge.ServiceClient {
                 CommunicationError(ex);
                 throw ex;
             }
-            if (resp?.Code != 0) {
+            if (resp?.Code != 0)
+            {
                 Logger.Warn("failed to update the frequency. {0} {1}", resp.Message, resp.Error);
                 throw new ServiceException("Failed to update the frequency", resp.Code, "Un expected error.");
             }
@@ -470,12 +562,16 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
 
-        async public Task<ZitiTunnelStatus> debugAsync() {
-            try {
+        async public Task<ZitiTunnelStatus> debugAsync()
+        {
+            try
+            {
                 await sendAsync(new ServiceFunction() { Command = "Debug" });
                 var rtn = await readAsync<ZitiTunnelStatus>(ipcReader);
                 return rtn;
-            } catch (Exception ioe) {
+            }
+            catch (Exception ioe)
+            {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //setupPipe();
                 //throw ioe;

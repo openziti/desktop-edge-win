@@ -14,7 +14,7 @@
 	limitations under the License.
 */
 
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using System.IO;
 using System.IO.Pipes;
@@ -26,8 +26,10 @@ using NLog;
 
 using ZitiDesktopEdge.DataStructures;
 
-namespace ZitiDesktopEdge.Server {
-    public class IPCServer {
+namespace ZitiDesktopEdge.Server
+{
+    public class IPCServer
+    {
         public const string PipeName = @"OpenZiti\ziti-monitor\ipc";
         public const string EventPipeName = @"OpenZiti\ziti-monitor\events";
 
@@ -62,12 +64,14 @@ namespace ZitiDesktopEdge.Server {
         public SetAutomaticUpdateDisabledDelegate SetAutomaticUpdateDisabled { get; set; }
         public SetAutomaticUpdateURLDelegate SetAutomaticUpdateURL { get; set; }
 
-        public IPCServer() {
+        public IPCServer()
+        {
             ipcPipeName = PipeName;
             eventPipeName = EventPipeName;
         }
 
-        async public Task startIpcServerAsync(OnClientAsync onClient) {
+        async public Task startIpcServerAsync(OnClientAsync onClient)
+        {
             int idx = 0;
 
             // Allow AuthenticatedUserSid read and write access to the pipe. 
@@ -75,8 +79,10 @@ namespace ZitiDesktopEdge.Server {
             var id = new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null);
             pipeSecurity.SetAccessRule(new PipeAccessRule(id, PipeAccessRights.CreateNewInstance | PipeAccessRights.ReadWrite, AccessControlType.Allow));
 
-            while (true) {
-                try {
+            while (true)
+            {
+                try
+                {
                     var ipcPipeServer = new NamedPipeServerStream(
                         ipcPipeName,
                         PipeDirection.InOut,
@@ -88,24 +94,31 @@ namespace ZitiDesktopEdge.Server {
                         pipeSecurity);
 
                     await ipcPipeServer.WaitForConnectionAsync();
-                    
+
                     Logger.Debug("Total ipc clients now at: {0}", ++idx);
-                    _ = Task.Run(async () => {
-                        try {
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
                             await handleIpcClientAsync(ipcPipeServer, onClient);
-                        } catch(Exception icpe) {
+                        }
+                        catch (Exception icpe)
+                        {
                             Logger.Error(icpe, "Unexpected error in handleIpcClientAsync");
                         }
                         idx--;
                         Logger.Debug("Total ipc clients now at: {0}", idx);
                     });
-                } catch (Exception pe) {
+                }
+                catch (Exception pe)
+                {
                     Logger.Error(pe, "Unexpected error when connecting a client pipe.");
                 }
             }
         }
 
-        async public Task startEventsServerAsync(OnClientAsync onClient) {
+        async public Task startEventsServerAsync(OnClientAsync onClient)
+        {
             int idx = 0;
 
             // Allow AuthenticatedUserSid read and write access to the pipe. 
@@ -113,8 +126,10 @@ namespace ZitiDesktopEdge.Server {
             var id = new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null);
             pipeSecurity.SetAccessRule(new PipeAccessRule(id, PipeAccessRights.CreateNewInstance | PipeAccessRights.ReadWrite, AccessControlType.Allow));
 
-            while (true) {
-                try {
+            while (true)
+            {
+                try
+                {
                     var eventPipeServer = new NamedPipeServerStream(
                         eventPipeName,
                         PipeDirection.InOut,
@@ -127,55 +142,77 @@ namespace ZitiDesktopEdge.Server {
 
                     await eventPipeServer.WaitForConnectionAsync();
                     Logger.Debug("Total event clients now at: {0}", ++idx);
-                    _ = Task.Run(async () => {
-                        try {
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
                             await handleEventClientAsync(eventPipeServer, onClient);
-                        } catch (Exception icpe) {
-                            if (icpe.Message.StartsWith("Service ziti was not found on computer")) {
+                        }
+                        catch (Exception icpe)
+                        {
+                            if (icpe.Message.StartsWith("Service ziti was not found on computer"))
+                            {
                                 //ignore this for now...
-                            } else {
+                            }
+                            else
+                            {
                                 Logger.Error(icpe, "Unexpected error in handleEventClientAsync");
                             }
                         }
                         idx--;
                         Logger.Debug("Total event clients now at: {0}", idx);
                     });
-                } catch (Exception pe) {
+                }
+                catch (Exception pe)
+                {
                     Logger.Error(pe, "Unexpected error when connecting a client pipe.");
                 }
             }
         }
 
-        async public Task handleIpcClientAsync(NamedPipeServerStream ss, OnClientAsync onClient) {
-            using (ss) {
-                try {
+        async public Task handleIpcClientAsync(NamedPipeServerStream ss, OnClientAsync onClient)
+        {
+            using (ss)
+            {
+                try
+                {
                     StreamReader reader = new StreamReader(ss);
                     StreamWriter writer = new StreamWriter(ss);
 
                     string line = await reader.ReadLineAsync();
 
-                    while (line != null) {
+                    while (line != null)
+                    {
                         await processMessageAsync(line, writer);
                         line = await reader.ReadLineAsync();
                     }
 
                     Logger.Debug("handleIpcClientAsync is complete");
-                } catch (Exception e) {
+                }
+                catch (Exception e)
+                {
                     Logger.Error(e, "Unexpected error when reading from or writing to a client pipe.");
                 }
             }
         }
 
-        async public Task handleEventClientAsync(NamedPipeServerStream ss, OnClientAsync onClient) {
-            try {
-                using (ss) {
+        async public Task handleEventClientAsync(NamedPipeServerStream ss, OnClientAsync onClient)
+        {
+            try
+            {
+                using (ss)
+                {
                     StreamWriter writer = new StreamWriter(ss);
 
-                    EventHandler eh = async (object sender, EventArgs e) => {
-                        try {
+                    EventHandler eh = async (object sender, EventArgs e) =>
+                    {
+                        try
+                        {
                             await writer.WriteLineAsync(sender.ToString());
                             await writer.FlushAsync();
-                        } catch (Exception ex) {
+                        }
+                        catch (Exception ex)
+                        {
                             Logger.Error("problem with event handler in handleEventClientAsync: {}", ex.Message);
                         }
                     };
@@ -186,7 +223,8 @@ namespace ZitiDesktopEdge.Server {
                     StreamReader reader = new StreamReader(ss);
 
                     string line = await reader.ReadLineAsync();
-                    while (line != null) {
+                    while (line != null)
+                    {
                         await processMessageAsync(line, writer);
                         line = await reader.ReadLineAsync();
                     }
@@ -194,25 +232,32 @@ namespace ZitiDesktopEdge.Server {
                     Logger.Debug("handleEventClientAsync is complete");
                     EventRegistry.MyEvent -= eh;
                 }
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 Logger.Error(e, "Unexpected error when reading from or writing to a client pipe.");
             }
         }
 
-        async public Task processMessageAsync(string json, StreamWriter writer) {
+        async public Task processMessageAsync(string json, StreamWriter writer)
+        {
             Logger.Debug("message received: {0}", json);
             var r = new SvcResponse();
             var rr = new MonitorServiceStatusEvent();
-            try {
+            try
+            {
                 ActionEvent ae = serializer.Deserialize<ActionEvent>(new JsonTextReader(new StringReader(json)));
                 Logger.Debug("Op: {0}", ae.Op);
-                switch (ae.Op.ToLower()) {
+                switch (ae.Op.ToLower())
+                {
                     case "stop":
-                        if (ae.Action == "Force") {
+                        if (ae.Action == "Force")
+                        {
                             // attempt to forcefully find the process and terminate it...
                             Logger.Warn("User has requested a FORCEFUL termination of the service. It must be stuck. Current status: {0}", ServiceActions.ServiceStatus());
                             var procs = System.Diagnostics.Process.GetProcessesByName("ziti-edge-tunnel");
-                            if (procs == null || procs.Length == 0) {
+                            if (procs == null || procs.Length == 0)
+                            {
                                 Logger.Error("Process not found! Cannot terminate!");
                                 rr.Code = -20;
                                 rr.Error = "Process not found! Cannot terminate!";
@@ -220,14 +265,17 @@ namespace ZitiDesktopEdge.Server {
                                 break;
                             }
 
-                            foreach(var p in procs) {
+                            foreach (var p in procs)
+                            {
                                 Logger.Warn("Forcefully terminating process: {0}", p.Id);
                                 p.Kill();
                             }
                             rr.Message = "Service has been terminated";
                             rr.Status = ServiceActions.ServiceStatus();
                             r = rr;
-                        } else {
+                        }
+                        else
+                        {
                             r.Message = ServiceActions.StopService();
                         }
                         break;
@@ -239,10 +287,13 @@ namespace ZitiDesktopEdge.Server {
                         r = rr;
                         break;
                     case "capturelogs":
-                        try {
+                        try
+                        {
                             string results = CaptureLogs();
                             r.Message = results;
-                        } catch (Exception ex) {
+                        }
+                        catch (Exception ex)
+                        {
                             string err = string.Format("UNKNOWN ERROR : {0}", ex.Message);
                             Logger.Error(ex, err);
                             r.Code = -5;
@@ -275,7 +326,9 @@ namespace ZitiDesktopEdge.Server {
                         Logger.Error(r.Message);
                         break;
                 }
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 Logger.Error(e, "Unexpected error in processMessage!");
                 r.Message = "FAILURE: " + e.Message;
                 r.Code = -2;
@@ -287,7 +340,8 @@ namespace ZitiDesktopEdge.Server {
         }
     }
 
-    public enum ErrorCodes {
+    public enum ErrorCodes
+    {
         NO_ERROR = 0,
         COULD_NOT_SET_URL,
         URL_INVALID,

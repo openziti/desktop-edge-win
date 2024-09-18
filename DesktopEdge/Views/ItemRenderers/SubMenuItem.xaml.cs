@@ -13,25 +13,31 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace ZitiDesktopEdge {
+namespace ZitiDesktopEdge
+{
     /// <summary>
     /// Interaction logic for MenuItem.xaml
     /// </summary>
-    public partial class SubMenuItem : UserControl {
+    public partial class SubMenuItem : UserControl
+    {
 
-		private string _label = "";
+        private string _label = "";
 
-		public string Label {
-			get {
-				return _label;
-			}
-			set {
-				this._label = value;
-				MainLabel.Content = this._label;
-			}
-		}
+        public string Label
+        {
+            get
+            {
+                return _label;
+            }
+            set
+            {
+                this._label = value;
+                MainLabel.Content = this._label;
+            }
+        }
 
-		public SubMenuItem() {
+        public SubMenuItem()
+        {
             InitializeComponent();
         }
     }

@@ -21,22 +21,27 @@ using System.Management;
 using System.ServiceProcess;
 using NLog;
 
-namespace ZitiDesktopEdge.Server {
-    public static class ServiceActions {
+namespace ZitiDesktopEdge.Server
+{
+    public static class ServiceActions
+    {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private static int serviceWaitTime = 60; //one minute
 
         private static ServiceController sc = new ServiceController("ziti");
-        public static string ServiceStatus() {
+        public static string ServiceStatus()
+        {
             var status = sc.Status;
             Logger.Debug("service status asked for. current value: {0}", sc.Status);
 
-            if (sc.Status == ServiceControllerStatus.StopPending) {
+            if (sc.Status == ServiceControllerStatus.StopPending)
+            {
                 //ServiceControllerStatus is reporting 'stop pending' when the service crashes or is terminated by a user
                 //this is INCORRECT as the service is dead - it is not pending. Test for the process by name and if there's
                 //still a process - cool. if NOT - send the 'stopped' message...
                 var procs = System.Diagnostics.Process.GetProcessesByName("ziti-edge-tunnel");
-                if (procs != null && procs.Length == 1) {
+                if (procs != null && procs.Length == 1)
+                {
                     // if there's more than one ziti-edge-tunnel that'd be bad too but we can't account for that here
                     Logger.Warn("ServiceControllerStatus is StopPending but there is NO ziti-edge-tunnel process! report service is stopped");
                     return ServiceControllerStatus.Stopped.ToString();
@@ -45,7 +50,8 @@ namespace ZitiDesktopEdge.Server {
             return status.ToString();
         }
 
-        public static string StartService() {
+        public static string StartService()
+        {
             Logger.Info($"request to start ziti service received... waiting up to {serviceWaitTime}s for service start...");
             sc.Start();
             sc.WaitForStatus(ServiceControllerStatus.Running, new System.TimeSpan(0, 0, serviceWaitTime));
@@ -53,28 +59,39 @@ namespace ZitiDesktopEdge.Server {
             return ServiceStatus();
         }
 
-        public static string StopService() {
-            try {
+        public static string StopService()
+        {
+            try
+            {
                 Logger.Info($"request to stop ziti service received... waiting up to {serviceWaitTime}s for service stop...");
                 sc.Stop();
                 sc.WaitForStatus(ServiceControllerStatus.Stopped, new System.TimeSpan(0, 0, serviceWaitTime));
                 Logger.Info("request to stop ziti service received... complete...");
                 return ServiceStatus();
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 Logger.Error("failed to stop service using ServiceController. Attempting to find and kill the ziti process directly");
 
                 var zetProcesses = Process.GetProcesses().Where(p => p.ProcessName == "ziti-edge-tunnel");
 
-                foreach (var process in zetProcesses) {
-                    try {
+                foreach (var process in zetProcesses)
+                {
+                    try
+                    {
                         Logger.Warn($"attempting to forcefully terminate process: {process.Id}");
                         process.Kill();
-                        if (process.WaitForExit(30 * 1000)) { // wait for 30s
+                        if (process.WaitForExit(30 * 1000))
+                        { // wait for 30s
                             Logger.Warn($"terminated process forcefully: {process.Id}");
-                        } else {
+                        }
+                        else
+                        {
                             Logger.Error($"waited 30s, could not terminate process: {process.Id}");
                         }
-                    } catch (Exception ex) {
+                    }
+                    catch (Exception ex)
+                    {
                         Logger.Error($"failed to forcefully terminate process: {process.Id}!!! Error Msg: {ex.Message}");
                     }
                 }
@@ -88,7 +105,8 @@ namespace ZitiDesktopEdge.Server {
             }
         }
 
-        static void RemoveNrptRules() {
+        static void RemoveNrptRules()
+        {
             Process nrptRuleProcess = new Process();
             ProcessStartInfo nrptRuleStartInfo = new ProcessStartInfo();
             nrptRuleStartInfo.WindowStyle = ProcessWindowStyle.Hidden;
@@ -98,23 +116,31 @@ namespace ZitiDesktopEdge.Server {
             Logger.Info("Running: {0}", nrptRuleStartInfo.Arguments);
             nrptRuleProcess.StartInfo = nrptRuleStartInfo;
             nrptRuleProcess.Start();
-            if (nrptRuleProcess.WaitForExit(60 * 1000)) { // wait for 60s
+            if (nrptRuleProcess.WaitForExit(60 * 1000))
+            { // wait for 60s
                 Logger.Debug("NRPT rules have been removed");
-            } else {
+            }
+            else
+            {
                 Logger.Error($"waited 60s, could not remove NRPT rules?!");
             }
         }
 
-        static void RemoveZitiTunInterfaces() {
+        static void RemoveZitiTunInterfaces()
+        {
             string query = "SELECT * FROM Win32_NetworkAdapter WHERE Name LIKE 'ziti%'";
             ManagementObjectSearcher searcher = new ManagementObjectSearcher(query);
             ManagementObjectCollection results = searcher.Get();
 
-            foreach (ManagementObject obj in results) {
-                try {
+            foreach (ManagementObject obj in results)
+            {
+                try
+                {
                     obj.InvokeMethod("Disable", null);
                     Console.WriteLine("Disabled interface: " + obj["Name"]);
-                } catch (Exception e) {
+                }
+                catch (Exception e)
+                {
                     Console.WriteLine("Error disabling interface: " + obj["Name"] + " - " + e.Message);
                 }
             }

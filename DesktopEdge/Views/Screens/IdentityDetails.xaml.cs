@@ -14,7 +14,7 @@
 	limitations under the License.
 */
 
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -31,530 +31,633 @@ using System.Windows.Media;
 using System.Windows.Data;
 using System.Diagnostics.Eventing.Reader;
 
-namespace ZitiDesktopEdge {
-	/// <summary>
-	/// Interaction logic for IdentityDetails.xaml
-	/// </summary> 
-	public partial class IdentityDetails:UserControl {
-		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+namespace ZitiDesktopEdge
+{
+    /// <summary>
+    /// Interaction logic for IdentityDetails.xaml
+    /// </summary> 
+    public partial class IdentityDetails : UserControl
+    {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-		private bool _isAttached = true;
-		public delegate void Forgot(ZitiIdentity forgotten);
-		public event Forgot OnForgot;
-		public delegate void ErrorOccurred(string message);
-		public event ErrorOccurred OnError;
-		public delegate void MFAToggled(bool isOn);
-		public event MFAToggled OnMFAToggled;
-		public delegate void Detched(MouseButtonEventArgs e);
-		public event Detched OnDetach;
-		public delegate void Mesage(string message);
-		public event Mesage OnMessage;
-		public delegate void OnAuthenticate(ZitiIdentity identity);
-		public event OnAuthenticate Authenticate;
-		public delegate void OnRecovery(ZitiIdentity identity);
-		public event OnRecovery Recovery;
-		public delegate void LoadingEvent(bool isComplete);
-		public event LoadingEvent OnLoading;
-		public delegate void ShowMFAEvent(ZitiIdentity identity);
-		public event ShowMFAEvent OnShowMFA;
+        private bool _isAttached = true;
+        public delegate void Forgot(ZitiIdentity forgotten);
+        public event Forgot OnForgot;
+        public delegate void ErrorOccurred(string message);
+        public event ErrorOccurred OnError;
+        public delegate void MFAToggled(bool isOn);
+        public event MFAToggled OnMFAToggled;
+        public delegate void Detched(MouseButtonEventArgs e);
+        public event Detched OnDetach;
+        public delegate void Mesage(string message);
+        public event Mesage OnMessage;
+        public delegate void OnAuthenticate(ZitiIdentity identity);
+        public event OnAuthenticate Authenticate;
+        public delegate void OnRecovery(ZitiIdentity identity);
+        public event OnRecovery Recovery;
+        public delegate void LoadingEvent(bool isComplete);
+        public event LoadingEvent OnLoading;
+        public delegate void ShowMFAEvent(ZitiIdentity identity);
+        public event ShowMFAEvent OnShowMFA;
 
-		private System.Windows.Forms.Timer _timer;
-		public double MainHeight = 500;
-		public string filter = "";
-		public int Page = 1;
-		public int PerPage = 50;
-		public int TotalPages = 1;
-		public string SortBy = "Name";
-		public string SortWay = "Asc";
-		private bool _loaded = false;
-		private double scrolledTo = 0;
-		public int totalServices = 0;
-		private ScrollViewer _scroller;
-		private ZitiService _info;
+        private System.Windows.Forms.Timer _timer;
+        public double MainHeight = 500;
+        public string filter = "";
+        public int Page = 1;
+        public int PerPage = 50;
+        public int TotalPages = 1;
+        public string SortBy = "Name";
+        public string SortWay = "Asc";
+        private bool _loaded = false;
+        private double scrolledTo = 0;
+        public int totalServices = 0;
+        private ScrollViewer _scroller;
+        private ZitiService _info;
 
-		public ObservableCollection<ZitiService> _services = new ObservableCollection<ZitiService>();
-		public ObservableCollection<ZitiService> ZitiServices { get { return _services; } }
+        public ObservableCollection<ZitiService> _services = new ObservableCollection<ZitiService>();
+        public ObservableCollection<ZitiService> ZitiServices { get { return _services; } }
 
-		internal MainWindow MainWindow { get; set; }
+        internal MainWindow MainWindow { get; set; }
 
-		private List<ZitiIdentity> identities {
-			get {
-				return (List<ZitiIdentity>)Application.Current.Properties["Identities"];
-			}
-		}
+        private List<ZitiIdentity> identities
+        {
+            get
+            {
+                return (List<ZitiIdentity>)Application.Current.Properties["Identities"];
+            }
+        }
 
-		private ZitiIdentity _identity;
+        private ZitiIdentity _identity;
 
-		public ZitiIdentity Identity {
-			get {
-				return _identity;
-			}
-			set {
-				_loaded = false;
-				FilterServices.Clear();
-				scrolledTo = 0;
-				_identity = value;
-				ServiceCount.Content = _identity.Services.Count + " service"+((_identity.Services.Count!=1)?"s":"");
-				Page = 1;
-				SortBy = "Name";
-				SortWay = "Asc";
-				filter = "";
-				UpdateView();
-				IdentityArea.Opacity = 1.0;
-				IdentityArea.Visibility = Visibility.Visible;
-				this.Visibility = Visibility.Visible;
-			}
-		}
+        public ZitiIdentity Identity
+        {
+            get
+            {
+                return _identity;
+            }
+            set
+            {
+                _loaded = false;
+                FilterServices.Clear();
+                scrolledTo = 0;
+                _identity = value;
+                ServiceCount.Content = _identity.Services.Count + " service" + ((_identity.Services.Count != 1) ? "s" : "");
+                Page = 1;
+                SortBy = "Name";
+                SortWay = "Asc";
+                filter = "";
+                UpdateView();
+                IdentityArea.Opacity = 1.0;
+                IdentityArea.Visibility = Visibility.Visible;
+                this.Visibility = Visibility.Visible;
+            }
+        }
 
-		public IdentityItem SelectedIdentity { get; set; }
-		public MenuIdentityItem SelectedIdentityMenu { get; set; }
+        public IdentityItem SelectedIdentity { get; set; }
+        public MenuIdentityItem SelectedIdentityMenu { get; set; }
 
-		private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
-			if (e.ChangedButton == MouseButton.Left) {
-				_isAttached = false;
-				OnDetach(e);
-			}
-		}
-
-
-		public bool IsAttached {
-			get {
-				return _isAttached;
-			}
-			set {
-				_isAttached = value;
-				if (_isAttached) {
-					Arrow.Visibility = Visibility.Visible;
-					ConfirmArrow.Visibility = Visibility.Visible;
-				} else {
-					Arrow.Visibility = Visibility.Collapsed;
-					ConfirmArrow.Visibility = Visibility.Collapsed;
-				}
-			}
-		}
+        private void Window_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton == MouseButton.Left)
+            {
+                _isAttached = false;
+                OnDetach(e);
+            }
+        }
 
 
-		private void MFAEnabledAndNeeded() {
-			if (_identity.Services.Count > 0) {
-				MainDetailScroll.Visibility = Visibility.Visible;
-			} else {
-				IdentityMFA.AuthOff.Visibility = Visibility.Visible;
-				AuthMessageBg.Visibility = Visibility.Visible;
-				AuthMessageLabel.Visibility = Visibility.Visible;
-				NoAuthServices.Visibility = Visibility.Visible;
-				NoAuthServices.Text = "You must authenticate to access services";
-			}
-		}
+        public bool IsAttached
+        {
+            get
+            {
+                return _isAttached;
+            }
+            set
+            {
+                _isAttached = value;
+                if (_isAttached)
+                {
+                    Arrow.Visibility = Visibility.Visible;
+                    ConfirmArrow.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    Arrow.Visibility = Visibility.Collapsed;
+                    ConfirmArrow.Visibility = Visibility.Collapsed;
+                }
+            }
+        }
 
-		private void MFAEnabledAndNotNeeded() {
-			MainDetailScroll.Visibility = Visibility.Visible;
-			IdentityMFA.AuthOn.Visibility = Visibility.Visible;
-		}
 
-		private void MFANotEnabledAndNotNeeded() {
-			MainDetailScroll.Visibility = Visibility.Visible;
-		}
+        private void MFAEnabledAndNeeded()
+        {
+            if (_identity.Services.Count > 0)
+            {
+                MainDetailScroll.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                IdentityMFA.AuthOff.Visibility = Visibility.Visible;
+                AuthMessageBg.Visibility = Visibility.Visible;
+                AuthMessageLabel.Visibility = Visibility.Visible;
+                NoAuthServices.Visibility = Visibility.Visible;
+                NoAuthServices.Text = "You must authenticate to access services";
+            }
+        }
 
-		private void MFANotEnabledAndNeeded() {
-			if (_identity.Services.Count > 0) {
-				MainDetailScroll.Visibility = Visibility.Visible;
-			} else {
-				AuthMessageLabel.Visibility = Visibility.Visible;
-				NoAuthServices.Visibility = Visibility.Visible;
-				NoAuthServices.Text = "You must enable MFA to access services";
-				ServiceCount.Visibility = Visibility.Collapsed;
-			}
-		}
+        private void MFAEnabledAndNotNeeded()
+        {
+            MainDetailScroll.Visibility = Visibility.Visible;
+            IdentityMFA.AuthOn.Visibility = Visibility.Visible;
+        }
 
-		public void UpdateView() {
-			if (_scroller==null) {
-				_scroller = GetScrollViewer(ServiceList) as ScrollViewer;
-			}
-			if (_scroller != null) {
-				_scroller.InvalidateScrollInfo();
-				_scroller.ScrollToVerticalOffset(0);
-				_scroller.InvalidateScrollInfo();
-			}
+        private void MFANotEnabledAndNotNeeded()
+        {
+            MainDetailScroll.Visibility = Visibility.Visible;
+        }
 
-			IsConnected.Visibility = Visibility.Collapsed;
-			IsDisconnected.Visibility = Visibility.Collapsed;
-			IsConnected.Visibility = Visibility.Collapsed;
-			IsDisconnected.Visibility = Visibility.Collapsed;
-			MainDetailScroll.Visibility = Visibility.Collapsed;
-			AuthMessageBg.Visibility = Visibility.Collapsed;
-			AuthMessageLabel.Visibility = Visibility.Collapsed;
-			NoAuthServices.Visibility = Visibility.Collapsed;
-			IdentityMFA.AuthOn.Visibility = Visibility.Collapsed;
-			IdentityMFA.AuthOff.Visibility = Visibility.Collapsed;
-			IdentityMFA.RecoveryButton.Visibility = Visibility.Collapsed;
-			ServiceCount.Visibility = Visibility.Visible;
+        private void MFANotEnabledAndNeeded()
+        {
+            if (_identity.Services.Count > 0)
+            {
+                MainDetailScroll.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                AuthMessageLabel.Visibility = Visibility.Visible;
+                NoAuthServices.Visibility = Visibility.Visible;
+                NoAuthServices.Text = "You must enable MFA to access services";
+                ServiceCount.Visibility = Visibility.Collapsed;
+            }
+        }
 
-			scrolledTo = 0;
-			IdDetailName.Text = _identity.Name;
-			IdDetailName.ToolTip = _identity.Name;
-			IdentityMFA.IsOn = _identity.IsMFAEnabled;
-			IdentityMFA.ToggleField.IsEnabled = true;
-			IdentityMFA.ToggleField.Opacity = 1;
-			IsConnected.ToolTip = "Enabled - Click To Disable";
-			IsDisconnected.ToolTip = "Disabled - Click to Enable";
-			IdServer.Value = _identity.ControllerUrl;
-			IdName.Value = _identity.Name;
+        public void UpdateView()
+        {
+            if (_scroller == null)
+            {
+                _scroller = GetScrollViewer(ServiceList) as ScrollViewer;
+            }
+            if (_scroller != null)
+            {
+                _scroller.InvalidateScrollInfo();
+                _scroller.ScrollToVerticalOffset(0);
+                _scroller.InvalidateScrollInfo();
+            }
+
+            IsConnected.Visibility = Visibility.Collapsed;
+            IsDisconnected.Visibility = Visibility.Collapsed;
+            IsConnected.Visibility = Visibility.Collapsed;
+            IsDisconnected.Visibility = Visibility.Collapsed;
+            MainDetailScroll.Visibility = Visibility.Collapsed;
+            AuthMessageBg.Visibility = Visibility.Collapsed;
+            AuthMessageLabel.Visibility = Visibility.Collapsed;
+            NoAuthServices.Visibility = Visibility.Collapsed;
+            IdentityMFA.AuthOn.Visibility = Visibility.Collapsed;
+            IdentityMFA.AuthOff.Visibility = Visibility.Collapsed;
+            IdentityMFA.RecoveryButton.Visibility = Visibility.Collapsed;
+            ServiceCount.Visibility = Visibility.Visible;
+
+            scrolledTo = 0;
+            IdDetailName.Text = _identity.Name;
+            IdDetailName.ToolTip = _identity.Name;
+            IdentityMFA.IsOn = _identity.IsMFAEnabled;
+            IdentityMFA.ToggleField.IsEnabled = true;
+            IdentityMFA.ToggleField.Opacity = 1;
+            IsConnected.ToolTip = "Enabled - Click To Disable";
+            IsDisconnected.ToolTip = "Disabled - Click to Enable";
+            IdServer.Value = _identity.ControllerUrl;
+            IdName.Value = _identity.Name;
 
 
 #if DEBUG
-			_identity.MFADebug("UpdateView");
+            _identity.MFADebug("UpdateView");
 #endif
-			if (_identity.IsMFAEnabled) {
-				if (_identity.IsMFANeeded) {
-					// enabled and needed = needs to be authorized. show the lock icon and tell the user to auth
-					MFAEnabledAndNeeded();
-				} else {
-					// enabled and not needed = authorized. show the services should be enabled and authorized
-					MFAEnabledAndNotNeeded();
-				}
-			} else {
-				if (_identity.IsMFANeeded) {
-					// not enabled and needed = show the user the MFA disabled so they can enable it
-					MFANotEnabledAndNeeded();
-				} else {
-					// normal case. means no lock icon needs to be shown
-					MFANotEnabledAndNotNeeded();
-				}
-			}
+            if (_identity.IsMFAEnabled)
+            {
+                if (_identity.IsMFANeeded)
+                {
+                    // enabled and needed = needs to be authorized. show the lock icon and tell the user to auth
+                    MFAEnabledAndNeeded();
+                }
+                else
+                {
+                    // enabled and not needed = authorized. show the services should be enabled and authorized
+                    MFAEnabledAndNotNeeded();
+                }
+            }
+            else
+            {
+                if (_identity.IsMFANeeded)
+                {
+                    // not enabled and needed = show the user the MFA disabled so they can enable it
+                    MFANotEnabledAndNeeded();
+                }
+                else
+                {
+                    // normal case. means no lock icon needs to be shown
+                    MFANotEnabledAndNotNeeded();
+                }
+            }
 
-			//change icon to timed out if it's timed out
-
-
-			totalServices = _identity.Services.Count;
-
-			if (_identity.Services.Count>0) {
-				int index = 0;
-				int total = 0;
-				ZitiService[] services = new ZitiService[0];
-				_services = null;
-				_services = new ObservableCollection<ZitiService>(); 
-				if (SortBy == "Name") services = _identity.Services.OrderBy(s => s.Name.ToLower()).ToArray();
-				else if (SortBy == "Address") services = _identity.Services.OrderBy(s => s.Addresses.ToString()).ToArray();
-				else if (SortBy == "Protocol") services = _identity.Services.OrderBy(s => s.Protocols.ToString()).ToArray();
-				else if (SortBy == "Port") services = _identity.Services.OrderBy(s => s.Ports.ToString()).ToArray();
-				if (SortWay == "Desc") services = services.Reverse().ToArray();
-				int startIndex = (Page - 1) * PerPage;
-				for (int i = startIndex; i < services.Length; i++) {
-					ZitiService zitiSvc = services[i];
-					total++;
-					if (index < PerPage) {
-						if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0) {
-							zitiSvc.TimeUpdated = _identity.LastUpdatedTime;
-							zitiSvc.IsMfaReady = _identity.IsMFAEnabled;
-							_services.Add(zitiSvc);
-							index++;
-						}
-					}
-				}
-				ServiceList.ItemsSource = ZitiServices;
-
-				TotalPages = (total / PerPage) + 1;
-
-				double newHeight = MainHeight - 330;
-				MainDetailScroll.MaxHeight = newHeight;
-				MainDetailScroll.Height = newHeight;
+            //change icon to timed out if it's timed out
 
 
-			}
-			ConfirmView.Visibility = Visibility.Collapsed;
-			_loaded = true;
-		}
+            totalServices = _identity.Services.Count;
 
-		private void ShowDetails(ZitiService info) {
-			_info = info;
-			DetailName.Text = info.Name;
-			DetailProtocols.Text = info.ProtocolString;
-			DetailAddress.Text = info.AddressString;
-			DetailPorts.Text = info.PortString;
-			DetailUrl.Text = info.ToString();
+            if (_identity.Services.Count > 0)
+            {
+                int index = 0;
+                int total = 0;
+                ZitiService[] services = new ZitiService[0];
+                _services = null;
+                _services = new ObservableCollection<ZitiService>();
+                if (SortBy == "Name") services = _identity.Services.OrderBy(s => s.Name.ToLower()).ToArray();
+                else if (SortBy == "Address") services = _identity.Services.OrderBy(s => s.Addresses.ToString()).ToArray();
+                else if (SortBy == "Protocol") services = _identity.Services.OrderBy(s => s.Protocols.ToString()).ToArray();
+                else if (SortBy == "Port") services = _identity.Services.OrderBy(s => s.Ports.ToString()).ToArray();
+                if (SortWay == "Desc") services = services.Reverse().ToArray();
+                int startIndex = (Page - 1) * PerPage;
+                for (int i = startIndex; i < services.Length; i++)
+                {
+                    ZitiService zitiSvc = services[i];
+                    total++;
+                    if (index < PerPage)
+                    {
+                        if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0)
+                        {
+                            zitiSvc.TimeUpdated = _identity.LastUpdatedTime;
+                            zitiSvc.IsMfaReady = _identity.IsMFAEnabled;
+                            _services.Add(zitiSvc);
+                            index++;
+                        }
+                    }
+                }
+                ServiceList.ItemsSource = ZitiServices;
 
-			UpdateClock(info);
-			if (_identity.IsMFAEnabled) {
-				if (_timer != null) _timer.Stop();
-				_timer = new System.Windows.Forms.Timer();
-				_timer.Interval = 1000;
-				_timer.Tick += Ticked; ;
-				_timer.Start();
-			}
+                TotalPages = (total / PerPage) + 1;
 
-			DetailsArea.Visibility = Visibility.Visible;
-			DetailsArea.Opacity = 0;
-			DetailsArea.Margin = new Thickness(0, 0, 0, 0);
-			DoubleAnimation animation = new DoubleAnimation(1, TimeSpan.FromSeconds(.3));
-			animation.Completed += ShowCompleted;
-			DetailsArea.BeginAnimation(Grid.OpacityProperty, animation);
-			DetailsArea.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
+                double newHeight = MainHeight - 330;
+                MainDetailScroll.MaxHeight = newHeight;
+                MainDetailScroll.Height = newHeight;
 
-			ShowModal();
-		}
 
-		private void Ticked(object sender, EventArgs e) {
-			UpdateClock(_info);
-		}
+            }
+            ConfirmView.Visibility = Visibility.Collapsed;
+            _loaded = true;
+        }
 
-		private void UpdateClock(ZitiService info) {
-			try {
-				if (_identity.IsMFAEnabled) {
-					if (info.TimeoutCalculated > 0) {
-						TimeSpan t = TimeSpan.FromSeconds(info.TimeoutCalculated);
-						string answer = t.Seconds + " seconds";
-						if (t.Days > 0) answer = t.Days + " days " + t.Hours + " hours " + t.Minutes + " minutes " + t.Seconds + " seconds";
-						else {
-							if (t.Hours > 0) answer = t.Hours + " hours " + t.Minutes + " minutes " + t.Seconds + " seconds";
-							else {
-								if (t.Minutes > 0) answer = t.Minutes + " minutes " + t.Seconds + " seconds";
-							}
-						}
-						TimeoutDetails.Text = answer;
-					} else {
-						if (info.TimeoutCalculated == 0) TimeoutDetails.Text = "Timed Out";
-						else TimeoutDetails.Text = "Never";
-					}
-				} else {
-					TimeoutDetails.Text = "Never";
-				}
-			} catch (Exception e) {
-				TimeoutDetails.Text = "Never";
-				Console.WriteLine("Error: " + e.ToString());
-			}
-		}
+        private void ShowDetails(ZitiService info)
+        {
+            _info = info;
+            DetailName.Text = info.Name;
+            DetailProtocols.Text = info.ProtocolString;
+            DetailAddress.Text = info.AddressString;
+            DetailPorts.Text = info.PortString;
+            DetailUrl.Text = info.ToString();
 
-		private void ShowCompleted(object sender, EventArgs e) {
-			DoubleAnimation animation = new DoubleAnimation(DetailPanel.ActualHeight + 60, TimeSpan.FromSeconds(.3));
-			DetailsArea.BeginAnimation(Grid.HeightProperty, animation);
-			//DetailsArea.Height = DetailPanel.ActualHeight + 60;
-		}
+            UpdateClock(info);
+            if (_identity.IsMFAEnabled)
+            {
+                if (_timer != null) _timer.Stop();
+                _timer = new System.Windows.Forms.Timer();
+                _timer.Interval = 1000;
+                _timer.Tick += Ticked; ;
+                _timer.Start();
+            }
 
-		private void CloseDetails(object sender, MouseButtonEventArgs e) {
-			DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
-			ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
-			DoubleAnimation animation2 = new DoubleAnimation(DetailPanel.ActualHeight + 100, TimeSpan.FromSeconds(.3));
-			animation.Completed += HideComplete;
-			DetailsArea.BeginAnimation(Grid.HeightProperty, animation2);
-			DetailsArea.BeginAnimation(Grid.OpacityProperty, animation);
-			DetailsArea.BeginAnimation(Grid.MarginProperty, animateThick);
-			HideModal();
-		}
+            DetailsArea.Visibility = Visibility.Visible;
+            DetailsArea.Opacity = 0;
+            DetailsArea.Margin = new Thickness(0, 0, 0, 0);
+            DoubleAnimation animation = new DoubleAnimation(1, TimeSpan.FromSeconds(.3));
+            animation.Completed += ShowCompleted;
+            DetailsArea.BeginAnimation(Grid.OpacityProperty, animation);
+            DetailsArea.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
 
-		private void HideComplete(object sender, EventArgs e) {
-			DetailsArea.Visibility = Visibility.Collapsed;
-			ModalBg.Visibility = Visibility.Collapsed;
-		}
+            ShowModal();
+        }
 
-		private void Info_OnMessage(string message) {
-			OnMessage?.Invoke(message);
-		}
+        private void Ticked(object sender, EventArgs e)
+        {
+            UpdateClock(_info);
+        }
 
-		public IdentityDetails() {
-			InitializeComponent();
-		}
-		private void HideMenu(object sender, MouseButtonEventArgs e) {
-			this.Visibility = Visibility.Collapsed;
-		}
+        private void UpdateClock(ZitiService info)
+        {
+            try
+            {
+                if (_identity.IsMFAEnabled)
+                {
+                    if (info.TimeoutCalculated > 0)
+                    {
+                        TimeSpan t = TimeSpan.FromSeconds(info.TimeoutCalculated);
+                        string answer = t.Seconds + " seconds";
+                        if (t.Days > 0) answer = t.Days + " days " + t.Hours + " hours " + t.Minutes + " minutes " + t.Seconds + " seconds";
+                        else
+                        {
+                            if (t.Hours > 0) answer = t.Hours + " hours " + t.Minutes + " minutes " + t.Seconds + " seconds";
+                            else
+                            {
+                                if (t.Minutes > 0) answer = t.Minutes + " minutes " + t.Seconds + " seconds";
+                            }
+                        }
+                        TimeoutDetails.Text = answer;
+                    }
+                    else
+                    {
+                        if (info.TimeoutCalculated == 0) TimeoutDetails.Text = "Timed Out";
+                        else TimeoutDetails.Text = "Never";
+                    }
+                }
+                else
+                {
+                    TimeoutDetails.Text = "Never";
+                }
+            }
+            catch (Exception e)
+            {
+                TimeoutDetails.Text = "Never";
+                Console.WriteLine("Error: " + e.ToString());
+            }
+        }
 
-		public void SetHeight(double height) {
-			MainDetailScroll.Height = height;
-		}
+        private void ShowCompleted(object sender, EventArgs e)
+        {
+            DoubleAnimation animation = new DoubleAnimation(DetailPanel.ActualHeight + 60, TimeSpan.FromSeconds(.3));
+            DetailsArea.BeginAnimation(Grid.HeightProperty, animation);
+            //DetailsArea.Height = DetailPanel.ActualHeight + 60;
+        }
 
-		private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
-			if (this.Visibility==Visibility.Visible&&ConfirmView.Visibility==Visibility.Collapsed) {
-				ConfirmView.Visibility = Visibility.Visible;
-			}
-		}
+        private void CloseDetails(object sender, MouseButtonEventArgs e)
+        {
+            DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
+            ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
+            DoubleAnimation animation2 = new DoubleAnimation(DetailPanel.ActualHeight + 100, TimeSpan.FromSeconds(.3));
+            animation.Completed += HideComplete;
+            DetailsArea.BeginAnimation(Grid.HeightProperty, animation2);
+            DetailsArea.BeginAnimation(Grid.OpacityProperty, animation);
+            DetailsArea.BeginAnimation(Grid.MarginProperty, animateThick);
+            HideModal();
+        }
 
-		private void CancelConfirmButton_Click(object sender, RoutedEventArgs e) {
-			ConfirmView.Visibility = Visibility.Collapsed;
-		}
+        private void HideComplete(object sender, EventArgs e)
+        {
+            DetailsArea.Visibility = Visibility.Collapsed;
+            ModalBg.Visibility = Visibility.Collapsed;
+        }
 
-		async private void ConfirmButton_Click(object sender, RoutedEventArgs e) {
-			this.Visibility = Visibility.Collapsed;
-			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-			try {
-				ConfirmView.Visibility = Visibility.Collapsed;
-				await client.RemoveIdentityAsync(_identity.Identifier);
+        private void Info_OnMessage(string message)
+        {
+            OnMessage?.Invoke(message);
+        }
 
-				ZitiIdentity forgotten = new ZitiIdentity();
-				foreach (var id in identities) {
-					if (id.Identifier == _identity.Identifier) {
-						forgotten = id;
-						identities.Remove(id);
-						break;
-					}
-				}
+        public IdentityDetails()
+        {
+            InitializeComponent();
+        }
+        private void HideMenu(object sender, MouseButtonEventArgs e)
+        {
+            this.Visibility = Visibility.Collapsed;
+        }
 
-				OnForgot?.Invoke(forgotten);
-			} catch (DataStructures.ServiceException se) {
-				Logger.Error(se, se.Message);
-				OnError(se.Message);
-			} catch (Exception ex) {
-				Logger.Error(ex, "Unexpected: "+ ex.Message);
-				OnError("An unexpected error has occured while removing the identity. Please verify the service is still running and try again.");
-			}
-		}
+        public void SetHeight(double height)
+        {
+            MainDetailScroll.Height = height;
+        }
 
-		private void ToggleMFA(bool isOn) {
-			this.OnMFAToggled?.Invoke(isOn);
-		}
+        private void ForgetIdentity(object sender, MouseButtonEventArgs e)
+        {
+            if (this.Visibility == Visibility.Visible && ConfirmView.Visibility == Visibility.Collapsed)
+            {
+                ConfirmView.Visibility = Visibility.Visible;
+            }
+        }
 
-		/* Modal UI Background visibility */
+        private void CancelConfirmButton_Click(object sender, RoutedEventArgs e)
+        {
+            ConfirmView.Visibility = Visibility.Collapsed;
+        }
 
-		/// <summary>
-		/// Show the modal, aniimating opacity
-		/// </summary>
-		private void ShowModal() {
-			ModalBg.Visibility = Visibility.Visible;
-			ModalBg.Opacity = 0;
-			ModalBg.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(.8, TimeSpan.FromSeconds(.3)));
-		}
+        async private void ConfirmButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.Visibility = Visibility.Collapsed;
+            DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+            try
+            {
+                ConfirmView.Visibility = Visibility.Collapsed;
+                await client.RemoveIdentityAsync(_identity.Identifier);
 
-		/// <summary>
-		/// Hide the modal animating the opacity
-		/// </summary>
-		private void HideModal() {
-			DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
-			animation.Completed += ModalHideComplete;
-			ModalBg.BeginAnimation(Grid.OpacityProperty, animation);
-		}
+                ZitiIdentity forgotten = new ZitiIdentity();
+                foreach (var id in identities)
+                {
+                    if (id.Identifier == _identity.Identifier)
+                    {
+                        forgotten = id;
+                        identities.Remove(id);
+                        break;
+                    }
+                }
 
-		/// <summary>
-		/// When the animation completes, set the visibility to avoid UI object conflicts
-		/// </summary>
-		/// <param name="sender">The animation</param>
-		/// <param name="e">The event</param>
-		private void ModalHideComplete(object sender, EventArgs e) {
-			ModalBg.Visibility = Visibility.Collapsed;
-		}
+                OnForgot?.Invoke(forgotten);
+            }
+            catch (DataStructures.ServiceException se)
+            {
+                Logger.Error(se, se.Message);
+                OnError(se.Message);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Unexpected: " + ex.Message);
+                OnError("An unexpected error has occured while removing the identity. Please verify the service is still running and try again.");
+            }
+        }
 
-		private void MFARecovery() {
-			this.Recovery?.Invoke(this.Identity);
-		}
+        private void ToggleMFA(bool isOn)
+        {
+            this.OnMFAToggled?.Invoke(isOn);
+        }
 
-		private void MFAAuthenticate() {
-			this.Authenticate.Invoke(this.Identity);
-		}
+        /* Modal UI Background visibility */
 
-		private void AuthFromMessage(object sender, MouseButtonEventArgs e) {
-			this.Authenticate.Invoke(this.Identity);
-		}
+        /// <summary>
+        /// Show the modal, aniimating opacity
+        /// </summary>
+        private void ShowModal()
+        {
+            ModalBg.Visibility = Visibility.Visible;
+            ModalBg.Opacity = 0;
+            ModalBg.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(.8, TimeSpan.FromSeconds(.3)));
+        }
 
-		public static DependencyObject GetScrollViewer(DependencyObject o) {
-			if (o is ScrollViewer) { return o; }
-			for (int i = 0; i < VisualTreeHelper.GetChildrenCount(o); i++) {
-				var child = VisualTreeHelper.GetChild(o, i);
-				var result = GetScrollViewer(child);
-				if (result == null) {
-					continue;
-				} else {
-					return result;
-				}
-			}
-			return null;
-		}
+        /// <summary>
+        /// Hide the modal animating the opacity
+        /// </summary>
+        private void HideModal()
+        {
+            DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
+            animation.Completed += ModalHideComplete;
+            ModalBg.BeginAnimation(Grid.OpacityProperty, animation);
+        }
 
-		private void Scrolled(object sender, ScrollChangedEventArgs e) {
-			if (_loaded) {
-				if (_scroller == null) {
-					_scroller = GetScrollViewer(ServiceList) as ScrollViewer;
-				}
-				var verticalOffset = _scroller.VerticalOffset;
-				var maxVerticalOffset = _scroller.ScrollableHeight;
-			
-				if ((maxVerticalOffset < 0 || verticalOffset == maxVerticalOffset) && verticalOffset>0 && scrolledTo<verticalOffset) {
-					if (Page < TotalPages) {
-						scrolledTo = verticalOffset;
-						// scrollViewer.ScrollChanged -= Scrolled;
-						Logger.Trace("Paging: " + Page);
-						_loaded = false;
-						Page += 1;
-						int index = 0;
-						ZitiService[] services = new ZitiService[0];
-						if (SortBy == "Name") services = _identity.Services.OrderBy(s => s.Name.ToLower()).ToArray();
-						else if (SortBy == "Address") services = _identity.Services.OrderBy(s => s.Addresses.ToString()).ToArray();
-						else if (SortBy == "Protocol") services = _identity.Services.OrderBy(s => s.Protocols.ToString()).ToArray();
-						else if (SortBy == "Port") services = _identity.Services.OrderBy(s => s.Ports.ToString()).ToArray();
-						if (SortWay == "Desc") services = services.Reverse().ToArray();
-						int startIndex = (Page - 1) * PerPage;
-						for (int i = startIndex; i < services.Length; i++) {
-							ZitiService zitiSvc = services[i];
-							if (index < PerPage) {
-								if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0) {
-									zitiSvc.TimeUpdated = _identity.LastUpdatedTime;
-									ZitiServices.Add(zitiSvc);
-									index++;
-								}
-							}
-						}
-						double totalOffset = _scroller.VerticalOffset;
-						double toNegate = index * 33;
-						double scrollTo = (totalOffset - toNegate);
-						_scroller.InvalidateScrollInfo();
-						_scroller.ScrollToVerticalOffset(verticalOffset);
-						_scroller.InvalidateScrollInfo();
-						_loaded = true;
-						// scrollViewer.ScrollChanged += Scrolled;
-					}
-				}
-			}
-		}
+        /// <summary>
+        /// When the animation completes, set the visibility to avoid UI object conflicts
+        /// </summary>
+        /// <param name="sender">The animation</param>
+        /// <param name="e">The event</param>
+        private void ModalHideComplete(object sender, EventArgs e)
+        {
+            ModalBg.Visibility = Visibility.Collapsed;
+        }
 
-		private void DoFilter(FilterData filterData) {
-			filter = filterData.SearchFor;
-			SortBy = filterData.SortBy;
-			SortWay = filterData.SortHow;
-			UpdateView();
-		}
+        private void MFARecovery()
+        {
+            this.Recovery?.Invoke(this.Identity);
+        }
 
-		async private void DoConnect(object sender, MouseButtonEventArgs e) {
-			this.OnLoading?.Invoke(false);
-			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-			await client.IdentityOnOffAsync(_identity.Identifier, true);
-			if (SelectedIdentity != null) SelectedIdentity.ToggleSwitch.Enabled = true;
-			if (SelectedIdentityMenu != null) SelectedIdentityMenu.ToggleSwitch.Enabled = true;
-			_identity.IsEnabled = true;
-			IsConnected.Visibility = Visibility.Visible;
-			IsDisconnected.Visibility = Visibility.Collapsed;
-			this.OnLoading?.Invoke(true);
-		}
+        private void MFAAuthenticate()
+        {
+            this.Authenticate.Invoke(this.Identity);
+        }
 
-		async private void DoDisconnect(object sender, MouseButtonEventArgs e) {
-			this.OnLoading?.Invoke(false);
-			DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-			await client.IdentityOnOffAsync(_identity.Identifier, false);
-			if (SelectedIdentity != null) SelectedIdentity.ToggleSwitch.Enabled = false;
-			if (SelectedIdentityMenu != null) SelectedIdentityMenu.ToggleSwitch.Enabled = false;
-			_identity.IsEnabled = false;
-			IsConnected.Visibility = Visibility.Collapsed;
-			IsDisconnected.Visibility = Visibility.Visible;
-			this.OnLoading?.Invoke(true);
-		}
+        private void AuthFromMessage(object sender, MouseButtonEventArgs e)
+        {
+            this.Authenticate.Invoke(this.Identity);
+        }
 
-		private void WarnClicked(object sender, MouseButtonEventArgs e) {
-			ZitiService item = (ZitiService)(sender as FrameworkElement).DataContext;
-			OnMessage?.Invoke(item.WarningMessage);
-		}
+        public static DependencyObject GetScrollViewer(DependencyObject o)
+        {
+            if (o is ScrollViewer) { return o; }
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(o); i++)
+            {
+                var child = VisualTreeHelper.GetChild(o, i);
+                var result = GetScrollViewer(child);
+                if (result == null)
+                {
+                    continue;
+                }
+                else
+                {
+                    return result;
+                }
+            }
+            return null;
+        }
 
-		private void DetailsClicked(object sender, MouseButtonEventArgs e) {
-			ZitiService item = (ZitiService)(sender as FrameworkElement).DataContext;
-			ShowDetails(item);
-		}
+        private void Scrolled(object sender, ScrollChangedEventArgs e)
+        {
+            if (_loaded)
+            {
+                if (_scroller == null)
+                {
+                    _scroller = GetScrollViewer(ServiceList) as ScrollViewer;
+                }
+                var verticalOffset = _scroller.VerticalOffset;
+                var maxVerticalOffset = _scroller.ScrollableHeight;
 
-		private void VisibilityChanged(object sender, DependencyPropertyChangedEventArgs e) {
-			if (this.Visibility==Visibility.Collapsed) {
-				ServiceList.DataContext = null;
-				if (_services!=null) {
-					_services.Clear();
-					_services = null;
-				}
-			}
-		}
+                if ((maxVerticalOffset < 0 || verticalOffset == maxVerticalOffset) && verticalOffset > 0 && scrolledTo < verticalOffset)
+                {
+                    if (Page < TotalPages)
+                    {
+                        scrolledTo = verticalOffset;
+                        // scrollViewer.ScrollChanged -= Scrolled;
+                        Logger.Trace("Paging: " + Page);
+                        _loaded = false;
+                        Page += 1;
+                        int index = 0;
+                        ZitiService[] services = new ZitiService[0];
+                        if (SortBy == "Name") services = _identity.Services.OrderBy(s => s.Name.ToLower()).ToArray();
+                        else if (SortBy == "Address") services = _identity.Services.OrderBy(s => s.Addresses.ToString()).ToArray();
+                        else if (SortBy == "Protocol") services = _identity.Services.OrderBy(s => s.Protocols.ToString()).ToArray();
+                        else if (SortBy == "Port") services = _identity.Services.OrderBy(s => s.Ports.ToString()).ToArray();
+                        if (SortWay == "Desc") services = services.Reverse().ToArray();
+                        int startIndex = (Page - 1) * PerPage;
+                        for (int i = startIndex; i < services.Length; i++)
+                        {
+                            ZitiService zitiSvc = services[i];
+                            if (index < PerPage)
+                            {
+                                if (zitiSvc.Name.ToLower().IndexOf(filter.ToLower()) >= 0 || zitiSvc.ToString().ToLower().IndexOf(filter.ToLower()) >= 0)
+                                {
+                                    zitiSvc.TimeUpdated = _identity.LastUpdatedTime;
+                                    ZitiServices.Add(zitiSvc);
+                                    index++;
+                                }
+                            }
+                        }
+                        double totalOffset = _scroller.VerticalOffset;
+                        double toNegate = index * 33;
+                        double scrollTo = (totalOffset - toNegate);
+                        _scroller.InvalidateScrollInfo();
+                        _scroller.ScrollToVerticalOffset(verticalOffset);
+                        _scroller.InvalidateScrollInfo();
+                        _loaded = true;
+                        // scrollViewer.ScrollChanged += Scrolled;
+                    }
+                }
+            }
+        }
 
-		private void DoMFA(object sender, MouseButtonEventArgs e) {
-			this.OnShowMFA?.Invoke(this._identity);
-		}
-	}
+        private void DoFilter(FilterData filterData)
+        {
+            filter = filterData.SearchFor;
+            SortBy = filterData.SortBy;
+            SortWay = filterData.SortHow;
+            UpdateView();
+        }
+
+        async private void DoConnect(object sender, MouseButtonEventArgs e)
+        {
+            this.OnLoading?.Invoke(false);
+            DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+            await client.IdentityOnOffAsync(_identity.Identifier, true);
+            if (SelectedIdentity != null) SelectedIdentity.ToggleSwitch.Enabled = true;
+            if (SelectedIdentityMenu != null) SelectedIdentityMenu.ToggleSwitch.Enabled = true;
+            _identity.IsEnabled = true;
+            IsConnected.Visibility = Visibility.Visible;
+            IsDisconnected.Visibility = Visibility.Collapsed;
+            this.OnLoading?.Invoke(true);
+        }
+
+        async private void DoDisconnect(object sender, MouseButtonEventArgs e)
+        {
+            this.OnLoading?.Invoke(false);
+            DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+            await client.IdentityOnOffAsync(_identity.Identifier, false);
+            if (SelectedIdentity != null) SelectedIdentity.ToggleSwitch.Enabled = false;
+            if (SelectedIdentityMenu != null) SelectedIdentityMenu.ToggleSwitch.Enabled = false;
+            _identity.IsEnabled = false;
+            IsConnected.Visibility = Visibility.Collapsed;
+            IsDisconnected.Visibility = Visibility.Visible;
+            this.OnLoading?.Invoke(true);
+        }
+
+        private void WarnClicked(object sender, MouseButtonEventArgs e)
+        {
+            ZitiService item = (ZitiService)(sender as FrameworkElement).DataContext;
+            OnMessage?.Invoke(item.WarningMessage);
+        }
+
+        private void DetailsClicked(object sender, MouseButtonEventArgs e)
+        {
+            ZitiService item = (ZitiService)(sender as FrameworkElement).DataContext;
+            ShowDetails(item);
+        }
+
+        private void VisibilityChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (this.Visibility == Visibility.Collapsed)
+            {
+                ServiceList.DataContext = null;
+                if (_services != null)
+                {
+                    _services.Clear();
+                    _services = null;
+                }
+            }
+        }
+
+        private void DoMFA(object sender, MouseButtonEventArgs e)
+        {
+            this.OnShowMFA?.Invoke(this._identity);
+        }
+    }
 }

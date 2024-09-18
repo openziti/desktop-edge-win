@@ -14,7 +14,7 @@
     limitations under the License.
 */
 
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
@@ -28,13 +28,15 @@ using System.Threading.Tasks;
 using NLog;
 using VerifyingFiles.PInvoke;
 
-namespace ZitiUpdateService.Checkers.PeFile {
-    public class SignedFileValidator {
+namespace ZitiUpdateService.Checkers.PeFile
+{
+    public class SignedFileValidator
+    {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         public const int LengthOfChecksum = 4; //the checksum is 4 bytes
         public const int LengthCertificateTable = 8; //the Certificate Table is 8 bytes
-        
+
         public HashPositions ImportantHashPositions { get; private set; }
         public string FilePath { get; private set; }
         public PeType Type { get; private set; }
@@ -47,7 +49,8 @@ namespace ZitiUpdateService.Checkers.PeFile {
         private X509Store SystemCAs = new X509Store();
         private const string oldKnownThumbprint = "39636E9F5E80308DE370C914CE8112876ECF4E0C";
 
-        public SignedFileValidator(string pathToFile) {
+        public SignedFileValidator(string pathToFile)
+        {
             X509Store store = new X509Store("MY", StoreLocation.CurrentUser);
             store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
             SystemCAs.Open(OpenFlags.ReadWrite);
@@ -58,15 +61,18 @@ namespace ZitiUpdateService.Checkers.PeFile {
             ImportantHashPositions = new HashPositions();
 
             parse();
-            if (ImportantHashPositions.reorderNeeded) {
+            if (ImportantHashPositions.reorderNeeded)
+            {
                 ImportantHashPositions.SectionTableHeaders.Sort((x, y) => x.PointerToRawData.CompareTo(y.PointerToRawData));
             }
         }
 
-        private X509Certificate2 certFromResource(string resourceName) {
+        private X509Certificate2 certFromResource(string resourceName)
+        {
             var assembly = this.GetType().Assembly;
             using (Stream stream = assembly.GetManifestResourceStream(resourceName))
-            using (BinaryReader reader = new BinaryReader(stream)) {
+            using (BinaryReader reader = new BinaryReader(stream))
+            {
                 byte[] bytes = new byte[stream.Length];
                 stream.Read(bytes, 0, bytes.Length);
                 return new X509Certificate2(bytes);
@@ -74,9 +80,11 @@ namespace ZitiUpdateService.Checkers.PeFile {
         }
 
         // ReSharper disable once InconsistentNaming
-        private void parse() {
+        private void parse()
+        {
             using (FileStream stream = new FileStream(FilePath, System.IO.FileMode.Open, System.IO.FileAccess.Read))
-            using (BinaryReader reader = new BinaryReader(stream)) {
+            using (BinaryReader reader = new BinaryReader(stream))
+            {
 
                 //seek to 0x3c to get right to the PE header location...
                 stream.Seek(0x3c, SeekOrigin.Begin);
@@ -92,25 +100,30 @@ namespace ZitiUpdateService.Checkers.PeFile {
                 int magicNumber = BitConverter.ToInt16(magicNumberBytes, 0);
                 Type = magicNumber == 0x10b ? PeType.Pe32 : PeType.Pe32Plus;
                 stream.Seek(-2, SeekOrigin.Current); //skip back to before the magic number so the struct below is created properly
-                
+
                 //parse Optional Header Standard and Windows-Specific fields (66 or 88 bytes)
                 //see: https://docs.microsoft.com/en-us/windows/win32/debug/pe-format#optional-header-standard-fields-image-only
-                if (Type == PeType.Pe32) {
+                if (Type == PeType.Pe32)
+                {
                     byte[] headerBytes = reader.ReadBytes(Marshal.SizeOf(typeof(IMAGE_OPTIONAL_HEADER32)));
                     StandardFieldsPe32 = StructHelper.FromBytes<IMAGE_OPTIONAL_HEADER32>(headerBytes);
-                } else {
+                }
+                else
+                {
                     byte[] headerBytes = reader.ReadBytes(Marshal.SizeOf(typeof(IMAGE_OPTIONAL_HEADER64)));
                     StandardFieldsPe32Plus = StructHelper.FromBytes<IMAGE_OPTIONAL_HEADER64>(headerBytes);
                 }
 
-                ImageOptionalHeaderWrapper wrapper = new ImageOptionalHeaderWrapper() {
+                ImageOptionalHeaderWrapper wrapper = new ImageOptionalHeaderWrapper()
+                {
                     h32 = StandardFieldsPe32,
                     h64 = StandardFieldsPe32Plus,
                     IsPe = Type == PeType.Pe32
                 };
                 ImportantHashPositions.SetCertificateDetails(Type, wrapper.SizeOfHeaders, wrapper.CertificateTableVirtualAddress, wrapper.CertificateTableSize);
 
-                for (int i = 0; i < CoffHeader.NumberOfSections; i++) {
+                for (int i = 0; i < CoffHeader.NumberOfSections; i++)
+                {
                     byte[] nextSection = reader.ReadBytes(Marshal.SizeOf(typeof(IMAGE_SECTION_HEADER))); //should be 40 bytes...
                     IMAGE_SECTION_HEADER sectionTableHeader = StructHelper.FromBytes<IMAGE_SECTION_HEADER>(nextSection);
                     ImportantHashPositions.AddSectionTableHeader(sectionTableHeader);
@@ -118,20 +131,26 @@ namespace ZitiUpdateService.Checkers.PeFile {
             }
         }
 
-        private void addCertToList(SignerInfo si, List<X509Certificate2> list) {
+        private void addCertToList(SignerInfo si, List<X509Certificate2> list)
+        {
 
             X509Certificate2 cert = si.Certificate;
-            if (list.Find(x => x.Thumbprint == cert.Thumbprint) == null) {
+            if (list.Find(x => x.Thumbprint == cert.Thumbprint) == null)
+            {
                 list.Add(cert);
-            } else {
+            }
+            else
+            {
                 Logger.Debug("Certificate with Thumbprint {0} already in list. skipping.", cert.Thumbprint);
             }
         }
 
-        public List<X509Certificate2> ExtractVerifiedSignatureCertificates() {
+        public List<X509Certificate2> ExtractVerifiedSignatureCertificates()
+        {
             List<X509Certificate2> list = new List<X509Certificate2>();
             using (FileStream stream = new FileStream(FilePath, FileMode.Open, FileAccess.Read))
-            using (BinaryReader reader = new BinaryReader(stream)) {
+            using (BinaryReader reader = new BinaryReader(stream))
+            {
                 //verify all the embedded signatures
                 stream.Seek(this.ImportantHashPositions.CertificateTableStart, SeekOrigin.Begin);
                 int readCertLen = reader.ReadInt32();
@@ -145,39 +164,54 @@ namespace ZitiUpdateService.Checkers.PeFile {
 
                 //shout out to Scott MG: https://social.msdn.microsoft.com/Forums/windowsdesktop/en-US/655f5c27-b049-4275-a8b3-cc1c0be2b4f2/retrieve-certificate-info-for-dualsigned-sha1sha256
                 //for indicating that the unsigned attributes contain the other SignerInfos
-                foreach (var cmsSi in cms.SignerInfos) {
+                foreach (var cmsSi in cms.SignerInfos)
+                {
                     cmsSi.CheckSignature(true);
-                    if (VerifyTrust(SystemCAs, expectedRootCa, cmsSi.Certificate).Result) {
+                    if (VerifyTrust(SystemCAs, expectedRootCa, cmsSi.Certificate).Result)
+                    {
                         VerifyFileHash(cms, cmsSi);
                         addCertToList(cmsSi, list);
                     }
-                    if (cmsSi.UnsignedAttributes.Count > 0) {
-                        foreach (var unsignedAttr in cmsSi.UnsignedAttributes) {
-                            foreach (AsnEncodedData asn in unsignedAttr.Values) {
+                    if (cmsSi.UnsignedAttributes.Count > 0)
+                    {
+                        foreach (var unsignedAttr in cmsSi.UnsignedAttributes)
+                        {
+                            foreach (AsnEncodedData asn in unsignedAttr.Values)
+                            {
                                 SignedCms innerCms = new SignedCms();
                                 innerCms.Decode(asn.RawData);
                                 innerCms.CheckHash();
-                                if (innerCms.SignerInfos.Count > 0) {
+                                if (innerCms.SignerInfos.Count > 0)
+                                {
                                     SignerInfo innerSignerInfo = innerCms.SignerInfos[0];
-                                    try {
+                                    try
+                                    {
                                         innerSignerInfo.CheckSignature(false);
                                     }
-                                    catch (CryptographicException) {
-                                        if (innerSignerInfo.Certificate.Thumbprint == oldKnownThumbprint) {
+                                    catch (CryptographicException)
+                                    {
+                                        if (innerSignerInfo.Certificate.Thumbprint == oldKnownThumbprint)
+                                        {
                                             //special handling for the known 'old' NetFoundry signing certificate, now expired...
                                             //TODO: remove this code after 2021
                                             //just allow this one error
                                             Logger.Warn("Ignoring timestamp validity issue for the existing code signing certificate. Subject: {0}, Thumbprint: {1}", innerSignerInfo.Certificate.Subject, innerSignerInfo.Certificate.Thumbprint);
-                                        } else {
-                                            if (IsCertificateOpenZitiVerifies(innerSignerInfo.Certificate)) {
+                                        }
+                                        else
+                                        {
+                                            if (IsCertificateOpenZitiVerifies(innerSignerInfo.Certificate))
+                                            {
                                                 Logger.Debug("Certificate {} from {} is not one needed to be verified", innerSignerInfo.Certificate.SubjectName, innerSignerInfo.Certificate.Issuer);
-                                            } else {
+                                            }
+                                            else
+                                            {
                                                 throw;
                                             }
                                         }
                                     }
 
-                                    if (VerifyTrust(SystemCAs, expectedRootCa, innerSignerInfo.Certificate).Result) {
+                                    if (VerifyTrust(SystemCAs, expectedRootCa, innerSignerInfo.Certificate).Result)
+                                    {
                                         VerifyFileHash(innerCms, innerSignerInfo);
                                         addCertToList(innerSignerInfo, list);
                                     }
@@ -191,33 +225,45 @@ namespace ZitiUpdateService.Checkers.PeFile {
             return list;
         }
 
-        public bool IsCertificateOpenZitiVerifies(X509Certificate2 cert) {
+        public bool IsCertificateOpenZitiVerifies(X509Certificate2 cert)
+        {
             bool yesOrNo = cert.Subject.ToLower().Contains("netfoundry") || cert.Subject.ToLower().Contains("openziti");
-            if (yesOrNo) {
+            if (yesOrNo)
+            {
                 Logger.Debug("Certificate does     need verification: {0}", cert.Subject);
-            } else {
+            }
+            else
+            {
                 Logger.Debug("Certificate does not need verification: {0}", cert.Subject);
             }
             return yesOrNo;
         }
 
-        public void Verify() {
+        public void Verify()
+        {
             Logger.Debug("extracting certificates from file: {0}", FilePath);
             List<X509Certificate2> list = ExtractVerifiedSignatureCertificates();
             Logger.Info("Certificates extracted: {0}", list.Count);
-            foreach (X509Certificate2 cert in list) {
+            foreach (X509Certificate2 cert in list)
+            {
                 Logger.Info("Checking certificate: [{0}] {1}", cert.Thumbprint, cert.Subject);
-                if (IsCertificateOpenZitiVerifies(cert)) {
+                if (IsCertificateOpenZitiVerifies(cert))
+                {
                     //verify this certificate was issued from the known CA
-                    try {
+                    try
+                    {
                         Logger.Info("Verifying trust of certificate: [{0}] {1}", cert.Subject, cert.Thumbprint);
                         VerifyTrust(empty, expectedRootCa, cert, true).Wait();
                         Logger.Info("Download verification complete. Certificate [{0}] {1} was verified signed by [{2}] {3}", cert.Thumbprint, cert.Subject, expectedRootCa.Thumbprint, expectedRootCa.Subject);
                         return; //yes!
-                    } catch (Exception e) {
+                    }
+                    catch (Exception e)
+                    {
                         Logger.Debug("Could not verify certificate. Exception encountered: {}", e);
                     }
-                } else {
+                }
+                else
+                {
                     Logger.Debug("Certificate {} from {} is not one needed to be verified", cert.SubjectName, cert.Issuer);
                 }
             }
@@ -225,8 +271,10 @@ namespace ZitiUpdateService.Checkers.PeFile {
             throw new CryptographicException("Executable not signed by an appropriate certificate");
         }
 
-        public void VerifyFileHash(SignedCms cms, SignerInfo signerInfo) {
-            if (!IsCertificateOpenZitiVerifies(signerInfo.Certificate)) {
+        public void VerifyFileHash(SignedCms cms, SignerInfo signerInfo)
+        {
+            if (!IsCertificateOpenZitiVerifies(signerInfo.Certificate))
+            {
                 return;
             }
 
@@ -236,16 +284,19 @@ namespace ZitiUpdateService.Checkers.PeFile {
             string hash = BitConverter.ToString(calculatedHash).Replace("-", "");
 
             string content = BitConverter.ToString(cms.ContentInfo.Content).Replace("-", "");
-            if (!content.Contains(hash)) {
+            if (!content.Contains(hash))
+            {
                 throw new CryptographicException("The expected hash and the actual hash did not match!");
             }
         }
 
-        public async static Task<bool> VerifyTrust(X509Store cas, X509Certificate2 trustedRootCertificateAuthority, X509Certificate2 certificate) {
+        public async static Task<bool> VerifyTrust(X509Store cas, X509Certificate2 trustedRootCertificateAuthority, X509Certificate2 certificate)
+        {
             return await VerifyTrust(cas, trustedRootCertificateAuthority, certificate, false);
         }
 
-        public async static Task<bool> VerifyTrust(X509Store cas, X509Certificate2 trustedRootCertificateAuthority, X509Certificate2 certificate, bool verifyTrustedRoot) {
+        public async static Task<bool> VerifyTrust(X509Store cas, X509Certificate2 trustedRootCertificateAuthority, X509Certificate2 certificate, bool verifyTrustedRoot)
+        {
             X509Chain chain = new X509Chain();
             chain.ChainPolicy.ExtraStore.Add(trustedRootCertificateAuthority);
             chain.ChainPolicy.ExtraStore.AddRange(cas.Certificates);
@@ -253,68 +304,91 @@ namespace ZitiUpdateService.Checkers.PeFile {
             chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
             chain.Build(new X509Certificate2(certificate));
             List<Exception> exceptions = new List<Exception>();
-            foreach (X509ChainStatus status in chain.ChainStatus) {
-                if (status.Status == X509ChainStatusFlags.NoError || status.Status == X509ChainStatusFlags.UntrustedRoot) {
+            foreach (X509ChainStatus status in chain.ChainStatus)
+            {
+                if (status.Status == X509ChainStatusFlags.NoError || status.Status == X509ChainStatusFlags.UntrustedRoot)
+                {
                     //X509ChainStatusFlags.UntrustedRoot simply means it was not found in the computer/user's trust store.... that's fine...
-                } else {
-                    if (status.Status == X509ChainStatusFlags.NotTimeValid && certificate.Thumbprint == oldKnownThumbprint) {
+                }
+                else
+                {
+                    if (status.Status == X509ChainStatusFlags.NotTimeValid && certificate.Thumbprint == oldKnownThumbprint)
+                    {
                         //X509ChainStatusFlags.NotTimeValid means the certificate has expired - we're allowing this for now (summer 2021) to allow older clients to update
                         Logger.Warn("Executable is signed using the old signing certificate. Allowing this certificate to report as expired");
-                    } else {
+                    }
+                    else
+                    {
                         exceptions.Add(new CryptographicException("Could not verify trust: " + status.StatusInformation));
                     }
                 }
             }
 
             //final check - make sure the last certificate matches the expected thumbprint
-            if (verifyTrustedRoot && chain.ChainElements[chain.ChainElements.Count - 1].Certificate.Thumbprint != trustedRootCertificateAuthority.Thumbprint) {
+            if (verifyTrustedRoot && chain.ChainElements[chain.ChainElements.Count - 1].Certificate.Thumbprint != trustedRootCertificateAuthority.Thumbprint)
+            {
                 exceptions.Add(new Exception("Could not verify trust. The expected thumbprint was not found!"));
             }
 
-            foreach (var e in certificate.Extensions) {
-                if (e.Oid.Value == "2.5.29.31") { //2.5.29.31 == CRL Distribution Points
-                    try {
+            foreach (var e in certificate.Extensions)
+            {
+                if (e.Oid.Value == "2.5.29.31")
+                { //2.5.29.31 == CRL Distribution Points
+                    try
+                    {
                         CrlDistributionPointParser t = new CrlDistributionPointParser(e.RawData);
 
-                        if (t != null) {
-                            foreach (string url in t.urls) {
-                                try {
+                        if (t != null)
+                        {
+                            foreach (string url in t.urls)
+                            {
+                                try
+                                {
                                     //good - things are going the way we want... keep going
                                     //fetch the CRL from the url provided and parse it...
                                     byte[] crlBytes = await new HttpClient().GetByteArrayAsync(url);
 
-                                    if (crlBytes != null && crlBytes.Length > 0) {
+                                    if (crlBytes != null && crlBytes.Length > 0)
+                                    {
                                         //fetch the crl
                                         Win32Crypto.CrlInfo info = Win32Crypto.FromBlob(crlBytes);
-                                        if (info.RevokedSerialNumbers.Contains(certificate.SerialNumber)) {
+                                        if (info.RevokedSerialNumbers.Contains(certificate.SerialNumber))
+                                        {
                                             exceptions.Add(new CryptographicException("Serial number " + certificate.SerialNumber + " has been revoked."));
                                         }
-                                    } else {
+                                    }
+                                    else
+                                    {
                                         exceptions.Add(new CryptographicException("Could not retrieve revocation list from " + url + "- cannot verify trust"));
                                     }
                                 }
-                                catch (Exception innerException) {
+                                catch (Exception innerException)
+                                {
                                     exceptions.Add(new CryptographicException("crl at " + url + " could not be used", innerException));
                                 }
                             }
                         }
                     }
-                    catch (Exception ex) {
+                    catch (Exception ex)
+                    {
                         exceptions.Add(ex);
                     }
                 }
             }
 
-            if (exceptions.Count > 0) {
+            if (exceptions.Count > 0)
+            {
                 throw new AggregateException(exceptions);
             }
 
             return true;
         }
 
-        public byte[] CalculatePeHashStreaming(IncrementalHash alg) {
+        public byte[] CalculatePeHashStreaming(IncrementalHash alg)
+        {
             using (FileStream stream = new FileStream(FilePath, System.IO.FileMode.Open, System.IO.FileAccess.Read))
-            using (BinaryReader reader = new BinaryReader(stream)) {
+            using (BinaryReader reader = new BinaryReader(stream))
+            {
                 stream.Seek(ImportantHashPositions.Chunk1.Start, SeekOrigin.Begin);
                 alg.AppendData(reader.ReadBytes(ImportantHashPositions.Chunk1.Length));
 
@@ -328,23 +402,29 @@ namespace ZitiUpdateService.Checkers.PeFile {
                 int read = 0;
                 byte[] buf = new byte[blockSize];
 
-                foreach (IMAGE_SECTION_HEADER h in ImportantHashPositions.SectionTableHeaders) {
+                foreach (IMAGE_SECTION_HEADER h in ImportantHashPositions.SectionTableHeaders)
+                {
                     stream.Seek(h.PointerToRawData, SeekOrigin.Begin);
-                    if (h.SizeOfRawData <= blockSize) {
+                    if (h.SizeOfRawData <= blockSize)
+                    {
                         //just read the full block as one
                         alg.AppendData(reader.ReadBytes((int)h.SizeOfRawData));
-                    } else {
+                    }
+                    else
+                    {
                         long pos = stream.Position;
                         long end = h.PointerToRawData + h.SizeOfRawData - blockSize;
                         //process the data into blocks
-                        while (pos < end) {
+                        while (pos < end)
+                        {
                             read = stream.Read(buf, 0, blockSize);
                             alg.AppendData(buf, 0, read);
                             pos += blockSize;
                         }
 
                         int remaining = (int)(end - pos + blockSize);
-                        if (remaining > 0) {
+                        if (remaining > 0)
+                        {
                             read = stream.Read(buf, 0, remaining);
                             alg.AppendData(buf, 0, read);
                         }
@@ -365,12 +445,15 @@ namespace ZitiUpdateService.Checkers.PeFile {
 
                 long leftoverBytesToHash = FILE_SIZE - ImportantHashPositions.SumOfBytesHashed - ImportantHashPositions.CertificateTableSize;
 
-                if (leftoverBytesToHash > 0) {
+                if (leftoverBytesToHash > 0)
+                {
                     //HashBlock(alg, reader, SUM_OF_BYTES_HASHED + certTableSize, FILE_SIZE);
                     stream.Seek(ImportantHashPositions.SumOfBytesHashed, SeekOrigin.Begin);
                     byte[] leftoverBytes = reader.ReadBytes((int)leftoverBytesToHash);
                     alg.AppendData(leftoverBytes);
-                } else {
+                }
+                else
+                {
                     //no more bytes to hash...
                 }
                 //alg.TransformFinalBlock(new byte[0], 0, 0);
@@ -381,8 +464,10 @@ namespace ZitiUpdateService.Checkers.PeFile {
             }
         }
 
-        public class HashPositions {
-            internal HashPositions() {
+        public class HashPositions
+        {
+            internal HashPositions()
+            {
                 Chunk1 = new Range();
                 Chunk2 = new Range();
                 Chunk3 = new Range();
@@ -482,22 +567,28 @@ namespace ZitiUpdateService.Checkers.PeFile {
 
             internal bool reorderNeeded = false;
             private uint lastAddress = 0;
-            public void AddSectionTableHeader(IMAGE_SECTION_HEADER sectionTableHeader) {
-                
-                if (sectionTableHeader.SizeOfRawData > 0) {
+            public void AddSectionTableHeader(IMAGE_SECTION_HEADER sectionTableHeader)
+            {
+
+                if (sectionTableHeader.SizeOfRawData > 0)
+                {
                     SectionTableHeaders.Add(sectionTableHeader);
                 }
 
-                if (lastAddress < sectionTableHeader.PointerToRawData) {
+                if (lastAddress < sectionTableHeader.PointerToRawData)
+                {
                     //good - it's in order...
-                } else {
+                }
+                else
+                {
                     reorderNeeded = true;
                 }
                 lastAddress = sectionTableHeader.PointerToRawData;
                 SumOfBytesHashed += sectionTableHeader.SizeOfRawData;
             }
 
-            public void SetStartCoffHeader(uint peHeaderStart) {
+            public void SetStartCoffHeader(uint peHeaderStart)
+            {
                 Chunk1.Start = 0;
                 uint checksumStart = peHeaderStart + 88; //88 is the size of the COFF Header (24) + Standard Headers + Windows-Specific Fields up to checksum (offset 64)
                 Chunk1.End = checksumStart;
@@ -512,8 +603,10 @@ namespace ZitiUpdateService.Checkers.PeFile {
             }
 
             public void SetCertificateDetails(PeType type, uint sizeOfHeaders, uint certificateTableStart,
-                uint certificateTableSize) {
-                if (type == PeType.Pe32Plus) {
+                uint certificateTableSize)
+            {
+                if (type == PeType.Pe32Plus)
+                {
                     uint winSpecificExtraBytes = 16; //need to account for the extra bytes in the Windows-Specific Fields (each field has 4 extra bytes)
                     Chunk2.End += winSpecificExtraBytes;
                     Chunk3.Start += winSpecificExtraBytes;
@@ -527,7 +620,8 @@ namespace ZitiUpdateService.Checkers.PeFile {
             }
         }
 
-        public class Range {
+        public class Range
+        {
             public long Start { get; internal set; }
             public long End { get; internal set; }
 
@@ -535,12 +629,14 @@ namespace ZitiUpdateService.Checkers.PeFile {
         }
     }
 
-    public enum PeType {
+    public enum PeType
+    {
         Pe32,
         Pe32Plus
     }
 
-    internal class CrlDistributionPointParser {
+    internal class CrlDistributionPointParser
+    {
         internal int offset;
         internal int length;
         internal List<CrlDistributionPointParser> tags = new List<CrlDistributionPointParser>();
@@ -549,26 +645,31 @@ namespace ZitiUpdateService.Checkers.PeFile {
         internal List<string> urls = new List<string>();
         private int consumedBytes = 0;
 
-        internal CrlDistributionPointParser(byte[] asn1Data) : this(new MemoryStream(asn1Data)) {
+        internal CrlDistributionPointParser(byte[] asn1Data) : this(new MemoryStream(asn1Data))
+        {
 
         }
 
-        internal CrlDistributionPointParser(MemoryStream asn1Data) : this(null, asn1Data/*new BinaryReader(asn1Data)*/, 0) {
+        internal CrlDistributionPointParser(MemoryStream asn1Data) : this(null, asn1Data/*new BinaryReader(asn1Data)*/, 0)
+        {
 
         }
 
-        internal CrlDistributionPointParser(CrlDistributionPointParser parent, MemoryStream memoryStream, /*BinaryReader asn1Reader,*/ int offset) {
+        internal CrlDistributionPointParser(CrlDistributionPointParser parent, MemoryStream memoryStream, /*BinaryReader asn1Reader,*/ int offset)
+        {
             BinaryReader asn1Reader = new BinaryReader(memoryStream);
             this.offset = offset;
-            type = readTag(asn1Reader); 
+            type = readTag(asn1Reader);
             length = readTagLen(asn1Reader);
             this.parent = parent;
             int headerBytes = consumedBytes;
-            while (this.consumedBytes < length + headerBytes) {
-                switch (type) {
+            while (this.consumedBytes < length + headerBytes)
+            {
+                switch (type)
+                {
                     case AsnTagType.SEQUENCE:
                     case AsnTagType.ARRAY_ELEMENT:
-                        var t = new CrlDistributionPointParser(this, memoryStream, (int) memoryStream.Position);
+                        var t = new CrlDistributionPointParser(this, memoryStream, (int)memoryStream.Position);
                         consumedBytes += t.consumedBytes;
                         tags.Add(t);
                         this.urls.AddRange(t.urls);
@@ -581,9 +682,11 @@ namespace ZitiUpdateService.Checkers.PeFile {
             }
         }
 
-        internal AsnTagType readTag(BinaryReader asn1Data) {
+        internal AsnTagType readTag(BinaryReader asn1Data)
+        {
             byte tagByte = asn1Data.ReadByte();
-            if (tagByte != 0x30 && tagByte != 0xA0 && tagByte != 0x86) {
+            if (tagByte != 0x30 && tagByte != 0xA0 && tagByte != 0x86)
+            {
                 throw new CryptographicException("Could not parse CRL Distribution Points. First byte not asn SEQUENCE|ARRAY|STRING marker");
             }
 
@@ -594,17 +697,20 @@ namespace ZitiUpdateService.Checkers.PeFile {
             return AsnTagType.NONE;
         }
 
-        internal int readTagLen(BinaryReader asn1Data) {
+        internal int readTagLen(BinaryReader asn1Data)
+        {
             int tagLen = asn1Data.ReadByte();
             consumedBytes++;
-            if (tagLen > 128) {
+            if (tagLen > 128)
+            {
                 //means there's more bytes to read that control the overall length of the next section
                 int moreBytes = tagLen - 128;
                 byte[] lenBytes = new byte[4];
                 byte[] d = asn1Data.ReadBytes(moreBytes);
 
                 int pos = 0;
-                for (int i = d.Length - 1; i >= 0; i--) {
+                for (int i = d.Length - 1; i >= 0; i--)
+                {
                     lenBytes[pos++] = d[i];
                 }
 
@@ -616,7 +722,8 @@ namespace ZitiUpdateService.Checkers.PeFile {
         }
     }
 
-    internal enum AsnTagType {
+    internal enum AsnTagType
+    {
         SEQUENCE = 0x30,
         ARRAY_ELEMENT = 0xA0,
         STRING = 0x86,

@@ -14,14 +14,16 @@
 	limitations under the License.
 */
 
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace VerifyingFiles.PInvoke {
-    public static class Win32Crypto {
+namespace VerifyingFiles.PInvoke
+{
+    public static class Win32Crypto
+    {
         //based on https://docs.microsoft.com/en-us/archive/blogs/alejacma/how-to-get-information-from-a-crl-net
 
         #region APIs
@@ -93,7 +95,8 @@ namespace VerifyingFiles.PInvoke {
         #region Structs
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct CRL_CONTEXT {
+        public struct CRL_CONTEXT
+        {
             public Int32 dwCertEncodingType;
             public IntPtr pbCrlEncoded;
             public Int32 cbCrlEncoded;
@@ -102,7 +105,8 @@ namespace VerifyingFiles.PInvoke {
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct CRL_INFO {
+        public struct CRL_INFO
+        {
             public Int32 dwVersion;
             public CRYPT_ALGORITHM_IDENTIFIER SignatureAlgorithm;
             public CRYPTOAPI_BLOB Issuer;
@@ -115,25 +119,29 @@ namespace VerifyingFiles.PInvoke {
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct CRYPT_ALGORITHM_IDENTIFIER {
+        public struct CRYPT_ALGORITHM_IDENTIFIER
+        {
             [MarshalAs(UnmanagedType.LPStr)] public String pszObjId;
             public CRYPTOAPI_BLOB Parameters;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct CRYPTOAPI_BLOB {
+        public struct CRYPTOAPI_BLOB
+        {
             public Int32 cbData;
             public IntPtr pbData;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct FILETIME {
+        public struct FILETIME
+        {
             public Int32 dwLowDateTime;
             public Int32 dwHighDateTime;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct CRL_ENTRY {
+        public struct CRL_ENTRY
+        {
             public CRYPTOAPI_BLOB SerialNumber;
             public FILETIME RevocationDate;
             public Int32 cExtension;
@@ -141,7 +149,8 @@ namespace VerifyingFiles.PInvoke {
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct CERT_EXTENSION {
+        public struct CERT_EXTENSION
+        {
             [MarshalAs(UnmanagedType.LPStr)] public String pszObjId;
             public Boolean fCritical;
             public CRYPTOAPI_BLOB Value;
@@ -175,16 +184,19 @@ namespace VerifyingFiles.PInvoke {
 
         #endregion
 
-        private static List<string> GetRevokedSerialNumbers(CRL_INFO stCrlInfo) {
+        private static List<string> GetRevokedSerialNumbers(CRL_INFO stCrlInfo)
+        {
             List<string> rtn = new List<string>();
             var rgCrlEntry = stCrlInfo.rgCRLEntry;
 
-            for (var i = 0; i < stCrlInfo.cCRLEntry; i++) {
+            for (var i = 0; i < stCrlInfo.cCRLEntry; i++)
+            {
                 var serial = string.Empty;
                 var stCrlEntry = (CRL_ENTRY)Marshal.PtrToStructure(rgCrlEntry, typeof(CRL_ENTRY));
 
                 IntPtr pByte = stCrlEntry.SerialNumber.pbData;
-                for (var j = 0; j < stCrlEntry.SerialNumber.cbData; j++) {
+                for (var j = 0; j < stCrlEntry.SerialNumber.cbData; j++)
+                {
                     Byte bByte = Marshal.ReadByte(pByte);
                     serial = bByte.ToString("X").PadLeft(2, '0') + serial;
                     pByte = pByte + Marshal.SizeOf(typeof(byte));
@@ -197,26 +209,32 @@ namespace VerifyingFiles.PInvoke {
             return rtn;
         }
 
-        public static DateTime FileTimeToDateTime(FILETIME fileTime) {
+        public static DateTime FileTimeToDateTime(FILETIME fileTime)
+        {
             DateTime dateTime;
             IntPtr int64Ptr = Marshal.AllocHGlobal(sizeof(Int64));
-            try {
+            try
+            {
                 Marshal.StructureToPtr(fileTime, int64Ptr, true);
                 dateTime = DateTime.FromFileTime(Marshal.ReadInt64(int64Ptr));
-            } finally {
+            }
+            finally
+            {
                 Marshal.FreeHGlobal(int64Ptr);
             }
 
             return dateTime;
         }
 
-        public static CrlInfo FromBlob(byte[] CrlDERBytes) {
+        public static CrlInfo FromBlob(byte[] CrlDERBytes)
+        {
 
             var phCertStore = IntPtr.Zero;
             var pvContext = IntPtr.Zero;
             var hCrlData = new GCHandle();
             var hCryptBlob = new GCHandle();
-            try {
+            try
+            {
                 hCrlData = GCHandle.Alloc(CrlDERBytes, GCHandleType.Pinned);
                 CRYPTOAPI_BLOB stCryptBlob;
                 stCryptBlob.cbData = CrlDERBytes.Length;
@@ -235,7 +253,8 @@ namespace VerifyingFiles.PInvoke {
                     ref phCertStore,
                     IntPtr.Zero,
                     ref pvContext
-                )) {
+                ))
+                {
                     throw new Win32Exception(Marshal.GetLastWin32Error(), "CRL is Corrupted.");
                 }
                 var stCrlContext = (CRL_CONTEXT)Marshal.PtrToStructure(pvContext, typeof(CRL_CONTEXT));
@@ -247,16 +266,20 @@ namespace VerifyingFiles.PInvoke {
                 info.RevokedSerialNumbers = GetRevokedSerialNumbers(stCrlInfo);
 
                 return info;
-            } finally {
+            }
+            finally
+            {
                 if (hCrlData.IsAllocated) hCrlData.Free();
                 if (hCryptBlob.IsAllocated) hCryptBlob.Free();
-                if (!pvContext.Equals(IntPtr.Zero)) {
+                if (!pvContext.Equals(IntPtr.Zero))
+                {
                     CertFreeCRLContext(pvContext);
                 }
             }
         }
 
-        public struct CrlInfo {
+        public struct CrlInfo
+        {
             public DateTime validTo;
             public DateTime validFrom;
             public List<string> RevokedSerialNumbers;

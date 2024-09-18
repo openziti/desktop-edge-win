@@ -13,10 +13,11 @@
 	See the License for the specific language governing permissions and
 	limitations under the License.
 */
-﻿
+
 namespace ZitiDesktopEdge.Models
 {
-    static class UIModel {
-		static public bool HideOnLostFocus { get; set; } = true;
-	}
+    static class UIModel
+    {
+        static public bool HideOnLostFocus { get; set; } = true;
+    }
 }
