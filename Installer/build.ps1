@@ -26,7 +26,7 @@ $ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer ${ADV_INST_V
 $SIGNTOOL="${ADV_INST_HOME}\third-party\winsdk\x64\signtool.exe"
 $ADVINST = "${ADV_INST_HOME}\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
-$ZITI_EDGE_TUNNEL_VERSION="v2.0.0-alpha20"
+$ZITI_EDGE_TUNNEL_VERSION="v2.0.0-alpha21"
 
 echo "Cleaning previous build folder if it exists"
 Remove-Item "${buildPath}" -r -ErrorAction Ignore
@@ -43,7 +43,7 @@ if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
     }
     echo "========================== fetching ziti-edge-tunnel =========================="
     $zet_dl="https://github.com/openziti/ziti-tunnel-sdk-c/releases/download/${ZITI_EDGE_TUNNEL_VERSION}/ziti-edge-tunnel-Windows_x86_64.zip"
-    echo "Beginning to download ziti-edge-tunnel from ${zet_dl}"
+    echo "Beginning to download ziti-edge-tunnel from ${zet_dl} to ${destination}"
     echo ""
     $response = Invoke-WebRequest $zet_dl -OutFile "${destination}"
 } else {
