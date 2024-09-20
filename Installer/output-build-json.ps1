@@ -8,7 +8,8 @@ param(
     [string]$url = "http://localhost:8000/release-streams/local",
     [string]$stream = "local",
     [string]$outputPath = "${version}.json",
-    [datetime]$published_at
+    [datetime]$published_at,
+    [string]$versionQualifier = ""
 )
 
 echo "=========== emitting a json file that represents this build ============"
@@ -29,7 +30,7 @@ $jsonTemplate = @"
   "assets": [
     {
       "name": "Ziti.Desktop.Edge.Client-${version}.exe",
-      "browser_download_url": "${url}/${version}/Ziti.Desktop.Edge.Client-${version}.exe"
+      "browser_download_url": "${url}/${version}${versionQualifier}/Ziti.Desktop.Edge.Client-${version}.exe"
     }
   ]
 }
