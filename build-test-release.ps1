@@ -12,7 +12,8 @@ param(
     [string]$stream = "local",
     [datetime]$published_at = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ"),
     [bool]$jsonOnly = $false,
-    [bool]$revertGitAfter = $true
+    [bool]$revertGitAfter = $true,
+    [string]$versionQualifier = ""
 )
 echo ""
 $scriptDirectory = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
@@ -24,7 +25,7 @@ Copy-Item -Force "$scriptDirectory\release-streams\${version}.json" "$scriptDire
 echo "json file written to: $scriptDirectory\release-streams\${stream}.json"
 
 if(! $jsonOnly) {
-  & .\Installer\build.ps1 -version $version -url $url -stream $stream -published_at $published_at -jsonOnly $jsonOnly -revertGitAfter $revertGitAfter
+  & .\Installer\build.ps1 -version $version -url $url -stream $stream -published_at $published_at -jsonOnly $jsonOnly -revertGitAfter $revertGitAfter -versionQualifier $versionQualifier
   $exitCode = $LASTEXITCODE
   if($exitCode -gt 0) {
     Write-Host "build.ps1 failed!"

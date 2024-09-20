@@ -4,7 +4,8 @@ param(
     [string]$stream = "beta",
     [datetime]$published_at = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ"),
     [bool]$jsonOnly = $false,
-    [bool]$revertGitAfter = $true
+    [bool]$revertGitAfter = $true,
+    [string]$versionQualifier = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -26,7 +27,7 @@ $ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer ${ADV_INST_V
 $SIGNTOOL="${ADV_INST_HOME}\third-party\winsdk\x64\signtool.exe"
 $ADVINST = "${ADV_INST_HOME}\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
-$ZITI_EDGE_TUNNEL_VERSION="v2.0.0-alpha21"
+$ZITI_EDGE_TUNNEL_VERSION="v2.0.0-alpha22"
 
 echo "Cleaning previous build folder if it exists"
 Remove-Item "${buildPath}" -r -ErrorAction Ignore
@@ -139,7 +140,15 @@ if($null -eq $env:OPENZITI_P12_PASS_2024) {
 echo "========================== build.ps1 completed =========================="
 
 $outputPath = "${scriptPath}\Output\Ziti Desktop Edge Client-${version}.exe.json"
-& .\Installer\output-build-json.ps1 -version $version -url $url -stream $stream -published_at $published_at -outputPath $outputPath
+& .\Installer\output-build-json.ps1 -version $version -url $url -stream $stream -published_at $published_at -outputPath $outputPath -versionQualifier $versionQualifier
 
 echo "REMOVING .back files: ${scriptPath}\*back*"
 Remove-Item "${scriptPath}\*back*" -Recurse -ErrorAction SilentlyContinue
+
+echo "Copying json file to beta.json"
+copy $outputPath "$checkoutRoot\release-streams\beta.json"
+
+
+if($revertGitAfter) {
+  git checkout DesktopEdge/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip
+}
