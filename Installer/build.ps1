@@ -27,7 +27,7 @@ $ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer ${ADV_INST_V
 $SIGNTOOL="${ADV_INST_HOME}\third-party\winsdk\x64\signtool.exe"
 $ADVINST = "${ADV_INST_HOME}\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
-$ZITI_EDGE_TUNNEL_VERSION="v2.0.0-alpha22"
+$ZITI_EDGE_TUNNEL_VERSION="v2.0.0-alpha23"
 
 echo "Cleaning previous build folder if it exists"
 Remove-Item "${buildPath}" -r -ErrorAction Ignore
@@ -86,8 +86,10 @@ msbuild ZitiDesktopEdge.sln /property:Configuration=Release
 
 Pop-Location
 
+$versionSuppled = $false
 if ($version -eq "") {
     $version=(Get-Content -Path ${checkoutRoot}\version)
+    $versionSuppled = $true
 }
 
 echo "Building VERSION $version"
@@ -148,7 +150,12 @@ Remove-Item "${scriptPath}\*back*" -Recurse -ErrorAction SilentlyContinue
 echo "Copying json file to beta.json"
 copy $outputPath "$checkoutRoot\release-streams\beta.json"
 
-
 if($revertGitAfter) {
   git checkout DesktopEdge/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip
+}
+
+if (-not $versionSupplied) {
+    echo ""
+    echo "this is version: ${version}"
+    echo ""
 }
