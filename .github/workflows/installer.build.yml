@@ -43,12 +43,12 @@ jobs:
       - name: Set up environment variable
         run: echo "ZITI_EDGE_TUNNEL_BUILD=${{ github.event.inputs.zet }}" >> $GITHUB_ENV
       - name: Git Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: microsoft/setup-msbuild@v1
+      - uses: microsoft/setup-msbuild@v2
       - name: Set up Go 
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
       - if: github.event_name == 'push'
         run: echo "GIT_BRANCH=$($env:GITHUB_REF.replace('refs/heads/', ''))" >> $env:GITHUB_ENV
       - if: github.event_name == 'pull_request'
@@ -71,7 +71,7 @@ jobs:
         run: choco install advanced-installer --version="$(cat .\adv-inst-version)" --yes
       - name: Setting up VERSION env var
         run: echo "VERSION=$(cat .\version)" >> $env:GITHUB_ENV
-      - uses: nuget/setup-nuget@v1
+      - uses: nuget/setup-nuget@v2
         with:
           nuget-api-key: ${{ secrets.NuGetAPIKey }}
           nuget-version: '5.8.1'
@@ -94,18 +94,13 @@ jobs:
           ziti_ci_gpg_key_id: ${{ secrets.ZITI_CI_GPG_KEY_ID }}
         run: powershell -File .\Installer\build.ps1
       - name: Upload installer onto job
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ZitiDesktopEdgeClient-${{ env.VERSION }}
           path: "Installer/Output/Ziti Desktop Edge Client-*"
-      - name: Upload update json to job
-        uses: actions/upload-artifact@v2
-        with:
-          name: ZitiDesktopEdgeClient-${{ env.VERSION }}
-          path: ${{ env.VERSION }}.json
       - name: Job Failure - Upload the signing log job
         if: failure()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: SigningLogs
           path: '**/*AWSSigner.log*'
