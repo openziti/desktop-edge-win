@@ -1,3 +1,13 @@
+param(
+    [string]$version,
+    [string]$url = "https://github.com/openziti/desktop-edge-win/releases/download/",
+    [string]$stream = "beta",
+    [datetime]$published_at = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ"),
+    [bool]$jsonOnly = $false,
+    [bool]$revertGitAfter = $true,
+    [string]$versionQualifier = ""
+)
+
 $ErrorActionPreference = "Stop"
 
 function verifyFile($path) {
@@ -18,7 +28,7 @@ $ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer ${ADV_INST_V
 $SIGNTOOL="${ADV_INST_HOME}\third-party\winsdk\x64\signtool.exe"
 $ADVINST = "${ADV_INST_HOME}\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
-$ZITI_EDGE_TUNNEL_VERSION="v1.1.0"
+$ZITI_EDGE_TUNNEL_VERSION="v1.1.4"
 
 echo "Cleaning previous build folder if it exists"
 Remove-Item "${buildPath}" -r -ErrorAction Ignore
@@ -35,7 +45,7 @@ if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
     }
     echo "========================== fetching ziti-edge-tunnel =========================="
     $zet_dl="https://github.com/openziti/ziti-tunnel-sdk-c/releases/download/${ZITI_EDGE_TUNNEL_VERSION}/ziti-edge-tunnel-Windows_x86_64.zip"
-    echo "Beginning to download ziti-edge-tunnel from ${zet_dl}"
+    echo "Beginning to download ziti-edge-tunnel from ${zet_dl} to ${destination}"
     echo ""
     $response = Invoke-WebRequest $zet_dl -OutFile "${destination}"
 } else {
@@ -77,16 +87,21 @@ msbuild ZitiDesktopEdge.sln /property:Configuration=Release
 
 Pop-Location
 
-$installerVersion=(Get-Content -Path ${checkoutRoot}\version)
+if ($version -eq "") {
+    $version=(Get-Content -Path ${checkoutRoot}\version)
+}
+
+echo "Building VERSION $version"
+
 if($null -ne $env:ZITI_DESKTOP_EDGE_VERSION) {
-    echo "ZITI_DESKTOP_EDGE_VERSION is set. Using that: ${env:ZITI_DESKTOP_EDGE_VERSION} instead of version found in file ${installerVersion}"
-    $installerVersion=$env:ZITI_DESKTOP_EDGE_VERSION
-    echo "Version set to: ${installerVersion}"
+    echo "ZITI_DESKTOP_EDGE_VERSION is set. Using that: ${env:ZITI_DESKTOP_EDGE_VERSION} instead of version found in file ${version}"
+    $version=$env:ZITI_DESKTOP_EDGE_VERSION
+    echo "Version set to: ${version}"
 }
 $action = '/SetVersion'
 
-echo "issuing $ADVINST /edit $ADVPROJECT $action $installerVersion (service version: $serviceVersion) - see https://www.advancedinstaller.com/user-guide/set-version.html"
-& $ADVINST /edit $ADVPROJECT $action $installerVersion
+echo "issuing $ADVINST /edit $ADVPROJECT $action $version (service version: $serviceVersion) - see https://www.advancedinstaller.com/user-guide/set-version.html"
+& $ADVINST /edit $ADVPROJECT $action $version
 
 $action = '/build'
 echo "Assembling installer using AdvancedInstaller at: $ADVINST $action $ADVPROJECT"
@@ -103,7 +118,7 @@ if($gituser -eq "ziti-ci") {
 }
 
 $outputPath="${scriptPath}\Output"
-$exeName="Ziti Desktop Edge Client-${installerVersion}.exe"
+$exeName="Ziti Desktop Edge Client-${version}.exe"
 $exeAbsPath="${outputPath}\${exeName}"
 
 if($null -eq $env:AWS_KEY_ID) {
@@ -118,15 +133,23 @@ if($null -eq $env:OPENZITI_P12_PASS_2024) {
     echo ""
 } else {
     echo "adding additional signature to executable with openziti.org signing certificate"
-    echo "Using ${SIGNTOOL} to sign executable with the additional OpenZiti signature"
+    echo "Using ${SIGNTOOL} to sign executable with the additional OpenZiti signature: ${exeAbsPath}"
     & "$SIGNTOOL" sign /f "${scriptPath}\openziti_2024.p12" /p "${env:OPENZITI_P12_PASS_2024}" /tr http://ts.ssl.com /fd sha512 /td sha512 /as "${exeAbsPath}"
 }
 
-(Get-FileHash "${exeAbsPath}").Hash > "${scriptPath}\Output\Ziti Desktop Edge Client-${installerVersion}.exe.sha256"
+(Get-FileHash "${exeAbsPath}").Hash > "${scriptPath}\Output\Ziti Desktop Edge Client-${version}.exe.sha256"
 echo "========================== build.ps1 completed =========================="
 
-$defaultRootUrl = "https://github.com/openziti/desktop-edge-win/releases/download/"
-$defaultStream = "beta"
-$defaultPublishedAt = Get-Date
-$updateJson = "${installerVersion}.json"
-& .\Installer\output-build-json.ps1 -version $installerVersion -url $defaultRootUrl -stream $defaultStream -published_at $defaultPublishedAt -outputPath $updateJson
+$outputPath = "${scriptPath}\Output\Ziti Desktop Edge Client-${version}.exe.json"
+& .\Installer\output-build-json.ps1 -version $version -url $url -stream $stream -published_at $published_at -outputPath $outputPath -versionQualifier $versionQualifier
+
+echo "REMOVING .back files: ${scriptPath}\*back*"
+Remove-Item "${scriptPath}\*back*" -Recurse -ErrorAction SilentlyContinue
+
+echo "Copying json file to beta.json"
+copy $outputPath "$checkoutRoot\release-streams\beta.json"
+
+
+if($revertGitAfter) {
+  git checkout DesktopEdge/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip
+}
