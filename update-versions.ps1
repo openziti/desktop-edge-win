@@ -32,14 +32,14 @@ $assemblyInfo="./DesktopEdge/Properties/AssemblyInfo.cs"
 $assemblyInfoReplaced="${assemblyInfo}.replaced"
 echo "Replacing version in $assemblyInfo into $assemblyInfoReplaced"
 (Get-Content -Encoding UTF8 -path $assemblyInfo -Raw) -replace 'Version\("[0-9]*.[0-9]*.[0-9]*.[0-9]*', "Version(""${v}" | Set-Content -Encoding UTF8 -Path "$assemblyInfoReplaced" -NoNewline
-rm $assemblyInfo
-mv $assemblyInfoReplaced $assemblyInfo
+Remove-Item $assemblyInfo
+Move-Item $assemblyInfoReplaced $assemblyInfo
 
 $assemblyInfo="./ZitiUpdateService/Properties/AssemblyInfo.cs"
 $assemblyInfoReplaced="${assemblyInfo}.replaced"
 echo "Replacing version in $assemblyInfo into $assemblyInfoReplaced"
 (Get-Content -Encoding UTF8 -path $assemblyInfo -Raw) -replace 'Version\("[0-9]*.[0-9]*.[0-9]*.[0-9]*', "Version(""${v}" | Set-Content -Encoding UTF8 -Path "$assemblyInfoReplaced" -NoNewline
-rm $assemblyInfo
-mv $assemblyInfoReplaced $assemblyInfo
+Remove-Item $assemblyInfo
+Move-Item $assemblyInfoReplaced $assemblyInfo
 
 echo "==================================== update-versions.ps1 complete ===================================="
