@@ -548,6 +548,7 @@ namespace ZitiUpdateService {
                     Interlocked.Add(ref zetFailedCheckCounter, 1);
                     Logger.Warn("ziti-edge-tunnel aliveness check appears blocked and has been for {} times", zetFailedCheckCounter);
                     if (zetFailedCheckCounter > 2) {
+                        disableHealthCheck();
                         //after 3 failures, just terminate ziti-edge-tunnel
                         Interlocked.Exchange(ref zetFailedCheckCounter, 0); //reset the counter back to 0
                         Logger.Warn("forcefully stopping ziti-edge-tunnel as it has been blocked for too long");
@@ -559,6 +560,7 @@ namespace ZitiUpdateService {
                 }
             } catch (Exception ex) {
                 Logger.Error("ziti-edge-tunnel aliveness check ends exceptionally: {}", ex.Message);
+                Logger.Error(ex);
             }
         }
 
@@ -640,6 +642,10 @@ namespace ZitiUpdateService {
 
         protected override bool OnPowerEvent(PowerBroadcastStatus powerStatus) {
             Logger.Info("ziti-monitor OnPowerEvent was called {0}", powerStatus);
+            if(powerStatus == PowerBroadcastStatus.Suspend) {
+                // when going to sleep, make sure the healthcheck is disabled or accounts for going to sleep
+                disableHealthCheck();
+            }
             return base.OnPowerEvent(powerStatus);
         }
 
@@ -968,22 +974,37 @@ namespace ZitiUpdateService {
             SetLogLevel(e.Status.LogLevel);
         }
 
-        private void Svc_OnClientConnected(object sender, object e) {
-            Logger.Info("successfully connected to service");
-            if (!zetHealthcheck.Enabled) {
+        private void disableHealthCheck() {
+            if (zetHealthcheck.Enabled) {
                 zetHealthcheck.Enabled = true;
-                zetHealthcheck.Start();
-                Logger.Info("ziti-edge-tunnel health check enabled");
+                zetHealthcheck.Stop();
+                Logger.Info("ziti-edge-tunnel health check disabled");
+            } else {
+                Logger.Info("ziti-edge-tunnel health check already disabled");
             }
         }
 
+        private void enableHealthCheck() {
+            if (!zetHealthcheck.Enabled) {
+                zetHealthcheck.Enabled = false;
+                zetHealthcheck.Start();
+                Logger.Info("ziti-edge-tunnel health check enabled");
+            } else {
+                Logger.Info("ziti-edge-tunnel health check already enabled");
+            }
+        }
+
+        private void Svc_OnClientConnected(object sender, object e) {
+            Logger.Info("successfully connected to service");
+            enableHealthCheck();
+        }
+
         private void Svc_OnClientDisconnected(object sender, object e) {
+            disableHealthCheck(); //no need to healthcheck when we know it's disconnected
             DataClient svc = (DataClient)sender;
             if (svc.ExpectedShutdown) {
                 //then this is fine and expected - the service is shutting down
                 Logger.Info("client disconnected due to clean service shutdown");
-                zetHealthcheck.Stop();
-                zetHealthcheck.Enabled = false;
             } else {
                 Logger.Error("SERVICE IS DOWN and did not exit cleanly.");
 
