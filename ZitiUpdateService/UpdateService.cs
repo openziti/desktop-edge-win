@@ -1000,11 +1000,11 @@ namespace ZitiUpdateService {
         }
 
         private void Svc_OnClientDisconnected(object sender, object e) {
+            disableHealthCheck(); //no need to healthcheck when we know it's disconnected
             DataClient svc = (DataClient)sender;
             if (svc.ExpectedShutdown) {
                 //then this is fine and expected - the service is shutting down
                 Logger.Info("client disconnected due to clean service shutdown");
-                disableHealthCheck();
             } else {
                 Logger.Error("SERVICE IS DOWN and did not exit cleanly.");
 
