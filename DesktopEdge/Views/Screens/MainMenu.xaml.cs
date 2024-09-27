@@ -410,7 +410,7 @@ namespace ZitiDesktopEdge {
         async private void SetLevel(object sender, MouseButtonEventArgs e) {
             SubOptionItem item = (SubOptionItem)sender;
             if (OnLogLevelChanged != null) {
-                if (await OnLogLevelChanged(this.LogLevel)) {
+                if (await OnLogLevelChanged(item.Label.ToLower())) {
                     this.LogLevel = item.Label.ToLower();
                 }
             }
