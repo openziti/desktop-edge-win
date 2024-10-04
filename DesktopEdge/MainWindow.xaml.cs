@@ -1158,7 +1158,10 @@ namespace ZitiDesktopEdge {
                         }
                     }
                     LoadIdentities(true);
+                } else if (e.Action == "needs_ext_login") {
+                    logger.Debug("needs_ext_login action received"); //handled through identity event at the moment (forever?)
                 } else {
+                    logger.Warn("unexpected action received: {}", e.Action);
                     IdentityForgotten(ZitiIdentity.FromClient(e.Id));
                 }
             });
