@@ -24,6 +24,9 @@ using Microsoft.Toolkit.Uwp.Notifications;
 using NLog;
 using SWM = System.Windows.Media;
 using Windows.UI.WebUI;
+using Windows.Media.Protection.PlayReady;
+using ZitiDesktopEdge.DataStructures;
+using System.Diagnostics;
 
 namespace ZitiDesktopEdge {
     /// <summary>
@@ -206,6 +209,16 @@ namespace ZitiDesktopEdge {
                 }
             }
 
+            if (_identity.NeedsExtAuth) {
+                //show ext auth
+                ExtAuthRequired.Visibility = Visibility.Visible;
+                ServiceCountArea.Visibility = Visibility.Collapsed;
+            } else {
+                //hide ext auth
+                ExtAuthRequired.Visibility = Visibility.Collapsed;
+                ServiceCountArea.Visibility = Visibility.Visible;
+            }
+
             IdName.Content = _identity.Name;
             IdUrl.Content = _identity.ControllerUrl;
             if (_identity.ContollerVersion != null && _identity.ContollerVersion.Length > 0) IdUrl.Content = _identity.ControllerUrl + " at " + _identity.ContollerVersion;
@@ -333,8 +346,21 @@ namespace ZitiDesktopEdge {
         private void DoMFAOrOpen(object sender, MouseButtonEventArgs e) {
             if (MfaRequired.Visibility == Visibility.Visible || TimerCountdown.Visibility == Visibility.Visible || PostureTimedOut.Visibility == Visibility.Visible) {
                 MFAAuthenticate(sender, e);
+            } else if (ExtAuthRequired.Visibility == Visibility.Visible) {
+                CompleteExtAuth(sender, e);
             } else {
                 OpenDetails(sender, e);
+            }
+        }
+
+        async private void CompleteExtAuth(object sender, MouseButtonEventArgs e) {
+            try {
+                DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+                ExternalAuthLoginResponse resp = await client.ExternalAuthLogin(_identity.Identifier);
+                Console.WriteLine(resp.Data.url);
+                Process.Start(resp.Data.url);
+            } catch (Exception ex) {
+                logger.Error("unexpected error!", ex);
             }
         }
     }

@@ -201,9 +201,7 @@ namespace ZitiDesktopEdge.DataStructures {
 
     public class ZitiDumpPayloadFunction {
         public string DumpPath { get; set; }
-
     }
-
     public class ZitiDumpFunction : ServiceFunction {
         public ZitiDumpFunction(string dumpPath) {
             this.Command = "ZitiDump";
@@ -212,6 +210,26 @@ namespace ZitiDesktopEdge.DataStructures {
             };
         }
         public ZitiDumpPayloadFunction Data { get; set; }
+    }
+
+    public class ExternalAuthFunction {
+        public string Identifier { get; set; }
+    }
+    public class ExternalAuthLogin : ServiceFunction {
+        public ExternalAuthLogin(string identifier) {
+            this.Command = "ExternalAuth";
+            this.Data = new ExternalAuthFunction() {
+                Identifier = identifier,
+            };
+        }
+        public ExternalAuthFunction Data { get; set; }
+    }
+    public class ExternalAuthLoginResponse : SvcResponse {
+        public ExternalAuthLoginPayload Data { get; set; }
+    }
+    public class ExternalAuthLoginPayload {
+        public string identifier { get; set; }
+        public string url { get; set; }
     }
 
     public class IdentifierPayload {
@@ -259,7 +277,7 @@ namespace ZitiDesktopEdge.DataStructures {
         public int MinTimeout { get; set; }
         public int MaxTimeout { get; set; }
         public DateTime MfaLastUpdatedTime { get; set; }
-
+        public bool NeedsExtAuth { get; set; }
     }
 
     public class Service {

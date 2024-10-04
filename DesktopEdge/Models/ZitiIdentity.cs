@@ -90,6 +90,8 @@ namespace ZitiDesktopEdge.Models {
             }
         }
 
+        public bool NeedsExtAuth { get; set; }
+
         /// <summary>
         /// Default constructor to support named initialization
         /// </summary>
@@ -134,7 +136,8 @@ namespace ZitiDesktopEdge.Models {
                 MaxTimeout = id.MaxTimeout,
                 LastUpdatedTime = id.MfaLastUpdatedTime,
                 TimeoutMessage = "",
-                IsConnected = true
+                IsConnected = true,
+                NeedsExtAuth = id.NeedsExtAuth,
             };
 
 #if DEBUG
