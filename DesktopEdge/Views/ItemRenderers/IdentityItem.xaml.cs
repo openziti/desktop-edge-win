@@ -20,19 +20,17 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.ServiceClient;
-using Microsoft.Toolkit.Uwp.Notifications;
 using NLog;
 using SWM = System.Windows.Media;
-using Windows.UI.WebUI;
-using Windows.Media.Protection.PlayReady;
 using ZitiDesktopEdge.DataStructures;
 using System.Diagnostics;
+using System.Web.UI;
 
 namespace ZitiDesktopEdge {
     /// <summary>
     /// User Control to list Identities and give status
     /// </summary>
-    public partial class IdentityItem : UserControl {
+    public partial class IdentityItem : System.Windows.Controls.UserControl {
 
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         public delegate void StatusChanged(bool attached);
@@ -209,14 +207,20 @@ namespace ZitiDesktopEdge {
                 }
             }
 
-            if (_identity.NeedsExtAuth) {
-                //show ext auth
-                ExtAuthRequired.Visibility = Visibility.Visible;
-                ServiceCountArea.Visibility = Visibility.Collapsed;
-            } else {
-                //hide ext auth
+            int idViewState = CalculateIdentityState(_identity);
+
+            if (idViewState == 0) {
                 ExtAuthRequired.Visibility = Visibility.Collapsed;
+                MfaRequired.Visibility = Visibility.Collapsed;
                 ServiceCountArea.Visibility = Visibility.Visible;
+            } else if (idViewState % (int)IdentityStates.NeedsExtAuth == 0) {
+                ExtAuthRequired.Visibility = Visibility.Visible;
+                MfaRequired.Visibility = Visibility.Collapsed;
+                ServiceCountArea.Visibility = Visibility.Collapsed;
+            } else if (idViewState % (int)IdentityStates.NeedsMfa == 0) {
+                ExtAuthRequired.Visibility = Visibility.Collapsed;
+                MfaRequired.Visibility = Visibility.Visible;
+                ServiceCountArea.Visibility = Visibility.Collapsed;
             }
 
             IdName.Content = _identity.Name;
@@ -224,6 +228,22 @@ namespace ZitiDesktopEdge {
             if (_identity.ContollerVersion != null && _identity.ContollerVersion.Length > 0) IdUrl.Content = _identity.ControllerUrl + " at " + _identity.ContollerVersion;
 
             ToggleStatus.Content = ((ToggleSwitch.Enabled) ? "ENABLED" : "DISABLED");
+        }
+
+        private int CalculateIdentityState(ZitiIdentity id) {
+            int ret = 0;
+            if (id.NeedsExtAuth) {
+                ret += (int)IdentityStates.NeedsExtAuth;
+            }
+            if (id.IsMFANeeded) {
+                ret += (int)IdentityStates.NeedsMfa;
+            }
+            return ret;
+        }
+
+        enum IdentityStates {
+            NeedsMfa = 1,
+            NeedsExtAuth = 2,
         }
 
         private void TimingTimerTick(object sender, EventArgs e) {
@@ -357,7 +377,7 @@ namespace ZitiDesktopEdge {
             try {
                 DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
                 ExternalAuthLoginResponse resp = await client.ExternalAuthLogin(_identity.Identifier);
-                Console.WriteLine(resp.Data.url);
+                Console.WriteLine(resp.Data?.url);
                 Process.Start(resp.Data.url);
             } catch (Exception ex) {
                 logger.Error("unexpected error!", ex);
