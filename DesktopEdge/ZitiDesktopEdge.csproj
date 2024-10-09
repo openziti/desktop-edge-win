@@ -475,6 +475,7 @@
     <Resource Include="Assets\Images\processing.png" />
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Assets\Images\ext-auth-needed.png" />
     <Resource Include="ziti-v2.ico" />
     <Content Include="..\ziti.ico" />
   </ItemGroup>
