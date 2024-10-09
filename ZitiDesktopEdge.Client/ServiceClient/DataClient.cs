@@ -318,6 +318,20 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
 
+        async public Task<ExternalAuthLoginResponse> ExternalAuthLogin(string identifier) {
+            try {
+                await sendAsync(new ExternalAuthLogin(identifier));
+                ExternalAuthLoginResponse extAuthResp = await readAsync<ExternalAuthLoginResponse>(ipcReader);
+                return extAuthResp;
+            } catch (Exception ioe) {
+                //almost certainly a problem with the pipe - recreate the pipe...
+                //throw ioe;
+                Logger.Error(ioe, "Unexpected error");
+                CommunicationError(ioe);
+            }
+            return null;
+        }
+
         protected override void ProcessLine(string line) {
             try {
                 string respAsString = line;

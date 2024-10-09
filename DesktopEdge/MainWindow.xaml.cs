@@ -439,7 +439,7 @@ namespace ZitiDesktopEdge {
             notifyIcon.BalloonTipClosed += NotifyIcon_BalloonTipClosed;
             notifyIcon.MouseClick += NotifyIcon_MouseClick;
             notifyIcon.ContextMenu = this.contextMenu;
-
+            
             IdentityMenu.OnDetach += OnDetach;
             MainMenu.OnDetach += OnDetach;
 
@@ -1125,6 +1125,7 @@ namespace ZitiDesktopEdge {
                         found.IsEnabled = zid.IsEnabled;
                         found.IsMFAEnabled = e.Id.MfaEnabled;
                         found.IsConnected = true;
+                        found.NeedsExtAuth = e.Id.NeedsExtAuth;
                         for (int i = 0; i < identities.Count; i++) {
                             if (identities[i].Identifier == found.Identifier) {
                                 identities[i] = found;
@@ -1157,7 +1158,10 @@ namespace ZitiDesktopEdge {
                         }
                     }
                     LoadIdentities(true);
+                } else if (e.Action == "needs_ext_login") {
+                    logger.Debug("needs_ext_login action received"); //handled through identity event at the moment (forever?)
                 } else {
+                    logger.Warn("unexpected action received: {}", e.Action);
                     IdentityForgotten(ZitiIdentity.FromClient(e.Id));
                 }
             });
@@ -1251,7 +1255,6 @@ namespace ZitiDesktopEdge {
 				}*/
                 this.MainMenu.LogLevel = e.Status.LogLevel;
                 Ziti.Desktop.Edge.Utils.UIUtils.SetLogLevel(e.Status.LogLevel);
-
                 InitializeTimer((int)e.Status.Duration);
                 LoadStatusFromService(e.Status);
                 LoadIdentities(true);
@@ -1429,7 +1432,9 @@ namespace ZitiDesktopEdge {
                         idItem.Identity = id;
                         idItem.IdentityChanged += IdItem_IdentityChanged;
 
-                        if (repaint) idItem.RefreshUI();
+                        if (repaint) {
+                            idItem.RefreshUI();
+                        }
 
                         IdList.Children.Add(idItem);
 
