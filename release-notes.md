@@ -1,3 +1,20 @@
+# Release 2.5.0.12
+
+## What's New
+* IdP Integration!
+* Keychain integration and TPM now used!
+
+## Other changes:
+* n/a
+
+## Bugs fixed:
+* n/a
+
+## Dependency Updates
+ziti-tunneler: v2.0.0-alpha24.11
+ziti-sdk:      2.0.0-alpha29
+tlsuv:         v0.32.2.1[OpenSSL 3.3.1 4 Jun 2024]
+
 # Release 2.5.0.10 & 2.5.0.11
 
 ## What's New

@@ -83,7 +83,7 @@ namespace ZitiDesktopEdge {
             ThisAssemblyName = asm.GetName().Name;
             state = (ZDEWViewState)Application.Current.Properties["ZDEWViewState"];
 #if DEBUG
-            ExecutionDirectory = @"C:\Program Files (x86)\NetFoundry, Inc\Ziti Desktop Edge";
+            ExecutionDirectory = @"C:\Program Files (x86)\NetFoundry Inc\Ziti Desktop Edge";
 #else
 			ExecutionDirectory = Path.GetDirectoryName(asm.Location);
 #endif
