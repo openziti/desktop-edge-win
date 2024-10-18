@@ -14,7 +14,7 @@
 	limitations under the License.
 */
 
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 
 namespace ZitiUpdateService.Checkers.PeFile {
     public static class StructHelper {

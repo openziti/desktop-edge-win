@@ -14,7 +14,7 @@
 	limitations under the License.
 */
 
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipes;
@@ -59,28 +59,29 @@ namespace ZitiDesktopEdge.ServiceClient {
         protected virtual void ClientConnected(object e) {
             Connected = true;
             Reconnecting = false;
-            CleanShutdown = false;
-            Logger.Debug("Client connected successfully. Setting CleanShutdown set to false.");
+            ExpectedShutdown = false;
+            Logger.Debug("Client connected successfully. Setting UnexpectedShutdown set to false.");
 
             ipcWriter = new StreamWriter(pipeClient);
             ipcReader = new StreamReader(pipeClient);
             Task.Run(async () => { //hack for now until it's async...
                 try {
-                    StreamReader eventReader = new StreamReader(eventClient);
-                    while (true) {
-                        if (eventReader.EndOfStream) {
-                            break;
-                        }
-                        string respAsString = null;
-                        try {
-                            respAsString = await readMessageAsync(eventReader);
-                            try {
-                                ProcessLine(respAsString);
-                            } catch (Exception ex) {
-                                Logger.Warn(ex, "ERROR caught in ProcessLine: {0}", respAsString);
+                    using (StreamReader eventReader = new StreamReader(eventClient)) {
+                        while (true) {
+                            if (eventReader.EndOfStream) {
+                                break;
                             }
-                        } catch (Exception ex) {
-                            Logger.Warn(ex, "ERROR caught in readMessageAsync: {0}", respAsString);
+                            string respAsString = null;
+                            try {
+                                respAsString = await readMessageAsync(eventReader);
+                                try {
+                                    ProcessLine(respAsString);
+                                } catch (Exception ex) {
+                                    Logger.Warn(ex, "ERROR caught in ProcessLine: {0}", respAsString);
+                                }
+                            } catch (Exception ex) {
+                                Logger.Warn(ex, "ERROR caught in readMessageAsync: {0}", respAsString);
+                            }
                         }
                     }
                 } catch (Exception ex) {
@@ -101,7 +102,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         protected virtual void ShutdownEvent(StatusEvent e) {
-            CleanShutdown = true;
+            ExpectedShutdown = true;
             OnShutdownEvent?.Invoke(this, e);
         }
 
@@ -130,7 +131,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                             await ipcWriter.WriteAsync('\n');
                             await ipcWriter.FlushAsync();
                         } else {
-                            throw new Exception("the monitor service appears to be offline?");
+                            throw new IPCException("ipcWriter is null. the target appears to be offline?");
                         }
                     } else {
                         Logger.Debug("NOT sending empty object??? " + objToSend?.ToString());
@@ -145,6 +146,8 @@ namespace ZitiDesktopEdge.ServiceClient {
                     } else {
                         retried = true; //fall back through to the while and try again
                     }
+                } catch (MonitorServiceException) {
+                    throw;
                 } catch (Exception ex) {
                     //if this fails it's usually because the writer is null/invalid. throwing IOException
                     //will trigger the pipe to rebuild
@@ -155,7 +158,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         public bool Reconnecting { get; set; }
         public bool Connected { get; set; }
-        public bool CleanShutdown { get; set; }
+        public bool ExpectedShutdown { get; set; }
 
         public AbstractClient(string id) {
             this.Id = id;
@@ -196,7 +199,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                     } catch (Exception) {
                         try {
                             ReconnectFailureEvent("reconnect failure");
-                        } catch (Exception){
+                        } catch (Exception) {
                             // don't care - just catch it and continue... it's a timeout...
                         }
                         var now = DateTime.Now;
@@ -286,5 +289,18 @@ namespace ZitiDesktopEdge.ServiceClient {
 
             return property;
         }
+    }
+
+    public class MonitorServiceException : Exception {
+        public MonitorServiceException() { }
+        public MonitorServiceException(string message) : base(message) { }
+        public MonitorServiceException(string message, Exception source) : base(message, source) { }
+    }
+
+    public class IPCException : Exception {
+        public IPCException() { }
+        public IPCException(string message) : base(message) { }
+        public IPCException(string message, Exception source) : base(message, source) { }
+
     }
 }

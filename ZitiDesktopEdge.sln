@@ -10,7 +10,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		build-test-release.ps1 = build-test-release.ps1
 		Installer\build.ps1 = Installer\build.ps1
 		.github\workflows\installer.build.yml = .github\workflows\installer.build.yml
+		manual-testing.md = manual-testing.md
 		.github\workflows\mattermost-ziti-webhook.yml = .github\workflows\mattermost-ziti-webhook.yml
+		Installer\output-build-json.ps1 = Installer\output-build-json.ps1
 		README.md = README.md
 		Installer\reg.bat = Installer\reg.bat
 		release-notes.md = release-notes.md
@@ -32,6 +34,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "release-streams", "release-streams", "{36C30126-C9DC-4233-835E-9E036BCD1A29}"
 	ProjectSection(SolutionItems) = preProject
 		release-streams\beta.json = release-streams\beta.json
+		release-streams\ctrlha-alpha.json = release-streams\ctrlha-alpha.json
 		release-streams\dev.json = release-streams\dev.json
 		release-streams\latest.json = release-streams\latest.json
 		release-streams\stable.json = release-streams\stable.json
@@ -44,6 +47,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{472A
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{DB005713-0237-4719-9F7B-A239879B290D}"
 	ProjectSection(SolutionItems) = preProject
+		.github\workflows\dependabot.yml = .github\workflows\dependabot.yml
 		.github\workflows\installer.build.yml = .github\workflows\installer.build.yml
 		.github\workflows\mattermost-ziti-webhook.yml = .github\workflows\mattermost-ziti-webhook.yml
 		.github\workflows\release-drafter.yml = .github\workflows\release-drafter.yml

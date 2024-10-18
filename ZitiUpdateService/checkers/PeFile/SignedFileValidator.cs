@@ -14,7 +14,7 @@
     limitations under the License.
 */
 
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
@@ -34,7 +34,7 @@ namespace ZitiUpdateService.Checkers.PeFile {
 
         public const int LengthOfChecksum = 4; //the checksum is 4 bytes
         public const int LengthCertificateTable = 8; //the Certificate Table is 8 bytes
-        
+
         public HashPositions ImportantHashPositions { get; private set; }
         public string FilePath { get; private set; }
         public PeType Type { get; private set; }
@@ -92,7 +92,7 @@ namespace ZitiUpdateService.Checkers.PeFile {
                 int magicNumber = BitConverter.ToInt16(magicNumberBytes, 0);
                 Type = magicNumber == 0x10b ? PeType.Pe32 : PeType.Pe32Plus;
                 stream.Seek(-2, SeekOrigin.Current); //skip back to before the magic number so the struct below is created properly
-                
+
                 //parse Optional Header Standard and Windows-Specific fields (66 or 88 bytes)
                 //see: https://docs.microsoft.com/en-us/windows/win32/debug/pe-format#optional-header-standard-fields-image-only
                 if (Type == PeType.Pe32) {
@@ -161,8 +161,7 @@ namespace ZitiUpdateService.Checkers.PeFile {
                                     SignerInfo innerSignerInfo = innerCms.SignerInfos[0];
                                     try {
                                         innerSignerInfo.CheckSignature(false);
-                                    }
-                                    catch (CryptographicException) {
+                                    } catch (CryptographicException) {
                                         if (innerSignerInfo.Certificate.Thumbprint == oldKnownThumbprint) {
                                             //special handling for the known 'old' NetFoundry signing certificate, now expired...
                                             //TODO: remove this code after 2021
@@ -292,14 +291,12 @@ namespace ZitiUpdateService.Checkers.PeFile {
                                     } else {
                                         exceptions.Add(new CryptographicException("Could not retrieve revocation list from " + url + "- cannot verify trust"));
                                     }
-                                }
-                                catch (Exception innerException) {
+                                } catch (Exception innerException) {
                                     exceptions.Add(new CryptographicException("crl at " + url + " could not be used", innerException));
                                 }
                             }
                         }
-                    }
-                    catch (Exception ex) {
+                    } catch (Exception ex) {
                         exceptions.Add(ex);
                     }
                 }
@@ -483,7 +480,7 @@ namespace ZitiUpdateService.Checkers.PeFile {
             internal bool reorderNeeded = false;
             private uint lastAddress = 0;
             public void AddSectionTableHeader(IMAGE_SECTION_HEADER sectionTableHeader) {
-                
+
                 if (sectionTableHeader.SizeOfRawData > 0) {
                     SectionTableHeaders.Add(sectionTableHeader);
                 }
@@ -560,7 +557,7 @@ namespace ZitiUpdateService.Checkers.PeFile {
         internal CrlDistributionPointParser(CrlDistributionPointParser parent, MemoryStream memoryStream, /*BinaryReader asn1Reader,*/ int offset) {
             BinaryReader asn1Reader = new BinaryReader(memoryStream);
             this.offset = offset;
-            type = readTag(asn1Reader); 
+            type = readTag(asn1Reader);
             length = readTagLen(asn1Reader);
             this.parent = parent;
             int headerBytes = consumedBytes;
@@ -568,7 +565,7 @@ namespace ZitiUpdateService.Checkers.PeFile {
                 switch (type) {
                     case AsnTagType.SEQUENCE:
                     case AsnTagType.ARRAY_ELEMENT:
-                        var t = new CrlDistributionPointParser(this, memoryStream, (int) memoryStream.Position);
+                        var t = new CrlDistributionPointParser(this, memoryStream, (int)memoryStream.Position);
                         consumedBytes += t.consumedBytes;
                         tags.Add(t);
                         this.urls.AddRange(t.urls);

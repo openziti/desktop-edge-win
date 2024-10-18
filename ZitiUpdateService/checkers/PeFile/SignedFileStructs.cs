@@ -14,7 +14,7 @@
 	limitations under the License.
 */
 
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 
 namespace ZitiUpdateService.Checkers.PeFile {
@@ -275,7 +275,8 @@ namespace ZitiUpdateService.Checkers.PeFile {
     [StructLayout(LayoutKind.Explicit)]
     public struct IMAGE_SECTION_HEADER {
         //FROM: http://www.pinvoke.net/default.aspx/Structures/IMAGE_SECTION_HEADER.html
-        [FieldOffset(0)] [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
+        [FieldOffset(0)]
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
         public char[] Name;
 
         [FieldOffset(8)] public UInt32 VirtualSize;

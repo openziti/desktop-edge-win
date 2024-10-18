@@ -14,7 +14,7 @@
 	limitations under the License.
 */
 
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using System.IO;
 using System.IO.Pipes;
@@ -88,12 +88,12 @@ namespace ZitiDesktopEdge.Server {
                         pipeSecurity);
 
                     await ipcPipeServer.WaitForConnectionAsync();
-                    
+
                     Logger.Debug("Total ipc clients now at: {0}", ++idx);
                     _ = Task.Run(async () => {
                         try {
                             await handleIpcClientAsync(ipcPipeServer, onClient);
-                        } catch(Exception icpe) {
+                        } catch (Exception icpe) {
                             Logger.Error(icpe, "Unexpected error in handleIpcClientAsync");
                         }
                         idx--;
@@ -167,18 +167,22 @@ namespace ZitiDesktopEdge.Server {
         }
 
         async public Task handleEventClientAsync(NamedPipeServerStream ss, OnClientAsync onClient) {
-            using (ss) {
-                StreamWriter writer = new StreamWriter(ss);
+            try {
+                using (ss) {
+                    StreamWriter writer = new StreamWriter(ss);
 
-                EventHandler eh = async (object sender, EventArgs e) => {
-                    await writer.WriteLineAsync(sender.ToString());
-                    await writer.FlushAsync();
-                };
+                    EventHandler eh = async (object sender, EventArgs e) => {
+                        try {
+                            await writer.WriteLineAsync(sender.ToString());
+                            await writer.FlushAsync();
+                        } catch (Exception ex) {
+                            Logger.Error("problem with event handler in handleEventClientAsync: {}", ex.Message);
+                        }
+                    };
 
-                await onClient(writer);
+                    await onClient(writer);
 
-                EventRegistry.MyEvent += eh;
-                try {
+                    EventRegistry.MyEvent += eh;
                     StreamReader reader = new StreamReader(ss);
 
                     string line = await reader.ReadLineAsync();
@@ -188,10 +192,10 @@ namespace ZitiDesktopEdge.Server {
                     }
 
                     Logger.Debug("handleEventClientAsync is complete");
-                } catch (Exception e) {
-                    Logger.Error(e, "Unexpected error when reading from or writing to a client pipe.");
+                    EventRegistry.MyEvent -= eh;
                 }
-                EventRegistry.MyEvent -= eh;
+            } catch (Exception e) {
+                Logger.Error(e, "Unexpected error when reading from or writing to a client pipe.");
             }
         }
 
@@ -216,7 +220,7 @@ namespace ZitiDesktopEdge.Server {
                                 break;
                             }
 
-                            foreach(var p in procs) {
+                            foreach (var p in procs) {
                                 Logger.Warn("Forcefully terminating process: {0}", p.Id);
                                 p.Kill();
                             }

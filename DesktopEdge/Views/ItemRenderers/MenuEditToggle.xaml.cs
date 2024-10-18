@@ -19,60 +19,60 @@ namespace ZitiDesktopEdge {
     /// <summary>
     /// Interaction logic for MenuItem.xaml
     /// </summary>
-    public partial class MenuEditToggle: UserControl {
+    public partial class MenuEditToggle : UserControl {
 
-		public delegate void OnToggle(bool isOn);
-		public event OnToggle Toggle;
-		public delegate void OnAuthenticate();
-		public event OnAuthenticate Authenticate;
-		public delegate void OnRecovery();
-		public event OnRecovery Recovery;
-		private ZitiIdentity _identity;
+        public delegate void OnToggle(bool isOn);
+        public event OnToggle Toggle;
+        public delegate void OnAuthenticate();
+        public event OnAuthenticate Authenticate;
+        public delegate void OnRecovery();
+        public event OnRecovery Recovery;
+        private ZitiIdentity _identity;
 
-		private string _label = "";
+        private string _label = "";
 
-		public string Label {
-			get {
-				return _label;
-			}
-			set {
-				this._label = value;
-				this.MainLabel.Text = this._label;
-			}
-		}
-		public bool IsOn {
-			get {
-				return ToggleField.Enabled; 
-			}
-			set {
-				ToggleField.Enabled = value;
-			}
-		}
+        public string Label {
+            get {
+                return _label;
+            }
+            set {
+                this._label = value;
+                this.MainLabel.Text = this._label;
+            }
+        }
+        public bool IsOn {
+            get {
+                return ToggleField.Enabled;
+            }
+            set {
+                ToggleField.Enabled = value;
+            }
+        }
 
-		public ZitiIdentity Identity {
-			get {
-				return _identity; 
-			}
-			set {
-				_identity = value;
-			}
-		}
+        public ZitiIdentity Identity {
+            get {
+                return _identity;
+            }
+            set {
+                _identity = value;
+            }
+        }
 
-		public MenuEditToggle() {
+        public MenuEditToggle() {
             InitializeComponent();
         }
 
-		public void Toggled(Boolean isOn) {
-			this.ToggleField.Enabled = isOn;
-			this.Toggle?.Invoke(isOn);
-		}
+        public void Toggled(Boolean isOn) {
+            this.ToggleField.Enabled = isOn;
+            this.Toggle?.Invoke(isOn);
+        }
 
-		private void MFAAuthenticate(object sender, MouseButtonEventArgs e) {
-			this.Authenticate?.Invoke();
-		}
+        private void MFAAuthenticate(object sender, MouseButtonEventArgs e) {
+            this.Authenticate?.Invoke();
+        }
 
-		private void MFARecovery(object sender, MouseButtonEventArgs e) {
-			this.Recovery?.Invoke();
-		}
-	}
+        private void MFARecovery(object sender, MouseButtonEventArgs e) {
+            this.Recovery?.Invoke();
+        }
+    }
 }

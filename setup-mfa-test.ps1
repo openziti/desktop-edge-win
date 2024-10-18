@@ -13,7 +13,6 @@ if ("$env:CLEAR_IDENTITIES_OK" -ne "yes") {
 Remove-Item C:\Windows\System32\config\systemprofile\AppData\Roaming\NetFoundry\mfa*.json
 Remove-Item C:\Windows\System32\config\systemprofile\AppData\Roaming\NetFoundry\config*.json
 Remove-Item "$env:APPDATA\NetFoundry\*.json"
-#copy C:\Users\clint\AppData\Roaming\NetFoundry\empty.config.json C:\Users\clint\AppData\Roaming\NetFoundry\config.json
 
 
 echo "starting reset"
@@ -74,16 +73,6 @@ ziti edge verify ca $caName --cert $verificationCert
 "verification cert path: $verificationCert"
 
 $authPolicy=(ziti edge create auth-policy yubi-mfa --primary-cert-allowed --secondary-req-totp --primary-cert-expired-allowed)
-
-$newUser="clint"
-ziti pki create client --pki-root "${zitiPkiRoot}" --ca-name "$caName" --client-file "$newUser" --client-name "$newUser"
-$newUserCert=(Get-ChildItem -Path $zitiPkiRoot -Filter "$newUser.cert" -Recurse).FullName
-$newUserKey=(Get-ChildItem -Path $zitiPkiRoot -Filter "$newUser.key" -Recurse).FullName
-ziti edge create identity $newUser --auth-policy "$authPolicy"
-ziti edge create enrollment ottca $newUser $caName
-
-$ottcajwt = (ziti edge list identities "name contains \""$newUser\""" -j | ConvertFrom-Json).data.enrollment.ottca.jwt
-Set-Content -Path "$newUser.jwt" -Value $ottcajwt -NoNewline -Encoding ASCII
 
 $count = 0
 $iterations = 10
@@ -162,6 +151,70 @@ ziti edge update service-policy "$name.svc.0.ziti.dial" --posture-check-roles "@
 
 
 
+$caName="3rd-party-ca-"+(Get-Date).ToString("yyyy-MM-dd-HH-mm-ss")
+clear
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+$zitiUser="admin"
+$zitiPwd="admin"
+$zitiCtrl="localhost:1280"
+ziti edge login $zitiCtrl -u $zitiUser -p $zitiPwd -y
+
+$caName="my-ca"
+$newUser="$caName-user"
+$zitiPkiRoot="C:\temp\support\discourse\2790\$caName\pki"
+ziti pki create ca --pki-root "${zitiPkiRoot}" --ca-file "$caName"
+
+$rootCa=(Get-ChildItem -Path $zitiPkiRoot -Filter "$caName.cert" -Recurse).FullName
+"root ca path: $rootCa"
+
+ziti edge create ca "$caName" "$rootCa" --auth --ottca
+
+$verificationToken=((ziti edge list cas -j | ConvertFrom-Json).data | Where-Object { $_.name -eq $caName }[0]).verificationToken
+ziti pki create client --pki-root "${zitiPkiRoot}" --ca-name "$caName" --client-file "$verificationToken" --client-name "$verificationToken"
+
+$verificationCert=(Get-ChildItem -Path $zitiPkiRoot -Filter "$verificationToken.cert" -Recurse).FullName
+"verification cert path: $verificationCert"
+ziti edge verify ca $caName --cert $verificationCert
+
+
+$authPolicy=(ziti edge create auth-policy "$caName-auth-policy" --primary-cert-allowed --secondary-req-totp --primary-cert-expired-allowed)
+
+
+ziti pki create client --pki-root "${zitiPkiRoot}" --ca-name "$caName" --client-file "$newUser" --client-name "$newUser"
+
+$newUserCert=(Get-ChildItem -Path $zitiPkiRoot -Filter "$newUser.cert" -Recurse).FullName
+$newUserKey=(Get-ChildItem -Path $zitiPkiRoot -Filter "$newUser.key" -Recurse).FullName
+
+ziti edge create identity $newUser --auth-policy "$authPolicy"
+ziti edge create enrollment ottca $newUser $caName
+
+if ($PSVersionTable.PSVersion.Major -gt 5) { #powershell....
+    $ottcajwt = (ziti edge list identities "name contains ""$newUser""" -j | ConvertFrom-Json).data.enrollment.ottca.jwt
+} else {
+    $ottcajwt = (ziti edge list identities "name contains \""$newUser\""" -j | ConvertFrom-Json).data.enrollment.ottca.jwt 
+}
+
+Set-Content -Path "$zitiPkiRoot\$newUser.jwt" -Value $ottcajwt -NoNewline -Encoding ASCII
+
+& 'C:\Program Files (x86)\NetFoundry Inc\Ziti Desktop Edge\ziti-edge-tunnel.exe' `
+    enroll `
+    --jwt "$zitiPkiRoot\$newUser.jwt" `
+    --cert $newUserCert `
+    --key $newUserKey `
+    --identity "C:\Windows\System32\config\systemprofile\AppData\Roaming\NetFoundry\${newUser}.json"
 
 
 

@@ -6,7 +6,6 @@
 # .\build-test-release.ps1 -version 1.2.3 -url https://lnxiskqx49x4.share.zrok.io/local -stream "dev" -published_at (Get-Date)
 # .\build-test-release.ps1 -version 1.2.3 -url https://lnxiskqx49x4.share.zrok.io/local -stream "dev" -published_at "2023-11-02T14:30:00"
 param(
-    [Parameter(Mandatory = $true)]
     [string]$version,
     [string]$url = "http://localhost:8000/release-streams/local",
     [string]$stream = "local",
@@ -16,9 +15,45 @@ param(
     [string]$versionQualifier = ""
 )
 echo ""
-$env:ZITI_DESKTOP_EDGE_DOWNLOAD_URL="$url"
-$env:ZITI_DESKTOP_EDGE_VERSION="$version"
 $scriptDirectory = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
+
+$version = $version.Trim()
+if (-not $version) {
+    if (Test-Path -Path "version") {
+        $version = (Get-Content -Path "version" -Raw).Trim()
+        Write-Host -NoNewline "Version not supplied. Using version from file and incrementing: "
+        Write-Host -ForegroundColor Yellow "${version}"
+
+        # Increment the last tuple
+        $versionWithoutPrefix = $version -replace '^v', ''
+        $segments = $versionWithoutPrefix -split '\.'
+        $segments[-1] = [int]$segments[-1] + 1
+        $version = ($segments -join '.')
+
+        Write-Host -NoNewline "New Version: "
+        Write-Host -ForegroundColor Green "$version"
+        # Check if the 'version' file has changes in git
+        $gitStatus = git status --porcelain "version"
+
+        if (-not $gitStatus) {
+            # File has not been modified in git, proceed to update it
+            Set-Content -Path "version" -Value $version -NoNewline
+        } else {
+            Write-Host "The version file has changes in git. Update skipped." -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "Version file not found" -ForegroundColor Red
+        exit 1
+    }
+} else {
+    # Regex to match semantic versioning pattern
+    if ($version -notmatch '^v?\d+(\.\d+){0,3}$') {
+        Write-Host -ForegroundColor Red "Invalid version format [${version}]. Expected a semantic version (e.g., 1.0.0)."
+        exit 1
+    }
+	Write-Host -NoNewline "Version: "
+    Write-Host -ForegroundColor Green "$version"
+}
 
 $outputPath = "$scriptDirectory\release-streams\${version}.json"
 & .\Installer\output-build-json.ps1 -version $version -url $url -stream $stream -published_at $published_at -outputPath $outputPath
@@ -30,7 +65,8 @@ if(! $jsonOnly) {
   & .\Installer\build.ps1 -version $version -url $url -stream $stream -published_at $published_at -jsonOnly $jsonOnly -revertGitAfter $revertGitAfter -versionQualifier $versionQualifier
   $exitCode = $LASTEXITCODE
   if($exitCode -gt 0) {
-    Write-Host "build.ps1 failed!"
+    Write-Host -ForegroundColor Red "ERROR:"
+    Write-Host -ForegroundColor Red "  - build.ps1 failed!"
     exit $exitCode
   }
   
