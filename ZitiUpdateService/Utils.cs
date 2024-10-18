@@ -14,7 +14,7 @@
 	limitations under the License.
 */
 
-﻿using System;
+using System;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.IO;
@@ -37,8 +37,7 @@ namespace ZitiUpdateService {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         public static void GrantAccessToDirectory(string path) {
-            try
-            {
+            try {
                 if (!Directory.Exists(path)) {
                     return;
                 }
@@ -48,7 +47,7 @@ namespace ZitiUpdateService {
                 SecurityIdentifier everyone = new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null);
                 sec.AddAccessRule(new FileSystemAccessRule(everyone, FileSystemRights.Modify | FileSystemRights.Synchronize, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
                 Directory.SetAccessControl(path, sec);
-            } catch(Exception e) {
+            } catch (Exception e) {
                 Logger.Error(e, "Unexpected error when setting directory security: {0}", e.Message);
             }
         }

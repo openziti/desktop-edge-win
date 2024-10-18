@@ -9,7 +9,6 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-
 function verifyFile($path) {
     if (Test-Path -Path "$path") {
         "OK: $path exists!"

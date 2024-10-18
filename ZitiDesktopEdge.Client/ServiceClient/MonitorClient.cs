@@ -73,7 +73,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 ClientConnected(null);
             } catch (Exception ex) {
                 semaphoreSlim.Release();
-                throw new ServiceException("Could not connect to the service.", 1, ex.Message);
+                throw new ServiceException("Could not connect to the monitor service.", 1, ex.Message);
             }
             semaphoreSlim.Release();
         }
@@ -92,38 +92,18 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
         }
 
-        async internal Task<string> SendServiceFunctionAsync(object toSend) {
-            try {
-                await sendAsync(toSend);
-                var resp = await readMessageAsync(ipcReader);
-                Logger.Info("RESPONSE: {0}", resp);
-                return resp;
-            } catch (Exception ex) {
-                Logger.Error(ex, "Unexpected error");
-            }
-            return null;
-        }
-
         async public Task<MonitorServiceStatusEvent> StopServiceAsync() {
             ActionEvent action = new ActionEvent() { Op = "Stop", Action = "Normal" };
-            try {
-                await sendAsync(action);
-                return await readAsync<MonitorServiceStatusEvent>(ipcReader);
-            } catch (Exception ex) {
-                Logger.Error(ex, "Unexpected error");
-            }
-            return null;
+            await sendAsync(action);
+            return await readAsync<MonitorServiceStatusEvent>(ipcReader);
         }
+
         async public Task<MonitorServiceStatusEvent> StartServiceAsync() {
             ActionEvent action = new ActionEvent() { Op = "Start", Action = "Normal" };
-            try {
-                await sendAsync(action);
-                return await readAsync<MonitorServiceStatusEvent>(ipcReader);
-            } catch (Exception ex) {
-                Logger.Error(ex, "Unexpected error");
-            }
-            return null;
+            await sendAsync(action);
+            return await readAsync<MonitorServiceStatusEvent>(ipcReader);
         }
+
         async public Task<MonitorServiceStatusEvent> ForceTerminateAsync() {
             ActionEvent action = new ActionEvent() { Op = "Stop", Action = "Force" };
             try {
@@ -134,6 +114,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
             return null;
         }
+
         async public Task<MonitorServiceStatusEvent> StatusAsync() {
             ActionEvent action = new ActionEvent() { Op = "Status", Action = "" };
             try {
@@ -144,82 +125,46 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
             return null;
         }
+
         async public Task<MonitorServiceStatusEvent> CaptureLogsAsync() {
             ActionEvent action = new ActionEvent() { Op = "CaptureLogs", Action = "Normal" };
-            try {
-                await sendAsync(action);
-                return await readAsync<MonitorServiceStatusEvent>(ipcReader);
-            } catch (Exception ex) {
-                Logger.Error(ex, "Unexpected error");
-            }
-            return null;
+            await sendAsync(action);
+            return await readAsync<MonitorServiceStatusEvent>(ipcReader);
         }
 
-        async public Task<SvcResponse> SetReleaseStreamAsync(string stream) {
-            ActionEvent action = new ActionEvent() { Op = "SetReleaseStream", Action = stream };
-            try {
-                await sendAsync(action);
-                return await readAsync<SvcResponse>(ipcReader);
-            } catch (Exception ex) {
-                Logger.Error(ex, "Unexpected error");
-            }
-            return null;
-        }
         async public Task<SvcResponse> SetLogLevelAsync(string level) {
             if ("verbose".Equals(level?.ToLower())) {
                 //only the data client understands verbose - so use trace...
                 level = "TRACE";
             }
             ActionEvent action = new ActionEvent() { Op = "SetLogLevel", Action = level };
-            try {
-                await sendAsync(action);
-                return await readAsync<SvcResponse>(ipcReader);
-            } catch (Exception ex) {
-                Logger.Error(ex, "Unexpected error");
-            }
-            return null;
-        }
-        async public Task<StatusCheck> DoUpdateCheck() {
-            ActionEvent action = new ActionEvent() { Op = "DoUpdateCheck", Action = "" };
-            try {
-                await sendAsync(action);
-                return await readAsync<StatusCheck>(ipcReader);
-            } catch (Exception ex) {
-                Logger.Error(ex, "Unexpected error");
-            }
-            return null;
+            await sendAsync(action);
+            return await readAsync<SvcResponse>(ipcReader);
         }
 
-		async public Task<SvcResponse> TriggerUpdate() {
-			UpgradeSentinel.StartUpgradeSentinel();
-			ActionEvent action = new ActionEvent() { Op = "TriggerUpdate", Action = "" };
-            try {
-                await sendAsync(action);
-                return await readAsync<SvcResponse>(ipcReader);
-            } catch (Exception ex) {
-                Logger.Error(ex, "Unexpected error");
-            }
-            return null;
+        async public Task<StatusCheck> DoUpdateCheck() {
+            ActionEvent action = new ActionEvent() { Op = "DoUpdateCheck", Action = "" };
+            await sendAsync(action);
+            return await readAsync<StatusCheck>(ipcReader);
         }
+
+        async public Task<SvcResponse> TriggerUpdate() {
+            UpgradeSentinel.StartUpgradeSentinel();
+            ActionEvent action = new ActionEvent() { Op = "TriggerUpdate", Action = "" };
+            await sendAsync(action);
+            return await readAsync<SvcResponse>(ipcReader);
+        }
+
         async public Task<SvcResponse> SetAutomaticUpgradeDisabledAsync(bool disabled) {
             ActionEvent action = new ActionEvent() { Op = "SetAutomaticUpgradeDisabled", Action = (disabled ? "true" : "false") };
-            try {
-                await sendAsync(action);
-                return await readAsync<SvcResponse>(ipcReader);
-            } catch (Exception ex) {
-                Logger.Error(ex, "Unexpected error");
-            }
-            return null;
+            await sendAsync(action);
+            return await readAsync<SvcResponse>(ipcReader);
         }
+
         async public Task<SvcResponse> SetAutomaticUpgradeURLAsync(string url) {
             ActionEvent action = new ActionEvent() { Op = "SetAutomaticUpgradeURL", Action = (url) };
-            try {
-                await sendAsync(action);
-                return await readAsync<SvcResponse>(ipcReader);
-            } catch (Exception ex) {
-                Logger.Error(ex, "Unexpected error");
-            }
-            return null;
+            await sendAsync(action);
+            return await readAsync<SvcResponse>(ipcReader);
         }
     }
 }

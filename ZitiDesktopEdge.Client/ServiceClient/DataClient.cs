@@ -55,7 +55,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         protected override void ShutdownEvent(StatusEvent e) {
             Logger.Debug("Clean shutdown detected from ziti");
-            CleanShutdown = true;
+            ExpectedShutdown = true;
             base.ShutdownEvent(e);
         }
 
@@ -89,7 +89,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         protected virtual void NotificationEvent(NotificationEvent e) {
             OnNotificationEvent?.Invoke(this, e);
-		}
+        }
 
         protected virtual void ControllerEvent(ControllerEvent e) {
             OnControllerEvent?.Invoke(this, e);
@@ -140,23 +140,15 @@ namespace ZitiDesktopEdge.ServiceClient {
                 ClientConnected(null);
             } catch (Exception ex) {
                 semaphoreSlim.Release();
-                throw new ServiceException("Could not connect to the service.", 1, ex.Message);
+                throw new ServiceException("Could not connect to the data service.", 1, ex.Message);
             }
             semaphoreSlim.Release();
         }
 
         async public Task<ZitiTunnelStatus> GetStatusAsync() {
-            try {
-                await sendAsync(new ServiceFunction() { Command = "Status" });
-                var rtn = await readAsync<ZitiTunnelStatus>(ipcReader);
-                return rtn;
-            } catch (Exception ioe) {
-                //almost certainly a problem with the pipe - recreate the pipe...
-                //setupPipe();
-                //throw ioe;
-                Logger.Error(ioe, "Unexpected error");
-            }
-            return null;
+            await sendAsync(new ServiceFunction() { Command = "Status" });
+            var rtn = await readAsync<ZitiTunnelStatus>(ipcReader);
+            return rtn;
         }
 
         async public Task<Identity> AddIdentityAsync(string jwtFileName, bool activate, string jwtContent) {
@@ -326,6 +318,20 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
 
+        async public Task<ExternalAuthLoginResponse> ExternalAuthLogin(string identifier) {
+            try {
+                await sendAsync(new ExternalAuthLogin(identifier));
+                ExternalAuthLoginResponse extAuthResp = await readAsync<ExternalAuthLoginResponse>(ipcReader);
+                return extAuthResp;
+            } catch (Exception ioe) {
+                //almost certainly a problem with the pipe - recreate the pipe...
+                //throw ioe;
+                Logger.Error(ioe, "Unexpected error");
+                CommunicationError(ioe);
+            }
+            return null;
+        }
+
         protected override void ProcessLine(string line) {
             try {
                 string respAsString = line;
@@ -348,7 +354,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                     case "status": //break here to see status on startup
                         //dbg comment Logger.Warn("STATUS EVENT: \n" + respAsString);
                         TunnelStatusEvent tse = serializer.Deserialize<TunnelStatusEvent>(jsonReader);
-                        
+
                         if (tse != null) {
                             TunnelStatusEvent(tse);
                         }
