@@ -17,6 +17,7 @@ function verifyFile($path) {
     }
 }
 
+echo ""
 echo "========================== build.ps1 begins =========================="
 $invocation = (Get-Variable MyInvocation).Value
 $scriptPath = Split-Path $invocation.MyCommand.Path
@@ -35,7 +36,7 @@ mkdir "${buildPath}" -ErrorAction Ignore > $null
 
 $global:ProgressPreference = "SilentlyContinue"
 $destination="${scriptPath}\zet.zip"
-
+$unzip = $true
 if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
     if($null -eq $env:ZITI_EDGE_TUNNEL_VERSION) {
         # use the default $ZITI_EDGE_TUNNEL_VERSION
@@ -51,19 +52,47 @@ if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
     echo "========================== using locally defined ziti-edge-tunnel =========================="
     $zet_dl="${env:ZITI_EDGE_TUNNEL_BUILD}"
 
-    echo "Sourcing ziti-edge-tunnel from ${zet_dl}"
+    echo "Using ziti-edge-tunnel declared from ${zet_dl}"
     echo ""
     if ($SourcePath -match "^https?://") {
         $response = Invoke-WebRequest -Uri "${zet_dl}" -OutFile "${destination}"
     } else {
-        $response = Copy-Item -Path "${zet_dl}" -Destination "${destination}" -ErrorAction Stop
+        echo "Determining if the location is a directory or zip file"
+        if (Test-Path $zet_dl -PathType Container) {
+            $unzip = $false
+        } elseif ($zet_dl -match '\.zip$') {
+            echo "Copying zip file to destination"
+            echo "  FROM: ${zet_dl}"
+            echo "    TO: ${destination}"
+            $response = Copy-Item -Path "${zet_dl}" -Destination "${destination}" -ErrorAction Stop
+        } else {
+            Write-Host  -ForegroundColor Red "Unknown type. Expected either a .zip file or a directory:"
+            Write-Host  -ForegroundColor Red "  - ${zet_dl}"
+            exit 1
+        }
     }
 }
 
-verifyFile("${destination}")
-echo "Expanding downloaded file..."
-Expand-Archive -Path "${destination}" -Force -DestinationPath "${buildPath}\service"
-echo "expanded ${destination} file to ${buildPath}\service"
+if($unzip) {
+    verifyFile("${destination}")
+    echo "Expanding downloaded file..."
+    Expand-Archive -Path "${destination}" -Force -DestinationPath "${buildPath}\service"
+    echo "expanded ${destination} file to ${buildPath}\service"
+} else {
+    if (Test-Path -Path "${buildPath}\service") {
+        echo "removing old service folder at: ${buildPath}\service"
+        Remove-Item -Path "${buildPath}\service" -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    
+    echo "creating new service directory: ${buildPath}\service"
+    New-Item -Path "${buildPath}\service" -ItemType Directory | Out-Null
+    
+    echo "Copying files from directory to destination"
+    echo "  FROM: ${zet_dl}\*"
+    echo "    TO: ${buildPath}\service\"
+    $response = Copy-Item -Path "${zet_dl}\wintun.dll" -Destination "${buildPath}\service\wintun.dll" -ErrorAction Stop -Force
+    $response = Copy-Item -Path "${zet_dl}\ziti-edge-tunnel.exe" -Destination "${buildPath}\service\ziti-edge-tunnel.exe" -ErrorAction Stop -Force
+}
 
 echo "========================== building and moving the custom signing tool =========================="
 dotnet build -c Release "${checkoutRoot}/AWSSigner.NET\AWSSigner.NET.csproj"
@@ -137,7 +166,6 @@ if($null -eq $env:OPENZITI_P12_PASS_2024) {
 }
 
 (Get-FileHash "${exeAbsPath}").Hash > "${scriptPath}\Output\Ziti Desktop Edge Client-${version}.exe.sha256"
-echo "========================== build.ps1 completed =========================="
 
 $outputPath = "${scriptPath}\Output\Ziti Desktop Edge Client-${version}.exe.json"
 & .\Installer\output-build-json.ps1 -version $version -url $url -stream $stream -published_at $published_at -outputPath $outputPath -versionQualifier $versionQualifier
@@ -152,3 +180,6 @@ copy $outputPath "$checkoutRoot\release-streams\beta.json"
 if($revertGitAfter) {
   git checkout DesktopEdge/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip
 }
+
+
+echo "========================== build.ps1 completed =========================="
