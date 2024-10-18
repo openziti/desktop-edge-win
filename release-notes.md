@@ -18,7 +18,8 @@
 # Release 2.5.0.12
 
 ## What's New
-* Keychain integration and TPM now used!
+* OIDC enabled, implementation (coming soon)
+* Keychain integration and TPM enablemed, implementation (coming soon)
 
 ## Other changes:
 * n/a

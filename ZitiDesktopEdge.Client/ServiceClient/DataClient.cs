@@ -159,7 +159,8 @@ namespace ZitiDesktopEdge.ServiceClient {
                     Command = "AddIdentity",
                     Data = new EnrollIdentifierPayload() {
                         JwtFileName = jwtFileName,
-                        JwtContent = jwtContent
+                        JwtContent = jwtContent,
+                        // future use UseKeychain = true,
                     }
                 };
 
