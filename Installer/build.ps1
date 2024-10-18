@@ -35,7 +35,9 @@ Remove-Item "${buildPath}" -r -ErrorAction Ignore
 mkdir "${buildPath}" -ErrorAction Ignore > $null
 
 $global:ProgressPreference = "SilentlyContinue"
-$destination="${scriptPath}\zet.zip"
+$zetDownloadLoc="${scriptPath}\build\zet"
+mkdir "${zetDownloadLoc}" -ErrorAction Ignore > $null
+$destination="${zetDownloadLoc}\${ZITI_EDGE_TUNNEL_VERSION}-zet.zip"
 $unzip = $true
 if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
     if($null -eq $env:ZITI_EDGE_TUNNEL_VERSION) {
@@ -44,13 +46,13 @@ if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
         $ZITI_EDGE_TUNNEL_VERSION=$env:ZITI_EDGE_TUNNEL_VERSION
     }
     if (Test-Path ${destination} -PathType Container) {
+        Write-Host -ForegroundColor Yellow "ziti-edge-tunnel.zip exists and won't be downloaded again: ${destination}"
+    } else {
         echo "========================== fetching ziti-edge-tunnel =========================="
         $zet_dl="https://github.com/openziti/ziti-tunnel-sdk-c/releases/download/${ZITI_EDGE_TUNNEL_VERSION}/ziti-edge-tunnel-Windows_x86_64.zip"
         echo "Beginning to download ziti-edge-tunnel from ${zet_dl} to ${destination}"
         echo ""
         $response = Invoke-WebRequest $zet_dl -OutFile "${destination}"
-    } else {
-        Write-Host -ForegroundColor Yellow "ziti-edge-tunnel.zip exists and won't be downloaded again: ${destination}"
     }
 } else {
     echo "========================== using locally defined ziti-edge-tunnel =========================="
