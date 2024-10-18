@@ -1,4 +1,4 @@
-# Release 2.5.0.0
+# Release 2.5.0.13
 
 ## What's New
 * nothing yet
@@ -15,6 +15,166 @@
 * ziti-sdk:      1.1.2
 * tlsuv:         v0.32.6[OpenSSL 3.3.1 4 Jun 2024]
 
+# Release 2.5.0.12
+
+## What's New
+* IdP Integration!
+* Keychain integration and TPM now used!
+
+## Other changes:
+* n/a
+
+## Bugs fixed:
+* n/a
+
+## Dependency Updates
+ziti-tunneler: v2.0.0-alpha24.11
+ziti-sdk:      2.0.0-alpha29
+tlsuv:         v0.32.2.1[OpenSSL 3.3.1 4 Jun 2024]
+
+# Release 2.5.0.10 & 2.5.0.11
+
+## What's New
+* n/a
+
+## Other changes:
+* n/a
+
+## Bugs fixed:
+* logging was overly verbose due to new healthchecking
+* fixed log level setting
+
+## Dependency Updates
+
+ziti-edge-tunnel.exe version -v:
+* *ziti-tunneler: v2.0.0-alpha24
+* *ziti-sdk:      2.0.0-alpha23
+* *tlsuv:         v0.31.4[OpenSSL 3.3.1 4 Jun 2024]
+
+
+# Release 2.5.0.9
+
+## What's New
+* n/a
+
+## Other changes:
+* n/a
+
+## Bugs fixed:
+* logging was overly verbose due to new healthchecking
+
+## Dependency Updates
+
+ziti-edge-tunnel.exe version -v:
+* ziti-tunneler: v2.0.0-alpha22
+* ziti-sdk:      2.0.0-alpha23
+* tlsuv:         v0.31.4[OpenSSL 3.3.1 4 Jun 2024]
+
+# Release 2.5.0.8
+
+## What's New
+* n/a
+
+## Other changes:
+* n/a
+
+## Bugs fixed:
+* logging was broken
+
+## Dependency Updates
+
+ziti-edge-tunnel.exe version -v:
+* ziti-tunneler: v2.0.0-alpha21
+* ziti-sdk:      2.0.0-alpha23
+* tlsuv:         v0.31.4[OpenSSL 3.3.1 4 Jun 2024]
+
+# Release 2.5.0.7
+
+## What's New
+* n/a
+
+## Other changes:
+* n/a
+
+## Bugs fixed:
+* n/a
+
+## Dependency Updates
+
+ziti-edge-tunnel.exe version -v:
+* ziti-tunneler: v2.0.0-alpha20
+* ziti-sdk:      2.0.0-alpha22
+* tlsuv:         v0.31.4[OpenSSL 3.3.1 4 Jun 2024]
+
+
+# Release 2.5.0.6
+
+## What's New
+* Added stalled ziti-edge-tunnel detection. If the process doesn't respond for 15 seconds the monitor service will
+  administratively terminate the process. Example log output shown below:
+
+      [2024-09-17T22:27:20.980Z]  INFO	ZitiUpdateService.UpdateService	ziti-edge-tunnel aliveness check ends successfully	
+      [2024-09-17T22:27:35.974Z]  WARN	ZitiUpdateService.UpdateService	ziti-edge-tunnel aliveness check appears blocked and has been for 1 times	
+      [2024-09-17T22:27:40.975Z]  WARN	ZitiUpdateService.UpdateService	ziti-edge-tunnel aliveness check appears blocked and has been for 2 times	
+      [2024-09-17T22:27:45.975Z]  WARN	ZitiUpdateService.UpdateService	ziti-edge-tunnel aliveness check appears blocked and has been for 3 times	
+      [2024-09-17T22:27:45.975Z]  WARN	ZitiUpdateService.UpdateService	forcefully stopping ziti-edge-tunnel as it has been blocked for too long	
+      [2024-09-17T22:27:45.975Z]  INFO	ZitiUpdateService.UpdateService	Closing the "data service [ziti]" process	
+      [2024-09-17T22:27:45.975Z]  INFO	ZitiUpdateService.UpdateService	Killing: System.Diagnostics.Process (ziti-edge-tunnel)	
+
+## Other changes:
+* n/a
+
+## Bugs fixed:
+* n/a
+
+## Dependency Updates
+
+ziti-edge-tunnel.exe version -v:
+* ziti-tunneler: v2.0.0-alpha19
+* *ziti-sdk:      2.0.0-alpha21
+* *tlsuv:         v0.31.4[OpenSSL 3.3.1 4 Jun 2024]
+
+# Release 2.5.0.3
+
+## What's New
+* none
+
+## Other changes:
+* added debug option to show when the data channel closes unexpectedly
+
+## Bugs fixed:
+* n/a
+
+## Dependency Updates
+* ziti-tunnel-sdk-c v2.0.0-alpha11/c sdk 2.0.0-alpha8
+
+# Release 2.5.0.2
+
+## What's New
+* updated c-sdk/tunneler to work with HA controllers
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* n/a
+
+## Dependency Updates
+* ziti-tunnel-sdk-c v2.0.0-alpha10/c sdk 2.0.0-alpha8
+
+# Release 2.5.0.1
+
+## What's New
+* updated c-sdk/tunneler to work with HA controllers
+
+## Other changes:
+* none
+
+## Bugs fixed:
+* n/a
+
+## Dependency Updates
+* ziti-tunnel-sdk-c v2.0.0-alpha9/c sdk 2.0.0-alpha6
 
 # Release 2.4.0.1
 

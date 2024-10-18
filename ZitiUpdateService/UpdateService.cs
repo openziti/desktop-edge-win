@@ -642,7 +642,7 @@ namespace ZitiUpdateService {
 
         protected override bool OnPowerEvent(PowerBroadcastStatus powerStatus) {
             Logger.Info("ziti-monitor OnPowerEvent was called {0}", powerStatus);
-            if(powerStatus == PowerBroadcastStatus.Suspend) {
+            if (powerStatus == PowerBroadcastStatus.Suspend) {
                 // when going to sleep, make sure the healthcheck is disabled or accounts for going to sleep
                 disableHealthCheck();
             }

@@ -36,8 +36,7 @@ namespace ZitiDesktopEdge.Models {
         public bool IsMFAEnabled { get; set; }
 
         public void MFADebug(string where) {
-            logger.Info($"{where}\n\tIdentifiter  : {Identifier}\n\tIsMFAEnabled : {IsMFAEnabled}\n\tIsMFANeeded  : {IsMFANeeded}");
-            //logger.Info($"{where}\n\tIdentifiter  : {Identifier}\n\tIsMFAEnabled : {IsMFAEnabled}\n\tIsMFANeeded  : {IsMFANeeded}\n\tShowMFA\t     : {ShowMFA}");
+            logger.Info($"{where}\n\tIdentifiter  : {Identifier}\n\tIsMFAEnabled : {IsMFAEnabled}\n\tIsMFANeeded  : {IsMFANeeded}\n\tNeedsExtAuth : {NeedsExtAuth}");
         }
 
         private bool mfaNeeded = false;
@@ -139,6 +138,11 @@ namespace ZitiDesktopEdge.Models {
                 IsConnected = true,
                 NeedsExtAuth = id.NeedsExtAuth,
             };
+
+            if (zid.Name.Contains(@"\")) {
+                int pos = zid.Name.LastIndexOf(@"\");
+                zid.Name = zid.Name.Substring(pos + 1);
+            }
 
 #if DEBUG
             zid.MFADebug("002");
