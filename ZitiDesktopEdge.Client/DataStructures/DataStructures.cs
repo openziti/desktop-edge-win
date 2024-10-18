@@ -239,6 +239,7 @@ namespace ZitiDesktopEdge.DataStructures {
     public class EnrollIdentifierPayload {
         public string JwtFileName { get; set; }
         public string JwtContent { get; set; }
+        public bool UseKeychain { get; set; }
     }
 
     public class EnrollIdentifierFunction : ServiceFunction {

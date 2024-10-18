@@ -1,3 +1,37 @@
+# Release 2.5.0.13
+
+## What's New
+* nothing yet
+
+## Other changes
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+
+* ziti-tunneler: v1.2.2
+* ziti-sdk:      1.1.2
+* tlsuv:         v0.32.6[OpenSSL 3.3.1 4 Jun 2024]
+
+# Release 2.5.0.12
+
+## What's New
+* OIDC enabled, implementation (coming soon)
+* Keychain integration and TPM enablemed, implementation (coming soon)
+
+## Other changes:
+* n/a
+
+## Bugs fixed:
+* n/a
+
+## Dependency Updates
+ziti-tunneler: v2.0.0-alpha24.11
+ziti-sdk:      2.0.0-alpha29
+tlsuv:         v0.32.2.1[OpenSSL 3.3.1 4 Jun 2024]
+
 # Release 2.5.0.10 & 2.5.0.11
 
 ## What's New

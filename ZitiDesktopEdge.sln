@@ -10,6 +10,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		build-test-release.ps1 = build-test-release.ps1
 		Installer\build.ps1 = Installer\build.ps1
 		.github\workflows\installer.build.yml = .github\workflows\installer.build.yml
+		manual-testing.md = manual-testing.md
 		.github\workflows\mattermost-ziti-webhook.yml = .github\workflows\mattermost-ziti-webhook.yml
 		Installer\output-build-json.ps1 = Installer\output-build-json.ps1
 		README.md = README.md

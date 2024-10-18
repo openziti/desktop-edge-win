@@ -83,7 +83,7 @@ namespace ZitiDesktopEdge {
             ThisAssemblyName = asm.GetName().Name;
             state = (ZDEWViewState)Application.Current.Properties["ZDEWViewState"];
 #if DEBUG
-            ExecutionDirectory = @"C:\Program Files (x86)\NetFoundry, Inc\Ziti Desktop Edge";
+            ExecutionDirectory = @"C:\Program Files (x86)\NetFoundry Inc\Ziti Desktop Edge";
 #else
 			ExecutionDirectory = Path.GetDirectoryName(asm.Location);
 #endif
@@ -439,7 +439,7 @@ namespace ZitiDesktopEdge {
             notifyIcon.BalloonTipClosed += NotifyIcon_BalloonTipClosed;
             notifyIcon.MouseClick += NotifyIcon_MouseClick;
             notifyIcon.ContextMenu = this.contextMenu;
-            
+
             IdentityMenu.OnDetach += OnDetach;
             MainMenu.OnDetach += OnDetach;
 
