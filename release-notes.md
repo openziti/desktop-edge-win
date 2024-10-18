@@ -18,7 +18,6 @@
 # Release 2.5.0.12
 
 ## What's New
-* IdP Integration!
 * Keychain integration and TPM now used!
 
 ## Other changes:
