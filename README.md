@@ -1,9 +1,7 @@
 # Ziti Desktop Edge for Windows
 
-(the uwp project which used to be here has moved to [uwp-vpnplugin-archive](.uwp-vpnplugin-archive) and is likely abandoned)
-
-The Ziti Desktop Edge for Windows is an application that is necessary to integrate applications which cannot embed a Ziti SDK
-directly into the application. This is colloquially known as a "brown field" Ziti-enabled application because the app
+The Ziti Desktop Edge for Windows is an application that is necessary to integrate applications which cannot embed an 
+OpenZiti SDK directly into the application. This is colloquially known as a "brown field" application because the app
 itself has no understanding that it has been Ziti-enabled.
 
 In order for an application that has no knowledge of being Ziti-enabled to work the connections established by the app
@@ -17,6 +15,12 @@ components:
 ## Building A Release
 
 see [releasing](./releasing.md)
+
+## Offline Installation
+
+The Ziti Desktop Edge for Windows requires .NET Framework 4.8 or later to be installed in order to work properly. This
+dependency will be installed automatically if there is internet connectivity available at install time but when running
+in an offline envirnonment it will need to be pre-installed before installing Ziti Desktop Edge for Windows.
 
 ## Microsoft Defender SmartScreen Issues
 
