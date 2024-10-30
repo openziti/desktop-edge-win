@@ -1,3 +1,35 @@
+# Release 2.5.1.0
+
+## What's New
+* installer no longer verifies internet connectivity
+
+## Other changes
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+
+n/a
+
+# Release 2.5.0.15
+
+## What's New
+* nothing yet
+
+## Other changes
+* none
+
+## Bugs fixed:
+* none
+
+## Dependency Updates
+
+ziti-tunneler: v1.2.5
+ziti-sdk:      1.1.5
+tlsuv:         v0.32.6[OpenSSL 3.3.1 4 Jun 2024]
+
 # Release 2.5.0.14
 
 ## What's New
