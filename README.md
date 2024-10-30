@@ -22,6 +22,24 @@ The Ziti Desktop Edge for Windows requires .NET Framework 4.8 or later to be ins
 dependency will be installed automatically if there is internet connectivity available at install time but when running
 in an offline envirnonment it will need to be pre-installed before installing Ziti Desktop Edge for Windows.
 
+You can check what version of .NET is installed by running the following powershell command:
+```
+Get-ChildItem 'HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP' -Recurse |
+    Get-ItemProperty -Name version -ErrorAction SilentlyContinue |
+    Where-Object { $_.PSChildName -Match '^(?!S)\p{L}' } |
+    Select-Object PSChildName, version
+```
+
+This should output something like the following:
+```
+PSChildName Version
+----------- -------
+Client      4.8.09032
+Full        4.8.09032
+Client      4.0.0.0
+```
+
+
 ## Microsoft Defender SmartScreen Issues
 
 After the new signing process was adopted where we sign with a legitimate, purchased signing certificate from a trusted CA as well
