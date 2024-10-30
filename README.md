@@ -22,6 +22,9 @@ The Ziti Desktop Edge for Windows requires .NET Framework 4.8 or later to be ins
 dependency will be installed automatically if there is internet connectivity available at install time but when running
 in an offline envirnonment it will need to be pre-installed before installing Ziti Desktop Edge for Windows.
 
+You can obtain the .NET 4.8 offline installer from Microsoft. As of this writing, the url is:
+https://support.microsoft.com/en-us/topic/microsoft-net-framework-4-8-offline-installer-for-windows-9d23f658-3b97-68ab-d013-aa3c3e7495e0
+
 You can check what version of .NET is installed by running the following powershell command:
 ```
 Get-ChildItem 'HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP' -Recurse |
