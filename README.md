@@ -42,6 +42,55 @@ Full        4.8.09032
 Client      4.0.0.0
 ```
 
+## Automatic Upgrades
+
+The Ziti Desktop Edge for Windows will automatically keep itself up to date. When it is installed, a default url will be used for
+detecting updates. By default, this url will point to the 'stable' stream of updates: https://get.openziti.io/zdew/stable.json
+
+There are currently two other streams available to subscribe to latest and beta:
+* https://get.openziti.io/zdew/latest.json
+* https://get.openziti.io/zdew/beta.json
+
+The 'latest' stream should be updated along with a GitHub release marked as latest. The 'beta' stream is updated often and is
+representative of the absolutely newest release available. These releases are marked in GitHub as "Pre-release".
+
+The 'stable' stream does not follow a rigorous pattern. When it's decided the latest release has been stable for "long enough", 
+the latest stream will be promoted to stable.
+
+You may opt to disable automatic updates of the Ziti Desktop Edge for Windows by going to the Main Menu -> Advanced Settings ->
+Configure Automatic Upgrades screen and choosing to enable or disable the functionality.
+
+### Customizing the Automatic Update URL
+
+Users may change the url used for automatic updates by going to Main Menu -> Advanced Settings -> Configure Automatic Upgrades
+and changing the URL. There is no schema supplied for this document at this time but it very roughly matches the GitHub api
+for releases as this API was used before allowing the URL to be changed. The format of the document can be seen by inspecting
+the files in [./release-streams]() and is subject (although unlikey) to change.
+
+There is currently no mechanism to update the URL at install time but the URL can be changed by changing the file located at
+`C:\Windows\System32\config\systemprofile\AppData\Roaming\NetFoundry\ZitiUpdateService\settings.json`. The file is very simple,
+containing two entries:
+```
+{
+  "AutomaticUpdatesDisabled": false,
+  "AutomaticUpdateURL": "https://get.openziti.io/zdew/stable.json"
+}
+```
+
+Updating the file will require administrator rights as the file is in a protected folder. After updating, the `ziti-monitor`
+service will need to be restarted for the setting to take effect. A restart of the machine is the easiest way to ensure the
+serivce is restarted. This process could be scripted easily enough, no script exists in the OpenZiti project at this time to
+manage this file in any automatic fashion, doing so is currently out of scope of the project.
+
+### Acceptable Files For Automatic Installation
+
+The Ziti Desktop Edge for Windows will not allow automatic installation of any binary. The file referenced by the automatic
+upgrade URL must be specifically signed by the OpenZiti project's CA. Only files signed by an OpenZiti signing certificate
+will be considered eligible for automatic installation. You will not be able to build your own version of the software and
+expect it to be automatically updated. The expected root CA is compiled directly into the executable. You will need to 
+change and deploy your own version with your own CA in order to have the automatic upgrade capability work and your version
+will not be usable by other installations of the Ziti Desktop Edge for Windows.
+
 
 ## Microsoft Defender SmartScreen Issues
 
