@@ -77,7 +77,9 @@ containing two entries:
 }
 ```
 
-Updating the file will require administrator rights as the file is in a protected folder.
+Updating the file will require administrator rights as the file is in a protected folder. After updating, the `ziti-monitor`
+service will need to be restarted for the setting to take effect. A restart of the machine is the easiest way to ensure the
+serivce is restarted.
 
 ### Acceptable Files For Automatic Installation
 
