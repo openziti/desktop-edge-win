@@ -8,9 +8,9 @@ project produces.
 This folder will illustrate how you can use the automatic upgrade behavior while being entirely offline.
 The following URLs will be connected to while verifying the installer:
 
-* http://crl.globalsign.com 
-* http://crl3.digicert.com 
-* https://openziti.github.io
+* http://crl.globalsign.com/gsgccr45evcodesignca2020.crl
+* http://crl3.digicert.com/DigiCertTrustedG4RSA4096SHA256TimeStampingCA.crl
+* https://openziti.github.io/crl/openziti.crl
 
 The offline machine *must* be able to make these requests or the validation of the installer will fail.
 If you are controlling the offline network, you will need to add DNS entries for these urls and host the
@@ -76,13 +76,16 @@ copied the contents locally. All commands will be executed relative to this READ
 1. Transfer the "current" (or n-1) installer to the `c:\offline\` folder. Example: 2.5.1.0
 1. Transfer the new installer version and corresponding sha256 to the `c:\offline\` folder. Example: 2.5.1.1
 
-
 ### On the Windows Sandbox (or VM)
 
 These commands assume you're using Windows Sandbox. If you're using a VM, there may be differences
 
 1. install the Ziti Desktop Edge for Windows - current version. Example: 2.5.1.0
-1. install Python
+1. install Python - wait for the install to complete before continuing
+1. After installing Python and transferring the `offline` folder, open Device Manager and uninstall the 
+   network adapter, likely named "Microsoft Hyper-V Network Adapter", eliminating network access.
+
+
 1. open a powershell prompt
 1. Configure the Windows Sandbox to trust the copied certificates and CRLs
 
@@ -95,7 +98,7 @@ These commands assume you're using Windows Sandbox. If you're using a VM, there 
       certutil -addstore CA "c:\offline\crl\openziti.crl"
       certutil -addstore root "C:\offline\openzitiCA.pem"
 
-1. restart Edge if open, restart the ziti-monitor:
+1. restart Edge if open, restart the ziti-monitor to pick up certificate-related changes:
 
       net stop ziti-monitor
       net start ziti-monitor
@@ -124,14 +127,7 @@ These commands assume you're using Windows Sandbox. If you're using a VM, there 
    upgrade URL.
 1. click "Check for Updates Now"
 1. If all has gone well you'll see "Update ${next version} is available"
-1. Click Perform Update
-1. a
-1. 
-1. After installing Python and transferring the `offline` folder, open Device Manager and uninstall the 
-   network adapter, likely named "Microsoft Hyper-V Network Adapter", eliminating network access.
-
-
-
+1. Click Perform Update - the software should automatically update
 
 
 
