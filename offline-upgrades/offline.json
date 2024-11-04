@@ -1,0 +1,12 @@
+{
+  "name": "2.5.2.0",
+  "tag_name": "2.5.2.0",
+  "published_at": "2024-10-30T07:45:35Z",
+  "installation_critical": false,
+  "assets": [
+    {
+      "name": "Ziti.Desktop.Edge.Client-2.5.2.0.exe",
+      "browser_download_url": "http://offline.install.example/Ziti.Desktop.Edge.Client-2.5.2.0.exe"
+    }
+  ]
+}

@@ -60,6 +60,14 @@ the latest stream will be promoted to stable.
 You may opt to disable automatic updates of the Ziti Desktop Edge for Windows by going to the Main Menu -> Advanced Settings ->
 Configure Automatic Upgrades screen and choosing to enable or disable the functionality.
 
+### Configuring a System for Offline Installation
+
+Public Key Infrastructure is complex and verifying trust is vital. Part of this trust verification is around certificate revocation
+lists - CRLs. The installer executables produced by the OpenZiti project are signed by two different entities. One entity is an
+indepependant third party and the other is the OpenZiti code signing CA. Also, as part of the signing process a timestamp is 
+produced at the time of signing using yet another CA. If you are going to use the automatic upgrade functionality, please see 
+[offline-installation/README.md]() for more information as to how to enable this functionality in an entirely offline environment.
+
 ### Customizing the Automatic Update URL
 
 Users may change the url used for automatic updates by going to Main Menu -> Advanced Settings -> Configure Automatic Upgrades
