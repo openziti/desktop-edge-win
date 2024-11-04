@@ -128,16 +128,3 @@ These commands assume you're using Windows Sandbox. If you're using a VM, there 
 1. click "Check for Updates Now"
 1. If all has gone well you'll see "Update ${next version} is available"
 1. Click Perform Update - the software should automatically update
-
-
-
-
-
-
-1. 
-   1. 
-      1. 1. Generate a json document and host it with an http server. An easy way to do this is to take an example
-   from [../release-streams](), such as [..\release-streams\latest.json](). Edit the document to have a
-   version higher than the version of the Ziti Desktop Edge for Windows installed. For example, this file
-   could be called "offline.json" and hosted by some server on the network.
-1. Host the 
