@@ -1,21 +1,19 @@
 # Automatic Upgrades in Offline Mode
 
-When trying to use the automatic upgrade functionality provided by the project, you will discover that
-numerous URL as attempted to be accessed when performing automatic upgrades. These URLs are all related
-to the certificate revocation lists (CRLs) of the certificates that have signed the installers the
-project produces.
+When attempting an automatic update, the process will still attempt to contact three specific URLs.
+These URLs are all related to the certificate revocation lists (CRLs) of the certificates that have 
+signed the installer the project produces.
 
-This folder will illustrate how you can use the automatic upgrade behavior while being entirely offline.
-The following URLs will be connected to while verifying the installer:
+The offline machine *must* be able to make these requests or the validation of the installer will fail.
+If you are controlling the offline network, you will need to add DNS entries for these urls and host the
+associated files. If you cannot control the DNS or there is no DNS, hosts file entries will need to be
+added. The following URLs will be connected to while verifying the installer:
 
 * http://crl.globalsign.com/gsgccr45evcodesignca2020.crl
 * http://crl3.digicert.com/DigiCertTrustedG4RSA4096SHA256TimeStampingCA.crl
 * https://openziti.github.io/crl/openziti.crl
 
-The offline machine *must* be able to make these requests or the validation of the installer will fail.
-If you are controlling the offline network, you will need to add DNS entries for these urls and host the
-associated files. If you cannot control the DNS or there is no DNS, hosts file entries will need to be
-added.
+This folder illustrates how you can use the automatic upgrade behavior while being entirely offline.
 
 Generate a json document and host it with an http server. An easy way to do this is to take an example
 from [../release-streams](), such as [..\release-streams\latest.json](). Duplicate the source document,
