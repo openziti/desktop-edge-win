@@ -440,8 +440,8 @@ namespace ZitiDesktopEdge {
             notifyIcon.MouseClick += NotifyIcon_MouseClick;
             notifyIcon.ContextMenu = this.contextMenu;
 
-            IdentityMenu.OnDetach += OnDetach;
-            MainMenu.OnDetach += OnDetach;
+            IdentityMenu.HandleAttachment += HandleAttachment;
+            MainMenu.HandleAttachment += HandleAttachment;
 
             this.MainMenu.MainWindow = this;
             this.IdentityMenu.MainWindow = this;
@@ -548,16 +548,21 @@ namespace ZitiDesktopEdge {
         }
 
         private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
-            OnDetach(e);
+            HandleAttachment(e);
         }
 
-        private void OnDetach(MouseButtonEventArgs e) {
+        private void HandleAttachment(MouseButtonEventArgs e) {
             if (e.ChangedButton == MouseButton.Left) {
                 _isAttached = false;
                 IdentityMenu.Arrow.Visibility = Visibility.Collapsed;
                 Arrow.Visibility = Visibility.Collapsed;
                 MainMenu.Detach();
                 this.DragMove();
+            } else if (e.ChangedButton == MouseButton.Right) {
+                _isAttached = true;
+                IdentityMenu.Arrow.Visibility = Visibility.Visible;
+                Arrow.Visibility = Visibility.Visible;
+                MainMenu.Retach();
             }
         }
 
@@ -1448,7 +1453,7 @@ namespace ZitiDesktopEdge {
                 } else {
                     this.Height = defaultHeight;
                     MainMenu.IdentitiesButton.Visibility = Visibility.Collapsed;
-                    IdListScroller.Visibility = Visibility.Visible;
+                    IdListScroller.Visibility = Visibility.Collapsed;
 
                 }
                 AddIdButton.Visibility = Visibility.Visible;
@@ -1514,11 +1519,11 @@ namespace ZitiDesktopEdge {
                 this.Top = desktopWorkingArea.Top + _top;
                 this.Left = desktopWorkingArea.Right - this.Width - _right;
                 Arrow.SetValue(Canvas.TopProperty, (double)0);
-                Arrow.SetValue(Canvas.LeftProperty, (double)185);
+                Arrow.SetValue(Canvas.LeftProperty, (double)195);
                 MainMenu.Arrow.SetValue(Canvas.TopProperty, (double)0);
-                MainMenu.Arrow.SetValue(Canvas.LeftProperty, (double)185);
+                MainMenu.Arrow.SetValue(Canvas.LeftProperty, (double)195);
                 IdentityMenu.Arrow.SetValue(Canvas.TopProperty, (double)0);
-                IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, (double)185);
+                IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, (double)195);
             } else if (trayRectangle.Left < 20) {
                 this.Position = "Left";
                 this.Left = _left;
@@ -1533,22 +1538,22 @@ namespace ZitiDesktopEdge {
                 this.Position = "Right";
                 this.Left = desktopWorkingArea.Right - this.Width - 20;
                 this.Top = desktopWorkingArea.Bottom - height - 75;
-                Arrow.SetValue(Canvas.TopProperty, height - 100);
+                Arrow.SetValue(Canvas.TopProperty, height - 200);
                 Arrow.SetValue(Canvas.LeftProperty, this.Width - 30);
-                MainMenu.Arrow.SetValue(Canvas.TopProperty, height - 100);
+                MainMenu.Arrow.SetValue(Canvas.TopProperty, height - 200);
                 MainMenu.Arrow.SetValue(Canvas.LeftProperty, this.Width - 30);
-                IdentityMenu.Arrow.SetValue(Canvas.TopProperty, height - 100);
+                IdentityMenu.Arrow.SetValue(Canvas.TopProperty, height - 200);
                 IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, this.Width - 30);
             } else {
                 this.Position = "Bottom";
                 this.Left = desktopWorkingArea.Right - this.Width - 75;
                 this.Top = desktopWorkingArea.Bottom - height;
                 Arrow.SetValue(Canvas.TopProperty, height - 35);
-                Arrow.SetValue(Canvas.LeftProperty, (double)185);
+                Arrow.SetValue(Canvas.LeftProperty, (double)195);
                 MainMenu.Arrow.SetValue(Canvas.TopProperty, height - 35);
-                MainMenu.Arrow.SetValue(Canvas.LeftProperty, (double)185);
+                MainMenu.Arrow.SetValue(Canvas.LeftProperty, (double)195);
                 IdentityMenu.Arrow.SetValue(Canvas.TopProperty, height - 35);
-                IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, (double)185);
+                IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, (double)195);
             }
         }
         public void Placement() {
@@ -1720,6 +1725,7 @@ namespace ZitiDesktopEdge {
         }
 
         private void Label_MouseDoubleClick(object sender, MouseButtonEventArgs e) {
+            logger.Info("CLICK");
             Placement();
         }
 

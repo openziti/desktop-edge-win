@@ -10,7 +10,7 @@
     <Grid>
         <!-- Border Arrow pointing to TaskBar -->
         <Canvas>
-            <Rectangle Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="White" Width="20" Canvas.Left="185" ClipToBounds="True" Canvas.Bottom="-10">
+            <Rectangle Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="White" Width="20" ClipToBounds="True">
                 <Rectangle.LayoutTransform>
                     <RotateTransform Angle="-45"/>
                 </Rectangle.LayoutTransform>
@@ -35,7 +35,7 @@
                     </Grid.ColumnDefinitions>
                     <Image x:Name="IsConnected" Grid.Column="0" Visibility="Visible" Source="/Assets/Images/online.png" Height="25" HorizontalAlignment="Right" Cursor="Hand" MouseUp="DoDisconnect" />
                     <Image x:Name="IsDisconnected" Grid.Column="0" Visibility="Collapsed" Source="/Assets/Images/offline.png" Height="25" HorizontalAlignment="Right" Cursor="Hand" MouseUp="DoConnect" />
-                    <TextBlock x:Name="IdDetailName" MouseDown="Window_MouseDown" MaxWidth="220" Grid.Column="1" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" FontSize="14" FontWeight="Bold" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="#0F0F23" VerticalAlignment="Center" TextWrapping="NoWrap" />
+                    <Label x:Name="IdDetailName" Content="IDENTITY DETAIL" MouseDown="Window_MouseDown" Cursor="ScrollAll" MaxWidth="220" Grid.Column="1" HorizontalAlignment="Center" FontSize="14" ToolTip="MOUSELEFT+DRAG to Detach/Move | MOUSERIGHT to Reattach" FontFamily="pack://application:,,,/Assets/Fonts/#Russo One" Foreground="#0F0F23" VerticalAlignment="Center" />
                     <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/x.png" Width="20" Height="20" Margin="0,0,0,0" HorizontalAlignment="Left" MouseUp="HideMenu"></Image>
                 </Grid>
                 <Rectangle Margin="40,0,40,10" Fill="#070826" Height="1" RadiusY="10" RadiusX="10" Opacity="0.1"></Rectangle>
@@ -102,7 +102,7 @@
             </StackPanel>
             <local:StyledButton x:Name="ForgetIdentityButton" MinWidth="310" BgColor="#F4044D" Label="Forget This Identity" Margin="0,0,0,40" OnClick="ForgetIdentity" HorizontalAlignment="Center" VerticalAlignment="Bottom" />
         </Grid>
-        <Rectangle x:Name="ModalBg" Margin="10,10,10,10" Fill="Black" RadiusY="10" RadiusX="10" Opacity="0" Visibility="Collapsed" MouseDown="Window_MouseDown"></Rectangle>
+        <Rectangle x:Name="ModalBg" Margin="10,10,10,10" Fill="Black" RadiusY="10" RadiusX="10" Opacity="0" Visibility="Collapsed"></Rectangle>
 
         <!-- Expended Detail Modal for Details pop up on service list -->
         <Grid x:Name="DetailsArea" Visibility="Collapsed" Height="400" Margin="0,0,0,0">
@@ -142,19 +142,12 @@
         </Grid>
 
         <!-- Confirmation Prompt for confirming deletion -->
-        <Grid x:Name="ConfirmView" Visibility="Collapsed" Width="400">
+        <Grid x:Name="ConfirmView" Visibility="Collapsed" Width="400" Margin="15,15,15,15">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="Black"/>
                 </Rectangle.Fill>
             </Rectangle>
-            <Canvas>
-                <Rectangle Name="ConfirmArrow" HorizontalAlignment="Center" Height="20" Fill="Black" Width="20" Canvas.Left="185" ClipToBounds="True" Canvas.Bottom="-10">
-                    <Rectangle.LayoutTransform>
-                        <RotateTransform Angle="-45"/>
-                    </Rectangle.LayoutTransform>
-                </Rectangle>
-            </Canvas>
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="200"></ColumnDefinition>
