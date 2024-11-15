@@ -185,13 +185,17 @@ namespace ZitiDesktopEdge {
             IdentityMFA.IsOn = _identity.IsMFAEnabled;
             IdentityMFA.ToggleField.IsEnabled = true;
             IdentityMFA.ToggleField.Opacity = 1;
-            IsConnected.ToolTip = "Enabled - Click To Disable";
-            IsDisconnected.ToolTip = "Disabled - Click to Enable";
             IdServer.Value = _identity.ControllerUrl;
             IdServer.ToolTip = _identity.ControllerUrl;
             IdName.ToolTip = _identity.Name;
             IdName.Value = _identity.Name;
-
+            if (_identity.IsEnabled) {
+                IsDisconnected.Visibility = Visibility.Collapsed;
+                IsConnected.Visibility = Visibility.Visible;
+            } else {
+                IsDisconnected.Visibility = Visibility.Visible;
+                IsConnected.Visibility = Visibility.Collapsed;
+            }
 
 #if DEBUG
             _identity.MFADebug("UpdateView");

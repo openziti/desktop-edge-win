@@ -221,7 +221,6 @@ namespace ZitiDesktopEdge {
                 LoadIdentities(true);
             });
         }
-
         /// <summary>
         /// Show the MFA Setup Modal
         /// </summary>
@@ -727,7 +726,7 @@ namespace ZitiDesktopEdge {
 
         private void ServiceClient_OnNotificationEvent(object sender, NotificationEvent e) {
             var displayMFARequired = false;
-            var displayMFATimout = false;
+            var displayMFATimeout = false;
             foreach (var notification in e.Notification) {
                 var found = identities.Find(id => id.Identifier == notification.Identifier);
                 if (found == null) {
@@ -742,7 +741,7 @@ namespace ZitiDesktopEdge {
                         // display mfa token icon
                         displayMFARequired = true;
                     } else {
-                        displayMFATimout = true;
+                        displayMFATimeout = true;
                     }
 
                     for (int i = 0; i < identities.Count; i++) {
@@ -756,7 +755,7 @@ namespace ZitiDesktopEdge {
 
             // we may need to display mfa icon, based on the timer in UI, remove found.MFAInfo.ShowMFA setting in this function. 
             // the below function can show mfa icon even after user authenticates successfully, in race conditions
-            if (displayMFARequired || displayMFATimout) {
+            if (displayMFARequired || displayMFATimeout) {
                 this.Dispatcher.Invoke(() => {
                     IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
                     if (deets.IsVisible) {
@@ -1479,7 +1478,7 @@ namespace ZitiDesktopEdge {
         }
 
         private void Id_OnStatusChanged(bool attached) {
-            for (int i = 0; i < IdList.Children.Count; i++) {
+            for (int i = 0; i < IdList.Children.Count; i++) {                
                 IdentityItem item = IdList.Children[i] as IdentityItem;
                 if (item.ToggleSwitch.Enabled) break;
             }
@@ -1626,7 +1625,7 @@ namespace ZitiDesktopEdge {
             _tunnelUptimeTimer.Start();
         }
 
-        async private Task DoConnectAsync() {
+        async private Task DoConnectAsync() {            
             try {
                 SetNotifyIcon("green");
                 TunnelConnected(true);
