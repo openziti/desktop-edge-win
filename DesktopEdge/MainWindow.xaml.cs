@@ -1723,6 +1723,10 @@ namespace ZitiDesktopEdge {
             }
         }
 
+        private void Label_MouseDoubleClick(object sender, MouseButtonEventArgs e) {
+            Placement();
+        }
+
         int cur = 0;
         LogLevelEnum[] levels = new LogLevelEnum[] { LogLevelEnum.FATAL, LogLevelEnum.ERROR, LogLevelEnum.WARN, LogLevelEnum.INFO, LogLevelEnum.DEBUG, LogLevelEnum.TRACE, LogLevelEnum.VERBOSE };
         public LogLevelEnum NextLevel() {
