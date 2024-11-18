@@ -46,7 +46,7 @@ namespace ZitiDesktopEdge {
         public delegate Task<bool> LogLevelChanged(string level);
         public event LogLevelChanged OnLogLevelChanged;
         public delegate void Detched(MouseButtonEventArgs e);
-        public event Detched OnDetach;
+        public event Detched HandleAttachment;
         public delegate void ShowBlurb(string message);
         public event ShowBlurb OnShowBlurb;
         public string menuState = "Main";
@@ -102,9 +102,7 @@ namespace ZitiDesktopEdge {
             MainMenuArea.Visibility = Visibility.Collapsed;
         }
         private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
-            if (e.ChangedButton == MouseButton.Left) {
-                OnDetach(e);
-            }
+            HandleAttachment(e);
         }
 
         private void CloseApp(object sender, MouseButtonEventArgs e) {
@@ -226,15 +224,15 @@ namespace ZitiDesktopEdge {
                 VersionInfo.Content = $"App: {appVersion} Service: {version}";
 
             } else if (menuState == "Advanced") {
-                MenuTitle.Content = "Advanced Settings";
+                MenuTitle.Content = "ADVANCED SETTINGS";
                 AdvancedItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "Licenses") {
-                MenuTitle.Content = "Third Party Licenses";
+                MenuTitle.Content = "THIRD PARTY LICENSES";
                 LicensesItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "Logs") {
-                MenuTitle.Content = "Advanced Settings";
+                MenuTitle.Content = "ADVANCED SETTINGS";
                 AdvancedItems.Visibility = Visibility.Visible;
                 //string targetFile = NativeMethods.GetFinalPathName(MainWindow.ExpectedLogPathServices);
                 string targetFile = MainWindow.ExpectedLogPathServices;
@@ -242,24 +240,24 @@ namespace ZitiDesktopEdge {
                 OpenLogFile("service", targetFile);
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "UILogs") {
-                MenuTitle.Content = "Advanced Settings";
+                MenuTitle.Content = "ADVANCED SETTINGS";
                 AdvancedItems.Visibility = Visibility.Visible;
                 OpenLogFile("UI", MainWindow.ExpectedLogPathUI);
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "LogLevel") {
                 ResetLevels();
 
-                MenuTitle.Content = "Set Log Level";
+                MenuTitle.Content = "SET LOG LEVEL";
                 LogLevelItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "ConfigureAutomaticUpgrades") {
                 SetAutomaticUpgradesState();
 
-                MenuTitle.Content = "Automatic Upgrades";
+                MenuTitle.Content = "AUTOMATIC UPGRADES";
                 AutomaticUpgradesItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "Config") {
-                MenuTitle.Content = "Tunnel Configuration";
+                MenuTitle.Content = "TUNNEL CONFIG";
                 ConfigItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
 
@@ -270,11 +268,11 @@ namespace ZitiDesktopEdge {
                 ConfigDns.Value = Application.Current.Properties["dns"]?.ToString();
                 ConfigDnsEnabled.Value = Application.Current.Properties["dnsenabled"]?.ToString();
             } else if (menuState == "Identities") {
-                MenuTitle.Content = "Identities";
+                MenuTitle.Content = "IDENTITIES";
                 IdListScrollView.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
             } else {
-                MenuTitle.Content = "Main Menu";
+                MenuTitle.Content = "MAIN MENU";
                 MainItems.Visibility = Visibility.Visible;
                 MainItemsButton.Visibility = Visibility.Visible;
             }
@@ -380,6 +378,12 @@ namespace ZitiDesktopEdge {
             DetachButton.Visibility = Visibility.Collapsed;
             AttachButton.Visibility = Visibility.Visible;
             Arrow.Visibility = Visibility.Collapsed;
+        }
+        public void Retach() {
+            Application.Current.MainWindow.ShowInTaskbar = false;
+            DetachButton.Visibility = Visibility.Visible;
+            AttachButton.Visibility = Visibility.Collapsed;
+            Arrow.Visibility = Visibility.Visible;
         }
         private void RetachWindow(object sender, MouseButtonEventArgs e) {
             Application.Current.MainWindow.ShowInTaskbar = false;

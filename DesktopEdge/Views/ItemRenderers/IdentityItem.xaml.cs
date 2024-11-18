@@ -223,9 +223,9 @@ namespace ZitiDesktopEdge {
                 ServiceCountArea.Visibility = Visibility.Collapsed;
             }
 
-            IdName.Content = _identity.Name;
-            IdUrl.Content = _identity.ControllerUrl;
-            if (_identity.ContollerVersion != null && _identity.ContollerVersion.Length > 0) IdUrl.Content = _identity.ControllerUrl + " at " + _identity.ContollerVersion;
+            IdName.Text = _identity.Name;
+            IdUrl.Text = _identity.ControllerUrl;
+            if (_identity.ContollerVersion != null && _identity.ContollerVersion.Length > 0) IdUrl.Text = _identity.ControllerUrl + " at " + _identity.ContollerVersion;
 
             ToggleStatus.Content = ((ToggleSwitch.Enabled) ? "ENABLED" : "DISABLED");
         }

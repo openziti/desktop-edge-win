@@ -221,7 +221,6 @@ namespace ZitiDesktopEdge {
                 LoadIdentities(true);
             });
         }
-
         /// <summary>
         /// Show the MFA Setup Modal
         /// </summary>
@@ -440,8 +439,8 @@ namespace ZitiDesktopEdge {
             notifyIcon.MouseClick += NotifyIcon_MouseClick;
             notifyIcon.ContextMenu = this.contextMenu;
 
-            IdentityMenu.OnDetach += OnDetach;
-            MainMenu.OnDetach += OnDetach;
+            IdentityMenu.HandleAttachment += HandleAttachment;
+            MainMenu.HandleAttachment += HandleAttachment;
 
             this.MainMenu.MainWindow = this;
             this.IdentityMenu.MainWindow = this;
@@ -548,16 +547,21 @@ namespace ZitiDesktopEdge {
         }
 
         private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
-            OnDetach(e);
+            HandleAttachment(e);
         }
 
-        private void OnDetach(MouseButtonEventArgs e) {
+        private void HandleAttachment(MouseButtonEventArgs e) {
             if (e.ChangedButton == MouseButton.Left) {
                 _isAttached = false;
                 IdentityMenu.Arrow.Visibility = Visibility.Collapsed;
                 Arrow.Visibility = Visibility.Collapsed;
                 MainMenu.Detach();
                 this.DragMove();
+            } else if (e.ChangedButton == MouseButton.Right) {
+                _isAttached = true;
+                IdentityMenu.Arrow.Visibility = Visibility.Visible;
+                Arrow.Visibility = Visibility.Visible;
+                MainMenu.Retach();
             }
         }
 
@@ -722,7 +726,7 @@ namespace ZitiDesktopEdge {
 
         private void ServiceClient_OnNotificationEvent(object sender, NotificationEvent e) {
             var displayMFARequired = false;
-            var displayMFATimout = false;
+            var displayMFATimeout = false;
             foreach (var notification in e.Notification) {
                 var found = identities.Find(id => id.Identifier == notification.Identifier);
                 if (found == null) {
@@ -737,7 +741,7 @@ namespace ZitiDesktopEdge {
                         // display mfa token icon
                         displayMFARequired = true;
                     } else {
-                        displayMFATimout = true;
+                        displayMFATimeout = true;
                     }
 
                     for (int i = 0; i < identities.Count; i++) {
@@ -749,9 +753,9 @@ namespace ZitiDesktopEdge {
                 }
             }
 
-            // we may need to display mfa icon, based on the timer in UI, remove found.MFAInfo.ShowMFA setting in this function. 
+            // we may need to display mfa icon, based on the timer in UI, remove found.MFAInfo.ShowMFA setting in this function.
             // the below function can show mfa icon even after user authenticates successfully, in race conditions
-            if (displayMFARequired || displayMFATimout) {
+            if (displayMFARequired || displayMFATimeout) {
                 this.Dispatcher.Invoke(() => {
                     IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
                     if (deets.IsVisible) {
@@ -766,7 +770,7 @@ namespace ZitiDesktopEdge {
             logger.Debug($"==== ControllerEvent    : action:{e.Action} identifier:{e.Identifier}");
             // commenting this block, because when it receives the disconnected events, identities are disabled and
             // it is not allowing me to click/perform any operation on the identity
-            // the color of the title is also too dark, and it is not clearly visible, when the identity is disconnected 
+            // the color of the title is also too dark, and it is not clearly visible, when the identity is disconnected
             /* if (e.Action == "connected") {
 				var found = identities.Find(i => i.Identifier == e.Identifier);
 				found.IsConnected = true;
@@ -1100,7 +1104,7 @@ namespace ZitiDesktopEdge {
 
         /// <summary>
         /// If an identity gets added late, execute this.
-        /// 
+        ///
         /// Do not update services for identity events
         /// </summary>
         /// <param name="sender">The sending service</param>
@@ -1448,7 +1452,7 @@ namespace ZitiDesktopEdge {
                 } else {
                     this.Height = defaultHeight;
                     MainMenu.IdentitiesButton.Visibility = Visibility.Collapsed;
-                    IdListScroller.Visibility = Visibility.Visible;
+                    IdListScroller.Visibility = Visibility.Collapsed;
 
                 }
                 AddIdButton.Visibility = Visibility.Visible;
@@ -1514,11 +1518,11 @@ namespace ZitiDesktopEdge {
                 this.Top = desktopWorkingArea.Top + _top;
                 this.Left = desktopWorkingArea.Right - this.Width - _right;
                 Arrow.SetValue(Canvas.TopProperty, (double)0);
-                Arrow.SetValue(Canvas.LeftProperty, (double)185);
+                Arrow.SetValue(Canvas.LeftProperty, (double)195);
                 MainMenu.Arrow.SetValue(Canvas.TopProperty, (double)0);
-                MainMenu.Arrow.SetValue(Canvas.LeftProperty, (double)185);
+                MainMenu.Arrow.SetValue(Canvas.LeftProperty, (double)195);
                 IdentityMenu.Arrow.SetValue(Canvas.TopProperty, (double)0);
-                IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, (double)185);
+                IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, (double)195);
             } else if (trayRectangle.Left < 20) {
                 this.Position = "Left";
                 this.Left = _left;
@@ -1533,22 +1537,22 @@ namespace ZitiDesktopEdge {
                 this.Position = "Right";
                 this.Left = desktopWorkingArea.Right - this.Width - 20;
                 this.Top = desktopWorkingArea.Bottom - height - 75;
-                Arrow.SetValue(Canvas.TopProperty, height - 100);
+                Arrow.SetValue(Canvas.TopProperty, height - 200);
                 Arrow.SetValue(Canvas.LeftProperty, this.Width - 30);
-                MainMenu.Arrow.SetValue(Canvas.TopProperty, height - 100);
+                MainMenu.Arrow.SetValue(Canvas.TopProperty, height - 200);
                 MainMenu.Arrow.SetValue(Canvas.LeftProperty, this.Width - 30);
-                IdentityMenu.Arrow.SetValue(Canvas.TopProperty, height - 100);
+                IdentityMenu.Arrow.SetValue(Canvas.TopProperty, height - 200);
                 IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, this.Width - 30);
             } else {
                 this.Position = "Bottom";
                 this.Left = desktopWorkingArea.Right - this.Width - 75;
                 this.Top = desktopWorkingArea.Bottom - height;
                 Arrow.SetValue(Canvas.TopProperty, height - 35);
-                Arrow.SetValue(Canvas.LeftProperty, (double)185);
+                Arrow.SetValue(Canvas.LeftProperty, (double)195);
                 MainMenu.Arrow.SetValue(Canvas.TopProperty, height - 35);
-                MainMenu.Arrow.SetValue(Canvas.LeftProperty, (double)185);
+                MainMenu.Arrow.SetValue(Canvas.LeftProperty, (double)195);
                 IdentityMenu.Arrow.SetValue(Canvas.TopProperty, height - 35);
-                IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, (double)185);
+                IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, (double)195);
             }
         }
         public void Placement() {
@@ -1717,10 +1721,6 @@ namespace ZitiDesktopEdge {
 				this.Visibility = Visibility.Collapsed;
 #endif
             }
-        }
-
-        private void Label_MouseDoubleClick(object sender, MouseButtonEventArgs e) {
-            Placement();
         }
 
         int cur = 0;
