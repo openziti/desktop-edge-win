@@ -126,7 +126,7 @@
         </Border>
         <Rectangle Margin="10,10,10,10" Name="BgColor" Stroke="Black" RadiusY="10" RadiusX="10" ClipToBounds="True">
             <Rectangle.Fill>
-                <ImageBrush ImageSource="/Assets/Images/background.png" />
+                <ImageBrush x:Name="UIMainBackgroundImage" />
             </Rectangle.Fill>
         </Rectangle>
         <StackPanel x:Name="MainView" Margin="10,10,10,-20">
@@ -145,9 +145,9 @@
                     <Label Content="MAIN" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" FontSize="10"></Label>
                     <Label Content="MENU" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" Margin="0,-14,0,0" FontSize="10"></Label>
                 </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,12">
-                    <Image Source="/Assets/Images/z.png" Height="40" RenderOptions.BitmapScalingMode="Fant" MouseDown="Window_MouseDown" Cursor="ScrollAll" ToolTip="MOUSELEFT+DRAG to Detach/Move | MOUSERIGHT to Reattach"></Image>
-                    <Label Content="Tap to Toggle Service" Margin="0,-3,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" FontSize="12" Foreground="White" HorizontalAlignment="Center"></Label>
+                <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Stretch">
+                    <Image x:Name="BrandLogo" Height="50" MaxWidth="200" Width="Auto" Margin="0,10,0,5" RenderOptions.BitmapScalingMode="HighQuality" MouseDown="Window_MouseDown" Cursor="ScrollAll" ToolTip="MOUSELEFT+DRAG to Detach/Move | MOUSERIGHT to Reattach"></Image>
+                    <Label x:Name="BrandContent" MouseDoubleClick="Label_MouseDoubleClick" Margin="-50,0,-50,0" Padding="0,0,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" FontSize="12" Foreground="white" HorizontalAlignment="Center"></Label>
                 </StackPanel>
                 <StackPanel x:Name="AddIdAreaButton" Grid.Column="2" Cursor="Hand" Orientation="Vertical" Margin="14,16,14,14" MouseLeftButtonUp="AddIdentity">
                     <Image Source="/Assets/Images/identity.png" Margin="0,0,5,-4" Width="26" Height="26" HorizontalAlignment="Right">
@@ -223,8 +223,7 @@
         <Canvas x:Name="AlertCanvas" ClipToBounds="False" Visibility="Collapsed">
             <Image Source="/Assets/Images/UpdateWarn.png" Canvas.Left="50" Canvas.Top="32" Width="14" Height="14"></Image>
         </Canvas>
-        <!-- Form for debugging -->
-        <debug:Debugging x:Name="DebugForm" Visibility="Collapsed" />
+
         <!-- Menu UI -->
         <local:MainMenu x:Name="MainMenu" Visibility="Collapsed"></local:MainMenu>
         <!-- ID Detail UI -->
@@ -378,7 +377,4 @@
             </Grid>
         </Grid>
     </Grid>
-    <Window.InputBindings>
-        <KeyBinding x:Name="ShowDebug" Command="{Binding SomeCommand}" Key="F12" />
-    </Window.InputBindings>
 </Window>

@@ -108,6 +108,7 @@
     <Reference Include="System.ServiceProcess" />
     <Reference Include="System.Transactions" />
     <Reference Include="System.Web" />
+    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Windows" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Windows.Presentation" />
@@ -475,6 +476,11 @@
     <Resource Include="Assets\Images\processing.png" />
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Assets\Images\background-blue.png" />
+    <Resource Include="Assets\Images\background-dark.png" />
+    <Resource Include="Assets\Images\background-light.png" />
+    <Resource Include="Assets\Images\background-netfoundry.png" />
+    <Resource Include="Assets\Images\background-red.png" />
     <Resource Include="Assets\Images\ext-auth-needed.png" />
     <Resource Include="ziti-v2.ico" />
     <Content Include="..\ziti.ico" />

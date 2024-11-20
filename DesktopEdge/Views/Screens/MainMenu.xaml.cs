@@ -359,7 +359,7 @@ namespace ZitiDesktopEdge {
         }
 
         private void ShowSupport(object sender, MouseButtonEventArgs e) {
-            Process.Start(new ProcessStartInfo("https://openziti.discourse.group/") { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo($"{MainWindow.CustomSupportLink}") { UseShellExecute = true });
         }
 
         private void DetachWindow(object sender, MouseButtonEventArgs e) {

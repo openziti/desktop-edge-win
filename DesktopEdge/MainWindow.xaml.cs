@@ -41,6 +41,10 @@ using NLog.Targets;
 using Microsoft.Win32;
 
 using Ziti.Desktop.Edge.Models;
+using System.Windows.Media.Imaging;
+using System.Configuration;
+using System.Collections.Specialized;
+
 
 namespace ZitiDesktopEdge {
 
@@ -56,15 +60,32 @@ namespace ZitiDesktopEdge {
         MonitorClient monitorClient = null;
         private bool _isAttached = true;
         private bool _isServiceInError = false;
-        private int _right = 75;
-        private int _left = 75;
-        private int _top = 30;
-        private int defaultHeight = 540;
+        private readonly int _right = 75;
+        private readonly int _left = 75;
+        private readonly int _top = 30;
+        private readonly int defaultHeight = 540;
         public int NotificationsShownCount = 0;
         private double _maxHeight = 800d;
         public string CurrentIcon = "white";
-        private string[] suffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };
+        private readonly string[] suffixes = { "bps", "Kbps", "Mbps", "Gbps", "Tbps", "Pbps" };
         private string _blurbUrl = "";
+
+        private static readonly System.Windows.Media.Color defaultBlue = System.Windows.Media.Color.FromRgb(0x00, 0x68, 0xF9);
+        private static readonly System.Windows.Media.Color defaultRed = System.Windows.Media.Color.FromRgb(0xFF, 0x00, 0x47);
+        private static readonly System.Windows.Media.Color defaultGreen = System.Windows.Media.Color.FromRgb(0x00, 0xFF, 0x00);
+        private static readonly System.Windows.Media.Color defaultBlack = System.Windows.Media.Color.FromRgb(0x00, 0x00, 0x00);
+        private static readonly System.Windows.Media.Brush DefaultRed = new System.Windows.Media.SolidColorBrush(defaultRed);
+        private static readonly System.Windows.Media.Brush DefaultBlue = new System.Windows.Media.SolidColorBrush(defaultBlue);
+        private static readonly System.Windows.Media.Brush DefaultGreen = new System.Windows.Media.SolidColorBrush(defaultGreen);
+        private static readonly System.Windows.Media.Brush DefaultBlack = new System.Windows.Media.SolidColorBrush(defaultBlack);
+
+        private readonly string CustomBrandTextDFLT = "Tap to Toggle Service"; // InitializeCustomization().
+        private readonly int CustomBrandTextLEN = 30; // InitializeCustomization().
+        private string CustomBrandImageDFLT = "/Assets/Images/z.png"; // InitializeCustomization().
+        private readonly string CustomThemeStyleDFLT = "dark"; // InitializeCustomization().       
+        private readonly string CustomSupportLinkDFLT = "https://openziti.discourse.group/"; // InitializeCustomization().
+        private string _CustomSupportLink; // InitializeCustomization().
+        private readonly string[] CustomThemeStyleBGs = { "light", "dark", "blue", "red", "netfoundry" };
 
         private DateTime NextNotificationTime;
         private static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
@@ -78,18 +99,212 @@ namespace ZitiDesktopEdge {
         public static string ExpectedLogPathServices;
 
         private static ZDEWViewState state;
+
+        public class CustomizationsSection : ConfigurationSection {
+            [ConfigurationProperty("brand")]
+            public BrandElement Brand => (BrandElement)this["brand"];
+
+            [ConfigurationProperty("support")]
+            public SupportElement Support => (SupportElement)this["support"];
+
+            [ConfigurationProperty("theme")]
+            public ThemeElement Theme => (ThemeElement)this["theme"];
+        }
+
+        public class CustomizationsInformationSection : ConfigurationSection {
+            [ConfigurationProperty("usage")]
+            public UsageElement Usage => (UsageElement)this["usage"];
+        }
+
+        public class BrandElement : ConfigurationElement {
+            [ConfigurationProperty("LogoPath", IsRequired = false)]
+            public string LogoPath => (string)this["LogoPath"];
+
+            [ConfigurationProperty("Text", IsRequired = false)]
+            public string Text => (string)this["Text"];
+        }
+
+        public class SupportElement : ConfigurationElement {
+            [ConfigurationProperty("Link", IsRequired = false)]
+            public string Link => (string)this["Link"];
+        }
+
+        public class ThemeElement : ConfigurationElement {
+            [ConfigurationProperty("Style", IsRequired = false)]
+            public string Style => (string)this["Style"];
+        }
+
+        public class UsageElement : ConfigurationElement {
+            [ConfigurationProperty("Information", IsRequired = false)]
+            public string Information => (string)this["Information"];
+
+            [ConfigurationProperty("ThemeStyle", IsRequired = false)]
+            public string ThemeStyle => (string)this["ThemeStyle"];
+
+            [ConfigurationProperty("BrandLogoPath", IsRequired = false)]
+            public string BrandLogoPath => (string)this["BrandLogoPath"];
+
+            [ConfigurationProperty("BrandText", IsRequired = false)]
+            public string BrandText => (string)this["BrandText"];
+
+            [ConfigurationProperty("SupportLink", IsRequired = false)]
+            public string SupportLink => (string)this["SupportLink"];
+        }
+
         static MainWindow() {
-            asm = System.Reflection.Assembly.GetExecutingAssembly();
-            ThisAssemblyName = asm.GetName().Name;
-            state = (ZDEWViewState)Application.Current.Properties["ZDEWViewState"];
+        asm = System.Reflection.Assembly.GetExecutingAssembly();
+        ThisAssemblyName = asm.GetName().Name;
+        state = (ZDEWViewState)Application.Current.Properties["ZDEWViewState"];
 #if DEBUG
-            ExecutionDirectory = @"C:\Program Files (x86)\NetFoundry Inc\Ziti Desktop Edge";
+        ExecutionDirectory = @"C:\Program Files (x86)\NetFoundry Inc\Ziti Desktop Edge";
 #else
-			ExecutionDirectory = Path.GetDirectoryName(asm.Location);
+		ExecutionDirectory = Path.GetDirectoryName(asm.Location);
 #endif
-            ExpectedLogPathRoot = Path.Combine(ExecutionDirectory, "logs");
-            ExpectedLogPathUI = Path.Combine(ExpectedLogPathRoot, "UI", $"{ThisAssemblyName}.log");
-            ExpectedLogPathServices = Path.Combine(ExpectedLogPathRoot, "service", $"ziti-tunneler.log");
+        ExpectedLogPathRoot = Path.Combine(ExecutionDirectory, "logs");
+        ExpectedLogPathUI = Path.Combine(ExpectedLogPathRoot, "UI", $"{ThisAssemblyName}.log");
+        ExpectedLogPathServices = Path.Combine(ExpectedLogPathRoot, "service", $"ziti-tunneler.log");
+    }
+
+        public void SetupCustomizationsConfig() {
+            // Pointer to the executable's primary configuration file.
+            var configFile = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+
+            var customizationsInformationSection = configFile.Sections["customizationsInformation"] as CustomizationsInformationSection;
+            if (customizationsInformationSection == null) {
+                // Create a new section if it does not exist.
+                customizationsInformationSection = new CustomizationsInformationSection();
+                configFile.Sections.Add("customizationsInformation", customizationsInformationSection);
+            }
+
+            // Check if the required sections exist, and create them if not.
+            var customizationsSection = configFile.Sections["customizations"] as CustomizationsSection;
+            if (customizationsSection == null) {
+                // Create a new section if it does not exist.
+                customizationsSection = new CustomizationsSection();
+                configFile.Sections.Add("customizations", customizationsSection);
+            }
+
+            // Set default values for the `usage` subsection if missing.
+            if (string.IsNullOrEmpty(customizationsInformationSection.Usage.Information))
+                customizationsInformationSection.Usage.ElementInformation.Properties["Information"].Value =
+                    "Set the values of the customizations section according to the guidelines as follows.";
+            if (string.IsNullOrEmpty(customizationsInformationSection.Usage.ThemeStyle))
+                customizationsInformationSection.Usage.ElementInformation.Properties["ThemeStyle"].Value =
+                    $"'{string.Join("', '", CustomThemeStyleBGs)}' OR 'random'.";
+            if (string.IsNullOrEmpty(customizationsInformationSection.Usage.BrandLogoPath))
+                customizationsInformationSection.Usage.ElementInformation.Properties["BrandLogoPath"].Value =
+                    $"The 'IMAGENAME.png' OR 'Logo.png' which exists in the main runtime folder '{ExecutionDirectory}'.";
+            if (string.IsNullOrEmpty(customizationsInformationSection.Usage.BrandText))
+                customizationsInformationSection.Usage.ElementInformation.Properties["BrandText"].Value =
+                    $"Text appearing below the logo. (MAX [{CustomBrandTextLEN}] CHARACTERS)";
+            if (string.IsNullOrEmpty(customizationsInformationSection.Usage.SupportLink))
+                customizationsInformationSection.Usage.ElementInformation.Properties["SupportLink"].Value =
+                    $"Replaces the support link in the main menu. (MUST CONTAIN 'http://' or 'https://')";
+
+            // Set default values for the `brand` subsection if missing.
+            if (string.IsNullOrEmpty(customizationsSection.Brand.LogoPath))
+                customizationsSection.Brand.ElementInformation.Properties["LogoPath"].Value = CustomBrandImageDFLT;
+            if (string.IsNullOrEmpty(customizationsSection.Brand.Text))
+                customizationsSection.Brand.ElementInformation.Properties["Text"].Value = CustomBrandTextDFLT;
+
+            // Set default values for the `support` subsection if missing.
+            if (string.IsNullOrEmpty(customizationsSection.Support.Link))
+                customizationsSection.Support.ElementInformation.Properties["Link"].Value = CustomSupportLinkDFLT;
+
+            // Set default values for the `theme` subsection if missing.
+            if (string.IsNullOrEmpty(customizationsSection.Theme.Style))
+                customizationsSection.Theme.ElementInformation.Properties["Style"].Value = CustomThemeStyleDFLT;
+
+            // Save and write the configuration back into the file.
+            configFile.Save(ConfigurationSaveMode.Modified);
+        }
+
+        public void ReloadConfigFile() {
+            // Save changes to the configuration file (if any changes were made previously).
+            var configFile = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            configFile.Save(ConfigurationSaveMode.Modified);
+
+            // Refresh the customizations section to reload the updated values into memory.
+            ConfigurationManager.RefreshSection("customizations");
+        }
+
+        public void InitializeCustomizations() {
+            // Setup the customizations configuration file as required and refresh it.
+            SetupCustomizationsConfig();
+            ReloadConfigFile();
+
+            // Obtain the customizations section from the configuration.
+            var customizationsSection = ConfigurationManager.GetSection("customizations") as CustomizationsSection;
+
+            // Apply theme settings.
+            var themeStyle = customizationsSection.Theme.Style.ToLower();
+            string customThemeStyle = CustomThemeStyleDFLT;
+            if (!string.IsNullOrWhiteSpace(themeStyle) && CustomThemeStyleBGs.Contains(themeStyle, StringComparer.OrdinalIgnoreCase)) {
+                customThemeStyle = themeStyle;
+            } else if (themeStyle == "random") {
+                var random = new Random();
+                customThemeStyle = CustomThemeStyleBGs[random.Next(CustomThemeStyleBGs.Length)];
+            }
+
+            // Apply brand settings.
+            var logoPath = customizationsSection.Brand.LogoPath;
+            string customBrandImage = CustomBrandImageDFLT;
+            if (!string.IsNullOrWhiteSpace(logoPath) && File.Exists(Path.Combine(ExecutionDirectory, logoPath))) {
+                customBrandImage = Path.Combine(ExecutionDirectory, logoPath);
+            } else if (File.Exists(Path.Combine(ExecutionDirectory, "Logo.png"))) {
+                customBrandImage = Path.Combine(ExecutionDirectory, "Logo.png");
+            }
+            var customBrandText = customizationsSection.Brand.Text;
+
+            // Apply support settings.
+            var supportLink = customizationsSection.Support.Link;
+            _CustomSupportLink = CustomSupportLinkDFLT;
+            if (!string.IsNullOrEmpty(supportLink) && (supportLink.StartsWith("http://") || supportLink.StartsWith("https://"))) {
+                _CustomSupportLink = supportLink;
+            }
+
+            // Apply customizations.
+            CustomBrandSetter(customBrandImage, customBrandText);
+            CustomThemeSetter(customThemeStyle);
+        }
+
+        public string CustomSupportLink {
+            // Public method to return the privately set custom support link string as a public string.
+            get { return _CustomSupportLink; }
+        }
+        private void CustomSupportSetter(string CustomSupportLink) {
+            _CustomSupportLink = CustomSupportLink; // Privately held custom support string.
+        }
+
+        private void CustomThemeSetter(string UIStyle) {
+            var BitmapImage = new BitmapImage();
+            BitmapImage.BeginInit();
+            string PackUri = $"pack://application:,,,/Assets/Images/background-{UIStyle}.png";
+            BitmapImage.UriSource = new Uri(PackUri, UriKind.Absolute);
+            BitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+            BitmapImage.EndInit();
+
+            UIMainBackgroundImage.ImageSource = BitmapImage; // Final image/BG to set in the XAML.
+        }
+
+        private void CustomBrandSetter(string ImagePath, string TextString) {
+            var BitmapImage = new BitmapImage();
+            BitmapImage.BeginInit();
+            if (File.Exists(ImagePath)) {
+                BitmapImage.UriSource = new Uri(ImagePath, UriKind.Absolute);
+            } else {
+                string PackUri = $"pack://application:,,,{ImagePath}";
+                BitmapImage.UriSource = new Uri(PackUri, UriKind.Absolute);
+            }
+            BitmapImage.DecodePixelHeight = 50;
+            BitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+            BitmapImage.EndInit();
+            BrandLogo.Source = BitmapImage; // Final image to set in the XAML.
+            if (TextString.Length > CustomBrandTextLEN) {
+                BrandContent.Content = TextString.Substring(0, CustomBrandTextLEN); // Final text to set in the XAML.
+            } else {
+                BrandContent.Content = TextString; // Final text to set in the XAML.
+            }
         }
 
         async private void IdentityMenu_OnMessage(string message) {
@@ -376,6 +591,8 @@ namespace ZitiDesktopEdge {
         private System.ComponentModel.IContainer components;
         public MainWindow() {
             InitializeComponent();
+            InitializeCustomizations();
+
             NextNotificationTime = DateTime.Now;
             SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
             string nlogFile = Path.Combine(ExecutionDirectory, ThisAssemblyName + "-log.config");
@@ -427,7 +644,7 @@ namespace ZitiDesktopEdge {
             this.contextMenu.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] { this.contextMenuItem });
 
             this.contextMenuItem.Index = 0;
-            this.contextMenuItem.Text = "&Close UI";
+            this.contextMenuItem.Text = "&Shutdown Ziti Desktop Edge Monitor";
             this.contextMenuItem.Click += new System.EventHandler(this.contextMenuItem_Click);
 
 
@@ -1835,27 +2052,6 @@ namespace ZitiDesktopEdge {
             ShowMFARecoveryCodes(identity);
         }
 
-
-
-
-
-        private ICommand someCommand;
-        public ICommand SomeCommand {
-            get {
-                return someCommand
-                    ?? (someCommand = new ActionCommand(() => {
-                        if (DebugForm.Visibility == Visibility.Hidden) {
-                            DebugForm.Visibility = Visibility.Visible;
-                        } else {
-                            DebugForm.Visibility = Visibility.Hidden;
-                        }
-                    }));
-            }
-            set {
-                someCommand = value;
-            }
-        }
-
         private void DoLoading(bool isComplete) {
             if (isComplete) HideLoad();
             else ShowLoad("Loading", "Please Wait.");
@@ -1864,24 +2060,5 @@ namespace ZitiDesktopEdge {
         private void Label_MouseDoubleClick_1(object sender, MouseButtonEventArgs e) {
             ShowToast("here's a toast all rightddd...");
         }
-    }
-
-    public class ActionCommand : ICommand {
-        private readonly Action _action;
-
-        public ActionCommand(Action action) {
-            _action = action;
-        }
-
-        public void Execute(object parameter) {
-            _action();
-        }
-
-        public bool CanExecute(object parameter) {
-            return true;
-        }
-#pragma warning disable CS0067 //The event 'ActionCommand.CanExecuteChanged' is never used
-        public event EventHandler CanExecuteChanged;
-#pragma warning restore CS0067 //The event 'ActionCommand.CanExecuteChanged' is never used
     }
 }
