@@ -192,7 +192,8 @@ namespace ZitiDesktopEdge {
             IdListScrollView.Visibility = Visibility.Collapsed;
             MainItems.Visibility = Visibility.Collapsed;
             AboutItems.Visibility = Visibility.Collapsed;
-            MainItemsButton.Visibility = Visibility.Collapsed;
+            MainItemsButtonA.Visibility = Visibility.Collapsed;
+            MainItemsButtonB.Visibility = Visibility.Collapsed;
             AboutItemsArea.Visibility = Visibility.Collapsed;
             BackArrow.Visibility = Visibility.Collapsed;
             AdvancedItems.Visibility = Visibility.Collapsed;
@@ -224,15 +225,15 @@ namespace ZitiDesktopEdge {
                 VersionInfo.Content = $"App: {appVersion} Service: {version}";
 
             } else if (menuState == "Advanced") {
-                MenuTitle.Content = "ADVANCED SETTINGS";
+                MenuTitle.Content = "Advanced Settings";
                 AdvancedItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "Licenses") {
-                MenuTitle.Content = "THIRD PARTY LICENSES";
+                MenuTitle.Content = "Third Party Licenses";
                 LicensesItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "Logs") {
-                MenuTitle.Content = "ADVANCED SETTINGS";
+                MenuTitle.Content = "Advanced Settings";
                 AdvancedItems.Visibility = Visibility.Visible;
                 //string targetFile = NativeMethods.GetFinalPathName(MainWindow.ExpectedLogPathServices);
                 string targetFile = MainWindow.ExpectedLogPathServices;
@@ -240,24 +241,24 @@ namespace ZitiDesktopEdge {
                 OpenLogFile("service", targetFile);
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "UILogs") {
-                MenuTitle.Content = "ADVANCED SETTINGS";
+                MenuTitle.Content = "Advanced Settings";
                 AdvancedItems.Visibility = Visibility.Visible;
                 OpenLogFile("UI", MainWindow.ExpectedLogPathUI);
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "LogLevel") {
                 ResetLevels();
 
-                MenuTitle.Content = "SET LOG LEVEL";
+                MenuTitle.Content = "Set Log Level";
                 LogLevelItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "ConfigureAutomaticUpgrades") {
                 SetAutomaticUpgradesState();
 
-                MenuTitle.Content = "AUTOMATIC UPGRADES";
+                MenuTitle.Content = "Automatic Upgrades";
                 AutomaticUpgradesItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "Config") {
-                MenuTitle.Content = "TUNNEL CONFIG";
+                MenuTitle.Content = "Tunnel Configuration";
                 ConfigItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
 
@@ -268,16 +269,60 @@ namespace ZitiDesktopEdge {
                 ConfigDns.Value = Application.Current.Properties["dns"]?.ToString();
                 ConfigDnsEnabled.Value = Application.Current.Properties["dnsenabled"]?.ToString();
             } else if (menuState == "Identities") {
-                MenuTitle.Content = "IDENTITIES";
+                MenuTitle.Content = "Identities";
                 IdListScrollView.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
             } else {
-                MenuTitle.Content = "MAIN MENU";
+                MenuTitle.Content = "Main Menu";
                 MainItems.Visibility = Visibility.Visible;
-                MainItemsButton.Visibility = Visibility.Visible;
+                MainItemsButtonA.Visibility = Visibility.Visible;
+                MainItemsButtonB.Visibility = Visibility.Visible;
             }
 
+            MenuTitle.Content = MenuTitle.Content.ToString().ToUpper();
             // ShowUpdateAvailable();
+        }
+
+        private async Task StopService(bool ShouldStop = false) {
+            if (ShouldStop) {
+                try {
+                    MainWindow.ShowLoad("Disabling Service", "Please wait for the service to stop.");
+                    var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
+                    var r = await monitorClient.StopServiceAsync();
+                    if (r.Code != 0) {
+                        logger.Warn($"ERROR: Error:{r.Error}, Message:{r.Message}");
+                    } else {
+                        logger.Info("Service stopped!");
+                    }
+                } catch (MonitorServiceException me) {
+                    logger.Warn("The monitor service appears offline.", me);
+                    MainWindow.ShowError("Error Disabling Service", "The monitor service is offline.");
+                } catch (Exception ex) {
+                    logger.Error(ex, "Unexpected error: {0}", ex.Message);
+                    MainWindow.ShowError("Error Disabling Service", "An error occurred while trying to disable the data service. Is the monitor service running?");
+                } finally {
+                    MainWindow.ShowLoad("Shutting Down", "");
+                    await Task.Delay(2000);
+                }
+            } else {
+                MainWindow.ShowLoad("Shutting Down", "");
+                await Task.Delay(2000);
+            }
+        }
+
+        private async void StopServiceCloseApp(object sender, RoutedEventArgs e) {
+            try {
+                await StopService(true);
+            } catch (Exception ex) {
+                MainWindow.ShowError("Error", "An error occurred while stopping the service: " + ex.Message);
+                return;
+            }
+            Application.Current.Shutdown();
+        }
+
+        private async void CloseApp(object sender, RoutedEventArgs e) {
+            await StopService(false);
+            Application.Current.Shutdown();
         }
 
         private void OpenLogFile(string which, string logFile) {
@@ -311,11 +356,8 @@ namespace ZitiDesktopEdge {
             }
             UpdateState();
         }
-        private void ShowPrivacy(object sender, MouseButtonEventArgs e) {
-            Process.Start(new ProcessStartInfo("https://netfoundry.io/privacy") { UseShellExecute = true });
-        }
-        private void ShowTerms(object sender, MouseButtonEventArgs e) {
-            Process.Start(new ProcessStartInfo("https://netfoundry.io/terms") { UseShellExecute = true });
+        private void ShowTermsPrivacy(object sender, MouseButtonEventArgs e) {
+            Process.Start(new ProcessStartInfo("https://netfoundry.io/terms-and-privacy-policy/") { UseShellExecute = true });
         }
 
         async public void CollectFeedbackLogs(object sender, MouseButtonEventArgs e) {
@@ -775,11 +817,6 @@ namespace ZitiDesktopEdge {
 
         private void UpdateUrl_TextChanged(object sender, TextChangedEventArgs e) {
             logger.Info("url: {}", state.AutomaticUpdateURL);
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e) {
-            logger.Info("sender name: {}", sender);
-
         }
     }
 }

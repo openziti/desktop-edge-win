@@ -67,7 +67,8 @@ namespace ZitiDesktopEdge {
         public int NotificationsShownCount = 0;
         private double _maxHeight = 800d;
         public string CurrentIcon = "white";
-        private readonly string[] suffixes = { "bps", "Kbps", "Mbps", "Gbps", "Tbps", "Pbps" };
+        private readonly string[] ByteSuffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };
+        private readonly string[] BitSuffixes = { "bps", "Kbps", "Mbps", "Gbps", "Tbps", "Pbps" };
         private string _blurbUrl = "";
 
         private static readonly System.Windows.Media.Color defaultBlue = System.Windows.Media.Color.FromRgb(0x00, 0x68, 0xF9);
@@ -268,12 +269,12 @@ namespace ZitiDesktopEdge {
             CustomThemeSetter(customThemeStyle);
         }
 
-        public string CustomSupportLink {
-            // Public method to return the privately set custom support link string as a public string.
+        public string CustomSupportLink {            
             get { return _CustomSupportLink; }
         }
+
         private void CustomSupportSetter(string CustomSupportLink) {
-            _CustomSupportLink = CustomSupportLink; // Privately held custom support string.
+            _CustomSupportLink = CustomSupportLink;
         }
 
         private void CustomThemeSetter(string UIStyle) {
@@ -587,7 +588,10 @@ namespace ZitiDesktopEdge {
         }
 
         private System.Windows.Forms.ContextMenu contextMenu;
-        private System.Windows.Forms.MenuItem contextMenuItem;
+        private System.Windows.Forms.MenuItem contextMenuItem1;
+        private System.Windows.Forms.MenuItem contextMenuItem2;
+        private System.Windows.Forms.MenuItem contextMenuSep1;
+        private System.Windows.Forms.MenuItem contextMenuItem3;
         private System.ComponentModel.IContainer components;
         public MainWindow() {
             InitializeComponent();
@@ -640,13 +644,30 @@ namespace ZitiDesktopEdge {
 
             this.components = new System.ComponentModel.Container();
             this.contextMenu = new System.Windows.Forms.ContextMenu();
-            this.contextMenuItem = new System.Windows.Forms.MenuItem();
-            this.contextMenu.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] { this.contextMenuItem });
 
-            this.contextMenuItem.Index = 0;
-            this.contextMenuItem.Text = "&Shutdown Ziti Desktop Edge Monitor";
-            this.contextMenuItem.Click += new System.EventHandler(this.contextMenuItem_Click);
+            this.contextMenuItem1 = new System.Windows.Forms.MenuItem();
+            this.contextMenuItem1.Index = 0;
+            this.contextMenuItem1.Text = "&QUIT - Close UI Only";
+            this.contextMenuItem1.Click += new System.EventHandler(this.CloseApp);
+            this.contextMenuItem2 = new System.Windows.Forms.MenuItem();
+            this.contextMenuItem2.Index = 1;
+            this.contextMenuItem2.Text = "&COMPLETE QUIT - Stop Service, Close UI";
+            this.contextMenuItem2.Click += new System.EventHandler(this.StopServiceCloseApp);
+            this.contextMenuSep1 = new System.Windows.Forms.MenuItem();
+            this.contextMenuSep1.Index = 1;
+            this.contextMenuSep1.Text = "-"; 
+            this.contextMenuItem3 = new System.Windows.Forms.MenuItem();
+            this.contextMenuItem3.Index = 2;
+            this.contextMenuItem3.Text = "&Reattach Main Window";
+            this.contextMenuItem3.Click += new System.EventHandler(this.TaskbarReattach);
 
+            // Add the menu items to the context menu
+            this.contextMenu.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
+                this.contextMenuItem1,
+                this.contextMenuItem2,
+                this.contextMenuSep1,
+                this.contextMenuItem3
+            });
 
             notifyIcon = new System.Windows.Forms.NotifyIcon();
             notifyIcon.Visible = true;
@@ -740,7 +761,46 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        private void contextMenuItem_Click(object Sender, EventArgs e) {
+
+        private async Task StopService(bool ShouldStop = false) {
+            if (ShouldStop) {
+                try {
+                    ShowLoad("Disabling Service", "Please wait for the service to stop.");
+                    var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
+                    var r = await monitorClient.StopServiceAsync();
+                    if (r.Code != 0) {
+                        logger.Warn($"ERROR: Error:{r.Error}, Message:{r.Message}");
+                    } else {
+                        logger.Info("Service stopped!");
+                    }
+                } catch (MonitorServiceException me) {
+                    logger.Warn("The monitor service appears offline.", me);
+                    ShowError("Error Disabling Service", "The monitor service is offline.");
+                } catch (Exception ex) {
+                    logger.Error(ex, "Unexpected error: {0}", ex.Message);
+                    ShowError("Error Disabling Service", "An error occurred while trying to disable the data service. Is the monitor service running?");
+                } finally {
+                    ShowLoad("Shutting Down", "");
+                    await Task.Delay(2000);
+                }
+            } else {
+                ShowLoad("Shutting Down", "");
+                await Task.Delay(2000);
+            }
+        }
+
+        private async void StopServiceCloseApp(object Sender, EventArgs e) {
+            try {
+                await StopService(true);
+            } catch (Exception ex) {
+                ShowError("Error", "An error occurred while stopping the service: " + ex.Message);
+                return;
+            }
+            Application.Current.Shutdown();
+        }
+
+        private async void CloseApp(object Sender, EventArgs e) {
+            await StopService(false);
             Application.Current.Shutdown();
         }
 
@@ -780,6 +840,12 @@ namespace ZitiDesktopEdge {
                 Arrow.Visibility = Visibility.Visible;
                 MainMenu.Retach();
             }
+        }
+        private void TaskbarReattach(object Sender, EventArgs e) {
+            _isAttached = true;
+            IdentityMenu.Arrow.Visibility = Visibility.Visible;
+            Arrow.Visibility = Visibility.Visible;
+            MainMenu.Retach();
         }
 
         private void MainWindow_Activated(object sender, EventArgs e) {
@@ -1409,6 +1475,7 @@ namespace ZitiDesktopEdge {
 
         public void SetSpeed(decimal bytes, Label speed, Label speedLabel) {
             int counter = 0;
+            string[] suffixes = ByteSuffixes;
             while (Math.Round(bytes / 1024) >= 1) {
                 bytes = bytes / 1024;
                 counter++;
@@ -1641,6 +1708,8 @@ namespace ZitiDesktopEdge {
                     this.Height = height;
                     IdentityMenu.SetHeight(this.Height - 160);
                     MainMenu.IdentitiesButton.Visibility = Visibility.Visible;
+                    MainMenu.MainItemsButtonB.IsEnabled = true;
+                    MainMenu.MainItemsButtonB.Opacity = 1;
                     foreach (var id in ids) {
                         IdentityItem idItem = new IdentityItem();
 
@@ -1669,6 +1738,8 @@ namespace ZitiDesktopEdge {
                 } else {
                     this.Height = defaultHeight;
                     MainMenu.IdentitiesButton.Visibility = Visibility.Collapsed;
+                    MainMenu.MainItemsButtonB.IsEnabled = false;
+                    MainMenu.MainItemsButtonB.Opacity = 0.3;
                     IdListScroller.Visibility = Visibility.Collapsed;
 
                 }

@@ -58,8 +58,7 @@
                     </Button>
                 </StackPanel>
                 <StackPanel Name="AboutItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
-                    <local:SubMenuItem HorizontalAlignment="Stretch" Width="Auto" Label="Privacy Policy" MouseUp="ShowPrivacy"></local:SubMenuItem>
-                    <local:SubMenuItem HorizontalAlignment="Stretch" Width="Auto" Label="Terms of Service" MouseUp="ShowTerms"></local:SubMenuItem>
+                    <local:SubMenuItem HorizontalAlignment="Stretch" Width="Auto" Label="Privacy and Terms of Service" MouseUp="ShowTermsPrivacy"></local:SubMenuItem>
                 </StackPanel>
                 <StackPanel Name="AdvancedItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/wrench.png" Width="Auto" Label="Tunnel Config" MouseUp="ShowConfig"></local:MenuItem>
@@ -262,8 +261,61 @@
                     <Label Name="VersionOlder" Content=" checking version information " HorizontalAlignment="Center" FontSize="10" Height="50" Padding="0,30,0,0" Foreground="#F4044D" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                     <Label Name="VersionNewer" Content="" HorizontalAlignment="Center" FontSize="10" Height="50" Padding="0,30,0,0" Foreground="#0069FF" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                 </StackPanel>
-                <Label Name="MainItemsButton" Margin="0,10,0,0" Foreground="#F4044D" FontWeight="SemiBold" Content="Quit Ziti Desktop Edge" Cursor="Hand" MouseUp="CloseApp" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Center"></Label>
             </StackPanel>
+            <Button Name="MainItemsButtonA" Width="175" Margin="0,0,0,50" Padding="0,5,0,5" Cursor="Hand" BorderThickness="3" Click="CloseApp" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" VerticalAlignment="Bottom" HorizontalAlignment="Left">
+                <TextBlock TextAlignment="Center">QUIT<LineBreak/>Close UI Only</TextBlock>
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Width" Value="175" />
+                        <Setter Property="Foreground" Value="White" />
+                        <Setter Property="FontSize" Value="14" />
+                        <Setter Property="Background" Value="OrangeRed" />
+                        <Setter Property="BorderBrush" Value="SlateGray" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border CornerRadius="5" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="Crimson" />
+                                <Setter Property="BorderBrush" Value="DarkRed" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+            <Button Name="MainItemsButtonB" Width="175" Margin="0,0,0,50" Padding="0,5,0,5" Cursor="Hand" BorderThickness="3" Click="StopServiceCloseApp" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" VerticalAlignment="Bottom" HorizontalAlignment="Right">
+                <TextBlock TextAlignment="Center">COMPLETE QUIT<LineBreak/>Stop Service, Close UI</TextBlock>
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Width" Value="175" />
+                        <Setter Property="Foreground" Value="LightGray" />
+                        <Setter Property="FontSize" Value="14" />
+                        <Setter Property="Background" Value="#F4044D" />
+                        <Setter Property="BorderBrush" Value="SlateGray" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border CornerRadius="5" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="Crimson" />
+                                <Setter Property="BorderBrush" Value="DarkRed" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>            
         </Grid>
 
         <!-- Modal for Menu Items: Next revision make one global modal -->
