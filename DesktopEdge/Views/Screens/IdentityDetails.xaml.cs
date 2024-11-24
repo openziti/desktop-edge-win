@@ -34,7 +34,7 @@ using System.Diagnostics.Eventing.Reader;
 namespace ZitiDesktopEdge {
     /// <summary>
     /// Interaction logic for IdentityDetails.xaml
-    /// </summary> 
+    /// </summary>
     public partial class IdentityDetails : UserControl {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -110,12 +110,10 @@ namespace ZitiDesktopEdge {
         public MenuIdentityItem SelectedIdentityMenu { get; set; }
 
         private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
-            if (e.ChangedButton == MouseButton.Left) {
-                _isAttached = false;
-                OnDetach(e);
-            }
+            if (e.ChangedButton == MouseButton.Left) IsAttached = false;
+            else if (e.ChangedButton == MouseButton.Right) IsAttached = true;
+            OnDetach(e);
         }
-
 
         public bool IsAttached {
             get {
@@ -125,10 +123,8 @@ namespace ZitiDesktopEdge {
                 _isAttached = value;
                 if (_isAttached) {
                     Arrow.Visibility = Visibility.Visible;
-                    ConfirmArrow.Visibility = Visibility.Visible;
                 } else {
                     Arrow.Visibility = Visibility.Collapsed;
-                    ConfirmArrow.Visibility = Visibility.Collapsed;
                 }
             }
         }
@@ -176,10 +172,6 @@ namespace ZitiDesktopEdge {
                 _scroller.InvalidateScrollInfo();
             }
 
-            IsConnected.Visibility = Visibility.Collapsed;
-            IsDisconnected.Visibility = Visibility.Collapsed;
-            IsConnected.Visibility = Visibility.Collapsed;
-            IsDisconnected.Visibility = Visibility.Collapsed;
             MainDetailScroll.Visibility = Visibility.Collapsed;
             AuthMessageBg.Visibility = Visibility.Collapsed;
             AuthMessageLabel.Visibility = Visibility.Collapsed;
@@ -190,20 +182,14 @@ namespace ZitiDesktopEdge {
             ServiceCount.Visibility = Visibility.Visible;
 
             scrolledTo = 0;
-            IdDetailName.Text = _identity.Name;
-            IdDetailName.ToolTip = _identity.Name;
             IdentityMFA.IsOn = _identity.IsMFAEnabled;
             IdentityMFA.ToggleField.IsEnabled = true;
             IdentityMFA.ToggleField.Opacity = 1;
-            IsConnected.ToolTip = "Enabled - Click To Disable";
-            IsDisconnected.ToolTip = "Disabled - Click to Enable";
             IdServer.Value = _identity.ControllerUrl;
+            IdServer.ToolTip = _identity.ControllerUrl;
+            IdName.ToolTip = _identity.Name;
             IdName.Value = _identity.Name;
 
-
-#if DEBUG
-            _identity.MFADebug("UpdateView");
-#endif
             if (_identity.IsMFAEnabled) {
                 if (_identity.IsMFANeeded) {
                     // enabled and needed = needs to be authorized. show the lock icon and tell the user to auth
@@ -516,8 +502,6 @@ namespace ZitiDesktopEdge {
             if (SelectedIdentity != null) SelectedIdentity.ToggleSwitch.Enabled = true;
             if (SelectedIdentityMenu != null) SelectedIdentityMenu.ToggleSwitch.Enabled = true;
             _identity.IsEnabled = true;
-            IsConnected.Visibility = Visibility.Visible;
-            IsDisconnected.Visibility = Visibility.Collapsed;
             this.OnLoading?.Invoke(true);
         }
 
@@ -528,8 +512,6 @@ namespace ZitiDesktopEdge {
             if (SelectedIdentity != null) SelectedIdentity.ToggleSwitch.Enabled = false;
             if (SelectedIdentityMenu != null) SelectedIdentityMenu.ToggleSwitch.Enabled = false;
             _identity.IsEnabled = false;
-            IsConnected.Visibility = Visibility.Collapsed;
-            IsDisconnected.Visibility = Visibility.Visible;
             this.OnLoading?.Invoke(true);
         }
 

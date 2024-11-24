@@ -102,9 +102,7 @@ namespace ZitiDesktopEdge {
             MainMenuArea.Visibility = Visibility.Collapsed;
         }
         private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
-            if (e.ChangedButton == MouseButton.Left) {
-                OnDetach(e);
-            }
+            OnDetach(e);
         }
 
         private void CloseApp(object sender, MouseButtonEventArgs e) {
@@ -230,7 +228,7 @@ namespace ZitiDesktopEdge {
                 AdvancedItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "Licenses") {
-                MenuTitle.Content = "Third Party Licenses";
+                MenuTitle.Content = "THIRD PARTY LICENSES";
                 LicensesItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "Logs") {
@@ -259,7 +257,7 @@ namespace ZitiDesktopEdge {
                 AutomaticUpgradesItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "Config") {
-                MenuTitle.Content = "Tunnel Configuration";
+                MenuTitle.Content = "Tunnel Config";
                 ConfigItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
 
@@ -380,6 +378,12 @@ namespace ZitiDesktopEdge {
             DetachButton.Visibility = Visibility.Collapsed;
             AttachButton.Visibility = Visibility.Visible;
             Arrow.Visibility = Visibility.Collapsed;
+        }
+        public void Retach() {
+            Application.Current.MainWindow.ShowInTaskbar = false;
+            DetachButton.Visibility = Visibility.Visible;
+            AttachButton.Visibility = Visibility.Collapsed;
+            Arrow.Visibility = Visibility.Visible;
         }
         private void RetachWindow(object sender, MouseButtonEventArgs e) {
             Application.Current.MainWindow.ShowInTaskbar = false;
