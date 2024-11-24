@@ -4,7 +4,6 @@ using System.Windows;
 using System.Windows.Input;
 using System;
 using ZitiDesktopEdge.DataStructures;
-using System;
 using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;

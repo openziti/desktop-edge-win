@@ -151,17 +151,12 @@ namespace ZitiDesktopEdge.ServiceClient {
             return rtn;
         }
 
-        async public Task<Identity> AddIdentityAsync(string jwtFileName, bool activate, string jwtContent) {
+        async public Task<Identity> AddIdentityAsync(EnrollIdentifierPayload payload) {
             IdentityResponse resp = null;
             try {
-
                 EnrollIdentifierFunction enrollIdentifierFunction = new EnrollIdentifierFunction() {
                     Command = "AddIdentity",
-                    Data = new EnrollIdentifierPayload() {
-                        JwtFileName = jwtFileName,
-                        JwtContent = jwtContent,
-                        // future use UseKeychain = true,
-                    }
+                    Data = payload
                 };
 
                 await sendAsync(enrollIdentifierFunction);

@@ -9,10 +9,10 @@
         mc:Ignorable="d"
         ShowInTaskbar="False"
         x:Name="MainUI"
-        Title="Ziti Desktop Edge" Height="520"
-        Width="420" ResizeMode="NoResize"
+        Title="Ziti Desktop Edge" 
+        Width="410" ResizeMode="NoResize" 
         ClipToBounds="False"
-        Icon="Assets/Images/icon.png" AllowsTransparency="True"
+        Icon="Assets/Images/icon.png" AllowsTransparency="True" 
         Closing="Window_Closing"
         i:MouseWheel.Enhanced="True"
         i:MouseWheel.LogicalScrollDebouncing="Auto"
@@ -22,6 +22,51 @@
         DataContext="{Binding RelativeSource={RelativeSource Self}}"
         >
     <Window.Resources>
+        <Color x:Key="DarkBackground">#111224</Color>
+        <Color x:Key="LightBackground">#2b3046</Color>
+        <Color x:Key="ContextMenuTextNormal">#C0C0C0</Color>
+        <Color x:Key="ContextMenuTextHover">#ffffff</Color>
+        <SolidColorBrush x:Key="DarkBackgroundBrush" Color="{StaticResource DarkBackground}" />
+        <SolidColorBrush x:Key="LightBackgroundBrush" Color="{StaticResource LightBackground}" />
+        <SolidColorBrush x:Key="ContextMenuTextNormalBrush" Color="{StaticResource ContextMenuTextNormal}" />
+        <SolidColorBrush x:Key="ContextMenuTextHoverBrush" Color="{StaticResource ContextMenuTextHover}" />
+
+        <ControlTemplate x:Key="ReusableMenuItemTemplate" TargetType="MenuItem">
+            <Border x:Name="ItemBorder" Background="{TemplateBinding Background}" Padding="10,10" BorderBrush="#555" BorderThickness="0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="ItemText" Text="{TemplateBinding Header}" VerticalAlignment="Center" Foreground="{StaticResource ContextMenuTextNormalBrush}" FontSize="16" />
+                </StackPanel>
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource DarkBackgroundBrush}" />
+                    <Setter TargetName="ItemText" Property="Foreground" Value="{StaticResource ContextMenuTextHoverBrush}"/>
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+        
+        <Style x:Key="CustomContextMenuStyle" TargetType="ContextMenu">
+            <Setter Property="Background" Value="#222" />
+            <Setter Property="BorderBrush" Value="#555" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="5" />
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+
+        <Style x:Key="CustomMenuItemStyle" TargetType="MenuItem">
+            <Setter Property="Background" Value="#333" />
+            <Setter Property="Foreground" Value="#FFF" />
+            <Setter Property="Padding" Value="5,5" />
+            <Setter Property="Margin" Value="0,2,0,2" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#555" />
+                    <Setter Property="Foreground" Value="#FFF" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
         <Style TargetType="Image">
             <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality" />
         </Style>
@@ -113,7 +158,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Canvas x:Name="ArrowCanvas" ClipToBounds="False">
-            <Rectangle x:Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="#070826" Width="20" ClipToBounds="True">
+            <Rectangle x:Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="#070826" Width="20" ClipToBounds="True" Canvas.Left="185" Canvas.Bottom="-10">
                 <Rectangle.LayoutTransform>
                     <RotateTransform Angle="-45"/>
                 </Rectangle.LayoutTransform>
@@ -130,6 +175,7 @@
             </Rectangle.Fill>
         </Rectangle>
         <StackPanel x:Name="MainView" Margin="10,10,10,-20">
+            <local:UrlEntryDialog x:Name="UrlEntryDialog" />
             <Grid HorizontalAlignment="Stretch">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="100"/>
@@ -146,17 +192,10 @@
                     <Label Content="MENU" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" Margin="0,-14,0,0" FontSize="10"></Label>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,12">
-                    <Image Source="/Assets/Images/z.png" Height="40" RenderOptions.BitmapScalingMode="Fant" MouseUp="HandleAttach" MouseDown="Window_MouseDown" Cursor="ScrollAll" ToolTip="Drag to detach/move, right click to reattach"></Image>
-                    <Label x:Name="ConnetLabel"
-                           Content="{Binding ConnectLabelContent}"
-                           Margin="0,-3,0,0" 
-                           FontFamily="pack://application:,,,/Assets/Fonts/#Russo One" 
-                           FontSize="14" 
-                           Foreground="White" 
-                           HorizontalAlignment="Center"
-                           />
+                    <Image Source="/Assets/Images/z.png" Height="40" RenderOptions.BitmapScalingMode="Fant" MouseDown="Window_MouseDown" Cursor="ScrollAll" ToolTip="MOUSELEFT+DRAG to Detach/Move | MOUSERIGHT to Reattach"></Image>
+                    <Label Content="Tap to Toggle Service" Margin="0,-3,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" FontSize="12" Foreground="White" HorizontalAlignment="Center"></Label>
                 </StackPanel>
-                <StackPanel x:Name="AddIdAreaButton" Grid.Column="2" Cursor="Hand" Orientation="Vertical" Margin="14,16,14,14" MouseLeftButtonUp="AddIdentity">
+                <StackPanel x:Name="AddIdAreaButton" Grid.Column="2" Cursor="Hand" Orientation="Vertical" Margin="14,16,14,14" MouseLeftButtonUp="ShowContextMenu">
                     <Image Source="/Assets/Images/identity.png" Margin="0,0,5,-4" Width="26" Height="26" HorizontalAlignment="Right">
                         <Image.Effect>
                             <DropShadowEffect Color="white" BlurRadius="1" ShadowDepth="1" Direction="90" Opacity="1" />
@@ -164,6 +203,24 @@
                     </Image>
                     <Label Content="ADD" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" FontSize="10" HorizontalAlignment="Right"></Label>
                     <Label Content="IDENTITY" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" Margin="0,-14,0,0" FontSize="10" HorizontalAlignment="Right"></Label>
+                    <StackPanel.ContextMenu>
+                        <ContextMenu>
+                            <ContextMenu.Template>
+                                <ControlTemplate TargetType="ContextMenu">
+                                    <Border Background="{StaticResource DarkBackgroundBrush}" BorderBrush="{StaticResource DarkBackgroundBrush}" BorderThickness="3" CornerRadius="10" Padding="0">
+                                        <StackPanel>
+                                            <ItemsPresenter />
+                                        </StackPanel>
+                                    </Border>
+                                </ControlTemplate>
+                            </ContextMenu.Template>
+
+                            <MenuItem Header="With JWT" Click="AddIdentity" Template="{StaticResource ReusableMenuItemTemplate}" />
+                            <MenuItem Header="With URL" Click="WithUrl_Click" Template="{StaticResource ReusableMenuItemTemplate}" />
+                            <!--MenuItem Header="With 3rd Party CA" Click="With3rdPartyCA_Click" Template="{StaticResource ReusableMenuItemTemplate}" /-->
+                        </ContextMenu>
+                    </StackPanel.ContextMenu>
+
                 </StackPanel>
             </Grid>
             <Canvas Name="ConnectButton" Cursor="Hand" Width="400" Height="160" MouseUp="StartZitiService" Visibility="Collapsed">
@@ -224,7 +281,7 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Label Name="AddIdButton" Padding="0,0,0,20" Grid.Column="0" Margin="0,0,0,20" Content="Add Identity" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="#0069FF" FontSize="16" Cursor="Hand" HorizontalAlignment="Center" VerticalAlignment="Center" MouseDown="AddIdentity"></Label>
+                <Label Name="AddIdButton" Padding="0,0,0,0" Grid.Column="0" Margin="0,0,0,0" Content="" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="#0069FF" FontSize="12 " HorizontalAlignment="Center" VerticalAlignment="Center" ></Label>
             </Grid>
         </StackPanel>
         <Canvas x:Name="AlertCanvas" ClipToBounds="False" Visibility="Collapsed">
@@ -236,11 +293,23 @@
         <local:MainMenu x:Name="MainMenu" Visibility="Collapsed"></local:MainMenu>
         <!-- ID Detail UI -->
         <local:IdentityDetails x:Name="IdentityMenu" Visibility="Collapsed" OnMFAToggled="MFAToggled" Authenticate="ShowAuthenticate" Recovery="ShowRecovery" OnLoading="DoLoading" OnShowMFA="ShowAuthenticate"></local:IdentityDetails>
-
+        
         <!-- Modal Background -->
         <Rectangle x:Name="ModalBg" MouseDown="Window_MouseDown" Margin="10,10,10,10" Fill="Black" RadiusY="10" RadiusX="10" Opacity="0" Visibility="Collapsed"></Rectangle>
         <!-- MFA Setup Prompt -->
         <local:MFAScreen x:Name="MFASetup" Visibility="Collapsed" Margin="0,0,0,0" OnClose="DoClose"></local:MFAScreen>
+        <local:AddIdentityUrl x:Name="AddIdentityByURL" 
+                              Visibility="Collapsed" 
+                              Margin="0,0,0,0" 
+                              OnClose="CloseJoinByUrl" 
+                              Height="Auto" 
+                              OnAddIdentity="OnAddIdentityAction" />
+        <local:AddIdentityCA x:Name="AddIdentityBy3rdPartyCA"
+                              Visibility="Collapsed" 
+                              Margin="0,0,0,0" 
+                              OnClose="CloseJoinByUrl" 
+                              Height="Auto" 
+                              OnAddIdentity="OnAddIdentityAction" />
 
         <!-- Small messages screen that opens at the bottom -->
         <Grid x:Name="BlurbArea" Visibility="Collapsed" Height="80" Margin="0,500,0,0" VerticalAlignment="Bottom">

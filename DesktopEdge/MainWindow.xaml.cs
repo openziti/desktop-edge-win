@@ -41,6 +41,9 @@ using NLog.Targets;
 using Microsoft.Win32;
 
 using Ziti.Desktop.Edge.Models;
+using Ziti.Desktop.Edge;
+using System.Text;
+using Newtonsoft.Json;
 using System.ComponentModel;
 
 namespace ZitiDesktopEdge {
@@ -91,6 +94,20 @@ namespace ZitiDesktopEdge {
             ExpectedLogPathRoot = Path.Combine(ExecutionDirectory, "logs");
             ExpectedLogPathUI = Path.Combine(ExpectedLogPathRoot, "UI", $"{ThisAssemblyName}.log");
             ExpectedLogPathServices = Path.Combine(ExpectedLogPathRoot, "service", $"ziti-tunneler.log");
+        }
+
+        private void OpenDialog_Click(object sender, RoutedEventArgs e) {
+            UrlEntryDialog.Visibility = Visibility.Visible;
+        }
+
+        private void UrlEntryDialog_OnSubmit(string url) {
+            MessageBox.Show($"URL Entered: {url}", "Info");
+            UrlEntryDialog.Visibility = Visibility.Collapsed;
+        }
+
+        private void UrlEntryDialog_OnCancel() {
+            MessageBox.Show("URL Entry Canceled", "Info");
+            UrlEntryDialog.Visibility = Visibility.Collapsed;
         }
 
         async private void IdentityMenu_OnMessage(string message) {
@@ -222,6 +239,7 @@ namespace ZitiDesktopEdge {
                 LoadIdentities(true);
             });
         }
+
         /// <summary>
         /// Show the MFA Setup Modal
         /// </summary>
@@ -264,6 +282,30 @@ namespace ZitiDesktopEdge {
             ShowModal();
         }
 
+        private void ShowJoinByUrl() {
+            AddIdentityByURL.Opacity = 0;
+            AddIdentityByURL.Visibility = Visibility.Visible;
+            AddIdentityByURL.Margin = new Thickness(0, 0, 0, 0);
+
+            DoubleAnimation animation = new DoubleAnimation(1, TimeSpan.FromSeconds(.3));
+            AddIdentityByURL.BeginAnimation(Grid.OpacityProperty, animation);
+            AddIdentityByURL.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
+
+            ShowModal();
+        }
+        
+        private void ShowJoinWith3rdPartyCA() {
+            AddIdentityBy3rdPartyCA.Opacity = 0;
+            AddIdentityBy3rdPartyCA.Visibility = Visibility.Visible;
+            AddIdentityBy3rdPartyCA.Margin = new Thickness(0, 0, 0, 0);
+
+            DoubleAnimation animation = new DoubleAnimation(1, TimeSpan.FromSeconds(.3));
+            AddIdentityBy3rdPartyCA.BeginAnimation(Grid.OpacityProperty, animation);
+            AddIdentityBy3rdPartyCA.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
+
+            ShowModal();
+        }
+
         private void Animatin_Completed(object sender, EventArgs e) {
             MFASetup.AuthCode.Focusable = true;
             MFASetup.AuthCode.Focus();
@@ -275,7 +317,7 @@ namespace ZitiDesktopEdge {
         /// <param name="identity">The Ziti Identity to Authenticate</param>
         async public void ShowMFARecoveryCodes(ZitiIdentity identity) {
             if (identity.IsMFAEnabled) {
-                if (identity.RecoveryCodes != null) {
+                if (identity.IsMFAEnabled && identity.RecoveryCodes != null) {
                     MFASetup.Opacity = 0;
                     MFASetup.Visibility = Visibility.Visible;
                     MFASetup.Margin = new Thickness(0, 0, 0, 0);
@@ -304,22 +346,13 @@ namespace ZitiDesktopEdge {
         }
 
         /// <summary>
-        /// Close the various MFA windows
-        /// </summary>
-        /// <param name="sender">The close button</param>
-        /// <param name="e">The event arguments</param>
-        private void CloseComplete(object sender, EventArgs e) {
-            MFASetup.Visibility = Visibility.Collapsed;
-        }
-
-        /// <summary>
         /// Hide the modal animating the opacity
         /// </summary>
         private void HideModal() {
             DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
             animation.Completed += ModalHideComplete;
             ModalBg.BeginAnimation(Grid.OpacityProperty, animation);
-        }
+        } 
 
         /// <summary>
         /// When the animation completes, set the visibility to avoid UI object conflicts
@@ -329,16 +362,28 @@ namespace ZitiDesktopEdge {
         private void ModalHideComplete(object sender, EventArgs e) {
             ModalBg.Visibility = Visibility.Collapsed;
         }
+        private void CloseJoinByUrl(bool isComplete, UserControl sender) {
+            DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
+            ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
+            animation.Completed += (s, e) => {
+                sender.Visibility = Visibility.Collapsed;
+            };
+            sender.BeginAnimation(Grid.OpacityProperty, animation);
+            sender.BeginAnimation(Grid.MarginProperty, animateThick);
+            HideModal();
+        }
 
         /// <summary>
         /// Close the MFA Screen with animation
         /// </summary>
-        private void DoClose(bool isComplete) {
+        private void DoClose(bool isComplete, UserControl sender) {
             DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
             ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
-            animation.Completed += CloseComplete;
-            MFASetup.BeginAnimation(Grid.OpacityProperty, animation);
-            MFASetup.BeginAnimation(Grid.MarginProperty, animateThick);
+            animation.Completed += (s, e) => {
+                sender.Visibility = Visibility.Collapsed;
+            };
+            sender.BeginAnimation(Grid.OpacityProperty, animation);
+            sender.BeginAnimation(Grid.MarginProperty, animateThick);
             HideModal();
             if (isComplete) {
                 if (MFASetup.Type == 1) {
@@ -376,11 +421,14 @@ namespace ZitiDesktopEdge {
         private System.Windows.Forms.MenuItem contextMenuItem;
         private System.ComponentModel.IContainer components;
         private MainViewModel props = null;
-
         public MainWindow() {
             InitializeComponent();
             props = new MainViewModel();
             DataContext = props;
+
+            UrlEntryDialog.OnSubmit += UrlEntryDialog_OnSubmit;
+            UrlEntryDialog.OnCancel += UrlEntryDialog_OnCancel;
+
             NextNotificationTime = DateTime.Now;
             SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
             string nlogFile = Path.Combine(ExecutionDirectory, ThisAssemblyName + "-log.config");
@@ -564,7 +612,7 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        private void HandleDetached (MouseButtonEventArgs e) {
+        private void HandleDetached(MouseButtonEventArgs e) {
             if (e.ChangedButton == MouseButton.Left) {
                 _isAttached = false;
                 IdentityMenu.Arrow.Visibility = Visibility.Collapsed;
@@ -762,7 +810,7 @@ namespace ZitiDesktopEdge {
                 }
             }
 
-            // we may need to display mfa icon, based on the timer in UI, remove found.MFAInfo.ShowMFA setting in this function.
+            // we may need to display mfa icon, based on the timer in UI, remove found.MFAInfo.ShowMFA setting in this function. 
             // the below function can show mfa icon even after user authenticates successfully, in race conditions
             if (displayMFARequired || displayMFATimeout) {
                 this.Dispatcher.Invoke(() => {
@@ -779,7 +827,7 @@ namespace ZitiDesktopEdge {
             logger.Debug($"==== ControllerEvent    : action:{e.Action} identifier:{e.Identifier}");
             // commenting this block, because when it receives the disconnected events, identities are disabled and
             // it is not allowing me to click/perform any operation on the identity
-            // the color of the title is also too dark, and it is not clearly visible, when the identity is disconnected
+            // the color of the title is also too dark, and it is not clearly visible, when the identity is disconnected 
             /* if (e.Action == "connected") {
 				var found = identities.Find(i => i.Identifier == e.Identifier);
 				found.IsConnected = true;
@@ -1113,7 +1161,7 @@ namespace ZitiDesktopEdge {
 
         /// <summary>
         /// If an identity gets added late, execute this.
-        ///
+        /// 
         /// Do not update services for identity events
         /// </summary>
         /// <param name="sender">The sending service</param>
@@ -1263,6 +1311,7 @@ namespace ZitiDesktopEdge {
 #if DEBUG
             //e.Status.Dump(Console.Out);
 #endif
+			e.Status.Dump(Console.Out);
             this.Dispatcher.Invoke(() => {
                 /*if (e.ApiVersion != DataClient.EXPECTED_API_VERSION) {
 					SetCantDisplay("Version mismatch!", "The version of the Service is not compatible", Visibility.Visible);
@@ -1464,6 +1513,7 @@ namespace ZitiDesktopEdge {
                     this.Height = defaultHeight;
                     MainMenu.IdentitiesButton.Visibility = Visibility.Collapsed;
                     IdListScroller.Visibility = Visibility.Collapsed;
+
                 }
                 AddIdButton.Visibility = Visibility.Visible;
                 AddIdAreaButton.Visibility = Visibility.Visible;
@@ -1512,7 +1562,7 @@ namespace ZitiDesktopEdge {
                     MainMenu.Disconnected();
                     DownloadSpeed.Content = "0.0";
                     UploadSpeed.Content = "0.0";
-                    props.Disconnected();
+                    props.Connected();
                 }
             });
         }
@@ -1522,12 +1572,11 @@ namespace ZitiDesktopEdge {
 
             var height = MainView.ActualHeight;
             IdentityMenu.MainHeight = MainView.ActualHeight;
-            MainMenu.MainHeight = MainView.ActualHeight;
-
             double defaultMiddle = 195;
             if (this.ActualWidth > 0) {
                 defaultMiddle = this.ActualWidth / 2;
             }
+
             Rectangle trayRectangle = WinAPI.GetTrayRectangle();
             if (trayRectangle.Top < 20) {
                 this.Position = "Top";
@@ -1582,13 +1631,44 @@ namespace ZitiDesktopEdge {
             }
         }
 
+        private void OpenIdentity(ZitiIdentity identity) {
+            IdentityMenu.Identity = identity;
+        }
+
         private void ShowMenu(object sender, MouseButtonEventArgs e) {
             MainMenu.Visibility = Visibility.Visible;
         }
 
-        async private void AddIdentity(object sender, MouseButtonEventArgs e) {
+        async private void AddId(EnrollIdentifierPayload payload) {
+            try {
+                Identity createdId = await serviceClient.AddIdentityAsync(payload);
+
+                if (createdId != null) {
+                    var zid = ZitiIdentity.FromClient(createdId);
+                    AddIdentity(zid);
+                    LoadIdentities(true);
+                    await serviceClient.IdentityOnOffAsync(createdId.Identifier, true);
+                } else {
+                    // this never returns a value...
+                }
+            } catch (ServiceException se) {
+                ShowError(se.Message, se.AdditionalInfo);
+            } catch (Exception ex) {
+                ShowError("Unexpected Error", "Code 2:" + ex.Message);
+            }
+            HideLoad();
+        }
+        private static string PadBase64(string base64) {
+            int padding = 4 - (base64.Length % 4);
+            if (padding < 4) {
+                base64 += new string('=', padding);
+            }
+            return base64;
+        }
+
+        private void AddIdentity(object sender, RoutedEventArgs e) {
             UIModel.HideOnLostFocus = false;
-            Microsoft.Win32.OpenFileDialog jwtDialog = new Microsoft.Win32.OpenFileDialog();
+            OpenFileDialog jwtDialog = new OpenFileDialog();
             UIModel.HideOnLostFocus = true;
             jwtDialog.DefaultExt = ".jwt";
             jwtDialog.Filter = "Ziti Identities (*.jwt)|*.jwt";
@@ -1596,22 +1676,42 @@ namespace ZitiDesktopEdge {
             if (jwtDialog.ShowDialog() == true) {
                 ShowLoad("Adding Identity", "Please wait while the identity is added");
                 string fileContent = File.ReadAllText(jwtDialog.FileName);
+                EnrollIdentifierPayload payload = new EnrollIdentifierPayload();
+                payload.JwtFileName = Path.GetFileName(jwtDialog.FileName);
+                payload.JwtContent = fileContent;
+                string[] jwtParts = fileContent?.Split('.');
 
-                try {
-                    Identity createdId = await serviceClient.AddIdentityAsync(System.IO.Path.GetFileName(jwtDialog.FileName), false, fileContent);
 
-                    if (createdId != null) {
-                        var zid = ZitiIdentity.FromClient(createdId);
-                        AddIdentity(zid);
-                        LoadIdentities(true);
-                        await serviceClient.IdentityOnOffAsync(createdId.Identifier, true);
-                    }/* else {
-						ShowError("Identity Error", "Identity Id was null, please try again");
-					}*/
-                } catch (ServiceException se) {
-                    ShowError(se.Message, se.AdditionalInfo);
-                } catch (Exception ex) {
-                    ShowError("Unexpected Error", "Code 2:" + ex.Message);
+                if (jwtParts != null && jwtParts.Length > 1) {
+                    string jsonString = Encoding.UTF8.GetString(Convert.FromBase64String(PadBase64(jwtParts[1])));
+
+                    // Deserialize JSON into a dynamic object
+                    dynamic jsonObj = JsonConvert.DeserializeObject(jsonString);
+
+                    Console.WriteLine(jsonString);
+                    // Access properties dynamically
+                    Console.WriteLine($"ISS: {jsonObj.iss}");
+                    Console.WriteLine($"SUB: {jsonObj.sub}");
+                    Console.WriteLine($"JTI: {jsonObj.jti}");
+                    Console.WriteLine($"AUD: {string.Join(", ", jsonObj.aud)}");
+
+                    Console.WriteLine($"EM: {jsonObj.em}");
+                    switch ($"{jsonObj.em}") {
+                        case "ottca":
+                            With3rdPartyCA_Click(sender, e);
+                            break;
+                        case "network":
+                            AddId(payload);
+                            break;
+                        case "ott":
+                            AddId(payload);
+                            break;
+                        case "ca":
+                            HideLoad();
+                            AddIdentityBy3rdPartyCA.Payload = payload;
+                            ShowJoinWith3rdPartyCA();
+                            break;
+                    }
                 }
                 HideLoad();
             }
@@ -1826,6 +1926,37 @@ namespace ZitiDesktopEdge {
         private void DoLoading(bool isComplete) {
             if (isComplete) HideLoad();
             else ShowLoad("Loading", "Please Wait.");
+        }
+
+        private void ShowContextMenu(object sender, MouseButtonEventArgs e) {
+            var stackPanel = sender as StackPanel;
+            if (stackPanel?.ContextMenu != null) {
+                stackPanel.ContextMenu.PlacementTarget = stackPanel;
+                stackPanel.ContextMenu.IsOpen = true;
+            }
+        }
+
+        private void WithJwt_Click(object sender, RoutedEventArgs e) {
+            // Handle "With JWT"
+            AddIdentity(sender, e);
+        }
+
+        void WithUrl_Click(object sender, RoutedEventArgs e) {
+            ShowJoinByUrl();
+        }
+        void With3rdPartyCA_Click(object sender, RoutedEventArgs e) {
+            ShowJoinWith3rdPartyCA();
+        }
+
+        void OnAddIdentityAction(EnrollIdentifierPayload payload, UserControl toClose) {
+            CloseJoinByUrl(false, toClose);
+            logger.Info(payload.JwtContent);
+            logger.Info(payload.JwtFileName);
+            logger.Info(payload.ControllerURL);
+            logger.Info(payload.Certificate);
+            logger.Info(payload.Key);
+            logger.Info(payload.Alias);
+            AddId(payload);
         }
     }
 

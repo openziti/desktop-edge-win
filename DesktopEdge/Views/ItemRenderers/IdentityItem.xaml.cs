@@ -175,10 +175,9 @@ namespace ZitiDesktopEdge {
             Console.WriteLine($"Calculate Bubble for:{_identity.Name}. IsMFANeeded: {_identity.IsMFANeeded}, IsMFAEnabled: {_identity.IsMFAEnabled}");
 #endif
 
-            Action calcImage = () => {
-                //PostureTimedOut.Visibility = c;
-                //MfaRequired.Visibility = c;
-                //ServiceCountArea.Visibility = v;
+            Action hideMfa = () => {
+                PostureTimedOut.Visibility = Visibility.Collapsed;
+                MfaRequired.Visibility = Visibility.Collapsed;
             };
             Action showMfa = () => {
                 if (_identity.IsTimedOut) {
@@ -187,12 +186,11 @@ namespace ZitiDesktopEdge {
                     MfaRequired.Visibility = Visibility.Visible;
                 }
                 ServiceCountArea.Visibility = Visibility.Collapsed;
-                calcImage();
+                hideMfa();
                 MainArea.Opacity = 0.6;
             };
             Action showBubbles = () => {
-                PostureTimedOut.Visibility = Visibility.Collapsed;
-                MfaRequired.Visibility = Visibility.Collapsed;
+                hideMfa();
                 ServiceCountArea.Visibility = Visibility.Visible;
             };
 
@@ -201,12 +199,15 @@ namespace ZitiDesktopEdge {
             // identity enabled, mfa needed, enabled, but not verified yet
             // identity enabled, mfa needed, enabled, has been verified
             // identity enabled, mfa not needed at all
+            // identity enabled, needs external auth
 
             // identity disabled, timed out <-- not possible
             // identity disabled, mfa needed, not enabled yet
             // identity disabled, mfa needed, enabled, but not verified yet
             // identity disabled, mfa needed, enabled, has been verified
             // identity disabled, mfa not needed at all
+
+            // identity disabled, needs external auth
             if (_identity.IsEnabled) {
                 if (_identity.IsMFAEnabled) {
                     if (_identity.IsMFANeeded) {
@@ -231,6 +232,11 @@ namespace ZitiDesktopEdge {
                         showBubbles();
                         ServiceCountBorder.Background = DefaultBrush;
                     }
+                }
+                if (_identity.NeedsExtAuth) {
+                    hideMfa();
+                    ServiceCountArea.Visibility = Visibility.Collapsed; //hide bubbles
+                    ExtAuthRequired.Visibility = Visibility.Visible;
                 }
             } else {
                 if (_identity.IsMFAEnabled) {
@@ -386,7 +392,7 @@ namespace ZitiDesktopEdge {
         }
 
         private void DoMFAOrOpen(object sender, MouseButtonEventArgs e) {
-            if (MfaRequired.Visibility == Visibility.Visible || 
+            if (MfaRequired.Visibility == Visibility.Visible ||
                 TimerCountdown.Visibility == Visibility.Visible ||
                 PostureTimedOut.Visibility == Visibility.Visible) {
                 MFAAuthenticate(sender, e);
@@ -401,8 +407,12 @@ namespace ZitiDesktopEdge {
             try {
                 DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
                 ExternalAuthLoginResponse resp = await client.ExternalAuthLogin(_identity.Identifier);
-                Console.WriteLine(resp.Data?.url);
-                Process.Start(resp.Data.url);
+                if (resp?.Data?.url != null) {
+                    Console.WriteLine(resp.Data?.url);
+                    Process.Start(resp.Data.url);
+                } else {
+                    Console.WriteLine("The response contained no url???");
+                }
             } catch (Exception ex) {
                 logger.Error("unexpected error!", ex);
             }

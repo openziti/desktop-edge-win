@@ -49,8 +49,7 @@ namespace ZitiDesktopEdge {
 
         public delegate void LoadEvent(bool isComplete, string title, string message);
         public event LoadEvent OnLoad;
-        public delegate void CloseAction(bool isComplete);
-        public event CloseAction OnClose;
+        public event SharedUserControlDefinitions.CloseAction OnClose;
         private string _url = "";
         public delegate void ErrorOccurred(string message);
         public event ErrorOccurred OnError;
@@ -73,7 +72,7 @@ namespace ZitiDesktopEdge {
         }
 
         private void ExecuteClose(object sender, MouseButtonEventArgs e) {
-            this.OnClose?.Invoke(false);
+            this.OnClose?.Invoke(false, this);
         }
 
         private void ShowError(string message) {
@@ -234,9 +233,9 @@ namespace ZitiDesktopEdge {
             DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
             SvcResponse resp = await serviceClient.VerifyMFA(this.zid.Identifier, code);
             if (resp.Code != 0) {
-                this.OnClose?.Invoke(false);
+                this.OnClose?.Invoke(false, this);
             } else {
-                this.OnClose?.Invoke(false);
+                this.OnClose?.Invoke(false, this);
             }
         }
 
@@ -267,7 +266,7 @@ namespace ZitiDesktopEdge {
                             this._executing = false;
                         } else {
                             this.zid.IsMFANeeded = true;
-                            this.OnClose?.Invoke(true);
+                            this.OnClose?.Invoke(true, this);
                             this._executing = false;
                         }
                         this.OnLoad?.Invoke(true, "", "");
@@ -280,7 +279,7 @@ namespace ZitiDesktopEdge {
                             this._executing = false;
                         } else {
                             this.zid.RecoveryCodes = codeResponse.Data.RecoveryCodes;
-                            this.OnClose?.Invoke(true);
+                            this.OnClose?.Invoke(true, this);
                             this._executing = false;
                         }
                         this.OnLoad?.Invoke(true, "", "");
@@ -292,7 +291,7 @@ namespace ZitiDesktopEdge {
                             this.OnError?.Invoke("Authentication Failed");
                             this._executing = false;
                         } else {
-                            this.OnClose?.Invoke(true);
+                            this.OnClose?.Invoke(true, this);
                             this._executing = false;
                         }
                         this.OnLoad?.Invoke(true, "", "");
@@ -304,7 +303,7 @@ namespace ZitiDesktopEdge {
                             this.OnError?.Invoke("Authentication Failed");
                         } else {
                             this.zid.RecoveryCodes = codeResponse.Data.RecoveryCodes;
-                            this.OnClose?.Invoke(true);
+                            this.OnClose?.Invoke(true, this);
                         }
                         this._executing = false;
                         this.OnLoad?.Invoke(true, "", "");
