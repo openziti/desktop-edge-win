@@ -46,7 +46,7 @@ namespace ZitiDesktopEdge {
         public delegate Task<bool> LogLevelChanged(string level);
         public event LogLevelChanged OnLogLevelChanged;
         public delegate void Detched(MouseButtonEventArgs e);
-        public event Detched HandleAttachment;
+        public event Detched OnDetach;
         public delegate void ShowBlurb(string message);
         public event ShowBlurb OnShowBlurb;
         public string menuState = "Main";
@@ -102,7 +102,7 @@ namespace ZitiDesktopEdge {
             MainMenuArea.Visibility = Visibility.Collapsed;
         }
         private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
-            HandleAttachment(e);
+            OnDetach(e);
         }
 
         private void CloseApp(object sender, MouseButtonEventArgs e) {
@@ -224,7 +224,7 @@ namespace ZitiDesktopEdge {
                 VersionInfo.Content = $"App: {appVersion} Service: {version}";
 
             } else if (menuState == "Advanced") {
-                MenuTitle.Content = "ADVANCED SETTINGS";
+                MenuTitle.Content = "Advanced Settings";
                 AdvancedItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "Licenses") {
@@ -232,7 +232,7 @@ namespace ZitiDesktopEdge {
                 LicensesItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "Logs") {
-                MenuTitle.Content = "ADVANCED SETTINGS";
+                MenuTitle.Content = "Advanced Settings";
                 AdvancedItems.Visibility = Visibility.Visible;
                 //string targetFile = NativeMethods.GetFinalPathName(MainWindow.ExpectedLogPathServices);
                 string targetFile = MainWindow.ExpectedLogPathServices;
@@ -240,24 +240,24 @@ namespace ZitiDesktopEdge {
                 OpenLogFile("service", targetFile);
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "UILogs") {
-                MenuTitle.Content = "ADVANCED SETTINGS";
+                MenuTitle.Content = "Advanced Settings";
                 AdvancedItems.Visibility = Visibility.Visible;
                 OpenLogFile("UI", MainWindow.ExpectedLogPathUI);
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "LogLevel") {
                 ResetLevels();
 
-                MenuTitle.Content = "SET LOG LEVEL";
+                MenuTitle.Content = "Set Log Level";
                 LogLevelItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "ConfigureAutomaticUpgrades") {
                 SetAutomaticUpgradesState();
 
-                MenuTitle.Content = "AUTOMATIC UPGRADES";
+                MenuTitle.Content = "Automatic Upgrades";
                 AutomaticUpgradesItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "Config") {
-                MenuTitle.Content = "TUNNEL CONFIG";
+                MenuTitle.Content = "Tunnel Config";
                 ConfigItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
 
@@ -268,11 +268,11 @@ namespace ZitiDesktopEdge {
                 ConfigDns.Value = Application.Current.Properties["dns"]?.ToString();
                 ConfigDnsEnabled.Value = Application.Current.Properties["dnsenabled"]?.ToString();
             } else if (menuState == "Identities") {
-                MenuTitle.Content = "IDENTITIES";
+                MenuTitle.Content = "Identities";
                 IdListScrollView.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
             } else {
-                MenuTitle.Content = "MAIN MENU";
+                MenuTitle.Content = "Main Menu";
                 MainItems.Visibility = Visibility.Visible;
                 MainItemsButton.Visibility = Visibility.Visible;
             }

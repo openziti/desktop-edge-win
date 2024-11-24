@@ -33,8 +33,6 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="60"/>
                     </Grid.ColumnDefinitions>
-                    <Image x:Name="IsConnected" Grid.Column="0" Visibility="Collapsed" Source="/Assets/Images/online.png" Height="25" HorizontalAlignment="Right" Cursor="Hand" ToolTip="Tap to Disable this Identity" MouseUp="DoDisconnect" />
-                    <Image x:Name="IsDisconnected" Grid.Column="0" Visibility="Collapsed" Source="/Assets/Images/offline.png" Height="25" HorizontalAlignment="Right" Cursor="Hand" ToolTip="Tap to Enable this Identity" MouseUp="DoConnect" />
                     <Label x:Name="IdDetailName" Content="IDENTITY DETAIL" MouseDown="Window_MouseDown" Cursor="ScrollAll" MaxWidth="220" Grid.Column="1" HorizontalAlignment="Center" FontSize="14" ToolTip="MOUSELEFT+DRAG to Detach/Move | MOUSERIGHT to Reattach" FontFamily="pack://application:,,,/Assets/Fonts/#Russo One" Foreground="#0F0F23" VerticalAlignment="Center" />
                     <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/x.png" Width="20" Height="20" Margin="0,0,0,0" HorizontalAlignment="Left" MouseUp="HideMenu"></Image>
                 </Grid>
@@ -142,7 +140,7 @@
         </Grid>
 
         <!-- Confirmation Prompt for confirming deletion -->
-        <Grid x:Name="ConfirmView" Visibility="Collapsed" Width="400" Margin="15,15,15,15">
+        <Grid x:Name="ConfirmView" Visibility="Collapsed" Width="400">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="Black"/>

@@ -1,41 +1,76 @@
-if ("$env:CLEAR_IDENTITIES_OK" -ne "yes") {
-    Write-host -ForegroundColor red "CLEAR_IDENTITIES_OK env var not set."
-    Write-host -ForegroundColor red "  you MUST set CLEAR_IDENTITIES_OK=\""yes\"" in the environment or this script won't run"
-    Write-host -ForegroundColor red "  This script deletes identities from C:\Windows\System32\config\systemprofile\AppData\Roaming\NetFoundry"
-    Write-host -ForegroundColor red " "
-    Write-host -ForegroundColor red "  YOU WERE WARNED"
-    Write-host -ForegroundColor red "  copy/paste: `$env:CLEAR_IDENTITIES_OK=""yes"""
+param (
+    [switch]$ClearIdentitiesOk,
+    [string]${ZitiHome}
+)
 
+if (-not $ClearIdentitiesOk) {
+    Write-Host -ForegroundColor Red "CLEAR_IDENTITIES_OK parameter not set."
+    Write-Host -ForegroundColor Red "  you MUST pass -ClearIdentitiesOk when running this script or it won't run."
+    Write-Host -ForegroundColor Red "  This script deletes identities from C:\Windows\System32\config\systemprofile\AppData\Roaming\NetFoundry"
+    Write-Host -ForegroundColor Red " "
+    Write-Host -ForegroundColor Red "  YOU WERE WARNED"
+    Write-Host -ForegroundColor Red "  Example: .\YourScript.ps1 -ClearIdentitiesOk"
     return
 } else {
-    Write-host -ForegroundColor Green "`$env:CLEAR_IDENTITIES_OK=""yes"" detected. continuing..."
+    Write-Host -ForegroundColor Green "-ClearIdentitiesOk detected. continuing..."
 }
-Remove-Item C:\Windows\System32\config\systemprofile\AppData\Roaming\NetFoundry\mfa*.json
-Remove-Item C:\Windows\System32\config\systemprofile\AppData\Roaming\NetFoundry\config*.json
-Remove-Item "$env:APPDATA\NetFoundry\*.json"
-
 
 echo "starting reset"
-
 taskkill /f /im ziti.exe
+
 $prefix = "zitiquickstart"
-$tempDir = [System.IO.Path]::GetTempPath()
-$logFile = "${tempDir}quickstart.txt"
-Write-host -ForegroundColor BLUE "LOG FILE: $logFile"
+
+if (-not ${ZitiHome}) {
+    ${ZitiHome} = [System.IO.Path]::GetTempPath() + "zdew-" + ([System.Guid]::NewGuid().ToString())
+    $zitiPkiRoot = "${ZitiHome}\pki"
+    $identityDir = "${ZitiHome}\identities"
+} else {
+    $ZitiHome = $ZitiHome.TrimEnd("\")
+    $zitiPkiRoot = "${ZitiHome}\pki"
+    $identityDir = "${ZitiHome}\identities"
+    echo "removing any .jwt/.json files at: ${ZitiHome}"
+    Remove-Item "${ZitiHome}\*.json"
+    Remove-Item "${ZitiHome}\*.jwt"
+    if (Test-Path "${ZitiHome}\pki") {
+        Remove-Item "${ZitiHome}\pki" -Recurse -Force -ErrorAction Continue > $null
+    } else {
+        Write-Host "Nothing found to remove: ${ZitiHome}\pki"
+    }
+    if (Test-Path "${ZitiHome}\identities") {
+        Remove-Item "${ZitiHome}\identities" -Recurse -Force -ErrorAction Continue > $null
+    } else {
+        Write-Host "Nothing found to remove: ${ZitiHome}\identities"
+    }
+    if (Test-Path "${ZitiHome}\db") {
+        Remove-Item "${ZitiHome}\db" -Recurse -Force -ErrorAction Continue > $null
+    } else {
+        Write-Host "Nothing found to remove: ${ZitiHome}\db"
+    }
+    
+
+Write-Host "Press Enter to continue..."
+[void][System.Console]::ReadLine()
+    #echo "removing C:\Windows\System32\config\systemprofile\AppData\Roaming\NetFoundry\config*.json"
+    #Remove-Item "C:\Windows\System32\config\systemprofile\AppData\Roaming\NetFoundry\config*.json"
+   
+    #echo "removing ${env:APPDATA}\NetFoundry\*.json"
+    #Remove-Item "${env:APPDATA}\NetFoundry\*.json"
+}
+
+mkdir ${ZitiHome} -Force > $NULL
+$logFile = "${ZitiHome}\quickstart.txt"
+Write-Host -ForegroundColor Blue "TEMP DIR: ${ZitiHome}"
+Write-Host -ForegroundColor Blue "ZITI LOG FILE: $logFile"
 
 #Start-Process cmd.exe '/c ziti edge quickstart > NUL"' -NoNewWindow
 #Start-Process "ziti" "edge quickstart" -NoNewWindow -RedirectStandardError $logFile -RedirectStandardInput $logFile
-Start-Process "ziti" "edge quickstart" -NoNewWindow *>&1 -RedirectStandardOutput $logFile
+Start-Process "ziti" "edge quickstart --home ${ZitiHome}" -NoNewWindow *>&1 -RedirectStandardOutput $logFile
 
 $hostname = "localhost"
 $port = 1280
 $delay = 1 # Delay in seconds
-$zitiPkiRoot="C:\temp\support\discourse\2790\pki"
-Remove-Item "C:\temp\support\discourse\2790\pki" -Recurse -Force -ErrorAction SilentlyContinue
-$identityDir="c:\temp\mfa"
-mkdir $identityDir -ErrorAction SilentlyContinue
-Remove-Item "$identityDir\mfa-*.jwt"
-
+#Remove-Item "C:\temp\support\discourse\2790\pki" -Recurse -Force -ErrorAction SilentlyContinue
+mkdir $identityDir -ErrorAction SilentlyContinue > $NULL
 
 while ($true) {
     $socket = New-Object Net.Sockets.TcpClient
@@ -75,7 +110,7 @@ ziti edge verify ca $caName --cert $verificationCert
 $authPolicy=(ziti edge create auth-policy yubi-mfa --primary-cert-allowed --secondary-req-totp --primary-cert-expired-allowed)
 
 $count = 0
-$iterations = 10
+$iterations = 5
 for ($i = 0; $i -lt $iterations; $i++) {
     $id = "mfa-$count"
     ziti edge create identity "$id" --auth-policy "$authPolicy" -o "$identityDir\$id.jwt"
@@ -98,8 +133,7 @@ function makeTestService {
 	ziti edge create service-policy "$svc.bind" Bind --identity-roles "@quickstart-router" --service-roles "@$svc"
 }
 
-$param1Range = 1..5
-$param2Range = 1..5
+$param1Range = 1..3
 
 # Loop through the ranges and call the function
 foreach ($i in $param1Range) {
@@ -143,6 +177,21 @@ ziti edge create posture-check mfa $name --wake
 ziti edge update service-policy "$name.svc.0.ziti.dial" --posture-check-roles "@$name"
 
 
+# make a regular ol users, nothing special...
+$name="normal-user-01"
+ziti edge create identity $name -o "$identityDir\$name.jwt"
+makeTestService $name "0"
+ziti edge update service-policy "$name.svc.0.ziti.dial"
+
+$name="normal-user-02"
+ziti edge create identity $name -o "$identityDir\$name.jwt"
+makeTestService $name "0"
+ziti edge update service-policy "$name.svc.0.ziti.dial"
+
+$name="normal-user-03"
+ziti edge create identity $name -o "$identityDir\$name.jwt"
+makeTestService $name "0"
+ziti edge update service-policy "$name.svc.0.ziti.dial"
 
 
 
@@ -150,75 +199,4 @@ ziti edge update service-policy "$name.svc.0.ziti.dial" --posture-check-roles "@
 
 
 
-
-$caName="3rd-party-ca-"+(Get-Date).ToString("yyyy-MM-dd-HH-mm-ss")
-clear
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-$zitiUser="admin"
-$zitiPwd="admin"
-$zitiCtrl="localhost:1280"
-ziti edge login $zitiCtrl -u $zitiUser -p $zitiPwd -y
-
-$caName="my-ca"
-$newUser="$caName-user"
-$zitiPkiRoot="C:\temp\support\discourse\2790\$caName\pki"
-ziti pki create ca --pki-root "${zitiPkiRoot}" --ca-file "$caName"
-
-$rootCa=(Get-ChildItem -Path $zitiPkiRoot -Filter "$caName.cert" -Recurse).FullName
-"root ca path: $rootCa"
-
-ziti edge create ca "$caName" "$rootCa" --auth --ottca
-
-$verificationToken=((ziti edge list cas -j | ConvertFrom-Json).data | Where-Object { $_.name -eq $caName }[0]).verificationToken
-ziti pki create client --pki-root "${zitiPkiRoot}" --ca-name "$caName" --client-file "$verificationToken" --client-name "$verificationToken"
-
-$verificationCert=(Get-ChildItem -Path $zitiPkiRoot -Filter "$verificationToken.cert" -Recurse).FullName
-"verification cert path: $verificationCert"
-ziti edge verify ca $caName --cert $verificationCert
-
-
-$authPolicy=(ziti edge create auth-policy "$caName-auth-policy" --primary-cert-allowed --secondary-req-totp --primary-cert-expired-allowed)
-
-
-ziti pki create client --pki-root "${zitiPkiRoot}" --ca-name "$caName" --client-file "$newUser" --client-name "$newUser"
-
-$newUserCert=(Get-ChildItem -Path $zitiPkiRoot -Filter "$newUser.cert" -Recurse).FullName
-$newUserKey=(Get-ChildItem -Path $zitiPkiRoot -Filter "$newUser.key" -Recurse).FullName
-
-ziti edge create identity $newUser --auth-policy "$authPolicy"
-ziti edge create enrollment ottca $newUser $caName
-
-if ($PSVersionTable.PSVersion.Major -gt 5) { #powershell....
-    $ottcajwt = (ziti edge list identities "name contains ""$newUser""" -j | ConvertFrom-Json).data.enrollment.ottca.jwt
-} else {
-    $ottcajwt = (ziti edge list identities "name contains \""$newUser\""" -j | ConvertFrom-Json).data.enrollment.ottca.jwt 
-}
-
-Set-Content -Path "$zitiPkiRoot\$newUser.jwt" -Value $ottcajwt -NoNewline -Encoding ASCII
-
-& 'C:\Program Files (x86)\NetFoundry Inc\Ziti Desktop Edge\ziti-edge-tunnel.exe' `
-    enroll `
-    --jwt "$zitiPkiRoot\$newUser.jwt" `
-    --cert $newUserCert `
-    --key $newUserKey `
-    --identity "C:\Windows\System32\config\systemprofile\AppData\Roaming\NetFoundry\${newUser}.json"
-
-
-
-
-
-
-
+Write-Host -ForegroundColor Blue "IDENTITIES AT: ${identityDir}"

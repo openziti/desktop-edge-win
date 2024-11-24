@@ -20,6 +20,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		release-notes.md = release-notes.md
 		releasing.md = releasing.md
 		setup-mfa-test.ps1 = setup-mfa-test.ps1
+		testing.md = testing.md
 		update-versions.ps1 = update-versions.ps1
 		version = version
 		ziti.ico = ziti.ico

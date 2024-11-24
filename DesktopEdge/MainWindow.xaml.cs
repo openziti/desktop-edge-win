@@ -41,6 +41,7 @@ using NLog.Targets;
 using Microsoft.Win32;
 
 using Ziti.Desktop.Edge.Models;
+using System.ComponentModel;
 
 namespace ZitiDesktopEdge {
 
@@ -274,7 +275,7 @@ namespace ZitiDesktopEdge {
         /// <param name="identity">The Ziti Identity to Authenticate</param>
         async public void ShowMFARecoveryCodes(ZitiIdentity identity) {
             if (identity.IsMFAEnabled) {
-                if (identity.IsMFAEnabled && identity.RecoveryCodes != null) {
+                if (identity.RecoveryCodes != null) {
                     MFASetup.Opacity = 0;
                     MFASetup.Visibility = Visibility.Visible;
                     MFASetup.Margin = new Thickness(0, 0, 0, 0);
@@ -374,8 +375,12 @@ namespace ZitiDesktopEdge {
         private System.Windows.Forms.ContextMenu contextMenu;
         private System.Windows.Forms.MenuItem contextMenuItem;
         private System.ComponentModel.IContainer components;
+        private MainViewModel props = null;
+
         public MainWindow() {
             InitializeComponent();
+            props = new MainViewModel();
+            DataContext = props;
             NextNotificationTime = DateTime.Now;
             SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
             string nlogFile = Path.Combine(ExecutionDirectory, ThisAssemblyName + "-log.config");
@@ -439,8 +444,8 @@ namespace ZitiDesktopEdge {
             notifyIcon.MouseClick += NotifyIcon_MouseClick;
             notifyIcon.ContextMenu = this.contextMenu;
 
-            IdentityMenu.HandleAttachment += HandleAttachment;
-            MainMenu.HandleAttachment += HandleAttachment;
+            IdentityMenu.OnDetach += HandleDetached;
+            MainMenu.OnDetach += HandleDetached;
 
             this.MainMenu.MainWindow = this;
             this.IdentityMenu.MainWindow = this;
@@ -547,21 +552,25 @@ namespace ZitiDesktopEdge {
         }
 
         private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
-            HandleAttachment(e);
+            HandleDetached(e);
         }
 
-        private void HandleAttachment(MouseButtonEventArgs e) {
+        private void HandleAttach(object sender, MouseButtonEventArgs e) {
+            if (e.ChangedButton == MouseButton.Right) {
+                _isAttached = true;
+                IdentityMenu.Arrow.Visibility = Visibility.Visible;
+                Arrow.Visibility = Visibility.Visible;
+                MainMenu.Retach();
+            }
+        }
+
+        private void HandleDetached (MouseButtonEventArgs e) {
             if (e.ChangedButton == MouseButton.Left) {
                 _isAttached = false;
                 IdentityMenu.Arrow.Visibility = Visibility.Collapsed;
                 Arrow.Visibility = Visibility.Collapsed;
                 MainMenu.Detach();
                 this.DragMove();
-            } else if (e.ChangedButton == MouseButton.Right) {
-                _isAttached = true;
-                IdentityMenu.Arrow.Visibility = Visibility.Visible;
-                Arrow.Visibility = Visibility.Visible;
-                MainMenu.Retach();
             }
         }
 
@@ -1251,7 +1260,9 @@ namespace ZitiDesktopEdge {
             logger.Debug($"==== TunnelStatusEvent: ");
             Application.Current.Properties.Remove("CurrentTunnelStatus");
             Application.Current.Properties.Add("CurrentTunnelStatus", e.Status);
-            e.Status.Dump(Console.Out);
+#if DEBUG
+            //e.Status.Dump(Console.Out);
+#endif
             this.Dispatcher.Invoke(() => {
                 /*if (e.ApiVersion != DataClient.EXPECTED_API_VERSION) {
 					SetCantDisplay("Version mismatch!", "The version of the Service is not compatible", Visibility.Visible);
@@ -1349,7 +1360,7 @@ namespace ZitiDesktopEdge {
                 foreach (var id in status.Identities) {
                     updateViewWithIdentity(id);
                 }
-                LoadIdentities(true);
+                //LoadIdentities(true);
             } else {
                 ShowServiceNotStarted();
             }
@@ -1453,7 +1464,6 @@ namespace ZitiDesktopEdge {
                     this.Height = defaultHeight;
                     MainMenu.IdentitiesButton.Visibility = Visibility.Collapsed;
                     IdListScroller.Visibility = Visibility.Collapsed;
-
                 }
                 AddIdButton.Visibility = Visibility.Visible;
                 AddIdAreaButton.Visibility = Visibility.Visible;
@@ -1492,6 +1502,7 @@ namespace ZitiDesktopEdge {
                     MainMenu.Connected();
                     HideLoad();
                     SetNotifyIcon("green");
+                    props.Connected();
                 } else {
                     ConnectButton.Visibility = Visibility.Visible;
                     DisconnectButton.Visibility = Visibility.Collapsed;
@@ -1501,6 +1512,7 @@ namespace ZitiDesktopEdge {
                     MainMenu.Disconnected();
                     DownloadSpeed.Content = "0.0";
                     UploadSpeed.Content = "0.0";
+                    props.Disconnected();
                 }
             });
         }
@@ -1512,17 +1524,21 @@ namespace ZitiDesktopEdge {
             IdentityMenu.MainHeight = MainView.ActualHeight;
             MainMenu.MainHeight = MainView.ActualHeight;
 
+            double defaultMiddle = 195;
+            if (this.ActualWidth > 0) {
+                defaultMiddle = this.ActualWidth / 2;
+            }
             Rectangle trayRectangle = WinAPI.GetTrayRectangle();
             if (trayRectangle.Top < 20) {
                 this.Position = "Top";
                 this.Top = desktopWorkingArea.Top + _top;
                 this.Left = desktopWorkingArea.Right - this.Width - _right;
                 Arrow.SetValue(Canvas.TopProperty, (double)0);
-                Arrow.SetValue(Canvas.LeftProperty, (double)195);
+                Arrow.SetValue(Canvas.LeftProperty, defaultMiddle);
                 MainMenu.Arrow.SetValue(Canvas.TopProperty, (double)0);
-                MainMenu.Arrow.SetValue(Canvas.LeftProperty, (double)195);
+                MainMenu.Arrow.SetValue(Canvas.LeftProperty, defaultMiddle);
                 IdentityMenu.Arrow.SetValue(Canvas.TopProperty, (double)0);
-                IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, (double)195);
+                IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, defaultMiddle);
             } else if (trayRectangle.Left < 20) {
                 this.Position = "Left";
                 this.Left = _left;
@@ -1548,11 +1564,11 @@ namespace ZitiDesktopEdge {
                 this.Left = desktopWorkingArea.Right - this.Width - 75;
                 this.Top = desktopWorkingArea.Bottom - height;
                 Arrow.SetValue(Canvas.TopProperty, height - 35);
-                Arrow.SetValue(Canvas.LeftProperty, (double)195);
+                Arrow.SetValue(Canvas.LeftProperty, defaultMiddle);
                 MainMenu.Arrow.SetValue(Canvas.TopProperty, height - 35);
-                MainMenu.Arrow.SetValue(Canvas.LeftProperty, (double)195);
+                MainMenu.Arrow.SetValue(Canvas.LeftProperty, defaultMiddle);
                 IdentityMenu.Arrow.SetValue(Canvas.TopProperty, height - 35);
-                IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, (double)195);
+                IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, defaultMiddle);
             }
         }
         public void Placement() {
@@ -1564,10 +1580,6 @@ namespace ZitiDesktopEdge {
                 IdentityMenu.Arrow.Visibility = Visibility.Collapsed;
                 Arrow.Visibility = Visibility.Collapsed;
             }
-        }
-
-        private void OpenIdentity(ZitiIdentity identity) {
-            IdentityMenu.Identity = identity;
         }
 
         private void ShowMenu(object sender, MouseButtonEventArgs e) {
@@ -1623,26 +1635,6 @@ namespace ZitiDesktopEdge {
             _tunnelUptimeTimer.Tick += OnTimedEvent;
             _tunnelUptimeTimer.Enabled = true;
             _tunnelUptimeTimer.Start();
-        }
-
-        async private Task DoConnectAsync() {
-            try {
-                SetNotifyIcon("green");
-                TunnelConnected(true);
-
-                for (int i = 0; i < identities.Count; i++) {
-                    await serviceClient.IdentityOnOffAsync(identities[i].Identifier, true);
-                }
-                for (int i = 0; i < IdList.Children.Count; i++) {
-                    IdentityItem item = IdList.Children[i] as IdentityItem;
-                    item._identity.IsEnabled = true;
-                    item.RefreshUI();
-                }
-            } catch (ServiceException se) {
-                ShowError("Error Occurred", se.Message + " " + se.AdditionalInfo);
-            } catch (Exception ex) {
-                ShowError("Unexpected Error", "Code 3:" + ex.Message);
-            }
         }
 
         async private void Disconnect(object sender, RoutedEventArgs e) {
@@ -1721,10 +1713,6 @@ namespace ZitiDesktopEdge {
 				this.Visibility = Visibility.Collapsed;
 #endif
             }
-        }
-
-        private void Label_MouseDoubleClick(object sender, MouseButtonEventArgs e) {
-            Placement();
         }
 
         int cur = 0;
@@ -1835,34 +1823,9 @@ namespace ZitiDesktopEdge {
             ShowMFARecoveryCodes(identity);
         }
 
-
-
-
-
-        private ICommand someCommand;
-        public ICommand SomeCommand {
-            get {
-                return someCommand
-                    ?? (someCommand = new ActionCommand(() => {
-                        if (DebugForm.Visibility == Visibility.Hidden) {
-                            DebugForm.Visibility = Visibility.Visible;
-                        } else {
-                            DebugForm.Visibility = Visibility.Hidden;
-                        }
-                    }));
-            }
-            set {
-                someCommand = value;
-            }
-        }
-
         private void DoLoading(bool isComplete) {
             if (isComplete) HideLoad();
             else ShowLoad("Loading", "Please Wait.");
-        }
-
-        private void Label_MouseDoubleClick_1(object sender, MouseButtonEventArgs e) {
-            ShowToast("here's a toast all rightddd...");
         }
     }
 
@@ -1883,5 +1846,29 @@ namespace ZitiDesktopEdge {
 #pragma warning disable CS0067 //The event 'ActionCommand.CanExecuteChanged' is never used
         public event EventHandler CanExecuteChanged;
 #pragma warning restore CS0067 //The event 'ActionCommand.CanExecuteChanged' is never used
+    }
+
+    public class MainViewModel : INotifyPropertyChanged {
+        private string _connectLabelContent = "Tap to Connect";
+        public string ConnectLabelContent {
+            get {
+                return _connectLabelContent;
+            }
+            set {
+                _connectLabelContent = value;
+                OnPropertyChanged(nameof(ConnectLabelContent));
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged(string propertyName) {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+        public void Disconnected() {
+            ConnectLabelContent = "Tap to Connect";
+        }
+        public void Connected() {
+            ConnectLabelContent = "Tap to Disconnect";
+        }
     }
 }

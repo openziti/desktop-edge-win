@@ -146,8 +146,15 @@
                     <Label Content="MENU" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" Margin="0,-14,0,0" FontSize="10"></Label>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,12">
-                    <Image Source="/Assets/Images/z.png" Height="40" RenderOptions.BitmapScalingMode="Fant" MouseDown="Window_MouseDown" Cursor="ScrollAll" ToolTip="MOUSELEFT+DRAG to Detach/Move | MOUSERIGHT to Reattach"></Image>
-                    <Label Content="Tap to Toggle Service" Margin="0,-3,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" FontSize="12" Foreground="White" HorizontalAlignment="Center"></Label>
+                    <Image Source="/Assets/Images/z.png" Height="40" RenderOptions.BitmapScalingMode="Fant" MouseUp="HandleAttach" MouseDown="Window_MouseDown" Cursor="ScrollAll" ToolTip="Drag to detach/move, right click to reattach"></Image>
+                    <Label x:Name="ConnetLabel"
+                           Content="{Binding ConnectLabelContent}"
+                           Margin="0,-3,0,0" 
+                           FontFamily="pack://application:,,,/Assets/Fonts/#Russo One" 
+                           FontSize="14" 
+                           Foreground="White" 
+                           HorizontalAlignment="Center"
+                           />
                 </StackPanel>
                 <StackPanel x:Name="AddIdAreaButton" Grid.Column="2" Cursor="Hand" Orientation="Vertical" Margin="14,16,14,14" MouseLeftButtonUp="AddIdentity">
                     <Image Source="/Assets/Images/identity.png" Margin="0,0,5,-4" Width="26" Height="26" HorizontalAlignment="Right">
@@ -231,7 +238,7 @@
         <local:IdentityDetails x:Name="IdentityMenu" Visibility="Collapsed" OnMFAToggled="MFAToggled" Authenticate="ShowAuthenticate" Recovery="ShowRecovery" OnLoading="DoLoading" OnShowMFA="ShowAuthenticate"></local:IdentityDetails>
 
         <!-- Modal Background -->
-        <Rectangle x:Name="ModalBg" Margin="10,10,10,10" Fill="Black" RadiusY="10" RadiusX="10" Opacity="0" Visibility="Collapsed"></Rectangle>
+        <Rectangle x:Name="ModalBg" MouseDown="Window_MouseDown" Margin="10,10,10,10" Fill="Black" RadiusY="10" RadiusX="10" Opacity="0" Visibility="Collapsed"></Rectangle>
         <!-- MFA Setup Prompt -->
         <local:MFAScreen x:Name="MFASetup" Visibility="Collapsed" Margin="0,0,0,0" OnClose="DoClose"></local:MFAScreen>
 
@@ -265,7 +272,7 @@
             </Grid>
         </Grid>
 
-        <Grid x:Name="NoServiceView" Visibility="Collapsed" Margin="15,15,15,15">
+        <Grid x:Name="NoServiceView" Visibility="Collapsed" Margin="15,15,15,50">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="Black" Opacity="0.9"/>
@@ -306,7 +313,7 @@
             </Grid>
         </Grid>
 
-        <Grid x:Name="LoadingScreen" Visibility="Collapsed" Margin="15,15,15,15">
+        <Grid x:Name="LoadingScreen" MouseDown="Window_MouseDown" Visibility="Collapsed" Margin="15,15,15,15">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="Black" Opacity="0.9"/>
@@ -331,7 +338,7 @@
             </Grid>
         </Grid>
 
-        <Grid x:Name="ErrorView" Visibility="Collapsed" Margin="15,15,15,15">
+        <Grid x:Name="ErrorView" MouseDown="Window_MouseDown" Visibility="Collapsed" Margin="15,15,15,15">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="Black" Opacity="0.9"/>
@@ -378,7 +385,4 @@
             </Grid>
         </Grid>
     </Grid>
-    <Window.InputBindings>
-        <KeyBinding x:Name="ShowDebug" Command="{Binding SomeCommand}" Key="F12" />
-    </Window.InputBindings>
 </Window>

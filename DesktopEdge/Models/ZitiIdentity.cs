@@ -144,10 +144,7 @@ namespace ZitiDesktopEdge.Models {
                 zid.Name = zid.Name.Substring(pos + 1);
             }
 
-#if DEBUG
-            zid.MFADebug("002");
-#endif
-            if (id.Services != null && id.Services.Count > 0) {
+            if (id.Active && id?.Services?.Count > 0) {
                 foreach (var svc in id.Services) {
                     if (svc != null) {
                         var zsvc = new ZitiService(svc);

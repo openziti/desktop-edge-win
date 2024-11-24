@@ -46,7 +46,7 @@ namespace ZitiDesktopEdge {
         public delegate void MFAToggled(bool isOn);
         public event MFAToggled OnMFAToggled;
         public delegate void Detched(MouseButtonEventArgs e);
-        public event Detched HandleAttachment;
+        public event Detched OnDetach;
         public delegate void Mesage(string message);
         public event Mesage OnMessage;
         public delegate void OnAuthenticate(ZitiIdentity identity);
@@ -112,7 +112,7 @@ namespace ZitiDesktopEdge {
         private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
             if (e.ChangedButton == MouseButton.Left) IsAttached = false;
             else if (e.ChangedButton == MouseButton.Right) IsAttached = true;
-            HandleAttachment(e);
+            OnDetach(e);
         }
 
         public bool IsAttached {
@@ -189,17 +189,7 @@ namespace ZitiDesktopEdge {
             IdServer.ToolTip = _identity.ControllerUrl;
             IdName.ToolTip = _identity.Name;
             IdName.Value = _identity.Name;
-            if (_identity.IsEnabled) {
-                IsDisconnected.Visibility = Visibility.Collapsed;
-                IsConnected.Visibility = Visibility.Visible;
-            } else {
-                IsDisconnected.Visibility = Visibility.Visible;
-                IsConnected.Visibility = Visibility.Collapsed;
-            }
 
-#if DEBUG
-            _identity.MFADebug("UpdateView");
-#endif
             if (_identity.IsMFAEnabled) {
                 if (_identity.IsMFANeeded) {
                     // enabled and needed = needs to be authorized. show the lock icon and tell the user to auth
@@ -512,8 +502,6 @@ namespace ZitiDesktopEdge {
             if (SelectedIdentity != null) SelectedIdentity.ToggleSwitch.Enabled = true;
             if (SelectedIdentityMenu != null) SelectedIdentityMenu.ToggleSwitch.Enabled = true;
             _identity.IsEnabled = true;
-            IsConnected.Visibility = Visibility.Visible;
-            IsDisconnected.Visibility = Visibility.Collapsed;
             this.OnLoading?.Invoke(true);
         }
 
@@ -524,8 +512,6 @@ namespace ZitiDesktopEdge {
             if (SelectedIdentity != null) SelectedIdentity.ToggleSwitch.Enabled = false;
             if (SelectedIdentityMenu != null) SelectedIdentityMenu.ToggleSwitch.Enabled = false;
             _identity.IsEnabled = false;
-            IsConnected.Visibility = Visibility.Collapsed;
-            IsDisconnected.Visibility = Visibility.Visible;
             this.OnLoading?.Invoke(true);
         }
 

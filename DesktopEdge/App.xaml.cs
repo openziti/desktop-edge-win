@@ -55,7 +55,7 @@ namespace ZitiDesktopEdge {
                 bool createdNew;
 
                 _mutex = new Mutex(true, appName, out createdNew);
-
+#if !DEBUG
                 if (!createdNew) {
                     using (var client = new NamedPipeClientStream(NamedPipeName)) {
                         logger.Info("Another instance exists. Attempting to notify it to open");
@@ -79,6 +79,7 @@ namespace ZitiDesktopEdge {
                     StartServer();
 #pragma warning restore 4014 //This async method lacks 'await'
                 }
+#endif
             } catch (Exception ex) {
                 logger.Error($"OnStartup FAILED unexpectedly. Exiting", ex);
                 Application.Current.Shutdown();
