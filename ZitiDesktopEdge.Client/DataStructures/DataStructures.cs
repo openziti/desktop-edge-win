@@ -214,12 +214,14 @@ namespace ZitiDesktopEdge.DataStructures {
 
     public class ExternalAuthFunction {
         public string Identifier { get; set; }
+        public string Provider { get; set; }
     }
     public class ExternalAuthLogin : ServiceFunction {
-        public ExternalAuthLogin(string identifier) {
+        public ExternalAuthLogin(string identifier, string extProvider) {
             this.Command = "ExternalAuth";
             this.Data = new ExternalAuthFunction() {
                 Identifier = identifier,
+                Provider = extProvider,
             };
         }
         public ExternalAuthFunction Data { get; set; }
@@ -279,10 +281,15 @@ namespace ZitiDesktopEdge.DataStructures {
         public string ControllerVersion { get; set; }
         public bool MfaEnabled { get; set; }
         public bool MfaNeeded { get; set; }
-        public int MinTimeout { get; set; }
-        public int MaxTimeout { get; set; }
+        public int MfaMinTimeout { get; set; }
+        public int MfaMaxTimeout { get; set; }
+        public int MfaMinTimeoutRem { get; set; }
+        public int MfaMaxTimeoutRem { get; set; }
+        public int MinTimeoutRemInSvcEvent { get; set; }
+        public int MaxTimeoutRemInSvcEvent { get; set; }
         public DateTime MfaLastUpdatedTime { get; set; }
         public bool NeedsExtAuth { get; set; }
+        public List<string> ExtAuthProviders { get; set; }
     }
 
     public class Service {

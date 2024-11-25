@@ -40,6 +40,8 @@ namespace ZitiDesktopEdge {
         public event OnAuthenticate Authenticate;
         public delegate void OnIdentityChanged(ZitiIdentity identity);
         public event OnIdentityChanged IdentityChanged;
+
+        public Action<string, string> ShowError; 
         private System.Windows.Forms.Timer _timer;
         private System.Windows.Forms.Timer _timingTimer;
         private float countdown = -1;
@@ -172,7 +174,7 @@ namespace ZitiDesktopEdge {
             MainArea.Opacity = 1.0;
 
 #if DEBUG
-            Console.WriteLine($"Calculate Bubble for:{_identity.Name}. IsMFANeeded: {_identity.IsMFANeeded}, IsMFAEnabled: {_identity.IsMFAEnabled}");
+            //Console.WriteLine($"Calculate Bubble for:{_identity.Name}. IsMFANeeded: {_identity.IsMFANeeded}, IsMFAEnabled: {_identity.IsMFAEnabled}");
 #endif
 
             Action hideMfa = () => {
@@ -186,7 +188,6 @@ namespace ZitiDesktopEdge {
                     MfaRequired.Visibility = Visibility.Visible;
                 }
                 ServiceCountArea.Visibility = Visibility.Collapsed;
-                hideMfa();
                 MainArea.Opacity = 0.6;
             };
             Action showBubbles = () => {
@@ -406,12 +407,16 @@ namespace ZitiDesktopEdge {
         async private void CompleteExtAuth(object sender, MouseButtonEventArgs e) {
             try {
                 DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-                ExternalAuthLoginResponse resp = await client.ExternalAuthLogin(_identity.Identifier);
-                if (resp?.Data?.url != null) {
-                    Console.WriteLine(resp.Data?.url);
-                    Process.Start(resp.Data.url);
+                ExternalAuthLoginResponse resp = await client.ExternalAuthLogin(_identity.Identifier, _identity.ExtAuthProviders[0]);
+                if (resp?.Error == null) {
+                    if (resp?.Data?.url != null) {
+                        Console.WriteLine(resp.Data?.url);
+                        Process.Start(resp.Data.url);
+                    } else {
+                        Console.WriteLine("The response contained no url???");
+                    }
                 } else {
-                    Console.WriteLine("The response contained no url???");
+                    ShowError("Failed to Authenticate", resp.Error);
                 }
             } catch (Exception ex) {
                 logger.Error("unexpected error!", ex);

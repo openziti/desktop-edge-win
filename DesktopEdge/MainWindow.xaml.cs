@@ -1173,7 +1173,7 @@ namespace ZitiDesktopEdge {
             logger.Debug($"==== IdentityEvent    : action:{e.Action} identifer:{e.Id.Identifier} name:{e.Id.Name} ");
 
             this.Dispatcher.Invoke(async () => {
-                if (e.Action == "added") {
+                if (e.Action == "added" || e.Action == "needs_ext_login") {
                     var found = identities.Find(i => i.Identifier == e.Id.Identifier);
                     if (found == null) {
                         AddIdentity(zid);
@@ -1187,6 +1187,7 @@ namespace ZitiDesktopEdge {
                         found.IsMFAEnabled = e.Id.MfaEnabled;
                         found.IsConnected = true;
                         found.NeedsExtAuth = e.Id.NeedsExtAuth;
+                        found.ExtAuthProviders = e.Id.ExtAuthProviders;
                         for (int i = 0; i < identities.Count; i++) {
                             if (identities[i].Identifier == found.Identifier) {
                                 identities[i] = found;
@@ -1219,8 +1220,6 @@ namespace ZitiDesktopEdge {
                         }
                     }
                     LoadIdentities(true);
-                } else if (e.Action == "needs_ext_login") {
-                    logger.Debug("needs_ext_login action received"); //handled through identity event at the moment (forever?)
                 } else {
                     logger.Warn("unexpected action received: {}", e.Action);
                     IdentityForgotten(ZitiIdentity.FromClient(e.Id));
@@ -1486,6 +1485,8 @@ namespace ZitiDesktopEdge {
                     MainMenu.IdentitiesButton.Visibility = Visibility.Visible;
                     foreach (var id in ids) {
                         IdentityItem idItem = new IdentityItem();
+                        idItem.ShowError = ShowError;
+
 
                         idItem.ToggleStatus.IsEnabled = id.IsEnabled;
                         if (id.IsEnabled) idItem.ToggleStatus.Content = "ENABLED";
@@ -1678,7 +1679,7 @@ namespace ZitiDesktopEdge {
                 string fileContent = File.ReadAllText(jwtDialog.FileName);
                 EnrollIdentifierPayload payload = new EnrollIdentifierPayload();
                 payload.JwtFileName = Path.GetFileName(jwtDialog.FileName);
-                payload.JwtContent = fileContent;
+                payload.JwtContent = fileContent.Trim();
                 string[] jwtParts = fileContent?.Split('.');
 
 
@@ -1687,15 +1688,15 @@ namespace ZitiDesktopEdge {
 
                     // Deserialize JSON into a dynamic object
                     dynamic jsonObj = JsonConvert.DeserializeObject(jsonString);
-
+#if DEBUG
                     Console.WriteLine(jsonString);
                     // Access properties dynamically
                     Console.WriteLine($"ISS: {jsonObj.iss}");
                     Console.WriteLine($"SUB: {jsonObj.sub}");
                     Console.WriteLine($"JTI: {jsonObj.jti}");
                     Console.WriteLine($"AUD: {string.Join(", ", jsonObj.aud)}");
-
                     Console.WriteLine($"EM: {jsonObj.em}");
+#endif
                     switch ($"{jsonObj.em}") {
                         case "ottca":
                             With3rdPartyCA_Click(sender, e);
@@ -1712,6 +1713,9 @@ namespace ZitiDesktopEdge {
                             ShowJoinWith3rdPartyCA();
                             break;
                     }
+                } else {
+                    // invalid jwt
+                    logger.Error("JWT is invalid? {}", fileContent);
                 }
                 HideLoad();
             }

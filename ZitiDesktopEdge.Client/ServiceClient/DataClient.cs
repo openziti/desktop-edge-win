@@ -314,9 +314,9 @@ namespace ZitiDesktopEdge.ServiceClient {
             return null;
         }
 
-        async public Task<ExternalAuthLoginResponse> ExternalAuthLogin(string identifier) {
+        async public Task<ExternalAuthLoginResponse> ExternalAuthLogin(string identifier, string provider) {
             try {
-                await sendAsync(new ExternalAuthLogin(identifier));
+                await sendAsync(new ExternalAuthLogin(identifier, provider));
                 ExternalAuthLoginResponse extAuthResp = await readAsync<ExternalAuthLoginResponse>(ipcReader);
                 return extAuthResp;
             } catch (Exception ioe) {

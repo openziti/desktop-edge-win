@@ -125,7 +125,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                     string toSend = JsonConvert.SerializeObject(objToSend, serializerSettings);
 
                     if (toSend?.Trim() != null) {
-                        debugServiceCommunication(toSend);
+                        debugServiceCommunication("send", toSend);
                         if (ipcWriter != null) {
                             await ipcWriter.WriteAsync(toSend);
                             await ipcWriter.WriteAsync('\n');
@@ -221,11 +221,12 @@ namespace ZitiDesktopEdge.ServiceClient {
             });
         }
 
-        protected void debugServiceCommunication(string msg) {
+        protected void debugServiceCommunication(string direction, string msg) {
 #if DEBUGSVCCOM
-            Logger.Debug(msg);
+            Logger.Warn(msg);
 #else
             Logger.Trace(msg);
+            Logger.Warn("{}-{}: {}", direction, Id, msg);
 #endif
         }
 
@@ -240,12 +241,12 @@ namespace ZitiDesktopEdge.ServiceClient {
                 int emptyCount = 1; //just a stop gap in case something crazy happens in the communication
 
                 string respAsString = await reader.ReadLineAsync();
-                debugServiceCommunication(respAsString);
+                debugServiceCommunication("read", respAsString);
                 while (string.IsNullOrEmpty(respAsString?.Trim())) {
-                    debugServiceCommunication("Received empty payload - continuing to read until a payload is received");
+                    debugServiceCommunication("read", "Received empty payload - continuing to read until a payload is received");
                     //now how'd that happen...
                     respAsString = await reader.ReadLineAsync();
-                    debugServiceCommunication(respAsString);
+                    debugServiceCommunication("read", respAsString);
                     emptyCount++;
                     if (emptyCount > 5) {
                         Logger.Debug("are we there yet? " + reader.EndOfStream);

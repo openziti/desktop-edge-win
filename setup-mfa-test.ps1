@@ -1,10 +1,14 @@
 param (
     [switch]$ClearIdentitiesOk,
-    [string]${ZitiHome}
+    [string]$ZitiHome,
+    [string]$Url,
+    [string]$Username,
+    [string]$Password,
+    [string]$RouterName
 )
 
 if (-not $ClearIdentitiesOk) {
-    Write-Host -ForegroundColor Red "CLEAR_IDENTITIES_OK parameter not set."
+    Write-Host -ForegroundColor Red "CLEAR_IDENTITIES_OK parameter not  set."
     Write-Host -ForegroundColor Red "  you MUST pass -ClearIdentitiesOk when running this script or it won't run."
     Write-Host -ForegroundColor Red "  This script deletes identities from C:\Windows\System32\config\systemprofile\AppData\Roaming\NetFoundry"
     Write-Host -ForegroundColor Red " "
@@ -15,10 +19,57 @@ if (-not $ClearIdentitiesOk) {
     Write-Host -ForegroundColor Green "-ClearIdentitiesOk detected. continuing..."
 }
 
-echo "starting reset"
-taskkill /f /im ziti.exe
+$envFile = ".env.ps1"
+if (Test-Path $envFile) {
+    . $envFile
+} else {
+    Write-Host "Add credentials to .env.ps1 to store Username/Password"
+}
 
 $prefix = "zitiquickstart"
+$zitiUser=""
+$zitiPwd=""
+$zitiCtrl="localhost:1280"
+$caName="my-third-party-ca"
+$startZiti = $true
+$routerIdentity = ""
+if (${Url}) {
+    if(-not $RouterName) {
+        Write-Host -ForegroundColor Red "RouterName not set! -RouterName required when using -Url"
+        return
+    }
+    $routerIdentity = $RouterName
+
+    $startZiti = $false
+    if (-not ${Url}.StartsWith("http")) {
+        $Url = "https://${Url}"
+    }
+    $zitiCtrl = ${Url}
+    $Url = $Url.TrimEnd("/")
+}
+
+# use params first...
+if (${Username}) { $zitiUser = ${Username} }
+if (${Password}) { $zitiPwd = ${Password} }
+
+# use values read from file
+if (-not ${zitiUser}) { $zitiUser = ${ZITI_USER} }
+if (-not ${zitiPwd}) { $zitiPwd = ${ZITI_PASS} }
+
+# use values in environment
+if (-not ${zitiUser}) { $zitiUser = ${env:ZITI_USER} }
+if (-not ${zitiPwd}) { $zitiPwd = ${env:ZITI_PASS} }
+
+# fallback to defaults
+if (-not ${zitiUser}) { $zitiUser="admin" }
+if (-not ${zitiPwd}) { $zitiPwd="admin" }
+
+if (${RouterName}) { $routerName = ${RouterName} }
+
+if($startZiti) {
+    echo "starting reset"
+    taskkill /f /im ziti.exe
+}
 
 if (-not ${ZitiHome}) {
     ${ZitiHome} = [System.IO.Path]::GetTempPath() + "zdew-" + ([System.Guid]::NewGuid().ToString())
@@ -58,16 +109,37 @@ Write-Host "Press Enter to continue..."
 }
 
 mkdir ${ZitiHome} -Force > $NULL
-$logFile = "${ZitiHome}\quickstart.txt"
+if($startZiti) {
+    $logFile = "${ZitiHome}\quickstart.txt"
+    Write-Host -ForegroundColor Blue "ZITI LOG FILE: $logFile"
+
+    #Start-Process cmd.exe '/c ziti edge quickstart > NUL"' -NoNewWindow
+    #Start-Process "ziti" "edge quickstart" -NoNewWindow -RedirectStandardError $logFile -RedirectStandardInput $logFile
+    Start-Process "ziti" "edge quickstart --home ${ZitiHome}" -NoNewWindow *>&1 -RedirectStandardOutput $logFile
+    $routerIdentity = "quickstart-router"
+} else {
+    ziti edge delete identities where 'name contains \"mfa\"' limit none
+    ziti edge delete service where 'name contains \"mfa\"' limit none
+    ziti edge delete service-policy where 'name contains \"mfa\"' limit none
+    ziti edge delete config where 'name contains \"mfa\"' limit none
+    ziti edge delete posture-check where 'name contains \"mfa\"' limit none
+
+    ziti edge delete identities where 'name contains \"normal\"' limit none
+    ziti edge delete service where 'name contains \"normal\"' limit none
+    ziti edge delete service-policy where 'name contains \"normal\"' limit none
+    ziti edge delete config where 'name contains \"normal\"' limit none
+
+    ziti edge delete ca "$caName"
+    ziti edge delete auth-policy yubi-mfa
+}
+
 Write-Host -ForegroundColor Blue "TEMP DIR: ${ZitiHome}"
-Write-Host -ForegroundColor Blue "ZITI LOG FILE: $logFile"
 
-#Start-Process cmd.exe '/c ziti edge quickstart > NUL"' -NoNewWindow
-#Start-Process "ziti" "edge quickstart" -NoNewWindow -RedirectStandardError $logFile -RedirectStandardInput $logFile
-Start-Process "ziti" "edge quickstart --home ${ZitiHome}" -NoNewWindow *>&1 -RedirectStandardOutput $logFile
+Write-Host "URL: $zitiCtrl"
+$uri = [System.Uri]::new($zitiCtrl)
+$hostname = $uri.Host
+$port = $uri.Port
 
-$hostname = "localhost"
-$port = 1280
 $delay = 1 # Delay in seconds
 #Remove-Item "C:\temp\support\discourse\2790\pki" -Recurse -Force -ErrorAction SilentlyContinue
 mkdir $identityDir -ErrorAction SilentlyContinue > $NULL
@@ -87,12 +159,6 @@ while ($true) {
     }
 }
 
-$caName="my-third-party-ca"
-$zitiUser="admin"
-$zitiPwd="admin"
-$zitiCtrl="localhost:1280"
-$caName="my-third-party-ca"
-
 ziti edge login $zitiCtrl -u $zitiUser -p $zitiPwd -y
 ziti pki create ca --pki-root "${zitiPkiRoot}" --ca-file "$caName"
 $rootCa=(Get-ChildItem -Path $zitiPkiRoot -Filter "$caName.cert" -Recurse).FullName
@@ -110,7 +176,7 @@ ziti edge verify ca $caName --cert $verificationCert
 $authPolicy=(ziti edge create auth-policy yubi-mfa --primary-cert-allowed --secondary-req-totp --primary-cert-expired-allowed)
 
 $count = 0
-$iterations = 5
+$iterations = 3
 for ($i = 0; $i -lt $iterations; $i++) {
     $id = "mfa-$count"
     ziti edge create identity "$id" --auth-policy "$authPolicy" -o "$identityDir\$id.jwt"
@@ -130,10 +196,10 @@ function makeTestService {
     ziti edge create config "$svc.host.v1" host.v1 "{\""protocol\"":\""tcp\"", \""address\"":\""localhost\"",\""port\"":$port }"
 	ziti edge create service "$svc" --configs "$svc.intercept.v1","$svc.host.v1"
 	ziti edge create service-policy "$svc.dial" Dial --identity-roles "@$user" --service-roles "@$svc"
-	ziti edge create service-policy "$svc.bind" Bind --identity-roles "@quickstart-router" --service-roles "@$svc"
+	ziti edge create service-policy "$svc.bind" Bind --identity-roles "@${routerName}" --service-roles "@$svc"
 }
 
-$param1Range = 1..3
+$param1Range = 0..2
 
 # Loop through the ranges and call the function
 foreach ($i in $param1Range) {
@@ -181,22 +247,19 @@ ziti edge update service-policy "$name.svc.0.ziti.dial" --posture-check-roles "@
 $name="normal-user-01"
 ziti edge create identity $name -o "$identityDir\$name.jwt"
 makeTestService $name "0"
-ziti edge update service-policy "$name.svc.0.ziti.dial"
 
 $name="normal-user-02"
 ziti edge create identity $name -o "$identityDir\$name.jwt"
 makeTestService $name "0"
-ziti edge update service-policy "$name.svc.0.ziti.dial"
 
 $name="normal-user-03"
 ziti edge create identity $name -o "$identityDir\$name.jwt"
 makeTestService $name "0"
-ziti edge update service-policy "$name.svc.0.ziti.dial"
 
-
-
-
-
-
+$network_jwt="${identityDir}\${hostname}_${port}.jwt"
+#$json = curl -sk "${Url}/edge/management/v1/network-jwts" #> 
+$json = curl -sk "${Url}/edge/management/v1/network-jwts"
+Set-Content -Path $network_jwt -Value ($json | ConvertFrom-Json).data.token 
 
 Write-Host -ForegroundColor Blue "IDENTITIES AT: ${identityDir}"
+Write-Host -ForegroundColor Blue " - network-jwts at : ${identityDir}\${hostname}_${port}.jwt"
