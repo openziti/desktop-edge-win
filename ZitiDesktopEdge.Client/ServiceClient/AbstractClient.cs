@@ -1,3 +1,4 @@
+//#define DEBUG_METRICS_MESSAGES
 /*
 	Copyright NetFoundry Inc.
 
@@ -222,11 +223,17 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         protected void debugServiceCommunication(string direction, string msg) {
-#if DEBUGSVCCOM
+#if DEBUG
+#if DEBUG_METRICS_MESSAGES
+            // see the top of the file for where you can enable this
             Logger.Warn(msg);
 #else
+            if (!msg.Contains("\"metrics\"")) {
+                Logger.Warn("{}-{}: {}", direction, Id, msg);
+            }
+#endif
+#else
             Logger.Trace(msg);
-            Logger.Warn("{}-{}: {}", direction, Id, msg);
 #endif
         }
 

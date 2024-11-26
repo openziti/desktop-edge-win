@@ -4,7 +4,8 @@ param (
     [string]$Url,
     [string]$Username,
     [string]$Password,
-    [string]$RouterName
+    [string]$RouterName,
+    [string]$ExternalId
 )
 
 if (-not $ClearIdentitiesOk) {
@@ -26,13 +27,15 @@ if (Test-Path $envFile) {
     Write-Host "Add credentials to .env.ps1 to store Username/Password"
 }
 
+$startZiti = $true
 $prefix = "zitiquickstart"
 $zitiUser=""
 $zitiPwd=""
 $zitiCtrl="localhost:1280"
 $caName="my-third-party-ca"
-$startZiti = $true
 $routerIdentity = ""
+
+
 if (${Url}) {
     if(-not $RouterName) {
         Write-Host -ForegroundColor Red "RouterName not set! -RouterName required when using -Url"
@@ -65,6 +68,19 @@ if (-not ${zitiUser}) { $zitiUser="admin" }
 if (-not ${zitiPwd}) { $zitiPwd="admin" }
 
 if (${RouterName}) { $routerName = ${RouterName} }
+
+if(-not $ExternalId) {
+    Write-Host -ForegroundColor Yellow "ExternalId not set! using: testuser@test.com"
+} else {
+    Write-Host -ForegroundColor Blue "ExternalId set to: $ExternalId"
+}
+
+ziti edge login $zitiCtrl -u $ZITI_USER -p $ZITI_PASS -y
+
+if ($LASTEXITCODE -gt 0) {
+    Write-Host -ForegroundColor Red "Could not authenticate! Check username/password/url"
+    return
+}
 
 if($startZiti) {
     echo "starting reset"
@@ -131,6 +147,10 @@ if($startZiti) {
 
     ziti edge delete ca "$caName"
     ziti edge delete auth-policy yubi-mfa
+    
+    ziti edge delete identities where 'name contains \"ejs\"'
+    ziti edge delete ext-jwt-signer where 'name contains \"ejs\"'
+    ziti edge delete auth-policy where 'name contains \"ejs\"'
 }
 
 Write-Host -ForegroundColor Blue "TEMP DIR: ${ZitiHome}"
@@ -243,7 +263,7 @@ ziti edge create posture-check mfa $name --wake
 ziti edge update service-policy "$name.svc.0.ziti.dial" --posture-check-roles "@$name"
 
 
-# make a regular ol users, nothing special...
+# make a few regular ol users, nothing special...
 $name="normal-user-01"
 ziti edge create identity $name -o "$identityDir\$name.jwt"
 makeTestService $name "0"
@@ -256,6 +276,30 @@ $name="normal-user-03"
 ziti edge create identity $name -o "$identityDir\$name.jwt"
 makeTestService $name "0"
 
+$extJwtSignerRoot = "https://keycloak.clint.demo.openziti.org:8446/realms/zitirealm"
+$extJwtDiscoveryEndpoint = "$extJwtSignerRoot/.well-known/openid-configuration"
+$extJwtClaimsProp = "email"
+$extJwtAudience = "openziti-client"
+$extJwtClientId = "openziti-client"
+$extJwtAuthUrl = "https://keycloak.clint.demo.openziti.org:8446/realms/zitirealm"
+$extJwtScopes = "openid profile email"
+
+$extJwtSigner = curl -s $extJwtDiscoveryEndpoint `
+    | ConvertFrom-Json
+ziti edge create ext-jwt-signer ejs-zdew-test $extJwtSigner.issuer `
+    --jwks-endpoint $json.jwks_uri `
+    --audience $extJwtAudience `
+    --claims-property $extJwtClaimsProp `
+    --client-id $extJwtClientId `
+    --external-auth-url $extJwtAuthUrl `
+    --scopes $extJwtScopes
+
+ziti edge create auth-policy ejs-auth-policy-primary `
+    --primary-ext-jwt-allowed
+
+ziti edge create identity ejs-test-id --external-id $ExternalId
+
+# get the network jwt for use with ext-auth
 $network_jwt="${identityDir}\${hostname}_${port}.jwt"
 #$json = curl -sk "${Url}/edge/management/v1/network-jwts" #> 
 $json = curl -sk "${Url}/edge/management/v1/network-jwts"
