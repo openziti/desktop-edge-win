@@ -50,7 +50,6 @@ namespace ZitiDesktopEdge {
         public delegate void ShowBlurb(string message);
         public event ShowBlurb OnShowBlurb;
         public string menuState = "Main";
-        public string licenseData = "it's open source.";
         public string LogLevel = "";
         private string appVersion = null;
         public double MainHeight = 500;
@@ -92,8 +91,6 @@ namespace ZitiDesktopEdge {
             }
 
             appVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            LicensesItems.Text = licenseData;
-            // don't check from the UI any more... CheckUpdates();
         }
 
         private void HideMenu(object sender, MouseButtonEventArgs e) {
@@ -120,10 +117,6 @@ namespace ZitiDesktopEdge {
         }
         private void ShowIdentities(object sender, MouseButtonEventArgs e) {
             menuState = "Identities";
-            UpdateState();
-        }
-        private void ShowLicenses(object sender, MouseButtonEventArgs e) {
-            menuState = "Licenses";
             UpdateState();
         }
         private void ShowConfig(object sender, MouseButtonEventArgs e) {
@@ -196,7 +189,6 @@ namespace ZitiDesktopEdge {
             AboutItemsArea.Visibility = Visibility.Collapsed;
             BackArrow.Visibility = Visibility.Collapsed;
             AdvancedItems.Visibility = Visibility.Collapsed;
-            LicensesItems.Visibility = Visibility.Collapsed;
             LogsItems.Visibility = Visibility.Collapsed;
             ConfigItems.Visibility = Visibility.Collapsed;
             LogLevelItems.Visibility = Visibility.Collapsed;
@@ -226,10 +218,6 @@ namespace ZitiDesktopEdge {
             } else if (menuState == "Advanced") {
                 MenuTitle.Content = "Advanced Settings";
                 AdvancedItems.Visibility = Visibility.Visible;
-                BackArrow.Visibility = Visibility.Visible;
-            } else if (menuState == "Licenses") {
-                MenuTitle.Content = "THIRD PARTY LICENSES";
-                LicensesItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "Logs") {
                 MenuTitle.Content = "Advanced Settings";
@@ -304,8 +292,6 @@ namespace ZitiDesktopEdge {
         private void GoBack(object sender, MouseButtonEventArgs e) {
             if (menuState == "Config" || menuState == "LogLevel" || menuState == "UILogs" || menuState == "SetReleaseStream" || menuState == "ConfigureAutomaticUpgrades") {
                 menuState = "Advanced";
-            } else if (menuState == "Licenses") {
-                menuState = "About";
             } else {
                 menuState = "Menu";
             }

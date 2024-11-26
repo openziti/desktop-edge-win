@@ -173,10 +173,6 @@ namespace ZitiDesktopEdge {
             ToggleSwitch.Enabled = _identity.IsEnabled;
             MainArea.Opacity = 1.0;
 
-#if DEBUG
-            //Console.WriteLine($"Calculate Bubble for:{_identity.Name}. IsMFANeeded: {_identity.IsMFANeeded}, IsMFAEnabled: {_identity.IsMFAEnabled}");
-#endif
-
             Action hideMfa = () => {
                 PostureTimedOut.Visibility = Visibility.Collapsed;
                 MfaRequired.Visibility = Visibility.Collapsed;

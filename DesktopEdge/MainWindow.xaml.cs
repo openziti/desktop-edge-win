@@ -1575,7 +1575,7 @@ namespace ZitiDesktopEdge {
             IdentityMenu.MainHeight = MainView.ActualHeight;
             double defaultMiddle = 195;
             if (this.ActualWidth > 0) {
-                defaultMiddle = this.ActualWidth / 2;
+                defaultMiddle = this.ActualWidth / 2 - Arrow.ActualWidth / 2;
             }
 
             Rectangle trayRectangle = WinAPI.GetTrayRectangle();
