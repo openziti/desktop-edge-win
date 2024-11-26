@@ -32,7 +32,8 @@ $prefix = "zitiquickstart"
 $zitiUser=""
 $zitiPwd=""
 $zitiCtrl="localhost:1280"
-$caName="my-third-party-ca"
+$caAutoId="tpca-test-autoId"
+$caMappedId="tpca-test-mappedId"
 $routerIdentity = ""
 
 
@@ -75,7 +76,9 @@ if(-not $ExternalId) {
     Write-Host -ForegroundColor Blue "ExternalId set to: $ExternalId"
 }
 
-ziti edge login $zitiCtrl -u $ZITI_USER -p $ZITI_PASS -y
+$loginOutput = ziti edge login $zitiCtrl -u $ZITI_USER -p $ZITI_PASS -y
+$token = ($loginOutput | Select-String -Pattern "Token: (\S+)").Matches.Groups[1].Value
+
 
 if ($LASTEXITCODE -gt 0) {
     Write-Host -ForegroundColor Red "Could not authenticate! Check username/password/url"
@@ -114,23 +117,15 @@ if (-not ${ZitiHome}) {
         Write-Host "Nothing found to remove: ${ZitiHome}\db"
     }
     
-
-Write-Host "Press Enter to continue..."
-[void][System.Console]::ReadLine()
-    #echo "removing C:\Windows\System32\config\systemprofile\AppData\Roaming\NetFoundry\config*.json"
-    #Remove-Item "C:\Windows\System32\config\systemprofile\AppData\Roaming\NetFoundry\config*.json"
-   
-    #echo "removing ${env:APPDATA}\NetFoundry\*.json"
-    #Remove-Item "${env:APPDATA}\NetFoundry\*.json"
+    Write-Host -ForegroundColor Blue "TEMP DIR: ${ZitiHome}"
+    Write-Host "Press Enter to continue..."
+    [void][System.Console]::ReadLine()
 }
 
 mkdir ${ZitiHome} -Force > $NULL
 if($startZiti) {
     $logFile = "${ZitiHome}\quickstart.txt"
     Write-Host -ForegroundColor Blue "ZITI LOG FILE: $logFile"
-
-    #Start-Process cmd.exe '/c ziti edge quickstart > NUL"' -NoNewWindow
-    #Start-Process "ziti" "edge quickstart" -NoNewWindow -RedirectStandardError $logFile -RedirectStandardInput $logFile
     Start-Process "ziti" "edge quickstart --home ${ZitiHome}" -NoNewWindow *>&1 -RedirectStandardOutput $logFile
     $routerIdentity = "quickstart-router"
 } else {
@@ -145,15 +140,18 @@ if($startZiti) {
     ziti edge delete service-policy where 'name contains \"normal\"' limit none
     ziti edge delete config where 'name contains \"normal\"' limit none
 
-    ziti edge delete ca "$caName"
-    ziti edge delete auth-policy yubi-mfa
+    ziti edge delete auth-policy "cert-primary-totp-auth-policy"
     
     ziti edge delete identities where 'name contains \"ejs\"'
     ziti edge delete ext-jwt-signer where 'name contains \"ejs\"'
     ziti edge delete auth-policy where 'name contains \"ejs\"'
-}
 
-Write-Host -ForegroundColor Blue "TEMP DIR: ${ZitiHome}"
+    ziti edge delete identity where ('name contains \"' + $caAutoId + '\"')
+    ziti edge delete ca "$caAutoId"
+
+    ziti edge delete identity where ('name contains \"' + $caMappedId + '\"')
+    ziti edge delete ca "$caMappedId"
+}
 
 Write-Host "URL: $zitiCtrl"
 $uri = [System.Uri]::new($zitiCtrl)
@@ -161,49 +159,22 @@ $hostname = $uri.Host
 $port = $uri.Port
 
 $delay = 1 # Delay in seconds
-#Remove-Item "C:\temp\support\discourse\2790\pki" -Recurse -Force -ErrorAction SilentlyContinue
 mkdir $identityDir -ErrorAction SilentlyContinue > $NULL
 
 while ($true) {
     $socket = New-Object Net.Sockets.TcpClient
     try {
         $socket.Connect($hostname, $port)
-        Write-Output "Port $port on $hostname is online."
+        Write-Output "Controller at ${hostname}:${port} is online."
         $socket.Close()
         break
     } catch {
-        Write-Output "Port $port on $hostname is not online. Waiting..."
+        Write-Output "Waiting for ${hostname}:${port}..."
         Start-Sleep -Seconds $delay
     } finally {
         $socket.Dispose()
     }
 }
-
-ziti edge login $zitiCtrl -u $zitiUser -p $zitiPwd -y
-ziti pki create ca --pki-root "${zitiPkiRoot}" --ca-file "$caName"
-$rootCa=(Get-ChildItem -Path $zitiPkiRoot -Filter "$caName.cert" -Recurse).FullName
-"root ca path: $rootCa"
-
-ziti edge create ca "$caName" "$rootCa" --auth --ottca
-
-$verificationToken=((ziti edge list cas -j | ConvertFrom-Json).data | Where-Object { $_.name -eq $caName }[0]).verificationToken
-ziti pki create client --pki-root "${zitiPkiRoot}" --ca-name "$caName" --client-file "$verificationToken" --client-name "$verificationToken"
-
-$verificationCert=(Get-ChildItem -Path $zitiPkiRoot -Filter "$verificationToken.cert" -Recurse).FullName
-ziti edge verify ca $caName --cert $verificationCert
-"verification cert path: $verificationCert"
-
-$authPolicy=(ziti edge create auth-policy yubi-mfa --primary-cert-allowed --secondary-req-totp --primary-cert-expired-allowed)
-
-$count = 0
-$iterations = 3
-for ($i = 0; $i -lt $iterations; $i++) {
-    $id = "mfa-$count"
-    ziti edge create identity "$id" --auth-policy "$authPolicy" -o "$identityDir\$id.jwt"
-    $count++
-    echo "$id"
-}
-
 
 function makeTestService {
     param (
@@ -217,6 +188,20 @@ function makeTestService {
 	ziti edge create service "$svc" --configs "$svc.intercept.v1","$svc.host.v1"
 	ziti edge create service-policy "$svc.dial" Dial --identity-roles "@$user" --service-roles "@$svc"
 	ziti edge create service-policy "$svc.bind" Bind --identity-roles "@${routerName}" --service-roles "@$svc"
+}
+
+$authPolicy=(ziti edge create auth-policy "cert-primary-totp-auth-policy" `
+    --primary-cert-allowed `
+    --secondary-req-totp `
+    --primary-cert-expired-allowed)
+
+$count = 0
+$iterations = 3
+for ($i = 0; $i -lt $iterations; $i++) {
+    $id = "mfa-$count"
+    ziti edge create identity "$id" --auth-policy "$authPolicy" -o "$identityDir\$id.jwt"
+    $count++
+    echo "$id"
 }
 
 $param1Range = 0..2
@@ -301,9 +286,85 @@ ziti edge create identity ejs-test-id --external-id $ExternalId
 
 # get the network jwt for use with ext-auth
 $network_jwt="${identityDir}\${hostname}_${port}.jwt"
-#$json = curl -sk "${Url}/edge/management/v1/network-jwts" #> 
 $json = curl -sk "${Url}/edge/management/v1/network-jwts"
 Set-Content -Path $network_jwt -Value ($json | ConvertFrom-Json).data.token 
 
+
+
+ziti pki create ca --pki-root "${zitiPkiRoot}" --ca-file "$caAutoId"
+$rootCa=(Get-ChildItem -Path $zitiPkiRoot -Filter "$caAutoId.cert" -Recurse).FullName
+"root ca path: $rootCa"
+
+$CA_ID = ziti edge create ca "$caAutoId" "$rootCa" --auth --ottca --autoca
+
+$verificationToken=((ziti edge list cas ('name = \"' + $caAutoId + '\"') -j | ConvertFrom-Json).data | Where-Object { $_.name -eq $caAutoId }[0]).verificationToken
+ziti pki create client --pki-root "${zitiPkiRoot}" --ca-name "$caAutoId" --client-file "$verificationToken" --client-name "$verificationToken"
+
+$verificationCert=(Get-ChildItem -Path $zitiPkiRoot -Filter "$verificationToken.cert" -Recurse).FullName
+ziti edge verify ca $caAutoId --cert $verificationCert
+"verification cert path: $verificationCert"
+
+# using the ziti CLI - make a client cert for the verificationToken
+ziti pki create client --pki-root="${zitiPkiRoot}" --ca-name="${caAutoId}" --client-name="${caAutoId}-user1" --client-file="${caAutoId}-user1"
+ziti pki create client --pki-root="${zitiPkiRoot}" --ca-name="${caAutoId}" --client-name="${caAutoId}-user2" --client-file="${caAutoId}-user2"
+ziti pki create client --pki-root="${zitiPkiRoot}" --ca-name="${caAutoId}" --client-name="${caAutoId}-user3" --client-file="${caAutoId}-user3"
+
+curl -sk -X GET `
+    -H "Content-Type: text/plain" `
+    -H "zt-session: ${token}" `
+    "${Url}/edge/management/v1/cas/${CA_ID}/jwt" > "${identityDir}\${caAutoId}.jwt"
+
+
+
+
+
+
+ziti pki create ca --pki-root "${zitiPkiRoot}" --ca-file "$caMappedId"
+$rootCa=(Get-ChildItem -Path $zitiPkiRoot -Filter "$caMappedId.cert" -Recurse).FullName
+"root ca path: $rootCa"
+
+$CA_ID = ziti edge create ca "$caMappedId" "$rootCa" --auth --ottca
+
+$verificationToken=((ziti edge list cas ('name = \"' + $caMappedId + '\"') -j | ConvertFrom-Json).data | Where-Object { $_.name -eq $caMappedId }[0]).verificationToken
+ziti pki create client --pki-root "${zitiPkiRoot}" --ca-name "$caMappedId" --client-file "$verificationToken" --client-name "$verificationToken"
+
+$verificationCert=(Get-ChildItem -Path $zitiPkiRoot -Filter "$verificationToken.cert" -Recurse).FullName
+ziti edge verify ca $caMappedId --cert $verificationCert
+"verification cert path: $verificationCert"
+
+# using the ziti CLI - make a client cert for the verificationToken
+ziti pki create client --pki-root="${zitiPkiRoot}" --ca-name="${caMappedId}" --client-name="${caMappedId}-user1" --client-file="${caMappedId}-user1"
+ziti pki create client --pki-root="${zitiPkiRoot}" --ca-name="${caMappedId}" --client-name="${caMappedId}-user2" --client-file="${caMappedId}-user2"
+ziti pki create client --pki-root="${zitiPkiRoot}" --ca-name="${caMappedId}" --client-name="${caMappedId}-user3" --client-file="${caMappedId}-user3"
+
+$idName="${caMappedId}-user1"
+ziti edge create identity "${idName}" `
+    -o "${identityDir}\${idName}.jwt" `
+    --auth-policy "$authPolicy" `
+    --external-id "${idName}"
+    
+$idName="${caMappedId}-user2"
+ziti edge create identity "${idName}" `
+    -o "${identityDir}\${idName}.jwt" `
+    --auth-policy "$authPolicy" `
+    --external-id "${idName}"
+    
+$idName="${caMappedId}-user3"
+ziti edge create identity "${idName}" `
+    -o "${identityDir}\${idName}.jwt" `
+    --auth-policy "$authPolicy" `
+    --external-id "${idName}"
+
+
+curl -sk -X GET `
+    -H "Content-Type: text/plain" `
+    -H "zt-session: ${token}" `
+    "${Url}/edge/management/v1/cas/${CA_ID}/jwt" > "${identityDir}\${caMappedId}.jwt"
+
+
+
+
 Write-Host -ForegroundColor Blue "IDENTITIES AT: ${identityDir}"
 Write-Host -ForegroundColor Blue " - network-jwts at : ${identityDir}\${hostname}_${port}.jwt"
+Write-Host -ForegroundColor Blue " - CA JWT at       : ${identityDir}\${caAutoId}.jwt"
+Write-Host -ForegroundColor Blue " - CA JWT at       : ${identityDir}\${caMappedId}.jwt"

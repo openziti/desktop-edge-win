@@ -25,7 +25,7 @@ namespace ZitiDesktopEdge {
         private void BrowseCertificateFile_Click(object sender, RoutedEventArgs e) {
             OpenFileDialog openFileDialog = new OpenFileDialog {
                 Title = "Select Certificate File",
-                Filter = "Certificate Files (*.crt;*.pem)|*.crt;*.pem|All Files (*.*)|*.*"
+                Filter = "Certificate Files (*.crt;*.cert;*.pem)|*.crt;*.cert;*.pem|All Files (*.*)|*.*"
             };
 
             if (openFileDialog.ShowDialog() == true) {

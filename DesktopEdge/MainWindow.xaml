@@ -44,29 +44,6 @@
                 </Trigger>
             </ControlTemplate.Triggers>
         </ControlTemplate>
-        
-        <Style x:Key="CustomContextMenuStyle" TargetType="ContextMenu">
-            <Setter Property="Background" Value="#222" />
-            <Setter Property="BorderBrush" Value="#555" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Padding" Value="5" />
-            <Setter Property="FontFamily" Value="Segoe UI" />
-            <Setter Property="FontSize" Value="12" />
-        </Style>
-
-        <Style x:Key="CustomMenuItemStyle" TargetType="MenuItem">
-            <Setter Property="Background" Value="#333" />
-            <Setter Property="Foreground" Value="#FFF" />
-            <Setter Property="Padding" Value="5,5" />
-            <Setter Property="Margin" Value="0,2,0,2" />
-            <Setter Property="FontWeight" Value="Bold" />
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#555" />
-                    <Setter Property="Foreground" Value="#FFF" />
-                </Trigger>
-            </Style.Triggers>
-        </Style>
         <Style TargetType="Image">
             <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality" />
         </Style>
@@ -192,8 +169,15 @@
                     <Label Content="MENU" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" Margin="0,-14,0,0" FontSize="10"></Label>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,12">
-                    <Image Source="/Assets/Images/z.png" Height="40" RenderOptions.BitmapScalingMode="Fant" MouseDown="Window_MouseDown" Cursor="ScrollAll" ToolTip="MOUSELEFT+DRAG to Detach/Move | MOUSERIGHT to Reattach"></Image>
-                    <Label Content="Tap to Toggle Service" Margin="0,-3,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" FontSize="12" Foreground="White" HorizontalAlignment="Center"></Label>
+                    <Image Source="/Assets/Images/z.png" Height="40" RenderOptions.BitmapScalingMode="Fant" MouseUp="HandleAttach" MouseDown="Window_MouseDown" Cursor="ScrollAll" ToolTip="Drag to detach/move, right click to reattach"></Image>
+                    <Label x:Name="ConnetLabel"
+                           Content="{Binding ConnectLabelContent}"
+                           Margin="0,-3,0,0" 
+                           FontFamily="pack://application:,,,/Assets/Fonts/#Russo One" 
+                           FontSize="14" 
+                           Foreground="White" 
+                           HorizontalAlignment="Center"
+                           />
                 </StackPanel>
                 <StackPanel x:Name="AddIdAreaButton" Grid.Column="2" Cursor="Hand" Orientation="Vertical" Margin="14,16,14,14" MouseLeftButtonUp="ShowContextMenu">
                     <Image Source="/Assets/Images/identity.png" Margin="0,0,5,-4" Width="26" Height="26" HorizontalAlignment="Right">

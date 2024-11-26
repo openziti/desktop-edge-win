@@ -58,8 +58,6 @@
                     </Button>
                 </StackPanel>
                 <StackPanel Name="AboutItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
-                    <local:SubMenuItem HorizontalAlignment="Stretch" Width="Auto" Label="Privacy Policy" MouseUp="ShowPrivacy"></local:SubMenuItem>
-                    <local:SubMenuItem HorizontalAlignment="Stretch" Width="Auto" Label="Terms of Service" MouseUp="ShowTerms"></local:SubMenuItem>
                 </StackPanel>
                 <StackPanel Name="AdvancedItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <local:MenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/wrench.png" Width="Auto" Label="Tunnel Config" MouseUp="ShowConfig"></local:MenuItem>
