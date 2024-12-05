@@ -33,6 +33,8 @@ using Ziti.Desktop.Edge.Models;
 using System.Threading;
 using System.Threading.Tasks;
 using ZitiDesktopEdge.Utility;
+using System.ComponentModel;
+using Newtonsoft.Json.Linq;
 
 namespace ZitiDesktopEdge {
     /// <summary>
@@ -58,6 +60,21 @@ namespace ZitiDesktopEdge {
 
         public bool ShowUnexpectedFailure { get; set; }
 
+        private bool _useKeychain;
+        public bool UseKeychain {
+            get {
+                return _useKeychain;
+            }
+            set {
+                _useKeychain = value;
+                OnPropertyChanged(nameof(UseKeychain));
+            }
+        }
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged(string propertyName) {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
         public void ShowUpdateAvailable() {
             if (state.UpdateAvailable) {
                 ForceUpdate.Visibility = Visibility.Visible;
@@ -80,6 +97,9 @@ namespace ZitiDesktopEdge {
 
         public MainMenu() {
             InitializeComponent();
+            // Set the initial value of UseKeychain from settings
+            UseKeychain = ZitiDesktopEdge.Properties.Settings.Default.UseKeychain;
+            this.DataContext = this;
             Application.Current.MainWindow.Title = "Ziti Desktop Edge";
             state = (ZDEWViewState)Application.Current.Properties["ZDEWViewState"];
 
@@ -255,6 +275,7 @@ namespace ZitiDesktopEdge {
                 ConfigMtu.Value = Application.Current.Properties["mtu"]?.ToString();
                 ConfigDns.Value = Application.Current.Properties["dns"]?.ToString();
                 ConfigDnsEnabled.Value = Application.Current.Properties["dnsenabled"]?.ToString();
+                ConfigUseKeychain.Value = Properties.Settings.Default.UseKeychain.ToString();
             } else if (menuState == "Identities") {
                 MenuTitle.Content = "Identities";
                 IdListScrollView.Visibility = Visibility.Visible;
@@ -521,6 +542,10 @@ namespace ZitiDesktopEdge {
         /// Save the config information to the properties and queue for update.
         /// </summary>
         async private void UpdateConfig() {
+            Properties.Settings.Default.UseKeychain = _useKeychain;
+            Properties.Settings.Default.Save();
+            ConfigUseKeychain.Value = Properties.Settings.Default.UseKeychain.ToString();
+
             logger.Info("updating config...");
             DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
             try {

@@ -62,6 +62,7 @@ namespace ZitiDesktopEdge.Models {
         public string Fingerprint { get; set; }
         public string Identifier { get; set; }
         private bool isTimedOut = false;
+        public bool AuthInProgress { get; set; }
 
         public SemaphoreSlim Mutex { get; } = new SemaphoreSlim(1);
         public bool IsTimedOut {

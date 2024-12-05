@@ -751,7 +751,7 @@ namespace ZitiDesktopEdge {
 
         private void ServiceClient_OnCommunicationError(object sender, Exception e) {
             serviceClient.Reconnect();
-            string msg = "Communication Error with data client?";
+            string msg = "Operation Timed Out";
             ShowError(msg, e.Message);
         }
 
@@ -1504,7 +1504,7 @@ namespace ZitiDesktopEdge {
                         idItem.OnStatusChanged += Id_OnStatusChanged;
                         idItem.Identity = id;
                         idItem.IdentityChanged += IdItem_IdentityChanged;
-
+                        idItem.BlurbEvent += IdItem_BlurbEvent;
                         if (repaint) {
                             idItem.RefreshUI();
                         }
@@ -1530,6 +1530,12 @@ namespace ZitiDesktopEdge {
                 Placement();
                 SetNotifyIcon("");
             });
+        }
+
+        private async void IdItem_BlurbEvent(ZitiIdentity identity) {
+            if(identity.AuthInProgress) {
+                await ShowBlurbAsync("Authentication in progress", "Please check your browser");
+            }
         }
 
         private void IdItem_IdentityChanged(ZitiIdentity identity) {
@@ -1650,6 +1656,15 @@ namespace ZitiDesktopEdge {
 
         async private void AddId(EnrollIdentifierPayload payload) {
             try {
+#if DEBUG
+                Console.WriteLine("AddId.JwtContent\t: " + payload.JwtContent);
+                Console.WriteLine("AddId.JwtFileName\t: " + payload.JwtFileName);
+                Console.WriteLine("AddId.ControllerURL\t: " + payload.ControllerURL);
+                Console.WriteLine("AddId.Certificate\t: " + payload.Certificate);
+                Console.WriteLine("AddId.Key\t\t: " + payload.Key);
+                Console.WriteLine("AddId.Alias\t: " + payload.Alias);
+                Console.WriteLine("AddId.UseKeychain\t: " + payload.UseKeychain);
+#endif
                 Identity createdId = await serviceClient.AddIdentityAsync(payload);
 
                 if (createdId != null) {
@@ -1686,6 +1701,7 @@ namespace ZitiDesktopEdge {
                 ShowLoad("Adding Identity", "Please wait while the identity is added");
                 string fileContent = File.ReadAllText(jwtDialog.FileName);
                 EnrollIdentifierPayload payload = new EnrollIdentifierPayload();
+                payload.UseKeychain = Properties.Settings.Default.UseKeychain;
                 payload.JwtFileName = Path.GetFileName(jwtDialog.FileName);
                 payload.JwtContent = fileContent.Trim();
                 string[] jwtParts = fileContent?.Split('.');
@@ -1962,12 +1978,6 @@ namespace ZitiDesktopEdge {
 
         void OnAddIdentityAction(EnrollIdentifierPayload payload, UserControl toClose) {
             CloseJoinByUrl(false, toClose);
-            logger.Info(payload.JwtContent);
-            logger.Info(payload.JwtFileName);
-            logger.Info(payload.ControllerURL);
-            logger.Info(payload.Certificate);
-            logger.Info(payload.Key);
-            logger.Info(payload.Alias);
             AddId(payload);
         }
 

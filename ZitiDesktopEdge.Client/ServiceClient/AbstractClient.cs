@@ -236,8 +236,11 @@ namespace ZitiDesktopEdge.ServiceClient {
             Logger.Trace(msg);
 #endif
         }
-
+#if DEBUG
+        TimeSpan timeout = TimeSpan.FromSeconds(10);
+#else
         TimeSpan timeout = TimeSpan.FromSeconds(3);
+#endif
         async protected Task<T> readAsync<T>(string source, StreamReader reader) where T : SvcResponse {
             var cts = new CancellationTokenSource(timeout);
             try {
@@ -252,7 +255,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
                 // If the timeout task is the one that completed, throw a TimeoutException
                 if (completedTask == timeoutTask) {
-                    throw new TimeoutException("Read operation timed out waiting for a response. If the data service is running, this is highly unepxected and should be reported.");
+                    throw new TimeoutException("Read operation timed out waiting for a response. If the " + Id + " service is running, this is highly unepxected and should be reported.");
                 }
 
                 // Otherwise, await the read operation to get the result

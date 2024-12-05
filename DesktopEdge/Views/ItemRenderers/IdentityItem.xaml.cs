@@ -41,6 +41,8 @@ namespace ZitiDesktopEdge {
         public event OnAuthenticate AuthenticateTOTP;
         public delegate void OnIdentityChanged(ZitiIdentity identity);
         public event OnIdentityChanged IdentityChanged;
+        public delegate void OnBlurb(ZitiIdentity identity);
+        public event OnBlurb BlurbEvent;
 
         public Action<string, string> ShowError; 
         private System.Windows.Forms.Timer _timer;
@@ -409,22 +411,29 @@ namespace ZitiDesktopEdge {
             try {
                 DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
                 if (_identity?.ExtAuthProviders?.Count > 0) {
-                    ExternalAuthLoginResponse resp = await client.ExternalAuthLogin(_identity.Identifier, _identity.ExtAuthProviders[0]);
-                    if (resp?.Error == null) {
-                        if (resp?.Data?.url != null) {
-                            Console.WriteLine(resp.Data?.url);
-                            Process.Start(resp.Data.url);
-                        } else {
-                            Console.WriteLine("The response contained no url???");
-                        }
+                    if (_identity.AuthInProgress) {
+                        BlurbEvent?.Invoke(_identity);
                     } else {
-                        ShowError("Failed to Authenticate", resp.Error);
+                        _identity.AuthInProgress = true;
+                        ExternalAuthLoginResponse resp = await client.ExternalAuthLogin(_identity.Identifier, _identity.ExtAuthProviders[0]);
+                        if (resp?.Error == null) {
+                            if (resp?.Data?.url != null) {
+                                Console.WriteLine(resp.Data?.url);
+                                Process.Start(resp.Data.url);
+                            } else {
+                                Console.WriteLine("The response contained no url???");
+                            }
+                        } else {
+                            ShowError("Failed to Authenticate", resp.Error);
+                            _identity.AuthInProgress = false;
+                        }
                     }
                 } else {
                     ShowError("Failed to Authenticate", "No external providers found! This is a configuration error. Inform your network administrator.");
                 }
             } catch (Exception ex) {
                 logger.Error("unexpected error!", ex);
+                _identity.AuthInProgress = false;
             }
         }
     }
