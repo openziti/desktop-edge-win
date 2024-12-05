@@ -698,7 +698,7 @@ namespace ZitiDesktopEdge {
             app.ReceiveString += App_ReceiveString;
 
             // add a new service client
-            serviceClient = new DataClient("ui");
+            serviceClient = new DataClient("data");
             serviceClient.OnClientConnected += ServiceClient_OnClientConnected;
             serviceClient.OnClientDisconnected += ServiceClient_OnClientDisconnected;
             serviceClient.OnIdentityEvent += ServiceClient_OnIdentityEvent;
@@ -710,9 +710,10 @@ namespace ZitiDesktopEdge {
             serviceClient.OnBulkServiceEvent += ServiceClient_OnBulkServiceEvent;
             serviceClient.OnNotificationEvent += ServiceClient_OnNotificationEvent;
             serviceClient.OnControllerEvent += ServiceClient_OnControllerEvent;
+            serviceClient.OnCommunicationError += ServiceClient_OnCommunicationError;
             Application.Current.Properties.Add("ServiceClient", serviceClient);
 
-            monitorClient = new MonitorClient("ui");
+            monitorClient = new MonitorClient("monitor");
             monitorClient.OnClientConnected += MonitorClient_OnClientConnected;
             monitorClient.OnNotificationEvent += MonitorClient_OnInstallationNotificationEvent;
             monitorClient.OnServiceStatusEvent += MonitorClient_OnServiceStatusEvent;
@@ -746,6 +747,12 @@ namespace ZitiDesktopEdge {
 
             IdentityMenu.OnForgot += IdentityForgotten;
             Placement();
+        }
+
+        private void ServiceClient_OnCommunicationError(object sender, Exception e) {
+            serviceClient.Reconnect();
+            string msg = "Communication Error with data client?";
+            ShowError(msg, e.Message);
         }
 
         private void MonitorClient_OnCommunicationError(object sender, Exception e) {
@@ -1792,7 +1799,7 @@ namespace ZitiDesktopEdge {
 
         public void ShowError(string title, string message) {
             this.Dispatcher.Invoke(() => {
-                ErrorTitle.Content = title;
+                ErrorTitle.Text = title;
                 ErrorDetails.Text = message;
                 ErrorView.Visibility = Visibility.Visible;
             });

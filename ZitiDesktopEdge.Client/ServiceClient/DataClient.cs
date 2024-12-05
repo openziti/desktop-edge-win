@@ -147,7 +147,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         async public Task<ZitiTunnelStatus> GetStatusAsync() {
             await sendAsync(new ServiceFunction() { Command = "Status" });
-            var rtn = await readAsync<ZitiTunnelStatus>(ipcReader);
+            var rtn = await readAsync<ZitiTunnelStatus>(Id, ipcReader);
             return rtn;
         }
 
@@ -160,7 +160,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 };
 
                 await sendAsync(enrollIdentifierFunction);
-                resp = await readAsync<IdentityResponse>(ipcReader);
+                resp = await readAsync<IdentityResponse>(Id, ipcReader);
             } catch (Exception ex) {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //setupPipe();
@@ -190,7 +190,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 };
                 Logger.Info("Removing Identity with identifier {0}", identifier);
                 await sendAsync(removeFunction);
-                var r = await readAsync<SvcResponse>(ipcReader);
+                var r = await readAsync<SvcResponse>(Id, ipcReader);
             } catch (Exception ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
                 //setupPipe();
@@ -204,7 +204,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task SetLogLevelAsync(string level) {
             try {
                 await sendAsync(new SetLogLevelFunction(level));
-                SvcResponse resp = await readAsync<SvcResponse>(ipcReader);
+                SvcResponse resp = await readAsync<SvcResponse>(Id, ipcReader);
                 return;
             } catch (Exception ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
@@ -219,7 +219,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task<Identity> IdentityOnOffAsync(string identifier, bool onOff) {
             try {
                 await sendAsync(new IdentityToggleFunction(identifier, onOff));
-                IdentityResponse idr = await readAsync<IdentityResponse>(ipcReader);
+                IdentityResponse idr = await readAsync<IdentityResponse>(Id, ipcReader);
                 return idr.Data;
             } catch (Exception ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
@@ -234,7 +234,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task<SvcResponse> EnableMFA(string identifier) {
             try {
                 await sendAsync(new EnableMFAFunction(identifier));
-                SvcResponse mfa = await readAsync<SvcResponse>(ipcReader);
+                SvcResponse mfa = await readAsync<SvcResponse>(Id, ipcReader);
                 return mfa;
             } catch (Exception ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
@@ -248,7 +248,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task<SvcResponse> VerifyMFA(string identifier, string totp) {
             try {
                 await sendAsync(new VerifyMFAFunction(identifier, totp));
-                SvcResponse mfa = await readAsync<SvcResponse>(ipcReader);
+                SvcResponse mfa = await readAsync<SvcResponse>(Id, ipcReader);
                 return mfa;
             } catch (Exception ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
@@ -262,7 +262,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task<SvcResponse> AuthMFA(string identifier, string totp) {
             try {
                 await sendAsync(new AuthMFAFunction(identifier, totp));
-                SvcResponse mfa = await readAsync<SvcResponse>(ipcReader);
+                SvcResponse mfa = await readAsync<SvcResponse>(Id, ipcReader);
                 return mfa;
             } catch (Exception ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
@@ -276,7 +276,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task<MfaRecoveryCodesResponse> GetMFACodes(string identifier, string totpOrRecoveryCode) {
             try {
                 await sendAsync(new GetMFACodesFunction(identifier, totpOrRecoveryCode));
-                MfaRecoveryCodesResponse mfa = await readAsync<MfaRecoveryCodesResponse>(ipcReader);
+                MfaRecoveryCodesResponse mfa = await readAsync<MfaRecoveryCodesResponse>(Id, ipcReader);
                 return mfa;
             } catch (Exception ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
@@ -290,7 +290,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task<MfaRecoveryCodesResponse> GenerateMFACodes(string identifier, string totpOrRecoveryCode) {
             try {
                 await sendAsync(new GenerateMFACodesFunction(identifier, totpOrRecoveryCode));
-                MfaRecoveryCodesResponse mfa = await readAsync<MfaRecoveryCodesResponse>(ipcReader);
+                MfaRecoveryCodesResponse mfa = await readAsync<MfaRecoveryCodesResponse>(Id, ipcReader);
                 return mfa;
             } catch (Exception ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
@@ -303,7 +303,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task<SvcResponse> RemoveMFA(string identifier, string totp) {
             try {
                 await sendAsync(new RemoveMFAFunction(identifier, totp));
-                SvcResponse mfa = await readAsync<SvcResponse>(ipcReader);
+                SvcResponse mfa = await readAsync<SvcResponse>(Id, ipcReader);
                 return mfa;
             } catch (Exception ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
@@ -317,7 +317,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task<ExternalAuthLoginResponse> ExternalAuthLogin(string identifier, string provider) {
             try {
                 await sendAsync(new ExternalAuthLogin(identifier, provider));
-                ExternalAuthLoginResponse extAuthResp = await readAsync<ExternalAuthLoginResponse>(ipcReader);
+                ExternalAuthLoginResponse extAuthResp = await readAsync<ExternalAuthLoginResponse>(Id, ipcReader);
                 return extAuthResp;
             } catch (Exception ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
@@ -420,7 +420,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task zitiDump(string dumpPath) {
             try {
                 await sendAsync(new ZitiDumpFunction(dumpPath));
-                var rtn = await readAsync<SvcResponse>(ipcReader);
+                var rtn = await readAsync<SvcResponse>(Id, ipcReader);
                 return; // rtn;
             } catch (Exception ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
@@ -438,7 +438,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 ConfigUpdateFunction configPayload = new ConfigUpdateFunction(tunIPv4, tunIPv4Mask, addDns, apiPageSize);
 
                 await sendAsync(configPayload);
-                resp = await readAsync<SvcResponse>(ipcReader);
+                resp = await readAsync<SvcResponse>(Id, ipcReader);
                 Logger.Debug("config update payload is sent to the ziti tunnel");
             } catch (Exception ex) {
                 //almost certainly a problem with the pipe - recreate the pipe...
@@ -462,7 +462,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 NotificationFrequencyFunction frequencyPayload = new NotificationFrequencyFunction(frequency);
 
                 await sendAsync(frequencyPayload);
-                resp = await readAsync<SvcResponse>(ipcReader);
+                resp = await readAsync<SvcResponse>(Id, ipcReader);
                 Logger.Debug("frequency update payload is sent to the ziti tunnel");
             } catch (Exception ex) {
                 //almost certainly a problem with the pipe - recreate the pipe...
@@ -483,7 +483,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task<ZitiTunnelStatus> debugAsync() {
             try {
                 await sendAsync(new ServiceFunction() { Command = "Debug" });
-                var rtn = await readAsync<ZitiTunnelStatus>(ipcReader);
+                var rtn = await readAsync<ZitiTunnelStatus>(Id, ipcReader);
                 return rtn;
             } catch (Exception ioe) {
                 //almost certainly a problem with the pipe - recreate the pipe...
