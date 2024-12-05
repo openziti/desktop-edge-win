@@ -26,6 +26,7 @@ using ZitiDesktopEdge.DataStructures;
 using System.Diagnostics;
 using System.Web.UI;
 using System.Drawing;
+using System.Diagnostics.Eventing.Reader;
 
 namespace ZitiDesktopEdge {
     /// <summary>
@@ -37,7 +38,7 @@ namespace ZitiDesktopEdge {
         public delegate void StatusChanged(bool attached);
         public event StatusChanged OnStatusChanged;
         public delegate void OnAuthenticate(ZitiIdentity identity);
-        public event OnAuthenticate Authenticate;
+        public event OnAuthenticate AuthenticateTOTP;
         public delegate void OnIdentityChanged(ZitiIdentity identity);
         public event OnIdentityChanged IdentityChanged;
 
@@ -231,6 +232,8 @@ namespace ZitiDesktopEdge {
                     }
                 }
                 if (_identity.NeedsExtAuth) {
+                    ServiceCountAreaLabel.Content = "authorize idp";
+                    MainArea.Opacity = 0.6;
                     hideMfa();
                     ServiceCountArea.Visibility = Visibility.Collapsed; //hide bubbles
                     ExtAuthRequired.Visibility = Visibility.Visible;
@@ -239,6 +242,7 @@ namespace ZitiDesktopEdge {
                 if (_identity.IsMFAEnabled) {
                     ServiceCount.Content = "MFA";
                     ServiceCountAreaLabel.Content = "id disabled";
+                    MainArea.Opacity = 0.6;
                     showMfa();
                 } else {
                     if (_identity.IsMFANeeded) {
@@ -249,6 +253,7 @@ namespace ZitiDesktopEdge {
                     } else {
                         ServiceCount.Content = "-";
                         ServiceCountAreaLabel.Content = "id disabled";
+                        MainArea.Opacity = 0.6;
                         showBubbles();
                         ServiceCountBorder.Background = DisabledBrush;
                     }
@@ -380,7 +385,7 @@ namespace ZitiDesktopEdge {
 
         private void MFAAuthenticate(object sender, MouseButtonEventArgs e) {
             if (Identity.IsEnabled) {
-                this.Authenticate?.Invoke(_identity);
+                this.AuthenticateTOTP?.Invoke(_identity);
             }
         }
 
@@ -403,16 +408,20 @@ namespace ZitiDesktopEdge {
         async private void CompleteExtAuth(object sender, MouseButtonEventArgs e) {
             try {
                 DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-                ExternalAuthLoginResponse resp = await client.ExternalAuthLogin(_identity.Identifier, _identity.ExtAuthProviders[0]);
-                if (resp?.Error == null) {
-                    if (resp?.Data?.url != null) {
-                        Console.WriteLine(resp.Data?.url);
-                        Process.Start(resp.Data.url);
+                if (_identity?.ExtAuthProviders?.Count > 0) {
+                    ExternalAuthLoginResponse resp = await client.ExternalAuthLogin(_identity.Identifier, _identity.ExtAuthProviders[0]);
+                    if (resp?.Error == null) {
+                        if (resp?.Data?.url != null) {
+                            Console.WriteLine(resp.Data?.url);
+                            Process.Start(resp.Data.url);
+                        } else {
+                            Console.WriteLine("The response contained no url???");
+                        }
                     } else {
-                        Console.WriteLine("The response contained no url???");
+                        ShowError("Failed to Authenticate", resp.Error);
                     }
                 } else {
-                    ShowError("Failed to Authenticate", resp.Error);
+                    ShowError("Failed to Authenticate", "No external providers found! This is a configuration error. Inform your network administrator.");
                 }
             } catch (Exception ex) {
                 logger.Error("unexpected error!", ex);

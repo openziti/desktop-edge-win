@@ -1,5 +1,6 @@
+//#define DEBUG_DUMP
 /*
-	Copyright NetFoundry Inc.
+Copyright NetFoundry Inc.
 
 	Licensed under the Apache License, Version 2.0 (the "License");
 	you may not use this file except in compliance with the License.
@@ -493,6 +494,7 @@ namespace ZitiDesktopEdge {
             notifyIcon.ContextMenu = this.contextMenu;
 
             IdentityMenu.OnDetach += HandleDetached;
+            IdentityMenu.OnAttach += HandleAttach;
             MainMenu.OnDetach += HandleDetached;
 
             this.MainMenu.MainWindow = this;
@@ -1307,10 +1309,9 @@ namespace ZitiDesktopEdge {
             logger.Debug($"==== TunnelStatusEvent: ");
             Application.Current.Properties.Remove("CurrentTunnelStatus");
             Application.Current.Properties.Add("CurrentTunnelStatus", e.Status);
-#if DEBUG
-            //e.Status.Dump(Console.Out);
+#if DEBUG && DEBUG_DUMP
+            e.Status.Dump(Console.Out);
 #endif
-			e.Status.Dump(Console.Out);
             this.Dispatcher.Invoke(() => {
                 /*if (e.ApiVersion != DataClient.EXPECTED_API_VERSION) {
 					SetCantDisplay("Version mismatch!", "The version of the Service is not compatible", Visibility.Visible);
@@ -1492,7 +1493,7 @@ namespace ZitiDesktopEdge {
                         if (id.IsEnabled) idItem.ToggleStatus.Content = "ENABLED";
                         else idItem.ToggleStatus.Content = "DISABLED";
 
-                        idItem.Authenticate += IdItem_Authenticate;
+                        idItem.AuthenticateTOTP += IdItem_Authenticate;
                         idItem.OnStatusChanged += Id_OnStatusChanged;
                         idItem.Identity = id;
                         idItem.IdentityChanged += IdItem_IdentityChanged;
@@ -1961,6 +1962,29 @@ namespace ZitiDesktopEdge {
             logger.Info(payload.Key);
             logger.Info(payload.Alias);
             AddId(payload);
+        }
+
+        private async void IdItem_ExternalAuthEvent(ZitiIdentity identity) {            
+            try {
+                DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+                if (identity?.ExtAuthProviders?.Count > 0) {
+                    ExternalAuthLoginResponse resp = await serviceClient.ExternalAuthLogin(identity.Identifier, identity.ExtAuthProviders[0]);
+                    if (resp?.Error == null) {
+                        if (resp?.Data?.url != null) {
+                            Console.WriteLine(resp.Data?.url);
+                            Process.Start(resp.Data.url);
+                        } else {
+                            Console.WriteLine("The response contained no url???");
+                        }
+                    } else {
+                        ShowError("Failed to Authenticate", resp.Error);
+                    }
+                } else {
+                    ShowError("Failed to Authenticate", "No external providers found! This is a configuration error. Inform your network administrator.");
+                }
+            } catch (Exception ex) {
+                logger.Error("unexpected error!", ex);
+            }
         }
     }
 

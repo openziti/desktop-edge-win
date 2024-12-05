@@ -47,10 +47,14 @@ namespace ZitiDesktopEdge {
         public event MFAToggled OnMFAToggled;
         public delegate void Detched(MouseButtonEventArgs e);
         public event Detched OnDetach;
+        public delegate void Attach(object sender, MouseButtonEventArgs e);
+        public event Attach OnAttach;
         public delegate void Mesage(string message);
         public event Mesage OnMessage;
         public delegate void OnAuthenticate(ZitiIdentity identity);
-        public event OnAuthenticate Authenticate;
+        public event OnAuthenticate AuthenticateTOTP;
+        public delegate void CompleteExternalAuth(ZitiIdentity identity);
+        public event CompleteExternalAuth IdentityDetails_ExternalAuthEvent;
         public delegate void OnRecovery(ZitiIdentity identity);
         public event OnRecovery Recovery;
         public delegate void LoadingEvent(bool isComplete);
@@ -142,6 +146,17 @@ namespace ZitiDesktopEdge {
             }
         }
 
+        private void ExternalAuthNeeded() {
+            if (_identity.Services.Count > 0) {
+                MainDetailScroll.Visibility = Visibility.Visible;
+            } else {
+                AuthMessageBg.Visibility = Visibility.Visible;
+                AuthMessageLabel.Visibility = Visibility.Visible;
+                NoAuthServices.Visibility = Visibility.Visible;
+                NoAuthServices.Text = "You must authenticate to access services";
+            }
+        }
+
         private void MFAEnabledAndNotNeeded() {
             MainDetailScroll.Visibility = Visibility.Visible;
             IdentityMFA.AuthOn.Visibility = Visibility.Visible;
@@ -190,22 +205,18 @@ namespace ZitiDesktopEdge {
             IdName.ToolTip = _identity.Name;
             IdName.Value = _identity.Name;
 
-            if (_identity.IsMFAEnabled) {
-                if (_identity.IsMFANeeded) {
+            if (_identity.IsMFANeeded) {
+                if (_identity.IsMFAEnabled) {
                     // enabled and needed = needs to be authorized. show the lock icon and tell the user to auth
                     MFAEnabledAndNeeded();
                 } else {
                     // enabled and not needed = authorized. show the services should be enabled and authorized
-                    MFAEnabledAndNotNeeded();
-                }
-            } else {
-                if (_identity.IsMFANeeded) {
-                    // not enabled and needed = show the user the MFA disabled so they can enable it
                     MFANotEnabledAndNeeded();
-                } else {
-                    // normal case. means no lock icon needs to be shown
-                    MFANotEnabledAndNotNeeded();
                 }
+            } else if (_identity.NeedsExtAuth) {
+                ExternalAuthNeeded();
+            } else {
+                MFANotEnabledAndNotNeeded();
             }
 
             //change icon to timed out if it's timed out
@@ -421,11 +432,15 @@ namespace ZitiDesktopEdge {
         }
 
         private void MFAAuthenticate() {
-            this.Authenticate.Invoke(this.Identity);
+            this.AuthenticateTOTP.Invoke(this.Identity);
         }
 
         private void AuthFromMessage(object sender, MouseButtonEventArgs e) {
-            this.Authenticate.Invoke(this.Identity);
+            if (_identity.IsMFANeeded) {
+                this.AuthenticateTOTP.Invoke(this.Identity);
+            } else if (_identity.NeedsExtAuth) {
+                this.IdentityDetails_ExternalAuthEvent.Invoke(this.Identity);
+            }
         }
 
         public static DependencyObject GetScrollViewer(DependencyObject o) {
@@ -440,6 +455,10 @@ namespace ZitiDesktopEdge {
                 }
             }
             return null;
+        }
+
+        private void HandleAttach(object sender, MouseButtonEventArgs e) {
+            OnAttach(sender, e);
         }
 
         private void Scrolled(object sender, ScrollChangedEventArgs e) {

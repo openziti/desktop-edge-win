@@ -49,7 +49,7 @@
             <Label Content="Controller URL" Foreground="White" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"/>
             <Label Content="Enter the controller URL" Foreground="White" Opacity="0.7" FontSize="12" HorizontalAlignment="Center"/>
             <TextBox x:Name="ControllerURL" 
-                             Text="https://ctrl.clint.demo.openziti.org:8441" 
+                             Text="https://controller.url" 
                              Focusable="True"
                              FontSize="14" 
                              TextAlignment="Center" 

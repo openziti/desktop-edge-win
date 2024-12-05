@@ -226,9 +226,9 @@ namespace ZitiDesktopEdge.ServiceClient {
 #if DEBUG
 #if DEBUG_METRICS_MESSAGES
             // see the top of the file for where you can enable this
-            Logger.Warn(msg);
+            Logger.Warn("{}-{}: {}", direction, Id, msg);
 #else
-            if (!msg.Contains("\"metrics\"")) {
+            if (false == msg?.Contains("\"metrics\"")) {
                 Logger.Warn("{}-{}: {}", direction, Id, msg);
             }
 #endif

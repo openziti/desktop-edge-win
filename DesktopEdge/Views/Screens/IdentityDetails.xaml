@@ -35,18 +35,21 @@
                     </Grid.ColumnDefinitions>
                     <Image x:Name="IsConnected" Grid.Column="0" Visibility="Visible" Source="/Assets/Images/online.png" Height="25" HorizontalAlignment="Right" />
                     <Image x:Name="IsDisconnected" Grid.Column="0" Visibility="Collapsed" Source="/Assets/Images/offline.png" Height="25" HorizontalAlignment="Right" />
-                    <Label x:Name="IdDetailName"
-                           Content="Identity Detail"
-                           MouseDown="Window_MouseDown"
-                           Cursor="ScrollAll"
-                           MaxWidth="220"
-                           Grid.Column="1"
-                           HorizontalAlignment="Center"
-                           FontSize="14"
-                           ToolTip="MOUSELEFT+DRAG to Detach/Move | MOUSERIGHT to Reattach"
-                           FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"
-                           Foreground="#0F0F23"
-                           VerticalAlignment="Center"
+                    <TextBlock x:Name="IdDetailName"
+                               MouseDown="Window_MouseDown"
+                               MouseUp="HandleAttach"
+                               Text="Identity Detail"
+                               MaxWidth="220"
+                               Grid.Column="1"
+                               Cursor="ScrollAll"
+                               TextTrimming="CharacterEllipsis"
+                               HorizontalAlignment="Center"
+                               FontSize="14"
+                               FontWeight="Bold"
+                               FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"
+                               Foreground="#0F0F23"
+                               VerticalAlignment="Center"
+                               TextWrapping="NoWrap"
                     />
                     <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/x.png" Width="20" Height="20" Margin="0,0,0,0" HorizontalAlignment="Left" MouseUp="HideMenu"></Image>
                 </Grid>

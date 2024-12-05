@@ -8,6 +8,17 @@ param (
     [string]$ExternalId
 )
 
+function cleanService {
+    param (
+        [string]$svcName
+    )
+    ziti edge delete identities where ('name contains \"'+${svcName}+'\" limit none')
+    ziti edge delete service where ('name contains \"'+${svcName}+'\" limit none')
+    ziti edge delete service-policy where ('name contains \"'+${svcName}+'\" limit none')
+    ziti edge delete config where ('name contains \"'+${svcName}+'\" limit none')
+    ziti edge delete posture-check where ('name contains \"'+${svcName}+'\" limit none')
+}
+
 if (-not $ClearIdentitiesOk) {
     Write-Host -ForegroundColor Red "CLEAR_IDENTITIES_OK parameter not  set."
     Write-Host -ForegroundColor Red "  you MUST pass -ClearIdentitiesOk when running this script or it won't run."
@@ -35,7 +46,8 @@ $zitiCtrl="localhost:1280"
 $caAutoId="tpca-test-autoId"
 $caMappedId="tpca-test-mappedId"
 $routerIdentity = ""
-
+$autoCa="auto-ca"
+$mappedCa="mapped-ca"
 
 if (${Url}) {
     if(-not $RouterName) {
@@ -118,7 +130,7 @@ if (-not ${ZitiHome}) {
     }
     
     Write-Host -ForegroundColor Blue "TEMP DIR: ${ZitiHome}"
-    Write-Host "Press Enter to continue..."
+    Write-Host "Ready to proceed? Press Enter to continue..."
     [void][System.Console]::ReadLine()
 }
 
@@ -129,28 +141,34 @@ if($startZiti) {
     Start-Process "ziti" "edge quickstart --home ${ZitiHome}" -NoNewWindow *>&1 -RedirectStandardOutput $logFile
     $routerIdentity = "quickstart-router"
 } else {
-    ziti edge delete identities where 'name contains \"mfa\"' limit none
-    ziti edge delete service where 'name contains \"mfa\"' limit none
-    ziti edge delete service-policy where 'name contains \"mfa\"' limit none
-    ziti edge delete config where 'name contains \"mfa\"' limit none
-    ziti edge delete posture-check where 'name contains \"mfa\"' limit none
+    # ziti edge delete identities where 'name contains \"mfa\"' limit none
+    # ziti edge delete service where 'name contains \"mfa\"' limit none
+    # ziti edge delete service-policy where 'name contains \"mfa\"' limit none
+    # ziti edge delete config where 'name contains \"mfa\"' limit none
+    # ziti edge delete posture-check where 'name contains \"mfa\"' limit none
+    cleanService "mfa"
 
-    ziti edge delete identities where 'name contains \"normal\"' limit none
-    ziti edge delete service where 'name contains \"normal\"' limit none
-    ziti edge delete service-policy where 'name contains \"normal\"' limit none
-    ziti edge delete config where 'name contains \"normal\"' limit none
-
-    ziti edge delete auth-policy "cert-primary-totp-auth-policy"
+    # ziti edge delete identities where 'name contains \"normal\"' limit none
+    # ziti edge delete service where 'name contains \"normal\"' limit none
+    # ziti edge delete service-policy where 'name contains \"normal\"' limit none
+    # ziti edge delete config where 'name contains \"normal\"' limit none
+    cleanService "normal"
+    cleanService "${autoCa}"
     
     ziti edge delete identities where 'name contains \"ejs\"'
     ziti edge delete ext-jwt-signer where 'name contains \"ejs\"'
-    ziti edge delete auth-policy where 'name contains \"ejs\"'
 
     ziti edge delete identity where ('name contains \"' + $caAutoId + '\"')
     ziti edge delete ca "$caAutoId"
 
     ziti edge delete identity where ('name contains \"' + $caMappedId + '\"')
     ziti edge delete ca "$caMappedId"
+
+    ziti edge delete auth-policy "cert-primary-totp-auth-policy"
+    ziti edge delete auth-policy where 'name contains \"ejs\"'
+
+    Write-Host "Delete complete. Press Enter to continue..."
+    [void][System.Console]::ReadLine()
 }
 
 Write-Host "URL: $zitiCtrl"
@@ -176,24 +194,38 @@ while ($true) {
     }
 }
 
+function routerOffloadPolicy {
+    param (
+        [string]$router
+    )
+    ziti edge delete service-policy "${router}.offload"
+	ziti edge create service-policy "${router}.offload" Bind --identity-roles "@${router}" --service-roles "#router-offloaded"
+}
+
 function makeTestService {
     param (
         [string]$user,
-        [string]$ordinal
+        [string]$ordinal,
+        [string[]]$attrs = @()
     )
-	$svc = "$user.svc.$ordinal.ziti"
-    Write-host "Creating test service: $svc for user: $user"
-	ziti edge create config "$svc.intercept.v1" intercept.v1 "{\""protocols\"":[\""tcp\""],\""addresses\"":[\""$svc\""], \""portRanges\"":[{\""low\"":80, \""high\"":443}]}"
-    ziti edge create config "$svc.host.v1" host.v1 "{\""protocol\"":\""tcp\"", \""address\"":\""localhost\"",\""port\"":$port }"
-	ziti edge create service "$svc" --configs "$svc.intercept.v1","$svc.host.v1"
-	ziti edge create service-policy "$svc.dial" Dial --identity-roles "@$user" --service-roles "@$svc"
-	ziti edge create service-policy "$svc.bind" Bind --identity-roles "@${routerName}" --service-roles "@$svc"
+	$svc = "${user}.svc.${ordinal}.ziti"
+    Write-host "Creating test service: ${svc} for user: ${user}"
+    $allAttrs = @("router-offloaded") + $attrs
+    $attrString = ($allAttrs | ForEach-Object { "`"$_`"" }) -join ","
+
+	ziti edge create config "${svc}.intercept.v1" intercept.v1 "{\""protocols\"":[\""tcp\""],\""addresses\"":[\""${svc}\""], \""portRanges\"":[{\""low\"":80, \""high\"":443}]}"
+    ziti edge create config "${svc}.host.v1" host.v1 "{\""protocol\"":\""tcp\"", \""address\"":\""localhost\"",\""port\"":${port} }"
+    ziti edge create service "${svc}" --configs "${svc}.intercept.v1","${svc}.host.v1" --role-attributes "${attrString}"
+	ziti edge create service-policy "${svc}.dial" Dial --identity-roles "@${user}" --service-roles "@${svc}"
+	# replaced withrouterOffloadPolicy: ziti edge create service-policy "$svc.bind" Bind --identity-roles "@${routerName}" --service-roles "@$svc"
 }
 
 $authPolicy=(ziti edge create auth-policy "cert-primary-totp-auth-policy" `
     --primary-cert-allowed `
     --secondary-req-totp `
     --primary-cert-expired-allowed)
+
+routerOffloadPolicy "${routerName}"
 
 $count = 0
 $iterations = 3
@@ -205,8 +237,6 @@ for ($i = 0; $i -lt $iterations; $i++) {
 }
 
 $param1Range = 0..2
-
-# Loop through the ranges and call the function
 foreach ($i in $param1Range) {
     foreach ($j in 1..$i) {
         makeTestService "mfa-$i" "$(if ($j -lt 10) {"0$j"} else {$j})"
@@ -252,6 +282,9 @@ ziti edge update service-policy "$name.svc.0.ziti.dial" --posture-check-roles "@
 $name="normal-user-01"
 ziti edge create identity $name -o "$identityDir\$name.jwt"
 makeTestService $name "0"
+ziti edge create service-policy "normal.dial" Dial `
+    --identity-roles "#all" `
+    --service-roles "@${name}.svc.0.ziti"
 
 $name="normal-user-02"
 ziti edge create identity $name -o "$identityDir\$name.jwt"
@@ -264,15 +297,15 @@ makeTestService $name "0"
 $extJwtSignerRoot = "https://keycloak.clint.demo.openziti.org:8446/realms/zitirealm"
 $extJwtDiscoveryEndpoint = "$extJwtSignerRoot/.well-known/openid-configuration"
 $extJwtClaimsProp = "email"
-$extJwtAudience = "openziti-client"
+$extJwtAudience = "openziti"
 $extJwtClientId = "openziti-client"
-$extJwtAuthUrl = "https://keycloak.clint.demo.openziti.org:8446/realms/zitirealm"
-$extJwtScopes = "openid profile email"
+$extJwtAuthUrl = "$extJwtSignerRoot"
+$extJwtScopes = "openid,profile,email"
 
 $extJwtSigner = curl -s $extJwtDiscoveryEndpoint `
     | ConvertFrom-Json
 ziti edge create ext-jwt-signer ejs-zdew-test $extJwtSigner.issuer `
-    --jwks-endpoint $json.jwks_uri `
+    --jwks-endpoint $extJwtSigner.jwks_uri `
     --audience $extJwtAudience `
     --claims-property $extJwtClaimsProp `
     --client-id $extJwtClientId `
@@ -282,20 +315,21 @@ ziti edge create ext-jwt-signer ejs-zdew-test $extJwtSigner.issuer `
 ziti edge create auth-policy ejs-auth-policy-primary `
     --primary-ext-jwt-allowed
 
-ziti edge create identity ejs-test-id --external-id $ExternalId
+ziti edge create identity ejs-test-id --external-id $ExternalId --role-attributes "ejwt-svcs"
 
 # get the network jwt for use with ext-auth
 $network_jwt="${identityDir}\${hostname}_${port}.jwt"
 $json = curl -sk "${Url}/edge/management/v1/network-jwts"
 Set-Content -Path $network_jwt -Value ($json | ConvertFrom-Json).data.token 
 
-
+makeTestService "${autoCa}" "0" "${autoCa}"
+ziti edge create service-policy "${autoCa}.svc.dial" Dial --identity-roles "#${autoCa}" --service-roles "@${autoCa}.svc.0.ziti"
 
 ziti pki create ca --pki-root "${zitiPkiRoot}" --ca-file "$caAutoId"
 $rootCa=(Get-ChildItem -Path $zitiPkiRoot -Filter "$caAutoId.cert" -Recurse).FullName
 "root ca path: $rootCa"
 
-$CA_ID = ziti edge create ca "$caAutoId" "$rootCa" --auth --ottca --autoca
+$CA_ID = ziti edge create ca "$caAutoId" "$rootCa" --auth --ottca --autoca --role-attributes "${autoCa}"
 
 $verificationToken=((ziti edge list cas ('name = \"' + $caAutoId + '\"') -j | ConvertFrom-Json).data | Where-Object { $_.name -eq $caAutoId }[0]).verificationToken
 ziti pki create client --pki-root "${zitiPkiRoot}" --ca-name "$caAutoId" --client-file "$verificationToken" --client-name "$verificationToken"
@@ -323,7 +357,7 @@ ziti pki create ca --pki-root "${zitiPkiRoot}" --ca-file "$caMappedId"
 $rootCa=(Get-ChildItem -Path $zitiPkiRoot -Filter "$caMappedId.cert" -Recurse).FullName
 "root ca path: $rootCa"
 
-$CA_ID = ziti edge create ca "$caMappedId" "$rootCa" --auth --ottca
+$CA_ID = ziti edge create ca "$caMappedId" "$rootCa" --auth --ottca --role-attributes "ott-ca-attrs"
 
 $verificationToken=((ziti edge list cas ('name = \"' + $caMappedId + '\"') -j | ConvertFrom-Json).data | Where-Object { $_.name -eq $caMappedId }[0]).verificationToken
 ziti pki create client --pki-root "${zitiPkiRoot}" --ca-name "$caMappedId" --client-file "$verificationToken" --client-name "$verificationToken"
