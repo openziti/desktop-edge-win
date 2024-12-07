@@ -698,7 +698,7 @@ namespace ZitiDesktopEdge {
             app.ReceiveString += App_ReceiveString;
 
             // add a new service client
-            serviceClient = new DataClient("data");
+            serviceClient = new DataClient("UI-DataClient");
             serviceClient.OnClientConnected += ServiceClient_OnClientConnected;
             serviceClient.OnClientDisconnected += ServiceClient_OnClientDisconnected;
             serviceClient.OnIdentityEvent += ServiceClient_OnIdentityEvent;
@@ -710,10 +710,11 @@ namespace ZitiDesktopEdge {
             serviceClient.OnBulkServiceEvent += ServiceClient_OnBulkServiceEvent;
             serviceClient.OnNotificationEvent += ServiceClient_OnNotificationEvent;
             serviceClient.OnControllerEvent += ServiceClient_OnControllerEvent;
+            serviceClient.OnAuthenticationEvent += ServiceClient_OnAuthenticationEvent;
             serviceClient.OnCommunicationError += ServiceClient_OnCommunicationError;
             Application.Current.Properties.Add("ServiceClient", serviceClient);
 
-            monitorClient = new MonitorClient("monitor");
+            monitorClient = new MonitorClient("UI-MonitorClient");
             monitorClient.OnClientConnected += MonitorClient_OnClientConnected;
             monitorClient.OnNotificationEvent += MonitorClient_OnInstallationNotificationEvent;
             monitorClient.OnServiceStatusEvent += MonitorClient_OnServiceStatusEvent;
@@ -747,6 +748,16 @@ namespace ZitiDesktopEdge {
 
             IdentityMenu.OnForgot += IdentityForgotten;
             Placement();
+        }
+
+        private void ServiceClient_OnAuthenticationEvent(object sender, AuthenticationEvent e) {
+            ZitiIdentity found = identities.Find(i => i.Identifier == e.Identifier);
+            if(found != null) {
+                if (e.Action == "error") {
+                    found.AuthInProgress = false;
+                    _ = ShowBlurbAsync("Authentication Failed", "External Auth Failed");
+                }
+            }
         }
 
         private void ServiceClient_OnCommunicationError(object sender, Exception e) {
@@ -1189,6 +1200,19 @@ namespace ZitiDesktopEdge {
                         LoadIdentities(true);
                     } else {
                         // means we likely are getting an update for some reason. compare the identities and use the latest info
+                        // for external auth, this event will return after external auth. track if the auth is in progress or not
+                        // and clear the flag here if it succeeds, else pop a 'auth failed'
+                        if (found.AuthInProgress) {
+                            //found.AuthInProgress = false; //regardless clear it here
+                            if (!zid.NeedsExtAuth) {
+                                found.AuthInProgress = false;
+                            }
+                            else {
+                                // seems bad?
+                                logger.Warn("Identity: {} AuthInProgress but still NeedsExtAuth?", found.Identifier);
+                                _ = ShowBlurbAsync("Authentication Failed", "External Auth Failed");
+                            }
+                        }
                         if (zid.Name != null && zid.Name.Length > 0) found.Name = zid.Name;
                         if (zid.ControllerUrl != null && zid.ControllerUrl.Length > 0) found.ControllerUrl = zid.ControllerUrl;
                         if (zid.ContollerVersion != null && zid.ContollerVersion.Length > 0) found.ContollerVersion = zid.ContollerVersion;
@@ -1658,11 +1682,10 @@ namespace ZitiDesktopEdge {
             try {
 #if DEBUG
                 Console.WriteLine("AddId.JwtContent\t: " + payload.JwtContent);
-                Console.WriteLine("AddId.JwtFileName\t: " + payload.JwtFileName);
+                Console.WriteLine("AddId.IdentityFilename\t: " + payload.IdentityFilename);
                 Console.WriteLine("AddId.ControllerURL\t: " + payload.ControllerURL);
                 Console.WriteLine("AddId.Certificate\t: " + payload.Certificate);
                 Console.WriteLine("AddId.Key\t\t: " + payload.Key);
-                Console.WriteLine("AddId.Alias\t: " + payload.Alias);
                 Console.WriteLine("AddId.UseKeychain\t: " + payload.UseKeychain);
 #endif
                 Identity createdId = await serviceClient.AddIdentityAsync(payload);
@@ -1702,7 +1725,8 @@ namespace ZitiDesktopEdge {
                 string fileContent = File.ReadAllText(jwtDialog.FileName);
                 EnrollIdentifierPayload payload = new EnrollIdentifierPayload();
                 payload.UseKeychain = Properties.Settings.Default.UseKeychain;
-                payload.JwtFileName = Path.GetFileName(jwtDialog.FileName);
+                string jwtFile = Path.GetFileName(jwtDialog.FileName);
+                payload.IdentityFilename = Path.GetFileNameWithoutExtension(jwtFile);
                 payload.JwtContent = fileContent.Trim();
                 string[] jwtParts = fileContent?.Split('.');
 

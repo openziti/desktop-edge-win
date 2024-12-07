@@ -8,12 +8,6 @@
              d:Width="400"
 >
 	<UserControl.Resources>
-        <Color x:Key="DarkBackground">#131429</Color>
-        <Color x:Key="InvalidUrlDark">#FF860000</Color>
-        <Color x:Key="InvalidUrlLight">#FFECB5B5</Color>
-        <SolidColorBrush x:Key="DarkBackgroundBrush" Color="{StaticResource DarkBackground}" />
-        <SolidColorBrush x:Key="InvalidUrlBorderBrush" Color="{StaticResource InvalidUrlDark}" />
-        <SolidColorBrush x:Key="InvalidUrlBackgroundBrush" Color="{StaticResource InvalidUrlLight}" />
         <Style x:Key="InvalidUrl" TargetType="TextBox">
             <Setter Property="Template">
                 <Setter.Value>

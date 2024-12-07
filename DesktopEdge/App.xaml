@@ -6,6 +6,38 @@
              ShutdownMode="OnExplicitShutdown"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
+        <Color x:Key="ContextMenuTextNormal">#C0C0C0</Color>
+        <Color x:Key="ContextMenuTextHover">#ffffff</Color>
+        <Color x:Key="DarkBackground">#131429</Color>
+        <Color x:Key="InvalidUrlDark">#FF860000</Color>
+        <Color x:Key="InvalidUrlLight">#FFECB5B5</Color>
+        <Color x:Key="LightBackground">#2b3046</Color>
+
+        <SolidColorBrush x:Key="DarkBackgroundBrush" Color="{StaticResource DarkBackground}" />
+        <SolidColorBrush x:Key="LightBackgroundBrush" Color="{StaticResource LightBackground}" />
+        <SolidColorBrush x:Key="ContextMenuTextNormalBrush" Color="{StaticResource ContextMenuTextNormal}" />
+        <SolidColorBrush x:Key="ContextMenuTextHoverBrush" Color="{StaticResource ContextMenuTextHover}" />
+        <SolidColorBrush x:Key="InvalidUrlBorderBrush" Color="{StaticResource InvalidUrlDark}" />
+        <SolidColorBrush x:Key="InvalidUrlBackgroundBrush" Color="{StaticResource InvalidUrlLight}" />
+        
+        <ControlTemplate x:Key="ReusableMenuItemTemplate" TargetType="MenuItem">
+            <Border x:Name="ItemBorder" Background="{TemplateBinding Background}" Padding="10,10" BorderBrush="#555" BorderThickness="0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="ItemText" Text="{TemplateBinding Header}" VerticalAlignment="Center" Foreground="{StaticResource ContextMenuTextNormalBrush}" FontSize="16" />
+                </StackPanel>
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource DarkBackgroundBrush}" />
+                    <Setter TargetName="ItemText" Property="Foreground" Value="{StaticResource ContextMenuTextHoverBrush}"/>
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+
+
+
+        
+        
         <Color x:Key="ButtonColor">#FF7EB4EA</Color>
         <SolidColorBrush x:Key="ButtonBrush" Color="{StaticResource ButtonColor}"/>
         <LinearGradientBrush x:Key="ComboBox.Static.Background" EndPoint="0,1" StartPoint="0,0">

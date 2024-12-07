@@ -26,7 +26,7 @@ namespace ZitiDesktopEdge {
             payload.ControllerURL = ControllerURL.Text;
 
             Uri ctrl = new Uri(ControllerURL.Text);
-            payload.Alias = ctrl.Host + "_" + ctrl.Port;
+            payload.IdentityFilename = ctrl.Host + "_" + ctrl.Port;
             OnAddIdentity(payload, this);
         }
 

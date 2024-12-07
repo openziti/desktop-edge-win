@@ -17,16 +17,14 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
+
 using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.ServiceClient;
 using NLog;
 using SWM = System.Windows.Media;
 using ZitiDesktopEdge.DataStructures;
 using System.Diagnostics;
-using System.Web.UI;
-using System.Drawing;
-using System.Diagnostics.Eventing.Reader;
+using System.Windows.Media;
 
 namespace ZitiDesktopEdge {
     /// <summary>
@@ -329,7 +327,6 @@ namespace ZitiDesktopEdge {
 
         private void ShowTimedOut() {
             _identity.Mutex.Wait();
-            Console.WriteLine(_identity.Mutex.GetHashCode());
             if (!_identity.WasFullNotified) {
                 _identity.WasFullNotified = true;
                 _identity.ShowMFAToast("All of the services with a timeout set for the identity " + _identity.Name + " have timed out");
@@ -356,6 +353,7 @@ namespace ZitiDesktopEdge {
                 this.Identity.IsEnabled = on;
                 if (on) {
                     ToggleStatus.Content = "ENABLED";
+                    Identity.AuthInProgress = false;
                 } else {
                     ToggleStatus.Content = "DISABLED";
                 }
@@ -367,16 +365,16 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        private void Canvas_MouseEnter(object sender, MouseEventArgs e) {
+        private void Canvas_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e) {
             OverState.Opacity = 0.2;
         }
 
-        private void Canvas_MouseLeave(object sender, MouseEventArgs e) {
+        private void Canvas_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e) {
             OverState.Opacity = 0;
         }
 
-        private void OpenDetails(object sender, MouseButtonEventArgs e) {
-            if (e.ChangedButton != MouseButton.Right && Identity.IsEnabled) {
+        private void OpenDetails(object sender, System.Windows.Input.MouseButtonEventArgs e) {
+            if (e.ChangedButton != System.Windows.Input.MouseButton.Right && Identity.IsEnabled) {
                 IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
                 deets.SelectedIdentity = this;
                 deets.Identity = this.Identity;
@@ -385,17 +383,17 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        private void MFAAuthenticate(object sender, MouseButtonEventArgs e) {
+        private void MFAAuthenticate(object sender, System.Windows.Input.MouseButtonEventArgs e) {
             if (Identity.IsEnabled) {
                 this.AuthenticateTOTP?.Invoke(_identity);
             }
         }
 
-        private void ToggledSwitch(object sender, MouseButtonEventArgs e) {
+        private void ToggledSwitch(object sender, System.Windows.Input.MouseButtonEventArgs e) {
             ToggleSwitch.Toggle();
         }
 
-        private void DoMFAOrOpen(object sender, MouseButtonEventArgs e) {
+        private void DoMFAOrOpen(object sender, System.Windows.Input.MouseButtonEventArgs e) {
             if (MfaRequired.Visibility == Visibility.Visible ||
                 TimerCountdown.Visibility == Visibility.Visible ||
                 PostureTimedOut.Visibility == Visibility.Visible) {
@@ -407,33 +405,111 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        async private void CompleteExtAuth(object sender, MouseButtonEventArgs e) {
+        private void CompleteExtAuth(object sender, System.Windows.Input.MouseButtonEventArgs e) {
             try {
-                DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
                 if (_identity?.ExtAuthProviders?.Count > 0) {
                     if (_identity.AuthInProgress) {
                         BlurbEvent?.Invoke(_identity);
                     } else {
-                        _identity.AuthInProgress = true;
-                        ExternalAuthLoginResponse resp = await client.ExternalAuthLogin(_identity.Identifier, _identity.ExtAuthProviders[0]);
-                        if (resp?.Error == null) {
-                            if (resp?.Data?.url != null) {
-                                Console.WriteLine(resp.Data?.url);
-                                Process.Start(resp.Data.url);
-                            } else {
-                                Console.WriteLine("The response contained no url???");
-                            }
-                        } else {
-                            ShowError("Failed to Authenticate", resp.Error);
-                            _identity.AuthInProgress = false;
-                        }
+                        performExtAuth();
                     }
                 } else {
                     ShowError("Failed to Authenticate", "No external providers found! This is a configuration error. Inform your network administrator.");
                 }
             } catch (Exception ex) {
                 logger.Error("unexpected error!", ex);
+                ShowError("UNEXPECTED ERROR", "Please report this issue: " + ex.Message);
                 _identity.AuthInProgress = false;
+            }
+        }
+
+        async void performExtAuth() {
+            _identity.AuthInProgress = true;
+             DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+            ExternalAuthLoginResponse resp = await client.ExternalAuthLogin(_identity.Identifier, _identity.ExtAuthProviders[0]);
+            if (resp?.Error == null) {
+                if (resp?.Data?.url != null) {
+                    Console.WriteLine(resp.Data?.url);
+                    Process.Start(resp.Data.url);
+                } else {
+                    Console.WriteLine("The response contained no url???");
+                }
+            } else {
+                ShowError("Failed to Authenticate", resp.Error);
+                _identity.AuthInProgress = false;
+            }
+        }
+
+        private void Rectangle_GotFocus(object sender, RoutedEventArgs e) {
+            Console.WriteLine("focus");
+        }
+
+        private void Rectangle_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e) {
+            if (sender is Grid grid) {
+
+                var contextMenu = grid.ContextMenu;
+                // Ensure contextMenu is not null
+                if (contextMenu != null) {
+                    if (_identity?.ExtAuthProviders?.Count > 1) {
+
+                        // Clear previous items
+                        contextMenu.Items.Clear();
+
+                        // Add menu items dynamically
+                        foreach (var provider in _identity.ExtAuthProviders) {
+                            var menuItem = new System.Windows.Controls.MenuItem {
+                                Header = provider // Use Header instead of Content
+                            };
+
+                            menuItem.Click += (s, args) => {
+                                // Handle provider selection here
+                                MessageBox.Show($"You selected {provider}");
+                            };
+
+                            contextMenu.Items.Add(menuItem);
+                        }
+
+                        // Show the context menu
+                        contextMenu.IsOpen = true;
+                    }
+                }
+            }
+        }
+
+        private void ExternalIdpHover(object sender, System.Windows.Input.MouseEventArgs e) {
+            var fe = sender as FrameworkElement;
+            if (fe?.ContextMenu != null) {
+                if (_identity?.ExtAuthProviders?.Count > 1) {
+
+                    var contextMenu = fe.ContextMenu;
+                    // Clear previous items
+                    contextMenu.Items.Clear();
+
+                    // Add menu items dynamically
+                    foreach (var provider in _identity.ExtAuthProviders) {
+                        var menuItem1 = new System.Windows.Controls.MenuItem {
+                            Header = provider // Use Header instead of Content
+                        };
+                        var menuItem = new OZMenuItem();
+                        menuItem.LabelCtrl.Content = provider;
+                        menuItem.IconCtrl.Visibility = Visibility.Collapsed;
+                        menuItem.IconCtrl.Width = 0;
+                        menuItem.ChevronCtrl.Width = 0;
+                        menuItem.LabelCtrl.Background = Brushes.White;
+
+                        menuItem.MouseUp += (s, args) => {
+                            // Handle provider selection here
+                            Console.WriteLine("clicked it You selected {provider}");
+                        };
+
+                        contextMenu.Items.Add(menuItem);
+                    }
+
+                    // Show the context menu
+                    contextMenu.IsOpen = true;
+                }
+                fe.ContextMenu.PlacementTarget = fe;
+                fe.ContextMenu.IsOpen = true;
             }
         }
     }

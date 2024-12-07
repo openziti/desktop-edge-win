@@ -240,12 +240,11 @@ namespace ZitiDesktopEdge.DataStructures {
 
     public class EnrollIdentifierPayload {
         public bool UseKeychain { get; set; }
-        public string JwtFileName { get; set; }
+        public string IdentityFilename { get; set; }
         public string JwtContent { get; set; }
         public string Key { get; set; }
         public string Certificate { get; set; }
         public string ControllerURL { get; set; }
-        public string Alias { get; set; }
     }
 
     public class EnrollIdentifierFunction : ServiceFunction {
@@ -513,6 +512,9 @@ namespace ZitiDesktopEdge.DataStructures {
     }
 
     public class ControllerEvent : ActionEvent {
+        public string Identifier { get; set; }
+    }
+    public class AuthenticationEvent : ActionEvent {
         public string Identifier { get; set; }
     }
 

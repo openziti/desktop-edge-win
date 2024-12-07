@@ -115,7 +115,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             OnCommunicationError?.Invoke(this, e);
         }
 
-        async protected Task sendAsync(object objToSend) {
+        async protected Task sendAsync(string channel, object objToSend) {
             bool retried = false;
             while (true) {
                 try {
@@ -126,7 +126,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                     string toSend = JsonConvert.SerializeObject(objToSend, serializerSettings);
 
                     if (toSend?.Trim() != null) {
-                        debugServiceCommunication("send", Id, toSend);
+                        debugServiceCommunication(Id, "send", channel, toSend);
                         if (ipcWriter != null) {
                             await ipcWriter.WriteAsync(toSend);
                             await ipcWriter.WriteAsync('\n');
@@ -222,14 +222,14 @@ namespace ZitiDesktopEdge.ServiceClient {
             });
         }
 
-        protected void debugServiceCommunication(string direction, string source, string msg) {
+        protected void debugServiceCommunication(string source, string direction, string channel, string msg) {
 #if DEBUG
 #if DEBUG_METRICS_MESSAGES
             // see the top of the file for where you can enable this
-            Logger.Warn("{}-{}: {}", direction, Id, msg);
+            Logger.Warn("{0}-{1}-{2}: {3}", source, direction, channel, msg);
 #else
             if (false == msg?.Contains("\"metrics\"")) {
-                Logger.Warn("{}-{}-{}: {}", direction, Id, source, msg);
+                Logger.Warn("{0}-{1}-{2}: {3}", source, direction, channel, msg);
             }
 #endif
 #else
@@ -241,11 +241,11 @@ namespace ZitiDesktopEdge.ServiceClient {
 #else
         TimeSpan timeout = TimeSpan.FromSeconds(3);
 #endif
-        async protected Task<T> readAsync<T>(string source, StreamReader reader) where T : SvcResponse {
+        async protected Task<T> readAsync<T>(string stream, StreamReader reader) where T : SvcResponse {
             var cts = new CancellationTokenSource(timeout);
             try {
                 // Create a task that will complete when the read operation finishes
-                var readTask = readMessageAsync(source, reader);
+                var readTask = readMessageAsync(stream, reader);
 
                 // Create a task that will complete when the timeout occurs
                 var timeoutTask = Task.Delay(timeout, cts.Token);
@@ -270,17 +270,17 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
         }
 
-        async public Task<string> readMessageAsync(string source, StreamReader reader) {
+        async public Task<string> readMessageAsync(string channel, StreamReader reader) {
             try {
                 int emptyCount = 1; //just a stop gap in case something crazy happens in the communication
 
                 string respAsString = await reader.ReadLineAsync();
-                debugServiceCommunication("read", source, respAsString);
+                debugServiceCommunication(Id, "read", channel, respAsString);
                 while (string.IsNullOrEmpty(respAsString?.Trim())) {
-                    debugServiceCommunication("read", source, "Received empty payload - continuing to read until a payload is received");
+                    debugServiceCommunication(Id, "read", channel, "Received empty payload - continuing to read until a payload is received");
                     //now how'd that happen...
                     respAsString = await reader.ReadLineAsync();
-                    debugServiceCommunication("read", source, respAsString);
+                    debugServiceCommunication(Id, "read", channel, respAsString);
                     emptyCount++;
                     if (emptyCount > 5) {
                         Logger.Debug("are we there yet? " + reader.EndOfStream);

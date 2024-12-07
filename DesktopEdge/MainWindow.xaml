@@ -22,28 +22,6 @@
         DataContext="{Binding RelativeSource={RelativeSource Self}}"
         >
     <Window.Resources>
-        <Color x:Key="DarkBackground">#111224</Color>
-        <Color x:Key="LightBackground">#2b3046</Color>
-        <Color x:Key="ContextMenuTextNormal">#C0C0C0</Color>
-        <Color x:Key="ContextMenuTextHover">#ffffff</Color>
-        <SolidColorBrush x:Key="DarkBackgroundBrush" Color="{StaticResource DarkBackground}" />
-        <SolidColorBrush x:Key="LightBackgroundBrush" Color="{StaticResource LightBackground}" />
-        <SolidColorBrush x:Key="ContextMenuTextNormalBrush" Color="{StaticResource ContextMenuTextNormal}" />
-        <SolidColorBrush x:Key="ContextMenuTextHoverBrush" Color="{StaticResource ContextMenuTextHover}" />
-
-        <ControlTemplate x:Key="ReusableMenuItemTemplate" TargetType="MenuItem">
-            <Border x:Name="ItemBorder" Background="{TemplateBinding Background}" Padding="10,10" BorderBrush="#555" BorderThickness="0">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock x:Name="ItemText" Text="{TemplateBinding Header}" VerticalAlignment="Center" Foreground="{StaticResource ContextMenuTextNormalBrush}" FontSize="16" />
-                </StackPanel>
-            </Border>
-            <ControlTemplate.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource DarkBackgroundBrush}" />
-                    <Setter TargetName="ItemText" Property="Foreground" Value="{StaticResource ContextMenuTextHoverBrush}"/>
-                </Trigger>
-            </ControlTemplate.Triggers>
-        </ControlTemplate>
         <Style TargetType="Image">
             <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality" />
         </Style>

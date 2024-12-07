@@ -6,11 +6,6 @@
              xmlns:local="clr-namespace:ZitiDesktopEdge"
              mc:Ignorable="d">
     <UserControl.Resources>
-        <Color x:Key="DarkBackground">#131429</Color>
-        <SolidColorBrush x:Key="DarkBackgroundBrush" Color="{StaticResource DarkBackground}" />
-        <SolidColorBrush x:Key="ButtonColorBrush" Color="#0069FF" />
-        <SolidColorBrush x:Key="ButtonColorDarkBrush" Color="#FF05214A" />
-        <SolidColorBrush x:Key="DarkRedBrush" Color="#FF860000" />
         <!-- Style for the RadioButton Toggle -->
         <Style x:Key="ToggleSwitchStyle" TargetType="RadioButton">
             <Setter Property="Template">
@@ -96,61 +91,6 @@
                     <TextBox x:Name="Alias" FontSize="14" Width="250" IsTabStop="True" />
                     <Label Margin="10,0,0,0" Width="{Binding ElementName=BrowseKeyBtn, Path=ActualWidth}"/>
                 </StackPanel>
-
-                <!--Grid Margin="10">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <Grid Grid.Row="0" HorizontalAlignment="Stretch">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-
-                        <RadioButton x:Name="WithJwtToggle" Content="With JWT" GroupName="ToggleGroup"
-                 Style="{StaticResource ToggleSwitchStyle}"
-                 Grid.Column="0" IsChecked="True" Checked="Toggle_Checked"
-                 HorizontalAlignment="Stretch" VerticalAlignment="Center" />
-
-                        <RadioButton x:Name="WithUrlToggle" Content="With URL" GroupName="ToggleGroup"
-                 Style="{StaticResource ToggleSwitchStyle}"
-                 Grid.Column="1" Checked="Toggle_Checked"
-                 HorizontalAlignment="Stretch" VerticalAlignment="Center" />
-                    </Grid>
-                    <Grid Grid.Row="1">
-                        <StackPanel x:Name="JwtInputPanel">
-                            <Label Content="Select the JWT for the CA" Foreground="White" Opacity="0.7" FontSize="12" HorizontalAlignment="Left"/>
-
-                            <StackPanel  x:Name="JwtInputPanelSub" Orientation="Horizontal"
-                                Visibility="{Binding Visibility, RelativeSource={RelativeSource AncestorType=StackPanel}}"
-                            >
-                                <TextBox x:Name="JwtTextBox" Width="230" IsReadOnly="True" Margin="0,0,10,0" />
-                                <Button Content="Browse" Width="80" Click="BrowseJwtFile_Click" />
-                            </StackPanel>
-                        </StackPanel>
-                        <StackPanel x:Name="UrlInputPanel"
-                                    Visibility="Collapsed"
-                        >
-                            <Label Content="Enter the controller URL" 
-                                   Foreground="White" Opacity="0.7" 
-                                   FontSize="12" HorizontalAlignment="Left"
-                                   />
-                            <TextBox x:Name="ControllerURL" 
-                                 Text="https://ctrl.clint.demo.openziti.org:8441" 
-                                 Focusable="True"
-                                 FontSize="14" 
-                                 TextAlignment="Center" 
-                                 Margin="0,0,0,0" 
-                                 TextChanged="ControllerURL_TextChanged" 
-                                 TextWrapping="NoWrap" 
-                                 VerticalAlignment="Top"
-                                 Width="Auto"
-                            />
-                        </StackPanel>
-                    </Grid>
-                </Grid-->
-
                 <local:StyledButton x:Name="JoinNetworkBtn" 
                                     OnClick="JoinNetworkUrl" 
                                     Label="Join Network" 

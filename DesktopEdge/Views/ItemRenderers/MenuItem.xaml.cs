@@ -17,7 +17,7 @@ namespace ZitiDesktopEdge {
     /// <summary>
     /// Interaction logic for MenuItem.xaml
     /// </summary>
-    public partial class MenuItem : UserControl {
+    public partial class OZMenuItem : UserControl {
 
         private string _label = "";
         private string _icon = "";
@@ -28,7 +28,7 @@ namespace ZitiDesktopEdge {
             }
             set {
                 this._label = value;
-                MainLabel.Content = this._label;
+                LabelCtrl.Content = this._label;
             }
         }
         public string Icon {
@@ -37,11 +37,12 @@ namespace ZitiDesktopEdge {
             }
             set {
                 this._icon = value;
-                MainSource.Source = new BitmapImage(new Uri(this._icon, UriKind.Relative));
+                IconCtrl.Source = new BitmapImage(new Uri(this._icon, UriKind.Relative));
             }
         }
 
-        public MenuItem() {
+
+        public OZMenuItem() {
             InitializeComponent();
         }
 
