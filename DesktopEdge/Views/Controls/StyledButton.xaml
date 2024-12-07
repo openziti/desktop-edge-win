@@ -6,25 +6,45 @@
              xmlns:local="clr-namespace:ZitiDesktopEdge"
              mc:Ignorable="d" 
              d:DesignHeight="30" d:DesignWidth="300" Cursor="Hand">
+    <UserControl.Resources>
+        <Color x:Key="DisabledText">#FF3A3A3A</Color>
+        <SolidColorBrush x:Key="DisabledTextBrush" Color="#000000"/>
+        <Style x:Key="Disabled" TargetType="Rectangle">
+            <Setter Property="Fill" Value="#FF607696"/>
+        </Style>
+        <Style x:Key="Enabled" TargetType="Rectangle">
+            <Setter Property="Fill" Value="#0069FF"/>
+        </Style>
+        <Style x:Key="Dark" TargetType="Rectangle">
+            <Setter Property="Fill" Value="#000000"/>
+        </Style>
+    </UserControl.Resources>
     <Grid>
-
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"></ColumnDefinition>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="30"></RowDefinition>
         </Grid.RowDefinitions>
-        
-        <Rectangle x:Name="ButtonBg" Margin="40,0,40,0" Opacity="0.8" RadiusX="7" Grid.Row="8" RadiusY="7" ClipToBounds="True" Height="30" VerticalAlignment="Bottom" MouseUp="DoClick" Cursor="Hand" MouseEnter="Hover" MouseLeave="Leave" MouseDown="Down">
-            <Rectangle.Fill>
-                <SolidColorBrush x:Name="ButtonBgColor" Color="#0069FF"/>
-            </Rectangle.Fill>
-        </Rectangle>
-        <Rectangle x:Name="ButtonBgDarken" Margin="40,0,40,0" Opacity="0.0" RadiusX="7" Grid.Row="8" RadiusY="7" ClipToBounds="True" Height="30" VerticalAlignment="Bottom" MouseUp="DoClick" Cursor="Hand" MouseEnter="Hover" MouseLeave="Leave" MouseDown="Down">
-            <Rectangle.Fill>
-                <SolidColorBrush Color="#000000"/>
-            </Rectangle.Fill>
-        </Rectangle>
-        <Label x:Name="ButtonLabel" HorizontalAlignment="Center" IsHitTestVisible="False" Foreground="#FFFFFF" Grid.Row="8"></Label>
+
+        <Rectangle x:Name="ButtonBg" Margin="40,0,40,0" 
+                   Opacity="0.8" RadiusX="7" Grid.Row="8" 
+                   RadiusY="7" ClipToBounds="True" Height="30" 
+                   VerticalAlignment="Bottom" MouseUp="DoClick" 
+                   Cursor="Hand" MouseEnter="Hover" 
+                   MouseLeave="Leave" MouseDown="Down" 
+                   Style="{StaticResource Enabled}"
+        />
+
+        <Rectangle x:Name="ButtonBgDarken" Margin="40,0,40,0"
+                   Opacity="0.0" RadiusX="7" Grid.Row="8" 
+                   RadiusY="7" ClipToBounds="True" Height="30"
+                   VerticalAlignment="Bottom" MouseUp="DoClick"
+                   Cursor="Hand" MouseEnter="Hover" 
+                   MouseLeave="Leave" MouseDown="Down"
+                   Style="{StaticResource Dark}"
+        />
+        <Label x:Name="ButtonLabel" HorizontalAlignment="Center" 
+               IsHitTestVisible="False" Foreground="#FFFFFF" Grid.Row="8"></Label>
     </Grid>
 </UserControl>

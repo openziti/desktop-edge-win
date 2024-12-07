@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="ZitiDesktopEdge.MenuItem"
+﻿<UserControl x:Class="ZitiDesktopEdge.OZMenuItem"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -30,20 +30,20 @@
             </BeginStoryboard>
         </EventTrigger>
     </UserControl.Triggers>
-    <Grid>
-        <Rectangle Name="BgFill" Fill="#7d8faf" Opacity="0"></Rectangle>
-        <StackPanel Orientation="Vertical">
-            <Grid Height="49">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="50"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="50"/>
-                </Grid.ColumnDefinitions>
-                <Image Name="MainSource" Source="/Assets/Images/advanced.png" Width="20" Height="20"></Image>
-                <Label Name="MainLabel" Grid.Column="1" Content="Main Menu" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
-                <Image Grid.Column="2" HorizontalAlignment="Right" Source="/Assets/Images/nextArrow.png" Width="20" Height="20" Margin="0,0,10,0" />
-            </Grid>
-            <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
-        </StackPanel>
-    </Grid>
+    <StackPanel Orientation="Vertical">
+        <Grid Height="49">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="50"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="50"/>
+            </Grid.ColumnDefinitions>
+
+            <Image Name="IconCtrl" Source="/Assets/Images/advanced.png" Width="20" Height="20"/>
+            <Label Name="LabelCtrl" Grid.Column="1" Content="Main Menu" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"/>
+            <Image Name="ChevronCtrl" Grid.Column="2" HorizontalAlignment="Right" Source="/Assets/Images/nextArrow.png" Width="20" Height="20" Margin="0,0,10,0"/>
+        </Grid>
+        <Rectangle Name="BgFill"
+                   Height="1" Fill="#7d8faf"
+                   Opacity="0.2" HorizontalAlignment="Stretch"/>
+    </StackPanel>
 </UserControl>

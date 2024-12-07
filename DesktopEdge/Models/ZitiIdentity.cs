@@ -17,6 +17,7 @@
 using NLog;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -61,6 +62,7 @@ namespace ZitiDesktopEdge.Models {
         public string Fingerprint { get; set; }
         public string Identifier { get; set; }
         private bool isTimedOut = false;
+        public bool AuthInProgress { get; set; }
 
         public SemaphoreSlim Mutex { get; } = new SemaphoreSlim(1);
         public bool IsTimedOut {
@@ -90,6 +92,7 @@ namespace ZitiDesktopEdge.Models {
         }
 
         public bool NeedsExtAuth { get; set; }
+        public List<string> ExtAuthProviders { get; set; }
 
         /// <summary>
         /// Default constructor to support named initialization
@@ -131,12 +134,13 @@ namespace ZitiDesktopEdge.Models {
                 IsMFANeeded = id.MfaNeeded,
                 IsTimedOut = false,
                 IsTimingOut = false,
-                MinTimeout = id.MinTimeout,
-                MaxTimeout = id.MaxTimeout,
+                MinTimeout = id.MfaMinTimeoutRem,
+                MaxTimeout = id.MfaMaxTimeoutRem,
                 LastUpdatedTime = id.MfaLastUpdatedTime,
                 TimeoutMessage = "",
                 IsConnected = true,
                 NeedsExtAuth = id.NeedsExtAuth,
+                ExtAuthProviders = id.ExtAuthProviders,
             };
 
             if (zid.Name.Contains(@"\")) {

@@ -10,7 +10,7 @@
              Width="35" 
              Height="20" 
              Padding="0,0,0,0" 
-             Loaded="OnLoad">
+>
     <StackPanel Orientation="Vertical" Margin="0,0,0,0">
         <Canvas Name="LayoutRoot" Cursor="Hand" MouseUp="OnToggle">
             <Border Name="BackColor" Width="35" Height="20" CornerRadius="9" Background="#E5EAED"></Border>
