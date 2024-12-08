@@ -134,14 +134,14 @@
     <Compile Include="Models\MessageCount.cs" />
     <Compile Include="Models\MFA.cs" />
     <Compile Include="Models\ViewState.cs" />
-    <Compile Include="UrlEntryDialog.xaml.cs">
-      <DependentUpon>UrlEntryDialog.xaml</DependentUpon>
-    </Compile>
     <Compile Include="Views\Controls\AddIdentityCA.xaml.cs">
       <DependentUpon>AddIdentityCA.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\Controls\AddIdentityUrl.xaml.cs">
       <DependentUpon>AddIdentityUrl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Controls\ExternalProviderSelector.xaml.cs">
+      <DependentUpon>ExternalProviderSelector.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\Controls\StyledButton.xaml.cs">
       <DependentUpon>StyledButton.xaml</DependentUpon>
@@ -194,11 +194,7 @@
       <DependentUpon>MFAScreen.xaml</DependentUpon>
     </Compile>
     <Compile Include="Native\WinAPI.cs" />
-    <Compile Include="Views\Screens\SharedUserControlDefinitions.cs" />
-    <Page Include="UrlEntryDialog.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
+    <Compile Include="Views\Screens\CommonDelegates.cs" />
     <Page Include="Views\Controls\AddIdentityCA.xaml">
       <SubType>Designer</SubType>
       <Generator>XamlIntelliSenseFileGenerator</Generator>
@@ -206,6 +202,10 @@
     <Page Include="Views\Controls\AddIdentityUrl.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\Controls\ExternalProviderSelector.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Views\Controls\StyledButton.xaml">
       <SubType>Designer</SubType>

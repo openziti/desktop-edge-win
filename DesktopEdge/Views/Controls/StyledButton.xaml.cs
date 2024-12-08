@@ -34,6 +34,17 @@ namespace ZitiDesktopEdge {
             }
         }
 
+        public static readonly DependencyProperty ButtonMarginProperty = DependencyProperty.Register(
+            "ButtonMargin",
+            typeof(Thickness),
+            typeof(StyledButton),
+            new PropertyMetadata(new Thickness(40, 0, 40, 0)));
+
+        public Thickness ButtonMargin {
+            get => (Thickness)GetValue(ButtonMarginProperty);
+            set => SetValue(ButtonMarginProperty, value);
+        }
+
         public StyledButton() {
             InitializeComponent();
         }

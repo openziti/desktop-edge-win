@@ -32,6 +32,12 @@ using System.Windows.Data;
 using System.Diagnostics.Eventing.Reader;
 
 namespace ZitiDesktopEdge {
+
+    public class Provider {
+        public string Name { get; set; }
+        public string UseByDefault { get; set; }
+    }
+
     /// <summary>
     /// Interaction logic for IdentityDetails.xaml
     /// </summary>
@@ -53,8 +59,7 @@ namespace ZitiDesktopEdge {
         public event Mesage OnMessage;
         public delegate void OnAuthenticate(ZitiIdentity identity);
         public event OnAuthenticate AuthenticateTOTP;
-        public delegate void CompleteExternalAuth(ZitiIdentity identity);
-        public event CompleteExternalAuth IdentityDetails_ExternalAuthEvent;
+        public event CommonDelegates.CompleteExternalAuth CompleteExternalAuth;
         public delegate void OnRecovery(ZitiIdentity identity);
         public event OnRecovery Recovery;
         public delegate void LoadingEvent(bool isComplete);
@@ -78,6 +83,7 @@ namespace ZitiDesktopEdge {
 
         public ObservableCollection<ZitiService> _services = new ObservableCollection<ZitiService>();
         public ObservableCollection<ZitiService> ZitiServices { get { return _services; } }
+        public ObservableCollection<Provider> Providers { get; set; }
 
         internal MainWindow MainWindow { get; set; }
 
@@ -147,13 +153,13 @@ namespace ZitiDesktopEdge {
         }
 
         private void ExternalAuthNeeded() {
-            if (_identity.Services.Count > 0) {
+            if(!Identity.NeedsExtAuth) {
                 MainDetailScroll.Visibility = Visibility.Visible;
             } else {
                 AuthMessageBg.Visibility = Visibility.Visible;
                 AuthMessageLabel.Visibility = Visibility.Visible;
                 NoAuthServices.Visibility = Visibility.Visible;
-                NoAuthServices.Text = "You must authenticate to access services";
+                //ExtProviderView.Visibility = Visibility.Visible;
             }
         }
 
@@ -173,7 +179,6 @@ namespace ZitiDesktopEdge {
                 AuthMessageLabel.Visibility = Visibility.Visible;
                 NoAuthServices.Visibility = Visibility.Visible;
                 NoAuthServices.Text = "You must enable MFA to access services";
-                ServiceCount.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -194,7 +199,8 @@ namespace ZitiDesktopEdge {
             IdentityMFA.AuthOn.Visibility = Visibility.Collapsed;
             IdentityMFA.AuthOff.Visibility = Visibility.Collapsed;
             IdentityMFA.RecoveryButton.Visibility = Visibility.Collapsed;
-            ServiceCount.Visibility = Visibility.Visible;
+            ServiceCount.Visibility = Visibility.Collapsed;
+            //ExtProviderView.Visibility = Visibility.Collapsed;
 
             scrolledTo = 0;
             IdentityMFA.IsOn = _identity.IsMFAEnabled;
@@ -258,7 +264,7 @@ namespace ZitiDesktopEdge {
 
 
             }
-            ConfirmView.Visibility = Visibility.Collapsed;
+            ForgetIdentityConfirmView.Visibility = Visibility.Collapsed;
             _loaded = true;
         }
 
@@ -349,6 +355,13 @@ namespace ZitiDesktopEdge {
 
         public IdentityDetails() {
             InitializeComponent();
+            DataContext = this;
+
+            Providers = new ObservableCollection<Provider>
+            {
+                new Provider { Name = "aaaa", UseByDefault = "Yes" },
+                new Provider { Name = "bbbb", UseByDefault = "No" }
+            };
         }
         private void HideMenu(object sender, MouseButtonEventArgs e) {
             this.Visibility = Visibility.Collapsed;
@@ -359,20 +372,20 @@ namespace ZitiDesktopEdge {
         }
 
         private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
-            if (this.Visibility == Visibility.Visible && ConfirmView.Visibility == Visibility.Collapsed) {
-                ConfirmView.Visibility = Visibility.Visible;
+            if (this.Visibility == Visibility.Visible && ForgetIdentityConfirmView.Visibility == Visibility.Collapsed) {
+                ForgetIdentityConfirmView.Visibility = Visibility.Visible;
             }
         }
 
         private void CancelConfirmButton_Click(object sender, RoutedEventArgs e) {
-            ConfirmView.Visibility = Visibility.Collapsed;
+            ForgetIdentityConfirmView.Visibility = Visibility.Collapsed;
         }
 
         async private void ConfirmButton_Click(object sender, RoutedEventArgs e) {
             this.Visibility = Visibility.Collapsed;
             DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
             try {
-                ConfirmView.Visibility = Visibility.Collapsed;
+                ForgetIdentityConfirmView.Visibility = Visibility.Collapsed;
                 await client.RemoveIdentityAsync(_identity.Identifier);
 
                 ZitiIdentity forgotten = new ZitiIdentity();
@@ -439,7 +452,7 @@ namespace ZitiDesktopEdge {
             if (_identity.IsMFANeeded) {
                 this.AuthenticateTOTP.Invoke(this.Identity);
             } else if (_identity.NeedsExtAuth) {
-                this.IdentityDetails_ExternalAuthEvent.Invoke(this.Identity);
+                this.CompleteExternalAuth.Invoke(this.Identity, "NULL");
             }
         }
 

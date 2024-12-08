@@ -49,7 +49,7 @@ namespace ZitiDesktopEdge {
 
         public delegate void LoadEvent(bool isComplete, string title, string message);
         public event LoadEvent OnLoad;
-        public event SharedUserControlDefinitions.CloseAction OnClose;
+        public event CommonDelegates.CloseAction OnClose;
         private string _url = "";
         public delegate void ErrorOccurred(string message);
         public event ErrorOccurred OnError;

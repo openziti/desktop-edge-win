@@ -50,8 +50,6 @@
             <Setter Property="HorizontalAlignment" Value="Center" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
-
-
     </UserControl.Resources>
 
     <Grid Margin="0" Height="Auto" VerticalAlignment="Center">
@@ -61,44 +59,57 @@
                 CornerRadius="10"
                 Padding="10">
         </Border>
-        <Grid>
-            <StackPanel x:Name="MFAAuthArea" Margin="5,10,5,10">
-                <Label Content="3rd Party Certificate" Foreground="White" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold" />
 
-                <!-- Certificate File -->
-                <Label Content="Certificate File" Foreground="White" Opacity="0.7" FontSize="12" HorizontalAlignment="Left" />
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,0">
-                    <TextBox x:Name="CertificateFile"
+        <StackPanel x:Name="MFAAuthArea" Margin="5,10,5,10">
+            <Label Content="3rd Party Certificate" Foreground="White" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold" />
+
+            <!-- Certificate File -->
+            <Label Content="Certificate File" Foreground="White" Opacity="0.7" FontSize="12" HorizontalAlignment="Left" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,0">
+                <TextBox x:Name="CertificateFile"
                              FontSize="14"
                              Width="250"
                              IsReadOnly="True"
-                             Text="C:\temp\join-network\id.crt"
+                             Text="&lt;Choose Certificate File&gt;"
                              IsTabStop="True"
                      />
-                    <Button Content="Browse" Margin="10,0,0,0" Click="BrowseCertificateFile_Click" IsTabStop="True"/>
-                </StackPanel>
+                <Button Content="Browse"
+                            Margin="10,0,0,0"
+                            Click="BrowseCertificateFile_Click"
+                            IsTabStop="True"/>
+            </StackPanel>
 
-                <!-- Key File -->
-                <Label Content="Key File" Foreground="White" Opacity="0.7" FontSize="12" HorizontalAlignment="Left" />
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,0">
-                    <TextBox x:Name="KeyFile" FontSize="14" Width="250" IsReadOnly="True" Text="C:\temp\join-network\id.key" IsTabStop="True"/>
-                    <Button x:Name="BrowseKeyBtn" Content="Browse" Margin="10,0,0,0" Click="BrowseKeyFile_Click" IsTabStop="True"/>
-                </StackPanel>
+            <!-- Key File -->
+            <Label Content="Key File" Foreground="White" Opacity="0.7" FontSize="12" HorizontalAlignment="Left" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,0">
+                <TextBox x:Name="KeyFile"
+                             FontSize="14"
+                             Width="250"
+                             IsReadOnly="True"
+                             Text="&lt;Choose Key File&gt;"
+                             IsTabStop="True"/>
+                <Button x:Name="BrowseKeyBtn"
+                            Content="Browse"
+                            Margin="10,0,0,0"
+                            Click="BrowseKeyFile_Click"
+                            IsTabStop="True"/>
+            </StackPanel>
 
-                <!-- Alias -->
-                <Label Content="Alias" Foreground="White" Opacity="0.7" FontSize="12" HorizontalAlignment="Left" />
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,0">
-                    <TextBox x:Name="Alias" FontSize="14" Width="250" IsTabStop="True" />
-                    <Label Margin="10,0,0,0" Width="{Binding ElementName=BrowseKeyBtn, Path=ActualWidth}"/>
-                </StackPanel>
-                <local:StyledButton x:Name="JoinNetworkBtn" 
+            <!-- Alias -->
+            <Label Content="Alias" Foreground="White" Opacity="0.7" FontSize="12" HorizontalAlignment="Left" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,0">
+                <TextBox x:Name="Alias"
+                             FontSize="14"
+                             Width="250"
+                             IsTabStop="True" />
+                <Label Margin="10,0,0,0"
+                           Width="{Binding ElementName=BrowseKeyBtn, Path=ActualWidth}"/>
+            </StackPanel>
+            <local:StyledButton x:Name="JoinNetworkBtn" 
                                     OnClick="JoinNetworkUrl" 
                                     Label="Join Network" 
                                     IsTabStop="True" 
                                     Margin="0,15,0,0" />
-            </StackPanel>
-        </Grid>
-        <Image x:Name="CloseBlack" Source="/Assets/Images/closeBlack.png" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,20,20,0" Width="15" Height="15" Cursor="Hand" MouseUp="ExecuteClose" />
-        <Image x:Name="CloseWhite" Source="/Assets/Images/close.png" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,20,20,0" Width="15" Height="15" Cursor="Hand" MouseUp="ExecuteClose" />
+        </StackPanel>
     </Grid>
 </UserControl>

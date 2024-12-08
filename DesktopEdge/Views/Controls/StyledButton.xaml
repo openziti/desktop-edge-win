@@ -27,22 +27,24 @@
             <RowDefinition Height="30"></RowDefinition>
         </Grid.RowDefinitions>
 
-        <Rectangle x:Name="ButtonBg" Margin="40,0,40,0" 
+        <Rectangle x:Name="ButtonBg"
                    Opacity="0.8" RadiusX="7" Grid.Row="8" 
                    RadiusY="7" ClipToBounds="True" Height="30" 
                    VerticalAlignment="Bottom" MouseUp="DoClick" 
                    Cursor="Hand" MouseEnter="Hover" 
                    MouseLeave="Leave" MouseDown="Down" 
                    Style="{StaticResource Enabled}"
+                   Margin="{Binding ButtonMargin, RelativeSource={RelativeSource AncestorType=local:StyledButton}}"
         />
 
-        <Rectangle x:Name="ButtonBgDarken" Margin="40,0,40,0"
+        <Rectangle x:Name="ButtonBgDarken"
                    Opacity="0.0" RadiusX="7" Grid.Row="8" 
                    RadiusY="7" ClipToBounds="True" Height="30"
                    VerticalAlignment="Bottom" MouseUp="DoClick"
                    Cursor="Hand" MouseEnter="Hover" 
                    MouseLeave="Leave" MouseDown="Down"
                    Style="{StaticResource Dark}"
+                   Margin="{Binding ButtonMargin, RelativeSource={RelativeSource AncestorType=local:StyledButton}}"
         />
         <Label x:Name="ButtonLabel" HorizontalAlignment="Center" 
                IsHitTestVisible="False" Foreground="#FFFFFF" Grid.Row="8"></Label>

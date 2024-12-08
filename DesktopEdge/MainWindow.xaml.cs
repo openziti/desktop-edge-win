@@ -46,6 +46,7 @@ using Ziti.Desktop.Edge;
 using System.Text;
 using Newtonsoft.Json;
 using System.ComponentModel;
+using static ZitiDesktopEdge.CommonDelegates;
 
 namespace ZitiDesktopEdge {
 
@@ -95,20 +96,6 @@ namespace ZitiDesktopEdge {
             ExpectedLogPathRoot = Path.Combine(ExecutionDirectory, "logs");
             ExpectedLogPathUI = Path.Combine(ExpectedLogPathRoot, "UI", $"{ThisAssemblyName}.log");
             ExpectedLogPathServices = Path.Combine(ExpectedLogPathRoot, "service", $"ziti-tunneler.log");
-        }
-
-        private void OpenDialog_Click(object sender, RoutedEventArgs e) {
-            UrlEntryDialog.Visibility = Visibility.Visible;
-        }
-
-        private void UrlEntryDialog_OnSubmit(string url) {
-            MessageBox.Show($"URL Entered: {url}", "Info");
-            UrlEntryDialog.Visibility = Visibility.Collapsed;
-        }
-
-        private void UrlEntryDialog_OnCancel() {
-            MessageBox.Show("URL Entry Canceled", "Info");
-            UrlEntryDialog.Visibility = Visibility.Collapsed;
         }
 
         async private void IdentityMenu_OnMessage(string message) {
@@ -426,9 +413,6 @@ namespace ZitiDesktopEdge {
             InitializeComponent();
             props = new MainViewModel();
             DataContext = props;
-
-            UrlEntryDialog.OnSubmit += UrlEntryDialog_OnSubmit;
-            UrlEntryDialog.OnCancel += UrlEntryDialog_OnCancel;
 
             NextNotificationTime = DateTime.Now;
             SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
@@ -755,7 +739,7 @@ namespace ZitiDesktopEdge {
             if(found != null) {
                 if (e.Action == "error") {
                     found.AuthInProgress = false;
-                    _ = ShowBlurbAsync("Authentication Failed", "External Auth Failed");
+                    _ = ShowBlurbAsync("Authentication Failed1", "External Auth Failed");
                 }
             }
         }
@@ -1199,18 +1183,17 @@ namespace ZitiDesktopEdge {
                         AddIdentity(zid);
                         LoadIdentities(true);
                     } else {
-                        // means we likely are getting an update for some reason. compare the identities and use the latest info
+                        // means we are getting an update for some reason. compare the identities and use the latest info
                         // for external auth, this event will return after external auth. track if the auth is in progress or not
                         // and clear the flag here if it succeeds, else pop a 'auth failed'
                         if (found.AuthInProgress) {
-                            //found.AuthInProgress = false; //regardless clear it here
+                            found.AuthInProgress = false; //regardless clear it here
                             if (!zid.NeedsExtAuth) {
-                                found.AuthInProgress = false;
                             }
                             else {
                                 // seems bad?
                                 logger.Warn("Identity: {} AuthInProgress but still NeedsExtAuth?", found.Identifier);
-                                _ = ShowBlurbAsync("Authentication Failed", "External Auth Failed");
+                                //_ = ShowBlurbAsync("Authentication Failed2", "External Auth Failed");
                             }
                         }
                         if (zid.Name != null && zid.Name.Length > 0) found.Name = zid.Name;
@@ -1532,6 +1515,7 @@ namespace ZitiDesktopEdge {
                         if (repaint) {
                             idItem.RefreshUI();
                         }
+                        idItem.CompleteExternalAuth += CompleteExternalAuthEvent;
 
                         IdList.Children.Add(idItem);
 
@@ -2005,11 +1989,11 @@ namespace ZitiDesktopEdge {
             AddId(payload);
         }
 
-        private async void IdItem_ExternalAuthEvent(ZitiIdentity identity) {            
+        private async void CompleteExternalAuthEvent(ZitiIdentity identity, string provider) {
             try {
                 DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
                 if (identity?.ExtAuthProviders?.Count > 0) {
-                    ExternalAuthLoginResponse resp = await serviceClient.ExternalAuthLogin(identity.Identifier, identity.ExtAuthProviders[0]);
+                    ExternalAuthLoginResponse resp = await serviceClient.ExternalAuthLogin(identity.Identifier, provider);
                     if (resp?.Error == null) {
                         if (resp?.Data?.url != null) {
                             Console.WriteLine(resp.Data?.url);

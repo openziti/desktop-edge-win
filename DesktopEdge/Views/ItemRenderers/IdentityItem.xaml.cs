@@ -26,6 +26,9 @@ using ZitiDesktopEdge.DataStructures;
 using System.Diagnostics;
 using System.Windows.Media;
 
+using WinForms=System.Windows.Forms;
+
+
 namespace ZitiDesktopEdge {
     /// <summary>
     /// User Control to list Identities and give status
@@ -41,6 +44,7 @@ namespace ZitiDesktopEdge {
         public event OnIdentityChanged IdentityChanged;
         public delegate void OnBlurb(ZitiIdentity identity);
         public event OnBlurb BlurbEvent;
+        public event CommonDelegates.CompleteExternalAuth CompleteExternalAuth;
 
         public Action<string, string> ShowError; 
         private System.Windows.Forms.Timer _timer;
@@ -64,6 +68,11 @@ namespace ZitiDesktopEdge {
             set {
                 _identity = value;
                 this.RefreshUI();
+            }
+        }
+        int ExtProviderCount {
+            get {
+                return _identity?.ExtAuthProviders?.Count ?? 0;
             }
         }
 
@@ -378,8 +387,23 @@ namespace ZitiDesktopEdge {
                 IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
                 deets.SelectedIdentity = this;
                 deets.Identity = this.Identity;
-            } else {
+                deets.ProviderList.Items.Clear();
+                if (Identity?.ExtAuthProviders?.Count > 0) {
+                    foreach (string provider in Identity.ExtAuthProviders) {
+                        deets.ProviderList.Items.Add(provider);
+                    }
+                }
+                deets.TOTPPanel.Visibility = Visibility.Collapsed;
+                deets.ExternalProviderPanel.Visibility = Visibility.Collapsed;
+                deets.ServicesPanel.Visibility = Visibility.Collapsed;
 
+                if (Identity.NeedsExtAuth) {
+                    deets.ExternalProviderPanel.Visibility = Visibility.Visible;
+                } else if(Identity.IsMFANeeded) {
+                    deets.TOTPPanel.Visibility = Visibility.Visible;
+                } else {
+                    deets.ServicesPanel.Visibility = Visibility.Visible;
+                }
             }
         }
 
@@ -424,6 +448,11 @@ namespace ZitiDesktopEdge {
         }
 
         async void performExtAuth() {
+            if (!Identity.NeedsExtAuth) {
+                return;
+            } else {
+                return;
+            }
             _identity.AuthInProgress = true;
              DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
             ExternalAuthLoginResponse resp = await client.ExternalAuthLogin(_identity.Identifier, _identity.ExtAuthProviders[0]);
@@ -444,69 +473,29 @@ namespace ZitiDesktopEdge {
             Console.WriteLine("focus");
         }
 
-        private void Rectangle_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e) {
-            if (sender is Grid grid) {
-
-                var contextMenu = grid.ContextMenu;
-                // Ensure contextMenu is not null
-                if (contextMenu != null) {
-                    if (_identity?.ExtAuthProviders?.Count > 1) {
-
-                        // Clear previous items
-                        contextMenu.Items.Clear();
-
-                        // Add menu items dynamically
-                        foreach (var provider in _identity.ExtAuthProviders) {
-                            var menuItem = new System.Windows.Controls.MenuItem {
-                                Header = provider // Use Header instead of Content
-                            };
-
-                            menuItem.Click += (s, args) => {
-                                // Handle provider selection here
-                                MessageBox.Show($"You selected {provider}");
-                            };
-
-                            contextMenu.Items.Add(menuItem);
-                        }
-
-                        // Show the context menu
-                        contextMenu.IsOpen = true;
-                    }
-                }
-            }
-        }
-
         private void ExternalIdpHover(object sender, System.Windows.Input.MouseEventArgs e) {
+            IconContext.IsEnabled = false;
             var fe = sender as FrameworkElement;
             if (fe?.ContextMenu != null) {
                 if (_identity?.ExtAuthProviders?.Count > 1) {
+                    IconContext.IsEnabled = true;
 
                     var contextMenu = fe.ContextMenu;
-                    // Clear previous items
                     contextMenu.Items.Clear();
 
                     // Add menu items dynamically
                     foreach (var provider in _identity.ExtAuthProviders) {
-                        var menuItem1 = new System.Windows.Controls.MenuItem {
-                            Header = provider // Use Header instead of Content
+                        var menuItem = new MenuItem();
+                        menuItem.Click += (s, mouseEventArgs) =>
+                        {
+                            CompleteExternalAuth?.Invoke(Identity, provider);
                         };
-                        var menuItem = new OZMenuItem();
-                        menuItem.LabelCtrl.Content = provider;
-                        menuItem.IconCtrl.Visibility = Visibility.Collapsed;
-                        menuItem.IconCtrl.Width = 0;
-                        menuItem.ChevronCtrl.Width = 0;
-                        menuItem.LabelCtrl.Background = Brushes.White;
+                        menuItem.Header = provider;
 
-                        menuItem.MouseUp += (s, args) => {
-                            // Handle provider selection here
-                            Console.WriteLine("clicked it You selected {provider}");
-                        };
-
+                        var controlTemplate = (System.Windows.Controls.ControlTemplate)Application.Current.FindResource("ReusableMenuItemTemplate");
+                        menuItem.Template = controlTemplate;
                         contextMenu.Items.Add(menuItem);
                     }
-
-                    // Show the context menu
-                    contextMenu.IsOpen = true;
                 }
                 fe.ContextMenu.PlacementTarget = fe;
                 fe.ContextMenu.IsOpen = true;

@@ -34,5 +34,16 @@ namespace ZitiDesktopEdge.Properties {
                 this["UseKeychain"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        public global::System.Collections.Specialized.StringCollection IdenttitySettings {
+            get {
+                return ((global::System.Collections.Specialized.StringCollection)(this["IdenttitySettings"]));
+            }
+            set {
+                this["IdenttitySettings"] = value;
+            }
+        }
     }
 }

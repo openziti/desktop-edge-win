@@ -9,11 +9,11 @@ using ZitiDesktopEdge.DataStructures;
 namespace ZitiDesktopEdge {
     public partial class AddIdentityUrl : UserControl {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
-        public event SharedUserControlDefinitions.CloseAction OnClose;
+        public event CommonDelegates.CloseAction OnClose;
         public event Action<EnrollIdentifierPayload, UserControl> OnAddIdentity;
         //public event Action<EnrollIdentifierPayload, string> OnAddIdentity2;
 
-        public SharedUserControlDefinitions.JoinNetwork JoinNetwork;
+        public CommonDelegates.JoinNetwork JoinNetwork;
 
         public AddIdentityUrl() {
             InitializeComponent();

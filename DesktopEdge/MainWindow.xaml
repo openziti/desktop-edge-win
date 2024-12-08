@@ -130,7 +130,6 @@
             </Rectangle.Fill>
         </Rectangle>
         <StackPanel x:Name="MainView" Margin="10,10,10,-20">
-            <local:UrlEntryDialog x:Name="UrlEntryDialog" />
             <Grid HorizontalAlignment="Stretch">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="100"/>
@@ -177,9 +176,10 @@
                                 </ControlTemplate>
                             </ContextMenu.Template>
 
-                            <MenuItem Header="With JWT" Click="AddIdentity" Template="{StaticResource ReusableMenuItemTemplate}" />
-                            <MenuItem Header="With URL" Click="WithUrl_Click" Template="{StaticResource ReusableMenuItemTemplate}" />
-                            <!--MenuItem Header="With 3rd Party CA" Click="With3rdPartyCA_Click" Template="{StaticResource ReusableMenuItemTemplate}" /-->
+                            <MenuItem Header="With JWT" Click="AddIdentity"
+                                      Template="{StaticResource ReusableMenuItemTemplate}" />
+                            <MenuItem Header="With URL" Click="WithUrl_Click"
+                                      Template="{StaticResource ReusableMenuItemTemplate}" />
                         </ContextMenu>
                     </StackPanel.ContextMenu>
 
@@ -261,7 +261,7 @@
                                Recovery="ShowRecovery"
                                OnLoading="DoLoading"
                                OnShowMFA="ShowAuthenticate"
-                               IdentityDetails_ExternalAuthEvent="IdItem_ExternalAuthEvent"
+                               CompleteExternalAuth="CompleteExternalAuthEvent"
         />
 
         <!-- Modal Background -->

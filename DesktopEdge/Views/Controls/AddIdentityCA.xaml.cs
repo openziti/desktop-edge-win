@@ -10,7 +10,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace ZitiDesktopEdge {
     public partial class AddIdentityCA : UserControl {
-        public event SharedUserControlDefinitions.CloseAction OnClose;
+        public event CommonDelegates.CloseAction OnClose;
         public event Action<EnrollIdentifierPayload, UserControl> OnAddIdentity;
         public EnrollIdentifierPayload Payload { get; set; }
 

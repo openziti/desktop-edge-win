@@ -26,15 +26,15 @@
                     <RowDefinition Height="40"/>
                     <RowDefinition Height="20"/>
                 </Grid.RowDefinitions>
-
+                
                 <local:Toggler x:Name="ToggleSwitch" Grid.Column="0" Grid.Row="0" Margin="0,10,0,0"></local:Toggler>
                 <Label Name="ToggleStatus" Grid.Column="0" Grid.Row="1" Margin="0,-5,0,0" Content="Enabled" Foreground="White" FontSize="11" Typography.Capitals="AllSmallCaps" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"></Label>
-                <Rectangle Fill="Transparent" Grid.Column="0" Grid.RowSpan="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Cursor="Hand" MouseUp="ToggledSwitch"></Rectangle>
+                <Rectangle  d:Fill="Green" d:Opacity=".5" Fill="Transparent" Grid.Column="0" Grid.RowSpan="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Cursor="Hand" MouseUp="ToggledSwitch"></Rectangle>
 
                 <Label MaxWidth="210" Grid.Row="0" Padding="0,0,0,0" Grid.Column="1" VerticalAlignment="Center" Margin="0,11,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" FontSize="16" Foreground="White" HorizontalAlignment="Left">
                     <TextBlock Name="IdName" TextTrimming="CharacterEllipsis">Identity Name</TextBlock>
                 </Label>
-                <Rectangle Fill="Transparent" Grid.RowSpan="2" Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Cursor="Hand" MouseUp="OpenDetails"></Rectangle>
+                <Rectangle d:Fill="Aqua" d:Opacity=".5" Fill="Transparent" Grid.RowSpan="2" Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Cursor="Hand" MouseUp="OpenDetails"></Rectangle>
 
                 <Label Cursor="Hand" MouseUp="OpenDetails" MaxWidth="180" MinWidth="210" Grid.Column="1" Grid.Row="1" FontSize="11" Margin="0,-5,0,0" Padding="0,5,0,0" Typography.Capitals="AllSmallCaps" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" HorizontalAlignment="Left">
                     <TextBlock Name="IdUrl" TextTrimming="CharacterEllipsis"></TextBlock>
@@ -42,33 +42,52 @@
                 <Image Name="PostureTimedOut" Visibility="Collapsed" Grid.Column="2" Source="/Assets/Images/lockout.png" VerticalAlignment="Bottom" HorizontalAlignment="Center" RenderOptions.BitmapScalingMode="Fant" Width="26" Height="26" Margin="0,0,0,6" Cursor="Hand" MouseUp="MFAAuthenticate"></Image>
                 <Image Name="MfaRequired"
                        Source="/Assets/Images/mfaoff.png"
-                       Grid.Column="2"
+                       Grid.Row="0" Grid.Column="2"
                        Cursor="Hand"
-                       Width="50" Height="26"
+                       Width="50" Height="30"
+                       Margin="0,0,0,3"
                        VerticalAlignment="Bottom"
                        RenderOptions.BitmapScalingMode="Fant"
                        Stretch="Uniform"
                        Visibility="Collapsed"
+                       d:Visibility="Visible"
                        MouseUp="MFAAuthenticate"
                 />
                 <Image Name="ExtAuthRequired"
                        Source="/Assets/Images/ext-auth-needed.png"
-                       Grid.Column="2"
+                       Grid.Row="0" Grid.Column="2"
                        Cursor="Hand"
-                       Width="50" Height="35    "
+                       Width="50" Height="35"
                        VerticalAlignment="Bottom"
                        RenderOptions.BitmapScalingMode="Fant"
                        Stretch="Uniform"
                        Visibility="Collapsed"
                        MouseUp="CompleteExtAuth"
-                       d:Visibility="Visible"
-                       MouseEnter="ExternalIdpHover"
+                       d:Visibility="Collapsed"
                 >
-                    <Image.ContextMenu>
-                        <ContextMenu Placement="MousePoint" PlacementTarget="{Binding RelativeSource={RelativeSource Self}}">
+                </Image>
+                <Grid Name="ServiceCountArea" Grid.Column="2" Grid.Row="0" Width="50" Height="40" Cursor="Hand" Visibility="Collapsed">
+                    <Border Name="ServiceCountBorder" Width="44" Height="26" Background="#0068F9" CornerRadius="12" Canvas.Top="10" Canvas.Left="3"></Border>
+                    <Label Name="ServiceCount" Width="50" Height="26" Canvas.Top="9" Padding="0,0,0,0" FontSize="14" Content="23" Foreground="White" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"></Label>
+                </Grid>
+                <Image Name="TimerCountdown" Visibility="Collapsed" Grid.Column="2" Source="/Assets/Images/timer.png" VerticalAlignment="Bottom" HorizontalAlignment="Center" Width="26" Height="26" Margin="0,0,0,6" Cursor="Hand" MouseUp="MFAAuthenticate"></Image>
+                <Label Name="ServiceCountAreaLabel" Grid.Column="3" MouseUp="OpenDetails" Grid.Row="1" Margin="0,-5,0,0" Content="authenticate" Cursor="Hand" Foreground="White" FontSize="11" HorizontalAlignment="Stretch" Typography.Capitals="AllSmallCaps" HorizontalContentAlignment="Center"></Label>
+                <Rectangle d:Fill="Purple" d:Opacity=".5" 
+                    Fill="Transparent"
+                    Grid.Column="2" Grid.RowSpan="2"
+                    VerticalAlignment="Stretch"
+                    HorizontalAlignment="Stretch"
+                    Cursor="Hand"
+                    MouseUp="CompleteExtAuth"
+                    MouseEnter="ExternalIdpHover"
+                >
+                    <Rectangle.ContextMenu>
+                        <ContextMenu Name="IconContext"
+                            Placement="MousePoint"
+                            PlacementTarget="{Binding RelativeSource={RelativeSource Self}}">
                             <ContextMenu.Template>
                                 <ControlTemplate TargetType="ContextMenu">
-                                    <Border Background="{StaticResource DarkBackgroundBrush}"
+                                    <Border Background="{StaticResource LightBackgroundBrush}"
                                             BorderBrush="{StaticResource DarkBackgroundBrush}"
                                             BorderThickness="3" CornerRadius="10" Padding="0">
                                         <StackPanel>
@@ -78,25 +97,17 @@
                                 </ControlTemplate>
                             </ContextMenu.Template>
                         </ContextMenu>
-                    </Image.ContextMenu>
-                </Image>
-                <Canvas Name="ServiceCountArea" Grid.Column="2" Grid.Row="0" Width="50" Height="40" Cursor="Hand" Visibility="Collapsed">
-                    <Border Name="ServiceCountBorder" Width="44" Height="26" Background="#0068F9" CornerRadius="12" Canvas.Top="10" Canvas.Left="3"></Border>
-                    <Label Name="ServiceCount" Width="50" Height="26" Canvas.Top="9" Padding="0,0,0,0" FontSize="14" Content="23" Foreground="White" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"></Label>
-                </Canvas>
-                <Image Name="TimerCountdown" Visibility="Collapsed" Grid.Column="2" Source="/Assets/Images/timer.png" VerticalAlignment="Bottom" HorizontalAlignment="Center" Width="26" Height="26" Margin="0,0,0,6" Cursor="Hand" MouseUp="MFAAuthenticate"></Image>
-                <Label Name="ServiceCountAreaLabel" Grid.Column="3" MouseUp="OpenDetails" Grid.Row="1" Margin="0,-5,0,0" Content="authenticate" Cursor="Hand" Foreground="White" FontSize="11" HorizontalAlignment="Stretch" Typography.Capitals="AllSmallCaps" HorizontalContentAlignment="Center"></Label>
-                <Rectangle
-                    Fill="Transparent"
-                    Grid.Column="2" Grid.RowSpan="2"
-                    VerticalAlignment="Stretch"
-                    HorizontalAlignment="Stretch"
-                    Cursor="Hand"
-                    MouseUp="CompleteExtAuth"
-                />
+                    </Rectangle.ContextMenu>
+                </Rectangle>
             </Grid>
             <Image Grid.Column="1" Source="/Assets/Images/next.png" Width="12" MouseUp="OpenDetails" Cursor="Hand"></Image>
-            <Rectangle Fill="Transparent" Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Cursor="Hand" MouseUp="OpenDetails"></Rectangle>
+            <Rectangle Fill="Transparent" d:Fill="blue" d:Opacity=".5" Grid.Column="1" Grid.ColumnSpan="2"
+                       VerticalAlignment="Stretch"
+                       HorizontalAlignment="Stretch"
+                       Cursor="Hand"
+                       MouseUp="OpenDetails"
+            >
+            </Rectangle>
         </Grid>
     </Canvas>
 </UserControl>

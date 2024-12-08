@@ -31,6 +31,10 @@
                     <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource DarkBackgroundBrush}" />
                     <Setter TargetName="ItemText" Property="Foreground" Value="{StaticResource ContextMenuTextHoverBrush}"/>
                 </Trigger>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter TargetName="ItemBorder" Property="Background" Value="Brown" />
+                    <Setter TargetName="ItemText" Property="Foreground" Value="White"/>
+                </Trigger>
             </ControlTemplate.Triggers>
         </ControlTemplate>
 
@@ -69,6 +73,9 @@
         <SolidColorBrush x:Key="ComboBox.Static.Glyph" Color="#FF606060"/>
         <SolidColorBrush x:Key="TextBox.Static.Background" Color="#FFFFFFFF"/>
         <Style TargetType="{x:Type Label}">
+            <Setter Property="FontFamily" Value="pack://application:,,,/Assets/Fonts/#Open Sans"/>
+        </Style>
+        <Style TargetType="{x:Type TextBox}">
             <Setter Property="FontFamily" Value="pack://application:,,,/Assets/Fonts/#Open Sans"/>
         </Style>
 
