@@ -1,0 +1,26 @@
+name: CodeQL Analysis for C#
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  analyze:
+    name: Analyze C# code with CodeQL
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up CodeQL
+        uses: github/codeql-action/init@v1
+        with:
+          languages: 'csharp'
+
+      - name: Perform CodeQL analysis on C#
+        uses: github/codeql-action/analyze@v1
+        with:
+          languages: 'csharp'
