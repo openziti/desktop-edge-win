@@ -17,14 +17,19 @@
 using NLog;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ZitiDesktopEdge.DataStructures;
 
 namespace ZitiDesktopEdge.Models {
     public class ZitiIdentity {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+        public const string ProviderDelimiter = "|-|";
+
         public List<ZitiService> Services { get; set; }
         public string Name { get; set; }
         public string ControllerUrl { get; set; }
@@ -61,6 +66,7 @@ namespace ZitiDesktopEdge.Models {
         public string Fingerprint { get; set; }
         public string Identifier { get; set; }
         private bool isTimedOut = false;
+        public bool AuthInProgress { get; set; }
 
         public SemaphoreSlim Mutex { get; } = new SemaphoreSlim(1);
         public bool IsTimedOut {
@@ -90,6 +96,7 @@ namespace ZitiDesktopEdge.Models {
         }
 
         public bool NeedsExtAuth { get; set; }
+        public List<string> ExtAuthProviders { get; set; }
 
         /// <summary>
         /// Default constructor to support named initialization
@@ -131,12 +138,13 @@ namespace ZitiDesktopEdge.Models {
                 IsMFANeeded = id.MfaNeeded,
                 IsTimedOut = false,
                 IsTimingOut = false,
-                MinTimeout = id.MinTimeout,
-                MaxTimeout = id.MaxTimeout,
+                MinTimeout = id.MfaMinTimeoutRem,
+                MaxTimeout = id.MfaMaxTimeoutRem,
                 LastUpdatedTime = id.MfaLastUpdatedTime,
                 TimeoutMessage = "",
                 IsConnected = true,
                 NeedsExtAuth = id.NeedsExtAuth,
+                ExtAuthProviders = id.ExtAuthProviders,
             };
 
             if (zid.Name.Contains(@"\")) {
@@ -144,10 +152,7 @@ namespace ZitiDesktopEdge.Models {
                 zid.Name = zid.Name.Substring(pos + 1);
             }
 
-#if DEBUG
-            zid.MFADebug("002");
-#endif
-            if (id.Services != null) {
+            if (id.Active && id?.Services?.Count > 0) {
                 foreach (var svc in id.Services) {
                     if (svc != null) {
                         var zsvc = new ZitiService(svc);
@@ -169,6 +174,84 @@ namespace ZitiDesktopEdge.Models {
                 .AddArgument("identifier", Identifier)
                 .SetBackgroundActivation()
                 .Show();
+        }
+
+        private string CreateDefaultProviderKey(string provider) {
+            return Identifier + ProviderDelimiter + provider;
+        }
+        private string IdentifierFromProviderKey(string providerKey) {
+            int delimIdx = providerKey.IndexOf(ProviderDelimiter);
+            return providerKey.Substring(delimIdx + ProviderDelimiter.Length);
+        }
+        public bool IsDefaultProvider(string provider) {
+            if (provider == null) {
+                return false;
+            }
+            if (provider.StartsWith("* ")) {
+                provider = provider.Substring(2);
+            }
+            string defaultProvider = GetDefaultProvider();
+            if (string.IsNullOrEmpty(defaultProvider)) {
+                return false;
+            }
+            string key = IdentifierFromProviderKey(defaultProvider);
+            return key == provider;
+        }
+
+
+
+        /// <summary>
+        /// Finds any default provider already configured and clears it -- and saves the state
+        /// </summary>
+        public void RemoveDefaultProvider() {
+            var defaultProviders = Properties.Settings.Default.DefaultProviders;
+            if (defaultProviders == null) {
+                return; // nothing to do...
+            }
+
+            List<string> keysToRemove = new List<string>();
+            foreach (string defaultProvider in defaultProviders) {
+                // find the entries by identifier
+                string providerKeyIdentifier = IdentifierFromProviderKey(defaultProvider);
+                if (ProviderIsForThisIdentity(defaultProvider)) {
+                    keysToRemove.Add(defaultProvider);
+                }
+            }
+            foreach (string key in keysToRemove) {
+                defaultProviders.Remove(key); // in the off chance there are more than one...
+            }
+            Properties.Settings.Default.Save();
+        }
+        public void SetDefaultProvider(string provider) {
+            if (provider.StartsWith("* ")) {
+                provider = provider.Substring(2);
+            }
+            RemoveDefaultProvider();
+            if (Properties.Settings.Default.DefaultProviders == null) {
+                logger.Info("DefaultProviders initialized");
+                Properties.Settings.Default.DefaultProviders = new System.Collections.Specialized.StringCollection();
+            }
+            string providerKey = CreateDefaultProviderKey(provider);
+            Properties.Settings.Default.DefaultProviders.Add(providerKey);
+            Properties.Settings.Default.Save();
+        }
+
+        public string GetDefaultProvider() {
+            var defaultProviders = Properties.Settings.Default.DefaultProviders;
+            if (defaultProviders == null) {
+                return null; // nothing to do...
+            }
+            string prefix = Identifier + ProviderDelimiter;
+            foreach (string defaultProvider in defaultProviders) {
+                if (ProviderIsForThisIdentity(defaultProvider)) {
+                    return defaultProvider;
+                }
+            }
+            return null;
+        }
+
+        private bool ProviderIsForThisIdentity(string defaultProvider) {
+            return defaultProvider.StartsWith(Identifier + ProviderDelimiter);
         }
     }
 }

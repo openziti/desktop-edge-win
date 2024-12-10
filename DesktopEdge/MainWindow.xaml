@@ -9,8 +9,8 @@
         mc:Ignorable="d"
         ShowInTaskbar="False"
         x:Name="MainUI"
-        Title="Ziti Desktop Edge" Height="520" 
-        Width="420" ResizeMode="NoResize" 
+        Title="Ziti Desktop Edge" 
+        Width="410" ResizeMode="NoResize" 
         ClipToBounds="False"
         Icon="Assets/Images/icon.png" AllowsTransparency="True" 
         Closing="Window_Closing"
@@ -137,21 +137,54 @@
                     <ColumnDefinition Width="100"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0" Cursor="Hand" Orientation="Vertical" Margin="14,16,14,14" MouseLeftButtonUp="ShowMenu">
-                    <Image Source="/Assets/Images/hamburger.png" Margin="5,0,0,-4" Width="26" Height="26" HorizontalAlignment="Left"></Image>
+                    <Image Source="/Assets/Images/hamburger.png" Margin="5,0,0,-4" Width="26" Height="26" HorizontalAlignment="Left">
+                        <Image.Effect>
+                            <DropShadowEffect Color="white" BlurRadius="1" ShadowDepth="1" Direction="90" Opacity="1" />
+                        </Image.Effect>
+                    </Image>
                     <Label Content="MAIN" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" FontSize="10"></Label>
                     <Label Content="MENU" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" Margin="0,-14,0,0" FontSize="10"></Label>
                 </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,12" MouseDown="Window_MouseDown">
-                    <Image Source="/Assets/Images/z.png" Height="40" RenderOptions.BitmapScalingMode="Fant"></Image>
-                    <Label Content="Tap to Connect" MouseDoubleClick="Label_MouseDoubleClick" Margin="0,-3,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Russo One" FontSize="14" Foreground="White" HorizontalAlignment="Center"></Label>
+                <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,12">
+                    <Image Source="/Assets/Images/z.png" Height="40" RenderOptions.BitmapScalingMode="Fant" MouseUp="HandleAttach" MouseDown="Window_MouseDown" Cursor="ScrollAll" ToolTip="Drag to detach/move, right click to reattach"></Image>
+                    <Label x:Name="ConnetLabel"
+                           Margin="0,-3,0,0" 
+                           FontFamily="pack://application:,,,/Assets/Fonts/#Russo One" 
+                           FontSize="14" 
+                           Foreground="White" 
+                           HorizontalAlignment="Center"
+                           />
                 </StackPanel>
-                <StackPanel x:Name="AddIdAreaButton" Grid.Column="2" Cursor="Hand" Orientation="Vertical" Margin="14,16,14,14" MouseLeftButtonUp="AddIdentity">
-                    <Image Source="/Assets/Images/identity.png" Margin="0,0,5,-4" Width="26" Height="26" HorizontalAlignment="Right"></Image>
+                <StackPanel x:Name="AddIdAreaButton" Grid.Column="2" Cursor="Hand" Orientation="Vertical" Margin="14,16,14,14" MouseLeftButtonUp="ShowContextMenu">
+                    <Image Source="/Assets/Images/identity.png" Margin="0,0,5,-4" Width="26" Height="26" HorizontalAlignment="Right">
+                        <Image.Effect>
+                            <DropShadowEffect Color="white" BlurRadius="1" ShadowDepth="1" Direction="90" Opacity="1" />
+                        </Image.Effect>
+                    </Image>
                     <Label Content="ADD" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" FontSize="10" HorizontalAlignment="Right"></Label>
                     <Label Content="IDENTITY" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" Margin="0,-14,0,0" FontSize="10" HorizontalAlignment="Right"></Label>
+                    <StackPanel.ContextMenu>
+                        <ContextMenu>
+                            <ContextMenu.Template>
+                                <ControlTemplate TargetType="ContextMenu">
+                                    <Border Background="{StaticResource DarkBackgroundBrush}" BorderBrush="{StaticResource DarkBackgroundBrush}" BorderThickness="3" CornerRadius="10" Padding="0">
+                                        <StackPanel>
+                                            <ItemsPresenter />
+                                        </StackPanel>
+                                    </Border>
+                                </ControlTemplate>
+                            </ContextMenu.Template>
+
+                            <MenuItem Header="With JWT" Click="AddIdentity"
+                                      Template="{StaticResource ReusableMenuItemTemplate}" />
+                            <MenuItem Header="With URL" Click="WithUrl_Click"
+                                      Template="{StaticResource ReusableMenuItemTemplate}" />
+                        </ContextMenu>
+                    </StackPanel.ContextMenu>
+
                 </StackPanel>
             </Grid>
-            <Canvas Name="ConnectButton" Width="400" Height="160" MouseUp="StartZitiService" Visibility="Collapsed">
+            <Canvas Name="ConnectButton" Cursor="Hand" Width="400" Height="160" MouseUp="StartZitiService" Visibility="Collapsed">
                 <Grid Width="{Binding ActualWidth, ElementName=ConnectButton}" Height="140">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="221*"/>
@@ -160,7 +193,7 @@
                     <Image Source="/Assets/Images/connect.png" Height="140" HorizontalAlignment="Center" Grid.ColumnSpan="2" Margin="105,0" />
                 </Grid>
             </Canvas>
-            <Canvas Name="DisconnectButton" Width="400" Height="160" MouseUp="Disconnect" Visibility="Collapsed">
+            <Canvas Name="DisconnectButton" Cursor="Hand" Width="400" Height="160" MouseUp="Disconnect" Visibility="Collapsed">
                 <Grid Width="{Binding ActualWidth, ElementName=DisconnectButton}" Height="140">
                     <Image Source="/Assets/Images/connected.png" Height="140" HorizontalAlignment="Center" />
                 </Grid>
@@ -209,7 +242,7 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Label Name="AddIdButton" Padding="0,0,0,20" Grid.Column="0" Margin="0,0,0,20" Content="Add Identity" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="#0069FF" FontSize="16" Cursor="Hand" HorizontalAlignment="Center" VerticalAlignment="Center" MouseDown="AddIdentity"></Label>
+                <Label Name="AddIdButton" Padding="0,0,0,0" Grid.Column="0" Margin="0,0,0,0" Content="" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="#0069FF" FontSize="12 " HorizontalAlignment="Center" VerticalAlignment="Center" ></Label>
             </Grid>
         </StackPanel>
         <Canvas x:Name="AlertCanvas" ClipToBounds="False" Visibility="Collapsed">
@@ -220,12 +253,32 @@
         <!-- Menu UI -->
         <local:MainMenu x:Name="MainMenu" Visibility="Collapsed"></local:MainMenu>
         <!-- ID Detail UI -->
-        <local:IdentityDetails x:Name="IdentityMenu" Visibility="Collapsed" OnMFAToggled="MFAToggled" Authenticate="ShowAuthenticate" Recovery="ShowRecovery" OnLoading="DoLoading" OnShowMFA="ShowAuthenticate"></local:IdentityDetails>
+        <local:IdentityDetails x:Name="IdentityMenu"
+                               Visibility="Collapsed"
+                               OnMFAToggled="MFAToggled"
+                               AuthenticateTOTP="ShowAuthenticate"
+                               Recovery="ShowRecovery"
+                               OnLoading="DoLoading"
+                               OnShowMFA="ShowAuthenticate"
+                               CompleteExternalAuth="CompleteExternalAuthEvent"
+        />
 
         <!-- Modal Background -->
         <Rectangle x:Name="ModalBg" MouseDown="Window_MouseDown" Margin="10,10,10,10" Fill="Black" RadiusY="10" RadiusX="10" Opacity="0" Visibility="Collapsed"></Rectangle>
         <!-- MFA Setup Prompt -->
         <local:MFAScreen x:Name="MFASetup" Visibility="Collapsed" Margin="0,0,0,0" OnClose="DoClose"></local:MFAScreen>
+        <local:AddIdentityUrl x:Name="AddIdentityByURL" 
+                              Visibility="Collapsed" 
+                              Margin="0,0,0,0" 
+                              OnClose="CloseJoinByUrl" 
+                              Height="Auto" 
+                              OnAddIdentity="OnAddIdentityAction" />
+        <local:AddIdentityCA x:Name="AddIdentityBy3rdPartyCA"
+                              Visibility="Collapsed" 
+                              Margin="0,0,0,0" 
+                              OnClose="CloseJoinByUrl" 
+                              Height="Auto" 
+                              OnAddIdentity="OnAddIdentityAction" />
 
         <!-- Small messages screen that opens at the bottom -->
         <Grid x:Name="BlurbArea" Visibility="Collapsed" Height="80" Margin="0,500,0,0" VerticalAlignment="Bottom">
@@ -343,7 +396,7 @@
                     <RowDefinition Height="30"></RowDefinition>
                     <RowDefinition Height="*"></RowDefinition>
                 </Grid.RowDefinitions>
-                <Label Name="ErrorTitle" Foreground="White" Content="An Error Occurred" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
+                <TextBlock x:Name="ErrorTitle" TextWrapping="WrapWithOverflow" Width="400" Foreground="White" Text="An Error Occurred" Grid.Row="1" TextAlignment="Center" VerticalAlignment="Center" FontSize="24" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
                 <TextBlock x:Name="ErrorDetails" TextWrapping="WrapWithOverflow" Width="400" Foreground="LightGray" Padding="10" Text="An Unknown Error Occurred, you could try restarting the service and the interface to continue" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
                 <Label Grid.Row="3" Foreground="Gray" FontWeight="Light" Content="Check the Log for Details" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Center"></Label>
 
@@ -370,7 +423,4 @@
             </Grid>
         </Grid>
     </Grid>
-    <Window.InputBindings>
-        <KeyBinding x:Name="ShowDebug" Command="{Binding SomeCommand}" Key="F12" />
-    </Window.InputBindings>
 </Window>
