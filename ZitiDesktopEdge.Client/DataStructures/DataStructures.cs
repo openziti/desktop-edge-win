@@ -383,6 +383,7 @@ namespace ZitiDesktopEdge.DataStructures {
         public bool AddDns { get; set; }
         public int ApiPageSize { get; set; }
 
+#if DEBUG
         public void Dump(System.IO.TextWriter writer) {
             try {
                 writer.WriteLine($"     LogLevel         : {LogLevel}");
@@ -403,8 +404,8 @@ namespace ZitiDesktopEdge.DataStructures {
             } catch (Exception e) {
                 if (writer != null) writer.WriteLine(e.ToString());
             }
-
         }
+#endif
 
         public LogLevelEnum EvaluateLogLevel() {
             try {

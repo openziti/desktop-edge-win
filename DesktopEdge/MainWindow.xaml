@@ -9,10 +9,10 @@
         mc:Ignorable="d"
         ShowInTaskbar="False"
         x:Name="MainUI"
-        Title="Ziti Desktop Edge" Height="520" 
-        Width="420" ResizeMode="NoResize" 
+        Title="Ziti Desktop Edge" Height="520"
+        Width="420" ResizeMode="NoResize"
         ClipToBounds="False"
-        Icon="Assets/Images/icon.png" AllowsTransparency="True" 
+        Icon="Assets/Images/icon.png" AllowsTransparency="True"
         Closing="Window_Closing"
         i:MouseWheel.Enhanced="True"
         i:MouseWheel.LogicalScrollDebouncing="Auto"
@@ -113,7 +113,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Canvas x:Name="ArrowCanvas" ClipToBounds="False">
-            <Rectangle x:Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="#070826" Width="20" ClipToBounds="True" Canvas.Left="185" Canvas.Bottom="-10">
+            <Rectangle x:Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="#070826" Width="20" ClipToBounds="True">
                 <Rectangle.LayoutTransform>
                     <RotateTransform Angle="-45"/>
                 </Rectangle.LayoutTransform>
@@ -137,21 +137,36 @@
                     <ColumnDefinition Width="100"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0" Cursor="Hand" Orientation="Vertical" Margin="14,16,14,14" MouseLeftButtonUp="ShowMenu">
-                    <Image Source="/Assets/Images/hamburger.png" Margin="5,0,0,-4" Width="26" Height="26" HorizontalAlignment="Left"></Image>
+                    <Image Source="/Assets/Images/hamburger.png" Margin="5,0,0,-4" Width="26" Height="26" HorizontalAlignment="Left">
+                        <Image.Effect>
+                            <DropShadowEffect Color="white" BlurRadius="1" ShadowDepth="1" Direction="90" Opacity="1" />
+                        </Image.Effect>
+                    </Image>
                     <Label Content="MAIN" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" FontSize="10"></Label>
                     <Label Content="MENU" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" Margin="0,-14,0,0" FontSize="10"></Label>
                 </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,12" MouseDown="Window_MouseDown">
-                    <Image Source="/Assets/Images/z.png" Height="40" RenderOptions.BitmapScalingMode="Fant"></Image>
-                    <Label Content="Tap to Connect" MouseDoubleClick="Label_MouseDoubleClick" Margin="0,-3,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Russo One" FontSize="14" Foreground="White" HorizontalAlignment="Center"></Label>
+                <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,12">
+                    <Image Source="/Assets/Images/z.png" Height="40" RenderOptions.BitmapScalingMode="Fant" MouseUp="HandleAttach" MouseDown="Window_MouseDown" Cursor="ScrollAll" ToolTip="Drag to detach/move, right click to reattach"></Image>
+                    <Label x:Name="ConnetLabel"
+                           Content="{Binding ConnectLabelContent}"
+                           Margin="0,-3,0,0" 
+                           FontFamily="pack://application:,,,/Assets/Fonts/#Russo One" 
+                           FontSize="14" 
+                           Foreground="White" 
+                           HorizontalAlignment="Center"
+                           />
                 </StackPanel>
                 <StackPanel x:Name="AddIdAreaButton" Grid.Column="2" Cursor="Hand" Orientation="Vertical" Margin="14,16,14,14" MouseLeftButtonUp="AddIdentity">
-                    <Image Source="/Assets/Images/identity.png" Margin="0,0,5,-4" Width="26" Height="26" HorizontalAlignment="Right"></Image>
+                    <Image Source="/Assets/Images/identity.png" Margin="0,0,5,-4" Width="26" Height="26" HorizontalAlignment="Right">
+                        <Image.Effect>
+                            <DropShadowEffect Color="white" BlurRadius="1" ShadowDepth="1" Direction="90" Opacity="1" />
+                        </Image.Effect>
+                    </Image>
                     <Label Content="ADD" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" FontSize="10" HorizontalAlignment="Right"></Label>
                     <Label Content="IDENTITY" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" Margin="0,-14,0,0" FontSize="10" HorizontalAlignment="Right"></Label>
                 </StackPanel>
             </Grid>
-            <Canvas Name="ConnectButton" Width="400" Height="160" MouseUp="StartZitiService" Visibility="Collapsed">
+            <Canvas Name="ConnectButton" Cursor="Hand" Width="400" Height="160" MouseUp="StartZitiService" Visibility="Collapsed">
                 <Grid Width="{Binding ActualWidth, ElementName=ConnectButton}" Height="140">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="221*"/>
@@ -160,7 +175,7 @@
                     <Image Source="/Assets/Images/connect.png" Height="140" HorizontalAlignment="Center" Grid.ColumnSpan="2" Margin="105,0" />
                 </Grid>
             </Canvas>
-            <Canvas Name="DisconnectButton" Width="400" Height="160" MouseUp="Disconnect" Visibility="Collapsed">
+            <Canvas Name="DisconnectButton" Cursor="Hand" Width="400" Height="160" MouseUp="Disconnect" Visibility="Collapsed">
                 <Grid Width="{Binding ActualWidth, ElementName=DisconnectButton}" Height="140">
                     <Image Source="/Assets/Images/connected.png" Height="140" HorizontalAlignment="Center" />
                 </Grid>
@@ -370,7 +385,4 @@
             </Grid>
         </Grid>
     </Grid>
-    <Window.InputBindings>
-        <KeyBinding x:Name="ShowDebug" Command="{Binding SomeCommand}" Key="F12" />
-    </Window.InputBindings>
 </Window>
