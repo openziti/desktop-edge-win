@@ -155,7 +155,7 @@
                            HorizontalAlignment="Center"
                            />
                 </StackPanel>
-                <StackPanel x:Name="AddIdAreaButton" Grid.Column="2" Cursor="Hand" Orientation="Vertical" Margin="14,16,14,14" MouseLeftButtonUp="ShowContextMenu">
+                <StackPanel x:Name="AddIdAreaButton" Grid.Column="2" Cursor="Hand" Orientation="Vertical" Margin="14,16,14,14" MouseLeftButtonUp="AddIdentityContextMenu">
                     <Image Source="/Assets/Images/identity.png" Margin="0,0,5,-4" Width="26" Height="26" HorizontalAlignment="Right">
                         <Image.Effect>
                             <DropShadowEffect Color="white" BlurRadius="1" ShadowDepth="1" Direction="90" Opacity="1" />

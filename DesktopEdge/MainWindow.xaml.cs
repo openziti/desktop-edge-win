@@ -1960,7 +1960,7 @@ namespace ZitiDesktopEdge {
             else ShowLoad("Loading", "Please Wait.");
         }
 
-        private void ShowContextMenu(object sender, MouseButtonEventArgs e) {
+        private void AddIdentityContextMenu(object sender, MouseButtonEventArgs e) {
             var stackPanel = sender as StackPanel;
             if (stackPanel?.ContextMenu != null) {
                 stackPanel.ContextMenu.PlacementTarget = stackPanel;

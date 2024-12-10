@@ -51,7 +51,7 @@
                             Margin="5,0,0,0"
                             Visibility="Visible"
                             d:Visibility="Visible"
-                            Source="/Assets/Images/ext-auth-needed.png"
+                            Source="/Assets/Images/ext-auth-ok.png"
                             Height="25"
                             HorizontalAlignment="Left"
                             ToolTip="Click to configure external auth providers"
