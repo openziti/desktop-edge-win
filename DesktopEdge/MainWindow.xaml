@@ -148,7 +148,6 @@
                 <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,12">
                     <Image Source="/Assets/Images/z.png" Height="40" RenderOptions.BitmapScalingMode="Fant" MouseUp="HandleAttach" MouseDown="Window_MouseDown" Cursor="ScrollAll" ToolTip="Drag to detach/move, right click to reattach"></Image>
                     <Label x:Name="ConnetLabel"
-                           Content="{Binding ConnectLabelContent}"
                            Margin="0,-3,0,0" 
                            FontFamily="pack://application:,,,/Assets/Fonts/#Russo One" 
                            FontSize="14" 

@@ -237,11 +237,11 @@ namespace ZitiDesktopEdge.ServiceClient {
 #endif
         }
 #if DEBUG
-        TimeSpan timeout = TimeSpan.FromSeconds(10);
+        protected TimeSpan DefaultReadTimeout = TimeSpan.FromSeconds(30);
 #else
-        TimeSpan timeout = TimeSpan.FromSeconds(3);
+        protected TimeSpan DefaultReadTimeout = TimeSpan.FromSeconds(3);
 #endif
-        async protected Task<T> readAsync<T>(string stream, StreamReader reader) where T : SvcResponse {
+        async protected Task<T> readAsync<T>(string stream, StreamReader reader, TimeSpan timeout) where T : SvcResponse {
             var cts = new CancellationTokenSource(timeout);
             try {
                 // Create a task that will complete when the read operation finishes

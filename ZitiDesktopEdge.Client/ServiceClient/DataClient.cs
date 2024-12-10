@@ -144,7 +144,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         async protected Task<T> readDataClientAsync<T>(StreamReader reader) where T : SvcResponse {
-            return await readAsync<T>("data", reader);
+            return await readAsync<T>("data", reader, DefaultReadTimeout);
         }
 
         async public Task<ZitiTunnelStatus> GetStatusAsync() {

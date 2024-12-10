@@ -12,9 +12,11 @@
         <Color x:Key="InvalidUrlDark">#FF860000</Color>
         <Color x:Key="InvalidUrlLight">#FFECB5B5</Color>
         <Color x:Key="LightBackground">#2b3046</Color>
+        <Color x:Key="VeryLightBackground">#cbcDd4</Color>
 
         <SolidColorBrush x:Key="DarkBackgroundBrush" Color="{StaticResource DarkBackground}" />
         <SolidColorBrush x:Key="LightBackgroundBrush" Color="{StaticResource LightBackground}" />
+        <SolidColorBrush x:Key="VeryLightBackgroundBrush" Color="{StaticResource VeryLightBackground}" />
         <SolidColorBrush x:Key="ContextMenuTextNormalBrush" Color="{StaticResource ContextMenuTextNormal}" />
         <SolidColorBrush x:Key="ContextMenuTextHoverBrush" Color="{StaticResource ContextMenuTextHover}" />
         <SolidColorBrush x:Key="InvalidUrlBorderBrush" Color="{StaticResource InvalidUrlDark}" />
@@ -76,6 +78,12 @@
             <Setter Property="FontFamily" Value="pack://application:,,,/Assets/Fonts/#Open Sans"/>
         </Style>
         <Style TargetType="{x:Type TextBox}">
+            <Setter Property="FontFamily" Value="pack://application:,,,/Assets/Fonts/#Open Sans"/>
+        </Style>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="FontFamily" Value="pack://application:,,,/Assets/Fonts/#Open Sans"/>
+        </Style>
+        <Style TargetType="{x:Type ListBoxItem}">
             <Setter Property="FontFamily" Value="pack://application:,,,/Assets/Fonts/#Open Sans"/>
         </Style>
 

@@ -72,7 +72,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 ClientConnected(null);
             } catch (Exception ex) {
                 semaphoreSlim.Release();
-                throw new ServiceException("Could not connect to the monitor service.", 1, ex.Message);
+                throw new MonitorServiceException("Could not connect to the monitor service.", ex);
             }
             semaphoreSlim.Release();
         }
@@ -92,11 +92,19 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         async private Task sendMonitorClientAsync(object objtoSend) {
-            await sendAsync("monitor", objtoSend);
+            try {
+                await sendAsync("monitor", objtoSend);
+            } catch (Exception ex) {
+                throw new MonitorServiceException("Could not connect to the monitor service.", ex);
+            }
         }
 
         async protected Task<T> readMonitorClientAsync<T>(StreamReader reader) where T : SvcResponse {
-            return await readAsync<T>("monitor", reader);
+            return await readAsync<T>("monitor", reader, DefaultReadTimeout);
+        }
+
+        async protected Task<T> readMonitorClientAsync<T>(StreamReader reader, TimeSpan timeout) where T : SvcResponse {
+            return await readAsync<T>("monitor", reader, timeout);
         }
 
         async public Task<MonitorServiceStatusEvent> StopServiceAsync() {
@@ -105,10 +113,10 @@ namespace ZitiDesktopEdge.ServiceClient {
             return await readMonitorClientAsync<MonitorServiceStatusEvent>(ipcReader);
         }
 
-        async public Task<MonitorServiceStatusEvent> StartServiceAsync() {
+        async public Task<MonitorServiceStatusEvent> StartServiceAsync(TimeSpan timeout) {
             ActionEvent action = new ActionEvent() { Op = "Start", Action = "Normal" };
             await sendMonitorClientAsync(action);
-            return await readMonitorClientAsync<MonitorServiceStatusEvent>(ipcReader);
+            return await readMonitorClientAsync<MonitorServiceStatusEvent>(ipcReader, timeout);
         }
 
         async public Task<MonitorServiceStatusEvent> ForceTerminateAsync() {

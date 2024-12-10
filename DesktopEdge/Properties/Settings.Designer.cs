@@ -37,12 +37,12 @@ namespace ZitiDesktopEdge.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        public global::System.Collections.Specialized.StringCollection IdenttitySettings {
+        public global::System.Collections.Specialized.StringCollection DefaultProviders {
             get {
-                return ((global::System.Collections.Specialized.StringCollection)(this["IdenttitySettings"]));
+                return ((global::System.Collections.Specialized.StringCollection)(this["DefaultProviders"]));
             }
             set {
-                this["IdenttitySettings"] = value;
+                this["DefaultProviders"] = value;
             }
         }
     }

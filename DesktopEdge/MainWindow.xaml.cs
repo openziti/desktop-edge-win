@@ -65,7 +65,7 @@ namespace ZitiDesktopEdge {
         private int _right = 75;
         private int _left = 75;
         private int _top = 30;
-        private int defaultHeight = 540;
+        private int defaultHeight = 460;
         public int NotificationsShownCount = 0;
         private double _maxHeight = 800d;
         public string CurrentIcon = "white";
@@ -96,10 +96,6 @@ namespace ZitiDesktopEdge {
             ExpectedLogPathRoot = Path.Combine(ExecutionDirectory, "logs");
             ExpectedLogPathUI = Path.Combine(ExpectedLogPathRoot, "UI", $"{ThisAssemblyName}.log");
             ExpectedLogPathServices = Path.Combine(ExpectedLogPathRoot, "service", $"ziti-tunneler.log");
-        }
-
-        async private void IdentityMenu_OnMessage(string message) {
-            await ShowBlurbAsync(message, "");
         }
 
         private void SystemEvents_DisplaySettingsChanged(object sender, EventArgs e) {
@@ -488,7 +484,6 @@ namespace ZitiDesktopEdge {
             this.PreviewKeyDown += KeyPressed;
             MFASetup.OnLoad += MFASetup_OnLoad;
             MFASetup.OnError += MFASetup_OnError;
-            IdentityMenu.OnMessage += IdentityMenu_OnMessage;
         }
 
         async private void MFASetup_OnError(string message) {
@@ -739,7 +734,7 @@ namespace ZitiDesktopEdge {
             if(found != null) {
                 if (e.Action == "error") {
                     found.AuthInProgress = false;
-                    _ = ShowBlurbAsync("Authentication Failed1", "External Auth Failed");
+                    _ = ShowBlurbAsync("Authentication Failed", "External Auth Failed");
                 }
             }
         }
@@ -951,11 +946,9 @@ namespace ZitiDesktopEdge {
             });
         }
 
-        public void SetAutomaticUpdateEnabled(string enabled, string url) {
-            this.Dispatcher.Invoke(() => {
-                state.AutomaticUpdatesDisabled = bool.Parse(enabled);
-                state.AutomaticUpdateURL = url;
-            });
+        private void SetAutomaticUpdateEnabled(string enabled, string url) {
+            state.AutomaticUpdatesDisabled = bool.Parse(enabled);
+            state.AutomaticUpdateURL = url;
         }
 
         private void MonitorClient_OnInstallationNotificationEvent(object sender, InstallationNotificationEvent evt) {
@@ -1073,7 +1066,7 @@ namespace ZitiDesktopEdge {
             try {
                 ShowLoad("Starting", "Starting the data service");
                 logger.Info("StartZitiService");
-                var r = await monitorClient.StartServiceAsync();
+                var r = await monitorClient.StartServiceAsync(TimeSpan.FromSeconds(60));
                 if (r.Code != 0) {
                     logger.Debug("ERROR: {0} : {1}", r.Message, r.Error);
                 } else {
@@ -1145,6 +1138,7 @@ namespace ZitiDesktopEdge {
 
         private void ServiceClient_OnClientDisconnected(object sender, object e) {
             this.Dispatcher.Invoke(() => {
+                AddIdAreaButton.IsEnabled = false;
                 IdentityMenu.Visibility = Visibility.Collapsed;
                 MFASetup.Visibility = Visibility.Collapsed;
                 HideModal();
@@ -1387,6 +1381,8 @@ namespace ZitiDesktopEdge {
                 UpdateServiceView();
                 NoServiceView.Visibility = Visibility.Collapsed;
                 SetNotifyIcon("green");
+
+                AddIdAreaButton.IsEnabled = true;
                 if (!Application.Current.Properties.Contains("ip")) {
                     Application.Current.Properties.Add("ip", status?.IpInfo?.Ip);
                 } else {

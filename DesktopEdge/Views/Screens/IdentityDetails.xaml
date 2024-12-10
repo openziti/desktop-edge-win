@@ -7,6 +7,10 @@
              mc:Ignorable="d" 
              x:Name="IdentityArea"
              d:DesignHeight="500" d:DesignWidth="400" IsVisibleChanged="VisibilityChanged">
+    <UserControl.Resources>
+        <Thickness x:Key="LeftMargin" Left="30" Top="0" Right="0" Bottom="0"/>
+        <Thickness x:Key="RightMargin" Left="0" Top="0" Right="30" Bottom="0"/>
+    </UserControl.Resources>
     <Grid>
         <!-- Border Arrow pointing to TaskBar -->
         <Canvas>
@@ -29,12 +33,38 @@
                 <!-- Header Controls -->
                 <Grid Margin="0,0,0,10">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="60"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="60"/>
+                        <ColumnDefinition Width="1*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="1*"/>
                     </Grid.ColumnDefinitions>
-                    <Image x:Name="IsConnected" Grid.Column="0" Visibility="Visible" Source="/Assets/Images/online.png" Height="25" HorizontalAlignment="Right" />
-                    <Image x:Name="IsDisconnected" Grid.Column="0" Visibility="Collapsed" Source="/Assets/Images/offline.png" Height="25" HorizontalAlignment="Right" />
+                    <StackPanel Margin="{StaticResource LeftMargin}"
+                                Orientation="Horizontal">
+                        <Image x:Name="IsConnected"
+                           Grid.Column="0"
+                           Visibility="Visible"
+                           d:Visibility="Visible"
+                           Source="/Assets/Images/online.png" Height="25"
+                           HorizontalAlignment="Left" />
+                        <Image
+                            x:Name="ExternalProviderSettingsIcon"
+                            Grid.Column="0"
+                            Margin="5,0,0,0"
+                            Visibility="Visible"
+                            d:Visibility="Visible"
+                            Source="/Assets/Images/ext-auth-needed.png"
+                            Height="25"
+                            HorizontalAlignment="Left"
+                            ToolTip="Click to configure external auth providers"
+                            Cursor="Hand"
+                            MouseUp="ExternalProviderSettingsIcon_MouseUp"
+                        />
+                        <Image x:Name="IsDisconnected"
+                           Grid.Column="0"
+                           Visibility="Collapsed"
+                           d:Visibility="Collapsed"
+                           Source="/Assets/Images/offline.png" Height="25"
+                           HorizontalAlignment="Left" />
+                    </StackPanel>
                     <TextBlock x:Name="IdDetailName"
                                MouseDown="Window_MouseDown"
                                MouseUp="HandleAttach"
@@ -46,13 +76,18 @@
                                HorizontalAlignment="Center"
                                FontSize="14"
                                FontWeight="Bold"
-                               FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"
                                Foreground="#0F0F23"
                                VerticalAlignment="Center"
                                TextWrapping="NoWrap"
                     />
-                    <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/x.png" Width="20" Height="20" Margin="0,0,0,0"
-                           HorizontalAlignment="Left" MouseUp="HideMenu"></Image>
+                    <Image Grid.Column="2"
+                           Cursor="Hand"
+                           Source="/Assets/Images/x.png"
+                           Width="20" Height="20"
+                           Margin="{StaticResource RightMargin}"
+                           HorizontalAlignment="Right"
+                           MouseUp="HideMenu"
+                    />
                 </Grid>
                 <Rectangle Margin="40,0,40,10" Fill="#070826" Height="1" RadiusY="10" RadiusX="10" Opacity="0.1"></Rectangle>
                 <local:MenuEditItem x:Name="IdName" Label="Name" IsLocked="True" />
@@ -60,9 +95,9 @@
                 <local:MenuEditItem x:Name="IdServer" Label="Network" IsLocked="True" />
                 <Rectangle Margin="40,0,40,10" Fill="#070826" Height="1" RadiusY="10" RadiusX="10" Opacity="0.1"></Rectangle>
                 <local:MenuEditToggle x:Name="IdentityMFA" HorizontalAlignment="Stretch" Label="Multi Factor Auth"
-                                      Margin="0,10,0,0" Recovery="MFARecovery" Authenticate="MFAAuthenticate"
+                                      Margin="0,0,0,0" Recovery="MFARecovery" Authenticate="MFAAuthenticate"
                                       Toggle="ToggleMFA"></local:MenuEditToggle>
-                <local:Filter x:Name="FilterServices" OnFilter="DoFilter" VerticalAlignment="Top" Margin="10,16,10,0" />
+                <local:Filter x:Name="FilterServices" OnFilter="DoFilter" VerticalAlignment="Top" Margin="10,5,10,0" />
                 <StackPanel Name="ServicesPanel" d:Visibility="Collapsed">
                     <Grid Name="MainDetailScroll" MaxHeight="160" Margin="10,0,10,-10">
                         <Grid.ColumnDefinitions>
@@ -126,75 +161,136 @@
                     </Grid>
                     <Label x:Name="ExternalProviderLabel" Grid.ColumnSpan="3" Width="Auto"
                            HorizontalAlignment="Center"
-                           Content="Select a Provider and Authenticate" 
+                           Content="You must authenticate to access services" 
                            FontWeight="Bold"
                            FontSize="12"
                            FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"
                      />
 
-                    <Border Background="{StaticResource DarkBackgroundBrush}"
+                    <Border Background="{StaticResource VeryLightBackgroundBrush}"
                             BorderBrush="Gray"
                             BorderThickness="2"
                             CornerRadius="5"
                             Width="300"
                     >
                         <StackPanel x:Name="ExternalProvider" Margin="0,0,0,10">
-                            <Label Content="Choose External Provider"
-                       Foreground="White"
-                       FontSize="14"
-                       HorizontalAlignment="Center"
-                       FontWeight="Bold" />
+                            <Label Content="Configured Providers"
+                                   Foreground="Black"
+                                   FontSize="12"
+                                   HorizontalAlignment="Left"
+                                   FontWeight="Bold"
+                                     Margin="20,0,20,0"
+                                   />
                             <ListBox Name="ProviderList"
                                      SelectionMode="Single"
-                                     Margin="20,0,20,10"
-                                     MaxHeight="60"
+                                     Margin="20,0,20,0"
+                                     MaxHeight="70"
+                                     BorderThickness="3"
+                                     BorderBrush="Black"
+                                     Padding="0"
+                                     FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"
+                                     SelectionChanged="ProviderList_SelectionChanged"
                             >
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <!-- Default background -->
+                                        <Style.Triggers>
+                                            <Trigger Property="IsSelected" Value="True" >
+                                                <Setter Property="FontWeight" Value="Bold" />
+                                                <Setter Property="Foreground" Value="Black" />
+                                                <Setter Property="Background" Value="#FF0000" />
+                                                <Setter Property="FontWeight" Value="ExtraBlack" />
+                                                <Setter Property="Background" Value="Orange" />
+                                            </Trigger>
+                                            <Trigger Property="IsSelected" Value="False" >
+                                                <Setter Property="Foreground" Value="Gray" />
+                                                <Setter Property="Background" Value="White" />
+                                                <Setter Property="BorderThickness" Value="0" />
+                                            </Trigger>
+                                        </Style.Triggers>
+                                        <Style.Resources>
+                                            <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Green"/>
+                                        </Style.Resources>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
                                 <d:ListBoxItem Content="Option 1" />
-                                <d:ListBoxItem Content="Option 2" />
+                                <d:ListBoxItem Content="Option 2" d:IsSelected="true" />
                                 <d:ListBoxItem Content="Option 3" />
                                 <d:ListBoxItem Content="Option 4" />
                             </ListBox>
-                            <Grid>
+                            <Grid HorizontalAlignment="Right">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="4*"/>
-                                    <ColumnDefinition Width="2*"/>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="1*" />
                                 </Grid.ColumnDefinitions>
-                                <local:StyledButton x:Name="AuthenticateWithProvider"
-                                        Grid.Column="0"
-                                        Label="Authenticate With Provider" 
-                                        IsTabStop="True"
-                                        ButtonMargin="10,0,10,0"
-                                        MouseUp="AuthFromMessage"
-                                        VerticalAlignment="Center"
+                                <Rectangle
+                                    Grid.Column="0"
+                                    Fill="Purple"
                                 />
-
-                                <Grid Grid.Column="1">
-                                    <Grid.ColumnDefinitions>
-                                            <ColumnDefinition/>
-                                            <ColumnDefinition/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0">
-                                        <TextBox HorizontalAlignment="Center" Text="Set as"/>
-                                        <TextBox Text="Default?"/>
-                                    </StackPanel>
-                                </Grid>
+                                <TextBox
+                                    Text="Default provider?"
+                                    Margin="0,5,0,5"
+                                    Background="Transparent"
+                                    VerticalAlignment="Center"
+                                    Grid.Column="1"
+                                />
+                                <CheckBox
+                                    Name="IsDefaultProvider"
+                                    Margin="0,5,20,5"
+                                    Background="White"
+                                    VerticalAlignment="Center"
+                                    Grid.Column="2"
+                                    Checked="IsDefaultProvider_Checked"
+                                    Unchecked="IsDefaultProvider_Unchecked"
+                                    PreviewMouseDown="IsDefaultProvider_PreviewMouseDown"
+                                />
                             </Grid>
+                            <local:StyledButton
+                                x:Name="AuthenticateWithProvider"
+                                Grid.Column="0"
+                                Label="Authenticate With Provider"
+                                IsTabStop="True"
+                                ButtonMargin="10,0,10,0"
+                                Margin="20,0,20,0"
+                                MouseUp="ExtAuthProvider"
+                                VerticalAlignment="Center"
+                            />
                         </StackPanel>
                     </Border>
                 </StackPanel>
                 <StackPanel Name="TOTPPanel" Visibility="Collapsed">
-                    <TextBox Name="NoAuthServices" Height="30" FontWeight="Bold" Margin="10,0,10,0" TextAlignment="Center"
-                         Text="You must authenticate to access services" IsReadOnly="True" HorizontalAlignment="Stretch"
-                         BorderThickness="0" ClipToBounds="True" Grid.Column="0" Grid.Row="5" VerticalAlignment="Center"
-                         Padding="0,6,3,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"
-                         Foreground="Black"></TextBox>
+                    <TextBox Name="NoAuthServices" 
+                             Grid.Column="0" Grid.Row="5"
+                             Height="30" FontWeight="Bold"
+                             Margin="10,0,10,0"
+                             TextAlignment="Center"
+                             Text="You must authenticate to access services" IsReadOnly="True"
+                             HorizontalAlignment="Stretch"
+                             BorderThickness="0" ClipToBounds="True"
+                             VerticalAlignment="Center"
+                             Padding="0,6,3,0" FontSize="12"                             
+                             Foreground="Black"
+                    />
                     <Grid>
-                        <Rectangle x:Name="AuthMessageBg" Margin="40,0,40,0" Opacity="0.8" RadiusX="7" RadiusY="7" ClipToBounds="True" Height="30" VerticalAlignment="Bottom" Cursor="Hand" MouseUp="AuthFromMessage">
+                        <Rectangle x:Name="AuthMessageBg"
+                                   Margin="40,0,40,0"
+                                   Opacity="0.8"
+                                   RadiusX="7" RadiusY="7"
+                                   ClipToBounds="True"
+                                   Height="30"
+                                   VerticalAlignment="Bottom"
+                                   Cursor="Hand"
+                                   MouseUp="ExtAuthTOTP">
                             <Rectangle.Fill>
                                 <SolidColorBrush x:Name="AuthBgColor" Color="#0069FF"/>
                             </Rectangle.Fill>
                         </Rectangle>
-                        <Label x:Name="AuthMessageLabel" HorizontalAlignment="Center" Content="Authenticate" IsHitTestVisible="False" Foreground="#FFFFFF"></Label>
+                        <Label x:Name="AuthMessageLabel"
+                               HorizontalAlignment="Center"
+                               Content="Authenticate"
+                               IsHitTestVisible="False"
+                               Foreground="#FFFFFF"></Label>
                     </Grid>
                 </StackPanel>
             </StackPanel>
@@ -203,7 +299,7 @@
                                 BgColor="#F4044D"
                                 Label="Forget This Identity"
                                 ButtonMargin="30,0,30,0"
-                                Margin="0,20,0,20"
+                                Margin="0,0,0,22"
                                 OnClick="ForgetIdentity"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Bottom"

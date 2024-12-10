@@ -5,7 +5,7 @@
     <Setting Name="UseKeychain" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
-    <Setting Name="IdenttitySettings" Type="System.Collections.Specialized.StringCollection" Scope="User">
+    <Setting Name="DefaultProviders" Type="System.Collections.Specialized.StringCollection" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
   </Settings>

@@ -30,6 +30,8 @@ using System.Web;
 using System.Windows.Media;
 using System.Windows.Data;
 using System.Diagnostics.Eventing.Reader;
+using System.ComponentModel.Design.Serialization;
+using System.Security.Cryptography;
 
 namespace ZitiDesktopEdge {
 
@@ -55,8 +57,6 @@ namespace ZitiDesktopEdge {
         public event Detched OnDetach;
         public delegate void Attach(object sender, MouseButtonEventArgs e);
         public event Attach OnAttach;
-        public delegate void Mesage(string message);
-        public event Mesage OnMessage;
         public delegate void OnAuthenticate(ZitiIdentity identity);
         public event OnAuthenticate AuthenticateTOTP;
         public event CommonDelegates.CompleteExternalAuth CompleteExternalAuth;
@@ -66,6 +66,7 @@ namespace ZitiDesktopEdge {
         public event LoadingEvent OnLoading;
         public delegate void ShowMFAEvent(ZitiIdentity identity);
         public event ShowMFAEvent OnShowMFA;
+        public event CommonDelegates.ShowBlurb ShowBlurb;
 
         private System.Windows.Forms.Timer _timer;
         public double MainHeight = 500;
@@ -83,7 +84,6 @@ namespace ZitiDesktopEdge {
 
         public ObservableCollection<ZitiService> _services = new ObservableCollection<ZitiService>();
         public ObservableCollection<ZitiService> ZitiServices { get { return _services; } }
-        public ObservableCollection<Provider> Providers { get; set; }
 
         internal MainWindow MainWindow { get; set; }
 
@@ -200,7 +200,10 @@ namespace ZitiDesktopEdge {
             IdentityMFA.AuthOff.Visibility = Visibility.Collapsed;
             IdentityMFA.RecoveryButton.Visibility = Visibility.Collapsed;
             ServiceCount.Visibility = Visibility.Collapsed;
-            //ExtProviderView.Visibility = Visibility.Collapsed;
+            TOTPPanel.Visibility = Visibility.Collapsed;
+            ExternalProviderPanel.Visibility = Visibility.Collapsed;
+            ServicesPanel.Visibility = Visibility.Collapsed;
+            ExternalProviderSettingsIcon.Visibility = Visibility.Collapsed;
 
             scrolledTo = 0;
             IdentityMFA.IsOn = _identity.IsMFAEnabled;
@@ -225,8 +228,24 @@ namespace ZitiDesktopEdge {
                 MFANotEnabledAndNotNeeded();
             }
 
-            //change icon to timed out if it's timed out
+            ProviderList.Items.Clear();
+            IsDefaultProvider.IsChecked = false;
+            if (Identity?.ExtAuthProviders?.Count > 0) {
+                PopulateExternalProviders(this);
+            }
 
+            if (Identity.NeedsExtAuth) {
+                ExternalProviderPanel.Visibility = Visibility.Visible;
+                AuthenticateWithProvider.Visibility = Visibility.Visible;
+                ExternalProviderLabel.Visibility = Visibility.Visible;
+            } else if (Identity.IsMFANeeded) {
+                TOTPPanel.Visibility = Visibility.Visible;
+            } else {
+                ServicesPanel.Visibility = Visibility.Visible;
+                if (Identity.ExtAuthProviders?.Count > 0) {
+                    ExternalProviderSettingsIcon.Visibility = Visibility.Visible;
+                }
+            }
 
             totalServices = _identity.Services.Count;
 
@@ -258,14 +277,23 @@ namespace ZitiDesktopEdge {
 
                 TotalPages = (total / PerPage) + 1;
 
-                double newHeight = MainHeight - 330;
+                double newHeight = MainHeight - 300;
                 MainDetailScroll.MaxHeight = newHeight;
                 MainDetailScroll.Height = newHeight;
-
-
             }
             ForgetIdentityConfirmView.Visibility = Visibility.Collapsed;
             _loaded = true;
+        }
+        private void PopulateExternalProviders(IdentityDetails deets) {
+            foreach (string provider in Identity.ExtAuthProviders) {
+                if (_identity.IsDefaultProvider(provider)) {
+                    string providerToAdd = NormalizeProvider(provider);
+                    deets.ProviderList.Items.Add(providerToAdd);
+                    deets.ProviderList.SelectedItem = providerToAdd;
+                } else {
+                    deets.ProviderList.Items.Add(provider);
+                }
+            }
         }
 
         private void ShowDetails(ZitiService info) {
@@ -350,18 +378,14 @@ namespace ZitiDesktopEdge {
         }
 
         private void Info_OnMessage(string message) {
-            OnMessage?.Invoke(message);
+            ShowBlurb?.Invoke(new Blurb{
+                Message = message,
+            });
         }
 
         public IdentityDetails() {
             InitializeComponent();
             DataContext = this;
-
-            Providers = new ObservableCollection<Provider>
-            {
-                new Provider { Name = "aaaa", UseByDefault = "Yes" },
-                new Provider { Name = "bbbb", UseByDefault = "No" }
-            };
         }
         private void HideMenu(object sender, MouseButtonEventArgs e) {
             this.Visibility = Visibility.Collapsed;
@@ -407,7 +431,7 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        private void ToggleMFA(bool isOn) {
+        private void ToggleMFA(bool isOn) { 
             this.OnMFAToggled?.Invoke(isOn);
         }
 
@@ -448,11 +472,27 @@ namespace ZitiDesktopEdge {
             this.AuthenticateTOTP.Invoke(this.Identity);
         }
 
-        private void AuthFromMessage(object sender, MouseButtonEventArgs e) {
+        private void ExtAuthTOTP(object sender, MouseButtonEventArgs e) {
             if (_identity.IsMFANeeded) {
                 this.AuthenticateTOTP.Invoke(this.Identity);
-            } else if (_identity.NeedsExtAuth) {
-                this.CompleteExternalAuth.Invoke(this.Identity, "NULL");
+            } else {
+                Logger.Warn("TOTP is not neecessary - ExtAuthTOTP should not be called. Report this as a bug.");
+            }
+        }
+
+        private void ExtAuthProvider(object sender, MouseButtonEventArgs e) {
+            if (_identity.NeedsExtAuth) {
+                if(ProviderList.SelectedItem == null) {
+                    Logger.Warn("no provider selected");
+                    return;
+                }
+                string selectedProvider = ProviderList.SelectedItem.ToString();
+                if (IsDefaultProvider.IsChecked ?? false) {
+                    _identity.SetDefaultProvider(selectedProvider);
+                }
+                this.CompleteExternalAuth.Invoke(this.Identity, selectedProvider);
+            } else {
+                Logger.Warn("Ext Auth not neecessary - ExtAuthProvider should not be called. Report this as a bug.");
             }
         }
 
@@ -549,7 +589,9 @@ namespace ZitiDesktopEdge {
 
         private void WarnClicked(object sender, MouseButtonEventArgs e) {
             ZitiService item = (ZitiService)(sender as FrameworkElement).DataContext;
-            OnMessage?.Invoke(item.WarningMessage);
+            ShowBlurb?.Invoke(new Blurb {
+                Message = item.WarningMessage,
+            });
         }
 
         private void DetailsClicked(object sender, MouseButtonEventArgs e) {
@@ -569,6 +611,60 @@ namespace ZitiDesktopEdge {
 
         private void DoMFA(object sender, MouseButtonEventArgs e) {
             this.OnShowMFA?.Invoke(this._identity);
+        }
+
+        private bool userInitiatedChange = false;
+        private void ProviderList_SelectionChanged(object sender, SelectionChangedEventArgs e) {
+            IsDefaultProvider.IsChecked = Identity.IsDefaultProvider(ProviderList.SelectedItem?.ToString());
+            userInitiatedChange = false;
+        }
+
+        private void IsDefaultProvider_Checked(object sender, RoutedEventArgs e) {
+            string selectedProvider = ProviderList.SelectedItem.ToString();
+            Identity.SetDefaultProvider(selectedProvider);
+            ProviderList.SelectedItem = "* " + selectedProvider;
+            userInitiatedChange = false; //clear the userinitiated change marker
+        }
+
+        private void IsDefaultProvider_Unchecked(object sender, RoutedEventArgs e) {
+            if (userInitiatedChange) {
+                int selectedIndex = ProviderList.SelectedIndex;
+                for (int i = 0; i < ProviderList.Items.Count; i++) {
+                    string currentItem = NormalizeProvider(ProviderList.Items[i] as string);
+                    ProviderList.Items[i] = currentItem;
+                }
+                Identity.RemoveDefaultProvider();
+                //reset the selected index
+                ProviderList.SelectedIndex = selectedIndex;
+            }
+            userInitiatedChange = false; //clear the userinitiated change marker
+        }
+
+        private void IsDefaultProvider_PreviewMouseDown(object sender, MouseButtonEventArgs e) {
+            userInitiatedChange = true;
+        }
+
+        private string NormalizeProvider(string provider) {
+            if(provider.StartsWith("* ")) {
+                return provider.Substring(2);
+            }
+            return provider;
+        }
+
+        private void ExternalProviderSettingsIcon_MouseUp(object sender, MouseButtonEventArgs e) {
+            if (ExternalProviderPanel.Visibility == Visibility.Visible) {
+                //hide all panels, show the provider panel
+                ExternalProviderPanel.Visibility = Visibility.Collapsed;
+                ServicesPanel.Visibility = Visibility.Visible;
+                ExternalProviderSettingsIcon.ToolTip = "Click to configure external auth providers";
+            } else {
+                //hide all panels, show the provider panel
+                ExternalProviderPanel.Visibility = Visibility.Visible;
+                ServicesPanel.Visibility = Visibility.Collapsed;
+                ExternalProviderSettingsIcon.ToolTip = "Click to show service detail";
+                AuthenticateWithProvider.Visibility = Visibility.Collapsed;
+                ExternalProviderLabel.Visibility = Visibility.Collapsed;
+            }
         }
     }
 }

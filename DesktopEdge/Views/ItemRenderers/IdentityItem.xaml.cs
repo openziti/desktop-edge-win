@@ -27,6 +27,7 @@ using System.Diagnostics;
 using System.Windows.Media;
 
 using WinForms=System.Windows.Forms;
+using System.Security.Cryptography;
 
 
 namespace ZitiDesktopEdge {
@@ -68,11 +69,6 @@ namespace ZitiDesktopEdge {
             set {
                 _identity = value;
                 this.RefreshUI();
-            }
-        }
-        int ExtProviderCount {
-            get {
-                return _identity?.ExtAuthProviders?.Count ?? 0;
             }
         }
 
@@ -387,23 +383,6 @@ namespace ZitiDesktopEdge {
                 IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
                 deets.SelectedIdentity = this;
                 deets.Identity = this.Identity;
-                deets.ProviderList.Items.Clear();
-                if (Identity?.ExtAuthProviders?.Count > 0) {
-                    foreach (string provider in Identity.ExtAuthProviders) {
-                        deets.ProviderList.Items.Add(provider);
-                    }
-                }
-                deets.TOTPPanel.Visibility = Visibility.Collapsed;
-                deets.ExternalProviderPanel.Visibility = Visibility.Collapsed;
-                deets.ServicesPanel.Visibility = Visibility.Collapsed;
-
-                if (Identity.NeedsExtAuth) {
-                    deets.ExternalProviderPanel.Visibility = Visibility.Visible;
-                } else if(Identity.IsMFANeeded) {
-                    deets.TOTPPanel.Visibility = Visibility.Visible;
-                } else {
-                    deets.ServicesPanel.Visibility = Visibility.Visible;
-                }
             }
         }
 
@@ -431,6 +410,9 @@ namespace ZitiDesktopEdge {
 
         private void CompleteExtAuth(object sender, System.Windows.Input.MouseButtonEventArgs e) {
             try {
+                if(!_identity.NeedsExtAuth) {
+                    return;
+                }
                 if (_identity?.ExtAuthProviders?.Count > 0) {
                     if (_identity.AuthInProgress) {
                         BlurbEvent?.Invoke(_identity);
@@ -448,11 +430,6 @@ namespace ZitiDesktopEdge {
         }
 
         async void performExtAuth() {
-            if (!Identity.NeedsExtAuth) {
-                return;
-            } else {
-                return;
-            }
             _identity.AuthInProgress = true;
              DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
             ExternalAuthLoginResponse resp = await client.ExternalAuthLogin(_identity.Identifier, _identity.ExtAuthProviders[0]);
@@ -469,16 +446,18 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        private void Rectangle_GotFocus(object sender, RoutedEventArgs e) {
-            Console.WriteLine("focus");
-        }
-
         private void ExternalIdpHover(object sender, System.Windows.Input.MouseEventArgs e) {
+            if (!_identity.NeedsExtAuth) {
+                return;
+            }
             IconContext.IsEnabled = false;
+            IconContext.Visibility = Visibility.Collapsed;
+            string defaultProvider = _identity.GetDefaultProvider();
             var fe = sender as FrameworkElement;
-            if (fe?.ContextMenu != null) {
+            if (fe?.ContextMenu != null && defaultProvider == null) {
                 if (_identity?.ExtAuthProviders?.Count > 1) {
                     IconContext.IsEnabled = true;
+                    IconContext.Visibility = Visibility.Visible;
 
                     var contextMenu = fe.ContextMenu;
                     contextMenu.Items.Clear();
