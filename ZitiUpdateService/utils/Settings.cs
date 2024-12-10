@@ -16,6 +16,7 @@
 
 using System;
 using System.IO;
+using System.Threading;
 using Newtonsoft.Json;
 using NLog;
 using ZitiDesktopEdge.DataStructures;
@@ -30,6 +31,7 @@ namespace ZitiUpdateService.Utils {
 
         public bool AutomaticUpdatesDisabled { get; set; }
         public string AutomaticUpdateURL { get; set; }
+        public int AlivenessChecksBeforeAction { get; set; } // the number of times the aliveness check can fail before terminating the tunneler
 
         public event System.EventHandler<ControllerEvent> OnConfigurationChange;
 
@@ -50,13 +52,13 @@ namespace ZitiUpdateService.Utils {
             watcher = new FileSystemWatcher(folder);
             watcher.Filter = file;
 
-            watcher.NotifyFilter = NotifyFilters.Attributes
-                                 | NotifyFilters.CreationTime
-                                 | NotifyFilters.DirectoryName
-                                 | NotifyFilters.FileName
-                                 | NotifyFilters.LastAccess
+            watcher.NotifyFilter = //NotifyFilters.Attributes
+                                 //| NotifyFilters.CreationTime
+                                 //| NotifyFilters.DirectoryName
+                                 //| NotifyFilters.FileName
+                                 //|
+                                 NotifyFilters.LastAccess
                                  | NotifyFilters.LastWrite
-                                 | NotifyFilters.Security
                                  | NotifyFilters.Size;
             watcher.Changed += OnChanged;
             watcher.Deleted += OnDeleted;
@@ -77,8 +79,8 @@ namespace ZitiUpdateService.Utils {
                     Logger.Debug("settings file was null? file doesn't exist or file was garbage?");
                 }
             } catch (Exception ex) {
-                // do nothing, probably means the file is just or doesn't exist etc.
-                Logger.Debug("unexpected error loading settings. file was null? file doesn't exist or file was garbage? {0}", ex);
+                // probably means the file is doesn't exist or hasn't finished being written yet
+                throw ex;
             }
         }
         internal void Write() {
@@ -116,14 +118,37 @@ namespace ZitiUpdateService.Utils {
         }
 
         private void OnChanged(object sender, FileSystemEventArgs e) {
-            Logger.Info("Settings file changed. Reloading...");
-            this.Load();
-            this.OnConfigurationChange?.Invoke(null, null);
+            try {
+                this.Load();
+            } catch (IOException ioe) {
+                int isLocked = (int)(System.Runtime.InteropServices.Marshal.GetHRForException(ioe) & 0xFFFF);
+                if (isLocked == 32) {
+                    /*
+                     see https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-
+                     ERROR_SHARING_VIOLATION
+                     32 (0x20)
+                     The process cannot access the file because it is being used by another process.
+                    */
+                    Thread.Sleep(500); //wait 500ms for the file to finish being written
+                    try {
+                        Load();
+                        //this.OnConfigurationChange?.Invoke(null, null);
+                    } catch (Exception ex2) {
+                        Logger.Debug("unexpected error loading settings twice. not trying again. {0}", ex2);
+                    }
+                } else {
+                    Logger.Debug("unexpected error loading settings. file was null? file doesn't exist or file was garbage? {0}", ioe);
+                }
+                this.OnConfigurationChange?.Invoke(null, null);
+            } catch (Exception ex) {
+                Logger.Debug("unexpected error loading settings. file was null? file doesn't exist or file was garbage? {0}", ex);
+            }
         }
 
         private void Update(Settings source) {
             this.AutomaticUpdatesDisabled = source.AutomaticUpdatesDisabled;
             this.AutomaticUpdateURL = source.AutomaticUpdateURL;
+            this.AlivenessChecksBeforeAction = source.AlivenessChecksBeforeAction;
         }
     }
 }
