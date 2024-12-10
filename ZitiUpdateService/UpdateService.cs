@@ -560,6 +560,7 @@ namespace ZitiUpdateService {
                             Interlocked.Exchange(ref zetFailedCheckCounter, 0); //reset the counter back to 0
                             Logger.Warn("forcefully stopping ziti-edge-tunnel as it has been blocked for too long");
                             stopProcessForcefully("ziti-edge-tunnel", "data service [ziti]");
+                            zetSemaphore.Release();
 
                             Logger.Info("immediately restarting ziti-edge-tunnel");
                             ServiceActions.StartService(); //attempt to start the service
