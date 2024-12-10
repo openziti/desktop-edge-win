@@ -151,6 +151,15 @@ if($gituser -eq "ziti-ci") {
   echo "detected user [${gituser}] which is not ziti-ci - skipping installer commit"
 }
 
+$timeout = 1  # Set timeout in seconds
+Write-Host ""
+Write-Host "============================================"
+Write-Host "Waiting $timeout seconds for Adv Inst to finish writing the file...."
+Write-Host "  if you see errors indicating the file is not found, increment"
+Write-Host "  the `$timeout by one"
+Write-Host "============================================"
+Start-Sleep -Seconds $timeout
+
 $outputPath="${scriptPath}\Output"
 $exeName="Ziti Desktop Edge Client-${version}.exe"
 $exeAbsPath="${outputPath}\${exeName}"

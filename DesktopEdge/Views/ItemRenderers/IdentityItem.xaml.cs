@@ -17,15 +17,18 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
+
 using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.ServiceClient;
 using NLog;
 using SWM = System.Windows.Media;
 using ZitiDesktopEdge.DataStructures;
 using System.Diagnostics;
-using System.Web.UI;
-using System.Drawing;
+using System.Windows.Media;
+
+using WinForms=System.Windows.Forms;
+using System.Security.Cryptography;
+
 
 namespace ZitiDesktopEdge {
     /// <summary>
@@ -37,9 +40,14 @@ namespace ZitiDesktopEdge {
         public delegate void StatusChanged(bool attached);
         public event StatusChanged OnStatusChanged;
         public delegate void OnAuthenticate(ZitiIdentity identity);
-        public event OnAuthenticate Authenticate;
+        public event OnAuthenticate AuthenticateTOTP;
         public delegate void OnIdentityChanged(ZitiIdentity identity);
         public event OnIdentityChanged IdentityChanged;
+        public delegate void OnBlurb(ZitiIdentity identity);
+        public event OnBlurb BlurbEvent;
+        public event CommonDelegates.CompleteExternalAuth CompleteExternalAuth;
+
+        public Action<string, string> ShowError; 
         private System.Windows.Forms.Timer _timer;
         private System.Windows.Forms.Timer _timingTimer;
         private float countdown = -1;
@@ -171,14 +179,9 @@ namespace ZitiDesktopEdge {
             ToggleSwitch.Enabled = _identity.IsEnabled;
             MainArea.Opacity = 1.0;
 
-#if DEBUG
-            Console.WriteLine($"Calculate Bubble for:{_identity.Name}. IsMFANeeded: {_identity.IsMFANeeded}, IsMFAEnabled: {_identity.IsMFAEnabled}");
-#endif
-
-            Action calcImage = () => {
-                //PostureTimedOut.Visibility = c;
-                //MfaRequired.Visibility = c;
-                //ServiceCountArea.Visibility = v;
+            Action hideMfa = () => {
+                PostureTimedOut.Visibility = Visibility.Collapsed;
+                MfaRequired.Visibility = Visibility.Collapsed;
             };
             Action showMfa = () => {
                 if (_identity.IsTimedOut) {
@@ -187,12 +190,10 @@ namespace ZitiDesktopEdge {
                     MfaRequired.Visibility = Visibility.Visible;
                 }
                 ServiceCountArea.Visibility = Visibility.Collapsed;
-                calcImage();
                 MainArea.Opacity = 0.6;
             };
             Action showBubbles = () => {
-                PostureTimedOut.Visibility = Visibility.Collapsed;
-                MfaRequired.Visibility = Visibility.Collapsed;
+                hideMfa();
                 ServiceCountArea.Visibility = Visibility.Visible;
             };
 
@@ -201,12 +202,15 @@ namespace ZitiDesktopEdge {
             // identity enabled, mfa needed, enabled, but not verified yet
             // identity enabled, mfa needed, enabled, has been verified
             // identity enabled, mfa not needed at all
+            // identity enabled, needs external auth
 
             // identity disabled, timed out <-- not possible
             // identity disabled, mfa needed, not enabled yet
             // identity disabled, mfa needed, enabled, but not verified yet
             // identity disabled, mfa needed, enabled, has been verified
             // identity disabled, mfa not needed at all
+
+            // identity disabled, needs external auth
             if (_identity.IsEnabled) {
                 if (_identity.IsMFAEnabled) {
                     if (_identity.IsMFANeeded) {
@@ -232,10 +236,18 @@ namespace ZitiDesktopEdge {
                         ServiceCountBorder.Background = DefaultBrush;
                     }
                 }
+                if (_identity.NeedsExtAuth) {
+                    ServiceCountAreaLabel.Content = "authorize idp";
+                    MainArea.Opacity = 0.6;
+                    hideMfa();
+                    ServiceCountArea.Visibility = Visibility.Collapsed; //hide bubbles
+                    ExtAuthRequired.Visibility = Visibility.Visible;
+                }
             } else {
                 if (_identity.IsMFAEnabled) {
                     ServiceCount.Content = "MFA";
                     ServiceCountAreaLabel.Content = "id disabled";
+                    MainArea.Opacity = 0.6;
                     showMfa();
                 } else {
                     if (_identity.IsMFANeeded) {
@@ -246,6 +258,7 @@ namespace ZitiDesktopEdge {
                     } else {
                         ServiceCount.Content = "-";
                         ServiceCountAreaLabel.Content = "id disabled";
+                        MainArea.Opacity = 0.6;
                         showBubbles();
                         ServiceCountBorder.Background = DisabledBrush;
                     }
@@ -319,7 +332,6 @@ namespace ZitiDesktopEdge {
 
         private void ShowTimedOut() {
             _identity.Mutex.Wait();
-            Console.WriteLine(_identity.Mutex.GetHashCode());
             if (!_identity.WasFullNotified) {
                 _identity.WasFullNotified = true;
                 _identity.ShowMFAToast("All of the services with a timeout set for the identity " + _identity.Name + " have timed out");
@@ -346,6 +358,7 @@ namespace ZitiDesktopEdge {
                 this.Identity.IsEnabled = on;
                 if (on) {
                     ToggleStatus.Content = "ENABLED";
+                    Identity.AuthInProgress = false;
                 } else {
                     ToggleStatus.Content = "DISABLED";
                 }
@@ -357,36 +370,34 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        private void Canvas_MouseEnter(object sender, MouseEventArgs e) {
+        private void Canvas_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e) {
             OverState.Opacity = 0.2;
         }
 
-        private void Canvas_MouseLeave(object sender, MouseEventArgs e) {
+        private void Canvas_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e) {
             OverState.Opacity = 0;
         }
 
-        private void OpenDetails(object sender, MouseButtonEventArgs e) {
-            if (e.ChangedButton != MouseButton.Right && Identity.IsEnabled) {
+        private void OpenDetails(object sender, System.Windows.Input.MouseButtonEventArgs e) {
+            if (e.ChangedButton != System.Windows.Input.MouseButton.Right && Identity.IsEnabled) {
                 IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
                 deets.SelectedIdentity = this;
                 deets.Identity = this.Identity;
-            } else {
-
             }
         }
 
-        private void MFAAuthenticate(object sender, MouseButtonEventArgs e) {
+        private void MFAAuthenticate(object sender, System.Windows.Input.MouseButtonEventArgs e) {
             if (Identity.IsEnabled) {
-                this.Authenticate?.Invoke(_identity);
+                this.AuthenticateTOTP?.Invoke(_identity);
             }
         }
 
-        private void ToggledSwitch(object sender, MouseButtonEventArgs e) {
+        private void ToggledSwitch(object sender, System.Windows.Input.MouseButtonEventArgs e) {
             ToggleSwitch.Toggle();
         }
 
-        private void DoMFAOrOpen(object sender, MouseButtonEventArgs e) {
-            if (MfaRequired.Visibility == Visibility.Visible || 
+        private void DoMFAOrOpen(object sender, System.Windows.Input.MouseButtonEventArgs e) {
+            if (MfaRequired.Visibility == Visibility.Visible ||
                 TimerCountdown.Visibility == Visibility.Visible ||
                 PostureTimedOut.Visibility == Visibility.Visible) {
                 MFAAuthenticate(sender, e);
@@ -397,14 +408,76 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        async private void CompleteExtAuth(object sender, MouseButtonEventArgs e) {
+        private void CompleteExtAuth(object sender, System.Windows.Input.MouseButtonEventArgs e) {
             try {
-                DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-                ExternalAuthLoginResponse resp = await client.ExternalAuthLogin(_identity.Identifier);
-                Console.WriteLine(resp.Data?.url);
-                Process.Start(resp.Data.url);
+                if(!_identity.NeedsExtAuth) {
+                    return;
+                }
+                if (_identity?.ExtAuthProviders?.Count > 0) {
+                    if (_identity.AuthInProgress) {
+                        BlurbEvent?.Invoke(_identity);
+                    } else {
+                        performExtAuth();
+                    }
+                } else {
+                    ShowError("Failed to Authenticate", "No external providers found! This is a configuration error. Inform your network administrator.");
+                }
             } catch (Exception ex) {
                 logger.Error("unexpected error!", ex);
+                ShowError("UNEXPECTED ERROR", "Please report this issue: " + ex.Message);
+                _identity.AuthInProgress = false;
+            }
+        }
+
+        async void performExtAuth() {
+            _identity.AuthInProgress = true;
+             DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+            ExternalAuthLoginResponse resp = await client.ExternalAuthLogin(_identity.Identifier, _identity.ExtAuthProviders[0]);
+            if (resp?.Error == null) {
+                if (resp?.Data?.url != null) {
+                    Console.WriteLine(resp.Data?.url);
+                    Process.Start(resp.Data.url);
+                } else {
+                    Console.WriteLine("The response contained no url???");
+                }
+            } else {
+                ShowError("Failed to Authenticate", resp.Error);
+                _identity.AuthInProgress = false;
+            }
+        }
+
+        private void ExternalIdpHover(object sender, System.Windows.Input.MouseEventArgs e) {
+            if (!_identity.NeedsExtAuth) {
+                return;
+            }
+            IconContext.IsEnabled = false;
+            IconContext.Visibility = Visibility.Collapsed;
+            string defaultProvider = _identity.GetDefaultProvider();
+            var fe = sender as FrameworkElement;
+            if (fe?.ContextMenu != null && defaultProvider == null) {
+                if (_identity?.ExtAuthProviders?.Count > 1) {
+                    IconContext.IsEnabled = true;
+                    IconContext.Visibility = Visibility.Visible;
+
+                    var contextMenu = fe.ContextMenu;
+                    contextMenu.Items.Clear();
+
+                    // Add menu items dynamically
+                    foreach (var provider in _identity.ExtAuthProviders) {
+                        var menuItem = new MenuItem();
+                        menuItem.Click += (s, mouseEventArgs) =>
+                        {
+                            CompleteExternalAuth?.Invoke(Identity, provider);
+                        };
+                        menuItem.Header = provider;
+
+                        var controlTemplate = (System.Windows.Controls.ControlTemplate)Application.Current.FindResource("ReusableMenuItemTemplate");
+                        menuItem.Template = controlTemplate;
+                        contextMenu.Items.Add(menuItem);
+                    }
+                }
+                fe.ContextMenu.PlacementTarget = fe;
+                fe.ContextMenu.IsOpen = true;
             }
         }
     }

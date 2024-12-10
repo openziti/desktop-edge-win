@@ -887,7 +887,7 @@ namespace ZitiUpdateService {
                     Logger.Debug("The ziti service was stopped successfully.");
                     cleanStop = true;
                 } catch (Exception e) {
-                    Logger.Error(e, "Timout while trying to stop service!");
+                    Logger.Error(e, "Timeout while trying to stop service!");
                 }
             } else {
                 Logger.Debug("The ziti has ALREADY been stopped successfully.");
