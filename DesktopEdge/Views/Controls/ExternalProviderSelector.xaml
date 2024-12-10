@@ -1,0 +1,39 @@
+﻿<UserControl x:Class="ZitiDesktopEdge.ExternalProviderSelector"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ZitiDesktopEdge"
+             mc:Ignorable="d"
+             d:DesignWidth="275"
+             Width="275" MouseLeave="UserControl_MouseLeave">
+    <UserControl.Resources>
+    </UserControl.Resources>
+    
+    <Grid Margin="0" Height="Auto" VerticalAlignment="Center">
+        <Border Background="{StaticResource DarkBackgroundBrush}"
+                BorderBrush="Gray"
+                BorderThickness="2"
+                CornerRadius="5"
+        >
+            <StackPanel x:Name="ExternalProvider" Margin="0,0,0,10">
+                <Label Content="Choose External Provider"
+                       Foreground="White"
+                       FontSize="16"
+                       HorizontalAlignment="Center"
+                       FontWeight="Bold" />
+                <ListBox SelectionMode="Single" Margin="20,0,20,10">
+                    <d:ListBoxItem Content="Option 1" />
+                    <d:ListBoxItem Content="Option 2" />
+                    <d:ListBoxItem Content="Option 3" />
+                    <d:ListBoxItem Content="Option 4" />
+                </ListBox>
+                <Grid>
+                    <local:StyledButton x:Name="AuthenticateWithProvider" 
+                                        Label="Authenticate With Provider" 
+                                        IsTabStop="True" />
+                </Grid>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

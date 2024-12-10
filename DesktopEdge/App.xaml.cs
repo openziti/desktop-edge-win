@@ -57,6 +57,9 @@ namespace ZitiDesktopEdge {
                 _mutex = new Mutex(true, appName, out createdNew);
 #if !DEBUG
                 if (!createdNew) {
+#if DEBUG
+                    logger.Info("Another instance exists but running in debug mode - allowing both to run...");
+#else
                     using (var client = new NamedPipeClientStream(NamedPipeName)) {
                         logger.Info("Another instance exists. Attempting to notify it to open");
                         try {
@@ -74,6 +77,7 @@ namespace ZitiDesktopEdge {
                         }
                     }
                     Application.Current.Shutdown();
+#endif
                 } else {
 #pragma warning disable 4014 //This async method lacks 'await'
                     StartServer();

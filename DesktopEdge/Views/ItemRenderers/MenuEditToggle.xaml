@@ -17,12 +17,45 @@
                 <ColumnDefinition Width="40"/>
                 <ColumnDefinition Width="40"/>
             </Grid.ColumnDefinitions>
-            <TextBox Name="MainLabel" Background="White" Height="30" FontWeight="Bold" IsReadOnly="True" HorizontalAlignment="Stretch" BorderThickness="0" ClipToBounds="True" Grid.Column="0" VerticalAlignment="Center" Padding="0,6,3,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBox>
-            <Image Name="RecoveryButton" Source="/Assets/Images/recovery.png" Grid.Column="1" Width="30" Height="30" Cursor="Hand" MouseUp="MFARecovery"></Image>
-            <Image Name="AuthOff" Source="/Assets/Images/mfaoff.png" Grid.Column="2" Width="30" Height="30" Cursor="Hand" MouseUp="MFAAuthenticate"></Image>
-            <Image Name="AuthOn" Source="/Assets/Images/mfaon.png" Grid.Column="2" Width="30" Height="30" Visibility="Collapsed"></Image>
-            <local:Toggler x:Name="ToggleField" Grid.Column="4" HorizontalAlignment="Right" OnToggled="Toggled" Margin="0,0,5,0"></local:Toggler>
+            <TextBox Name="MainLabel"
+                     Background="White"
+                     Height="30"
+                     FontWeight="Bold"
+                     IsReadOnly="True"
+                     HorizontalAlignment="Stretch"
+                     BorderThickness="0"
+                     ClipToBounds="True"
+                     Grid.Column="0"
+                     VerticalAlignment="Center"
+                     Padding="0,6,3,0"
+                     FontSize="12"
+                     Foreground="Black"
+            />
+            <Image Name="RecoveryButton"
+                   Source="/Assets/Images/recovery.png"
+                   Grid.Column="1"
+                   Width="30" Height="30"
+                   Cursor="Hand"
+                   MouseUp="MFARecovery"
+            />
+            <Image Name="AuthOff" Source="/Assets/Images/mfaoff.png"
+                   Grid.Column="2"
+                   Width="30" Height="30"
+                   Cursor="Hand"
+                   MouseUp="MFAAuthenticate"
+            />
+            <Image Name="AuthOn"
+                   Source="/Assets/Images/mfaon.png"
+                   Grid.Column="2"
+                   Width="30" Height="30"
+                   Visibility="Collapsed"
+            />
+            <local:Toggler x:Name="ToggleField"
+                           Grid.Column="4"
+                           HorizontalAlignment="Right"
+                           OnToggled="Toggled"
+                           Margin="0,0,5,0"
+            />
         </Grid>
     </StackPanel>
 </UserControl>
- 

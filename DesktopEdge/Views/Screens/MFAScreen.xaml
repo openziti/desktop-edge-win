@@ -48,7 +48,7 @@
                 <RowDefinition Height="10"></RowDefinition>
                 <RowDefinition Height="30"></RowDefinition>
             </Grid.RowDefinitions>
-            <Label Content="SETUP MFA" Foreground="white" Grid.Row="0" FontSize="14" HorizontalAlignment="Center" FontFamily="/ZitiDesktopEdge;component/Assets/Fonts/#Russo One"></Label>
+            <Label Content="Setup MFA" Grid.Row="0" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"></Label>
             <Label x:Name="IdName" Content="Identity Name" Grid.Row="1" FontSize="12" Foreground="DarkGray" HorizontalAlignment="Center"></Label>
             <Image x:Name="MFAImage" MaxWidth="200" MaxHeight="200" Width="200" Height="200" RenderOptions.BitmapScalingMode="Fant" Stretch="UniformToFill" Source="/Assets/Images/qrcode.png" Margin="50,0,50,0" Grid.Row="2" />
             <TextBox x:Name="SecretCode" TextWrapping="WrapWithOverflow" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" IsReadOnly="True" BorderThickness="0"></TextBox>
@@ -58,7 +58,7 @@
                 <Label x:Name="SecretButton" HorizontalAlignment="Center" Content="Show Secret" Foreground="#0069FF" MouseUp="ShowSecret" Cursor="Hand"></Label>
             </StackPanel>
             <Label Content="Enter the code below to finish setup." Grid.Row="4" FontSize="11" Foreground="DarkGray" HorizontalAlignment="Center"></Label>
-            <Label Content="Authentication Code" Grid.Row="5" FontSize="14" Foreground="#FFFFFF" HorizontalAlignment="Center" FontWeight="Bold"></Label>
+            <Label Content="Authentication Code" Grid.Row="5" FontSize="18" Foreground="#FFFFFF" HorizontalAlignment="Center" FontWeight="Bold" FontFamily="/ZitiDesktopEdge;component/Assets/Fonts/#Russo One"></Label>
             <TextBox x:Name="SetupCode" MaxLength="6" Padding="0,5,0,0" Grid.Row="6" Keyboard.KeyUp="HandleKey" BorderThickness="0 0 0 0" TextAlignment="Center" FontSize="50">
                 <TextBox.Resources>
                     <Style TargetType="{x:Type Border}">
