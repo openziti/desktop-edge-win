@@ -233,7 +233,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
 #endif
 #else
-            Logger.Trace(msg);
+            Logger.Trace("{0}-{1}-{2}: {3}", source, direction, channel, msg);
 #endif
         }
 #if DEBUG

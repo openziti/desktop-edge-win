@@ -10,7 +10,8 @@
         ShowInTaskbar="False"
         x:Name="MainUI"
         Title="Ziti Desktop Edge" 
-        Width="410" ResizeMode="NoResize" 
+        MaxWidth="430"
+        ResizeMode="NoResize" 
         ClipToBounds="False"
         Icon="Assets/Images/icon.png" AllowsTransparency="True" 
         Closing="Window_Closing"
@@ -142,16 +143,20 @@
                             <DropShadowEffect Color="white" BlurRadius="1" ShadowDepth="1" Direction="90" Opacity="1" />
                         </Image.Effect>
                     </Image>
-                    <Label Content="MAIN" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" FontSize="10"></Label>
-                    <Label Content="MENU" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" Margin="0,-14,0,0" FontSize="10"></Label>
+                    <Label Content="MAIN" Foreground="White" Height="25" FontSize="10"></Label>
+                    <Label Content="MENU" Foreground="White" Height="25" Margin="0,-14,0,0" FontSize="10"></Label>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,12">
                     <Image Source="/Assets/Images/z.png" Height="40" RenderOptions.BitmapScalingMode="Fant" MouseUp="HandleAttach" MouseDown="Window_MouseDown" Cursor="ScrollAll" ToolTip="Drag to detach/move, right click to reattach"></Image>
-                    <Label x:Name="ConnetLabel"
+                    <Label x:Name="ConnectLabel"
+                           Content="{Binding ConnectLabelContent}"
+                           d:Content="Tap to Connect"
                            Margin="0,-3,0,0" 
-                           FontFamily="pack://application:,,,/Assets/Fonts/#Russo One" 
+                           FontFamily="pack://application:,,,/Assets/Fonts/#Russo One"
+                           FontWeight="Bold"
                            FontSize="14" 
-                           Foreground="White" 
+                           Foreground="White"
+                           Typography.Capitals="AllSmallCaps"
                            HorizontalAlignment="Center"
                            />
                 </StackPanel>
@@ -161,8 +166,8 @@
                             <DropShadowEffect Color="white" BlurRadius="1" ShadowDepth="1" Direction="90" Opacity="1" />
                         </Image.Effect>
                     </Image>
-                    <Label Content="ADD" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" FontSize="10" HorizontalAlignment="Right"></Label>
-                    <Label Content="IDENTITY" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Height="25" Margin="0,-14,0,0" FontSize="10" HorizontalAlignment="Right"></Label>
+                    <Label Content="ADD"  Foreground="White" Height="25" FontSize="10" HorizontalAlignment="Right"></Label>
+                    <Label Content="IDENTITY" Foreground="White" Height="25" Margin="0,-14,0,0" FontSize="10" HorizontalAlignment="Right"></Label>
                     <StackPanel.ContextMenu>
                         <ContextMenu>
                             <ContextMenu.Template>
@@ -215,11 +220,11 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="40"/>
                         </Grid.ColumnDefinitions>
-                        <Label Grid.Column="0" Content="Download Speed" Foreground="White" HorizontalAlignment="Right" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
+                        <Label Grid.Column="0" Content="Download Speed" Foreground="White" HorizontalAlignment="Right" FontSize="14" ></Label>
                         <Image Grid.Column="1" Source="/Assets/Images/down.png" Width="20" HorizontalAlignment="Left" Height="20"></Image>
                     </Grid>
-                    <Label Name="DownloadSpeed" Margin="0,-16,0,0" Foreground="#0069FF" Content="0" FontSize="40" HorizontalAlignment="Center" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" />
-                    <Label Name="DownloadSpeedLabel" Foreground="White" Margin="0,-20,0,30" Content="KBps" FontSize="11" HorizontalAlignment="Center" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" />
+                    <Label Name="DownloadSpeed" Margin="0,-16,0,0" Foreground="#0069FF" Content="0" FontSize="40" HorizontalAlignment="Center"  />
+                    <Label Name="DownloadSpeedLabel" Foreground="White" Margin="0,-20,0,30" Content="KBps" FontSize="11" HorizontalAlignment="Center"  />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Vertical">
                     <Grid HorizontalAlignment="Stretch" Width="Auto">
@@ -227,11 +232,11 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="50"/>
                         </Grid.ColumnDefinitions>
-                        <Label Grid.Column="0" Content="Upload Speed" Foreground="White" HorizontalAlignment="Right" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
+                        <Label Grid.Column="0" Content="Upload Speed" Foreground="White" HorizontalAlignment="Right" FontSize="14" ></Label>
                         <Image Grid.Column="1" Source="/Assets/Images/up.png" Width="20" HorizontalAlignment="Left" Height="20"></Image>
                     </Grid>
-                    <Label Name="UploadSpeed" Margin="0,-16,0,0" Foreground="#FF0047" Content="0" FontSize="40" HorizontalAlignment="Center" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" />
-                    <Label Name="UploadSpeedLabel" Foreground="White" Margin="0,-20,0,30" Content="KBps" FontSize="11" HorizontalAlignment="Center" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" />
+                    <Label Name="UploadSpeed" Margin="0,-16,0,0" Foreground="#FF0047" Content="0" FontSize="40" HorizontalAlignment="Center"  />
+                    <Label Name="UploadSpeedLabel" Foreground="White" Margin="0,-20,0,30" Content="KBps" FontSize="11" HorizontalAlignment="Center"  />
                 </StackPanel>
             </Grid>
 
@@ -242,14 +247,14 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Label Name="AddIdButton" Padding="0,0,0,0" Grid.Column="0" Margin="0,0,0,0" Content="" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="#0069FF" FontSize="12 " HorizontalAlignment="Center" VerticalAlignment="Center" ></Label>
+                <Label Name="AddIdButton" Padding="0,0,0,0" Grid.Column="0" Margin="0,0,0,0" Content=""  Foreground="#0069FF" FontSize="12 " HorizontalAlignment="Center" VerticalAlignment="Center" ></Label>
             </Grid>
         </StackPanel>
         <Canvas x:Name="AlertCanvas" ClipToBounds="False" Visibility="Collapsed">
             <Image Source="/Assets/Images/UpdateWarn.png" Canvas.Left="50" Canvas.Top="32" Width="14" Height="14"></Image>
         </Canvas>
         <!-- Form for debugging -->
-        <debug:Debugging x:Name="DebugForm" Visibility="Collapsed" />
+        <!--debug:Debugging x:Name="DebugForm" Visibility="Collapsed" /-->
         <!-- Menu UI -->
         <local:MainMenu x:Name="MainMenu" Visibility="Collapsed"></local:MainMenu>
         <!-- ID Detail UI -->
@@ -305,7 +310,7 @@
                 </Grid.RowDefinitions>
                 <Image x:Name="RedBlurb" Source="/Assets/Images/WarningRed.png" Grid.Column="0" Width="30" Grid.Row="1" Height="30" Margin="0,0,0,0"></Image>
                 <Image x:Name="InfoBlurb" Visibility="Collapsed" Source="/Assets/Images/Warning.png" Grid.Column="0" Width="30" Grid.Row="1" Height="30" Margin="0,0,0,0"></Image>
-                <Label x:Name="Blurb" Content="An Update is available!" MouseUp="BlurbAction" Grid.Column="1" Padding="0,0,0,0" Grid.Row="1" Margin="0,0,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="#000000" FontSize="12" Cursor="Hand" HorizontalAlignment="Center" VerticalAlignment="Center"></Label>
+                <Label x:Name="Blurb" Content="An Update is available!" MouseUp="BlurbAction" Grid.Column="1" Padding="0,0,0,0" Grid.Row="1" Margin="0,0,0,0"  Foreground="#000000" FontSize="12" Cursor="Hand" HorizontalAlignment="Center" VerticalAlignment="Center"></Label>
                 <Image Source="/Assets/Images/closeBlack.png" Grid.Column="2" Width="10" Height="10" Grid.Row="1" Margin="0,0,0,0" Cursor="Hand" MouseUp="DoHideBlurb"></Image>
             </Grid>
         </Grid>
@@ -325,22 +330,22 @@
                     <RowDefinition Height="30"></RowDefinition>
                     <RowDefinition Height="*"></RowDefinition>
                 </Grid.RowDefinitions>
-                <Label x:Name="ErrorMsg" Foreground="White" Content="Service Not Started" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
-                <Label x:Name="ErrorMsgDetail" Foreground="LightGray" Content="Start the Ziti Tunnel Service to get started" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
+                <Label x:Name="ErrorMsg" Foreground="White" Content="Service Not Started" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" />
+                <Label x:Name="ErrorMsgDetail" Foreground="LightGray" Content="Start the Ziti Tunnel Service to get started" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14" />
 
                 <Grid Grid.Row="4">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="1*"></ColumnDefinition>
                         <ColumnDefinition Width="1*"></ColumnDefinition>
                     </Grid.ColumnDefinitions>
-                    <Button x:Name="CloseErrorButton" Grid.Column="0" Margin="40,0,20,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#0068F9" Content="Close Error" Click="CloseError" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                    <Button x:Name="CloseErrorButton" Grid.Column="0" Margin="40,0,20,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#0068F9" Content="Close Error" Click="CloseError" >
                         <Button.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="5"/>
                             </Style>
                         </Button.Resources>
                     </Button>
-                    <Button x:Name="QuitButton" Grid.Column="1" Margin="20,0,40,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#F4044D" Content="Quit App" Click="CloseApp" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                    <Button x:Name="QuitButton" Grid.Column="1" Margin="20,0,40,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#F4044D" Content="Quit App" Click="CloseApp" >
                         <Button.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="5"/>
@@ -370,8 +375,8 @@
                     <RowDefinition Height="10"></RowDefinition>
                     <RowDefinition Height="*"></RowDefinition>
                 </Grid.RowDefinitions>
-                <Label x:Name="LoadingTitle" Foreground="White" Content="Loading" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
-                <TextBlock x:Name="LoadingDetails" TextWrapping="WrapWithOverflow" Foreground="LightGray" Padding="10" Text="${x:DefaultLoadText}" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
+                <Label x:Name="LoadingTitle" Foreground="White" Content="Loading" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" />
+                <TextBlock x:Name="LoadingDetails" TextWrapping="WrapWithOverflow" Foreground="LightGray" Padding="10" Text="${x:DefaultLoadText}" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" FontSize="14" />
                 <ProgressBar x:Name="LoadProgress" Width="100" Grid.Row="3" IsEnabled="True" />
             </Grid>
         </Grid>
@@ -396,23 +401,23 @@
                     <RowDefinition Height="30"></RowDefinition>
                     <RowDefinition Height="*"></RowDefinition>
                 </Grid.RowDefinitions>
-                <TextBlock x:Name="ErrorTitle" TextWrapping="WrapWithOverflow" Width="400" Foreground="White" Text="An Error Occurred" Grid.Row="1" TextAlignment="Center" VerticalAlignment="Center" FontSize="24" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
-                <TextBlock x:Name="ErrorDetails" TextWrapping="WrapWithOverflow" Width="400" Foreground="LightGray" Padding="10" Text="An Unknown Error Occurred, you could try restarting the service and the interface to continue" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"/>
-                <Label Grid.Row="3" Foreground="Gray" FontWeight="Light" Content="Check the Log for Details" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Center"></Label>
+                <TextBlock x:Name="ErrorTitle" TextWrapping="WrapWithOverflow" Width="400" Foreground="White" Text="An Error Occurred" Grid.Row="1" TextAlignment="Center" VerticalAlignment="Center" FontSize="24" />
+                <TextBlock x:Name="ErrorDetails" TextWrapping="WrapWithOverflow" Width="400" Foreground="LightGray" Padding="10" Text="An Unknown Error Occurred, you could try restarting the service and the interface to continue" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" FontSize="14" />
+                <Label Grid.Row="3" Foreground="Gray" FontWeight="Light" Content="Check the Log for Details"  HorizontalAlignment="Center"></Label>
 
                 <Grid Grid.Row="4">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="1*"></ColumnDefinition>
                         <ColumnDefinition Width="1*"></ColumnDefinition>
                     </Grid.ColumnDefinitions>
-                    <Button Grid.Column="0" Margin="40,0,20,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#0068F9" Content="Close Error" Click="CloseError" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                    <Button Grid.Column="0" Margin="40,0,20,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#0068F9" Content="Close Error" Click="CloseError" >
                         <Button.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="5"/>
                             </Style>
                         </Button.Resources>
                     </Button>
-                    <Button Grid.Column="1" Margin="20,0,40,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#F4044D" Content="Quit App" Click="CloseApp" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                    <Button Grid.Column="1" Margin="20,0,40,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#F4044D" Content="Quit App" Click="CloseApp" >
                         <Button.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="5"/>
