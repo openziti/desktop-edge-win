@@ -89,7 +89,12 @@ namespace ZitiUpdateService {
         public UpdateService() {
             InitializeComponent();
 
-            CurrentSettings.Load();
+            try {
+                CurrentSettings.Load();
+            } catch {
+                /* just ignore - file doesn't exist */
+            }
+            CurrentSettings.Write(); // allows for migration of settings
             CurrentSettings.OnConfigurationChange += CurrentSettings_OnConfigurationChange;
 
             base.CanHandlePowerEvent = true;
@@ -546,16 +551,20 @@ namespace ZitiUpdateService {
                     Logger.Trace("ziti-edge-tunnel aliveness check ends successfully");
                 } else {
                     Interlocked.Add(ref zetFailedCheckCounter, 1);
-                    Logger.Warn("ziti-edge-tunnel aliveness check appears blocked and has been for {} times", zetFailedCheckCounter);
-                    if (zetFailedCheckCounter > 2) {
-                        disableHealthCheck();
-                        //after 3 failures, just terminate ziti-edge-tunnel
-                        Interlocked.Exchange(ref zetFailedCheckCounter, 0); //reset the counter back to 0
-                        Logger.Warn("forcefully stopping ziti-edge-tunnel as it has been blocked for too long");
-                        stopProcessForcefully("ziti-edge-tunnel", "data service [ziti]");
+                    Logger.Warn("ziti-edge-tunnel aliveness check appears blocked and has been for {0} times. AlivenessChecksBeforeAction:{1}", 
+                        zetFailedCheckCounter, CurrentSettings.AlivenessChecksBeforeAction);
+                    if (CurrentSettings.AlivenessChecksBeforeAction > 0) {
+                        if (zetFailedCheckCounter > CurrentSettings.AlivenessChecksBeforeAction) {
+                            disableHealthCheck();
+                            //after 'n' failures, just terminate ziti-edge-tunnel
+                            Interlocked.Exchange(ref zetFailedCheckCounter, 0); //reset the counter back to 0
+                            Logger.Warn("forcefully stopping ziti-edge-tunnel as it has been blocked for too long");
+                            stopProcessForcefully("ziti-edge-tunnel", "data service [ziti]");
+                            zetSemaphore.Release();
 
-                        Logger.Info("immediately restarting ziti-edge-tunnel");
-                        ServiceActions.StartService(); //attempt to start the service
+                            Logger.Info("immediately restarting ziti-edge-tunnel");
+                            ServiceActions.StartService(); //attempt to start the service
+                        }
                     }
                 }
             } catch (Exception ex) {
@@ -1017,6 +1026,7 @@ namespace ZitiUpdateService {
                     ReleaseStream = IsBeta ? "beta" : "stable",
                     AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString(),
                     AutomaticUpgradeURL = CurrentSettings.AutomaticUpdateURL,
+                    AlivenessChecksBeforeAction = CurrentSettings.AlivenessChecksBeforeAction ?? -1,
                 };
                 EventRegistry.SendEventToConsumers(status);
             }
