@@ -20,8 +20,7 @@
         i:MouseWheel.LogicalScrollIncrement="1"
         i:MouseWheel.ScrollMode="Auto"
         WindowStyle="None" Loaded="MainWindow_Loaded" Background="#000F0F23"
-        DataContext="{Binding RelativeSource={RelativeSource Self}}"
-        >
+    >
     <Window.Resources>
         <Style TargetType="Image">
             <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality" />
@@ -153,10 +152,8 @@
                            d:Content="Tap to Connect"
                            Margin="0,-3,0,0" 
                            FontFamily="pack://application:,,,/Assets/Fonts/#Russo One"
-                           FontWeight="Bold"
                            FontSize="14" 
                            Foreground="White"
-                           Typography.Capitals="AllSmallCaps"
                            HorizontalAlignment="Center"
                            />
                 </StackPanel>

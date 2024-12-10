@@ -407,13 +407,13 @@ namespace ZitiDesktopEdge {
         private MainViewModel props = null;
         public MainWindow() {
             InitializeComponent();
+
             props = new MainViewModel();
             DataContext = props;
 
             NextNotificationTime = DateTime.Now;
             SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
             string nlogFile = Path.Combine(ExecutionDirectory, ThisAssemblyName + "-log.config");
-
 
             ToastNotificationManagerCompat.OnActivated += ToastNotificationManagerCompat_OnActivated;
 
@@ -2036,10 +2036,9 @@ namespace ZitiDesktopEdge {
 
     public class MainViewModel : INotifyPropertyChanged {
         private string _connectLabelContent = "Tap to Connect";
+
         public string ConnectLabelContent {
-            get {
-                return _connectLabelContent;
-            }
+            get { return _connectLabelContent; }
             set {
                 _connectLabelContent = value;
                 OnPropertyChanged(nameof(ConnectLabelContent));
@@ -2047,12 +2046,15 @@ namespace ZitiDesktopEdge {
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
+
         protected void OnPropertyChanged(string propertyName) {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
         public void Disconnected() {
             ConnectLabelContent = "Tap to Connect";
         }
+
         public void Connected() {
             ConnectLabelContent = "Tap to Disconnect";
         }
