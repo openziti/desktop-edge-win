@@ -28,6 +28,7 @@ using System.Windows.Media;
 
 using WinForms=System.Windows.Forms;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 
 
 namespace ZitiDesktopEdge {
@@ -169,7 +170,7 @@ namespace ZitiDesktopEdge {
             ServiceCountAreaLabel.Content = "disabled";
         }
 
-        public void RefreshUI() {
+        public async void RefreshUI() {
             TimerCountdown.Visibility = Visibility.Collapsed;
             PostureTimedOut.Visibility = Visibility.Collapsed;
             ServiceCountArea.Visibility = Visibility.Collapsed;
@@ -244,25 +245,11 @@ namespace ZitiDesktopEdge {
                     ExtAuthRequired.Visibility = Visibility.Visible;
                 }
             } else {
-                if (_identity.IsMFAEnabled) {
-                    ServiceCount.Content = "MFA";
-                    ServiceCountAreaLabel.Content = "id disabled";
-                    MainArea.Opacity = 0.6;
-                    showMfa();
-                } else {
-                    if (_identity.IsMFANeeded) {
-                        ServiceCount.Content = "MFA";
-                        ServiceCountAreaLabel.Content = "disabled3";
-                        ServiceCountBorder.Background = DisabledBrush;
-                        showMfa();
-                    } else {
-                        ServiceCount.Content = "-";
-                        ServiceCountAreaLabel.Content = "id disabled";
-                        MainArea.Opacity = 0.6;
-                        showBubbles();
-                        ServiceCountBorder.Background = DisabledBrush;
-                    }
-                }
+                ServiceCount.Content = "-";
+                MainArea.Opacity = 0.6;
+                ServiceCountBorder.Background = DisabledBrush;
+                ServiceCountAreaLabel.Content = "id disabled";
+                showBubbles();
             }
 
             IdName.Text = _identity.Name;

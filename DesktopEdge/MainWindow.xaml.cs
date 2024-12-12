@@ -729,14 +729,14 @@ namespace ZitiDesktopEdge {
             Placement();
         }
 
-        private void ServiceClient_OnAuthenticationEvent(object sender, AuthenticationEvent e) {
+        private async void ServiceClient_OnAuthenticationEvent(object sender, AuthenticationEvent e) {
             ZitiIdentity found = identities.Find(i => i.Identifier == e.Identifier);
             if(found != null) {
                 if (e.Action == "error") {
                     found.AuthInProgress = false;
-                    this.Dispatcher.Invoke(() => {
-                        ShowBlurbAsync("Authentication Failed", "External Auth Failed").Wait();
-                    });
+                    await Dispatcher.BeginInvoke(new Action(async () => {
+                        await ShowBlurbAsync("Authentication Failed", "External Auth Failed");
+                    }));
                 }
             }
         }
@@ -1898,7 +1898,7 @@ namespace ZitiDesktopEdge {
                 ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(15, 0, 15, 15), TimeSpan.FromSeconds(.3));
                 BlurbArea.BeginAnimation(Grid.OpacityProperty, animation);
                 BlurbArea.BeginAnimation(Grid.MarginProperty, animateThick);
-                await Task.Delay(5000);
+                await Task.Delay(2500);
                 HideBlurb();
             } catch(Exception e) {
                 logger.Error(e);
