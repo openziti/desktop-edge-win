@@ -33,6 +33,8 @@ using Ziti.Desktop.Edge.Models;
 using System.Threading;
 using System.Threading.Tasks;
 using ZitiDesktopEdge.Utility;
+using System.ComponentModel;
+using Newtonsoft.Json.Linq;
 
 namespace ZitiDesktopEdge {
     /// <summary>
@@ -50,7 +52,6 @@ namespace ZitiDesktopEdge {
         public delegate void ShowBlurb(string message);
         public event ShowBlurb OnShowBlurb;
         public string menuState = "Main";
-        public string licenseData = "it's open source.";
         public string LogLevel = "";
         private string appVersion = null;
         public double MainHeight = 500;
@@ -58,6 +59,21 @@ namespace ZitiDesktopEdge {
         private ZDEWViewState state;
 
         public bool ShowUnexpectedFailure { get; set; }
+
+        private bool _useKeychain;
+        public bool UseKeychain {
+            get {
+                return _useKeychain;
+            }
+            set {
+                _useKeychain = value;
+                OnPropertyChanged(nameof(UseKeychain));
+            }
+        }
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged(string propertyName) {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
 
         public void ShowUpdateAvailable() {
             if (state.UpdateAvailable) {
@@ -81,6 +97,9 @@ namespace ZitiDesktopEdge {
 
         public MainMenu() {
             InitializeComponent();
+            // Set the initial value of UseKeychain from settings
+            UseKeychain = ZitiDesktopEdge.Properties.Settings.Default.UseKeychain;
+            this.DataContext = this;
             Application.Current.MainWindow.Title = "Ziti Desktop Edge";
             state = (ZDEWViewState)Application.Current.Properties["ZDEWViewState"];
 
@@ -92,8 +111,6 @@ namespace ZitiDesktopEdge {
             }
 
             appVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            LicensesItems.Text = licenseData;
-            // don't check from the UI any more... CheckUpdates();
         }
 
         private void HideMenu(object sender, MouseButtonEventArgs e) {
@@ -102,9 +119,7 @@ namespace ZitiDesktopEdge {
             MainMenuArea.Visibility = Visibility.Collapsed;
         }
         private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
-            if (e.ChangedButton == MouseButton.Left) {
-                OnDetach(e);
-            }
+            OnDetach(e);
         }
 
         private void CloseApp(object sender, MouseButtonEventArgs e) {
@@ -122,10 +137,6 @@ namespace ZitiDesktopEdge {
         }
         private void ShowIdentities(object sender, MouseButtonEventArgs e) {
             menuState = "Identities";
-            UpdateState();
-        }
-        private void ShowLicenses(object sender, MouseButtonEventArgs e) {
-            menuState = "Licenses";
             UpdateState();
         }
         private void ShowConfig(object sender, MouseButtonEventArgs e) {
@@ -198,7 +209,6 @@ namespace ZitiDesktopEdge {
             AboutItemsArea.Visibility = Visibility.Collapsed;
             BackArrow.Visibility = Visibility.Collapsed;
             AdvancedItems.Visibility = Visibility.Collapsed;
-            LicensesItems.Visibility = Visibility.Collapsed;
             LogsItems.Visibility = Visibility.Collapsed;
             ConfigItems.Visibility = Visibility.Collapsed;
             LogLevelItems.Visibility = Visibility.Collapsed;
@@ -229,10 +239,6 @@ namespace ZitiDesktopEdge {
                 MenuTitle.Content = "Advanced Settings";
                 AdvancedItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
-            } else if (menuState == "Licenses") {
-                MenuTitle.Content = "Third Party Licenses";
-                LicensesItems.Visibility = Visibility.Visible;
-                BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "Logs") {
                 MenuTitle.Content = "Advanced Settings";
                 AdvancedItems.Visibility = Visibility.Visible;
@@ -259,7 +265,7 @@ namespace ZitiDesktopEdge {
                 AutomaticUpgradesItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "Config") {
-                MenuTitle.Content = "Tunnel Configuration";
+                MenuTitle.Content = "Tunnel Config";
                 ConfigItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
 
@@ -269,6 +275,7 @@ namespace ZitiDesktopEdge {
                 ConfigMtu.Value = Application.Current.Properties["mtu"]?.ToString();
                 ConfigDns.Value = Application.Current.Properties["dns"]?.ToString();
                 ConfigDnsEnabled.Value = Application.Current.Properties["dnsenabled"]?.ToString();
+                ConfigUseKeychain.Value = Properties.Settings.Default.UseKeychain.ToString();
             } else if (menuState == "Identities") {
                 MenuTitle.Content = "Identities";
                 IdListScrollView.Visibility = Visibility.Visible;
@@ -306,8 +313,6 @@ namespace ZitiDesktopEdge {
         private void GoBack(object sender, MouseButtonEventArgs e) {
             if (menuState == "Config" || menuState == "LogLevel" || menuState == "UILogs" || menuState == "SetReleaseStream" || menuState == "ConfigureAutomaticUpgrades") {
                 menuState = "Advanced";
-            } else if (menuState == "Licenses") {
-                menuState = "About";
             } else {
                 menuState = "Menu";
             }
@@ -380,6 +385,12 @@ namespace ZitiDesktopEdge {
             DetachButton.Visibility = Visibility.Collapsed;
             AttachButton.Visibility = Visibility.Visible;
             Arrow.Visibility = Visibility.Collapsed;
+        }
+        public void Retach() {
+            Application.Current.MainWindow.ShowInTaskbar = false;
+            DetachButton.Visibility = Visibility.Visible;
+            AttachButton.Visibility = Visibility.Collapsed;
+            Arrow.Visibility = Visibility.Visible;
         }
         private void RetachWindow(object sender, MouseButtonEventArgs e) {
             Application.Current.MainWindow.ShowInTaskbar = false;
@@ -531,6 +542,10 @@ namespace ZitiDesktopEdge {
         /// Save the config information to the properties and queue for update.
         /// </summary>
         async private void UpdateConfig() {
+            Properties.Settings.Default.UseKeychain = _useKeychain;
+            Properties.Settings.Default.Save();
+            ConfigUseKeychain.Value = Properties.Settings.Default.UseKeychain.ToString();
+
             logger.Info("updating config...");
             DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
             try {

@@ -6,11 +6,16 @@
              xmlns:local="clr-namespace:ZitiDesktopEdge"
              mc:Ignorable="d" 
              x:Name="IdentityArea"
-             d:DesignHeight="500" d:DesignWidth="350" IsVisibleChanged="VisibilityChanged">
+             MaxWidth="430"
+             d:DesignHeight="500" d:DesignWidth="400" IsVisibleChanged="VisibilityChanged">
+    <UserControl.Resources>
+        <Thickness x:Key="LeftMargin" Left="30" Top="0" Right="0" Bottom="0"/>
+        <Thickness x:Key="RightMargin" Left="0" Top="0" Right="30" Bottom="0"/>
+    </UserControl.Resources>
     <Grid>
         <!-- Border Arrow pointing to TaskBar -->
         <Canvas>
-            <Rectangle Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="White" Width="20" Canvas.Left="185" ClipToBounds="True" Canvas.Bottom="-10">
+            <Rectangle Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="White" Width="20" ClipToBounds="True">
                 <Rectangle.LayoutTransform>
                     <RotateTransform Angle="-45"/>
                 </Rectangle.LayoutTransform>
@@ -20,87 +25,286 @@
         <!-- Background Color for Pop Overs -->
         <Rectangle x:Name="MainCanvas" Margin="10,10,10,10" Fill="White" RadiusY="10" RadiusX="10"></Rectangle>
 
-        <Grid Margin="0,30,0,-20">
+        <Grid Margin="0,30,0,0" d:Visibility="Visible"
+        >
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,0,0,30">
-
                 <!-- Header Controls -->
                 <Grid Margin="0,0,0,10">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="60"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="60"/>
+                        <ColumnDefinition Width="1*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="1*"/>
                     </Grid.ColumnDefinitions>
-                    <Image x:Name="IsConnected" Grid.Column="0" Visibility="Visible" Source="/Assets/Images/online.png" Height="25" HorizontalAlignment="Right" Cursor="Hand" MouseUp="DoDisconnect" />
-                    <Image x:Name="IsDisconnected" Grid.Column="0" Visibility="Collapsed" Source="/Assets/Images/offline.png" Height="25" HorizontalAlignment="Right" Cursor="Hand" MouseUp="DoConnect" />
-                    <TextBlock x:Name="IdDetailName" MouseDown="Window_MouseDown" MaxWidth="220" Grid.Column="1" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" FontSize="14" FontWeight="Bold" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="#0F0F23" VerticalAlignment="Center" TextWrapping="NoWrap" />
-                    <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/x.png" Width="20" Height="20" Margin="0,0,0,0" HorizontalAlignment="Left" MouseUp="HideMenu"></Image>
+                    <StackPanel Margin="{StaticResource LeftMargin}"
+                                Orientation="Horizontal">
+                        <Image x:Name="IsConnected"
+                           Grid.Column="0"
+                           Visibility="Visible"
+                           d:Visibility="Visible"
+                           Source="/Assets/Images/online.png" Height="25"
+                           HorizontalAlignment="Left" />
+                        <Image
+                            x:Name="ExternalProviderSettingsIcon"
+                            Grid.Column="0"
+                            Margin="5,0,0,0"
+                            Visibility="Visible"
+                            d:Visibility="Visible"
+                            Source="/Assets/Images/ext-auth-ok.png"
+                            Height="25"
+                            HorizontalAlignment="Left"
+                            ToolTip="Click to configure external auth providers"
+                            Cursor="Hand"
+                            MouseUp="ExternalProviderSettingsIcon_MouseUp"
+                        />
+                        <Image x:Name="IsDisconnected"
+                           Grid.Column="0"
+                           Visibility="Collapsed"
+                           d:Visibility="Collapsed"
+                           Source="/Assets/Images/offline.png" Height="25"
+                           HorizontalAlignment="Left" />
+                    </StackPanel>
+                    <TextBlock x:Name="IdDetailName"
+                               MouseDown="Window_MouseDown"
+                               MouseUp="HandleAttach"
+                               Text="Identity Detail"
+                               MaxWidth="220"
+                               Grid.Column="1"
+                               Cursor="ScrollAll"
+                               TextTrimming="CharacterEllipsis"
+                               HorizontalAlignment="Center"
+                               FontSize="14"
+                               FontWeight="Bold"
+                               Foreground="#0F0F23"
+                               VerticalAlignment="Center"
+                               TextWrapping="NoWrap"
+                    />
+                    <Image Grid.Column="2"
+                           Cursor="Hand"
+                           Source="/Assets/Images/x.png"
+                           Width="20" Height="20"
+                           Margin="{StaticResource RightMargin}"
+                           HorizontalAlignment="Right"
+                           MouseUp="HideMenu"
+                    />
                 </Grid>
                 <Rectangle Margin="40,0,40,10" Fill="#070826" Height="1" RadiusY="10" RadiusX="10" Opacity="0.1"></Rectangle>
                 <local:MenuEditItem x:Name="IdName" Label="Name" IsLocked="True" />
                 <Rectangle Margin="40,0,40,10" Fill="#070826" Height="1" RadiusY="10" RadiusX="10" Opacity="0.1"></Rectangle>
                 <local:MenuEditItem x:Name="IdServer" Label="Network" IsLocked="True" />
                 <Rectangle Margin="40,0,40,10" Fill="#070826" Height="1" RadiusY="10" RadiusX="10" Opacity="0.1"></Rectangle>
-                <local:MenuEditToggle x:Name="IdentityMFA" HorizontalAlignment="Stretch" Label="Multi Factor Auth" Margin="0,10,0,0" Recovery="MFARecovery" Authenticate="MFAAuthenticate" Toggle="ToggleMFA"></local:MenuEditToggle>
+                <local:MenuEditToggle x:Name="IdentityMFA" HorizontalAlignment="Stretch" Label="Multi Factor Auth"
+                                      Margin="0,0,0,0" Recovery="MFARecovery" Authenticate="MFAAuthenticate"
+                                      Toggle="ToggleMFA"></local:MenuEditToggle>
+                <local:Filter x:Name="FilterServices" OnFilter="DoFilter" VerticalAlignment="Top" Margin="10,5,10,0" />
+                <StackPanel Name="ServicesPanel" d:Visibility="Collapsed">
+                    <Grid Name="MainDetailScroll" MaxHeight="160" Margin="10,0,10,-10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="95*"/>
+                            <ColumnDefinition Width="34*"/>
+                            <ColumnDefinition Width="61*"/>
+                        </Grid.ColumnDefinitions>
+                        <Rectangle Margin="10,10,10,10" Fill="#070826" RadiusY="10" RadiusX="10" Grid.ColumnSpan="3"></Rectangle>
+                        <ListView x:Name="ServiceList" VirtualizingPanel.IsVirtualizing="True"
+                                  ScrollViewer.IsDeferredScrollingEnabled="True" ScrollViewer.ScrollChanged="Scrolled"
+                                  Focusable="False" IsManipulationEnabled="False" BorderThickness="0" Background="Transparent"
+                                  Margin="20,20,10,20" Style="{DynamicResource ServiceListStyle}" Grid.ColumnSpan="3">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="{x:Type ListViewItem}">
+                                    <Setter Property="Background" Value="Transparent" />
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="{x:Type ListViewItem}">
+                                                <ContentPresenter />
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Height="32">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="200"/>
+                                            <ColumnDefinition Width="100"/>
+                                            <ColumnDefinition x:Name="TimerColumn" Width="20"/>
+                                            <ColumnDefinition x:Name="WarningColumn" Width="20"/>
+                                            <ColumnDefinition x:Name="DetailColumn" Width="20"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Orientation="Vertical" Height="30" Grid.Column="0">
+                                            <TextBlock Name="MainLabel" Text="{Binding Name}" Padding="0,0,12,0" Height="15" FontWeight="Bold" Background="Transparent" ClipToBounds="True" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" FontSize="11" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White"></TextBlock>
+                                            <TextBlock Name="MainEdit" Text="{Binding AddressString}" Height="14" Padding="0,0,12,0" Background="Transparent" ClipToBounds="True" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Stretch" FontSize="10" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="LightGray"></TextBlock>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Vertical" Height="30" Grid.Column="1">
+                                            <TextBlock Name="Protocols" Text="{Binding ProtocolString}" Padding="0,0,12,0" Height="15" FontWeight="Bold" Background="Transparent" ClipToBounds="True" VerticalAlignment="Bottom" HorizontalAlignment="Center" FontSize="11" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Opacity="0.9"></TextBlock>
+                                            <TextBlock Name="Ports" Text="{Binding PortString}" Height="14" Padding="0,0,12,0" HorizontalAlignment="Center" Background="Transparent" ClipToBounds="True" Grid.Column="0" VerticalAlignment="Top" FontSize="10" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="LightGray"></TextBlock>
+                                        </StackPanel>
+                                        <Image x:Name="TimerIcon" Visibility="{Binding TimerVisibility}" Source="/Assets/Images/timer.png" Grid.Column="2" Width="20" Height="20" Cursor="Hand" MouseUp="DoMFA"/>
+                                        <Image x:Name="TimedOutIcon" Visibility="{Binding MfaVisibility}" Source="/Assets/Images/mfaoff.png" Grid.Column="2" Width="20" Height="20" Cursor="Hand" MouseUp="DoMFA"/>
+                                        <Image x:Name="WarnIcon" Visibility="{Binding WarningVisibility}" ToolTip="{Binding WarningMessage}" Source="/Assets/Images/Warning.png" Grid.Column="3" Width="20" Height="20" Cursor="Hand" MouseUp="WarnClicked"/>
+                                        <Image x:Name="DetailIcon" Source="/Assets/Images/detail.png" Grid.Column="4" Width="20" Height="20" Cursor="Hand" MouseUp="DetailsClicked"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </Grid>
+                    <Label x:Name="ServiceCount" HorizontalAlignment="Center" Content="0 Services" Margin="0,0,0,0" Foreground="Gray" FontWeight="Bold" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
+                </StackPanel>
+                <StackPanel Name="ExternalProviderPanel" Visibility="Visible">
+                    <Grid MaxHeight="160" Margin="10,0,10,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="3*"/>
+                            <ColumnDefinition Width="6*"/>
+                            <ColumnDefinition Width="3*"/>
+                        </Grid.ColumnDefinitions>
+                    </Grid>
+                    <Label x:Name="ExternalProviderLabel" Grid.ColumnSpan="3" Width="Auto"
+                           HorizontalAlignment="Center"
+                           Content="You must authenticate to access services" 
+                           FontWeight="Bold"
+                           FontSize="12"
+                           FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"
+                     />
 
-                <local:Filter x:Name="FilterServices" OnFilter="DoFilter" VerticalAlignment="Top" Margin="10,16,10,0" />
-
-                <TextBox Name="NoAuthServices" Height="30" FontWeight="Bold" Margin="10,0,10,0" TextAlignment="Center" Text="You must authenticate to access services" IsReadOnly="True" HorizontalAlignment="Stretch" BorderThickness="0" ClipToBounds="True" Grid.Column="0" Grid.Row="5" VerticalAlignment="Center" Padding="0,6,3,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></TextBox>
-                <Grid Name="MainDetailScroll" MaxHeight="160" Margin="10,0,10,-10">
-                    <Rectangle Margin="10,10,10,10" Fill="#070826" RadiusY="10" RadiusX="10"></Rectangle>
-                    <ListView x:Name="ServiceList" VirtualizingPanel.IsVirtualizing="True" ScrollViewer.IsDeferredScrollingEnabled="True" ScrollViewer.ScrollChanged="Scrolled" Focusable="False" IsManipulationEnabled="False" BorderThickness="0" Background="Transparent" Margin="20,20,10,20" Style="{DynamicResource ServiceListStyle}">
-                        <ListView.ItemContainerStyle>
-                            <Style TargetType="{x:Type ListViewItem}">
-                                <Setter Property="Background" Value="Transparent" />
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="{x:Type ListViewItem}">
-                                            <ContentPresenter />
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                            </Style>
-                        </ListView.ItemContainerStyle>
-                        <ListView.ItemTemplate>
-                            <DataTemplate>
-                                <Grid Height="32">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="200"/>
-                                        <ColumnDefinition Width="100"/>
-                                        <ColumnDefinition x:Name="TimerColumn" Width="20"/>
-                                        <ColumnDefinition x:Name="WarningColumn" Width="20"/>
-                                        <ColumnDefinition x:Name="DetailColumn" Width="20"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Orientation="Vertical" Height="30" Grid.Column="0">
-                                        <TextBlock Name="MainLabel" Text="{Binding Name}" Padding="0,0,12,0" Height="15" FontWeight="Bold" Background="Transparent" ClipToBounds="True" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" FontSize="11" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White"></TextBlock>
-                                        <TextBlock Name="MainEdit" Text="{Binding AddressString}" Height="14" Padding="0,0,12,0" Background="Transparent" ClipToBounds="True" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Stretch" FontSize="10" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="LightGray"></TextBlock>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Vertical" Height="30" Grid.Column="1">
-                                        <TextBlock Name="Protocols" Text="{Binding ProtocolString}" Padding="0,0,12,0" Height="15" FontWeight="Bold" Background="Transparent" ClipToBounds="True" VerticalAlignment="Bottom" HorizontalAlignment="Center" FontSize="11" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Opacity="0.9"></TextBlock>
-                                        <TextBlock Name="Ports" Text="{Binding PortString}" Height="14" Padding="0,0,12,0" HorizontalAlignment="Center" Background="Transparent" ClipToBounds="True" Grid.Column="0" VerticalAlignment="Top" FontSize="10" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="LightGray"></TextBlock>
-                                    </StackPanel>
-                                    <Image x:Name="TimerIcon" Visibility="{Binding TimerVisibility}" Source="/Assets/Images/timer.png" Grid.Column="2" Width="20" Height="20" Cursor="Hand" MouseUp="DoMFA"/>
-                                    <Image x:Name="TimedOutIcon" Visibility="{Binding MfaVisibility}" Source="/Assets/Images/mfaoff.png" Grid.Column="2" Width="20" Height="20" Cursor="Hand" MouseUp="DoMFA"/>
-                                    <Image x:Name="WarnIcon" Visibility="{Binding WarningVisibility}" ToolTip="{Binding WarningMessage}" Source="/Assets/Images/Warning.png" Grid.Column="3" Width="20" Height="20" Cursor="Hand" MouseUp="WarnClicked"/>
-                                    <Image x:Name="DetailIcon" Source="/Assets/Images/detail.png" Grid.Column="4" Width="20" Height="20" Cursor="Hand" MouseUp="DetailsClicked"/>
-                                </Grid>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
-                </Grid>
-                <Label x:Name="ServiceCount" HorizontalAlignment="Center" Content="0 Services" Margin="0,0,0,0" Foreground="Gray" FontWeight="Bold" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
-                <Grid>
-                    <Rectangle x:Name="AuthMessageBg" Margin="40,0,40,0" Opacity="0.8" RadiusX="7" RadiusY="7" ClipToBounds="True" Height="30" VerticalAlignment="Bottom" Cursor="Hand" MouseUp="AuthFromMessage">
-                        <Rectangle.Fill>
-                            <SolidColorBrush x:Name="AuthBgColor" Color="#0069FF"/>
-                        </Rectangle.Fill>
-                    </Rectangle>
-                    <Label x:Name="AuthMessageLabel" HorizontalAlignment="Center" Content="Authenticate" IsHitTestVisible="False" Foreground="#FFFFFF"></Label>
-                </Grid>
+                    <Border Background="{StaticResource VeryLightBackgroundBrush}"
+                            BorderBrush="Gray"
+                            BorderThickness="2"
+                            CornerRadius="5"
+                            Width="300"
+                    >
+                        <StackPanel x:Name="ExternalProvider" Margin="0,0,0,10">
+                            <Label Content="Configured Providers"
+                                   Foreground="Black"
+                                   FontSize="12"
+                                   HorizontalAlignment="Left"
+                                   FontWeight="Bold"
+                                     Margin="20,0,20,0"
+                                   />
+                            <ListBox Name="ProviderList"
+                                     SelectionMode="Single"
+                                     Margin="20,0,20,0"
+                                     MaxHeight="70"
+                                     BorderThickness="3"
+                                     BorderBrush="Black"
+                                     Padding="0"
+                                     FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"
+                                     SelectionChanged="ProviderList_SelectionChanged"
+                            >
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <!-- Default background -->
+                                        <Style.Triggers>
+                                            <Trigger Property="IsSelected" Value="True" >
+                                                <Setter Property="FontWeight" Value="Bold" />
+                                                <Setter Property="Foreground" Value="Black" />
+                                                <Setter Property="Background" Value="#FF0000" />
+                                                <Setter Property="FontWeight" Value="ExtraBlack" />
+                                                <Setter Property="Background" Value="Orange" />
+                                            </Trigger>
+                                            <Trigger Property="IsSelected" Value="False" >
+                                                <Setter Property="Foreground" Value="Gray" />
+                                                <Setter Property="Background" Value="White" />
+                                                <Setter Property="BorderThickness" Value="0" />
+                                            </Trigger>
+                                        </Style.Triggers>
+                                        <Style.Resources>
+                                            <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Green"/>
+                                        </Style.Resources>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                                <d:ListBoxItem Content="Option 1" />
+                                <d:ListBoxItem Content="Option 2" d:IsSelected="true" />
+                                <d:ListBoxItem Content="Option 3" />
+                                <d:ListBoxItem Content="Option 4" />
+                            </ListBox>
+                            <Grid HorizontalAlignment="Right">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="1*" />
+                                </Grid.ColumnDefinitions>
+                                <Rectangle
+                                    Grid.Column="0"
+                                    Fill="Purple"
+                                />
+                                <TextBox
+                                    Text="Default provider?"
+                                    Margin="0,5,0,5"
+                                    Background="Transparent"
+                                    VerticalAlignment="Center"
+                                    Grid.Column="1"
+                                />
+                                <CheckBox
+                                    Name="IsDefaultProvider"
+                                    Margin="0,5,20,5"
+                                    Background="White"
+                                    VerticalAlignment="Center"
+                                    Grid.Column="2"
+                                    Checked="IsDefaultProvider_Checked"
+                                    Unchecked="IsDefaultProvider_Unchecked"
+                                    PreviewMouseDown="IsDefaultProvider_PreviewMouseDown"
+                                />
+                            </Grid>
+                            <local:StyledButton
+                                x:Name="AuthenticateWithProvider"
+                                Grid.Column="0"
+                                Label="Authenticate With Provider"
+                                IsTabStop="True"
+                                ButtonMargin="10,0,10,0"
+                                Margin="20,0,20,0"
+                                MouseUp="ExtAuthProvider"
+                                VerticalAlignment="Center"
+                            />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+                <StackPanel Name="TOTPPanel" Visibility="Collapsed">
+                    <TextBox Name="NoAuthServices" 
+                             Grid.Column="0" Grid.Row="5"
+                             Height="30" FontWeight="Bold"
+                             Margin="10,0,10,0"
+                             TextAlignment="Center"
+                             Text="You must authenticate to access services" IsReadOnly="True"
+                             HorizontalAlignment="Stretch"
+                             BorderThickness="0" ClipToBounds="True"
+                             VerticalAlignment="Center"
+                             Padding="0,6,3,0" FontSize="12"                             
+                             Foreground="Black"
+                    />
+                    <Grid>
+                        <Rectangle x:Name="AuthMessageBg"
+                                   Margin="40,0,40,0"
+                                   Opacity="0.8"
+                                   RadiusX="7" RadiusY="7"
+                                   ClipToBounds="True"
+                                   Height="30"
+                                   VerticalAlignment="Bottom"
+                                   Cursor="Hand"
+                                   MouseUp="ExtAuthTOTP">
+                            <Rectangle.Fill>
+                                <SolidColorBrush x:Name="AuthBgColor" Color="#0069FF"/>
+                            </Rectangle.Fill>
+                        </Rectangle>
+                        <Label x:Name="AuthMessageLabel"
+                               HorizontalAlignment="Center"
+                               Content="Authenticate"
+                               IsHitTestVisible="False"
+                               Foreground="#FFFFFF"></Label>
+                    </Grid>
+                </StackPanel>
             </StackPanel>
-            <local:StyledButton x:Name="ForgetIdentityButton" MinWidth="310" BgColor="#F4044D" Label="Forget This Identity" Margin="0,0,0,40" OnClick="ForgetIdentity" HorizontalAlignment="Center" VerticalAlignment="Bottom" />
+            <local:StyledButton x:Name="ForgetIdentityButton"
+                                MinWidth="310"
+                                BgColor="#F4044D"
+                                Label="Forget This Identity"
+                                ButtonMargin="30,0,30,0"
+                                Margin="0,0,0,22"
+                                OnClick="ForgetIdentity"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Bottom"
+            />
         </Grid>
         <Rectangle x:Name="ModalBg" Margin="10,10,10,10" Fill="Black" RadiusY="10" RadiusX="10" Opacity="0" Visibility="Collapsed" MouseDown="Window_MouseDown"></Rectangle>
 
@@ -142,19 +346,12 @@
         </Grid>
 
         <!-- Confirmation Prompt for confirming deletion -->
-        <Grid x:Name="ConfirmView" Visibility="Collapsed" Width="400">
+        <Grid x:Name="ForgetIdentityConfirmView" Visibility="Collapsed" Width="400">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="Black"/>
                 </Rectangle.Fill>
             </Rectangle>
-            <Canvas>
-                <Rectangle Name="ConfirmArrow" HorizontalAlignment="Center" Height="20" Fill="Black" Width="20" Canvas.Left="185" ClipToBounds="True" Canvas.Bottom="-10">
-                    <Rectangle.LayoutTransform>
-                        <RotateTransform Angle="-45"/>
-                    </Rectangle.LayoutTransform>
-                </Rectangle>
-            </Canvas>
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="200"></ColumnDefinition>

@@ -1,18 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using System.Windows;
 
 namespace ZitiDesktopEdge {
     /// <summary>
@@ -29,7 +20,7 @@ namespace ZitiDesktopEdge {
             get { return bgColor; }
             set {
                 bgColor = value;
-                ButtonBgColor.Color = (Color)ColorConverter.ConvertFromString(bgColor);
+                ButtonBg.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString(bgColor));
             }
         }
 
@@ -41,6 +32,17 @@ namespace ZitiDesktopEdge {
                 this._label = value;
                 ButtonLabel.Content = this._label;
             }
+        }
+
+        public static readonly DependencyProperty ButtonMarginProperty = DependencyProperty.Register(
+            "ButtonMargin",
+            typeof(Thickness),
+            typeof(StyledButton),
+            new PropertyMetadata(new Thickness(40, 0, 40, 0)));
+
+        public Thickness ButtonMargin {
+            get => (Thickness)GetValue(ButtonMarginProperty);
+            set => SetValue(ButtonMarginProperty, value);
         }
 
         public StyledButton() {
@@ -83,6 +85,18 @@ namespace ZitiDesktopEdge {
         /// <param name="e"></param>
         private void DoClick(object sender, MouseButtonEventArgs e) {
             this.OnClick?.Invoke(sender, e);
+        }
+
+        public void Disable() {
+            this.IsEnabled = false;
+            ButtonBg.Style = (Style)Resources["Disabled"];
+            ButtonLabel.Foreground = (Brush)Resources["DisabledTextBrush"];
+        }
+
+        public void Enable() {
+            this.IsEnabled = true;
+            ButtonBg.Style = (Style)Resources["Enabled"];
+            ButtonLabel.Foreground = Brushes.White;
         }
     }
 }

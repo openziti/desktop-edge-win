@@ -1,3 +1,4 @@
+//#define DEBUG_METRICS_MESSAGES
 /*
 	Copyright NetFoundry Inc.
 
@@ -73,7 +74,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                             }
                             string respAsString = null;
                             try {
-                                respAsString = await readMessageAsync(eventReader);
+                                respAsString = await readMessageAsync("event", eventReader);
                                 try {
                                     ProcessLine(respAsString);
                                 } catch (Exception ex) {
@@ -114,7 +115,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             OnCommunicationError?.Invoke(this, e);
         }
 
-        async protected Task sendAsync(object objToSend) {
+        async protected Task sendAsync(string channel, object objToSend) {
             bool retried = false;
             while (true) {
                 try {
@@ -125,7 +126,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                     string toSend = JsonConvert.SerializeObject(objToSend, serializerSettings);
 
                     if (toSend?.Trim() != null) {
-                        debugServiceCommunication(toSend);
+                        debugServiceCommunication(Id, "send", channel, toSend);
                         if (ipcWriter != null) {
                             await ipcWriter.WriteAsync(toSend);
                             await ipcWriter.WriteAsync('\n');
@@ -221,31 +222,65 @@ namespace ZitiDesktopEdge.ServiceClient {
             });
         }
 
-        protected void debugServiceCommunication(string msg) {
-#if DEBUGSVCCOM
-            Logger.Debug(msg);
+        protected void debugServiceCommunication(string source, string direction, string channel, string msg) {
+#if DEBUG
+#if DEBUG_METRICS_MESSAGES
+            // see the top of the file for where you can enable this
+            Logger.Warn("{0}-{1}-{2}: {3}", source, direction, channel, msg);
 #else
-            Logger.Trace(msg);
+            if (false == msg?.Contains("\"metrics\"")) {
+                Logger.Warn("{0}-{1}-{2}: {3}", source, direction, channel, msg);
+            }
+#endif
+#else
+            Logger.Trace("{0}-{1}-{2}: {3}", source, direction, channel, msg);
 #endif
         }
+#if DEBUG
+        protected TimeSpan DefaultReadTimeout = TimeSpan.FromSeconds(30);
+#else
+        protected TimeSpan DefaultReadTimeout = TimeSpan.FromSeconds(3);
+#endif
+        async protected Task<T> readAsync<T>(string stream, StreamReader reader, TimeSpan timeout) where T : SvcResponse {
+            var cts = new CancellationTokenSource(timeout);
+            try {
+                // Create a task that will complete when the read operation finishes
+                var readTask = readMessageAsync(stream, reader);
 
-        async protected Task<T> readAsync<T>(StreamReader reader) where T : SvcResponse {
-            string respAsString = await readMessageAsync(reader);
-            T resp = (T)serializer.Deserialize(new StringReader(respAsString), typeof(T));
-            return resp;
+                // Create a task that will complete when the timeout occurs
+                var timeoutTask = Task.Delay(timeout, cts.Token);
+
+                // Wait for either the read operation or timeout
+                var completedTask = await Task.WhenAny(readTask, timeoutTask);
+
+                // If the timeout task is the one that completed, throw a TimeoutException
+                if (completedTask == timeoutTask) {
+                    throw new TimeoutException("Read operation timed out waiting for a response. If the " + Id + " service is running, this is highly unepxected and should be reported.");
+                }
+
+                // Otherwise, await the read operation to get the result
+                string respAsString = await readTask;
+                T resp = (T)serializer.Deserialize(new StringReader(respAsString), typeof(T));
+                return resp;
+            } catch (TimeoutException) {
+                throw; // just throw it
+            } catch (Exception ex) {
+                // handle all the other unexpected situations
+                throw new IOException("Unexpected error while reading data. " + ex.Message);
+            }
         }
 
-        async public Task<string> readMessageAsync(StreamReader reader) {
+        async public Task<string> readMessageAsync(string channel, StreamReader reader) {
             try {
                 int emptyCount = 1; //just a stop gap in case something crazy happens in the communication
 
                 string respAsString = await reader.ReadLineAsync();
-                debugServiceCommunication(respAsString);
+                debugServiceCommunication(Id, "read", channel, respAsString);
                 while (string.IsNullOrEmpty(respAsString?.Trim())) {
-                    debugServiceCommunication("Received empty payload - continuing to read until a payload is received");
+                    debugServiceCommunication(Id, "read", channel, "Received empty payload - continuing to read until a payload is received");
                     //now how'd that happen...
                     respAsString = await reader.ReadLineAsync();
-                    debugServiceCommunication(respAsString);
+                    debugServiceCommunication(Id, "read", channel, respAsString);
                     emptyCount++;
                     if (emptyCount > 5) {
                         Logger.Debug("are we there yet? " + reader.EndOfStream);
