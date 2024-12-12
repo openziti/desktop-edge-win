@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:ZitiDesktopEdge"
              mc:Ignorable="d"
+             MaxWidth="430"
              x:Name="MainMenuArea"
              d:DesignHeight="400" d:DesignWidth="400" Margin="1,1,1,1">
 

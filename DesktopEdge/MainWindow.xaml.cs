@@ -407,13 +407,13 @@ namespace ZitiDesktopEdge {
         private MainViewModel props = null;
         public MainWindow() {
             InitializeComponent();
+
             props = new MainViewModel();
             DataContext = props;
 
             NextNotificationTime = DateTime.Now;
             SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
             string nlogFile = Path.Combine(ExecutionDirectory, ThisAssemblyName + "-log.config");
-
 
             ToastNotificationManagerCompat.OnActivated += ToastNotificationManagerCompat_OnActivated;
 
@@ -734,7 +734,9 @@ namespace ZitiDesktopEdge {
             if(found != null) {
                 if (e.Action == "error") {
                     found.AuthInProgress = false;
-                    _ = ShowBlurbAsync("Authentication Failed", "External Auth Failed");
+                    this.Dispatcher.Invoke(() => {
+                        ShowBlurbAsync("Authentication Failed", "External Auth Failed").Wait();
+                    });
                 }
             }
         }
@@ -1581,7 +1583,7 @@ namespace ZitiDesktopEdge {
                     MainMenu.Disconnected();
                     DownloadSpeed.Content = "0.0";
                     UploadSpeed.Content = "0.0";
-                    props.Connected();
+                    props.Disconnected();
                 }
             });
         }
@@ -1879,24 +1881,28 @@ namespace ZitiDesktopEdge {
         /// <param name="message">The message to show</param>
         /// <param name="url">The url or action name to execute</param>
         public async Task ShowBlurbAsync(string message, string url, string level = "error") {
-            RedBlurb.Visibility = Visibility.Collapsed;
-            InfoBlurb.Visibility = Visibility.Collapsed;
-            if (level == "error") {
-                RedBlurb.Visibility = Visibility.Visible;
-            } else {
-                InfoBlurb.Visibility = Visibility.Visible;
+            try {
+                RedBlurb.Visibility = Visibility.Collapsed;
+                InfoBlurb.Visibility = Visibility.Collapsed;
+                if (level == "error") {
+                    RedBlurb.Visibility = Visibility.Visible;
+                } else {
+                    InfoBlurb.Visibility = Visibility.Visible;
+                }
+                Blurb.Content = message;
+                _blurbUrl = url;
+                BlurbArea.Visibility = Visibility.Visible;
+                BlurbArea.Opacity = 0;
+                BlurbArea.Margin = new Thickness(0, 0, 0, 0);
+                DoubleAnimation animation = new DoubleAnimation(1, TimeSpan.FromSeconds(.3));
+                ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(15, 0, 15, 15), TimeSpan.FromSeconds(.3));
+                BlurbArea.BeginAnimation(Grid.OpacityProperty, animation);
+                BlurbArea.BeginAnimation(Grid.MarginProperty, animateThick);
+                await Task.Delay(5000);
+                HideBlurb();
+            } catch(Exception e) {
+                logger.Error(e);
             }
-            Blurb.Content = message;
-            _blurbUrl = url;
-            BlurbArea.Visibility = Visibility.Visible;
-            BlurbArea.Opacity = 0;
-            BlurbArea.Margin = new Thickness(0, 0, 0, 0);
-            DoubleAnimation animation = new DoubleAnimation(1, TimeSpan.FromSeconds(.3));
-            ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(15, 0, 15, 15), TimeSpan.FromSeconds(.3));
-            BlurbArea.BeginAnimation(Grid.OpacityProperty, animation);
-            BlurbArea.BeginAnimation(Grid.MarginProperty, animateThick);
-            await Task.Delay(5000);
-            HideBlurb();
         }
 
         /// <summary>
@@ -1960,7 +1966,7 @@ namespace ZitiDesktopEdge {
             else ShowLoad("Loading", "Please Wait.");
         }
 
-        private void ShowContextMenu(object sender, MouseButtonEventArgs e) {
+        private void AddIdentityContextMenu(object sender, MouseButtonEventArgs e) {
             var stackPanel = sender as StackPanel;
             if (stackPanel?.ContextMenu != null) {
                 stackPanel.ContextMenu.PlacementTarget = stackPanel;
@@ -2030,10 +2036,9 @@ namespace ZitiDesktopEdge {
 
     public class MainViewModel : INotifyPropertyChanged {
         private string _connectLabelContent = "Tap to Connect";
+
         public string ConnectLabelContent {
-            get {
-                return _connectLabelContent;
-            }
+            get { return _connectLabelContent; }
             set {
                 _connectLabelContent = value;
                 OnPropertyChanged(nameof(ConnectLabelContent));
@@ -2041,12 +2046,15 @@ namespace ZitiDesktopEdge {
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
+
         protected void OnPropertyChanged(string propertyName) {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
         public void Disconnected() {
             ConnectLabelContent = "Tap to Connect";
         }
+
         public void Connected() {
             ConnectLabelContent = "Tap to Disconnect";
         }

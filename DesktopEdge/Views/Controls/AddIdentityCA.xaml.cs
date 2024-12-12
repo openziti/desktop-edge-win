@@ -92,54 +92,11 @@ namespace ZitiDesktopEdge {
             return "Enter Alias";
         }
 
-        //private void Toggle_Checked(object sender, RoutedEventArgs e) {
-        //    if (WithJwtToggle != null && UrlInputPanel != null) {
-        //        if (WithJwtToggle.IsChecked == true) {
-        //            JwtInputPanel.Visibility = Visibility.Visible;
-        //            UrlInputPanel.Visibility = Visibility.Collapsed;
-        //        } else if (WithUrlToggle.IsChecked == true) {
-        //            JwtInputPanel.Visibility = Visibility.Collapsed;
-        //            UrlInputPanel.Visibility = Visibility.Visible;
-        //        } else {
-        //            JwtInputPanel.Visibility = Visibility.Collapsed;
-        //            UrlInputPanel.Visibility = Visibility.Visible;
-        //        }
-        //    }
-        //}
-
-        private void BrowseJwtFile_Click(object sender, RoutedEventArgs e) {
-            var openFileDialog = new Microsoft.Win32.OpenFileDialog();
-            if (openFileDialog.ShowDialog() == true) {
-                //JwtTextBox.Text = openFileDialog.FileName;
-            }
-        }
-
         private void ControllerURL_TextChanged(object sender, TextChangedEventArgs e) {
             //if (ControllerURL.ActualWidth > 0) {
             //    ControllerURL.MaxWidth = ControllerURL.ActualWidth; //disable any expanding
             //}
             //UpdateUrlValidity();
         }
-
-        //private void UpdateUrlValidity() {
-        //    bool valid = true;
-        //    try {
-        //        // check that it looks like a url
-        //        Uri ctrl = new Uri(ControllerURL.Text);
-        //        if (!ctrl.Host.Contains(".") || ctrl.Host.Length < 3) {
-        //            valid = false;
-        //        }
-        //    } catch {
-        //        // not a url -- don't allow it
-        //        valid = false;
-        //    }
-        //    if (valid) {
-        //        ControllerURL.Style = (Style)Resources["ValidUrl"];
-        //        if (JoinNetworkBtn != null) JoinNetworkBtn.Enable();
-        //    } else {
-        //        ControllerURL.Style = (Style)Resources["InvalidUrl"];
-        //        if (JoinNetworkBtn != null) JoinNetworkBtn.Disable();
-        //    }
-        //}
     }
 }

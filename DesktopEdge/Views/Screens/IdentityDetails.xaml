@@ -6,6 +6,7 @@
              xmlns:local="clr-namespace:ZitiDesktopEdge"
              mc:Ignorable="d" 
              x:Name="IdentityArea"
+             MaxWidth="430"
              d:DesignHeight="500" d:DesignWidth="400" IsVisibleChanged="VisibilityChanged">
     <UserControl.Resources>
         <Thickness x:Key="LeftMargin" Left="30" Top="0" Right="0" Bottom="0"/>
@@ -51,7 +52,7 @@
                             Margin="5,0,0,0"
                             Visibility="Visible"
                             d:Visibility="Visible"
-                            Source="/Assets/Images/ext-auth-needed.png"
+                            Source="/Assets/Images/ext-auth-ok.png"
                             Height="25"
                             HorizontalAlignment="Left"
                             ToolTip="Click to configure external auth providers"

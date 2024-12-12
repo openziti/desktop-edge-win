@@ -1,3 +1,18 @@
+# Release 2.5.1.1
+
+## What's New
+* bugfix
+
+## Other changes
+* none
+
+## Bugs fixed:
+* [issue 760](https://github.com/openziti/desktop-edge-win/issues/760) - stall detector operated too quickly. tamed to 60s from 15s and allowed for configuration
+
+## Dependency Updates
+
+n/a
+
 # Release 2.5.1.0
 
 ## What's New
