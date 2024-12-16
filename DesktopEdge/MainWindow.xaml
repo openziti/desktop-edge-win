@@ -129,7 +129,7 @@
                 <ImageBrush ImageSource="/Assets/Images/background.png" />
             </Rectangle.Fill>
         </Rectangle>
-        <StackPanel x:Name="MainView" Margin="10,10,10,-20">
+        <StackPanel x:Name="MainView" Margin="10,10,10,-20" MinHeight="500">
             <Grid HorizontalAlignment="Stretch">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="100"/>
@@ -257,6 +257,7 @@
         <!-- ID Detail UI -->
         <local:IdentityDetails x:Name="IdentityMenu"
                                Visibility="Collapsed"
+                               d:Visibility="Visible"
                                OnMFAToggled="MFAToggled"
                                AuthenticateTOTP="ShowAuthenticate"
                                Recovery="ShowRecovery"

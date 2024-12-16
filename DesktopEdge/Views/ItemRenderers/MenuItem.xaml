@@ -38,12 +38,24 @@
                 <ColumnDefinition x:Name="Col2" Width="*"/>
                 <ColumnDefinition x:Name="Col3" Width="50"/>
             </Grid.ColumnDefinitions>
-
-            <Image Name="IconCtrl" Source="/Assets/Images/advanced.png" Width="20" Height="20"/>
-            <Label Name="LabelCtrl" Grid.Column="1" Content="Main Menu" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"/>
-            <Image Name="ChevronCtrl" Grid.Column="2" HorizontalAlignment="Right" Source="/Assets/Images/nextArrow.png" Width="20" Height="20" Margin="0,0,10,0"/>
+            <Image Name="IconCtrl"
+                   Source="/Assets/Images/advanced.png"
+                   Width="20" Height="20"/>
+            <Label Name="LabelCtrl"
+                   Grid.Column="1"
+                   Content="Main Menu"
+                   VerticalAlignment="Center"
+                   HorizontalAlignment="Stretch"
+                   FontSize="14"
+                   Foreground="Black"/>
+            <Image Name="ChevronCtrl"
+                   Grid.Column="2"
+                   HorizontalAlignment="Right"
+                   Source="/Assets/Images/nextArrow.png"
+                   Width="20" Height="20"
+                   Margin="0,0,10,0"/>
         </Grid>
-        <Rectangle Name="BgFill"
+        <Rectangle Name="BgFill" Grid.ColumnSpan="3"
                    Height="1" Fill="#7d8faf"
                    Opacity="0.2" HorizontalAlignment="Stretch"/>
     </StackPanel>

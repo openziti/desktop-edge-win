@@ -37,7 +37,9 @@
                         <Image Source="/Assets/Images/lastArrow.png" Width="20" Height="20"></Image>
                         <Label FontSize="12" FontWeight="SemiBold" Content="Back" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                     </StackPanel>
-                    <Label Name="MenuTitle" MouseDown="Window_MouseDown" Grid.Column="1" Content="Main Menu" HorizontalAlignment="Center" FontSize="14" FontWeight="SemiBold" Foreground="#0F0F23"></Label>
+                    <Label Name="MenuTitle" Cursor="ScrollAll" MouseDown="Window_MouseDown"
+                           Grid.Column="1" Content="Main Menu" HorizontalAlignment="Center"
+                           FontSize="14" FontWeight="SemiBold" Foreground="#0F0F23"></Label>
                     <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/x.png" Height="20" Margin="50,4,0,5" MouseUp="HideMenu"></Image>
                 </Grid>
                 <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>

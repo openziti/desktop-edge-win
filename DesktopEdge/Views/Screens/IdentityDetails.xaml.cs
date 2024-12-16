@@ -358,7 +358,6 @@ namespace ZitiDesktopEdge {
         private void ShowCompleted(object sender, EventArgs e) {
             DoubleAnimation animation = new DoubleAnimation(DetailPanel.ActualHeight + 60, TimeSpan.FromSeconds(.3));
             DetailsArea.BeginAnimation(Grid.HeightProperty, animation);
-            //DetailsArea.Height = DetailPanel.ActualHeight + 60;
         }
 
         private void CloseDetails(object sender, MouseButtonEventArgs e) {
