@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Ziti.Desktop.Edge.Utils;
 
 namespace ZitiDesktopEdge {
     /// <summary>
@@ -52,6 +53,10 @@ namespace ZitiDesktopEdge {
 
         private void UserControl_MouseLeave(object sender, MouseEventArgs e) {
 
+        }
+
+        private void MainUI_PreviewMouseDown(object sender, MouseButtonEventArgs e) {
+            UIUtils.ClickedControl = e.Source as UIElement;
         }
     }
 }

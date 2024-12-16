@@ -4,7 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ZitiDesktopEdge"
-             mc:Ignorable="d" 
+             mc:Ignorable="d"
+             PreviewMouseDown="MainUI_PreviewMouseDown"
              d:DesignHeight="50" HorizontalAlignment="Stretch"
              d:DesignWidth="375" Cursor="Hand">
     <UserControl.Triggers>

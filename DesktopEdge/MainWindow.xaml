@@ -19,6 +19,7 @@
         i:MouseWheel.LogicalScrollDebouncing="Auto"
         i:MouseWheel.LogicalScrollIncrement="1"
         i:MouseWheel.ScrollMode="Auto"
+        PreviewMouseDown="MainUI_PreviewMouseDown"
         WindowStyle="None" Loaded="MainWindow_Loaded" Background="#000F0F23"
     >
     <Window.Resources>
@@ -146,7 +147,14 @@
                     <Label Content="MENU" Foreground="White" Height="25" Margin="0,-14,0,0" FontSize="10"></Label>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,12">
-                    <Image Source="/Assets/Images/z.png" Height="40" RenderOptions.BitmapScalingMode="Fant" MouseUp="HandleAttach" MouseDown="Window_MouseDown" Cursor="ScrollAll" ToolTip="Drag to detach/move, right click to reattach"></Image>
+                    <Image Source="/Assets/Images/z.png"
+                           Height="40"
+                           RenderOptions.BitmapScalingMode="Fant"
+                           MouseUp="HandleAttach"
+                           MouseDown="Window_MouseDown"
+                           Cursor="ScrollAll"
+                           ToolTip="Drag to detach/move, right click to reattach"
+                    />
                     <Label x:Name="ConnectLabel"
                            Content="{Binding ConnectLabelContent}"
                            d:Content="Tap to Connect"

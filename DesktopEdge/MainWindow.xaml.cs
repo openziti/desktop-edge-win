@@ -47,6 +47,7 @@ using System.Text;
 using Newtonsoft.Json;
 using System.ComponentModel;
 using static ZitiDesktopEdge.CommonDelegates;
+using Ziti.Desktop.Edge.Utils;
 
 namespace ZitiDesktopEdge {
 
@@ -84,6 +85,14 @@ namespace ZitiDesktopEdge {
         public static string ExpectedLogPathServices;
 
         private static ZDEWViewState state;
+
+        public static UIElement MouseDownControl;
+        // Global MouseDown for all controls inside the window
+        private void Window_GlobalMouseDown(object sender, MouseButtonEventArgs e) {
+            Console.WriteLine("MOUSE DOWN ON: " + e.OriginalSource);
+            MouseDownControl = e.OriginalSource as UIElement;
+        }
+
         static MainWindow() {
             asm = System.Reflection.Assembly.GetExecutingAssembly();
             ThisAssemblyName = asm.GetName().Name;
@@ -1053,6 +1062,8 @@ namespace ZitiDesktopEdge {
         }
 
         async private void ForceQuitButtonClick(object sender, RoutedEventArgs e) {
+            if (!UIUtils.IsLeftClick(e)) return;
+            if (!UIUtils.MouseUpForMouseDown(e)) return;
             MonitorServiceStatusEvent status = await monitorClient.ForceTerminateAsync();
             if (status.IsStopped()) {
                 //good
@@ -1065,6 +1076,8 @@ namespace ZitiDesktopEdge {
         }
 
         async private void StartZitiService(object sender, RoutedEventArgs e) {
+            if (!UIUtils.IsLeftClick(e)) return;
+            if (!UIUtils.MouseUpForMouseDown(e)) return;
             try {
                 ShowLoad("Starting", "Starting the data service");
                 logger.Info("StartZitiService");
@@ -1701,6 +1714,8 @@ namespace ZitiDesktopEdge {
         }
 
         private void AddIdentity(object sender, RoutedEventArgs e) {
+            if (!UIUtils.IsLeftClick(e)) return;
+            if (!UIUtils.MouseUpForMouseDown(e)) return;
             UIModel.HideOnLostFocus = false;
             OpenFileDialog jwtDialog = new OpenFileDialog();
             UIModel.HideOnLostFocus = true;
@@ -1777,6 +1792,8 @@ namespace ZitiDesktopEdge {
         }
 
         async private void Disconnect(object sender, RoutedEventArgs e) {
+            if (!UIUtils.IsLeftClick(e)) return;
+            if (!UIUtils.MouseUpForMouseDown(e)) return;
             try {
                 ShowLoad("Disabling Service", "Please wait for the service to stop.");
                 var r = await monitorClient.StopServiceAsync();
@@ -1841,6 +1858,8 @@ namespace ZitiDesktopEdge {
         }
 
         private void CloseApp(object sender, RoutedEventArgs e) {
+            if (!UIUtils.IsLeftClick(e)) return;
+            if (!UIUtils.MouseUpForMouseDown(e)) return;
             Application.Current.Shutdown();
         }
 
@@ -1869,6 +1888,8 @@ namespace ZitiDesktopEdge {
         }
 
         async private void CollectLogFileClick(object sender, RoutedEventArgs e) {
+            if (!UIUtils.IsLeftClick(e)) return;
+            if (!UIUtils.MouseUpForMouseDown(e)) return;
             await CollectLogFiles();
         }
         async private Task CollectLogFiles() {
@@ -1980,14 +2001,20 @@ namespace ZitiDesktopEdge {
         }
 
         private void WithJwt_Click(object sender, RoutedEventArgs e) {
+            if (!UIUtils.IsLeftClick(e)) return;
+            if (!UIUtils.MouseUpForMouseDown(e)) return;
             // Handle "With JWT"
             AddIdentity(sender, e);
         }
 
         void WithUrl_Click(object sender, RoutedEventArgs e) {
+            if (!UIUtils.IsLeftClick(e)) return;
+            if (!UIUtils.MouseUpForMouseDown(e)) return;
             ShowJoinByUrl();
         }
         void With3rdPartyCA_Click(object sender, RoutedEventArgs e) {
+            if (!UIUtils.IsLeftClick(e)) return;
+            if (!UIUtils.MouseUpForMouseDown(e)) return;
             ShowJoinWith3rdPartyCA();
         }
 
@@ -2017,6 +2044,10 @@ namespace ZitiDesktopEdge {
             } catch (Exception ex) {
                 logger.Error("unexpected error!", ex);
             }
+        }
+
+        private void MainUI_PreviewMouseDown(object sender, MouseButtonEventArgs e) {
+            UIUtils.ClickedControl = e.Source as UIElement;
         }
     }
 

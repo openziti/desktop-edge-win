@@ -6,7 +6,6 @@
              xmlns:local="clr-namespace:ZitiDesktopEdge"
              mc:Ignorable="d" 
              x:Name="IdentityArea"
-             MaxWidth="430"
              d:DesignHeight="500" d:DesignWidth="400" IsVisibleChanged="VisibilityChanged">
     <UserControl.Resources>
         <Thickness x:Key="LeftMargin" Left="30" Top="0" Right="0" Bottom="0"/>
@@ -40,46 +39,40 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel Margin="{StaticResource LeftMargin}"
                                 Orientation="Horizontal">
-                        <Image x:Name="IsConnected"
-                           Grid.Column="0"
-                           Visibility="Visible"
-                           d:Visibility="Visible"
-                           Source="/Assets/Images/online.png" Height="25"
-                           HorizontalAlignment="Left" />
-                        <Image
-                            x:Name="ExternalProviderSettingsIcon"
-                            Grid.Column="0"
-                            Margin="5,0,0,0"
-                            Visibility="Visible"
-                            d:Visibility="Visible"
-                            Source="/Assets/Images/ext-auth-ok.png"
-                            Height="25"
-                            HorizontalAlignment="Left"
-                            ToolTip="Click to configure external auth providers"
-                            Cursor="Hand"
-                            MouseUp="ExternalProviderSettingsIcon_MouseUp"
+                        <Image Name="IsConnectedAndDetails" Height="25"
+                               Visibility="Collapsed"
+                               d:Visibility="Visible"
+                               ToolTip="Identity connected. Click to see service details."
+                               Source="/Assets/Images/online.png"
+                               HorizontalAlignment="Left"
                         />
-                        <Image x:Name="IsDisconnected"
-                           Grid.Column="0"
-                           Visibility="Collapsed"
-                           d:Visibility="Collapsed"
-                           Source="/Assets/Images/offline.png" Height="25"
-                           HorizontalAlignment="Left" />
+                        <Image Name="MFAStatusAndDetails" Height="25" Cursor="Hand"
+                               Margin="5,0,0,0"
+                               Visibility="Collapsed"
+                               d:Visibility="Visible"
+                               Source="/Assets/Images/mfaoff.png"
+                        />
+                        <Image Name="ExternalProviderStatusAndDetails" Height="25" Cursor="Hand"
+                               Margin="5,0,0,0"
+                               Visibility="Visible"
+                               d:Visibility="Visible"
+                               Source="/Assets/Images/ext-auth-ok.png"
+                               HorizontalAlignment="Left"
+                               ToolTip="Click to configure external auth providers"
+                               MouseUp="ExternalProviderSettingsIcon_MouseUp"
+                        />
                     </StackPanel>
-                    <TextBlock x:Name="IdDetailName"
+                    <Label x:Name="IdDetailName"
                                MouseDown="Window_MouseDown"
                                MouseUp="HandleAttach"
-                               Text="Identity Detail"
-                               MaxWidth="220"
+                               Content="Identity Details"
                                Grid.Column="1"
                                Cursor="ScrollAll"
-                               TextTrimming="CharacterEllipsis"
                                HorizontalAlignment="Center"
                                FontSize="14"
                                FontWeight="Bold"
                                Foreground="#0F0F23"
                                VerticalAlignment="Center"
-                               TextWrapping="NoWrap"
                     />
                     <Image Grid.Column="2"
                            Cursor="Hand"
@@ -172,7 +165,7 @@
                             BorderBrush="Gray"
                             BorderThickness="2"
                             CornerRadius="5"
-                            Width="300"
+                            Width="300" Margin="0,5,0,0"
                     >
                         <StackPanel x:Name="ExternalProvider" Margin="0,0,0,10">
                             <Label Content="Configured Providers"
@@ -346,7 +339,7 @@
         </Grid>
 
         <!-- Confirmation Prompt for confirming deletion -->
-        <Grid x:Name="ForgetIdentityConfirmView" Visibility="Collapsed" Width="400">
+        <Grid x:Name="ForgetIdentityConfirmView" Visibility="Collapsed" MaxWidth="410">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="Black"/>
