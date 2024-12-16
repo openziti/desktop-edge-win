@@ -210,7 +210,7 @@
                                 </ControlTemplate>
                             </ContextMenu.Template>
 
-                            <MenuItem Header="With JWT" Click="AddIdentity"
+                            <MenuItem Header="With JWT" Click="AddIdentity_Click"
                                       Template="{StaticResource AddIdentityContextMenuTemplate}" />
                             <MenuItem Header="With URL" Click="WithUrl_Click"
                                       Template="{StaticResource AddIdentityContextMenuTemplate}" />

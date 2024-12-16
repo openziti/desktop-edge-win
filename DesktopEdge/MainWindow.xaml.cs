@@ -1713,9 +1713,7 @@ namespace ZitiDesktopEdge {
             return base64;
         }
 
-        private void AddIdentity(object sender, RoutedEventArgs e) {
-            if (!UIUtils.IsLeftClick(e)) return;
-            if (!UIUtils.MouseUpForMouseDown(e)) return;
+        private void AddIdentity_Click(object sender, RoutedEventArgs e) {
             UIModel.HideOnLostFocus = false;
             OpenFileDialog jwtDialog = new OpenFileDialog();
             UIModel.HideOnLostFocus = true;
@@ -2004,7 +2002,7 @@ namespace ZitiDesktopEdge {
             if (!UIUtils.IsLeftClick(e)) return;
             if (!UIUtils.MouseUpForMouseDown(e)) return;
             // Handle "With JWT"
-            AddIdentity(sender, e);
+            AddIdentity_Click(sender, e);
         }
 
         void WithUrl_Click(object sender, RoutedEventArgs e) {
