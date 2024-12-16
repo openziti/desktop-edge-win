@@ -135,7 +135,9 @@
                                 <ControlTemplate TargetType="ContextMenu">
                                     <Border Background="{StaticResource LightBackgroundBrush}"
                                             BorderBrush="Gray"
-                                            BorderThickness="3" CornerRadius="10" Padding="0">
+                                            BorderThickness="3"
+                                            CornerRadius="10"
+                                            Padding="0">
                                         <StackPanel>
                                             <ItemsPresenter />
                                         </StackPanel>
