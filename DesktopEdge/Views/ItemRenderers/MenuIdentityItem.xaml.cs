@@ -15,6 +15,7 @@ using System.Windows.Shapes;
 using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.ServiceClient;
+using Ziti.Desktop.Edge.Utils;
 
 namespace ZitiDesktopEdge {
     /// <summary>
@@ -62,9 +63,15 @@ namespace ZitiDesktopEdge {
         }
 
         private void ShowIdentity(object sender, MouseButtonEventArgs e) {
+            if (!UIUtils.IsLeftClick(e)) return;
+            if (!UIUtils.MouseUpForMouseDown(e)) return;
             IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
             deets.SelectedIdentityMenu = this;
             deets.Identity = this.Identity;
+        }
+
+        private void MainUI_PreviewMouseDown(object sender, MouseButtonEventArgs e) {
+            UIUtils.ClickedControl = e.Source as UIElement;
         }
     }
 }

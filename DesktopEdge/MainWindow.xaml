@@ -19,6 +19,7 @@
         i:MouseWheel.LogicalScrollDebouncing="Auto"
         i:MouseWheel.LogicalScrollIncrement="1"
         i:MouseWheel.ScrollMode="Auto"
+        PreviewMouseDown="MainUI_PreviewMouseDown"
         WindowStyle="None" Loaded="MainWindow_Loaded" Background="#000F0F23"
     >
     <Window.Resources>
@@ -88,6 +89,27 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <ControlTemplate x:Key="AddIdentityContextMenuTemplate" TargetType="MenuItem">
+            <Border x:Name="ItemBorder"
+                    Background="{TemplateBinding Background}"
+                    Padding="10,10"
+                    Margin="1,1"
+                    BorderBrush="#555" BorderThickness="0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="ItemText" Text="{TemplateBinding Header}" VerticalAlignment="Center" Foreground="{StaticResource ContextMenuTextNormalBrush}" FontSize="16" />
+                </StackPanel>
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource DarkBackgroundBrush}" />
+                    <Setter TargetName="ItemText" Property="Foreground" Value="{StaticResource ContextMenuTextHoverBrush}"/>
+                </Trigger>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource LightBackgroundBrush}" />
+                    <Setter TargetName="ItemText" Property="Foreground" Value="White"/>
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
     </Window.Resources>
     <Window.Triggers>
         <EventTrigger RoutedEvent="Window.Loaded">
@@ -129,7 +151,7 @@
                 <ImageBrush ImageSource="/Assets/Images/background.png" />
             </Rectangle.Fill>
         </Rectangle>
-        <StackPanel x:Name="MainView" Margin="10,10,10,-20">
+        <StackPanel x:Name="MainView" Margin="10,10,10,-20" MinHeight="500">
             <Grid HorizontalAlignment="Stretch">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="100"/>
@@ -146,7 +168,14 @@
                     <Label Content="MENU" Foreground="White" Height="25" Margin="0,-14,0,0" FontSize="10"></Label>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,12">
-                    <Image Source="/Assets/Images/z.png" Height="40" RenderOptions.BitmapScalingMode="Fant" MouseUp="HandleAttach" MouseDown="Window_MouseDown" Cursor="ScrollAll" ToolTip="Drag to detach/move, right click to reattach"></Image>
+                    <Image Source="/Assets/Images/z.png"
+                           Height="40"
+                           RenderOptions.BitmapScalingMode="Fant"
+                           MouseUp="HandleAttach"
+                           MouseDown="Window_MouseDown"
+                           Cursor="ScrollAll"
+                           ToolTip="Drag to detach/move, right click to reattach"
+                    />
                     <Label x:Name="ConnectLabel"
                            Content="{Binding ConnectLabelContent}"
                            d:Content="Tap to Connect"
@@ -169,7 +198,11 @@
                         <ContextMenu>
                             <ContextMenu.Template>
                                 <ControlTemplate TargetType="ContextMenu">
-                                    <Border Background="{StaticResource DarkBackgroundBrush}" BorderBrush="{StaticResource DarkBackgroundBrush}" BorderThickness="3" CornerRadius="10" Padding="0">
+                                    <Border Background="{StaticResource DarkBackgroundBrush}"
+                                            BorderBrush="Gray"
+                                            BorderThickness="3"
+                                            CornerRadius="10"
+                                            Padding="0">
                                         <StackPanel>
                                             <ItemsPresenter />
                                         </StackPanel>
@@ -177,10 +210,10 @@
                                 </ControlTemplate>
                             </ContextMenu.Template>
 
-                            <MenuItem Header="With JWT" Click="AddIdentity"
-                                      Template="{StaticResource ReusableMenuItemTemplate}" />
+                            <MenuItem Header="With JWT" Click="AddIdentity_Click"
+                                      Template="{StaticResource AddIdentityContextMenuTemplate}" />
                             <MenuItem Header="With URL" Click="WithUrl_Click"
-                                      Template="{StaticResource ReusableMenuItemTemplate}" />
+                                      Template="{StaticResource AddIdentityContextMenuTemplate}" />
                         </ContextMenu>
                     </StackPanel.ContextMenu>
 
@@ -257,6 +290,7 @@
         <!-- ID Detail UI -->
         <local:IdentityDetails x:Name="IdentityMenu"
                                Visibility="Collapsed"
+                               d:Visibility="Visible"
                                OnMFAToggled="MFAToggled"
                                AuthenticateTOTP="ShowAuthenticate"
                                Recovery="ShowRecovery"

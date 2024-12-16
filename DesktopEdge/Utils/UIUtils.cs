@@ -16,13 +16,18 @@
 
 using System;
 using System.Threading.Tasks;
-
+using System.Windows;
+using System.Windows.Input;
 using NLog;
+using Windows.Media.Streaming.Adaptive;
 
 namespace Ziti.Desktop.Edge.Utils {
     public class UIUtils {
 
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        
+        public static UIElement ClickedControl;
+
 
         public static void SetLogLevel(string level) {
             try {
@@ -42,6 +47,19 @@ namespace Ziti.Desktop.Edge.Utils {
             } catch (Exception e) {
                 Logger.Error(e, "Failed to set log level: {0}", e.Message);
             }
+        }
+
+        public static bool MouseUpForMouseDown(RoutedEventArgs e) {
+            if (ClickedControl == e?.Source) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        public static bool IsLeftClick(RoutedEventArgs e) {
+            MouseButtonEventArgs mea = e as MouseButtonEventArgs;
+            return mea?.ChangedButton == MouseButton.Left;
         }
     }
 }

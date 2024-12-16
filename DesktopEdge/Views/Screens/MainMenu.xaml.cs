@@ -35,6 +35,7 @@ using System.Threading.Tasks;
 using ZitiDesktopEdge.Utility;
 using System.ComponentModel;
 using Newtonsoft.Json.Linq;
+using Ziti.Desktop.Edge.Utils;
 
 namespace ZitiDesktopEdge {
     /// <summary>
@@ -791,6 +792,10 @@ namespace ZitiDesktopEdge {
         private void Button_Click(object sender, RoutedEventArgs e) {
             logger.Info("sender name: {}", sender);
 
+        }
+
+        private void MainUI_PreviewMouseDown(object sender, MouseButtonEventArgs e) {
+            UIUtils.ClickedControl = e.Source as UIElement;
         }
     }
 }

@@ -203,7 +203,9 @@ namespace ZitiDesktopEdge {
             TOTPPanel.Visibility = Visibility.Collapsed;
             ExternalProviderPanel.Visibility = Visibility.Collapsed;
             ServicesPanel.Visibility = Visibility.Collapsed;
-            ExternalProviderSettingsIcon.Visibility = Visibility.Collapsed;
+
+            //top row detail icons
+            ExternalProviderStatusAndDetails.Visibility = Visibility.Collapsed;
 
             scrolledTo = 0;
             IdentityMFA.IsOn = _identity.IsMFAEnabled;
@@ -243,7 +245,7 @@ namespace ZitiDesktopEdge {
             } else {
                 ServicesPanel.Visibility = Visibility.Visible;
                 if (Identity.ExtAuthProviders?.Count > 0) {
-                    ExternalProviderSettingsIcon.Visibility = Visibility.Visible;
+                    ExternalProviderStatusAndDetails.Visibility = Visibility.Visible;
                 }
             }
 
@@ -358,7 +360,6 @@ namespace ZitiDesktopEdge {
         private void ShowCompleted(object sender, EventArgs e) {
             DoubleAnimation animation = new DoubleAnimation(DetailPanel.ActualHeight + 60, TimeSpan.FromSeconds(.3));
             DetailsArea.BeginAnimation(Grid.HeightProperty, animation);
-            //DetailsArea.Height = DetailPanel.ActualHeight + 60;
         }
 
         private void CloseDetails(object sender, MouseButtonEventArgs e) {
@@ -656,12 +657,12 @@ namespace ZitiDesktopEdge {
                 //hide all panels, show the provider panel
                 ExternalProviderPanel.Visibility = Visibility.Collapsed;
                 ServicesPanel.Visibility = Visibility.Visible;
-                ExternalProviderSettingsIcon.ToolTip = "Click to configure external auth providers";
+                ExternalProviderStatusAndDetails.ToolTip = "Click to configure external auth providers";
             } else {
                 //hide all panels, show the provider panel
                 ExternalProviderPanel.Visibility = Visibility.Visible;
                 ServicesPanel.Visibility = Visibility.Collapsed;
-                ExternalProviderSettingsIcon.ToolTip = "Click to show service detail";
+                ExternalProviderStatusAndDetails.ToolTip = "Click to show service details";
                 AuthenticateWithProvider.Visibility = Visibility.Collapsed;
                 ExternalProviderLabel.Visibility = Visibility.Collapsed;
             }

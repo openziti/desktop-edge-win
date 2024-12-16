@@ -170,7 +170,7 @@ namespace ZitiDesktopEdge {
             ServiceCountAreaLabel.Content = "disabled";
         }
 
-        public async void RefreshUI() {
+        public void RefreshUI() {
             TimerCountdown.Visibility = Visibility.Collapsed;
             PostureTimedOut.Visibility = Visibility.Collapsed;
             ServiceCountArea.Visibility = Visibility.Collapsed;
@@ -458,7 +458,7 @@ namespace ZitiDesktopEdge {
                         };
                         menuItem.Header = provider;
 
-                        var controlTemplate = (System.Windows.Controls.ControlTemplate)Application.Current.FindResource("ReusableMenuItemTemplate");
+                        var controlTemplate = (ControlTemplate)this.FindResource("IdentityItemContextMenuTemplate");
                         menuItem.Template = controlTemplate;
                         contextMenu.Items.Add(menuItem);
                     }
