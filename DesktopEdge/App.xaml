@@ -21,26 +21,6 @@
         <SolidColorBrush x:Key="ContextMenuTextHoverBrush" Color="{StaticResource ContextMenuTextHover}" />
         <SolidColorBrush x:Key="InvalidUrlBorderBrush" Color="{StaticResource InvalidUrlDark}" />
         <SolidColorBrush x:Key="InvalidUrlBackgroundBrush" Color="{StaticResource InvalidUrlLight}" />
-        
-        <ControlTemplate x:Key="ReusableMenuItemTemplate" TargetType="MenuItem">
-            <Border x:Name="ItemBorder" Background="{TemplateBinding Background}" Padding="10,10" BorderBrush="#555" BorderThickness="0">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock x:Name="ItemText" Text="{TemplateBinding Header}" VerticalAlignment="Center" Foreground="{StaticResource ContextMenuTextNormalBrush}" FontSize="16" />
-                </StackPanel>
-            </Border>
-            <ControlTemplate.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource DarkBackgroundBrush}" />
-                    <Setter TargetName="ItemText" Property="Foreground" Value="{StaticResource ContextMenuTextHoverBrush}"/>
-                </Trigger>
-                <Trigger Property="IsHighlighted" Value="True">
-                    <Setter TargetName="ItemBorder" Property="Background" Value="Brown" />
-                    <Setter TargetName="ItemText" Property="Foreground" Value="White"/>
-                </Trigger>
-            </ControlTemplate.Triggers>
-        </ControlTemplate>
-
-
 
         
         

@@ -7,6 +7,29 @@
              mc:Ignorable="d"
              MaxWidth="430"
              d:DesignHeight="64" d:DesignWidth="375" Height="64">
+    <UserControl.Resources>
+        <ControlTemplate x:Key="IdentityItemContextMenuTemplate" TargetType="MenuItem">
+            <Border x:Name="ItemBorder"
+                    Background="{TemplateBinding Background}"
+                    Padding="10,10"
+                    Margin="2,2"
+                    BorderBrush="#555" BorderThickness="0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="ItemText" Text="{TemplateBinding Header}" VerticalAlignment="Center" Foreground="{StaticResource ContextMenuTextNormalBrush}" FontSize="16" />
+                </StackPanel>
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource DarkBackgroundBrush}" />
+                    <Setter TargetName="ItemText" Property="Foreground" Value="{StaticResource ContextMenuTextHoverBrush}"/>
+                </Trigger>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource DarkBackgroundBrush}" />
+                    <Setter TargetName="ItemText" Property="Foreground" Value="White"/>
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+    </UserControl.Resources>    
     <Canvas Name="MainArea" MouseEnter="Canvas_MouseEnter" MouseLeave="Canvas_MouseLeave">
         <Canvas.Resources>
         </Canvas.Resources>
@@ -111,7 +134,7 @@
                             <ContextMenu.Template>
                                 <ControlTemplate TargetType="ContextMenu">
                                     <Border Background="{StaticResource LightBackgroundBrush}"
-                                            BorderBrush="{StaticResource DarkBackgroundBrush}"
+                                            BorderBrush="Gray"
                                             BorderThickness="3" CornerRadius="10" Padding="0">
                                         <StackPanel>
                                             <ItemsPresenter />
