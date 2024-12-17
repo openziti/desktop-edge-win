@@ -24,12 +24,17 @@
         <!-- Background Color for Pop Overs -->
         <Rectangle x:Name="MainCanvas" Margin="10,10,10,10" Fill="White" RadiusY="10" RadiusX="10"></Rectangle>
 
-        <Grid Margin="0,30,0,0" d:Visibility="Visible"
-        >
+        <Grid Margin="0,30,0,0" d:Visibility="Visible">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,0,0,30">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="1*"/>
+                <!-- Content before -->
+                <RowDefinition Height="*" />
+                <!-- Space for the StackPanel -->
+            </Grid.RowDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,0,0,0">
                 <!-- Header Controls -->
                 <Grid Margin="0,0,0,10">
                     <Grid.ColumnDefinitions>
@@ -288,12 +293,12 @@
                     </Grid>
                 </StackPanel>
             </StackPanel>
-            <local:StyledButton x:Name="ForgetIdentityButton"
+            <local:StyledButton x:Name="ForgetIdentityButton" Grid.Row="1"
                                 MinWidth="310"
                                 BgColor="#F4044D"
                                 Label="Forget This Identity"
                                 ButtonMargin="30,0,30,0"
-                                Margin="0,0,0,22"
+                                Margin="0,10,0,20"
                                 OnClick="ForgetIdentity"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Bottom"

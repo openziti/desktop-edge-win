@@ -1509,7 +1509,9 @@ namespace ZitiDesktopEdge {
                 MainMenu.SetupIdList(ids);
                 if (ids.Length > 0 && serviceClient.Connected) {
                     double height = defaultHeight + (ids.Length * 60);
-                    if (height > _maxHeight) height = _maxHeight;
+                    if (height > _maxHeight) {
+                        height = _maxHeight;
+                    }
                     this.Height = height;
                     IdentityMenu.SetHeight(this.Height - 160);
                     MainMenu.IdentitiesButton.Visibility = Visibility.Visible;
@@ -2006,8 +2008,6 @@ namespace ZitiDesktopEdge {
         }
 
         void WithUrl_Click(object sender, RoutedEventArgs e) {
-            if (!UIUtils.IsLeftClick(e)) return;
-            if (!UIUtils.MouseUpForMouseDown(e)) return;
             ShowJoinByUrl();
         }
         void With3rdPartyCA_Click(object sender, RoutedEventArgs e) {
