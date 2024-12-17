@@ -296,6 +296,7 @@
                                Recovery="ShowRecovery"
                                OnLoading="DoLoading"
                                OnShowMFA="ShowAuthenticate"
+                               ShowBlurb="IdentityMenu_ShowBlurb"
                                CompleteExternalAuth="CompleteExternalAuthEvent"
         />
 

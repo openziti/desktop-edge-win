@@ -93,7 +93,7 @@
                 <Rectangle Margin="40,0,40,10" Fill="#070826" Height="1" RadiusY="10" RadiusX="10" Opacity="0.1"></Rectangle>
                 <local:MenuEditItem x:Name="IdServer" Label="Network" IsLocked="True" />
                 <Rectangle Margin="40,0,40,10" Fill="#070826" Height="1" RadiusY="10" RadiusX="10" Opacity="0.1"></Rectangle>
-                <local:MenuEditToggle x:Name="IdentityMFA" HorizontalAlignment="Stretch" Label="Multi Factor Auth"
+                <local:MenuEditToggle x:Name="IdentityMFA" HorizontalAlignment="Stretch" Label="Multi Factor Auth" PreviewMouseDown="IdentityMFA_PreviewMouseDown" PreviewMouseUp="IdentityMFA_PreviewMouseUp"
                                       Margin="0,0,0,0" Recovery="MFARecovery" Authenticate="MFAAuthenticate"
                                       Toggle="ToggleMFA"></local:MenuEditToggle>
                 <local:Filter x:Name="FilterServices" OnFilter="DoFilter" VerticalAlignment="Top" Margin="10,5,10,0" />

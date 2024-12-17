@@ -51,7 +51,7 @@ namespace ZitiDesktopEdge {
         public event Forgot OnForgot;
         public delegate void ErrorOccurred(string message);
         public event ErrorOccurred OnError;
-        public delegate void MFAToggled(bool isOn);
+        public delegate void MFAToggled(ZitiIdentity id, bool isOn);
         public event MFAToggled OnMFAToggled;
         public delegate void Detched(MouseButtonEventArgs e);
         public event Detched OnDetach;
@@ -397,6 +397,10 @@ namespace ZitiDesktopEdge {
         }
 
         private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
+            if(_identity.IsMFAEnabled) {
+                ShowBlurb?.Invoke(new Blurb { Message = "Disable MFA before forgetting identity" });
+                return;
+            }
             if (this.Visibility == Visibility.Visible && ForgetIdentityConfirmView.Visibility == Visibility.Collapsed) {
                 ForgetIdentityConfirmView.Visibility = Visibility.Visible;
             }
@@ -432,8 +436,11 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        private void ToggleMFA(bool isOn) { 
-            this.OnMFAToggled?.Invoke(isOn);
+        private void ToggleMFA(bool isOn) {
+            if (_identity.IsConnected && _identity.NeedsExtAuth) {
+                return;
+            }
+            this.OnMFAToggled?.Invoke(_identity, isOn);
         }
 
         /* Modal UI Background visibility */
@@ -590,9 +597,7 @@ namespace ZitiDesktopEdge {
 
         private void WarnClicked(object sender, MouseButtonEventArgs e) {
             ZitiService item = (ZitiService)(sender as FrameworkElement).DataContext;
-            ShowBlurb?.Invoke(new Blurb {
-                Message = item.WarningMessage,
-            });
+            ShowBlurb?.Invoke(new Blurb {Message = item.WarningMessage});
         }
 
         private void DetailsClicked(object sender, MouseButtonEventArgs e) {
@@ -665,6 +670,25 @@ namespace ZitiDesktopEdge {
                 ExternalProviderStatusAndDetails.ToolTip = "Click to show service details";
                 AuthenticateWithProvider.Visibility = Visibility.Collapsed;
                 ExternalProviderLabel.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void IdentityMFA_PreviewMouseDown(object sender, MouseButtonEventArgs e) {
+            if(_identity.NeedsExtAuth) {
+                // prevent the event
+                e.Handled = true;
+            }
+        }
+
+        private void IdentityMFA_PreviewMouseUp(object sender, MouseButtonEventArgs e) {
+            if (_identity.NeedsExtAuth) {
+                // prevent the event
+                e.Handled = true;
+                string action = "enabling";
+                if (_identity.IsMFAEnabled) {
+                    action = "disabling";
+                }
+                ShowBlurb.Invoke(new Blurb() {Message = $"You must authenticate before {action} MFA", Level= "error" });
             }
         }
     }

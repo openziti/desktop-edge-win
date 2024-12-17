@@ -121,7 +121,7 @@ namespace ZitiDesktopEdge {
         /// The MFA Toggle was toggled
         /// </summary>
         /// <param name="isOn">True if the toggle was on</param>
-        private async void MFAToggled(bool isOn) {
+        private async void MFAToggled(ZitiIdentity id, bool isOn) {
             if (isOn) {
                 ShowLoad("Generating MFA", "MFA Setup Commencing, please wait");
 
@@ -201,7 +201,7 @@ namespace ZitiDesktopEdge {
                             }
                         }
                         if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Identifier == mfa.Identifier) this.IdentityMenu.Identity = found;
-                        await ShowBlurbAsync("MFA Disabled, Service Access Can Be Limited", "");
+                        await ShowBlurbAsync("MFA disabled, access may be limited", "");
                     } else {
                         await ShowBlurbAsync("MFA Removal Failed", "");
                     }
@@ -1930,6 +1930,9 @@ namespace ZitiDesktopEdge {
                 logger.Error(e);
             }
         }
+        public async Task ShowBlurbAsync(Blurb blurb) {
+            await ShowBlurbAsync(blurb.Message, null, blurb.Level);
+        }
 
         /// <summary>
         /// Execute the hide operation wihout an action from the growler
@@ -2046,6 +2049,10 @@ namespace ZitiDesktopEdge {
 
         private void MainUI_PreviewMouseDown(object sender, MouseButtonEventArgs e) {
             UIUtils.ClickedControl = e.Source as UIElement;
+        }
+
+        private async void IdentityMenu_ShowBlurb(Blurb blurb) {
+            await ShowBlurbAsync(blurb);
         }
     }
 
