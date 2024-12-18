@@ -589,11 +589,16 @@ namespace ZitiDesktopEdge {
             thisIcon.Dispose();
         }
 
+        System.Windows.Point positionAtDetatch;
         private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
+            if (!UIUtils.IsLeftClick(e)) return;
+            if (!UIUtils.MouseUpForMouseDown(e)) return;
+            positionAtDetatch = new System.Windows.Point(App.Current.MainWindow.Left, App.Current.MainWindow.Top);
             HandleDetached(e);
         }
 
         private void HandleAttach(object sender, MouseButtonEventArgs e) {
+            if (!UIUtils.MouseUpForMouseDown(e)) return;
             if (e.ChangedButton == MouseButton.Right) {
                 _isAttached = true;
                 IdentityMenu.Arrow.Visibility = Visibility.Visible;

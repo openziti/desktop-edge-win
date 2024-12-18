@@ -254,35 +254,22 @@ function createMfaRelatedIdentities {
         }
     }
 
-    # make a user that has NO mfa requirement
-    ziti edge create identity mfa-not-needed -o "$identityDir\mfa-not-needed.jwt"
-    #ziti edge create service "mfa-not-needed-svc"
-    #ziti edge create service-policy "mfa-not-needed.dial" Dial --identity-roles "@mfa-not-needed" --service-roles "@mfa-not-needed-svc"
-    makeTestService "mfa-not-needed" "0"
-
-    # make a user that needs mfa for a posture check
-    $name="mfa-normal"
-    ziti edge create identity $name -o "$identityDir\$name.jwt"
-    makeTestService $name "0"
-    ziti edge create posture-check mfa $name
-    ziti edge update service-policy "$name.svc.0.ziti.dial" --posture-check-roles "@$name"
-
     # make a user that needs mfa for a posture check and the posture check times out quickly
-    $name="mfa-to"
+    $name="mfa-with-imeout"
     ziti edge create identity $name -o "$identityDir\$name.jwt"
     makeTestService $name "0"
     ziti edge create posture-check mfa $name --seconds 60
     ziti edge update service-policy "$name.svc.0.ziti.dial" --posture-check-roles "@$name"
 
     # make a user that needs mfa for a posture check and the posture check triggers on lock
-    $name="mfa-unlock"
+    $name="mfa-onunlock"
     ziti edge create identity $name -o "$identityDir\$name.jwt"
     makeTestService $name "0"
     ziti edge create posture-check mfa $name --unlock 
     ziti edge update service-policy "$name.svc.0.ziti.dial" --posture-check-roles "@$name"
 
     # make a user that needs mfa for a posture check and the posture check triggers on wake
-    $name="mfa-wake"
+    $name="mfa-onwake"
     ziti edge create identity $name -o "$identityDir\$name.jwt"
     makeTestService $name "0"
     ziti edge create posture-check mfa $name --wake
