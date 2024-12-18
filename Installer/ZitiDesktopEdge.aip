@@ -110,7 +110,7 @@
     <ROW File="NLog.dll" Component_="NLog.dll" FileName="NLog.dll" Attributes="0" SourcePath="..\ZitiUpdateService\bin\Release\NLog.dll" SelfReg="false"/>
     <ROW File="ZitiUpdateServicelog.config" Component_="App.config" FileName="ZITIUP~2.CON|ZitiUpdateService-log.config" Attributes="0" SourcePath="..\ZitiUpdateService\bin\Release\ZitiUpdateService-log.config" SelfReg="false"/>
     <ROW File="ZitiDesktopEdgelog.config" Component_="App.config" FileName="ZITIDE~2.CON|ZitiDesktopEdge-log.config" Attributes="0" SourcePath="..\DesktopEdge\bin\Release\ZitiDesktopEdge-log.config" SelfReg="false"/>
-    <ROW File="wintun.dll" Component_="wintun.dll" FileName="wintun.dll" Attributes="0" SourcePath="build\service\wintun.dll" SelfReg="false"/>
+    <ROW File="wintun.dll" Component_="wintun.dll" FileName="wintun.dll" Version="65535.65535.65535.65535" Attributes="0" SourcePath="build\service\wintun.dll" SelfReg="false"/>
     <ROW File="WpfMouseWheelLib.dll" Component_="WpfMouseWheelLib.dll" FileName="WPFMOU~1.DLL|WpfMouseWheelLib.dll" Attributes="0" SourcePath="..\DesktopEdge\bin\Release\WpfMouseWheelLib.dll" SelfReg="false"/>
     <ROW File="DnsClient.dll" Component_="DnsClient.dll" FileName="DNSCLI~1.DLL|DnsClient.dll" Attributes="0" SourcePath="..\ZitiUpdateService\bin\Release\DnsClient.dll" SelfReg="false"/>
     <ROW File="System.Buffers.dll" Component_="System.Buffers.dll" FileName="SYSTEM~1.DLL|System.Buffers.dll" Attributes="0" SourcePath="..\ZitiUpdateService\bin\Release\System.Buffers.dll" SelfReg="false"/>
