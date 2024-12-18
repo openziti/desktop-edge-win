@@ -68,7 +68,7 @@ namespace ZitiDesktopEdge {
         private int _top = 30;
         private int defaultHeight = 560;
         public int NotificationsShownCount = 0;
-        private double _maxHeight = 800d;
+        private double _maxHeight = 805d;
         public string CurrentIcon = "white";
         private string[] suffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };
         private string _blurbUrl = "";
@@ -1504,7 +1504,7 @@ namespace ZitiDesktopEdge {
                 if (_maxHeight < 100) {
                     _maxHeight = 100;
                 }
-                IdList.MaxHeight = _maxHeight - 520;
+                IdList.MaxHeight = _maxHeight - 480;
                 ZitiIdentity[] ids = identities.OrderBy(i => (i.Name != null) ? i.Name.ToLower() : i.Name).ToArray();
                 MainMenu.SetupIdList(ids);
                 if (ids.Length > 0 && serviceClient.Connected) {
