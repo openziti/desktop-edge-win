@@ -654,9 +654,15 @@ namespace ZitiDesktopEdge {
         }
 
         private void TargetNotifyIcon_Click(object sender, EventArgs e) {
-            this.Show();
-            this.Activate();
-            Application.Current.MainWindow.Activate();
+            this.Dispatcher.Invoke(() => {
+                try {
+                    this.Show();
+                    this.Activate();
+                    Application.Current.MainWindow.Activate();
+                } catch(Exception ex) {
+                    logger.Error("UNEXPECTED error when trying to click the notification icon?", ex);
+                }
+            });
         }
 
         private void UpdateServiceView() {
