@@ -53,7 +53,6 @@ namespace ZitiDesktopEdge {
 
             Payload.Certificate = CertificateFile.Text;
             Payload.Key = KeyFile.Text;
-            Payload.IdentityFilename = Alias.Text;
             OnAddIdentity(Payload, this);
         }
         static string GetCertificateFingerprint(string filePath) {

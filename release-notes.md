@@ -1,6 +1,64 @@
 # Release 2.5.1.1
 
 ## What's New
+* Lots of new stuff in this release all centered around OIDC Auth Code Flow + PKCE
+* Add Identity button now supports adding an identity by JWT or by URl
+    * JWT behavior remains the same
+    * support has been added for joining a network by 3rd party CA
+    * support added for joining an OpenZiti network v1.2+ by URL. Note, the URL must be
+      preconfigured with trust from the OS trust store. Unverifiable URLs cannot be used.
+* Keychain support is added! The OpenZiti C SDK uses the 
+  [tlsuv library](https://github.com/openziti/tlsuv) which as integrated with 
+  [Windows "Cryptography API: Next Generation"](https://learn.microsoft.com/en-us/windows/win32/seccng/cng-portal)
+  to support storing private key material through OS API calls.
+
+## OIDC Auth Code flow + PKCE
+
+If you are using an OpenZiti controller version 1.2 or higher, you are now able to use
+an[External JWT Signer](https://openziti.io/docs/learn/core-concepts/security/authentication/external-jwt-signers/)
+to authenticate to the overlay. When configured, you can join the network by using either
+the network JWT (downloaded from the ZAC or extracted from the controller's `/network-jwts` endpoint)
+
+If there are more than one ext-jwt-signers configured, new controls on the item details page will let
+the user configure a default external auth provider. When a default is configured, simply clicking the
+new "authorize IdP" icon.
+
+## Other changes
+* removed "add identity" button from the bottom of the screen
+* pointers now change to indicate an element is a drag point
+* tooltips added to 'Z' icon
+* right click on the main screen 'Z' icon to reattach a window
+* various UI presentation improvements
+
+## Bugs fixed:
+* the UI now knows if it's connected or disconnected and shows the label appropriately
+* when disabling the UI the lower portion no longer looks truncated
+
+## Dependencies
+
+* ziti-tunneler: v1.3.2
+* ziti-sdk:      1.3.2
+* tlsuv:         v0.32.9[OpenSSL 3.3.1 4 Jun 2024]
+
+# Release 2.5.1.2
+
+## What's New
+* nothing - bugfix
+
+## Other changes
+* none
+
+## Bugs fixed:
+* Rolls back the TLS engine to mbedTLS for now, so identities can write a new CA bundle if needed
+
+## Dependencies
+
+* ziti-tunneler:  v1.1.4.2
+* ziti-sdk:       1.0.9
+
+# Release 2.5.1.1
+
+## What's New
 * bugfix
 
 ## Other changes
@@ -9,9 +67,11 @@
 ## Bugs fixed:
 * [issue 760](https://github.com/openziti/desktop-edge-win/issues/760) - stall detector operated too quickly. tamed to 60s from 15s and allowed for configuration
 
-## Dependency Updates
+## Dependencies
 
-n/a
+* ziti-tunneler: v1.3.2
+* ziti-sdk:      1.3.2
+* tlsuv:         v0.32.9[OpenSSL 3.3.1 4 Jun 2024]
 
 # Release 2.5.1.0
 

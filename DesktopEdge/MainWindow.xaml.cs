@@ -68,7 +68,7 @@ namespace ZitiDesktopEdge {
         private int _top = 30;
         private int defaultHeight = 560;
         public int NotificationsShownCount = 0;
-        private double _maxHeight = 800d;
+        private double _maxHeight = 805d;
         public string CurrentIcon = "white";
         private string[] suffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };
         private string _blurbUrl = "";
@@ -121,7 +121,7 @@ namespace ZitiDesktopEdge {
         /// The MFA Toggle was toggled
         /// </summary>
         /// <param name="isOn">True if the toggle was on</param>
-        private async void MFAToggled(bool isOn) {
+        private async void MFAToggled(ZitiIdentity id, bool isOn) {
             if (isOn) {
                 ShowLoad("Generating MFA", "MFA Setup Commencing, please wait");
 
@@ -201,7 +201,7 @@ namespace ZitiDesktopEdge {
                             }
                         }
                         if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Identifier == mfa.Identifier) this.IdentityMenu.Identity = found;
-                        await ShowBlurbAsync("MFA Disabled, Service Access Can Be Limited", "");
+                        await ShowBlurbAsync("MFA disabled, access may be limited", "");
                     } else {
                         await ShowBlurbAsync("MFA Removal Failed", "");
                     }
@@ -589,11 +589,16 @@ namespace ZitiDesktopEdge {
             thisIcon.Dispose();
         }
 
+        System.Windows.Point positionAtDetatch;
         private void Window_MouseDown(object sender, MouseButtonEventArgs e) {
+            if (!UIUtils.IsLeftClick(e)) return;
+            if (!UIUtils.MouseUpForMouseDown(e)) return;
+            positionAtDetatch = new System.Windows.Point(App.Current.MainWindow.Left, App.Current.MainWindow.Top);
             HandleDetached(e);
         }
 
         private void HandleAttach(object sender, MouseButtonEventArgs e) {
+            if (!UIUtils.MouseUpForMouseDown(e)) return;
             if (e.ChangedButton == MouseButton.Right) {
                 _isAttached = true;
                 IdentityMenu.Arrow.Visibility = Visibility.Visible;
@@ -1504,12 +1509,14 @@ namespace ZitiDesktopEdge {
                 if (_maxHeight < 100) {
                     _maxHeight = 100;
                 }
-                IdList.MaxHeight = _maxHeight - 520;
+                IdList.MaxHeight = _maxHeight - 480;
                 ZitiIdentity[] ids = identities.OrderBy(i => (i.Name != null) ? i.Name.ToLower() : i.Name).ToArray();
                 MainMenu.SetupIdList(ids);
                 if (ids.Length > 0 && serviceClient.Connected) {
                     double height = defaultHeight + (ids.Length * 60);
-                    if (height > _maxHeight) height = _maxHeight;
+                    if (height > _maxHeight) {
+                        height = _maxHeight;
+                    }
                     this.Height = height;
                     IdentityMenu.SetHeight(this.Height - 160);
                     MainMenu.IdentitiesButton.Visibility = Visibility.Visible;
@@ -1928,6 +1935,9 @@ namespace ZitiDesktopEdge {
                 logger.Error(e);
             }
         }
+        public async Task ShowBlurbAsync(Blurb blurb) {
+            await ShowBlurbAsync(blurb.Message, null, blurb.Level);
+        }
 
         /// <summary>
         /// Execute the hide operation wihout an action from the growler
@@ -2006,8 +2016,6 @@ namespace ZitiDesktopEdge {
         }
 
         void WithUrl_Click(object sender, RoutedEventArgs e) {
-            if (!UIUtils.IsLeftClick(e)) return;
-            if (!UIUtils.MouseUpForMouseDown(e)) return;
             ShowJoinByUrl();
         }
         void With3rdPartyCA_Click(object sender, RoutedEventArgs e) {
@@ -2046,6 +2054,10 @@ namespace ZitiDesktopEdge {
 
         private void MainUI_PreviewMouseDown(object sender, MouseButtonEventArgs e) {
             UIUtils.ClickedControl = e.Source as UIElement;
+        }
+
+        private async void IdentityMenu_ShowBlurb(Blurb blurb) {
+            await ShowBlurbAsync(blurb);
         }
     }
 

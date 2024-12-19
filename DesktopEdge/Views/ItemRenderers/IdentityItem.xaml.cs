@@ -238,7 +238,7 @@ namespace ZitiDesktopEdge {
                     }
                 }
                 if (_identity.NeedsExtAuth) {
-                    ServiceCountAreaLabel.Content = "authorize idp";
+                    ServiceCountAreaLabel.Content = "authorize IdP";
                     MainArea.Opacity = 0.6;
                     hideMfa();
                     ServiceCountArea.Visibility = Visibility.Collapsed; //hide bubbles
