@@ -1,3 +1,19 @@
+# Release 2.5.1.2
+
+## What's New
+* nothing - bugfix
+
+## Other changes
+* none
+
+## Bugs fixed:
+* Rolls back the TLS engine to mbedTLS for now, so identities can write a new CA bundle if needed
+
+## Dependencies
+
+* ziti-tunneler:  v1.1.4.2
+* ziti-sdk:       1.0.9
+
 # Release 2.5.1.1
 
 ## What's New
