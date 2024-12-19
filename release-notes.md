@@ -18,9 +18,9 @@
 ## OIDC Auth Code flow + PKCE
 
 If you are using an OpenZiti controller version 1.2 or higher, you are now able to use
-an[External JWT Signer](https://openziti.io/docs/learn/core-concepts/security/authentication/external-jwt-signers/)
-to authenticate to the overlay. When configured, you can join the network by using either
-the network JWT (downloaded from the ZAC or extracted from the controller's `/network-jwts` endpoint)
+an [External JWT Signer](https://openziti.io/docs/learn/core-concepts/security/authentication/external-jwt-signers/) to
+authenticate to the overlay. When configured, you can join the network by using either the network 
+JWT (downloaded from the ZAC or extracted from the controller's `/network-jwts` endpoint)
 
 If there are more than one ext-jwt-signers configured, new controls on the item details page will let
 the user configure a default external auth provider. When a default is configured, simply clicking the
