@@ -1,7 +1,8 @@
-# Release 2.5.1.1
+# Release 2.5.2.2
 
 ## What's New
-* Lots of new stuff in this release all centered around OIDC Auth Code Flow + PKCE
+* Lots of new stuff in this release!
+* OIDC Auth Code Flow + PKCE
 * Add Identity button now supports adding an identity by JWT or by URl
     * JWT behavior remains the same
     * support has been added for joining a network by 3rd party CA
@@ -10,7 +11,9 @@
 * Keychain support is added! The OpenZiti C SDK uses the 
   [tlsuv library](https://github.com/openziti/tlsuv) which as integrated with 
   [Windows "Cryptography API: Next Generation"](https://learn.microsoft.com/en-us/windows/win32/seccng/cng-portal)
-  to support storing private key material through OS API calls.
+  to support storing private key material through OS API calls. While this can be disabled
+  if __necessary__, it is enabled by default and should remain enabled unless you are sure
+  that it shouldn't be.
 
 ## OIDC Auth Code flow + PKCE
 
