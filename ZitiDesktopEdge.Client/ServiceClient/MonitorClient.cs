@@ -144,7 +144,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task<MonitorServiceStatusEvent> CaptureLogsAsync() {
             ActionEvent action = new ActionEvent() { Op = "CaptureLogs", Action = "Normal" };
             await sendMonitorClientAsync(action);
-            return await readMonitorClientAsync<MonitorServiceStatusEvent>(ipcReader);
+            return await readMonitorClientAsync<MonitorServiceStatusEvent>(ipcReader, TimeSpan.FromSeconds(60));
         }
 
         async public Task<SvcResponse> SetLogLevelAsync(string level) {
