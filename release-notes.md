@@ -1,3 +1,19 @@
+# Release 2.5.2.3
+## What's New
+* nothing - bugfix
+
+## Other changes
+* none
+
+## Bugs fixed:
+* [issue 776 - Asking for feedback log takes too long](https://github.com/openziti/desktop-edge-win/issues/776)
+
+## Dependencies
+
+* ziti-tunneler: v1.3.3
+* ziti-sdk:      1.3.2
+* tlsuv:         v0.32.9[OpenSSL 3.3.1 4 Jun 2024]
+
 # Release 2.5.2.2
 
 ## What's New
