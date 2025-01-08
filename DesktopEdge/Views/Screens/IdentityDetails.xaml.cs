@@ -647,6 +647,10 @@ namespace ZitiDesktopEdge {
         }
 
         private void IsDefaultProvider_PreviewMouseDown(object sender, MouseButtonEventArgs e) {
+            if (ProviderList.SelectedItem == null) {
+                e.Handled = true;
+                return;
+            }
             userInitiatedChange = true;
         }
 
