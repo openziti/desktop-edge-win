@@ -29,6 +29,7 @@ using System.Windows.Media;
 using WinForms=System.Windows.Forms;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using System.Windows.Input;
 
 
 namespace ZitiDesktopEdge {
@@ -389,7 +390,7 @@ namespace ZitiDesktopEdge {
                 PostureTimedOut.Visibility == Visibility.Visible) {
                 MFAAuthenticate(sender, e);
             } else if (ExtAuthRequired.Visibility == Visibility.Visible) {
-                CompleteExtAuth(sender, e);
+                ShowExtAuthList(sender, e);
             } else {
                 OpenDetails(sender, e);
             }
@@ -433,7 +434,7 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        private void ExternalIdpHover(object sender, System.Windows.Input.MouseEventArgs e) {
+        private void ShowExtAuthList(object sender, System.Windows.Input.MouseEventArgs e) {
             if (!_identity.NeedsExtAuth) {
                 return;
             }
@@ -452,8 +453,7 @@ namespace ZitiDesktopEdge {
                     // Add menu items dynamically
                     foreach (var provider in _identity.ExtAuthProviders) {
                         var menuItem = new MenuItem();
-                        menuItem.Click += (s, mouseEventArgs) =>
-                        {
+                        menuItem.Click += (s, mouseEventArgs) => {
                             CompleteExternalAuth?.Invoke(Identity, provider);
                         };
                         menuItem.Header = provider;
@@ -465,6 +465,8 @@ namespace ZitiDesktopEdge {
                 }
                 fe.ContextMenu.PlacementTarget = fe;
                 fe.ContextMenu.IsOpen = true;
+            } else {
+                CompleteExtAuth(sender, e as MouseButtonEventArgs);
             }
         }
     }

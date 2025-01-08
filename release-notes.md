@@ -1,3 +1,19 @@
+# Release 2.5.2.4
+## What's New
+* nothing - bugfix
+
+## Other changes
+* [issue 779 - changed on hover to on click for initiating external provider auth](https://github.com/openziti/desktop-edge-win/issues/779)
+
+## Bugs fixed:
+* none
+
+## Dependencies
+
+* ziti-tunneler: v1.3.5
+* ziti-sdk:      1.3.4
+* tlsuv:         v0.33.1[OpenSSL 3.3.1 4 Jun 2024]
+
 # Release 2.5.2.3
 ## What's New
 * nothing - bugfix
