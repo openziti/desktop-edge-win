@@ -123,7 +123,6 @@
                     HorizontalAlignment="Stretch"
                     Cursor="Hand"
                     MouseLeftButtonUp="DoMFAOrOpen"
-                    MouseEnter="ExternalIdpHover"
                 >
                     <Rectangle.ContextMenu>
                         <ContextMenu Name="IconContext"
