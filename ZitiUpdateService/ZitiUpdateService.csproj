@@ -164,6 +164,7 @@
       <DependentUpon>ProjectInstaller.cs</DependentUpon>
     </Compile>
     <Compile Include="checkers\UpdateCheckers.cs" />
+    <Compile Include="utils\MiniDump.cs" />
     <Compile Include="utils\Settings.cs" />
     <Compile Include="UpdateService.cs">
       <SubType>Component</SubType>

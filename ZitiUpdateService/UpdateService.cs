@@ -915,6 +915,8 @@ namespace ZitiUpdateService {
 
         private void stopProcessForcefully(string processName, string description) {
             try {
+                string logLocation = Path.Combine(exeLocation, "logs");
+
                 Logger.Info("Closing the {description} process", description);
                 Process[] workers = Process.GetProcessesByName(processName);
                 if (workers.Length < 1) {
@@ -928,6 +930,7 @@ namespace ZitiUpdateService {
 
                 foreach (Process worker in workers) {
                     try {
+                        MiniDump.CreateMemoryDump(worker, Path.Combine(logLocation, "ziti-edge-tunnel.stalled.dmp"));
                         Logger.Info("Killing: {0}", worker);
                         if (!worker.CloseMainWindow()) {
                             //don't care right now because when called on the UI it just gets 'hidden'
