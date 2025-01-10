@@ -164,6 +164,7 @@
       <DependentUpon>ProjectInstaller.cs</DependentUpon>
     </Compile>
     <Compile Include="checkers\UpdateCheckers.cs" />
+    <Compile Include="utils\MiniDump.cs" />
     <Compile Include="utils\Settings.cs" />
     <Compile Include="UpdateService.cs">
       <SubType>Component</SubType>
@@ -178,13 +179,11 @@
     <Content Include="App.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <None Include="UpdateJsonExample.json" />
     <None Include="ZitiUpdateService-log.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
     <None Include="Properties\app.manifest" />
-    <None Include="ZitiUpdateService_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="ProjectInstaller.resx">
