@@ -1,3 +1,19 @@
+# Release 2.5.2.5
+## What's New
+* nothing - bugfix
+
+## Other changes
+* dependency update
+
+## Bugs fixed:
+* none
+
+## Dependencies
+
+* ziti-tunneler: v1.3.7
+* ziti-sdk:      1.3.5
+* tlsuv:         v0.33.2[OpenSSL 3.3.1 4 Jun 2024]
+
 # Release 2.5.2.4
 ## What's New
 * nothing - bugfix

@@ -85,9 +85,14 @@ if($revertGitAfter) {
 
 Write-Host ""
 Write-Host "Dependencies from ziti-edge-tunnel:"
-Write-Host "---------------------------------------------" 
-& '.\Installer\build\service\ziti-edge-tunnel.exe' version -v
-Write-Host "" 
+Write-Host "---------------------------------------------"
+& '.\Installer\build\service\ziti-edge-tunnel.exe' version -v | ForEach-Object {
+    if ($_ -notmatch "StartServiceCtrlDispatcher failed") {
+        "* $_"
+    }
+}
+Write-Host ""
+
 
 Write-Host "Start a python server in this location with:"
 Write-Host "" 

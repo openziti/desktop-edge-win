@@ -28,7 +28,7 @@
         </Grid.RowDefinitions>
 
         <Rectangle x:Name="ButtonBg"
-                   Opacity="0.8" RadiusX="7" Grid.Row="8" 
+                   Opacity="0.8" RadiusX="7"
                    RadiusY="7" ClipToBounds="True" Height="30" 
                    VerticalAlignment="Bottom" MouseUp="DoClick" 
                    Cursor="Hand" MouseEnter="Hover" 
@@ -38,7 +38,7 @@
         />
 
         <Rectangle x:Name="ButtonBgDarken"
-                   Opacity="0.0" RadiusX="7" Grid.Row="8" 
+                   Opacity="0.0" RadiusX="7"
                    RadiusY="7" ClipToBounds="True" Height="30"
                    VerticalAlignment="Bottom" MouseUp="DoClick"
                    Cursor="Hand" MouseEnter="Hover" 
@@ -46,7 +46,7 @@
                    Style="{StaticResource Dark}"
                    Margin="{Binding ButtonMargin, RelativeSource={RelativeSource AncestorType=local:StyledButton}}"
         />
-        <Label x:Name="ButtonLabel" HorizontalAlignment="Center" 
+        <Label x:Name="ButtonLabel" HorizontalAlignment="Center"
                IsHitTestVisible="False" Foreground="#FFFFFF" Grid.Row="8"></Label>
     </Grid>
 </UserControl>

@@ -238,7 +238,6 @@ namespace ZitiDesktopEdge {
 
             if (Identity.NeedsExtAuth) {
                 ExternalProviderPanel.Visibility = Visibility.Visible;
-                AuthenticateWithProvider.Visibility = Visibility.Visible;
                 ExternalProviderLabel.Visibility = Visibility.Visible;
             } else if (Identity.IsMFANeeded) {
                 TOTPPanel.Visibility = Visibility.Visible;
@@ -488,7 +487,7 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        private void ExtAuthProvider(object sender, MouseButtonEventArgs e) {
+        private void AuthenticateWithExtAuthProvider(object sender, MouseButtonEventArgs e) {
             if (_identity.NeedsExtAuth) {
                 if(ProviderList.SelectedItem == null) {
                     Logger.Warn("no provider selected");
@@ -621,6 +620,11 @@ namespace ZitiDesktopEdge {
 
         private bool userInitiatedChange = false;
         private void ProviderList_SelectionChanged(object sender, SelectionChangedEventArgs e) {
+            if (ProviderList.SelectedItem != null) {
+                AuthenticateWithProvider.Visibility = Visibility.Visible;
+            } else {
+                AuthenticateWithProvider.Visibility = Visibility.Collapsed;
+            }
             IsDefaultProvider.IsChecked = Identity.IsDefaultProvider(ProviderList.SelectedItem?.ToString());
             userInitiatedChange = false;
         }
