@@ -12,6 +12,7 @@ on:
       - main
   pull_request:
     branches:
+      - main
       - 'release-*'
       - 'beta-release-*'
 
