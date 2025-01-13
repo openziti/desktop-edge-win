@@ -1869,8 +1869,6 @@ namespace ZitiDesktopEdge {
         }
 
         private void CloseApp(object sender, RoutedEventArgs e) {
-            if (!UIUtils.IsLeftClick(e)) return;
-            if (!UIUtils.MouseUpForMouseDown(e)) return;
             Application.Current.Shutdown();
         }
 
