@@ -1869,8 +1869,6 @@ namespace ZitiDesktopEdge {
         }
 
         private void CloseApp(object sender, RoutedEventArgs e) {
-            if (!UIUtils.IsLeftClick(e)) return;
-            if (!UIUtils.MouseUpForMouseDown(e)) return;
             Application.Current.Shutdown();
         }
 
@@ -2038,20 +2036,17 @@ namespace ZitiDesktopEdge {
         private async void CompleteExternalAuthEvent(ZitiIdentity identity, string provider) {
             try {
                 DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-                if (identity?.ExtAuthProviders?.Count > 0) {
-                    ExternalAuthLoginResponse resp = await serviceClient.ExternalAuthLogin(identity.Identifier, provider);
-                    if (resp?.Error == null) {
-                        if (resp?.Data?.url != null) {
-                            Console.WriteLine(resp.Data?.url);
-                            Process.Start(resp.Data.url);
-                        } else {
-                            Console.WriteLine("The response contained no url???");
-                        }
+                ExternalAuthLoginResponse resp = await serviceClient.ExternalAuthLogin(identity.Identifier, provider);
+                if (resp?.Error == null) {
+                    if (resp?.Data?.url != null) {
+                        Console.WriteLine(resp.Data?.url);
+                        Process.Start(resp.Data.url);
                     } else {
-                        ShowError("Failed to Authenticate", resp.Error);
+                        Console.WriteLine("The response contained no url???");
                     }
                 } else {
-                    ShowError("Failed to Authenticate", "No external providers found! This is a configuration error. Inform your network administrator.");
+                    logger.Error("external auth failed: [{}]", resp.Error);
+                    ShowError("Failed to Authenticate", "External authentication could not start. This is likely a configuration error. Inform your network administrator.");
                 }
             } catch (Exception ex) {
                 logger.Error("unexpected error!", ex);

@@ -464,6 +464,8 @@ namespace ZitiDesktopEdge {
                     }
                 } else if (_identity?.ExtAuthProviders?.Count == 1) {
                     this.CompleteExternalAuth.Invoke(this.Identity, _identity?.ExtAuthProviders[0]);
+                } else {
+                    this.CompleteExternalAuth.Invoke(this.Identity, null);
                 }
                 fe.ContextMenu.PlacementTarget = fe;
                 fe.ContextMenu.IsOpen = true;
