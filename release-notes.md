@@ -1,3 +1,20 @@
+# Release 2.5.2.8
+
+## What's New
+dependencies
+
+## Other changes
+* a logging change for OIDC
+
+## Bugs fixed:
+* n/a
+
+## Dependencies
+
+* ziti-tunneler: v1.3.9
+* ziti-sdk:      1.3.7
+* tlsuv:         v0.33.4[OpenSSL 3.3.1 4 Jun 2024]
+* 
 # Release 2.5.2.7
 
 ## What's New
