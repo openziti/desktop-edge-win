@@ -34,24 +34,6 @@ dependencies
 * ziti-sdk:      1.3.5
 * tlsuv:         v0.33.2[OpenSSL 3.3.1 4 Jun 2024]
 
-
-# Release 2.5.2.6
-
-## What's New
-* properly handle secondary auth by ext jwt 
-
-## Other changes
-* n/a
-
-## Bugs fixed:
-* n/a
-
-## Dependencies
-
-* ziti-tunneler: v1.3.7
-* ziti-sdk:      1.3.5
-* tlsuv:         v0.33.2[OpenSSL 3.3.1 4 Jun 2024]
-
 # Release 2.5.2.5
 ## What's New
 * nothing - bugfix
