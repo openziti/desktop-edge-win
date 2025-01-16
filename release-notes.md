@@ -1,3 +1,22 @@
+# Release 2.5.2.7
+
+## What's New
+dependencies
+
+## Other changes
+* n/a
+
+## Bugs fixed:
+
+* C SDK no longer applies `offline_access` scope
+* C SDK no longer fails OIDC auth when external url ends with /
+
+## Dependencies
+
+* ziti-tunneler: v1.3.8
+* ziti-sdk:      1.3.6
+* tlsuv:         v0.33.4[OpenSSL 3.3.1 4 Jun 2024]
+
 # Release 2.5.2.6
 
 ## What's New
