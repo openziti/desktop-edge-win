@@ -1,3 +1,20 @@
+# Release 2.5.3.0
+
+## What's New
+dependencies updated to handle different IdP token usages (ID|Access)
+
+## Other changes
+* n/a
+
+## Bugs fixed:
+* n/a
+
+## Dependencies
+
+* ziti-tunneler: v1.4.2
+* ziti-sdk:      1.4.1
+* tlsuv:         v0.33.5[OpenSSL 3.3.1 4 Jun 2024]
+
 # Release 2.5.2.8
 
 ## What's New

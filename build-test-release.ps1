@@ -55,6 +55,9 @@ if (-not $version) {
     Write-Host -ForegroundColor Green "$version"
 }
 
+Set-Content -Path "version" -Value $version -NoNewline
+Write-Host "Updating version file to version: $version" -ForegroundColor Yellow
+
 $outputPath = "$scriptDirectory\release-streams\${version}.json"
 & .\Installer\output-build-json.ps1 -version $version -url $url -stream $stream -published_at $published_at -outputPath $outputPath
 
