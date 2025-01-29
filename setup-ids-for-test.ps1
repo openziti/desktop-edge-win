@@ -215,7 +215,7 @@ function makeTestService {
         [string]$ordinal,
         [string[]]$attrs = @(),
         [string]$binder = "@${user}.svc.${ordinal}.ziti",
-        [string]$dialer = "@${user}.svc.${ordinal}.ziti"
+        [string]$dialer = "@${user}"
         )
 	    $svc = "${user}.svc.${ordinal}.ziti"
     Write-host "Creating test service: ${svc} for user: ${user}"
