@@ -83,4 +83,4 @@ $json = Get-Content -Path $FromPath | ConvertFrom-Json
 # Change the 'published_at' field to the current date and time
 $json.published_at = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ssZ")
 
-$json | ConvertTo-Json | Format-Json | Out-File $ToPath
+$json | ConvertTo-Json | Format-Json | Set-Content -Path $ToPath
