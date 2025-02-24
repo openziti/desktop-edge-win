@@ -1,3 +1,19 @@
+# Release 2.5.2.9
+
+## What's New
+bug fix to stall detector
+
+## Other changes
+* n/a
+
+## Bugs fixed:
+* [issue 800 - stall detector can get stuck](https://github.com/openziti/desktop-edge-win/issues/800)
+
+## Dependencies
+* ziti-tunneler: v1.3.8
+* ziti-sdk:      1.3.6
+* tlsuv:         v0.33.4[OpenSSL 3.3.1 4 Jun 2024]
+
 # Release 2.5.2.7
 
 ## What's New
