@@ -1,4 +1,4 @@
-# Release 2.5.5.0
+# Release 2.6.0.0
 
 ## What's New
 Bug fixes

@@ -1760,7 +1760,7 @@ namespace ZitiDesktopEdge {
             return base64;
         }
 
-        private void AddIdentity_Click(object sender, RoutedEventArgs e) {
+        private async void AddIdentity_Click(object sender, RoutedEventArgs e) {
             UIModel.HideOnLostFocus = false;
             OpenFileDialog jwtDialog = new OpenFileDialog();
             UIModel.HideOnLostFocus = true;
@@ -1808,10 +1808,10 @@ namespace ZitiDesktopEdge {
                             With3rdPartyCA_Click(sender, e);
                             break;
                         case "network":
-                            AddId(payload).Wait();
+                            await AddId(payload);
                             break;
                         case "ott":
-                            AddId(payload).Wait();
+                            await AddId(payload);
                             break;
                         case "ca":
                             HideLoad();
@@ -1820,7 +1820,7 @@ namespace ZitiDesktopEdge {
                             break;
                         default:
                             logger.Error("JWT is invalid? {}", fileContent);
-                            ShowBlurbAsync("The file selected is not a valid JWT", "").Wait();
+                            ShowError("JWT Invalid", "The file selected is not a valid JWT");
                             break;
                     }
                 } else {
@@ -2077,9 +2077,9 @@ namespace ZitiDesktopEdge {
             ShowJoinWith3rdPartyCA();
         }
 
-        void OnAddIdentityAction(EnrollIdentifierPayload payload, UserControl toClose) {
+        async void OnAddIdentityAction(EnrollIdentifierPayload payload, UserControl toClose) {
             CloseJoinByUrl(false, toClose);
-            AddId(payload).Wait();
+            await AddId(payload);
         }
 
         private async void CompleteExternalAuthEvent(ZitiIdentity identity, string provider) {
