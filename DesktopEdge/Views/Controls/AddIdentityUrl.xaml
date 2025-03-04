@@ -52,7 +52,7 @@
                              TextWrapping="NoWrap" 
                              HorizontalAlignment="Stretch" 
                              VerticalAlignment="Top"
-                             Width="Auto"
+                             Width="Auto" KeyUp="HandleEnterKey"
                 />
             <!-- A place for a name, might be needed? -->
             <!--Label Content="Identity Alias" Foreground="White" Opacity="0.7" FontSize="12" HorizontalAlignment="Center"/>

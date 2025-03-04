@@ -36,11 +36,11 @@ namespace ZitiDesktopEdge {
                 var result = client.GetAsync(ControllerURL.Text).Result;
                 OnAddIdentity(payload, this);
             } catch {
-                Mouse.OverrideCursor = null;
                 this.OnClose?.Invoke(false, this);
                 await ((MainWindow)Application.Current.MainWindow).ShowBlurbAsync("Timed out accessing URL", "");
                 logger.Warn("could not connect to url");
             }
+            Mouse.OverrideCursor = null;
         }
 
         private void ExecuteClose(object sender, MouseButtonEventArgs e) {
@@ -76,6 +76,12 @@ namespace ZitiDesktopEdge {
             } else {
                 ControllerURL.Style = (Style)Resources["InvalidUrl"];
                 if (JoinNetworkBtn != null) JoinNetworkBtn.Disable();
+            }
+        }
+        private void HandleEnterKey(object sender, KeyEventArgs e) {
+            if (e.Key == Key.Return) {
+                e.Handled = true;
+                this.JoinNetworkUrl(sender, null);
             }
         }
     }
