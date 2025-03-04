@@ -48,8 +48,8 @@ namespace ZitiDesktopEdge {
             throw new System.NotImplementedException();
         }
 
-        private void JoinNetworkUrl(object sender, MouseButtonEventArgs e) {
-            Console.WriteLine("join");
+        private void JoinNetworkCA(object sender, MouseButtonEventArgs e) {
+            Console.WriteLine("JoinNetworkCA");
 
             Payload.Certificate = CertificateFile.Text;
             Payload.Key = KeyFile.Text;

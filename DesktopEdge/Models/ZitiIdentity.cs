@@ -183,7 +183,7 @@ namespace ZitiDesktopEdge.Models {
             int delimIdx = providerKey.IndexOf(ProviderDelimiter);
             return providerKey.Substring(delimIdx + ProviderDelimiter.Length);
         }
-        public bool IsDefaultProvider(string provider) {
+        internal bool IsDefaultProvider(string provider) {
             if (provider == null) {
                 return false;
             }
@@ -236,6 +236,11 @@ namespace ZitiDesktopEdge.Models {
             Properties.Settings.Default.Save();
         }
 
+        /// <summary>
+        /// returns the key the UI expects, not to be sent to the tunneler. Use <see cref="GetDefaultProviderId"/>
+        /// to send to the tunneler
+        /// </summary>
+        /// <returns></returns>
         public string GetDefaultProvider() {
             var defaultProviders = Properties.Settings.Default.DefaultProviders;
             if (defaultProviders == null) {
@@ -248,6 +253,15 @@ namespace ZitiDesktopEdge.Models {
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// returns the key/identifier the tunneler will expect
+        /// </summary>
+        /// <returns></returns>
+        public string GetDefaultProviderId() {
+            string key = GetDefaultProvider();
+            return IdentifierFromProviderKey(key);
         }
 
         private bool ProviderIsForThisIdentity(string defaultProvider) {

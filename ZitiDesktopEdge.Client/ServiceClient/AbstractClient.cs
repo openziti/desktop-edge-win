@@ -197,9 +197,9 @@ namespace ZitiDesktopEdge.ServiceClient {
                         } else {
                             //ClientDisconnected(null);
                         }
-                    } catch (Exception) {
+                    } catch (Exception e) {
                         try {
-                            ReconnectFailureEvent("reconnect failure");
+                            ReconnectFailureEvent("reconnect failure: " + e.Message);
                         } catch (Exception) {
                             // don't care - just catch it and continue... it's a timeout...
                         }

@@ -344,9 +344,9 @@ namespace ZitiDesktopEdge {
                 DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
                 Identity id = await client.IdentityOnOffAsync(_identity.Identifier, on);
                 this.Identity.IsEnabled = on;
+                Identity.AuthInProgress = false;
                 if (on) {
                     ToggleStatus.Content = "ENABLED";
-                    Identity.AuthInProgress = false;
                 } else {
                     ToggleStatus.Content = "DISABLED";
                 }
@@ -396,7 +396,7 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        private void CompleteExtAuth(object sender, System.Windows.Input.MouseButtonEventArgs e) {
+        private void CompleteDefaultExtAuth(object sender, System.Windows.Input.MouseButtonEventArgs e) {
             try {
                 if(!_identity.NeedsExtAuth) {
                     return;
@@ -419,14 +419,15 @@ namespace ZitiDesktopEdge {
 
         async void performExtAuth() {
             _identity.AuthInProgress = true;
-             DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-            ExternalAuthLoginResponse resp = await client.ExternalAuthLogin(_identity.Identifier, _identity.ExtAuthProviders[0]);
+            DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+            string defaultProvider = _identity.GetDefaultProviderId();
+            ExternalAuthLoginResponse resp = await client.ExternalAuthLogin(_identity.Identifier, defaultProvider);
             if (resp?.Error == null) {
                 if (resp?.Data?.url != null) {
                     Console.WriteLine(resp.Data?.url);
                     Process.Start(resp.Data.url);
                 } else {
-                    Console.WriteLine("The response contained no url???");
+                    logger.Error("The response contained no url???");
                 }
             } else {
                 ShowError("Failed to Authenticate", resp.Error);
@@ -470,7 +471,7 @@ namespace ZitiDesktopEdge {
                 fe.ContextMenu.PlacementTarget = fe;
                 fe.ContextMenu.IsOpen = true;
             } else {
-                CompleteExtAuth(sender, e as MouseButtonEventArgs);
+                CompleteDefaultExtAuth(sender, e as MouseButtonEventArgs);
             }
         }
     }

@@ -80,6 +80,7 @@ namespace ZitiUpdateService {
 
         private const int zetHealthcheckInterval = 5;
         private SemaphoreSlim zetSemaphore = new SemaphoreSlim(1, 1);
+        private string zetSemaphoreName = "";
         private System.Timers.Timer zetHealthcheck = new System.Timers.Timer();
         private int zetFailedCheckCounter = 0;
 
@@ -545,30 +546,37 @@ namespace ZitiUpdateService {
             bool succeeded = false;
             try {
                 if (zetSemaphore.Wait(TimeSpan.FromSeconds(zetHealthcheckInterval))) {
+                    zetSemaphoreName = $"acquired at: {DateTime.UtcNow}";
                     Logger.Trace("ziti-edge-tunnel aliveness check starts, zetSemaphore lock acquired");
                     dataClient.GetStatusAsync().Wait();
-                    Logger.Trace("ziti-edge-tunnel aliveness check ends successfully");
+                    Logger.Trace("ziti-edge-tunnel aliveness check {} ends successfully", zetSemaphoreName);
                     succeeded = true;
+                } else {
+                    Logger.Trace("ziti-edge-tunnel aliveness check {} semaphore could not be aquired", zetSemaphoreName);
                 }
-            } catch (Exception ex) {
-                Logger.Error("ziti-edge-tunnel aliveness check ends exceptionally: {}", ex.Message);
+            }
+            catch (Exception ex) {
+                Logger.Error("ziti-edge-tunnel aliveness check {} ended exceptionally. released semaphore but not resetting counter", zetSemaphoreName);
+                zetSemaphore.Release();
                 Logger.Error(ex);
             }
 
             if (succeeded) {
                 Interlocked.Exchange(ref zetFailedCheckCounter, 0);
                 zetSemaphore.Release();
-                Logger.Trace("zetFailedCheckCounter reset to 0 and zetSemaphore released");
+                Logger.Trace("status call succeeded, reset to 0 and zetSemaphore {} released", zetSemaphoreName);
+                zetSemaphoreName = "unset";
             } else {
                 Interlocked.Add(ref zetFailedCheckCounter, 1);
-                Logger.Warn("ziti-edge-tunnel aliveness check appears blocked and has been for {0} times. AlivenessChecksBeforeAction:{1}", zetFailedCheckCounter, CurrentSettings.AlivenessChecksBeforeAction);
+                Logger.Warn("ziti-edge-tunnel aliveness check {} appears blocked and has been for {0} times. AlivenessChecksBeforeAction:{1}", zetSemaphoreName, zetFailedCheckCounter, CurrentSettings.AlivenessChecksBeforeAction);
                 if (CurrentSettings.AlivenessChecksBeforeAction > 0) {
                     if (zetFailedCheckCounter > CurrentSettings.AlivenessChecksBeforeAction) {
                         disableHealthCheck();
                         //after 'n' failures, just terminate ziti-edge-tunnel
                         Interlocked.Exchange(ref zetFailedCheckCounter, 0); //reset the counter back to 0
+                        Logger.Debug("status call failed, reset to 0 and zetSemaphore {} released", zetSemaphoreName);
+                        zetSemaphoreName = "unset";
                         zetSemaphore.Release();
-                        Logger.Trace("zetFailedCheckCounter reset to 0 and zetSemaphore released");
 
                         Logger.Warn("forcefully stopping ziti-edge-tunnel as it has been blocked for too long");
                         stopProcessForcefully("ziti-edge-tunnel", "data service [ziti]");

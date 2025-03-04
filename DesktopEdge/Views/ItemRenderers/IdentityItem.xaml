@@ -97,7 +97,7 @@
                        RenderOptions.BitmapScalingMode="Fant"
                        Stretch="Uniform"
                        Visibility="Collapsed"
-                       MouseUp="CompleteExtAuth"
+                       MouseUp="CompleteDefaultExtAuth"
                        d:Visibility="Collapsed"
                 >
                 </Image>

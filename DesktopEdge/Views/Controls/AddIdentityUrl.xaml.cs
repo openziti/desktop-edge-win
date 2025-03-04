@@ -1,9 +1,12 @@
 ﻿using NLog;
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
+using Windows.Web.Http;
 using ZitiDesktopEdge.DataStructures;
 
 namespace ZitiDesktopEdge {
@@ -11,7 +14,6 @@ namespace ZitiDesktopEdge {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         public event CommonDelegates.CloseAction OnClose;
         public event Action<EnrollIdentifierPayload, UserControl> OnAddIdentity;
-        //public event Action<EnrollIdentifierPayload, string> OnAddIdentity2;
 
         public CommonDelegates.JoinNetwork JoinNetwork;
 
@@ -20,14 +22,25 @@ namespace ZitiDesktopEdge {
         }
 
         private void JoinNetworkUrl(object sender, MouseButtonEventArgs e) {
-            Console.WriteLine("join");
-
             EnrollIdentifierPayload payload = new EnrollIdentifierPayload();
             payload.ControllerURL = ControllerURL.Text;
 
             Uri ctrl = new Uri(ControllerURL.Text);
             payload.IdentityFilename = ctrl.Host + "_" + ctrl.Port;
-            OnAddIdentity(payload, this);
+
+            var client = new System.Net.Http.HttpClient();
+            client.Timeout = TimeSpan.FromSeconds(5);
+
+            Mouse.OverrideCursor = Cursors.Wait;
+            try {
+                var result = client.GetAsync(ControllerURL.Text).Result;
+                OnAddIdentity(payload, this);
+            } catch {
+                Mouse.OverrideCursor = null;
+                this.OnClose?.Invoke(false, this);
+                ((MainWindow)Application.Current.MainWindow).ShowBlurbAsync("Timed out accessing URL", "");
+                logger.Warn("could not connect to url");
+            }
         }
 
         private void ExecuteClose(object sender, MouseButtonEventArgs e) {

@@ -125,7 +125,7 @@
                            Width="{Binding ElementName=BrowseKeyBtn, Path=ActualWidth}"/>
             </StackPanel-->
             <local:StyledButton x:Name="JoinNetworkBtn" 
-                                    OnClick="JoinNetworkUrl" 
+                                    OnClick="JoinNetworkCA" 
                                     Label="Join Network" 
                                     IsTabStop="True" 
                                     Margin="0,15,0,0" />
