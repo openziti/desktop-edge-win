@@ -17,6 +17,7 @@
 using NLog;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Security.Cryptography;
@@ -24,6 +25,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ZitiDesktopEdge.DataStructures;
+using ZitiDesktopEdge.ServiceClient;
 
 namespace ZitiDesktopEdge.Models {
     public class ZitiIdentity {
@@ -266,6 +268,26 @@ namespace ZitiDesktopEdge.Models {
 
         private bool ProviderIsForThisIdentity(string defaultProvider) {
             return defaultProvider.StartsWith(Identifier + ProviderDelimiter);
+        }
+
+
+        internal async Task PerformExternalAuthEvent(DataClient client, string provider) {
+            try {
+                AuthInProgress = true;
+                ExternalAuthLoginResponse resp = await client.ExternalAuthLogin(Identifier, provider);
+                if (resp?.Error == null) {
+                    if (resp?.Data?.url != null) {
+                        Console.WriteLine(resp.Data?.url);
+                        Process.Start(resp.Data.url);
+                    } else {
+                        throw new Exception("External authentication could not start. No URL was returned to login. Inform your network administrator.");
+                    }
+                } else {
+                    throw new Exception("External authentication could not start. This is likely a configuration error. Inform your network administrator.");
+                }
+            } catch (Exception ex) {
+                throw new Exception("unexpected error during external authentication!", ex);
+            }
         }
     }
 }

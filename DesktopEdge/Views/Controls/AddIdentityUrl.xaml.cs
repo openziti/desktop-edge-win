@@ -21,7 +21,7 @@ namespace ZitiDesktopEdge {
             InitializeComponent();
         }
 
-        private void JoinNetworkUrl(object sender, MouseButtonEventArgs e) {
+        private async void JoinNetworkUrl(object sender, MouseButtonEventArgs e) {
             EnrollIdentifierPayload payload = new EnrollIdentifierPayload();
             payload.ControllerURL = ControllerURL.Text;
 
@@ -38,7 +38,7 @@ namespace ZitiDesktopEdge {
             } catch {
                 Mouse.OverrideCursor = null;
                 this.OnClose?.Invoke(false, this);
-                ((MainWindow)Application.Current.MainWindow).ShowBlurbAsync("Timed out accessing URL", "");
+                await ((MainWindow)Application.Current.MainWindow).ShowBlurbAsync("Timed out accessing URL", "");
                 logger.Warn("could not connect to url");
             }
         }

@@ -396,7 +396,7 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        private void CompleteDefaultExtAuth(object sender, System.Windows.Input.MouseButtonEventArgs e) {
+        private async void CompleteDefaultExtAuth(object sender, System.Windows.Input.MouseButtonEventArgs e) {
             try {
                 if(!_identity.NeedsExtAuth) {
                     return;
@@ -405,7 +405,17 @@ namespace ZitiDesktopEdge {
                     if (_identity.AuthInProgress) {
                         BlurbEvent?.Invoke(_identity);
                     } else {
-                        performExtAuth();
+                        try {
+                            string defaultProvider = _identity.GetDefaultProviderId();
+                            DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+                            await _identity.PerformExternalAuthEvent(client, defaultProvider);
+                        } catch (Exception ex) {
+                            logger.Error("external auth failed: [{}]", ex.Message);
+                            // possibly add this back some day. right now this triggers when the ext-auth-url is a valid looking url
+                            // but the url is invalid. for example if the user copy/pastes the proper url without the terminating char
+                            // or http not https etc.
+                            // ShowError("Failed to Authenticate", ex.Message);
+                        }
                     }
                 } else {
                     ShowError("Failed to Authenticate", "No external providers found! This is a configuration error. Inform your network administrator.");
@@ -413,24 +423,6 @@ namespace ZitiDesktopEdge {
             } catch (Exception ex) {
                 logger.Error("unexpected error!", ex);
                 ShowError("UNEXPECTED ERROR", "Please report this issue: " + ex.Message);
-                _identity.AuthInProgress = false;
-            }
-        }
-
-        async void performExtAuth() {
-            _identity.AuthInProgress = true;
-            DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-            string defaultProvider = _identity.GetDefaultProviderId();
-            ExternalAuthLoginResponse resp = await client.ExternalAuthLogin(_identity.Identifier, defaultProvider);
-            if (resp?.Error == null) {
-                if (resp?.Data?.url != null) {
-                    Console.WriteLine(resp.Data?.url);
-                    Process.Start(resp.Data.url);
-                } else {
-                    logger.Error("The response contained no url???");
-                }
-            } else {
-                ShowError("Failed to Authenticate", resp.Error);
                 _identity.AuthInProgress = false;
             }
         }

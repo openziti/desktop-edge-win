@@ -2084,22 +2084,10 @@ namespace ZitiDesktopEdge {
 
         private async void CompleteExternalAuthEvent(ZitiIdentity identity, string provider) {
             try {
-                identity.AuthInProgress = true;
-                DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-                ExternalAuthLoginResponse resp = await serviceClient.ExternalAuthLogin(identity.Identifier, provider);
-                if (resp?.Error == null) {
-                    if (resp?.Data?.url != null) {
-                        Console.WriteLine(resp.Data?.url);
-                        Process.Start(resp.Data.url);
-                    } else {
-                        ShowError("Failed to Authenticate", "External authentication could not start. No URL was returned to login. Inform your network administrator.");
-                    }
-                } else {
-                    logger.Error("external auth failed: [{}]", resp.Error);
-                    ShowError("Failed to Authenticate", "External authentication could not start. This is likely a configuration error. Inform your network administrator.");
-                }
+                await identity.PerformExternalAuthEvent(serviceClient, provider);
             } catch (Exception ex) {
-                logger.Error("unexpected error!", ex);
+                logger.Error("external auth failed: [{}]", ex.Message);
+                ShowError("Failed to Authenticate", ex.Message);
             }
         }
 
