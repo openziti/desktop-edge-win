@@ -314,7 +314,6 @@
     <None Include="ZitiDesktopEdge-log.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="ZitiDesktopEdge_TemporaryKey.pfx" />
     <Resource Include="Assets\Fonts\open_sans.ttf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Resource>
