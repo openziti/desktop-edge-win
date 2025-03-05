@@ -411,10 +411,6 @@ namespace ZitiDesktopEdge {
                             await _identity.PerformExternalAuthEvent(client, defaultProvider);
                         } catch (Exception ex) {
                             logger.Error("external auth failed: [{}]", ex.Message);
-                            // possibly add this back some day. right now this triggers when the ext-auth-url is a valid looking url
-                            // but the url is invalid. for example if the user copy/pastes the proper url without the terminating char
-                            // or http not https etc.
-                            // ShowError("Failed to Authenticate", ex.Message);
                         }
                     }
                 } else {

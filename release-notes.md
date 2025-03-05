@@ -12,7 +12,7 @@ Bug fixes
 * jwt with invalid content no longer crashes the UI
 
 ## Dependencies
-* ziti-tunneler: v1.5.0
+* ziti-tunneler: v1.5.1
 * ziti-sdk:      1.5.0
 * tlsuv:         v0.33.6[OpenSSL 3.3.1 4 Jun 2024]
 

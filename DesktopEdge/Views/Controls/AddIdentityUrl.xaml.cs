@@ -1,4 +1,19 @@
-﻿using NLog;
+﻿/*
+	Copyright NetFoundry Inc.
+
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+
+	https://www.apache.org/licenses/LICENSE-2.0
+
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+*/
+using NLog;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,13 +49,14 @@ namespace ZitiDesktopEdge {
             Mouse.OverrideCursor = Cursors.Wait;
             try {
                 var result = client.GetAsync(ControllerURL.Text).Result;
+                Mouse.OverrideCursor = null;
                 OnAddIdentity(payload, this);
             } catch {
+                Mouse.OverrideCursor = null;
                 this.OnClose?.Invoke(false, this);
                 await ((MainWindow)Application.Current.MainWindow).ShowBlurbAsync("Timed out accessing URL", "");
                 logger.Warn("could not connect to url");
             }
-            Mouse.OverrideCursor = null;
         }
 
         private void ExecuteClose(object sender, MouseButtonEventArgs e) {
