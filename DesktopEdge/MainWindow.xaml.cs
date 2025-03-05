@@ -48,7 +48,6 @@ using Newtonsoft.Json;
 using System.ComponentModel;
 using static ZitiDesktopEdge.CommonDelegates;
 using Ziti.Desktop.Edge.Utils;
-using Lada.Windows.Input;
 
 namespace ZitiDesktopEdge {
 
@@ -1933,13 +1932,13 @@ namespace ZitiDesktopEdge {
             this.Dispatcher.Invoke(() => {
                 OverrideKeychain.Title = title;
                 OverrideKeychain.Description = description;
-                OverrideKeychain.OkFunc = new RelayCommand(async () => {
+                OverrideKeychain.OkFunc = new ActionCommand(async () => {
                     HideModal();
                     OverrideKeychain.Visibility = Visibility.Collapsed;
                     payload.UseKeychain = false;
                     await AddId(payload);
                 });
-                OverrideKeychain.CancelFunc = new RelayCommand(() => {
+                OverrideKeychain.CancelFunc = new ActionCommand(() => {
                     HideModal();
                     OverrideKeychain.Visibility = Visibility.Collapsed;
                 });
