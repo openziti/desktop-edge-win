@@ -277,7 +277,7 @@ namespace ZitiDesktopEdge.Models {
                 ExternalAuthLoginResponse resp = await client.ExternalAuthLogin(Identifier, provider);
                 if (resp?.Error == null) {
                     if (resp?.Data?.url != null) {
-                        Console.WriteLine(resp.Data?.url);
+                        logger.Info("beginning external auth using url: {}", resp.Data?.url);
                         Process.Start(resp.Data.url);
                     } else {
                         throw new Exception("External authentication could not start. No URL was returned to login. Inform your network administrator.");

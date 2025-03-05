@@ -49,13 +49,14 @@ namespace ZitiDesktopEdge {
             Mouse.OverrideCursor = Cursors.Wait;
             try {
                 var result = client.GetAsync(ControllerURL.Text).Result;
+                Mouse.OverrideCursor = null;
                 OnAddIdentity(payload, this);
             } catch {
+                Mouse.OverrideCursor = null;
                 this.OnClose?.Invoke(false, this);
                 await ((MainWindow)Application.Current.MainWindow).ShowBlurbAsync("Timed out accessing URL", "");
                 logger.Warn("could not connect to url");
             }
-            Mouse.OverrideCursor = null;
         }
 
         private void ExecuteClose(object sender, MouseButtonEventArgs e) {
