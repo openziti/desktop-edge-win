@@ -135,6 +135,9 @@
     <Compile Include="Models\MessageCount.cs" />
     <Compile Include="Models\MFA.cs" />
     <Compile Include="Models\ViewState.cs" />
+    <Compile Include="Views\Controls\ConfirmationDialog.xaml.cs">
+      <DependentUpon>ConfirmationDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\Controls\AddIdentityCA.xaml.cs">
       <DependentUpon>AddIdentityCA.xaml</DependentUpon>
     </Compile>
@@ -196,6 +199,10 @@
     </Compile>
     <Compile Include="Native\WinAPI.cs" />
     <Compile Include="Views\Screens\CommonDelegates.cs" />
+    <Page Include="Views\Controls\ConfirmationDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Views\Controls\AddIdentityCA.xaml">
       <SubType>Designer</SubType>
       <Generator>XamlIntelliSenseFileGenerator</Generator>

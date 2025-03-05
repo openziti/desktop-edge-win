@@ -48,6 +48,7 @@ using Newtonsoft.Json;
 using System.ComponentModel;
 using static ZitiDesktopEdge.CommonDelegates;
 using Ziti.Desktop.Edge.Utils;
+using Lada.Windows.Input;
 
 namespace ZitiDesktopEdge {
 
@@ -608,12 +609,17 @@ namespace ZitiDesktopEdge {
         }
 
         private void HandleDetached(MouseButtonEventArgs e) {
-            if (e.ChangedButton == MouseButton.Left) {
-                _isAttached = false;
-                IdentityMenu.Arrow.Visibility = Visibility.Collapsed;
-                Arrow.Visibility = Visibility.Collapsed;
-                MainMenu.Detach();
-                this.DragMove();
+            try {
+                if (e.ChangedButton == MouseButton.Left) {
+                    _isAttached = false;
+                    IdentityMenu.Arrow.Visibility = Visibility.Collapsed;
+                    Arrow.Visibility = Visibility.Collapsed;
+                    MainMenu.Detach();
+                    this.DragMove();
+                }
+            }catch {
+                // just ignore any errors
+                logger.Trace("error when HandleDetached was called?");
             }
         }
 
@@ -1202,23 +1208,31 @@ namespace ZitiDesktopEdge {
             logger.Debug($"==== IdentityEvent    : action:{e.Action} identifer:{e.Id.Identifier} name:{e.Id.Name} ");
 
             this.Dispatcher.Invoke(async () => {
-                if (e.Action == "added") {
+                if (e.Action == "added" || e.Action == "needs_ext_login") {
                     var found = identities.Find(i => i.Identifier == e.Id.Identifier);
                     if (found == null) {
                         AddIdentity(zid);
                         LoadIdentities(true);
                     } else {
+                        var isAdd = e.Action == "added";
+                        var isExtLogin = e.Action == "needs_ext_login";
                         // means we are getting an update for some reason. compare the identities and use the latest info
                         // for external auth, this event will return after external auth. track if the auth is in progress or not
                         // and clear the flag here if it succeeds, else pop a 'auth failed'
                         if (found.AuthInProgress) {
-                            found.AuthInProgress = false; //regardless clear it here
-                            if (zid.NeedsExtAuth) {
-                                logger.Warn("Identity: {} AuthInProgress but still NeedsExtAuth? Check the tunneler logs", found.Identifier);
-                                ShowError("Authentication Request Failed", "An error occurred preventing external authentication from succeeding. See the log and contact your administrator.");
+                            if (isAdd) {
+                                found.AuthInProgress = false; //regardless clear it here
+                                if (zid.NeedsExtAuth) {
+                                    logger.Warn("Identity: {} AuthInProgress but still NeedsExtAuth? Check the tunneler logs", found.Identifier);
+                                    ShowError("Authentication Request Failed", "An error occurred preventing external authentication from succeeding. See the log and contact your administrator.");
+                                } else {
+                                    // happy path. this means auth was in progress and now the identity no longer requires exteral auth
+                                    logger.Info("Identity: {} successfully authenticated", found.Identifier);
+                                }
+                            } else if (isExtLogin) {
+                                found.NeedsExtAuth = e.Id.NeedsExtAuth; // mark the identity as needing ext auth
                             } else {
-                                // happy path. this means auth was in progress and now the identity no longer requires exteral auth
-                                logger.Info("Identity: {} successfully authenticated", found.Identifier);
+                                logger.Info("how???");
                             }
                         } else {
                             // auth not in progress, mark as needs ext auth
@@ -1240,15 +1254,16 @@ namespace ZitiDesktopEdge {
                         }
                         LoadIdentities(true);
                     }
-                } else if (e.Action == "needs_ext_login") {
+                } else if (e.Action == "needs_ext_loginsadsadfsadsadfsadf") {
                     var found = identities.Find(i => i.Identifier == e.Id.Identifier);
-                    logger.Trace("auth not in progress. should this be handled?");
-                    if (found.AuthInProgress) {
-                        logger.Debug("Identity: {} with AuthInProgress received needs_ext_login event", found.Identifier);
-                    } else {
-                        // auth not in progress, mark as needs ext auth
-                        found.NeedsExtAuth = e.Id.NeedsExtAuth;
-                        LoadIdentities(true);
+                    if (found != null) {
+                        if (found.AuthInProgress) {
+                            logger.Debug("Identity: {} with AuthInProgress received needs_ext_login event", found.Identifier);
+                        } else {
+                            // auth not in progress, mark as needs ext auth
+                            found.NeedsExtAuth = e.Id.NeedsExtAuth;
+                            LoadIdentities(true);
+                        }
                     }
                 } else if (e.Action == "updated") {
                     //this indicates that all updates have been sent to the UI... wait for 2 seconds then trigger any ui updates needed
@@ -1710,48 +1725,26 @@ namespace ZitiDesktopEdge {
         }
 
         async private Task AddId(EnrollIdentifierPayload payload) {
-            try {
 #if DEBUG
-                Console.WriteLine("AddId.JwtContent\t: " + payload.JwtContent);
-                Console.WriteLine("AddId.IdentityFilename\t: " + payload.IdentityFilename);
-                Console.WriteLine("AddId.ControllerURL\t: " + payload.ControllerURL);
-                Console.WriteLine("AddId.Certificate\t: " + payload.Certificate);
-                Console.WriteLine("AddId.Key\t\t: " + payload.Key);
-                Console.WriteLine("AddId.UseKeychain\t: " + payload.UseKeychain);
+            Console.WriteLine("AddId.JwtContent\t: " + payload.JwtContent);
+            Console.WriteLine("AddId.IdentityFilename\t: " + payload.IdentityFilename);
+            Console.WriteLine("AddId.ControllerURL\t: " + payload.ControllerURL);
+            Console.WriteLine("AddId.Certificate\t: " + payload.Certificate);
+            Console.WriteLine("AddId.Key\t\t: " + payload.Key);
+            Console.WriteLine("AddId.UseKeychain\t: " + payload.UseKeychain);
 #endif
-                Identity createdId = await serviceClient.AddIdentityAsync(payload);
+            Identity createdId = await serviceClient.AddIdentityAsync(payload);
 
-                if (createdId != null) {
-                    var zid = ZitiIdentity.FromClient(createdId);
-                    AddIdentity(zid);
-                    LoadIdentities(true);
-                    await serviceClient.IdentityOnOffAsync(createdId.Identifier, true);
-                } else {
-                    // this never returns a value...
-                }
-            } catch (ServiceException se) {
-                if (se.Code == 500) {
-                    if (se.Message == "enrollment failed: error generating private key") {
-                        //fallback to no keychain support
-                        if (payload.UseKeychain == true) {
-                            // try without keychain support...
-                            logger.Warn("keychain support is enabled but enrolling using keychain failed! attempting to enroll using keychain=false");
-                            payload.UseKeychain = false;
-                            try {
-                                await AddId(payload);
-                            } catch (Exception e) {
-                                logger.Error("Attempt to enroll identity with keychain=false failed as well.");
-                                throw e; // throw out to the showerror dialog
-                            }
-                        }
-                    }
-                }
-                ShowError(se.Message, se.AdditionalInfo);
-            } catch (Exception ex) {
-                ShowError("Unexpected Error", "Code 2:" + ex.Message);
+            if (createdId != null) {
+                var zid = ZitiIdentity.FromClient(createdId);
+                AddIdentity(zid);
+                LoadIdentities(true);
+                await serviceClient.IdentityOnOffAsync(createdId.Identifier, true);
+            } else {
+                // this never returns a value...
             }
-            HideLoad();
         }
+
         private static string PadBase64(string base64) {
             int padding = 4 - (base64.Length % 4);
             if (padding < 4) {
@@ -1803,32 +1796,51 @@ namespace ZitiDesktopEdge {
                     Console.WriteLine($"AUD: {string.Join(", ", jsonObj.aud)}");
                     Console.WriteLine($"EM: {jsonObj.em}");
 #endif
-                    switch ($"{jsonObj.em}") {
-                        case "ottca":
-                            With3rdPartyCA_Click(sender, e);
-                            break;
-                        case "network":
-                            await AddId(payload);
-                            break;
-                        case "ott":
-                            await AddId(payload);
-                            break;
-                        case "ca":
-                            HideLoad();
-                            AddIdentityBy3rdPartyCA.Payload = payload;
-                            ShowJoinWith3rdPartyCA();
-                            break;
-                        default:
-                            logger.Error("JWT is invalid? {}", fileContent);
-                            ShowError("JWT Invalid", "The file selected is not a valid JWT");
-                            break;
+                    try {
+                        switch ($"{jsonObj.em}") {
+                            case "ottca":
+                                With3rdPartyCA_Click(sender, e);
+                                break;
+                            case "network":
+                                await AddId(payload);
+                                break;
+                            case "ott":
+                                await AddId(payload);
+                                break;
+                            case "ca":
+                                AddIdentityBy3rdPartyCA.Payload = payload;
+                                ShowJoinWith3rdPartyCA();
+                                break;
+                            default:
+                                logger.Error("JWT is invalid? {}", fileContent);
+                                ShowError("JWT Invalid", "The file selected is not a valid JWT");
+                                break;
+                        }
+                    } catch (ServiceException se) {
+                        if (se.Code == 500) {
+                            if (se?.OriginalResponse?.Error == "ZITI_KEY_GENERATION_FAILED") {
+                                //fallback to no keychain support
+                                if (payload.UseKeychain == true) {
+                                    // try without keychain support...
+                                    logger.Warn("keychain support is enabled but enrolling using keychain failed! attempting to enroll using keychain=false");
+                                    payload.UseKeychain = false;
+                                }
+                                ShowKeychainOverrideDialog(payload, "Key Generation Failed", "Generating a key using the keychain failed. If you continue to have this issue, consider disabling keychain support in Main Menu->Advanced Settings->Tunnel Config\n\nWould you like to try to enroll the identity again but with keychain support disabled?");
+                            }
+                        } else {
+                            ShowError(se.Message, se.AdditionalInfo);
+                        }
+                    } catch (Exception ex) {
+                        ShowError("Unexpected Error", "Code 2:" + ex.Message);
                     }
                 } else {
                     // invalid jwt
                     logger.Error("JWT is invalid? {}", fileContent);
                 }
-                HideLoad();
+            } else {
+                logger.Debug("user closed jwt dialog without selecting a file. nbd.");
             }
+            HideLoad();
         }
 
         private void OnTimedEvent(object sender, EventArgs e) {
@@ -1914,6 +1926,25 @@ namespace ZitiDesktopEdge {
                 ErrorView.Visibility = Visibility.Collapsed;
                 NoServiceView.Visibility = Visibility.Collapsed;
                 CloseErrorButton.IsEnabled = true;
+            });
+        }
+
+        public void ShowKeychainOverrideDialog(EnrollIdentifierPayload payload, string title, string description) {
+            this.Dispatcher.Invoke(() => {
+                OverrideKeychain.Title = title;
+                OverrideKeychain.Description = description;
+                OverrideKeychain.OkFunc = new RelayCommand(async () => {
+                    HideModal();
+                    OverrideKeychain.Visibility = Visibility.Collapsed;
+                    payload.UseKeychain = false;
+                    await AddId(payload);
+                });
+                OverrideKeychain.CancelFunc = new RelayCommand(() => {
+                    HideModal();
+                    OverrideKeychain.Visibility = Visibility.Collapsed;
+                });
+                ShowModal();
+                OverrideKeychain.Visibility = Visibility.Visible;
             });
         }
 
@@ -2078,8 +2109,22 @@ namespace ZitiDesktopEdge {
         }
 
         async void OnAddIdentityAction(EnrollIdentifierPayload payload, UserControl toClose) {
-            CloseJoinByUrl(false, toClose);
-            await AddId(payload);
+            try {
+                CloseJoinByUrl(false, toClose);
+                await AddId(payload);
+            } catch (ServiceException se) {
+                if (se.Code == 500) {
+                    if (se?.OriginalResponse?.Error == "ZITI_KEY_GENERATION_FAILED") {
+                        HideLoad();
+                        ShowKeychainOverrideDialog(payload, "Override Keychain?", "keychain support is enabled but key generation failed. Do you want to enroll without keychain support?");
+                        return;
+                    }
+                }
+                ShowError(se.Message, se.AdditionalInfo);
+            } catch (Exception ex) {
+                ShowError("Unexpected Error", "Code 2:" + ex.Message);
+            }
+            HideLoad();
         }
 
         private async void CompleteExternalAuthEvent(ZitiIdentity identity, string provider) {

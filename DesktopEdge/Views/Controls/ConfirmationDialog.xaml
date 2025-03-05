@@ -1,0 +1,84 @@
+﻿<UserControl x:Class="ZitiDesktopEdge.ConfirmationDialog"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:ZitiDesktopEdge"
+             MaxWidth="350"
+             mc:Ignorable="d">
+    <UserControl.Resources>
+    </UserControl.Resources>
+
+    <Grid Margin="0" Height="Auto" VerticalAlignment="Center">
+        <Border Background="{StaticResource DarkBackgroundBrush}"
+                BorderBrush="Gray"
+                BorderThickness="2"
+                CornerRadius="10"
+                Padding="10">
+        </Border>
+
+        <StackPanel x:Name="ConfirmationPanel" Margin="5,10,5,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
+                <Label Grid.Column="1"
+                    d:Content="This title is for the designer"
+                    Content="{Binding Title, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                    Foreground="White" FontSize="16"
+                    HorizontalAlignment="Stretch"
+                    FontWeight="Bold"
+                />
+                <Image Name="CloseThirdPartyDialog"
+                    Grid.Column="2"
+                    Cursor="Hand"
+                    Source="/Assets/Images/x.png"
+                    Width="20" Height="20"
+                    HorizontalAlignment="Right"
+                    Margin="0,0,10,0"
+                    MouseUp="ExecuteClose"
+                />
+            </Grid>
+
+            <TextBlock Grid.Column="1"
+                   d:Text="This is the description it should and could be long it might contain newlines and should wrap."
+                   Text="{Binding Description, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                   Foreground="White"
+                   FontSize="14"
+                   TextAlignment="Center"
+                   TextWrapping="Wrap"
+                   HorizontalAlignment="Stretch"
+                   Padding="10,20,10,20"
+            />
+            <Grid Margin="0,5,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*" />
+                    <ColumnDefinition Width="1*" />
+                </Grid.ColumnDefinitions>
+                <local:StyledButton
+                    x:Name="OkayBtn" 
+                    OnClick="ConfirmationAction" 
+                    Label="Okay" 
+                    IsTabStop="True" 
+                    Grid.Column="0"
+                    Padding="0,0,0,0"
+                    Margin="0,5,0,0"
+                />
+                <StackPanel
+                    Grid.Column="1"><local:StyledButton x:Name="CancelBtn" 
+                    OnClick="CancelAction" 
+                    Label="Cancel" 
+                    IsTabStop="True"
+                    BgColor="#FF1100"
+                    HorizontalContentAlignment="Stretch"
+                    HorizontalAlignment="Stretch"
+                    Padding="0,0,0,0"
+                    Margin="0,5,0,0"
+                />
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+    </Grid>
+</UserControl>

@@ -459,5 +459,12 @@
                 </Grid>
             </Grid>
         </Grid>
+
+        <local:ConfirmationDialog
+            x:Name="OverrideKeychain"
+            Title="Delete Item?"
+            Visibility="Collapsed"
+            Description="Are you sure you want to delete this item? This action cannot be undone."
+        />
     </Grid>
 </Window>
