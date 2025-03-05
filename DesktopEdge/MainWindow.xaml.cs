@@ -1231,7 +1231,7 @@ namespace ZitiDesktopEdge {
                             } else if (isExtLogin) {
                                 found.NeedsExtAuth = e.Id.NeedsExtAuth; // mark the identity as needing ext auth
                             } else {
-                                logger.Info("how???");
+                                logger.Debug("unexpected situation. if auth is in progress either it should be an add or ext-auth-login action");
                             }
                         } else {
                             // auth not in progress, mark as needs ext auth
