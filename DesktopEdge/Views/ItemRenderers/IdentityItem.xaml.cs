@@ -344,9 +344,9 @@ namespace ZitiDesktopEdge {
                 DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
                 Identity id = await client.IdentityOnOffAsync(_identity.Identifier, on);
                 this.Identity.IsEnabled = on;
+                Identity.AuthInProgress = false;
                 if (on) {
                     ToggleStatus.Content = "ENABLED";
-                    Identity.AuthInProgress = false;
                 } else {
                     ToggleStatus.Content = "DISABLED";
                 }
@@ -396,7 +396,7 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        private void CompleteExtAuth(object sender, System.Windows.Input.MouseButtonEventArgs e) {
+        private async void CompleteDefaultExtAuth(object sender, System.Windows.Input.MouseButtonEventArgs e) {
             try {
                 if(!_identity.NeedsExtAuth) {
                     return;
@@ -405,7 +405,13 @@ namespace ZitiDesktopEdge {
                     if (_identity.AuthInProgress) {
                         BlurbEvent?.Invoke(_identity);
                     } else {
-                        performExtAuth();
+                        try {
+                            string defaultProvider = _identity.GetDefaultProviderId();
+                            DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+                            await _identity.PerformExternalAuthEvent(client, defaultProvider);
+                        } catch (Exception ex) {
+                            logger.Error("external auth failed: [{}]", ex.Message);
+                        }
                     }
                 } else {
                     ShowError("Failed to Authenticate", "No external providers found! This is a configuration error. Inform your network administrator.");
@@ -413,23 +419,6 @@ namespace ZitiDesktopEdge {
             } catch (Exception ex) {
                 logger.Error("unexpected error!", ex);
                 ShowError("UNEXPECTED ERROR", "Please report this issue: " + ex.Message);
-                _identity.AuthInProgress = false;
-            }
-        }
-
-        async void performExtAuth() {
-            _identity.AuthInProgress = true;
-             DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-            ExternalAuthLoginResponse resp = await client.ExternalAuthLogin(_identity.Identifier, _identity.ExtAuthProviders[0]);
-            if (resp?.Error == null) {
-                if (resp?.Data?.url != null) {
-                    Console.WriteLine(resp.Data?.url);
-                    Process.Start(resp.Data.url);
-                } else {
-                    Console.WriteLine("The response contained no url???");
-                }
-            } else {
-                ShowError("Failed to Authenticate", resp.Error);
                 _identity.AuthInProgress = false;
             }
         }
@@ -470,7 +459,7 @@ namespace ZitiDesktopEdge {
                 fe.ContextMenu.PlacementTarget = fe;
                 fe.ContextMenu.IsOpen = true;
             } else {
-                CompleteExtAuth(sender, e as MouseButtonEventArgs);
+                CompleteDefaultExtAuth(sender, e as MouseButtonEventArgs);
             }
         }
     }

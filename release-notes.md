@@ -1,3 +1,21 @@
+# Release 2.6.0.0
+
+## What's New
+Bug fixes
+
+## Other changes
+* Merged changes from 2.5.2.x stream for stall detector changes
+
+## Bugs fixed:
+* ext-jwt-signer with incorrect jwks url would silently fail auth. Now an error will be shown to the user
+* join network by url no long hangs when the URL doesn't RST/fail/ack immediately
+* jwt with invalid content no longer crashes the UI
+
+## Dependencies
+* ziti-tunneler: v1.5.1
+* ziti-sdk:      1.5.0
+* tlsuv:         v0.33.6[OpenSSL 3.3.1 4 Jun 2024]
+
 # Release 2.5.5.0
 
 ## What's New
@@ -66,7 +84,40 @@ dependencies
 * ziti-tunneler: v1.3.9
 * ziti-sdk:      1.3.7
 * tlsuv:         v0.33.4[OpenSSL 3.3.1 4 Jun 2024]
-* 
+
+# Release 2.5.2.9
+
+## What's New
+bug fix to stall detector
+
+## Other changes
+* n/a
+
+## Bugs fixed:
+* [issue 800 - stall detector can get stuck](https://github.com/openziti/desktop-edge-win/issues/800)
+
+## Dependencies
+* ziti-tunneler: v1.3.8
+* ziti-sdk:      1.3.6
+* tlsuv:         v0.33.4[OpenSSL 3.3.1 4 Jun 2024]
+
+# Release 2.5.2.8
+
+## What's New
+dependencies
+
+## Other changes
+* a logging change for OIDC
+
+## Bugs fixed:
+* n/a
+
+## Dependencies
+
+* ziti-tunneler: v1.3.9
+* ziti-sdk:      1.3.7
+* tlsuv:         v0.33.4[OpenSSL 3.3.1 4 Jun 2024]
+
 # Release 2.5.2.7
 
 ## What's New

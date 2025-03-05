@@ -103,6 +103,7 @@
     <Reference Include="System.Configuration" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Net" />
+    <Reference Include="System.Net.Http" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.ServiceProcess" />
@@ -134,6 +135,9 @@
     <Compile Include="Models\MessageCount.cs" />
     <Compile Include="Models\MFA.cs" />
     <Compile Include="Models\ViewState.cs" />
+    <Compile Include="Views\Controls\ConfirmationDialog.xaml.cs">
+      <DependentUpon>ConfirmationDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\Controls\AddIdentityCA.xaml.cs">
       <DependentUpon>AddIdentityCA.xaml</DependentUpon>
     </Compile>
@@ -195,6 +199,10 @@
     </Compile>
     <Compile Include="Native\WinAPI.cs" />
     <Compile Include="Views\Screens\CommonDelegates.cs" />
+    <Page Include="Views\Controls\ConfirmationDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Views\Controls\AddIdentityCA.xaml">
       <SubType>Designer</SubType>
       <Generator>XamlIntelliSenseFileGenerator</Generator>
@@ -313,7 +321,6 @@
     <None Include="ZitiDesktopEdge-log.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="ZitiDesktopEdge_TemporaryKey.pfx" />
     <Resource Include="Assets\Fonts\open_sans.ttf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Resource>

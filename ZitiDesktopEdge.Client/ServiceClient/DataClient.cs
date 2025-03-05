@@ -134,7 +134,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 ClientConnected(null);
             } catch (Exception ex) {
                 semaphoreSlim.Release();
-                throw new ServiceException("Could not connect to the data service.", 1, ex.Message);
+                throw new ServiceException("Could not connect to the data service.", new SvcResponse() { Code = 1 }, ex.Message);
             }
             semaphoreSlim.Release();
         }
@@ -171,9 +171,12 @@ namespace ZitiDesktopEdge.ServiceClient {
                 CommunicationError(ex);
                 throw ex;
             }
+            if (resp?.Error == "ZITI_KEY_GENERATION_FAILED") {
+                throw new ServiceException("Failed to Enroll", resp, "keygen failed");
+            }
             if (resp?.Code != 0) {
                 Logger.Warn("failed to enroll. {0} {1}", resp.Message, resp.Error);
-                throw new ServiceException("Failed to Enroll", resp.Code, !string.IsNullOrEmpty(resp.Error) ? resp.Error : "The provided token was invalid. This usually is because the token has already been used or it has expired.");
+                throw new ServiceException("Failed to Enroll", resp, !string.IsNullOrEmpty(resp.Error) ? resp.Error : "The provided token was invalid. This usually is because the token has already been used or it has expired.");
             }
             return resp.Data;
         }
@@ -457,7 +460,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
             if (resp?.Code != 0) {
                 Logger.Warn("failed to update the config. {0} {1}", resp.Message, resp.Error);
-                throw new ServiceException("Failed to update the config", resp.Code, "Un expected error.");
+                throw new ServiceException("Failed to update the config", resp, "Un expected error.");
             }
             return resp;
         }
@@ -481,7 +484,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             }
             if (resp?.Code != 0) {
                 Logger.Warn("failed to update the frequency. {0} {1}", resp.Message, resp.Error);
-                throw new ServiceException("Failed to update the frequency", resp.Code, "Un expected error.");
+                throw new ServiceException("Failed to update the frequency", resp, "Un expected error.");
             }
             return resp;
         }

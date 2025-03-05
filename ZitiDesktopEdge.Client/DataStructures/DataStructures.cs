@@ -428,13 +428,15 @@ namespace ZitiDesktopEdge.DataStructures {
     }
 
     public class ServiceException : System.Exception {
-        public ServiceException(string Message, int Code, string AdditionalInfo) : base(Message) {
-            this.Code = Code;
+        public ServiceException(string Message, SvcResponse resp, string AdditionalInfo) : base(Message) {
+            this.Code = resp.Code;
             this.AdditionalInfo = AdditionalInfo;
+            this.OriginalResponse = resp;
         }
 
         public int Code { get; }
         public string AdditionalInfo { get; }
+        public SvcResponse OriginalResponse { get; }
     }
 
     public class StatusEvent {
