@@ -4,6 +4,23 @@
 Bug fixes
 
 ## Other changes
+N/A
+
+## Bugs fixed:
+* handle leak during process-based posture checks
+ 
+## Dependencies
+
+* ziti-tunneler: v1.5.2
+* ziti-sdk:      1.5.1
+* tlsuv:         v0.33.6[OpenSSL 3.3.1 4 Jun 2024]
+
+# Release 2.6.0.0
+
+## What's New
+Bug fixes
+
+## Other changes
 * Merged changes from 2.5.2.x stream for stall detector changes
 
 ## Bugs fixed:
