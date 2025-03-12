@@ -1,4 +1,21 @@
-# Release 2.6.0.0
+# Release 2.6.2.0
+
+## What's New
+OIDC-related bug fixes
+
+## Other changes
+N/A
+
+## Bugs fixed:
+* handle IdP using url-encoded chars in returned code
+ 
+## Dependencies
+
+* ziti-tunneler: v1.5.3
+* ziti-sdk:      1.5.3
+* tlsuv:         v0.33.6[OpenSSL 3.3.1 4 Jun 2024]
+
+# Release 2.6.1.0
 
 ## What's New
 Bug fixes
