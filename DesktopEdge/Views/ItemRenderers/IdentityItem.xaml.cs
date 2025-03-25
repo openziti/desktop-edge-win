@@ -410,6 +410,7 @@ namespace ZitiDesktopEdge {
                             DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
                             await _identity.PerformExternalAuthEvent(client, defaultProvider);
                         } catch (Exception ex) {
+                            ShowError("Unexpected Error", "Please report this issue: " + ex.Message);
                             logger.Error("external auth failed: [{}]", ex.Message);
                         }
                     }
@@ -440,6 +441,7 @@ namespace ZitiDesktopEdge {
                     contextMenu.Items.Clear();
 
                     // Add menu items dynamically
+                    _identity.ExtAuthProviders.Sort();
                     foreach (var provider in _identity.ExtAuthProviders) {
                         var menuItem = new MenuItem();
                         menuItem.Click += (s, mouseEventArgs) => {

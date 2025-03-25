@@ -164,6 +164,7 @@ namespace ZitiDesktopEdge.Models {
                 }
                 zid.HasServiceFailingPostureCheck = zid.Services.Any(p => !p.HasFailingPostureCheck());
             }
+            zid.ExtAuthProviders?.Sort();
             logger.Info("Identity: {0} updated To {1}", zid.Name, Newtonsoft.Json.JsonConvert.SerializeObject(id));
             return zid;
         }
@@ -251,7 +252,9 @@ namespace ZitiDesktopEdge.Models {
             string prefix = Identifier + ProviderDelimiter;
             foreach (string defaultProvider in defaultProviders) {
                 if (ProviderIsForThisIdentity(defaultProvider)) {
-                    return defaultProvider;
+                    if (ExtAuthProviders.Contains(IdentifierFromProviderKey(defaultProvider))) {
+                        return defaultProvider;
+                    }
                 }
             }
             return null;
@@ -270,8 +273,8 @@ namespace ZitiDesktopEdge.Models {
             return defaultProvider.StartsWith(Identifier + ProviderDelimiter);
         }
 
-
         internal async Task PerformExternalAuthEvent(DataClient client, string provider) {
+            string errMsg = null;
             try {
                 AuthInProgress = true;
                 ExternalAuthLoginResponse resp = await client.ExternalAuthLogin(Identifier, provider);
@@ -280,14 +283,20 @@ namespace ZitiDesktopEdge.Models {
                         logger.Info("beginning external auth using url: {}", resp.Data?.url);
                         Process.Start(resp.Data.url);
                     } else {
-                        throw new Exception("External authentication could not start. No URL was returned to login. Inform your network administrator.");
+                        errMsg = "External authentication could not start. No URL was returned to login. Inform your network administrator.";
                     }
                 } else {
-                    throw new Exception("External authentication could not start. This is likely a configuration error. Inform your network administrator.");
+                    errMsg = resp.Error;
                 }
             } catch (Exception ex) {
+                AuthInProgress = false;
                 throw new Exception("unexpected error during external authentication!", ex);
             }
+            AuthInProgress = false;
+            if (errMsg != null) {
+                throw new Exception(errMsg);
+            }
+
         }
     }
 }
