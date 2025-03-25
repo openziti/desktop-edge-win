@@ -1,3 +1,19 @@
+# Release 2.6.4
+## What's New
+bug fix / minor improvement
+
+## Other changes
+* [issue 813](https://github.com/openziti/desktop-edge-win/issues/813) alphabetizes the external jwt signer lists
+
+## Bugs fixed:
+* Discovered a bug when testing where auth would fail if the default provider was saved but no longer in the list
+
+## Dependencies
+
+* ziti-tunneler: v1.5.4
+* ziti-sdk:      1.5.4
+* tlsuv:         v0.33.8[OpenSSL 3.3.1 4 Jun 2024]
+
 # Release 2.6.3.0
 ## What's New
 dependency update
