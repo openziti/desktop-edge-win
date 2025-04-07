@@ -1,3 +1,18 @@
+# Release 2.6.3.1
+## What's New
+dependency update
+
+## Other changes
+N/A
+
+## Bugs fixed:
+WSL->ZDEW scp was failing
+
+## Dependencies
+* ziti-tunneler: v1.5.4.2
+* ziti-sdk:      1.5.4.1
+* tlsuv:         v0.33.8[OpenSSL 3.3.1 4 Jun 2024]
+
 # Release 2.6.3.0
 ## What's New
 dependency update
