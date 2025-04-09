@@ -1,3 +1,18 @@
+# Release 2.6.4.0
+## What's New
+dependency updates
+
+## Other changes
+N/A
+
+## Bugs fixed:
+Stability and other bug fixes
+
+## Dependencies
+* ziti-tunneler: v1.5.8
+* ziti-sdk:      1.5.9
+* tlsuv:         v0.33.9[OpenSSL 3.4.0 22 Oct 2024]
+
 # Release 2.6.3.0
 ## What's New
 dependency update
