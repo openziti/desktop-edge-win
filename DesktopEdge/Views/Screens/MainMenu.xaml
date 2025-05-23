@@ -279,6 +279,21 @@
                     <Label Name="VersionInfo" FontSize="14" HorizontalAlignment="Center" Padding="0,30,0,0" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack:Up//application:,,,/Assets/Fonts/#Open Sans"></Label>
                     <Label Name="VersionOlder" Content=" checking version information " HorizontalAlignment="Center" FontSize="14" Padding="0,30,0,0" Foreground="#F4044D" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                     <Label Name="VersionNewer" Content="" HorizontalAlignment="Center" FontSize="14" Padding="0,30,0,0" Foreground="#0069FF" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
+                    <StackPanel x:Name="FIPSPanel">
+                        <Label Name="FIPSEnabled" Content="FIPS compliant crypto in use: true"  HorizontalAlignment="Center" FontSize="14" Padding="0,30,0,0" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
+                        <Label Name="FIPSVersion" Content=""  HorizontalAlignment="Center" FontSize="14" Padding="0,30,0,0" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
+
+                        <TextBlock FontSize="14" TextWrapping="Wrap" TextAlignment="Center" Foreground="#638190" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                            <Hyperlink NavigateUri="https://openssl-library.org/source/" RequestNavigate="Hyperlink_RequestNavigate">
+                                Refer to the OpenSSL documentation for exact CMVP certificate for the version listed above.
+                            </Hyperlink>
+                        </TextBlock>
+                        <TextBlock FontSize="14" TextWrapping="Wrap" TextAlignment="Center" Padding="0,30,0,0" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                            <Hyperlink NavigateUri="https://github.com/openziti/desktop-edge-win/tree/main/Installer/openssl/README.md" RequestNavigate="Hyperlink_RequestNavigate">
+                                Click here for information related to the FIPS module
+                            </Hyperlink>
+                        </TextBlock>
+                    </StackPanel>
                 </StackPanel>
                 <Label Name="MainItemsButton" Margin="0,10,0,0" Foreground="#F4044D" FontWeight="SemiBold" Content="Quit Ziti Desktop Edge" Cursor="Hand" MouseUp="CloseApp" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Center"></Label>
             </StackPanel>
