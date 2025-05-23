@@ -1,5 +1,24 @@
 # Release 2.6.5.0
 ## What's New
+* FIPS compliant cryptography - Ziti Desktop Edge for Windows now ships an optional fips.dll built
+  by strictly adhering to the build steps outlined by the OpenSSH project. See the 
+  [OpenSSL Source guide](https://openssl-library.org/source/). 
+* dependency updates
+
+## Other changes
+N/A
+
+## Bugs fixed:
+Dependency stability and bug fix updates
+
+## Dependencies
+* ziti-tunneler: v1.6.0
+* ziti-sdk:      1.6.5
+* tlsuv:         v0.35.0[OpenSSL 3.4.0 22 Oct 2024]
+
+
+# Release 2.6.5.0
+## What's New
 dependency updates
 
 ## Other changes
