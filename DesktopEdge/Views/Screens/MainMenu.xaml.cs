@@ -36,6 +36,7 @@ using ZitiDesktopEdge.Utility;
 using System.ComponentModel;
 using Newtonsoft.Json.Linq;
 using Ziti.Desktop.Edge.Utils;
+using System.Windows.Navigation;
 
 namespace ZitiDesktopEdge {
     /// <summary>
@@ -235,6 +236,16 @@ namespace ZitiDesktopEdge {
 
                 // Interface Version
                 VersionInfo.Content = $"App: {appVersion} Service: {version}";
+
+
+                string fipsdll = Path.Combine(MainWindow.ExecutionDirectory, "fips.dll");
+                if (File.Exists(fipsdll)) {
+                    FileVersionInfo versionInfo = FileVersionInfo.GetVersionInfo(fipsdll);
+                    FIPSVersion.Content = $"OpenSSL FIPS Module: {versionInfo.ProductVersion}";
+                    FIPSPanel.Visibility = Visibility.Visible;
+                } else {
+                    FIPSPanel.Visibility = Visibility.Collapsed;
+                }
 
             } else if (menuState == "Advanced") {
                 MenuTitle.Content = "Advanced Settings";
@@ -796,6 +807,11 @@ namespace ZitiDesktopEdge {
 
         private void MainUI_PreviewMouseDown(object sender, MouseButtonEventArgs e) {
             UIUtils.ClickedControl = e.Source as UIElement;
+        }
+
+        private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e) {
+            Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+            e.Handled = true;
         }
     }
 }
