@@ -241,7 +241,7 @@ namespace ZitiDesktopEdge {
                 string fipsdll = Path.Combine(MainWindow.ExecutionDirectory, "fips.dll");
                 if (File.Exists(fipsdll)) {
                     FileVersionInfo versionInfo = FileVersionInfo.GetVersionInfo(fipsdll);
-                    Console.WriteLine($"Version: {versionInfo.FileVersion}");
+                    FIPSVersion.Content = $"OpenSSL FIPS Module: {versionInfo.ProductVersion}";
                     FIPSPanel.Visibility = Visibility.Visible;
                 } else {
                     FIPSPanel.Visibility = Visibility.Collapsed;
