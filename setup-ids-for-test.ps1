@@ -253,9 +253,16 @@ function createMfaRelatedIdentities {
             makeTestService "mfa-$i" "$(if ($j -lt 10) {"0$j"} else {$j})"
         }
     }
+    
+
+    $name="mfa-needed"
+    ziti edge create identity $name -o "$identityDir\$name.jwt"
+    makeTestService $name "0"
+    ziti edge create posture-check mfa $name
+    ziti edge update service-policy "$name.svc.0.ziti.dial" --posture-check-roles "@$name"
 
     # make a user that needs mfa for a posture check and the posture check times out quickly
-    $name="mfa-with-imeout"
+    $name="mfa-with-timeout"
     ziti edge create identity $name -o "$identityDir\$name.jwt"
     makeTestService $name "0"
     ziti edge create posture-check mfa $name --seconds 60

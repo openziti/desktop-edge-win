@@ -280,7 +280,6 @@
                     <Label Name="VersionOlder" Content=" checking version information " HorizontalAlignment="Center" FontSize="14" Padding="0,30,0,0" Foreground="#F4044D" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                     <Label Name="VersionNewer" Content="" HorizontalAlignment="Center" FontSize="14" Padding="0,30,0,0" Foreground="#0069FF" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                     <StackPanel x:Name="FIPSPanel">
-                        <Label Name="FIPSEnabled" Content="FIPS compliant crypto in use: true"  HorizontalAlignment="Center" FontSize="14" Padding="0,30,0,0" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                         <Label Name="FIPSVersion" Content=""  HorizontalAlignment="Center" FontSize="14" Padding="0,30,0,0" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
 
                         <TextBlock FontSize="14" TextWrapping="Wrap" TextAlignment="Center" Foreground="#638190" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
