@@ -1,4 +1,4 @@
-# Release 2.7.0
+# Release 2.7.0.1
 ## What's New
 * FIPS compliant cryptography - Ziti Desktop Edge for Windows now ships an optional fips.dll built
   by strictly adhering to the build steps outlined by the OpenSSH project. See the 
@@ -6,7 +6,7 @@
 * dependency updates
 
 ## Other changes
-N/A
+* removed the "Add DNS" checkbox
 
 ## Bugs fixed:
 Dependency stability and bug fix updates
