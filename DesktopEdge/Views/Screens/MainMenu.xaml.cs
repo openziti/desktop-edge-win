@@ -229,7 +229,7 @@ namespace ZitiDesktopEdge {
                 string version = "";
                 try {
                     TunnelStatus s = (TunnelStatus)Application.Current.Properties["CurrentTunnelStatus"];
-                    version = $"{s.ServiceVersion.Version}@{s.ServiceVersion.Revision}";
+                    version = $"{s.ServiceVersion.Version}";
                 } catch (Exception e) {
                     logger.Warn(e, "Could not get service version/revision?");
                 }
@@ -287,6 +287,12 @@ namespace ZitiDesktopEdge {
                 ConfigMtu.Value = Application.Current.Properties["mtu"]?.ToString();
                 ConfigDns.Value = Application.Current.Properties["dns"]?.ToString();
                 ConfigDnsEnabled.Value = Application.Current.Properties["dnsenabled"]?.ToString();
+                bool dnsEnabled;
+                if(Boolean.TryParse(Application.Current.Properties["dnsenabled"]?.ToString(), out dnsEnabled)) {
+                    if (dnsEnabled) {
+                        ConfigDnsEnabled.Visibility = Visibility.Visible;
+                    }
+                }
                 ConfigUseKeychain.Value = Properties.Settings.Default.UseKeychain.ToString();
             } else if (menuState == "Identities") {
                 MenuTitle.Content = "Identities";
@@ -631,6 +637,7 @@ namespace ZitiDesktopEdge {
             AddDnsNew.IsChecked = false;
             if (Application.Current.Properties.Contains("dnsenabled")) {
                 AddDnsNew.IsChecked = (bool)Application.Current.Properties["dnsenabled"];
+                AddDnsNew.Visibility = Visibility.Visible;
             }
             EditArea.Opacity = 0;
             EditArea.Visibility = Visibility.Visible;

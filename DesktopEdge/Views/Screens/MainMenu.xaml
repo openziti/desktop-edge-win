@@ -265,7 +265,7 @@
                     <local:MenuEditItem x:Name="ConfigMtu" HorizontalAlignment="Stretch" Width="Auto" Label="MTU:"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigDns" HorizontalAlignment="Stretch" Width="Auto" Label="DNS Server:"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigPageSize" HorizontalAlignment="Stretch" Width="Auto" Label="Api Page Size (10-500):"></local:MenuEditItem>
-                    <local:MenuEditItem x:Name="ConfigDnsEnabled" HorizontalAlignment="Stretch" Width="Auto" Label="Add Dns:"></local:MenuEditItem>
+                    <local:MenuEditItem x:Name="ConfigDnsEnabled" HorizontalAlignment="Stretch" Width="Auto" Label="Add Dns:" Visibility="Collapsed"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigUseKeychain" HorizontalAlignment="Stretch" Width="Auto" Label="Use Keychain:"></local:MenuEditItem>
                     <local:StyledButton x:Name="EditButton" OnClick="ShowEdit_Click" Label="Edit Values" Grid.Row="8" Margin="0,20,0,0"></local:StyledButton>
                 </StackPanel>
@@ -372,7 +372,7 @@
                     </TextBox.Resources>
                 </TextBox>
 
-                <CheckBox x:Name="AddDnsNew" Content="Add DNS" IsChecked="True" Margin="10"/>
+                <CheckBox x:Name="AddDnsNew" Content="Add DNS" IsChecked="True" Margin="10" Visibility="Collapsed"/>
                 <CheckBox x:Name="UseKeychainToggle" Content="Use Keychain" IsChecked="{Binding UseKeychain, Mode=TwoWay}" Margin="10"/>
 
                 <local:StyledButton x:Name="SaveConfigButton" OnClick="SaveConfig_Click" Label="Save" Grid.Row="8"></local:StyledButton>
