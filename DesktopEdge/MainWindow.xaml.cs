@@ -1733,7 +1733,6 @@ namespace ZitiDesktopEdge {
             Console.WriteLine("AddId.UseKeychain\t: " + payload.UseKeychain);
 #endif
             try {
-                await ShowBlurbAsync("Unexpected error when adding identity!", "");
                 Identity createdId = await serviceClient.AddIdentityAsync(payload);
 
                 if (createdId != null) {
@@ -1744,14 +1743,17 @@ namespace ZitiDesktopEdge {
                 } else {
                     // this never returns a value...
                 }
-            } catch (Exception) {
+            } catch (ServiceException e) {
+                HideLoad();
+                await ShowBlurbAsync("Unexpected error when adding identity!", e.Message);
+            } catch (Exception e) {
                 ZdewLink linkControl = new ZdewLink {
                     NavigateUri = new Uri("https://openziti.discourse.group/"),
                     Text = "Visit our support forum",
                 };
 
                 ShowError("Unexpected Error!",
-                    "Please review the logs and consider providing a feedback bundle to the support forum",
+                    $"Please review the logs and consider providing a feedback bundle to the support forum.\nError: {e.Message}",
                     linkControl
                     );
             }
