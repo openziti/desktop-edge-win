@@ -449,7 +449,19 @@
                     <RowDefinition Height="*"></RowDefinition>
                 </Grid.RowDefinitions>
                 <TextBlock x:Name="ErrorTitle" TextWrapping="WrapWithOverflow" Width="400" Foreground="White" Text="An Error Occurred" Grid.Row="1" TextAlignment="Center" VerticalAlignment="Center" FontSize="24" />
-                <TextBlock x:Name="ErrorDetails" TextWrapping="WrapWithOverflow" Width="400" Foreground="LightGray" Padding="10" Text="An Unknown Error Occurred, you could try restarting the service and the interface to continue" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" FontSize="14" />
+                <StackPanel x:Name="ErrorPanel"
+                            Grid.Row="2"
+                            Width="400">
+                    <TextBlock x:Name="ErrorDetails"
+                               TextWrapping="WrapWithOverflow" Foreground="LightGray"
+                               Padding="10"
+                               Text="An Unknown Error Occurred, you could try restarting the service and the interface to continue"
+                               
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               TextAlignment="Center"
+                               FontSize="14" />
+                </StackPanel>
                 <Label Grid.Row="3" Foreground="Gray" FontWeight="Light" Content="Check the Log for Details"  HorizontalAlignment="Center"></Label>
 
                 <Grid Grid.Row="4">
