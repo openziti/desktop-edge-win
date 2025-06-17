@@ -88,8 +88,6 @@
     <ROW Component="ZitiDesktopEdge.exe" ComponentId="{FDDCF14B-4FAF-469F-810E-0877A0DD5F3B}" Directory_="APPDIR" Attributes="0" KeyPath="ZitiDesktopEdge.exe"/>
     <ROW Component="ZitiUpdateService.exe" ComponentId="{01B4F535-D4A3-44CD-BB2D-A3A905A095D6}" Directory_="APPDIR" Attributes="0" KeyPath="ZitiUpdateService.exe"/>
     <ROW Component="ZitiUpgradeSentinel.exe" ComponentId="{9C87C05E-2E44-4CF7-896D-E37030BE67CB}" Directory_="APPDIR" Attributes="0" KeyPath="ZitiUpgradeSentinel.exe"/>
-    <ROW Component="fips.dll" ComponentId="{98793073-1059-4CCE-B17A-2874A2591C7E}" Directory_="APPDIR" Attributes="256" KeyPath="fips.dll"/>
-    <ROW Component="openssl.exe" ComponentId="{6558BDE3-3192-466D-BE96-62BCB2C39110}" Directory_="APPDIR" Attributes="256" KeyPath="openssl.exe"/>
     <ROW Component="wintun.dll" ComponentId="{9A0B9D43-D06F-4456-BBCF-C99A90D19D8C}" Directory_="APPDIR" Attributes="256" KeyPath="wintun.dll"/>
     <ROW Component="zitiedgetunnel.exe" ComponentId="{53505232-48E9-44C1-B2FB-77472C1C4732}" Directory_="APPDIR" Attributes="256" KeyPath="zitiedgetunnel.exe"/>
   </COMPONENT>
@@ -116,8 +114,6 @@
     <ROW File="Microsoft.Toolkit.Uwp.Notifications.dll" Component_="Microsoft.Toolkit.Uwp.Notifications.dll" FileName="MICROS~1.DLL|Microsoft.Toolkit.Uwp.Notifications.dll" Attributes="0" SourcePath="..\DesktopEdge\bin\Release\Microsoft.Toolkit.Uwp.Notifications.dll" SelfReg="false"/>
     <ROW File="zitiedgetunnel.exe" Component_="zitiedgetunnel.exe" FileName="ZITI-E~1.EXE|ziti-edge-tunnel.exe" Attributes="0" SourcePath="build\service\ziti-edge-tunnel.exe" SelfReg="false" DigSign="true"/>
     <ROW File="ZitiUpgradeSentinel.exe" Component_="ZitiUpgradeSentinel.exe" FileName="UPGRAD~1.EXE|ZitiUpgradeSentinel.exe" Attributes="0" SourcePath="..\ZitiUpgradeSentinel\bin\Release\ZitiUpgradeSentinel.exe" SelfReg="false" DigSign="true"/>
-    <ROW File="fips.dll" Component_="fips.dll" FileName="fips.dll" Attributes="0" SourcePath="openssl\fips.dll" SelfReg="false"/>
-    <ROW File="openssl.exe" Component_="openssl.exe" FileName="openssl.exe" Attributes="0" SourcePath="openssl\openssl.exe" SelfReg="false" DigSign="true"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.AiPersistentDataComponent">
     <ROW PersistentRow="ZitiUpdateServicelog.config" Type="0" Condition="OLDPRODUCTS"/>
@@ -182,7 +178,6 @@
     <ROW Property="AI_SETUPEXEPATH" Signature_="AI_EXE_PATH_CU" Builds="AnyCPU_Release"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiBinaryComponent">
-    <ROW Name="PowerShellScriptLauncher.dll" SourcePath="&lt;AI_CUSTACTS&gt;PowerShellScriptLauncher.dll"/>
     <ROW Name="Prereq.dll" SourcePath="&lt;AI_CUSTACTS&gt;Prereq.dll"/>
     <ROW Name="ResourceCleaner.dll" SourcePath="&lt;AI_CUSTACTS&gt;ResourceCleaner.dll"/>
     <ROW Name="aicustact.dll" SourcePath="&lt;AI_CUSTACTS&gt;aicustact.dll"/>
@@ -282,8 +277,6 @@
     <ROW Action="AI_ConfigFailActions" Type="11265" Source="aicustact.dll" Target="ConfigureServFailActions" WithoutSeq="true"/>
     <ROW Action="AI_DATA_SETTER" Type="51" Source="CustomActionData" Target="[AI_SETUPEXEPATH]"/>
     <ROW Action="AI_DATA_SETTER_1" Type="51" Source="CustomActionData" Target="[~]"/>
-    <ROW Action="AI_DATA_SETTER_2" Type="51" Source="CustomActionData" Target="AFAAYQByAGEAbQBzAAIAAQBTAGMAcgBpAHAAdAACACMAUgBlAHEAdQBpAHIAZQBzACAALQB2AGUAcgBzAGkAbwBuACAAMwANAAoAUABhAHIAYQBtACgAWwBcAFsAXQBzAHQAcgBpAG4AZwBbAFwAXQBdACQASQBuAHMAdABhAGwAbABEAGkAcgApAA0ACgANAAoAJABmAGkAbABlAHMAIAA9ACAAQAAoAA0ACgAgACAAIAAgACIAJABJAG4AcwB0AGEAbABsAEQAaQByAFwAZgBpAHAAcwBtAG8AZAB1AGwAZQAuAGMAbgBmACIALAANAAoAIAAgACAAIAAiACQASQBuAHMAdABhAGwAbABEAGkAcgBcAG8AcABlAG4AcwBzAGwALgBjAG4AZgAiAA0ACgApAA0ACgANAAoAZQBjAGgAbwAgACIAUgBlAG0AbwB2AGUARgBJAFAAUwBDAG8AbgBmAGkAZwAgAHIAdQBuAG4AaQBuAGcAIAB3AGkAdABoACAAcABhAHIAYQBtACAAJABJAG4AcwB0AGEAbABsAEQAaQByACIADQAKAGYAbwByAGUAYQBjAGgAIAAoACQAZgBpAGwAZQAgAGkAbgAgACQAZgBpAGwAZQBzACkAIABbAFwAewBdAA0ACgAgACAAIAAgAGkAZgAgACgAVABlAHMAdAAtAFAAYQB0AGgAIAAkAGYAaQBsAGUAKQAgAFsAXAB7AF0ADQAKACAAIAAgACAAIAAgACAAIABlAGMAaABvACAAIgBSAGUAbQBvAHYAZQBGAEkAUABTAEMAbwBuAGYAaQBnADoAIAByAGUAbQBvAHYAaQBuAGcAIABmAGkAcABzAC0AcgBlAGwAYQB0AGUAZAAgAGYAaQBsAGUAOgAgACQAZgBpAGwAZQAiAA0ACgAgACAAIAAgACAAIAAgACAAUgBlAG0AbwB2AGUALQBJAHQAZQBtACAAJABmAGkAbABlACAALQBGAG8AcgBjAGUADQAKACAAIAAgACAAWwBcAH0AXQANAAoAWwBcAH0AXQ=="/>
-    <ROW Action="AI_DATA_SETTER_3" Type="51" Source="GenFIPSConfig" Target="AFAAYQByAGEAbQBzAAIAIgBbAEEAUABQAEQASQBSAF0AIgABAFMAYwByAGkAcAB0AAIAIwBSAGUAcQB1AGkAcgBlAHMAIAAtAHYAZQByAHMAaQBvAG4AIAAzAA0ACgBQAGEAcgBhAG0AKABbAFwAWwBdAHMAdAByAGkAbgBnAFsAXABdAF0AJABJAG4AcwB0AGEAbABsAEQAaQByACkADQAKAA0ACgB0AHIAeQAgAFsAXAB7AF0ADQAKACAAIAAgACAAJABwAGEAdABoACAAPQAgACQASQBuAHMAdABhAGwAbABEAGkAcgAgAC0AcgBlAHAAbABhAGMAZQAgACcAXABcACcALAAnAC8AJwANAAoAIAAgACAAIAAkAHAAYQB0AGgAIAA9ACAAJABwAGEAdABoAC4AVAByAGkAbQBFAG4AZAAoACcALwAnACkADQAKACAAIAAgACAADQAKACAAIAAgACAAJABjAG8AbgB0AGUAbgB0ACAAPQAgAEAAJwANAAoAYwBvAG4AZgBpAGcAXwBkAGkAYQBnAG4AbwBzAHQAaQBjAHMAIAA9ACAAMQANAAoAbwBwAGUAbgBzAHMAbABfAGMAbwBuAGYAIAA9ACAAbwBwAGUAbgBzAHMAbABfAGkAbgBpAHQADQAKAA0ACgAuAGkAbgBjAGwAdQBkAGUAIAAiAFsAXAB7AF0AMABbAFwAfQBdAC8AZgBpAHAAcwBtAG8AZAB1AGwAZQAuAGMAbgBmACIADQAKAA0ACgBbAFwAWwBdAG8AcABlAG4AcwBzAGwAXwBpAG4AaQB0AFsAXABdAF0ADQAKAHAAcgBvAHYAaQBkAGUAcgBzACAAPQAgAHAAcgBvAHYAaQBkAGUAcgBfAHMAZQBjAHQADQAKAGEAbABnAF8AcwBlAGMAdABpAG8AbgAgAD0AIABhAGwAZwBvAHIAaQB0AGgAbQBfAHMAZQBjAHQADQAKAA0ACgBbAFwAWwBdAHAAcgBvAHYAaQBkAGUAcgBfAHMAZQBjAHQAWwBcAF0AXQANAAoAYgBhAHMAZQAgAD0AIABiAGEAcwBlAF8AcwBlAGMAdAANAAoAZgBpAHAAcwAgAD0AIABmAGkAcABzAF8AcwBlAGMAdAANAAoADQAKAFsAXABbAF0AYgBhAHMAZQBfAHMAZQBjAHQAWwBcAF0AXQANAAoAYQBjAHQAaQB2AGEAdABlACAAPQAgADEADQAKAA0ACgBbAFwAWwBdAGYAaQBwAHMAXwBzAGUAYwB0AFsAXABdAF0ADQAKAG0AbwBkAHUAbABlACAAPQAgACIAWwBcAHsAXQAwAFsAXAB9AF0ALwBmAGkAcABzAC4AZABsAGwAIgANAAoAYQBjAHQAaQB2AGEAdABlACAAPQAgADEADQAKAA0ACgBbAFwAWwBdAGQAZQBmAGEAdQBsAHQAXwBzAGUAYwB0AFsAXABdAF0ADQAKAGEAYwB0AGkAdgBhAHQAZQAgAD0AIAAxAA0ACgANAAoAWwBcAFsAXQBhAGwAZwBvAHIAaQB0AGgAbQBfAHMAZQBjAHQAWwBcAF0AXQANAAoAZABlAGYAYQB1AGwAdABfAHAAcgBvAHAAZQByAHQAaQBlAHMAIAA9ACAAZgBpAHAAcwA9AHkAZQBzAA0ACgAnAEAAIAAtAGYAIAAkAHAAYQB0AGgADQAKAA0ACgAgACAAIAAgAFMAZQB0AC0AQwBvAG4AdABlAG4AdAAgAC0AUABhAHQAaAAgACIAJABbAFwAewBdAEkAbgBzAHQAYQBsAGwARABpAHIAWwBcAH0AXQAvAG8AcABlAG4AcwBzAGwALgBjAG4AZgAiACAALQBWAGEAbAB1AGUAIAAkAGMAbwBuAHQAZQBuAHQAIAAtAEUAbgBjAG8AZABpAG4AZwAgAEEAUwBDAEkASQANAAoADQAKACAAIAAgACAAJAByAGUAdAByAGkAZQBzACAAPQAgADEAMAANAAoAIAAgACAAIAAkAGYAbwB1AG4AZAAgAD0AIAAkAGYAYQBsAHMAZQANAAoADQAKACAAIAAgACAAZgBvAHIAIAAoACQAaQAgAD0AIAAwADsAIAAkAGkAIAAtAGwAdAAgACQAcgBlAHQAcgBpAGUAcwA7ACAAJABpACsAKwApACAAWwBcAHsAXQANAAoAIAAgACAAIAAgACAAIAAgAGkAZgAgACgAVABlAHMAdAAtAFAAYQB0AGgAIAAiACQAWwBcAHsAXQBJAG4AcwB0AGEAbABsAEQAaQByAFsAXAB9AF0ALwBvAHAAZQBuAHMAcwBsAC4AZQB4AGUAIgApACAAWwBcAHsAXQANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAJABmAG8AdQBuAGQAIAA9ACAAJAB0AHIAdQBlAA0ACgAgACAAIAAgACAAIAAgACAAIAAgACAAIABiAHIAZQBhAGsADQAKACAAIAAgACAAIAAgACAAIABbAFwAfQBdACAAZQBsAHMAZQAgAFsAXAB7AF0ADQAKACAAIAAgACAAIAAgACAAIAAgACAAVwByAGkAdABlAC0ASABvAHMAdAAgACIAbwBwAGUAbgBzAHMAbAAuAGUAeABlACAAbgBvAHQAIABmAG8AdQBuAGQAIABhAHQAIAAkAG8AcABlAG4AcwBzAGwAUABhAHQAaAAiAA0ACgAgACAAIAAgACAAIAAgACAAWwBcAH0AXQANAAoAIAAgACAAIAAgACAAIAAgAFMAdABhAHIAdAAtAFMAbABlAGUAcAAgAC0AUwBlAGMAbwBuAGQAcwAgADEADQAKACAAIAAgACAAWwBcAH0AXQANAAoADQAKACAAIAAgACAAaQBmACAAKAAkAGYAbwB1AG4AZAApACAAWwBcAHsAXQANAAoAIAAgACAAIAAgACAAIAAgACYAIAAiACQAWwBcAHsAXQBJAG4AcwB0AGEAbABsAEQAaQByAFsAXAB9AF0ALwBvAHAAZQBuAHMAcwBsAC4AZQB4AGUAIgAgAGYAaQBwAHMAaQBuAHMAdABhAGwAbAAgAGAADQAKACAAIAAgACAAIAAgACAAIAAgACAALQBvAHUAdAAgACIAJABbAFwAewBdAEkAbgBzAHQAYQBsAGwARABpAHIAWwBcAH0AXQAvAGYAaQBwAHMAbQBvAGQAdQBsAGUALgBjAG4AZgAiACAAYAANAAoAIAAgACAAIAAgACAAIAAgACAAIAAtAG0AbwBkAHUAbABlACAAIgAkAFsAXAB7AF0ASQBuAHMAdABhAGwAbABEAGkAcgBbAFwAfQBdAC8AZgBpAHAAcwAuAGQAbABsACIADQAKACAAIAAgACAAWwBcAH0AXQAgAGUAbABzAGUAIABbAFwAewBdAA0ACgAgACAAIAAgACAAIAAgACAAVwByAGkAdABlAC0ASABvAHMAdAAgACIAbwBwAGUAbgBzAHMAbAAuAGUAeABlACAAbgBvAHQAIABmAG8AdQBuAGQAIABpAG4AIAAkAEkAbgBzAHQAYQBsAGwARABpAHIAIABhAGYAdABlAHIAIAAkAHIAZQB0AHIAaQBlAHMAIABhAHQAdABlAG0AcAB0AHMAIgANAAoAIAAgACAAIABbAFwAfQBdAA0ACgANAAoAIAAgACAAIABXAHIAaQB0AGUALQBIAG8AcwB0ACAAIgBGAEkAUABTACAAaQBuAHMAdABhAGwAbAAgAGMAbwBtAHAAbABlAHQAZQBkACAAcwB1AGMAYwBlAHMAcwBmAHUAbABsAHkAIgANAAoAWwBcAH0AXQANAAoAYwBhAHQAYwBoACAAWwBcAHsAXQANAAoAIAAgACAAIABXAHIAaQB0AGUALQBIAG8AcwB0ACAAIgBGAEkAUABTACAAaQBuAHMAdABhAGwAbAAgAGYAYQBpAGwAZQBkADoAIAAkAF8AIgANAAoAWwBcAH0AXQANAAo="/>
     <ROW Action="AI_DOWNGRADE" Type="19" Target="4010"/>
     <ROW Action="AI_DeleteCadLzma" Type="51" Source="AI_DeleteLzma" Target="[AI_SETUPEXEPATH]"/>
     <ROW Action="AI_DeleteLzma" Type="1025" Source="lzmaextractor.dll" Target="DeleteLZMAFiles"/>
@@ -306,8 +299,6 @@
     <ROW Action="AI_RunFinishActions" Type="1" Source="aicustact.dll" Target="RunFinishActions" WithoutSeq="true"/>
     <ROW Action="AI_SHOW_LOG" Type="65" Source="aicustact.dll" Target="LaunchLogFile" WithoutSeq="true"/>
     <ROW Action="AI_STORE_LOCATION" Type="51" Source="ARPINSTALLLOCATION" Target="[APPDIR]"/>
-    <ROW Action="GenFIPSConfig" Type="1537" Source="PowerShellScriptLauncher.dll" Target="RunPowerShellScript" Options="1" AdditionalSeq="AI_DATA_SETTER_3"/>
-    <ROW Action="RemoveFIPSConfig" Type="1" Source="PowerShellScriptLauncher.dll" Target="RunPowerShellScript" Options="1" AdditionalSeq="AI_DATA_SETTER_2"/>
     <ROW Action="SET_APPDIR" Type="307" Source="APPDIR" Target="[ProgramFilesFolder][Manufacturer]\[ProductName]" MultiBuildTarget="AnyCPU_Release:[ProgramFiles64Folder][Manufacturer]\[ProductName]"/>
     <ROW Action="SET_SHORTCUTDIR" Type="307" Source="SHORTCUTDIR" Target="[ProgramMenuFolder][ProductName]"/>
     <ROW Action="SET_TARGETDIR_TO_APPDIR" Type="51" Source="TARGETDIR" Target="[APPDIR]"/>
@@ -334,8 +325,6 @@
     <ROW Feature_="MainFeature" Component_="Microsoft.Toolkit.Uwp.Notifications.dll"/>
     <ROW Feature_="MainFeature" Component_="zitiedgetunnel.exe"/>
     <ROW Feature_="MainFeature" Component_="ZitiUpgradeSentinel.exe"/>
-    <ROW Feature_="EnableFIPS" Component_="fips.dll"/>
-    <ROW Feature_="EnableFIPS" Component_="openssl.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiIconsComponent">
     <ROW Name="ziti.exe" SourcePath="..\ziti.ico" Index="0"/>
@@ -366,10 +355,6 @@
     <ROW Action="AI_ExtractLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="1549" Builds="AnyCPU_Release"/>
     <ROW Action="AI_DeleteRLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="1548" Builds="AnyCPU_Release"/>
     <ROW Action="AI_DeleteLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="6599" Builds="AnyCPU_Release"/>
-    <ROW Action="GenFIPSConfig" Condition="( ( NOT Installed ) OR ( Installed AND REMOVE &lt;&gt; &quot;ALL&quot; AND AI_INSTALL_MODE &lt;&gt; &quot;Remove&quot; ) ) AND ( ZITI_ENABLE_FIPS )" Sequence="5827"/>
-    <ROW Action="AI_DATA_SETTER_3" Condition="( ( NOT Installed ) OR ( Installed AND REMOVE &lt;&gt; &quot;ALL&quot; AND AI_INSTALL_MODE &lt;&gt; &quot;Remove&quot; ) ) AND ( ZITI_ENABLE_FIPS )" Sequence="5826"/>
-    <ROW Action="RemoveFIPSConfig" Condition="( Installed AND ( REMOVE = &quot;ALL&quot; OR AI_INSTALL_MODE = &quot;Remove&quot; ) )" Sequence="3502"/>
-    <ROW Action="AI_DATA_SETTER_2" Condition="( Installed AND ( REMOVE = &quot;ALL&quot; OR AI_INSTALL_MODE = &quot;Remove&quot; ) )" Sequence="3501"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiInstallUISequenceComponent">
     <ROW Action="AI_RESTORE_LOCATION" Condition="APPDIR=&quot;&quot;" Sequence="749"/>
