@@ -291,7 +291,11 @@ namespace ZitiDesktopEdge {
                 if(Boolean.TryParse(Application.Current.Properties["dnsenabled"]?.ToString(), out dnsEnabled)) {
                     if (dnsEnabled) {
                         ConfigDnsEnabled.Visibility = Visibility.Visible;
+                    } else {
+                        ConfigDnsEnabled.Visibility = Visibility.Collapsed;
                     }
+                } else {
+                    ConfigDnsEnabled.Visibility = Visibility.Collapsed;
                 }
                 ConfigUseKeychain.Value = Properties.Settings.Default.UseKeychain.ToString();
             } else if (menuState == "Identities") {
@@ -638,7 +642,11 @@ namespace ZitiDesktopEdge {
                 AddDnsNew.IsChecked = (bool)Application.Current.Properties["dnsenabled"];
                 if (true == AddDnsNew.IsChecked) {
                     AddDnsNew.Visibility = Visibility.Visible;
+                } else {
+                    AddDnsNew.Visibility = Visibility.Collapsed;
                 }
+            } else {
+                AddDnsNew.Visibility = Visibility.Collapsed;
             }
             EditArea.Opacity = 0;
             EditArea.Visibility = Visibility.Visible;
