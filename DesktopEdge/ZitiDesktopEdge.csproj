@@ -153,6 +153,9 @@
     <Compile Include="Views\Controls\FilePicker.xaml.cs">
       <DependentUpon>FilePicker.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\Controls\ZdewLink.xaml.cs">
+      <DependentUpon>ZdewLink.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\ItemRenderers\Filter.xaml.cs">
       <DependentUpon>Filter.xaml</DependentUpon>
     </Compile>
@@ -220,6 +223,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Views\Controls\FilePicker.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\Controls\ZdewLink.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

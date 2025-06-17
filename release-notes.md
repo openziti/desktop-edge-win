@@ -1,3 +1,20 @@
+# Release 2.7.0.1
+## What's New
+* removed any openssl FIPS-related material, fips.dll, removed screen from installer
+* dependency updates
+
+## Other changes
+* removed the "Add DNS" checkbox. Users with it enabled will see it but on disable there will be no way to enable again
+
+## Bugs fixed:
+* *Dependency stability and bug fix updates
+* [Issue 828](https://github.com/openziti/desktop-edge-win/issues/828) - unexpected UI crash when add identity fails
+
+## Dependencies
+* ziti-tunneler: v1.6.1
+* ziti-sdk:      1.6.6.1
+* tlsuv:         v0.35.0.24[OpenSSL 3.4.0 22 Oct 2024]
+
 # Release 2.7.0
 ## What's New
 * FIPS compliant cryptography - Ziti Desktop Edge for Windows now ships an optional fips.dll built
@@ -15,7 +32,6 @@ Dependency stability and bug fix updates
 * ziti-tunneler: v1.6.0
 * ziti-sdk:      1.6.5
 * tlsuv:         v0.35.0[OpenSSL 3.4.0 22 Oct 2024]
-
 
 # Release 2.6.5.0
 ## What's New
