@@ -1,3 +1,18 @@
+# Release 2.7.0.2
+## What's New
+* Nothing
+
+## Other changes
+* fixed incorrect beta url
+
+## Bugs fixed:
+* none
+
+## Dependencies
+* ziti-tunneler: v1.6.1
+* ziti-sdk:      1.6.6.1
+* tlsuv:         v0.35.0.24[OpenSSL 3.4.0 22 Oct 2024]
+
 # Release 2.7.0.1
 ## What's New
 * removed any openssl FIPS-related material, fips.dll, removed screen from installer
