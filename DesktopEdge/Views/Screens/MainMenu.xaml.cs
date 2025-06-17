@@ -634,10 +634,11 @@ namespace ZitiDesktopEdge {
                     break;
                 }
             }
-            AddDnsNew.IsChecked = false;
             if (Application.Current.Properties.Contains("dnsenabled")) {
                 AddDnsNew.IsChecked = (bool)Application.Current.Properties["dnsenabled"];
-                AddDnsNew.Visibility = Visibility.Visible;
+                if (true == AddDnsNew.IsChecked) {
+                    AddDnsNew.Visibility = Visibility.Visible;
+                }
             }
             EditArea.Opacity = 0;
             EditArea.Visibility = Visibility.Visible;
