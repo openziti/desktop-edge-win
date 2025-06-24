@@ -25,7 +25,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("NetFoundry")]
 [assembly: AssemblyProduct("ZitiUpdateService")]
-[assembly: AssemblyCopyright("Copyright © NetFoundry 2020")]
+[assembly: AssemblyCopyright("Copyright NetFoundry Inc.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
