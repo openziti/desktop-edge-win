@@ -36,6 +36,7 @@ using ZitiDesktopEdge.Utility;
 using System.ComponentModel;
 using Newtonsoft.Json.Linq;
 using Ziti.Desktop.Edge.Utils;
+using System.Windows.Navigation;
 
 namespace ZitiDesktopEdge {
     /// <summary>
@@ -228,13 +229,23 @@ namespace ZitiDesktopEdge {
                 string version = "";
                 try {
                     TunnelStatus s = (TunnelStatus)Application.Current.Properties["CurrentTunnelStatus"];
-                    version = $"{s.ServiceVersion.Version}@{s.ServiceVersion.Revision}";
+                    version = $"{s.ServiceVersion.Version}";
                 } catch (Exception e) {
                     logger.Warn(e, "Could not get service version/revision?");
                 }
 
                 // Interface Version
                 VersionInfo.Content = $"App: {appVersion} Service: {version}";
+
+
+                string fipsdll = Path.Combine(MainWindow.ExecutionDirectory, "fips.dll");
+                if (File.Exists(fipsdll)) {
+                    FileVersionInfo versionInfo = FileVersionInfo.GetVersionInfo(fipsdll);
+                    FIPSVersion.Content = $"OpenSSL FIPS Module detected: {versionInfo.ProductVersion}";
+                    FIPSPanel.Visibility = Visibility.Visible;
+                } else {
+                    FIPSPanel.Visibility = Visibility.Collapsed;
+                }
 
             } else if (menuState == "Advanced") {
                 MenuTitle.Content = "Advanced Settings";
@@ -276,6 +287,16 @@ namespace ZitiDesktopEdge {
                 ConfigMtu.Value = Application.Current.Properties["mtu"]?.ToString();
                 ConfigDns.Value = Application.Current.Properties["dns"]?.ToString();
                 ConfigDnsEnabled.Value = Application.Current.Properties["dnsenabled"]?.ToString();
+                bool dnsEnabled;
+                if(Boolean.TryParse(Application.Current.Properties["dnsenabled"]?.ToString(), out dnsEnabled)) {
+                    if (dnsEnabled) {
+                        ConfigDnsEnabled.Visibility = Visibility.Visible;
+                    } else {
+                        ConfigDnsEnabled.Visibility = Visibility.Collapsed;
+                    }
+                } else {
+                    ConfigDnsEnabled.Visibility = Visibility.Collapsed;
+                }
                 ConfigUseKeychain.Value = Properties.Settings.Default.UseKeychain.ToString();
             } else if (menuState == "Identities") {
                 MenuTitle.Content = "Identities";
@@ -617,9 +638,15 @@ namespace ZitiDesktopEdge {
                     break;
                 }
             }
-            AddDnsNew.IsChecked = false;
             if (Application.Current.Properties.Contains("dnsenabled")) {
                 AddDnsNew.IsChecked = (bool)Application.Current.Properties["dnsenabled"];
+                if (true == AddDnsNew.IsChecked) {
+                    AddDnsNew.Visibility = Visibility.Visible;
+                } else {
+                    AddDnsNew.Visibility = Visibility.Collapsed;
+                }
+            } else {
+                AddDnsNew.Visibility = Visibility.Collapsed;
             }
             EditArea.Opacity = 0;
             EditArea.Visibility = Visibility.Visible;
@@ -796,6 +823,11 @@ namespace ZitiDesktopEdge {
 
         private void MainUI_PreviewMouseDown(object sender, MouseButtonEventArgs e) {
             UIUtils.ClickedControl = e.Source as UIElement;
+        }
+
+        private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e) {
+            Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+            e.Handled = true;
         }
     }
 }

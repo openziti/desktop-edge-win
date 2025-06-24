@@ -1,17 +1,96 @@
-# Release 2.6.4
+# Release 2.7.0.2
 ## What's New
-bug fix / minor improvement
+* Nothing
 
 ## Other changes
-* [issue 813](https://github.com/openziti/desktop-edge-win/issues/813) alphabetizes the external jwt signer lists
+* fixed incorrect beta url
 
 ## Bugs fixed:
-* Discovered a bug when testing where auth would fail if the default provider was saved but no longer in the list
+* none
 
 ## Dependencies
+* ziti-tunneler: v1.6.1
+* ziti-sdk:      1.6.6.1
+* tlsuv:         v0.35.0.24[OpenSSL 3.4.0 22 Oct 2024]
 
-* ziti-tunneler: v1.5.4
-* ziti-sdk:      1.5.4
+# Release 2.7.0.1
+## What's New
+* removed any openssl FIPS-related material, fips.dll, removed screen from installer
+* dependency updates
+
+## Other changes
+* removed the "Add DNS" checkbox. Users with it enabled will see it but on disable there will be no way to enable again
+
+## Bugs fixed:
+* *Dependency stability and bug fix updates
+* [Issue 828](https://github.com/openziti/desktop-edge-win/issues/828) - unexpected UI crash when add identity fails
+
+## Dependencies
+* ziti-tunneler: v1.6.1
+* ziti-sdk:      1.6.6.1
+* tlsuv:         v0.35.0.24[OpenSSL 3.4.0 22 Oct 2024]
+
+# Release 2.7.0
+## What's New
+* FIPS compliant cryptography - Ziti Desktop Edge for Windows now ships an optional fips.dll built
+  by strictly adhering to the build steps outlined by the OpenSSH project. See the 
+  [OpenSSL Source guide](https://openssl-library.org/source/). 
+* dependency updates
+
+## Other changes
+N/A
+
+## Bugs fixed:
+Dependency stability and bug fix updates
+
+## Dependencies
+* ziti-tunneler: v1.6.0
+* ziti-sdk:      1.6.5
+* tlsuv:         v0.35.0[OpenSSL 3.4.0 22 Oct 2024]
+
+# Release 2.6.5.0
+## What's New
+dependency updates
+
+## Other changes
+N/A
+
+## Bugs fixed:
+Stability and bug fixes
+
+## Dependencies
+* ziti-tunneler: v1.5.10
+* ziti-sdk:      1.5.10
+* tlsuv:         v0.33.9[OpenSSL 3.4.0 22 Oct 2024]
+
+# Release 2.6.4.0
+## What's New
+dependency updates
+
+## Other changes
+N/A
+
+## Bugs fixed:
+Stability and other bug fixes
+
+## Dependencies
+* ziti-tunneler: v1.5.8
+* ziti-sdk:      1.5.9
+* tlsuv:         v0.33.9[OpenSSL 3.4.0 22 Oct 2024]
+
+# Release 2.6.3.1
+## What's New
+dependency update
+
+## Other changes
+N/A
+
+## Bugs fixed:
+WSL->ZDEW scp was failing
+
+## Dependencies
+* ziti-tunneler: v1.5.4.2
+* ziti-sdk:      1.5.4.1
 * tlsuv:         v0.33.8[OpenSSL 3.3.1 4 Jun 2024]
 
 # Release 2.6.3.0

@@ -12,10 +12,42 @@ param(
     [datetime]$published_at = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ"),
     [bool]$jsonOnly = $false,
     [bool]$revertGitAfter = $true,
-    [string]$versionQualifier = ""
+    [string]$versionQualifier = "",
+    [switch]$promote = $false  # New parameter for promotion
 )
+
+# Promote function that copies 'beta.json' to 'latest.json' and updates timestamp
+function Promote-Release {
+    $betaJsonPath = "$scriptDirectory\release-streams\beta.json"
+    $latestJsonPath = "$scriptDirectory\release-streams\latest.json"
+    
+    if (Test-Path -Path $betaJsonPath) {
+        # Copy the beta.json to latest.json
+        Copy-Item -Force $betaJsonPath $latestJsonPath
+        Write-Host "Copied 'beta.json' to 'latest.json'."
+
+        # Read the content of the latest.json
+        $latestJsonContent = Get-Content -Path $latestJsonPath -Raw
+
+        # Replace the 'published_at' timestamp with the current time
+        $newTimestamp = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
+        $latestJsonContent = $latestJsonContent -replace '"published_at": "(.*?)"', ('"published_at": "' + $newTimestamp + '"')
+
+        # Write the updated content back to the latest.json
+        Set-Content -Path $latestJsonPath -Value $latestJsonContent
+        Write-Host "Updated the 'published_at' field in 'latest.json'."
+    } else {
+        Write-Host "'beta.json' not found. Promotion failed." -ForegroundColor Red
+    }
+}
+
 echo ""
 $scriptDirectory = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
+
+# If promote flag is set, invoke the promotion function
+if ($promote) {
+    Promote-Release
+}
 
 $version = $version.Trim()
 if (-not $version) {

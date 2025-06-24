@@ -1732,15 +1732,30 @@ namespace ZitiDesktopEdge {
             Console.WriteLine("AddId.Key\t\t: " + payload.Key);
             Console.WriteLine("AddId.UseKeychain\t: " + payload.UseKeychain);
 #endif
-            Identity createdId = await serviceClient.AddIdentityAsync(payload);
+            try {
+                Identity createdId = await serviceClient.AddIdentityAsync(payload);
 
-            if (createdId != null) {
-                var zid = ZitiIdentity.FromClient(createdId);
-                AddIdentity(zid);
-                LoadIdentities(true);
-                await serviceClient.IdentityOnOffAsync(createdId.Identifier, true);
-            } else {
-                // this never returns a value...
+                if (createdId != null) {
+                    var zid = ZitiIdentity.FromClient(createdId);
+                    AddIdentity(zid);
+                    LoadIdentities(true);
+                    await serviceClient.IdentityOnOffAsync(createdId.Identifier, true);
+                } else {
+                    // this never returns a value...
+                }
+            } catch (ServiceException e) {
+                HideLoad();
+                await ShowBlurbAsync("Unexpected error when adding identity!", e.Message);
+            } catch (Exception e) {
+                ZdewLink linkControl = new ZdewLink {
+                    NavigateUri = new Uri("https://openziti.discourse.group/"),
+                    Text = "Visit our support forum",
+                };
+
+                ShowError("Unexpected Error!",
+                    $"Please review the logs and consider providing a feedback bundle to the support forum.\nError: {e.Message}",
+                    linkControl
+                    );
             }
         }
 
@@ -1913,9 +1928,16 @@ namespace ZitiDesktopEdge {
         }
 
         public void ShowError(string title, string message) {
+            ShowError(title, message, null);
+        }
+
+        public void ShowError(string title, string message, UIElement additionalElements) {
             this.Dispatcher.Invoke(() => {
                 ErrorTitle.Text = title;
                 ErrorDetails.Text = message;
+                if (additionalElements != null) {
+                    ErrorPanel.Children.Add(additionalElements);
+                }
                 ErrorView.Visibility = Visibility.Visible;
             });
         }

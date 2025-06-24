@@ -1,12 +1,12 @@
 {
-  "name": "2.5.2.9",
-  "tag_name": "2.5.2.9",
-  "published_at": "2025-02-24T12:21:04Z",
+  "name": "2.6.4",
+  "tag_name": "2.6.4",
+  "published_at": "2025-04-15T02:56:35Z",
   "installation_critical": false,
   "assets": [
     {
-      "name": "Ziti.Desktop.Edge.Client-2.5.2.9.exe",
-      "browser_download_url": "https://github.com/openziti/desktop-edge-win/releases/download/2.5.2.9/Ziti.Desktop.Edge.Client-2.5.2.9.exe"
+      "name": "Ziti.Desktop.Edge.Client-2.6.4.exe",
+      "browser_download_url": "https://github.com/openziti/desktop-edge-win/releases/download/2.6.4/Ziti.Desktop.Edge.Client-2.6.4.exe"
     }
   ]
 }

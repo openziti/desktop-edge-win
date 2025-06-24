@@ -265,7 +265,7 @@
                     <local:MenuEditItem x:Name="ConfigMtu" HorizontalAlignment="Stretch" Width="Auto" Label="MTU:"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigDns" HorizontalAlignment="Stretch" Width="Auto" Label="DNS Server:"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigPageSize" HorizontalAlignment="Stretch" Width="Auto" Label="Api Page Size (10-500):"></local:MenuEditItem>
-                    <local:MenuEditItem x:Name="ConfigDnsEnabled" HorizontalAlignment="Stretch" Width="Auto" Label="Add Dns:"></local:MenuEditItem>
+                    <local:MenuEditItem x:Name="ConfigDnsEnabled" HorizontalAlignment="Stretch" Width="Auto" Label="Add Dns:" Visibility="Collapsed"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigUseKeychain" HorizontalAlignment="Stretch" Width="Auto" Label="Use Keychain:"></local:MenuEditItem>
                     <local:StyledButton x:Name="EditButton" OnClick="ShowEdit_Click" Label="Edit Values" Grid.Row="8" Margin="0,20,0,0"></local:StyledButton>
                 </StackPanel>
@@ -279,6 +279,20 @@
                     <Label Name="VersionInfo" FontSize="14" HorizontalAlignment="Center" Padding="0,30,0,0" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack:Up//application:,,,/Assets/Fonts/#Open Sans"></Label>
                     <Label Name="VersionOlder" Content=" checking version information " HorizontalAlignment="Center" FontSize="14" Padding="0,30,0,0" Foreground="#F4044D" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                     <Label Name="VersionNewer" Content="" HorizontalAlignment="Center" FontSize="14" Padding="0,30,0,0" Foreground="#0069FF" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
+                    <StackPanel x:Name="FIPSPanel">
+                        <Label Name="FIPSVersion" Content=""  HorizontalAlignment="Center" FontSize="14" Padding="0,30,0,0" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
+
+                        <TextBlock FontSize="14" TextWrapping="Wrap" TextAlignment="Center" Foreground="#638190" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                            <Hyperlink NavigateUri="https://openssl-library.org/source/" RequestNavigate="Hyperlink_RequestNavigate">
+                                Refer to the OpenSSL documentation for exact CMVP certificate for the version listed above.
+                            </Hyperlink>
+                        </TextBlock>
+                        <TextBlock FontSize="14" TextWrapping="Wrap" TextAlignment="Center" Padding="0,30,0,0" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                            <Hyperlink NavigateUri="https://github.com/openziti/desktop-edge-win/tree/main/Installer/openssl/README.md" RequestNavigate="Hyperlink_RequestNavigate">
+                                Click here for information related to the FIPS module
+                            </Hyperlink>
+                        </TextBlock>
+                    </StackPanel>
                 </StackPanel>
                 <Label Name="MainItemsButton" Margin="0,10,0,0" Foreground="#F4044D" FontWeight="SemiBold" Content="Quit Ziti Desktop Edge" Cursor="Hand" MouseUp="CloseApp" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Center"></Label>
             </StackPanel>
@@ -358,7 +372,7 @@
                     </TextBox.Resources>
                 </TextBox>
 
-                <CheckBox x:Name="AddDnsNew" Content="Add DNS" IsChecked="True" Margin="10"/>
+                <CheckBox x:Name="AddDnsNew" Content="Add DNS" IsChecked="True" Margin="10" Visibility="Collapsed"/>
                 <CheckBox x:Name="UseKeychainToggle" Content="Use Keychain" IsChecked="{Binding UseKeychain, Mode=TwoWay}" Margin="10"/>
 
                 <local:StyledButton x:Name="SaveConfigButton" OnClick="SaveConfig_Click" Label="Save" Grid.Row="8"></local:StyledButton>
