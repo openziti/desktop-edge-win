@@ -10,9 +10,9 @@
 * Discovered a bug when testing where auth would fail if the default provider was saved but no longer in the list
 
 ## Dependencies
-* ziti-tunneler: v1.6.1
-* ziti-sdk:      1.6.6.1
-* tlsuv:         v0.35.0.24[OpenSSL 3.4.0 22 Oct 2024]
+* ziti-tunneler: v1.6.1.4
+* ziti-sdk:      1.7.2
+* tlsuv:         v0.36.3[win32crypto(CNG): ncrypt[1.0] ]
 
 
 # Release 2.7.0.2
