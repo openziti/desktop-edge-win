@@ -12,7 +12,7 @@ using System.Windows;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("Ziti Desktop Edge")]
-[assembly: AssemblyCopyright("Copyright NetFoundry © 2020")]
+[assembly: AssemblyCopyright("Copyright NetFoundry Inc.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
