@@ -12,6 +12,16 @@ on:
   release:
     types: [released]
   workflow_dispatch:
+    inputs:
+      version:
+        required: true
+        type: string
+      run_id:
+        required: true
+        type: string
+      repo:
+        required: true
+        type: string
 
 jobs:
   mattermost-ziti-webhook:
@@ -29,3 +39,27 @@ jobs:
         eventJson: ${{ toJson(github.event) }}
         senderUsername: "GitHubZ"
         destChannel: "dev-notifications"
+        
+  repository-dispatch:
+    if: ${{ !cancelled() && needs.publish.result == 'success' }}
+    name: Repository Dispatch Event
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send repository_dispatch event
+        env:
+          # this token has fine-grained permission to send repository_dispatch events to the downstream private repo
+          GH_TOKEN: ${{ secrets.GH_FGPAT_NF_REPO_DISPATCH }}
+        shell: bash
+        run: |
+          set -o pipefail
+          set -o xtrace
+
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/netfoundry/desktop-edge-windows/dispatches \
+            -f "event_type=ziti_release" \
+            -F "client_payload[version]=${{ needs.publish.outputs.ZITI_VERSION }}" \
+            -F "client_payload[run_id]=${{ github.run_id }}" \
+            -F "client_payload[repo]=${{ github.repository }}"
