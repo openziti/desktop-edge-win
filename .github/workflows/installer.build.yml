@@ -79,15 +79,20 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: .\Installer\build.ps1
+      - name: Upload installer onto job
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZitiDesktopEdgeClient-${{ env.VERSION }}
+          path: "Installer/Output/Ziti Desktop Edge Client-*"
       - name: Build UI and Assemble win32crypto Installer
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: .\Installer\build.ps1 -Win32Crypto:$true
-      - name: Upload installer onto job
+      - name: Upload win32crypto installer onto job
         uses: actions/upload-artifact@v4
         with:
-          name: ZitiDesktopEdgeClient-${{ env.VERSION }}
+          name: ZitiDesktopEdgeClient-${{ env.VERSION }}-win32crypto
           path: "Installer/Output/Ziti Desktop Edge Client-*"
       - name: Job Failure - Upload the signing log job
         if: failure()

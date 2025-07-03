@@ -138,7 +138,7 @@ echo "Restoring the .NET project"
 nuget restore .\ZitiDesktopEdge.sln
 
 echo "Building the UI"
-msbuild ZitiDesktopEdge.sln /property:Configuration=Release /p:EnableWin32Crypto=true
+msbuild ZitiDesktopEdge.sln /property:Configuration=Release /p:EnableWin32Crypto=$Win32Crypto
 
 Pop-Location
 
