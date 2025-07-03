@@ -41,7 +41,7 @@ jobs:
         destChannel: "dev-notifications"
         
   repository-dispatch:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled()  }}
     name: Repository Dispatch Event
     runs-on: ubuntu-latest
     steps:
