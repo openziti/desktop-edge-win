@@ -75,13 +75,15 @@ jobs:
         name: Configure ziti-ci
         run: C:\Users\runneradmin\go\bin\ziti-ci configure-git
       - name: Build UI and Assemble Installer
+        shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: powershell -File .\Installer\build.ps1
+        run: .\Installer\build.ps1
       - name: Build UI and Assemble win32crypto Installer
+        shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: powershell -Command .\Installer\build.ps1 -Win32Crypto:$true
+        run: .\Installer\build.ps1 -Win32Crypto:$true
       - name: Upload installer onto job
         uses: actions/upload-artifact@v4
         with:
