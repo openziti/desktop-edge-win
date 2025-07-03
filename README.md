@@ -66,7 +66,7 @@ Public Key Infrastructure is complex and verifying trust is vital. Part of this 
 lists - CRLs. The installer executables produced by the OpenZiti project are signed by two different entities. One entity is an
 indepependant third party and the other is the OpenZiti code signing CA. Also, as part of the signing process a timestamp is 
 produced at the time of signing using yet another CA. If you are going to use the automatic upgrade functionality, please see 
-[offline-installation/README.md]() for more information as to how to enable this functionality in an entirely offline environment.
+[offline-upgrades/README.md]() for more information as to how to enable this functionality in an entirely offline environment.
 
 ### Customizing the Automatic Update URL
 

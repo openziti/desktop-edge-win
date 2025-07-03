@@ -5,6 +5,7 @@
 # .\build-test-release.ps1 -jsonOnly $true -version 2.2.5 -url https://lnxiskqx49x4.share.zrok.io/local -stream "dev" -revertGitAfter $true
 # .\build-test-release.ps1 -version 1.2.3 -url https://lnxiskqx49x4.share.zrok.io/local -stream "dev" -published_at (Get-Date)
 # .\build-test-release.ps1 -version 1.2.3 -url https://lnxiskqx49x4.share.zrok.io/local -stream "dev" -published_at "2023-11-02T14:30:00"
+# .\build-test-release.ps1 -version 1.2.3 -url https://lnxiskqx49x4.share.zrok.io/local -stream "dev" -published_at "2023-11-02T14:30:00" -Win32Crypto:$true
 param(
     [string]$version,
     [string]$url = "http://localhost:8000/release-streams/local",
@@ -13,7 +14,8 @@ param(
     [bool]$jsonOnly = $false,
     [bool]$revertGitAfter = $true,
     [string]$versionQualifier = "",
-    [switch]$promote = $false  # New parameter for promotion
+    [switch]$promote = $false,  # New parameter for promotion
+    [bool]$Win32Crypto = $false #used to specify which ziti edge tunnel version to pull, openssl or win32crypto-based
 )
 
 # Promote function that copies 'beta.json' to 'latest.json' and updates timestamp
@@ -91,13 +93,13 @@ Set-Content -Path "version" -Value $version -NoNewline
 Write-Host "Updating version file to version: $version" -ForegroundColor Yellow
 
 $outputPath = "$scriptDirectory\release-streams\${version}.json"
-& .\Installer\output-build-json.ps1 -version $version -url $url -stream $stream -published_at $published_at -outputPath $outputPath
+& .\Installer\output-build-json.ps1 -version:$version -url:$url -stream:$stream -published_at:$published_at -outputPath:$outputPath
 
 Copy-Item -Force "$scriptDirectory\release-streams\${version}.json" "$scriptDirectory\release-streams\${stream}.json"
 echo "json file written to: $scriptDirectory\release-streams\${stream}.json"
 
 if(! $jsonOnly) {
-  & .\Installer\build.ps1 -version $version -url $url -stream $stream -published_at $published_at -jsonOnly $jsonOnly -revertGitAfter $revertGitAfter -versionQualifier $versionQualifier
+  & .\Installer\build.ps1 -version:$version -url:$url -stream:$stream -published_at:$published_at -jsonOnly:$jsonOnly -revertGitAfter:$revertGitAfter -versionQualifier:$versionQualifier -Win32Crypto:$Win32Crypto
   $exitCode = $LASTEXITCODE
   if($exitCode -gt 0) {
     Write-Host -ForegroundColor Red "ERROR:"
