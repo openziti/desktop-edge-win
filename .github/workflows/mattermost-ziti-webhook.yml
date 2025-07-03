@@ -41,7 +41,7 @@ jobs:
         destChannel: "dev-notifications"
         
   repository-dispatch:
-    if: ${{ !cancelled() && needs.publish.result == 'success' }}
+    if: ${{ !cancelled() }}
     name: Repository Dispatch Event
     runs-on: ubuntu-latest
     steps:
