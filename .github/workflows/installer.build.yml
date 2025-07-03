@@ -11,10 +11,6 @@ on:
     branches:
       - main
   pull_request:
-    branches:
-      - main
-      - 'release-*'
-      - 'beta-release-*'
 
 env:
   BUILD_CONFIG: "Release"
@@ -24,7 +20,7 @@ jobs:
   build:
     name: Build the Ziti Desktop Edge for Windows Installer Package
     runs-on: windows-latest
-    if: "!contains(github.event.head_commit.message, 'ci skip')"
+    if: "!contains(github.event.head_commit.message, 'ci skip') && contains(github.head_ref, 'release')"
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWSKMS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWSKMS_SECRET_ACCESS_KEY }}
