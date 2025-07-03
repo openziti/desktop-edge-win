@@ -19,6 +19,18 @@ env:
   BUILDNUMBER: ${{github.run_number}}
 
 jobs:
+  debug:
+    name: debug
+    runs-on: windows-latest
+    if: "!contains(github.event.head_commit.message, 'ci skip') && contains(github.ref, 'release')"
+    steps:
+      - name: Debug trigger context
+        run: |
+          echo "event_name=${{ github.event_name }}"
+          echo "ref=${{ github.ref }}"
+          echo "head_ref=${{ github.head_ref }}"
+          echo "commit message=${{ github.event.head_commit.message }}"
+
   build:
     name: Build the Ziti Desktop Edge for Windows Installer Package
     runs-on: windows-latest
