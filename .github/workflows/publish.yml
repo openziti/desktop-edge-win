@@ -1,0 +1,23 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      action_id:
+        description: 'GitHub Actions run ID to inspect'
+        required: true
+        type: string
+
+jobs:
+  list-artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: List artifacts
+        run: |
+          gh run artifacts ${{ inputs.action_id }} \
+            --repo $GITHUB_REPOSITORY \
+            --limit 100 \
+            --json name,sizeInBytes,archiveDownloadUrl \
+            | jq
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
