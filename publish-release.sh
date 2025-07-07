@@ -99,10 +99,10 @@ for file in "$base_path"/*; do
 done
 
 echo "Creating a release on GitHub"
-gh release create "v${version}" \
-  --title "v${version}" \
+gh release create "${version}" \
+  --title "${version}" \
   --notes "$release_notes" \
   --prerelease
 
-gh release upload "v${version}" /tmp/zdew-artifacts/ZitiDesktopEdgeClient-${version}/*
+gh release upload "${version}" /tmp/zdew-artifacts/ZitiDesktopEdgeClient-${version}/*
 
