@@ -104,5 +104,5 @@ gh release create "v${version}" \
   --notes "$release_notes" \
   --prerelease
 
-gh release upload "v${version}" /tmp/zdew-artifacts/ZitiDesktopEdgeClient-2.7.1.2/*
+gh release upload "v${version}" /tmp/zdew-artifacts/ZitiDesktopEdgeClient-${version}/*
 
