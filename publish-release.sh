@@ -48,9 +48,8 @@ echo "$json" | jq -c '.' | while read -r artifact; do
   }
 done
 
-rm /tmp/zdew-artifacts/*.zip
+rm "${tmp_dir}"/*.zip
 
-tree "/tmp/zdew-artifacts"
 artifact_version=$(find "${tmp_dir}" -name "*.exe" | grep -oP '\d+\.\d+\.\d+(\.\d+)?' | sort | uniq )
 count=$(echo "${artifact_version}" | wc -l)
 
@@ -69,7 +68,7 @@ else
   exit 1
 fi
 
-for f in /tmp/zdew-artifacts/ZitiDesktopEdgeClient-"${artifact_version}"-win32crypto/*; do
+for f in "${tmp_dir}/ZitiDesktopEdgeClient-${artifact_version}-win32crypto"/*; do
   new="$(dirname "$f")/$(basename "$f" | tr ' ' '.')"
   echo "renaming $f"
   echo "      to $new"
@@ -78,7 +77,7 @@ for f in /tmp/zdew-artifacts/ZitiDesktopEdgeClient-"${artifact_version}"-win32cr
 done
 
 repo="downloads"
-base_path="/tmp/zdew-artifacts/ZitiDesktopEdgeClient-${artifact_version}-win32crypto"
+base_path="${tmp_dir}/ZitiDesktopEdgeClient-${artifact_version}-win32crypto"
 JFROG_TOKEN="$(cat /mnt/c/temp/jfrog.token)"
 
 for file in "$base_path"/*; do
@@ -104,5 +103,5 @@ gh release create "${version}" \
   --notes "$release_notes" \
   --prerelease
 
-gh release upload "${version}" /tmp/zdew-artifacts/ZitiDesktopEdgeClient-${version}/*
+gh release upload "${version}" "${tmp_dir}/ZitiDesktopEdgeClient-${version}"/*
 
