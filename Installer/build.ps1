@@ -205,8 +205,8 @@ $outputPath = "${scriptPath}\Output\Ziti Desktop Edge Client-${version}.exe.json
 echo "REMOVING .back files: ${scriptPath}\*back*"
 Remove-Item "${scriptPath}\*back*" -Recurse -ErrorAction SilentlyContinue
 
-echo "Copying json file to beta.json"
-copy $outputPath "$checkoutRoot\release-streams\beta.json"
+echo "Copying json file to beta${versionQualifier}.json"
+copy $outputPath "$checkoutRoot\release-streams\beta${versionQualifier}.json"
 
 
 if($revertGitAfter) {
