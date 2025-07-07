@@ -24,8 +24,11 @@ using Newtonsoft.Json.Linq;
 namespace ZitiDesktopEdge.Utility {
     public static class GithubAPI {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-
+#if WIN32CRYPTO
+        public const string ProdUrl = "https://get.openziti.io/zdew/stable-win32crypto.json";
+#else
         public const string ProdUrl = "https://get.openziti.io/zdew/stable.json";
+#endif
 
         public static JObject GetJson(string url) {
             HttpWebRequest httpWebRequest = WebRequest.CreateHttp(url);

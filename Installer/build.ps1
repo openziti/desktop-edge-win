@@ -1,11 +1,12 @@
-param(
+﻿param(
     [string]$version,
     [string]$url = "https://github.com/openziti/desktop-edge-win/releases/download/",
     [string]$stream = "beta",
     [datetime]$published_at = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ"),
     [bool]$jsonOnly = $false,
     [bool]$revertGitAfter = $true,
-    [string]$versionQualifier = ""
+    [string]$versionQualifier = "",
+    [bool]$Win32Crypto = $false #used to specify which ziti edge tunnel version to pull, openssl or win32crypto-based
 )
 
 $ErrorActionPreference = "Stop"
@@ -28,11 +29,20 @@ $ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer ${ADV_INST_V
 $SIGNTOOL="${ADV_INST_HOME}\third-party\winsdk\x64\signtool.exe"
 $ADVINST = "${ADV_INST_HOME}\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
-$ZITI_EDGE_TUNNEL_VERSION="v1.6.0"
+$ZITI_EDGE_TUNNEL_VERSION="v1.7.3"
 
 echo "Cleaning previous build folder if it exists"
 Remove-Item "${buildPath}" -r -ErrorAction Ignore
 mkdir "${buildPath}" -ErrorAction Ignore > $null
+
+if ([string]::IsNullOrEmpty($versionQualifier)) {
+    if($Win32Crypto) {
+        $versionQualifier = "-win32crypto"
+    } else {
+        $versionQualifier = ""
+    }
+    echo "Using versionQualifier: $versionQualifier"
+}
 
 $global:ProgressPreference = "SilentlyContinue"
 $zetDownloadLoc="${scriptPath}\build\zet"
@@ -45,14 +55,21 @@ if($null -eq $env:ZITI_EDGE_TUNNEL_BUILD) {
     } else {
         $ZITI_EDGE_TUNNEL_VERSION=$env:ZITI_EDGE_TUNNEL_VERSION
     }
+
     if (Test-Path ${destination} -PathType Container) {
         Write-Host -ForegroundColor Yellow "ziti-edge-tunnel.zip exists and won't be downloaded again: ${destination}"
     } else {
         echo "========================== fetching ziti-edge-tunnel =========================="
-        $zet_dl="https://github.com/openziti/ziti-tunnel-sdk-c/releases/download/${ZITI_EDGE_TUNNEL_VERSION}/ziti-edge-tunnel-Windows_x86_64.zip"
+        $zet_dl="https://github.com/openziti/ziti-tunnel-sdk-c/releases/download/${ZITI_EDGE_TUNNEL_VERSION}/ziti-edge-tunnel-Windows_x86_64${versionQualifier}.zip"
         echo "Beginning to download ziti-edge-tunnel from ${zet_dl} to ${destination}"
         echo ""
-        $response = Invoke-WebRequest $zet_dl -OutFile "${destination}"
+        try {
+            $response = Invoke-WebRequest $zet_dl -OutFile "${destination}" -ErrorAction Stop
+        }
+        catch {
+            Write-Host -ForegroundColor Red "❌ Download failed: $zet_dl $($_.Exception.Message)"
+            exit 1
+        }
     }
 } else {
     echo "========================== using locally defined ziti-edge-tunnel =========================="
@@ -121,7 +138,7 @@ echo "Restoring the .NET project"
 nuget restore .\ZitiDesktopEdge.sln
 
 echo "Building the UI"
-msbuild ZitiDesktopEdge.sln /property:Configuration=Release
+msbuild ZitiDesktopEdge.sln /property:Configuration=Release /p:EnableWin32Crypto=$Win32Crypto
 
 Pop-Location
 
@@ -183,7 +200,7 @@ if($null -eq $env:OPENZITI_P12_PASS_2024) {
 (Get-FileHash "${exeAbsPath}").Hash > "${scriptPath}\Output\Ziti Desktop Edge Client-${version}.exe.sha256"
 
 $outputPath = "${scriptPath}\Output\Ziti Desktop Edge Client-${version}.exe.json"
-& .\Installer\output-build-json.ps1 -version $version -url $url -stream $stream -published_at $published_at -outputPath $outputPath -versionQualifier $versionQualifier
+& .\Installer\output-build-json.ps1 -version:$version -url:$url -stream:$stream -published_at:$published_at -outputPath:$outputPath -versionQualifier:$versionQualifier
 
 echo "REMOVING .back files: ${scriptPath}\*back*"
 Remove-Item "${scriptPath}\*back*" -Recurse -ErrorAction SilentlyContinue

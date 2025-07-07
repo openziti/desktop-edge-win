@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup Condition="'$(EnableWin32Crypto)' == 'true'">
+    <DefineConstants>$(DefineConstants);WIN32CRYPTO</DefineConstants>
+  </PropertyGroup>
+  <Target Name="PrintFeatureXEnabled" BeforeTargets="BeforeBuild" >
+    <Message Importance="High" Text="CONSTANTS DEFINED: $(DefineConstants)" />
+  </Target>
+</Project>
