@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NLog;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -6,6 +7,8 @@ using System.Runtime.InteropServices;
 
 namespace ZitiUpdateService {
     public class MinidumpMonitor {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         [Flags]
         private enum MiniDumpType {
             MiniDumpNormal = 0x00000000,
@@ -44,20 +47,24 @@ namespace ZitiUpdateService {
         public void StartMonitoring() {
             var targetProcess = Process.GetProcessesByName(_processName);
             if (targetProcess.Length == 0) {
-                Console.WriteLine($"Target process '{_processName}' not found.");
+                Logger.Warn($"Target process '{_processName}' not found.");
                 return;
             }
 
             var process = targetProcess[0];
-            process.EnableRaisingEvents = true;
-            process.Exited += (sender, e) => {
-                Console.WriteLine($"Process {_processName} has exited. Capturing minidump...");
+            try {
+                process.EnableRaisingEvents = true;
+                process.Exited += (sender, e) => {
+                    Logger.Warn($"Process {_processName} has exited. Capturing minidump...");
 
-                string dumpPath = Path.Combine(Environment.CurrentDirectory, $"{_processName}.dmp");
-                CaptureMinidump(process, dumpPath);
-            };
+                    string dumpPath = Path.Combine(Environment.CurrentDirectory, $"{_processName}.dmp");
+                    CaptureMinidump(process, dumpPath);
+                };
 
-            Console.WriteLine($"Monitoring process {_processName}...");
+                Logger.Info($"Monitoring process {_processName}...");
+            } catch(Exception e) {
+                Logger.Error($"Unexpected error when trying to watch process: {e.Message}");
+            }
         }
 
         private void CaptureMinidump(Process process, string dumpPath) {

@@ -281,8 +281,8 @@ ziti-edge-tunnel/*.exe
 ziti-edge-tunnel/*.zip
 OPENZITI_P12.b64
 Installer/zet.zip
-release-streams/local/*
-release-streams/local.json
+release-streams/local*/*
+release-streams/local*.json
 release-streams/dev.json
 tosign.exe
 [0-9]*.[0-9]*.[0-9]*.json

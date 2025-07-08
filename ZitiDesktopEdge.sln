@@ -12,6 +12,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Installer\build.ps1 = Installer\build.ps1
 		manual-testing.md = manual-testing.md
 		Installer\output-build-json.ps1 = Installer\output-build-json.ps1
+		publish-release.sh = publish-release.sh
 		README.md = README.md
 		offline-upgrades\README.md = offline-upgrades\README.md
 		Installer\reg.bat = Installer\reg.bat
@@ -50,6 +51,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{
 		.github\workflows\dependabot.yml = .github\workflows\dependabot.yml
 		.github\workflows\installer.build.yml = .github\workflows\installer.build.yml
 		.github\workflows\mattermost-ziti-webhook.yml = .github\workflows\mattermost-ziti-webhook.yml
+		.github\workflows\publish.yml = .github\workflows\publish.yml
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AWSSigner.NET", "AWSSigner.NET\AWSSigner.NET.csproj", "{8E160C43-62B9-4A2A-8E0E-6FCFCFA997FF}"

@@ -1018,6 +1018,17 @@ namespace ZitiUpdateService {
             } else {
                 Logger.Info("ziti-edge-tunnel health check already enabled");
             }
+            Thread monitoringThread = new Thread(() =>
+            {
+                var monitor = new MinidumpMonitor("ziti-edge-tunnel");
+                monitor.StartMonitoring();
+            });
+
+            monitoringThread.IsBackground = true;
+            monitoringThread.Start();
+
+            Console.WriteLine("Monitoring started in a separate thread. Press Enter to exit.");
+            Console.ReadLine();
         }
 
         private void Svc_OnClientConnected(object sender, object e) {

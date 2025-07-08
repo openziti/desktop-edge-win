@@ -81,7 +81,7 @@ base_path="${tmp_dir}/ZitiDesktopEdgeClient-${artifact_version}-win32crypto"
 
 for file in "$base_path"/*; do
   name=$(basename "$file")
-  url="https://netfoundry.jfrog.io/artifactory/$repo/desktop-edge-win/${artifact_version}-win32crypto/$name"
+  url="https://netfoundry.jfrog.io/artifactory/$repo/desktop-edge-win-win32crypto/${artifact_version}/$name"
 
   echo "⬆️  Uploading $name to $url"
   response=$(curl -s -w "%{http_code}" -o /dev/null \
