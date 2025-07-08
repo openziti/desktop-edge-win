@@ -14,15 +14,18 @@ on:
 
 jobs:
   publish-release:
+    runs-on: ubuntu-latest
     env:
       JFROG_ACCESS_TOKEN: ${{ secrets.JFROG_ACCESS_TOKEN }}
-    runs-on: ubuntu-latest
+    permissions:
+        actions: read
+        contents: write
     steps:
       - name: Git Checkout
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: List artifacts
+      - name: Publish Release
         run: ./publish-release.sh ${{ inputs.version }} ${{ inputs.action_id }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
