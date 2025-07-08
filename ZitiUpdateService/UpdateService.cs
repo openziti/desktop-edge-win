@@ -34,14 +34,8 @@ using ZitiDesktopEdge.Utility;
 
 using NLog;
 using Newtonsoft.Json;
-using System.Net;
-using DnsClient;
-using DnsClient.Protocol;
 using ZitiUpdateService.Utils;
 using ZitiUpdateService.Checkers;
-using System.Security.Policy;
-using Newtonsoft.Json.Linq;
-using System.Runtime.Remoting.Messaging;
 
 #if !SKIPUPDATE
 using ZitiUpdateService.Checkers.PeFile;
@@ -1018,6 +1012,18 @@ namespace ZitiUpdateService {
             } else {
                 Logger.Info("ziti-edge-tunnel health check already enabled");
             }
+            /* monitoring thread needs more testing
+            Thread monitoringThread = new Thread(() =>
+            {
+                var monitor = new MinidumpMonitor("ziti-edge-tunnel");
+                monitor.StartMonitoring();
+            });
+
+            monitoringThread.IsBackground = true;
+            monitoringThread.Start();
+
+            Logger.Info("Monitoring started in a separate thread. Press Enter to exit.");
+            */
         }
 
         private void Svc_OnClientConnected(object sender, object e) {

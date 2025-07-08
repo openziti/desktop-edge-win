@@ -30,7 +30,7 @@ $jsonTemplate = @"
   "assets": [
     {
       "name": "Ziti.Desktop.Edge.Client-${version}.exe",
-      "browser_download_url": "${url}/${version}/Ziti.Desktop.Edge.Client-${version}${versionQualifier}.exe"
+      "browser_download_url": "${url}/${version}/Ziti.Desktop.Edge.Client-${version}.exe"
     }
   ]
 }

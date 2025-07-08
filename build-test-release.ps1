@@ -18,11 +18,14 @@ param(
     [bool]$Win32Crypto = $false #used to specify which ziti edge tunnel version to pull, openssl or win32crypto-based
 )
 
-$release_qualifier = "";
-if($Win32Crypto) {
-    $release_qualifier="-win32crypto"
+if ([string]::IsNullOrEmpty($versionQualifier)) {
+    if($Win32Crypto) {
+        $versionQualifier = "-win32crypto"
+    } else {
+        $versionQualifier = ""
+    }
+    echo "Using versionQualifier: $versionQualifier"
 }
-
 
 # Promote function that copies 'beta.json' to 'latest.json' and updates timestamp
 function Promote-Release {
@@ -49,6 +52,7 @@ function Promote-Release {
 
 echo ""
 $scriptDirectory = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
+$localDir = Join-Path $scriptDirectory "release-streams\local${versionQualifier}"
 
 # If promote flag is set, invoke the promotion function
 if ($promote) {
@@ -111,22 +115,24 @@ if(! $jsonOnly) {
     exit $exitCode
   }
   
-  mkdir "$scriptDirectory\release-streams\local\${version}" -ErrorAction Ignore > $null
-  #echo "$scriptDirectory/Installer/Output/Ziti Desktop Edge Client-${version}.exe" "$scriptDirectory\release-streams\local\${version}\Ziti.Desktop.Edge.Client-${version}.exe"
-  Move-Item -Force "$scriptDirectory/Installer/Output/Ziti Desktop Edge Client-${version}.exe" "$scriptDirectory\release-streams\local\${version}\Ziti.Desktop.Edge.Client-${version}.exe"
-  Move-Item -Force "$scriptDirectory/Installer/Output/Ziti Desktop Edge Client-${version}.exe.sha256" "$scriptDirectory\release-streams\local\${version}\Ziti.Desktop.Edge.Client-${version}.exe.sha256"
+  mkdir "${localDir}\${version}" -ErrorAction Ignore > $null
+  Move-Item -Force "$scriptDirectory/Installer/Output/Ziti Desktop Edge Client-${version}.exe" "$localDir\${version}\Ziti.Desktop.Edge.Client-${version}.exe"
+  Move-Item -Force "$scriptDirectory/Installer/Output/Ziti Desktop Edge Client-${version}.exe.sha256" "$localDir\${version}\Ziti.Desktop.Edge.Client-${version}.exe.sha256"
   Write-Host ""
   Write-Host "done."
-  Write-Host "installer exists at $scriptDirectory\release-streams\local\${version}\Ziti.Desktop.Edge.Client-${version}.exe"
+  Write-Host "installer exists at $localDir\${version}\Ziti.Desktop.Edge.Client-${version}.exe"
 }
 
 if($revertGitAfter) {
   git checkout DesktopEdge/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip
 }
 
+$localUrl="http://localhost:8000/release-streams/local${versionQualifier}"
+& .\Installer\output-build-json.ps1 -version:$version -url:$localUrl -stream:$stream -published_at:$published_at -outputPath:"${localDir}\local.json"
+
 Write-Host "Start a python server in this location with:"
 Write-Host "" 
 Write-Host "  python -m http.server 8000"
 Write-Host "" 
-Write-Host "Set the automatic upgrade url to http://localhost:8000/release-streams/local.json"
+Write-Host "Set the automatic upgrade url to http://localhost:8000/release-streams/local${versionQualifier}.json"
 Write-Host "" 

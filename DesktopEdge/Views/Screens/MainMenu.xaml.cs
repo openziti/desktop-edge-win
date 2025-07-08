@@ -234,18 +234,14 @@ namespace ZitiDesktopEdge {
                     logger.Warn(e, "Could not get service version/revision?");
                 }
 
+#if WIN32CRYPTO
+                string crypto = "win32crypto";
+#else
+                string crypto = "openssl";
+#endif
+
                 // Interface Version
-                VersionInfo.Content = $"App: {appVersion} Service: {version}";
-
-
-                string fipsdll = Path.Combine(MainWindow.ExecutionDirectory, "fips.dll");
-                if (File.Exists(fipsdll)) {
-                    FileVersionInfo versionInfo = FileVersionInfo.GetVersionInfo(fipsdll);
-                    FIPSVersion.Content = $"OpenSSL FIPS Module detected: {versionInfo.ProductVersion}";
-                    FIPSPanel.Visibility = Visibility.Visible;
-                } else {
-                    FIPSPanel.Visibility = Visibility.Collapsed;
-                }
+                VersionInfo.Content = $"App: {appVersion} Service: {version} {crypto}";
 
             } else if (menuState == "Advanced") {
                 MenuTitle.Content = "Advanced Settings";
