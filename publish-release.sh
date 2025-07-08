@@ -78,7 +78,6 @@ done
 
 repo="downloads"
 base_path="${tmp_dir}/ZitiDesktopEdgeClient-${artifact_version}-win32crypto"
-JFROG_TOKEN="$(cat /mnt/c/temp/jfrog.token)"
 
 for file in "$base_path"/*; do
   name=$(basename "$file")
@@ -86,7 +85,7 @@ for file in "$base_path"/*; do
 
   echo "⬆️  Uploading $name to $url"
   response=$(curl -s -w "%{http_code}" -o /dev/null \
-    -H "Authorization: Bearer $JFROG_TOKEN" \
+    -H "Authorization: Bearer $JFROG_ACCESS_TOKEN" \
     -T "$file" "$url")
 
   if [[ "$response" == "201" || "$response" == "200" ]]; then
