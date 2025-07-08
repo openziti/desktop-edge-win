@@ -13,9 +13,13 @@ on:
         type: string
 
 jobs:
-  list-artifacts:
+  publish-release:
     runs-on: ubuntu-latest
     steps:
+      - name: Git Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: List artifacts
         run: ./publish-release.sh ${{ inputs.version }} ${{ inputs.action_id }}
         env:
