@@ -34,14 +34,8 @@ using ZitiDesktopEdge.Utility;
 
 using NLog;
 using Newtonsoft.Json;
-using System.Net;
-using DnsClient;
-using DnsClient.Protocol;
 using ZitiUpdateService.Utils;
 using ZitiUpdateService.Checkers;
-using System.Security.Policy;
-using Newtonsoft.Json.Linq;
-using System.Runtime.Remoting.Messaging;
 
 #if !SKIPUPDATE
 using ZitiUpdateService.Checkers.PeFile;
@@ -1027,8 +1021,7 @@ namespace ZitiUpdateService {
             monitoringThread.IsBackground = true;
             monitoringThread.Start();
 
-            Console.WriteLine("Monitoring started in a separate thread. Press Enter to exit.");
-            Console.ReadLine();
+            Logger.Info("Monitoring started in a separate thread. Press Enter to exit.");
         }
 
         private void Svc_OnClientConnected(object sender, object e) {
