@@ -13,10 +13,19 @@ on:
         type: string
 
 jobs:
-  list-artifacts:
+  publish-release:
     runs-on: ubuntu-latest
+    env:
+      JFROG_ACCESS_TOKEN: ${{ secrets.JFROG_ACCESS_TOKEN }}
+    permissions:
+        actions: read
+        contents: write
     steps:
-      - name: List artifacts
+      - name: Git Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Publish Release
         run: ./publish-release.sh ${{ inputs.version }} ${{ inputs.action_id }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

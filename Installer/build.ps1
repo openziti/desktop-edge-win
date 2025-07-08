@@ -213,5 +213,20 @@ if($revertGitAfter) {
   git checkout DesktopEdge/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip
 }
 
+$log = ".\deps-info${versionQualifier}.txt"
+
+"" | Out-File $log
+"Dependencies from ziti-edge-tunnel:" | Out-File $log -Append
+"---------------------------------------------" | Out-File $log -Append
+
+& '.\Installer\build\service\ziti-edge-tunnel.exe' version -v | ForEach-Object {
+    if ($_ -notmatch "StartServiceCtrlDispatcher failed") {
+        "* $_" | Out-File $log -Append
+    }
+}
+
+"" | Out-File $log -Append
+
+Get-Content $log
 
 echo "========================== build.ps1 completed =========================="
