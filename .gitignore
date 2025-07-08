@@ -289,3 +289,4 @@ tosign.exe
 
 .env*.ps1*
 zac
+deps-info*

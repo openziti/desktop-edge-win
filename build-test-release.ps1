@@ -124,17 +124,6 @@ if($revertGitAfter) {
   git checkout DesktopEdge/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip
 }
 
-Write-Host ""
-Write-Host "Dependencies from ziti-edge-tunnel:"
-Write-Host "---------------------------------------------"
-& '.\Installer\build\service\ziti-edge-tunnel.exe' version -v | ForEach-Object {
-    if ($_ -notmatch "StartServiceCtrlDispatcher failed") {
-        "* $_"
-    }
-}
-Write-Host ""
-
-
 Write-Host "Start a python server in this location with:"
 Write-Host "" 
 Write-Host "  python -m http.server 8000"
