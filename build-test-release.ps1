@@ -18,17 +18,21 @@ param(
     [bool]$Win32Crypto = $false #used to specify which ziti edge tunnel version to pull, openssl or win32crypto-based
 )
 
+$release_qualifier = "";
+if($Win32Crypto) {
+    $release_qualifier="-win32crypto"
+}
+
+
 # Promote function that copies 'beta.json' to 'latest.json' and updates timestamp
 function Promote-Release {
-    $betaJsonPath = "$scriptDirectory\release-streams\beta.json"
-    $latestJsonPath = "$scriptDirectory\release-streams\latest.json"
+    $betaJsonPath = "$scriptDirectory\release-streams\beta${versionQualifier}.json"
+    $latestJsonPath = "$scriptDirectory\release-streams\latest${versionQualifier}.json"
     
     if (Test-Path -Path $betaJsonPath) {
-        # Copy the beta.json to latest.json
         Copy-Item -Force $betaJsonPath $latestJsonPath
-        Write-Host "Copied 'beta.json' to 'latest.json'."
+        Write-Host "Copied '$betaJsonPath' to '$latestJsonPath'."
 
-        # Read the content of the latest.json
         $latestJsonContent = Get-Content -Path $latestJsonPath -Raw
 
         # Replace the 'published_at' timestamp with the current time
@@ -37,9 +41,9 @@ function Promote-Release {
 
         # Write the updated content back to the latest.json
         Set-Content -Path $latestJsonPath -Value $latestJsonContent
-        Write-Host "Updated the 'published_at' field in 'latest.json'."
+        Write-Host "Updated the 'published_at' field in '$latestJsonPath'."
     } else {
-        Write-Host "'beta.json' not found. Promotion failed." -ForegroundColor Red
+        Write-Host "'$betaJsonPath' not found. Promotion failed." -ForegroundColor Red
     }
 }
 
