@@ -3,33 +3,86 @@
 ## Prerequisites
 
 1. Visual Studio (currently 2022) / dotnet
-1. Powershell
+1. Developer PowerShell for VS 2022
 1. the latest [Advanced Installer](https://www.advancedinstaller.com/download.html)
-1. [optional for automatic upgrade] two signing certificates:
+1. [optional, necessary to test automatic upgrade] two signing certificates:
     1. the OpenZiti signing cert/key/passphrase
     1. a legitimage 3rd party CA signer
 1. (add any that are missed if there are any)
 
+## General Overview
+
+In July 2025 a GitHub action was created that specifically publishes a release. The action simply runs the
+script located in the root of the checkout named `publish-release.sh` using bash instead of Powershell. The
+script is relatively straightforward. It requires specifying the branch containing the `publish-release.sh`,
+which will likely always be `main`, the action id of the job to publish artifacts from, and the expected
+version to be published. The version input is used to verify the expected action contains the expected artifact
+version as a small check.
+
+The script also expects the first (topmost) release-note entry to be the same version as input and found above
+via the built artifacts. It will extract the changes, use the `gh` CLI, generate a release, and upload artifacts
+to the release. It will also publish the `win32crypto` build to the NetFoundry JFrog repository (as of July 2025).
+
+After creating the release, verify the changelog looks correct in GitHub.
+
+## Publishing a Release
+
+Once satisfied with local testing (see below), to make a new release here are the rough steps to follow:
+
+* make a branch for code changes from main
+* make code changes, including the version file, perform local testing
+* push code changes and merge to main using a pull request. **DO NOT include any updates to the `release-streams` at this time**
+* on merge to main the ["Build Installer"](https://github.com/openziti/desktop-edge-win/actions/workflows/installer.build.yml)
+  action will fire. Find the action, download/test the build artifacts.
+* take note of the action's id when downloading the artifacts. From the action itself it should be shown as the top/last action run.
+  for example: https://github.com/openziti/desktop-edge-win/actions/runs/16150600186, that would have 'id': 16150600186.
+* go to the ["Create Release" action](https://github.com/openziti/desktop-edge-win/actions/workflows/publish.yml)
+* click "Run workflow" and enter inputs
+  * branch: main
+  * expected version to publish: enter expected version (the version needs to match the versions from the action id)
+  * enter GitHub Actions run ID: enter the action id from above
+
+
 ## Making a Release for Local Testing
 
 First, you should probably bump the file that drives the [version](../version). The project does not follow the
-[semver](https://semver.org/) versioning scheme exclusively but it follows it in spirit. Do not use these versions for
+[semver](https://semver.org/) versioning scheme perfectly but it follows it in spirit. Do not use these versions for
 decisions related to the API/domain socket protocols used. Use your best judgement when bumping the version.
 
-Creating a release for local testing is accomplished by running the [`build.ps1`](../Installer/build.ps1) Powershell script.
-It should "just run" assuming you have the prerequisties. You'll need to set the environment variable: `OPENZITI_P12_PASS`
-in order for the process to sign the built executable a second time. Set it using: `$env:OPENZITI_P12_PASS="__passphrase_here__"`
+Creating a release for local testing is probably best accomplished by running the `build-test-release.ps1` script. This
+script will automate much of the tedium associated with locally testing releases and allows for easy overriding of value.
+This script will update the `release-streams/beta*.json` files as well, making it easier to publish a new release. You
+will require the appropriate secrets if you want to locally test the automatic upgrade procedure as the OpenZiti signing
+cert is mandatory to sign the executable for the upgrade process to start. The follow secrets will be necessary:
 
-After the `build.ps1` script finishes, an executable will be produced at `Installer\Output`. You'll see output similar to:
+* $env:AWS_REGION="_region_"
+* $env:AWS_KEY_ID="arn:aws:kms:_region__:_id__:key/_key_id__"
+* $env:AWS_ACCESS_KEY_ID="_access_key_id_"
+* $env:AWS_SECRET_ACCESS_KEY="_aws_secret_key_"
+* $env:OPENZITI_P12_PASS_2024="_password_for_p12_" (and the .p12)
+
+This example builds both the openssl and win32crypto versions:
+
 ```
-Done Adding Additional Store
-Successfully signed: C:\work\git\github\openziti\desktop-edge-win\Installer\Output\Ziti Desktop Edge Client-2.2.1.6.exe
-========================== build.ps1 completed ==========================
-=========== emitting a json file that represents this build ============
-published_at resolved to: 2023-11-21T10:10:41Z
+$ver="2.7.1.5"
+.\build-test-release.ps1 -url https://netfoundry.jfrog.io/artifactory/downloads/desktop-edge-win-win32crypto -version $ver -Win32Crypto:$true
+.\build-test-release.ps1 -url https://github.com/openziti/desktop-edge-win/releases/download -version $ver -Win32Crypto:$false
 ```
 
-This installer can be executed manually/directly to test the installer and to test the deployed components.
+After the installers finish they will output `deps-info.txt` files. This file is useful to fill out the dependencies for
+the README.
+
+Example:
+```
+cat .\deps-info.txt
+
+Dependencies from ziti-edge-tunnel:
+---------------------------------------------
+* ziti-tunneler: v1.7.3
+* ziti-sdk:      1.7.4
+* tlsuv:         v0.36.4[OpenSSL 3.5.0 8 Apr 2025]
+```
+
 
 ## Automatic Installation
 
@@ -71,37 +124,3 @@ Once the build is created, you can change to this project and run a simple serve
     python -m http.server 8000
 
 Then, update your locally running ZDEW and point it to something like: http://localhost:8000/release-streams/dev.json
-
-### Making the Official Release
-
-Once you've tested the build and feel confident it's ready to be released you're ready to make an actual release. To do this, do the following:
-* make a new 'release' on github
-* put up a pull request against the repo and change the associated stream/s: latest, stable, etc.
-* test, this change by using the corresponding `release-next` raw url. For example if you are updating stable, use:
-
-      https://raw.githubusercontent.com/openziti/desktop-edge-win/release-next/release-streams/stable.json
-
-* Once tested, merge the pull request to main. Once merged the release will show in the stream
-
-
-## Checklist
-
-1. Verify the file at the root of the checkout named `version` is updated with the version number that is being released
-1. Verify all pull requests are merged into `main` that should be released
-1. Verify all changes have been accounted for in `release-notes.md` and verify that the file is accurate for the version being released. For example if producing release 10.10.10 the release notes should refer to the changes in 10.10.10. *[This step is often missed]*
-
-## Performing the Release
-
-1. Navigate to [Releases](https://github.com/openziti/desktop-edge-win/releases)
-1. A github action should have already created a draft release with some changes listed within.
-1. Verify these changes are correct.
-1. In another window/tab navigate to [Actions](https://github.com/openziti/desktop-edge-win/actions)
-1. On the left - click "Build Installer" under "Workflows" to filter down to only the Installer CI actions.
-1. Find the installer built from the `main` branch and open it
-1. Locate the execuable installer added to the job and download it. It'll have a name such as: ZitiDesktopEdgeClient-x.y.z and will be a zip file
-1. After downloading the zip file, unzip it somewhere and verify there are two different files: the executable and a hash
-1. Back on the [Releases](https://github.com/openziti/desktop-edge-win/releases) page - click the button to 'edit' the latest release (which should be marked 'Draft')
-1. Veify the Tag Version and Release title match the version specified in the `version` file
-1. Drag the unzipped files (two of them) onto the section of the form labeled: "Attach binaries by dropping them here or selecting them."
-1. Copy the release notes markdown from the release-notes.md into the release.
-1. When ready click "Publish Release"
