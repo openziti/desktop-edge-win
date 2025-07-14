@@ -2079,17 +2079,7 @@ namespace ZitiDesktopEdge {
         /// <param name="sender">The object that was clicked</param>
         /// <param name="e">The click event</param>
         private void BlurbAction(object sender, MouseButtonEventArgs e) {
-            if (_blurbUrl.Length > 0) {
-                // So this simply execute a url but you could do like if (_blurbUrl=="DoSomethingNifty") CallNifyFunction();
-                if (_blurbUrl == this.RECOVER) {
-                    this.ShowMFA(IdentityMenu.Identity, 4);
-                } else {
-                    Process.Start(new ProcessStartInfo(_blurbUrl) { UseShellExecute = true });
-                }
-                HideBlurb();
-            } else {
-                HideBlurb();
-            }
+            HideBlurb();
         }
 
         private void ShowAuthenticate(ZitiIdentity identity) {
