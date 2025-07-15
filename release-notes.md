@@ -1,3 +1,19 @@
+# Release 2.7.1.6
+## What's New
+* Nothing
+
+## Other changes
+* None
+
+## Bugs fixed:
+* [Issue 846](https://github.com/openziti/desktop-edge-win/issues/846) - UI crashes unexpectedly when enrolling a used JWT
+
+## Dependencies
+* ziti-tunneler: v1.7.3
+* ziti-sdk:      1.7.4
+* tlsuv:         v0.36.4[OpenSSL 3.5.0 8 Apr 2025]
+* 
+
 # Release 2.7.1.5
 ## What's New
 * Nothing
