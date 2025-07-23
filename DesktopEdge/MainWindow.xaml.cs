@@ -1778,7 +1778,7 @@ namespace ZitiDesktopEdge {
                 ShowLoad("Adding Identity", "Please wait while the identity is added");
                 string fileContent = File.ReadAllText(jwtDialog.FileName);
                 EnrollIdentifierPayload payload = new EnrollIdentifierPayload();
-                payload.UseKeychain = Properties.Settings.Default.UseKeychain;
+                payload.UseKeychain = false;
                 string jwtFile = Path.GetFileName(jwtDialog.FileName);
                 payload.IdentityFilename = Path.GetFileNameWithoutExtension(jwtFile);
                 payload.JwtContent = fileContent.Trim();
@@ -1831,19 +1831,7 @@ namespace ZitiDesktopEdge {
                                 break;
                         }
                     } catch (ServiceException se) {
-                        if (se.Code == 500) {
-                            if (se?.OriginalResponse?.Error == "ZITI_KEY_GENERATION_FAILED") {
-                                //fallback to no keychain support
-                                if (payload.UseKeychain == true) {
-                                    // try without keychain support...
-                                    logger.Warn("keychain support is enabled but enrolling using keychain failed! attempting to enroll using keychain=false");
-                                    payload.UseKeychain = false;
-                                }
-                                ShowKeychainOverrideDialog(payload, "Key Generation Failed", "Generating a key using the keychain failed. If you continue to have this issue, consider disabling keychain support in Main Menu->Advanced Settings->Tunnel Config\n\nWould you like to try to enroll the identity again but with keychain support disabled?");
-                            }
-                        } else {
-                            ShowError(se.Message, se.AdditionalInfo);
-                        }
+                        ShowError(se.Message, se.AdditionalInfo);
                     } catch (Exception ex) {
                         ShowError("Unexpected Error", "Code 2:" + ex.Message);
                     }
