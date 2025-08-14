@@ -227,8 +227,8 @@ namespace ZitiDesktopEdge {
                     }
                 } else {
                     if (_identity.IsMFANeeded) {
-                        ServiceCount.Content = "MFA";
-                        ServiceCountAreaLabel.Content = "enable";
+                        ServiceCount.Content = _identity.Services.Count.ToString();
+                        ServiceCountAreaLabel.Content = "enable mfa";
                         showBubbles();
                         ServiceCountBorder.Background = MFANeededBrush;
                     } else {

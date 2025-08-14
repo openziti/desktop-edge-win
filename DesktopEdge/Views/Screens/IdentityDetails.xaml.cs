@@ -202,7 +202,7 @@ namespace ZitiDesktopEdge {
             ServiceCount.Visibility = Visibility.Collapsed;
             TOTPPanel.Visibility = Visibility.Collapsed;
             ExternalProviderPanel.Visibility = Visibility.Collapsed;
-            ServicesPanel.Visibility = Visibility.Collapsed;
+            //never hide ServicesPanel.Visibility = Visibility.Collapsed;
 
             //top row detail icons
             ExternalProviderStatusAndDetails.Visibility = Visibility.Collapsed;

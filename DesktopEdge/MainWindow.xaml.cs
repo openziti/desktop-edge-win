@@ -1354,10 +1354,14 @@ namespace ZitiDesktopEdge {
             if (svc == null) {
                 logger.Debug("Service Added: " + zs.Name);
                 found.Services.Add(zs);
+
                 if (zs.HasFailingPostureCheck()) {
                     found.HasServiceFailingPostureCheck = true;
-                    if (zs.PostureChecks.Any(p => !p.IsPassing && p.QueryType == "MFA")) {
-                        found.IsMFANeeded = true;
+
+                    foreach (var service in found.Services) {
+                        if (service != null && service.PostureChecks != null && service.PostureChecks.Any(p => !p.IsPassing && p.QueryType == "MFA")) {
+                            found.IsMFANeeded = true;
+                        }
                     }
                 }
             } else {

@@ -91,9 +91,7 @@ namespace ZitiDesktopEdge.Models {
             set {
                 logger.Info("Identity: {0} posture change. is a posture check failing: {1}", Name, !value);
                 svcFailingPostureCheck = value;
-                if (!value) {
-                    IsMFANeeded = true;
-                }
+                IsMFANeeded = false;
             }
         }
 
@@ -162,7 +160,15 @@ namespace ZitiDesktopEdge.Models {
                         zid.Services.Add(zsvc);
                     }
                 }
-                zid.HasServiceFailingPostureCheck = zid.Services.Any(p => !p.HasFailingPostureCheck());
+
+                foreach (var service in zid.Services) {
+                    if(!zid.HasServiceFailingPostureCheck && service.HasFailingPostureCheck()) {
+                        zid.HasServiceFailingPostureCheck = true;
+                    }
+                    if (service != null && service.PostureChecks != null && service.PostureChecks.Any(p => !p.IsPassing && p.QueryType == "MFA")) {
+                        zid.IsMFANeeded = true;
+                    }
+                }
             }
             zid.ExtAuthProviders?.Sort();
             logger.Info("Identity: {0} updated To {1}", zid.Name, Newtonsoft.Json.JsonConvert.SerializeObject(id));
@@ -296,7 +302,6 @@ namespace ZitiDesktopEdge.Models {
             if (errMsg != null) {
                 throw new Exception(errMsg);
             }
-
         }
     }
 }
