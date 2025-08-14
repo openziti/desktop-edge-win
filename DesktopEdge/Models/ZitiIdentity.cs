@@ -91,7 +91,6 @@ namespace ZitiDesktopEdge.Models {
             set {
                 logger.Info("Identity: {0} posture change. is a posture check failing: {1}", Name, !value);
                 svcFailingPostureCheck = value;
-                IsMFANeeded = false;
             }
         }
 
