@@ -1,3 +1,18 @@
+# Release 2.7.2.0
+## What's New
+* Bugfix
+
+## Other changes
+* None
+
+## Bugs fixed:
+* [Issue 825](https://github.com/openziti/desktop-edge-win/issues/825) - MFA needed via posture check prevents service listing
+
+## Dependencies
+* ziti-tunneler: v1.7.7
+* ziti-sdk:      1.7.11
+* tlsuv:         v0.37.3[OpenSSL 3.5.0 8 Apr 2025]
+
 # Release 2.7.1.8
 ## What's New
 * Nothing
