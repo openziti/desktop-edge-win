@@ -810,7 +810,12 @@ namespace ZitiUpdateService {
                 Logger.Trace("package has already been downloaded to {0}", fileDestination);
             } else {
                 Logger.Info("copying update package begins");
-                check.CopyUpdatePackage(updateFolder, check.FileName);
+                try {
+                    check.CopyUpdatePackage(updateFolder, check.FileName);
+                } catch (Exception e) {
+                    Logger.Error("copying update package failed! {0}", e);
+                    return;
+                }
                 Logger.Info("copying update package complete");
             }
 
