@@ -50,8 +50,17 @@ namespace ZitiUpdateService.Checkers {
             WebClient webClient = new WebClient();
             string dest = Path.Combine(destinationFolder, destinationName);
             Logger.Info("download started for: {0} to {1}", downloadUrl, dest);
-            webClient.DownloadFile(downloadUrl, dest);
-            Logger.Info("download complete to: {0}", dest);
+            try {
+                webClient.DownloadFile(downloadUrl, dest);
+                Logger.Info("download complete to: {0}", dest);
+            } catch (Exception e) {
+                Logger.Info("download FAILED {0}", e.Message);
+                if (File.Exists(dest)) {
+                    Logger.Info("removing failed download at: {0}", dest);
+                    File.Delete(dest);
+                }
+                throw e;
+            }
         }
 
         private int CheckUpdate(Version currentVersion) {
@@ -105,7 +114,17 @@ namespace ZitiUpdateService.Checkers {
             string sha256dest = Path.Combine(destinationFolder, destinationName + ".sha256");
             string downloadUrlsha256 = downloadUrl + ".sha256";
             Logger.Info("download started for: {0} to {1}", downloadUrlsha256, sha256dest);
-            webClient.DownloadFile(downloadUrlsha256, sha256dest);
+
+            try {
+                webClient.DownloadFile(downloadUrlsha256, sha256dest);
+            } catch (Exception e) {
+                Logger.Info("download FAILED {0}", e.Message);
+                if (File.Exists(sha256dest)) {
+                    Logger.Info("removing failed download at: {0}", sha256dest);
+                    File.Delete(sha256dest);
+                }
+                return false;
+            }
             Logger.Info("download complete to: {0}", sha256dest);
 
             string dest = Path.Combine(destinationFolder, destinationName);
