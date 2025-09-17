@@ -276,10 +276,10 @@ namespace ZitiDesktopEdge {
                     if (dnsEnabled) {
                         ConfigDnsEnabled.Visibility = Visibility.Visible;
                     } else {
-                        ConfigDnsEnabled.Visibility = Visibility.Collapsed;
+                        // uncomment when we want to remove ConfigDnsEnabled.Visibility = Visibility.Collapsed;
                     }
                 } else {
-                    ConfigDnsEnabled.Visibility = Visibility.Collapsed;
+                    // uncomment when we want to remove ConfigDnsEnabled.Visibility = Visibility.Collapsed;
                 }
             } else if (menuState == "Identities") {
                 MenuTitle.Content = "Identities";
@@ -555,6 +555,7 @@ namespace ZitiDesktopEdge {
                 ComboBoxItem item = (ComboBoxItem)ConfigMaskNew.SelectedValue;
                 var newMaskVar = Int32.Parse(item.Tag.ToString());
                 var addDnsNewVar = Convert.ToBoolean(AddDnsNew.IsChecked);
+                ConfigDnsEnabled.Value = addDnsNewVar.ToString();
                 CheckRange();
                 int pageSize = Int32.Parse(ConfigePageSizeNew.Text);
                 ConfigPageSize.Value = ConfigePageSizeNew.Text;
@@ -624,10 +625,10 @@ namespace ZitiDesktopEdge {
                 if (true == AddDnsNew.IsChecked) {
                     AddDnsNew.Visibility = Visibility.Visible;
                 } else {
-                    AddDnsNew.Visibility = Visibility.Collapsed;
+                    // uncomment when we want to remove AddDnsNew.Visibility = Visibility.Collapsed;
                 }
             } else {
-                AddDnsNew.Visibility = Visibility.Collapsed;
+                // uncomment when we want to remove AddDnsNew.Visibility = Visibility.Collapsed;
             }
             EditArea.Opacity = 0;
             EditArea.Visibility = Visibility.Visible;
