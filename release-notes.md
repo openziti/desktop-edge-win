@@ -1,3 +1,18 @@
+# Release 2.7.3.0
+## What's New
+* Added "Add DNS" option back for legacy support. [See issue 865](https://github.com/openziti/desktop-edge-win/issues/865)
+
+## Bugs fixed:
+n/a
+
+## Other changes
+n/a
+
+## Dependencies
+* ziti-tunneler: v1.7.11
+* ziti-sdk:      1.8.3
+* tlsuv:         v0.37.4[OpenSSL 3.5.0 8 Apr 2025]
+
 # Release 2.7.2.1
 ## What's New
 * Bugfix
