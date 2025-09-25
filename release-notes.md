@@ -1,3 +1,18 @@
+# Release 2.7.3.1
+## What's New
+* n/a
+
+## Bugs fixed:
+This release updates the CSDK via the ziti-edge-tunnel to attempt to resolve a problem with OIDC-based auth
+
+## Other changes
+n/a
+
+## Dependencies
+* ziti-tunneler: v1.7.13
+* ziti-sdk:      1.9.2
+* tlsuv:         v0.38.1[OpenSSL 3.5.0 8 Apr 2025]
+
 # Release 2.7.3.0
 ## What's New
 * Added "Add DNS" option back for legacy support. [See issue 865](https://github.com/openziti/desktop-edge-win/issues/865)
