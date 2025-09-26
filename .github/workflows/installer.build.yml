@@ -22,7 +22,15 @@ jobs:
   build:
     name: Build the Ziti Desktop Edge for Windows Installer Package
     runs-on: windows-latest
-    if: "!contains(github.event.head_commit.message, 'ci skip') && (contains(github.ref, 'release') || github.ref == 'refs/heads/main')"
+    if: |
+      !contains(github.event.head_commit.message, 'ci skip') &&
+      (
+        github.ref_name == 'main' ||
+        startsWith(github.ref_name, 'release-') ||
+        startsWith(github.ref_name, 'beta-release-') ||
+        startsWith(github.head_ref, 'release-') ||
+        startsWith(github.head_ref, 'beta-release-')
+      )
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWSKMS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWSKMS_SECRET_ACCESS_KEY }}

@@ -15,6 +15,7 @@
 */
 using NLog;
 using System;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -48,14 +49,28 @@ namespace ZitiDesktopEdge {
 
             Mouse.OverrideCursor = Cursors.Wait;
             try {
-                var result = client.GetAsync(ControllerURL.Text).Result;
+                var result = await client.GetAsync(ControllerURL.Text);
                 Mouse.OverrideCursor = null;
                 OnAddIdentity(payload, this);
-            } catch {
+            } catch (Exception ex) {
                 Mouse.OverrideCursor = null;
                 this.OnClose?.Invoke(false, this);
-                await ((MainWindow)Application.Current.MainWindow).ShowBlurbAsync("Timed out accessing URL", "");
-                logger.Warn("could not connect to url");
+                MainWindow mw = ((MainWindow)Application.Current.MainWindow);
+                if (ex.InnerException is System.Net.WebException webEx) {
+                    if (webEx.Status == System.Net.WebExceptionStatus.TrustFailure) {
+                        await mw.ShowBlurbAsync("Untrusted certificate or TLS error", "");
+                        logger.Warn(ex, "TLS trust issue with URL: {0}", ControllerURL.Text);
+                    } else if (webEx.Status == System.Net.WebExceptionStatus.NameResolutionFailure) {
+                        await mw.ShowBlurbAsync("Invalid or unreachable host name", "");
+                        logger.Warn(ex, "Bunk URL or DNS resolution failed: {0}", ControllerURL.Text);
+                    } else {
+                        await mw.ShowBlurbAsync("Unexpected error accessing URL", "");
+                        logger.Warn(ex, "Could not connect to URL, status={0}", webEx.Status);
+                    }
+                } else {
+                    await mw.ShowBlurbAsync("Unexpected error accessing URL", "");
+                    logger.Warn(ex, "Unexpected exception {0}", ex.Message);
+                }
             }
         }
 
