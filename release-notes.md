@@ -4,6 +4,7 @@
 
 ## Bugs fixed:
 This release updates the CSDK via the ziti-edge-tunnel to attempt to resolve a problem with OIDC-based auth
+[issue 871](https://github.com/openziti/desktop-edge-win/issues/871) - Better errors with By URL identity adding
 
 ## Other changes
 n/a
