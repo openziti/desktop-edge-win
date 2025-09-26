@@ -59,10 +59,10 @@ namespace ZitiDesktopEdge {
                 if (ex.InnerException is System.Net.WebException webEx) {
                     if (webEx.Status == System.Net.WebExceptionStatus.TrustFailure) {
                         await mw.ShowBlurbAsync("Untrusted certificate or TLS error", "");
-                        logger.Warn(ex, "TLS trust issue with URL");
+                        logger.Warn(ex, "TLS trust issue with URL: {0}", ControllerURL.Text);
                     } else if (webEx.Status == System.Net.WebExceptionStatus.NameResolutionFailure) {
                         await mw.ShowBlurbAsync("Invalid or unreachable host name", "");
-                        logger.Warn(ex, "Bunk URL or DNS resolution failed");
+                        logger.Warn(ex, "Bunk URL or DNS resolution failed: {0}", ControllerURL.Text);
                     } else {
                         await mw.ShowBlurbAsync("Unexpected error accessing URL", "");
                         logger.Warn(ex, "Could not connect to URL, status={0}", webEx.Status);
