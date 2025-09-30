@@ -367,7 +367,7 @@ namespace ZitiDesktopEdge {
         }
 
         private void OpenDetails(object sender, System.Windows.Input.MouseButtonEventArgs e) {
-            if (e.ChangedButton != System.Windows.Input.MouseButton.Right && Identity.IsEnabled) {
+            if (e.ChangedButton != System.Windows.Input.MouseButton.Right) {
                 IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
                 deets.SelectedIdentity = this;
                 deets.Identity = this.Identity;
