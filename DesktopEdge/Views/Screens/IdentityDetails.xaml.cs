@@ -242,14 +242,7 @@ namespace ZitiDesktopEdge {
                 ExternalProviderPanel.Visibility = Visibility.Visible;
                 ExternalProviderLabel.Visibility = Visibility.Visible;
             } else if (Identity.IsMFANeeded) {
-                if(Identity.IsMFAEnabled) {
-                    Logger.Info("xxx is enabled, is needed, but not mfa enabled");
-                }
-                if (Identity.IsEnabled) {
-                    TOTPPanel.Visibility = Visibility.Visible;
-                } else {
-                    Logger.Info("is enabled, is needed, but not mfa enabled");
-                }
+                TOTPPanel.Visibility = Visibility.Visible;
             } else {
                 if (Identity.IsEnabled) {
                     ServicesPanel.Visibility = Visibility.Visible;
