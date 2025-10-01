@@ -159,20 +159,24 @@ namespace ZitiDesktopEdge {
         }
 
         public void ShowMFA(ZitiIdentity identity, int type) {
-            this.Type = type;
-            AuthCode.Text = "";
-            AuthBrush.Visibility = Visibility.Visible;
-            MainBrush.Visibility = Visibility.Collapsed;
-            CloseBlack.Visibility = Visibility.Collapsed;
-            CloseWhite.Visibility = Visibility.Visible;
-            this.zid = identity;
-            MFASetupArea.Visibility = Visibility.Collapsed;
-            MFARecoveryArea.Visibility = Visibility.Collapsed;
-            SeperationColor.Visibility = Visibility.Collapsed;
-            MFAAuthArea.Visibility = Visibility.Visible;
-            MFAArea.Height = 220;
-            AuthCode.Focusable = true;
-            AuthCode.Focus();
+            if (identity.IsEnabled) {
+                this.Type = type;
+                AuthCode.Text = "";
+                AuthBrush.Visibility = Visibility.Visible;
+                MainBrush.Visibility = Visibility.Collapsed;
+                CloseBlack.Visibility = Visibility.Collapsed;
+                CloseWhite.Visibility = Visibility.Visible;
+                this.zid = identity;
+                MFASetupArea.Visibility = Visibility.Collapsed;
+                MFARecoveryArea.Visibility = Visibility.Collapsed;
+                SeperationColor.Visibility = Visibility.Collapsed;
+                MFAAuthArea.Visibility = Visibility.Visible;
+                MFAArea.Height = 220;
+                AuthCode.Focusable = true;
+                AuthCode.Focus();
+            } else {
+                ShowError("Identity disabled, MFA cannot continue.");
+            }
         }
 
         private BitmapImage LoadImage(string url) {

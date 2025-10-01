@@ -144,11 +144,13 @@ namespace ZitiDesktopEdge {
             if (_identity.Services.Count > 0) {
                 MainDetailScroll.Visibility = Visibility.Visible;
             } else {
-                IdentityMFA.AuthOff.Visibility = Visibility.Visible;
-                AuthMessageBg.Visibility = Visibility.Visible;
-                AuthMessageLabel.Visibility = Visibility.Visible;
-                NoAuthServices.Visibility = Visibility.Visible;
-                NoAuthServices.Text = "You must authenticate to access services";
+                if (Identity.IsEnabled) {
+                    IdentityMFA.AuthOff.Visibility = Visibility.Visible;
+                    AuthMessageBg.Visibility = Visibility.Visible;
+                    AuthMessageLabel.Visibility = Visibility.Visible;
+                    NoAuthServices.Visibility = Visibility.Visible;
+                    NoAuthServices.Text = "You must authenticate to access services";
+                }
             }
         }
 
@@ -242,9 +244,13 @@ namespace ZitiDesktopEdge {
             } else if (Identity.IsMFANeeded) {
                 TOTPPanel.Visibility = Visibility.Visible;
             } else {
-                ServicesPanel.Visibility = Visibility.Visible;
-                if (Identity.ExtAuthProviders?.Count > 0) {
-                    ExternalProviderStatusAndDetails.Visibility = Visibility.Visible;
+                if (Identity.IsEnabled) {
+                    ServicesPanel.Visibility = Visibility.Visible;
+                    if (Identity.ExtAuthProviders?.Count > 0) {
+                        ExternalProviderStatusAndDetails.Visibility = Visibility.Visible;
+                    }
+                } else {
+                    ServicesPanel.Visibility = Visibility.Collapsed;
                 }
             }
 
@@ -396,10 +402,6 @@ namespace ZitiDesktopEdge {
         }
 
         private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
-            if(_identity.IsMFAEnabled) {
-                ShowBlurb?.Invoke(new Blurb { Message = "Disable MFA before forgetting identity" });
-                return;
-            }
             if (this.Visibility == Visibility.Visible && ForgetIdentityConfirmView.Visibility == Visibility.Collapsed) {
                 ForgetIdentityConfirmView.Visibility = Visibility.Visible;
             }
@@ -439,7 +441,11 @@ namespace ZitiDesktopEdge {
             if (_identity.IsConnected && _identity.NeedsExtAuth) {
                 return;
             }
-            this.OnMFAToggled?.Invoke(_identity, isOn);
+            if (_identity.IsEnabled) {
+                this.OnMFAToggled?.Invoke(_identity, isOn);
+            } else {
+                Info_OnMessage("Identity is disabled. MFA cannot continue.");
+            }
         }
 
         /* Modal UI Background visibility */

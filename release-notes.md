@@ -1,3 +1,18 @@
+# Release 2.7.4.0
+## What's New
+* [issue 875](https://github.com/openziti/desktop-edge-win/issues/875) - Allow removing identities whether disabled or MFA-enabled
+
+## Bugs fixed:
+* [issue 877](https://github.com/openziti/desktop-edge-win/issues/875) - New Identity with TOTP required cannot enable MFA
+
+## Other changes
+n/a
+
+## Dependencies
+* ziti-tunneler: v1.7.13
+* ziti-sdk:      1.9.2
+* tlsuv:         v0.38.1[OpenSSL 3.5.0 8 Apr 2025]
+
 # Release 2.7.3.1
 ## What's New
 * n/a
