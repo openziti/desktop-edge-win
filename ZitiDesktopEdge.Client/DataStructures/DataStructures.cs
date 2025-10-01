@@ -278,6 +278,8 @@ namespace ZitiDesktopEdge.DataStructures {
         public List<Service> Services { get; set; }
         public Metrics Metrics { get; set; }
         public string ControllerVersion { get; set; }
+
+        private bool _mfaEnabled;
         public bool MfaEnabled { get; set; }
         public bool MfaNeeded { get; set; }
         public int MfaMinTimeout { get; set; }
@@ -473,6 +475,10 @@ namespace ZitiDesktopEdge.DataStructures {
 
     public class IdentityEvent : ActionEvent {
         public Identity Id { get; set; }
+
+        public bool IsAdded() {
+            return this.Action == "added";
+        }
     }
 
     public class LogLevelEvent : ActionEvent {

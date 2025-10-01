@@ -175,7 +175,7 @@ namespace ZitiDesktopEdge {
                 AuthCode.Focusable = true;
                 AuthCode.Focus();
             } else {
-                ShowError("MFA cannot be changed");
+                ShowError("Identity disabled, MFA cannot continue.");
             }
         }
 

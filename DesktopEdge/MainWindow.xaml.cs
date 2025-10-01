@@ -261,18 +261,22 @@ namespace ZitiDesktopEdge {
         /// <param name="identity">The Identity that is currently active</param>
         /// <param name="type">The type of screen to show - 1 Setup, 2 Authenticate, 3 Remove MFA, 4 Regenerate Codes</param>
         private void ShowMFA(ZitiIdentity identity, int type) {
-            MFASetup.Opacity = 0;
-            MFASetup.Visibility = Visibility.Visible;
-            MFASetup.Margin = new Thickness(0, 0, 0, 0);
+            if (identity.IsEnabled) {
+                MFASetup.Opacity = 0;
+                MFASetup.Visibility = Visibility.Visible;
+                MFASetup.Margin = new Thickness(0, 0, 0, 0);
 
-            DoubleAnimation animatin = new DoubleAnimation(1, TimeSpan.FromSeconds(.3));
-            animatin.Completed += Animatin_Completed;
-            MFASetup.BeginAnimation(Grid.OpacityProperty, animatin);
-            MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
+                DoubleAnimation animatin = new DoubleAnimation(1, TimeSpan.FromSeconds(.3));
+                animatin.Completed += Animatin_Completed;
+                MFASetup.BeginAnimation(Grid.OpacityProperty, animatin);
+                MFASetup.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
 
-            MFASetup.ShowMFA(identity, type);
+                MFASetup.ShowMFA(identity, type);
 
-            ShowModal();
+                ShowModal();
+            } else {
+                MainMenu_OnShowBlurb("Identity disabled, MFA cannot continue.");
+            }
         }
 
         private void ShowJoinByUrl() {
@@ -1210,6 +1214,7 @@ namespace ZitiDesktopEdge {
                 if (e.Action == "added" || e.Action == "needs_ext_login") {
                     var found = identities.Find(i => i.Identifier == e.Id.Identifier);
                     if (found == null) {
+                        zid.IsMFAEnabled = false; // this is an added identity, it cannot have mfa enabled yet
                         AddIdentity(zid);
                         LoadIdentities(true);
                     } else {
@@ -1253,7 +1258,9 @@ namespace ZitiDesktopEdge {
                         }
                         LoadIdentities(true);
                     }
-                } else if (e.Action == "needs_ext_loginsadsadfsadsadfsadf") {
+                } else if (e.Action == "needs_ext_login_do_not_match") {
+                    //this was here previously but was chnaged in https://github.com/openziti/desktop-edge-win/commit/4ce8d2c6
+                    //leaving here for history's sake at this point
                     var found = identities.Find(i => i.Identifier == e.Id.Identifier);
                     if (found != null) {
                         if (found.AuthInProgress) {
@@ -1435,9 +1442,6 @@ namespace ZitiDesktopEdge {
         }
 
         private void LoadStatusFromService(TunnelStatus status) {
-            //clear any identities
-            this.identities.Clear();
-
             if (status != null) {
                 _isServiceInError = false;
                 UpdateServiceView();
@@ -1481,7 +1485,6 @@ namespace ZitiDesktopEdge {
                 foreach (var id in status.Identities) {
                     updateViewWithIdentity(id);
                 }
-                //LoadIdentities(true);
             } else {
                 ShowServiceNotStarted();
             }
@@ -1489,11 +1492,10 @@ namespace ZitiDesktopEdge {
 
         private void updateViewWithIdentity(Identity id) {
             var zid = ZitiIdentity.FromClient(id);
-            foreach (var i in identities) {
-                if (i.Identifier == zid.Identifier) {
-                    identities.Remove(i);
-                    break;
-                }
+            var found = identities.Find(fid => fid.Identifier == id.Identifier);
+            if(found != null) {
+                identities.Remove(found);
+                zid.IsMFAEnabled = found.IsMFAEnabled;
             }
             identities.Add(zid);
         }

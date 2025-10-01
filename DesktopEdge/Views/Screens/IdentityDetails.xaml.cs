@@ -242,10 +242,13 @@ namespace ZitiDesktopEdge {
                 ExternalProviderPanel.Visibility = Visibility.Visible;
                 ExternalProviderLabel.Visibility = Visibility.Visible;
             } else if (Identity.IsMFANeeded) {
+                if(Identity.IsMFAEnabled) {
+                    Logger.Info("xxx is enabled, is needed, but not mfa enabled");
+                }
                 if (Identity.IsEnabled) {
                     TOTPPanel.Visibility = Visibility.Visible;
                 } else {
-
+                    Logger.Info("is enabled, is needed, but not mfa enabled");
                 }
             } else {
                 if (Identity.IsEnabled) {
@@ -445,7 +448,11 @@ namespace ZitiDesktopEdge {
             if (_identity.IsConnected && _identity.NeedsExtAuth) {
                 return;
             }
-            this.OnMFAToggled?.Invoke(_identity, isOn);
+            if (_identity.IsEnabled) {
+                this.OnMFAToggled?.Invoke(_identity, isOn);
+            } else {
+                Info_OnMessage("Identity is disabled. MFA cannot continue.");
+            }
         }
 
         /* Modal UI Background visibility */
