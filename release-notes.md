@@ -1,9 +1,9 @@
 # Release 2.7.4.0
 ## What's New
-[resolves issue 875](https://github.com/openziti/desktop-edge-win/issues/875) - Allow removing identities whether disabled or MFA-enabled
+* [issue 875](https://github.com/openziti/desktop-edge-win/issues/875) - Allow removing identities whether disabled or MFA-enabled
 
 ## Bugs fixed:
-n/a
+* [issue 877](https://github.com/openziti/desktop-edge-win/issues/875) - New Identity with TOTP required cannot enable MFA
 
 ## Other changes
 n/a
