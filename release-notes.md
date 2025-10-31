@@ -1,3 +1,18 @@
+# Release 2.7.5.0
+## What's New
+* updated dependencies
+
+## Bugs fixed:
+* n/a
+
+## Other changes
+n/a
+
+## Dependencies
+* ziti-tunneler: v1.9.0
+* ziti-sdk:      1.9.12
+* tlsuv:         v0.39.6[OpenSSL 3.6.0 1 Oct 2025]
+
 # Release 2.7.4.0
 ## What's New
 * [issue 875](https://github.com/openziti/desktop-edge-win/issues/875) - Allow removing identities whether disabled or MFA-enabled
