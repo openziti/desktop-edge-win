@@ -9,8 +9,8 @@
 n/a
 
 ## Dependencies
-* ziti-tunneler: v1.9.1
-* ziti-sdk:      1.9.13
+* ziti-tunneler: v1.9.2
+* ziti-sdk:      1.9.14
 * tlsuv:         v0.39.6[OpenSSL 3.6.0 1 Oct 2025]
 
 # Release 2.7.5.0
