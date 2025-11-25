@@ -12,6 +12,7 @@ n/a
 * ziti-tunneler: v1.9.6
 * ziti-sdk:      1.9.17
 * tlsuv:         v0.39.7[OpenSSL 3.6.0 1 Oct 2025]
+* tlsuv:         v0.39.7[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.8.0.0
 ## What's New
