@@ -1,3 +1,19 @@
+# Release 2.8.3.0
+## What's New
+* Remove stats from main screen
+
+## Bugs fixed:
+n/a
+
+## Other changes
+n/a
+
+## Dependencies
+* ziti-tunneler: v1.9.8
+* ziti-sdk:      1.9.20
+* tlsuv:         v0.40.1[OpenSSL 3.6.0 1 Oct 2025]
+* tlsuv:         v0.40.1[win32crypto(CNG): ncrypt[1.0] ]
+
 # Release 2.8.2.0
 ## What's New
 * updated dependencies
