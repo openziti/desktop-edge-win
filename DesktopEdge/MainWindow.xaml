@@ -254,7 +254,7 @@
                     <Label HorizontalAlignment="Center"  Content="STOP" Foreground="White" Padding="0,105,0,0"/>
                 </Grid>
             </Canvas>
-            <Grid x:Name="StatArea" HorizontalAlignment="Stretch" Width="Auto" Margin="0,30,0,0">
+            <Grid x:Name="StatArea" HorizontalAlignment="Stretch" Width="Auto" Margin="0,30,0,0" Visibility="Collapsed">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
