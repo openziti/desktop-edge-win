@@ -1,3 +1,21 @@
+# Release 2.8.4.0
+## What's New
+* Remove stats from main screen
+
+## Bugs fixed:
+n/a
+
+## Other changes
+* fixed an issue that caused service terminators to accumulate when hosted service configurations changed
+* fixed a potential when hosted services become unavailable
+* fixes API session refresh failure when connected with edge router versions 1.6-1.8
+
+## Dependencies
+* ziti-tunneler: v1.9.9
+* ziti-sdk:      1.9.21
+* tlsuv:         v0.40.1[OpenSSL 3.6.0 1 Oct 2025]
+* tlsuv:         v0.40.1[win32crypto(CNG): ncrypt[1.0] ]
+
 # Release 2.8.3.0
 ## What's New
 * Remove stats from main screen
