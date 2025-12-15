@@ -1,6 +1,6 @@
 # Release 2.8.4.0
 ## What's New
-* Remove stats from main screen
+* updated dependencies
 
 ## Bugs fixed:
 n/a
