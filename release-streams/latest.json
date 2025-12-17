@@ -5,7 +5,7 @@
   "installation_critical": false,
   "assets": [
     {
-      "name": "Ziti.Desktop.Edge.Client-2.8.3.0.exe",
+      "name": "Ziti.Desktop.Edge.Client-2.8.4.0.exe",
       "browser_download_url": "https://github.com/openziti/desktop-edge-win/releases/download/2.8.4.0/Ziti.Desktop.Edge.Client-2.8.4.0.exe"
     }
   ]
