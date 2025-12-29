@@ -6,13 +6,13 @@
 n/a
 
 ## Other changes
-* The ziti-sdk/tlsuv update fixes an issue that could cause OIDC authentication to fail indefinitely after i/o errors.
+n/a
 
 ## Dependencies
-* ziti-tunneler: v1.10.2
-* ziti-sdk:      1.10.2
-* tlsuv:         v0.40.2[OpenSSL 3.6.0 1 Oct 2025]
-* tlsuv:         v0.40.2[win32crypto(CNG): ncrypt[1.0] ]
+* ziti-tunneler: v1.10.3
+* ziti-sdk:      1.10.4
+* tlsuv:         v0.40.3[OpenSSL 3.6.0 1 Oct 2025]
+* tlsuv:         v0.40.3[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.8.6.0
 ## What's New
