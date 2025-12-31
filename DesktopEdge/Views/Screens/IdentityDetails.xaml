@@ -206,6 +206,7 @@
                                             />
                                             <TextBlock Name="MainEdit" Style="{StaticResource RowTextBlock}"
                                                        Text="{Binding AddressString}"
+                                                       Visibility="{Binding DialString, Converter={StaticResource NullToCollapsed}}"
                                             />
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Grid.Row="1" VerticalAlignment="Center">
