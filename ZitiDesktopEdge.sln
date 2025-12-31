@@ -14,7 +14,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Installer\output-build-json.ps1 = Installer\output-build-json.ps1
 		publish-release.sh = publish-release.sh
 		README.md = README.md
-		offline-upgrades\README.md = offline-upgrades\README.md
 		Installer\reg.bat = Installer\reg.bat
 		release-notes.md = release-notes.md
 		releasing.md = releasing.md
