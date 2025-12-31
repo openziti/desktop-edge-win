@@ -45,6 +45,7 @@ namespace ZitiDesktopEdge {
     /// </summary>
     public partial class IdentityDetails : UserControl {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private TimeSpan _animationTime = TimeSpan.FromMilliseconds(100);
 
         private bool _isAttached = true;
         public delegate void Forgot(ZitiIdentity forgotten);
@@ -310,6 +311,18 @@ namespace ZitiDesktopEdge {
             DetailAddress.Text = info.AddressString;
             DetailPorts.Text = info.PortString;
             DetailUrl.Text = info.ToString();
+            string permissions = "";
+            if (info.HasBind) {
+                permissions += "Bind";
+                if (info.HasDial) {
+                    permissions += ", Dial";
+                }
+            } else {
+                if (info.HasDial) {
+                    permissions += "Dial";
+                }
+            }
+            DetailsPermissions.Text = permissions;
 
             UpdateClock(info);
             if (_identity.IsMFAEnabled) {
@@ -323,10 +336,10 @@ namespace ZitiDesktopEdge {
             DetailsArea.Visibility = Visibility.Visible;
             DetailsArea.Opacity = 0;
             DetailsArea.Margin = new Thickness(0, 0, 0, 0);
-            DoubleAnimation animation = new DoubleAnimation(1, TimeSpan.FromSeconds(.3));
+            DoubleAnimation animation = new DoubleAnimation(1, _animationTime);
             animation.Completed += ShowCompleted;
             DetailsArea.BeginAnimation(Grid.OpacityProperty, animation);
-            DetailsArea.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
+            DetailsArea.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), _animationTime));
 
             ShowModal();
         }
@@ -363,14 +376,14 @@ namespace ZitiDesktopEdge {
         }
 
         private void ShowCompleted(object sender, EventArgs e) {
-            DoubleAnimation animation = new DoubleAnimation(DetailPanel.ActualHeight + 60, TimeSpan.FromSeconds(.3));
+            DoubleAnimation animation = new DoubleAnimation(DetailPanel.ActualHeight + 60, _animationTime);
             DetailsArea.BeginAnimation(Grid.HeightProperty, animation);
         }
 
         private void CloseDetails(object sender, MouseButtonEventArgs e) {
-            DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
-            ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
-            DoubleAnimation animation2 = new DoubleAnimation(DetailPanel.ActualHeight + 100, TimeSpan.FromSeconds(.3));
+            DoubleAnimation animation = new DoubleAnimation(0, _animationTime);
+            ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), _animationTime);
+            DoubleAnimation animation2 = new DoubleAnimation(DetailPanel.ActualHeight + 100, _animationTime);
             animation.Completed += HideComplete;
             DetailsArea.BeginAnimation(Grid.HeightProperty, animation2);
             DetailsArea.BeginAnimation(Grid.OpacityProperty, animation);
@@ -456,14 +469,14 @@ namespace ZitiDesktopEdge {
         private void ShowModal() {
             ModalBg.Visibility = Visibility.Visible;
             ModalBg.Opacity = 0;
-            ModalBg.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(.8, TimeSpan.FromSeconds(.3)));
+            ModalBg.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(.8, _animationTime));
         }
 
         /// <summary>
         /// Hide the modal animating the opacity
         /// </summary>
         private void HideModal() {
-            DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
+            DoubleAnimation animation = new DoubleAnimation(0, _animationTime);
             animation.Completed += ModalHideComplete;
             ModalBg.BeginAnimation(Grid.OpacityProperty, animation);
         }

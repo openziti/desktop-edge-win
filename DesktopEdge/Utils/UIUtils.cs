@@ -14,18 +14,18 @@
 	limitations under the License.
 */
 
+using NLog;
 using System;
-using System.Threading.Tasks;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Input;
-using NLog;
-using Windows.Media.Streaming.Adaptive;
+using System.Windows.Data;
 
 namespace Ziti.Desktop.Edge.Utils {
     public class UIUtils {
 
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-        
+
         public static UIElement ClickedControl;
 
 
@@ -60,6 +60,16 @@ namespace Ziti.Desktop.Edge.Utils {
         public static bool IsLeftClick(RoutedEventArgs e) {
             MouseButtonEventArgs mea = e as MouseButtonEventArgs;
             return mea?.ChangedButton == MouseButton.Left;
+        }
+    }
+
+    public class NullOrEmptyToCollapsedConverter : IValueConverter {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
+            return string.IsNullOrEmpty(value as string) ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
+            throw new NotImplementedException();
         }
     }
 }

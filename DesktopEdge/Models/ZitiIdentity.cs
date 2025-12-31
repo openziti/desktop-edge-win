@@ -18,10 +18,7 @@ using NLog;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ZitiDesktopEdge.DataStructures;
@@ -154,9 +151,13 @@ namespace ZitiDesktopEdge.Models {
             if (id.Active && id?.Services?.Count > 0) {
                 foreach (var svc in id.Services) {
                     if (svc != null) {
-                        var zsvc = new ZitiService(svc);
-                        zsvc.TimeUpdated = zid.LastUpdatedTime;
-                        zid.Services.Add(zsvc);
+                        if (svc.Permissions != null && (svc.Permissions.Bind || svc.Permissions.Dial)) {
+                            var zsvc = new ZitiService(svc);
+                            zsvc.TimeUpdated = zid.LastUpdatedTime;
+                            zid.Services.Add(zsvc);
+                        } else {
+                            logger.Warn("Service {0} was received but no permissions are available. Skipping.", svc.Name);
+                        }
                     }
                 }
 

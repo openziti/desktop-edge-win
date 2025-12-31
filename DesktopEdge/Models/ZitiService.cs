@@ -56,6 +56,8 @@ namespace ZitiDesktopEdge.Models {
                 }
             }
         }
+        public bool HasBind { get; set; }
+        public bool HasDial { get; set; }
 
         public ZitiService() {
         }
@@ -76,6 +78,15 @@ namespace ZitiDesktopEdge.Models {
                 this.failingPostureCheck = this.PostureChecks.Any(p => !p.IsPassing);
             }
             this.IsAccessible = svc.IsAccessible;
+            if (svc.Permissions != null) {
+                this.HasBind = svc.Permissions.Bind;
+                this.HasDial = svc.Permissions.Dial;
+                if (!svc.Permissions.Dial && !svc.Permissions.Bind) {
+                    Console.WriteLine("permissions is empty???");
+                }
+            } else {
+                Console.WriteLine("permissions is empty???");
+            }
             //commented out for now logger.Warn("SERVICE: " + this.Name + " HAS FAILING POSTURE CHECK: " + failingPostureCheck);
         }
 
@@ -204,6 +215,18 @@ namespace ZitiDesktopEdge.Models {
                 return toReturn;
             }
             set { }
+        }
+
+        public string BindString {
+            get {
+                return this.HasBind? "Bind" : null;
+            }
+        }
+
+        public string DialString {
+            get {
+                return this.HasDial ? "Dial" : null;
+            }
         }
 
         public string PortString {
