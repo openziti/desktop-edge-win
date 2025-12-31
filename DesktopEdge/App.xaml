@@ -25,7 +25,7 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="./ScrollBarStyles.xaml"/>
+                <ResourceDictionary Source="./Styles/ScrollBarStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
             <Color x:Key="ContextMenuTextNormal">#C0C0C0</Color>
             <Color x:Key="ContextMenuTextHover">#ffffff</Color>
@@ -537,7 +537,7 @@
             <uiutils:NullOrEmptyToCollapsedConverter x:Key="NullToCollapsed"/>
 
             <!-- set the default scrollbar styling -->
-            <Style TargetType="{x:Type ScrollBar}" BasedOn="{StaticResource DefaultScrollBar}"/>
+            <Style TargetType="{x:Type ScrollBar}" BasedOn="{StaticResource ScrollBar2026}"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -25,7 +25,8 @@
         ShowInTaskbar="False"
         x:Name="MainUI"
         Title="Ziti Desktop Edge" 
-        MaxWidth="430"
+        Width="{StaticResource MaxWindowWidth}"
+        MaxWidth="{StaticResource MaxWindowWidth}"
         ResizeMode="NoResize" 
         ClipToBounds="False"
         Icon="Assets/Images/icon.png" AllowsTransparency="True" 
@@ -285,7 +286,8 @@
                 </StackPanel>
             </Grid>
 
-            <ScrollViewer Name="IdListScroller" MinHeight="60" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" FocusVisualStyle="{x:Null}" CanContentScroll="True" ClipToBounds="True" PanningMode="VerticalOnly" PanningRatio=".1">
+            <ScrollViewer Name="IdListScroller" MinHeight="60" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto"
+                          FocusVisualStyle="{x:Null}" CanContentScroll="True" ClipToBounds="True" PanningMode="VerticalOnly" PanningRatio=".1">
                 <StackPanel Name="IdList" Orientation="Vertical" IsItemsHost="False" LayoutUpdated="IdList_LayoutUpdated" FocusVisualStyle="{x:Null}"></StackPanel>
             </ScrollViewer>
             <Grid HorizontalAlignment="Stretch" Margin="0,20,0,10" Width="Auto">
