@@ -22,7 +22,7 @@
     </Style>
 
     <!--Yellow ScrollBar Style-->
-    <Style x:Key="YellowScrollBar" TargetType="{x:Type ScrollBar}">
+    <Style x:Key="ScrollBar2026" TargetType="{x:Type ScrollBar}">
         <Setter Property="Stylus.IsFlicksEnabled" Value="true" />
         <Setter Property="Foreground" Value="#878b98" />
         <Setter Property="Background" Value="#878b98" />
@@ -106,7 +106,7 @@
 
                         <ScrollBar x:Name="PART_VerticalScrollBar"
                                    Grid.Column="1" Grid.Row="0"
-                                   Style="{StaticResource YellowScrollBar}"
+                                   Style="{StaticResource ScrollBar2026}"
                                    Orientation="Vertical"
                                    Maximum="{TemplateBinding ScrollableHeight}"
                                    ViewportSize="{TemplateBinding ViewportHeight}"
@@ -115,7 +115,7 @@
 
                         <ScrollBar x:Name="PART_HorizontalScrollBar"
                                    Grid.Column="0" Grid.Row="1"
-                                   Style="{StaticResource YellowScrollBar}"
+                                   Style="{StaticResource ScrollBar2026}"
                                    Orientation="Horizontal"
                                    Maximum="{TemplateBinding ScrollableWidth}"
                                    ViewportSize="{TemplateBinding ViewportWidth}"
@@ -128,7 +128,7 @@
         </Setter>
     </Style>
 
-    <Style x:Key="DefaultScrollBar" TargetType="{x:Type ScrollBar}">
+    <Style x:Key="OriginalScrollBar" TargetType="{x:Type ScrollBar}">
         <Setter Property="Stylus.IsFlicksEnabled" Value="true" />
         <Setter Property="Foreground" Value="Green" />
         <Setter Property="Background" Value="Transparent" />
