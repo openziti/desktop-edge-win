@@ -308,9 +308,14 @@ namespace ZitiDesktopEdge {
             _info = info;
             DetailName.Text = info.Name;
             DetailProtocols.Text = info.ProtocolString;
-            DetailAddress.Text = info.AddressString;
+            if (info.HasDial) {
+                DetailAddress.Text = info.AddressString;
+                DetailUrl.Text = info.ToString();
+            } else {
+                DetailAddress.Text = "";
+                DetailUrl.Text = "";
+            }
             DetailPorts.Text = info.PortString;
-            DetailUrl.Text = info.ToString();
             string permissions = "";
             if (info.HasBind) {
                 permissions += "Bind";
