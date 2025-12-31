@@ -302,6 +302,12 @@ namespace ZitiDesktopEdge.DataStructures {
         public bool IsAccessible { get; set; }
         public int Timeout { get; set; }
         public int TimeoutRemaining { get; set; }
+        public Permissions Permissions { get; set; }
+    }
+
+    public class Permissions {
+        public bool Bind { get; set; }
+        public bool Dial { get; set; }
     }
 
     public class Address {

@@ -17,14 +17,53 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
              xmlns:local="clr-namespace:ZitiDesktopEdge"
-             mc:Ignorable="d" 
+             mc:Ignorable="d"
+             MaxWidth="{StaticResource MaxWindowWidth}"
              x:Name="IdentityArea"
-             d:DesignHeight="500" d:DesignWidth="400" IsVisibleChanged="VisibilityChanged">
+             d:DesignHeight="500" d:DesignWidth="450" IsVisibleChanged="VisibilityChanged">
     <UserControl.Resources>
         <Thickness x:Key="LeftMargin" Left="30" Top="0" Right="0" Bottom="0"/>
         <Thickness x:Key="RightMargin" Left="0" Top="0" Right="30" Bottom="0"/>
+        <Style x:Key="HeaderTextBlock" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontFamily" Value="pack://application:,,,/Assets/Fonts/#Open Sans"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style x:Key="RowTextBlock" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontFamily" Value="pack://application:,,,/Assets/Fonts/#Open Sans"/>
+            <Setter Property="Foreground" Value="LightGray"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <FontFamily x:Key="DetailFont">pack://application:,,,/Assets/Fonts/#Open Sans</FontFamily>
+        <sys:Double x:Key="DetailFontSize">12</sys:Double>
+        
+        <SolidColorBrush x:Key="DetailForeground" Color="Black"/>
+
+        <!-- Label style -->
+        <Style x:Key="DetailRowLabel" TargetType="Label">
+            <Setter Property="Padding" Value="5,0,0,0"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="{StaticResource DetailFontSize}"/>
+            <Setter Property="FontFamily" Value="{StaticResource DetailFont}"/>
+            <Setter Property="Foreground" Value="{StaticResource DetailForeground}"/>
+        </Style>
+
+        <!-- TextBox style -->
+        <Style x:Key="DetailRowTextBox" TargetType="TextBox">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="Padding" Value="15,0,0,5"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="TextAlignment" Value="Left"/>
+            <Setter Property="FontSize" Value="{StaticResource DetailFontSize}"/>
+            <Setter Property="FontFamily" Value="{StaticResource DetailFont}"/>
+            <Setter Property="Foreground" Value="{StaticResource DetailForeground}"/>
+        </Style>
     </UserControl.Resources>
     <Grid>
         <!-- Border Arrow pointing to TaskBar -->
@@ -103,17 +142,17 @@
                            MouseUp="HideMenu"
                     />
                 </Grid>
-                <Rectangle Margin="40,0,40,10" Fill="#070826" Height="1" RadiusY="10" RadiusX="10" Opacity="0.1"></Rectangle>
-                <local:MenuEditItem x:Name="IdName" Label="Name" IsLocked="True" />
-                <Rectangle Margin="40,0,40,10" Fill="#070826" Height="1" RadiusY="10" RadiusX="10" Opacity="0.1"></Rectangle>
-                <local:MenuEditItem x:Name="IdServer" Label="Network" IsLocked="True" />
-                <Rectangle Margin="40,0,40,10" Fill="#070826" Height="1" RadiusY="10" RadiusX="10" Opacity="0.1"></Rectangle>
+                <Rectangle Margin="20,0,20,10" Fill="#070826" Height="1" RadiusY="10" RadiusX="10" Opacity="0.1"></Rectangle>
+                <local:MenuEditItem Margin="20,0,20,5" x:Name="IdName" Label="Name" IsLocked="True" />
+                <Rectangle Margin="20,0,20,10" Fill="#070826" Height="1" RadiusY="10" RadiusX="10" Opacity="0.1"></Rectangle>
+                <local:MenuEditItem x:Name="IdServer" Margin="20,0,20,5" Label="Network" IsLocked="True" />
+                <Rectangle Margin="20,0,20,5" Fill="#070826" Height="1" RadiusY="10" RadiusX="10" Opacity="0.1"></Rectangle>
                 <local:MenuEditToggle x:Name="IdentityMFA" HorizontalAlignment="Stretch" Label="Multi Factor Auth" PreviewMouseDown="IdentityMFA_PreviewMouseDown" PreviewMouseUp="IdentityMFA_PreviewMouseUp"
-                                      Margin="0,0,0,0" Recovery="MFARecovery" Authenticate="MFAAuthenticate"
+                                      Margin="20,0,20,5" Recovery="MFARecovery" Authenticate="MFAAuthenticate"
                                       Toggle="ToggleMFA"></local:MenuEditToggle>
                 <local:Filter x:Name="FilterServices" OnFilter="DoFilter" VerticalAlignment="Top" Margin="10,5,10,0" />
                 <StackPanel Name="ServicesPanel" d:Visibility="Collapsed">
-                    <Grid Name="MainDetailScroll" MaxHeight="160" Margin="10,0,10,-10">
+                    <Grid Name="MainDetailScroll" MaxHeight="160" Margin="10,0,10,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="95*"/>
                             <ColumnDefinition Width="34*"/>
@@ -121,16 +160,30 @@
                         </Grid.ColumnDefinitions>
                         <Rectangle Margin="10,10,10,10" Fill="#070826" RadiusY="10" RadiusX="10" Grid.ColumnSpan="3"></Rectangle>
                         <ListView x:Name="ServiceList" VirtualizingPanel.IsVirtualizing="True"
-                                  ScrollViewer.IsDeferredScrollingEnabled="True" ScrollViewer.ScrollChanged="Scrolled"
-                                  Focusable="False" IsManipulationEnabled="False" BorderThickness="0" Background="Transparent"
-                                  Margin="20,20,10,20" Style="{DynamicResource ServiceListStyle}" Grid.ColumnSpan="3">
+                                  ScrollViewer.IsDeferredScrollingEnabled="True"
+                                  ScrollViewer.ScrollChanged="Scrolled"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                                  Focusable="False" IsManipulationEnabled="False"
+                                  BorderThickness="0" Background="Transparent"
+                                  Margin="15,15,15,15"
+                                  Style="{DynamicResource ServiceListStyle}" Grid.ColumnSpan="3">
+                            <ListView.Resources>
+                                <Style TargetType="ScrollBar" BasedOn="{StaticResource ScrollBar2026}"/>
+                            </ListView.Resources>
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="{x:Type ListViewItem}">
                                     <Setter Property="Background" Value="Transparent" />
                                     <Setter Property="Template">
                                         <Setter.Value>
                                             <ControlTemplate TargetType="{x:Type ListViewItem}">
-                                                <ContentPresenter />
+                                                <Border x:Name="ItemBorder" Background="{TemplateBinding Background}">
+                                                    <ContentPresenter />
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="ItemBorder" Property="Background" Value="#33FFFFFF"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
                                             </ControlTemplate>
                                         </Setter.Value>
                                     </Setter>
@@ -140,24 +193,55 @@
                                 <DataTemplate>
                                     <Grid Height="32">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="200"/>
+                                            <ColumnDefinition Width="225"/>
+                                            <ColumnDefinition Width="30"/>
                                             <ColumnDefinition Width="100"/>
-                                            <ColumnDefinition x:Name="TimerColumn" Width="20"/>
-                                            <ColumnDefinition x:Name="WarningColumn" Width="20"/>
-                                            <ColumnDefinition x:Name="DetailColumn" Width="20"/>
+                                            <ColumnDefinition x:Name="TimerColumn" Width="20" />
+                                            <ColumnDefinition x:Name="WarningColumn" Width="20" />
+                                            <ColumnDefinition x:Name="DetailColumn" Width="20" />
                                         </Grid.ColumnDefinitions>
-                                        <StackPanel Orientation="Vertical" Height="30" Grid.Column="0">
-                                            <TextBlock Name="MainLabel" Text="{Binding Name}" Padding="0,0,12,0" Height="15" FontWeight="Bold" Background="Transparent" ClipToBounds="True" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" FontSize="11" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White"></TextBlock>
-                                            <TextBlock Name="MainEdit" Text="{Binding AddressString}" Height="14" Padding="0,0,12,0" Background="Transparent" ClipToBounds="True" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Stretch" FontSize="10" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="LightGray"></TextBlock>
+                                        <StackPanel Orientation="Vertical" Height="30" Grid.Column="0" VerticalAlignment="Center">
+                                            <TextBlock Name="MainLabel" Style="{StaticResource HeaderTextBlock}"
+                                                       Text="{Binding Name}"
+                                            />
+                                            <TextBlock Name="MainEdit" Style="{StaticResource RowTextBlock}"
+                                                       Text="{Binding AddressString}"
+                                                       Visibility="{Binding DialString, Converter={StaticResource NullToCollapsed}}"
+                                            />
                                         </StackPanel>
-                                        <StackPanel Orientation="Vertical" Height="30" Grid.Column="1">
-                                            <TextBlock Name="Protocols" Text="{Binding ProtocolString}" Padding="0,0,12,0" Height="15" FontWeight="Bold" Background="Transparent" ClipToBounds="True" VerticalAlignment="Bottom" HorizontalAlignment="Center" FontSize="11" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="White" Opacity="0.9"></TextBlock>
-                                            <TextBlock Name="Ports" Text="{Binding PortString}" Height="14" Padding="0,0,12,0" HorizontalAlignment="Center" Background="Transparent" ClipToBounds="True" Grid.Column="0" VerticalAlignment="Top" FontSize="10" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="LightGray"></TextBlock>
+                                        <StackPanel Grid.Column="1" Grid.Row="1" VerticalAlignment="Center">
+                                            <TextBlock x:Name="BindText" Style="{StaticResource HeaderTextBlock}" TextAlignment="Center"
+                                                       Text="{Binding BindString}" Height="Auto"
+                                                       Visibility="{Binding BindString, Converter={StaticResource NullToCollapsed}}"
+                                            />
+                                            <TextBlock x:Name="DialText" Style="{StaticResource HeaderTextBlock}" TextAlignment="Center"
+                                                       Text="{Binding DialString}" Height="Auto"
+                                                       Visibility="{Binding DialString, Converter={StaticResource NullToCollapsed}}"
+                                            />
                                         </StackPanel>
-                                        <Image x:Name="TimerIcon" Visibility="{Binding TimerVisibility}" Source="/Assets/Images/timer.png" Grid.Column="2" Width="20" Height="20" Cursor="Hand" MouseUp="DoMFA"/>
-                                        <Image x:Name="TimedOutIcon" Visibility="{Binding MfaVisibility}" Source="/Assets/Images/mfaoff.png" Grid.Column="2" Width="20" Height="20" Cursor="Hand" MouseUp="DoMFA"/>
-                                        <Image x:Name="WarnIcon" Visibility="{Binding WarningVisibility}" ToolTip="{Binding WarningMessage}" Source="/Assets/Images/Warning.png" Grid.Column="3" Width="20" Height="20" Cursor="Hand" MouseUp="WarnClicked"/>
-                                        <Image x:Name="DetailIcon" Source="/Assets/Images/detail.png" Grid.Column="4" Width="20" Height="20" Cursor="Hand" MouseUp="DetailsClicked"/>
+                                        <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                            <TextBlock Name="Protocols" Text="{Binding ProtocolString}" Padding="0,0,12,0"
+                                                       Height="15" FontWeight="Bold" Background="Transparent" ClipToBounds="True"
+                                                       VerticalAlignment="Bottom" HorizontalAlignment="Center"
+                                                       FontSize="11" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"
+                                                       Foreground="White" Opacity="0.9"></TextBlock>
+                                            <TextBlock Name="Ports" Text="{Binding PortString}" Height="14" Padding="0,0,12,0"
+                                                       HorizontalAlignment="Center" Background="Transparent" ClipToBounds="True"
+                                                       Grid.Column="0" VerticalAlignment="Top" FontSize="10"
+                                                       FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="LightGray"></TextBlock>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="3" VerticalAlignment="Center">
+                                            <Image x:Name="TimerIcon" Visibility="{Binding TimerVisibility}"
+                                                   Source="/Assets/Images/timer.png" Width="20" Height="20" Cursor="Hand" MouseUp="DoMFA"/>
+                                            <Image x:Name="TimedOutIcon" Visibility="{Binding MfaVisibility}"
+                                                   Source="/Assets/Images/mfaoff.png" Width="20" Height="20" Cursor="Hand" MouseUp="DoMFA"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="4" VerticalAlignment="Center">
+                                            <Image x:Name="WarnIcon" Visibility="{Binding WarningVisibility}" ToolTip="{Binding WarningMessage}" Source="/Assets/Images/Warning.png" Width="20" Height="20" Cursor="Hand" MouseUp="WarnClicked"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="5" VerticalAlignment="Center">
+                                            <Image x:Name="DetailIcon" Source="/Assets/Images/detail.png" Width="20" Height="20" Cursor="Hand" MouseUp="DetailsClicked"/>
+                                        </StackPanel>
                                     </Grid>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
@@ -323,7 +407,7 @@
         <Rectangle x:Name="ModalBg" Margin="10,10,10,10" Fill="Black" RadiusY="10" RadiusX="10" Opacity="0" Visibility="Collapsed" MouseDown="Window_MouseDown"></Rectangle>
 
         <!-- Expended Detail Modal for Details pop up on service list -->
-        <Grid x:Name="DetailsArea" Visibility="Collapsed" Height="400" Margin="0,0,0,0">
+        <Grid x:Name="DetailsArea" Visibility="Collapsed" Height="450" Margin="0,0,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"></ColumnDefinition>
             </Grid.ColumnDefinitions>
@@ -338,23 +422,26 @@
                 </Rectangle.Fill>
             </Rectangle>
             <StackPanel x:Name="DetailPanel" Grid.Column="0" Orientation="Vertical" Margin="20,20,20,20" VerticalAlignment="Center" FocusVisualStyle="{x:Null}">
-                <Label Content="Name" Padding="10,0,0,0" FontWeight="Bold" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
-                <TextBox x:Name="DetailName" MaxWidth="300" Grid.Row="0" Background="Transparent" IsReadOnly="True" HorizontalAlignment="Stretch" Height="20" BorderThickness="0" TextAlignment="Left" Padding="0,0,0,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
+                <Label Content="Name" Style="{StaticResource DetailRowLabel}"/>
+                <TextBox x:Name="DetailName" Style="{StaticResource DetailRowTextBox}"/>
 
-                <Label Content="Url" Padding="10,0,0,0" FontWeight="Bold" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
-                <TextBox Grid.Column="0" x:Name="DetailUrl" MaxWidth="300" Background="Transparent" ClipToBounds="True" IsReadOnly="True" HorizontalAlignment="Stretch" Height="20" BorderThickness="0" TextAlignment="Left" Padding="0,0,0,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
+                <Label Content="Url" Style="{StaticResource DetailRowLabel}"/>
+                <TextBox x:Name="DetailUrl" Style="{StaticResource DetailRowTextBox}"/>
 
-                <Label Content="Addresses" Padding="10,0,0,0" FontWeight="Bold" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
-                <TextBox x:Name="DetailAddress" MaxWidth="300" Background="Transparent" IsReadOnly="True" HorizontalAlignment="Stretch" Height="20" BorderThickness="0" TextAlignment="Left" Padding="0,0,0,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
+                <Label Content="Addresses" Style="{StaticResource DetailRowLabel}"/>
+                <TextBox x:Name="DetailAddress" Style="{StaticResource DetailRowTextBox}"/>
 
-                <Label Content="Ports" Padding="10,0,0,0" FontWeight="Bold" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
-                <TextBox x:Name="DetailPorts" MaxWidth="300" Background="Transparent" IsReadOnly="True" HorizontalAlignment="Stretch" Height="20" BorderThickness="0" TextAlignment="Left" Padding="0,0,0,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
+                <Label Content="Ports" Style="{StaticResource DetailRowLabel}"/>
+                <TextBox x:Name="DetailPorts" Style="{StaticResource DetailRowTextBox}"/>
 
-                <Label Content="Protocols" Padding="10,0,0,0" FontWeight="Bold" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
-                <TextBox x:Name="DetailProtocols" MaxWidth="300" Background="Transparent" IsReadOnly="True" HorizontalAlignment="Stretch" Height="20" BorderThickness="0" TextAlignment="Left" Padding="0,0,0,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
+                <Label Content="Protocols" Style="{StaticResource DetailRowLabel}"/>
+                <TextBox x:Name="DetailProtocols" Style="{StaticResource DetailRowTextBox}"/>
 
-                <Label Content="Timeout" Padding="10,0,0,0" FontWeight="Bold" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
-                <TextBox x:Name="TimeoutDetails" MaxWidth="300" Background="Transparent" IsReadOnly="True" HorizontalAlignment="Stretch" Height="20" BorderThickness="0" TextAlignment="Left" Padding="0,0,0,0" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" ></TextBox>
+                <Label Content="Permissions" Style="{StaticResource DetailRowLabel}"/>
+                <TextBox x:Name="DetailsPermissions" Style="{StaticResource DetailRowTextBox}"/>
+
+                <Label Content="Timeout" Style="{StaticResource DetailRowLabel}"/>
+                <TextBox x:Name="TimeoutDetails" Style="{StaticResource DetailRowTextBox}"/>
             </StackPanel>
             <Image Source="/Assets/Images/closeBlack.png" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,40,40,0" Width="10" Height="10" Cursor="Hand" MouseUp="CloseDetails"></Image>
         </Grid>
