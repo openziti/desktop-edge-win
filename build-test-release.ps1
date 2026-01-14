@@ -19,7 +19,6 @@ param(
 )
 
 $newTimestamp = $published_at.ToString("yyyy-MM-ddTHH:mm:ssZ")
-echo "NEW TIMESTAMP: $newTimestamp"
 
 if ([string]::IsNullOrEmpty($versionQualifier)) {
     if($Win32Crypto) {
