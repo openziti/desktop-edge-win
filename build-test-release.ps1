@@ -10,13 +10,16 @@ param(
     [string]$version,
     [string]$url = "http://localhost:8000/release-streams/local",
     [string]$stream = "local",
-    [datetime]$published_at = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ"),
+    [datetime]$published_at = (Get-Date).ToUniversalTime(),
     [bool]$jsonOnly = $false,
     [bool]$revertGitAfter = $true,
     [string]$versionQualifier = "",
     [switch]$promote = $false,  # New parameter for promotion
     [bool]$Win32Crypto = $false #used to specify which ziti edge tunnel version to pull, openssl or win32crypto-based
 )
+
+$newTimestamp = $published_at.ToString("yyyy-MM-ddTHH:mm:ssZ")
+echo "NEW TIMESTAMP: $newTimestamp"
 
 if ([string]::IsNullOrEmpty($versionQualifier)) {
     if($Win32Crypto) {
@@ -39,7 +42,6 @@ function Promote-Release {
         $latestJsonContent = Get-Content -Path $latestJsonPath -Raw
 
         # Replace the 'published_at' timestamp with the current time
-        $newTimestamp = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
         $latestJsonContent = $latestJsonContent -replace '"published_at": "(.*?)"', ('"published_at": "' + $newTimestamp + '"')
 
         # Write the updated content back to the latest.json

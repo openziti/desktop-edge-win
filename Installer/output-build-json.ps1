@@ -9,16 +9,12 @@ param(
     [string]$url = "http://localhost:8000/release-streams/local",
     [string]$stream = "local",
     [string]$outputPath = "${version}.json",
-    [datetime]$published_at
+    [datetime]$published_at = (Get-Date).ToUniversalTime()
 )
 
 echo "=========== emitting a json file that represents this build ============"
 $url = $url.TrimEnd(" ", "/")
-if ($published_at -eq $null) {
-    $published_at_str = Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ"
-} else {
-    $published_at_str = $published_at.ToString("yyyy-MM-ddTHH:mm:ssZ")
-}
+$published_at_str = $published_at.ToString("yyyy-MM-ddTHH:mm:ssZ")
 Write-Host "published_at resolved to: ${published_at_str}"
 
 $jsonTemplate = @"
