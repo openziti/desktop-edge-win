@@ -9,8 +9,8 @@ n/a
 n/a
 
 ## Dependencies
-* ziti-tunneler: v1.10.4
-* ziti-sdk:      1.10.5
+* ziti-tunneler: v1.10.5
+* ziti-sdk:      1.10.6
 * tlsuv:         v0.40.4[OpenSSL 3.6.0 1 Oct 2025]
 * tlsuv:         v0.40.4[win32crypto(CNG): ncrypt[1.0] ]
 
