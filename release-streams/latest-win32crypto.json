@@ -1,12 +1,12 @@
 {
-  "name": "2.8.4.0",
-  "tag_name": "2.8.4.0",
-  "published_at": "2025-12-18T15:00:00Z",
+  "name": "2.9.3.0",
+  "tag_name": "2.9.3.0",
+  "published_at": "2026-01-23T15:00:00Z",
   "installation_critical": false,
   "assets": [
     {
-      "name": "Ziti.Desktop.Edge.Client-2.8.4.0.exe",
-      "browser_download_url": "https://netfoundry.jfrog.io/artifactory/downloads/desktop-edge-win-win32crypto/2.8.4.0/Ziti.Desktop.Edge.Client-2.8.4.0.exe"
+      "name": "Ziti.Desktop.Edge.Client-2.9.3.0.exe",
+      "browser_download_url": "https://netfoundry.jfrog.io/artifactory/downloads/desktop-edge-win-win32crypto/2.9.3.0/Ziti.Desktop.Edge.Client-2.9.3.0.exe"
     }
   ]
 }
