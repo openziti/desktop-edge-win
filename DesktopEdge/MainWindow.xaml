@@ -285,7 +285,17 @@
                     <Label Name="UploadSpeedLabel" Foreground="White" Margin="0,-20,0,30" Content="KBps" FontSize="11" HorizontalAlignment="Center"  />
                 </StackPanel>
             </Grid>
-
+            <Grid MaxWidth="430">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="70"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="30"/>
+                </Grid.ColumnDefinitions>
+                <Label x:Name="SortByStatus" Grid.Column="0" Content="Status" Foreground="#7d8faf" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-5,0,0" Cursor="Hand" MouseDown="SortByStatus_Click"/>
+                <Label x:Name="SortByName" Grid.Column="1" Content="Name" Foreground="#7d8faf" FontSize="16" HorizontalAlignment="Left" VerticalAlignment="Center" Padding="0" Margin="0,-5,0,0" Cursor="Hand" MouseDown="SortByName_Click"/>
+                <Label x:Name="SortByServices" Grid.Column="2" Content="Services" Foreground="#7d8faf" FontSize="16" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,-5,0,0"  Cursor="Hand" MouseDown="SortByServices_Click"/>
+            </Grid>
             <ScrollViewer Name="IdListScroller" MinHeight="60" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto"
                           FocusVisualStyle="{x:Null}" CanContentScroll="True" ClipToBounds="True" PanningMode="VerticalOnly" PanningRatio=".1">
                 <StackPanel Name="IdList" Orientation="Vertical" IsItemsHost="False" LayoutUpdated="IdList_LayoutUpdated" FocusVisualStyle="{x:Null}"></StackPanel>
