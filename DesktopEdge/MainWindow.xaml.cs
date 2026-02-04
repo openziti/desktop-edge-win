@@ -1538,6 +1538,40 @@ namespace ZitiDesktopEdge {
             Application.Current.MainWindow.Icon = System.Windows.Media.Imaging.BitmapFrame.Create(iconUri);
         }
 
+        private void SortByName_Click(object sender, MouseButtonEventArgs e) {
+            state.SortOption = "Name";
+            LoadIdentities(true);
+        }
+
+        private void SortByServices_Click(object sender, MouseButtonEventArgs e) {
+            state.SortOption = "Services";
+            LoadIdentities(true);
+        }
+
+        private void SortByStatus_Click(object sender, MouseButtonEventArgs e) {
+            state.SortOption = "Status";
+            LoadIdentities(true);
+        }
+
+        private ZitiIdentity[] GetSortedIdentities() {
+            IEnumerable<ZitiIdentity> sorted;
+            switch (state.SortOption) {
+                case "Name":
+                    sorted = identities.OrderBy(i => i.Name, StringComparer.OrdinalIgnoreCase);
+                    break;
+                case "Services":
+                    sorted = identities.OrderByDescending(i => i.Services.Count);
+                    break;
+                case "Status":
+                    sorted = identities.OrderByDescending(i => i.IsEnabled);
+                    break;
+                default:
+                    sorted = identities.OrderBy(i => i.Name, StringComparer.OrdinalIgnoreCase);
+                    break;
+            }
+            return sorted.ToArray();
+        }
+
         private void LoadIdentities(Boolean repaint) {
             this.Dispatcher.Invoke(() => {
                 for (int i = 0; i < IdList.Children.Count; i++) {
@@ -1554,7 +1588,7 @@ namespace ZitiDesktopEdge {
                     _maxHeight = 100;
                 }
                 IdList.MaxHeight = _maxHeight - 480;
-                ZitiIdentity[] ids = identities.OrderBy(i => (i.Name != null) ? i.Name.ToLower() : i.Name).ToArray();
+                ZitiIdentity[] ids = GetSortedIdentities();
                 MainMenu.SetupIdList(ids);
                 if (ids.Length > 0 && serviceClient.Connected) {
                     double height = defaultHeight + (ids.Length * 60);
