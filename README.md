@@ -173,3 +173,4 @@ inside the Installer directory. Then login to microsoft partner portal and follo
 When updating the ZitiUpdateService (aka ZitiMonitorService), it's important to ensure the upgrade solution continues to work.
 For information about this testing, see [releasing](./releasing.md).
 
+
