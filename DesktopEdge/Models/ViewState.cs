@@ -40,7 +40,6 @@ namespace Ziti.Desktop.Edge.Models {
             }
         }
 
-        public string SortOption { get; set; }
         public bool UpdateAvailable { get; set; }
         public UpdateInfo PendingUpdate { get; set; } = new UpdateInfo();
 
