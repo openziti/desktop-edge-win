@@ -34,6 +34,7 @@
             <Color x:Key="InvalidUrlLight">#FFECB5B5</Color>
             <Color x:Key="LightBackground">#2b3046</Color>
             <Color x:Key="VeryLightBackground">#cbcDd4</Color>
+            <Color x:Key="ColumnHeaderText">#7d8faf</Color>
 
             <SolidColorBrush x:Key="DarkBackgroundBrush" Color="{StaticResource DarkBackground}" />
             <SolidColorBrush x:Key="LightBackgroundBrush" Color="{StaticResource LightBackground}" />
@@ -42,6 +43,7 @@
             <SolidColorBrush x:Key="ContextMenuTextHoverBrush" Color="{StaticResource ContextMenuTextHover}" />
             <SolidColorBrush x:Key="InvalidUrlBorderBrush" Color="{StaticResource InvalidUrlDark}" />
             <SolidColorBrush x:Key="InvalidUrlBackgroundBrush" Color="{StaticResource InvalidUrlLight}" />
+            <SolidColorBrush x:Key="ColumnHeaderTextBrush" Color="{StaticResource ColumnHeaderText}" />
 
 
 
