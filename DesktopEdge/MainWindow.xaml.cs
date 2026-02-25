@@ -86,8 +86,6 @@ namespace ZitiDesktopEdge {
 
         private static ZDEWViewState state;
 
-        private Dictionary<string, (System.Windows.Shapes.Rectangle Up, System.Windows.Shapes.Rectangle Down)> _sortIndicators;
-
         public static UIElement MouseDownControl;
         // Global MouseDown for all controls inside the window
         private void Window_GlobalMouseDown(object sender, MouseButtonEventArgs e) {
@@ -701,14 +699,6 @@ namespace ZitiDesktopEdge {
             this.Activate();
         }
 
-        private void InitializeSortIndicators() {
-            _sortIndicators = new Dictionary<string, (System.Windows.Shapes.Rectangle Up, System.Windows.Shapes.Rectangle Down)> {
-        { "Name",     (SortByNameUp,     SortByNameDown) },
-        { "Status",   (SortByStatusUp,   SortByStatusDown) },
-        { "Services", (SortByServicesUp, SortByServicesDown) },
-    };
-        }
-
         async private void MainWindow_Loaded(object sender, RoutedEventArgs e) {
 
             Window window = Window.GetWindow(App.Current.MainWindow);
@@ -764,7 +754,6 @@ namespace ZitiDesktopEdge {
                 monitorClient.Reconnect();
             }
 
-            InitializeSortIndicators();
             IdentityMenu.OnForgot += IdentityForgotten;
             Placement();
         }
@@ -1578,17 +1567,19 @@ namespace ZitiDesktopEdge {
             var settings = Properties.Settings.Default;
             bool descending = settings.SortDirection == "Descending";
 
-            foreach (var indicator in _sortIndicators.Values) {
-                indicator.Up.Visibility = Visibility.Hidden;
-                indicator.Down.Visibility = Visibility.Hidden;
-            }
+            SortByNameArrow.Visibility = Visibility.Collapsed;
+            SortByStatusArrow.Visibility = Visibility.Collapsed;
+            SortByServicesArrow.Visibility = Visibility.Collapsed;
 
-            if (_sortIndicators.TryGetValue(settings.SortOption, out var active)) {
-                if (descending) {
-                    active.Down.Visibility = Visibility.Visible;
-                } else {
-                    active.Up.Visibility = Visibility.Visible;
-                }
+            if (settings.SortOption == "Name") {
+                SortByNameArrow.Visibility = Visibility.Visible;
+                SortByNameArrow.Text = descending ? "▼" : "▲";
+            } else if (settings.SortOption == "Status") {
+                SortByStatusArrow.Visibility = Visibility.Visible;
+                SortByStatusArrow.Text = descending ? "▼" : "▲";
+            } else if (settings.SortOption == "Services") {
+                SortByServicesArrow.Visibility = Visibility.Visible;
+                SortByServicesArrow.Text = descending ? "▼" : "▲";
             }
         }
 

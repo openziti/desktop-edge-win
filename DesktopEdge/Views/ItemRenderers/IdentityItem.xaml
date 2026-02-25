@@ -55,9 +55,9 @@
             </Grid.ColumnDefinitions>
             <Grid HorizontalAlignment="Stretch">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="70"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="70" SharedSizeGroup="Status"/>
+                    <ColumnDefinition Width="*" SharedSizeGroup="Name"/>
+                    <ColumnDefinition Width="80" SharedSizeGroup="Services"/>
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="40"/>

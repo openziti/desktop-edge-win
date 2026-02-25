@@ -105,20 +105,24 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <Style x:Key="SortBarStyle" TargetType="Rectangle">
-            <Setter Property="Height" Value="2"/>
-            <Setter Property="Width" Value="40"/>
-            <Setter Property="Fill" Value="#0069FF"/>
-            <Setter Property="HorizontalAlignment" Value="Center"/>
-            <Setter Property="Visibility" Value="Hidden"/>
-        </Style>
-
         <Style x:Key="SortLabelStyle" TargetType="Label">
             <Setter Property="Foreground" Value="{StaticResource ColumnHeaderTextBrush}"/>
             <Setter Property="FontSize" Value="16"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="Padding" Value="0,4"/>
+        </Style>
+        <Style x:Key="HeaderStackPanelStyle" TargetType="StackPanel">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style x:Key="SortArrowStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Margin" Value="4,0,0,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="{StaticResource ColumnHeaderTextBrush}"/>
+            <Setter Property="Visibility" Value="Collapsed"/>
         </Style>
         <ControlTemplate x:Key="AddIdentityContextMenuTemplate" TargetType="MenuItem">
             <Border x:Name="ItemBorder"
@@ -300,39 +304,53 @@
                     <Label Name="UploadSpeedLabel" Foreground="White" Margin="0,-20,0,30" Content="KBps" FontSize="11" HorizontalAlignment="Center"  />
                 </StackPanel>
             </Grid>
-            <Rectangle Margin="10,5,10,0" Fill="White" Height="1" RadiusY="1" RadiusX="1" Opacity="0.1"/>
-            <Grid MaxWidth="430" Margin="0,8,0,8">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="70"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="80"/>
-                    <ColumnDefinition Width="30"/>
-                </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0" Orientation="Vertical"
-                            HorizontalAlignment="Center" Cursor="Hand" MouseDown="SortByStatus_Click">
-                    <Rectangle x:Name="SortByStatusUp" Style="{StaticResource SortBarStyle}"/>
-                    <Label x:Name="SortByStatus" Content="Status" Style="{StaticResource SortLabelStyle}"/>
-                    <Rectangle x:Name="SortByStatusDown" Style="{StaticResource SortBarStyle}"/>
-                </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Vertical"
-                            HorizontalAlignment="Center" Cursor="Hand" MouseDown="SortByName_Click">
-                    <Rectangle x:Name="SortByNameUp" Style="{StaticResource SortBarStyle}"/>
-                    <Label x:Name="SortByName" Content="Name" Style="{StaticResource SortLabelStyle}"/>
-                    <Rectangle x:Name="SortByNameDown" Style="{StaticResource SortBarStyle}"/>
-                </StackPanel>
-                <StackPanel Grid.Column="2" Orientation="Vertical" Margin="0,0,13,0"
-                            HorizontalAlignment="Center" Cursor="Hand" MouseDown="SortByServices_Click">
-                    <Rectangle x:Name="SortByServicesUp" Style="{StaticResource SortBarStyle}"/>
-                    <Label x:Name="SortByServices" Content="Services"
-                           Style="{StaticResource SortLabelStyle}"/>
-                    <Rectangle x:Name="SortByServicesDown" Style="{StaticResource SortBarStyle}"/>
-                </StackPanel>
+            <Grid HorizontalAlignment="Stretch" Margin="0,8,0,8" Grid.IsSharedSizeScope="True">
+                <!-- Mock the grid definitions for identity items so the headers align with list items -->
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="6"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="6"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="30"/>
+                    </Grid.ColumnDefinitions>
+                    <Rectangle Fill="White" Height="1" Opacity="0.1" Grid.ColumnSpan="2" Grid.Row="0" Margin="8,0"/>
+                    <Grid Grid.Column="0" Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="70" SharedSizeGroup="Status"/>
+                            <ColumnDefinition Width="*" SharedSizeGroup="Name"/>
+                            <ColumnDefinition Width="80" SharedSizeGroup="Services"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Style="{StaticResource HeaderStackPanelStyle}" MouseDown="SortByStatus_Click">
+                            <Label x:Name="SortByStatus" Content="Status" Style="{StaticResource SortLabelStyle}"/>
+                            <TextBlock x:Name="SortByStatusArrow" Style="{StaticResource SortArrowStyle}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Style="{StaticResource HeaderStackPanelStyle}" MouseDown="SortByName_Click">
+                            <Label x:Name="SortByName" Content="Name" Style="{StaticResource SortLabelStyle}"/>
+                            <TextBlock x:Name="SortByNameArrow" Style="{StaticResource SortArrowStyle}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Style="{StaticResource HeaderStackPanelStyle}" MouseDown="SortByServices_Click">
+                            <Label x:Name="SortByServices" Content="Services" Style="{StaticResource SortLabelStyle}"/>
+                            <TextBlock x:Name="SortByServicesArrow" Style="{StaticResource SortArrowStyle}"/>
+                        </StackPanel>
+                    </Grid>
+                    <Rectangle Fill="White" Height="1" Opacity="0.1" Grid.ColumnSpan="2" Grid.Row="4" Margin="8,0"/>
+                </Grid>
+                <ScrollViewer Name="IdListScroller" MinHeight="60" HorizontalScrollBarVisibility="Hidden"
+                              VerticalScrollBarVisibility="Auto" FocusVisualStyle="{x:Null}" CanContentScroll="True"
+                              ClipToBounds="True" PanningMode="VerticalOnly" PanningRatio=".1" Grid.Row="1">
+                    <StackPanel Name="IdList" Orientation="Vertical" IsItemsHost="False"
+                                LayoutUpdated="IdList_LayoutUpdated" FocusVisualStyle="{x:Null}"/>
+                </ScrollViewer>
             </Grid>
-            <Rectangle Margin="10,0,10,5" Fill="White" Height="1" RadiusY="1" RadiusX="1" Opacity="0.1"/>
-            <ScrollViewer Name="IdListScroller" MinHeight="60" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto"
-                          FocusVisualStyle="{x:Null}" CanContentScroll="True" ClipToBounds="True" PanningMode="VerticalOnly" PanningRatio=".1">
-                <StackPanel Name="IdList" Orientation="Vertical" IsItemsHost="False" LayoutUpdated="IdList_LayoutUpdated" FocusVisualStyle="{x:Null}"></StackPanel>
-            </ScrollViewer>
             <Grid HorizontalAlignment="Stretch" Margin="0,20,0,10" Width="Auto">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
