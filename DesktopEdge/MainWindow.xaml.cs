@@ -497,6 +497,7 @@ namespace ZitiDesktopEdge {
             this.PreviewKeyDown += KeyPressed;
             MFASetup.OnLoad += MFASetup_OnLoad;
             MFASetup.OnError += MFASetup_OnError;
+            UpdateSortIndicators();
         }
 
         async private void MFASetup_OnError(string message) {
