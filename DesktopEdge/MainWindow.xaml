@@ -333,7 +333,8 @@
                             <Label x:Name="SortByStatus" Content="Status" Style="{StaticResource SortLabelStyle}"/>
                             <TextBlock x:Name="SortByStatusArrow" Style="{StaticResource SortArrowStyle}"/>
                         </StackPanel>
-                        <StackPanel Grid.Column="1" Style="{StaticResource HeaderStackPanelStyle}" MouseDown="SortByName_Click">
+                        <StackPanel Grid.Column="1" Style="{StaticResource HeaderStackPanelStyle}" MouseDown="SortByName_Click"
+                                    HorizontalAlignment="Left">
                             <Label x:Name="SortByName" Content="Name" Style="{StaticResource SortLabelStyle}"/>
                             <TextBlock x:Name="SortByNameArrow" Style="{StaticResource SortArrowStyle}"/>
                         </StackPanel>
