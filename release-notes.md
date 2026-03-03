@@ -1,3 +1,19 @@
+# Release 2.9.5.0
+## What's New
+* uses 1.11.0 tunneler with fix for legacy authentication issues
+
+## Bugs fixed:
+n/a
+
+## Other changes
+n/a
+
+## Dependencies
+* ziti-tunneler: v1.11.0
+* ziti-sdk:      1.11.2
+* tlsuv:         v0.40.13[OpenSSL 3.6.0 1 Oct 2025]
+* tlsuv:         v0.40.13[win32crypto(CNG): ncrypt[1.0] ]
+
 # Release 2.9.4.1
 ## What's New
 * reverted to 1.9.6 tunneler for stable stream only to address legacy auth-related issues reported
