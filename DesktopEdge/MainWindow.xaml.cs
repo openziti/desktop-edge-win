@@ -1,4 +1,4 @@
-//#define DEBUG_DUMP
+﻿//#define DEBUG_DUMP
 /*
 Copyright NetFoundry Inc.
 
@@ -49,6 +49,8 @@ using System.ComponentModel;
 using static ZitiDesktopEdge.CommonDelegates;
 using Ziti.Desktop.Edge.Utils;
 
+using System.Collections.Specialized;
+
 namespace ZitiDesktopEdge {
 
     public partial class MainWindow : Window {
@@ -87,11 +89,28 @@ namespace ZitiDesktopEdge {
         private static ZDEWViewState state;
 
         public static UIElement MouseDownControl;
+
+        private enum IdentitySortColumn {
+            Manual,
+            Enabled,
+            Name,
+            Services,
+        }
+
+        private IdentitySortColumn _identitySortColumn = IdentitySortColumn.Manual;
+        private bool _identitySortAscending = true;
+
+        // drag/drop state
+        private System.Windows.Point _dragStartPoint;
+        private bool _didDrag = false;
+        private string _draggedIdentityIdentifier = null;
+
         // Global MouseDown for all controls inside the window
         private void Window_GlobalMouseDown(object sender, MouseButtonEventArgs e) {
             Console.WriteLine("MOUSE DOWN ON: " + e.OriginalSource);
             MouseDownControl = e.OriginalSource as UIElement;
         }
+
 
         static MainWindow() {
             asm = System.Reflection.Assembly.GetExecutingAssembly();
@@ -1554,9 +1573,12 @@ namespace ZitiDesktopEdge {
                     _maxHeight = 100;
                 }
                 IdList.MaxHeight = _maxHeight - 480;
-                ZitiIdentity[] ids = identities.OrderBy(i => (i.Name != null) ? i.Name.ToLower() : i.Name).ToArray();
+                //ZitiIdentity[] ids = identities.OrderBy(i => (i.Name != null) ? i.Name.ToLower() : i.Name).ToArray();
+                ZitiIdentity[] ids = GetOrderedIdentities();
+                UpdateSortHeaderUI();
                 MainMenu.SetupIdList(ids);
                 if (ids.Length > 0 && serviceClient.Connected) {
+                    IdSortHeader.Visibility = Visibility.Visible;
                     double height = defaultHeight + (ids.Length * 60);
                     if (height > _maxHeight) {
                         height = _maxHeight;
@@ -1566,6 +1588,14 @@ namespace ZitiDesktopEdge {
                     MainMenu.IdentitiesButton.Visibility = Visibility.Visible;
                     foreach (var id in ids) {
                         IdentityItem idItem = new IdentityItem();
+
+                        idItem.AllowDrop = true;
+                        idItem.PreviewMouseLeftButtonDown += IdentityItem_PreviewMouseLeftButtonDown;
+                        idItem.PreviewMouseMove += IdentityItem_PreviewMouseMove;
+                        idItem.PreviewMouseLeftButtonUp += IdentityItem_PreviewMouseLeftButtonUp;
+                        idItem.DragOver += IdentityItem_DragOver;
+                        idItem.Drop += IdentityItem_Drop;
+
                         idItem.ShowError = ShowError;
 
 
@@ -1593,6 +1623,7 @@ namespace ZitiDesktopEdge {
                     IdList.BeginAnimation(FrameworkElement.HeightProperty, animation);
                     IdListScroller.Visibility = Visibility.Visible;
                 } else {
+                    IdSortHeader.Visibility = Visibility.Collapsed;
                     this.Height = defaultHeight;
                     MainMenu.IdentitiesButton.Visibility = Visibility.Collapsed;
                     IdListScroller.Visibility = Visibility.Collapsed;
@@ -1739,6 +1770,8 @@ namespace ZitiDesktopEdge {
             Console.WriteLine("AddId.UseKeychain\t: " + payload.UseKeychain);
 #endif
             try {
+                if (!EnsureServiceClientConnected("add an identity")) return;
+
                 Identity createdId = await serviceClient.AddIdentityAsync(payload);
 
                 if (createdId != null) {
@@ -1753,6 +1786,16 @@ namespace ZitiDesktopEdge {
                 HideLoad();
                 await ShowBlurbAsync("Unexpected error when adding identity!", e.Message);
             } catch (Exception e) {
+                //detect the specific IPC error and show a clearer message
+                if (e.Message != null && e.Message.IndexOf("ipcWriter is null", StringComparison.OrdinalIgnoreCase) >= 0) {
+                    ShowError(
+                        "Service offline",
+                        "The UI lost connection to the data service while adding the identity. " +
+                        "Start/restart the service and try again."
+                    );
+                    try { serviceClient?.Reconnect(); } catch { }
+                    return;
+                }
                 ZdewLink linkControl = new ZdewLink {
                     NavigateUri = new Uri("https://openziti.discourse.group/"),
                     Text = "Visit our support forum",
@@ -1782,6 +1825,7 @@ namespace ZitiDesktopEdge {
 
             if (jwtDialog.ShowDialog() == true) {
                 ShowLoad("Adding Identity", "Please wait while the identity is added");
+                if (!EnsureServiceClientConnected("Add an Identity")) return;
                 string fileContent = File.ReadAllText(jwtDialog.FileName);
                 EnrollIdentifierPayload payload = new EnrollIdentifierPayload();
                 payload.UseKeychain = false;
@@ -2147,6 +2191,319 @@ namespace ZitiDesktopEdge {
 
         private async void IdentityMenu_ShowBlurb(Blurb blurb) {
             await ShowBlurbAsync(blurb);
+        }
+        //cve
+        private StringCollection IdentityOrderSetting {
+            get {
+                var order = ZitiDesktopEdge.Properties.Settings.Default.IdentityOrder;
+                if (order == null) {
+                    order = new StringCollection();
+                    ZitiDesktopEdge.Properties.Settings.Default.IdentityOrder = order;
+                    ZitiDesktopEdge.Properties.Settings.Default.Save();
+                }
+                return order;
+            }
+        }
+
+        private string GetIdentityNameSortKey(ZitiIdentity id) {
+            if (id == null) return "";
+            if (!string.IsNullOrWhiteSpace(id.Name)) return id.Name.Trim();
+            if (!string.IsNullOrWhiteSpace(id.ControllerUrl)) return id.ControllerUrl.Trim();
+            return id.Identifier ?? "";
+        }
+
+        private int GetServiceCount(ZitiIdentity id) => id?.Services?.Count ?? 0;
+
+        private void EnsureIdentityOrder() {
+            var order = IdentityOrderSetting;
+
+            var liveIds = new HashSet<string>(
+                identities.Where(i => !string.IsNullOrEmpty(i?.Identifier))
+                          .Select(i => i.Identifier)
+            );
+
+            bool changed = false;
+
+            // First time seeding: keep current behavior roughly (alphabetical by display-ish key),
+            // but then it becomes stable forever.
+            if (order.Count == 0 && liveIds.Count > 0) {
+                foreach (var id in identities.OrderBy(i => GetIdentityNameSortKey(i), StringComparer.OrdinalIgnoreCase)) {
+                    if (!string.IsNullOrEmpty(id?.Identifier) && !order.Contains(id.Identifier)) {
+                        order.Add(id.Identifier);
+                    }
+                }
+                changed = true;
+            }
+
+            // remove dead ids
+            for (int i = order.Count - 1; i >= 0; i--) {
+                if (!liveIds.Contains(order[i])) {
+                    order.RemoveAt(i);
+                    changed = true;
+                }
+            }
+
+            // add new ids at the end
+            foreach (var id in identities) {
+                if (string.IsNullOrEmpty(id?.Identifier)) continue;
+                if (!order.Contains(id.Identifier)) {
+                    order.Add(id.Identifier);
+                    changed = true;
+                }
+            }
+
+            if (changed) {
+                ZitiDesktopEdge.Properties.Settings.Default.Save();
+            }
+        }
+
+        private Dictionary<string, int> BuildOrderIndex() {
+            var map = new Dictionary<string, int>(StringComparer.Ordinal);
+            var order = IdentityOrderSetting;
+            for (int i = 0; i < order.Count; i++) {
+                string key = order[i];
+                if (!map.ContainsKey(key)) map[key] = i;
+            }
+            return map;
+        }
+
+        private ZitiIdentity[] GetOrderedIdentities() {
+            EnsureIdentityOrder();
+            var orderIndex = BuildOrderIndex();
+
+            int customIndex(ZitiIdentity id) =>
+                (id?.Identifier != null && orderIndex.TryGetValue(id.Identifier, out int idx)) ? idx : int.MaxValue;
+
+            IEnumerable<ZitiIdentity> query = identities.Where(i => i != null);
+
+            switch (_identitySortColumn) {
+                case IdentitySortColumn.Enabled:
+                    // Default first click shows Enabled first
+                    query = (_identitySortAscending
+                        ? query.OrderByDescending(i => i.IsEnabled)
+                        : query.OrderBy(i => i.IsEnabled))
+                        .ThenBy(i => customIndex(i))
+                        .ThenBy(i => GetIdentityNameSortKey(i), StringComparer.OrdinalIgnoreCase);
+                    break;
+
+                case IdentitySortColumn.Name:
+                    query = (_identitySortAscending
+                        ? query.OrderBy(i => GetIdentityNameSortKey(i), StringComparer.OrdinalIgnoreCase)
+                        : query.OrderByDescending(i => GetIdentityNameSortKey(i), StringComparer.OrdinalIgnoreCase))
+                        .ThenBy(i => customIndex(i));
+                    break;
+
+                case IdentitySortColumn.Services:
+                    query = (_identitySortAscending
+                        ? query.OrderBy(i => GetServiceCount(i))
+                        : query.OrderByDescending(i => GetServiceCount(i)))
+                        .ThenBy(i => customIndex(i))
+                        .ThenBy(i => GetIdentityNameSortKey(i), StringComparer.OrdinalIgnoreCase);
+                    break;
+
+                case IdentitySortColumn.Manual:
+                default:
+                    query = query.OrderBy(i => customIndex(i));
+                    break;
+            }
+
+            return query.ToArray();
+        }
+
+        private void UpdateSortHeaderUI() {
+            if (SortEnabledHeader == null) return; // before XAML is ready
+
+            SortEnabledHeader.Text = BuildHeaderText("Enabled", IdentitySortColumn.Enabled);
+            SortNameHeader.Text = BuildHeaderText("Name", IdentitySortColumn.Name);
+            SortServicesHeader.Text = BuildHeaderText("Services", IdentitySortColumn.Services);
+            SortManualHeader.Text = (_identitySortColumn == IdentitySortColumn.Manual) ? "Manual ✓" : "Manual";
+        }
+
+        private string BuildHeaderText(string label, IdentitySortColumn col) {
+            if (_identitySortColumn != col) return label;
+            if (col == IdentitySortColumn.Manual) return $"{label} ✓";
+            return _identitySortAscending ? $"{label} ↑" : $"{label} ↓";
+        }
+
+        private void ToggleSort(IdentitySortColumn col) {
+            if (_identitySortColumn == col) {
+                _identitySortAscending = !_identitySortAscending;
+            } else {
+                _identitySortColumn = col;
+                _identitySortAscending = true;
+            }
+        }
+
+        private void SortManualHeader_Click(object sender, MouseButtonEventArgs e) {
+            if (!UIUtils.IsLeftClick(e)) return;
+            if (!UIUtils.MouseUpForMouseDown(e)) return;
+
+            _identitySortColumn = IdentitySortColumn.Manual;
+            _identitySortAscending = true;
+            LoadIdentities(true);
+        }
+
+        private void SortEnabledHeader_Click(object sender, MouseButtonEventArgs e) {
+            if (!UIUtils.IsLeftClick(e)) return;
+            if (!UIUtils.MouseUpForMouseDown(e)) return;
+
+            ToggleSort(IdentitySortColumn.Enabled);
+            LoadIdentities(true);
+        }
+
+        private void SortNameHeader_Click(object sender, MouseButtonEventArgs e) {
+            if (!UIUtils.IsLeftClick(e)) return;
+            if (!UIUtils.MouseUpForMouseDown(e)) return;
+
+            ToggleSort(IdentitySortColumn.Name);
+            LoadIdentities(true);
+        }
+
+        private void SortServicesHeader_Click(object sender, MouseButtonEventArgs e) {
+            if (!UIUtils.IsLeftClick(e)) return;
+            if (!UIUtils.MouseUpForMouseDown(e)) return;
+
+            ToggleSort(IdentitySortColumn.Services);
+            LoadIdentities(true);
+        }
+
+        private void IdentityItem_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e) {
+            _dragStartPoint = e.GetPosition(null);
+            _didDrag = false;
+
+            if (sender is IdentityItem item && item.Identity != null) {
+                _draggedIdentityIdentifier = item.Identity.Identifier;
+            } else {
+                _draggedIdentityIdentifier = null;
+            }
+        }
+
+        private void IdentityItem_PreviewMouseMove(object sender, MouseEventArgs e) {
+            if (e.LeftButton != MouseButtonState.Pressed) return;
+            if (string.IsNullOrEmpty(_draggedIdentityIdentifier)) return;
+
+            var pos = e.GetPosition(null);
+            var diff = pos - _dragStartPoint;
+
+            if (!_didDrag &&
+                (Math.Abs(diff.X) > SystemParameters.MinimumHorizontalDragDistance ||
+                 Math.Abs(diff.Y) > SystemParameters.MinimumVerticalDragDistance)) {
+
+                _didDrag = true;
+                DragDrop.DoDragDrop((DependencyObject)sender, _draggedIdentityIdentifier, DragDropEffects.Move);
+            }
+        }
+
+        private void IdentityItem_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e) {
+            if (_didDrag) {
+                // swallow MouseUp so IdentityItem click logic doesn't fire after drag
+                e.Handled = true;
+            }
+            _didDrag = false;
+            _draggedIdentityIdentifier = null;
+        }
+
+        private void IdentityItem_DragOver(object sender, DragEventArgs e) {
+            e.Effects = e.Data.GetDataPresent(typeof(string)) ? DragDropEffects.Move : DragDropEffects.None;
+            e.Handled = true;
+        }
+
+        private void IdentityItem_Drop(object sender, DragEventArgs e) {
+            if (!e.Data.GetDataPresent(typeof(string))) return;
+
+            string draggedId = e.Data.GetData(typeof(string)) as string;
+            if (string.IsNullOrEmpty(draggedId)) return;
+
+            var targetItem = sender as IdentityItem;
+            if (targetItem == null || targetItem.Identity == null) return;
+
+            string targetId = targetItem.Identity.Identifier;
+            if (string.IsNullOrEmpty(targetId) || draggedId == targetId) return;
+
+            bool insertBefore = e.GetPosition(targetItem).Y < (targetItem.ActualHeight / 2);
+
+            MoveIdentityInManualOrder(draggedId, targetId, insertBefore);
+
+            // After a manual reorder, force manual view
+            _identitySortColumn = IdentitySortColumn.Manual;
+            _identitySortAscending = true;
+
+            LoadIdentities(true);
+            e.Handled = true;
+        }
+
+        private void MoveIdentityInManualOrder(string draggedId, string targetId, bool insertBefore) {
+            EnsureIdentityOrder();
+
+            var order = IdentityOrderSetting;
+            var list = order.Cast<string>().ToList();
+
+            int from = list.IndexOf(draggedId);
+            int to = list.IndexOf(targetId);
+            if (from < 0 || to < 0) return;
+
+            list.RemoveAt(from);
+            if (from < to) to--;
+
+            int insertIndex = insertBefore ? to : to + 1;
+            if (insertIndex < 0) insertIndex = 0;
+            if (insertIndex > list.Count) insertIndex = list.Count;
+
+            list.Insert(insertIndex, draggedId);
+
+            order.Clear();
+            foreach (var id in list) order.Add(id);
+
+            ZitiDesktopEdge.Properties.Settings.Default.Save();
+        }
+
+        private void IdList_DragOver(object sender, DragEventArgs e) {
+            e.Effects = e.Data.GetDataPresent(typeof(string)) ? DragDropEffects.Move : DragDropEffects.None;
+            e.Handled = true;
+        }
+
+        private void IdList_Drop(object sender, DragEventArgs e) {
+            if (!e.Data.GetDataPresent(typeof(string))) return;
+
+            string draggedId = e.Data.GetData(typeof(string)) as string;
+            if (string.IsNullOrEmpty(draggedId)) return;
+
+            MoveIdentityToEnd(draggedId);
+
+            _identitySortColumn = IdentitySortColumn.Manual;
+            _identitySortAscending = true;
+
+            LoadIdentities(true);
+            e.Handled = true;
+        }
+
+        private void MoveIdentityToEnd(string draggedId) {
+            EnsureIdentityOrder();
+
+            var order = IdentityOrderSetting;
+            var list = order.Cast<string>().ToList();
+
+            if (!list.Remove(draggedId)) return;
+            list.Add(draggedId);
+
+            order.Clear();
+            foreach (var id in list) order.Add(id);
+
+            ZitiDesktopEdge.Properties.Settings.Default.Save();
+        }
+
+        private bool EnsureServiceClientConnected(string actionDescription) {
+            if (serviceClient == null || !serviceClient.Connected) {
+                HideLoad();
+                ShowError(
+                    "Service not connected",
+                    "Cannot " + actionDescription + " because the Ziti data service is offline. " +
+                    "Start the service (Tap to Connect) and try again."
+                );
+                try { serviceClient?.Reconnect(); } catch { /* ignore */ }
+                return false;
+            }
+            return true;
         }
     }
 
