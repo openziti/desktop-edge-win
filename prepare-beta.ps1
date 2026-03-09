@@ -91,6 +91,34 @@ if (-not $DryRun) {
 }
 Ok "version file written"
 
+# ── Prepend release-notes.md entry ───────────────────────────────────────────
+
+$releaseNotesEntry = @"
+# Release $DesktopEdgeVersion
+## What's New
+* updated to ziti-edge-tunnel $ZetVersion
+
+## Bugs fixed:
+n/a
+
+## Other changes
+n/a
+
+## Dependencies
+* ziti-tunneler: $ZetVersion
+* ziti-sdk:      <fill in>
+* tlsuv:         <fill in>[OpenSSL 3.6.0 1 Oct 2025]
+* tlsuv:         <fill in>[win32crypto(CNG): ncrypt[1.0] ]
+
+"@
+
+Info "Prepending entry to release-notes.md"
+if (-not $DryRun) {
+    $existing = Get-Content -Path "$scriptDir\release-notes.md" -Raw
+    ($releaseNotesEntry + $existing) | Set-Content -Path "$scriptDir\release-notes.md" -NoNewline
+}
+Ok "release-notes.md updated"
+
 # ── Write beta.json ───────────────────────────────────────────────────────────
 
 $betaJson = @"
@@ -143,6 +171,7 @@ Log ""
 Log "Files to commit:"
 Info "Installer/build.ps1                -> ZET $ZetVersion"
 Info "version                            -> $DesktopEdgeVersion"
+Info "release-notes.md                   -> prepended $DesktopEdgeVersion entry"
 Info "release-streams/beta.json          -> $DesktopEdgeVersion (github releases)"
 Info "release-streams/beta-win32crypto.json -> $DesktopEdgeVersion (jfrog)"
 Log ""
@@ -152,7 +181,7 @@ Log ""
 $commitMsg = "chore: prepare beta $DesktopEdgeVersion with ZET $ZetVersion"
 Info "Committing: $commitMsg"
 if (-not $DryRun) {
-    git add Installer/build.ps1 version release-streams/beta.json release-streams/beta-win32crypto.json
+    git add Installer/build.ps1 version release-notes.md release-streams/beta.json release-streams/beta-win32crypto.json
     git diff --cached --quiet
     if ($LASTEXITCODE -eq 0) {
         Info "Nothing to commit - files already up to date"
