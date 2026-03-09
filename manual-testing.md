@@ -22,7 +22,6 @@ These are the tests you need to make sure to perform per release.
 
 
 - Identity marked as disabled, is disabled on restart of zet
-- Identity marked as enabled is enabled on restart
 - Identity with overlapping service definitions in two different networks
 - 
 - Multiple ziti edge tunnels running at one time, intercepts are removed on clean shutdown
@@ -100,3 +99,16 @@ These are the tests you need to make sure to perform per release.
    with alias: `autoid02`
 -- tpca-test-autoId.jwt using pki\tpca-test-autoId\certs\tpca-test-autoId-user3.cert and pki\tpca-test-autoId\keys\tpca-test-autoId-user3.key
    with alias: `autoid03`
+
+## Enable / diable
+
+- enable an ext-jwt-signer based identity then disable it
+- authenticate to an ext-jwt-signer then disable, enable, reauth
+- enable a cert-based auth identity then disable it, verify it auths, then disable it
+- Identity marked as enabled is enabled on restart
+- Identity marked as disabled is disabled on restart
+- get a little crazy, disable/enable a bunch of identities -  spaz out ... :)
+
+## Random
+
+- Delete the config file - verify things start up properly

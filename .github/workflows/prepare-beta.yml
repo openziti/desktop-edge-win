@@ -1,0 +1,41 @@
+name: Prepare Beta Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      desktop_edge_version:
+        description: 'Desktop Edge version to release (e.g. 2.9.6.0)'
+        required: true
+        type: string
+      zet_version:
+        description: 'ziti-edge-tunnel version to bundle (e.g. v1.11.1)'
+        required: true
+        type: string
+
+jobs:
+  prepare-beta:
+    name: Create beta-release branch and open PR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Prepare beta release
+        shell: pwsh
+        run: |
+          ./prepare-beta.ps1 `
+            -DesktopEdgeVersion '${{ inputs.desktop_edge_version }}' `
+            -ZetVersion '${{ inputs.zet_version }}'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
