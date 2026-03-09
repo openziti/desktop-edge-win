@@ -94,7 +94,79 @@ if (-not $DryRun) {
 }
 Ok "version file written"
 
+# ── Build standard installer ──────────────────────────────────────────────────
+
+Log ""
+Info "Running standard build..."
+if (-not $DryRun) {
+    & "$scriptDir\Installer\build.ps1" `
+        -version $DesktopEdgeVersion `
+        -url $buildUrl `
+        -stream "beta" `
+        -revertGitAfter $true
+    if ($LASTEXITCODE -ne 0) { Die "Standard build failed" }
+}
+Ok "Standard build complete"
+
+# ── Extract versions from standard binary (OpenSSL) ──────────────────────────
+
+Log ""
+$zetTunneler  = $ZetVersion
+$zitiSdk      = "<fill in>"
+$tlsuvOpenSsl = "<fill in>"
+$tlsuvWin32   = "<fill in>"
+
+if (-not $DryRun) {
+    if (Test-Path $zetExe) {
+        Info "Reading versions from standard ziti-edge-tunnel.exe (OpenSSL)"
+        $versionLines = & $zetExe version -v 2>&1 | Where-Object { $_ -notmatch "StartServiceCtrlDispatcher" }
+        foreach ($line in $versionLines) {
+            Info "  $line"
+            if ($line -match 'ziti-tunneler:\s*(.+)')  { $zetTunneler  = $Matches[1].Trim() }
+            if ($line -match 'ziti-sdk:\s*(.+)')       { $zitiSdk      = $Matches[1].Trim() }
+            if ($line -match 'tlsuv:\s*(.+)\[OpenSSL') { $tlsuvOpenSsl = $Matches[1].Trim() }
+        }
+        Ok "Standard versions extracted"
+    } else {
+        Write-Host -ForegroundColor Yellow "  [warn] ziti-edge-tunnel.exe not found after standard build, using placeholders"
+    }
+}
+
+# ── Build win32crypto installer ───────────────────────────────────────────────
+
+Log ""
+Info "Running win32crypto build..."
+if (-not $DryRun) {
+    & "$scriptDir\Installer\build.ps1" `
+        -version $DesktopEdgeVersion `
+        -url $buildUrl `
+        -stream "beta" `
+        -Win32Crypto $true `
+        -revertGitAfter $true
+    if ($LASTEXITCODE -ne 0) { Die "Win32Crypto build failed" }
+}
+Ok "Win32Crypto build complete"
+
+# ── Extract versions from win32crypto binary ──────────────────────────────────
+
+Log ""
+if (-not $DryRun) {
+    if (Test-Path $zetExe) {
+        Info "Reading versions from win32crypto ziti-edge-tunnel.exe"
+        $versionLines = & $zetExe version -v 2>&1 | Where-Object { $_ -notmatch "StartServiceCtrlDispatcher" }
+        foreach ($line in $versionLines) {
+            Info "  $line"
+            if ($line -match 'tlsuv:\s*(.+)\[win32')   { $tlsuvWin32   = $Matches[1].Trim() }
+        }
+        Ok "Win32crypto versions extracted"
+    } else {
+        Write-Host -ForegroundColor Yellow "  [warn] ziti-edge-tunnel.exe not found after win32crypto build, using placeholders"
+    }
+}
+
 # ── Write beta.json ───────────────────────────────────────────────────────────
+# Written after builds so our hardcoded 12:00:00Z timestamp isn't overwritten
+# by output-build-json.ps1 which build.ps1 calls internally.
 
 $betaJson = @"
 {
@@ -140,60 +212,6 @@ if (-not $DryRun) {
 }
 Ok "beta-win32crypto.json written"
 
-# ── Build standard installer ──────────────────────────────────────────────────
-
-Log ""
-Info "Running standard build..."
-if (-not $DryRun) {
-    & "$scriptDir\Installer\build.ps1" `
-        -version $DesktopEdgeVersion `
-        -url $buildUrl `
-        -stream "beta" `
-        -revertGitAfter $true
-    if ($LASTEXITCODE -ne 0) { Die "Standard build failed" }
-}
-Ok "Standard build complete"
-
-# ── Build win32crypto installer ───────────────────────────────────────────────
-
-Log ""
-Info "Running win32crypto build..."
-if (-not $DryRun) {
-    & "$scriptDir\Installer\build.ps1" `
-        -version $DesktopEdgeVersion `
-        -url $buildUrl `
-        -stream "beta" `
-        -Win32Crypto $true `
-        -revertGitAfter $true
-    if ($LASTEXITCODE -ne 0) { Die "Win32Crypto build failed" }
-}
-Ok "Win32Crypto build complete"
-
-# ── Extract dependency versions from ziti-edge-tunnel ────────────────────────
-
-Log ""
-$zetTunneler = $ZetVersion
-$zitiSdk     = "<fill in>"
-$tlsuvOpenSsl = "<fill in>"
-$tlsuvWin32  = "<fill in>"
-
-if (-not $DryRun) {
-    if (Test-Path $zetExe) {
-        Info "Reading dependency versions from ziti-edge-tunnel.exe version -v"
-        $versionLines = & $zetExe version -v 2>&1 | Where-Object { $_ -notmatch "StartServiceCtrlDispatcher" }
-        foreach ($line in $versionLines) {
-            Info "  $line"
-            if ($line -match 'ziti-tunneler:\s*(.+)')   { $zetTunneler  = $Matches[1].Trim() }
-            if ($line -match 'ziti-sdk:\s*(.+)')        { $zitiSdk      = $Matches[1].Trim() }
-            if ($line -match 'tlsuv:\s*(v[\d.]+)\[OpenSSL')   { $tlsuvOpenSsl = $Matches[1].Trim() }
-            if ($line -match 'tlsuv:\s*(v[\d.]+)\[win32')     { $tlsuvWin32   = $Matches[1].Trim() }
-        }
-        Ok "Dependency versions extracted"
-    } else {
-        Write-Host -ForegroundColor Yellow "  [warn] ziti-edge-tunnel.exe not found at expected path, using placeholders"
-    }
-}
-
 # ── Prepend release-notes.md entry ───────────────────────────────────────────
 
 $releaseNotesEntry = @"
@@ -218,6 +236,10 @@ n/a
 Info "Prepending entry to release-notes.md"
 if (-not $DryRun) {
     $existing = Get-Content -Path "$scriptDir\release-notes.md" -Raw
+    if ($existing -match "# Release $([regex]::Escape($DesktopEdgeVersion))") {
+        Info "Entry for $DesktopEdgeVersion already exists in release-notes.md - overwriting it"
+        $existing = $existing -replace "(?s)# Release $([regex]::Escape($DesktopEdgeVersion)).+?(?=# Release |\z)", ""
+    }
     ($releaseNotesEntry + $existing) | Set-Content -Path "$scriptDir\release-notes.md" -NoNewline
 }
 Ok "release-notes.md updated"
