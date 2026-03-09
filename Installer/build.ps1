@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$version,
     [string]$url = "https://github.com/openziti/desktop-edge-win/releases/download/",
     [string]$stream = "beta",
@@ -29,7 +29,7 @@ $ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer ${ADV_INST_V
 $SIGNTOOL="${ADV_INST_HOME}\third-party\winsdk\x64\signtool.exe"
 $ADVINST = "${ADV_INST_HOME}\bin\x86\AdvancedInstaller.com"
 $ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
-$ZITI_EDGE_TUNNEL_VERSION="v1.11.0"
+$ZITI_EDGE_TUNNEL_VERSION="v1.11.1"
 
 echo "Cleaning previous build folder if it exists"
 Remove-Item "${buildPath}" -r -ErrorAction Ignore
