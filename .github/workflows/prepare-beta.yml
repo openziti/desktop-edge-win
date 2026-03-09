@@ -26,12 +26,16 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Prepare beta release
         shell: pwsh
         run: |
           ./prepare-beta.ps1 `
             -DesktopEdgeVersion '${{ inputs.desktop_edge_version }}' `
-            -ZetVersion '${{ inputs.zet_version }}' `
-            -SkipBuilds
+            -ZetVersion '${{ inputs.zet_version }}'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
