@@ -35,9 +35,13 @@ Before using this tool you need:
 1. `AWSSigner.NET` is built (`dotnet build -c Release`) and staged to `Installer/AWSSigner.NET/`
 2. `SIGNING_CERT` is set to the GlobalSign DV certificate (`Installer/GlobalSign-SigningCert-2024-2027.cert`)
 3. `SIGNTOOL_PATH` is set to the `signtool.exe` bundled with Advanced Installer
-4. Advanced Installer builds `ZitiDesktopEdge.aip` — the `.aip` project is configured to call
-   `AWSSigner.NET.exe <file>` as its custom signing tool, which fires for every binary that needs
-   to be signed during the installer build
+4. Advanced Installer builds `ZitiDesktopEdge.aip` — the `.aip` project registers AWSSigner.NET
+   as its custom signing tool via `CustomToolPath="AWSSigner.NET\AWSSigner.NET.exe"`. Advanced
+   Installer's signing configuration requires a native executable here; a PowerShell script cannot
+   be used directly, which is the reason this wrapper is a compiled C# project rather than a `.ps1`.
+   It is invoked once for each file marked `DigSign="true"` in the project:
+   `ZitiDesktopEdge.exe`, `ZitiUpdateService.exe`, `ZitiUpgradeSentinel.exe`, and
+   `ziti-edge-tunnel.exe`
 5. Optionally, a **second (dual) Authenticode signature** is appended to the final installer EXE
    with `signtool /as` using the local `openziti_2024.p12` cert (ssl.com TSA) — only when the
    environment variable `OPENZITI_P12_PASS_2024` is set
