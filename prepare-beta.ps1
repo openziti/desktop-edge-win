@@ -85,39 +85,37 @@ $zitiSdk      = "<fill in>"
 $tlsuvOpenSsl = "<fill in>"
 $tlsuvWin32   = "<fill in>"
 
-$tempDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.IO.Path]::GetRandomFileName())
-New-Item -ItemType Directory -Path $tempDir | Out-Null
+$zetDownloadDir = "$scriptDir\Installer\build\zet"
+New-Item -ItemType Directory -Path "$zetDownloadDir\standard"    -Force | Out-Null
+New-Item -ItemType Directory -Path "$zetDownloadDir\win32crypto" -Force | Out-Null
 
-try {
-    foreach ($variant in @("", "-win32crypto")) {
-        $zipName = "ziti-edge-tunnel-Windows_x86_64${variant}.zip"
-        $zipPath = Join-Path $tempDir $zipName
-        $extractDir = Join-Path $tempDir "zet${variant}"
-        $url = "$zetBase/$zipName"
+foreach ($variant in @("", "-win32crypto")) {
+    $zipName    = "ziti-edge-tunnel-Windows_x86_64${variant}.zip"
+    $subDir     = if ($variant -eq "") { "standard" } else { "win32crypto" }
+    $extractDir = "$zetDownloadDir\$subDir"
+    $zipPath    = "$zetDownloadDir\$zipName"
+    $url        = "$zetBase/$zipName"
 
-        Info "Downloading $zipName"
-        if (-not $DryRun) {
-            Invoke-WebRequest -Uri $url -OutFile $zipPath
-            Expand-Archive -Path $zipPath -DestinationPath $extractDir -Force
-            $exe = Join-Path $extractDir "ziti-edge-tunnel.exe"
+    Info "Downloading $zipName -> Installer\build\zet\$subDir\"
+    if (-not $DryRun) {
+        Invoke-WebRequest -Uri $url -OutFile $zipPath
+        Expand-Archive -Path $zipPath -DestinationPath $extractDir -Force
+        $exe = "$extractDir\ziti-edge-tunnel.exe"
 
-            Info "Running version -v on $zipName"
-            $lines = & $exe version -v 2>&1 | Where-Object { $_ -notmatch "StartServiceCtrlDispatcher" }
-            foreach ($line in $lines) {
-                Info "  $line"
-                if ($variant -eq "") {
-                    if ($line -match 'ziti-tunneler:\s*(.+)')  { $zetTunneler  = $Matches[1].Trim() }
-                    if ($line -match 'ziti-sdk:\s*(.+)')       { $zitiSdk      = $Matches[1].Trim() }
-                    if ($line -match 'tlsuv:\s*(.+)\[OpenSSL') { $tlsuvOpenSsl = $Matches[1].Trim() }
-                } else {
-                    if ($line -match 'tlsuv:\s*(.+)\[win32')   { $tlsuvWin32   = $Matches[1].Trim() }
-                }
+        Info "Running version -v on $subDir binary"
+        $lines = & $exe version -v 2>&1 | Where-Object { $_ -notmatch "StartServiceCtrlDispatcher" }
+        foreach ($line in $lines) {
+            Info "  $line"
+            if ($variant -eq "") {
+                if ($line -match 'ziti-tunneler:\s*(.+)')  { $zetTunneler  = $Matches[1].Trim() }
+                if ($line -match 'ziti-sdk:\s*(.+)')       { $zitiSdk      = $Matches[1].Trim() }
+                if ($line -match 'tlsuv:\s*(.+)')            { $tlsuvOpenSsl = $Matches[1].Trim() }
+            } else {
+                if ($line -match 'tlsuv:\s*(.+)')            { $tlsuvWin32   = $Matches[1].Trim() }
             }
-            Ok "Versions extracted from $zipName"
         }
+        Ok "Versions extracted from $subDir binary"
     }
-} finally {
-    Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
 }
 
 # ── Update ZET version in Installer\build.ps1 ────────────────────────────────
@@ -200,8 +198,9 @@ n/a
 ## Dependencies
 * ziti-tunneler: $zetTunneler
 * ziti-sdk:      $zitiSdk
-* tlsuv:         ${tlsuvOpenSsl}[OpenSSL 3.6.0 1 Oct 2025]
-* tlsuv:         ${tlsuvWin32}[win32crypto(CNG): ncrypt[1.0] ]
+* tlsuv:         $tlsuvOpenSsl
+* tlsuv:         $tlsuvWin32
+
 
 "@
 
