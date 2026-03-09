@@ -1,4 +1,4 @@
-# Prepares a beta release branch and opens a PR against release-next.
+# Prepares a beta release branch with two local builds and opens a PR against release-next.
 #
 # Sample invocations:
 #   .\prepare-beta.ps1 -DesktopEdgeVersion 2.9.6.0 -ZetVersion v1.11.1
@@ -6,6 +6,7 @@
 #
 # Prerequisites:
 #   - git configured with push access to the repo
+#   - Advanced Installer, msbuild, nuget on PATH (same requirements as Installer\build.ps1)
 #   - gh CLI installed and authenticated (https://cli.github.com) for PR creation
 #
 param(
@@ -22,10 +23,10 @@ $ErrorActionPreference = "Stop"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-function Log($msg) { Write-Host $msg }
-function Info($msg) { Write-Host -ForegroundColor Cyan  "  [info] $msg" }
-function Ok($msg)   { Write-Host -ForegroundColor Green "    [ok] $msg" }
-function Die($msg)  { Write-Host -ForegroundColor Red   " [error] $msg"; exit 1 }
+function Log($msg)  { Write-Host $msg }
+function Info($msg) { Write-Host -ForegroundColor Cyan   "  [info] $msg" }
+function Ok($msg)   { Write-Host -ForegroundColor Green  "    [ok] $msg" }
+function Die($msg)  { Write-Host -ForegroundColor Red    " [error] $msg"; exit 1 }
 
 # ── Validate ──────────────────────────────────────────────────────────────────
 
@@ -35,7 +36,7 @@ Log "  prepare-beta.ps1"
 Log "========================================================"
 Info "Desktop Edge version : $DesktopEdgeVersion"
 Info "ZET version          : $ZetVersion"
-if ($DryRun) { Info "DRY RUN - no git commits or pushes will be made" }
+if ($DryRun) { Info "DRY RUN - no builds, git commits, or pushes will be made" }
 Log "========================================================"
 Log ""
 
@@ -48,12 +49,14 @@ if ($ZetVersion -notmatch '^v\d+\.\d+\.\d+$') {
 
 $ghAvailable = $null -ne (Get-Command gh -ErrorAction SilentlyContinue)
 if (-not $ghAvailable) {
-    Write-Host -ForegroundColor Yellow "  [warn] gh CLI not found - branch/commit/push will run but PR must be opened manually"
+    Write-Host -ForegroundColor Yellow "  [warn] gh CLI not found - PR must be opened manually after pushing"
     Write-Host -ForegroundColor Yellow "         Install from https://cli.github.com or run: winget install GitHub.cli"
 }
 
-$branch = "beta-release-$DesktopEdgeVersion"
-$now    = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd") + "T12:00:00Z"
+$branch   = "beta-release-$DesktopEdgeVersion"
+$now      = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd") + "T12:00:00Z"
+$zetExe   = "$scriptDir\Installer\build\service\ziti-edge-tunnel.exe"
+$buildUrl = "https://github.com/openziti/desktop-edge-win/releases/download/"
 
 Push-Location $scriptDir
 try {
@@ -73,7 +76,7 @@ if (-not $DryRun) {
 }
 Ok "Branch ready"
 
-# ── Update ZET version in build.ps1 ──────────────────────────────────────────
+# ── Update ZET version in Installer\build.ps1 ────────────────────────────────
 
 Info "Updating Installer/build.ps1 -> ZITI_EDGE_TUNNEL_VERSION=$ZetVersion"
 if (-not $DryRun) {
@@ -91,34 +94,6 @@ if (-not $DryRun) {
 }
 Ok "version file written"
 
-# ── Prepend release-notes.md entry ───────────────────────────────────────────
-
-$releaseNotesEntry = @"
-# Release $DesktopEdgeVersion
-## What's New
-* updated to ziti-edge-tunnel $ZetVersion
-
-## Bugs fixed:
-n/a
-
-## Other changes
-n/a
-
-## Dependencies
-* ziti-tunneler: $ZetVersion
-* ziti-sdk:      <fill in>
-* tlsuv:         <fill in>[OpenSSL 3.6.0 1 Oct 2025]
-* tlsuv:         <fill in>[win32crypto(CNG): ncrypt[1.0] ]
-
-"@
-
-Info "Prepending entry to release-notes.md"
-if (-not $DryRun) {
-    $existing = Get-Content -Path "$scriptDir\release-notes.md" -Raw
-    ($releaseNotesEntry + $existing) | Set-Content -Path "$scriptDir\release-notes.md" -NoNewline
-}
-Ok "release-notes.md updated"
-
 # ── Write beta.json ───────────────────────────────────────────────────────────
 
 $betaJson = @"
@@ -130,7 +105,7 @@ $betaJson = @"
   "assets": [
     {
       "name": "Ziti.Desktop.Edge.Client-$DesktopEdgeVersion.exe",
-      "browser_download_url": "https://github.com/openziti/desktop-edge-win/releases/download/$DesktopEdgeVersion/Ziti.Desktop.Edge.Client-$DesktopEdgeVersion.exe"
+      "browser_download_url": "${buildUrl}$DesktopEdgeVersion/Ziti.Desktop.Edge.Client-$DesktopEdgeVersion.exe"
     }
   ]
 }
@@ -165,14 +140,96 @@ if (-not $DryRun) {
 }
 Ok "beta-win32crypto.json written"
 
+# ── Build standard installer ──────────────────────────────────────────────────
+
+Log ""
+Info "Running standard build..."
+if (-not $DryRun) {
+    & "$scriptDir\Installer\build.ps1" `
+        -version $DesktopEdgeVersion `
+        -url $buildUrl `
+        -stream "beta" `
+        -revertGitAfter $true
+    if ($LASTEXITCODE -ne 0) { Die "Standard build failed" }
+}
+Ok "Standard build complete"
+
+# ── Build win32crypto installer ───────────────────────────────────────────────
+
+Log ""
+Info "Running win32crypto build..."
+if (-not $DryRun) {
+    & "$scriptDir\Installer\build.ps1" `
+        -version $DesktopEdgeVersion `
+        -url $buildUrl `
+        -stream "beta" `
+        -Win32Crypto $true `
+        -revertGitAfter $true
+    if ($LASTEXITCODE -ne 0) { Die "Win32Crypto build failed" }
+}
+Ok "Win32Crypto build complete"
+
+# ── Extract dependency versions from ziti-edge-tunnel ────────────────────────
+
+Log ""
+$zetTunneler = $ZetVersion
+$zitiSdk     = "<fill in>"
+$tlsuvOpenSsl = "<fill in>"
+$tlsuvWin32  = "<fill in>"
+
+if (-not $DryRun) {
+    if (Test-Path $zetExe) {
+        Info "Reading dependency versions from ziti-edge-tunnel.exe version -v"
+        $versionLines = & $zetExe version -v 2>&1 | Where-Object { $_ -notmatch "StartServiceCtrlDispatcher" }
+        foreach ($line in $versionLines) {
+            Info "  $line"
+            if ($line -match 'ziti-tunneler:\s*(.+)')   { $zetTunneler  = $Matches[1].Trim() }
+            if ($line -match 'ziti-sdk:\s*(.+)')        { $zitiSdk      = $Matches[1].Trim() }
+            if ($line -match 'tlsuv:\s*(v[\d.]+)\[OpenSSL')   { $tlsuvOpenSsl = $Matches[1].Trim() }
+            if ($line -match 'tlsuv:\s*(v[\d.]+)\[win32')     { $tlsuvWin32   = $Matches[1].Trim() }
+        }
+        Ok "Dependency versions extracted"
+    } else {
+        Write-Host -ForegroundColor Yellow "  [warn] ziti-edge-tunnel.exe not found at expected path, using placeholders"
+    }
+}
+
+# ── Prepend release-notes.md entry ───────────────────────────────────────────
+
+$releaseNotesEntry = @"
+# Release $DesktopEdgeVersion
+## What's New
+* updated to ziti-edge-tunnel $ZetVersion
+
+## Bugs fixed:
+n/a
+
+## Other changes
+n/a
+
+## Dependencies
+* ziti-tunneler: $zetTunneler
+* ziti-sdk:      $zitiSdk
+* tlsuv:         ${tlsuvOpenSsl}[OpenSSL 3.6.0 1 Oct 2025]
+* tlsuv:         ${tlsuvWin32}[win32crypto(CNG): ncrypt[1.0] ]
+
+"@
+
+Info "Prepending entry to release-notes.md"
+if (-not $DryRun) {
+    $existing = Get-Content -Path "$scriptDir\release-notes.md" -Raw
+    ($releaseNotesEntry + $existing) | Set-Content -Path "$scriptDir\release-notes.md" -NoNewline
+}
+Ok "release-notes.md updated"
+
 # ── Summary of changes ────────────────────────────────────────────────────────
 
 Log ""
 Log "Files to commit:"
-Info "Installer/build.ps1                -> ZET $ZetVersion"
-Info "version                            -> $DesktopEdgeVersion"
-Info "release-notes.md                   -> prepended $DesktopEdgeVersion entry"
-Info "release-streams/beta.json          -> $DesktopEdgeVersion (github releases)"
+Info "Installer/build.ps1                   -> ZET $ZetVersion"
+Info "version                               -> $DesktopEdgeVersion"
+Info "release-notes.md                      -> prepended $DesktopEdgeVersion entry"
+Info "release-streams/beta.json             -> $DesktopEdgeVersion (github releases)"
 Info "release-streams/beta-win32crypto.json -> $DesktopEdgeVersion (jfrog)"
 Log ""
 
@@ -192,56 +249,19 @@ if (-not $DryRun) {
 }
 Ok "Committed"
 
-# ── Push ──────────────────────────────────────────────────────────────────────
-
-Info "Pushing $branch to origin"
-if (-not $DryRun) {
-    git push origin $branch
-    if ($LASTEXITCODE -ne 0) { Die "git push failed" }
-}
-Ok "Pushed"
-
-# ── Open PR ───────────────────────────────────────────────────────────────────
-
-$prBody = @"
-## Beta Release Preparation
-
-| | |
-|---|---|
-| Desktop Edge version | ``$DesktopEdgeVersion`` |
-| ziti-edge-tunnel version | ``$ZetVersion`` |
-
-The installer build workflow will run automatically on this PR and produce signed artifacts.
-Merge to publish the beta release to ``release-streams/beta.json``.
-"@
-
-Info "Opening PR: $branch -> release-next"
-if (-not $DryRun) {
-    if ($ghAvailable) {
-        try {
-            $existingPr = gh pr view $branch --json url --jq '.url' 2>$null
-        } catch {
-            $existingPr = $null
-        }
-        if ($existingPr) {
-            Ok "PR already exists: $existingPr"
-        } else {
-            gh pr create `
-                --base release-next `
-                --head $branch `
-                --title "Beta release $DesktopEdgeVersion" `
-                --body $prBody
-            if ($LASTEXITCODE -ne 0) { Die "gh pr create failed" }
-            Ok "PR opened"
-        }
-    } else {
-        $prUrl = "https://github.com/openziti/desktop-edge-win/pull/new/$branch"
-        Info "gh CLI not available - open PR manually:"
-        Info "  $prUrl"
-    }
-}
+# ── Push + PR ─────────────────────────────────────────────────────────────────
 
 Log ""
+Log "Branch is ready locally. When satisfied, push and open a PR:"
+Log ""
+Log "  git push origin $branch"
+if ($ghAvailable) {
+    Log "  gh pr create --base release-next --head $branch --title `"Beta release $DesktopEdgeVersion`""
+} else {
+    Log "  https://github.com/openziti/desktop-edge-win/pull/new/$branch"
+}
+Log ""
+
 Log "========================================================"
 Log "  Done."
 if ($DryRun) { Log "  (dry run - no changes were made)" }
