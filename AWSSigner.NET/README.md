@@ -110,21 +110,3 @@ AWSSigner.NET.exe <env-var-file.ps1> <file-to-sign.exe> <cert.cert> <signtool.ex
 ```
 
 The env-var file should contain lines in the form `$env:VAR="value"`.
-
-Logs are written to `AWSSigner.log` in the working directory, with daily rotation (7-day
-retention).
-
-## Known limitations / gotchas
-
-- **Validation short-circuits incorrectly**: `VerifyEnvVar` is called for all four required AWS
-  variables but each call overwrites the same `envVarsExist` boolean. Only the last variable
-  checked (`SIGNING_CERT`) determines whether the process aborts. If the AWS variables are missing
-  but `SIGNING_CERT` is set, the tool will proceed and fail at the KMS call rather than at
-  startup validation.
-- **Silent return on missing inputs**: when validation fails the tool exits with code 0, so
-  Advanced Installer treats it as success. The resulting binary will be unsigned. Watch for the
-  `ERROR:` lines in the console output or `AWSSigner.log`.
-- **`AWS_KEY_ID` missing = unsigned build**: `build.ps1` warns but does not abort when
-  `AWS_KEY_ID` is unset. A release built without this variable will ship unsigned.
-- **Target framework**: The project targets .NET 4.7.2 (`net472`). `dotnet build` works but
-  requires the .NET Framework 4.7.2 targeting pack to be installed on the build machine.
