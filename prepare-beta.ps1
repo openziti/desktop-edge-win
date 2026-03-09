@@ -3,8 +3,9 @@
 # Sample invocations:
 #   .\prepare-beta.ps1 -DesktopEdgeVersion 2.9.6.0 -ZetVersion v1.11.1
 #   .\prepare-beta.ps1 -DesktopEdgeVersion 2.9.6.0 -ZetVersion v1.11.1 -DryRun
+#   .\prepare-beta.ps1 -DesktopEdgeVersion 2.9.6.0 -ZetVersion v1.11.1 -SkipBuilds  # used by CI
 #
-# Prerequisites:
+# Prerequisites (local):
 #   - git configured with push access to the repo
 #   - Advanced Installer, msbuild, nuget on PATH (same requirements as Installer\build.ps1)
 #   - gh CLI installed and authenticated (https://cli.github.com) for PR creation
@@ -16,7 +17,11 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$ZetVersion,
 
-    [switch]$DryRun
+    [switch]$DryRun,
+
+    # Skip local builds - used when running from CI where installer.build.yml
+    # will perform the real signed build once the PR is opened.
+    [switch]$SkipBuilds
 )
 
 $ErrorActionPreference = "Stop"
@@ -96,9 +101,13 @@ Ok "version file written"
 
 # ── Build standard installer ──────────────────────────────────────────────────
 
+if ($SkipBuilds) {
+    Write-Host -ForegroundColor Yellow "  [warn] Skipping builds (-SkipBuilds). Release notes dependency versions will be placeholders."
+}
+
 Log ""
 Info "Running standard build..."
-if (-not $DryRun) {
+if (-not $DryRun -and -not $SkipBuilds) {
     & "$scriptDir\Installer\build.ps1" `
         -version $DesktopEdgeVersion `
         -url $buildUrl `
@@ -116,7 +125,7 @@ $zitiSdk      = "<fill in>"
 $tlsuvOpenSsl = "<fill in>"
 $tlsuvWin32   = "<fill in>"
 
-if (-not $DryRun) {
+if (-not $DryRun -and -not $SkipBuilds) {
     if (Test-Path $zetExe) {
         Info "Reading versions from standard ziti-edge-tunnel.exe (OpenSSL)"
         $versionLines = & $zetExe version -v 2>&1 | Where-Object { $_ -notmatch "StartServiceCtrlDispatcher" }
@@ -136,7 +145,7 @@ if (-not $DryRun) {
 
 Log ""
 Info "Running win32crypto build..."
-if (-not $DryRun) {
+if (-not $DryRun -and -not $SkipBuilds) {
     & "$scriptDir\Installer\build.ps1" `
         -version $DesktopEdgeVersion `
         -url $buildUrl `
@@ -150,7 +159,7 @@ Ok "Win32Crypto build complete"
 # ── Extract versions from win32crypto binary ──────────────────────────────────
 
 Log ""
-if (-not $DryRun) {
+if (-not $DryRun -and -not $SkipBuilds) {
     if (Test-Path $zetExe) {
         Info "Reading versions from win32crypto ziti-edge-tunnel.exe"
         $versionLines = & $zetExe version -v 2>&1 | Where-Object { $_ -notmatch "StartServiceCtrlDispatcher" }
@@ -271,16 +280,53 @@ if (-not $DryRun) {
 }
 Ok "Committed"
 
-# ── Push + PR ─────────────────────────────────────────────────────────────────
+# ── Push ──────────────────────────────────────────────────────────────────────
 
-Log ""
-Log "Branch is ready locally. When satisfied, push and open a PR:"
-Log ""
-Log "  git push origin $branch"
-if ($ghAvailable) {
-    Log "  gh pr create --base release-next --head $branch --title `"Beta release $DesktopEdgeVersion`""
-} else {
-    Log "  https://github.com/openziti/desktop-edge-win/pull/new/$branch"
+Info "Pushing $branch to origin"
+if (-not $DryRun) {
+    git push origin $branch
+    if ($LASTEXITCODE -ne 0) { Die "git push failed" }
+}
+Ok "Pushed"
+
+# ── Open PR ───────────────────────────────────────────────────────────────────
+
+$prBody = @"
+## Beta Release Preparation
+
+| | |
+|---|---|
+| Desktop Edge version | ``$DesktopEdgeVersion`` |
+| ziti-edge-tunnel version | ``$ZetVersion`` |
+
+The installer build workflow will run automatically on this PR and produce signed artifacts.
+Merge to publish the beta release to ``release-streams/beta.json``.
+"@
+
+Info "Opening PR: $branch -> release-next"
+if (-not $DryRun) {
+    if ($ghAvailable) {
+        try {
+            $existingPr = gh pr view $branch --json url --jq '.url' 2>$null
+        } catch {
+            $existingPr = $null
+        }
+        if ($existingPr) {
+            Ok "PR already exists: $existingPr"
+        } else {
+            gh pr create `
+                --base release-next `
+                --head $branch `
+                --title "Beta release $DesktopEdgeVersion" `
+                --body $prBody
+            if ($LASTEXITCODE -ne 0) { Die "gh pr create failed" }
+            Ok "PR opened"
+        }
+    } else {
+        $prUrl = "https://github.com/openziti/desktop-edge-win/pull/new/$branch"
+        Info "gh CLI not available - open PR manually:"
+        Info "  $prUrl"
+    }
 }
 Log ""
 

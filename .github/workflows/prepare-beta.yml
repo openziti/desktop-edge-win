@@ -31,6 +31,7 @@ jobs:
         run: |
           ./prepare-beta.ps1 `
             -DesktopEdgeVersion '${{ inputs.desktop_edge_version }}' `
-            -ZetVersion '${{ inputs.zet_version }}'
+            -ZetVersion '${{ inputs.zet_version }}' `
+            -SkipBuilds
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
