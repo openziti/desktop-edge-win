@@ -203,15 +203,17 @@ n/a
 
 
 "@
+$releaseNotesEntry = $releaseNotesEntry -replace "`r`n", "`n"
 
 Info "Prepending entry to release-notes.md"
 if (-not $DryRun) {
-    $existing = Get-Content -Path "$scriptDir\release-notes.md" -Raw
+    $existing = [System.IO.File]::ReadAllText("$scriptDir\release-notes.md") -replace "`r`n", "`n"
     if ($existing -match "# Release $([regex]::Escape($DesktopEdgeVersion))") {
         Info "Entry for $DesktopEdgeVersion already exists - overwriting it"
         $existing = $existing -replace "(?s)# Release $([regex]::Escape($DesktopEdgeVersion)).+?(?=# Release |\z)", ""
     }
-    ($releaseNotesEntry + $existing) | Set-Content -Path "$scriptDir\release-notes.md" -NoNewline
+    $content = ($releaseNotesEntry + $existing) -replace "`r`n", "`n"
+    [System.IO.File]::WriteAllText("$scriptDir\release-notes.md", $content, [System.Text.UTF8Encoding]::new($false))
 }
 Ok "release-notes.md updated"
 
