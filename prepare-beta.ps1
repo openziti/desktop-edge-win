@@ -203,6 +203,7 @@ n/a
 
 
 "@
+$releaseNotesEntry = $releaseNotesEntry -replace "`r`n", "`n"
 
 Info "Prepending entry to release-notes.md"
 if (-not $DryRun) {
