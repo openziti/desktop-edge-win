@@ -358,11 +358,11 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        private void Canvas_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e) {
+        private void MainGrid_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e) {
             OverState.Opacity = 0.2;
         }
 
-        private void Canvas_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e) {
+        private void MainGrid_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e) {
             OverState.Opacity = 0;
         }
 

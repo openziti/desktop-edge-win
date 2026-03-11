@@ -1,4 +1,4 @@
-//#define DEBUG_DUMP
+﻿//#define DEBUG_DUMP
 /*
 Copyright NetFoundry Inc.
 
@@ -497,6 +497,7 @@ namespace ZitiDesktopEdge {
             this.PreviewKeyDown += KeyPressed;
             MFASetup.OnLoad += MFASetup_OnLoad;
             MFASetup.OnError += MFASetup_OnError;
+            UpdateSortIndicators();
         }
 
         async private void MFASetup_OnError(string message) {
@@ -1538,6 +1539,81 @@ namespace ZitiDesktopEdge {
             Application.Current.MainWindow.Icon = System.Windows.Media.Imaging.BitmapFrame.Create(iconUri);
         }
 
+        private void SortByName_Click(object sender, MouseButtonEventArgs e) {
+            SetSort("Name", "Descending");
+        }
+
+        private void SortByServices_Click(object sender, MouseButtonEventArgs e) {
+            SetSort("Services", "Descending");
+        }
+
+        private void SortByStatus_Click(object sender, MouseButtonEventArgs e) {
+            SetSort("Status", "Descending");
+        }
+
+        private void SetSort(string option, string defaultDirection) {
+            var settings = Properties.Settings.Default;
+            if (settings.SortOption == option) {
+                settings.SortDirection = settings.SortDirection == "Descending" ? "Ascending" : "Descending";
+            } else {
+                settings.SortOption = option;
+                settings.SortDirection = defaultDirection;
+            }
+            settings.Save();
+            UpdateSortIndicators();
+            LoadIdentities(true);
+        }
+
+        private void UpdateSortIndicators() {
+            var settings = Properties.Settings.Default;
+            bool descending = settings.SortDirection == "Descending";
+
+            SortByNameArrow.Visibility = Visibility.Collapsed;
+            SortByStatusArrow.Visibility = Visibility.Collapsed;
+            SortByServicesArrow.Visibility = Visibility.Collapsed;
+
+            if (settings.SortOption == "Name") {
+                SortByNameArrow.Visibility = Visibility.Visible;
+                SortByNameArrow.Text = descending ? "▼" : "▲";
+            } else if (settings.SortOption == "Status") {
+                SortByStatusArrow.Visibility = Visibility.Visible;
+                SortByStatusArrow.Text = descending ? "▼" : "▲";
+            } else if (settings.SortOption == "Services") {
+                SortByServicesArrow.Visibility = Visibility.Visible;
+                SortByServicesArrow.Text = descending ? "▼" : "▲";
+            }
+        }
+
+        private ZitiIdentity[] GetSortedIdentities() {
+            var settings = Properties.Settings.Default;
+            bool descending = settings.SortDirection == "Descending";
+            IEnumerable<ZitiIdentity> sorted;
+
+            if (settings.SortOption == "Name") {
+                if (descending) {
+                    sorted = identities.OrderByDescending(i => i.Name, StringComparer.OrdinalIgnoreCase);
+                } else {
+                    sorted = identities.OrderBy(i => i.Name, StringComparer.OrdinalIgnoreCase);
+                }
+            } else if (settings.SortOption == "Services") {
+                if (descending) {
+                    sorted = identities.OrderByDescending(i => i.Services.Count);
+                } else {
+                    sorted = identities.OrderBy(i => i.Services.Count);
+                }
+            } else if (settings.SortOption == "Status") {
+                if (descending) {
+                    sorted = identities.OrderByDescending(i => i.IsEnabled);
+                } else {
+                    sorted = identities.OrderBy(i => i.IsEnabled);
+                }
+            } else {
+                sorted = identities.OrderBy(i => i.Name, StringComparer.OrdinalIgnoreCase);
+            }
+
+            return sorted.ToArray();
+        }
+
         private void LoadIdentities(Boolean repaint) {
             this.Dispatcher.Invoke(() => {
                 for (int i = 0; i < IdList.Children.Count; i++) {
@@ -1554,7 +1630,7 @@ namespace ZitiDesktopEdge {
                     _maxHeight = 100;
                 }
                 IdList.MaxHeight = _maxHeight - 480;
-                ZitiIdentity[] ids = identities.OrderBy(i => (i.Name != null) ? i.Name.ToLower() : i.Name).ToArray();
+                ZitiIdentity[] ids = GetSortedIdentities();
                 MainMenu.SetupIdList(ids);
                 if (ids.Length > 0 && serviceClient.Connected) {
                     double height = defaultHeight + (ids.Length * 60);

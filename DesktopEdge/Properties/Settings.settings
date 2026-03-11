@@ -5,5 +5,11 @@
     <Setting Name="DefaultProviders" Type="System.Collections.Specialized.StringCollection" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
+    <Setting Name="SortOption" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Name</Value>
+    </Setting>
+    <Setting Name="SortDirection" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Ascending</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
