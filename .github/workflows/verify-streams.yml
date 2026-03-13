@@ -1,0 +1,19 @@
+name: Verify Stream URLs
+
+on:
+  push:
+    paths:
+      - 'release-streams/*.json'
+
+jobs:
+  verify:
+    name: Check download URLs are reachable
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify stream download URLs
+        shell: pwsh
+        run: ./verify-streams.ps1
