@@ -9,6 +9,8 @@ jobs:
   verify:
     name: Check download URLs are reachable
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout
