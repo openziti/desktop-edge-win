@@ -285,10 +285,54 @@
                     <Label Name="UploadSpeedLabel" Foreground="White" Margin="0,-20,0,30" Content="KBps" FontSize="11" HorizontalAlignment="Center"  />
                 </StackPanel>
             </Grid>
+            <!-- Identity sort header -->
+            <StackPanel x:Name="IdSortHeader"
+            Orientation="Horizontal"
+            HorizontalAlignment="Center"
+            Margin="0,10,0,5"
+            Visibility="Collapsed">
 
+                <TextBlock x:Name="SortEnabledHeader"
+               Text="Enabled"
+               Foreground="White"
+               Opacity="0.85"
+               FontSize="12"
+               Cursor="Hand"
+               MouseLeftButtonUp="SortEnabledHeader_Click"/>
+
+                <TextBlock Text="  |  " Foreground="White" Opacity="0.35" FontSize="12"/>
+
+                <TextBlock x:Name="SortNameHeader"
+               Text="Name"
+               Foreground="White"
+               Opacity="0.85"
+               FontSize="12"
+               Cursor="Hand"
+               MouseLeftButtonUp="SortNameHeader_Click"/>
+
+                <TextBlock Text="  |  " Foreground="White" Opacity="0.35" FontSize="12"/>
+
+                <TextBlock x:Name="SortServicesHeader"
+               Text="Services"
+               Foreground="White"
+               Opacity="0.85"
+               FontSize="12"
+               Cursor="Hand"
+               MouseLeftButtonUp="SortServicesHeader_Click"/>
+
+                <TextBlock Text="  |  " Foreground="White" Opacity="0.35" FontSize="12"/>
+
+                <TextBlock x:Name="SortManualHeader"
+               Text="Manual"
+               Foreground="White"
+               Opacity="0.85"
+               FontSize="12"
+               Cursor="Hand"
+               MouseLeftButtonUp="SortManualHeader_Click"/>
+            </StackPanel>
             <ScrollViewer Name="IdListScroller" MinHeight="60" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto"
                           FocusVisualStyle="{x:Null}" CanContentScroll="True" ClipToBounds="True" PanningMode="VerticalOnly" PanningRatio=".1">
-                <StackPanel Name="IdList" Orientation="Vertical" IsItemsHost="False" LayoutUpdated="IdList_LayoutUpdated" FocusVisualStyle="{x:Null}"></StackPanel>
+                <StackPanel Name="IdList" Orientation="Vertical" IsItemsHost="False" LayoutUpdated="IdList_LayoutUpdated" FocusVisualStyle="{x:Null}" AllowDrop="True" DragOver="IdList_DragOver" Drop="IdList_Drop"></StackPanel>
             </ScrollViewer>
             <Grid HorizontalAlignment="Stretch" Margin="0,20,0,10" Width="Auto">
                 <Grid.ColumnDefinitions>
