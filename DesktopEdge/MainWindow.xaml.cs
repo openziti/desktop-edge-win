@@ -1482,6 +1482,7 @@ namespace ZitiDesktopEdge {
                     Application.Current.Properties[key] = status?.ApiPageSize;
                 }
 
+                identities.Clear();
                 foreach (var id in status.Identities) {
                     updateViewWithIdentity(id);
                 }
