@@ -497,7 +497,6 @@ namespace ZitiDesktopEdge {
             this.PreviewKeyDown += KeyPressed;
             MFASetup.OnLoad += MFASetup_OnLoad;
             MFASetup.OnError += MFASetup_OnError;
-            UpdateSortIndicators();
         }
 
         async private void MFASetup_OnError(string message) {
@@ -1540,78 +1539,22 @@ namespace ZitiDesktopEdge {
         }
 
         private void SortByName_Click(object sender, MouseButtonEventArgs e) {
-            SetSort("Name", "Descending");
-        }
-
-        private void SortByServices_Click(object sender, MouseButtonEventArgs e) {
-            SetSort("Services", "Descending");
-        }
-
-        private void SortByStatus_Click(object sender, MouseButtonEventArgs e) {
-            SetSort("Status", "Descending");
-        }
-
-        private void SetSort(string option, string defaultDirection) {
-            var settings = Properties.Settings.Default;
-            if (settings.SortOption == option) {
-                settings.SortDirection = settings.SortDirection == "Descending" ? "Ascending" : "Descending";
-            } else {
-                settings.SortOption = option;
-                settings.SortDirection = defaultDirection;
-            }
-            settings.Save();
-            UpdateSortIndicators();
+            props.SetSort("Name");
             LoadIdentities(true);
         }
 
-        private void UpdateSortIndicators() {
-            var settings = Properties.Settings.Default;
-            bool descending = settings.SortDirection == "Descending";
+        private void SortByServices_Click(object sender, MouseButtonEventArgs e) {
+            props.SetSort("Services");
+            LoadIdentities(true);
+        }
 
-            SortByNameArrow.Visibility = Visibility.Collapsed;
-            SortByStatusArrow.Visibility = Visibility.Collapsed;
-            SortByServicesArrow.Visibility = Visibility.Collapsed;
-
-            if (settings.SortOption == "Name") {
-                SortByNameArrow.Visibility = Visibility.Visible;
-                SortByNameArrow.Text = descending ? "▼" : "▲";
-            } else if (settings.SortOption == "Status") {
-                SortByStatusArrow.Visibility = Visibility.Visible;
-                SortByStatusArrow.Text = descending ? "▼" : "▲";
-            } else if (settings.SortOption == "Services") {
-                SortByServicesArrow.Visibility = Visibility.Visible;
-                SortByServicesArrow.Text = descending ? "▼" : "▲";
-            }
+        private void SortByStatus_Click(object sender, MouseButtonEventArgs e) {
+            props.SetSort("Status");
+            LoadIdentities(true);
         }
 
         private ZitiIdentity[] GetSortedIdentities() {
-            var settings = Properties.Settings.Default;
-            bool descending = settings.SortDirection == "Descending";
-            IEnumerable<ZitiIdentity> sorted;
-
-            if (settings.SortOption == "Name") {
-                if (descending) {
-                    sorted = identities.OrderByDescending(i => i.Name, StringComparer.OrdinalIgnoreCase);
-                } else {
-                    sorted = identities.OrderBy(i => i.Name, StringComparer.OrdinalIgnoreCase);
-                }
-            } else if (settings.SortOption == "Services") {
-                if (descending) {
-                    sorted = identities.OrderByDescending(i => i.Services.Count);
-                } else {
-                    sorted = identities.OrderBy(i => i.Services.Count);
-                }
-            } else if (settings.SortOption == "Status") {
-                if (descending) {
-                    sorted = identities.OrderByDescending(i => i.IsEnabled);
-                } else {
-                    sorted = identities.OrderBy(i => i.IsEnabled);
-                }
-            } else {
-                sorted = identities.OrderBy(i => i.Name, StringComparer.OrdinalIgnoreCase);
-            }
-
-            return sorted.ToArray();
+            return props.GetSortedIdentities(identities);
         }
 
         private void LoadIdentities(Boolean repaint) {
@@ -2243,31 +2186,5 @@ namespace ZitiDesktopEdge {
 #pragma warning disable CS0067 //The event 'ActionCommand.CanExecuteChanged' is never used
         public event EventHandler CanExecuteChanged;
 #pragma warning restore CS0067 //The event 'ActionCommand.CanExecuteChanged' is never used
-    }
-
-    public class MainViewModel : INotifyPropertyChanged {
-        private string _connectLabelContent = "Tap to Connect";
-
-        public string ConnectLabelContent {
-            get { return _connectLabelContent; }
-            set {
-                _connectLabelContent = value;
-                OnPropertyChanged(nameof(ConnectLabelContent));
-            }
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        protected void OnPropertyChanged(string propertyName) {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-
-        public void Disconnected() {
-            ConnectLabelContent = "Tap to Connect";
-        }
-
-        public void Connected() {
-            ConnectLabelContent = "Tap to Disconnect";
-        }
     }
 }

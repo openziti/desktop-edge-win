@@ -107,10 +107,11 @@
         </Style>
         <Style x:Key="SortLabelStyle" TargetType="Label">
             <Setter Property="Foreground" Value="{StaticResource ColumnHeaderTextBrush}"/>
-            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontSize" Value="13"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="Padding" Value="0,4"/>
+            <Setter Property="Typography.Capitals" Value="AllSmallCaps"/>
         </Style>
         <Style x:Key="HeaderStackPanelStyle" TargetType="StackPanel">
             <Setter Property="Orientation" Value="Horizontal"/>
@@ -122,7 +123,6 @@
             <Setter Property="Margin" Value="4,0,0,0"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="Foreground" Value="{StaticResource ColumnHeaderTextBrush}"/>
-            <Setter Property="Visibility" Value="Collapsed"/>
         </Style>
         <ControlTemplate x:Key="AddIdentityContextMenuTemplate" TargetType="MenuItem">
             <Border x:Name="ItemBorder"
@@ -322,7 +322,6 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="30"/>
                     </Grid.ColumnDefinitions>
-                    <Rectangle Fill="White" Height="1" Opacity="0.1" Grid.ColumnSpan="2" Grid.Row="0" Margin="8,0"/>
                     <Grid Grid.Column="0" Grid.Row="2">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="70" SharedSizeGroup="Status"/>
@@ -331,16 +330,19 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" Style="{StaticResource HeaderStackPanelStyle}" MouseDown="SortByStatus_Click">
                             <Label x:Name="SortByStatus" Content="Status" Style="{StaticResource SortLabelStyle}"/>
-                            <TextBlock x:Name="SortByStatusArrow" Style="{StaticResource SortArrowStyle}"/>
+                            <TextBlock x:Name="SortByStatusArrow" Style="{StaticResource SortArrowStyle}" Text="{Binding SortArrowText}"
+                                       Visibility="{Binding StatusArrowVisibility}"/>
                         </StackPanel>
                         <StackPanel Grid.Column="1" Style="{StaticResource HeaderStackPanelStyle}" MouseDown="SortByName_Click"
                                     HorizontalAlignment="Left">
                             <Label x:Name="SortByName" Content="Name" Style="{StaticResource SortLabelStyle}"/>
-                            <TextBlock x:Name="SortByNameArrow" Style="{StaticResource SortArrowStyle}"/>
+                            <TextBlock x:Name="SortByNameArrow" Style="{StaticResource SortArrowStyle}" Text="{Binding SortArrowText}"
+                                       Visibility="{Binding NameArrowVisibility}"/>
                         </StackPanel>
                         <StackPanel Grid.Column="2" Style="{StaticResource HeaderStackPanelStyle}" MouseDown="SortByServices_Click">
                             <Label x:Name="SortByServices" Content="Services" Style="{StaticResource SortLabelStyle}"/>
-                            <TextBlock x:Name="SortByServicesArrow" Style="{StaticResource SortArrowStyle}"/>
+                            <TextBlock x:Name="SortByServicesArrow" Style="{StaticResource SortArrowStyle}" Text="{Binding SortArrowText}"
+                                       Visibility="{Binding ServicesArrowVisibility}"/>
                         </StackPanel>
                     </Grid>
                     <Rectangle Fill="White" Height="1" Opacity="0.1" Grid.ColumnSpan="2" Grid.Row="4" Margin="8,0"/>
