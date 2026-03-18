@@ -1,4 +1,4 @@
-//#define DEBUG_DUMP
+﻿//#define DEBUG_DUMP
 /*
 Copyright NetFoundry Inc.
 
@@ -1538,6 +1538,25 @@ namespace ZitiDesktopEdge {
             Application.Current.MainWindow.Icon = System.Windows.Media.Imaging.BitmapFrame.Create(iconUri);
         }
 
+        private void SortByName_Click(object sender, MouseButtonEventArgs e) {
+            props.SetSort("Name");
+            LoadIdentities(true);
+        }
+
+        private void SortByServices_Click(object sender, MouseButtonEventArgs e) {
+            props.SetSort("Services");
+            LoadIdentities(true);
+        }
+
+        private void SortByStatus_Click(object sender, MouseButtonEventArgs e) {
+            props.SetSort("Status");
+            LoadIdentities(true);
+        }
+
+        private ZitiIdentity[] GetSortedIdentities() {
+            return props.GetSortedIdentities(identities);
+        }
+
         private void LoadIdentities(Boolean repaint) {
             this.Dispatcher.Invoke(() => {
                 for (int i = 0; i < IdList.Children.Count; i++) {
@@ -1554,7 +1573,7 @@ namespace ZitiDesktopEdge {
                     _maxHeight = 100;
                 }
                 IdList.MaxHeight = _maxHeight - 480;
-                ZitiIdentity[] ids = identities.OrderBy(i => (i.Name != null) ? i.Name.ToLower() : i.Name).ToArray();
+                ZitiIdentity[] ids = GetSortedIdentities();
                 MainMenu.SetupIdList(ids);
                 if (ids.Length > 0 && serviceClient.Connected) {
                     double height = defaultHeight + (ids.Length * 60);
@@ -2167,31 +2186,5 @@ namespace ZitiDesktopEdge {
 #pragma warning disable CS0067 //The event 'ActionCommand.CanExecuteChanged' is never used
         public event EventHandler CanExecuteChanged;
 #pragma warning restore CS0067 //The event 'ActionCommand.CanExecuteChanged' is never used
-    }
-
-    public class MainViewModel : INotifyPropertyChanged {
-        private string _connectLabelContent = "Tap to Connect";
-
-        public string ConnectLabelContent {
-            get { return _connectLabelContent; }
-            set {
-                _connectLabelContent = value;
-                OnPropertyChanged(nameof(ConnectLabelContent));
-            }
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        protected void OnPropertyChanged(string propertyName) {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-
-        public void Disconnected() {
-            ConnectLabelContent = "Tap to Connect";
-        }
-
-        public void Connected() {
-            ConnectLabelContent = "Tap to Disconnect";
-        }
     }
 }
