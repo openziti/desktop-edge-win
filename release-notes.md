@@ -1,3 +1,22 @@
+# Release 2.9.8.0
+## What's New
+* Added column headers to allow ascending/descending sorting of identities based on:
+    * Status (enabled/disabled)
+    * Name
+    * Number of services
+
+## Bugs fixed:
+* Prevent identities from incorrectly persisting through disconnect/reconnect when identities no longer exist in the app data directory
+
+## Other changes
+n/a
+
+## Dependencies
+* ziti-tunneler: v1.11.2
+* ziti-sdk:      1.11.7
+* tlsuv:         v0.41.1[OpenSSL 3.6.1 27 Jan 2026]
+* tlsuv:         v0.41.1[win32crypto(CNG): ncrypt[1.0] ]
+
 # Release 2.9.7.0
 ## What's New
 * updated to ziti-edge-tunnel v1.11.2
