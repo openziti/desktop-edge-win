@@ -26,6 +26,8 @@ namespace ZitiDesktopEdge {
         private string _connectLabelContent = "Tap to Connect";
         private string _sortOption;
         private string _sortDirection;
+        private bool _isConnected;
+        private int _identityCount;
 
         public MainViewModel() {
             _sortOption = Properties.Settings.Default.SortOption;
@@ -59,6 +61,17 @@ namespace ZitiDesktopEdge {
                 OnPropertyChanged(nameof(SortArrowText));
             }
         }
+
+        public int IdentityCount {
+            get { return _identityCount; }
+            set {
+                _identityCount = value;
+                OnPropertyChanged(nameof(IdentityCount));
+                OnPropertyChanged(nameof(ColumnHeaderVisibility));
+            }
+        }
+
+        public Visibility ColumnHeaderVisibility => _isConnected && _identityCount > 0 ? Visibility.Visible : Visibility.Collapsed;
 
         public Visibility NameArrowVisibility => SortOption == "Name" ? Visibility.Visible : Visibility.Collapsed;
         public Visibility StatusArrowVisibility => SortOption == "Status" ? Visibility.Visible : Visibility.Collapsed;
@@ -111,11 +124,15 @@ namespace ZitiDesktopEdge {
         }
 
         public void Disconnected() {
+            _isConnected = false;
             ConnectLabelContent = "Tap to Connect";
+            OnPropertyChanged(nameof(ColumnHeaderVisibility));
         }
 
         public void Connected() {
+            _isConnected = true;
             ConnectLabelContent = "Tap to Disconnect";
+            OnPropertyChanged(nameof(ColumnHeaderVisibility));
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

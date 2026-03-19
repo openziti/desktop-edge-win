@@ -1481,7 +1481,7 @@ namespace ZitiDesktopEdge {
                 } else {
                     Application.Current.Properties[key] = status?.ApiPageSize;
                 }
-
+                identities.Clear();
                 foreach (var id in status.Identities) {
                     updateViewWithIdentity(id);
                 }
@@ -1575,6 +1575,7 @@ namespace ZitiDesktopEdge {
                 IdList.MaxHeight = _maxHeight - 480;
                 ZitiIdentity[] ids = GetSortedIdentities();
                 MainMenu.SetupIdList(ids);
+                props.IdentityCount = ids.Length;
                 if (ids.Length > 0 && serviceClient.Connected) {
                     double height = defaultHeight + (ids.Length * 60);
                     if (height > _maxHeight) {
