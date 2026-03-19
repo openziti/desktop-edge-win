@@ -152,7 +152,7 @@
                                       Toggle="ToggleMFA"></local:MenuEditToggle>
                 <local:Filter x:Name="FilterServices" OnFilter="DoFilter" VerticalAlignment="Top" Margin="10,5,10,0" />
                 <StackPanel Name="ServicesPanel" d:Visibility="Collapsed">
-                    <Grid Name="MainDetailScroll" MaxHeight="160" Margin="10,0,10,0">
+                    <Grid Name="MainDetailScroll" Margin="10,0,10,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="95*"/>
                             <ColumnDefinition Width="34*"/>
@@ -162,6 +162,7 @@
                         <ListView x:Name="ServiceList" VirtualizingPanel.IsVirtualizing="True"
                                   ScrollViewer.IsDeferredScrollingEnabled="True"
                                   ScrollViewer.ScrollChanged="Scrolled"
+                                  VirtualizingPanel.VirtualizationMode="Recycling"
                                   ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                                   Focusable="False" IsManipulationEnabled="False"
                                   BorderThickness="0" Background="Transparent"
