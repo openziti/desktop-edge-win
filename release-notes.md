@@ -7,6 +7,7 @@
 
 ## Bugs fixed:
 * Prevent identities from incorrectly persisting through disconnect/reconnect when identities no longer exist in the app data directory
+* [Issue 924](https://github.com/openziti/desktop-edge-win/issues/924) - Fix identity details service list scaling up and down when sorting or filtering services
 
 ## Other changes
 n/a
