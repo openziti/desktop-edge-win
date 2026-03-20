@@ -1,4 +1,4 @@
-﻿namespace ZitiUpdateService {
+namespace ZitiUpdateService {
 	partial class UpdateService {
 		/// <summary> 
 		/// Required designer variable.
