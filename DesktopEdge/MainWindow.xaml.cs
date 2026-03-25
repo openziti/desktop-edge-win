@@ -225,7 +225,9 @@ namespace ZitiDesktopEdge {
                         }
                     }
                     if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Identifier == mfa.Identifier) this.IdentityMenu.Identity = found;
-                    // ShowBlurb("mfa authenticated: " + mfa.Successful, "");
+                    if (mfa.Successful) {
+                        _notificationThrottle.Remove(mfa.Identifier);
+                    }
                 } else {
                     await ShowBlurbAsync("Unexpected error when processing MFA", "");
                     logger.Error("unexpected action: " + mfa.Action);
@@ -543,6 +545,17 @@ namespace ZitiDesktopEdge {
                             if (found != null) {
                                 this.Dispatcher.Invoke(async () => {
                                     await StartExtAuth(found);
+                                });
+                            }
+                        }
+                    } else if (value == "mfa-auth") {
+                        string mfaIdentifier = null;
+                        args.TryGetValue("identifier", out mfaIdentifier);
+                        if (mfaIdentifier != null) {
+                            var found = identities.Find(i => i.Identifier == mfaIdentifier);
+                            if (found != null) {
+                                this.Dispatcher.Invoke(() => {
+                                    MFAAuthenticate(found);
                                 });
                             }
                         }
@@ -1091,7 +1104,11 @@ namespace ZitiDesktopEdge {
 
         private void QueueMfaNotification(ZitiIdentity identity) {
             string displayName = string.IsNullOrEmpty(identity.Name) ? identity.Identifier : identity.Name;
-            _notificationThrottle.Queue(identity.Identifier, "Authorization Required", $"{displayName} requires MFA authentication.", null, "{0} identities require authorization.");
+            var button = new ToastButton()
+                .SetContent("Authenticate")
+                .AddArgument("action", "mfa-auth")
+                .AddArgument("identifier", identity.Identifier);
+            _notificationThrottle.Queue(identity.Identifier, "Authorization Required", $"{displayName} requires MFA authentication.", button, "{0} identities require authorization.");
         }
 
         private async Task StartExtAuth(ZitiIdentity identity) {
@@ -1283,6 +1300,7 @@ namespace ZitiDesktopEdge {
                                 } else {
                                     // happy path. this means auth was in progress and now the identity no longer requires exteral auth
                                     logger.Info("Identity: {} successfully authenticated", found.Identifier);
+                                    _notificationThrottle.Remove(found.Identifier);
                                 }
                             } else if (isExtLogin) {
                                 found.NeedsExtAuth = e.Id.NeedsExtAuth; // mark the identity as needing ext auth
@@ -1304,6 +1322,9 @@ namespace ZitiDesktopEdge {
                         found.IsConnected = true;
                         found.NeedsExtAuth = e.Id.NeedsExtAuth;
                         found.ExtAuthProviders = e.Id.ExtAuthProviders;
+                        if (!found.NeedsExtAuth) {
+                            _notificationThrottle.Remove(found.Identifier);
+                        }
                         for (int i = 0; i < identities.Count; i++) {
                             if (identities[i].Identifier == found.Identifier) {
                                 identities[i] = found;
@@ -1332,11 +1353,19 @@ namespace ZitiDesktopEdge {
                 } else if (e.Action == "connected") {
                     var found = identities.Find(i => i.Identifier == e.Id.Identifier);
                     found.IsConnected = true;
+                    found.IsMFANeeded = e.Id.MfaNeeded;
+                    found.NeedsExtAuth = e.Id.NeedsExtAuth;
                     for (int i = 0; i < identities.Count; i++) {
                         if (identities[i].Identifier == found.Identifier) {
                             identities[i] = found;
                             break;
                         }
+                    }
+                    if (found.IsMFANeeded) {
+                        QueueMfaNotification(found);
+                    }
+                    if (found.NeedsExtAuth) {
+                        QueueExtAuthNotification(found);
                     }
                     LoadIdentities(true);
                 } else if (e.Action == "disconnected") {

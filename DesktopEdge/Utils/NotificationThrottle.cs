@@ -57,6 +57,13 @@ namespace Ziti.Desktop.Edge.Utils {
         }
 
         /// <summary>
+        /// Removes a single identity from the seen set so it can trigger notifications again.
+        /// </summary>
+        public void Remove(string identityIdentifier) {
+            _seenIdentifiers.Remove(identityIdentifier);
+        }
+
+        /// <summary>
         /// Resets all state. Called on service disconnect so notifications re-fire on reconnect.
         /// </summary>
         public void Clear() {
