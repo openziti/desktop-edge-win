@@ -31,11 +31,13 @@ namespace Ziti.Desktop.Edge.Utils {
         private readonly Action<string, string, ToastButton> _sendNotification;
         private readonly Dictionary<string, Action> _pendingNotifications = new Dictionary<string, Action>();
         private readonly DispatcherTimer _throttleTimer;
-        private string _header;
-        private string _summaryFormat;
+        private readonly string _header;
+        private readonly string _summaryFormat;
 
-        public NotificationThrottle(Action<string, string, ToastButton> sendNotification) {
+        public NotificationThrottle(Action<string, string, ToastButton> sendNotification, string header, string summaryFormat) {
             _sendNotification = sendNotification;
+            _header = header;
+            _summaryFormat = summaryFormat;
             _throttleTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
             _throttleTimer.Tick += (s, e) => SendPendingNotifications();
         }
@@ -44,11 +46,9 @@ namespace Ziti.Desktop.Edge.Utils {
         /// Adds a notification to the pending queue. Skips duplicates for the same identity.
         /// Resets the 5-second window each time a new notification arrives.
         /// </summary>
-        public void Queue(string identityIdentifier, string header, string message, ToastButton button, string summaryFormat) {
+        public void Queue(string identityIdentifier, string message, ToastButton button) {
             if (_pendingNotifications.ContainsKey(identityIdentifier)) return;
-            _header = header;
-            _summaryFormat = summaryFormat;
-            _pendingNotifications[identityIdentifier] = () => _sendNotification(header, message, button);
+            _pendingNotifications[identityIdentifier] = () => _sendNotification(_header, message, button);
             _throttleTimer.Stop();
             _throttleTimer.Start();
         }

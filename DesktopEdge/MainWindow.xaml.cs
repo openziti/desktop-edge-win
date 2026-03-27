@@ -429,7 +429,7 @@ namespace ZitiDesktopEdge {
             DataContext = props;
 
             NextNotificationTime = DateTime.Now;
-            _notificationThrottle = new NotificationThrottle(ShowToast);
+            _notificationThrottle = new NotificationThrottle(ShowToast, "Authorization Required", "{0} identities require authorization.");
             SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
             string nlogFile = Path.Combine(ExecutionDirectory, ThisAssemblyName + "-log.config");
 
@@ -1099,7 +1099,7 @@ namespace ZitiDesktopEdge {
                 .SetContent("Authenticate")
                 .AddArgument("action", "ext-auth")
                 .AddArgument("identifier", identity.Identifier);
-            _notificationThrottle.Queue(identity.Identifier, "Authorization Required", $"{displayName} requires external authentication to access services.", button, "{0} identities require authorization.");
+            _notificationThrottle.Queue(identity.Identifier, $"{displayName} requires external authentication to access services.", button);
         }
 
         private void QueueMfaNotification(ZitiIdentity identity) {
@@ -1108,7 +1108,7 @@ namespace ZitiDesktopEdge {
                 .SetContent("Authenticate")
                 .AddArgument("action", "mfa-auth")
                 .AddArgument("identifier", identity.Identifier);
-            _notificationThrottle.Queue(identity.Identifier, "Authorization Required", $"{displayName} requires MFA authentication.", button, "{0} identities require authorization.");
+            _notificationThrottle.Queue(identity.Identifier, $"{displayName} requires MFA authentication.", button);
         }
 
         private async Task StartExtAuth(ZitiIdentity identity) {
