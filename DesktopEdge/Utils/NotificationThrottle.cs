@@ -16,6 +16,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Threading;
 using Microsoft.Toolkit.Uwp.Notifications;
 
@@ -28,17 +29,15 @@ namespace Ziti.Desktop.Edge.Utils {
     public class NotificationThrottle {
 
         private readonly Action<string, string, ToastButton> _sendNotification;
-        private readonly HashSet<string> _seenIdentifiers = new HashSet<string>();
-        private readonly List<Action> _pendingNotifications = new List<Action>();
+        private readonly Dictionary<string, Action> _pendingNotifications = new Dictionary<string, Action>();
         private readonly DispatcherTimer _throttleTimer;
-        private int _queuedCount;
         private string _header;
         private string _summaryFormat;
 
         public NotificationThrottle(Action<string, string, ToastButton> sendNotification) {
             _sendNotification = sendNotification;
             _throttleTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
-            _throttleTimer.Tick += (s, e) => Flush();
+            _throttleTimer.Tick += (s, e) => SendPendingNotifications();
         }
 
         /// <summary>
@@ -46,12 +45,10 @@ namespace Ziti.Desktop.Edge.Utils {
         /// Resets the 5-second window each time a new notification arrives.
         /// </summary>
         public void Queue(string identityIdentifier, string header, string message, ToastButton button, string summaryFormat) {
-            if (_seenIdentifiers.Contains(identityIdentifier)) return;
-            _seenIdentifiers.Add(identityIdentifier);
+            if (_pendingNotifications.ContainsKey(identityIdentifier)) return;
             _header = header;
             _summaryFormat = summaryFormat;
-            _queuedCount++;
-            _pendingNotifications.Add(() => _sendNotification(header, message, button));
+            _pendingNotifications[identityIdentifier] = () => _sendNotification(header, message, button);
             _throttleTimer.Stop();
             _throttleTimer.Start();
         }
@@ -60,7 +57,7 @@ namespace Ziti.Desktop.Edge.Utils {
         /// Removes a single identity from the seen set so it can trigger notifications again.
         /// </summary>
         public void Remove(string identityIdentifier) {
-            _seenIdentifiers.Remove(identityIdentifier);
+            _pendingNotifications.Remove(identityIdentifier);
         }
 
         /// <summary>
@@ -68,24 +65,25 @@ namespace Ziti.Desktop.Edge.Utils {
         /// </summary>
         public void Clear() {
             _throttleTimer.Stop();
-            _seenIdentifiers.Clear();
             _pendingNotifications.Clear();
-            _queuedCount = 0;
         }
 
         /// <summary>
-        /// Fires when the throttle window expires. Sends the individual notification or a summary depending on count.
+        /// Fires when the throttle window expires. Sends the individual notification or a summary if count > 1.
         /// </summary>
-        private void Flush() {
+        private void SendPendingNotifications() {
             _throttleTimer.Stop();
-            if (_queuedCount == 0) return;
-            if (_queuedCount == 1) {
-                _pendingNotifications[0]();
+            int count = _pendingNotifications.Count;
+            if (count == 0) return;
+
+            bool sendSummary = count > 1;
+            if (sendSummary) {
+                _sendNotification(_header, string.Format(_summaryFormat, count), null);
             } else {
-                _sendNotification(_header, string.Format(_summaryFormat, _queuedCount), null);
+                // Send the single notification
+                _pendingNotifications.Values.First()();
             }
             _pendingNotifications.Clear();
-            _queuedCount = 0;
         }
     }
 }
