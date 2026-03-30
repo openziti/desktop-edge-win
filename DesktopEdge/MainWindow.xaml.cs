@@ -1481,6 +1481,16 @@ namespace ZitiDesktopEdge {
                 } else {
                     Application.Current.Properties[key] = status?.ApiPageSize;
                 }
+                if (!Application.Current.Properties.Contains("L2Enabled")) {
+                    Application.Current.Properties.Add("L2Enabled", status?.L2Enabled);
+                } else {
+                    Application.Current.Properties["L2Enabled"] = status?.L2Enabled;
+                }
+                if (!Application.Current.Properties.Contains("PcapInterface")) {
+                    Application.Current.Properties.Add("PcapInterface", status?.PcapInterface);
+                } else {
+                    Application.Current.Properties["PcapInterface"] = status?.PcapInterface;
+                }
                 identities.Clear();
                 foreach (var id in status.Identities) {
                     updateViewWithIdentity(id);

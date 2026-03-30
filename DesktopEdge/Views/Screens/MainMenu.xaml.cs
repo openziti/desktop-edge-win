@@ -19,6 +19,9 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Diagnostics;
 using System;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Net.Mail;
 using System.IO;
@@ -61,6 +64,20 @@ namespace ZitiDesktopEdge {
         private ZDEWViewState state;
 
         public bool ShowUnexpectedFailure { get; set; }
+
+        private bool _l2Enabled;
+        public bool L2Enabled {
+            get { return _l2Enabled; }
+            set { _l2Enabled = value; OnPropertyChanged(nameof(L2Enabled)); }
+        }
+
+        public ObservableCollection<string> PcapInterfaces { get; } = new ObservableCollection<string>();
+
+        private string _selectedPcapInterface;
+        public string SelectedPcapInterface {
+            get { return _selectedPcapInterface; }
+            set { _selectedPcapInterface = value; OnPropertyChanged(nameof(SelectedPcapInterface)); }
+        }
 
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged(string propertyName) {
@@ -271,6 +288,8 @@ namespace ZitiDesktopEdge {
                 ConfigMtu.Value = Application.Current.Properties["mtu"]?.ToString();
                 ConfigDns.Value = Application.Current.Properties["dns"]?.ToString();
                 ConfigDnsEnabled.Value = Application.Current.Properties["dnsenabled"]?.ToString();
+                ConfigL2Enabled.Value = ((Application.Current.Properties.Contains("L2Enabled")) ? Application.Current.Properties["L2Enabled"].ToString() : "False");
+                ConfigPcapInterface.Value = ((Application.Current.Properties.Contains("PcapInterface")) ? Application.Current.Properties["PcapInterface"]?.ToString() : "");
                 bool dnsEnabled;
                 if(Boolean.TryParse(Application.Current.Properties["dnsenabled"]?.ToString(), out dnsEnabled)) {
                     if (dnsEnabled) {
@@ -552,23 +571,27 @@ namespace ZitiDesktopEdge {
             logger.Info("updating config...");
             DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
             try {
-                ComboBoxItem item = (ComboBoxItem)ConfigMaskNew.SelectedValue;
-                var newMaskVar = Int32.Parse(item.Tag.ToString());
-                var addDnsNewVar = Convert.ToBoolean(AddDnsNew.IsChecked);
-                ConfigDnsEnabled.Value = addDnsNewVar.ToString();
+                ComboBoxItem selectedMask = (ComboBoxItem)ConfigMaskNew.SelectedValue;
+                int prefixLength = Int32.Parse(selectedMask.Tag.ToString());
+                bool addDns = Convert.ToBoolean(AddDnsNew.IsChecked);
+                ConfigDnsEnabled.Value = addDns.ToString();
                 CheckRange();
                 int pageSize = Int32.Parse(ConfigePageSizeNew.Text);
                 ConfigPageSize.Value = ConfigePageSizeNew.Text;
 
-                var r = await client.UpdateConfigAsync(ConfigIpNew.Text, newMaskVar, addDnsNewVar, pageSize);
-                if (r.Code != 0) {
-                    this.OnShowBlurb?.Invoke("Error: " + r.Error);
-                    logger.Debug("ERROR: {0} : {1}", r.Message, r.Error);
+                ConfigL2Enabled.Value = L2Enabled.ToString();
+                string pcapInterface = SelectedPcapInterface ?? "";
+                ConfigPcapInterface.Value = pcapInterface;
+
+                SvcResponse response = await client.UpdateInterfaceConfigAsync(ConfigIpNew.Text, prefixLength, addDns, pageSize, L2Enabled, pcapInterface);
+                if (response.Code != 0) {
+                    this.OnShowBlurb?.Invoke("Error: " + response.Error);
+                    logger.Debug("ERROR: {0} : {1}", response.Message, response.Error);
                 } else {
                     this.OnShowBlurb?.Invoke("Config Save, Please Restart Ziti to Update");
                     this.CloseEdit();
                 }
-                logger.Info("Got response from update config task : {0}", r);
+                logger.Info("Got response from update interface config task : {0}", response);
             } catch (DataStructures.ServiceException se) {
                 this.OnShowBlurb?.Invoke("Error: " + se.Message);
                 logger.Error(se, "service exception in update check: {0}", se.Message);
@@ -630,6 +653,23 @@ namespace ZitiDesktopEdge {
             } else {
                 // uncomment when we want to remove AddDnsNew.Visibility = Visibility.Collapsed;
             }
+
+            if (Application.Current.Properties.Contains("L2Enabled")) {
+                L2Enabled = (bool)Application.Current.Properties["L2Enabled"];
+            } else {
+                L2Enabled = false;
+            }
+
+            PcapInterfaces.Clear();
+            foreach (var nic in NetworkInterface.GetAllNetworkInterfaces()
+                .Where(n => n.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+                .OrderBy(n => n.Name)) {
+                PcapInterfaces.Add(nic.Name);
+            }
+            if (Application.Current.Properties.Contains("PcapInterface")) {
+                SelectedPcapInterface = Application.Current.Properties["PcapInterface"]?.ToString();
+            }
+
             EditArea.Opacity = 0;
             EditArea.Visibility = Visibility.Visible;
             EditArea.Margin = new Thickness(0, 0, 0, 0);
