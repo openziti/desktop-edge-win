@@ -4,6 +4,7 @@
     * Status (enabled/disabled)
     * Name
     * Number of services
+* [Issue 887](https://github.com/openziti/desktop-edge-win/issues/887) - OS toast notifications when identities require authorization (ext-auth or MFA). Single identity notifications include an Authenticate button; multiple identities are batched into a summary over a sliding 5-second window
 
 ## Bugs fixed:
 * Prevent identities from incorrectly persisting through disconnect/reconnect when identities no longer exist in the app data directory
