@@ -267,6 +267,7 @@
                     <local:MenuEditItem x:Name="ConfigPageSize" HorizontalAlignment="Stretch" Width="Auto" Label="Api Page Size (10-500):"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigDnsEnabled" HorizontalAlignment="Stretch" Width="Auto" Label="Add Dns:" Visibility="Visible"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigL2Enabled" HorizontalAlignment="Stretch" Width="Auto" Label="L2 Enabled:"></local:MenuEditItem>
+                    <local:MenuEditItem x:Name="ConfigUsePcap" HorizontalAlignment="Stretch" Width="Auto" Label="Use Pcap:"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigPcapInterface" HorizontalAlignment="Stretch" Width="Auto" Label="Pcap Interface:"></local:MenuEditItem>
                     <local:StyledButton x:Name="EditButton" OnClick="ShowEdit_Click" Label="Edit Values" Grid.Row="8" Margin="0,20,0,0"></local:StyledButton>
                 </StackPanel>
@@ -289,7 +290,7 @@
         <Rectangle x:Name="ModalBg" MouseDown="Window_MouseDown" Margin="10,10,10,10" Fill="Black" RadiusY="10" RadiusX="10" Opacity="0" Visibility="Collapsed"></Rectangle>
 
         <!-- Modal For modifying the config data -->
-        <Grid x:Name="EditArea" Visibility="Collapsed" Height="500" Margin="0,0,0,0">
+        <Grid x:Name="EditArea" Visibility="Collapsed" Height="520" Margin="0,0,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"></ColumnDefinition>
             </Grid.ColumnDefinitions>
@@ -362,9 +363,10 @@
                 <CheckBox x:Name="AddDnsNew" Content="Add DNS" IsChecked="True" Margin="10" Visibility="Visible"/>
 
                 <CheckBox Content="L2 Enabled" IsChecked="{Binding L2Enabled}" Margin="10" Visibility="Visible"/>
+                <CheckBox Content="Use Pcap" IsChecked="{Binding UsePcap}" IsEnabled="{Binding L2Enabled}" Margin="10" Visibility="Visible"/>
 
                 <Label Content="Pcap Interface" Padding="10,0,0,0" FontWeight="Bold" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
-                <ComboBox ItemsSource="{Binding PcapInterfaces}" SelectedItem="{Binding SelectedPcapInterface}" Padding="10" Margin="10,10,10,10" FontSize="14" Height="40" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black" BorderBrush="#FFACACAC" Style="{DynamicResource ComboStyle}"/>
+                <ComboBox ItemsSource="{Binding PcapInterfaces}" SelectedItem="{Binding SelectedPcapInterface}" IsEnabled="{Binding IsPcapDropdownEnabled}" Padding="10" Margin="10,10,10,10" FontSize="14" Height="40" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black" BorderBrush="#FFACACAC" Style="{DynamicResource ComboStyle}"/>
 
                 <local:StyledButton x:Name="SaveConfigButton" OnClick="SaveConfig_Click" Label="Save" Grid.Row="8"></local:StyledButton>
 

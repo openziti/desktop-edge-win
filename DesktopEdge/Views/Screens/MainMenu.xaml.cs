@@ -68,7 +68,28 @@ namespace ZitiDesktopEdge {
         private bool _l2Enabled;
         public bool L2Enabled {
             get { return _l2Enabled; }
-            set { _l2Enabled = value; OnPropertyChanged(nameof(L2Enabled)); }
+            set {
+                _l2Enabled = value;
+                if (!value) { UsePcap = false; }
+                OnPropertyChanged(nameof(L2Enabled));
+                OnPropertyChanged(nameof(IsPcapDropdownEnabled));
+            }
+        }
+
+        // Only relevant when L2Enabled is true. Controls whether a PcapInterface is sent to the tunneler.
+        private bool _usePcap;
+        public bool UsePcap {
+            get { return _usePcap; }
+            set {
+                _usePcap = value;
+                if (!value) { SelectedPcapInterface = null; }
+                OnPropertyChanged(nameof(UsePcap));
+                OnPropertyChanged(nameof(IsPcapDropdownEnabled));
+            }
+        }
+
+        public bool IsPcapDropdownEnabled {
+            get { return L2Enabled && UsePcap; }
         }
 
         public ObservableCollection<string> PcapInterfaces { get; } = new ObservableCollection<string>();
@@ -289,7 +310,9 @@ namespace ZitiDesktopEdge {
                 ConfigDns.Value = Application.Current.Properties["dns"]?.ToString();
                 ConfigDnsEnabled.Value = Application.Current.Properties["dnsenabled"]?.ToString();
                 ConfigL2Enabled.Value = ((Application.Current.Properties.Contains("L2Enabled")) ? Application.Current.Properties["L2Enabled"].ToString() : "False");
-                ConfigPcapInterface.Value = ((Application.Current.Properties.Contains("PcapInterface")) ? Application.Current.Properties["PcapInterface"]?.ToString() : "");
+                string storedPcap = (Application.Current.Properties.Contains("PcapInterface")) ? Application.Current.Properties["PcapInterface"]?.ToString() : "";
+                ConfigUsePcap.Value = (!string.IsNullOrEmpty(storedPcap)).ToString();
+                ConfigPcapInterface.Value = storedPcap;
                 bool dnsEnabled;
                 if(Boolean.TryParse(Application.Current.Properties["dnsenabled"]?.ToString(), out dnsEnabled)) {
                     if (dnsEnabled) {
@@ -566,6 +589,11 @@ namespace ZitiDesktopEdge {
         /// Save the config information to the properties and queue for update.
         /// </summary>
         async private void UpdateConfig() {
+            if (L2Enabled && UsePcap && string.IsNullOrEmpty(SelectedPcapInterface)) {
+                this.OnShowBlurb?.Invoke("Select a Pcap Interface");
+                return;
+            }
+
             Properties.Settings.Default.Save();
 
             logger.Info("updating config...");
@@ -580,7 +608,8 @@ namespace ZitiDesktopEdge {
                 ConfigPageSize.Value = ConfigePageSizeNew.Text;
 
                 ConfigL2Enabled.Value = L2Enabled.ToString();
-                string pcapInterface = SelectedPcapInterface ?? "";
+                ConfigUsePcap.Value = (L2Enabled && UsePcap).ToString();
+                string pcapInterface = (L2Enabled && UsePcap) ? SelectedPcapInterface ?? "" : "";
                 ConfigPcapInterface.Value = pcapInterface;
 
                 SvcResponse response = await client.UpdateInterfaceConfigAsync(ConfigIpNew.Text, prefixLength, addDns, pageSize, L2Enabled, pcapInterface);
@@ -669,7 +698,11 @@ namespace ZitiDesktopEdge {
                 PcapInterfaces.Add(nic.Name);
             }
             if (Application.Current.Properties.Contains("PcapInterface")) {
-                SelectedPcapInterface = Application.Current.Properties["PcapInterface"]?.ToString();
+                string storedPcapInterface = Application.Current.Properties["PcapInterface"]?.ToString();
+                SelectedPcapInterface = storedPcapInterface;
+                UsePcap = !string.IsNullOrEmpty(storedPcapInterface);
+            } else {
+                UsePcap = false;
             }
 
             EditArea.Opacity = 0;
