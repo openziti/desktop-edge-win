@@ -441,26 +441,22 @@ namespace ZitiDesktopEdge.ServiceClient {
             return;
         }
 
-        async public Task<SvcResponse> UpdateConfigAsync(string tunIPv4, int tunIPv4Mask, bool addDns, int apiPageSize) {
+        async public Task<SvcResponse> UpdateInterfaceConfigAsync(string tunIPv4, int tunIPv4Mask, bool addDns, int apiPageSize, bool l2Enabled, string pcapInterface) {
             SvcResponse resp = null;
             try {
+                InterfaceConfigUpdateFunction payload = new InterfaceConfigUpdateFunction(tunIPv4, tunIPv4Mask, addDns, apiPageSize, l2Enabled, pcapInterface);
 
-                ConfigUpdateFunction configPayload = new ConfigUpdateFunction(tunIPv4, tunIPv4Mask, addDns, apiPageSize);
-
-                await sendDataClientAsync(configPayload);
+                await sendDataClientAsync(payload);
                 resp = await readDataClientAsync<SvcResponse>(ipcReader);
-                Logger.Debug("config update payload is sent to the ziti tunnel");
+                Logger.Debug("interface config payload is sent to the ziti tunnel");
             } catch (Exception ex) {
-                //almost certainly a problem with the pipe - recreate the pipe...
-                //setupPipe();
-                //throw;
                 Logger.Error(ex, "Unexpected error");
                 CommunicationError(ex);
                 throw ex;
             }
             if (resp?.Code != 0) {
-                Logger.Warn("failed to update the config. {0} {1}", resp.Message, resp.Error);
-                throw new ServiceException("Failed to update the config", resp, "Un expected error.");
+                Logger.Warn("failed to update interface config. {0} {1}", resp.Message, resp.Error);
+                throw new ServiceException("Failed to update interface config", resp, "Unexpected error.");
             }
             return resp;
         }

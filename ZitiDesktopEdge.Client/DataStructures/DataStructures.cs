@@ -398,6 +398,8 @@ namespace ZitiDesktopEdge.DataStructures {
         public ServiceVersion ServiceVersion { get; set; }
         public bool AddDns { get; set; }
         public int ApiPageSize { get; set; }
+        public bool L2Enabled { get; set; }
+        public string PcapInterface { get; set; }
 
 #if DEBUG
         public void Dump(System.IO.TextWriter writer) {
@@ -537,24 +539,40 @@ namespace ZitiDesktopEdge.DataStructures {
         public MfaRecoveryCodes Data { get; set; }
     }
 
-    public class ConfigPayload {
+    public class L3Options {
         public string TunIPv4 { get; set; }
         public int TunPrefixLength { get; set; }
         public bool AddDns { get; set; }
         public int ApiPageSize { get; set; }
     }
 
-    public class ConfigUpdateFunction : ServiceFunction {
-        public ConfigUpdateFunction(string tunIPv4, int tunPrefixLength, bool addDns, int apiPageSize) {
-            this.Command = "UpdateTunIpv4";
-            this.Data = new ConfigPayload() {
-                TunIPv4 = tunIPv4,
-                TunPrefixLength = tunPrefixLength,
-                AddDns = addDns,
-                ApiPageSize = apiPageSize,
+    public class L2Options {
+        public bool Enabled { get; set; }
+        public string PcapInterface { get; set; }
+    }
+
+    public class InterfaceConfigPayload {
+        public L3Options L3 { get; set; }
+        public L2Options L2 { get; set; }
+    }
+
+    public class InterfaceConfigUpdateFunction : ServiceFunction {
+        public InterfaceConfigUpdateFunction(string tunIPv4, int tunPrefixLength, bool addDns, int apiPageSize, bool l2Enabled, string pcapInterface) {
+            this.Command = "UpdateInterfaceConfig";
+            this.Data = new InterfaceConfigPayload() {
+                L3 = new L3Options() {
+                    TunIPv4 = tunIPv4,
+                    TunPrefixLength = tunPrefixLength,
+                    AddDns = addDns,
+                    ApiPageSize = apiPageSize,
+                },
+                L2 = new L2Options() {
+                    Enabled = l2Enabled,
+                    PcapInterface = pcapInterface,
+                },
             };
         }
-        public ConfigPayload Data { get; set; }
+        public InterfaceConfigPayload Data { get; set; }
     }
 
     public class NotificationFrequencyPayload {
