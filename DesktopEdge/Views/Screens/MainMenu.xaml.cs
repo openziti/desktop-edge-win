@@ -45,7 +45,7 @@ namespace ZitiDesktopEdge {
     /// <summary>
     /// Interaction logic for MainMenu.xaml
     /// </summary>
-    public partial class MainMenu : UserControl {
+    public partial class MainMenu : UserControl, INotifyPropertyChanged {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         public delegate void AttachementChanged(bool attached);
@@ -588,6 +588,8 @@ namespace ZitiDesktopEdge {
                     this.OnShowBlurb?.Invoke("Error: " + response.Error);
                     logger.Debug("ERROR: {0} : {1}", response.Message, response.Error);
                 } else {
+                    Application.Current.Properties["L2Enabled"] = L2Enabled;
+                    Application.Current.Properties["PcapInterface"] = pcapInterface;
                     this.OnShowBlurb?.Invoke("Config Save, Please Restart Ziti to Update");
                     this.CloseEdit();
                 }
