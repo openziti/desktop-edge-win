@@ -1,3 +1,19 @@
+# Release 2.10.0.0
+## What's New
+* updated to ziti-edge-tunnel v1.14.0
+
+## Bugs fixed:
+n/a
+
+## Other changes
+n/a
+
+## Dependencies
+* ziti-tunneler: v1.14.0
+* ziti-sdk:      1.14.0.2
+* tlsuv:         v0.41.1[OpenSSL 3.6.1 27 Jan 2026]
+* tlsuv:         v0.41.1[win32crypto(CNG): ncrypt[1.0] ]
+
 # Release 2.9.8.0
 ## What's New
 * Added column headers to allow ascending/descending sorting of identities based on:
