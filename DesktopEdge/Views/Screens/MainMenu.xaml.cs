@@ -1,3 +1,4 @@
+#define PROCESS_STOPPED_ZITI_SERVICE
 /*
 	Copyright NetFoundry Inc.
 
@@ -572,10 +573,17 @@ namespace ZitiDesktopEdge {
         }
 
         public void Disconnected() {
+#if PROCESS_STOPPED_ZITI_SERVICE
             ConfigItems.IsEnabled = false;
             ConfigItems.Opacity = 0.3;
             LogLevelItems.IsEnabled = false;
             LogLevelItems.Opacity = 0.3;
+#if DEBUG
+            logger.Warn("========================================");
+            logger.Warn("PROCESS_STOPPED_ZITI_SERVICE is enabled. if the ziti service is running - editing advanced options will appear broken.");
+            logger.Warn("========================================");
+#endif
+#endif
         }
 
         public void Connected() {
