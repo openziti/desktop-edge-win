@@ -34,7 +34,7 @@ jobs:
       - name: Prepare beta release
         shell: pwsh
         run: |
-          ./prepare-beta.ps1 `
+          ./scripts/prepare-beta.ps1 `
             -DesktopEdgeVersion '${{ inputs.desktop_edge_version }}' `
             -ZetVersion '${{ inputs.zet_version }}'
         env:

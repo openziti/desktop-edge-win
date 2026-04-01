@@ -132,7 +132,7 @@ if ($version -eq "") {
 }
 
 echo "Updating the version for UI and Installer"
-.\update-versions.ps1 $version
+.\scripts\update-versions.ps1 $version
 
 echo "Restoring the .NET project"
 nuget restore .\ZitiDesktopEdge.sln

@@ -5,7 +5,7 @@
 #   .\verify-streams.ps1
 #   .\verify-streams.ps1 -StreamsDir .\release-streams
 param(
-    [string]$StreamsDir = (Join-Path $PSScriptRoot "release-streams")
+    [string]$StreamsDir = (Join-Path (Split-Path $PSScriptRoot -Parent) "release-streams")
 )
 
 $failed = $false

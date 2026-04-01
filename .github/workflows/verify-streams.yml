@@ -18,4 +18,4 @@ jobs:
 
       - name: Verify stream download URLs
         shell: pwsh
-        run: ./verify-streams.ps1
+        run: ./scripts/verify-streams.ps1

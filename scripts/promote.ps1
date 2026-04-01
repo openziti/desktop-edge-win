@@ -50,7 +50,7 @@ function Invoke-Promote($sourcePath, $targetPath) {
 if ($PSCmdlet.ParameterSetName -eq "ByPath") {
     Invoke-Promote $From $To[0]
 } else {
-    $streamsDir = "$PSScriptRoot\release-streams"
+    $streamsDir = "$(Split-Path $PSScriptRoot -Parent)\release-streams"
 
     # Locate the regular source for this version.
     $regularSource = $null

@@ -31,8 +31,8 @@ if ([string]::IsNullOrEmpty($versionQualifier)) {
 
 # Promote function that copies 'beta.json' to 'latest.json' and updates timestamp
 function Promote-Release {
-    $betaJsonPath = "$scriptDirectory\release-streams\beta${versionQualifier}.json"
-    $latestJsonPath = "$scriptDirectory\release-streams\latest${versionQualifier}.json"
+    $betaJsonPath = "$repoRoot\release-streams\beta${versionQualifier}.json"
+    $latestJsonPath = "$repoRoot\release-streams\latest${versionQualifier}.json"
     
     if (Test-Path -Path $betaJsonPath) {
         Copy-Item -Force $betaJsonPath $latestJsonPath
@@ -53,7 +53,8 @@ function Promote-Release {
 
 echo ""
 $scriptDirectory = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
-$localDir = Join-Path $scriptDirectory "release-streams\local${versionQualifier}"
+$repoRoot = (Resolve-Path "$scriptDirectory\..").Path
+$localDir = Join-Path $repoRoot "release-streams\local${versionQualifier}"
 
 # If promote flag is set, invoke the promotion function
 if ($promote) {
@@ -101,11 +102,11 @@ if (-not $version) {
 Set-Content -Path "version" -Value $version -NoNewline
 Write-Host "Updating version file to version: $version" -ForegroundColor Yellow
 
-$outputPath = "$scriptDirectory\release-streams\${version}.json"
+$outputPath = "$repoRoot\release-streams\${version}.json"
 & .\Installer\output-build-json.ps1 -version:$version -url:$url -stream:$stream -published_at:$published_at -outputPath:$outputPath
 
-Copy-Item -Force "$scriptDirectory\release-streams\${version}.json" "$scriptDirectory\release-streams\${stream}.json"
-echo "json file written to: $scriptDirectory\release-streams\${stream}.json"
+Copy-Item -Force "$repoRoot\release-streams\${version}.json" "$repoRoot\release-streams\${stream}.json"
+echo "json file written to: $repoRoot\release-streams\${stream}.json"
 
 if(! $jsonOnly) {
   & .\Installer\build.ps1 -version:$version -url:$url -stream:$stream -published_at:$published_at -jsonOnly:$jsonOnly -revertGitAfter:$revertGitAfter -versionQualifier:$versionQualifier -Win32Crypto:$Win32Crypto
@@ -117,8 +118,8 @@ if(! $jsonOnly) {
   }
   
   mkdir "${localDir}\${version}" -ErrorAction Ignore > $null
-  Move-Item -Force "$scriptDirectory/Installer/Output/Ziti Desktop Edge Client-${version}.exe" "$localDir\${version}\Ziti.Desktop.Edge.Client-${version}.exe"
-  Move-Item -Force "$scriptDirectory/Installer/Output/Ziti Desktop Edge Client-${version}.exe.sha256" "$localDir\${version}\Ziti.Desktop.Edge.Client-${version}.exe.sha256"
+  Move-Item -Force "$repoRoot/Installer/Output/Ziti Desktop Edge Client-${version}.exe" "$localDir\${version}\Ziti.Desktop.Edge.Client-${version}.exe"
+  Move-Item -Force "$repoRoot/Installer/Output/Ziti Desktop Edge Client-${version}.exe.sha256" "$localDir\${version}\Ziti.Desktop.Edge.Client-${version}.exe.sha256"
   Write-Host ""
   Write-Host "done."
   Write-Host "installer exists at $localDir\${version}\Ziti.Desktop.Edge.Client-${version}.exe"
