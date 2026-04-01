@@ -34,6 +34,12 @@ namespace Ziti.Desktop.Edge.Utils {
         private readonly string _header;
         private readonly string _summaryFormat;
 
+        private bool _suppress;
+        public bool Suppress {
+            get { return _suppress; }
+            set { _suppress = value; }
+        }
+
         public NotificationThrottle(Action<string, string, ToastButton> sendNotification, string header, string summaryFormat) {
             _sendNotification = sendNotification;
             _header = header;
@@ -75,6 +81,11 @@ namespace Ziti.Desktop.Edge.Utils {
             _throttleTimer.Stop();
             int count = _pendingNotifications.Count;
             if (count == 0) return;
+
+            if (_suppress) {
+                _pendingNotifications.Clear();
+                return;
+            }
 
             bool sendSummary = count > 1;
             if (sendSummary) {

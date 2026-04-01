@@ -660,9 +660,11 @@ namespace ZitiDesktopEdge {
             this.Show();
             this.Visibility = Visibility.Visible;
             this.Opacity = 1;
+            _notificationThrottle.Suppress = true;
         }
 
         private void MainWindow_Deactivated(object sender, EventArgs e) {
+            _notificationThrottle.Suppress = false;
             if (this._isAttached) {
                 this.Visibility = Visibility.Hidden;
             }
@@ -1570,6 +1572,7 @@ namespace ZitiDesktopEdge {
                     updateViewWithIdentity(id);
                 }
                 foreach (var zid in identities) {
+                    if (!zid.IsEnabled) continue;
                     if (zid.NeedsExtAuth) {
                         QueueExtAuthNotification(zid);
                     }
