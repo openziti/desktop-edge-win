@@ -1,6 +1,27 @@
+# Release 2.10.1.0
+## What's New
+* Updated to ziti-edge-tunnel v1.14.1
+
+## Bugs fixed:
+n/a
+
+## Other changes
+n/a
+
+## Dependencies
+* ziti-tunneler: v1.14.1
+* ziti-sdk:      1.14.0.2
+* tlsuv:         v0.41.1[OpenSSL 3.6.1 27 Jan 2026]
+* tlsuv:         v0.41.1[win32crypto(CNG): ncrypt[1.0] ]
+
 # Release 2.10.0.0
 ## What's New
-* updated to ziti-edge-tunnel v1.14.0
+* Added Layer 2 (L2) support with configurable options in the tunnel configuration modal:
+    * L2 Enabled toggle to activate Layer 2 networking
+    * Use Pcap checkbox to enable packet capture interface selection
+    * Pcap Interface dropdown for selecting the network interface used for packet capture
+* Replaced `UpdateTunIpv4` IPC command with unified `UpdateInterfaceConfig` command that combines L3 and L2 configuration into a single payload
+* Updated to ziti-edge-tunnel v1.14.0
 
 ## Bugs fixed:
 n/a
