@@ -178,6 +178,7 @@
     </Compile>
     <Compile Include="Models\UIModel.cs" />
     <Compile Include="Native\NativeMethods.cs" />
+    <Compile Include="Utils\NotificationThrottle.cs" />
     <Compile Include="Utils\UIUtils.cs" />
     <Compile Include="Views\ItemRenderers\MenuEditItem.xaml.cs">
       <DependentUpon>MenuEditItem.xaml</DependentUpon>
