@@ -91,6 +91,18 @@ namespace ZitiDesktopEdge {
             settings.Save();
         }
 
+        /// <summary>
+        /// Returns a sort rank for an identity's auth state, where lower values
+        /// represent statuses that need more urgent user attention.
+        /// </summary>
+        private int AuthSortOrder(ZitiIdentity identity) {
+            if (identity.IsTimedOut) return 0;
+            if (identity.IsTimingOut) return 1;
+            if (identity.IsMFANeeded) return 2;
+            if (identity.NeedsExtAuth) return 3;
+            return 4;
+        }
+
         public ZitiIdentity[] GetSortedIdentities(IEnumerable<ZitiIdentity> identities) {
             bool descending = SortDirection == "Descending";
             IEnumerable<ZitiIdentity> sorted;
@@ -104,9 +116,13 @@ namespace ZitiDesktopEdge {
                     break;
                 case "Services":
                     if (descending) {
-                        sorted = identities.OrderByDescending(i => i.Services.Count);
+                        sorted = identities
+                            .OrderByDescending(i => AuthSortOrder(i))
+                            .ThenByDescending(i => i.Services.Count);
                     } else {
-                        sorted = identities.OrderBy(i => i.Services.Count);
+                        sorted = identities
+                            .OrderBy(i => AuthSortOrder(i))
+                            .ThenBy(i => i.Services.Count);
                     }
                     break;
                 case "Status":
