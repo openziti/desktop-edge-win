@@ -24,6 +24,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$repoRoot  = (Resolve-Path "$scriptDir\..").Path
 
 function Log($msg)  { Write-Host $msg }
 function Info($msg) { Write-Host -ForegroundColor Cyan   "  [info] $msg" }
@@ -60,7 +61,7 @@ $now      = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd") + "T12:00:00Z"
 $zetBase  = "https://github.com/openziti/ziti-tunnel-sdk-c/releases/download/$ZetVersion"
 $buildUrl = "https://github.com/openziti/desktop-edge-win/releases/download/"
 
-Push-Location $scriptDir
+Push-Location $repoRoot
 try {
 
 # ── Create branch ─────────────────────────────────────────────────────────────
@@ -85,7 +86,7 @@ $zitiSdk      = "<fill in>"
 $tlsuvOpenSsl = "<fill in>"
 $tlsuvWin32   = "<fill in>"
 
-$zetDownloadDir = "$scriptDir\Installer\build\zet"
+$zetDownloadDir = "$repoRoot\Installer\build\zet"
 New-Item -ItemType Directory -Path "$zetDownloadDir\standard"    -Force | Out-Null
 New-Item -ItemType Directory -Path "$zetDownloadDir\win32crypto" -Force | Out-Null
 
@@ -122,7 +123,7 @@ foreach ($variant in @("", "-win32crypto")) {
 
 Info "Updating Installer/build.ps1 -> ZITI_EDGE_TUNNEL_VERSION=$ZetVersion"
 if (-not $DryRun) {
-    $buildPs1 = "$scriptDir\Installer\build.ps1"
+    $buildPs1 = "$repoRoot\Installer\build.ps1"
     (Get-Content $buildPs1) -replace '\$ZITI_EDGE_TUNNEL_VERSION="v\d+\.\d+\.\d+"', "`$ZITI_EDGE_TUNNEL_VERSION=`"$ZetVersion`"" |
         Set-Content $buildPs1
 }
@@ -132,7 +133,7 @@ Ok "build.ps1 updated"
 
 Info "Writing version -> $DesktopEdgeVersion"
 if (-not $DryRun) {
-    [System.IO.File]::WriteAllText("$scriptDir\version", $DesktopEdgeVersion)
+    [System.IO.File]::WriteAllText("$repoRoot\version", $DesktopEdgeVersion)
 }
 Ok "version file written"
 
@@ -155,7 +156,7 @@ $betaJson = @"
 
 Info "Writing release-streams/beta.json"
 if (-not $DryRun) {
-    $betaJson | Set-Content -Path "$scriptDir\release-streams\beta.json" -NoNewline
+    $betaJson | Set-Content -Path "$repoRoot\release-streams\beta.json" -NoNewline
 }
 Ok "beta.json written"
 
@@ -178,7 +179,7 @@ $betaWin32CryptoJson = @"
 
 Info "Writing release-streams/beta-win32crypto.json"
 if (-not $DryRun) {
-    $betaWin32CryptoJson | Set-Content -Path "$scriptDir\release-streams\beta-win32crypto.json" -NoNewline
+    $betaWin32CryptoJson | Set-Content -Path "$repoRoot\release-streams\beta-win32crypto.json" -NoNewline
 }
 Ok "beta-win32crypto.json written"
 
@@ -207,13 +208,13 @@ $releaseNotesEntry = $releaseNotesEntry -replace "`r`n", "`n"
 
 Info "Prepending entry to release-notes.md"
 if (-not $DryRun) {
-    $existing = [System.IO.File]::ReadAllText("$scriptDir\release-notes.md") -replace "`r`n", "`n"
+    $existing = [System.IO.File]::ReadAllText("$repoRoot\release-notes.md") -replace "`r`n", "`n"
     if ($existing -match "# Release $([regex]::Escape($DesktopEdgeVersion))") {
         Info "Entry for $DesktopEdgeVersion already exists - overwriting it"
         $existing = $existing -replace "(?s)# Release $([regex]::Escape($DesktopEdgeVersion)).+?(?=# Release |\z)", ""
     }
     $content = ($releaseNotesEntry + $existing) -replace "`r`n", "`n"
-    [System.IO.File]::WriteAllText("$scriptDir\release-notes.md", $content, [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText("$repoRoot\release-notes.md", $content, [System.Text.UTF8Encoding]::new($false))
 }
 Ok "release-notes.md updated"
 

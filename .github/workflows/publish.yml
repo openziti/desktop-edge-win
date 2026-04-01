@@ -26,6 +26,6 @@ jobs:
         with:
           persist-credentials: false
       - name: Publish Release
-        run: ./publish-release.sh ${{ inputs.version }} ${{ inputs.action_id }}
+        run: ./scripts/publish-release.sh ${{ inputs.version }} ${{ inputs.action_id }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

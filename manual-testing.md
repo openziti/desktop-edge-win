@@ -52,11 +52,11 @@ These are the tests you need to make sure to perform per release.
 
 ## Methodology
 
-- establish an `.env.ps1` file located adjacent to `setup-ids-for-test.ps1` containing:
+- establish an `.env.ps1` file located adjacent to `scripts/setup-ids-for-test.ps1` containing:
 
       $ZITI_USER="usernamehere"
       $ZITI_PASS="passwordhere"
-- execute the `.\setup-ids-for-test.ps1`:
+- execute the `.\scripts\setup-ids-for-test.ps1`:
 -- ClearIdentitiesOk is a mandatory flag that must be passed. the script cleans up the specified ZitiHome directory
    as well as cleans up the controller and resets identities, auth policies, external jwt signers etc.
 -- Url is the url to the controller with or without the https
@@ -65,7 +65,7 @@ These are the tests you need to make sure to perform per release.
 -- ZitiHome is the location of the jwts that will be produced as well as the location for certs/keys (pki-root)
 -- ExternalId is the email address of whatever user you want to use with the IdP. Likely this will be your email address
 
-      .\setup-ids-for-test.ps1 `
+      .\scripts\setup-ids-for-test.ps1 `
         -ClearIdentitiesOk `
         -Url "$zitiControllerAddress:$zitiControllerPort" `
         -RouterName "$zitiRouterName" `
@@ -74,7 +74,7 @@ These are the tests you need to make sure to perform per release.
 
 -- Example execution:
 
-      .\setup-ids-for-test.ps1 `
+      .\scripts\setup-ids-for-test.ps1 `
         -ClearIdentitiesOk `
         -Url "ctrl.cdaws.clint.demo.openziti.org:8441" `
         -RouterName "ip-172-31-47-200-edge-router" `

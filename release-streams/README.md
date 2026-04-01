@@ -26,9 +26,9 @@ This folder is also used when doing local development/upgrade testing. The basic
 * use python or some other simple webserver to serve up the release-streams/local folder as content
 
 All these steps are automated for you if you have the prerequisites installed. Simply run 
-`.\build-test-release.ps1` and provide a version to produce. For example, if 2.1.1 is deployed and
+`.\scripts\build-test-release.ps1` and provide a version to produce. For example, if 2.1.1 is deployed and
 you want to test 2.2.1, you would run:
-* `.\build-test-release.ps1 -version 2.2.1`
+* `.\scripts\build-test-release.ps1 -version 2.2.1`
 * cd `${project_root}/release-streams/local`
 * `python -m http.server 8000`
 * open the ZDEW, change the update url to http://localhost:8000/local.json and check for updates

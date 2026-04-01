@@ -13,7 +13,7 @@
 ## General Overview
 
 In July 2025 a GitHub action was created that specifically publishes a release. The action simply runs the
-script located in the root of the checkout named `publish-release.sh` using bash instead of Powershell. The
+script located at `scripts/publish-release.sh` using bash instead of Powershell. The
 script is relatively straightforward. It requires specifying the branch containing the `publish-release.sh`,
 which will likely always be `main`, the action id of the job to publish artifacts from, and the expected
 version to be published. The version input is used to verify the expected action contains the expected artifact
@@ -49,7 +49,7 @@ First, you should probably bump the file that drives the [version](../version). 
 [semver](https://semver.org/) versioning scheme perfectly but it follows it in spirit. Do not use these versions for
 decisions related to the API/domain socket protocols used. Use your best judgement when bumping the version.
 
-Creating a release for local testing is probably best accomplished by running the `build-test-release.ps1` script. This
+Creating a release for local testing is probably best accomplished by running the `scripts/build-test-release.ps1` script. This
 script will automate much of the tedium associated with locally testing releases and allows for easy overriding of value.
 This script will update the `release-streams/beta*.json` files as well, making it easier to publish a new release. You
 will require the appropriate secrets if you want to locally test the automatic upgrade procedure as the OpenZiti signing
@@ -65,8 +65,8 @@ This example builds both the openssl and win32crypto versions:
 
 ```
 $ver="2.7.1.5"
-.\build-test-release.ps1 -url https://netfoundry.jfrog.io/artifactory/downloads/desktop-edge-win-win32crypto -version $ver -Win32Crypto:$true
-.\build-test-release.ps1 -url https://github.com/openziti/desktop-edge-win/releases/download -version $ver -Win32Crypto:$false
+.\scripts\build-test-release.ps1 -url https://netfoundry.jfrog.io/artifactory/downloads/desktop-edge-win-win32crypto -version $ver -Win32Crypto:$true
+.\scripts\build-test-release.ps1 -url https://github.com/openziti/desktop-edge-win/releases/download -version $ver -Win32Crypto:$false
 ```
 
 After the installers finish they will output `deps-info.txt` files. This file is useful to fill out the dependencies for
