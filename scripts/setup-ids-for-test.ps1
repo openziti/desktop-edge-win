@@ -546,4 +546,4 @@ if ($runAll -or $Normal) { createNormalUsers }
 if ($runAll -or $Ejs)    { createExternalJwtEntities }
 if ($runAll -or $Ca)     { createCaRelatedEntities }
 Write-Host -ForegroundColor Green "[main] === test identity setup complete ==="
-Stop-Transcript
+try { Stop-Transcript } catch { }
