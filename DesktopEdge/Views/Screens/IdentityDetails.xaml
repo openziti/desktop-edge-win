@@ -448,17 +448,16 @@
         </Grid>
 
         <!-- Confirmation Prompt for confirming deletion -->
-        <Grid x:Name="ForgetIdentityConfirmView" Visibility="Collapsed" MaxWidth="410">
-            <Rectangle RadiusX="10" RadiusY="10">
+        <Grid x:Name="ForgetIdentityConfirmView" Visibility="Collapsed"
+              Height="{Binding ActualHeight, ElementName=IdentityArea}"
+              Width="{Binding ActualWidth, ElementName=IdentityArea}"
+              VerticalAlignment="Top"
+              HorizontalAlignment="Left">
+            <Rectangle RadiusX="10" RadiusY="10" Margin="10,10,10,10">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="Black"/>
                 </Rectangle.Fill>
             </Rectangle>
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="200"></ColumnDefinition>
-                </Grid.ColumnDefinitions>
-            </Grid>
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"></RowDefinition>
