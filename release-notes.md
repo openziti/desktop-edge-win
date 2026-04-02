@@ -3,7 +3,7 @@
 * updated to ziti-edge-tunnel v1.14.1
 
 ## Bugs fixed:
-n/a
+* Fixed forget identity confirmation modal not consistently filling the full UI area
 
 ## Other changes
 n/a
