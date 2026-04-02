@@ -12,16 +12,15 @@
 
 ## General Overview
 
-In July 2025 a GitHub action was created that specifically publishes a release. The action simply runs the
-script located at `scripts/publish-release.sh` using bash instead of Powershell. The
-script is relatively straightforward. It requires specifying the branch containing the `publish-release.sh`,
-which will likely always be `main`, the action id of the job to publish artifacts from, and the expected
-version to be published. The version input is used to verify the expected action contains the expected artifact
-version as a small check.
+Release notes are maintained in `upcoming-release-notes.md` as a working file. As changes are made between releases,
+update this file with the relevant details. When a release is cut, `prepare-beta.ps1` adds the version header
+and dependency info, and the publish action uses it for the GitHub release body. After promoting the release
+streams, `promote.ps1` clears the file for the next cycle. Release notes through 2.10.1.0 are archived in `release-notes-archive/`. Notes for later
+versions can be found on the [Releases](https://github.com/openziti/desktop-edge-win/releases) page.
 
-The script also expects the first (topmost) release-note entry to be the same version as input and found above
-via the built artifacts. It will extract the changes, use the `gh` CLI, generate a release, and upload artifacts
-to the release. It will also publish the `win32crypto` build to the NetFoundry JFrog repository (as of July 2025).
+The ["Create Release"](https://github.com/openziti/desktop-edge-win/actions/workflows/publish.yml) action runs
+`scripts/publish-release.sh` which validates `upcoming-release-notes.md`, creates a GitHub release, uploads artifacts,
+and publishes the `win32crypto` build to JFrog.
 
 After creating the release, verify the changelog looks correct in GitHub.
 
@@ -29,18 +28,26 @@ After creating the release, verify the changelog looks correct in GitHub.
 
 Once satisfied with local testing (see below), to make a new release here are the rough steps to follow:
 
-* make a branch for code changes from main
-* make code changes, including the version file, perform local testing
-* push code changes and merge to main using a pull request. **DO NOT include any updates to the `release-streams` at this time**
-* on merge to main the ["Build Installer"](https://github.com/openziti/desktop-edge-win/actions/workflows/installer.build.yml)
-  action will fire. Find the action, download/test the build artifacts.
-* take note of the action's id when downloading the artifacts. From the action itself it should be shown as the top/last action run.
-  for example: https://github.com/openziti/desktop-edge-win/actions/runs/16150600186, that would have 'id': 16150600186.
-* go to the ["Create Release" action](https://github.com/openziti/desktop-edge-win/actions/workflows/publish.yml)
-* click "Run workflow" and enter inputs
-  * branch: main
-  * expected version to publish: enter expected version (the version needs to match the versions from the action id)
-  * enter GitHub Actions run ID: enter the action id from above
+* ensure `upcoming-release-notes.md` is up to date with the changes for this release
+* run `prepare-beta.ps1` with the version and optionally a new ZET version. If no ZET version is provided, the current version from `Installer/build.ps1` is used
+  ```
+  .\scripts\prepare-beta.ps1 -DesktopEdgeVersion <version> -ZetVersion <zet-version>
+  .\scripts\prepare-beta.ps1 -DesktopEdgeVersion <version>
+  .\scripts\prepare-beta.ps1 -DesktopEdgeVersion <version> -DryRun
+  ```
+* review and merge the PR to main. **DO NOT include any updates to the `release-streams` at this time**
+* on merge to main the ["Build Installer"](https://github.com/openziti/desktop-edge-win/actions/workflows/installer.build.yml) action will fire. Find the action, download/test the build artifacts
+* take note of the action's run ID. From the action page it should be shown as the top/last action run (e.g. the numeric ID at the end of the action URL)
+* go to the ["Create Release" action](https://github.com/openziti/desktop-edge-win/actions/workflows/publish.yml), click "Run workflow" and enter the version and action run ID
+* after the release is published, update release streams with `scripts/promote.ps1`. This also clears `upcoming-release-notes.md` for the next cycle
+  ```
+  .\scripts\promote.ps1 -Version <version> -To beta
+  ```
+  Commit and push the changes in a PR
+* when the beta is validated and ready for general availability:
+  ```
+  .\scripts\promote.ps1 -Version <version> -To latest, stable
+  ```
 
 
 ## Making a Release for Local Testing
@@ -64,24 +71,12 @@ cert is mandatory to sign the executable for the upgrade process to start. The f
 This example builds both the openssl and win32crypto versions:
 
 ```
-$ver="2.7.1.5"
+$ver="<version>"
 .\scripts\build-test-release.ps1 -url https://netfoundry.jfrog.io/artifactory/downloads/desktop-edge-win-win32crypto -version $ver -Win32Crypto:$true
 .\scripts\build-test-release.ps1 -url https://github.com/openziti/desktop-edge-win/releases/download -version $ver -Win32Crypto:$false
 ```
 
-After the installers finish they will output `deps-info.txt` files. This file is useful to fill out the dependencies for
-the README.
-
-Example:
-```
-cat .\deps-info.txt
-
-Dependencies from ziti-edge-tunnel:
----------------------------------------------
-* ziti-tunneler: v1.7.3
-* ziti-sdk:      1.7.4
-* tlsuv:         v0.36.4[OpenSSL 3.5.0 8 Apr 2025]
-```
+After the installers finish they will output `deps-info.txt` files with dependency versions.
 
 
 ## Automatic Installation
