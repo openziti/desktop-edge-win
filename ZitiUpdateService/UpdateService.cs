@@ -90,6 +90,7 @@ namespace ZitiUpdateService {
                 /* just ignore - file doesn't exist */
             }
             CurrentSettings.Write(); // allows for migration of settings
+            GpoSettings.Load();      // read registry overrides; must run after Write() so GPO wins
             CurrentSettings.OnConfigurationChange += CurrentSettings_OnConfigurationChange;
 
             base.CanHandlePowerEvent = true;
@@ -122,6 +123,14 @@ namespace ZitiUpdateService {
         }
 
         private SvcResponse SetAutomaticUpdateURL(string url) {
+            if (GpoSettings.IsLocked("UpdateStreamURL")) {
+                Logger.Warn("UpdateStreamURL is managed by Group Policy — change rejected");
+                return new SvcResponse {
+                    Code = (int)ErrorCodes.MANAGED_BY_GPO,
+                    Error = "UpdateStreamURL is managed by Group Policy",
+                    Message = "Failure",
+                };
+            }
             SvcResponse failure = new SvcResponse();
             failure.Code = (int)ErrorCodes.URL_INVALID;
             failure.Error = $"The url supplied is invalid: \n{url}\n";
@@ -176,6 +185,14 @@ namespace ZitiUpdateService {
         }
 
         private SvcResponse SetAutomaticUpdateDisabled(bool disabled) {
+            if (GpoSettings.IsLocked("DisableAutomaticUpdates")) {
+                Logger.Warn("DisableAutomaticUpdates is managed by Group Policy — change rejected");
+                return new SvcResponse {
+                    Code = (int)ErrorCodes.MANAGED_BY_GPO,
+                    Error = "DisableAutomaticUpdates is managed by Group Policy",
+                    Message = "Failure",
+                };
+            }
             if (lastInstallationNotification != null) {
                 lastInstallationNotification.AutomaticUpgradeDisabled = disabled.ToString();
             }
@@ -251,6 +268,10 @@ namespace ZitiUpdateService {
         }
 
         private void SetReleaseStream(string stream) {
+            if (GpoSettings.IsLocked("UpdateStreamURL")) {
+                Logger.Warn("UpdateStreamURL is managed by Group Policy — SetReleaseStream rejected");
+                return;
+            }
             string markerFile = Path.Combine(exeLocation, betaStreamMarkerFile);
             if (stream == "beta") {
                 if (IsBeta) {
@@ -562,9 +583,10 @@ namespace ZitiUpdateService {
                 zetSemaphoreName = "unset";
             } else {
                 Interlocked.Add(ref zetFailedCheckCounter, 1);
-                Logger.Warn("ziti-edge-tunnel aliveness check {} appears blocked and has been for {0} times. AlivenessChecksBeforeAction:{1}", zetSemaphoreName, zetFailedCheckCounter, CurrentSettings.AlivenessChecksBeforeAction);
-                if (CurrentSettings.AlivenessChecksBeforeAction > 0) {
-                    if (zetFailedCheckCounter > CurrentSettings.AlivenessChecksBeforeAction) {
+                int alivenessThreshold = GpoSettings.EffectiveAlivenessChecksBeforeAction(CurrentSettings);
+                Logger.Warn("ziti-edge-tunnel aliveness check {} appears blocked and has been for {0} times. AlivenessChecksBeforeAction:{1}", zetSemaphoreName, zetFailedCheckCounter, alivenessThreshold);
+                if (alivenessThreshold > 0) {
+                    if (zetFailedCheckCounter > alivenessThreshold) {
                         disableHealthCheck();
                         //after 'n' failures, just terminate ziti-edge-tunnel
                         Interlocked.Exchange(ref zetFailedCheckCounter, 0); //reset the counter back to 0
@@ -668,14 +690,10 @@ namespace ZitiUpdateService {
         }
 
         private void SetupServiceWatchers() {
-            var updateTimerInterval = ConfigurationManager.AppSettings.Get("UpdateTimer");
-            var upInt = TimeSpan.Zero;
-            if (!TimeSpan.TryParse(updateTimerInterval, out upInt)) {
-                upInt = new TimeSpan(0, 10, 0);
-            }
+            var upInt = GpoSettings.EffectiveUpdateInterval();
 
             if (upInt.TotalMilliseconds < 10 * 60 * 1000) {
-                Logger.Warn("provided time [{0}] is too small. Using 10 minutes.", updateTimerInterval);
+                Logger.Warn("provided time [{0}] is too small. Using 10 minutes.", upInt);
 #if MOCKUPDATE || ALLOWFASTINTERVAL
                 Logger.Info("MOCKUPDATE detected. Not limiting check to 10 minutes");
 #else
@@ -730,14 +748,18 @@ namespace ZitiUpdateService {
 			var check = new FilesystemCheck(v, -1, mockDate, "FilesysteCheck.download.mock.txt", new Version("2.1.4"));
 #else
 
-            if (string.IsNullOrEmpty(CurrentSettings.AutomaticUpdateURL)) {
-                CurrentSettings.AutomaticUpdateURL = GithubAPI.ProdUrl;
-                Logger.Info("Settings does not contain update url. Setting to: {}", CurrentSettings.AutomaticUpdateURL);
-                CurrentSettings.Write();
+            string updateUrl = GpoSettings.EffectiveUpdateStreamURL(CurrentSettings);
+            if (string.IsNullOrEmpty(updateUrl)) {
+                updateUrl = GithubAPI.ProdUrl;
+                if (!GpoSettings.IsLocked("UpdateStreamURL")) {
+                    CurrentSettings.AutomaticUpdateURL = updateUrl;
+                    CurrentSettings.Write();
+                }
+                Logger.Info("No update URL configured. Using default: {}", updateUrl);
             }
-            Logger.Debug("AutomaticUpdateURL url: {}", CurrentSettings.AutomaticUpdateURL);
+            Logger.Debug("update stream URL: {}", updateUrl);
 
-            var check = new GithubCheck(v, CurrentSettings.AutomaticUpdateURL);
+            var check = new GithubCheck(v, updateUrl);
 #endif
             return check;
         }
@@ -784,7 +806,7 @@ namespace ZitiUpdateService {
                     info.InstallTime = DateTime.Now + TimeSpan.Parse("0:0:30");
                     Logger.Warn("Installation is critical! for ZDE version: {0}. update published at: {1}. approximate install time: {2}", info.ZDEVersion, check.PublishDate, info.InstallTime);
                     NotifyInstallationUpdates(info, true);
-                    if (CurrentSettings.AutomaticUpdatesDisabled) {
+                    if (GpoSettings.EffectiveDisableAutomaticUpdates(CurrentSettings)) {
                         Logger.Debug("AutomaticUpdatesDisabled is set to true. Automatic update is disabled.");
                     } else {
                         Thread.Sleep(30);
@@ -1076,30 +1098,15 @@ namespace ZitiUpdateService {
         }
 
         private TimeSpan InstallationReminder() {
-            var installationReminderIntervalStr = ConfigurationManager.AppSettings.Get("InstallationReminder");
-            var reminderInt = TimeSpan.Zero;
-            if (!TimeSpan.TryParse(installationReminderIntervalStr, out reminderInt)) {
-                reminderInt = new TimeSpan(0, 1, 0);
-            }
-            return reminderInt;
+            return GpoSettings.EffectiveInstallationReminder();
         }
 
         private DateTime InstallDateFromPublishDate(DateTime publishDate) {
-            var installationReminderIntervalStr = ConfigurationManager.AppSettings.Get("InstallationCritical");
-            var instCritTimespan = TimeSpan.Zero;
-            if (!TimeSpan.TryParse(installationReminderIntervalStr, out instCritTimespan)) {
-                instCritTimespan = TimeSpan.Parse("7:0:0:0");
-            }
-            return publishDate + instCritTimespan;
+            return publishDate + GpoSettings.EffectiveInstallationCritical();
         }
 
         private bool InstallationIsCritical(DateTime publishDate) {
-            var installationReminderIntervalStr = ConfigurationManager.AppSettings.Get("InstallationCritical");
-            var instCritTimespan = TimeSpan.Zero;
-            if (!TimeSpan.TryParse(installationReminderIntervalStr, out instCritTimespan)) {
-                instCritTimespan = TimeSpan.Parse("7:0:0:0");
-            }
-            return DateTime.Now > publishDate + instCritTimespan;
+            return DateTime.Now > publishDate + GpoSettings.EffectiveInstallationCritical();
         }
 
         private void NotifyInstallationUpdates(InstallationNotificationEvent evt) {

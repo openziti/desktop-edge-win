@@ -291,5 +291,6 @@ namespace ZitiDesktopEdge.Server {
         NO_ERROR = 0,
         COULD_NOT_SET_URL,
         URL_INVALID,
+        MANAGED_BY_GPO,
     }
 }
