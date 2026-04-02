@@ -6,6 +6,7 @@
 # Sample invocations:
 #   .\prepare-beta.ps1 -DesktopEdgeVersion 2.9.6.0 -ZetVersion v1.11.1
 #   .\prepare-beta.ps1 -DesktopEdgeVersion 2.9.6.0 -ZetVersion v1.11.1 -DryRun
+#   .\prepare-beta.ps1 -DesktopEdgeVersion 2.10.2.0
 #
 # Prerequisites:
 #   - git configured with push access to the repo
@@ -15,7 +16,6 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$DesktopEdgeVersion,
 
-    [Parameter(Mandatory = $true)]
     [string]$ZetVersion,
 
     [switch]$DryRun
@@ -37,6 +37,17 @@ Log ""
 Log "========================================================"
 Log "  prepare-beta.ps1"
 Log "========================================================"
+$isZetBump = [bool]$ZetVersion
+
+if (-not $ZetVersion) {
+    $buildPs1Content = Get-Content "$repoRoot\Installer\build.ps1" -Raw
+    if ($buildPs1Content -match '\$ZITI_EDGE_TUNNEL_VERSION="(v\d+\.\d+\.\d+)"') {
+        $ZetVersion = $Matches[1]
+    } else {
+        Die "Could not read current ZITI_EDGE_TUNNEL_VERSION from Installer/build.ps1"
+    }
+}
+
 Info "Desktop Edge version : $DesktopEdgeVersion"
 Info "ZET version          : $ZetVersion"
 if ($DryRun) { Info "DRY RUN - no git commits or pushes will be made" }
@@ -46,7 +57,7 @@ Log ""
 if ($DesktopEdgeVersion -notmatch '^\d+\.\d+\.\d+\.\d+$') {
     Die "DesktopEdgeVersion must be a 4-tuple (e.g. 2.9.6.0), got: $DesktopEdgeVersion"
 }
-if ($ZetVersion -notmatch '^v\d+\.\d+\.\d+$') {
+if ($ZetVersion -and $ZetVersion -notmatch '^v\d+\.\d+\.\d+$') {
     Die "ZetVersion must be in the form v1.2.3, got: $ZetVersion"
 }
 
@@ -58,8 +69,8 @@ if (-not $ghAvailable) {
 
 $branch   = "beta-release-$DesktopEdgeVersion"
 $now      = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd") + "T12:00:00Z"
-$zetBase  = "https://github.com/openziti/ziti-tunnel-sdk-c/releases/download/$ZetVersion"
 $buildUrl = "https://github.com/openziti/desktop-edge-win/releases/download/"
+$zetBase  = "https://github.com/openziti/ziti-tunnel-sdk-c/releases/download/$ZetVersion"
 
 Push-Location $repoRoot
 try {
@@ -82,9 +93,9 @@ Ok "Branch ready"
 # ── Download ZET binaries and extract dependency versions ─────────────────────
 
 $zetTunneler  = $ZetVersion
-$zitiSdk      = "<fill in>"
-$tlsuvOpenSsl = "<fill in>"
-$tlsuvWin32   = "<fill in>"
+$zitiSdk      = ""
+$tlsuvOpenSsl = ""
+$tlsuvWin32   = ""
 
 $zetDownloadDir = "$repoRoot\Installer\build\zet"
 New-Item -ItemType Directory -Path "$zetDownloadDir\standard"    -Force | Out-Null
@@ -98,36 +109,38 @@ foreach ($variant in @("", "-win32crypto")) {
     $url        = "$zetBase/$zipName"
 
     Info "Downloading $zipName -> Installer\build\zet\$subDir\"
-    if (-not $DryRun) {
-        Invoke-WebRequest -Uri $url -OutFile $zipPath
-        Expand-Archive -Path $zipPath -DestinationPath $extractDir -Force
-        $exe = "$extractDir\ziti-edge-tunnel.exe"
+    Invoke-WebRequest -Uri $url -OutFile $zipPath
+    Expand-Archive -Path $zipPath -DestinationPath $extractDir -Force
+    $exe = "$extractDir\ziti-edge-tunnel.exe"
 
-        Info "Running version -v on $subDir binary"
-        $lines = & $exe version -v 2>&1 | Where-Object { $_ -notmatch "StartServiceCtrlDispatcher" }
-        foreach ($line in $lines) {
-            Info "  $line"
-            if ($variant -eq "") {
-                if ($line -match 'ziti-tunneler:\s*(.+)')  { $zetTunneler  = $Matches[1].Trim() }
-                if ($line -match 'ziti-sdk:\s*(.+)')       { $zitiSdk      = $Matches[1].Trim() }
-                if ($line -match 'tlsuv:\s*(.+)')            { $tlsuvOpenSsl = $Matches[1].Trim() }
-            } else {
-                if ($line -match 'tlsuv:\s*(.+)')            { $tlsuvWin32   = $Matches[1].Trim() }
-            }
+    Info "Running version -v on $subDir binary"
+    $lines = & $exe version -v 2>&1 | Where-Object { $_ -notmatch "StartServiceCtrlDispatcher" }
+    foreach ($line in $lines) {
+        Info "  $line"
+        if ($variant -eq "") {
+            if ($line -match 'ziti-tunneler:\s*(.+)')  { $zetTunneler  = $Matches[1].Trim() }
+            if ($line -match 'ziti-sdk:\s*(.+)')       { $zitiSdk      = $Matches[1].Trim() }
+            if ($line -match 'tlsuv:\s*(.+)')            { $tlsuvOpenSsl = $Matches[1].Trim() }
+        } else {
+            if ($line -match 'tlsuv:\s*(.+)')            { $tlsuvWin32   = $Matches[1].Trim() }
         }
-        Ok "Versions extracted from $subDir binary"
     }
+    Ok "Versions extracted from $subDir binary"
 }
 
 # ── Update ZET version in Installer\build.ps1 ────────────────────────────────
 
-Info "Updating Installer/build.ps1 -> ZITI_EDGE_TUNNEL_VERSION=$ZetVersion"
-if (-not $DryRun) {
-    $buildPs1 = "$repoRoot\Installer\build.ps1"
-    (Get-Content $buildPs1) -replace '\$ZITI_EDGE_TUNNEL_VERSION="v\d+\.\d+\.\d+"', "`$ZITI_EDGE_TUNNEL_VERSION=`"$ZetVersion`"" |
-        Set-Content $buildPs1
+if ($isZetBump) {
+    Info "Updating Installer/build.ps1 -> ZITI_EDGE_TUNNEL_VERSION=$ZetVersion"
+    if (-not $DryRun) {
+        $buildPs1 = "$repoRoot\Installer\build.ps1"
+        (Get-Content $buildPs1) -replace '\$ZITI_EDGE_TUNNEL_VERSION="v\d+\.\d+\.\d+"', "`$ZITI_EDGE_TUNNEL_VERSION=`"$ZetVersion`"" |
+            Set-Content $buildPs1
+    }
+    Ok "build.ps1 updated"
+} else {
+    Info "ZET version unchanged - skipping build.ps1 update"
 }
-Ok "build.ps1 updated"
 
 # ── Write version ─────────────────────────────────────────────────────────────
 
@@ -183,58 +196,71 @@ if (-not $DryRun) {
 }
 Ok "beta-win32crypto.json written"
 
-# ── Prepend release-notes.md entry ───────────────────────────────────────────
+# ── Build release notes ──────────────────────────────────────────────────────
 
-$releaseNotesEntry = @"
-# Release $DesktopEdgeVersion
-## What's New
-* updated to ziti-edge-tunnel $ZetVersion
+$releaseNotesPath = "$repoRoot\upcoming-release-notes.md"
 
-## Bugs fixed:
-n/a
+$currentNotes = ([System.IO.File]::ReadAllText($releaseNotesPath) -replace "`r`n", "`n").Trim()
 
-## Other changes
-n/a
+# Strip the header/instructions block, keep only the section content
+$currentNotes = $currentNotes -replace "(?s)^# Next Release.*?(?=## )", ""
+
+# Inject "updated to ziti-edge-tunnel" into What's New if this is a ZET bump
+if ($isZetBump) {
+    $currentNotes = $currentNotes -replace "(## What's New\n)", "`$1* updated to ziti-edge-tunnel $ZetVersion`n"
+}
+
+# Append dependencies
+$depsSection = @"
 
 ## Dependencies
 * ziti-tunneler: $zetTunneler
 * ziti-sdk:      $zitiSdk
 * tlsuv:         $tlsuvOpenSsl
 * tlsuv:         $tlsuvWin32
-
-
 "@
-$releaseNotesEntry = $releaseNotesEntry -replace "`r`n", "`n"
 
-Info "Prepending entry to release-notes.md"
+$releaseEntry = "# Release $DesktopEdgeVersion`n$currentNotes`n$depsSection`n" -replace "`r`n", "`n"
+
+Info "Updating upcoming-release-notes.md with version header and dependencies"
 if (-not $DryRun) {
-    $existing = [System.IO.File]::ReadAllText("$repoRoot\release-notes.md") -replace "`r`n", "`n"
-    if ($existing -match "# Release $([regex]::Escape($DesktopEdgeVersion))") {
-        Info "Entry for $DesktopEdgeVersion already exists - overwriting it"
-        $existing = $existing -replace "(?s)# Release $([regex]::Escape($DesktopEdgeVersion)).+?(?=# Release |\z)", ""
-    }
-    $content = ($releaseNotesEntry + $existing) -replace "`r`n", "`n"
-    [System.IO.File]::WriteAllText("$repoRoot\release-notes.md", $content, [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllText($releaseNotesPath, $releaseEntry, [System.Text.UTF8Encoding]::new($false))
 }
-Ok "release-notes.md updated"
+Ok "upcoming-release-notes.md updated"
+
+if ($DryRun) {
+    Log ""
+    Log "Release notes preview:"
+    Log "------------------------------------------------------------------------"
+    Log $releaseEntry
+    Log "------------------------------------------------------------------------"
+}
 
 # ── Summary of changes ────────────────────────────────────────────────────────
 
 Log ""
 Log "Files to commit:"
-Info "Installer/build.ps1                   -> ZET $ZetVersion"
+if ($isZetBump) { Info "Installer/build.ps1                   -> ZET $ZetVersion" }
 Info "version                               -> $DesktopEdgeVersion"
-Info "release-notes.md                      -> prepended $DesktopEdgeVersion entry"
+Info "upcoming-release-notes.md                      -> $DesktopEdgeVersion entry"
+Log ""
+Log "Files written but NOT committed (commit after release is published):"
 Info "release-streams/beta.json             -> $DesktopEdgeVersion (github releases)"
 Info "release-streams/beta-win32crypto.json -> $DesktopEdgeVersion (jfrog)"
 Log ""
 
 # ── Commit ────────────────────────────────────────────────────────────────────
 
-$commitMsg = "chore: prepare beta $DesktopEdgeVersion with ZET $ZetVersion"
+if ($isZetBump) {
+    $commitMsg = "chore: prepare beta $DesktopEdgeVersion with ZET $ZetVersion"
+} else {
+    $commitMsg = "chore: prepare beta $DesktopEdgeVersion"
+}
 Info "Committing: $commitMsg"
 if (-not $DryRun) {
-    git add Installer/build.ps1 version release-notes.md release-streams/beta.json release-streams/beta-win32crypto.json
+    $filesToAdd = @("version", "upcoming-release-notes.md")
+    if ($isZetBump) { $filesToAdd += "Installer/build.ps1" }
+    git add @filesToAdd
     git diff --cached --quiet
     if ($LASTEXITCODE -eq 0) {
         Info "Nothing to commit - files already up to date"
@@ -256,7 +282,8 @@ Ok "Pushed"
 
 # ── Open PR ───────────────────────────────────────────────────────────────────
 
-$prBody = @"
+if ($isZetBump) {
+    $prBody = @"
 ## Beta Release Preparation
 
 | | |
@@ -265,10 +292,22 @@ $prBody = @"
 | ziti-edge-tunnel version | ``$ZetVersion`` |
 
 The installer build workflow will run automatically on this PR and produce signed artifacts.
-Merge to publish the beta release to ``release-streams/beta.json``.
+After merging and publishing the release, update release streams with ``promote.ps1``.
 "@
+} else {
+    $prBody = @"
+## Beta Release Preparation
 
-Info "Opening PR: $branch -> release-next"
+| | |
+|---|---|
+| Desktop Edge version | ``$DesktopEdgeVersion`` |
+
+The installer build workflow will run automatically on this PR and produce signed artifacts.
+After merging and publishing the release, update release streams with ``promote.ps1``.
+"@
+}
+
+Info "Opening PR: $branch -> main"
 if (-not $DryRun) {
     if ($ghAvailable) {
         try {
@@ -280,7 +319,7 @@ if (-not $DryRun) {
             Ok "PR already exists: $existingPr"
         } else {
             gh pr create `
-                --base release-next `
+                --base main `
                 --head $branch `
                 --title "Beta release $DesktopEdgeVersion" `
                 --body $prBody

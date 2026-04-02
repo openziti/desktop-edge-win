@@ -8,8 +8,8 @@ on:
         required: true
         type: string
       zet_version:
-        description: 'ziti-edge-tunnel version to bundle (e.g. v1.11.1)'
-        required: true
+        description: 'ziti-edge-tunnel version to bundle (e.g. v1.11.1). Leave empty to keep current version.'
+        required: false
         type: string
 
 jobs:

@@ -84,4 +84,27 @@ if ($PSCmdlet.ParameterSetName -eq "ByPath") {
             Invoke-Promote $win32Source "$streamsDir\$stream-win32crypto.json"
         }
     }
+
+    # Clear release notes for next cycle
+    $repoRoot = Split-Path $streamsDir -Parent
+    $releaseNotesPath = "$repoRoot\upcoming-release-notes.md"
+    $blankTemplate = @"
+# Next Release
+
+Changes for the next release go here. This file is consumed by
+``prepare-beta.ps1`` when cutting a release, then cleared after publishing.
+See [Releases](https://github.com/openziti/desktop-edge-win/releases) for published release notes.
+
+## What's New
+n/a
+
+## Bugs fixed
+n/a
+
+## Other changes
+n/a
+"@
+    $blankTemplate = $blankTemplate -replace "`r`n", "`n"
+    [System.IO.File]::WriteAllText($releaseNotesPath, $blankTemplate, [System.Text.UTF8Encoding]::new($false))
+    Write-Host "cleared: upcoming-release-notes.md"
 }
