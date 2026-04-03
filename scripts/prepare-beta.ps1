@@ -68,8 +68,6 @@ if (-not $ghAvailable) {
 }
 
 $branch   = "beta-release-$DesktopEdgeVersion"
-$now      = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd") + "T12:00:00Z"
-$buildUrl = "https://github.com/openziti/desktop-edge-win/releases/download/"
 $zetBase  = "https://github.com/openziti/ziti-tunnel-sdk-c/releases/download/$ZetVersion"
 
 Push-Location $repoRoot
@@ -150,60 +148,17 @@ if (-not $DryRun) {
 }
 Ok "version file written"
 
-# ── Write beta.json ───────────────────────────────────────────────────────────
-
-$betaJson = @"
-{
-  "name": "$DesktopEdgeVersion",
-  "tag_name": "$DesktopEdgeVersion",
-  "published_at": "$now",
-  "installation_critical": false,
-  "assets": [
-    {
-      "name": "Ziti.Desktop.Edge.Client-$DesktopEdgeVersion.exe",
-      "browser_download_url": "${buildUrl}$DesktopEdgeVersion/Ziti.Desktop.Edge.Client-$DesktopEdgeVersion.exe"
-    }
-  ]
-}
-"@
-
-Info "Writing release-streams/beta.json"
-if (-not $DryRun) {
-    $betaJson | Set-Content -Path "$repoRoot\release-streams\beta.json" -NoNewline
-}
-Ok "beta.json written"
-
-# ── Write beta-win32crypto.json ───────────────────────────────────────────────
-
-$betaWin32CryptoJson = @"
-{
-  "name": "$DesktopEdgeVersion",
-  "tag_name": "$DesktopEdgeVersion",
-  "published_at": "$now",
-  "installation_critical": false,
-  "assets": [
-    {
-      "name": "Ziti.Desktop.Edge.Client-$DesktopEdgeVersion.exe",
-      "browser_download_url": "https://netfoundry.jfrog.io/artifactory/downloads/desktop-edge-win-win32crypto/$DesktopEdgeVersion/Ziti.Desktop.Edge.Client-$DesktopEdgeVersion.exe"
-    }
-  ]
-}
-"@
-
-Info "Writing release-streams/beta-win32crypto.json"
-if (-not $DryRun) {
-    $betaWin32CryptoJson | Set-Content -Path "$repoRoot\release-streams\beta-win32crypto.json" -NoNewline
-}
-Ok "beta-win32crypto.json written"
-
 # ── Build release notes ──────────────────────────────────────────────────────
 
 $releaseNotesPath = "$repoRoot\upcoming-release-notes.md"
 
 $currentNotes = ([System.IO.File]::ReadAllText($releaseNotesPath) -replace "`r`n", "`n").Trim()
 
-# Strip the header/instructions block, keep only the section content
-$currentNotes = $currentNotes -replace "(?s)^# Next Release.*?(?=## )", ""
+# Strip the top-level header block (e.g. "# Next Release" or "# Release X.Y.Z.W"),
+# keep only the ## section content. Also strip any trailing ## Dependencies block
+# since it will be regenerated from the downloaded binaries.
+$currentNotes = $currentNotes -replace "(?s)^# [^\n]*\n.*?(?=## )", ""
+$currentNotes = $currentNotes -replace "(?s)\n## Dependencies.*$", ""
 
 # Inject "updated to ziti-edge-tunnel" into What's New if this is a ZET bump
 if ($isZetBump) {
@@ -242,11 +197,7 @@ Log ""
 Log "Files to commit:"
 if ($isZetBump) { Info "Installer/build.ps1                   -> ZET $ZetVersion" }
 Info "version                               -> $DesktopEdgeVersion"
-Info "upcoming-release-notes.md                      -> $DesktopEdgeVersion entry"
-Log ""
-Log "Files written but NOT committed (commit after release is published):"
-Info "release-streams/beta.json             -> $DesktopEdgeVersion (github releases)"
-Info "release-streams/beta-win32crypto.json -> $DesktopEdgeVersion (jfrog)"
+Info "upcoming-release-notes.md             -> $DesktopEdgeVersion entry"
 Log ""
 
 # ── Commit ────────────────────────────────────────────────────────────────────
@@ -292,7 +243,7 @@ if ($isZetBump) {
 | ziti-edge-tunnel version | ``$ZetVersion`` |
 
 The installer build workflow will run automatically on this PR and produce signed artifacts.
-After merging and publishing the release, update release streams with ``promote.ps1``.
+After merging and publishing the release, run ``promote.ps1`` to write release stream JSONs.
 "@
 } else {
     $prBody = @"
@@ -303,7 +254,7 @@ After merging and publishing the release, update release streams with ``promote.
 | Desktop Edge version | ``$DesktopEdgeVersion`` |
 
 The installer build workflow will run automatically on this PR and produce signed artifacts.
-After merging and publishing the release, update release streams with ``promote.ps1``.
+After merging and publishing the release, run ``promote.ps1`` to write release stream JSONs.
 "@
 }
 

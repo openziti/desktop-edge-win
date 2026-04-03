@@ -14,9 +14,9 @@
 
 Release notes are maintained in `upcoming-release-notes.md` as a working file. As changes are made between releases,
 update this file with the relevant details. When a release is cut, `prepare-beta.ps1` adds the version header
-and dependency info, and the publish action uses it for the GitHub release body. After promoting the release
-streams, `promote.ps1` clears the file for the next cycle. Release notes through 2.10.1.0 are archived in `release-notes-archive/`. Notes for later
-versions can be found on the [Releases](https://github.com/openziti/desktop-edge-win/releases) page.
+and dependency info, and the publish action uses it for the GitHub release body. Release notes through 2.10.1.0
+are archived in `release-notes-archive/`. Notes for later versions can be found on the
+[Releases](https://github.com/openziti/desktop-edge-win/releases) page.
 
 The ["Create Release"](https://github.com/openziti/desktop-edge-win/actions/workflows/publish.yml) action runs
 `scripts/publish-release.sh` which validates `upcoming-release-notes.md`, creates a GitHub release, uploads artifacts,
@@ -39,11 +39,10 @@ Once satisfied with local testing (see below), to make a new release here are th
 * on merge to main the ["Build Installer"](https://github.com/openziti/desktop-edge-win/actions/workflows/installer.build.yml) action will fire. Find the action, download/test the build artifacts
 * take note of the action's run ID. From the action page it should be shown as the top/last action run (e.g. the numeric ID at the end of the action URL)
 * go to the ["Create Release" action](https://github.com/openziti/desktop-edge-win/actions/workflows/publish.yml), click "Run workflow" and enter the version and action run ID
-* after the release is published, update release streams with `scripts/promote.ps1`. This also clears `upcoming-release-notes.md` for the next cycle
+* after the release is published, update the beta release streams with `scripts/promote.ps1`. Commit and push the changes in a follow-up PR
   ```
   .\scripts\promote.ps1 -Version <version> -To beta
   ```
-  Commit and push the changes in a PR
 * when the beta is validated and ready for general availability:
   ```
   .\scripts\promote.ps1 -Version <version> -To latest, stable
