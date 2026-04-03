@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!--
   English language resources for NetFoundry.ZitiMonitorService.admx
 -->
@@ -20,13 +20,15 @@
   <resources>
     <stringTable>
 
-      <!-- ---- Supported on ---- -->
+      <!-- Supported on -->
       <string id="SUPPORTED_ZitiMonitorService">Ziti Desktop Edge for Windows (all versions)</string>
 
-      <!-- ---- Category names ---- -->
+      <!-- Category names -->
+      <string id="CAT_NetFoundry">NetFoundry</string>
+      <string id="CAT_ZitiDesktopEdge">Ziti Desktop Edge for Windows</string>
       <string id="CAT_ZitiMonitorService">ziti-monitor-service</string>
 
-      <!-- ---- ZMS_DisableAutomaticUpdates ---- -->
+      <!-- ZMS_DisableAutomaticUpdates -->
       <string id="ZMS_DisableAutomaticUpdates">Disable Automatic Updates</string>
       <string id="ZMS_DisableAutomaticUpdates_Help">
 Controls whether ZitiUpdateService automatically downloads and installs new releases.
@@ -44,7 +46,7 @@ is used and can be changed at runtime.
 Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service\DisableAutomaticUpdates (REG_DWORD, 1 or 0)
       </string>
 
-      <!-- ---- ZMS_UpdateStreamURL ---- -->
+      <!-- ZMS_UpdateStreamURL -->
       <string id="ZMS_UpdateStreamURL">Configure Update Stream URL</string>
       <string id="ZMS_UpdateStreamURL_Help">
 Specifies the URL of the release feed that ZitiUpdateService polls for new versions.
@@ -66,7 +68,7 @@ GitHub releases API used by this service.
 Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service\UpdateStreamURL (REG_SZ)
       </string>
 
-      <!-- ---- ZMS_UpdateIntervalSeconds ---- -->
+      <!-- ZMS_UpdateIntervalSeconds -->
       <string id="ZMS_UpdateIntervalSeconds">Configure Update Check Interval</string>
       <string id="ZMS_UpdateIntervalSeconds_Help">
 Specifies how often (in seconds) ZitiUpdateService polls the release feed for a new
@@ -89,7 +91,7 @@ ZitiUpdateService.exe.config is used (default: 600 seconds).
 Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service\UpdateIntervalSeconds (REG_DWORD)
       </string>
 
-      <!-- ---- ZMS_InstallationReminderSeconds ---- -->
+      <!-- ZMS_InstallationReminderSeconds -->
       <string id="ZMS_InstallationReminderSeconds">Configure Installation Reminder Interval</string>
       <string id="ZMS_InstallationReminderSeconds_Help">
 Specifies how often (in seconds) ZitiUpdateService re-notifies users about a pending
@@ -113,7 +115,7 @@ ZitiUpdateService.exe.config is used (default: 86400 seconds / 1 day).
 Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service\InstallationReminderSeconds (REG_DWORD)
       </string>
 
-      <!-- ---- ZMS_InstallationCriticalSeconds ---- -->
+      <!-- ZMS_InstallationCriticalSeconds -->
       <string id="ZMS_InstallationCriticalSeconds">Configure Critical Installation Threshold</string>
       <string id="ZMS_InstallationCriticalSeconds_Help">
 Specifies the age of a detected release (in seconds, measured from its publish date)
@@ -141,7 +143,7 @@ ZitiUpdateService.exe.config is used (default: 604800 seconds / 7 days).
 Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service\InstallationCriticalSeconds (REG_DWORD)
       </string>
 
-      <!-- ---- ZMS_AlivenessChecksBeforeAction ---- -->
+      <!-- ZMS_AlivenessChecksBeforeAction -->
       <string id="ZMS_AlivenessChecksBeforeAction">Configure Aliveness Check Threshold</string>
       <string id="ZMS_AlivenessChecksBeforeAction_Help">
 Specifies how many consecutive failed aliveness checks against ziti-edge-tunnel must
