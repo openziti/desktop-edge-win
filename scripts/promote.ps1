@@ -1,18 +1,22 @@
-### Promotes a release stream to one or more target streams, updating published_at to noon UTC today.
+### Promotes a release to one or more target streams, updating published_at to noon UTC today.
+### When no source JSON exists for the version, generates it from known URL patterns.
 ###
 ### Usage:
+###   # by version (auto-finds or generates source, handles win32crypto twin automatically):
+###   .\promote.ps1 -Version 2.9.6.1 -To beta
+###   .\promote.ps1 -Version 2.9.6.1 -To latest, stable
+###
 ###   # by file path (original behaviour):
 ###   .\promote.ps1 -From release-streams\beta.json -To release-streams\latest.json
-###
-###   # by version (auto-finds source, handles win32crypto twin automatically):
-###   .\promote.ps1 -Version 2.9.6.1 -To latest
-###   .\promote.ps1 -Version 2.9.6.1 -To latest, stable
 [CmdletBinding()]
 param (
     [Parameter(ParameterSetName = "ByPath",    Mandatory = $true)]  [string]   $From,
     [Parameter(ParameterSetName = "ByVersion", Mandatory = $true)]  [string]   $Version,
     [Parameter(Mandatory = $true)]                                   [string[]] $To
 )
+
+$githubBaseUrl = "https://github.com/openziti/desktop-edge-win/releases/download"
+$jfrogBaseUrl  = "https://netfoundry.jfrog.io/artifactory/downloads/desktop-edge-win-win32crypto"
 
 # thanks to https://jonathancrozier.com/blog/formatting-json-with-proper-indentation-using-powershell
 function Format-Json
@@ -47,12 +51,30 @@ function Invoke-Promote($sourcePath, $targetPath) {
     Write-Host "promoted: $sourcePath -> $targetPath"
 }
 
+function New-VersionJson([string]$version, [string]$downloadUrl) {
+    $now = (Get-Date).ToUniversalTime().Date.AddHours(12).ToString("yyyy-MM-ddTHH:mm:ssZ")
+    return @"
+{
+  "name": "$version",
+  "tag_name": "$version",
+  "published_at": "$now",
+  "installation_critical": false,
+  "assets": [
+    {
+      "name": "Ziti.Desktop.Edge.Client-$version.exe",
+      "browser_download_url": "$downloadUrl"
+    }
+  ]
+}
+"@
+}
+
 if ($PSCmdlet.ParameterSetName -eq "ByPath") {
     Invoke-Promote $From $To[0]
 } else {
     $streamsDir = "$(Split-Path $PSScriptRoot -Parent)\release-streams"
 
-    # Locate the regular source for this version.
+    # Locate or generate the regular source for this version.
     $regularSource = $null
     $versionFile = "$streamsDir\$Version.json"
     if (Test-Path $versionFile) {
@@ -63,9 +85,14 @@ if ($PSCmdlet.ParameterSetName -eq "ByPath") {
             if ($j.tag_name -eq $Version -or $j.name -eq $Version) { $regularSource = $f.FullName; break }
         }
     }
-    if (-not $regularSource) { Write-Error "No source JSON found for version $Version"; exit 1 }
+    if (-not $regularSource) {
+        Write-Host "No existing source found for $Version - generating $versionFile"
+        $json = New-VersionJson $Version "$githubBaseUrl/$Version/Ziti.Desktop.Edge.Client-$Version.exe"
+        $json | Set-Content -Path $versionFile -NoNewline
+        $regularSource = $versionFile
+    }
 
-    # Locate the win32crypto source for this version.
+    # Locate or generate the win32crypto source for this version.
     $win32Source = $null
     $win32VersionFile = "$streamsDir\$Version-win32crypto.json"
     if (Test-Path $win32VersionFile) {
@@ -76,35 +103,15 @@ if ($PSCmdlet.ParameterSetName -eq "ByPath") {
             if ($j.tag_name -eq $Version -or $j.name -eq $Version) { $win32Source = $f.FullName; break }
         }
     }
-    if (-not $win32Source) { Write-Warning "No win32crypto source found for version $Version — skipping win32crypto targets" }
+    if (-not $win32Source) {
+        Write-Host "No existing win32crypto source found for $Version - generating $win32VersionFile"
+        $json = New-VersionJson $Version "$jfrogBaseUrl/$Version/Ziti.Desktop.Edge.Client-$Version.exe"
+        $json | Set-Content -Path $win32VersionFile -NoNewline
+        $win32Source = $win32VersionFile
+    }
 
     foreach ($stream in $To) {
         Invoke-Promote $regularSource "$streamsDir\$stream.json"
-        if ($win32Source) {
-            Invoke-Promote $win32Source "$streamsDir\$stream-win32crypto.json"
-        }
+        Invoke-Promote $win32Source "$streamsDir\$stream-win32crypto.json"
     }
-
-    # Clear release notes for next cycle
-    $repoRoot = Split-Path $streamsDir -Parent
-    $releaseNotesPath = "$repoRoot\upcoming-release-notes.md"
-    $blankTemplate = @"
-# Next Release
-
-Changes for the next release go here. This file is consumed by
-``prepare-beta.ps1`` when cutting a release, then cleared after publishing.
-See [Releases](https://github.com/openziti/desktop-edge-win/releases) for published release notes.
-
-## What's New
-n/a
-
-## Bugs fixed
-n/a
-
-## Other changes
-n/a
-"@
-    $blankTemplate = $blankTemplate -replace "`r`n", "`n"
-    [System.IO.File]::WriteAllText($releaseNotesPath, $blankTemplate, [System.Text.UTF8Encoding]::new($false))
-    Write-Host "cleared: upcoming-release-notes.md"
 }
