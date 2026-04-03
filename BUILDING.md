@@ -87,15 +87,4 @@ release-streams/           Update channel JSON files (stable, latest, beta)
 
 ## Scripts
 
-All scripts live in [`scripts/`](./scripts/) and assume the working directory is the repository root.
-
-| Script | Purpose |
-|--------|---------|
-| `setup-ids-for-test.ps1` | Provision test identities and services on a controller |
-| `build-test-release.ps1` | Full local build with release stream generation for upgrade testing |
-| `prepare-beta.ps1` | Create a beta release branch and open a PR |
-| `publish-release.sh` | Create a GitHub release from CI build artifacts |
-| `promote.ps1` | Promote a release stream (e.g. beta to latest) |
-| `update-versions.ps1` | Stamp version across all project files |
-| `verify-streams.ps1` | Check that release stream download URLs are reachable |
-| `fetch-zac.ps1` | Download the Ziti Administration Console |
+Scripts for releasing, promoting, and utilities live in [`scripts/`](./scripts/) and assume the working directory is the repository root.
