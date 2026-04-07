@@ -28,6 +28,8 @@ using System.Windows.Interop;
 
 using NLog;
 using Ziti.Desktop.Edge.Models;
+using Ziti.Desktop.Edge.Utils;
+using ZitiDesktopEdge.ViewModels;
 using System.Reflection;
 using ZitiDesktopEdge.Utility;
 
@@ -49,6 +51,11 @@ namespace ZitiDesktopEdge {
             UpgradeSentinel.RemoveUpgradeSentinelExe();
             try {
                 Current.Properties["ZDEWViewState"] = new ZDEWViewState();
+
+                GpoPolicyState gpoPolicyState = GpoPolicyReader.Read();
+                GpoPolicyViewModel gpoPolicyViewModel = new GpoPolicyViewModel();
+                gpoPolicyViewModel.ApplyState(gpoPolicyState);
+                Current.Properties["GpoPolicyViewModel"] = gpoPolicyViewModel;
 
                 const string appName = "Ziti Desktop Edge";
 

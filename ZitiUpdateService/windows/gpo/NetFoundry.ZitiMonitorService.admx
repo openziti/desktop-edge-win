@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!--
   Administrative Template for ZitiUpdateService / ziti-monitor-service
   (Ziti Desktop Edge for Windows)
@@ -25,9 +25,6 @@
   <policyNamespaces>
     <target prefix="ZitiMonitorService"
             namespace="NetFoundry.ZitiDesktopEdge.ZitiMonitorService"/>
-    <!-- Reuse the parent categories defined in the ZitiEdgeTunnel template -->
-    <using prefix="ZitiEdgeTunnel"
-           namespace="NetFoundry.ZitiDesktopEdge.ZitiEdgeTunnel"/>
   </policyNamespaces>
 
   <resources minRequiredRevision="1.0"/>
@@ -40,10 +37,19 @@
   </supportedOn>
 
   <categories>
-    <!-- NetFoundry and Ziti Desktop Edge categories come from ZitiEdgeTunnel.admx -->
+    <!--
+      Parent categories defined here so this ADMX is self-contained.
+      When the ziti-edge-tunnel ADMX (NetFoundry.ZitiEdgeTunnel.admx) is available,
+      these parent definitions can move there and this file can reference them via
+      a <using> namespace import instead.
+    -->
+    <category name="CAT_NetFoundry" displayName="$(string.CAT_NetFoundry)"/>
+    <category name="CAT_ZitiDesktopEdge" displayName="$(string.CAT_ZitiDesktopEdge)">
+      <parentCategory ref="CAT_NetFoundry"/>
+    </category>
     <category name="CAT_ZitiMonitorService"
               displayName="$(string.CAT_ZitiMonitorService)">
-      <parentCategory ref="ZitiEdgeTunnel:CAT_ZitiDesktopEdge"/>
+      <parentCategory ref="CAT_ZitiDesktopEdge"/>
     </category>
   </categories>
 

@@ -134,7 +134,10 @@
     <Compile Include="Models\FilterData.cs" />
     <Compile Include="Models\MessageCount.cs" />
     <Compile Include="Models\MFA.cs" />
+    <Compile Include="Models\GpoPolicyState.cs" />
     <Compile Include="Models\ViewState.cs" />
+    <Compile Include="Utils\GpoPolicyReader.cs" />
+    <Compile Include="ViewModels\GpoPolicyViewModel.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
     <Compile Include="ViewModels\IdentityDetailsViewModel.cs" />
     <Compile Include="Views\Controls\ConfirmationDialog.xaml.cs">

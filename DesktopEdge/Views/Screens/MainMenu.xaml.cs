@@ -40,6 +40,7 @@ using ZitiDesktopEdge.Utility;
 using System.ComponentModel;
 using Newtonsoft.Json.Linq;
 using Ziti.Desktop.Edge.Utils;
+using ZitiDesktopEdge.ViewModels;
 using System.Windows.Navigation;
 
 namespace ZitiDesktopEdge {
@@ -63,6 +64,7 @@ namespace ZitiDesktopEdge {
         public double MainHeight = 500;
 
         private ZDEWViewState state;
+        private GpoPolicyViewModel gpoPolicyViewModel;
 
         public bool ShowUnexpectedFailure { get; set; }
 
@@ -131,6 +133,7 @@ namespace ZitiDesktopEdge {
             this.DataContext = this;
             Application.Current.MainWindow.Title = "Ziti Desktop Edge";
             state = (ZDEWViewState)Application.Current.Properties["ZDEWViewState"];
+            gpoPolicyViewModel = (GpoPolicyViewModel)Application.Current.Properties["GpoPolicyViewModel"];
 
             try {
                 ShowUnexpectedFailure = bool.Parse(ConfigurationManager.AppSettings.Get("ShowUnexpectedFailure"));
@@ -195,6 +198,10 @@ namespace ZitiDesktopEdge {
         }
 
         async private void SetAutomaticUpgradesMenuAction(object sender, MouseButtonEventArgs e) {
+            if (gpoPolicyViewModel.IsAutoUpdatesGpoLocked) {
+                MainWindow.ShowError("Managed by Group Policy", "Automatic upgrade settings are controlled by your organization and cannot be changed.");
+                return;
+            }
             bool disableAutomaticUpgrades = false;
             if (sender == AutomaticUpgradesItemOff) {
                 disableAutomaticUpgrades = true;
@@ -292,16 +299,41 @@ namespace ZitiDesktopEdge {
 
                 MenuTitle.Content = "Set Log Level";
                 LogLevelItems.Visibility = Visibility.Visible;
+                if (gpoPolicyViewModel.IsLogLevelGpoLocked) {
+                    LogLevelItems.IsEnabled = false;
+                    LogLevelItems.Opacity = 0.3;
+                }
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "ConfigureAutomaticUpgrades") {
                 SetAutomaticUpgradesState();
 
                 MenuTitle.Content = "Automatic Upgrades";
                 AutomaticUpgradesItems.Visibility = Visibility.Visible;
+                if (gpoPolicyViewModel.IsAutoUpdatesGpoLocked) {
+                    bool gpoDisabled = gpoPolicyViewModel.GpoAutomaticUpdatesDisabled;
+                    AutomaticUpgradesItemOn.IsSelected = !gpoDisabled;
+                    AutomaticUpgradesItemOff.IsSelected = gpoDisabled;
+                    AutomaticUpgradesItemOn.IsEnabled = false;
+                    AutomaticUpgradesItemOff.IsEnabled = false;
+                    AutomaticUpgradesItemOn.Opacity = 0.3;
+                    AutomaticUpgradesItemOff.Opacity = 0.3;
+                }
+                if (gpoPolicyViewModel.IsUpdateUrlGpoLocked) {
+                    UpdateUrl.Text = gpoPolicyViewModel.GpoUpdateStreamUrl;
+                    UpdateUrl.IsEnabled = false;
+                    UpdateUrl.Opacity = 0.3;
+                    UpdateUrlWarningLabel.Content = "Managed by your organization";
+                    SetUpdateUrlButton.Visibility = Visibility.Collapsed;
+                    ResetUrlButton.Visibility = Visibility.Collapsed;
+                }
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "Config") {
                 MenuTitle.Content = "Tunnel Config";
                 ConfigItems.Visibility = Visibility.Visible;
+                if (gpoPolicyViewModel.IsTunSettingsGpoLocked) {
+                    EditButton.Disable();
+                    ConfigItems.Opacity = 0.3;
+                }
                 BackArrow.Visibility = Visibility.Visible;
 
                 ConfigPageSize.Value = ((Application.Current.Properties.Contains("ApiPageSize")) ? Application.Current.Properties["ApiPageSize"].ToString() : "25");
@@ -467,6 +499,10 @@ namespace ZitiDesktopEdge {
         }
 
         async private void SetLevel(object sender, MouseButtonEventArgs e) {
+            if (gpoPolicyViewModel.IsLogLevelGpoLocked) {
+                MainWindow.ShowError("Managed by Group Policy", "Log level is controlled by your organization and cannot be changed.");
+                return;
+            }
             SubOptionItem item = (SubOptionItem)sender;
             if (OnLogLevelChanged != null) {
                 if (await OnLogLevelChanged(item.Label.ToLower())) {
@@ -487,7 +523,7 @@ namespace ZitiDesktopEdge {
             logger.Info("checking for update...");
             CheckForUpdateStatus.Content = "Checking for updates...";
             await Task.Delay(1000);
-            if (state.AutomaticUpdateURL != this.UpdateUrl.Text) {
+            if (!gpoPolicyViewModel.IsUpdateUrlGpoLocked && state.AutomaticUpdateURL != this.UpdateUrl.Text) {
                 SetUpdateUrlButton_Click(sender, e);
             }
             try {
@@ -672,6 +708,10 @@ namespace ZitiDesktopEdge {
         /// Show the Edit Modal and blur the background
         /// </summary>
         private void ShowEdit_Click(object sender, MouseButtonEventArgs e) {
+            if (gpoPolicyViewModel.IsTunSettingsGpoLocked) {
+                MainWindow.ShowError("Managed by Group Policy", "Tunnel IP settings are controlled by your organization and cannot be changed.");
+                return;
+            }
             ConfigIpNew.Text = ConfigIp.Value;
             ConfigePageSizeNew.Text = ConfigPageSize.Value;
             CheckRange();
@@ -853,10 +893,15 @@ namespace ZitiDesktopEdge {
         }
 
         private void ResetUrlButton_Click(object sender, RoutedEventArgs e) {
+            if (gpoPolicyViewModel.IsUpdateUrlGpoLocked) return;
             UpdateUrl.Text = GithubAPI.ProdUrl;
         }
 
         private async void SetUpdateUrlButton_Click(object sender, MouseButtonEventArgs e) {
+            if (gpoPolicyViewModel.IsUpdateUrlGpoLocked) {
+                MainWindow.ShowError("Managed by Group Policy", "Update URL is controlled by your organization and cannot be changed.");
+                return;
+            }
             try {
                 var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
 
