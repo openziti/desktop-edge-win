@@ -45,6 +45,13 @@
             <SolidColorBrush x:Key="InvalidUrlBackgroundBrush" Color="{StaticResource InvalidUrlLight}" />
             <SolidColorBrush x:Key="ColumnHeaderTextBrush" Color="{StaticResource ColumnHeaderText}" />
 
+            <Style x:Key="SectionDivider" TargetType="Rectangle">
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="Height" Value="1"/>
+                <Setter Property="Fill" Value="{StaticResource ColumnHeaderTextBrush}"/>
+                <Setter Property="Opacity" Value="0.2"/>
+            </Style>
+
 
 
             <Color x:Key="ButtonColor">#FF7EB4EA</Color>
