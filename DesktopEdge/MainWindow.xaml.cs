@@ -1120,6 +1120,9 @@ namespace ZitiDesktopEdge {
                 if (defaultProvider != null) {
                     DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
                     await identity.PerformExternalAuthEvent(client, identity.GetDefaultProviderId());
+                } else if (identity.ExtAuthProviders?.Count == 1) {
+                    DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+                    await identity.PerformExternalAuthEvent(client, identity.ExtAuthProviders[0]);
                 } else {
                     OpenIdentity(identity);
                 }
