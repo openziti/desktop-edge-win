@@ -792,15 +792,16 @@ namespace ZitiDesktopEdge {
 
         private async void ServiceClient_OnAuthenticationEvent(object sender, AuthenticationEvent e) {
             ZitiIdentity found = identities.Find(i => i.Identifier == e.Identifier);
-            if(found != null) {
+            if (found != null) {
                 if (e.Action == "error") {
                     found.AuthInProgress = false;
                     await Dispatcher.BeginInvoke(new Action(async () => {
-                        if (!_notificationThrottle.Suppress) {
+                        if (_notificationThrottle.Suppress) {
+                            await ShowBlurbAsync("Authentication Failed", "External Auth Failed");
+                        } else {
                             string displayName = string.IsNullOrEmpty(found.Name) ? found.Identifier : found.Name;
                             ShowToast("Authentication Failed", $"{displayName} failed to authenticate externally.", null);
-                        } else {
-                            await ShowBlurbAsync("Authentication Failed", "External Auth Failed");
+
                         }
                     }));
                 }

@@ -402,7 +402,6 @@ namespace ZitiDesktopEdge {
                     return;
                 }
                 if (_identity?.ExtAuthProviders?.Count > 0) {
-                    _identity.AuthInProgress = false;
                     try {
                         string defaultProvider = _identity.GetDefaultProviderId();
                         DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];

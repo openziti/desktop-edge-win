@@ -35,7 +35,7 @@ These are the tests you need to make sure to perform per release.
 - ext-jwt-signer incorrect, specifically the external-auth url is invalid: "this is invalid"
 - ext-jwt-signer incorrect, specifically the external-auth url never returns: https://62a2d8fa-6ed4-4ca9-a939-db058b6696c3.production.netfoundry.io:8441/
 - ext-jwt-signer incorrect, url is not the root of a .well-known/openid-configuration endpoint
-- single ext-jwt-signer: clicking authenticate auto-launches the browser without opening identity details
+- single ext-jwt-signer: clicking authenticate on the toast notification auto-launches the browser without opening identity details
 - add identity by url, turn off UI, ensure the identity needs ext auth
 - add identity by url, restart zet, ensure the identity requires ext auth
 - add identity by url, authenticate, turn off UI, ensure identity does not indicate it needs auth
