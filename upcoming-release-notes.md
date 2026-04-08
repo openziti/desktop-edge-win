@@ -1,6 +1,6 @@
-# Release 2.10.3.0
+# Next Release
 ## What's New
-n/a
+* [Issue 970](https://github.com/openziti/desktop-edge-win/issues/970) - Added toast notifications for external auth success/failure when the UI is minimized and auto-launch browser for single-provider external auth
 
 ## Bugs fixed
 * [Issue 960](https://github.com/openziti/desktop-edge-win/issues/960) - Fixed forget identity confirmation modal not consistently filling the full UI area
