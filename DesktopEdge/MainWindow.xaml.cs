@@ -796,7 +796,12 @@ namespace ZitiDesktopEdge {
                 if (e.Action == "error") {
                     found.AuthInProgress = false;
                     await Dispatcher.BeginInvoke(new Action(async () => {
-                        await ShowBlurbAsync("Authentication Failed", "External Auth Failed");
+                        if (!_notificationThrottle.Suppress) {
+                            string displayName = string.IsNullOrEmpty(found.Name) ? found.Identifier : found.Name;
+                            ShowToast("Authentication Failed", $"{displayName} failed to authenticate externally.", null);
+                        } else {
+                            await ShowBlurbAsync("Authentication Failed", "External Auth Failed");
+                        }
                     }));
                 }
             }
@@ -1326,31 +1331,31 @@ namespace ZitiDesktopEdge {
                     } else {
                         var isAdd = e.Action == "added";
                         var isExtLogin = e.Action == "needs_ext_login";
-                        // means we are getting an update for some reason. compare the identities and use the latest info
-                        // for external auth, this event will return after external auth. track if the auth is in progress or not
-                        // and clear the flag here if it succeeds, else pop a 'auth failed'
+                        // identity already exists: handle ext auth state transitions.
+                        // ziti-edge-tunnel sends needs_ext_login immediately when ExternalAuthLogin is called.
+                        // that clears AuthInProgress so the subsequent added event with NeedsExtAuth=false
+                        // is treated as a successful auth in the else branch.
                         if (found.AuthInProgress) {
-                            if (isAdd) {
-                                found.AuthInProgress = false; //regardless clear it here
-                                if (zid.NeedsExtAuth) {
-                                    logger.Warn("Identity: {} AuthInProgress but still NeedsExtAuth? Check the tunneler logs", found.Identifier);
-                                    ShowError("Authentication Request Failed", "An error occurred preventing external authentication from succeeding. See the log and contact your administrator.");
-                                } else {
-                                    // happy path. this means auth was in progress and now the identity no longer requires exteral auth
-                                    logger.Info("Identity: {} successfully authenticated", found.Identifier);
-                                    _notificationThrottle.Remove(found.Identifier);
-                                }
-                            } else if (isExtLogin) {
-                                found.NeedsExtAuth = e.Id.NeedsExtAuth; // mark the identity as needing ext auth
-                            } else {
-                                logger.Debug("unexpected situation. if auth is in progress either it should be an add or ext-auth-login action");
+                            // ext auth started: dequeue the authenticate toast and reset state
+                            if (isExtLogin) {
+                                _notificationThrottle.Remove(found.Identifier);
+                                found.AuthInProgress = false;
+                                found.NeedsExtAuth = e.Id.NeedsExtAuth;
                             }
                         } else {
-                            // auth not in progress, mark as needs ext auth
-                            found.NeedsExtAuth = e.Id.NeedsExtAuth;
-                            if (isExtLogin && found.NeedsExtAuth) {
+                            // ext auth completed: identity no longer needs ext auth
+                            if (isAdd && found.NeedsExtAuth && !e.Id.NeedsExtAuth) {
+                                logger.Info("Identity: {} successfully authenticated", found.Identifier);
+                                _notificationThrottle.Remove(found.Identifier);
+                                if (!_notificationThrottle.Suppress) {
+                                    string displayName = string.IsNullOrEmpty(found.Name) ? found.Identifier : found.Name;
+                                    ShowToast("Authentication Successful", $"{displayName} has been authenticated.", null);
+                                }
+                            // identity still needs ext auth and no auth is currently in progress: queue a toast
+                            } else if (isExtLogin && found.NeedsExtAuth) {
                                 QueueExtAuthNotification(found);
                             }
+                            found.NeedsExtAuth = e.Id.NeedsExtAuth;
                         }
                         if (zid.Name != null && zid.Name.Length > 0) found.Name = zid.Name;
                         if (zid.ControllerUrl != null && zid.ControllerUrl.Length > 0) found.ControllerUrl = zid.ControllerUrl;
