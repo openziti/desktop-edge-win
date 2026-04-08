@@ -1351,7 +1351,7 @@ namespace ZitiDesktopEdge {
                                     string displayName = string.IsNullOrEmpty(found.Name) ? found.Identifier : found.Name;
                                     ShowToast("Authentication Successful", $"{displayName} has been authenticated.", null);
                                 }
-                            // identity still needs ext auth and no auth is currently in progress: queue a toast
+                                // identity still needs ext auth and no auth is currently in progress: queue a toast
                             } else if (isExtLogin && e.Id.NeedsExtAuth) {
                                 QueueExtAuthNotification(found);
                             }
@@ -1375,19 +1375,6 @@ namespace ZitiDesktopEdge {
                             }
                         }
                         LoadIdentities(true);
-                    }
-                } else if (e.Action == "needs_ext_login_do_not_match") {
-                    //this was here previously but was chnaged in https://github.com/openziti/desktop-edge-win/commit/4ce8d2c6
-                    //leaving here for history's sake at this point
-                    var found = identities.Find(i => i.Identifier == e.Id.Identifier);
-                    if (found != null) {
-                        if (found.AuthInProgress) {
-                            logger.Debug("Identity: {} with AuthInProgress received needs_ext_login event", found.Identifier);
-                        } else {
-                            // auth not in progress, mark as needs ext auth
-                            found.NeedsExtAuth = e.Id.NeedsExtAuth;
-                            LoadIdentities(true);
-                        }
                     }
                 } else if (e.Action == "updated") {
                     //this indicates that all updates have been sent to the UI... wait for 2 seconds then trigger any ui updates needed
