@@ -1319,7 +1319,7 @@ namespace ZitiDesktopEdge {
                                     ShowToast("Authentication Successful", $"{displayName} has been authenticated.", null);
                                 }
                             // identity still needs ext auth and no auth is currently in progress: queue a toast
-                            } else if (isExtLogin && found.NeedsExtAuth) {
+                            } else if (isExtLogin && e.Id.NeedsExtAuth) {
                                 QueueExtAuthNotification(found);
                             }
                             found.NeedsExtAuth = e.Id.NeedsExtAuth;
