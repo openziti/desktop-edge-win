@@ -803,12 +803,23 @@ namespace ZitiUpdateService {
             semaphore.Release();
         }
 
+        private void SendUpgradeProgress(string phase) {
+            var status = new MonitorServiceStatusEvent() {
+                Code = 0,
+                Error = "",
+                Message = "UpdateProgress:" + phase,
+                Status = ServiceActions.ServiceStatus(),
+            };
+            EventRegistry.SendEventToConsumers(status);
+        }
+
         private void installZDE(UpdateCheck check) {
             string fileDestination = Path.Combine(updateFolder, check?.FileName);
 
             if (check.AlreadyDownloaded(updateFolder, check.FileName)) {
                 Logger.Trace("package has already been downloaded to {0}", fileDestination);
             } else {
+                SendUpgradeProgress("Updating");
                 Logger.Info("copying update package begins");
                 try {
                     check.CopyUpdatePackage(updateFolder, check.FileName);
@@ -833,6 +844,7 @@ namespace ZitiUpdateService {
 				new SignedFileValidator(fileDestination).Verify();
 				Logger.Info("SignedFileValidator complete");
 
+				SendUpgradeProgress("Installing");
 				StopZiti();
 				StopUI().Wait();
 

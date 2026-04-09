@@ -164,7 +164,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         async public Task<SvcResponse> TriggerUpdate() {
-            UpgradeSentinel.StartUpgradeSentinel();
+            UpgradeSentinel.StartUpgradeSentinel(true);
             ActionEvent action = new ActionEvent() { Op = "TriggerUpdate", Action = "" };
             await sendMonitorClientAsync(action);
             return await readMonitorClientAsync<SvcResponse>(ipcReader);
