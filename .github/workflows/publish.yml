@@ -24,6 +24,7 @@ jobs:
       - name: Git Checkout
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.ref }}
           persist-credentials: false
       - name: Publish Release
         run: ./scripts/publish-release.sh ${{ inputs.version }} ${{ inputs.action_id }}
