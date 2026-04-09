@@ -98,6 +98,7 @@ done
 
 echo "Creating a release on GitHub"
 gh release create "${version}" \
+  --target "${GITHUB_REF_NAME}" \
   --title "${version}" \
   --notes "$release_notes" \
   --prerelease
