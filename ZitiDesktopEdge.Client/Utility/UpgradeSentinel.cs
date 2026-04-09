@@ -30,7 +30,7 @@ namespace ZitiDesktopEdge.Utility {
         public const string ZitiUpgradeSentinelExeName = "ZitiUpgradeSentinel.exe";
         private static string SentinelTempSource = Path.Combine(Path.GetTempPath(), ZitiUpgradeSentinelExeName);
 
-        public static void StartUpgradeSentinel() {
+        public static void StartUpgradeSentinel(bool showProgress) {
             //start the sentinel process...
             using (Process process = new Process()) {
                 string executablePath = Assembly.GetEntryAssembly().Location;
@@ -42,7 +42,8 @@ namespace ZitiDesktopEdge.Utility {
                         File.Copy(sentinelSource, SentinelTempSource, true);
                         logger.Info("starting sentinel process: {}", SentinelTempSource);
                         process.StartInfo.FileName = SentinelTempSource;
-                        process.StartInfo.Arguments = "version";
+                        string args = showProgress ? "version --show-progress" : "version";
+                        process.StartInfo.Arguments = args;
                         process.StartInfo.RedirectStandardOutput = true;
                         process.StartInfo.UseShellExecute = false;
                         process.StartInfo.CreateNoWindow = true;
