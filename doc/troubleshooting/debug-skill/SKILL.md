@@ -216,9 +216,45 @@ look at posture policies, terminator health, or service configuration.
 - **Any 2x+ day-over-day spike in either category:** flag the date and note whether it's isolated to one
   machine or shared
 
-### 10. Report
+### 10. Write the report to a markdown file
 
-List the full extracted structure and summarize:
-- How many feedback captures were found (1 for a normal zip, N for an aggregation)
-- The timestamp/name of each capture folder
-- Key files present in each capture (confirm `service/`, `UI/`, `ZitiMonitorService/` are present)
+Once all analysis is complete, write the full report to a markdown file inside the ticket folder:
+
+```
+<ticket_number>/<ticket_number>-analysis.md
+```
+
+The report should contain all findings from steps 6–9, structured as:
+
+```markdown
+# ZDEW Debug Report — Ticket <ticket_number>
+
+**Source zip:** `<filename>`
+**Captures:** N (single / aggregated)
+**Generated:** <date>
+
+---
+
+## <capture_name> — <hostname>
+
+### Crash / Stall Markers
+...
+
+### .ziti Analysis
+...
+
+### Service History
+...
+
+### Error Analysis
+...
+
+---
+
+## Summary
+
+One or two sentences calling out the most significant findings across all captures.
+Flag anything the support engineer should act on or ask the customer about.
+```
+
+After writing the file, tell the user the path and give a one-line summary of the most important finding.
