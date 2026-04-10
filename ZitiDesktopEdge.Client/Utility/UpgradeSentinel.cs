@@ -30,19 +30,27 @@ namespace ZitiDesktopEdge.Utility {
         public const string ZitiUpgradeSentinelExeName = "ZitiUpgradeSentinel.exe";
         private static string SentinelTempSource = Path.Combine(Path.GetTempPath(), ZitiUpgradeSentinelExeName);
 
+        private static string PrefsDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "NetFoundry");
+        private static string HideProgressFile = Path.Combine(PrefsDirectory, "hide-upgrade-progress");
+
+        public static bool IsProgressHidden() {
+            return File.Exists(HideProgressFile);
+        }
+
         public static void StartUpgradeSentinel(bool showProgress) {
             //start the sentinel process...
             using (Process process = new Process()) {
                 string executablePath = Assembly.GetEntryAssembly().Location;
                 string executableDirectory = Path.GetDirectoryName(executablePath);
-                var sentinelSource = Path.Combine(executableDirectory, ZitiUpgradeSentinelExeName);
+                string sentinelSource = Path.Combine(executableDirectory, ZitiUpgradeSentinelExeName);
 
                 if (File.Exists(sentinelSource)) {
                     try {
                         File.Copy(sentinelSource, SentinelTempSource, true);
                         logger.Info("starting sentinel process: {}", SentinelTempSource);
                         process.StartInfo.FileName = SentinelTempSource;
-                        string args = showProgress ? "version --show-progress" : "version";
+                        bool shouldShow = showProgress && !IsProgressHidden();
+                        string args = shouldShow ? "version --show-progress" : "version";
                         process.StartInfo.Arguments = args;
                         process.StartInfo.RedirectStandardOutput = true;
                         process.StartInfo.UseShellExecute = false;
@@ -60,7 +68,6 @@ namespace ZitiDesktopEdge.Utility {
         public static void RemoveUpgradeSentinelExe() {
             try {
                 if (File.Exists(SentinelTempSource)) {
-                    // if the temp file exists, clear it out
                     File.Delete(SentinelTempSource);
                     logger.Debug("found and removed upgrade sentinel at: {}", SentinelTempSource);
                 } else {
