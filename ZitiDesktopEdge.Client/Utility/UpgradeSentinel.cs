@@ -65,6 +65,19 @@ namespace ZitiDesktopEdge.Utility {
             }
         }
 
+        public static void StopUpgradeSentinel() {
+            try {
+                Process[] sentinels = Process.GetProcessesByName("ZitiUpgradeSentinel");
+                foreach (Process sentinel in sentinels) {
+                    logger.Info("killing upgrade sentinel process: {}", sentinel.Id);
+                    sentinel.Kill();
+                    sentinel.Dispose();
+                }
+            } catch (Exception ex) {
+                logger.Error("failed to stop upgrade sentinel: {}", ex.Message);
+            }
+        }
+
         public static void RemoveUpgradeSentinelExe() {
             try {
                 if (File.Exists(SentinelTempSource)) {

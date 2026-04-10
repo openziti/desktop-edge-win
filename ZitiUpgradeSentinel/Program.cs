@@ -58,8 +58,14 @@ class FileWatcher {
                         await RunWithTimeout(task: WaitForStartupChange(), timeout: TimeSpan.FromMinutes(5));
                         UpdateStatus("Launching application...");
                         StartZitiDesktopEdgeUI();
+                    } catch (TimeoutException) {
+                        Log($"{processName} timed out waiting for service restart");
+                        UpdateStatus($"Update timed out. Please restart manually.\nSee log: {logFilePath}");
+                        Thread.Sleep(5000);
                     } catch (Exception e) {
                         Log($"{processName} completed exceptionally: {e}");
+                        UpdateStatus($"Update failed. Please restart manually.\nSee log: {logFilePath}");
+                        Thread.Sleep(5000);
                     } finally {
                         Log($"{processName} completed");
                         CloseForm();
@@ -69,8 +75,12 @@ class FileWatcher {
                 Application.Run(progressForm);
             } else {
                 Task.Run(async () => {
-                    await RunWithTimeout(task: WaitForStartupChange(), timeout: TimeSpan.FromMinutes(5));
-                    StartZitiDesktopEdgeUI();
+                    try {
+                        await RunWithTimeout(task: WaitForStartupChange(), timeout: TimeSpan.FromMinutes(5));
+                        StartZitiDesktopEdgeUI();
+                    } catch (TimeoutException) {
+                        Log($"{processName} timed out waiting for service restart");
+                    }
                 }).Wait();
             }
         } catch (Exception e) {
