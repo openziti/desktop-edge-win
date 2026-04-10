@@ -483,7 +483,6 @@ namespace ZitiDesktopEdge {
             this.UpdateUrl.Text = state.AutomaticUpdateURL;
         }
 
-
         async private void CheckForUpdate_OnClick(object sender, MouseButtonEventArgs e) {
             logger.Info("checking for update...");
             CheckForUpdateStatus.Content = "Checking for updates...";
