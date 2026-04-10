@@ -1,6 +1,10 @@
-# Release 2.10.4.0
+# Next Release
 ## What's New
-* updated to ziti-edge-tunnel v1.14.6
+* [Issue 818](https://github.com/openziti/desktop-edge-win/issues/818) - Added update progress UI
+  * Update service sends progress and failure status to the UI during updates
+  * Upgrade sentinel shows a dismissable progress dialog on user-triggered updates
+  * Update failures are shown to the user instead of silently hanging
+  * Automatic updates now relaunch the UI after the install completes if the UI was running prior to the update
 
 ## Bugs fixed
 n/a

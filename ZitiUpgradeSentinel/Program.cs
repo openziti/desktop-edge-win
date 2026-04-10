@@ -16,6 +16,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.IO.Pipes;
 using System.Threading;
@@ -24,6 +25,7 @@ using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Text;
+using System.Windows.Forms;
 
 class FileWatcher {
     private static string processName = Process.GetCurrentProcess().ProcessName;
@@ -31,20 +33,152 @@ class FileWatcher {
     private static string fileName = $"{processName}_{DateTime.Now:yyyyMMddHHmmss}.log";
     private static string logFilePath = Path.Combine(tempDir, fileName);
 
-    public static async Task Main(string[] args) {
-        Log($"{processName} started");
+    private static Form progressForm;
+    private static Label statusLabel;
+    private static bool showProgress = false;
+
+    [STAThread]
+    public static void Main(string[] args) {
+        showProgress = Array.Exists(args, a => a == "--show-progress");
+        Log($"{processName} started. showProgress={showProgress}");
+
         try {
             if (Process.GetProcessesByName(processName).Length > 1) {
                 Log("Another instance is already running. Exiting...");
                 return;
             }
-            await RunWithTimeout(task: WaitForStartupChange(), timeout: TimeSpan.FromMinutes(5));
-            StartZitiDesktopEdgeUI();
+
+            if (showProgress) {
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+                progressForm = CreateProgressForm();
+
+                Task.Run(async () => {
+                    try {
+                        await RunWithTimeout(task: WaitForStartupChange(), timeout: TimeSpan.FromMinutes(5));
+                        UpdateStatus("Launching application...");
+                        StartZitiDesktopEdgeUI();
+                    } catch (TimeoutException) {
+                        Log($"{processName} timed out waiting for service restart");
+                        UpdateStatus($"Update timed out. Please restart manually.\nSee log: {logFilePath}");
+                        await Task.Delay(5000);
+                    } catch (Exception e) {
+                        Log($"{processName} completed exceptionally: {e}");
+                        UpdateStatus($"Update failed. Please restart manually.\nSee log: {logFilePath}");
+                        await Task.Delay(5000);
+                    } finally {
+                        Log($"{processName} completed");
+                        CloseForm();
+                    }
+                });
+
+                Application.Run(progressForm);
+            } else {
+                Task.Run(async () => {
+                    try {
+                        await RunWithTimeout(task: WaitForStartupChange(), timeout: TimeSpan.FromMinutes(5));
+                        StartZitiDesktopEdgeUI();
+                    } catch (TimeoutException) {
+                        Log($"{processName} timed out waiting for service restart");
+                    }
+                }).Wait();
+            }
         } catch (Exception e) {
-            Log($"{processName} completed exceptionally: ");
-            Log(e.ToString());
+            Log($"{processName} completed exceptionally: {e}");
         } finally {
             Log($"{processName} completed");
+        }
+    }
+
+    private static string prefsDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "NetFoundry");
+    private static string hideProgressFile = Path.Combine(prefsDirectory, "hide-upgrade-progress");
+
+    private static void SaveHidePreference(bool hide) {
+        try {
+            if (hide) {
+                Directory.CreateDirectory(prefsDirectory);
+                File.WriteAllText(hideProgressFile, "");
+            } else if (File.Exists(hideProgressFile)) {
+                File.Delete(hideProgressFile);
+            }
+        } catch (Exception ex) {
+            Log($"Failed to save preference: {ex.Message}");
+        }
+    }
+
+    private static Form CreateProgressForm() {
+        Form form = new Form {
+            Text = "Ziti Desktop Edge - Updating",
+            Size = new Size(420, 160),
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            StartPosition = FormStartPosition.CenterScreen,
+            MaximizeBox = false,
+            MinimizeBox = false,
+            TopMost = true,
+            ShowInTaskbar = true,
+        };
+
+        try {
+            string exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            form.Icon = Icon.ExtractAssociatedIcon(exePath);
+        } catch (Exception ex) {
+            Log($"Failed to extract icon: {ex.Message}");
+        }
+
+        statusLabel = new Label {
+            Text = "Launching installer...",
+            AutoSize = false,
+            TextAlign = ContentAlignment.MiddleCenter,
+            Dock = DockStyle.Top,
+            Height = 50,
+            Font = new Font("Segoe UI", 11f),
+        };
+
+        ProgressBar progressBar = new ProgressBar {
+            Style = ProgressBarStyle.Marquee,
+            MarqueeAnimationSpeed = 30,
+            Dock = DockStyle.Top,
+            Height = 25,
+        };
+
+        CheckBox hideCheckbox = new CheckBox {
+            Text = "Don't show this again",
+            Dock = DockStyle.Bottom,
+            Height = 25,
+            Font = new Font("Segoe UI", 9f),
+            Padding = new Padding(5, 0, 0, 0),
+        };
+        hideCheckbox.CheckedChanged += (sender, e) => SaveHidePreference(hideCheckbox.Checked);
+
+        Panel padding = new Panel { Dock = DockStyle.Top, Height = 10 };
+
+        form.Controls.Add(hideCheckbox);
+        form.Controls.Add(progressBar);
+        form.Controls.Add(padding);
+        form.Controls.Add(statusLabel);
+
+        return form;
+    }
+
+    private static void UpdateStatus(string text) {
+        Log($"Status: {text}");
+        if (!showProgress || progressForm == null || progressForm.IsDisposed) {
+            return;
+        }
+        if (progressForm.InvokeRequired) {
+            progressForm.Invoke(new Action(() => statusLabel.Text = text));
+        } else {
+            statusLabel.Text = text;
+        }
+    }
+
+    private static void CloseForm() {
+        if (progressForm != null && !progressForm.IsDisposed) {
+            if (progressForm.InvokeRequired) {
+                progressForm.Invoke(new Action(() => progressForm.Close()));
+            } else {
+                progressForm.Close();
+            }
         }
     }
 
@@ -60,14 +194,13 @@ class FileWatcher {
         DateTime startTime = DateTime.Parse(response.Data.StartTime).ToLocalTime();
         Log($"StartTime: {startTime}");
         return startTime;
-        throw new Exception("could not obtain current time from data service");
     }
 
     public static async Task WaitForStartupChange() {
         DateTime startTime = DateTime.Now;
         try {
             using (NamedPipeClientStream pipeClient = new NamedPipeClientStream(".", "ziti-edge-tunnel.sock", PipeDirection.InOut)) {
-                pipeClient.Connect();
+                pipeClient.Connect(5000);
                 StreamWriter writer = new StreamWriter(pipeClient);
                 StreamReader reader = new StreamReader(pipeClient);
 
@@ -82,25 +215,25 @@ class FileWatcher {
             Log($"Error: {ex.Message}");
         }
 
+        UpdateStatus("Waiting for services to stop...");
         while (true) {
             try {
                 using (NamedPipeClientStream pipeClient = new NamedPipeClientStream(".", "ziti-edge-tunnel.sock", PipeDirection.InOut)) {
-                    pipeClient.Connect();
+                    pipeClient.Connect(2000);
                     StreamWriter writer = new StreamWriter(pipeClient);
                     StreamReader reader = new StreamReader(pipeClient);
                     DateTime nextStartTime = GetCurrentStartTime(writer, reader);
-                    if (startTime == nextStartTime) {
-                        Log($"{startTime} is equal to {nextStartTime}");
-                    } else {
+                    if (nextStartTime != startTime) {
                         Log($"{startTime} has changed to {nextStartTime}");
                         return;
                     }
-                    await Task.Delay(TimeSpan.FromMilliseconds(500)); // wait for the serice to start and return a result
+                    UpdateStatus("Waiting for services to stop...");
                 }
             } catch (Exception ex) {
+                UpdateStatus("Waiting for services to start...");
                 Log($"Error: {ex.Message}");
             }
-            await Task.Delay(TimeSpan.FromMilliseconds(500)); // try again...
+            await Task.Delay(500);
         }
     }
 
@@ -114,6 +247,7 @@ class FileWatcher {
             }
         }
     }
+
     public static void Log(string message) {
         Console.WriteLine(message);
         File.AppendAllText(logFilePath, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - {message}\n");
