@@ -483,6 +483,7 @@ namespace ZitiDesktopEdge {
             this.UpdateUrl.Text = state.AutomaticUpdateURL;
         }
 
+
         async private void CheckForUpdate_OnClick(object sender, MouseButtonEventArgs e) {
             logger.Info("checking for update...");
             CheckForUpdateStatus.Content = "Checking for updates...";
@@ -521,7 +522,7 @@ namespace ZitiDesktopEdge {
             try {
                 CheckForUpdateStatus.Content = "Requesting automatic update...";
                 var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
-                var r = await monitorClient.TriggerUpdate();
+                SvcResponse r = await monitorClient.TriggerUpdate();
                 CheckForUpdateStatus.Content = "Automatic update requested...";
                 if (r == null) {
                     MainWindow.ShowError("Error When Triggering Update", "An error occurred while trying to trigger the update.");

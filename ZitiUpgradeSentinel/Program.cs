@@ -19,7 +19,6 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.IO.Pipes;
-using System.ServiceProcess;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -58,7 +57,6 @@ class FileWatcher {
                     try {
                         await RunWithTimeout(task: WaitForStartupChange(), timeout: TimeSpan.FromMinutes(5));
                         UpdateStatus("Launching application...");
-                        Thread.Sleep(500);
                         StartZitiDesktopEdgeUI();
                     } catch (Exception e) {
                         Log($"{processName} completed exceptionally: {e}");
@@ -70,8 +68,10 @@ class FileWatcher {
 
                 Application.Run(progressForm);
             } else {
-                RunWithTimeout(task: WaitForStartupChange(), timeout: TimeSpan.FromMinutes(5)).Wait();
-                StartZitiDesktopEdgeUI();
+                Task.Run(async () => {
+                    await RunWithTimeout(task: WaitForStartupChange(), timeout: TimeSpan.FromMinutes(5));
+                    StartZitiDesktopEdgeUI();
+                }).Wait();
             }
         } catch (Exception e) {
             Log($"{processName} completed exceptionally: {e}");
@@ -80,10 +80,26 @@ class FileWatcher {
         }
     }
 
+    private static string prefsDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "NetFoundry");
+    private static string hideProgressFile = Path.Combine(prefsDirectory, "hide-upgrade-progress");
+
+    private static void SaveHidePreference(bool hide) {
+        try {
+            if (hide) {
+                Directory.CreateDirectory(prefsDirectory);
+                File.WriteAllText(hideProgressFile, "");
+            } else if (File.Exists(hideProgressFile)) {
+                File.Delete(hideProgressFile);
+            }
+        } catch (Exception ex) {
+            Log($"Failed to save preference: {ex.Message}");
+        }
+    }
+
     private static Form CreateProgressForm() {
-        var form = new Form {
+        Form form = new Form {
             Text = "Ziti Desktop Edge - Updating",
-            Size = new Size(420, 130),
+            Size = new Size(420, 160),
             FormBorderStyle = FormBorderStyle.FixedDialog,
             StartPosition = FormStartPosition.CenterScreen,
             MaximizeBox = false,
@@ -95,10 +111,12 @@ class FileWatcher {
         try {
             string exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
             form.Icon = Icon.ExtractAssociatedIcon(exePath);
-        } catch { }
+        } catch (Exception ex) {
+            Log($"Failed to extract icon: {ex.Message}");
+        }
 
         statusLabel = new Label {
-            Text = "Update in progress...",
+            Text = "Launching installer...",
             AutoSize = false,
             TextAlign = ContentAlignment.MiddleCenter,
             Dock = DockStyle.Top,
@@ -106,15 +124,25 @@ class FileWatcher {
             Font = new Font("Segoe UI", 11f),
         };
 
-        var progressBar = new ProgressBar {
+        ProgressBar progressBar = new ProgressBar {
             Style = ProgressBarStyle.Marquee,
             MarqueeAnimationSpeed = 30,
             Dock = DockStyle.Top,
             Height = 25,
         };
 
-        var padding = new Panel { Dock = DockStyle.Top, Height = 10 };
+        CheckBox hideCheckbox = new CheckBox {
+            Text = "Don't show this again",
+            Dock = DockStyle.Bottom,
+            Height = 25,
+            Font = new Font("Segoe UI", 9f),
+            Padding = new Padding(5, 0, 0, 0),
+        };
+        hideCheckbox.CheckedChanged += (sender, e) => SaveHidePreference(hideCheckbox.Checked);
 
+        Panel padding = new Panel { Dock = DockStyle.Top, Height = 10 };
+
+        form.Controls.Add(hideCheckbox);
         form.Controls.Add(progressBar);
         form.Controls.Add(padding);
         form.Controls.Add(statusLabel);
@@ -156,30 +184,27 @@ class FileWatcher {
         DateTime startTime = DateTime.Parse(response.Data.StartTime).ToLocalTime();
         Log($"StartTime: {startTime}");
         return startTime;
-        throw new Exception("could not obtain current time from data service");
-    }
-
-    private static bool IsServiceRunning(string serviceName) {
-        try {
-            ServiceController sc = new ServiceController(serviceName);
-            sc.Refresh();
-            return sc.Status == ServiceControllerStatus.Running;
-        } catch {
-            return false;
-        }
     }
 
     public static async Task WaitForStartupChange() {
-        DateTime startTime = DateTime.Now;
+        DateTime sentinelLaunchTime = DateTime.Now;
+        DateTime startTime = sentinelLaunchTime;
         try {
             using (NamedPipeClientStream pipeClient = new NamedPipeClientStream(".", "ziti-edge-tunnel.sock", PipeDirection.InOut)) {
-                pipeClient.Connect();
+                pipeClient.Connect(5000);
                 StreamWriter writer = new StreamWriter(pipeClient);
                 StreamReader reader = new StreamReader(pipeClient);
 
                 try {
                     startTime = GetCurrentStartTime(writer, reader);
                     Log($"initial start time {startTime}");
+
+                    // If the service started after the sentinel launched, the
+                    // update already completed before we got here.
+                    if (startTime > sentinelLaunchTime) {
+                        Log($"Service already restarted (start time {startTime} is after sentinel launch {sentinelLaunchTime})");
+                        return;
+                    }
                 } catch {
                     Log("Could not obtain current time. The service is expected to be down. Using 'now' as current time.");
                 }
@@ -188,39 +213,11 @@ class FileWatcher {
             Log($"Error: {ex.Message}");
         }
 
-        // Wait for ziti service to stop
-        UpdateStatus("Stopping ziti service...");
-        while (IsServiceRunning("ziti")) {
-            await Task.Delay(500);
-        }
-
-        // Wait for ziti-monitor to stop
-        UpdateStatus("Stopping ziti-monitor service...");
-        while (IsServiceRunning("ziti-monitor")) {
-            await Task.Delay(500);
-        }
-
-        // Wait for services to come back
-        UpdateStatus("Installing update...");
-        while (!IsServiceRunning("ziti") && !IsServiceRunning("ziti-monitor")) {
-            await Task.Delay(500);
-        }
-
-        UpdateStatus("Starting ziti service...");
-        while (!IsServiceRunning("ziti")) {
-            await Task.Delay(500);
-        }
-
-        UpdateStatus("Starting ziti-monitor service...");
-        while (!IsServiceRunning("ziti-monitor")) {
-            await Task.Delay(500);
-        }
-
-        // Verify tunnel actually restarted via pipe
+        UpdateStatus("Waiting for services to stop...");
         while (true) {
             try {
                 using (NamedPipeClientStream pipeClient = new NamedPipeClientStream(".", "ziti-edge-tunnel.sock", PipeDirection.InOut)) {
-                    pipeClient.Connect();
+                    pipeClient.Connect(2000);
                     StreamWriter writer = new StreamWriter(pipeClient);
                     StreamReader reader = new StreamReader(pipeClient);
                     DateTime nextStartTime = GetCurrentStartTime(writer, reader);
@@ -228,8 +225,10 @@ class FileWatcher {
                         Log($"{startTime} has changed to {nextStartTime}");
                         return;
                     }
+                    UpdateStatus("Waiting for services to stop...");
                 }
             } catch (Exception ex) {
+                UpdateStatus("Waiting for services to start...");
                 Log($"Error: {ex.Message}");
             }
             await Task.Delay(500);
