@@ -954,6 +954,16 @@ namespace ZitiDesktopEdge {
                         ShowLoad("Update In Progress", phase);
                         return;
                     }
+                    if (evt.Message != null && evt.Message.StartsWith("UpdateFailed:")) {
+                        string reason = evt.Message.Substring("UpdateFailed:".Length);
+                        logger.Warn("Update failed: {0}", reason);
+                        UpgradeSentinel.StopUpgradeSentinel();
+                        HideLoad();
+                        this.Show();
+                        this.Activate();
+                        ShowError("Update Failed", reason);
+                        return;
+                    }
                     if (evt.Message?.ToLower() == "upgrading") {
                         logger.Info("The monitor has indicated an upgrade is in progress. Shutting down the UI");
                         UpgradeSentinel.StartUpgradeSentinel(false);

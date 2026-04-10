@@ -813,6 +813,16 @@ namespace ZitiUpdateService {
             EventRegistry.SendEventToConsumers(status);
         }
 
+        private void SendUpgradeFailure(string reason) {
+            var status = new MonitorServiceStatusEvent() {
+                Code = 1,
+                Error = reason,
+                Message = "UpdateFailed:" + reason,
+                Status = ServiceActions.ServiceStatus(),
+            };
+            EventRegistry.SendEventToConsumers(status);
+        }
+
         private void installZDE(UpdateCheck check) {
             string fileDestination = Path.Combine(updateFolder, check?.FileName);
 
@@ -825,6 +835,7 @@ namespace ZitiUpdateService {
                     check.CopyUpdatePackage(updateFolder, check.FileName);
                 } catch (Exception e) {
                     Logger.Error("copying update package failed! {0}", e);
+                    SendUpgradeFailure("Download failed");
                     return;
                 }
                 Logger.Info("copying update package complete");
@@ -835,6 +846,7 @@ namespace ZitiUpdateService {
             if (!check.HashIsValid(updateFolder, check.FileName)) {
                 Logger.Warn("The file was downloaded but the hash is not valid. The file will be removed: {0}", fileDestination);
                 File.Delete(fileDestination);
+                SendUpgradeFailure("Hash verification failed");
                 return;
             }
             Logger.Debug("downloaded file hash was correct. update can continue.");
@@ -853,6 +865,7 @@ namespace ZitiUpdateService {
 				Process.Start(fileDestination, "/passive");
 			} catch (Exception ex) {
 				Logger.Error(ex, "Unexpected error during installation");
+				SendUpgradeFailure("Installation failed");
 			}
 #else
             Logger.Warn("SKIPUPDATE IS SET - NOT PERFORMING UPDATE of version: {} published at {}", check.GetNextVersion(), check.PublishDate);
