@@ -804,23 +804,23 @@ namespace ZitiUpdateService {
         }
 
         private void SendUpgradeProgress(string phase) {
-            var status = new MonitorServiceStatusEvent() {
+            MonitorServiceStatusEvent progressEvent = new MonitorServiceStatusEvent() {
                 Code = 0,
                 Error = "",
                 Message = "UpdateProgress:" + phase,
                 Status = ServiceActions.ServiceStatus(),
             };
-            EventRegistry.SendEventToConsumers(status);
+            EventRegistry.SendEventToConsumers(progressEvent);
         }
 
         private void SendUpgradeFailure(string reason) {
-            var status = new MonitorServiceStatusEvent() {
+            MonitorServiceStatusEvent failureEvent = new MonitorServiceStatusEvent() {
                 Code = 1,
                 Error = reason,
                 Message = "UpdateFailed:" + reason,
                 Status = ServiceActions.ServiceStatus(),
             };
-            EventRegistry.SendEventToConsumers(status);
+            EventRegistry.SendEventToConsumers(failureEvent);
         }
 
         private void installZDE(UpdateCheck check) {
@@ -829,7 +829,7 @@ namespace ZitiUpdateService {
             if (check.AlreadyDownloaded(updateFolder, check.FileName)) {
                 Logger.Trace("package has already been downloaded to {0}", fileDestination);
             } else {
-                SendUpgradeProgress("Updating");
+                SendUpgradeProgress("Downloading");
                 Logger.Info("copying update package begins");
                 try {
                     check.CopyUpdatePackage(updateFolder, check.FileName);
@@ -842,6 +842,7 @@ namespace ZitiUpdateService {
             }
 
             Logger.Info("package is in {0} - moving to install phase", fileDestination);
+            SendUpgradeProgress("Verifying");
 
             if (!check.HashIsValid(updateFolder, check.FileName)) {
                 Logger.Warn("The file was downloaded but the hash is not valid. The file will be removed: {0}", fileDestination);

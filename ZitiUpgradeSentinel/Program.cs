@@ -61,11 +61,11 @@ class FileWatcher {
                     } catch (TimeoutException) {
                         Log($"{processName} timed out waiting for service restart");
                         UpdateStatus($"Update timed out. Please restart manually.\nSee log: {logFilePath}");
-                        Thread.Sleep(5000);
+                        await Task.Delay(5000);
                     } catch (Exception e) {
                         Log($"{processName} completed exceptionally: {e}");
                         UpdateStatus($"Update failed. Please restart manually.\nSee log: {logFilePath}");
-                        Thread.Sleep(5000);
+                        await Task.Delay(5000);
                     } finally {
                         Log($"{processName} completed");
                         CloseForm();
@@ -197,8 +197,7 @@ class FileWatcher {
     }
 
     public static async Task WaitForStartupChange() {
-        DateTime sentinelLaunchTime = DateTime.Now;
-        DateTime startTime = sentinelLaunchTime;
+        DateTime startTime = DateTime.Now;
         try {
             using (NamedPipeClientStream pipeClient = new NamedPipeClientStream(".", "ziti-edge-tunnel.sock", PipeDirection.InOut)) {
                 pipeClient.Connect(5000);
@@ -208,13 +207,6 @@ class FileWatcher {
                 try {
                     startTime = GetCurrentStartTime(writer, reader);
                     Log($"initial start time {startTime}");
-
-                    // If the service started after the sentinel launched, the
-                    // update already completed before we got here.
-                    if (startTime > sentinelLaunchTime) {
-                        Log($"Service already restarted (start time {startTime} is after sentinel launch {sentinelLaunchTime})");
-                        return;
-                    }
                 } catch {
                     Log("Could not obtain current time. The service is expected to be down. Using 'now' as current time.");
                 }
@@ -251,7 +243,7 @@ class FileWatcher {
                 cancellationTokenSource.Cancel();
                 await task;
             } else {
-                throw new System.TimeoutException("The operation has timed out.");
+                throw new TimeoutException("The operation has timed out.");
             }
         }
     }
