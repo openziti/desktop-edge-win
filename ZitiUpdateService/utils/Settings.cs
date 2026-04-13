@@ -34,6 +34,9 @@ namespace ZitiUpdateService.Utils {
         public bool AutomaticUpdatesDisabled { get; set; }
         public string AutomaticUpdateURL { get; set; }
         public int? AlivenessChecksBeforeAction { get; set; } // the number of times the aliveness check can fail before terminating the tunneler
+        public bool DeferInstallToRestart { get; set; }       // stage the update and apply it on the next service/system restart
+        public int? MaintenanceWindowStart { get; set; }      // hour (0-23) when installs may begin; null = no window
+        public int? MaintenanceWindowEnd { get; set; }        // hour (0-23) when installs must stop; if equal to Start = no window; if < Start = window crosses midnight
 
         public event System.EventHandler<ControllerEvent> OnConfigurationChange;
 
@@ -42,6 +45,8 @@ namespace ZitiUpdateService.Utils {
                 init();
             }
             AlivenessChecksBeforeAction = DefaultAlivenessChecks;
+            MaintenanceWindowStart = null; // null = any time (no window restriction)
+            MaintenanceWindowEnd   = null;
         }
 
         public Settings() {
@@ -146,6 +151,9 @@ namespace ZitiUpdateService.Utils {
         private void Update(Settings source) {
             this.AutomaticUpdatesDisabled = source.AutomaticUpdatesDisabled;
             this.AutomaticUpdateURL = source.AutomaticUpdateURL;
+            this.DeferInstallToRestart = source.DeferInstallToRestart;
+            this.MaintenanceWindowStart = source.MaintenanceWindowStart;
+            this.MaintenanceWindowEnd = source.MaintenanceWindowEnd;
             if (source.AlivenessChecksBeforeAction != null) {
                 AlivenessChecksBeforeAction = source.AlivenessChecksBeforeAction;
             } else {
