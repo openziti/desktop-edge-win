@@ -72,7 +72,7 @@ namespace ZitiUpdateService.Checkers {
             foreach (JObject asset in assets.Children<JObject>()) {
                 string assetName = asset.Property("name").Value.ToString();
 
-                if (assetName.StartsWith("Ziti.Desktop.Edge.Client-")) {
+                if (assetName.StartsWith("Ziti.Desktop.Edge.Client-") && assetName.EndsWith(".exe")) {
                     downloadUrl = asset.Property("browser_download_url").Value.ToString();
                     break;
                 } else {
