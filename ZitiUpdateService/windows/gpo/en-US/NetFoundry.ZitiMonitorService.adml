@@ -1,0 +1,287 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+  English language resources for NetFoundry.ZitiMonitorService.admx
+-->
+<policyDefinitionResources
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    revision="1.0"
+    schemaVersion="1.0"
+    xmlns="http://schemas.microsoft.com/GroupPolicy/2006/07/PolicyDefinitions">
+
+  <displayName>Ziti Monitor Service Policy Definitions</displayName>
+  <description>
+    Administrative templates for ZitiUpdateService (ziti-monitor-service), the
+    automatic-update and aliveness-monitor component of Ziti Desktop Edge for Windows.
+    These policies allow administrators to control update behavior across a fleet of
+    managed endpoints so that settings cannot be changed by end users at runtime.
+  </description>
+
+  <resources>
+    <stringTable>
+
+      <!-- Supported on -->
+      <string id="SUPPORTED_ZitiMonitorService">Ziti Desktop Edge for Windows (all versions)</string>
+
+      <!-- Category names -->
+      <string id="CAT_NetFoundry">NetFoundry</string>
+      <string id="CAT_ZitiDesktopEdge">Ziti Desktop Edge for Windows</string>
+      <string id="CAT_ZitiMonitorService">ziti-monitor-service</string>
+
+      <!-- ZMS_AutomaticUpdatesDisabled -->
+      <string id="ZMS_AutomaticUpdatesDisabled">Disable Automatic Updates</string>
+      <string id="ZMS_AutomaticUpdatesDisabled_Help">
+Controls whether ZitiUpdateService automatically downloads and installs new releases.
+
+When this policy is Enabled, automatic update installation is suppressed. The service
+will still detect available updates and may notify users, but will never initiate an
+installation — including when the InstallationCritical threshold is reached.
+
+When this policy is Disabled, automatic updates are explicitly permitted (equivalent
+to Not Configured but explicit).
+
+When this policy is Not Configured, the AutomaticUpdatesDisabled value in settings.json
+is used and can be changed at runtime.
+
+Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service\AutomaticUpdatesDisabled (REG_DWORD, 1 or 0)
+      </string>
+
+      <!-- ZMS_AutomaticUpdateURL -->
+      <string id="ZMS_AutomaticUpdateURL">Configure Update Stream URL</string>
+      <string id="ZMS_AutomaticUpdateURL_Help">
+Specifies the URL of the release feed that ZitiUpdateService polls for new versions.
+
+Set this to control which release stream endpoints receive updates from. You can point
+to the official stable feed, the beta feed, or any internal mirror that serves the
+same release artifact schema.
+
+When this policy is Enabled, the specified URL is used at service startup and cannot
+be changed via IPC or by modifying settings.json at runtime.
+
+When this policy is Disabled or Not Configured, the AutomaticUpdateURL value in
+settings.json is used. If AutomaticUpdateURL is also empty, the service falls back to
+its compiled-in default feed URL.
+
+The URL must be HTTPS and must return a feed in the same schema as the default
+GitHub releases API used by this service.
+
+Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service\AutomaticUpdateURL (REG_SZ)
+      </string>
+
+      <!-- ZMS_UpdateTimer -->
+      <string id="ZMS_UpdateTimer">Configure Update Check Interval</string>
+      <string id="ZMS_UpdateTimer_Help">
+Specifies how often (in seconds) ZitiUpdateService polls the release feed for a new
+version.
+
+The minimum enforced value is 600 (10 minutes). Values below 600 are silently raised
+to 600. The maximum configurable value is 864000 (10 days).
+
+Common values:
+  600     — every 10 minutes (minimum)
+  3600    — every hour
+  86400   — every day (recommended default)
+
+When this policy is Enabled, the specified interval is used and the UpdateTimer value
+in ZitiUpdateService.exe.config is ignored.
+
+When this policy is Disabled or Not Configured, the UpdateTimer value in
+ZitiUpdateService.exe.config is used (default: 600 seconds).
+
+Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service\UpdateTimer (REG_DWORD)
+      </string>
+
+      <!-- ZMS_InstallationReminder -->
+      <string id="ZMS_InstallationReminder">Configure Installation Reminder Interval</string>
+      <string id="ZMS_InstallationReminder_Help">
+Specifies how often (in seconds) ZitiUpdateService re-notifies users about a pending
+update after it was first detected.
+
+This value should generally be greater than or equal to UpdateTimer. If set
+lower than the update check interval, users will receive a notification on every
+update-check cycle.
+
+Common values:
+  3600    — every hour
+  86400   — once per day (compiled-in default)
+  604800  — once per week
+
+When this policy is Enabled, the specified interval is used and the InstallationReminder
+value in ZitiUpdateService.exe.config is ignored.
+
+When this policy is Disabled or Not Configured, the InstallationReminder value in
+ZitiUpdateService.exe.config is used (default: 86400 seconds / 1 day).
+
+Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service\InstallationReminder (REG_DWORD)
+      </string>
+
+      <!-- ZMS_InstallationCritical -->
+      <string id="ZMS_InstallationCritical">Configure Critical Installation Threshold</string>
+      <string id="ZMS_InstallationCritical_Help">
+Specifies the age of a detected release (in seconds, measured from its publish date)
+at which the update is treated as critical and applied automatically without user
+interaction. The auto-install is triggered within 30 seconds of the threshold being
+crossed.
+
+Set to 0 to treat every update as immediately critical — installation begins within
+30 seconds of detection. No grace period is given to the user.
+
+Note: if the Disable Automatic Updates policy is also Enabled, this threshold is
+suppressed and no force-install will occur regardless of release age.
+
+Common values:
+  0       — force-install immediately on detection (no grace period)
+  86400   — 1 day grace period
+  604800  — 7 days (compiled-in default)
+
+When this policy is Enabled, the specified threshold is used and the InstallationCritical
+value in ZitiUpdateService.exe.config is ignored.
+
+When this policy is Disabled or Not Configured, the InstallationCritical value in
+ZitiUpdateService.exe.config is used (default: 604800 seconds / 7 days).
+
+Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service\InstallationCritical (REG_DWORD)
+      </string>
+
+      <!-- ZMS_AlivenessChecksBeforeAction -->
+      <string id="ZMS_AlivenessChecksBeforeAction">Configure Aliveness Check Threshold</string>
+      <string id="ZMS_AlivenessChecksBeforeAction_Help">
+Specifies how many consecutive failed aliveness checks against ziti-edge-tunnel must
+occur before ZitiUpdateService takes corrective action (terminates and restarts the
+tunneler process).
+
+Each check runs approximately every 5 seconds, so the default of 12 equals roughly
+60 seconds of unresponsiveness before action is taken.
+
+Minimum: 1 (action on first failed check, ~5 second tolerance).
+Maximum: 720 (approximately 1 hour of unresponsiveness tolerated).
+
+When this policy is Enabled, the specified count is used and the AlivenessChecksBeforeAction
+value in settings.json is ignored.
+
+When this policy is Disabled or Not Configured, the AlivenessChecksBeforeAction value
+in settings.json is used (default: 12).
+
+Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service\AlivenessChecksBeforeAction (REG_DWORD)
+      </string>
+
+      <!-- ZMS_DeferInstallToRestart -->
+      <string id="ZMS_DeferInstallToRestart">Defer Installation to Next Restart</string>
+      <string id="ZMS_DeferInstallToRestart_Help">
+Controls whether ZitiUpdateService stages a downloaded update and applies it on the
+next service or system restart rather than installing it immediately.
+
+When this policy is Enabled, updates are downloaded and staged but not applied until
+the service next starts (e.g. after a planned system reboot). This prevents update
+installations from disrupting active user sessions.
+
+Note: if the InstallationCritical threshold is reached and the update has not yet been
+applied, the service will force-install immediately regardless of this setting.
+
+Note: if AutomaticUpdatesDisabled is also Enabled, no installation occurs at all and
+this setting has no effect.
+
+When this policy is Disabled or Not Configured, the DeferInstallToRestart value in
+settings.json is used (default: false — install immediately when ready).
+
+Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service\DeferInstallToRestart (REG_DWORD, 1 or 0)
+      </string>
+
+      <!-- ZMS_MaintenanceWindowStart -->
+      <string id="ZMS_MaintenanceWindowStart">Configure Maintenance Window Start Hour</string>
+      <string id="ZMS_MaintenanceWindowStart_Help">
+Specifies the hour of day (0–23, 24-hour clock) at which the maintenance window begins.
+ZitiUpdateService will only initiate update installations during the maintenance window.
+
+Set both MaintenanceWindowStart and MaintenanceWindowEnd to the same value to disable
+the maintenance window — installations may occur at any time.
+
+If MaintenanceWindowStart is greater than MaintenanceWindowEnd, the window is interpreted
+as crossing midnight. For example, Start=22 and End=6 means 10 PM to 6 AM.
+
+When this policy is Enabled, the specified hour is used and the MaintenanceWindowStart
+value in settings.json is ignored.
+
+When this policy is Disabled or Not Configured, the MaintenanceWindowStart value in
+settings.json is used. If not set there either, no maintenance window is enforced.
+
+Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service\MaintenanceWindowStart (REG_DWORD, 0–23)
+      </string>
+
+      <!-- ZMS_MaintenanceWindowEnd -->
+      <string id="ZMS_MaintenanceWindowEnd">Configure Maintenance Window End Hour</string>
+      <string id="ZMS_MaintenanceWindowEnd_Help">
+Specifies the hour of day (0–23, 24-hour clock) at which the maintenance window ends.
+ZitiUpdateService will not initiate new update installations outside this window.
+
+Set both MaintenanceWindowStart and MaintenanceWindowEnd to the same value to disable
+the maintenance window — installations may occur at any time.
+
+If MaintenanceWindowEnd is less than MaintenanceWindowStart, the window crosses midnight.
+For example, Start=22 and End=6 means 10 PM to 6 AM.
+
+When this policy is Enabled, the specified hour is used and the MaintenanceWindowEnd
+value in settings.json is ignored.
+
+When this policy is Disabled or Not Configured, the MaintenanceWindowEnd value in
+settings.json is used. If not set there either, no maintenance window is enforced.
+
+Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service\MaintenanceWindowEnd (REG_DWORD, 0–23)
+      </string>
+
+    </stringTable>
+
+    <presentationTable>
+
+      <presentation id="ZMS_AutomaticUpdateURL">
+        <textBox refId="AutomaticUpdateURL_Text">
+          <label>Update stream URL (HTTPS):</label>
+          <defaultValue>https://github.com/openziti/desktop-edge-win/releases</defaultValue>
+        </textBox>
+      </presentation>
+
+      <presentation id="ZMS_UpdateTimer">
+        <decimalTextBox refId="UpdateTimer_Decimal"
+                        defaultValue="600" spinStep="60">
+          Update check interval (seconds, minimum 600):
+        </decimalTextBox>
+      </presentation>
+
+      <presentation id="ZMS_InstallationReminder">
+        <decimalTextBox refId="InstallationReminder_Decimal"
+                        defaultValue="86400" spinStep="3600">
+          Reminder interval (seconds):
+        </decimalTextBox>
+      </presentation>
+
+      <presentation id="ZMS_InstallationCritical">
+        <decimalTextBox refId="InstallationCritical_Decimal"
+                        defaultValue="604800" spinStep="3600">
+          Critical threshold (seconds; 0 = force-install immediately):
+        </decimalTextBox>
+      </presentation>
+
+      <presentation id="ZMS_AlivenessChecksBeforeAction">
+        <decimalTextBox refId="AlivenessChecksBeforeAction_Decimal"
+                        defaultValue="12" spinStep="1">
+          Failed checks before restart (default 12, ~60 seconds):
+        </decimalTextBox>
+      </presentation>
+
+      <presentation id="ZMS_MaintenanceWindowStart">
+        <decimalTextBox refId="MaintenanceWindowStart_Decimal"
+                        defaultValue="0" spinStep="1">
+          Start hour (0–23, 24-hour clock):
+        </decimalTextBox>
+      </presentation>
+
+      <presentation id="ZMS_MaintenanceWindowEnd">
+        <decimalTextBox refId="MaintenanceWindowEnd_Decimal"
+                        defaultValue="0" spinStep="1">
+          End hour (0–23, 24-hour clock; same as start = no window; less than start = crosses midnight):
+        </decimalTextBox>
+      </presentation>
+
+    </presentationTable>
+  </resources>
+</policyDefinitionResources>
