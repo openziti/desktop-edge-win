@@ -122,9 +122,6 @@
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
-    <Reference Include="WpfMouseWheelLib">
-      <HintPath>..\WpfMouseWheelLib.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
@@ -180,6 +177,7 @@
     <Compile Include="Native\NativeMethods.cs" />
     <Compile Include="Utils\NotificationThrottle.cs" />
     <Compile Include="Utils\UIUtils.cs" />
+    <Compile Include="Utils\WheelScroll.cs" />
     <Compile Include="Views\ItemRenderers\MenuEditItem.xaml.cs">
       <DependentUpon>MenuEditItem.xaml</DependentUpon>
     </Compile>

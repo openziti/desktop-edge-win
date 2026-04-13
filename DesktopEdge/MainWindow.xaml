@@ -20,7 +20,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ZitiDesktopEdge"
         xmlns:debug="clr-namespace:Ziti.Desktop.Edge.Views.Screens"
-        xmlns:i="clr-namespace:Lada.Windows.Input;assembly=WpfMouseWheelLib"
+        xmlns:utils="clr-namespace:Ziti.Desktop.Edge.Utils"
         mc:Ignorable="d"
         ShowInTaskbar="False"
         x:Name="MainUI"
@@ -31,10 +31,6 @@
         ClipToBounds="False"
         Icon="Assets/Images/icon.png" AllowsTransparency="True" 
         Closing="Window_Closing"
-        i:MouseWheel.Enhanced="True"
-        i:MouseWheel.LogicalScrollDebouncing="Auto"
-        i:MouseWheel.LogicalScrollIncrement="1"
-        i:MouseWheel.ScrollMode="Auto"
         PreviewMouseDown="MainUI_PreviewMouseDown"
         WindowStyle="None" Loaded="MainWindow_Loaded" Background="#000F0F23"
     >
@@ -349,7 +345,8 @@
                 </Grid>
                 <ScrollViewer Name="IdListScroller" MinHeight="60" HorizontalScrollBarVisibility="Hidden"
                               VerticalScrollBarVisibility="Auto" FocusVisualStyle="{x:Null}" CanContentScroll="True"
-                              ClipToBounds="True" PanningMode="VerticalOnly" PanningRatio=".1" Grid.Row="1">
+                              ClipToBounds="True" PanningMode="VerticalOnly" PanningRatio=".1" Grid.Row="1"
+                              utils:WheelScroll.ByItem="True">
                     <StackPanel Name="IdList" Orientation="Vertical" IsItemsHost="False"
                                 LayoutUpdated="IdList_LayoutUpdated" FocusVisualStyle="{x:Null}"/>
                 </ScrollViewer>
