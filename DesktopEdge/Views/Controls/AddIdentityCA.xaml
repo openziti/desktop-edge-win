@@ -143,7 +143,7 @@
                                     OnClick="JoinNetworkCA" 
                                     Label="Join Network" 
                                     IsTabStop="True" 
-                                    Margin="0,15,0,0" />
+                                    Margin="{StaticResource MarginTop10}" />
         </StackPanel>
     </Grid>
 </UserControl>
