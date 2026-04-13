@@ -6,7 +6,7 @@
 # .\build-test-release.ps1 -version 1.2.3 -url https://lnxiskqx49x4.share.zrok.io/local -stream "dev" -published_at (Get-Date)
 # .\build-test-release.ps1 -version 1.2.3 -url https://lnxiskqx49x4.share.zrok.io/local -stream "dev" -published_at "2023-11-02T14:30:00"
 # .\build-test-release.ps1 -version 1.2.3 -url https://lnxiskqx49x4.share.zrok.io/local -stream "dev" -published_at "2023-11-02T14:30:00" -Win32Crypto:$true
-# .\build-test-release.ps1 -version 2.15.0.24 -increment -url http://sg4.parkplace-via-dhcp:8000/release-streams/local
+# .\build-test-release.ps1 -version 1.2.3 -increment -url http://sg4.parkplace-via-dhcp:8000/release-streams/local
 param(
     [string]$version,
     [switch]$increment = $false,  # bump the last version tuple before use
