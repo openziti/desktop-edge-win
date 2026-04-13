@@ -6,8 +6,10 @@
 # .\build-test-release.ps1 -version 1.2.3 -url https://lnxiskqx49x4.share.zrok.io/local -stream "dev" -published_at (Get-Date)
 # .\build-test-release.ps1 -version 1.2.3 -url https://lnxiskqx49x4.share.zrok.io/local -stream "dev" -published_at "2023-11-02T14:30:00"
 # .\build-test-release.ps1 -version 1.2.3 -url https://lnxiskqx49x4.share.zrok.io/local -stream "dev" -published_at "2023-11-02T14:30:00" -Win32Crypto:$true
+# .\build-test-release.ps1 -version 2.15.0.24 -increment -url http://sg4.parkplace-via-dhcp:8000/release-streams/local
 param(
     [string]$version,
+    [switch]$increment = $false,  # bump the last version tuple before use
     [string]$url = "http://localhost:8000/release-streams/local",
     [string]$stream = "local",
     [datetime]$published_at = (Get-Date).ToUniversalTime(),
@@ -15,7 +17,8 @@ param(
     [bool]$revertGitAfter = $true,
     [string]$versionQualifier = "",
     [switch]$promote = $false,  # New parameter for promotion
-    [bool]$Win32Crypto = $false #used to specify which ziti edge tunnel version to pull, openssl or win32crypto-based
+    [bool]$Win32Crypto = $false, #used to specify which ziti edge tunnel version to pull, openssl or win32crypto-based
+    [switch]$AllowFastInterval = $false  # bakes ALLOWFASTINTERVAL + 30s UpdateTimer into the installer for dev testing
 )
 
 $newTimestamp = $published_at.ToString("yyyy-MM-ddTHH:mm:ssZ")
@@ -62,6 +65,14 @@ if ($promote) {
 }
 
 $version = $version.Trim()
+if ($increment -and $version) {
+    $versionWithoutPrefix = $version -replace '^v', ''
+    $segments = $versionWithoutPrefix -split '\.'
+    $segments[-1] = [int]$segments[-1] + 1
+    $version = ($segments -join '.')
+    Write-Host -NoNewline "Incremented version to: "
+    Write-Host -ForegroundColor Green "$version"
+}
 if (-not $version) {
     if (Test-Path -Path "version") {
         $version = (Get-Content -Path "version" -Raw).Trim()
@@ -109,7 +120,7 @@ Copy-Item -Force "$repoRoot\release-streams\${version}.json" "$repoRoot\release-
 echo "json file written to: $repoRoot\release-streams\${stream}.json"
 
 if(! $jsonOnly) {
-  & .\Installer\build.ps1 -version:$version -url:$url -stream:$stream -published_at:$published_at -jsonOnly:$jsonOnly -revertGitAfter:$revertGitAfter -versionQualifier:$versionQualifier -Win32Crypto:$Win32Crypto
+  & .\Installer\build.ps1 -version:$version -url:$url -stream:$stream -published_at:$published_at -jsonOnly:$jsonOnly -revertGitAfter:$revertGitAfter -versionQualifier:$versionQualifier -Win32Crypto:$Win32Crypto -AllowFastInterval:$AllowFastInterval
   $exitCode = $LASTEXITCODE
   if($exitCode -gt 0) {
     Write-Host -ForegroundColor Red "ERROR:"
@@ -120,9 +131,19 @@ if(! $jsonOnly) {
   mkdir "${localDir}\${version}" -ErrorAction Ignore > $null
   Move-Item -Force "$repoRoot/Installer/Output/Ziti Desktop Edge Client-${version}.exe" "$localDir\${version}\Ziti.Desktop.Edge.Client-${version}.exe"
   Move-Item -Force "$repoRoot/Installer/Output/Ziti Desktop Edge Client-${version}.exe.sha256" "$localDir\${version}\Ziti.Desktop.Edge.Client-${version}.exe.sha256"
+
+  $msiSrc = "$repoRoot/Installer/Output/Ziti Desktop Edge Client-${version}.msi"
+  if (Test-Path $msiSrc) {
+    Move-Item -Force $msiSrc "$localDir\${version}\Ziti.Desktop.Edge.Client-${version}.msi"
+    Move-Item -Force "$repoRoot/Installer/Output/Ziti Desktop Edge Client-${version}.msi.sha256" "$localDir\${version}\Ziti.Desktop.Edge.Client-${version}.msi.sha256"
+  }
+
   Write-Host ""
   Write-Host "done."
-  Write-Host "installer exists at $localDir\${version}\Ziti.Desktop.Edge.Client-${version}.exe"
+  Write-Host "installer (EXE) exists at $localDir\${version}\Ziti.Desktop.Edge.Client-${version}.exe"
+  if (Test-Path "$localDir\${version}\Ziti.Desktop.Edge.Client-${version}.msi") {
+    Write-Host "installer (MSI) exists at $localDir\${version}\Ziti.Desktop.Edge.Client-${version}.msi"
+  }
 }
 
 if($revertGitAfter) {
@@ -131,6 +152,34 @@ if($revertGitAfter) {
 
 $localUrl="http://localhost:8000/release-streams/local${versionQualifier}"
 & .\Installer\output-build-json.ps1 -version:$version -url:$localUrl -stream:$stream -published_at:$published_at -outputPath:"${localDir}\local.json"
+
+$builtConfig = "$repoRoot\ZitiUpdateService\bin\Release\ZitiUpdateService.exe.config"
+$builtUpdateTimer = if (Test-Path $builtConfig) {
+    ((Get-Content $builtConfig) | Select-String 'key="UpdateTimer"' | Select-Object -Last 1).ToString().Trim()
+} else { "(ZitiUpdateService.exe.config not found at $builtConfig)" }
+
+$summary = @"
+============================================================
+  BUILD SUMMARY
+============================================================
+  version            = $version
+  url                = $url
+  localUrl           = $localUrl
+  stream             = $stream
+  published_at       = $newTimestamp
+  jsonOnly           = $jsonOnly
+  revertGitAfter     = $revertGitAfter
+  AllowFastInterval  = $AllowFastInterval
+  Win32Crypto        = $Win32Crypto
+  versionQualifier   = $(if ($versionQualifier) { $versionQualifier } else { '(none)' })
+  localDir           = $localDir
+  builtUpdateTimer   = $builtUpdateTimer
+============================================================
+"@
+
+$summaryFile = "$scriptDirectory\build-summary-${version}.txt"
+$summary | Set-Content $summaryFile
+Write-Host $summary -ForegroundColor Cyan
 
 Write-Host "Start a python server in this location with:"
 Write-Host "" 
