@@ -48,7 +48,7 @@ namespace ZitiUpdateService {
                 var logfile = new FileTarget("logfile") {
                     FileName = $"logs\\ZitiMonitorService\\{logname}.log",
                     ArchiveEvery = FileArchivePeriod.Day,
-                    ArchiveNumbering = ArchiveNumberingMode.Rolling,
+                    ArchiveSuffixFormat = "_{0:00}",
                     MaxArchiveFiles = 7,
                     AutoFlush = true,
                     Layout = "[${date:universalTime=true:format=yyyy-MM-ddTHH:mm:ss.fff}Z] ${level:uppercase=true:padding=5}\t${logger}\t${message}\t${exception:format=tostring}",
