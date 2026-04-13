@@ -399,10 +399,6 @@ namespace ZitiDesktopEdge {
 
                 MenuTitle.Content = "Set Log Level";
                 LogLevelItems.Visibility = Visibility.Visible;
-                if (policyViewModel.IsLogLevelPolicyLocked) {
-                    LogLevelItems.IsEnabled = false;
-                    LogLevelItems.Opacity = 0.3;
-                }
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "ConfigureAutomaticUpgrades") {
                 MenuTitle.Content = "Automatic Upgrades";
@@ -435,10 +431,6 @@ namespace ZitiDesktopEdge {
             } else if (menuState == "Config") {
                 MenuTitle.Content = "Tunnel Config";
                 ConfigItems.Visibility = Visibility.Visible;
-                if (policyViewModel.IsTunSettingsPolicyLocked) {
-                    EditButton.Disable();
-                    ConfigItems.Opacity = 0.3;
-                }
                 BackArrow.Visibility = Visibility.Visible;
 
                 ConfigPageSize.Value = ((Application.Current.Properties.Contains("ApiPageSize")) ? Application.Current.Properties["ApiPageSize"].ToString() : "25");
@@ -604,10 +596,6 @@ namespace ZitiDesktopEdge {
         }
 
         async private void SetLevel(object sender, MouseButtonEventArgs e) {
-            if (policyViewModel.IsLogLevelPolicyLocked) {
-                MainWindow.ShowError("Managed by your organization", "Log level is controlled by your organization and cannot be changed.");
-                return;
-            }
             SubOptionItem item = (SubOptionItem)sender;
             if (OnLogLevelChanged != null) {
                 if (await OnLogLevelChanged(item.Label.ToLower())) {
@@ -918,10 +906,6 @@ namespace ZitiDesktopEdge {
         /// Show the Edit Modal and blur the background
         /// </summary>
         private void ShowEdit_Click(object sender, MouseButtonEventArgs e) {
-            if (policyViewModel.IsTunSettingsPolicyLocked) {
-                MainWindow.ShowError("Managed by your organization", "Tunnel IP settings are controlled by your organization and cannot be changed.");
-                return;
-            }
             ConfigIpNew.Text = ConfigIp.Value;
             ConfigePageSizeNew.Text = ConfigPageSize.Value;
             CheckRange();

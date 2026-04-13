@@ -97,16 +97,12 @@ namespace ZitiDesktopEdge.ViewModels {
 
         // ---- Policy lock indicators (bind to Visibility for "managed by your organization" labels) ----
 
-        public bool IsLogLevelPolicyLocked => _state.LogLevelLocked;
-        public bool IsTunSettingsPolicyLocked => _state.TunSettingsLocked;
         public bool IsAutoUpdatesPolicyLocked => _state.AutomaticUpdatesDisabledLocked;
         public bool IsUpdateUrlPolicyLocked => _state.UpdateStreamUrlLocked;
         public bool IsDefaultExtAuthPolicyLocked => _state.DefaultExtAuthProviderLocked;
 
         // ---- Inverted editability (bind to IsEnabled on controls) ----
 
-        public bool IsLogLevelEditable => !_state.LogLevelLocked;
-        public bool IsTunSettingsEditable => !_state.TunSettingsLocked;
         public bool IsAutoUpdatesEditable => !_state.AutomaticUpdatesDisabledLocked;
         public bool IsUpdateUrlEditable => !_state.UpdateStreamUrlLocked;
         public bool IsDefaultExtAuthEditable => !_state.DefaultExtAuthProviderLocked;

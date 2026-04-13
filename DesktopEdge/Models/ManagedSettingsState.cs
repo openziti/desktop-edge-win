@@ -23,12 +23,6 @@ namespace Ziti.Desktop.Edge.Models {
     /// ManagedSettingsViewModel.
     /// </summary>
     public sealed class ManagedSettingsState {
-        // ziti-edge-tunnel locks
-        public bool LogLevelLocked { get; set; }
-        public bool TunIpv4Locked { get; set; }
-        public bool TunIpv4MaskLocked { get; set; }
-        public bool AddDnsLocked { get; set; }
-
         // ziti-monitor-service locks
         public bool AutomaticUpdatesDisabledLocked { get; set; }
         public bool PolicyAutomaticUpdatesDisabled { get; set; }
@@ -37,13 +31,6 @@ namespace Ziti.Desktop.Edge.Models {
 
         // UI-only policy values
         public string DefaultExtAuthProvider { get; set; }
-
-        /// <summary>
-        /// ziti-edge-tunnel treats TunIpv4/TunIpv4Mask/AddDns as a group;
-        /// if any one is locked by policy, all three are locked at runtime.
-        /// </summary>
-        public bool TunSettingsLocked =>
-            TunIpv4Locked || TunIpv4MaskLocked || AddDnsLocked;
 
         public bool DefaultExtAuthProviderLocked =>
             DefaultExtAuthProvider != null;

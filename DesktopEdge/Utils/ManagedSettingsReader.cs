@@ -21,21 +21,13 @@ using Ziti.Desktop.Edge.Models;
 
 namespace Ziti.Desktop.Edge.Utils {
     /// <summary>
-    /// Reads organizational policy registry keys for all three ZDEW components
-    /// and returns a <see cref="ManagedSettingsState"/> snapshot.
+    /// Reads organizational policy registry keys for ZDEW components and returns a
+    /// <see cref="ManagedSettingsState"/> snapshot.
     ///
     /// The policy source may be Group Policy, Intune, MDM, or any tool that writes
     /// to HKLM\SOFTWARE\Policies\NetFoundry\...
     ///
-    /// The UI does not enforce policy; ziti-edge-tunnel and ziti-monitor-service
-    /// reject mutations server-side. This reader exists so the UI can disable
-    /// controls proactively rather than showing errors after the user clicks Save.
-    ///
-    /// The one exception is the "ui" subkey which holds UI-only policy values
-    /// (e.g. DefaultExtAuthProvider) that no service knows about.
-    ///
     /// Registry roots:
-    ///   HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-edge-tunnel
     ///   HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service
     ///   HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ui
     /// </summary>
@@ -48,7 +40,6 @@ namespace Ziti.Desktop.Edge.Utils {
         internal static ManagedSettingsState Read() {
             ManagedSettingsState state = new ManagedSettingsState();
             try {
-                ReadZetKeys(state);
                 ReadMonitorKeys(state);
                 ReadUiKeys(state);
             } catch (Exception ex) {
@@ -56,26 +47,12 @@ namespace Ziti.Desktop.Edge.Utils {
             }
 
             Logger.Info(
-                "Policy state: LogLevel={0}, TunSettings={1}, " +
-                "AutoUpdatesDisabled={2}, UpdateStreamURL={3}, " +
-                "DefaultExtAuthProvider={4}",
-                FormatLock(state.LogLevelLocked),
-                FormatLock(state.TunSettingsLocked),
+                "Policy state: AutoUpdatesDisabled={0}, UpdateStreamURL={1}, DefaultExtAuthProvider={2}",
                 FormatLock(state.AutomaticUpdatesDisabledLocked),
                 FormatLock(state.UpdateStreamUrlLocked),
                 state.DefaultExtAuthProvider ?? "(not set)");
 
             return state;
-        }
-
-        private static void ReadZetKeys(ManagedSettingsState state) {
-            using (RegistryKey key = OpenSubKey("ziti-edge-tunnel")) {
-                if (key == null) return;
-                state.LogLevelLocked = ValueExists(key, "LogLevel");
-                state.TunIpv4Locked = ValueExists(key, "TunIpv4");
-                state.TunIpv4MaskLocked = ValueExists(key, "TunIpv4Mask");
-                state.AddDnsLocked = ValueExists(key, "AddDns");
-            }
         }
 
         private static void ReadMonitorKeys(ManagedSettingsState state) {
@@ -112,14 +89,6 @@ namespace Ziti.Desktop.Edge.Utils {
                 Logger.Debug("Policy registry key absent: {0}", fullPath);
             }
             return key;
-        }
-
-        private static bool ValueExists(RegistryKey key, string valueName) {
-            bool exists = key.GetValue(valueName) != null;
-            if (exists) {
-                Logger.Debug("Policy locked: {0}", valueName);
-            }
-            return exists;
         }
 
         private static string FormatLock(bool locked) {
