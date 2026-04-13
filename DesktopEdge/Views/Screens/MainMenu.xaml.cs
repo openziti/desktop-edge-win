@@ -40,6 +40,7 @@ using ZitiDesktopEdge.Utility;
 using System.ComponentModel;
 using Newtonsoft.Json.Linq;
 using Ziti.Desktop.Edge.Utils;
+using ZitiDesktopEdge.ViewModels;
 using System.Windows.Navigation;
 
 namespace ZitiDesktopEdge {
@@ -63,6 +64,7 @@ namespace ZitiDesktopEdge {
         public double MainHeight = 500;
 
         private ZDEWViewState state;
+        private ManagedSettingsViewModel policyViewModel;
 
         public bool ShowUnexpectedFailure { get; set; }
 
@@ -106,22 +108,108 @@ namespace ZitiDesktopEdge {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
+        private void ResetDeferCheckbox() {
+            DeferToRestartCheckbox.IsChecked = false;
+            DeferToRestartCheckbox.IsEnabled = true;
+            ForceUpdate.Content = "Update Now";
+        }
+
+        private void SetDeferCheckboxStaged() {
+            DeferToRestartCheckbox.IsChecked = true;
+            DeferToRestartCheckbox.IsEnabled = false;
+            ForceUpdate.Content = "Update on Restart";
+        }
+
         public void ShowUpdateAvailable() {
+            if (policyViewModel.AutomaticUpdatesDisabled) {
+                // Policy has disabled automatic updates — hide all update UI and suppress tray badge/alert.
+                // state.UpdateAvailable is intentionally NOT cleared so the UI restores automatically
+                // when policy is removed (state.AutomaticUpdatesDisabled gates the badge in SetNotifyIcon).
+                ForceUpdate.Visibility = Visibility.Collapsed;
+                TriggerUpdateButton.Visibility = Visibility.Collapsed;
+                DeferToRestartCheckbox.Visibility = Visibility.Collapsed;
+                CheckForUpdateStatus.Visibility = Visibility.Collapsed;
+                UpdateTimeLeft.Visibility = Visibility.Collapsed;
+                MainWindow?.RefreshNotifyIcon();
+                SetAutomaticUpgradesState();
+                return;
+            }
+
             if (state.UpdateAvailable) {
+                // Checkbox is only shown when the user has a free choice —
+                // if DeferInstallToRestart is locked by policy, the service already handles deferral.
                 ForceUpdate.Visibility = Visibility.Visible;
+                TriggerUpdateButton.Visibility = Visibility.Visible;
+                DeferToRestartCheckbox.Visibility = state.DeferInstallToRestartLocked ? Visibility.Collapsed : Visibility.Visible;
+                if (!state.StagingDownloadPending && !state.DeferToRestartPending) {
+                    ResetDeferCheckbox();
+                }
+                MainWindow?.RefreshNotifyIcon();  // restore badge + AlertCanvas if they were suppressed
+            }
+
+            if (state.StagingDownloadPending) {
+                SetDeferCheckboxStaged();
+                CheckForUpdateStatus.Content = "Downloading update for next restart...";
+                CheckForUpdateStatus.Visibility = Visibility.Visible;
+                UpdateTimeLeft.Content = "Downloading update for next restart...";
+                UpdateTimeLeft.Visibility = Visibility.Visible;
+                SetAutomaticUpgradesState();
+                return;
+            }
+
+            if (state.DeferToRestartPending) {
+                SetDeferCheckboxStaged();
+                CheckForUpdateStatus.Content = "Update staged for next restart";
+                CheckForUpdateStatus.Visibility = Visibility.Visible;
+                UpdateTimeLeft.Content = "Update staged for next restart";
+                UpdateTimeLeft.Visibility = Visibility.Visible;
+                SetAutomaticUpgradesState();
+                return;
+            }
+
+            if (state.DeferredInstallPending) {
+                CheckForUpdateStatus.Content = "Update scheduled for maintenance window";
+                CheckForUpdateStatus.Visibility = Visibility.Visible;
+                UpdateTimeLeft.Content = "Update scheduled for maintenance window";
+                UpdateTimeLeft.Visibility = Visibility.Visible;
+                SetAutomaticUpgradesState();
+                return;
             }
 
             if (state.PendingUpdate.TimeLeft > 0) {
+                DateTime installTime = SnapInstallTimeToWindow(state.PendingUpdate.InstallTime);
+                UpdateTimeLeft.Content = $"Automatic update to {state.PendingUpdate.Version} will occur on or after {installTime.ToString("g")}";
                 UpdateTimeLeft.Visibility = Visibility.Visible;
-                if (!state.AutomaticUpdatesDisabled) {
-                    UpdateTimeLeft.Content = $"Automatic update to {state.PendingUpdate.Version} will occur on or after {state.PendingUpdate.InstallTime.ToString("g")}";
-                    CheckForUpdateStatus.Content = $"update {state.PendingUpdate.Version} is available";
-                } else {
-                    UpdateTimeLeft.Content = "";
-                }
-                CheckForUpdateStatus.Visibility = UpdateTimeLeft.Visibility;
+                CheckForUpdateStatus.Content = $"update {state.PendingUpdate.Version} is available";
+                CheckForUpdateStatus.Visibility = Visibility.Visible;
             }
             SetAutomaticUpgradesState();
+        }
+
+        /// <summary>
+        /// Snaps <paramref name="installTime"/> forward to the next opening of the current
+        /// maintenance window. Returns it unchanged when no window is set (any time).
+        /// Mirrors the same logic in UpdateService so the UI stays correct even before
+        /// the service sends a fresh InstallationNotificationEvent after a window change.
+        /// </summary>
+        private DateTime SnapInstallTimeToWindow(DateTime installTime) {
+            int? start = policyViewModel.MaintenanceWindowStart;
+            int? end   = policyViewModel.MaintenanceWindowEnd;
+            if (!start.HasValue || !end.HasValue) return installTime;
+            if (start.Value == end.Value) return installTime;  // 0/0 or equal = any time
+
+            if (IsInMaintenanceWindow(installTime.Hour, start.Value, end.Value)) return installTime;
+
+            DateTime candidate = installTime.Date.AddHours(start.Value);
+            if (candidate <= installTime) candidate = candidate.AddDays(1);
+            return candidate;
+        }
+
+        private bool IsInMaintenanceWindow(int hour, int windowStart, int windowEnd) {
+            if (windowStart < windowEnd) {
+                return hour >= windowStart && hour < windowEnd;
+            }
+            return hour >= windowStart || hour < windowEnd;  // crosses midnight
         }
 
         internal MainWindow MainWindow { get; set; }
@@ -131,6 +219,14 @@ namespace ZitiDesktopEdge {
             this.DataContext = this;
             Application.Current.MainWindow.Title = "Ziti Desktop Edge";
             state = (ZDEWViewState)Application.Current.Properties["ZDEWViewState"];
+            policyViewModel = (ManagedSettingsViewModel)Application.Current.Properties["ManagedSettingsViewModel"];
+            policyViewModel.PropertyChanged += (s, e) => {
+                if (menuState == "ConfigureAutomaticUpgrades") {
+                    Dispatcher.Invoke(UpdateState);
+                }
+            };
+
+            PopulateHourCombos();
 
             try {
                 ShowUnexpectedFailure = bool.Parse(ConfigurationManager.AppSettings.Get("ShowUnexpectedFailure"));
@@ -195,6 +291,10 @@ namespace ZitiDesktopEdge {
         }
 
         async private void SetAutomaticUpgradesMenuAction(object sender, MouseButtonEventArgs e) {
+            if (policyViewModel.AutomaticUpgradesPolicyControlled) {
+                MainWindow.ShowError("Managed by your organization", "Automatic upgrade settings are controlled by your organization and cannot be changed.");
+                return;
+            }
             bool disableAutomaticUpgrades = false;
             if (sender == AutomaticUpgradesItemOff) {
                 disableAutomaticUpgrades = true;
@@ -204,13 +304,18 @@ namespace ZitiDesktopEdge {
                 SvcResponse r = await monitorClient.SetAutomaticUpgradeDisabledAsync(disableAutomaticUpgrades);
                 if (r.Code != 0) {
                     logger.Error(r?.Error);
+                } else {
+                    // optimistic update; the incoming service event will confirm
+                    this.AutomaticUpgradesItemOn.IsSelected  = !disableAutomaticUpgrades;
+                    this.AutomaticUpgradesItemOff.IsSelected = disableAutomaticUpgrades;
+                    ApplyUpgradesDetailsDimming(policyViewModel.AutomaticUpgradesPolicyControlled, disableAutomaticUpgrades);
+                    this.OnShowBlurb?.Invoke("Settings Saved.");
                 }
             } catch (MonitorServiceException) {
                 MainWindow.ShowError("Could Not Set Automatic Update", "The monitor service is offline");
             } catch (Exception ex) {
                 logger.Error("unexpected error when setting automatic upgrade enabled", ex);
             }
-            SetAutomaticUpgradesState();
         }
 
         private void checkResponse(SvcResponse r, string titleOnErr, string msgOnErr) {
@@ -242,9 +347,11 @@ namespace ZitiDesktopEdge {
             ConfigItems.Visibility = Visibility.Collapsed;
             LogLevelItems.Visibility = Visibility.Collapsed;
             AutomaticUpgradesItems.Visibility = Visibility.Collapsed;
-            Visibility visibilityFromUpdateAvail = state.UpdateAvailable ? Visibility.Visible : Visibility.Collapsed;
+            Visibility visibilityFromUpdateAvail = state.UpdateAvailable && !policyViewModel.AutomaticUpdatesDisabled ? Visibility.Visible : Visibility.Collapsed;
             TriggerUpdateButton.Visibility = visibilityFromUpdateAvail;
             ForceUpdate.Visibility = visibilityFromUpdateAvail;
+            DeferToRestartCheckbox.Visibility = visibilityFromUpdateAvail == Visibility.Visible && !state.DeferInstallToRestartLocked
+                ? Visibility.Visible : Visibility.Collapsed;
             CheckForUpdateStatus.Visibility = visibilityFromUpdateAvail;
 
             if (menuState == "About") {
@@ -292,16 +399,46 @@ namespace ZitiDesktopEdge {
 
                 MenuTitle.Content = "Set Log Level";
                 LogLevelItems.Visibility = Visibility.Visible;
+                if (policyViewModel.IsLogLevelPolicyLocked) {
+                    LogLevelItems.IsEnabled = false;
+                    LogLevelItems.Opacity = 0.3;
+                }
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "ConfigureAutomaticUpgrades") {
-                SetAutomaticUpgradesState();
-
                 MenuTitle.Content = "Automatic Upgrades";
                 AutomaticUpgradesItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
+
+                if (!policyViewModel.IsMonitorConnected) {
+                    // Service is offline — show the offline banner, hide all settings so stale
+                    // values from the last connection are never displayed.
+                    MonitorOfflineBanner.Visibility       = Visibility.Visible;
+                    AutomaticUpgradesContent.Visibility   = Visibility.Collapsed;
+                    return;
+                }
+
+                MonitorOfflineBanner.Visibility     = Visibility.Collapsed;
+                AutomaticUpgradesContent.Visibility = Visibility.Visible;
+
+                SetAutomaticUpgradesState();
+                SetMaintenanceWindowState();
+
+                bool policyControlled = policyViewModel.AutomaticUpgradesPolicyControlled;
+                PolicyManagedBanner.Visibility = policyControlled ? Visibility.Visible : Visibility.Collapsed;
+
+                AutomaticUpgradesHeading.Opacity         = policyControlled ? 0.3 : 1.0;
+                AutomaticUpgradesItemOn.IsEnabled        = !policyControlled;
+                AutomaticUpgradesItemOff.IsEnabled       = !policyControlled;
+                AutomaticUpgradesItemOn.Opacity          = policyControlled ? 0.3 : 1.0;
+                AutomaticUpgradesItemOff.Opacity         = policyControlled ? 0.3 : 1.0;
+                ApplyUpgradesDetailsDimming(policyControlled, this.AutomaticUpgradesItemOff.IsSelected);
             } else if (menuState == "Config") {
                 MenuTitle.Content = "Tunnel Config";
                 ConfigItems.Visibility = Visibility.Visible;
+                if (policyViewModel.IsTunSettingsPolicyLocked) {
+                    EditButton.Disable();
+                    ConfigItems.Opacity = 0.3;
+                }
                 BackArrow.Visibility = Visibility.Visible;
 
                 ConfigPageSize.Value = ((Application.Current.Properties.Contains("ApiPageSize")) ? Application.Current.Properties["ApiPageSize"].ToString() : "25");
@@ -467,6 +604,10 @@ namespace ZitiDesktopEdge {
         }
 
         async private void SetLevel(object sender, MouseButtonEventArgs e) {
+            if (policyViewModel.IsLogLevelPolicyLocked) {
+                MainWindow.ShowError("Managed by your organization", "Log level is controlled by your organization and cannot be changed.");
+                return;
+            }
             SubOptionItem item = (SubOptionItem)sender;
             if (OnLogLevelChanged != null) {
                 if (await OnLogLevelChanged(item.Label.ToLower())) {
@@ -477,19 +618,109 @@ namespace ZitiDesktopEdge {
         }
 
         private void SetAutomaticUpgradesState() {
-            bool disabled = state.AutomaticUpdatesDisabled;
-            this.AutomaticUpgradesItemOn.IsSelected = !disabled;
-            this.AutomaticUpgradesItemOff.IsSelected = disabled;
-            this.UpdateUrl.Text = state.AutomaticUpdateURL;
+            this.AutomaticUpgradesItemOn.IsSelected  = !policyViewModel.AutomaticUpdatesDisabled;
+            this.AutomaticUpgradesItemOff.IsSelected = policyViewModel.AutomaticUpdatesDisabled;
+            this.UpdateUrl.Text = policyViewModel.AutomaticUpdateURL ?? GithubAPI.ProdUrl;
+        }
+
+        private void ApplyUpgradesDetailsDimming(bool policyControlled, bool upgradesDisabled) {
+            bool detailsEditable = !policyControlled && !upgradesDisabled;
+            bool anyTime = MaintenanceWindowAnyTime.IsChecked == true;
+            UpdateUrlHeading.Opacity              = detailsEditable ? 1.0 : 0.3;
+            UpdateUrl.IsEnabled                   = detailsEditable;
+            UpdateUrl.Opacity                     = detailsEditable ? 1.0 : 0.3;
+            UpdateUrlWarning.Visibility           = detailsEditable ? Visibility.Visible : Visibility.Collapsed;
+            ResetUrlButton.Visibility             = detailsEditable ? Visibility.Visible : Visibility.Collapsed;
+            MaintenanceWindowHeading.Opacity      = detailsEditable ? 1.0 : 0.3;
+            CheckForUpdate.IsEnabled              = !upgradesDisabled;
+            CheckForUpdate.Opacity                = upgradesDisabled ? 0.3 : 1.0;
+            if (upgradesDisabled) {
+                CheckForUpdateStatus.Visibility   = Visibility.Collapsed;
+                TriggerUpdateButton.Visibility    = Visibility.Collapsed;
+                DeferToRestartCheckbox.Visibility = Visibility.Collapsed;
+                ForceUpdate.Visibility            = Visibility.Collapsed;
+            }
+            MaintenanceWindowAnyTime.IsEnabled    = detailsEditable;
+            MaintenanceWindowAnyTime.Opacity      = detailsEditable ? 1.0 : 0.3;
+            MaintenanceWindowStartCombo.IsEnabled = detailsEditable && !anyTime;
+            MaintenanceWindowStartCombo.Opacity   = detailsEditable ? 1.0 : 0.3;
+            MaintenanceWindowEndCombo.IsEnabled   = detailsEditable && !anyTime;
+            MaintenanceWindowEndCombo.Opacity     = detailsEditable ? 1.0 : 0.3;
+            SaveSettingsButton.Visibility         = detailsEditable ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void PopulateHourCombos() {
+            var hours = new System.Collections.Generic.List<string>();
+            for (int h = 0; h < 24; h++) {
+                hours.Add($"{h:D2}:00");
+            }
+            MaintenanceWindowStartCombo.ItemsSource = hours;
+            MaintenanceWindowEndCombo.ItemsSource   = hours;
+        }
+
+        private void SetMaintenanceWindowState() {
+            int start = policyViewModel.MaintenanceWindowStart ?? 0;
+            int end   = policyViewModel.MaintenanceWindowEnd   ?? 0;
+            MaintenanceWindowStartCombo.SelectedIndex = start;
+            MaintenanceWindowEndCombo.SelectedIndex   = end;
+            bool anyTime = start == 0 && end == 0;
+            MaintenanceWindowAnyTime.IsChecked = anyTime;
+        }
+
+        private void MaintenanceWindow_SelectionChanged(object sender, SelectionChangedEventArgs e) {
+        }
+
+        private void MaintenanceWindowAnyTime_Changed(object sender, RoutedEventArgs e) {
+            bool anyTime = MaintenanceWindowAnyTime.IsChecked == true;
+            bool detailsEditable = !policyViewModel.AutomaticUpgradesPolicyControlled
+                                && !policyViewModel.AutomaticUpdatesDisabled;
+            if (anyTime) {
+                MaintenanceWindowStartCombo.SelectedIndex = 0;
+                MaintenanceWindowEndCombo.SelectedIndex   = 0;
+            }
+            MaintenanceWindowStartCombo.IsEnabled = detailsEditable && !anyTime;
+            MaintenanceWindowEndCombo.IsEnabled   = detailsEditable && !anyTime;
+        }
+
+        async private void SaveSettingsButton_Click(object sender, MouseButtonEventArgs e) {
+            await SaveSettingsButton_Click_Async();
+        }
+
+        async private Task SaveSettingsButton_Click_Async() {
+            if (policyViewModel.AutomaticUpgradesPolicyControlled) {
+                MainWindow.ShowError("Managed by your organization", "These settings are controlled by your organization and cannot be changed.");
+                return;
+            }
+            try {
+                var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
+
+                // Capture UI values before any await; service events during awaits
+                // can trigger UpdateState() which resets combos to stale viewmodel values.
+                string url   = UpdateUrl.Text;
+                int    start = MaintenanceWindowStartCombo.SelectedIndex;
+                int    end   = MaintenanceWindowEndCombo.SelectedIndex;
+
+                var rUrl = await monitorClient.SetAutomaticUpgradeURLAsync(url);
+                if (rUrl != null && rUrl.Code != 0) { checkResponse(rUrl, "Error Saving Settings", "Could not set update URL."); return; }
+                state.AutomaticUpdateURL = url;
+                var r1 = await monitorClient.SetMaintenanceWindowStartAsync(start);
+                var r2 = await monitorClient.SetMaintenanceWindowEndAsync(end);
+                if (r1.Code != 0) { checkResponse(r1, "Error Saving Settings", "Could not set maintenance window start."); return; }
+                if (r2.Code != 0) { checkResponse(r2, "Error Saving Settings", "Could not set maintenance window end."); return; }
+                state.MaintenanceWindowStart = start;
+                state.MaintenanceWindowEnd   = end;
+                this.OnShowBlurb?.Invoke("Settings Saved.");
+            } catch (MonitorServiceException) {
+                MainWindow.ShowError("Could Not Save Settings", "The monitor service is offline");
+            } catch (Exception ex) {
+                logger.Error("unexpected error saving automatic upgrade settings", ex);
+            }
         }
 
         async private void CheckForUpdate_OnClick(object sender, MouseButtonEventArgs e) {
             logger.Info("checking for update...");
             CheckForUpdateStatus.Content = "Checking for updates...";
             await Task.Delay(1000);
-            if (state.AutomaticUpdateURL != this.UpdateUrl.Text) {
-                SetUpdateUrlButton_Click(sender, e);
-            }
             try {
                 CheckForUpdate.IsEnabled = false;
                 CheckForUpdateStatus.Visibility = Visibility.Visible;
@@ -497,13 +728,9 @@ namespace ZitiDesktopEdge {
                 var r = await monitorClient.DoUpdateCheck();
                 checkResponse(r, "Error When Checking for Update", "An error occurred while trying check for update.");
                 CheckForUpdateStatus.Content = r.Message;
-                if (r.UpdateAvailable) {
-                    TriggerUpdateButton.Visibility = Visibility.Visible;
-                    ForceUpdate.Visibility = Visibility.Visible;
-                } else {
-                    TriggerUpdateButton.Visibility = Visibility.Collapsed;
-                    ForceUpdate.Visibility = Visibility.Collapsed;
-                }
+                bool showUpdate = r.UpdateAvailable && !policyViewModel.AutomaticUpdatesDisabled;
+                TriggerUpdateButton.Visibility = showUpdate ? Visibility.Visible : Visibility.Collapsed;
+                ForceUpdate.Visibility         = showUpdate ? Visibility.Visible : Visibility.Collapsed;
             } catch (MonitorServiceException) {
                 CheckForUpdateStatus.Content = "Monitor service is offline";
             } catch (Exception ex) {
@@ -521,10 +748,24 @@ namespace ZitiDesktopEdge {
             try {
                 CheckForUpdateStatus.Content = "Requesting automatic update...";
                 var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
-                var r = await monitorClient.TriggerUpdate();
-                CheckForUpdateStatus.Content = "Automatic update requested...";
+                bool forceDefer = sender == ForceUpdate && DeferToRestartCheckbox.IsChecked == true;
+                var r = await monitorClient.TriggerUpdate(forceDefer: forceDefer);
                 if (r == null) {
+                    CheckForUpdateStatus.Content = "Error requesting update.";
                     MainWindow.ShowError("Error When Triggering Update", "An error occurred while trying to trigger the update.");
+                    if (src != null) src.IsEnabled = true;
+                } else if (r.Message != null && r.Message == "Update scheduled for maintenance window") {
+                    state.DeferredInstallPending = true;
+                    CheckForUpdateStatus.Content = r.Message;
+                    UpdateTimeLeft.Content = r.Message;
+                    UpdateTimeLeft.Visibility = Visibility.Visible;
+                    if (src != null) src.IsEnabled = true;
+                } else if (r.Message != null && r.Message == "Downloading update for next restart...") {
+                    state.StagingDownloadPending = true;
+                    CheckForUpdateStatus.Content = r.Message;
+                    CheckForUpdateStatus.Visibility = Visibility.Visible;
+                    UpdateTimeLeft.Content = r.Message;
+                    UpdateTimeLeft.Visibility = Visibility.Visible;
                     if (src != null) src.IsEnabled = true;
                 } else {
                     this.OnShowBlurb?.Invoke("Update Requested");
@@ -541,6 +782,11 @@ namespace ZitiDesktopEdge {
                 MainWindow.ShowError("Error When Triggering Update", "An error occurred while trying to trigger the update.");
                 if (src != null) src.IsEnabled = true;
             }
+        }
+
+        private void DeferToRestartCheckbox_Changed(object sender, RoutedEventArgs e) {
+            bool deferred = DeferToRestartCheckbox.IsChecked == true;
+            ForceUpdate.Content = deferred ? "Update on Restart" : "Update Now";
         }
 
         public void SetupIdList(ZitiIdentity[] ids) {
@@ -672,6 +918,10 @@ namespace ZitiDesktopEdge {
         /// Show the Edit Modal and blur the background
         /// </summary>
         private void ShowEdit_Click(object sender, MouseButtonEventArgs e) {
+            if (policyViewModel.IsTunSettingsPolicyLocked) {
+                MainWindow.ShowError("Managed by your organization", "Tunnel IP settings are controlled by your organization and cannot be changed.");
+                return;
+            }
             ConfigIpNew.Text = ConfigIp.Value;
             ConfigePageSizeNew.Text = ConfigPageSize.Value;
             CheckRange();
@@ -853,29 +1103,10 @@ namespace ZitiDesktopEdge {
         }
 
         private void ResetUrlButton_Click(object sender, RoutedEventArgs e) {
+            if (policyViewModel.AutomaticUpgradesPolicyControlled) return;
             UpdateUrl.Text = GithubAPI.ProdUrl;
         }
 
-        private async void SetUpdateUrlButton_Click(object sender, MouseButtonEventArgs e) {
-            try {
-                var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
-
-                SvcResponse r = await monitorClient.SetAutomaticUpgradeURLAsync(UpdateUrl.Text);
-                if (r == null) {
-                    logger.Error("Failed to set automatic upgrade url! SvcResponse was null?!?!?");
-                    MainWindow.ShowError("Could not set url!", "Is the monitor service running?");
-                } else if (r.Code != 0) {
-                    logger.Error(r?.Error);
-                    MainWindow.ShowError("Could not set url", r?.Error);
-                } else {
-                    this.OnShowBlurb?.Invoke("Config Saved.");
-                }
-            } catch (MonitorServiceException) {
-                MainWindow.ShowError("Could Not Set URL", "The monitor service is offline");
-            } catch (Exception ex) {
-                logger.Error("unexpected error when setting automatic upgrade enabled", ex);
-            }
-        }
 
         private void UpdateUrl_TextChanged(object sender, TextChangedEventArgs e) {
             logger.Info("url: {}", state.AutomaticUpdateURL);

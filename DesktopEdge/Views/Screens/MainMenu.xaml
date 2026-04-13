@@ -75,6 +75,7 @@
                             </Style>
                         </Button.Resources>
                     </Button>
+                    <CheckBox x:Name="DeferToRestartCheckbox" Visibility="Collapsed" HorizontalAlignment="Center" Margin="20,6,40,0" Foreground="#0F0F23" Content="Install on next restart" Checked="DeferToRestartCheckbox_Changed" Unchecked="DeferToRestartCheckbox_Changed"/>
                 </StackPanel>
                 <StackPanel Name="AboutItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
                 </StackPanel>
@@ -211,16 +212,37 @@
                         </Style>
                     </StackPanel.Resources>
 
-                    <Label FontWeight="Bold" FontSize="16" Margin="0,20,0,0">Automatic upgrades:</Label>
-                    <Rectangle Style="{StaticResource SectionDivider}" Margin="0,0,0,5"/>
+                    <!-- Shown when the ziti-monitor service is not running; hides stale cached values -->
+                    <Border x:Name="MonitorOfflineBanner" Visibility="Collapsed"
+                            Background="#3a1a1a" CornerRadius="5" Margin="0,0,0,4" Padding="10,7">
+                        <TextBlock Foreground="White" FontSize="12" TextWrapping="Wrap">
+                            ziti-monitor service is not running. Settings will appear when the service starts.
+                        </TextBlock>
+                    </Border>
+
+                    <!-- All settings content — hidden when monitor is offline so stale values are never shown -->
+                    <StackPanel x:Name="AutomaticUpgradesContent" Orientation="Vertical">
+
+                    <Border x:Name="PolicyManagedBanner" Visibility="Collapsed"
+                            Background="#1a3a6e" CornerRadius="5" Margin="0,0,0,4" Padding="10,7">
+                        <TextBlock Foreground="White" FontSize="12" TextWrapping="Wrap">
+                            &#x1F512; Managed by your organization
+                        </TextBlock>
+                    </Border>
+
+                    <Label x:Name="AutomaticUpgradesHeading" FontWeight="Bold" FontSize="16" Margin="{StaticResource MarginTop10}">Automatic upgrades:</Label>
+                    <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
                     <local:SubOptionItem x:Name="AutomaticUpgradesItemOn" HorizontalAlignment="Stretch" Width="Auto" Label="Enabled" MouseUp="SetAutomaticUpgradesMenuAction"></local:SubOptionItem>
                     <local:SubOptionItem x:Name="AutomaticUpgradesItemOff" HorizontalAlignment="Stretch" Width="Auto" Label="Disabled" MouseUp="SetAutomaticUpgradesMenuAction"></local:SubOptionItem>
 
-                    <Label FontWeight="Bold" FontSize="16" Margin="0,20,0,0">URL used to discover new upgrades:</Label>
-                    <Rectangle Style="{StaticResource SectionDivider}" Margin="0,0,0,5"/>
-                    <Label Opacity="0.6" Margin="0,0,0,0">Change only if you understand the associated risks</Label>
-                    <StackPanel Margin="5,0,0,0" HorizontalAlignment="Left" Width="325">
-                        <TextBox x:Name="UpdateUrl" Padding="5" TextChanged="UpdateUrl_TextChanged" HorizontalAlignment="Stretch" BorderThickness="1" TextAlignment="Left" FontSize="13" Foreground="Black" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                    <Label x:Name="UpdateUrlHeading" FontWeight="Bold" FontSize="16"  Margin="{StaticResource MarginTop10}">URL used to discover new upgrades:</Label>
+
+                    <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
+                    <StackPanel x:Name="UpdateUrlWarning" Orientation="Horizontal">
+                        <Label x:Name="UpdateUrlWarningLabel" Opacity="0.6">Change only if you understand the associated risks</Label>
+                    </StackPanel>
+                    <StackPanel Margin="0,0,0,0">
+                        <TextBox x:Name="UpdateUrl" Padding="5" TextChanged="UpdateUrl_TextChanged" Width="325" BorderThickness="1" TextAlignment="Left" FontSize="13" Foreground="Black" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
                             <TextBox.Resources>
                                 <Style TargetType="{x:Type Border}">
                                     <Setter Property="CornerRadius" Value="5"/>
@@ -228,30 +250,47 @@
                             </TextBox.Resources>
                         </TextBox>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0">
-                            <Label Content=""/>
-                            <Button Click="ResetUrlButton_Click" Content="Reset" VerticalAlignment="Top"
-                                    BorderThickness="1,0,1,1" Opacity=".6">
+                            <Button x:Name="ResetUrlButton" Click="ResetUrlButton_Click" Content="Reset" VerticalAlignment="Top"
+                                    BorderThickness="1,0,1,1" Opacity=".6"
+                                    >
                                 <Button.Resources>
                                     <Style TargetType="Border">
                                         <Setter Property="CornerRadius" Value="0,0,5,5"/>
                                         <Setter Property="Height" Value="20"/>
-                                        <Setter Property="Padding" Value="10,0,10,0"/>
+                                        <Setter Property="Padding" Value="5,0,5,0"/>
                                         <Setter Property="BorderThickness" Value="15"/>
                                     </Style>
                                 </Button.Resources>
                             </Button>
-                            <Label Content="" Width="5" Padding="0"/>
+                            <Label Content=""/>
                         </StackPanel>
                     </StackPanel>
-                    <local:StyledButton x:Name="SetUpdateUrlButton" OnClick="SetUpdateUrlButton_Click" Label="Set Update URL" Margin="0,10,0,0"></local:StyledButton>
-                    <local:StyledButton x:Name="CheckForUpdate" OnClick="CheckForUpdate_OnClick" Label="Check for Updates Now" Margin="0,10,0,0"></local:StyledButton>
+                    <Label x:Name="MaintenanceWindowHeading" FontWeight="Bold" FontSize="16">Installation maintenance window:</Label>
+                    <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0" VerticalAlignment="Center">
+                        <Label VerticalAlignment="Center" Padding="0,0,6,0">From</Label>
+                        <ComboBox x:Name="MaintenanceWindowStartCombo"
+                                  Width="80" SelectionChanged="MaintenanceWindow_SelectionChanged"/>
+                        <Label VerticalAlignment="Center" Padding="6,0">to</Label>
+                        <ComboBox x:Name="MaintenanceWindowEndCombo"
+                                  Width="80" SelectionChanged="MaintenanceWindow_SelectionChanged"/>
+                        <CheckBox x:Name="MaintenanceWindowAnyTime" Content="Any time" VerticalAlignment="Center"
+                                  Margin="12,0,0,0"
+                                  Checked="MaintenanceWindowAnyTime_Changed"
+                                  Unchecked="MaintenanceWindowAnyTime_Changed"/>
+                    </StackPanel>
+                    <local:StyledButton x:Name="SaveSettingsButton" OnClick="SaveSettingsButton_Click" Label="Save Settings" Margin="{StaticResource MarginTop10}"/>
+
+                    <local:StyledButton x:Name="CheckForUpdate" OnClick="CheckForUpdate_OnClick" Label="Check for Updates Now" Margin="{StaticResource MarginTop10}"></local:StyledButton>
                     <Label HorizontalAlignment="Center" x:Name="CheckForUpdateStatus" Content=""></Label>
 
                     <Button x:Name="TriggerUpdateButton"
                             Click="TriggerUpdate_RoutedEventArgs_Click"
                             Visibility="Collapsed"
-                            Content="Perform Update"
+                            Content="Update Now"
                             Style="{StaticResource TestButton}"/>
+
+                    </StackPanel><!-- AutomaticUpgradesContent -->
 
                 </StackPanel>
 
@@ -278,7 +317,7 @@
                     <Label Name="VersionOlder" Content=" checking version information " HorizontalAlignment="Center" FontSize="14" Padding="0,30,0,0" Foreground="#F4044D" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                     <Label Name="VersionNewer" Content="" HorizontalAlignment="Center" FontSize="14" Padding="0,30,0,0" Foreground="#0069FF" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                 </StackPanel>
-                <Label Name="MainItemsButton" Margin="0,10,0,0" Foreground="#F4044D" FontWeight="SemiBold" Content="Quit Ziti Desktop Edge" Cursor="Hand" MouseUp="CloseApp" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Center"></Label>
+                <Label Name="MainItemsButton" Margin="{StaticResource MarginTop10}" Foreground="#F4044D" FontWeight="SemiBold" Content="Quit Ziti Desktop Edge" Cursor="Hand" MouseUp="CloseApp" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Center"></Label>
             </StackPanel>
         </Grid>
 
