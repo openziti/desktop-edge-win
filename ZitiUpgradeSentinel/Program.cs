@@ -109,7 +109,7 @@ class FileWatcher {
     private static Form CreateProgressForm() {
         Form form = new Form {
             Text = "Ziti Desktop Edge - Updating",
-            Size = new Size(420, 160),
+            Size = new Size(360, 140),
             FormBorderStyle = FormBorderStyle.FixedDialog,
             StartPosition = FormStartPosition.CenterScreen,
             MaximizeBox = false,
@@ -130,27 +130,27 @@ class FileWatcher {
             AutoSize = false,
             TextAlign = ContentAlignment.MiddleCenter,
             Dock = DockStyle.Top,
-            Height = 50,
-            Font = new Font("Segoe UI", 11f),
+            Height = 40,
+            Font = new Font("Segoe UI", 10f),
         };
 
         ProgressBar progressBar = new ProgressBar {
             Style = ProgressBarStyle.Marquee,
             MarqueeAnimationSpeed = 30,
             Dock = DockStyle.Top,
-            Height = 25,
+            Height = 20,
         };
 
         CheckBox hideCheckbox = new CheckBox {
             Text = "Don't show this again",
             Dock = DockStyle.Bottom,
-            Height = 25,
+            Height = 20,
             Font = new Font("Segoe UI", 9f),
             Padding = new Padding(5, 0, 0, 0),
         };
         hideCheckbox.CheckedChanged += (sender, e) => SaveHidePreference(hideCheckbox.Checked);
 
-        Panel padding = new Panel { Dock = DockStyle.Top, Height = 10 };
+        Panel padding = new Panel { Dock = DockStyle.Top, Height = 6 };
 
         form.Controls.Add(hideCheckbox);
         form.Controls.Add(progressBar);
