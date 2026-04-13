@@ -199,7 +199,7 @@ namespace ZitiUpdateService {
                 // then we kick the first update check.
             }
 
-            Logger.Info("Policy settings changed, notifying consumers");
+            Logger.Debug("Policy settings changed, notifying consumers");
             if (PolicySettings.EffectiveAutomaticUpdatesDisabled(CurrentSettings) && (_deferredInstallPending || _deferToRestartPending || _stagingDownloadPending)) {
                 Logger.Info("AutomaticUpdatesDisabled is now set; cancelling pending deferred install");
                 _deferredInstallPending = false;

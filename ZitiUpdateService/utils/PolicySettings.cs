@@ -230,9 +230,11 @@ namespace ZitiUpdateService.Utils {
             // Reload policy now because changes written while the watcher was down
             // will not re-fire and would otherwise be silently missed.
             if (_watcher != null) {
-                Logger.Info("Policy registry watcher (re)started, reloading policy in case values changed while watcher was down");
+                Logger.Debug("Policy registry watcher (re)started, reloading policy in case values changed while watcher was down");
                 Load();
-                OnConfigurationChange?.Invoke(null, null);
+                if (HasPolicy) {
+                    OnConfigurationChange?.Invoke(null, null);
+                }
             }
         }
 
@@ -253,7 +255,7 @@ namespace ZitiUpdateService.Utils {
                 _debounceTimer = new System.Threading.Timer(OnDebounceElapsed, null, System.Threading.Timeout.Infinite, System.Threading.Timeout.Infinite);
                 Logger.Debug("Policy registry watcher started (watching tree: {0}\\{1})", WmiHive, WmiRootPath);
             } catch (Exception) {
-                Logger.Info("Policy registry watcher unavailable, local settings active. Policy-related changes will require a service restart to take effect.");
+                Logger.Debug("Policy registry watcher unavailable, local settings active. Policy-related changes will require a service restart to take effect.");
             }
         }
 
