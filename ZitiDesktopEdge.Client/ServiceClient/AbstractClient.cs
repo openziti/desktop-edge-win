@@ -322,6 +322,15 @@ namespace ZitiDesktopEdge.ServiceClient {
                     };
             }
 
+            // EnrollMode and Provider are optional AddIdentity fields; omit them when unset so the payload
+            // stays wire-compatible with zet builds that predate them.
+            if (property.DeclaringType == typeof(EnrollIdentifierPayload) && property.PropertyName == "EnrollMode") {
+                property.ShouldSerialize = instance => !string.IsNullOrEmpty(((EnrollIdentifierPayload)instance)?.EnrollMode);
+            }
+            if (property.DeclaringType == typeof(EnrollIdentifierPayload) && property.PropertyName == "Provider") {
+                property.ShouldSerialize = instance => !string.IsNullOrEmpty(((EnrollIdentifierPayload)instance)?.Provider);
+            }
+
             return property;
         }
     }
