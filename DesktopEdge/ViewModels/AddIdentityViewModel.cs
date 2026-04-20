@@ -17,6 +17,8 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
+using System.Windows;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -33,8 +35,23 @@ namespace ZitiDesktopEdge {
     public class AddIdentityViewModel : INotifyPropertyChanged {
         private ExternalJwtSigner _selectedSigner;
         private string _enrollMode;
+        private bool _showSignerPicker;
+
+        /// <summary>Initial placeholder shown in the controller URL field, also used to detect whether the user has entered a real URL.</summary>
+        public string UrlPlaceholder { get; } = "https://controller.url";
 
         public ObservableCollection<ExternalJwtSigner> Signers { get; } = new ObservableCollection<ExternalJwtSigner>();
+
+        public bool ShowSignerPicker {
+            get { return _showSignerPicker; }
+            private set {
+                _showSignerPicker = value;
+                OnPropertyChanged(nameof(ShowSignerPicker));
+                OnPropertyChanged(nameof(SignerPickerVisibility));
+            }
+        }
+
+        public Visibility SignerPickerVisibility => _showSignerPicker ? Visibility.Visible : Visibility.Collapsed;
 
         public ExternalJwtSigner SelectedSigner {
             get { return _selectedSigner; }
@@ -66,6 +83,24 @@ namespace ZitiDesktopEdge {
                     Signers.Add(signer);
                 }
             }
+
+            // Picker rules:
+            //   0 capable signers — no picker, fall through to the current add-by-URL flow.
+            //   1 capable signer  — auto-select it; dropdown stays hidden (no choice to make).
+            //   2+ capable        — show the dropdown, force the user to pick one.
+            List<ExternalJwtSigner> capable = Signers.Where(s => s.SupportsAnyEnrollMode).ToList();
+            if (capable.Count == 1) {
+                SelectedSigner = capable[0];
+            }
+            ShowSignerPicker = capable.Count > 1;
+        }
+
+        /// <summary>Clears any previously-loaded signer state — call when the controller URL changes.</summary>
+        public void Reset() {
+            Signers.Clear();
+            SelectedSigner = null;
+            EnrollMode = null;
+            ShowSignerPicker = false;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
