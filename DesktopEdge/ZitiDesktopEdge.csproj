@@ -145,6 +145,7 @@
     <Compile Include="Models\ViewState.cs" />
     <Compile Include="Utils\ManagedSettingsReader.cs" />
     <Compile Include="ViewModels\ManagedSettingsViewModel.cs" />
+    <Compile Include="ViewModels\AddIdentityViewModel.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
     <Compile Include="ViewModels\IdentityDetailsViewModel.cs" />
     <Compile Include="Views\Controls\ConfirmationDialog.xaml.cs">
