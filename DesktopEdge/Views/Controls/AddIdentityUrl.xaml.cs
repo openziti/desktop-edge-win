@@ -33,23 +33,30 @@ namespace ZitiDesktopEdge {
 
         public CommonDelegates.JoinNetwork JoinNetwork;
 
+        public AddIdentityViewModel AddIdentityViewModel { get; } = new AddIdentityViewModel();
+
         public AddIdentityUrl() {
             InitializeComponent();
         }
 
         private async void JoinNetworkUrl(object sender, MouseButtonEventArgs e) {
-            EnrollIdentifierPayload payload = new EnrollIdentifierPayload();
-            payload.ControllerURL = ControllerURL.Text;
+            Uri raw = new Uri(ControllerURL.Text);
+            // Ignore any path/query the user pasted; we only want scheme://host:port.
+            string controllerBaseUrl = raw.GetLeftPart(UriPartial.Authority);
 
-            Uri ctrl = new Uri(ControllerURL.Text);
-            payload.IdentityFilename = ctrl.Host + "_" + ctrl.Port;
+            EnrollIdentifierPayload payload = new EnrollIdentifierPayload();
+            payload.ControllerURL = controllerBaseUrl;
+            payload.IdentityFilename = raw.Host + "_" + raw.Port;
 
             var client = new System.Net.Http.HttpClient();
             client.Timeout = TimeSpan.FromSeconds(5);
 
             Mouse.OverrideCursor = Cursors.Wait;
             try {
-                var result = await client.GetAsync(ControllerURL.Text);
+                var result = await client.GetAsync(controllerBaseUrl + "/external-jwt-signers");
+                result.EnsureSuccessStatusCode();
+                string signersBody = await result.Content.ReadAsStringAsync();
+                AddIdentityViewModel.LoadSigners(signersBody);
                 Mouse.OverrideCursor = null;
                 OnAddIdentity(payload, this);
             } catch (Exception ex) {

@@ -14,12 +14,9 @@
 	limitations under the License.
 */
 
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Net.Http;
-using System.Threading.Tasks;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -34,16 +31,8 @@ namespace ZitiDesktopEdge {
     }
 
     public class AddIdentityViewModel : INotifyPropertyChanged {
-        // Fixed by the Ziti edge API contract. The deployment-specific path prefix
-        // (e.g. "/edge/client/v1") is read from the controller's root response instead.
-        private const string EdgeClientApiFamily = "edge-client";
-        private const string EdgeClientApiVersion = "v1";
-        private const string ExternalJwtSignersSuffix = "/external-jwt-signers";
-        private static readonly TimeSpan DiscoveryTimeout = TimeSpan.FromSeconds(5);
-
         private ExternalJwtSigner _selectedSigner;
         private string _enrollMode;
-        private bool _isDiscovering;
 
         public ObservableCollection<ExternalJwtSigner> Signers { get; } = new ObservableCollection<ExternalJwtSigner>();
 
@@ -63,56 +52,20 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        public bool IsDiscovering {
-            get { return _isDiscovering; }
-            private set {
-                _isDiscovering = value;
-                OnPropertyChanged(nameof(IsDiscovering));
-            }
-        }
-
         /// <summary>
-        /// Replaces <see cref="Signers"/> with the controller's external JWT signers.
-        /// The caller provides the already-fetched preflight body so we don't re-GET the root.
-        /// HTTP and parsing errors propagate.
+        /// Parses the controller's external-jwt-signers response and replaces <see cref="Signers"/>.
+        /// Parsing errors propagate so the caller can surface a specific error.
         /// </summary>
-        public async Task DiscoverSignersAsync(string controllerUrl, string controllerRootBody) {
+        public void LoadSigners(string signersResponseBody) {
             Signers.Clear();
             SelectedSigner = null;
-            IsDiscovering = true;
-            try {
-                Uri baseUri = new Uri(controllerUrl);
-                string edgeClientPath = ExtractEdgeClientApiPath(controllerRootBody, baseUri);
-                Uri signersUri = new Uri(baseUri, edgeClientPath + ExternalJwtSignersSuffix);
 
-                using (HttpClient client = new HttpClient()) {
-                    client.Timeout = DiscoveryTimeout;
-                    string signersBody = await client.GetStringAsync(signersUri);
-                    ExternalJwtSignerListResponse parsed = JsonConvert.DeserializeObject<ExternalJwtSignerListResponse>(signersBody, DeserializationSettings);
-                    if (parsed?.Data != null) {
-                        foreach (ExternalJwtSigner signer in parsed.Data) {
-                            Signers.Add(signer);
-                        }
-                    }
+            ExternalJwtSignerListResponse parsed = JsonConvert.DeserializeObject<ExternalJwtSignerListResponse>(signersResponseBody, DeserializationSettings);
+            if (parsed?.Data != null) {
+                foreach (ExternalJwtSigner signer in parsed.Data) {
+                    Signers.Add(signer);
                 }
-            } finally {
-                IsDiscovering = false;
             }
-        }
-
-        private static string ExtractEdgeClientApiPath(string rootBody, Uri baseUri) {
-            ControllerRootResponse root = JsonConvert.DeserializeObject<ControllerRootResponse>(rootBody, DeserializationSettings);
-
-            Dictionary<string, ApiVersionInfo> edgeClient = null;
-            root?.Data?.ApiVersions?.TryGetValue(EdgeClientApiFamily, out edgeClient);
-            ApiVersionInfo v1 = null;
-            edgeClient?.TryGetValue(EdgeClientApiVersion, out v1);
-
-            if (string.IsNullOrEmpty(v1?.Path)) {
-                throw new InvalidOperationException(
-                    $"Controller at {baseUri} did not advertise an '{EdgeClientApiFamily}.{EdgeClientApiVersion}.path' in its root response.");
-            }
-            return v1.Path;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -125,18 +78,6 @@ namespace ZitiDesktopEdge {
         private static readonly JsonSerializerSettings DeserializationSettings = new JsonSerializerSettings {
             ContractResolver = new CamelCasePropertyNamesContractResolver()
         };
-
-        private class ControllerRootResponse {
-            public ControllerRootData Data { get; set; }
-        }
-
-        private class ControllerRootData {
-            public Dictionary<string, Dictionary<string, ApiVersionInfo>> ApiVersions { get; set; }
-        }
-
-        private class ApiVersionInfo {
-            public string Path { get; set; }
-        }
 
         private class ExternalJwtSignerListResponse {
             public List<ExternalJwtSigner> Data { get; set; }
