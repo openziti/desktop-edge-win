@@ -135,6 +135,7 @@
     <Compile Include="Models\MessageCount.cs" />
     <Compile Include="Models\MFA.cs" />
     <Compile Include="Models\ViewState.cs" />
+    <Compile Include="ViewModels\AddIdentityViewModel.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
     <Compile Include="ViewModels\IdentityDetailsViewModel.cs" />
     <Compile Include="Views\Controls\ConfirmationDialog.xaml.cs">
