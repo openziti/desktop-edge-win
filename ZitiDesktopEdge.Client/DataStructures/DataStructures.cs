@@ -245,6 +245,8 @@ namespace ZitiDesktopEdge.DataStructures {
         public string Key { get; set; }
         public string Certificate { get; set; }
         public string ControllerURL { get; set; }
+        public string EnrollMode { get; set; }
+        public string Provider { get; set; }
     }
 
     public class EnrollIdentifierFunction : ServiceFunction {
