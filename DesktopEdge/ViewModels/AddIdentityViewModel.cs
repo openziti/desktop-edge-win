@@ -23,13 +23,13 @@ using System.Windows;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
+using ZitiDesktopEdge.DataStructures;
+
 namespace ZitiDesktopEdge {
-    /// <summary>Subset of the controller's external-jwt-signer response used by the add-identity UI.</summary>
     public class ExternalJwtSigner {
         public string Name { get; set; }
         public bool EnrollToCertEnabled { get; set; }
         public bool EnrollToTokenEnabled { get; set; }
-        public bool SupportsAnyEnrollMode => EnrollToCertEnabled || EnrollToTokenEnabled;
     }
 
     public class AddIdentityViewModel : INotifyPropertyChanged {
@@ -37,8 +37,9 @@ namespace ZitiDesktopEdge {
         private string _enrollMode;
         private bool _showSignerPicker;
 
-        /// <summary>Initial placeholder shown in the controller URL field, also used to detect whether the user has entered a real URL.</summary>
         public string UrlPlaceholder { get; } = "https://controller.url";
+        public string ControllerBaseUrl { get; set; }
+        public string IdentityFilename { get; set; }
 
         public ObservableCollection<ExternalJwtSigner> Signers { get; } = new ObservableCollection<ExternalJwtSigner>();
 
@@ -57,7 +58,9 @@ namespace ZitiDesktopEdge {
             get { return _selectedSigner; }
             set {
                 _selectedSigner = value;
+                EnrollMode = (value != null && value.EnrollToCertEnabled) ? "user-session" : null;
                 OnPropertyChanged(nameof(SelectedSigner));
+                OnPropertyChanged(nameof(EnrollModeRadiosVisibility));
             }
         }
 
@@ -66,13 +69,29 @@ namespace ZitiDesktopEdge {
             set {
                 _enrollMode = value;
                 OnPropertyChanged(nameof(EnrollMode));
+                OnPropertyChanged(nameof(IsUserSessionSelected));
+                OnPropertyChanged(nameof(IsDeviceCertificateSelected));
             }
         }
 
-        /// <summary>
-        /// Parses the controller's external-jwt-signers response and replaces <see cref="Signers"/>.
-        /// Parsing errors propagate so the caller can surface a specific error.
-        /// </summary>
+        public bool IsUserSessionSelected {
+            get { return _enrollMode == "user-session"; }
+            set { if (value) EnrollMode = "user-session"; }
+        }
+
+        public bool IsDeviceCertificateSelected {
+            get { return _enrollMode == "device-certificate"; }
+            set { if (value) EnrollMode = "device-certificate"; }
+        }
+
+        public Visibility EnrollModeRadiosVisibility {
+            get {
+                if (_selectedSigner == null) return Visibility.Collapsed;
+                if (!_selectedSigner.EnrollToCertEnabled) return Visibility.Collapsed;
+                return Visibility.Visible;
+            }
+        }
+
         public void LoadSigners(string signersResponseBody) {
             Signers.Clear();
             SelectedSigner = null;
@@ -84,23 +103,49 @@ namespace ZitiDesktopEdge {
                 }
             }
 
-            // Picker rules:
-            //   0 capable signers — no picker, fall through to the current add-by-URL flow.
-            //   1 capable signer  — auto-select it; dropdown stays hidden (no choice to make).
-            //   2+ capable        — show the dropdown, force the user to pick one.
-            List<ExternalJwtSigner> capable = Signers.Where(s => s.SupportsAnyEnrollMode).ToList();
-            if (capable.Count == 1) {
-                SelectedSigner = capable[0];
-            }
+            List<ExternalJwtSigner> capable = Signers.Where(s => s.EnrollToCertEnabled || s.EnrollToTokenEnabled).ToList();
+            if (capable.Count == 1) SelectedSigner = capable[0];
             ShowSignerPicker = capable.Count > 1;
         }
 
-        /// <summary>Clears any previously-loaded signer state — call when the controller URL changes.</summary>
         public void Reset() {
             Signers.Clear();
             SelectedSigner = null;
             EnrollMode = null;
             ShowSignerPicker = false;
+            ControllerBaseUrl = null;
+            IdentityFilename = null;
+        }
+
+        public bool CanJoin {
+            get {
+                if (ShowSignerPicker && SelectedSigner == null) return false;
+                if (EnrollModeRadiosVisibility == Visibility.Visible && EnrollMode == null) return false;
+                return true;
+            }
+        }
+
+        public EnrollIdentifierPayload BuildEnrollPayload() {
+            return new EnrollIdentifierPayload {
+                ControllerURL = ControllerBaseUrl,
+                IdentityFilename = IdentityFilename,
+                EnrollMode = ResolveWireEnrollMode(),
+                Provider = ResolveWireProvider(),
+            };
+        }
+
+        private string ResolveWireEnrollMode() {
+            if (_selectedSigner == null) return null;
+            bool cert = _selectedSigner.EnrollToCertEnabled;
+            bool token = _selectedSigner.EnrollToTokenEnabled;
+            if (!cert && token) return "token";
+            if (_enrollMode == "device-certificate") return "cert";
+            if (_enrollMode == "user-session" && token) return "token";
+            return null;
+        }
+
+        private string ResolveWireProvider() {
+            return _showSignerPicker ? _selectedSigner?.Name : null;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -109,7 +154,6 @@ namespace ZitiDesktopEdge {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        // Map camelCase wire fields to PascalCase C# properties without per-field attributes.
         private static readonly JsonSerializerSettings DeserializationSettings = new JsonSerializerSettings {
             ContractResolver = new CamelCasePropertyNamesContractResolver()
         };

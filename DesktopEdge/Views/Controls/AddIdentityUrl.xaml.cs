@@ -22,7 +22,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
-using System.Windows.Threading;
 using Windows.Web.Http;
 using ZitiDesktopEdge.DataStructures;
 
@@ -31,33 +30,39 @@ namespace ZitiDesktopEdge {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         public event CommonDelegates.CloseAction OnClose;
         public event Action<EnrollIdentifierPayload, UserControl> OnAddIdentity;
+        public event Action<AddIdentityViewModel, UserControl> OnNeedsSignerChoice;
 
         public CommonDelegates.JoinNetwork JoinNetwork;
 
         public AddIdentityViewModel AddIdentityViewModel { get; } = new AddIdentityViewModel();
 
-        // Fires RunDiscoveryAsync after the user stops typing in the URL field.
-        private readonly DispatcherTimer _discoveryDebounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1500) };
-
         public AddIdentityUrl() {
             InitializeComponent();
             DataContext = AddIdentityViewModel;
-            _discoveryDebounce.Tick += DiscoveryDebounce_Tick;
         }
 
-        private async void DiscoveryDebounce_Tick(object sender, EventArgs e) {
-            _discoveryDebounce.Stop();
-            await RunDiscoveryAsync();
-        }
+        private async void JoinNetworkUrl(object sender, MouseButtonEventArgs e) {
+            if (!IsUrlSyntacticallyValid()) return;
 
-        private void JoinNetworkUrl(object sender, MouseButtonEventArgs e) {
-            // Button is only enabled after RunDiscoveryAsync succeeds, so we can trust the VM state here.
+            bool ok = await RunDiscoveryAsync();
+            if (!ok) {
+                this.OnClose?.Invoke(false, this);
+                return;
+            }
+
             Uri raw = new Uri(ControllerURL.Text);
-            string controllerBaseUrl = raw.GetLeftPart(UriPartial.Authority);
-            EnrollIdentifierPayload payload = new EnrollIdentifierPayload();
-            payload.ControllerURL = controllerBaseUrl;
-            payload.IdentityFilename = raw.Host + "_" + raw.Port;
-            OnAddIdentity(payload, this);
+            AddIdentityViewModel.ControllerBaseUrl = raw.GetLeftPart(UriPartial.Authority);
+            AddIdentityViewModel.IdentityFilename = raw.Host + "_" + raw.Port;
+
+            bool needsChoice = AddIdentityViewModel.ShowSignerPicker
+                            || AddIdentityViewModel.EnrollModeRadiosVisibility == Visibility.Visible
+                            || (AddIdentityViewModel.SelectedSigner != null && AddIdentityViewModel.SelectedSigner.EnrollToTokenEnabled);
+            if (needsChoice) {
+                OnNeedsSignerChoice?.Invoke(AddIdentityViewModel, this);
+                return;
+            }
+
+            OnAddIdentity(AddIdentityViewModel.BuildEnrollPayload(), this);
         }
 
         private async Task<bool> RunDiscoveryAsync() {
@@ -72,7 +77,6 @@ namespace ZitiDesktopEdge {
                 result.EnsureSuccessStatusCode();
                 string body = await result.Content.ReadAsStringAsync();
                 AddIdentityViewModel.LoadSigners(body);
-                JoinNetworkBtn.Enable();
                 return true;
             } catch (Exception ex) {
                 await ShowConnectionErrorAsync(ex);
@@ -116,26 +120,22 @@ namespace ZitiDesktopEdge {
 
         private void Grid_Loaded(object sender, System.Windows.RoutedEventArgs e) {
             ControllerURL.Focus();
-            // Remains disabled until RunDiscoveryAsync succeeds.
-            JoinNetworkBtn.Disable();         }
+            JoinNetworkBtn.Disable();
+        }
 
         private void ControllerURL_TextChanged(object sender, TextChangedEventArgs e) {
             if (ControllerURL.ActualWidth > 0) {
-                ControllerURL.MaxWidth = ControllerURL.ActualWidth; //disable any expanding
+                ControllerURL.MaxWidth = ControllerURL.ActualWidth;
             }
-            // URL changed: any prior discovery is stale, so invalidate state and disable Join until re-run.
             AddIdentityViewModel.Reset();
-            if (JoinNetworkBtn != null) JoinNetworkBtn.Disable();
             UpdateUrlValidity();
-            // Restart the debounce. Discovery fires after the user pauses typing.
-            // Skip the on-load placeholder so opening the dialog doesn't fire a request.
-            _discoveryDebounce.Stop();
-            if (IsUrlSyntacticallyValid() && ControllerURL.Text != AddIdentityViewModel.UrlPlaceholder) _discoveryDebounce.Start();
         }
 
         private void UpdateUrlValidity() {
-            if (IsUrlSyntacticallyValid()) {
+            bool valid = IsUrlSyntacticallyValid() && ControllerURL.Text != AddIdentityViewModel.UrlPlaceholder;
+            if (valid) {
                 ControllerURL.Style = (Style)Resources["ValidUrl"];
+                if (JoinNetworkBtn != null) JoinNetworkBtn.Enable();
             } else {
                 ControllerURL.Style = (Style)Resources["InvalidUrl"];
                 if (JoinNetworkBtn != null) JoinNetworkBtn.Disable();
@@ -143,8 +143,6 @@ namespace ZitiDesktopEdge {
         }
 
         private void HandleEnterKey(object sender, KeyEventArgs e) {
-            // Enter submits only once discovery has enabled the button. Before that it does nothing
-            // the debounce is already running to trigger discovery.
             if (e.Key == Key.Return && JoinNetworkBtn.IsEnabled) {
                 e.Handled = true;
                 JoinNetworkUrl(sender, null);
