@@ -19,6 +19,7 @@ using System.Net.Sockets;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
+using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.ServiceClient;
 
 namespace ZitiDesktopEdge.Client.IntegrationTests;
@@ -41,10 +42,7 @@ public static class QuickstartFixture {
 	private static readonly TimeSpan SetupTimeout = TimeSpan.FromMinutes(5);
 	private static readonly TimeSpan ControllerStartTimeout = TimeSpan.FromSeconds(60);
 
-	// Identity names that the setup-ids-for-test.ps1 script creates. Anything here gets
-	// purged from ZET at assembly init (clears residue from a prior crashed run) and at
-	// assembly cleanup (routine teardown). Never touches identities outside this set, so
-	// unrelated production identities on the same ZET instance are safe.
+	// Only these names are touched by cleanup; other identities on the same ZET are safe.
 	private static readonly string[] TestIdentityNames = { "normal-user-01", "normal-user-02", "normal-user-03", "normal-user-04" };
 
 	private static Process? zitiProcess;
@@ -57,13 +55,12 @@ public static class QuickstartFixture {
 	[AssemblyInitialize]
 	public static void Init(TestContext context) {
 		ConfigureNLog();
-		ClearTestIdentities().GetAwaiter().GetResult();
+		RemoveTestIdentitiesViaIpc().GetAwaiter().GetResult();
 	}
 
 	[AssemblyCleanup]
 	public static void TearDown() {
-		ClearTestIdentities().GetAwaiter().GetResult();
-
+		RemoveTestIdentitiesViaIpc().GetAwaiter().GetResult();
 		StopZitiProcess();
 
 		if (quickstartHome is not null) {
@@ -74,62 +71,23 @@ public static class QuickstartFixture {
 		}
 	}
 
-	// ZET writes identity files under LocalSystem's %APPDATA%\NetFoundry. IPC RemoveIdentity
-	// only works for loaded identities, so partial enrollments leave orphan .json files that
-	// poison subsequent AddIdentity calls. Stopping the ziti service lets us delete the files
-	// directly; restarting rebuilds in-memory state from what's left on disk.
-	private static readonly string ZetIdentityDir = Path.Combine(
-		Environment.GetFolderPath(Environment.SpecialFolder.System),
-		@"config\systemprofile\AppData\Roaming\NetFoundry");
-
-	private static readonly TimeSpan ServiceStartTimeout = TimeSpan.FromSeconds(60);
-
 	/// <summary>
-	/// Deletes any test identity JSON files ZET is holding. Stops the ziti service (via the
-	/// monitor service, same mechanism the UI uses), removes <see cref="TestIdentityNames"/>
-	/// files from <see cref="ZetIdentityDir"/>, and restarts ziti. No-ops if no stale files
-	/// exist. Safe to call when ZET is already stopped or the monitor is unreachable.
+	/// Removes loaded test identities via IPC. Called at init and teardown so a crashed
+	/// prior run self-heals. Throws if ZET isn't reachable.
 	/// </summary>
-	public static async Task ClearTestIdentities() {
-		if (!Directory.Exists(ZetIdentityDir)) return;
+	public static async Task RemoveTestIdentitiesViaIpc() {
+		var client = new DataClient("fixture-cleanup");
+		await client.ConnectAsync();
+		await client.WaitForConnectionAsync();
 
-		var stale = TestIdentityNames
-			.Select(n => Path.Combine(ZetIdentityDir, n + ".json"))
-			.Where(File.Exists)
-			.ToList();
-		if (stale.Count == 0) return;
+		ZitiTunnelStatus status = await client.GetStatusAsync();
+		IEnumerable<Identity> loaded = status?.Data?.Identities?
+			.Where(i => TestIdentityNames.Contains(i.Name) && !string.IsNullOrEmpty(i.Identifier))
+			?? Enumerable.Empty<Identity>();
 
-		Logger.Info("cleanup: {0} test identity file(s) on disk; cycling ziti service", stale.Count);
-
-		var monitor = new MonitorClient("fixture-cleanup-monitor");
-		try {
-			await monitor.ConnectAsync();
-		} catch (Exception ex) {
-			Logger.Warn("cleanup: could not connect to ziti-monitor; skipping service cycle. {0}", ex.Message);
-			return;
-		}
-		await monitor.WaitForConnectionAsync();
-
-		try {
-			await monitor.StopServiceAsync();
-		} catch (Exception ex) {
-			Logger.Warn(ex, "cleanup: StopServiceAsync failed");
-			return;
-		}
-
-		foreach (string path in stale) {
-			try {
-				File.Delete(path);
-				Logger.Info("cleanup: deleted {0}", Path.GetFileName(path));
-			} catch (Exception ex) {
-				Logger.Warn(ex, "cleanup: could not delete {0}", path);
-			}
-		}
-
-		try {
-			await monitor.StartServiceAsync(ServiceStartTimeout);
-		} catch (Exception ex) {
-			Logger.Warn(ex, "cleanup: StartServiceAsync failed; ziti service may be stopped");
+		foreach (Identity id in loaded) {
+			await client.RemoveIdentityAsync(id.Identifier);
+			Logger.Info("fixture: removed {0} via IPC", id.Name);
 		}
 	}
 
@@ -152,10 +110,9 @@ public static class QuickstartFixture {
 	}
 
 	/// <summary>
-	/// Runs scripts/setup-ids-for-test.ps1 to create the standard test identities
-	/// on the running controller. Uses a separate temp -ZitiHome so the script's
-	/// pki/identities/db cleanup can't touch the running quickstart's data.
-	/// Requires <see cref="StartQuickstart"/> to have been called first.
+	/// Provisions the standard test identities via scripts/setup-ids-for-test.ps1.
+	/// Requires <see cref="StartQuickstart"/> first. Uses a separate temp -ZitiHome
+	/// so the script's cleanup can't touch the running quickstart's data.
 	/// </summary>
 	public static void CreateTestIdentities() {
 		if (quickstartHome is null) {

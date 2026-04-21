@@ -16,16 +16,16 @@ prerequisites are missing, since its `ClassInitialize` launches the controller.
 
 ## Fixture behavior (`QuickstartFixture`)
 
-- **AssemblyInitialize**: cycles the ziti service via the monitor pipe to
-  delete any `normal-user-*.json` files still loaded by ZET from a prior run.
-  Only names in `TestIdentityNames` are touched; unrelated identities on the
-  same ZET instance are safe.
+- **AssemblyInitialize**: configures logging, then removes any loaded test
+  identities over IPC. Self-heals a crashed prior run whose teardown never
+  fired. No-op on a clean start. Only names in `TestIdentityNames` are
+  touched; unrelated identities on the same ZET instance are safe.
 - **ClassInitialize** (for classes that need a controller): launches
   `ziti edge quickstart` under a temp `--home`, waits for TCP port 1280, then
   runs `scripts/setup-ids-for-test.ps1 -Normal` to provision the
   `normal-user-*` identities. JWTs land in `QuickstartFixture.IdentityDir`.
-- **AssemblyCleanup**: clears the test identities again, kills the quickstart
-  process tree, deletes both temp homes.
+- **AssemblyCleanup**: same IPC cleanup as init, kills the quickstart process
+  tree, deletes both temp homes.
 
 ## Running
 
