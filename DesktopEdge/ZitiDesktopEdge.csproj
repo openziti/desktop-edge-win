@@ -157,6 +157,9 @@
     <Compile Include="Views\Controls\AddIdentityUrl.xaml.cs">
       <DependentUpon>AddIdentityUrl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\Controls\AddIdentitySignerChoice.xaml.cs">
+      <DependentUpon>AddIdentitySignerChoice.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\Controls\ExternalProviderSelector.xaml.cs">
       <DependentUpon>ExternalProviderSelector.xaml</DependentUpon>
     </Compile>
@@ -230,6 +233,10 @@
       <Generator>XamlIntelliSenseFileGenerator</Generator>
     </Page>
     <Page Include="Views\Controls\AddIdentityUrl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\Controls\AddIdentitySignerChoice.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

@@ -72,17 +72,6 @@
             <!-- A place for a name, might be needed? -->
             <!--Label Content="Identity Alias" Foreground="White" Opacity="0.7" FontSize="12" HorizontalAlignment="Center"/>
                 <TextBox x:Name="IdentityName" FontSize="14" TextAlignment="Center" BorderThickness="0" Margin="0,0,0,15" /-->
-            <Label Content="Identity Provider"
-                   Foreground="White" Opacity="0.7" FontSize="12"
-                   HorizontalAlignment="Center"
-                   Visibility="{Binding SignerPickerVisibility}" />
-            <ComboBox x:Name="SignerPicker"
-                      ItemsSource="{Binding Signers}"
-                      SelectedItem="{Binding SelectedSigner}" DisplayMemberPath="Name"
-                      Visibility="{Binding SignerPickerVisibility}" Background="White"
-                      Foreground="Black" FontSize="12" Padding="8,2"
-                      HorizontalAlignment="Center" HorizontalContentAlignment="Center"
-                      Width="200" Margin="0,0,0,15" />
             <local:StyledButton x:Name="JoinNetworkBtn" OnClick="JoinNetworkUrl" Label="Join Network" />
 
         </StackPanel>
