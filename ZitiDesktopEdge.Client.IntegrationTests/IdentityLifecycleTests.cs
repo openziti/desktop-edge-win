@@ -29,14 +29,14 @@ public class IdentityLifecycleTests {
 	}
 
 	[TestMethod]
-	public async Task AddIdentity_Succeeds() {
+	public async Task AddIdentity_WithValidJwt_Succeeds() {
 		DataClient client = await ConnectClient();
 		await AddJwt(client, "normal-user-01");
 		// AddIdentityAsync throws ServiceException when Code != 0. Reaching this line is the assertion.
 	}
 
 	[TestMethod]
-	public async Task DisableIdentity_SetsActiveFalse() {
+	public async Task IdentityOnOff_WhenDisabling_SetsActiveFalse() {
 		DataClient client = await ConnectClient();
 		await AddJwt(client, "normal-user-02");
 
@@ -47,7 +47,7 @@ public class IdentityLifecycleTests {
 	}
 
 	[TestMethod]
-	public async Task EnableIdentity_SetsActiveTrue() {
+	public async Task IdentityOnOff_WhenReenabling_SetsActiveTrue() {
 		DataClient client = await ConnectClient();
 		await AddJwt(client, "normal-user-03");
 
@@ -57,6 +57,34 @@ public class IdentityLifecycleTests {
 		await client.IdentityOnOffAsync(enrolled.Identifier, true);
 		Identity on = await WaitForActive(client, "normal-user-03", true);
 		Assert.IsTrue(on.Active, "identity should be active after enable");
+	}
+
+	[TestMethod]
+	public async Task IdentityOnOff_AfterServiceRestart_PreservesDisabledState() {
+		DataClient client = await ConnectClient();
+		await AddJwt(client, "normal-user-04");
+
+		Identity enrolled = await WaitForIdentity(client, "normal-user-04");
+		await client.IdentityOnOffAsync(enrolled.Identifier, false);
+		await WaitForActive(client, "normal-user-04", false);
+
+		await CycleZitiService();
+
+		DataClient reconnected = await ConnectClient();
+		Identity persisted = await WaitForActive(reconnected, "normal-user-04", false);
+		Assert.IsFalse(persisted.Active, "identity should still be disabled after ziti service restart");
+	}
+
+	private static async Task CycleZitiService() {
+		var monitor = new MonitorClient("integration-test-monitor");
+		try {
+			await monitor.ConnectAsync();
+		} catch (Exception ex) {
+			Assert.Inconclusive("Could not connect to ziti-monitor pipe; is the monitor service running? " + ex.Message);
+		}
+		await monitor.WaitForConnectionAsync();
+		await monitor.StopServiceAsync();
+		await monitor.StartServiceAsync(TimeSpan.FromSeconds(60));
 	}
 
 	private static async Task<DataClient> ConnectClient() {

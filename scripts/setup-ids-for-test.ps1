@@ -391,6 +391,11 @@ function createNormalUsers {
     ziti edge create identity $name -o "$identityDir\$name.jwt"
     makeTestService $name "0"
 
+    $name="normal-user-04"
+    Write-Host -ForegroundColor Cyan "  [normal] creating identity: $name"
+    ziti edge create identity $name -o "$identityDir\$name.jwt"
+    makeTestService $name "0"
+
     Write-Host -ForegroundColor Green "[normal] done"
 }
 

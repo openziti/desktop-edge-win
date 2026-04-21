@@ -45,7 +45,7 @@ public static class QuickstartFixture {
 	// purged from ZET at assembly init (clears residue from a prior crashed run) and at
 	// assembly cleanup (routine teardown). Never touches identities outside this set, so
 	// unrelated production identities on the same ZET instance are safe.
-	private static readonly string[] TestIdentityNames = { "normal-user-01", "normal-user-02", "normal-user-03" };
+	private static readonly string[] TestIdentityNames = { "normal-user-01", "normal-user-02", "normal-user-03", "normal-user-04" };
 
 	private static Process? zitiProcess;
 	private static string? quickstartHome;
@@ -201,8 +201,8 @@ public static class QuickstartFixture {
 		using var process = Process.Start(psi)
 			?? throw new InvalidOperationException("failed to launch " + pwsh);
 
-		process.OutputDataReceived += (_, e) => { if (e.Data is not null) Logger.Info("[setup] {0}", e.Data); };
-		process.ErrorDataReceived += (_, e) => { if (e.Data is not null) Logger.Warn("[setup] {0}", e.Data); };
+		process.OutputDataReceived += (_, e) => Logger.Debug("[setup] {0}", e.Data);
+		process.ErrorDataReceived += (_, e) => Logger.Warn("[setup] {0}", e.Data);
 		process.BeginOutputReadLine();
 		process.BeginErrorReadLine();
 
@@ -266,8 +266,8 @@ public static class QuickstartFixture {
 		Logger.Info("starting: {0} edge quickstart --home {1}", zitiExe, zitiHome);
 		var process = Process.Start(psi) ?? throw new InvalidOperationException("failed to launch " + zitiExe);
 
-		process.OutputDataReceived += (_, e) => { if (e.Data is not null) Logger.Info("[quickstart] {0}", e.Data); };
-		process.ErrorDataReceived += (_, e) => { if (e.Data is not null) Logger.Warn("[quickstart] {0}", e.Data); };
+		process.OutputDataReceived += (_, e) => Logger.Debug("[quickstart] {0}", e.Data);
+		process.ErrorDataReceived += (_, e) => Logger.Warn("[quickstart] {0}", e.Data);
 		process.BeginOutputReadLine();
 		process.BeginErrorReadLine();
 		return process;
@@ -342,11 +342,16 @@ public static class QuickstartFixture {
 		return sb.ToString();
 	}
 
+	// Silent by default. Set INTEGRATION_TEST_LOG=Debug (or Info/Warn/etc.) to enable
+	// NLog output. The wrapper script does this automatically when -v is passed.
 	private static void ConfigureNLog() {
 		if (LogManager.Configuration is not null) return;
+
+		string? level = Environment.GetEnvironmentVariable("INTEGRATION_TEST_LOG");
+		if (string.IsNullOrWhiteSpace(level)) return;
+
 		var config = new LoggingConfiguration();
-		var console = new ConsoleTarget("logconsole");
-		config.AddRule(LogLevel.Info, LogLevel.Fatal, console);
+		config.AddRule(LogLevel.FromString(level), LogLevel.Fatal, new ConsoleTarget("logconsole"));
 		LogManager.Configuration = config;
 	}
 }
