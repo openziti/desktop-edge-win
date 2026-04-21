@@ -9,7 +9,8 @@ param (
     [switch]$Mfa,
     [switch]$Normal,
     [switch]$Ejs,
-    [switch]$Ca
+    [switch]$Ca,
+    [switch]$NonInteractive
 )
 
 $ProgressPreference = 'SilentlyContinue'
@@ -21,6 +22,7 @@ function waitForConfirm() {
     param (
         [string]$msg
     )
+    if ($NonInteractive) { return }
     Write-Host $msg
     [void][System.Console]::ReadLine()
 }
