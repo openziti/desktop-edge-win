@@ -383,7 +383,7 @@ namespace ZitiDesktopEdge.DataStructures {
     }
 
     public class ZitiTunnelStatus : SvcResponse {
-        public TunnelStatus Status { get; set; }
+        public TunnelStatus Data { get; set; }
     }
 
     public class TunnelStatus {
