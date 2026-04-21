@@ -284,26 +284,27 @@ namespace ZitiDesktopEdge {
         }
 
         private void ShowJoinByUrl() {
-            AddIdentityByURL.Opacity = 0;
-            AddIdentityByURL.Visibility = Visibility.Visible;
-            AddIdentityByURL.Margin = new Thickness(0, 0, 0, 0);
-
-            DoubleAnimation animation = new DoubleAnimation(1, TimeSpan.FromSeconds(.3));
-            AddIdentityByURL.BeginAnimation(Grid.OpacityProperty, animation);
-            AddIdentityByURL.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
-
+            AnimateDialogIn(AddIdentityByURL);
             ShowModal();
         }
         
+        private void AnimateDialogIn(UserControl dialog) {
+            dialog.Opacity = 0;
+            dialog.Visibility = Visibility.Visible;
+            dialog.Margin = new Thickness(0, 0, 0, 0);
+            dialog.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
+            dialog.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
+        }
+
+        private void AnimateDialogOut(UserControl dialog) {
+            DoubleAnimation fade = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
+            fade.Completed += (s, e) => dialog.Visibility = Visibility.Collapsed;
+            dialog.BeginAnimation(Grid.OpacityProperty, fade);
+            dialog.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3)));
+        }
+
         private void ShowJoinWith3rdPartyCA() {
-            AddIdentityBy3rdPartyCA.Opacity = 0;
-            AddIdentityBy3rdPartyCA.Visibility = Visibility.Visible;
-            AddIdentityBy3rdPartyCA.Margin = new Thickness(0, 0, 0, 0);
-
-            DoubleAnimation animation = new DoubleAnimation(1, TimeSpan.FromSeconds(.3));
-            AddIdentityBy3rdPartyCA.BeginAnimation(Grid.OpacityProperty, animation);
-            AddIdentityBy3rdPartyCA.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
-
+            AnimateDialogIn(AddIdentityBy3rdPartyCA);
             ShowModal();
         }
 
@@ -364,13 +365,7 @@ namespace ZitiDesktopEdge {
             ModalBg.Visibility = Visibility.Collapsed;
         }
         private void CloseJoinByUrl(bool isComplete, UserControl sender) {
-            DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
-            ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
-            animation.Completed += (s, e) => {
-                sender.Visibility = Visibility.Collapsed;
-            };
-            sender.BeginAnimation(Grid.OpacityProperty, animation);
-            sender.BeginAnimation(Grid.MarginProperty, animateThick);
+            AnimateDialogOut(sender);
             HideModal();
         }
 
@@ -2236,6 +2231,13 @@ namespace ZitiDesktopEdge {
             if (!UIUtils.IsLeftClick(e)) return;
             if (!UIUtils.MouseUpForMouseDown(e)) return;
             ShowJoinWith3rdPartyCA();
+        }
+
+        void OnNeedsSignerChoiceAction(AddIdentityViewModel vm, UserControl toClose) {
+            // Swap dialogs without touching the modal overlay so the main window stays dimmed.
+            AnimateDialogOut(toClose);
+            AddIdentitySignerPicker.Prepare(vm);
+            AnimateDialogIn(AddIdentitySignerPicker);
         }
 
         async void OnAddIdentityAction(EnrollIdentifierPayload payload, UserControl toClose) {
