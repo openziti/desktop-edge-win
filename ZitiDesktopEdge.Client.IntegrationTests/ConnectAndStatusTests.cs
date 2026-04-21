@@ -21,33 +21,22 @@ namespace ZitiDesktopEdge.Client.IntegrationTests;
 
 [TestClass]
 public class ConnectAndStatusTests {
-	private static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(10);
 
 	[TestMethod]
 	public async Task Connect_GetStatus_ReturnsTunnelInfo() {
-		QuickstartFixture.SkipIfUnavailable();
-
 		var client = new DataClient("integration-test");
 
 		try {
 			await client.ConnectAsync();
 		} catch (ServiceException ex) {
-			Assert.Inconclusive(
-				"Could not connect to ziti-edge-tunnel pipes; is the service running? "
-				+ ex.Message);
+			Assert.Inconclusive("Could not connect to ziti-edge-tunnel pipes; is the service running? " + ex.Message);
 		}
 
-		using var deadline = new CancellationTokenSource(ConnectTimeout);
-		while (!client.Connected && !deadline.IsCancellationRequested) {
-			await Task.Delay(50);
-		}
-		Assert.IsTrue(client.Connected,
-			$"DataClient did not report connected within {ConnectTimeout}.");
+		await client.WaitForConnectionAsync();
 
 		ZitiTunnelStatus status = await client.GetStatusAsync();
 
 		Assert.IsNotNull(status, "GetStatusAsync returned null.");
-		Assert.AreEqual(0, status.Code,
-			$"GetStatus returned non-zero code. Message='{status.Message}', Error='{status.Error}'.");
+		Assert.AreEqual(0, status.Code, $"GetStatus returned non-zero code. Message='{status.Message}', Error='{status.Error}'.");
 	}
 }
