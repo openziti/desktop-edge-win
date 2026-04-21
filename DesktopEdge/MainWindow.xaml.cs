@@ -1884,6 +1884,12 @@ namespace ZitiDesktopEdge {
                 Identity createdId = await serviceClient.AddIdentityAsync(payload);
 
                 if (createdId != null) {
+                    // External-auth enrollment: zet returns an auth URL instead of a full identity.
+                    // Launch the browser; zet will emit a normal identity event once the user signs in.
+                    if (!string.IsNullOrEmpty(createdId.Url)) {
+                        System.Diagnostics.Process.Start(createdId.Url);
+                        return;
+                    }
                     var zid = ZitiIdentity.FromClient(createdId);
                     AddIdentity(zid);
                     LoadIdentities(true);
