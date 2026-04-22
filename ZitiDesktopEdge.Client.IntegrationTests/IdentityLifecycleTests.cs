@@ -59,6 +59,19 @@ public class IdentityLifecycleTests {
 	}
 
 	[Fact]
+	public async Task AddIdentity_AfterServiceRestart_RemainsActive() {
+		DataClient client = await ConnectClient();
+		await AddIdentityFromJwt(client, "normal-user-05");
+		await WaitForEnrollment(client, "normal-user-05");
+
+		await RestartZitiService();
+
+		DataClient reconnected = await ConnectClient();
+		Identity persisted = await WaitForActiveState(reconnected, "normal-user-05", true);
+		Assert.True(persisted.Active, "identity should still be enabled after ziti service restart");
+	}
+
+	[Fact]
 	public async Task IdentityOnOff_AfterServiceRestart_PreservesDisabledState() {
 		DataClient client = await ConnectClient();
 		await AddIdentityFromJwt(client, "normal-user-04");

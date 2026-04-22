@@ -37,7 +37,7 @@ public class QuickstartFixture : IAsyncLifetime {
 	private static readonly TimeSpan ControllerStartTimeout = TimeSpan.FromSeconds(60);
 
 	// Only these names are touched by cleanup; other identities on the same ZET are safe.
-	private static readonly string[] TestIdentityNames = { "normal-user-01", "normal-user-02", "normal-user-03", "normal-user-04" };
+	private static readonly string[] TestIdentityNames = { "normal-user-01", "normal-user-02", "normal-user-03", "normal-user-04", "normal-user-05" };
 
 	private Process? _zitiProcess;
 	private string? _quickstartHome;
