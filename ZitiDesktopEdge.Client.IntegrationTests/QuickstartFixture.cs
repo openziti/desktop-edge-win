@@ -25,57 +25,56 @@ using ZitiDesktopEdge.ServiceClient;
 namespace ZitiDesktopEdge.Client.IntegrationTests;
 
 /// <summary>
-/// Test classes that need a running controller and test identities call:
-///   QuickstartFixture.StartQuickstart();
-///   QuickstartFixture.CreateTestIdentities();
-/// from their [ClassInitialize]. Both are idempotent. TearDown stops the
-/// quickstart process and cleans the temp ZitiHome at assembly cleanup.
+/// Collection fixture. InitializeAsync boots the quickstart and provisions test
+/// identities once for the collection; DisposeAsync tears it down.
 /// </summary>
-[TestClass]
-public static class QuickstartFixture {
+public class QuickstartFixture : IAsyncLifetime {
 	private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 	private const string ControllerHost = "localhost";
 	private const int ControllerPort = 1280;
 	private const string ControllerUrlDefault = "https://localhost:1280";
-	private const string RouterNameDefault = "router-quickstart";
-	private static readonly TimeSpan SetupTimeout = TimeSpan.FromMinutes(5);
 	private static readonly TimeSpan ControllerStartTimeout = TimeSpan.FromSeconds(60);
 
 	// Only these names are touched by cleanup; other identities on the same ZET are safe.
 	private static readonly string[] TestIdentityNames = { "normal-user-01", "normal-user-02", "normal-user-03", "normal-user-04" };
 
-	private static Process? zitiProcess;
-	private static string? quickstartHome;
+	private Process? _zitiProcess;
+	private string? _quickstartHome;
 
-	public static string? ZitiHome { get; private set; }
-	public static string? IdentityDir { get; private set; }
-	public static string ControllerUrl => ControllerUrlDefault;
+	public string ZitiHome { get; private set; } = "";
+	public string IdentityDir { get; private set; } = "";
+	public string ControllerUrl => ControllerUrlDefault;
 
-	[AssemblyInitialize]
-	public static void Init(TestContext context) {
+	public async Task InitializeAsync() {
 		ConfigureNLog();
-		RemoveTestIdentitiesViaIpc().GetAwaiter().GetResult();
+		await RemoveTestIdentitiesViaIpc();
+		StartQuickstart();
+		CreateTestIdentities();
 	}
 
-	[AssemblyCleanup]
-	public static void TearDown() {
-		RemoveTestIdentitiesViaIpc().GetAwaiter().GetResult();
-		StopZitiProcess();
-
-		if (quickstartHome is not null) {
-			TryDelete(quickstartHome);
+	public async Task DisposeAsync() {
+		try {
+			await RemoveTestIdentitiesViaIpc();
+		} catch (Exception ex) {
+			Logger.Warn(ex, "fixture: IPC cleanup failed");
 		}
-		if (ZitiHome is not null) {
+
+		try {
+			StopZitiProcess();
+		} catch (Exception ex) {
+			Logger.Warn(ex, "fixture: StopZitiProcess failed");
+		}
+
+		if (_quickstartHome is not null) {
+			TryDelete(_quickstartHome);
+		}
+		if (!string.IsNullOrEmpty(ZitiHome)) {
 			TryDelete(ZitiHome);
 		}
 	}
 
-	/// <summary>
-	/// Removes loaded test identities via IPC. Called at init and teardown so a crashed
-	/// prior run self-heals. Throws if ZET isn't reachable.
-	/// </summary>
-	public static async Task RemoveTestIdentitiesViaIpc() {
+	private static async Task RemoveTestIdentitiesViaIpc() {
 		var client = new DataClient("fixture-cleanup");
 		await client.ConnectAsync();
 		await client.WaitForConnectionAsync();
@@ -91,98 +90,61 @@ public static class QuickstartFixture {
 		}
 	}
 
-	/// <summary>
-	/// Starts a fresh `ziti edge quickstart` in a dedicated temp --home and waits
-	/// for the controller to accept TCP connections. Idempotent.
-	/// </summary>
-	public static void StartQuickstart() {
-		if (zitiProcess is not null) return;
+	private void StartQuickstart() {
+		if (_zitiProcess is not null) return;
 
 		string zitiExe = FindExecutableOnPath("ziti.exe")
 			?? throw new FileNotFoundException("ziti.exe not found on PATH.");
 
-		quickstartHome = Path.Combine(Path.GetTempPath(), "zdew-quickstart-" + Guid.NewGuid().ToString("N"));
-		Directory.CreateDirectory(quickstartHome);
+		_quickstartHome = Path.Combine(Path.GetTempPath(), "zdew-quickstart-" + Guid.NewGuid().ToString("N"));
+		Directory.CreateDirectory(_quickstartHome);
 
-		zitiProcess = LaunchQuickstartProcess(zitiExe, quickstartHome);
+		_zitiProcess = LaunchQuickstartProcess(zitiExe, _quickstartHome);
 		WaitForController(ControllerStartTimeout);
-		Logger.Info("Quickstart started. home={0}", quickstartHome);
+		Logger.Info("Quickstart started. home={0}", _quickstartHome);
 	}
 
-	/// <summary>
-	/// Provisions the standard test identities via scripts/setup-ids-for-test.ps1.
-	/// Requires <see cref="StartQuickstart"/> first. Uses a separate temp -ZitiHome
-	/// so the script's cleanup can't touch the running quickstart's data.
-	/// </summary>
-	public static void CreateTestIdentities() {
-		if (quickstartHome is null) {
-			throw new InvalidOperationException(
-				$"Call {nameof(StartQuickstart)}() before {nameof(CreateTestIdentities)}().");
+	private void CreateTestIdentities() {
+		if (_quickstartHome is null) {
+			throw new InvalidOperationException($"{nameof(StartQuickstart)}() must run before {nameof(CreateTestIdentities)}().");
 		}
 
-		string pwsh = FindExecutableOnPath("pwsh.exe")
-			?? throw new FileNotFoundException("pwsh.exe (PowerShell 7+) not found on PATH.");
-		string scriptPath = LocateSetupScript();
+		string zitiExe = FindExecutableOnPath("ziti.exe") ?? throw new FileNotFoundException("ziti.exe not found on PATH.");
 
 		string idHome = Path.Combine(Path.GetTempPath(), "zdew-ids-" + Guid.NewGuid().ToString("N"));
-		Directory.CreateDirectory(idHome);
 		ZitiHome = idHome;
 		IdentityDir = Path.Combine(idHome, "identities");
+		Directory.CreateDirectory(IdentityDir);
 
-		RunSetupScript(pwsh, scriptPath, idHome);
-		Logger.Info("Test identities created. ZitiHome={0}", ZitiHome);
+		RunZiti(zitiExe, "edge", "login", ControllerUrlDefault, "-u", "admin", "-p", "admin", "-y");
+		foreach (string name in TestIdentityNames) {
+			RunZiti(zitiExe, "edge", "create", "identity", name, "-o", Path.Combine(IdentityDir, name + ".jwt"));
+		}
+
+		Logger.Info("Test identities created. IdentityDir={0}", IdentityDir);
 	}
 
-	private static void RunSetupScript(string pwsh, string scriptPath, string tempHome) {
-		var args = new[] {
-			"-NoProfile",
-			"-ExecutionPolicy", "Bypass",
-			"-File", scriptPath,
-			"-ClearIdentitiesOk",
-			"-NonInteractive",
-			"-ZitiHome", tempHome,
-			"-Url", ControllerUrlDefault,
-			"-RouterName", RouterNameDefault,
-			"-Normal",
-		};
-
-		var psi = new ProcessStartInfo(pwsh) {
+	private static void RunZiti(string zitiExe, params string[] args) {
+		var psi = new ProcessStartInfo(zitiExe) {
 			UseShellExecute = false,
 			RedirectStandardOutput = true,
 			RedirectStandardError = true,
 			CreateNoWindow = true,
-			WorkingDirectory = Path.GetDirectoryName(scriptPath)!,
 			Arguments = QuoteArgs(args),
 		};
 
-		using var process = Process.Start(psi)
-			?? throw new InvalidOperationException("failed to launch " + pwsh);
+		using var process = Process.Start(psi) ?? throw new InvalidOperationException("failed to launch " + zitiExe);
 
-		process.OutputDataReceived += (_, e) => Logger.Debug("[setup] {0}", e.Data);
-		process.ErrorDataReceived += (_, e) => Logger.Warn("[setup] {0}", e.Data);
+		process.OutputDataReceived += (_, e) => Logger.Debug("[ziti] {0}", e.Data);
+		process.ErrorDataReceived += (_, e) => Logger.Warn("[ziti] {0}", e.Data);
 		process.BeginOutputReadLine();
 		process.BeginErrorReadLine();
 
-		if (!process.WaitForExit((int)SetupTimeout.TotalMilliseconds)) {
-			KillProcessTree(process);
-			throw new TimeoutException($"setup-ids-for-test.ps1 did not complete within {SetupTimeout}.");
-		}
+		process.WaitForExit();
 
 		if (process.ExitCode != 0) {
-			throw new InvalidOperationException(
-				$"setup-ids-for-test.ps1 exited with code {process.ExitCode}.");
+			throw new InvalidOperationException($"ziti {string.Join(" ", args)} exited with code {process.ExitCode}.");
 		}
-	}
-
-	private static string LocateSetupScript() {
-		string start = AppContext.BaseDirectory;
-		for (var dir = new DirectoryInfo(start); dir is not null; dir = dir.Parent) {
-			string candidate = Path.Combine(dir.FullName, "scripts", "setup-ids-for-test.ps1");
-			if (File.Exists(candidate)) {
-				return candidate;
-			}
-		}
-		throw new FileNotFoundException("could not locate scripts/setup-ids-for-test.ps1 from " + start);
 	}
 
 	private static string? FindExecutableOnPath(string fileName) {
@@ -230,11 +192,11 @@ public static class QuickstartFixture {
 		return process;
 	}
 
-	private static void WaitForController(TimeSpan timeout) {
+	private void WaitForController(TimeSpan timeout) {
 		DateTime deadline = DateTime.UtcNow + timeout;
 		while (DateTime.UtcNow < deadline) {
-			if (zitiProcess is { HasExited: true }) {
-				throw new InvalidOperationException($"ziti edge quickstart exited with code {zitiProcess.ExitCode} before the controller came up.");
+			if (_zitiProcess is { HasExited: true }) {
+				throw new InvalidOperationException($"ziti edge quickstart exited with code {_zitiProcess.ExitCode} before the controller came up.");
 			}
 			if (TryConnectController()) {
 				Logger.Info("controller at {0}:{1} is accepting connections", ControllerHost, ControllerPort);
@@ -255,18 +217,18 @@ public static class QuickstartFixture {
 		}
 	}
 
-	private static void StopZitiProcess() {
-		if (zitiProcess is null) return;
+	private void StopZitiProcess() {
+		if (_zitiProcess is null) return;
 		try {
-			if (!zitiProcess.HasExited) {
-				KillProcessTree(zitiProcess);
-				zitiProcess.WaitForExit(10_000);
+			if (!_zitiProcess.HasExited) {
+				KillProcessTree(_zitiProcess);
+				_zitiProcess.WaitForExit(10_000);
 			}
 		} catch (Exception ex) {
 			Logger.Warn(ex, "failed to stop ziti quickstart");
 		} finally {
-			zitiProcess.Dispose();
-			zitiProcess = null;
+			_zitiProcess.Dispose();
+			_zitiProcess = null;
 		}
 	}
 
@@ -312,3 +274,6 @@ public static class QuickstartFixture {
 		LogManager.Configuration = config;
 	}
 }
+
+[CollectionDefinition("Quickstart")]
+public class QuickstartCollection : ICollectionFixture<QuickstartFixture> { }

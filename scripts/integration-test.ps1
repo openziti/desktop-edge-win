@@ -8,6 +8,6 @@ param (
 $project = Join-Path $PSScriptRoot "..\ZitiDesktopEdge.Client.IntegrationTests\ZitiDesktopEdge.Client.IntegrationTests.csproj"
 $verbosity = if ($Detailed) { "detailed" } else { "normal" }
 
-if ($Detailed) { $env:INTEGRATION_TEST_LOG = "Debug" }
+$env:INTEGRATION_TEST_LOG = if ($Detailed) { "Debug" } else { "" }
 
-dotnet test $project --logger "console;verbosity=$verbosity" @ExtraArgs
+dotnet test $project -tl:off --logger "console;verbosity=$verbosity" @ExtraArgs

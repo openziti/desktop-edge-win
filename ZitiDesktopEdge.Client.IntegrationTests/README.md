@@ -5,27 +5,27 @@ Windows service and a local `ziti edge quickstart` controller. No mocks.
 
 ## Prerequisites
 
-- `ziti.exe` on `PATH` (for `ziti edge quickstart`).
-- `pwsh.exe` (PowerShell 7+) on `PATH`.
+- `ziti.exe` on `PATH` (for `ziti edge quickstart` and identity provisioning).
 - `ziti-edge-tunnel` installed and running as the Windows service. First-time
   install needs an admin shell.
 
-`ConnectAndStatusTests` reports **Inconclusive** if the ZET pipes are
-unreachable. `IdentityLifecycleTests` fails outright if the quickstart
-prerequisites are missing, since its `ClassInitialize` launches the controller.
+All tests fail outright if prerequisites are missing: `ConnectAndStatusTests`
+needs the ZET pipe, `IdentityLifecycleTests` needs ZET plus the quickstart
+CLI, and `IdentityOnOff_AfterServiceRestart_PreservesDisabledState`
+additionally needs the ziti-monitor pipe.
 
 ## Fixture behavior (`QuickstartFixture`)
 
-- **AssemblyInitialize**: configures logging, then removes any loaded test
-  identities over IPC. Self-heals a crashed prior run whose teardown never
-  fired. No-op on a clean start. Only names in `TestIdentityNames` are
-  touched; unrelated identities on the same ZET instance are safe.
-- **ClassInitialize** (for classes that need a controller): launches
-  `ziti edge quickstart` under a temp `--home`, waits for TCP port 1280, then
-  runs `scripts/setup-ids-for-test.ps1 -Normal` to provision the
-  `normal-user-*` identities. JWTs land in `QuickstartFixture.IdentityDir`.
-- **AssemblyCleanup**: same IPC cleanup as init, kills the quickstart process
-  tree, deletes both temp homes.
+xUnit collection fixture. Runs once for classes marked `[Collection("Quickstart")]`.
+
+- **InitializeAsync**: configures logging, IPC-cleans `TestIdentityNames`,
+  starts `ziti edge quickstart` in a temp `--home`, waits on TCP 1280, logs in
+  and `ziti edge create identity`s the `TestIdentityNames`. JWTs land in
+  `QuickstartFixture.IdentityDir`.
+- **DisposeAsync**: IPC cleanup, kills the quickstart tree, deletes temp homes.
+
+`ConnectAndStatusTests` stays out of the collection so it doesn't boot the
+controller.
 
 ## Running
 

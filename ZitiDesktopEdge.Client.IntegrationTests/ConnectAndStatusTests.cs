@@ -19,24 +19,17 @@ using ZitiDesktopEdge.ServiceClient;
 
 namespace ZitiDesktopEdge.Client.IntegrationTests;
 
-[TestClass]
 public class ConnectAndStatusTests {
 
-	[TestMethod]
+	[Fact]
 	public async Task Connect_GetStatus_ReturnsTunnelInfo() {
 		var client = new DataClient("integration-test");
-
-		try {
-			await client.ConnectAsync();
-		} catch (ServiceException ex) {
-			Assert.Inconclusive("Could not connect to ziti-edge-tunnel pipes; is the service running? " + ex.Message);
-		}
-
+		await client.ConnectAsync();
 		await client.WaitForConnectionAsync();
 
 		ZitiTunnelStatus status = await client.GetStatusAsync();
 
-		Assert.IsNotNull(status, "GetStatusAsync returned null.");
-		Assert.AreEqual(0, status.Code, $"GetStatus returned non-zero code. Message='{status.Message}', Error='{status.Error}'.");
+		Assert.NotNull(status);
+		Assert.True(status.Code == 0, $"GetStatus returned non-zero code. Message='{status.Message}', Error='{status.Error}'.");
 	}
 }

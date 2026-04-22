@@ -19,69 +19,64 @@ using ZitiDesktopEdge.ServiceClient;
 
 namespace ZitiDesktopEdge.Client.IntegrationTests;
 
-[TestClass]
+[Collection("Quickstart")]
 public class IdentityLifecycleTests {
+	private readonly QuickstartFixture _quickstartFixture;
 
-	[ClassInitialize]
-	public static void Init(TestContext _) {
-		QuickstartFixture.StartQuickstart();
-		QuickstartFixture.CreateTestIdentities();
+	public IdentityLifecycleTests(QuickstartFixture quickstartFixture) {
+		_quickstartFixture = quickstartFixture;
 	}
 
-	[TestMethod]
-	public async Task AddIdentity_WithValidJwt_Succeeds() {
+	[Fact]
+	public async Task AddIdentity_WithJwt_Succeeds() {
 		DataClient client = await ConnectClient();
-		await AddJwt(client, "normal-user-01");
-		// AddIdentityAsync throws ServiceException when Code != 0. Reaching this line is the assertion.
+		await AddIdentityFromJwt(client, "normal-user-01");
+		await WaitForEnrollment(client, "normal-user-01");
 	}
 
-	[TestMethod]
-	public async Task IdentityOnOff_WhenDisabling_SetsActiveFalse() {
+	[Fact]
+	public async Task IdentityOnOff_Disable_SetsActiveFalse() {
 		DataClient client = await ConnectClient();
-		await AddJwt(client, "normal-user-02");
+		await AddIdentityFromJwt(client, "normal-user-02");
 
-		Identity enrolled = await WaitForIdentity(client, "normal-user-02");
+		Identity enrolled = await WaitForEnrollment(client, "normal-user-02");
 		await client.IdentityOnOffAsync(enrolled.Identifier, false);
-		Identity off = await WaitForActive(client, "normal-user-02", false);
-		Assert.IsFalse(off.Active, "identity should be inactive after disable");
+		Identity off = await WaitForActiveState(client, "normal-user-02", false);
+		Assert.False(off.Active, "identity should be inactive after disable");
 	}
 
-	[TestMethod]
-	public async Task IdentityOnOff_WhenReenabling_SetsActiveTrue() {
+	[Fact]
+	public async Task IdentityOnOff_ReenableAfterDisable_SetsActiveTrue() {
 		DataClient client = await ConnectClient();
-		await AddJwt(client, "normal-user-03");
+		await AddIdentityFromJwt(client, "normal-user-03");
 
-		Identity enrolled = await WaitForIdentity(client, "normal-user-03");
+		Identity enrolled = await WaitForEnrollment(client, "normal-user-03");
 		await client.IdentityOnOffAsync(enrolled.Identifier, false);
-		await WaitForActive(client, "normal-user-03", false);
+		await WaitForActiveState(client, "normal-user-03", false);
 		await client.IdentityOnOffAsync(enrolled.Identifier, true);
-		Identity on = await WaitForActive(client, "normal-user-03", true);
-		Assert.IsTrue(on.Active, "identity should be active after enable");
+		Identity on = await WaitForActiveState(client, "normal-user-03", true);
+		Assert.True(on.Active, "identity should be active after enable");
 	}
 
-	[TestMethod]
+	[Fact]
 	public async Task IdentityOnOff_AfterServiceRestart_PreservesDisabledState() {
 		DataClient client = await ConnectClient();
-		await AddJwt(client, "normal-user-04");
+		await AddIdentityFromJwt(client, "normal-user-04");
 
-		Identity enrolled = await WaitForIdentity(client, "normal-user-04");
+		Identity enrolled = await WaitForEnrollment(client, "normal-user-04");
 		await client.IdentityOnOffAsync(enrolled.Identifier, false);
-		await WaitForActive(client, "normal-user-04", false);
+		await WaitForActiveState(client, "normal-user-04", false);
 
-		await CycleZitiService();
+		await RestartZitiService();
 
 		DataClient reconnected = await ConnectClient();
-		Identity persisted = await WaitForActive(reconnected, "normal-user-04", false);
-		Assert.IsFalse(persisted.Active, "identity should still be disabled after ziti service restart");
+		Identity persisted = await WaitForActiveState(reconnected, "normal-user-04", false);
+		Assert.False(persisted.Active, "identity should still be disabled after ziti service restart");
 	}
 
-	private static async Task CycleZitiService() {
+	private static async Task RestartZitiService() {
 		var monitor = new MonitorClient("integration-test-monitor");
-		try {
-			await monitor.ConnectAsync();
-		} catch (Exception ex) {
-			Assert.Inconclusive("Could not connect to ziti-monitor pipe; is the monitor service running? " + ex.Message);
-		}
+		await monitor.ConnectAsync();
 		await monitor.WaitForConnectionAsync();
 		await monitor.StopServiceAsync();
 		await monitor.StartServiceAsync(TimeSpan.FromSeconds(60));
@@ -89,17 +84,13 @@ public class IdentityLifecycleTests {
 
 	private static async Task<DataClient> ConnectClient() {
 		var client = new DataClient("integration-test");
-		try {
-			await client.ConnectAsync();
-		} catch (ServiceException ex) {
-			Assert.Inconclusive("Could not connect to ziti-edge-tunnel pipes; is the service running? " + ex.Message);
-		}
+		await client.ConnectAsync();
 		await client.WaitForConnectionAsync();
 		return client;
 	}
 
-	private static async Task AddJwt(DataClient client, string name) {
-		string jwtPath = Path.Combine(QuickstartFixture.IdentityDir!, name + ".jwt");
+	private async Task AddIdentityFromJwt(DataClient client, string name) {
+		string jwtPath = Path.Combine(_quickstartFixture.IdentityDir, name + ".jwt");
 		string jwtContent = File.ReadAllText(jwtPath).Trim();
 		await client.AddIdentityAsync(new EnrollIdentifierPayload {
 			UseKeychain = false,
@@ -112,12 +103,12 @@ public class IdentityLifecycleTests {
 	// becomes toggle-ready only after the controller handshake completes; ZET populates
 	// ControllerVersion on the status record at that point (same as Loaded=true on the wire).
 	// Poll until we see that. The UI observes the same delay via OnIdentityEvent.
-	private static async Task<Identity> WaitForIdentity(DataClient client, string name) {
+	private static async Task<Identity> WaitForEnrollment(DataClient client, string name) {
 		while (true) {
 			ZitiTunnelStatus status = await client.GetStatusAsync();
-			Identity? match = status?.Data?.Identities?.FirstOrDefault(i => i.Name == name);
-			if (match is not null && !string.IsNullOrEmpty(match.Identifier) && !string.IsNullOrEmpty(match.ControllerVersion)) {
-				return match;
+			Identity? identity = status?.Data?.Identities?.FirstOrDefault(i => i.Name == name);
+			if (identity is not null && !string.IsNullOrEmpty(identity.Identifier) && !string.IsNullOrEmpty(identity.ControllerVersion)) {
+				return identity;
 			}
 			await Task.Delay(100);
 		}
@@ -126,12 +117,12 @@ public class IdentityLifecycleTests {
 	// IdentityOnOff's IPC response echoes the request in Data, not an Identity, so
 	// IdentityResponse.Data deserializes to defaults (Active=false). The real state
 	// change is visible on the next GetStatusAsync after ZET applies the toggle.
-	private static async Task<Identity> WaitForActive(DataClient client, string name, bool desired) {
+	private static async Task<Identity> WaitForActiveState(DataClient client, string name, bool expected) {
 		while (true) {
 			ZitiTunnelStatus status = await client.GetStatusAsync();
-			Identity? match = status?.Data?.Identities?.FirstOrDefault(i => i.Name == name);
-			if (match is not null && match.Active == desired) {
-				return match;
+			Identity? identity = status?.Data?.Identities?.FirstOrDefault(i => i.Name == name);
+			if (identity is not null && identity.Active == expected) {
+				return identity;
 			}
 			await Task.Delay(100);
 		}
