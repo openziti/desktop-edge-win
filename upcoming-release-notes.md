@@ -1,15 +1,9 @@
-# Release 2.10.5.0
+# Next Release
 ## What's New
-* updated to ziti-edge-tunnel v1.15.1
+n/a
 
 ## Bugs fixed
-n/a
+* [Issue 823](https://github.com/openziti/desktop-edge-win/issues/823) - Fixed a crash when rapidly scrolling the main identity list
 
 ## Other changes
 n/a
-
-## Dependencies
-* ziti-tunneler: v1.15.1
-* ziti-sdk:      1.15.0
-* tlsuv:         v0.41.1[OpenSSL 3.6.1 27 Jan 2026]
-* tlsuv:         v0.41.1[win32crypto(CNG): ncrypt[1.0] ]
