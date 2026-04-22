@@ -1,7 +1,7 @@
 # ZitiDesktopEdge.Client.IntegrationTests
 
-Drives `ZitiDesktopEdge.Client.DataClient` against the real `ziti-edge-tunnel`
-Windows service and a local `ziti edge quickstart` controller. No mocks.
+Drives `ZitiDesktopEdge.Client.DataClient` against the `ziti-edge-tunnel`
+Windows service and a local `ziti edge quickstart` controller.
 
 ## Prerequisites
 
