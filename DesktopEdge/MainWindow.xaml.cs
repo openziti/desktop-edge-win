@@ -948,9 +948,25 @@ namespace ZitiDesktopEdge {
         private void MonitorClient_OnServiceStatusEvent(object sender, MonitorServiceStatusEvent evt) {
             this.Dispatcher.Invoke(() => {
                 try {
+                    if (evt.Message?.StartsWith("UpdateProgress:") == true) {
+                        string phase = evt.Message.Substring("UpdateProgress:".Length);
+                        logger.Info("Upgrade progress phase received: {0}", phase);
+                        ShowLoad("Update In Progress", phase);
+                        return;
+                    }
+                    if (evt.Message?.StartsWith("UpdateFailed:") == true) {
+                        string reason = evt.Message.Substring("UpdateFailed:".Length);
+                        logger.Warn("Update failed: {0}", reason);
+                        UpgradeSentinel.StopUpgradeSentinel();
+                        HideLoad();
+                        this.Show();
+                        this.Activate();
+                        ShowError("Update Failed", reason);
+                        return;
+                    }
                     if (evt.Message?.ToLower() == "upgrading") {
                         logger.Info("The monitor has indicated an upgrade is in progress. Shutting down the UI");
-                        UpgradeSentinel.StartUpgradeSentinel();
+                        UpgradeSentinel.StartUpgradeSentinel(false);
 
                         App.Current.Exit -= Current_Exit;
                         logger.Info("Removed Current_Exit handler");
@@ -1009,6 +1025,9 @@ namespace ZitiDesktopEdge {
         }
 
         private void SetAutomaticUpdateEnabled(string enabled, string url) {
+            if (enabled == null) {
+                return;
+            }
             try {
                 bool yn = bool.Parse(enabled);
                 state.AutomaticUpdatesDisabled = yn;

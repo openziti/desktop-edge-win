@@ -803,27 +803,51 @@ namespace ZitiUpdateService {
             semaphore.Release();
         }
 
+        private void SendUpgradeProgress(string phase) {
+            MonitorServiceStatusEvent progressEvent = new MonitorServiceStatusEvent() {
+                Code = 0,
+                Error = "",
+                Message = "UpdateProgress:" + phase,
+                Status = ServiceActions.ServiceStatus(),
+            };
+            EventRegistry.SendEventToConsumers(progressEvent);
+        }
+
+        private void SendUpgradeFailure(string reason) {
+            MonitorServiceStatusEvent failureEvent = new MonitorServiceStatusEvent() {
+                Code = 1,
+                Error = reason,
+                Message = "UpdateFailed:" + reason,
+                Status = ServiceActions.ServiceStatus(),
+            };
+            EventRegistry.SendEventToConsumers(failureEvent);
+        }
+
         private void installZDE(UpdateCheck check) {
             string fileDestination = Path.Combine(updateFolder, check?.FileName);
 
             if (check.AlreadyDownloaded(updateFolder, check.FileName)) {
                 Logger.Trace("package has already been downloaded to {0}", fileDestination);
             } else {
+                SendUpgradeProgress("Downloading");
                 Logger.Info("copying update package begins");
                 try {
                     check.CopyUpdatePackage(updateFolder, check.FileName);
                 } catch (Exception e) {
                     Logger.Error("copying update package failed! {0}", e);
+                    SendUpgradeFailure("Download failed");
                     return;
                 }
                 Logger.Info("copying update package complete");
             }
 
             Logger.Info("package is in {0} - moving to install phase", fileDestination);
+            SendUpgradeProgress("Verifying");
 
             if (!check.HashIsValid(updateFolder, check.FileName)) {
                 Logger.Warn("The file was downloaded but the hash is not valid. The file will be removed: {0}", fileDestination);
                 File.Delete(fileDestination);
+                SendUpgradeFailure("Hash verification failed");
                 return;
             }
             Logger.Debug("downloaded file hash was correct. update can continue.");
@@ -833,6 +857,7 @@ namespace ZitiUpdateService {
 				new SignedFileValidator(fileDestination).Verify();
 				Logger.Info("SignedFileValidator complete");
 
+				SendUpgradeProgress("Installing");
 				StopZiti();
 				StopUI().Wait();
 
@@ -841,6 +866,7 @@ namespace ZitiUpdateService {
 				Process.Start(fileDestination, "/passive");
 			} catch (Exception ex) {
 				Logger.Error(ex, "Unexpected error during installation");
+				SendUpgradeFailure("Installation failed");
 			}
 #else
             Logger.Warn("SKIPUPDATE IS SET - NOT PERFORMING UPDATE of version: {} published at {}", check.GetNextVersion(), check.PublishDate);
