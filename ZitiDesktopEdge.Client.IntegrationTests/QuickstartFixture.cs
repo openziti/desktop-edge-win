@@ -93,6 +93,11 @@ public class QuickstartFixture : IAsyncLifetime {
 	private void StartQuickstart() {
 		if (_zitiProcess is not null) return;
 
+		bool portAlreadyInUse = TryConnectController();
+		if (portAlreadyInUse) {
+			throw new InvalidOperationException($"controller port {ControllerPort} is already in use.");
+		}
+
 		string zitiExe = FindExecutableOnPath("ziti.exe")
 			?? throw new FileNotFoundException("ziti.exe not found on PATH.");
 
