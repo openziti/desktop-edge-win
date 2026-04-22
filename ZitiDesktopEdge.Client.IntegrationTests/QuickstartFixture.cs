@@ -61,9 +61,15 @@ public class QuickstartFixture : IAsyncLifetime {
 		}
 
 		try {
-			StopZitiProcess();
+			KillQuickstartProcessTree();
 		} catch (Exception ex) {
-			Logger.Warn(ex, "fixture: StopZitiProcess failed");
+			Logger.Warn(ex, "fixture: KillQuickstartProcessTree failed");
+		}
+
+		try {
+			await RestartZitiService();
+		} catch (Exception ex) {
+			Logger.Warn(ex, "fixture: RestartZitiService failed");
 		}
 
 		if (_quickstartHome is not null) {
@@ -72,6 +78,14 @@ public class QuickstartFixture : IAsyncLifetime {
 		if (!string.IsNullOrEmpty(ZitiHome)) {
 			TryDelete(ZitiHome);
 		}
+	}
+
+	public static async Task RestartZitiService() {
+		var monitor = new MonitorClient("fixture-cleanup-monitor");
+		await monitor.ConnectAsync();
+		await monitor.WaitForConnectionAsync();
+		await monitor.StopServiceAsync();
+		await monitor.StartServiceAsync(TimeSpan.FromSeconds(60));
 	}
 
 	private static async Task RemoveTestIdentitiesViaIpc() {
@@ -222,7 +236,7 @@ public class QuickstartFixture : IAsyncLifetime {
 		}
 	}
 
-	private void StopZitiProcess() {
+	private void KillQuickstartProcessTree() {
 		if (_zitiProcess is null) return;
 		try {
 			if (!_zitiProcess.HasExited) {

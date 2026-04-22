@@ -35,6 +35,19 @@ public class IdentityLifecycleTests {
 	}
 
 	[Fact]
+	public async Task AddIdentity_WithInvalidJwt_Fails() {
+		DataClient client = await ConnectClient();
+		EnrollIdentifierPayload payload = new EnrollIdentifierPayload {
+			UseKeychain = false,
+			IdentityFilename = "invalid-jwt-identity",
+			JwtContent = "this.is.not-a-real-jwt",
+		};
+		ServiceException ex = await Assert.ThrowsAsync<ServiceException>(() => client.AddIdentityAsync(payload));
+		Assert.Equal("Failed to Enroll", ex.Message);
+		Assert.NotEqual(0, ex.Code);
+	}
+
+	[Fact]
 	public async Task IdentityOnOff_Disable_SetsActiveFalse() {
 		DataClient client = await ConnectClient();
 		await AddIdentityFromJwt(client, "normal-user-02");
@@ -113,21 +126,13 @@ public class IdentityLifecycleTests {
 		await client.IdentityOnOffAsync(toDisable.Identifier, false);
 		await WaitForActiveState(client, "normal-user-04", false);
 
-		await RestartZitiService();
+		await QuickstartFixture.RestartZitiService();
 
 		DataClient reconnected = await ConnectClient();
 		Identity disabled = await WaitForActiveState(reconnected, "normal-user-04", false);
 		Identity enabled = await WaitForActiveState(reconnected, "normal-user-05", true);
 		Assert.False(disabled.Active, "disabled identity should persist disabled after restart");
 		Assert.True(enabled.Active, "enabled identity should persist enabled after restart");
-	}
-
-	private static async Task RestartZitiService() {
-		var monitor = new MonitorClient("integration-test-monitor");
-		await monitor.ConnectAsync();
-		await monitor.WaitForConnectionAsync();
-		await monitor.StopServiceAsync();
-		await monitor.StartServiceAsync(TimeSpan.FromSeconds(60));
 	}
 
 	private static async Task<DataClient> ConnectClient() {
