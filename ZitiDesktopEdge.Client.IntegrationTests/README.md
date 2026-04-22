@@ -58,6 +58,8 @@ dotnet test ZitiDesktopEdge.Client.IntegrationTests\ZitiDesktopEdge.Client.Integ
 - `ConnectAndStatusTests`: smoke test. `DataClient` connects and `GetStatus`
   round-trips.
 - `IdentityLifecycleTests`: enroll a JWT identity, toggle it off and on via
-  `IdentityOnOff`, remove an identity via `RemoveIdentity`, and verify that
-  both disabled and enabled states persist across a ziti service restart in
-  a single cycle. State is observed through `GetStatus`.
+  `IdentityOnOff`, remove an identity via `RemoveIdentity`, drive a churn
+  sequence across multiple identities and verify each converges to its
+  last-written state, and verify that both disabled and enabled states
+  persist across a ziti service restart in a single cycle. State is observed
+  through `GetStatus`.

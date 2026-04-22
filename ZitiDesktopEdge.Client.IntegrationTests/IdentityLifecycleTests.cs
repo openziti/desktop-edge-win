@@ -59,6 +59,37 @@ public class IdentityLifecycleTests {
 	}
 
 	[Fact]
+	public async Task IdentityOnOff_RapidToggles_StatesConverge() {
+		DataClient client = await ConnectClient();
+
+		await AddIdentityFromJwt(client, "normal-user-07");
+		await AddIdentityFromJwt(client, "normal-user-08");
+		await AddIdentityFromJwt(client, "normal-user-09");
+
+		Identity user07 = await WaitForEnrollment(client, "normal-user-07");
+		Identity user08 = await WaitForEnrollment(client, "normal-user-08");
+		Identity user09 = await WaitForEnrollment(client, "normal-user-09");
+
+		await client.IdentityOnOffAsync(user07.Identifier, false);
+		await client.IdentityOnOffAsync(user08.Identifier, false);
+		await client.IdentityOnOffAsync(user09.Identifier, false);
+		await client.IdentityOnOffAsync(user07.Identifier, true);
+		await client.IdentityOnOffAsync(user09.Identifier, true);
+		await client.IdentityOnOffAsync(user08.Identifier, false);
+		await client.IdentityOnOffAsync(user07.Identifier, false);
+		await client.IdentityOnOffAsync(user09.Identifier, false);
+		await client.IdentityOnOffAsync(user07.Identifier, true);
+
+		Identity finalUser07 = await WaitForActiveState(client, "normal-user-07", true);
+		Identity finalUser08 = await WaitForActiveState(client, "normal-user-08", false);
+		Identity finalUser09 = await WaitForActiveState(client, "normal-user-09", false);
+
+		Assert.True(finalUser07.Active);
+		Assert.False(finalUser08.Active);
+		Assert.False(finalUser09.Active);
+	}
+
+	[Fact]
 	public async Task RemoveIdentity_RemovesFromStatus() {
 		DataClient client = await ConnectClient();
 		await AddIdentityFromJwt(client, "normal-user-06");
