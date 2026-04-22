@@ -289,16 +289,17 @@ namespace ZitiDesktopEdge.Models {
                         logger.Info("beginning external auth using url: {}", resp.Data?.url);
                         Process.Start(resp.Data.url);
                     } else {
+                        AuthInProgress = false;
                         errMsg = "External authentication could not start. No URL was returned to login. Inform your network administrator.";
                     }
                 } else {
+                    AuthInProgress = false;
                     errMsg = resp.Error;
                 }
             } catch (Exception ex) {
                 AuthInProgress = false;
                 throw new Exception("unexpected error during external authentication!", ex);
             }
-            AuthInProgress = false;
             if (errMsg != null) {
                 throw new Exception(errMsg);
             }
