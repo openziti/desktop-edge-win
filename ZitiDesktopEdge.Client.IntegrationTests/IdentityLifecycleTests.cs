@@ -21,6 +21,8 @@ namespace ZitiDesktopEdge.Client.IntegrationTests;
 
 [Collection("Quickstart")]
 public class IdentityLifecycleTests {
+	private static readonly TimeSpan WaitTimeout = TimeSpan.FromSeconds(30);
+
 	private readonly QuickstartFixture _quickstartFixture;
 
 	public IdentityLifecycleTests(QuickstartFixture quickstartFixture) {
@@ -157,7 +159,8 @@ public class IdentityLifecycleTests {
 	// ControllerVersion on the status record at that point (same as Loaded=true on the wire).
 	// Poll until we see that. The UI observes the same delay via OnIdentityEvent.
 	private static async Task<Identity> WaitForEnrollment(DataClient client, string name) {
-		while (true) {
+		DateTime deadline = DateTime.UtcNow + WaitTimeout;
+		while (DateTime.UtcNow < deadline) {
 			ZitiTunnelStatus status = await client.GetStatusAsync();
 			Identity? identity = status?.Data?.Identities?.FirstOrDefault(i => i.Name == name);
 			if (identity is not null && !string.IsNullOrEmpty(identity.Identifier) && !string.IsNullOrEmpty(identity.ControllerVersion)) {
@@ -165,10 +168,12 @@ public class IdentityLifecycleTests {
 			}
 			await Task.Delay(100);
 		}
+		throw new TimeoutException($"identity '{name}' did not reach enrolled state within {WaitTimeout.TotalSeconds}s");
 	}
 
 	private static async Task WaitForIdentityAbsent(DataClient client, string name) {
-		while (true) {
+		DateTime deadline = DateTime.UtcNow + WaitTimeout;
+		while (DateTime.UtcNow < deadline) {
 			ZitiTunnelStatus status = await client.GetStatusAsync();
 			bool present = status?.Data?.Identities?.Any(i => i.Name == name) ?? false;
 			if (!present) {
@@ -176,13 +181,15 @@ public class IdentityLifecycleTests {
 			}
 			await Task.Delay(100);
 		}
+		throw new TimeoutException($"identity '{name}' was still present after {WaitTimeout.TotalSeconds}s");
 	}
 
 	// IdentityOnOff's IPC response echoes the request in Data, not an Identity, so
 	// IdentityResponse.Data deserializes to defaults (Active=false). The real state
 	// change is visible on the next GetStatusAsync after ZET applies the toggle.
 	private static async Task<Identity> WaitForActiveState(DataClient client, string name, bool expected) {
-		while (true) {
+		DateTime deadline = DateTime.UtcNow + WaitTimeout;
+		while (DateTime.UtcNow < deadline) {
 			ZitiTunnelStatus status = await client.GetStatusAsync();
 			Identity? identity = status?.Data?.Identities?.FirstOrDefault(i => i.Name == name);
 			if (identity is not null && identity.Active == expected) {
@@ -190,5 +197,6 @@ public class IdentityLifecycleTests {
 			}
 			await Task.Delay(100);
 		}
+		throw new TimeoutException($"identity '{name}' did not reach Active={expected} within {WaitTimeout.TotalSeconds}s");
 	}
 }
