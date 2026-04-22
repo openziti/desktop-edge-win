@@ -59,32 +59,36 @@ public class IdentityLifecycleTests {
 	}
 
 	[Fact]
-	public async Task AddIdentity_AfterServiceRestart_RemainsActive() {
+	public async Task RemoveIdentity_RemovesFromStatus() {
 		DataClient client = await ConnectClient();
-		await AddIdentityFromJwt(client, "normal-user-05");
-		await WaitForEnrollment(client, "normal-user-05");
+		await AddIdentityFromJwt(client, "normal-user-06");
 
-		await RestartZitiService();
+		Identity enrolled = await WaitForEnrollment(client, "normal-user-06");
+		await client.RemoveIdentityAsync(enrolled.Identifier);
+		await WaitForIdentityAbsent(client, "normal-user-06");
 
-		DataClient reconnected = await ConnectClient();
-		Identity persisted = await WaitForActiveState(reconnected, "normal-user-05", true);
-		Assert.True(persisted.Active, "identity should still be enabled after ziti service restart");
+		ZitiTunnelStatus status = await client.GetStatusAsync();
+		Assert.DoesNotContain(status.Data.Identities, i => i.Name == "normal-user-06");
 	}
 
 	[Fact]
-	public async Task IdentityOnOff_AfterServiceRestart_PreservesDisabledState() {
+	public async Task ServiceRestart_PreservesIdentityStates() {
 		DataClient client = await ConnectClient();
 		await AddIdentityFromJwt(client, "normal-user-04");
+		await AddIdentityFromJwt(client, "normal-user-05");
 
-		Identity enrolled = await WaitForEnrollment(client, "normal-user-04");
-		await client.IdentityOnOffAsync(enrolled.Identifier, false);
+		Identity toDisable = await WaitForEnrollment(client, "normal-user-04");
+		await WaitForEnrollment(client, "normal-user-05");
+		await client.IdentityOnOffAsync(toDisable.Identifier, false);
 		await WaitForActiveState(client, "normal-user-04", false);
 
 		await RestartZitiService();
 
 		DataClient reconnected = await ConnectClient();
-		Identity persisted = await WaitForActiveState(reconnected, "normal-user-04", false);
-		Assert.False(persisted.Active, "identity should still be disabled after ziti service restart");
+		Identity disabled = await WaitForActiveState(reconnected, "normal-user-04", false);
+		Identity enabled = await WaitForActiveState(reconnected, "normal-user-05", true);
+		Assert.False(disabled.Active, "disabled identity should persist disabled after restart");
+		Assert.True(enabled.Active, "enabled identity should persist enabled after restart");
 	}
 
 	private static async Task RestartZitiService() {
@@ -122,6 +126,17 @@ public class IdentityLifecycleTests {
 			Identity? identity = status?.Data?.Identities?.FirstOrDefault(i => i.Name == name);
 			if (identity is not null && !string.IsNullOrEmpty(identity.Identifier) && !string.IsNullOrEmpty(identity.ControllerVersion)) {
 				return identity;
+			}
+			await Task.Delay(100);
+		}
+	}
+
+	private static async Task WaitForIdentityAbsent(DataClient client, string name) {
+		while (true) {
+			ZitiTunnelStatus status = await client.GetStatusAsync();
+			bool present = status?.Data?.Identities?.Any(i => i.Name == name) ?? false;
+			if (!present) {
+				return;
 			}
 			await Task.Delay(100);
 		}

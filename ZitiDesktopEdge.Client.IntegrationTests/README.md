@@ -11,8 +11,8 @@ Windows service and a local `ziti edge quickstart` controller.
 
 All tests fail outright if prerequisites are missing: `ConnectAndStatusTests`
 needs the ZET pipe, `IdentityLifecycleTests` needs ZET plus the quickstart
-CLI, and `IdentityOnOff_AfterServiceRestart_PreservesDisabledState`
-additionally needs the ziti-monitor pipe.
+CLI, and `ServiceRestart_PreservesIdentityStates` additionally needs the
+ziti-monitor pipe.
 
 ## Fixture behavior (`QuickstartFixture`)
 
@@ -58,6 +58,6 @@ dotnet test ZitiDesktopEdge.Client.IntegrationTests\ZitiDesktopEdge.Client.Integ
 - `ConnectAndStatusTests`: smoke test. `DataClient` connects and `GetStatus`
   round-trips.
 - `IdentityLifecycleTests`: enroll a JWT identity, toggle it off and on via
-  `IdentityOnOff`, verify a disabled identity stays disabled after the ziti
-  service is cycled, and verify a freshly enrolled identity remains active
-  after the ziti service is cycled. State is observed through `GetStatus`.
+  `IdentityOnOff`, remove an identity via `RemoveIdentity`, and verify that
+  both disabled and enabled states persist across a ziti service restart in
+  a single cycle. State is observed through `GetStatus`.
