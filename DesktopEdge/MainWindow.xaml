@@ -350,6 +350,22 @@
                 </Grid.ColumnDefinitions>
                 <Label Name="AddIdButton" Padding="0,0,0,0" Grid.Column="0" Margin="0,0,0,0" Content=""  Foreground="#0069FF" FontSize="12 " HorizontalAlignment="Center" VerticalAlignment="Center" ></Label>
             </Grid>
+            <Border x:Name="AlternateTunnelFooter"
+                    Visibility="Collapsed"
+                    Margin="14,0,14,10"
+                    Padding="10,6,10,6"
+                    CornerRadius="4"
+                    BorderThickness="1"
+                    BorderBrush="#4AC84A"
+                    Background="#1F2E23">
+                <TextBlock x:Name="AlternateTunnelFooterText"
+                           Foreground="#CDEFD1"
+                           FontFamily="Segoe UI"
+                           FontSize="11"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           Text=""/>
+            </Border>
         </StackPanel>
         <Canvas x:Name="AlertCanvas" ClipToBounds="False" Visibility="Collapsed">
             <Image Source="/Assets/Images/UpdateWarn.png" Canvas.Left="50" Canvas.Top="32" Width="14" Height="14"></Image>
