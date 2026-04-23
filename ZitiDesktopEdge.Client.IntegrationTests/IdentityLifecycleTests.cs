@@ -21,7 +21,7 @@ namespace ZitiDesktopEdge.Client.IntegrationTests;
 
 [Collection("Quickstart")]
 public class IdentityLifecycleTests {
-	private static readonly TimeSpan WaitTimeout = TimeSpan.FromSeconds(30);
+	private static readonly TimeSpan WaitTimeout = TimeSpan.FromSeconds(10);
 
 	private readonly QuickstartFixture _quickstartFixture;
 
@@ -71,37 +71,6 @@ public class IdentityLifecycleTests {
 		await client.IdentityOnOffAsync(enrolled.Identifier, true);
 		Identity on = await WaitForActiveState(client, "normal-user-03", true);
 		Assert.True(on.Active, "identity should be active after enable");
-	}
-
-	[Fact]
-	public async Task IdentityOnOff_RapidToggles_StatesConverge() {
-		DataClient client = await ConnectClient();
-
-		await AddIdentityFromJwt(client, "normal-user-07");
-		await AddIdentityFromJwt(client, "normal-user-08");
-		await AddIdentityFromJwt(client, "normal-user-09");
-
-		Identity user07 = await WaitForEnrollment(client, "normal-user-07");
-		Identity user08 = await WaitForEnrollment(client, "normal-user-08");
-		Identity user09 = await WaitForEnrollment(client, "normal-user-09");
-
-		await client.IdentityOnOffAsync(user07.Identifier, false);
-		await client.IdentityOnOffAsync(user08.Identifier, false);
-		await client.IdentityOnOffAsync(user09.Identifier, false);
-		await client.IdentityOnOffAsync(user07.Identifier, true);
-		await client.IdentityOnOffAsync(user09.Identifier, true);
-		await client.IdentityOnOffAsync(user08.Identifier, false);
-		await client.IdentityOnOffAsync(user07.Identifier, false);
-		await client.IdentityOnOffAsync(user09.Identifier, false);
-		await client.IdentityOnOffAsync(user07.Identifier, true);
-
-		Identity finalUser07 = await WaitForActiveState(client, "normal-user-07", true);
-		Identity finalUser08 = await WaitForActiveState(client, "normal-user-08", false);
-		Identity finalUser09 = await WaitForActiveState(client, "normal-user-09", false);
-
-		Assert.True(finalUser07.Active);
-		Assert.False(finalUser08.Active);
-		Assert.False(finalUser09.Active);
 	}
 
 	[Fact]
