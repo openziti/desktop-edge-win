@@ -50,6 +50,22 @@ public class IdentityLifecycleTests {
 	}
 
 	[Fact]
+	public async Task AddIdentity_SameJwtTwice_SecondFails() {
+		DataClient client = await ConnectClient();
+		await AddIdentityFromJwt(client, "normal-user-07");
+		await WaitForEnrollment(client, "normal-user-07");
+
+		ServiceException? duplicateEnrollmentException = null;
+		try {
+			await AddIdentityFromJwt(client, "normal-user-07");
+		} catch (ServiceException secondAddFailure) {
+			duplicateEnrollmentException = secondAddFailure;
+		}
+		Assert.NotNull(duplicateEnrollmentException);
+		Assert.NotEqual(0, duplicateEnrollmentException.Code);
+	}
+
+	[Fact]
 	public async Task IdentityOnOff_Disable_SetsActiveFalse() {
 		DataClient client = await ConnectClient();
 		await AddIdentityFromJwt(client, "normal-user-02");
