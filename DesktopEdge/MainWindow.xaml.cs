@@ -1573,7 +1573,7 @@ namespace ZitiDesktopEdge {
                 } else {
                     Application.Current.Properties["PcapInterface"] = status?.PcapInterface;
                 }
-                identities.Clear();
+                
                 foreach (var id in status.Identities) {
                     updateViewWithIdentity(id);
                 }
