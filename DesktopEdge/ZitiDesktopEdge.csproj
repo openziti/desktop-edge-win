@@ -284,6 +284,7 @@
     <Compile Include="Views\ItemRenderers\IdentityItem.xaml.cs">
       <DependentUpon>IdentityItem.xaml</DependentUpon>
     </Compile>
+    <Compile Include="TunnelInstancePickerWindow.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>

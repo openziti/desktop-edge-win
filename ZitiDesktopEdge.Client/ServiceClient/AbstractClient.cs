@@ -42,6 +42,31 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         protected NamedPipeClientStream pipeClient = null;
         protected NamedPipeClientStream eventClient = null;
+
+        /// <summary>
+        /// Set by subclasses during an in-flight instance switch. When true, the
+        /// disconnect path must not kick off the auto-reconnect loop or fire the
+        /// OnClientDisconnected event — the caller is orchestrating the swap and
+        /// will reconnect to a new pipe explicitly.
+        /// </summary>
+        protected volatile bool SwitchInProgress;
+
+        /// <summary>
+        /// Monotonic counter bumped every time the live pipe pair is replaced
+        /// (reconnect, or explicit instance switch). Each event-reader task
+        /// captures the value when it starts and only reports its own
+        /// disconnection if the counter still matches on exit — stale readers
+        /// from a prior connection stay silent.
+        /// </summary>
+        private int _connectionGeneration;
+
+        protected int BumpConnectionGeneration() {
+            return System.Threading.Interlocked.Increment(ref _connectionGeneration);
+        }
+
+        protected int CurrentConnectionGeneration {
+            get { return System.Threading.Volatile.Read(ref _connectionGeneration); }
+        }
         protected StreamWriter ipcWriter = null;
         protected StreamReader ipcReader = null;
         protected abstract Task ConnectPipesAsync();
@@ -63,6 +88,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             ExpectedShutdown = false;
             Logger.Debug("Client connected successfully. Setting UnexpectedShutdown set to false.");
 
+            int readerGen = BumpConnectionGeneration();
             ipcWriter = new StreamWriter(pipeClient);
             ipcReader = new StreamReader(pipeClient);
             Task.Run(async () => { //hack for now until it's async...
@@ -74,7 +100,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                             }
                             string respAsString = null;
                             try {
-                                respAsString = await readMessageAsync("event", eventReader);
+                                respAsString = await readMessageAsync("event", eventReader, readerGen);
                                 try {
                                     ProcessLine(respAsString);
                                 } catch (Exception ex) {
@@ -89,8 +115,16 @@ namespace ZitiDesktopEdge.ServiceClient {
                     Logger.Debug("unepxected error: " + ex.ToString());
                 }
 
-                // since this thread is always sitting waiting to read
-                // it should be the only one triggering this event
+                // Only report the disconnect if we're still the active reader.
+                // A SwitchInstanceAsync (or any other force-replace of the pipe
+                // pair) bumps the generation; the stale reader's async callback
+                // can land long after the new connection is live, so comparing
+                // generations keeps it from kicking off a spurious reconnect
+                // cycle.
+                if (readerGen != CurrentConnectionGeneration) {
+                    Logger.Debug("stale event-reader exit ignored (readerGen={0}, current={1})", readerGen, CurrentConnectionGeneration);
+                    return;
+                }
                 ClientDisconnected(null);
             });
             OnClientConnected?.Invoke(this, e);
@@ -170,6 +204,18 @@ namespace ZitiDesktopEdge.ServiceClient {
             await ConnectPipesAsync();
         }
 
+        /// <summary>
+        /// Set by <see cref="AbortReconnect"/> to ask an in-flight reconnect
+        /// loop to bail out. Checked after each Task.Delay so an external
+        /// caller taking over the pipe pair (e.g. an explicit instance
+        /// switch) doesn't race against the retry loop.
+        /// </summary>
+        private volatile bool _abortReconnect;
+
+        public void AbortReconnect() {
+            _abortReconnect = true;
+        }
+
         public void Reconnect() {
             if (Reconnecting) {
                 Logger.Debug("Already in reconnect mode.");
@@ -177,6 +223,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             } else {
                 Reconnecting = true;
             }
+            _abortReconnect = false;
 
             Task.Run(async () => {
                 Logger.Info("service is down. attempting to connect to service...");
@@ -184,9 +231,16 @@ namespace ZitiDesktopEdge.ServiceClient {
                 DateTime reconnectStart = DateTime.Now;
                 DateTime logAgainAfter = reconnectStart + TimeSpan.FromSeconds(1);
 
-                while (true) {
+                while (!_abortReconnect) {
                     try {
                         await Task.Delay(2500);
+                        if (_abortReconnect) break;
+                        if (Connected) {
+                            // Someone else (e.g. SwitchInstanceAsync) connected
+                            // while we were sleeping. Exit quietly.
+                            Reconnecting = false;
+                            return;
+                        }
                         await ConnectPipesAsync();
 
                         if (Connected) {
@@ -219,6 +273,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                         }
                     }
                 }
+                Reconnecting = false;
             });
         }
 
@@ -271,6 +326,20 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         async public Task<string> readMessageAsync(string channel, StreamReader reader) {
+            return await readMessageAsync(channel, reader, null);
+        }
+
+        /// <summary>
+        /// Same as <see cref="readMessageAsync(string, StreamReader)"/> but
+        /// with optional generation awareness. Callers running as part of a
+        /// long-lived reader task (e.g. the event channel) should pass the
+        /// generation captured when the reader started. If the pipe was
+        /// replaced beneath us (instance switch, reconnect) we no longer own
+        /// the stream and must not fire ClientDisconnected — that would kick
+        /// off a redundant reconnect cycle on top of the one already in
+        /// flight.
+        /// </summary>
+        async public Task<string> readMessageAsync(string channel, StreamReader reader, int? readerGeneration) {
             try {
                 int emptyCount = 1; //just a stop gap in case something crazy happens in the communication
 
@@ -291,15 +360,28 @@ namespace ZitiDesktopEdge.ServiceClient {
                 return respAsString;
             } catch (IOException ioe) {
                 //almost certainly a problem with the pipe
-                Logger.Error(ioe, "io error in read: " + ioe.Message);
-                ClientDisconnected(null);
+                if (IsCurrentReader(readerGeneration)) {
+                    Logger.Error(ioe, "io error in read: " + ioe.Message);
+                    ClientDisconnected(null);
+                } else {
+                    Logger.Debug("io error from stale reader ignored (gen={0}, current={1}): {2}", readerGeneration, CurrentConnectionGeneration, ioe.Message);
+                }
                 throw ioe;
             } catch (Exception ee) {
                 //almost certainly a problem with the pipe
-                Logger.Error(ee, "unexpected error in read: " + ee.Message);
-                ClientDisconnected(null);
+                if (IsCurrentReader(readerGeneration)) {
+                    Logger.Error(ee, "unexpected error in read: " + ee.Message);
+                    ClientDisconnected(null);
+                } else {
+                    Logger.Debug("read error from stale reader ignored (gen={0}, current={1}): {2}", readerGeneration, CurrentConnectionGeneration, ee.Message);
+                }
                 throw ee;
             }
+        }
+
+        private bool IsCurrentReader(int? readerGeneration) {
+            if (!readerGeneration.HasValue) return true; // caller opted out of the check
+            return readerGeneration.Value == CurrentConnectionGeneration;
         }
 
         async public Task WaitForConnectionAsync() {
