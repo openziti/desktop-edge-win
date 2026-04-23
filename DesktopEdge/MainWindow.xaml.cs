@@ -1312,6 +1312,7 @@ namespace ZitiDesktopEdge {
                     item.StopTimers();
                 }
                 IdList.Children.Clear();
+                identities.Clear();
                 if (e != null) {
                     logger.Debug(e.ToString());
                 }
