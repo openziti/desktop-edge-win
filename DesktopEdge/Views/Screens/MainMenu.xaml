@@ -61,10 +61,10 @@
                 <Rectangle Style="{StaticResource SectionDivider}"/>
                 <StackPanel Name="MainItems" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <local:OZMenuItem x:Name="IdentitiesButton" Label="Identities" Icon="/Assets/Images/identities.png" MouseUp="ShowIdentities"></local:OZMenuItem>
-                    <local:OZMenuItem HorizontalAlignment="Stretch" Width="Auto" MouseUp="ShowAdvanced" Label="Advanced Settings" Icon="/Assets/Images/advanced.png"></local:OZMenuItem>
-                    <local:OZMenuItem Label="About" Icon="/Assets/Images/about.png" MouseUp="ShowAbout"></local:OZMenuItem>
-                    <local:OZMenuItem Label="Feedback" Icon="/Assets/Images/feedback.png" MouseUp="CollectFeedbackLogs"></local:OZMenuItem>
-                    <local:OZMenuItem Label="Support" Icon="/Assets/Images/support.png" MouseUp="ShowSupport"></local:OZMenuItem>
+                    <local:OZMenuItem HorizontalAlignment="Stretch" Width="Auto" MouseUp="ShowAdvanced" Label="Advanced Settings" Icon="/Assets/Images/advanced.png" AutomationProperties.AutomationId="AdvancedSettings"></local:OZMenuItem>
+                    <local:OZMenuItem Label="About" Icon="/Assets/Images/about.png" MouseUp="ShowAbout" AutomationProperties.AutomationId="About"></local:OZMenuItem>
+                    <local:OZMenuItem Label="Feedback" Icon="/Assets/Images/feedback.png" MouseUp="CollectFeedbackLogs" AutomationProperties.AutomationId="Feedback"></local:OZMenuItem>
+                    <local:OZMenuItem Label="Support" Icon="/Assets/Images/support.png" MouseUp="ShowSupport" AutomationProperties.AutomationId="Support"></local:OZMenuItem>
                     <local:OZMenuItem x:Name="DetachButton" Label="Detach App" Icon="/Assets/Images/detach.png" MouseUp="DetachWindow"></local:OZMenuItem>
                     <local:OZMenuItem x:Name="AttachButton" Label="Attach App" Icon="/Assets/Images/detach.png" MouseUp="RetachWindow" Visibility="Collapsed"></local:OZMenuItem>
                     <Label Name="UpdateTimeLeft" Visibility="Collapsed" Content="" HorizontalAlignment="Center" FontSize="10" Height="50" Padding="0,30,0,0" Foreground="#F4044D" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
