@@ -445,7 +445,7 @@ namespace ZitiDesktopEdge {
                 var logfile = new FileTarget("logfile") {
                     FileName = ExpectedLogPathUI,
                     ArchiveEvery = FileArchivePeriod.Day,
-                    ArchiveNumbering = ArchiveNumberingMode.Rolling,
+                    ArchiveSuffixFormat = "_{0:00}",
                     MaxArchiveFiles = 7,
                     AutoFlush = true,
                     Layout = "[${date:format=yyyy-MM-ddTHH:mm:ss.fff}Z] ${level:uppercase=true:padding=5}\t${logger}\t${message}\t${exception:format=tostring}",
@@ -916,6 +916,8 @@ namespace ZitiDesktopEdge {
         string nextVersionStr = null;
         private void MonitorClient_OnReconnectFailure(object sender, object e) {
             logger.Trace("MonitorClient_OnReconnectFailure triggered");
+            var policyViewModel = Application.Current.Properties["ManagedSettingsViewModel"] as ZitiDesktopEdge.ViewModels.ManagedSettingsViewModel;
+            if (policyViewModel != null) policyViewModel.IsMonitorConnected = false;
             if (nextVersionStr == null) {
                 // check for the current version
                 nextVersionStr = "checking for update";
@@ -966,7 +968,7 @@ namespace ZitiDesktopEdge {
                     }
                     if (evt.Message?.ToLower() == "upgrading") {
                         logger.Info("The monitor has indicated an upgrade is in progress. Shutting down the UI");
-                        UpgradeSentinel.StartUpgradeSentinel(false);
+                        UpgradeSentinel.StartUpgradeSentinel(true);
 
                         App.Current.Exit -= Current_Exit;
                         logger.Info("Removed Current_Exit handler");
@@ -977,12 +979,29 @@ namespace ZitiDesktopEdge {
                         return;
                     }
                     SetAutomaticUpdateEnabled(evt.AutomaticUpgradeDisabled, evt.AutomaticUpgradeURL);
+
+                    var policyViewModel = Application.Current.Properties["ManagedSettingsViewModel"] as ZitiDesktopEdge.ViewModels.ManagedSettingsViewModel;
+                    if (policyViewModel != null) {
+                        logger.Info("MonitorClient_OnServiceStatusEvent policy lock state: " +
+                            "AutomaticUpdatesDisabled={0} (locked={1}), " +
+                            "AutomaticUpdateURL={2} (locked={3})",
+                            evt.AutomaticUpgradeDisabled, evt.AutomaticUpgradeDisabledLocked,
+                            evt.AutomaticUpgradeURL, evt.AutomaticUpgradeURLLocked);
+                        policyViewModel.ApplyFromEvent(evt);
+                    } else {
+                        logger.Warn("MonitorClient_OnServiceStatusEvent: ManagedSettingsViewModel not found in Application.Current.Properties");
+                    }
+
                     if (evt.Code != 0) {
                         logger.Error("CODE: " + evt.Code);
                         if (MainMenu.ShowUnexpectedFailure) {
                             ShowToast("The data channel has stopped unexpectedly", $"If this keeps happening please collect logs and report the issue.", feedbackToastButton);
                         }
                     }
+                    state.DeferredInstallPending     = evt.DeferredInstallPending;
+                    state.DeferToRestartPending      = evt.DeferToRestartPending;
+                    state.StagingDownloadPending     = evt.StagingDownloadPending;
+                    state.DeferInstallToRestartLocked = evt.DeferInstallToRestartLocked;
                     MainMenu.ShowUpdateAvailable();
                     logger.Debug("MonitorClient_OnServiceStatusEvent: {0}", evt.Status);
                     Application.Current.Properties["ReleaseStream"] = evt.ReleaseStream;
@@ -1048,6 +1067,10 @@ namespace ZitiDesktopEdge {
                         state.PendingUpdate.Version = evt.ZDEVersion;
                         state.PendingUpdate.InstallTime = evt.InstallTime;
                         state.UpdateAvailable = true;
+                        state.DeferredInstallPending      = evt.DeferredInstallPending;
+                        state.DeferToRestartPending       = evt.DeferToRestartPending;
+                        state.StagingDownloadPending      = evt.StagingDownloadPending;
+                        state.DeferInstallToRestartLocked  = evt.DeferInstallToRestartLocked;
                         SetAutomaticUpdateEnabled(evt.AutomaticUpgradeDisabled, evt.AutomaticUpgradeURL);
                         MainMenu.ShowUpdateAvailable();
                         AlertCanvas.Visibility = Visibility.Visible;
@@ -1222,6 +1245,8 @@ namespace ZitiDesktopEdge {
         private void MonitorClient_OnClientConnected(object sender, object e) {
             logger.Debug("MonitorClient_OnClientConnected");
             MainMenu.SetAppUpgradeAvailableText("");
+            var policyViewModel = Application.Current.Properties["ManagedSettingsViewModel"] as ZitiDesktopEdge.ViewModels.ManagedSettingsViewModel;
+            if (policyViewModel != null) policyViewModel.IsMonitorConnected = true;
         }
 
         async private Task<bool> LogLevelChanged(string level) {
@@ -1640,10 +1665,16 @@ namespace ZitiDesktopEdge {
             return false;
         }
 
+        internal void RefreshNotifyIcon() {
+            SetNotifyIcon("");
+            AlertCanvas.Visibility = (state.UpdateAvailable && !state.AutomaticUpdatesDisabled)
+                ? Visibility.Visible : Visibility.Collapsed;
+        }
+
         private void SetNotifyIcon(string iconPrefix) {
             if (iconPrefix != "") CurrentIcon = iconPrefix;
             string icon = "pack://application:,,/Assets/Images/ziti-" + CurrentIcon;
-            if (state.UpdateAvailable) {
+            if (state.UpdateAvailable && !state.AutomaticUpdatesDisabled) {
                 icon += "-update";
             } else {
                 if (IsTimedOut()) {
