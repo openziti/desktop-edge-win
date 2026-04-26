@@ -52,7 +52,7 @@ namespace ZitiDesktopEdge.Server {
         public delegate StatusCheck DoUpdateCheckDelegate();
         public DoUpdateCheckDelegate DoUpdateCheck { get; set; }
 
-        public delegate SvcResponse TriggerUpdateDelegate();
+        public delegate SvcResponse TriggerUpdateDelegate(bool forceDefer);
         public TriggerUpdateDelegate TriggerUpdate { get; set; }
 
         public delegate SvcResponse SetAutomaticUpdateDisabledDelegate(bool disabled);
@@ -61,6 +61,11 @@ namespace ZitiDesktopEdge.Server {
 
         public SetAutomaticUpdateDisabledDelegate SetAutomaticUpdateDisabled { get; set; }
         public SetAutomaticUpdateURLDelegate SetAutomaticUpdateURL { get; set; }
+
+        public delegate SvcResponse SetMaintenanceWindowStartDelegate(int? hour);
+        public delegate SvcResponse SetMaintenanceWindowEndDelegate(int? hour);
+        public SetMaintenanceWindowStartDelegate SetMaintenanceWindowStart { get; set; }
+        public SetMaintenanceWindowEndDelegate SetMaintenanceWindowEnd { get; set; }
 
         public IPCServer() {
             ipcPipeName = PipeName;
@@ -260,13 +265,19 @@ namespace ZitiDesktopEdge.Server {
                         r = DoUpdateCheck();
                         break;
                     case "triggerupdate":
-                        r = TriggerUpdate();
+                        r = TriggerUpdate(ae.Action == "defer");
                         break;
                     case "setautomaticupgradedisabled":
                         r = SetAutomaticUpdateDisabled(bool.TrueString.ToLower() == ("" + ae.Action).ToLower().Trim());
                         break;
                     case "setautomaticupgradeurl":
                         r = SetAutomaticUpdateURL(ae.Action);
+                        break;
+                    case "setmaintenancewindowstart":
+                        r = SetMaintenanceWindowStart(string.IsNullOrEmpty(ae.Action) ? (int?)null : int.Parse(ae.Action));
+                        break;
+                    case "setmaintenancewindowend":
+                        r = SetMaintenanceWindowEnd(string.IsNullOrEmpty(ae.Action) ? (int?)null : int.Parse(ae.Action));
                         break;
                     default:
                         r.Message = "FAILURE";
@@ -291,5 +302,6 @@ namespace ZitiDesktopEdge.Server {
         NO_ERROR = 0,
         COULD_NOT_SET_URL,
         URL_INVALID,
+        MANAGED_BY_POLICY,
     }
 }
