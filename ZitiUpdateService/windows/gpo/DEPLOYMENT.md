@@ -56,7 +56,7 @@ Use for testing on an unmanaged machine, lab boxes, or kiosk-style deployments.
      └─ Administrative Templates
           └─ NetFoundry
                └─ Ziti Desktop Edge for Windows
-                    └─ ziti-monitor-service
+                    └─ Monitor Service
    ```
 
 4. Configure the desired policies and click **OK**.
@@ -107,7 +107,7 @@ Copy-Item en-US\NetFoundry.ZitiDesktopEdgeUI.adml  "$central\en-US\"
           └─ Administrative Templates
                └─ NetFoundry
                     └─ Ziti Desktop Edge for Windows
-                         └─ ziti-monitor-service
+                         └─ Monitor Service
    ```
 
 4. Configure the desired policies. Click **OK**.

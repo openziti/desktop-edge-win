@@ -26,7 +26,7 @@
       <!-- Category names -->
       <string id="CAT_NetFoundry">NetFoundry</string>
       <string id="CAT_ZitiDesktopEdge">Ziti Desktop Edge for Windows</string>
-      <string id="CAT_ZitiMonitorService">ziti-monitor-service</string>
+      <string id="CAT_ZitiMonitorService">Monitor Service</string>
 
       <!-- ZMS_AutomaticUpdatesDisabled -->
       <string id="ZMS_AutomaticUpdatesDisabled">Disable Automatic Updates</string>

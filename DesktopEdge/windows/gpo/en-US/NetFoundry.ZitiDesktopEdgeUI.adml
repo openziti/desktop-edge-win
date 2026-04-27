@@ -23,7 +23,7 @@
       <string id="SUPPORTED_ZitiDesktopEdgeUI">Ziti Desktop Edge for Windows (all versions)</string>
 
       <!-- Category names -->
-      <string id="CAT_ZitiDesktopEdgeUI">Desktop Edge UI</string>
+      <string id="CAT_ZitiDesktopEdgeUI">UI</string>
 
       <!-- ZDEUI_DefaultExtAuthProvider -->
       <string id="ZDEUI_DefaultExtAuthProvider">Configure Default External Authentication Provider</string>
