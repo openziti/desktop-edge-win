@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Creates the GPO registry key and values read by ZitiUpdateService's GpoSettings.
+    Writes the registry policy values read by the ziti-monitor service's PolicySettings reader.
 
 .DESCRIPTION
     Writes policy overrides to:
@@ -8,6 +8,12 @@
 
     Any value left at its default ($null) is skipped — only explicitly supplied values
     are written.  Run with -WhatIf to preview changes without applying them.
+
+    The ziti-monitor service picks up changes automatically within ~500 ms via its
+    WMI registry watcher; no service restart is required.
+
+    Parameter ranges match NetFoundry.ZitiMonitorService.admx so values written by
+    this script are also writable from the Group Policy editor.
 
     NOTE: Setting ANY of these values causes the Ziti Desktop Edge UI to display a
     "Managed by your organization" banner on the Automatic Upgrades screen and locks
@@ -59,11 +65,11 @@
 
 .EXAMPLE
     # Disable automatic updates and check every 30 minutes
-    .\Set-GpoRegistryValues.ps1 -AutomaticUpdatesDisabled 1 -UpdateTimer 1800
+    .\Set-PolicyRegistryValues.ps1 -AutomaticUpdatesDisabled 1 -UpdateTimer 1800
 
 .EXAMPLE
     # Preview all values without making any changes
-    .\Set-GpoRegistryValues.ps1 `
+    .\Set-PolicyRegistryValues.ps1 `
         -AutomaticUpdatesDisabled 1 `
         -AutomaticUpdateURL 'https://get.openziti.io/zdew/beta.json' `
         -UpdateTimer 1800 `
@@ -78,16 +84,17 @@ param(
 
     [string]        $AutomaticUpdateURL             = $null,
 
-    [ValidateRange(600, [int]::MaxValue)]
+    # Range matches NetFoundry.ZitiMonitorService.admx so the script and ADMX agree.
+    [ValidateRange(600, 864000)]
     [Nullable[int]] $UpdateTimer       = $null,
 
-    [ValidateRange(0, [int]::MaxValue)]
+    [ValidateRange(1, 2592000)]
     [Nullable[int]] $InstallationReminder = $null,
 
-    [ValidateRange(0, [int]::MaxValue)]
+    [ValidateRange(0, 2592000)]
     [Nullable[int]] $InstallationCritical = $null,
 
-    [ValidateRange(1, [int]::MaxValue)]
+    [ValidateRange(1, 720)]
     [Nullable[int]] $AlivenessChecksBeforeAction = $null,
 
     [ValidateSet(0, 1)]
@@ -176,7 +183,7 @@ foreach ($source in @('settings.json', 'ZitiUpdateService.exe.config')) {
 if ($noParams) {
     Write-Host 'No parameters supplied. Example usage:'
     Write-Host ''
-    Write-Host '  .\windows\gpo\Set-GpoRegistryValues.ps1 `'
+    Write-Host '  .\windows\gpo\Set-PolicyRegistryValues.ps1 `'
     Write-Host "      -AutomaticUpdatesDisabled 1 ``"
     Write-Host "      -AutomaticUpdateURL 'https://get.openziti.io/zdew/beta.json' ``"
     Write-Host "      -AlivenessChecksBeforeAction 12 ``"
@@ -196,6 +203,8 @@ if ($noParams) {
     Write-Host '[WhatIf] Registry was not modified — remove -WhatIf to apply.'
     Write-Host ''
 } else {
-    Write-Host 'Done. Restart ZitiUpdateService for changes to take effect if the WMI watcher is not running.'
+    Write-Host 'Done. The ziti-monitor service reloads policy automatically within ~500 ms via its WMI registry'
+    Write-Host 'watcher — no service restart required. Verify with Get-ItemProperty against the key above, or'
+    Write-Host 'tail the service log for the "Policy overrides loaded:" line.'
     Write-Host ''
 }

@@ -11,9 +11,12 @@
     %SystemRoot%\PolicyDefinitions\              (local machine)
   or the SYSVOL PolicyDefinitions share on a domain controller.
 
-  This template reuses the NetFoundry and Ziti Desktop Edge parent categories
-  defined in NetFoundry.ZitiEdgeTunnel.admx. Both files must be deployed
-  together (or the ZitiEdgeTunnel ADMX must already be in PolicyDefinitions).
+  This template is self-contained — it defines the NetFoundry and Ziti Desktop
+  Edge parent categories itself and has no other ADMX dependencies. The sibling
+  NetFoundry.ZitiDesktopEdgeUI.admx (in DesktopEdge/windows/gpo/) imports those
+  parent categories from this file via <using>, so when both are deployed
+  together this file MUST be present (and Intune ADMX ingestion must upload
+  this file FIRST). Deploying this file alone is fully supported.
 -->
 <policyDefinitions
     xmlns:xsd="http://www.w3.org/2001/XMLSchema"
