@@ -1,4 +1,4 @@
-# Sample invocations:
+﻿# Sample invocations:
 # .\build-test-release.ps1 -jsonOnly $true -version 1.1.1
 # .\build-test-release.ps1 -jsonOnly $true -version 1.1.1 -stream "dev" -revertGitAfter $true
 # .\build-test-release.ps1 -version 2.2.5 -stream "dev" -revertGitAfter $true

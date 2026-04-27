@@ -1,4 +1,4 @@
-# Prepares a beta release branch and opens a PR against release-next.
+﻿# Prepares a beta release branch and opens a PR against release-next.
 # Downloads ziti-edge-tunnel binaries to extract dependency versions for the
 # release notes. The actual signed build happens automatically via
 # installer.build.yml when the PR is opened.

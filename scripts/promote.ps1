@@ -1,4 +1,4 @@
-### Promotes a release to one or more target streams, updating published_at to noon UTC today.
+﻿### Promotes a release to one or more target streams, updating published_at to noon UTC today.
 ### When no source JSON exists for the version, generates it from known URL patterns.
 ###
 ### Usage:

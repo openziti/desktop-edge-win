@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory=$true)][string]$Version,
     [string]$OutputDir = (Join-Path $PSScriptRoot "..\Installer\Output")
 )
