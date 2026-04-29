@@ -651,9 +651,6 @@ namespace ZitiDesktopEdge {
             MaintenanceWindowAnyTime.IsChecked = anyTime;
         }
 
-        private void MaintenanceWindow_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-        }
-
         private void MaintenanceWindowAnyTime_Changed(object sender, RoutedEventArgs e) {
             bool anyTime = MaintenanceWindowAnyTime.IsChecked == true;
             bool detailsEditable = !policyViewModel.AutomaticUpgradesPolicyControlled

@@ -262,11 +262,9 @@
                     <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"/>
                     <StackPanel Orientation="Horizontal" Margin="0,6,0,0" VerticalAlignment="Center">
                         <Label VerticalAlignment="Center" Padding="5,0,6,0">From</Label>
-                        <ComboBox x:Name="MaintenanceWindowStartCombo"
-                                  Width="80" SelectionChanged="MaintenanceWindow_SelectionChanged"/>
+                        <ComboBox x:Name="MaintenanceWindowStartCombo" Width="80"/>
                         <Label VerticalAlignment="Center" Padding="6,0">to</Label>
-                        <ComboBox x:Name="MaintenanceWindowEndCombo"
-                                  Width="80" SelectionChanged="MaintenanceWindow_SelectionChanged"/>
+                        <ComboBox x:Name="MaintenanceWindowEndCombo" Width="80"/>
                         <CheckBox x:Name="MaintenanceWindowAnyTime" Content="Any time" VerticalAlignment="Center"
                                   Margin="12,0,0,0"
                                   Checked="MaintenanceWindowAnyTime_Changed"
