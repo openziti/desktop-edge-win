@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+  English language resources for NetFoundry.ZitiDesktopEdgeUI.admx
+-->
+<policyDefinitionResources
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    revision="1.0"
+    schemaVersion="1.0"
+    xmlns="http://schemas.microsoft.com/GroupPolicy/2006/07/PolicyDefinitions">
+
+  <displayName>Ziti Desktop Edge UI Policy Definitions</displayName>
+  <description>
+    Administrative templates for the Ziti Desktop Edge for Windows user interface.
+    These policies allow administrators to lock UI-specific settings so they cannot
+    be changed by end users at runtime.
+  </description>
+
+  <resources>
+    <stringTable>
+
+      <!-- Supported on -->
+      <string id="SUPPORTED_ZitiDesktopEdgeUI">Ziti Desktop Edge for Windows (all versions)</string>
+
+      <!-- Category names -->
+      <string id="CAT_ZitiDesktopEdgeUI">UI</string>
+
+      <!-- ZDEUI_DefaultExtAuthProvider -->
+      <string id="ZDEUI_DefaultExtAuthProvider">Configure Default External Authentication Provider</string>
+      <string id="ZDEUI_DefaultExtAuthProvider_Help">
+Specifies the name of the external JWT authentication provider that should be
+selected as the default for all identities in the Ziti Desktop Edge UI.
+
+When this policy is Enabled, the specified provider name is automatically selected
+in the provider list for every identity that offers it. The "Default provider?"
+checkbox is checked and locked — users cannot change the default provider selection.
+
+When this policy is Disabled or Not Configured, users can choose and change their
+preferred default provider per identity as normal.
+
+The value must match the provider name exactly as it appears in the identity's
+external authentication provider list. If the specified provider is not available
+for a given identity, the policy has no effect on that identity.
+
+Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ui\DefaultExtAuthProvider (REG_SZ)
+      </string>
+
+    </stringTable>
+
+    <presentationTable>
+
+      <presentation id="ZDEUI_DefaultExtAuthProvider">
+        <textBox refId="DefaultExtAuthProvider_Text">
+          <label>Provider name (must match exactly):</label>
+        </textBox>
+      </presentation>
+
+    </presentationTable>
+  </resources>
+</policyDefinitionResources>

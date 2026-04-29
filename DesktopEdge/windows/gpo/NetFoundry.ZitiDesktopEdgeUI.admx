@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Administrative Template for Ziti Desktop Edge UI
+  NetFoundry Inc. — https://netfoundry.io
+
+  Registry root:
+    HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ui
+
+  Deploy by copying this file (and the en-US\*.adml companion) to:
+    %SystemRoot%\PolicyDefinitions\              (local machine)
+  or the SYSVOL PolicyDefinitions share on a domain controller.
+
+  This template reuses the NetFoundry and Ziti Desktop Edge parent categories
+  defined in NetFoundry.ZitiMonitorService.admx. Both files must be deployed
+  together (or the ZitiMonitorService ADMX must already be in PolicyDefinitions).
+-->
+<policyDefinitions
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    revision="1.0"
+    schemaVersion="1.0"
+    xmlns="http://schemas.microsoft.com/GroupPolicy/2006/07/PolicyDefinitions">
+
+  <policyNamespaces>
+    <target prefix="ZitiDesktopEdgeUI"
+            namespace="NetFoundry.ZitiDesktopEdge.ZitiDesktopEdgeUI"/>
+    <!-- Reuse the parent categories defined in the ZitiMonitorService template -->
+    <using prefix="ZitiMonitorService"
+           namespace="NetFoundry.ZitiDesktopEdge.ZitiMonitorService"/>
+  </policyNamespaces>
+
+  <resources minRequiredRevision="1.0"/>
+
+  <supportedOn>
+    <definitions>
+      <definition name="SUPPORTED_ZitiDesktopEdgeUI"
+                  displayName="$(string.SUPPORTED_ZitiDesktopEdgeUI)"/>
+    </definitions>
+  </supportedOn>
+
+  <categories>
+    <!-- NetFoundry and Ziti Desktop Edge categories come from ZitiMonitorService.admx -->
+    <category name="CAT_ZitiDesktopEdgeUI"
+              displayName="$(string.CAT_ZitiDesktopEdgeUI)">
+      <parentCategory ref="ZitiMonitorService:CAT_ZitiDesktopEdge"/>
+    </category>
+  </categories>
+
+  <policies>
+
+    <!-- ================================================================
+         DefaultExtAuthProvider
+         Writes:  HKLM\...\ui\DefaultExtAuthProvider  (REG_SZ)
+         ================================================================ -->
+    <policy name="ZDEUI_DefaultExtAuthProvider"
+            class="Machine"
+            displayName="$(string.ZDEUI_DefaultExtAuthProvider)"
+            explainText="$(string.ZDEUI_DefaultExtAuthProvider_Help)"
+            presentation="$(presentation.ZDEUI_DefaultExtAuthProvider)"
+            key="SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ui">
+      <parentCategory ref="CAT_ZitiDesktopEdgeUI"/>
+      <supportedOn ref="SUPPORTED_ZitiDesktopEdgeUI"/>
+      <elements>
+        <text id="DefaultExtAuthProvider_Text" valueName="DefaultExtAuthProvider" required="true"/>
+      </elements>
+    </policy>
+
+  </policies>
+</policyDefinitions>

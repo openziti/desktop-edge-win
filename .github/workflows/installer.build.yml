@@ -102,6 +102,14 @@ jobs:
         with:
           name: ZitiDesktopEdgeClient-${{ env.VERSION }}-win32crypto
           path: "Installer/Output/Ziti Desktop Edge Client-*"
+      - name: Build admin templates zip
+        shell: pwsh
+        run: .\scripts\build-admin-templates-zip.ps1 -Version "${env:VERSION}"
+      - name: Upload admin templates zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZDEW-AdminTemplates-${{ env.VERSION }}
+          path: "Installer/Output/ZDEW-AdminTemplates-*"
       - name: Job Failure - Upload the signing log job
         if: failure()
         uses: actions/upload-artifact@v4

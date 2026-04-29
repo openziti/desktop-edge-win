@@ -1,4 +1,4 @@
-# Verifies that every browser_download_url in the release-streams JSON files is reachable.
+﻿# Verifies that every browser_download_url in the release-streams JSON files is reachable.
 # Skips versioned snapshot files (e.g. 2.9.5.0.json) and local dev files.
 #
 # Usage:

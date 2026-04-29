@@ -1,0 +1,237 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Administrative Template for ZitiUpdateService / ziti-monitor-service
+  (Ziti Desktop Edge for Windows)
+  NetFoundry Inc. — https://netfoundry.io
+
+  Registry root:
+    HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service
+
+  Deploy by copying this file (and the en-US\*.adml companion) to:
+    %SystemRoot%\PolicyDefinitions\              (local machine)
+  or the SYSVOL PolicyDefinitions share on a domain controller.
+
+  This template is self-contained — it defines the NetFoundry and Ziti Desktop
+  Edge parent categories itself and has no other ADMX dependencies. The sibling
+  NetFoundry.ZitiDesktopEdgeUI.admx (in DesktopEdge/windows/gpo/) imports those
+  parent categories from this file via <using>, so when both are deployed
+  together this file MUST be present (and Intune ADMX ingestion must upload
+  this file FIRST). Deploying this file alone is fully supported.
+-->
+<policyDefinitions
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    revision="1.0"
+    schemaVersion="1.0"
+    xmlns="http://schemas.microsoft.com/GroupPolicy/2006/07/PolicyDefinitions">
+
+  <policyNamespaces>
+    <target prefix="ZitiMonitorService"
+            namespace="NetFoundry.ZitiDesktopEdge.ZitiMonitorService"/>
+  </policyNamespaces>
+
+  <resources minRequiredRevision="1.0"/>
+
+  <supportedOn>
+    <definitions>
+      <definition name="SUPPORTED_ZitiMonitorService"
+                  displayName="$(string.SUPPORTED_ZitiMonitorService)"/>
+    </definitions>
+  </supportedOn>
+
+  <categories>
+    <!--
+      Parent categories defined here so this ADMX is self-contained.
+      When the ziti-edge-tunnel ADMX (NetFoundry.ZitiEdgeTunnel.admx) is available,
+      these parent definitions can move there and this file can reference them via
+      a <using> namespace import instead.
+    -->
+    <category name="CAT_NetFoundry" displayName="$(string.CAT_NetFoundry)"/>
+    <category name="CAT_ZitiDesktopEdge" displayName="$(string.CAT_ZitiDesktopEdge)">
+      <parentCategory ref="CAT_NetFoundry"/>
+    </category>
+    <category name="CAT_ZitiMonitorService"
+              displayName="$(string.CAT_ZitiMonitorService)">
+      <parentCategory ref="CAT_ZitiDesktopEdge"/>
+    </category>
+  </categories>
+
+  <policies>
+
+    <!-- ================================================================
+         AutomaticUpdatesDisabled
+         Writes:  HKLM\...\ziti-monitor-service\AutomaticUpdatesDisabled  (REG_DWORD)
+         Enabled  → AutomaticUpdatesDisabled = 1  (updates suppressed)
+         Disabled → AutomaticUpdatesDisabled = 0  (updates allowed)
+         Not Configured → value absent, settings.json AutomaticUpdatesDisabled used
+         ================================================================ -->
+    <policy name="ZMS_AutomaticUpdatesDisabled"
+            class="Machine"
+            displayName="$(string.ZMS_AutomaticUpdatesDisabled)"
+            explainText="$(string.ZMS_AutomaticUpdatesDisabled_Help)"
+            key="SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service"
+            valueName="AutomaticUpdatesDisabled">
+      <parentCategory ref="CAT_ZitiMonitorService"/>
+      <supportedOn ref="SUPPORTED_ZitiMonitorService"/>
+      <enabledValue><decimal value="1"/></enabledValue>
+      <disabledValue><decimal value="0"/></disabledValue>
+    </policy>
+
+    <!-- ================================================================
+         AutomaticUpdateURL
+         Writes:  HKLM\...\ziti-monitor-service\AutomaticUpdateURL  (REG_SZ)
+         ================================================================ -->
+    <policy name="ZMS_AutomaticUpdateURL"
+            class="Machine"
+            displayName="$(string.ZMS_AutomaticUpdateURL)"
+            explainText="$(string.ZMS_AutomaticUpdateURL_Help)"
+            presentation="$(presentation.ZMS_AutomaticUpdateURL)"
+            key="SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service">
+      <parentCategory ref="CAT_ZitiMonitorService"/>
+      <supportedOn ref="SUPPORTED_ZitiMonitorService"/>
+      <elements>
+        <text id="AutomaticUpdateURL_Text" valueName="AutomaticUpdateURL" required="true"/>
+      </elements>
+    </policy>
+
+    <!-- ================================================================
+         UpdateTimer
+         Writes:  HKLM\...\ziti-monitor-service\UpdateTimer  (REG_DWORD)
+         Minimum enforced value: 600 (10 minutes)
+         ================================================================ -->
+    <policy name="ZMS_UpdateTimer"
+            class="Machine"
+            displayName="$(string.ZMS_UpdateTimer)"
+            explainText="$(string.ZMS_UpdateTimer_Help)"
+            presentation="$(presentation.ZMS_UpdateTimer)"
+            key="SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service">
+      <parentCategory ref="CAT_ZitiMonitorService"/>
+      <supportedOn ref="SUPPORTED_ZitiMonitorService"/>
+      <elements>
+        <decimal id="UpdateTimer_Decimal" valueName="UpdateTimer"
+                 minValue="600" maxValue="864000" required="true"/>
+      </elements>
+    </policy>
+
+    <!-- ================================================================
+         InstallationReminder
+         Writes:  HKLM\...\ziti-monitor-service\InstallationReminder  (REG_DWORD)
+         ================================================================ -->
+    <policy name="ZMS_InstallationReminder"
+            class="Machine"
+            displayName="$(string.ZMS_InstallationReminder)"
+            explainText="$(string.ZMS_InstallationReminder_Help)"
+            presentation="$(presentation.ZMS_InstallationReminder)"
+            key="SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service">
+      <parentCategory ref="CAT_ZitiMonitorService"/>
+      <supportedOn ref="SUPPORTED_ZitiMonitorService"/>
+      <elements>
+        <decimal id="InstallationReminder_Decimal"
+                 valueName="InstallationReminder"
+                 minValue="1" maxValue="2592000" required="true"/>
+      </elements>
+    </policy>
+
+    <!-- ================================================================
+         InstallationCritical
+         Writes:  HKLM\...\ziti-monitor-service\InstallationCritical  (REG_DWORD)
+         0 = treat every update as immediately critical (no grace period)
+         ================================================================ -->
+    <policy name="ZMS_InstallationCritical"
+            class="Machine"
+            displayName="$(string.ZMS_InstallationCritical)"
+            explainText="$(string.ZMS_InstallationCritical_Help)"
+            presentation="$(presentation.ZMS_InstallationCritical)"
+            key="SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service">
+      <parentCategory ref="CAT_ZitiMonitorService"/>
+      <supportedOn ref="SUPPORTED_ZitiMonitorService"/>
+      <elements>
+        <decimal id="InstallationCritical_Decimal"
+                 valueName="InstallationCritical"
+                 minValue="0" maxValue="2592000" required="true"/>
+      </elements>
+    </policy>
+
+    <!-- ================================================================
+         AlivenessChecksBeforeAction
+         Writes:  HKLM\...\ziti-monitor-service\AlivenessChecksBeforeAction  (REG_DWORD)
+         Default: 12 (~60 seconds at ~5 s per check)
+         ================================================================ -->
+    <policy name="ZMS_AlivenessChecksBeforeAction"
+            class="Machine"
+            displayName="$(string.ZMS_AlivenessChecksBeforeAction)"
+            explainText="$(string.ZMS_AlivenessChecksBeforeAction_Help)"
+            presentation="$(presentation.ZMS_AlivenessChecksBeforeAction)"
+            key="SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service">
+      <parentCategory ref="CAT_ZitiMonitorService"/>
+      <supportedOn ref="SUPPORTED_ZitiMonitorService"/>
+      <elements>
+        <decimal id="AlivenessChecksBeforeAction_Decimal"
+                 valueName="AlivenessChecksBeforeAction"
+                 minValue="1" maxValue="720" required="true"/>
+      </elements>
+    </policy>
+
+    <!-- ================================================================
+         DeferInstallToRestart
+         Writes:  HKLM\...\ziti-monitor-service\DeferInstallToRestart  (REG_DWORD)
+         Enabled  → DeferInstallToRestart = 1  (stage update; apply on next restart)
+         Disabled → DeferInstallToRestart = 0  (install immediately when ready)
+         Not Configured → value absent, settings.json DeferInstallToRestart used
+         ================================================================ -->
+    <policy name="ZMS_DeferInstallToRestart"
+            class="Machine"
+            displayName="$(string.ZMS_DeferInstallToRestart)"
+            explainText="$(string.ZMS_DeferInstallToRestart_Help)"
+            key="SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service"
+            valueName="DeferInstallToRestart">
+      <parentCategory ref="CAT_ZitiMonitorService"/>
+      <supportedOn ref="SUPPORTED_ZitiMonitorService"/>
+      <enabledValue><decimal value="1"/></enabledValue>
+      <disabledValue><decimal value="0"/></disabledValue>
+    </policy>
+
+    <!-- ================================================================
+         MaintenanceWindowStart
+         Writes:  HKLM\...\ziti-monitor-service\MaintenanceWindowStart  (REG_DWORD)
+         Valid range: 0–23 (hour of day, 24-hour clock)
+         ================================================================ -->
+    <policy name="ZMS_MaintenanceWindowStart"
+            class="Machine"
+            displayName="$(string.ZMS_MaintenanceWindowStart)"
+            explainText="$(string.ZMS_MaintenanceWindowStart_Help)"
+            presentation="$(presentation.ZMS_MaintenanceWindowStart)"
+            key="SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service">
+      <parentCategory ref="CAT_ZitiMonitorService"/>
+      <supportedOn ref="SUPPORTED_ZitiMonitorService"/>
+      <elements>
+        <decimal id="MaintenanceWindowStart_Decimal"
+                 valueName="MaintenanceWindowStart"
+                 minValue="0" maxValue="23" required="true"/>
+      </elements>
+    </policy>
+
+    <!-- ================================================================
+         MaintenanceWindowEnd
+         Writes:  HKLM\...\ziti-monitor-service\MaintenanceWindowEnd  (REG_DWORD)
+         Valid range: 0–23 (hour of day, 24-hour clock)
+         If equal to MaintenanceWindowStart → no effective window (installs any time)
+         If less than MaintenanceWindowStart → window crosses midnight
+         ================================================================ -->
+    <policy name="ZMS_MaintenanceWindowEnd"
+            class="Machine"
+            displayName="$(string.ZMS_MaintenanceWindowEnd)"
+            explainText="$(string.ZMS_MaintenanceWindowEnd_Help)"
+            presentation="$(presentation.ZMS_MaintenanceWindowEnd)"
+            key="SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service">
+      <parentCategory ref="CAT_ZitiMonitorService"/>
+      <supportedOn ref="SUPPORTED_ZitiMonitorService"/>
+      <elements>
+        <decimal id="MaintenanceWindowEnd_Decimal"
+                 valueName="MaintenanceWindowEnd"
+                 minValue="0" maxValue="23" required="true"/>
+      </elements>
+    </policy>
+
+  </policies>
+</policyDefinitions>

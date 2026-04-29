@@ -165,13 +165,6 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Canvas x:Name="ArrowCanvas" ClipToBounds="False">
-            <Rectangle x:Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="#070826" Width="20" ClipToBounds="True" Canvas.Left="185" Canvas.Bottom="-10">
-                <Rectangle.LayoutTransform>
-                    <RotateTransform Angle="-45"/>
-                </Rectangle.LayoutTransform>
-            </Rectangle>
-        </Canvas>
         <Border Margin="10,10,10,10" Name="UIBorder" BorderBrush="Black" BorderThickness="8" CornerRadius="10">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="15" Direction="1" RenderingBias="Quality" ShadowDepth="1" Opacity="1"/>
@@ -182,7 +175,7 @@
                 <ImageBrush ImageSource="/Assets/Images/background.png" />
             </Rectangle.Fill>
         </Rectangle>
-        <StackPanel x:Name="MainView" Margin="10,10,10,-20" MinHeight="500">
+        <StackPanel x:Name="MainView" Margin="10,10,10,-20" MinHeight="580">
             <Grid HorizontalAlignment="Stretch">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="100"/>

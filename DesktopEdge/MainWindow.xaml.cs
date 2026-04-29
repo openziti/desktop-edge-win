@@ -445,7 +445,7 @@ namespace ZitiDesktopEdge {
                 var logfile = new FileTarget("logfile") {
                     FileName = ExpectedLogPathUI,
                     ArchiveEvery = FileArchivePeriod.Day,
-                    ArchiveNumbering = ArchiveNumberingMode.Rolling,
+                    ArchiveSuffixFormat = "_{0:00}",
                     MaxArchiveFiles = 7,
                     AutoFlush = true,
                     Layout = "[${date:format=yyyy-MM-ddTHH:mm:ss.fff}Z] ${level:uppercase=true:padding=5}\t${logger}\t${message}\t${exception:format=tostring}",
@@ -634,8 +634,6 @@ namespace ZitiDesktopEdge {
             if (!UIUtils.MouseUpForMouseDown(e)) return;
             if (e.ChangedButton == MouseButton.Right) {
                 _isAttached = true;
-                IdentityMenu.Arrow.Visibility = Visibility.Visible;
-                Arrow.Visibility = Visibility.Visible;
                 MainMenu.Retach();
             }
         }
@@ -644,8 +642,6 @@ namespace ZitiDesktopEdge {
             try {
                 if (e.ChangedButton == MouseButton.Left) {
                     _isAttached = false;
-                    IdentityMenu.Arrow.Visibility = Visibility.Collapsed;
-                    Arrow.Visibility = Visibility.Collapsed;
                     MainMenu.Detach();
                     this.DragMove();
                 }
@@ -916,6 +912,8 @@ namespace ZitiDesktopEdge {
         string nextVersionStr = null;
         private void MonitorClient_OnReconnectFailure(object sender, object e) {
             logger.Trace("MonitorClient_OnReconnectFailure triggered");
+            var policyViewModel = Application.Current.Properties["ManagedSettingsViewModel"] as ZitiDesktopEdge.ViewModels.ManagedSettingsViewModel;
+            if (policyViewModel != null) policyViewModel.IsMonitorConnected = false;
             if (nextVersionStr == null) {
                 // check for the current version
                 nextVersionStr = "checking for update";
@@ -966,7 +964,7 @@ namespace ZitiDesktopEdge {
                     }
                     if (evt.Message?.ToLower() == "upgrading") {
                         logger.Info("The monitor has indicated an upgrade is in progress. Shutting down the UI");
-                        UpgradeSentinel.StartUpgradeSentinel(false);
+                        UpgradeSentinel.StartUpgradeSentinel(true);
 
                         App.Current.Exit -= Current_Exit;
                         logger.Info("Removed Current_Exit handler");
@@ -977,12 +975,29 @@ namespace ZitiDesktopEdge {
                         return;
                     }
                     SetAutomaticUpdateEnabled(evt.AutomaticUpgradeDisabled, evt.AutomaticUpgradeURL);
+
+                    var policyViewModel = Application.Current.Properties["ManagedSettingsViewModel"] as ZitiDesktopEdge.ViewModels.ManagedSettingsViewModel;
+                    if (policyViewModel != null) {
+                        logger.Info("MonitorClient_OnServiceStatusEvent policy lock state: " +
+                            "AutomaticUpdatesDisabled={0} (locked={1}), " +
+                            "AutomaticUpdateURL={2} (locked={3})",
+                            evt.AutomaticUpgradeDisabled, evt.AutomaticUpgradeDisabledLocked,
+                            evt.AutomaticUpgradeURL, evt.AutomaticUpgradeURLLocked);
+                        policyViewModel.ApplyFromEvent(evt);
+                    } else {
+                        logger.Warn("MonitorClient_OnServiceStatusEvent: ManagedSettingsViewModel not found in Application.Current.Properties");
+                    }
+
                     if (evt.Code != 0) {
                         logger.Error("CODE: " + evt.Code);
                         if (MainMenu.ShowUnexpectedFailure) {
                             ShowToast("The data channel has stopped unexpectedly", $"If this keeps happening please collect logs and report the issue.", feedbackToastButton);
                         }
                     }
+                    state.DeferredInstallPending     = evt.DeferredInstallPending;
+                    state.DeferToRestartPending      = evt.DeferToRestartPending;
+                    state.StagingDownloadPending     = evt.StagingDownloadPending;
+                    state.DeferInstallToRestartLocked = evt.DeferInstallToRestartLocked;
                     MainMenu.ShowUpdateAvailable();
                     logger.Debug("MonitorClient_OnServiceStatusEvent: {0}", evt.Status);
                     Application.Current.Properties["ReleaseStream"] = evt.ReleaseStream;
@@ -1048,6 +1063,10 @@ namespace ZitiDesktopEdge {
                         state.PendingUpdate.Version = evt.ZDEVersion;
                         state.PendingUpdate.InstallTime = evt.InstallTime;
                         state.UpdateAvailable = true;
+                        state.DeferredInstallPending      = evt.DeferredInstallPending;
+                        state.DeferToRestartPending       = evt.DeferToRestartPending;
+                        state.StagingDownloadPending      = evt.StagingDownloadPending;
+                        state.DeferInstallToRestartLocked  = evt.DeferInstallToRestartLocked;
                         SetAutomaticUpdateEnabled(evt.AutomaticUpgradeDisabled, evt.AutomaticUpgradeURL);
                         MainMenu.ShowUpdateAvailable();
                         AlertCanvas.Visibility = Visibility.Visible;
@@ -1222,6 +1241,8 @@ namespace ZitiDesktopEdge {
         private void MonitorClient_OnClientConnected(object sender, object e) {
             logger.Debug("MonitorClient_OnClientConnected");
             MainMenu.SetAppUpgradeAvailableText("");
+            var policyViewModel = Application.Current.Properties["ManagedSettingsViewModel"] as ZitiDesktopEdge.ViewModels.ManagedSettingsViewModel;
+            if (policyViewModel != null) policyViewModel.IsMonitorConnected = true;
         }
 
         async private Task<bool> LogLevelChanged(string level) {
@@ -1640,10 +1661,16 @@ namespace ZitiDesktopEdge {
             return false;
         }
 
+        internal void RefreshNotifyIcon() {
+            SetNotifyIcon("");
+            AlertCanvas.Visibility = (state.UpdateAvailable && !state.AutomaticUpdatesDisabled)
+                ? Visibility.Visible : Visibility.Collapsed;
+        }
+
         private void SetNotifyIcon(string iconPrefix) {
             if (iconPrefix != "") CurrentIcon = iconPrefix;
             string icon = "pack://application:,,/Assets/Images/ziti-" + CurrentIcon;
-            if (state.UpdateAvailable) {
+            if (state.UpdateAvailable && !state.AutomaticUpdatesDisabled) {
                 icon += "-update";
             } else {
                 if (IsTimedOut()) {
@@ -1803,65 +1830,31 @@ namespace ZitiDesktopEdge {
         private void SetLocation() {
             var desktopWorkingArea = SystemParameters.WorkArea;
 
-            var renderedHeight = MainView.ActualHeight; // > defaultHeight ? MainView.ActualHeight : defaultHeight;
+            var renderedHeight = MainView.ActualHeight;
             IdentityMenu.MainHeight = renderedHeight;
-            
-            double defaultMiddle = 195;
-            if (this.ActualWidth > 0) {
-                defaultMiddle = this.ActualWidth / 2 - Arrow.ActualWidth / 2;
-            }
 
             Rectangle trayRectangle = WinAPI.GetTrayRectangle();
             if (trayRectangle.Top < 20) {
                 this.Position = "Top";
                 this.Top = desktopWorkingArea.Top + _top;
                 this.Left = desktopWorkingArea.Right - this.Width - _right;
-                Arrow.SetValue(Canvas.TopProperty, (double)0);
-                Arrow.SetValue(Canvas.LeftProperty, defaultMiddle);
-                MainMenu.Arrow.SetValue(Canvas.TopProperty, (double)0);
-                MainMenu.Arrow.SetValue(Canvas.LeftProperty, defaultMiddle);
-                IdentityMenu.Arrow.SetValue(Canvas.TopProperty, (double)0);
-                IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, defaultMiddle);
             } else if (trayRectangle.Left < 20) {
                 this.Position = "Left";
                 this.Left = _left;
                 this.Top = desktopWorkingArea.Bottom - this.ActualHeight - 75;
-                Arrow.SetValue(Canvas.TopProperty, renderedHeight - 200);
-                Arrow.SetValue(Canvas.LeftProperty, (double)0);
-                MainMenu.Arrow.SetValue(Canvas.TopProperty, renderedHeight - 200);
-                MainMenu.Arrow.SetValue(Canvas.LeftProperty, (double)0);
-                IdentityMenu.Arrow.SetValue(Canvas.TopProperty, renderedHeight - 200);
-                IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, (double)0);
             } else if (desktopWorkingArea.Right == (double)trayRectangle.Left) {
                 this.Position = "Right";
                 this.Left = desktopWorkingArea.Right - this.Width - 20;
                 this.Top = desktopWorkingArea.Bottom - renderedHeight - 75;
-                Arrow.SetValue(Canvas.TopProperty, renderedHeight - 200);
-                Arrow.SetValue(Canvas.LeftProperty, this.Width - 30);
-                MainMenu.Arrow.SetValue(Canvas.TopProperty, renderedHeight - 200);
-                MainMenu.Arrow.SetValue(Canvas.LeftProperty, this.Width - 30);
-                IdentityMenu.Arrow.SetValue(Canvas.TopProperty, renderedHeight - 200);
-                IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, this.Width - 30);
             } else {
                 this.Position = "Bottom";
                 this.Left = desktopWorkingArea.Right - this.Width - 75;
                 this.Top = desktopWorkingArea.Bottom - renderedHeight;
-                Arrow.SetValue(Canvas.TopProperty, renderedHeight - 35);
-                Arrow.SetValue(Canvas.LeftProperty, defaultMiddle);
-                MainMenu.Arrow.SetValue(Canvas.TopProperty, renderedHeight - 35);
-                MainMenu.Arrow.SetValue(Canvas.LeftProperty, defaultMiddle);
-                IdentityMenu.Arrow.SetValue(Canvas.TopProperty, renderedHeight - 35);
-                IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, defaultMiddle);
             }
         }
         public void Placement() {
             if (_isAttached) {
-                Arrow.Visibility = Visibility.Visible;
-                IdentityMenu.Arrow.Visibility = Visibility.Visible;
                 SetLocation();
-            } else {
-                IdentityMenu.Arrow.Visibility = Visibility.Visible;
-                Arrow.Visibility = Visibility.Collapsed;
             }
         }
 
