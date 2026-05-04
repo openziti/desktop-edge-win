@@ -757,6 +757,7 @@ namespace ZitiDesktopEdge {
             monitorClient.OnClientConnected += MonitorClient_OnClientConnected;
             monitorClient.OnNotificationEvent += MonitorClient_OnInstallationNotificationEvent;
             monitorClient.OnServiceStatusEvent += MonitorClient_OnServiceStatusEvent;
+            monitorClient.OnCaptureFeedbackProgressEvent += MonitorClient_OnCaptureFeedbackProgressEvent;
             monitorClient.OnShutdownEvent += MonitorClient_OnShutdownEvent;
             monitorClient.OnCommunicationError += MonitorClient_OnCommunicationError;
             monitorClient.OnReconnectFailure += MonitorClient_OnReconnectFailure;
@@ -1035,6 +1036,19 @@ namespace ZitiDesktopEdge {
             } catch(Exception e) {
                 logger.Error("SetAutomaticUpdateEnabled: {0}", e);
             }
+        }
+
+        private void MonitorClient_OnCaptureFeedbackProgressEvent(object sender, MonitorServiceStatusEvent evt) {
+            if (evt == null || string.IsNullOrEmpty(evt.Message)) return;
+            this.Dispatcher.Invoke(() => {
+                if (LoadingScreen.Visibility == Visibility.Visible) {
+                    string current = MainMenu?.LogLevel ?? "";
+                    string level = string.IsNullOrEmpty(current) ? "UNKNOWN" : current.ToUpper();
+                    bool isVerbose = current == "trace" || current == "verbose" || current == "debug";
+                    string warning = isVerbose ? " (may take several minutes)" : "";
+                    LoadingDetails.Text = $"Log level: {level}{warning}\n{evt.Message}";
+                }
+            });
         }
 
         private void MonitorClient_OnInstallationNotificationEvent(object sender, InstallationNotificationEvent evt) {

@@ -50,6 +50,7 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         public event EventHandler<MonitorServiceStatusEvent> OnServiceStatusEvent;
         public event EventHandler<InstallationNotificationEvent> OnNotificationEvent;
+        public event EventHandler<MonitorServiceStatusEvent> OnCaptureFeedbackProgressEvent;
 
         protected virtual void ServiceStatusEvent(MonitorServiceStatusEvent e) {
             OnServiceStatusEvent?.Invoke(this, e);
@@ -57,6 +58,10 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         protected virtual void InstallationNotificationEvent(InstallationNotificationEvent e) {
             OnNotificationEvent?.Invoke(this, e);
+        }
+
+        protected virtual void CaptureFeedbackProgressEvent(MonitorServiceStatusEvent e) {
+            OnCaptureFeedbackProgressEvent?.Invoke(this, e);
         }
 
         public MonitorClient(string id) : base(id) {
@@ -84,6 +89,9 @@ namespace ZitiDesktopEdge.ServiceClient {
                 case "Notification":
                     var instEvt = serializer.Deserialize<InstallationNotificationEvent>(new JsonTextReader(new StringReader(line)));
                     InstallationNotificationEvent(instEvt);
+                    break;
+                case "CaptureFeedbackProgress":
+                    CaptureFeedbackProgressEvent(evt);
                     break;
                 default:
                     ServiceStatusEvent(evt);
