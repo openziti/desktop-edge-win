@@ -375,7 +375,14 @@ namespace ZitiDesktopEdge {
 
         async public void CollectFeedbackLogs(object sender, MouseButtonEventArgs e) {
             try {
-                MainWindow.ShowLoad("Collecting Information", "Please wait while we run some commands\nand collect some diagnostic information");
+                logger.Info("Feedback collection started");
+
+                string exeLocation = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                string logLocation = Path.Combine(exeLocation, "logs");
+                string serviceLogsLocation = Path.Combine(logLocation, "service");
+
+                string statusMessage = buildFeedbackStatusMessage(logLocation);
+                MainWindow.ShowLoad("Collecting Information", statusMessage);
 
                 System.Text.StringBuilder sb = new System.Text.StringBuilder();
                 sb.Append("Logs collected at : " + DateTime.Now.ToString());
@@ -411,6 +418,23 @@ namespace ZitiDesktopEdge {
                 MainWindow.ShowError("Could Not Collect Feedback", "The monitor service is offline");
             }
             MainWindow.HideLoad();
+        }
+
+        private string buildFeedbackStatusMessage(string logLocation) {
+            string level = string.IsNullOrEmpty(this.LogLevel) ? "unknown" : this.LogLevel.ToUpper();
+            long totalBytes = 0;
+            try {
+                foreach (FileInfo file in new DirectoryInfo(logLocation).GetFiles("*.*", SearchOption.AllDirectories)) {
+                    if (file.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)) continue;
+                    totalBytes += file.Length;
+                }
+            } catch (Exception ex) {
+                logger.Warn(ex, "could not size {0}", logLocation);
+            }
+            string size = ByteFormat.Format(totalBytes);
+            bool isVerbose = this.LogLevel == "trace" || this.LogLevel == "verbose" || this.LogLevel == "debug";
+            string warning = isVerbose ? "\nVerbose logging may take several minutes." : "";
+            return $"Log level: {level} | ~{size} of logs{warning}";
         }
 
         private void ShowSupport(object sender, MouseButtonEventArgs e) {
