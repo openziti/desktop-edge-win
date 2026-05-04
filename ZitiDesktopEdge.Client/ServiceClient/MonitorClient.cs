@@ -152,7 +152,29 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task<MonitorServiceStatusEvent> CaptureLogsAsync() {
             ActionEvent action = new ActionEvent() { Op = "CaptureLogs", Action = "Normal" };
             await sendMonitorClientAsync(action);
-            return await readMonitorClientAsync<MonitorServiceStatusEvent>(ipcReader, TimeSpan.FromSeconds(60));
+
+            DateTime lastProgressTime = DateTime.UtcNow;
+            EventHandler<MonitorServiceStatusEvent> heartbeat = (s, e) => lastProgressTime = DateTime.UtcNow;
+            OnCaptureFeedbackProgressEvent += heartbeat;
+
+            try {
+                Task<MonitorServiceStatusEvent> readTask = readMonitorClientAsync<MonitorServiceStatusEvent>(ipcReader, Timeout.InfiniteTimeSpan);
+                TimeSpan stallThreshold = TimeSpan.FromSeconds(60);
+
+                while (true) {
+                    Task completed = await Task.WhenAny(readTask, Task.Delay(5000));
+                    if (completed == readTask) {
+                        return await readTask;
+                    }
+                    if (DateTime.UtcNow - lastProgressTime > stallThreshold) {
+                        string error = $"Feedback collection stalled (no progress for {stallThreshold.TotalSeconds}s).";
+                        Logger.Error(error);
+                        throw new MonitorServiceException(error);
+                    }
+                }
+            } finally {
+                OnCaptureFeedbackProgressEvent -= heartbeat;
+            }
         }
 
         async public Task<SvcResponse> SetLogLevelAsync(string level) {
