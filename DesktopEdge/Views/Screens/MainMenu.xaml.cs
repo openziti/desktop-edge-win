@@ -392,9 +392,6 @@ namespace ZitiDesktopEdge {
 
                 var dataClient = (DataClient)Application.Current.Properties["ServiceClient"];
 
-                string exeLocation = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                string logLocation = Path.Combine(exeLocation, "logs");
-                string serviceLogsLocation = Path.Combine(logLocation, "service");
                 await dataClient.zitiDump(serviceLogsLocation);
 
                 var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
@@ -406,15 +403,16 @@ namespace ZitiDesktopEdge {
                     return;
                 }
                 string pathToLogs = resp.Message;
-                logger.Info("Log files found at : {0}", resp.Message);
+                logger.Info("Feedback collection completed: {0}", pathToLogs);
                 string args = string.Format("/Select, \"{0}\"", pathToLogs);
 
                 ProcessStartInfo pfi = new ProcessStartInfo("Explorer.exe", args);
                 Process.Start(pfi);
-            } catch (MonitorServiceException) {
+            } catch (MonitorServiceException ex) {
+                logger.Warn("Feedback collection aborted: {0}", ex.Message);
                 MainWindow.ShowError("Could Not Collect Feedback", "The monitor service is offline");
             } catch (Exception ex) {
-                logger.Warn(ex, "An unexpected error has occurred when submitting feedback? {0}", ex.Message);
+                logger.Warn(ex, "Feedback collection failed: {0}", ex.Message);
                 MainWindow.ShowError("Could Not Collect Feedback", "The monitor service is offline");
             }
             MainWindow.HideLoad();
