@@ -276,19 +276,13 @@ namespace ZitiUpdateService {
             }
         }
 
-        private const int FeedbackHeartbeatIntervalMs = 5000;
+        private const int _feedbackHeartbeatIntervalMs = 5000;
         private string _currentFeedbackPhase = "";
 
-        private void setFeedbackPhase(string phase) {
-            Logger.Info("Feedback phase: {0}", phase);
-            _currentFeedbackPhase = phase;
-            sendCaptureFeedbackProgress(phase);
-        }
-
         private string CaptureLogs() {
-            _currentFeedbackPhase = "Starting...";
+            sendCaptureFeedbackProgress("Starting...");
 
-            System.Timers.Timer heartbeat = new System.Timers.Timer(FeedbackHeartbeatIntervalMs);
+            System.Timers.Timer heartbeat = new System.Timers.Timer(_feedbackHeartbeatIntervalMs);
             heartbeat.Elapsed += (s, e) => sendCaptureFeedbackProgress(_currentFeedbackPhase);
             heartbeat.Start();
 
@@ -320,7 +314,7 @@ namespace ZitiUpdateService {
                 }
                 string sizeText = ByteFormat.Format(totalBytes);
 
-                setFeedbackPhase($"Copying log files (~{sizeText})");
+                sendCaptureFeedbackProgress($"Copying log files (~{sizeText})");
                 Logger.Debug("copying all non-zip files from: {0}", logLocation);
                 foreach (string newPath in Directory.GetFiles(logLocation, "*.*", SearchOption.AllDirectories)) {
                     if (!newPath.EndsWith(".zip") && !isSymlink(newPath)) {
@@ -329,7 +323,7 @@ namespace ZitiUpdateService {
                     }
                 }
 
-                setFeedbackPhase($"Collecting system info");
+                sendCaptureFeedbackProgress($"Collecting system info");
                 outputIpconfigInfo(destinationLocation);
                 outputSystemInfo(destinationLocation);
                 outputDnsCache(destinationLocation);
@@ -341,7 +335,7 @@ namespace ZitiUpdateService {
 
                 Task.Delay(500).Wait();
 
-                setFeedbackPhase($"Zipping log files (~{sizeText})");
+                sendCaptureFeedbackProgress($"Zipping log files (~{sizeText})");
                 string zipName = Path.Combine(logLocation, DateTime.Now.ToString("yyyy-MM-dd_HHmmss") + ".zip");
                 ZipFile.CreateFromDirectory(destinationLocation, zipName);
 
@@ -369,10 +363,14 @@ namespace ZitiUpdateService {
             }
         }
 
-        private static void sendCaptureFeedbackProgress(string message) {
+        private void sendCaptureFeedbackProgress(string phase) {
+            if (phase != _currentFeedbackPhase) {
+                Logger.Info("Feedback phase: {0}", phase);
+                _currentFeedbackPhase = phase;
+            }
             MonitorServiceStatusEvent evt = new MonitorServiceStatusEvent();
             evt.Type = "CaptureFeedbackProgress";
-            evt.Message = message;
+            evt.Message = phase;
             EventRegistry.SendEventToConsumers(evt);
         }
 
