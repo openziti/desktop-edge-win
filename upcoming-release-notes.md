@@ -1,15 +1,14 @@
-# Release 2.10.7.0
+# Next Release
 ## What's New
-* updated to [ziti-edge-tunnel v1.16.1](https://github.com/openziti/ziti-tunnel-sdk-c/releases/tag/v1.16.1)
+n/a
 
 ## Bugs fixed
-n/a
+* [Issue 776](https://github.com/openziti/desktop-edge-win/issues/776) - Feedback collection no longer times out prematurely on large or verbose log bundles
+    * Progress dialog shows the current phase (copy, collect, zip) and bundle size
+    * Stall detection: if the service stops sending progress for 10 seconds the UI surfaces an error
+    * A notice is shown when feedback is requested while a previous collection is still in progress
+    * Error dialog reports the underlying error rather than always saying "monitor service is offline"
+    * Symlinked log files are skipped, and a duplicate ZET log copy step was removed
 
 ## Other changes
 n/a
-
-## Dependencies
-* ziti-tunneler: v1.16.1
-* ziti-sdk:      1.16.0
-* tlsuv:         v0.41.3[OpenSSL 3.6.1 27 Jan 2026]
-* tlsuv:         v0.41.3[win32crypto(CNG): ncrypt[1.0] ]
