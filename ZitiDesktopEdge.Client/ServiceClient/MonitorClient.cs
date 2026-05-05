@@ -50,6 +50,11 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         public event EventHandler<MonitorServiceStatusEvent> OnServiceStatusEvent;
         public event EventHandler<InstallationNotificationEvent> OnNotificationEvent;
+        public event EventHandler<MonitorServiceStatusEvent> OnCaptureFeedbackProgressEvent;
+
+        public DateTime LastFeedbackHeartbeat { get; private set; } = DateTime.MinValue;
+
+        public bool IsServiceCapturingFeedback => (DateTime.UtcNow - LastFeedbackHeartbeat).TotalSeconds < 10;
 
         protected virtual void ServiceStatusEvent(MonitorServiceStatusEvent e) {
             OnServiceStatusEvent?.Invoke(this, e);
@@ -57,6 +62,11 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         protected virtual void InstallationNotificationEvent(InstallationNotificationEvent e) {
             OnNotificationEvent?.Invoke(this, e);
+        }
+
+        protected virtual void CaptureFeedbackProgressEvent(MonitorServiceStatusEvent e) {
+            LastFeedbackHeartbeat = DateTime.UtcNow;
+            OnCaptureFeedbackProgressEvent?.Invoke(this, e);
         }
 
         public MonitorClient(string id) : base(id) {
@@ -84,6 +94,9 @@ namespace ZitiDesktopEdge.ServiceClient {
                 case "Notification":
                     var instEvt = serializer.Deserialize<InstallationNotificationEvent>(new JsonTextReader(new StringReader(line)));
                     InstallationNotificationEvent(instEvt);
+                    break;
+                case "CaptureFeedbackProgress":
+                    CaptureFeedbackProgressEvent(evt);
                     break;
                 default:
                     ServiceStatusEvent(evt);
@@ -144,7 +157,16 @@ namespace ZitiDesktopEdge.ServiceClient {
         async public Task<MonitorServiceStatusEvent> CaptureLogsAsync() {
             ActionEvent action = new ActionEvent() { Op = "CaptureLogs", Action = "Normal" };
             await sendMonitorClientAsync(action);
-            return await readMonitorClientAsync<MonitorServiceStatusEvent>(ipcReader, TimeSpan.FromSeconds(60));
+
+            LastFeedbackHeartbeat = DateTime.UtcNow;
+            Task<MonitorServiceStatusEvent> readTask = readMonitorClientAsync<MonitorServiceStatusEvent>(ipcReader, TimeSpan.FromMinutes(30));
+            while (!readTask.IsCompleted) {
+                await Task.WhenAny(readTask, Task.Delay(2000));
+                if (!IsServiceCapturingFeedback) {
+                    throw new MonitorServiceException("Feedback collection stopped responding.");
+                }
+            }
+            return await readTask;
         }
 
         async public Task<SvcResponse> SetLogLevelAsync(string level) {
