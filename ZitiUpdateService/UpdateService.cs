@@ -276,12 +276,25 @@ namespace ZitiUpdateService {
             }
         }
 
+        private const int FeedbackHeartbeatIntervalMs = 5000;
+        private string _currentFeedbackPhase = "";
+
+        private void setFeedbackPhase(string phase) {
+            Logger.Info("Feedback phase: {0}", phase);
+            _currentFeedbackPhase = phase;
+            sendCaptureFeedbackProgress(phase);
+        }
+
         private string CaptureLogs() {
+            _currentFeedbackPhase = "Starting...";
+
+            System.Timers.Timer heartbeat = new System.Timers.Timer(FeedbackHeartbeatIntervalMs);
+            heartbeat.Elapsed += (s, e) => sendCaptureFeedbackProgress(_currentFeedbackPhase);
+            heartbeat.Start();
+
             try {
                 string logLocation = Path.Combine(exeLocation, "logs");
                 string destinationLocation = Path.Combine(exeLocation, "temp");
-                string serviceLogsLocation = Path.Combine(logLocation, "service");
-                string serviceLogsDest = Path.Combine(destinationLocation, "service");
 
                 Logger.Debug("removing leftover temp folder: {0}", destinationLocation);
                 try {
@@ -292,71 +305,45 @@ namespace ZitiUpdateService {
 
                 Directory.CreateDirectory(destinationLocation);
 
+                // Clone directory structure for zip
                 Logger.Debug("copying all directories from: {0}", logLocation);
                 foreach (string dirPath in Directory.GetDirectories(logLocation, "*", SearchOption.AllDirectories)) {
                     Directory.CreateDirectory(dirPath.Replace(logLocation, destinationLocation));
                 }
 
+                // Get size of files to copy/zip for UI
                 long totalBytes = 0;
                 foreach (string filePath in Directory.GetFiles(logLocation, "*.*", SearchOption.AllDirectories)) {
-                    if (!filePath.EndsWith(".zip")) totalBytes += new FileInfo(filePath).Length;
+                    if (!filePath.EndsWith(".zip") && !isSymlink(filePath)) {
+                        totalBytes += new FileInfo(filePath).Length;
+                    }
                 }
-                long bytesProcessed = 0;
+                string sizeText = ByteFormat.Format(totalBytes);
 
+                setFeedbackPhase($"Copying log files (~{sizeText})");
                 Logger.Debug("copying all non-zip files from: {0}", logLocation);
                 foreach (string newPath in Directory.GetFiles(logLocation, "*.*", SearchOption.AllDirectories)) {
-                    if (!newPath.EndsWith(".zip")) {
-                        sendCaptureFeedbackProgress("Preparing... " + ByteFormat.Format(bytesProcessed) + " of " + ByteFormat.Format(totalBytes));
+                    if (!newPath.EndsWith(".zip") && !isSymlink(newPath)) {
+                        Logger.Debug("copying file: {0}", newPath);
                         File.Copy(newPath, newPath.Replace(logLocation, destinationLocation), true);
-                        bytesProcessed += new FileInfo(newPath).Length;
                     }
                 }
 
-                Logger.Debug("copying service files from: {0} to {1}", serviceLogsLocation, serviceLogsDest);
-                Directory.CreateDirectory(serviceLogsDest);
-                foreach (string newPath in Directory.GetFiles(serviceLogsLocation, "*.*", SearchOption.TopDirectoryOnly)) {
-                    if (newPath.EndsWith(".log") || newPath.Contains("config.json")) {
-                        sendCaptureFeedbackProgress("Copying log: " + Path.GetFileName(newPath));
-                        File.Copy(newPath, newPath.Replace(serviceLogsLocation, serviceLogsDest), true);
-                    }
-                }
-
-                sendCaptureFeedbackProgress("Collecting system info: ipconfig...");
+                setFeedbackPhase($"Collecting system info");
                 outputIpconfigInfo(destinationLocation);
-                sendCaptureFeedbackProgress("Collecting system info: systeminfo...");
                 outputSystemInfo(destinationLocation);
-                sendCaptureFeedbackProgress("Collecting system info: DNS cache...");
                 outputDnsCache(destinationLocation);
-                sendCaptureFeedbackProgress("Collecting system info: external IP...");
                 outputExternalIP(destinationLocation);
-                sendCaptureFeedbackProgress("Collecting system info: tasklist...");
                 outputTasklist(destinationLocation);
-                sendCaptureFeedbackProgress("Collecting system info: routes...");
                 outputRouteInfo(destinationLocation);
-                sendCaptureFeedbackProgress("Collecting system info: netstat...");
                 outputNetstatInfo(destinationLocation);
-                sendCaptureFeedbackProgress("Collecting system info: NRPT...");
                 outputNrpt(destinationLocation);
 
                 Task.Delay(500).Wait();
 
+                setFeedbackPhase($"Zipping log files (~{sizeText})");
                 string zipName = Path.Combine(logLocation, DateTime.Now.ToString("yyyy-MM-dd_HHmmss") + ".zip");
-
-                string[] filesToZip = Directory.GetFiles(destinationLocation, "*.*", SearchOption.AllDirectories);
-                long totalZipBytes = 0;
-                foreach (string filePath in filesToZip) totalZipBytes += new FileInfo(filePath).Length;
-                long zipBytesProcessed = 0;
-
-                using (ZipArchive zip = ZipFile.Open(zipName, ZipArchiveMode.Create)) {
-                    foreach (string filePath in filesToZip) {
-                        sendCaptureFeedbackProgress("Compressing... " + ByteFormat.Format(zipBytesProcessed) + " of " + ByteFormat.Format(totalZipBytes));
-                        string entryName = filePath.Substring(destinationLocation.Length)
-                            .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-                            .Replace(Path.DirectorySeparatorChar, '/');
-                        zip.CreateEntryFromFile(filePath, entryName, CompressionLevel.Optimal);
-                        zipBytesProcessed += new FileInfo(filePath).Length;
-                    }
-                }
+                ZipFile.CreateFromDirectory(destinationLocation, zipName);
 
                 Logger.Debug("cleaning up temp folder: {0}", destinationLocation);
                 try {
@@ -368,11 +355,21 @@ namespace ZitiUpdateService {
             } catch (Exception ex) {
                 Logger.Error(ex, "Unexpected error in generating system files {0}", ex.Message);
                 return null;
+            } finally {
+                heartbeat.Stop();
+                heartbeat.Dispose();
+            }
+        }
+
+        private static bool isSymlink(string path) {
+            try {
+                return (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
+            } catch {
+                return false;
             }
         }
 
         private static void sendCaptureFeedbackProgress(string message) {
-            Logger.Info(message);
             MonitorServiceStatusEvent evt = new MonitorServiceStatusEvent();
             evt.Type = "CaptureFeedbackProgress";
             evt.Message = message;

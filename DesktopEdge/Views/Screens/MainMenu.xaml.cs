@@ -61,6 +61,7 @@ namespace ZitiDesktopEdge {
         public string LogLevel = "";
         private string appVersion = null;
         public double MainHeight = 500;
+        private bool _isCapturingFeedback;
 
         private ZDEWViewState state;
 
@@ -374,6 +375,17 @@ namespace ZitiDesktopEdge {
         }
 
         async public void CollectFeedbackLogs(object sender, MouseButtonEventArgs e) {
+            if (_isCapturingFeedback) {
+                logger.Info("Feedback collection already in progress - ignoring duplicate click");
+                return;
+            }
+            MonitorClient mc = (MonitorClient)Application.Current.Properties["MonitorClient"];
+            if (mc != null && mc.IsServiceCapturingFeedback) {
+                logger.Info("Service still emitting CaptureFeedback heartbeats - previous capture not yet finished");
+                MainWindow.ShowError("Feedback unavailable", "A previous feedback collection is still running. Check logs for progress, or wait for it to finish.");
+                return;
+            }
+            _isCapturingFeedback = true;
             try {
                 logger.Info("Feedback collection started");
 
@@ -383,12 +395,6 @@ namespace ZitiDesktopEdge {
 
                 string statusMessage = buildFeedbackStatusMessage(logLocation);
                 MainWindow.ShowLoad("Collecting Information", statusMessage);
-
-                System.Text.StringBuilder sb = new System.Text.StringBuilder();
-                sb.Append("Logs collected at : " + DateTime.Now.ToString());
-                sb.Append(". client version : " + appVersion);
-
-                string timestamp = DateTime.Now.ToFileTime().ToString();
 
                 var dataClient = (DataClient)Application.Current.Properties["ServiceClient"];
 
@@ -410,12 +416,14 @@ namespace ZitiDesktopEdge {
                 Process.Start(pfi);
             } catch (MonitorServiceException ex) {
                 logger.Warn("Feedback collection aborted: {0}", ex.Message);
-                MainWindow.ShowError("Could Not Collect Feedback", "The monitor service is offline");
+                MainWindow.ShowError("Could Not Collect Feedback", ex.Message);
             } catch (Exception ex) {
                 logger.Warn(ex, "Feedback collection failed: {0}", ex.Message);
                 MainWindow.ShowError("Could Not Collect Feedback", "The monitor service is offline");
+            } finally {
+                _isCapturingFeedback = false;
+                MainWindow.HideLoad();
             }
-            MainWindow.HideLoad();
         }
 
         private string buildFeedbackStatusMessage(string logLocation) {

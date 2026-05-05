@@ -52,6 +52,12 @@ namespace ZitiDesktopEdge.ServiceClient {
         public event EventHandler<InstallationNotificationEvent> OnNotificationEvent;
         public event EventHandler<MonitorServiceStatusEvent> OnCaptureFeedbackProgressEvent;
 
+        private static readonly TimeSpan FeedbackHeartbeatStaleAfter = TimeSpan.FromSeconds(10);
+
+        public DateTime LastFeedbackHeartbeat { get; private set; } = DateTime.MinValue;
+
+        public bool IsServiceCapturingFeedback => DateTime.UtcNow - LastFeedbackHeartbeat < FeedbackHeartbeatStaleAfter;
+
         protected virtual void ServiceStatusEvent(MonitorServiceStatusEvent e) {
             OnServiceStatusEvent?.Invoke(this, e);
         }
@@ -61,6 +67,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         protected virtual void CaptureFeedbackProgressEvent(MonitorServiceStatusEvent e) {
+            LastFeedbackHeartbeat = DateTime.UtcNow;
             OnCaptureFeedbackProgressEvent?.Invoke(this, e);
         }
 
@@ -153,28 +160,15 @@ namespace ZitiDesktopEdge.ServiceClient {
             ActionEvent action = new ActionEvent() { Op = "CaptureLogs", Action = "Normal" };
             await sendMonitorClientAsync(action);
 
-            DateTime lastProgressTime = DateTime.UtcNow;
-            EventHandler<MonitorServiceStatusEvent> heartbeat = (s, e) => lastProgressTime = DateTime.UtcNow;
-            OnCaptureFeedbackProgressEvent += heartbeat;
-
-            try {
-                Task<MonitorServiceStatusEvent> readTask = readMonitorClientAsync<MonitorServiceStatusEvent>(ipcReader, Timeout.InfiniteTimeSpan);
-                TimeSpan stallThreshold = TimeSpan.FromSeconds(60);
-
-                while (true) {
-                    Task completed = await Task.WhenAny(readTask, Task.Delay(5000));
-                    if (completed == readTask) {
-                        return await readTask;
-                    }
-                    if (DateTime.UtcNow - lastProgressTime > stallThreshold) {
-                        string error = $"Feedback collection stalled (no progress for {stallThreshold.TotalSeconds}s).";
-                        Logger.Error(error);
-                        throw new MonitorServiceException(error);
-                    }
+            LastFeedbackHeartbeat = DateTime.UtcNow;
+            Task<MonitorServiceStatusEvent> readTask = readMonitorClientAsync<MonitorServiceStatusEvent>(ipcReader, TimeSpan.FromMinutes(30));
+            while (!readTask.IsCompleted) {
+                await Task.WhenAny(readTask, Task.Delay(2000));
+                if (!IsServiceCapturingFeedback) {
+                    throw new MonitorServiceException("Feedback collection stopped responding.");
                 }
-            } finally {
-                OnCaptureFeedbackProgressEvent -= heartbeat;
             }
+            return await readTask;
         }
 
         async public Task<SvcResponse> SetLogLevelAsync(string level) {
