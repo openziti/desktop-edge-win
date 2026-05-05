@@ -402,17 +402,13 @@ namespace ZitiDesktopEdge {
                     return;
                 }
                 if (_identity?.ExtAuthProviders?.Count > 0) {
-                    if (_identity.AuthInProgress) {
-                        BlurbEvent?.Invoke(_identity);
-                    } else {
-                        try {
-                            string defaultProvider = _identity.GetDefaultProviderId();
-                            DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-                            await _identity.PerformExternalAuthEvent(client, defaultProvider);
-                        } catch (Exception ex) {
-                            ShowError("Unexpected Error", "Please report this issue: " + ex.Message);
-                            logger.Error("external auth failed: [{}]", ex.Message);
-                        }
+                    try {
+                        string defaultProvider = _identity.GetDefaultProviderId();
+                        DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+                        await _identity.PerformExternalAuthEvent(client, defaultProvider);
+                    } catch (Exception ex) {
+                        ShowError("Unexpected Error", "Please report this issue: " + ex.Message);
+                        logger.Error("external auth failed: [{}]", ex.Message);
                     }
                 } else {
                     ShowError("Failed to Authenticate", "No external providers found! This is a configuration error. Inform your network administrator.");
