@@ -627,47 +627,17 @@ namespace ZitiDesktopEdge {
         }
 
         /// <summary>
-        /// Startup: pick whichever ziti-edge-tunnel instance to connect to.
-        /// Rules:
-        ///   0 running          — fall back to the default-pipe reconnect loop.
-        ///   1 running          — connect to it, default or not.
-        ///   2+ with default    — connect to default (preserves prior behaviour).
-        ///   2+ without default — pop the picker; user cancel → reconnect loop.
+        /// Startup: connect to the default ziti-edge-tunnel instance. If it
+        /// isn't running, show the not-started banner and let the reconnect
+        /// loop poll for it. Non-default instances are reached exclusively via
+        /// the Ctrl+Shift+T picker — startup never auto-routes to them.
         /// </summary>
         private async Task ChooseAndConnectOnStartupAsync() {
-            IReadOnlyList<TunnelInstanceDiscovery.TunnelInstance> instances = null;
             try {
-                instances = await TunnelInstanceDiscovery.EnumerateAsync();
-            } catch (Exception ex) {
-                logger.Debug(ex, "instance enumeration failed on startup");
-            }
-
-            if (instances == null || instances.Count == 0) {
-                logger.Info("no running ziti-edge-tunnel instances found on startup — entering reconnect loop on default");
-                ShowServiceNotStarted();
-                serviceClient.Reconnect();
-                return;
-            }
-
-            if (instances.Count == 1) {
-                var only = instances[0];
-                logger.Info("exactly one tunnel instance running on startup ('{0}') — auto-connecting", only.DisplayLabel);
-                await SwitchToInstanceAsync(only.Discriminator);
-                return;
-            }
-
-            var def = instances.FirstOrDefault(i => string.IsNullOrEmpty(i.Discriminator));
-            if (def != null) {
-                logger.Info("{0} instances running on startup, default is one of them — connecting to default", instances.Count);
-                await SwitchToInstanceAsync(null);
-                return;
-            }
-
-            logger.Info("{0} tunnel instances running on startup, none is the default — opening picker", instances.Count);
-            string chosen;
-            if (PromptForInstance(out chosen)) {
-                await SwitchToInstanceAsync(chosen);
-            } else {
+                await serviceClient.ConnectAsync();
+                await serviceClient.WaitForConnectionAsync();
+            } catch /*ignored for now (Exception ex) */
+              {
                 ShowServiceNotStarted();
                 serviceClient.Reconnect();
             }

@@ -79,6 +79,7 @@ namespace ZitiDesktopEdge {
                 AddIdentityViewModel.LoadSigners(body);
                 return true;
             } catch (Exception ex) {
+                logger.Error(ex, "connecting to the url provided failed");
                 await ShowConnectionErrorAsync(ex);
                 return false;
             } finally {
