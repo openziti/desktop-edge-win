@@ -61,7 +61,6 @@ namespace ZitiDesktopEdge {
         public string LogLevel = "";
         private string appVersion = null;
         public double MainHeight = 500;
-        private bool _isCapturingFeedback;
 
         private ZDEWViewState state;
 
@@ -375,26 +374,20 @@ namespace ZitiDesktopEdge {
         }
 
         async public void CollectFeedbackLogs(object sender, MouseButtonEventArgs e) {
-            if (_isCapturingFeedback) {
-                logger.Info("Feedback collection already in progress - ignoring duplicate click");
-                return;
-            }
             MonitorClient mc = (MonitorClient)Application.Current.Properties["MonitorClient"];
             if (mc != null && mc.IsServiceCapturingFeedback) {
-                logger.Info("Service still emitting CaptureFeedback heartbeats - previous capture not yet finished");
-                MainWindow.ShowError("Feedback unavailable", "A previous feedback collection is still running. Check logs for progress, or wait for it to finish.");
+                logger.Debug("Service still emitting CaptureFeedback heartbeats - previous capture not yet finished");
+                await MainWindow.ShowBlurbAsync("Feedback in progress", "A previous feedback collection is still running.");
                 return;
             }
-            _isCapturingFeedback = true;
             try {
-                logger.Info("Feedback collection started");
+                logger.Debug("Feedback collection started");
 
                 string exeLocation = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
                 string logLocation = Path.Combine(exeLocation, "logs");
                 string serviceLogsLocation = Path.Combine(logLocation, "service");
 
-                string statusMessage = buildFeedbackStatusMessage(logLocation);
-                MainWindow.ShowLoad("Collecting Information", statusMessage);
+                MainWindow.ShowLoad("Collecting Information", "Please wait...");
 
                 var dataClient = (DataClient)Application.Current.Properties["ServiceClient"];
 
@@ -409,38 +402,20 @@ namespace ZitiDesktopEdge {
                     return;
                 }
                 string pathToLogs = resp.Message;
-                logger.Info("Feedback collection completed: {0}", pathToLogs);
+                logger.Info("Feedback collection completed at {0}: {1}", DateTime.Now, pathToLogs);
                 string args = string.Format("/Select, \"{0}\"", pathToLogs);
 
                 ProcessStartInfo pfi = new ProcessStartInfo("Explorer.exe", args);
                 Process.Start(pfi);
             } catch (MonitorServiceException ex) {
-                logger.Warn("Feedback collection aborted: {0}", ex.Message);
+                logger.Error("Feedback collection aborted: {0}", ex.Message);
                 MainWindow.ShowError("Could Not Collect Feedback", ex.Message);
             } catch (Exception ex) {
-                logger.Warn(ex, "Feedback collection failed: {0}", ex.Message);
+                logger.Error(ex, "Feedback collection failed: {0}", ex.Message);
                 MainWindow.ShowError("Could Not Collect Feedback", "The monitor service is offline");
             } finally {
-                _isCapturingFeedback = false;
                 MainWindow.HideLoad();
             }
-        }
-
-        private string buildFeedbackStatusMessage(string logLocation) {
-            string level = string.IsNullOrEmpty(this.LogLevel) ? "unknown" : this.LogLevel.ToUpper();
-            long totalBytes = 0;
-            try {
-                foreach (FileInfo file in new DirectoryInfo(logLocation).GetFiles("*.*", SearchOption.AllDirectories)) {
-                    if (file.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)) continue;
-                    totalBytes += file.Length;
-                }
-            } catch (Exception ex) {
-                logger.Warn(ex, "could not size {0}", logLocation);
-            }
-            string size = ByteFormat.Format(totalBytes);
-            bool isVerbose = this.LogLevel == "trace" || this.LogLevel == "verbose" || this.LogLevel == "debug";
-            string warning = isVerbose ? "\nVerbose logging may take several minutes." : "";
-            return $"Log level: {level} | ~{size} of logs{warning}";
         }
 
         private void ShowSupport(object sender, MouseButtonEventArgs e) {
