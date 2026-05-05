@@ -52,11 +52,9 @@ namespace ZitiDesktopEdge.ServiceClient {
         public event EventHandler<InstallationNotificationEvent> OnNotificationEvent;
         public event EventHandler<MonitorServiceStatusEvent> OnCaptureFeedbackProgressEvent;
 
-        private static readonly TimeSpan FeedbackHeartbeatStaleAfter = TimeSpan.FromSeconds(10);
-
         public DateTime LastFeedbackHeartbeat { get; private set; } = DateTime.MinValue;
 
-        public bool IsServiceCapturingFeedback => DateTime.UtcNow - LastFeedbackHeartbeat < FeedbackHeartbeatStaleAfter;
+        public bool IsServiceCapturingFeedback => (DateTime.UtcNow - LastFeedbackHeartbeat).TotalSeconds < 10;
 
         protected virtual void ServiceStatusEvent(MonitorServiceStatusEvent e) {
             OnServiceStatusEvent?.Invoke(this, e);
