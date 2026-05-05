@@ -95,7 +95,7 @@ namespace ZitiDesktopEdge.ServiceClient {
                 // On Windows .NET Framework, Directory.GetFiles against \\.\pipe\
                 // returns the list of named pipes. Entries come back as full paths
                 // of the form \\.\pipe\<name>, so we extract just the name.
-                pipeEntries = Directory.GetFiles(@"\\.\pipe\");
+                pipeEntries = Directory.GetFiles(@"\\.\pipe\", "ziti*");
             } catch (Exception ex) {
                 Logger.Debug(ex, "Failed to enumerate named pipes at \\\\.\\pipe\\");
                 return instances;
