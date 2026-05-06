@@ -2,8 +2,8 @@
 ## What's New
 * [Issue 985](https://github.com/openziti/desktop-edge-win/issues/985) - Allow registry settings to override and lock ZDEW local/file settings
   * Organizational policy enforcement via the Windows registry
-      * IT administrators can enforce settings via Group Policy, Microsoft Intune (ADMX ingestion
-        or OMA-URI), MDM, or any tool that writes to the managed-policy hive:
+      * IT administrators can enforce settings via Group Policy, Microsoft Intune with the
+        provided ADMX ingested, or any tool that writes directly to the managed-policy hive:
         `HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\`
       * Registry values take precedence over `settings.json` and `App.config` defaults; if no
         registry value is present, behavior is unchanged from prior releases
@@ -56,7 +56,7 @@
     can request a staged install explicitly
   * ADMX/ADML Group Policy templates for `ziti-monitor-service` and the UI, ready for GPMC or
     Intune ADMX ingestion. Bundled as `ZDEW-AdminTemplates-<version>.zip` on each GitHub release.
-  * PowerShell helper script (`Set-GpoRegistryValues.ps1`) for setting policy registry values
+  * PowerShell helper script (`Set-PolicyRegistryValues.ps1`) for setting policy registry values
     directly without a full GPO deployment -- useful for standalone machines or test rigs
   * Per-identity external authentication provider selection is policy-locked when
     `DefaultExtAuthProvider` is set under the `ui` key
