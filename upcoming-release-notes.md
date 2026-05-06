@@ -7,6 +7,9 @@
         `HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\`
       * Registry values take precedence over `settings.json` and `App.config` defaults; if no
         registry value is present, behavior is unchanged from prior releases
+      * Values live under `HKLM\SOFTWARE\Policies\...`, which the Group Policy Client Side
+        Extension manages directly. When a GPO is unlinked or no longer applies to the
+        machine, the corresponding values are removed automatically and the lock is released
       * Policy is enforced server-side by `ziti-monitor-service` -- any IPC attempt to mutate a
         locked setting is rejected with a new `MANAGED_BY_POLICY` error code
       * The UI reads policy state from the monitor service at connect time and on every status
