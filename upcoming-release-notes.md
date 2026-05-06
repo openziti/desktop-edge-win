@@ -1,4 +1,4 @@
-# Next Release
+# Release 2.11.0.0
 ## What's New
 * [Issue 985](https://github.com/openziti/desktop-edge-win/issues/985) - Allow registry settings to override and lock ZDEW local/file settings
   * Organizational policy enforcement via the Windows registry
@@ -80,3 +80,9 @@
   `Microsoft.Bcl.Cryptography` and `System.Formats.Asn1`
 * Advanced Installer project upgraded 23.2 -> 23.6; installer now emits an MSI SHA256 sidecar
   alongside the EXE
+
+## Dependencies
+* ziti-tunneler: v1.16.1
+* ziti-sdk:      1.16.0
+* tlsuv:         v0.41.3[OpenSSL 3.6.1 27 Jan 2026]
+* tlsuv:         v0.41.3[win32crypto(CNG): ncrypt[1.0] ]
