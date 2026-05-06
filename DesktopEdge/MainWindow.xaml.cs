@@ -634,8 +634,6 @@ namespace ZitiDesktopEdge {
             if (!UIUtils.MouseUpForMouseDown(e)) return;
             if (e.ChangedButton == MouseButton.Right) {
                 _isAttached = true;
-                IdentityMenu.Arrow.Visibility = Visibility.Visible;
-                Arrow.Visibility = Visibility.Visible;
                 MainMenu.Retach();
             }
         }
@@ -644,8 +642,6 @@ namespace ZitiDesktopEdge {
             try {
                 if (e.ChangedButton == MouseButton.Left) {
                     _isAttached = false;
-                    IdentityMenu.Arrow.Visibility = Visibility.Collapsed;
-                    Arrow.Visibility = Visibility.Collapsed;
                     MainMenu.Detach();
                     this.DragMove();
                 }
@@ -1844,65 +1840,31 @@ namespace ZitiDesktopEdge {
         private void SetLocation() {
             var desktopWorkingArea = SystemParameters.WorkArea;
 
-            var renderedHeight = MainView.ActualHeight; // > defaultHeight ? MainView.ActualHeight : defaultHeight;
+            var renderedHeight = MainView.ActualHeight;
             IdentityMenu.MainHeight = renderedHeight;
-            
-            double defaultMiddle = 195;
-            if (this.ActualWidth > 0) {
-                defaultMiddle = this.ActualWidth / 2 - Arrow.ActualWidth / 2;
-            }
 
             Rectangle trayRectangle = WinAPI.GetTrayRectangle();
             if (trayRectangle.Top < 20) {
                 this.Position = "Top";
                 this.Top = desktopWorkingArea.Top + _top;
                 this.Left = desktopWorkingArea.Right - this.Width - _right;
-                Arrow.SetValue(Canvas.TopProperty, (double)0);
-                Arrow.SetValue(Canvas.LeftProperty, defaultMiddle);
-                MainMenu.Arrow.SetValue(Canvas.TopProperty, (double)0);
-                MainMenu.Arrow.SetValue(Canvas.LeftProperty, defaultMiddle);
-                IdentityMenu.Arrow.SetValue(Canvas.TopProperty, (double)0);
-                IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, defaultMiddle);
             } else if (trayRectangle.Left < 20) {
                 this.Position = "Left";
                 this.Left = _left;
                 this.Top = desktopWorkingArea.Bottom - this.ActualHeight - 75;
-                Arrow.SetValue(Canvas.TopProperty, renderedHeight - 200);
-                Arrow.SetValue(Canvas.LeftProperty, (double)0);
-                MainMenu.Arrow.SetValue(Canvas.TopProperty, renderedHeight - 200);
-                MainMenu.Arrow.SetValue(Canvas.LeftProperty, (double)0);
-                IdentityMenu.Arrow.SetValue(Canvas.TopProperty, renderedHeight - 200);
-                IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, (double)0);
             } else if (desktopWorkingArea.Right == (double)trayRectangle.Left) {
                 this.Position = "Right";
                 this.Left = desktopWorkingArea.Right - this.Width - 20;
                 this.Top = desktopWorkingArea.Bottom - renderedHeight - 75;
-                Arrow.SetValue(Canvas.TopProperty, renderedHeight - 200);
-                Arrow.SetValue(Canvas.LeftProperty, this.Width - 30);
-                MainMenu.Arrow.SetValue(Canvas.TopProperty, renderedHeight - 200);
-                MainMenu.Arrow.SetValue(Canvas.LeftProperty, this.Width - 30);
-                IdentityMenu.Arrow.SetValue(Canvas.TopProperty, renderedHeight - 200);
-                IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, this.Width - 30);
             } else {
                 this.Position = "Bottom";
                 this.Left = desktopWorkingArea.Right - this.Width - 75;
                 this.Top = desktopWorkingArea.Bottom - renderedHeight;
-                Arrow.SetValue(Canvas.TopProperty, renderedHeight - 35);
-                Arrow.SetValue(Canvas.LeftProperty, defaultMiddle);
-                MainMenu.Arrow.SetValue(Canvas.TopProperty, renderedHeight - 35);
-                MainMenu.Arrow.SetValue(Canvas.LeftProperty, defaultMiddle);
-                IdentityMenu.Arrow.SetValue(Canvas.TopProperty, renderedHeight - 35);
-                IdentityMenu.Arrow.SetValue(Canvas.LeftProperty, defaultMiddle);
             }
         }
         public void Placement() {
             if (_isAttached) {
-                Arrow.Visibility = Visibility.Visible;
-                IdentityMenu.Arrow.Visibility = Visibility.Visible;
                 SetLocation();
-            } else {
-                IdentityMenu.Arrow.Visibility = Visibility.Visible;
-                Arrow.Visibility = Visibility.Collapsed;
             }
         }
 

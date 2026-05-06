@@ -120,11 +120,6 @@ namespace ZitiDesktopEdge {
             }
             set {
                 _isAttached = value;
-                if (_isAttached) {
-                    Arrow.Visibility = Visibility.Visible;
-                } else {
-                    Arrow.Visibility = Visibility.Collapsed;
-                }
             }
         }
 

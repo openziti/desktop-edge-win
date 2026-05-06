@@ -555,7 +555,6 @@ namespace ZitiDesktopEdge {
             Application.Current.MainWindow.ShowInTaskbar = true;
             DetachButton.Visibility = Visibility.Collapsed;
             AttachButton.Visibility = Visibility.Visible;
-            Arrow.Visibility = Visibility.Collapsed;
             if (OnAttachmentChange != null) {
                 OnAttachmentChange(false);
             }
@@ -566,19 +565,16 @@ namespace ZitiDesktopEdge {
             Application.Current.MainWindow.ShowInTaskbar = true;
             DetachButton.Visibility = Visibility.Collapsed;
             AttachButton.Visibility = Visibility.Visible;
-            Arrow.Visibility = Visibility.Collapsed;
         }
         public void Retach() {
             Application.Current.MainWindow.ShowInTaskbar = false;
             DetachButton.Visibility = Visibility.Visible;
             AttachButton.Visibility = Visibility.Collapsed;
-            Arrow.Visibility = Visibility.Visible;
         }
         private void RetachWindow(object sender, MouseButtonEventArgs e) {
             Application.Current.MainWindow.ShowInTaskbar = false;
             DetachButton.Visibility = Visibility.Visible;
             AttachButton.Visibility = Visibility.Collapsed;
-            Arrow.Visibility = Visibility.Visible;
             if (OnAttachmentChange != null) {
                 OnAttachmentChange(true);
             }
@@ -660,9 +656,6 @@ namespace ZitiDesktopEdge {
             MaintenanceWindowAnyTime.IsChecked = anyTime;
         }
 
-        private void MaintenanceWindow_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-        }
-
         private void MaintenanceWindowAnyTime_Changed(object sender, RoutedEventArgs e) {
             bool anyTime = MaintenanceWindowAnyTime.IsChecked == true;
             bool detailsEditable = !policyViewModel.AutomaticUpgradesPolicyControlled
@@ -685,23 +678,37 @@ namespace ZitiDesktopEdge {
                 return;
             }
             try {
-                var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
+                MonitorClient monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
 
                 // Capture UI values before any await; service events during awaits
                 // can trigger UpdateState() which resets combos to stale viewmodel values.
-                string url   = UpdateUrl.Text;
-                int    start = MaintenanceWindowStartCombo.SelectedIndex;
-                int    end   = MaintenanceWindowEndCombo.SelectedIndex;
+                string url       = UpdateUrl.Text;
+                int    startHour = MaintenanceWindowStartCombo.SelectedIndex;
+                int    endHour   = MaintenanceWindowEndCombo.SelectedIndex;
 
-                var rUrl = await monitorClient.SetAutomaticUpgradeURLAsync(url);
-                if (rUrl != null && rUrl.Code != 0) { checkResponse(rUrl, "Error Saving Settings", "Could not set update URL."); return; }
+                SvcResponse urlResponse = await monitorClient.SetAutomaticUpgradeURLAsync(url);
+                if (urlResponse == null || urlResponse.Code != 0) {
+                    logger.Error("SetAutomaticUpgradeURLAsync failed: {0}", urlResponse?.Error ?? "(null response)");
+                    MainWindow.ShowError("Error Saving Settings", !string.IsNullOrEmpty(urlResponse?.Error) ? urlResponse.Error : "Could not set update URL.");
+                    return;
+                }
                 state.AutomaticUpdateURL = url;
-                var r1 = await monitorClient.SetMaintenanceWindowStartAsync(start);
-                var r2 = await monitorClient.SetMaintenanceWindowEndAsync(end);
-                if (r1.Code != 0) { checkResponse(r1, "Error Saving Settings", "Could not set maintenance window start."); return; }
-                if (r2.Code != 0) { checkResponse(r2, "Error Saving Settings", "Could not set maintenance window end."); return; }
-                state.MaintenanceWindowStart = start;
-                state.MaintenanceWindowEnd   = end;
+
+                SvcResponse startResponse = await monitorClient.SetMaintenanceWindowStartAsync(startHour);
+                if (startResponse == null || startResponse.Code != 0) {
+                    logger.Error("SetMaintenanceWindowStartAsync failed: {0}", startResponse?.Error ?? "(null response)");
+                    MainWindow.ShowError("Error Saving Settings", !string.IsNullOrEmpty(startResponse?.Error) ? startResponse.Error : "Could not set maintenance window start.");
+                    return;
+                }
+
+                SvcResponse endResponse = await monitorClient.SetMaintenanceWindowEndAsync(endHour);
+                if (endResponse == null || endResponse.Code != 0) {
+                    logger.Error("SetMaintenanceWindowEndAsync failed: {0}", endResponse?.Error ?? "(null response)");
+                    MainWindow.ShowError("Error Saving Settings", !string.IsNullOrEmpty(endResponse?.Error) ? endResponse.Error : "Could not set maintenance window end.");
+                    return;
+                }
+                state.MaintenanceWindowStart = startHour;
+                state.MaintenanceWindowEnd   = endHour;
                 this.OnShowBlurb?.Invoke("Settings Saved.");
             } catch (MonitorServiceException) {
                 MainWindow.ShowError("Could Not Save Settings", "The monitor service is offline");

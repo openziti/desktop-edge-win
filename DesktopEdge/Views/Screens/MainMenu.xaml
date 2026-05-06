@@ -26,13 +26,6 @@
              d:DesignHeight="400" d:DesignWidth="400" Margin="1,1,1,1">
 
     <Grid>
-        <Canvas>
-            <Rectangle Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="White" VerticalAlignment="Bottom" Width="20">
-                <Rectangle.LayoutTransform>
-                    <RotateTransform Angle="-45"/>
-                </Rectangle.LayoutTransform>
-            </Rectangle>
-        </Canvas>
         <Rectangle Margin="10,10,10,10" Fill="White" RadiusY="10" RadiusX="10" ClipToBounds="True"></Rectangle>
 
         <Grid Margin="20,20,20,-20">
@@ -268,12 +261,10 @@
                     <Label x:Name="MaintenanceWindowHeading" FontWeight="Bold" FontSize="16">Installation maintenance window:</Label>
                     <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"/>
                     <StackPanel Orientation="Horizontal" Margin="0,6,0,0" VerticalAlignment="Center">
-                        <Label VerticalAlignment="Center" Padding="0,0,6,0">From</Label>
-                        <ComboBox x:Name="MaintenanceWindowStartCombo"
-                                  Width="80" SelectionChanged="MaintenanceWindow_SelectionChanged"/>
+                        <Label VerticalAlignment="Center" Padding="5,0,6,0">From</Label>
+                        <ComboBox x:Name="MaintenanceWindowStartCombo" Width="80"/>
                         <Label VerticalAlignment="Center" Padding="6,0">to</Label>
-                        <ComboBox x:Name="MaintenanceWindowEndCombo"
-                                  Width="80" SelectionChanged="MaintenanceWindow_SelectionChanged"/>
+                        <ComboBox x:Name="MaintenanceWindowEndCombo" Width="80"/>
                         <CheckBox x:Name="MaintenanceWindowAnyTime" Content="Any time" VerticalAlignment="Center"
                                   Margin="12,0,0,0"
                                   Checked="MaintenanceWindowAnyTime_Changed"

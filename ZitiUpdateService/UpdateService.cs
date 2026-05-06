@@ -283,6 +283,9 @@ namespace ZitiUpdateService {
             if (PolicySettings.IsLocked("MaintenanceWindowStart")) {
                 return new SvcResponse { Code = (int)ErrorCodes.MANAGED_BY_POLICY, Error = "MaintenanceWindowStart is managed by policy", Message = "Failure" };
             }
+            if (hour.HasValue && (hour.Value < 0 || hour.Value > 23)) {
+                return new SvcResponse { Code = (int)ErrorCodes.INVALID_VALUE, Error = $"MaintenanceWindowStart must be 0-23, got {hour.Value}", Message = "Failure" };
+            }
             CurrentSettings.MaintenanceWindowStart = hour;
             CurrentSettings.Write();
             return new SvcResponse { Message = "Success" };
@@ -291,6 +294,9 @@ namespace ZitiUpdateService {
         private SvcResponse SetMaintenanceWindowEnd(int? hour) {
             if (PolicySettings.IsLocked("MaintenanceWindowEnd")) {
                 return new SvcResponse { Code = (int)ErrorCodes.MANAGED_BY_POLICY, Error = "MaintenanceWindowEnd is managed by policy", Message = "Failure" };
+            }
+            if (hour.HasValue && (hour.Value < 0 || hour.Value > 23)) {
+                return new SvcResponse { Code = (int)ErrorCodes.INVALID_VALUE, Error = $"MaintenanceWindowEnd must be 0-23, got {hour.Value}", Message = "Failure" };
             }
             CurrentSettings.MaintenanceWindowEnd = hour;
             CurrentSettings.Write();

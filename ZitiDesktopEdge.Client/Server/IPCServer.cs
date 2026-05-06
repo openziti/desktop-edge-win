@@ -303,5 +303,6 @@ namespace ZitiDesktopEdge.Server {
         COULD_NOT_SET_URL,
         URL_INVALID,
         MANAGED_BY_POLICY,
+        INVALID_VALUE,
     }
 }
