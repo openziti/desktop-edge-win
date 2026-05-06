@@ -1,5 +1,17 @@
-# Release 2.11.0.0
+# Next Release
 ## What's New
+* [Issue 970](https://github.com/openziti/desktop-edge-win/issues/970) - Added toast notifications for external auth success/failure when the UI is minimized and auto-launch browser for single-provider external auth
+
+## Bugs fixed
+* [Issue 776](https://github.com/openziti/desktop-edge-win/issues/776) - Feedback collection no longer times out prematurely on large or verbose log bundles
+    * Progress dialog shows the current phase (copy, collect, zip) and bundle size
+    * Stall detection: if the service stops sending progress for 10 seconds the UI surfaces an error
+    * A notice is shown when feedback is requested while a previous collection is still in progress
+    * Error dialog reports the underlying error rather than always saying "monitor service is offline"
+    * Symlinked log files are skipped, and a duplicate ZET log copy step was removed
+
+
+
 * Organizational policy enforcement via the Windows registry
     * IT administrators can enforce settings via Group Policy, Microsoft Intune (ADMX ingestion
       or OMA-URI), MDM, or any tool that writes to the managed-policy hive:
@@ -83,24 +95,6 @@
 * New `DebugMock` solution configuration and `AllowFastInterval` build switch for local testing
   (production builds keep the 600 s minimum poll interval)
 
-## Dependencies
-* ziti-tunneler: v1.14.6
-* ziti-sdk:      1.14.3
-* tlsuv:         v0.41.1[OpenSSL 3.6.1 27 Jan 2026]
-* tlsuv:         v0.41.1[win32crypto(CNG): ncrypt[1.0] ]
-
-# Release 2.10.4.0
-## What's New
-* updated to ziti-edge-tunnel v1.14.6
-
-## Bugs fixed
-n/a
 
 ## Other changes
 n/a
-
-## Dependencies
-* ziti-tunneler: v1.14.6
-* ziti-sdk:      1.14.3
-* tlsuv:         v0.41.1[OpenSSL 3.6.1 27 Jan 2026]
-* tlsuv:         v0.41.1[win32crypto(CNG): ncrypt[1.0] ]

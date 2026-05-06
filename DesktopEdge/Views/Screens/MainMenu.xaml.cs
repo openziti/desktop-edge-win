@@ -503,20 +503,23 @@ namespace ZitiDesktopEdge {
         }
 
         async public void CollectFeedbackLogs(object sender, MouseButtonEventArgs e) {
+            MonitorClient mc = (MonitorClient)Application.Current.Properties["MonitorClient"];
+            if (mc != null && mc.IsServiceCapturingFeedback) {
+                logger.Debug("Service still emitting CaptureFeedback heartbeats - previous capture not yet finished");
+                await MainWindow.ShowBlurbAsync("Feedback in progress", "A previous feedback collection is still running.");
+                return;
+            }
             try {
-                MainWindow.ShowLoad("Collecting Information", "Please wait while we run some commands\nand collect some diagnostic information");
-
-                System.Text.StringBuilder sb = new System.Text.StringBuilder();
-                sb.Append("Logs collected at : " + DateTime.Now.ToString());
-                sb.Append(". client version : " + appVersion);
-
-                string timestamp = DateTime.Now.ToFileTime().ToString();
-
-                var dataClient = (DataClient)Application.Current.Properties["ServiceClient"];
+                logger.Debug("Feedback collection started");
 
                 string exeLocation = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
                 string logLocation = Path.Combine(exeLocation, "logs");
                 string serviceLogsLocation = Path.Combine(logLocation, "service");
+
+                MainWindow.ShowLoad("Collecting Information", "Please wait...");
+
+                var dataClient = (DataClient)Application.Current.Properties["ServiceClient"];
+
                 await dataClient.zitiDump(serviceLogsLocation);
 
                 var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
@@ -528,18 +531,20 @@ namespace ZitiDesktopEdge {
                     return;
                 }
                 string pathToLogs = resp.Message;
-                logger.Info("Log files found at : {0}", resp.Message);
+                logger.Info("Feedback collection completed at {0}: {1}", DateTime.Now, pathToLogs);
                 string args = string.Format("/Select, \"{0}\"", pathToLogs);
 
                 ProcessStartInfo pfi = new ProcessStartInfo("Explorer.exe", args);
                 Process.Start(pfi);
-            } catch (MonitorServiceException) {
-                MainWindow.ShowError("Could Not Collect Feedback", "The monitor service is offline");
+            } catch (MonitorServiceException ex) {
+                logger.Error("Feedback collection aborted: {0}", ex.Message);
+                MainWindow.ShowError("Could Not Collect Feedback", ex.Message);
             } catch (Exception ex) {
-                logger.Warn(ex, "An unexpected error has occurred when submitting feedback? {0}", ex.Message);
+                logger.Error(ex, "Feedback collection failed: {0}", ex.Message);
                 MainWindow.ShowError("Could Not Collect Feedback", "The monitor service is offline");
+            } finally {
+                MainWindow.HideLoad();
             }
-            MainWindow.HideLoad();
         }
 
         private void ShowSupport(object sender, MouseButtonEventArgs e) {
