@@ -105,3 +105,11 @@ gh release create "${version}" \
 
 gh release upload "${version}" "${tmp_dir}/ZitiDesktopEdgeClient-${version}"/*
 
+admin_templates_dir="${tmp_dir}/ZDEW-AdminTemplates-${version}"
+if [[ -d "${admin_templates_dir}" ]]; then
+  echo "Uploading admin templates assets to release ${version}"
+  gh release upload "${version}" "${admin_templates_dir}"/*
+else
+  echo "WARNING: ${admin_templates_dir} not found; admin templates assets NOT uploaded to release"
+fi
+

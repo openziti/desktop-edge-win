@@ -80,6 +80,15 @@ namespace ZitiUpdateService {
 
         private UpdateCheck lastUpdateCheck;
         private InstallationNotificationEvent lastInstallationNotification;
+        private volatile bool _deferredInstallPending = false;
+        private volatile bool _deferToRestartPending  = false;
+        private volatile bool _stagingDownloadPending = false;
+
+        // Startup policy-polling: when HasPolicy is false at boot, poll every 5s until the
+        // Group Policy registry keys appear (or until 2 minutes have elapsed).  This bounds
+        // the time the UI shows unlocked/wrong values to ~5s instead of 30–60s.
+        private System.Threading.Timer _startupPollTimer;
+        private int _startupPollAttempts;
 
         public UpdateService() {
             InitializeComponent();
@@ -90,6 +99,7 @@ namespace ZitiUpdateService {
                 /* just ignore - file doesn't exist */
             }
             CurrentSettings.Write(); // allows for migration of settings
+            PolicySettings.Load();      // read registry overrides; must run after Write() so policy wins
             CurrentSettings.OnConfigurationChange += CurrentSettings_OnConfigurationChange;
 
             base.CanHandlePowerEvent = true;
@@ -111,6 +121,8 @@ namespace ZitiUpdateService {
             svr.TriggerUpdate = TriggerUpdate;
             svr.SetAutomaticUpdateDisabled = SetAutomaticUpdateDisabled;
             svr.SetAutomaticUpdateURL = SetAutomaticUpdateURL;
+            svr.SetMaintenanceWindowStart = SetMaintenanceWindowStart;
+            svr.SetMaintenanceWindowEnd = SetMaintenanceWindowEnd;
 
             string assemblyVersionStr = Assembly.GetExecutingAssembly().GetName().Version.ToString(); //fetch from ziti?
             assemblyVersion = new Version(assemblyVersionStr);
@@ -122,6 +134,14 @@ namespace ZitiUpdateService {
         }
 
         private SvcResponse SetAutomaticUpdateURL(string url) {
+            if (PolicySettings.IsLocked("AutomaticUpdateURL")) {
+                Logger.Warn("UpdateStreamURL is managed by Group Policy, change rejected");
+                return new SvcResponse {
+                    Code = (int)ErrorCodes.MANAGED_BY_POLICY,
+                    Error = "UpdateStreamURL is managed by Group Policy",
+                    Message = "Failure",
+                };
+            }
             SvcResponse failure = new SvcResponse();
             failure.Code = (int)ErrorCodes.URL_INVALID;
             failure.Error = $"The url supplied is invalid: \n{url}\n";
@@ -146,8 +166,6 @@ namespace ZitiUpdateService {
                     }
                 }
 
-                checkUpdateImmediately();
-
                 CurrentSettings.AutomaticUpdateURL = url;
                 CurrentSettings.Write();
                 r.Message = "Success";
@@ -156,26 +174,144 @@ namespace ZitiUpdateService {
         }
 
         private void CurrentSettings_OnConfigurationChange(object sender, ControllerEvent e) {
-            MonitorServiceStatusEvent evt;
-            if (lastInstallationNotification != null) {
-                evt = lastInstallationNotification;
-            } else {
-                evt = new MonitorServiceStatusEvent() {
-                    Code = 0,
-                    Error = "",
-                    Message = "Configuration Changed",
-                    Type = "Status",
-                    Status = ServiceActions.ServiceStatus(),
-                    ReleaseStream = IsBeta ? "beta" : "stable",
-                    AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString(),
-                    AutomaticUpgradeURL = CurrentSettings.AutomaticUpdateURL,
-                };
-            }
-            Logger.Debug($"notifying consumers of change to CurrentSettings. AutomaticUpdates status = {(CurrentSettings.AutomaticUpdatesDisabled ? "disabled" : "enabled")}");
+            var evt = new MonitorServiceStatusEvent() {
+                Code = 0,
+                Error = "",
+                Message = "Configuration Changed",
+                Type = "Status",
+                Status = ServiceActions.ServiceStatus(),
+                ReleaseStream = IsBeta ? "beta" : "stable",
+            };
+            ApplyEffectiveSettings(evt);
+            LogStatusEvent("config change", evt);
             EventRegistry.SendEventToConsumers(evt);
         }
 
+        private void PolicySettings_OnConfigurationChange(object sender, ControllerEvent e) {
+            // If WMI fires while the startup poll is still running, cancel the poll so we don't
+            // double-call checkUpdateImmediately().  If the poll timer is null we're in the
+            // normal (post-startup) path and there's nothing extra to do.
+            var pollTimer = Interlocked.Exchange(ref _startupPollTimer, null);
+            if (pollTimer != null) {
+                Logger.Info("Policy change received via WMI; cancelling startup poll timer and performing initial update check");
+                pollTimer.Dispose();
+                // Fall through — CurrentSettings_OnConfigurationChange below notifies the UI,
+                // then we kick the first update check.
+            }
+
+            Logger.Debug("Policy settings changed, notifying consumers");
+            if (PolicySettings.EffectiveAutomaticUpdatesDisabled(CurrentSettings) && (_deferredInstallPending || _deferToRestartPending || _stagingDownloadPending)) {
+                Logger.Info("AutomaticUpdatesDisabled is now set; cancelling pending deferred install");
+                _deferredInstallPending = false;
+                _deferToRestartPending  = false;
+                _stagingDownloadPending = false;
+                DeferredInstallTask.Remove();
+                lastInstallationNotification = null;
+            }
+
+            // If a deferred install was waiting on a maintenance-window or defer-to-restart gate
+            // and the new policy state has just removed those gates, fire the install now instead
+            // of waiting for the next update-timer tick.  Without this, an admin who clears the
+            // gate from policy waits up to one full poll interval (10 minutes in production) for
+            // the queued install to actually start.
+            if (_deferredInstallPending
+                && !PolicySettings.EffectiveAutomaticUpdatesDisabled(CurrentSettings)
+                && IsCurrentlyInMaintenanceWindow()
+                && lastUpdateCheck != null) {
+
+                var versionToInstall = lastUpdateCheck.GetNextVersion();
+                Logger.Info("Policy change unblocked deferred install; proceeding immediately with install of {0}", versionToInstall);
+                _deferredInstallPending = false;
+                var checkToInstall = lastUpdateCheck;
+                Task.Run(() => { installZDE(checkToInstall); });
+            }
+
+            CurrentSettings_OnConfigurationChange(sender, e);
+
+            if (pollTimer != null) {
+                checkUpdateImmediately();
+            }
+        }
+
+        private void ApplyEffectiveSettings(MonitorServiceStatusEvent evt) {
+            evt.AutomaticUpgradeDisabled          = PolicySettings.EffectiveAutomaticUpdatesDisabled(CurrentSettings).ToString();
+            evt.AutomaticUpgradeDisabledLocked    = PolicySettings.IsLocked("AutomaticUpdatesDisabled");
+            evt.AutomaticUpgradeURL               = PolicySettings.EffectiveAutomaticUpdateURL(CurrentSettings) ?? GithubAPI.ProdUrl;
+            evt.AutomaticUpgradeURLLocked         = PolicySettings.IsLocked("AutomaticUpdateURL");
+            evt.AlivenessChecksBeforeAction       = PolicySettings.EffectiveAlivenessChecksBeforeAction(CurrentSettings);
+            evt.AlivenessChecksBeforeActionLocked = PolicySettings.IsLocked("AlivenessChecksBeforeAction");
+            evt.UpdateInterval                    = PolicySettings.EffectiveUpdateInterval().ToString();
+            evt.UpdateIntervalLocked              = PolicySettings.IsLocked("UpdateTimer");
+            evt.InstallationReminder              = PolicySettings.EffectiveInstallationReminder().ToString();
+            evt.InstallationReminderLocked        = PolicySettings.IsLocked("InstallationReminder");
+            evt.InstallationCritical              = PolicySettings.EffectiveInstallationCritical().ToString();
+            evt.InstallationCriticalLocked        = PolicySettings.IsLocked("InstallationCritical");
+            evt.MaintenanceWindowStart            = PolicySettings.EffectiveMaintenanceWindowStart(CurrentSettings);
+            evt.MaintenanceWindowStartLocked      = PolicySettings.IsLocked("MaintenanceWindowStart");
+            evt.MaintenanceWindowEnd              = PolicySettings.EffectiveMaintenanceWindowEnd(CurrentSettings);
+            evt.MaintenanceWindowEndLocked        = PolicySettings.IsLocked("MaintenanceWindowEnd");
+            evt.DeferInstallToRestartLocked       = PolicySettings.IsLocked("DeferInstallToRestart");
+            evt.DeferredInstallPending            = _deferredInstallPending;
+            evt.DeferToRestartPending             = _deferToRestartPending;
+            evt.StagingDownloadPending            = _stagingDownloadPending;
+        }
+
+        private void LogStatusEvent(string context, MonitorServiceStatusEvent evt) {
+            Logger.Debug("{0}: sending MonitorServiceStatusEvent\n" +
+                        "  AutomaticUpgradeDisabled    = {1}  (locked={2})\n" +
+                        "  AutomaticUpgradeURL         = {3}  (locked={4})\n" +
+                        "  AlivenessChecksBeforeAction = {5}  (locked={6})\n" +
+                        "  UpdateInterval              = {7}  (locked={8})\n" +
+                        "  InstallationReminder        = {9}  (locked={10})\n" +
+                        "  InstallationCritical        = {11}  (locked={12})\n" +
+                        "  ReleaseStream               = {13}\n" +
+                        "  Status                      = {14}\n" +
+                        "  Message                     = {15}",
+                context,
+                evt.AutomaticUpgradeDisabled    ?? "(null)", evt.AutomaticUpgradeDisabledLocked,
+                evt.AutomaticUpgradeURL         ?? "(null)", evt.AutomaticUpgradeURLLocked,
+                evt.AlivenessChecksBeforeAction?.ToString() ?? "(null)", evt.AlivenessChecksBeforeActionLocked,
+                evt.UpdateInterval              ?? "(null)", evt.UpdateIntervalLocked,
+                evt.InstallationReminder        ?? "(null)", evt.InstallationReminderLocked,
+                evt.InstallationCritical        ?? "(null)", evt.InstallationCriticalLocked,
+                evt.ReleaseStream               ?? "(null)",
+                evt.Status                      ?? "(null)",
+                evt.Message                     ?? "(null)");
+        }
+
+        private SvcResponse SetMaintenanceWindowStart(int? hour) {
+            if (PolicySettings.IsLocked("MaintenanceWindowStart")) {
+                return new SvcResponse { Code = (int)ErrorCodes.MANAGED_BY_POLICY, Error = "MaintenanceWindowStart is managed by policy", Message = "Failure" };
+            }
+            if (hour.HasValue && (hour.Value < 0 || hour.Value > 23)) {
+                return new SvcResponse { Code = (int)ErrorCodes.INVALID_VALUE, Error = $"MaintenanceWindowStart must be 0-23, got {hour.Value}", Message = "Failure" };
+            }
+            CurrentSettings.MaintenanceWindowStart = hour;
+            CurrentSettings.Write();
+            return new SvcResponse { Message = "Success" };
+        }
+
+        private SvcResponse SetMaintenanceWindowEnd(int? hour) {
+            if (PolicySettings.IsLocked("MaintenanceWindowEnd")) {
+                return new SvcResponse { Code = (int)ErrorCodes.MANAGED_BY_POLICY, Error = "MaintenanceWindowEnd is managed by policy", Message = "Failure" };
+            }
+            if (hour.HasValue && (hour.Value < 0 || hour.Value > 23)) {
+                return new SvcResponse { Code = (int)ErrorCodes.INVALID_VALUE, Error = $"MaintenanceWindowEnd must be 0-23, got {hour.Value}", Message = "Failure" };
+            }
+            CurrentSettings.MaintenanceWindowEnd = hour;
+            CurrentSettings.Write();
+            return new SvcResponse { Message = "Success" };
+        }
+
         private SvcResponse SetAutomaticUpdateDisabled(bool disabled) {
+            if (PolicySettings.IsLocked("AutomaticUpdatesDisabled")) {
+                Logger.Warn("DisableAutomaticUpdates is managed by Group Policy, change rejected");
+                return new SvcResponse {
+                    Code = (int)ErrorCodes.MANAGED_BY_POLICY,
+                    Error = "DisableAutomaticUpdates is managed by Group Policy",
+                    Message = "Failure",
+                };
+            }
             if (lastInstallationNotification != null) {
                 lastInstallationNotification.AutomaticUpgradeDisabled = disabled.ToString();
             }
@@ -186,12 +322,89 @@ namespace ZitiUpdateService {
             return r;
         }
 
-        private SvcResponse TriggerUpdate() {
+        private SvcResponse TriggerUpdate(bool forceDefer = false) {
             SvcResponse r = new SvcResponse();
-            r.Message = "Initiating Update";
 
+            int? start = PolicySettings.EffectiveMaintenanceWindowStart(CurrentSettings);
+            int? end   = PolicySettings.EffectiveMaintenanceWindowEnd(CurrentSettings);
+            bool anyTime = !start.HasValue || !end.HasValue || start.Value == end.Value;
+            bool inWindow = anyTime || IsCurrentlyInMaintenanceWindow();
+
+            Logger.Info("TriggerUpdate requested. MaintenanceWindow={0}-{1}, anyTime={2}, inWindow={3}, now={4}",
+                start.HasValue ? start.Value.ToString() : "null",
+                end.HasValue   ? end.Value.ToString()   : "null",
+                anyTime, inWindow, DateTime.Now.ToString("HH:mm") + " (local)");
+
+            if (!inWindow) {
+                DateTime next = SnapToMaintenanceWindow(DateTime.Now);
+                Logger.Info("TriggerUpdate deferred: outside maintenance window {0}-{1}. Will install when window opens at {2}",
+                    start, end, next.ToString("g") + " (local)");
+                _deferredInstallPending = true;
+                r.Message = "Update scheduled for maintenance window";
+                r.Code = (int)ErrorCodes.NO_ERROR;
+                return r;
+            }
+
+            Logger.Info("TriggerUpdate proceeding, inside maintenance window");
+            _deferredInstallPending = false;
+
+            if (forceDefer || PolicySettings.EffectiveDeferInstallToRestart(CurrentSettings)) {
+                Logger.Info("TriggerUpdate: {0}, staging installer for next restart",
+                    forceDefer ? "user requested deferred install" : "DeferInstallToRestart=True");
+                _stagingDownloadPending = true;
+                r.Message = "Downloading update for next restart...";
+                r.Code = (int)ErrorCodes.NO_ERROR;
+                Task.Run(() => { StageInstallForRestart(lastUpdateCheck); });
+                return r;
+            }
+
+            r.Message = "Initiating Update";
             Task.Run(() => { installZDE(lastUpdateCheck); });
             return r;
+        }
+
+        private void StageInstallForRestart(UpdateCheck check) {
+            try {
+                if (check == null) {
+                    Logger.Warn("StageInstallForRestart: no update check available, cannot stage");
+                    return;
+                }
+                string fileDestination = Path.Combine(updateFolder, check.FileName);
+                if (check.AlreadyDownloaded(updateFolder, check.FileName)) {
+                    Logger.Debug("StageInstallForRestart: installer already downloaded at {0}", fileDestination);
+                } else {
+                    Logger.Info("StageInstallForRestart: downloading installer");
+                    check.CopyUpdatePackage(updateFolder, check.FileName);
+                    Logger.Info("StageInstallForRestart: download complete");
+                }
+                if (!check.HashIsValid(updateFolder, check.FileName)) {
+                    Logger.Warn("StageInstallForRestart: hash invalid, removing {0}", fileDestination);
+                    File.Delete(fileDestination);
+                    _stagingDownloadPending = false;
+                    _deferToRestartPending  = false;
+                    if (lastInstallationNotification != null) NotifyInstallationUpdates(lastInstallationNotification, true);
+                    return;
+                }
+#if !SKIPUPDATE
+                new SignedFileValidator(fileDestination).Verify();
+                DeferredInstallTask.Register(fileDestination);
+                Logger.Info("StageInstallForRestart: installer staged at {0}; will run on next system restart", fileDestination);
+#else
+                Logger.Warn("SKIPUPDATE IS SET - NOT staging installer for restart");
+#endif
+                // Transition: downloading → staged
+                _stagingDownloadPending = false;
+                _deferToRestartPending  = true;
+                // Push updated state to connected UI clients
+                if (lastInstallationNotification != null) {
+                    NotifyInstallationUpdates(lastInstallationNotification, true);
+                }
+            } catch (Exception ex) {
+                Logger.Error(ex, "StageInstallForRestart: unexpected error staging installer");
+                _stagingDownloadPending = false;
+                _deferToRestartPending  = false;
+                if (lastInstallationNotification != null) NotifyInstallationUpdates(lastInstallationNotification, true);
+            }
         }
 
 
@@ -201,6 +414,41 @@ namespace ZitiUpdateService {
             } catch (Exception ex) {
                 Logger.Error(ex, "Unexpected error in CheckUpdate");
             }
+        }
+
+        /// <summary>
+        /// Periodic callback during startup: reloads policy every 5 s until HasPolicy is true
+        /// or 2 minutes have elapsed.  When policy is found the UI is notified immediately and
+        /// the first update check is performed.  If WMI fires first, it cancels this timer via
+        /// <see cref="PolicySettings_OnConfigurationChange"/> so we don't double-check.
+        /// </summary>
+        private void OnStartupPolicyPoll(object state) {
+            _startupPollAttempts++;
+            PolicySettings.Load();
+
+            bool policyFound = PolicySettings.HasPolicy;
+            bool timedOut    = _startupPollAttempts >= 24; // 24 × 5 s = 120 s
+
+            if (!policyFound && !timedOut) {
+                Logger.Trace("Startup policy poll attempt {0}: policy not yet in registry", _startupPollAttempts);
+                return; // keep polling
+            }
+
+            // Stop the timer (swap to null so PolicySettings_OnConfigurationChange won't double-fire).
+            var t = Interlocked.Exchange(ref _startupPollTimer, null);
+            t?.Dispose();
+
+            if (policyFound) {
+                Logger.Info("Startup policy poll: policy found after {0} attempt(s); notifying UI and checking for updates", _startupPollAttempts);
+                // Start the WMI watcher now that the registry key exists, so the
+                // subsequent RetryWatchIfNeeded inside CheckUpdate is a no-op and
+                // does not trigger a redundant second Load().
+                PolicySettings.StartWatching();
+                PolicySettings_OnConfigurationChange(null, null); // push locked state to UI
+            } else {
+                Logger.Info("Startup policy poll: no policy after 2 minutes; proceeding without policy");
+            }
+            checkUpdateImmediately();
         }
 
         private StatusCheck DoUpdateCheck() {
@@ -251,6 +499,10 @@ namespace ZitiUpdateService {
         }
 
         private void SetReleaseStream(string stream) {
+            if (PolicySettings.IsLocked("AutomaticUpdateURL")) {
+                Logger.Warn("UpdateStreamURL is managed by Group Policy, SetReleaseStream rejected");
+                return;
+            }
             string markerFile = Path.Combine(exeLocation, betaStreamMarkerFile);
             if (stream == "beta") {
                 if (IsBeta) {
@@ -559,6 +811,9 @@ namespace ZitiUpdateService {
             Logger.Info("starting events server");
             eventServer = svr.startEventsServerAsync(onEventsClientAsync);
 
+            PolicySettings.OnConfigurationChange += PolicySettings_OnConfigurationChange;
+            PolicySettings.StartWatching();
+
             Logger.Info("starting service watchers");
             if (!running) {
                 running = true;
@@ -596,9 +851,10 @@ namespace ZitiUpdateService {
                 zetSemaphoreName = "unset";
             } else {
                 Interlocked.Add(ref zetFailedCheckCounter, 1);
-                Logger.Warn("ziti-edge-tunnel aliveness check {} appears blocked and has been for {0} times. AlivenessChecksBeforeAction:{1}", zetSemaphoreName, zetFailedCheckCounter, CurrentSettings.AlivenessChecksBeforeAction);
-                if (CurrentSettings.AlivenessChecksBeforeAction > 0) {
-                    if (zetFailedCheckCounter > CurrentSettings.AlivenessChecksBeforeAction) {
+                int alivenessThreshold = PolicySettings.EffectiveAlivenessChecksBeforeAction(CurrentSettings);
+                Logger.Warn("ziti-edge-tunnel aliveness check {} appears blocked and has been for {0} times. AlivenessChecksBeforeAction:{1}", zetSemaphoreName, zetFailedCheckCounter, alivenessThreshold);
+                if (alivenessThreshold > 0) {
+                    if (zetFailedCheckCounter > alivenessThreshold) {
                         disableHealthCheck();
                         //after 'n' failures, just terminate ziti-edge-tunnel
                         Interlocked.Exchange(ref zetFailedCheckCounter, 0); //reset the counter back to 0
@@ -628,14 +884,16 @@ namespace ZitiUpdateService {
                     Type = "Status",
                     Status = ServiceActions.ServiceStatus(),
                     ReleaseStream = IsBeta ? "beta" : "stable",
-                    AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString(),
-                    AutomaticUpgradeURL = CurrentSettings.AutomaticUpdateURL,
                 };
+                ApplyEffectiveSettings(status);
+                LogStatusEvent("new client connected", status);
                 await writer.WriteLineAsync(JsonConvert.SerializeObject(status));
                 await writer.FlushAsync();
 
                 //if a new client attaches - send the last update check status
-                if (lastUpdateCheck != null) {
+                if (lastUpdateCheck != null && lastInstallationNotification != null) {
+                    lastInstallationNotification.DeferredInstallPending = _deferredInstallPending;
+                    lastInstallationNotification.DeferToRestartPending  = _deferToRestartPending;
                     await writer.WriteLineAsync(JsonConvert.SerializeObject(lastInstallationNotification));
                     await writer.FlushAsync();
                 }
@@ -664,6 +922,7 @@ namespace ZitiUpdateService {
 
         protected override void OnStop() {
             Logger.Info("ziti-monitor OnStop was called");
+            PolicySettings.StopWatching();
             base.OnStop();
         }
 
@@ -702,18 +961,14 @@ namespace ZitiUpdateService {
         }
 
         private void SetupServiceWatchers() {
-            var updateTimerInterval = ConfigurationManager.AppSettings.Get("UpdateTimer");
-            var upInt = TimeSpan.Zero;
-            if (!TimeSpan.TryParse(updateTimerInterval, out upInt)) {
-                upInt = new TimeSpan(0, 10, 0);
-            }
+            var upInt = PolicySettings.EffectiveUpdateInterval();
 
             if (upInt.TotalMilliseconds < 10 * 60 * 1000) {
-                Logger.Warn("provided time [{0}] is too small. Using 10 minutes.", updateTimerInterval);
 #if MOCKUPDATE || ALLOWFASTINTERVAL
-                Logger.Info("MOCKUPDATE detected. Not limiting check to 10 minutes");
+                Logger.Debug("Fast interval enabled: using {0} (minimum floor bypassed)", upInt);
 #else
-				upInt = TimeSpan.Parse("0:10:0");
+                Logger.Warn("provided time [{0}] is too small. Using 10 minutes.", upInt);
+                upInt = TimeSpan.Parse("0:10:0");
 #endif
             }
 
@@ -722,12 +977,32 @@ namespace ZitiUpdateService {
             _updateTimer.Interval = upInt.TotalMilliseconds;
             _updateTimer.Enabled = true;
             _updateTimer.Start();
-            Logger.Info("Version Checker is running every {0} minutes", upInt.TotalMinutes);
+
+            if (upInt.TotalSeconds > 120) {
+                Logger.Info("Version Checker is running every {0} minutes", upInt.TotalMinutes);
+            } else {
+                Logger.Info("Version Checker is running every {0} seconds", upInt.TotalSeconds);
+            }
 
             cleanOldLogs(asmDir);
             scanForStaleDownloads(updateFolder);
+            if (DeferredInstallTask.IsRegistered()) {
+                Logger.Info("Deferred install task is registered at startup; removing it (installer already ran)");
+                DeferredInstallTask.Remove();
+            } else {
+                Logger.Info("No deferred install task registered at startup");
+            }
 
-            checkUpdateImmediately();
+            if (PolicySettings.HasPolicy) {
+                checkUpdateImmediately();
+            } else {
+                // No policy registry key at startup — Group Policy may not have applied yet.
+                // Poll every 5s for up to 2 minutes so the UI updates within ~5s of GP applying
+                // rather than waiting for the WMI watcher (which can take 30–60s to fire).
+                Logger.Info("No policy found at startup; polling every 5s for Group Policy to apply (max 2 min)");
+                _startupPollAttempts = 0;
+                _startupPollTimer = new System.Threading.Timer(OnStartupPolicyPoll, null, 5000, 5000);
+            }
 
             try {
                 dataClient.ConnectAsync().Wait();
@@ -764,14 +1039,18 @@ namespace ZitiUpdateService {
 			var check = new FilesystemCheck(v, -1, mockDate, "FilesysteCheck.download.mock.txt", new Version("2.1.4"));
 #else
 
-            if (string.IsNullOrEmpty(CurrentSettings.AutomaticUpdateURL)) {
-                CurrentSettings.AutomaticUpdateURL = GithubAPI.ProdUrl;
-                Logger.Info("Settings does not contain update url. Setting to: {}", CurrentSettings.AutomaticUpdateURL);
-                CurrentSettings.Write();
+            string updateUrl = PolicySettings.EffectiveAutomaticUpdateURL(CurrentSettings);
+            if (string.IsNullOrEmpty(updateUrl)) {
+                updateUrl = GithubAPI.ProdUrl;
+                if (!PolicySettings.IsLocked("AutomaticUpdateURL")) {
+                    CurrentSettings.AutomaticUpdateURL = updateUrl;
+                    CurrentSettings.Write();
+                }
+                Logger.Info("No update URL configured. Using default: {}", updateUrl);
             }
-            Logger.Debug("AutomaticUpdateURL url: {}", CurrentSettings.AutomaticUpdateURL);
+            Logger.Debug("update stream URL: {}", updateUrl);
 
-            var check = new GithubCheck(v, CurrentSettings.AutomaticUpdateURL);
+            var check = new GithubCheck(v, updateUrl);
 #endif
             return check;
         }
@@ -784,20 +1063,54 @@ namespace ZitiUpdateService {
                 Type = "Notification",
                 Status = ServiceActions.ServiceStatus(),
                 ReleaseStream = IsBeta ? "beta" : "stable",
-                AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString().ToLower(),
-                AutomaticUpgradeURL = CurrentSettings.AutomaticUpdateURL,
                 ZDEVersion = version,
             };
+            ApplyEffectiveSettings(info);
             return info;
         }
 
         private void CheckUpdate(object sender, ElapsedEventArgs e) {
+            PolicySettings.RetryWatchIfNeeded();
+
             if (e != null) {
                 Logger.Debug("Timer triggered CheckUpdate at {0}", e.SignalTime);
             }
-            semaphore.Wait();
+            // Drop concurrent invocations rather than queueing them.  Multiple call sites
+            // (timer tick, IPC DoUpdateCheck, policy-change handler, startup poll) can fire
+            // CheckUpdate within the same instant; without this, each invocation waits in turn
+            // and re-runs the entire check, producing N×log spam and N×network requests for
+            // the same state. The first caller wins; the rest log a debug line and return.
+            if (!semaphore.Wait(0)) {
+                Logger.Debug("CheckUpdate already in progress; skipping concurrent invocation");
+                return;
+            }
 
             try {
+                if (_deferredInstallPending) {
+                    bool inWindow = IsCurrentlyInMaintenanceWindow();
+                    if (lastUpdateCheck != null && inWindow) {
+                        Logger.Info("Deferred install: maintenance window is now open, proceeding with install of {0}", lastUpdateCheck.GetNextVersion());
+                        _deferredInstallPending = false;
+                        semaphore.Release();
+                        Task.Run(() => { installZDE(lastUpdateCheck); });
+                        return;
+                    }
+                    int? wStart = PolicySettings.EffectiveMaintenanceWindowStart(CurrentSettings);
+                    int? wEnd   = PolicySettings.EffectiveMaintenanceWindowEnd(CurrentSettings);
+                    Logger.Info("Deferred install pending, update {0} queued. Window={1}-{2}, inWindow={3}, now={4}",
+                        lastUpdateCheck != null ? lastUpdateCheck.GetNextVersion().ToString() : "(verifying...)",
+                        wStart.HasValue ? wStart.Value.ToString() : "any",
+                        wEnd.HasValue   ? wEnd.Value.ToString()   : "any",
+                        inWindow,
+                        DateTime.Now.ToString("HH:mm") + " (local)");
+                    if (lastUpdateCheck != null) {
+                        // Version already known; skip network call and just wait for window
+                        semaphore.Release();
+                        return;
+                    }
+                    // lastUpdateCheck is null; fall through to populate it via network check
+                }
+
                 Logger.Debug("checking for update");
                 var check = getCheck(assemblyVersion);
 
@@ -808,29 +1121,49 @@ namespace ZitiUpdateService {
                 }
 
                 Logger.Info("update is available.");
+
+                if (_deferredInstallPending) {
+                    // First check since service start; record the version and wait for window
+                    lastUpdateCheck = check;
+                    semaphore.Release();
+                    return;
+                }
+
                 if (!Directory.Exists(updateFolder)) {
                     Directory.CreateDirectory(updateFolder);
                 }
                 InstallationNotificationEvent info = newInstallationNotificationEvent(check.GetNextVersion().ToString());
                 info.PublishTime = check.PublishDate;
                 info.NotificationDuration = InstallationReminder();
+                bool updatesDisabled = PolicySettings.EffectiveAutomaticUpdatesDisabled(CurrentSettings);
+                Logger.Debug("InstallationIsCritical check: publishDate={0:u} (UTC), threshold={1}, criticalAfter={2} (local), now={3} (local)",
+                    check.PublishDate.ToUniversalTime(), PolicySettings.EffectiveInstallationCritical(),
+                    check.PublishDate.ToLocalTime() + PolicySettings.EffectiveInstallationCritical(), DateTime.Now);
                 if (InstallationIsCritical(check.PublishDate)) {
-                    info.InstallTime = DateTime.Now + TimeSpan.Parse("0:0:30");
-                    Logger.Warn("Installation is critical! for ZDE version: {0}. update published at: {1}. approximate install time: {2}", info.ZDEVersion, check.PublishDate, info.InstallTime);
-                    NotifyInstallationUpdates(info, true);
-                    if (CurrentSettings.AutomaticUpdatesDisabled) {
-                        Logger.Debug("AutomaticUpdatesDisabled is set to true. Automatic update is disabled.");
-                    } else {
-                        Thread.Sleep(30);
+                    if (updatesDisabled) {
+                        Logger.Info("Update {0} is critical but AutomaticUpdatesDisabled is set; skipping notification and install", info.ZDEVersion);
+                    } else if (IsCurrentlyInMaintenanceWindow()) {
+                        info.InstallTime = DateTime.Now + TimeSpan.Parse("0:0:30");
+                        Logger.Warn("Installation is critical! for ZDE version: {0}. update published at: {1:u} (UTC). approximate install time: {2} (local)", info.ZDEVersion, check.PublishDate.ToUniversalTime(), info.InstallTime);
+                        NotifyInstallationUpdates(info, true);
+                        Thread.Sleep(30000);
                         installZDE(check);
+                    } else {
+                        info.InstallTime = SnapToMaintenanceWindow(DateTime.Now);
+                        Logger.Warn("Installation is critical for ZDE version: {0} but outside maintenance window, deferring to {1} (local)", info.ZDEVersion, info.InstallTime);
+                        NotifyInstallationUpdates(info, true);
                     }
                 } else {
                     info.InstallTime = InstallDateFromPublishDate(check.PublishDate);
-                    Logger.Info("Installation reminder for ZDE version: {0}. update published at: {1}. approximate install time: {2}", info.ZDEVersion, check.PublishDate, info.InstallTime);
-                    NotifyInstallationUpdates(info);
+                    if (updatesDisabled) {
+                        Logger.Info("Update {0} available but AutomaticUpdatesDisabled is set; skipping notification", info.ZDEVersion);
+                    } else {
+                        Logger.Info("Installation reminder for ZDE version: {0}. update published at: {1:u} (UTC). approximate install time: {2} (local)", info.ZDEVersion, check.PublishDate.ToUniversalTime(), info.InstallTime);
+                        NotifyInstallationUpdates(info);
+                    }
                 }
                 lastUpdateCheck = check;
-                lastInstallationNotification = info;
+                lastInstallationNotification = updatesDisabled ? null : info;
             } catch (Exception ex) {
                 Logger.Error(ex, "Unexpected error has occurred during the check for ZDE updates");
             }
@@ -858,6 +1191,15 @@ namespace ZitiUpdateService {
         }
 
         private void installZDE(UpdateCheck check) {
+            int? start = PolicySettings.EffectiveMaintenanceWindowStart(CurrentSettings);
+            int? end   = PolicySettings.EffectiveMaintenanceWindowEnd(CurrentSettings);
+            bool anyTime = !start.HasValue || !end.HasValue || start.Value == end.Value;
+            string windowStr = anyTime ? "any" : $"{start.Value}-{end.Value}";
+            Logger.Info("installZDE called at {0} (local). MaintenanceWindow={1}. InWindow={2}. Version={3}",
+                DateTime.Now.ToString("HH:mm"),
+                windowStr,
+                IsCurrentlyInMaintenanceWindow(),
+                check?.GetNextVersion());
             string fileDestination = Path.Combine(updateFolder, check?.FileName);
 
             if (check.AlreadyDownloaded(updateFolder, check.FileName)) {
@@ -911,7 +1253,7 @@ namespace ZitiUpdateService {
 
         private bool isOlder(Version current) {
             int compare = current.CompareTo(assemblyVersion);
-            Logger.Info("comparing current[{0}] to compare[{1}]: {2}", current.ToString(), assemblyVersion.ToString(), compare);
+            Logger.Info("stale download check: file={0}, running={1}, isOlder={2}", current, assemblyVersion, compare < 0);
             if (compare < 0) {
                 return true;
             } else if (compare > 0) {
@@ -1112,10 +1454,8 @@ namespace ZitiUpdateService {
                     Type = "Status",
                     Status = ServiceActions.ServiceStatus(),
                     ReleaseStream = IsBeta ? "beta" : "stable",
-                    AutomaticUpgradeDisabled = CurrentSettings.AutomaticUpdatesDisabled.ToString(),
-                    AutomaticUpgradeURL = CurrentSettings.AutomaticUpdateURL,
-                    AlivenessChecksBeforeAction = CurrentSettings.AlivenessChecksBeforeAction ?? -1,
                 };
+                ApplyEffectiveSettings(status);
                 EventRegistry.SendEventToConsumers(status);
             }
         }
@@ -1136,30 +1476,64 @@ namespace ZitiUpdateService {
         }
 
         private TimeSpan InstallationReminder() {
-            var installationReminderIntervalStr = ConfigurationManager.AppSettings.Get("InstallationReminder");
-            var reminderInt = TimeSpan.Zero;
-            if (!TimeSpan.TryParse(installationReminderIntervalStr, out reminderInt)) {
-                reminderInt = new TimeSpan(0, 1, 0);
-            }
-            return reminderInt;
+            return PolicySettings.EffectiveInstallationReminder();
         }
 
         private DateTime InstallDateFromPublishDate(DateTime publishDate) {
-            var installationReminderIntervalStr = ConfigurationManager.AppSettings.Get("InstallationCritical");
-            var instCritTimespan = TimeSpan.Zero;
-            if (!TimeSpan.TryParse(installationReminderIntervalStr, out instCritTimespan)) {
-                instCritTimespan = TimeSpan.Parse("7:0:0:0");
-            }
-            return publishDate + instCritTimespan;
+            // check.PublishDate is UTC (comes from the release-stream JSON). Convert to local
+            // before adding the critical-install TimeSpan so SnapToMaintenanceWindow compares
+            // against local-time window bounds (its .Hour check assumes local time), and so the
+            // resulting InstallTime is consistent with the other InstallTime assignments that
+            // use DateTime.Now (local).
+            DateTime raw = publishDate.ToLocalTime() + PolicySettings.EffectiveInstallationCritical();
+            return SnapToMaintenanceWindow(raw);
         }
 
         private bool InstallationIsCritical(DateTime publishDate) {
-            var installationReminderIntervalStr = ConfigurationManager.AppSettings.Get("InstallationCritical");
-            var instCritTimespan = TimeSpan.Zero;
-            if (!TimeSpan.TryParse(installationReminderIntervalStr, out instCritTimespan)) {
-                instCritTimespan = TimeSpan.Parse("7:0:0:0");
+            // publishDate is UTC (from the release-stream JSON). Convert to local so the
+            // comparison against DateTime.Now (local) is timezone-consistent. Without this
+            // conversion, users in negative UTC offsets would see the critical threshold
+            // appear to be in the future and never auto-install.
+            return DateTime.Now > publishDate.ToLocalTime() + PolicySettings.EffectiveInstallationCritical();
+        }
+
+        /// <summary>
+        /// Returns true when the current wall-clock time falls inside the effective
+        /// maintenance window, or when no window is configured (any time is allowed).
+        /// </summary>
+        private bool IsCurrentlyInMaintenanceWindow() {
+            int? start = PolicySettings.EffectiveMaintenanceWindowStart(CurrentSettings);
+            int? end   = PolicySettings.EffectiveMaintenanceWindowEnd(CurrentSettings);
+            if (!start.HasValue || !end.HasValue) return true;
+            if (start.Value == end.Value) return true;  // 0/0 or equal values = any time
+            return IsInWindow(DateTime.Now.Hour, start.Value, end.Value);
+        }
+
+        /// <summary>
+        /// Snaps <paramref name="dt"/> forward to the next opening of the maintenance window.
+        /// Returns <paramref name="dt"/> unchanged when no window is configured or the time
+        /// already falls within the window.
+        /// </summary>
+        private DateTime SnapToMaintenanceWindow(DateTime dt) {
+            int? start = PolicySettings.EffectiveMaintenanceWindowStart(CurrentSettings);
+            int? end   = PolicySettings.EffectiveMaintenanceWindowEnd(CurrentSettings);
+            if (!start.HasValue || !end.HasValue) return dt;
+            if (start.Value == end.Value) return dt;  // any time
+
+            if (IsInWindow(dt.Hour, start.Value, end.Value)) return dt;
+
+            // Advance to the next occurrence of the window start hour
+            DateTime candidate = dt.Date.AddHours(start.Value);
+            if (candidate <= dt) candidate = candidate.AddDays(1);
+            return candidate;
+        }
+
+        private bool IsInWindow(int hour, int windowStart, int windowEnd) {
+            if (windowStart < windowEnd) {
+                return hour >= windowStart && hour < windowEnd;
             }
-            return DateTime.Now > publishDate + instCritTimespan;
+            // Crosses midnight (e.g. 22:00–04:00)
+            return hour >= windowStart || hour < windowEnd;
         }
 
         private void NotifyInstallationUpdates(InstallationNotificationEvent evt) {
@@ -1170,6 +1544,11 @@ namespace ZitiUpdateService {
             try {
                 evt.Message = "InstallationUpdate";
                 evt.Type = "Notification";
+                // Always stamp the current pending-install flags so the UI stays consistent
+                // even when a timer tick fires a new notification after staging has occurred.
+                evt.DeferredInstallPending = _deferredInstallPending;
+                evt.DeferToRestartPending  = _deferToRestartPending;
+                evt.StagingDownloadPending = _stagingDownloadPending;
                 EventRegistry.SendEventToConsumers(evt);
                 Logger.Debug("NotifyInstallationUpdates: sent for version {0} is sent to the events pipe...", evt.ZDEVersion);
                 return;

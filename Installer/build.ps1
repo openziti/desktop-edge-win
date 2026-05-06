@@ -6,7 +6,8 @@ param(
     [bool]$jsonOnly = $false,
     [bool]$revertGitAfter = $true,
     [string]$versionQualifier = "",
-    [bool]$Win32Crypto = $false #used to specify which ziti edge tunnel version to pull, openssl or win32crypto-based
+    [bool]$Win32Crypto = $false, #used to specify which ziti edge tunnel version to pull, openssl or win32crypto-based
+    [int]$FastInterval = 0  # if > 0, bakes ALLOWFASTINTERVAL into the binary and sets UpdateTimer to this many seconds. use when dev/testing auto updating. 0 = disabled (production 10-min floor applies).
 )
 
 $ErrorActionPreference = "Stop"
@@ -118,6 +119,9 @@ if($unzip) {
 }
 
 echo "========================== building and moving the custom signing tool =========================="
+# AWSSigner.NET is a non-SDK-style project, so packages aren't auto-restored by
+# `dotnet build`. Restore explicitly so a fresh checkout / worktree works.
+nuget restore "${checkoutRoot}/AWSSigner.NET\AWSSigner.NET.csproj" -PackagesDirectory "${checkoutRoot}\packages"
 dotnet build -c Release "${checkoutRoot}/AWSSigner.NET\AWSSigner.NET.csproj"
 Remove-Item "${scriptPath}\AWSSigner.NET" -Recurse -ErrorAction SilentlyContinue
 $signerTargetDir="${scriptPath}\AWSSigner.NET"
@@ -137,8 +141,17 @@ echo "Updating the version for UI and Installer"
 echo "Restoring the .NET project"
 nuget restore .\ZitiDesktopEdge.sln
 
+if ($FastInterval -gt 0) {
+    $ts = [TimeSpan]::FromSeconds($FastInterval)
+    $tsValue = "{0}:{1}:{2}:{3}" -f $ts.Days, $ts.Hours, $ts.Minutes, $ts.Seconds
+    echo "FastInterval: patching UpdateTimer to $FastInterval seconds ($tsValue) in App.config"
+    $appConfig = "$checkoutRoot\ZitiUpdateService\App.config"
+    (Get-Content $appConfig) -replace 'key="UpdateTimer" value="[^"]*"', "key=`"UpdateTimer`" value=`"$tsValue`"" | Set-Content $appConfig
+}
+
 echo "Building the UI"
-msbuild ZitiDesktopEdge.sln /property:Configuration=Release /p:EnableWin32Crypto=$Win32Crypto
+$msbuildExtra = if ($FastInterval -gt 0) { "/p:AllowFastInterval=true" } else { "" }
+msbuild ZitiDesktopEdge.sln /property:Configuration=Release /p:EnableWin32Crypto=$Win32Crypto $msbuildExtra
 
 Pop-Location
 
@@ -197,7 +210,16 @@ if($null -eq $env:OPENZITI_P12_PASS_2024) {
     & "$SIGNTOOL" sign /f "${scriptPath}\openziti_2024.p12" /p "${env:OPENZITI_P12_PASS_2024}" /tr http://ts.ssl.com /fd sha512 /td sha512 /as "${exeAbsPath}"
 }
 
+echo "Generating SHA256 for EXE: ${exeAbsPath}"
 (Get-FileHash "${exeAbsPath}").Hash > "${scriptPath}\Output\Ziti Desktop Edge Client-${version}.exe.sha256"
+
+$msiAbsPath="${outputPath}\Ziti Desktop Edge Client-${version}.msi"
+if (Test-Path "${msiAbsPath}") {
+    echo "Generating SHA256 for MSI: ${msiAbsPath}"
+    (Get-FileHash "${msiAbsPath}").Hash > "${scriptPath}\Output\Ziti Desktop Edge Client-${version}.msi.sha256"
+} else {
+    echo "MSI not found at ${msiAbsPath} - skipping SHA256"
+}
 
 $outputPath = "${scriptPath}\Output\Ziti Desktop Edge Client-${version}.exe.json"
 & .\Installer\output-build-json.ps1 -version:$version -url:$url -stream:$stream -published_at:$published_at -outputPath:$outputPath -versionQualifier:$versionQualifier
@@ -210,7 +232,9 @@ copy $outputPath "$checkoutRoot\release-streams\beta${versionQualifier}.json"
 
 
 if($revertGitAfter) {
-  git checkout DesktopEdge/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip
+  $revertFiles = "DesktopEdge/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip"
+  if ($FastInterval -gt 0) { $revertFiles += " ZitiUpdateService/App.config" }
+  git checkout $revertFiles
 }
 
 $log = ".\deps-info${versionQualifier}.txt"

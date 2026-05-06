@@ -27,6 +27,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="./Styles/ScrollBarStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+            <Thickness x:Key="MarginTop10">0,10,0,0</Thickness>
             <Color x:Key="ContextMenuTextNormal">#C0C0C0</Color>
             <Color x:Key="ContextMenuTextHover">#ffffff</Color>
             <Color x:Key="DarkBackground">#131429</Color>

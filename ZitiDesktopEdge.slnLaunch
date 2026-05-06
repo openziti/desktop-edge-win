@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "UI+Monitor",
+    "Projects": [
+      {
+        "Path": "DesktopEdge\\ZitiDesktopEdge.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "ZitiUpdateService\\ZitiUpdateService.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

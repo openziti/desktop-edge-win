@@ -66,15 +66,6 @@
         </Style>
     </UserControl.Resources>
     <Grid>
-        <!-- Border Arrow pointing to TaskBar -->
-        <Canvas>
-            <Rectangle Name="Arrow" HorizontalAlignment="Center" Height="20" Fill="White" Width="20" ClipToBounds="True">
-                <Rectangle.LayoutTransform>
-                    <RotateTransform Angle="-45"/>
-                </Rectangle.LayoutTransform>
-            </Rectangle>
-        </Canvas>
-
         <!-- Background Color for Pop Overs -->
         <Rectangle x:Name="MainCanvas" Margin="10,10,10,10" Fill="White" RadiusY="10" RadiusX="10"></Rectangle>
 

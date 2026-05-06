@@ -30,6 +30,7 @@ using System.Windows.Data;
 using System.Diagnostics.Eventing.Reader;
 using System.ComponentModel.Design.Serialization;
 using System.Security.Cryptography;
+using ZitiDesktopEdge.ViewModels;
 
 namespace ZitiDesktopEdge {
 
@@ -119,11 +120,6 @@ namespace ZitiDesktopEdge {
             }
             set {
                 _isAttached = value;
-                if (_isAttached) {
-                    Arrow.Visibility = Visibility.Visible;
-                } else {
-                    Arrow.Visibility = Visibility.Collapsed;
-                }
             }
         }
 
@@ -239,6 +235,9 @@ namespace ZitiDesktopEdge {
             ForgetIdentityConfirmView.Visibility = Visibility.Collapsed;
         }
         private void PopulateExternalProviders(IdentityDetails deets) {
+            string policyProvider = policyViewModel.PolicyDefaultExtAuthProvider;
+            bool policyLocked = policyViewModel.IsDefaultExtAuthPolicyLocked;
+
             foreach (string provider in Identity.ExtAuthProviders) {
                 if (_identity.IsDefaultProvider(provider)) {
                     string providerToAdd = NormalizeProvider(provider);
@@ -247,6 +246,19 @@ namespace ZitiDesktopEdge {
                 } else {
                     deets.ProviderList.Items.Add(provider);
                 }
+            }
+
+            if (policyLocked && policyProvider != null) {
+                // auto-select the policy-forced provider if it exists in the list
+                for (int i = 0; i < deets.ProviderList.Items.Count; i++) {
+                    string item = NormalizeProvider(deets.ProviderList.Items[i] as string);
+                    if (string.Equals(item, policyProvider, StringComparison.OrdinalIgnoreCase)) {
+                        deets.ProviderList.SelectedIndex = i;
+                        break;
+                    }
+                }
+                deets.IsDefaultProvider.IsChecked = true;
+                deets.IsDefaultProvider.IsEnabled = false;
             }
         }
 
@@ -353,10 +365,13 @@ namespace ZitiDesktopEdge {
             });
         }
 
+        private ManagedSettingsViewModel policyViewModel;
+
         public IdentityDetails() {
             InitializeComponent();
             DataContext = this;
             ServiceList.ItemsSource = IdentityDetailsViewModel.Services;
+            policyViewModel = (ManagedSettingsViewModel)Application.Current.Properties["ManagedSettingsViewModel"];
         }
         private void HideMenu(object sender, MouseButtonEventArgs e) {
             this.Visibility = Visibility.Collapsed;
@@ -569,6 +584,7 @@ namespace ZitiDesktopEdge {
         }
 
         private void IsDefaultProvider_Checked(object sender, RoutedEventArgs e) {
+            if (policyViewModel.IsDefaultExtAuthPolicyLocked) return;
             string selectedProvider = ProviderList.SelectedItem.ToString();
             Identity.SetDefaultProvider(selectedProvider);
             ProviderList.SelectedItem = "* " + selectedProvider;
@@ -576,6 +592,7 @@ namespace ZitiDesktopEdge {
         }
 
         private void IsDefaultProvider_Unchecked(object sender, RoutedEventArgs e) {
+            if (policyViewModel.IsDefaultExtAuthPolicyLocked) return;
             if (userInitiatedChange) {
                 int selectedIndex = ProviderList.SelectedIndex;
                 for (int i = 0; i < ProviderList.Items.Count; i++) {
@@ -590,6 +607,10 @@ namespace ZitiDesktopEdge {
         }
 
         private void IsDefaultProvider_PreviewMouseDown(object sender, MouseButtonEventArgs e) {
+            if (policyViewModel.IsDefaultExtAuthPolicyLocked) {
+                e.Handled = true;
+                return;
+            }
             if (ProviderList.SelectedItem == null) {
                 e.Handled = true;
                 return;

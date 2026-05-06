@@ -40,7 +40,14 @@ namespace Ziti.Desktop.Edge.Models {
             }
         }
 
+        public int? MaintenanceWindowStart { get; set; }
+        public int? MaintenanceWindowEnd { get; set; }
+
         public bool UpdateAvailable { get; set; }
+        public bool DeferredInstallPending { get; set; }
+        public bool DeferToRestartPending { get; set; }
+        public bool StagingDownloadPending { get; set; }
+        public bool DeferInstallToRestartLocked { get; set; }
         public UpdateInfo PendingUpdate { get; set; } = new UpdateInfo();
 
     }

@@ -185,9 +185,8 @@ namespace ZitiDesktopEdge.ServiceClient {
             return await readMonitorClientAsync<StatusCheck>(ipcReader);
         }
 
-        async public Task<SvcResponse> TriggerUpdate() {
-            UpgradeSentinel.StartUpgradeSentinel(true);
-            ActionEvent action = new ActionEvent() { Op = "TriggerUpdate", Action = "" };
+        async public Task<SvcResponse> TriggerUpdate(bool forceDefer = false) {
+            ActionEvent action = new ActionEvent() { Op = "TriggerUpdate", Action = forceDefer ? "defer" : "" };
             await sendMonitorClientAsync(action);
             return await readMonitorClientAsync<SvcResponse>(ipcReader);
         }
@@ -200,6 +199,18 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         async public Task<SvcResponse> SetAutomaticUpgradeURLAsync(string url) {
             ActionEvent action = new ActionEvent() { Op = "SetAutomaticUpgradeURL", Action = (url) };
+            await sendMonitorClientAsync(action);
+            return await readMonitorClientAsync<SvcResponse>(ipcReader);
+        }
+
+        async public Task<SvcResponse> SetMaintenanceWindowStartAsync(int? hour) {
+            ActionEvent action = new ActionEvent() { Op = "SetMaintenanceWindowStart", Action = hour?.ToString() ?? "" };
+            await sendMonitorClientAsync(action);
+            return await readMonitorClientAsync<SvcResponse>(ipcReader);
+        }
+
+        async public Task<SvcResponse> SetMaintenanceWindowEndAsync(int? hour) {
+            ActionEvent action = new ActionEvent() { Op = "SetMaintenanceWindowEnd", Action = hour?.ToString() ?? "" };
             await sendMonitorClientAsync(action);
             return await readMonitorClientAsync<SvcResponse>(ipcReader);
         }

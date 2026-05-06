@@ -491,8 +491,30 @@ namespace ZitiDesktopEdge.DataStructures {
         public string Status { get; set; }
         public string ReleaseStream { get; set; }
         public string AutomaticUpgradeDisabled { get; set; }
+        public bool   AutomaticUpgradeDisabledLocked { get; set; }
         public string AutomaticUpgradeURL { get; set; }
-        public int? AlivenessChecksBeforeAction { get; set; }
+        public bool   AutomaticUpgradeURLLocked { get; set; }
+        public int?   AlivenessChecksBeforeAction { get; set; }
+        public bool   AlivenessChecksBeforeActionLocked { get; set; }
+        public string UpdateInterval { get; set; }
+        public bool   UpdateIntervalLocked { get; set; }
+        public string InstallationReminder { get; set; }
+        public bool   InstallationReminderLocked { get; set; }
+        public string InstallationCritical { get; set; }
+        public bool   InstallationCriticalLocked { get; set; }
+        public int?   MaintenanceWindowStart { get; set; }
+        public bool   MaintenanceWindowStartLocked { get; set; }
+        public int?   MaintenanceWindowEnd { get; set; }
+        public bool   MaintenanceWindowEndLocked { get; set; }
+        public bool   DeferInstallToRestartLocked { get; set; }
+
+        /// <summary>
+        /// True when the user requested an immediate install but the service deferred it
+        /// to the next maintenance window. Lives only in service memory, never persisted.
+        /// </summary>
+        public bool   DeferredInstallPending  { get; set; }
+        public bool   DeferToRestartPending   { get; set; }
+        public bool   StagingDownloadPending  { get; set; }
 
         public bool IsStopped() {
             return "Stopped" == this.Status;

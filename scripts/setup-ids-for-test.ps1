@@ -1,4 +1,4 @@
-param (
+﻿param (
     [switch]$ClearIdentitiesOk,
     [string]$ZitiHome,
     [string]$Url,
