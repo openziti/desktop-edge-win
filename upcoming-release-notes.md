@@ -19,9 +19,10 @@
         service restart is required when an admin applies or revokes policy
       * A startup poll timer (5 s x up to 24 attempts, ~2 min total) handles the Group Policy
         boot-race where policy may not yet have applied by the time the service starts
-      * Range-sensitive values are clamped on read (e.g. `UpdateTimer` >= 600 s,
-        `AlivenessChecksBeforeAction` >= 1, `MaintenanceWindowStart/End` to 0-23);
-        semantic correctness of other values is the administrator's responsibility
+      * Some values have enforced bounds (`UpdateTimer` >= 600 s,
+        `AlivenessChecksBeforeAction` >= 1, `MaintenanceWindowStart`/`MaintenanceWindowEnd` 0-23).
+        Values outside the bounds are adjusted to the nearest allowed value and the
+        effective value is logged
       * Settings controllable under `ziti-monitor-service`:
           * `AutomaticUpdatesDisabled` (DWORD) -- enable/disable automatic update checks
           * `AutomaticUpdateURL` (String) -- pin the update stream to a specific URL
