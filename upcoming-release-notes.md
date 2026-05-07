@@ -1,4 +1,4 @@
-# Next Release
+# Release 2.11.1.0
 ## What's New
 * Enroll to cert / token via external JWT signers
     * Joining a network by URL now discovers the controller's external JWT signers and routes
@@ -15,3 +15,9 @@ n/a
 
 ## Other changes
 n/a
+
+## Dependencies
+* ziti-tunneler: v1.16.1
+* ziti-sdk:      1.16.0
+* tlsuv:         v0.41.3[OpenSSL 3.6.1 27 Jan 2026]
+* tlsuv:         v0.41.3[win32crypto(CNG): ncrypt[1.0] ]
