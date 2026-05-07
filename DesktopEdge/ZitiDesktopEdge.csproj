@@ -145,6 +145,7 @@
     <Compile Include="Models\ViewState.cs" />
     <Compile Include="Utils\ManagedSettingsReader.cs" />
     <Compile Include="ViewModels\ManagedSettingsViewModel.cs" />
+    <Compile Include="ViewModels\AddIdentityViewModel.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
     <Compile Include="ViewModels\IdentityDetailsViewModel.cs" />
     <Compile Include="Views\Controls\ConfirmationDialog.xaml.cs">
@@ -155,6 +156,9 @@
     </Compile>
     <Compile Include="Views\Controls\AddIdentityUrl.xaml.cs">
       <DependentUpon>AddIdentityUrl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Controls\AddIdentitySignerChoice.xaml.cs">
+      <DependentUpon>AddIdentitySignerChoice.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\Controls\ExternalProviderSelector.xaml.cs">
       <DependentUpon>ExternalProviderSelector.xaml</DependentUpon>
@@ -232,6 +236,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="Views\Controls\AddIdentitySignerChoice.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Views\Controls\ExternalProviderSelector.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -287,6 +295,7 @@
     <Compile Include="Views\ItemRenderers\IdentityItem.xaml.cs">
       <DependentUpon>IdentityItem.xaml</DependentUpon>
     </Compile>
+    <Compile Include="TunnelInstancePickerWindow.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>

@@ -76,6 +76,7 @@
     <Compile Include="DataStructures\DataStructures.cs" />
     <Compile Include="ServiceClient\MonitorClient.cs" />
     <Compile Include="Utility\ByteFormat.cs" />
+    <Compile Include="ServiceClient\TunnelInstanceDiscovery.cs" />
     <Compile Include="Utility\GithubAPI.cs" />
     <Compile Include="Utility\UpgradeSentinel.cs" />
   </ItemGroup>

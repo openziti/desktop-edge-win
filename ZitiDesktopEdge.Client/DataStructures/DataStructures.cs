@@ -245,6 +245,8 @@ namespace ZitiDesktopEdge.DataStructures {
         public string Key { get; set; }
         public string Certificate { get; set; }
         public string ControllerURL { get; set; }
+        public string EnrollMode { get; set; }
+        public string Provider { get; set; }
     }
 
     public class EnrollIdentifierFunction : ServiceFunction {
@@ -289,6 +291,9 @@ namespace ZitiDesktopEdge.DataStructures {
         public DateTime MfaLastUpdatedTime { get; set; }
         public bool NeedsExtAuth { get; set; }
         public List<string> ExtAuthProviders { get; set; }
+        // Populated on the AddIdentity response when enrollment needs external auth — zet returns
+        // the OIDC authorize URL so ZDEW can open the browser for the user to sign in.
+        public string Url { get; set; }
     }
 
     public class Service {

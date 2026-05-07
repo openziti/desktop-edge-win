@@ -30,47 +30,88 @@ namespace ZitiDesktopEdge {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         public event CommonDelegates.CloseAction OnClose;
         public event Action<EnrollIdentifierPayload, UserControl> OnAddIdentity;
+        public event Action<AddIdentityViewModel, UserControl> OnNeedsSignerChoice;
 
         public CommonDelegates.JoinNetwork JoinNetwork;
 
+        public AddIdentityViewModel AddIdentityViewModel { get; } = new AddIdentityViewModel();
+
         public AddIdentityUrl() {
             InitializeComponent();
+            DataContext = AddIdentityViewModel;
         }
 
         private async void JoinNetworkUrl(object sender, MouseButtonEventArgs e) {
-            EnrollIdentifierPayload payload = new EnrollIdentifierPayload();
-            payload.ControllerURL = ControllerURL.Text;
+            if (!IsUrlSyntacticallyValid()) return;
 
-            Uri ctrl = new Uri(ControllerURL.Text);
-            payload.IdentityFilename = ctrl.Host + "_" + ctrl.Port;
+            bool ok = await RunDiscoveryAsync();
+            if (!ok) {
+                this.OnClose?.Invoke(false, this);
+                return;
+            }
 
-            var client = new System.Net.Http.HttpClient();
-            client.Timeout = TimeSpan.FromSeconds(5);
+            Uri raw = new Uri(ControllerURL.Text);
+            AddIdentityViewModel.ControllerBaseUrl = raw.GetLeftPart(UriPartial.Authority);
+            AddIdentityViewModel.IdentityFilename = raw.Host + "_" + raw.Port;
 
+            bool needsChoice = AddIdentityViewModel.ShowSignerPicker
+                            || AddIdentityViewModel.EnrollModeRadiosVisibility == Visibility.Visible
+                            || (AddIdentityViewModel.SelectedSigner != null && AddIdentityViewModel.SelectedSigner.EnrollToTokenEnabled);
+            if (needsChoice) {
+                OnNeedsSignerChoice?.Invoke(AddIdentityViewModel, this);
+                return;
+            }
+
+            OnAddIdentity(AddIdentityViewModel.BuildEnrollPayload(), this);
+        }
+
+        private async Task<bool> RunDiscoveryAsync() {
+            if (!IsUrlSyntacticallyValid()) return false;
             Mouse.OverrideCursor = Cursors.Wait;
             try {
-                var result = await client.GetAsync(ControllerURL.Text);
-                Mouse.OverrideCursor = null;
-                OnAddIdentity(payload, this);
+                Uri raw = new Uri(ControllerURL.Text);
+                string baseUrl = raw.GetLeftPart(UriPartial.Authority);
+                var client = new System.Net.Http.HttpClient();
+                client.Timeout = TimeSpan.FromSeconds(5);
+                var result = await client.GetAsync(baseUrl + "/external-jwt-signers");
+                result.EnsureSuccessStatusCode();
+                string body = await result.Content.ReadAsStringAsync();
+                AddIdentityViewModel.LoadSigners(body);
+                return true;
             } catch (Exception ex) {
+                logger.Error(ex, "connecting to the url provided failed");
+                await ShowConnectionErrorAsync(ex);
+                return false;
+            } finally {
                 Mouse.OverrideCursor = null;
-                this.OnClose?.Invoke(false, this);
-                MainWindow mw = ((MainWindow)Application.Current.MainWindow);
-                if (ex.InnerException is System.Net.WebException webEx) {
-                    if (webEx.Status == System.Net.WebExceptionStatus.TrustFailure) {
-                        await mw.ShowBlurbAsync("Untrusted certificate or TLS error", "");
-                        logger.Warn(ex, "TLS trust issue with URL: {0}", ControllerURL.Text);
-                    } else if (webEx.Status == System.Net.WebExceptionStatus.NameResolutionFailure) {
-                        await mw.ShowBlurbAsync("Invalid or unreachable host name", "");
-                        logger.Warn(ex, "Bunk URL or DNS resolution failed: {0}", ControllerURL.Text);
-                    } else {
-                        await mw.ShowBlurbAsync("Unexpected error accessing URL", "");
-                        logger.Warn(ex, "Could not connect to URL, status={0}", webEx.Status);
-                    }
+            }
+        }
+
+        private async Task ShowConnectionErrorAsync(Exception ex) {
+            MainWindow mw = (MainWindow)Application.Current.MainWindow;
+            if (ex.InnerException is System.Net.WebException webEx) {
+                if (webEx.Status == System.Net.WebExceptionStatus.TrustFailure) {
+                    await mw.ShowBlurbAsync("Untrusted certificate or TLS error", "");
+                    logger.Warn(ex, "TLS trust issue with URL: {0}", ControllerURL.Text);
+                } else if (webEx.Status == System.Net.WebExceptionStatus.NameResolutionFailure) {
+                    await mw.ShowBlurbAsync("Invalid or unreachable host name", "");
+                    logger.Warn(ex, "Bunk URL or DNS resolution failed: {0}", ControllerURL.Text);
                 } else {
                     await mw.ShowBlurbAsync("Unexpected error accessing URL", "");
-                    logger.Warn(ex, "Unexpected exception {0}", ex.Message);
+                    logger.Warn(ex, "Could not connect to URL, status={0}", webEx.Status);
                 }
+            } else {
+                await mw.ShowBlurbAsync("Unexpected error accessing URL", "");
+                logger.Warn(ex, "Unexpected exception {0}", ex.Message);
+            }
+        }
+
+        private bool IsUrlSyntacticallyValid() {
+            try {
+                Uri ctrl = new Uri(ControllerURL.Text);
+                return ctrl.Host.Contains(".") && ctrl.Host.Length >= 3;
+            } catch {
+                return false;
             }
         }
 
@@ -80,28 +121,20 @@ namespace ZitiDesktopEdge {
 
         private void Grid_Loaded(object sender, System.Windows.RoutedEventArgs e) {
             ControllerURL.Focus();
+            JoinNetworkBtn.Disable();
         }
 
         private void ControllerURL_TextChanged(object sender, TextChangedEventArgs e) {
             if (ControllerURL.ActualWidth > 0) {
-                ControllerURL.MaxWidth = ControllerURL.ActualWidth; //disable any expanding
+                ControllerURL.MaxWidth = ControllerURL.ActualWidth;
             }
+            AddIdentityViewModel.Reset();
             UpdateUrlValidity();
         }
 
         private void UpdateUrlValidity() {
-            bool valid = true;
-            try {
-                // check that it looks like a url
-                Uri ctrl = new Uri(ControllerURL.Text);
-                if (!ctrl.Host.Contains(".") || ctrl.Host.Length < 3) {
-                    valid = false;
-                }
-            } catch {
-                // not a url -- don't allow it
-                valid = false;
-            }
-            if(valid) {
+            bool valid = IsUrlSyntacticallyValid() && ControllerURL.Text != AddIdentityViewModel.UrlPlaceholder;
+            if (valid) {
                 ControllerURL.Style = (Style)Resources["ValidUrl"];
                 if (JoinNetworkBtn != null) JoinNetworkBtn.Enable();
             } else {
@@ -109,11 +142,13 @@ namespace ZitiDesktopEdge {
                 if (JoinNetworkBtn != null) JoinNetworkBtn.Disable();
             }
         }
+
         private void HandleEnterKey(object sender, KeyEventArgs e) {
-            if (e.Key == Key.Return) {
+            if (e.Key == Key.Return && JoinNetworkBtn.IsEnabled) {
                 e.Handled = true;
-                this.JoinNetworkUrl(sender, null);
+                JoinNetworkUrl(sender, null);
             }
         }
+
     }
 }

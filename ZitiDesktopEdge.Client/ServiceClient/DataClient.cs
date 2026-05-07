@@ -101,16 +101,88 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         protected override void ClientDisconnected(object e) {
+            if (SwitchInProgress) {
+                // The caller is orchestrating an instance switch — stay quiet; they
+                // will call ConnectPipesAsync again against the new pipe names.
+                Connected = false;
+                return;
+            }
             Reconnect();
             Connected = false;
             base.ClientDisconnected(e);
         }
 
         // ziti edge tunnel
-        const string ipcPipe = @"ziti-edge-tunnel.sock";
-        const string eventPipe = @"ziti-edge-tunnel-event.sock";
+        private const string DefaultIpcPipe = @"ziti-edge-tunnel.sock";
+        private const string DefaultEventPipe = @"ziti-edge-tunnel-event.sock";
 
-        public DataClient(string id) : base(id) {
+        private string ipcPipe;
+        private string eventPipe;
+
+        /// <summary>
+        /// The discriminator supplied to ziti-edge-tunnel via its -P|--pipe flag.
+        /// null (or empty) means the default instance (no discriminator).
+        /// </summary>
+        public string Discriminator { get; private set; }
+
+        public DataClient(string id) : this(id, null) {
+        }
+
+        public DataClient(string id, string discriminator) : base(id) {
+            ApplyDiscriminator(discriminator);
+        }
+
+        private void ApplyDiscriminator(string discriminator) {
+            Discriminator = string.IsNullOrEmpty(discriminator) ? null : discriminator;
+            if (Discriminator == null) {
+                ipcPipe = DefaultIpcPipe;
+                eventPipe = DefaultEventPipe;
+            } else {
+                ipcPipe = DefaultIpcPipe + "." + Discriminator;
+                eventPipe = DefaultEventPipe + "." + Discriminator;
+            }
+        }
+
+        /// <summary>
+        /// Switch this client from the currently-connected ziti-edge-tunnel
+        /// instance to the one identified by <paramref name="discriminator"/>
+        /// (null/empty means the default instance). The caller is responsible
+        /// for resetting any UI state tied to the previous instance BEFORE
+        /// calling this — the normal OnClientDisconnected event is suppressed
+        /// while the swap is in progress so the UI does not flash "service not
+        /// started".
+        ///
+        /// On return the new pipes are connected and event delivery has
+        /// resumed; a fresh TunnelStatusEvent will repopulate identities.
+        /// </summary>
+        public async Task SwitchInstanceAsync(string discriminator) {
+            string newDisc = string.IsNullOrEmpty(discriminator) ? null : discriminator;
+            if (newDisc == Discriminator && Connected) {
+                return;
+            }
+
+            // Ask any background reconnect loop to bail out — we're about to
+            // take the pipes over. Without this, the loop can race with our
+            // own ConnectPipesAsync and produce a parallel event reader.
+            AbortReconnect();
+
+            SwitchInProgress = true;
+            try {
+                // Bump generation BEFORE disposing so the stale event-reader
+                // task — which may take tens of milliseconds to notice the
+                // dispose — sees a mismatch when it exits and stays silent.
+                BumpConnectionGeneration();
+                try { pipeClient?.Dispose(); } catch (Exception ex) { Logger.Debug(ex, "error disposing pipeClient during switch"); }
+                try { eventClient?.Dispose(); } catch (Exception ex) { Logger.Debug(ex, "error disposing eventClient during switch"); }
+                pipeClient = null;
+                eventClient = null;
+                Connected = false;
+                ApplyDiscriminator(newDisc);
+            } finally {
+                SwitchInProgress = false;
+            }
+
+            await ConnectPipesAsync();
         }
 
         PipeSecurity CreateSystemIOPipeSecurity() {

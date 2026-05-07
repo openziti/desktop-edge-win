@@ -284,26 +284,27 @@ namespace ZitiDesktopEdge {
         }
 
         private void ShowJoinByUrl() {
-            AddIdentityByURL.Opacity = 0;
-            AddIdentityByURL.Visibility = Visibility.Visible;
-            AddIdentityByURL.Margin = new Thickness(0, 0, 0, 0);
-
-            DoubleAnimation animation = new DoubleAnimation(1, TimeSpan.FromSeconds(.3));
-            AddIdentityByURL.BeginAnimation(Grid.OpacityProperty, animation);
-            AddIdentityByURL.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
-
+            AnimateDialogIn(AddIdentityByURL);
             ShowModal();
         }
         
+        private void AnimateDialogIn(UserControl dialog) {
+            dialog.Opacity = 0;
+            dialog.Visibility = Visibility.Visible;
+            dialog.Margin = new Thickness(0, 0, 0, 0);
+            dialog.BeginAnimation(Grid.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromSeconds(.3)));
+            dialog.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
+        }
+
+        private void AnimateDialogOut(UserControl dialog) {
+            DoubleAnimation fade = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
+            fade.Completed += (s, e) => dialog.Visibility = Visibility.Collapsed;
+            dialog.BeginAnimation(Grid.OpacityProperty, fade);
+            dialog.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3)));
+        }
+
         private void ShowJoinWith3rdPartyCA() {
-            AddIdentityBy3rdPartyCA.Opacity = 0;
-            AddIdentityBy3rdPartyCA.Visibility = Visibility.Visible;
-            AddIdentityBy3rdPartyCA.Margin = new Thickness(0, 0, 0, 0);
-
-            DoubleAnimation animation = new DoubleAnimation(1, TimeSpan.FromSeconds(.3));
-            AddIdentityBy3rdPartyCA.BeginAnimation(Grid.OpacityProperty, animation);
-            AddIdentityBy3rdPartyCA.BeginAnimation(Grid.MarginProperty, new ThicknessAnimation(new Thickness(30, 30, 30, 30), TimeSpan.FromSeconds(.3)));
-
+            AnimateDialogIn(AddIdentityBy3rdPartyCA);
             ShowModal();
         }
 
@@ -364,13 +365,7 @@ namespace ZitiDesktopEdge {
             ModalBg.Visibility = Visibility.Collapsed;
         }
         private void CloseJoinByUrl(bool isComplete, UserControl sender) {
-            DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
-            ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
-            animation.Completed += (s, e) => {
-                sender.Visibility = Visibility.Collapsed;
-            };
-            sender.BeginAnimation(Grid.OpacityProperty, animation);
-            sender.BeginAnimation(Grid.MarginProperty, animateThick);
+            AnimateDialogOut(sender);
             HideModal();
         }
 
@@ -571,6 +566,131 @@ namespace ZitiDesktopEdge {
                 if (IdentityMenu.Visibility == Visibility.Visible) IdentityMenu.Visibility = Visibility.Collapsed;
                 else if (MainMenu.Visibility == Visibility.Visible) MainMenu.Visibility = Visibility.Collapsed;
             }
+
+            // Ctrl+Shift+T : open the dev-only tunneler instance picker
+            if (e.Key == Key.T
+                    && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control
+                    && (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift) {
+                OpenTunnelInstancePicker();
+                e.Handled = true;
+            }
+        }
+
+        private void OpenTunnelInstancePicker() {
+            // If there's only one ziti-edge-tunnel instance running, there's
+            // nothing useful to switch to — suppress the picker entirely.
+            _ = OpenTunnelInstancePickerAsync();
+        }
+
+        private async Task OpenTunnelInstancePickerAsync() {
+            try {
+                var instances = await TunnelInstanceDiscovery.EnumerateAsync();
+                if (instances.Count <= 1) {
+                    logger.Debug("Ctrl+Shift+T ignored — only {0} tunneler instance running", instances.Count);
+                    return;
+                }
+            } catch (Exception ex) {
+                logger.Debug(ex, "enumeration failed when opening picker; showing it anyway");
+            }
+
+            bool picked = false;
+            string chosen = null;
+            this.Dispatcher.Invoke(() => {
+                string tmp;
+                picked = PromptForInstance(out tmp);
+                chosen = tmp;
+            });
+            if (picked) {
+                await SwitchToInstanceAsync(chosen);
+            }
+        }
+
+        /// <summary>
+        /// Shows the picker modally. Returns true if the user chose an instance
+        /// (populating <paramref name="discriminator"/> with null for default
+        /// or the picked name); false if the user dismissed the dialog.
+        /// </summary>
+        private bool PromptForInstance(out string discriminator) {
+            discriminator = null;
+            try {
+                var picker = new TunnelInstancePickerWindow(serviceClient?.Discriminator);
+                if (this.IsLoaded) picker.Owner = this;
+                bool? dialog = picker.ShowDialog();
+                if (dialog == true && picker.InstanceSelected) {
+                    discriminator = picker.SelectedDiscriminator;
+                    return true;
+                }
+            } catch (Exception ex) {
+                logger.Error(ex, "failed to open tunnel instance picker");
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Startup: connect to the default ziti-edge-tunnel instance. If it
+        /// isn't running, show the not-started banner and let the reconnect
+        /// loop poll for it. Non-default instances are reached exclusively via
+        /// the Ctrl+Shift+T picker — startup never auto-routes to them.
+        /// </summary>
+        private async Task ChooseAndConnectOnStartupAsync() {
+            try {
+                await serviceClient.ConnectAsync();
+                await serviceClient.WaitForConnectionAsync();
+            } catch /*ignored for now (Exception ex) */
+              {
+                ShowServiceNotStarted();
+                serviceClient.Reconnect();
+            }
+        }
+
+
+        private async Task SwitchToInstanceAsync(string discriminator) {
+            logger.Info("switching tunneler instance to '{0}'", discriminator ?? "default");
+            this.Dispatcher.Invoke(() => {
+                ResetTunnelerScopedState();
+                ShowLoad("Switching tunneler", "Connecting to '" + (discriminator ?? "default") + "'…");
+            });
+            try {
+                await serviceClient.SwitchInstanceAsync(discriminator);
+                this.Dispatcher.Invoke(() => HideLoad());
+            } catch (Exception ex) {
+                logger.Error(ex, "failed to switch tunneler instance to '{0}'", discriminator ?? "default");
+                this.Dispatcher.Invoke(() => {
+                    HideLoad();
+                    ShowError("Switch failed", "Could not connect to '" + (discriminator ?? "default") + "': " + ex.Message);
+                    ShowServiceNotStarted();
+                });
+            }
+        }
+
+        /// <summary>
+        /// True when the UI is currently viewing the default ziti-edge-tunnel
+        /// instance. The big start/stop/force-terminate button always targets
+        /// the default Windows service regardless; this is purely for
+        /// cosmetic signals (e.g. the alternate-tunnel footer).
+        /// </summary>
+        private bool IsViewingDefaultInstance {
+            get { return string.IsNullOrEmpty(serviceClient?.Discriminator); }
+        }
+
+        /// <summary>
+        /// Show/hide the "you are viewing an alternate tunneler" footer based
+        /// on the current <see cref="DataClient.Discriminator"/>. Safe to call
+        /// from any thread — bounces to the Dispatcher.
+        /// </summary>
+        private void UpdateAlternateTunnelFooter() {
+            this.Dispatcher.Invoke(() => {
+                if (AlternateTunnelFooter == null) return;
+                string disc = serviceClient?.Discriminator;
+                if (string.IsNullOrEmpty(disc)) {
+                    AlternateTunnelFooter.Visibility = Visibility.Collapsed;
+                    AlternateTunnelFooterText.Text = "";
+                } else {
+                    AlternateTunnelFooter.Visibility = Visibility.Visible;
+                    AlternateTunnelFooterText.Text =
+                        "viewing alternate tunneler: ziti-edge-tunnel.sock." + disc;
+                }
+            });
         }
 
         private void MFASetup_OnLoad(bool isComplete, string title, string message) {
@@ -765,14 +885,7 @@ namespace ZitiDesktopEdge {
             MainMenu.OnShowBlurb += MainMenu_OnShowBlurb;
             IdentityMenu.OnError += IdentityMenu_OnError;
 
-            try {
-                await serviceClient.ConnectAsync();
-                await serviceClient.WaitForConnectionAsync();
-            } catch /*ignored for now (Exception ex) */
-              {
-                ShowServiceNotStarted();
-                serviceClient.Reconnect();
-            }
+            await ChooseAndConnectOnStartupAsync();
 
             try {
                 await monitorClient.ConnectAsync();
@@ -1023,8 +1136,22 @@ namespace ZitiDesktopEdge {
                             logger.Info("Service is stopping...");
 
                             this.Dispatcher.Invoke(async () => {
-                                SetCantDisplay("The Service is Stopping", "Please wait while the service stops", Visibility.Visible);
-                                await WaitForServiceToStop(DateTime.Now + TimeSpan.FromSeconds(30));
+                                ShowLoad("Service is Stopping", "Please wait while the service stops");
+                                try {
+                                    await WaitForServiceToStop(DateTime.Now + TimeSpan.FromSeconds(30));
+                                } finally {
+                                    // Wipe identity UI before removing the modal so the
+                                    // user doesn't briefly see stale identities after the
+                                    // modal disappears (ClientDisconnected would clear
+                                    // them a moment later, but that's visibly laggy).
+                                    // If WaitForServiceToStop hit its timeout it has
+                                    // already replaced the modal with the "Service
+                                    // Appears Stuck" error (which owns the Force Quit
+                                    // button); HideLoad in that case is a harmless no-op
+                                    // on the already-hidden modal.
+                                    ResetTunnelerScopedState();
+                                    HideLoad();
+                                }
                             });
                             break;
                         case ServiceControllerStatus.StartPending:
@@ -1216,6 +1343,8 @@ namespace ZitiDesktopEdge {
         async private void ForceQuitButtonClick(object sender, RoutedEventArgs e) {
             if (!UIUtils.IsLeftClick(e)) return;
             if (!UIUtils.MouseUpForMouseDown(e)) return;
+            // Targets the default Windows-service-managed tunneler regardless
+            // of which instance is currently being viewed.
             MonitorServiceStatusEvent status = await monitorClient.ForceTerminateAsync();
             if (status.IsStopped()) {
                 //good
@@ -1230,6 +1359,7 @@ namespace ZitiDesktopEdge {
         async private void StartZitiService(object sender, RoutedEventArgs e) {
             if (!UIUtils.IsLeftClick(e)) return;
             if (!UIUtils.MouseUpForMouseDown(e)) return;
+            // Always targets the default Windows service.
             try {
                 ShowLoad("Starting", "Starting the data service");
                 logger.Info("StartZitiService");
@@ -1302,29 +1432,86 @@ namespace ZitiDesktopEdge {
                 UpdateServiceView();
                 SetNotifyIcon("white");
                 LoadIdentities(true);
+                UpdateAlternateTunnelFooter();
             });
         }
 
         private void ServiceClient_OnClientDisconnected(object sender, object e) {
             this.Dispatcher.Invoke(() => {
-                AddIdAreaButton.IsEnabled = false;
-                IdentityMenu.Visibility = Visibility.Collapsed;
-                MFASetup.Visibility = Visibility.Collapsed;
-                HideModal();
-                MainMenu.Disconnected();
-                for (int i = 0; i < IdList.Children.Count; i++) {
-                    IdentityItem item = (IdentityItem)IdList.Children[i];
-                    item.StopTimers();
-                }
-                IdList.Children.Clear();
+                ResetTunnelerScopedState();
                 if (e != null) {
                     logger.Debug(e.ToString());
                 }
-                //SetCantDisplay("Start the Ziti Tunnel Service to continue");
                 SetNotifyIcon("red");
-                _notificationThrottle.Clear();
                 ShowServiceNotStarted();
+                // The underlying DataClient has already kicked off its own
+                // reconnect loop against whatever pipe we were viewing. If the
+                // user wants to view a different instance they can hit
+                // Ctrl+Shift+T.
             });
+        }
+
+        /// <summary>
+        /// Wipes all UI and in-memory state scoped to the currently-connected
+        /// ziti-edge-tunnel instance. Safe to call when nothing is connected.
+        /// Called by the disconnect handler and (later) by the instance switcher
+        /// before reconnecting to a different tunneler.
+        ///
+        /// Must be invoked on the UI thread.
+        /// </summary>
+        private void ResetTunnelerScopedState() {
+            AddIdAreaButton.IsEnabled = false;
+            IdentityMenu.Visibility = Visibility.Collapsed;
+            MFASetup.Visibility = Visibility.Collapsed;
+            HideModal();
+            MainMenu.Disconnected();
+
+            for (int i = 0; i < IdList.Children.Count; i++) {
+                IdentityItem item = (IdentityItem)IdList.Children[i];
+                item.StopTimers();
+            }
+            IdList.Children.Clear();
+            identities.Clear();
+
+            StopTunnelUptimeTimer();
+            _startDate = default(DateTime);
+            ConnectedTime.Content = "00:00:00";
+
+            DownloadSpeed.Content = "0.0";
+            UploadSpeed.Content = "0.0";
+
+            _notificationThrottle?.Clear();
+            NextNotificationTime = DateTime.Now;
+
+            var props = Application.Current.Properties;
+            props.Remove("CurrentTunnelStatus");
+            props.Remove("ip");
+            props.Remove("subnet");
+            props.Remove("mtu");
+            props.Remove("dns");
+            props.Remove("dnsenabled");
+            props.Remove("ApiPageSize");
+            props.Remove("L2Enabled");
+            props.Remove("PcapInterface");
+
+            // Hide the alternate-tunnel footer while we're not connected; it
+            // will come back when ClientConnected fires (discriminator
+            // persists across a reconnect on the same pipe).
+            if (AlternateTunnelFooter != null) {
+                AlternateTunnelFooter.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void StopTunnelUptimeTimer() {
+            if (_tunnelUptimeTimer == null) return;
+            try {
+                _tunnelUptimeTimer.Stop();
+                _tunnelUptimeTimer.Tick -= OnTimedEvent;
+                _tunnelUptimeTimer.Dispose();
+            } catch (Exception ex) {
+                logger.Debug(ex, "error while stopping tunnel uptime timer");
+            }
+            _tunnelUptimeTimer = null;
         }
 
         /// <summary>
@@ -1627,7 +1814,7 @@ namespace ZitiDesktopEdge {
                 } else {
                     Application.Current.Properties["PcapInterface"] = status?.PcapInterface;
                 }
-                identities.Clear();
+                
                 foreach (var id in status.Identities) {
                     updateViewWithIdentity(id);
                 }
@@ -1889,6 +2076,12 @@ namespace ZitiDesktopEdge {
                 Identity createdId = await serviceClient.AddIdentityAsync(payload);
 
                 if (createdId != null) {
+                    // External-auth enrollment: zet returns an auth URL instead of a full identity.
+                    // Launch the browser; zet will emit a normal identity event once the user signs in.
+                    if (!string.IsNullOrEmpty(createdId.Url)) {
+                        System.Diagnostics.Process.Start(createdId.Url);
+                        return;
+                    }
                     var zid = ZitiIdentity.FromClient(createdId);
                     AddIdentity(zid);
                     LoadIdentities(true);
@@ -2010,6 +2203,7 @@ namespace ZitiDesktopEdge {
         }
 
         private void InitializeTimer(int millisAgoStarted) {
+            StopTunnelUptimeTimer();
             _startDate = DateTime.Now.Subtract(new TimeSpan(0, 0, 0, 0, millisAgoStarted));
             _tunnelUptimeTimer = new System.Windows.Forms.Timer();
             _tunnelUptimeTimer.Interval = 100;
@@ -2021,6 +2215,7 @@ namespace ZitiDesktopEdge {
         async private void Disconnect(object sender, RoutedEventArgs e) {
             if (!UIUtils.IsLeftClick(e)) return;
             if (!UIUtils.MouseUpForMouseDown(e)) return;
+            // Always targets the default Windows service.
             try {
                 ShowLoad("Disabling Service", "Please wait for the service to stop.");
                 var r = await monitorClient.StopServiceAsync();
@@ -2258,6 +2453,13 @@ namespace ZitiDesktopEdge {
             if (!UIUtils.IsLeftClick(e)) return;
             if (!UIUtils.MouseUpForMouseDown(e)) return;
             ShowJoinWith3rdPartyCA();
+        }
+
+        void OnNeedsSignerChoiceAction(AddIdentityViewModel vm, UserControl toClose) {
+            // Swap dialogs without touching the modal overlay so the main window stays dimmed.
+            AnimateDialogOut(toClose);
+            AddIdentitySignerPicker.Prepare(vm);
+            AnimateDialogIn(AddIdentitySignerPicker);
         }
 
         async void OnAddIdentityAction(EnrollIdentifierPayload payload, UserControl toClose) {
