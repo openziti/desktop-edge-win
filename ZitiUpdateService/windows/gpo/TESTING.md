@@ -1,4 +1,4 @@
-# Testing GPO / Policy Override Support ΓÇö ZitiUpdateService
+# Testing GPO / Policy Override Support — ZitiUpdateService
 
 This document covers how to test the policy override feature locally without a domain
 controller, Active Directory, or MDM server. All tests use direct registry manipulation
@@ -14,7 +14,7 @@ For enterprise deployment, see [DEPLOYMENT.md](DEPLOYMENT.md).
 ### 1. Install Ziti Desktop Edge for Windows
 
 The service must be installed so `ZitiUpdateService` is registered and can be started and
-stopped. A standard installation is sufficient ΓÇö no special build is required.
+stopped. A standard installation is sufficient — no special build is required.
 
 ### 2. Verify the service name
 
@@ -70,7 +70,7 @@ function Restart-MonitorService {
 
 ---
 
-## Test 1 ΓÇö Startup: all six values overridden
+## Test 1 — Startup: all six values overridden
 
 **Goal:** verify that `PolicySettings.Load()` reads all six fields and logs them at startup,
 and that the values take effect even if `settings.json` or `App.config` say something
@@ -89,7 +89,7 @@ Restart the service and look for these lines in the log
 (`%APPDATA%\NetFoundry\ZitiUpdateService\` or the installation log directory):
 
 ```
-[INFO] Policy overrides loaded ΓÇö DisableAutomaticUpdates=True, UpdateStreamURL=https://...,
+[INFO] Policy overrides loaded — DisableAutomaticUpdates=True, UpdateStreamURL=https://...,
        UpdateIntervalSeconds=3600, InstallationReminderSeconds=7200,
        InstallationCriticalSeconds=172800, AlivenessChecksBeforeAction=24
 ```
@@ -99,7 +99,7 @@ the `settings.json` or `App.config` defaults are used in their place.
 
 ---
 
-## Test 2 ΓÇö Startup: partial override
+## Test 2 — Startup: partial override
 
 **Goal:** verify that setting only some values overrides only those; others fall back to
 `settings.json` / `App.config` as normal.
@@ -112,17 +112,17 @@ Set-Policy "DisableAutomaticUpdates" 1 DWord
 Restart the service. Expected log:
 
 ```
-[INFO] Policy overrides loaded ΓÇö DisableAutomaticUpdates=True, UpdateStreamURL=(not set),
+[INFO] Policy overrides loaded — DisableAutomaticUpdates=True, UpdateStreamURL=(not set),
        UpdateIntervalSeconds=(not set), ...
 ```
 
 **Pass criteria:**
 - `DisableAutomaticUpdates` is `True` in the log
-- All other values show `(not set)` ΓÇö they are taken from `settings.json` / `App.config`
+- All other values show `(not set)` — they are taken from `settings.json` / `App.config`
 
 ---
 
-## Test 3 ΓÇö Runtime block: SetAutomaticUpdateDisabled
+## Test 3 — Runtime block: SetAutomaticUpdateDisabled
 
 **Goal:** verify that sending a `SetAutomaticUpdateDisabled` IPC command while
 `DisableAutomaticUpdates` is policy-locked returns an error and does not change the setting.
@@ -132,7 +132,7 @@ Set-Policy "DisableAutomaticUpdates" 0 DWord   # locked to "enabled"
 Restart-MonitorService
 ```
 
-Now use the Ziti Desktop Edge UI (Settings ΓåÆ toggle automatic updates) or any IPC client
+Now use the Ziti Desktop Edge UI (Settings → toggle automatic updates) or any IPC client
 to attempt to disable automatic updates. Expected IPC response:
 
 ```json
@@ -142,14 +142,14 @@ to attempt to disable automatic updates. Expected IPC response:
 And in the service log:
 
 ```
-[WARN] DisableAutomaticUpdates is managed by policy ΓÇö change rejected
+[WARN] DisableAutomaticUpdates is managed by policy — change rejected
 ```
 
 **Pass criteria:** response `Code` is `3` (`MANAGED_BY_POLICY`), setting does not change.
 
 ---
 
-## Test 4 ΓÇö Runtime block: SetAutomaticUpdateURL
+## Test 4 — Runtime block: SetAutomaticUpdateURL
 
 **Goal:** verify that attempting to change the update URL while `UpdateStreamURL` is
 policy-locked is rejected.
@@ -169,7 +169,7 @@ Attempt to change the URL via the UI or IPC. Expected response:
 
 ---
 
-## Test 5 ΓÇö Runtime block: SetReleaseStream
+## Test 5 — Runtime block: SetReleaseStream
 
 **Goal:** verify that switching between beta/stable release streams is silently blocked
 when `UpdateStreamURL` is policy-locked (since policy owns the stream URL entirely).
@@ -182,7 +182,7 @@ Restart-MonitorService
 Attempt to switch the release stream via the UI. Expected service log:
 
 ```
-[WARN] UpdateStreamURL is managed by policy ΓÇö SetReleaseStream rejected
+[WARN] UpdateStreamURL is managed by policy — SetReleaseStream rejected
 ```
 
 No error is returned to the caller (the command is a fire-and-forget void call), but the
@@ -192,7 +192,7 @@ release stream does not change.
 
 ---
 
-## Test 6 ΓÇö No policy key present
+## Test 6 — No policy key present
 
 **Goal:** verify baseline behaviour is unchanged when no policy key exists at all.
 
@@ -204,7 +204,7 @@ Restart-MonitorService
 Expected log:
 
 ```
-[DEBUG] GPO registry key absent ΓÇö no policy overrides in effect
+[DEBUG] GPO registry key absent — no policy overrides in effect
 ```
 
 Confirm:
@@ -216,7 +216,7 @@ Confirm:
 
 ---
 
-## Test 7 ΓÇö Policy removal (restart required)
+## Test 7 — Policy removal (restart required)
 
 **Goal:** verify that removing a policy value and restarting the service restores normal
 behaviour.
@@ -238,7 +238,7 @@ After restart, `SetAutomaticUpdateDisabled` IPC commands should succeed again.
 
 ---
 
-## Test 8 ΓÇö InstallationCriticalSeconds = 0 (force-install immediately)
+## Test 8 — InstallationCriticalSeconds = 0 (force-install immediately)
 
 **Goal:** verify that setting the critical threshold to `0` causes the service to treat
 any detected update as immediately critical and schedule installation within 30 seconds.
@@ -277,7 +277,7 @@ If an update is available, the service log should show:
 ## Testing the ADMX/ADML Files (no AD domain required)
 
 You can validate that the ADMX and ADML files are well-formed and that all policy settings
-appear correctly in the Group Policy UI using only your local machine ΓÇö no Active Directory,
+appear correctly in the Group Policy UI using only your local machine — no Active Directory,
 domain controller, or MDM server needed.
 
 ### Steps
@@ -295,23 +295,23 @@ Copy-Item "ZitiUpdateService\windows\gpo\en-US\NetFoundry.ZitiMonitorService.adm
 2. Open Local Group Policy Editor:
 
 ```
-Win+R ΓåÆ gpedit.msc
+Win+R → gpedit.msc
 ```
 
 3. Navigate to:
 
 ```
 Computer Configuration
-  ΓööΓöÇ Administrative Templates
-       ΓööΓöÇ NetFoundry
-            ΓööΓöÇ Ziti Desktop Edge for Windows
-                 ΓööΓöÇ Ziti Monitor Service
+  └─ Administrative Templates
+       └─ NetFoundry
+            └─ Ziti Desktop Edge for Windows
+                 └─ Ziti Monitor Service
 ```
 
 4. Enable or configure any policy setting and click **OK** or **Apply**.
 
 5. The editor writes the value directly to
-   `HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service` ΓÇö
+   `HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service` —
    the same key the service reads. All the registry-based tests above work the same way
    whether the value was written by `gpedit.msc` or by `Set-ItemProperty`.
 
