@@ -103,9 +103,44 @@ build to keep iteration fast.
   UITests\quick-run.ps1
   ```
 
-### Running a single test
+### Running a subset of tests
 
-`quick-run.ps1` always runs the full suite. For a single test:
+#### By category
+
+Every test is tagged with a `Category` trait. `quick-run.ps1 -Category` accepts one
+or many:
+
+| Category                  | Tests                                                              |
+| ------------------------- | ------------------------------------------------------------------ |
+| `MainScreen`              | Landing screen rendering, identity list, toggles, sort headers     |
+| `IdentityDetail`          | Opening identity-detail screen, ext-auth Authorize click           |
+| `IdentityDetailServices`  | Service list, detail icon, filter, Forget button                   |
+| `Mfa`                     | Enable, disable, MFA-needed, MFA-enabled-at-start, QR dialog       |
+| `Sort`                    | Sort header clicks, alphabetical / case-insensitive / status group |
+| `TunnelSettings`          | Tunnel Config screen open, Edit Values, Save                       |
+| `LogLevel`                | Set Logging Level walkthrough                                      |
+| `AutomaticUpdate`         | (placeholder for future auto-update tests)                         |
+
+```powershell
+# just one category
+UITests\quick-run.ps1 -Category Mfa
+
+# multiple categories at once (comma-separated)
+UITests\quick-run.ps1 -Category Mfa,Sort,TunnelSettings
+
+# everything (no filter)
+UITests\quick-run.ps1
+```
+
+Under the hood this passes `--filter "Category=Mfa|Category=Sort|..."` to
+`dotnet test`. The same OR syntax works directly:
+
+```powershell
+dotnet test UITests\UITests.Appium\UITests.Appium.csproj `
+    --filter "Category=Mfa|Category=Sort"
+```
+
+#### By individual test name
 
 ```powershell
 dotnet test UITests\UITests.Appium\UITests.Appium.csproj `

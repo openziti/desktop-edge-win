@@ -79,6 +79,13 @@ public static class TestHelpers
     public static IWebElement ById(AppiumSession s, string id) =>
         s.Driver.FindElement(By.XPath($"//*[@AutomationId='{id}']"));
 
+    /// <summary>Element text or empty string if the element isn't in the tree.</summary>
+    public static string TryGetTextById(AppiumSession s, string id)
+    {
+        try { return ById(s, id).Text ?? ""; }
+        catch (NoSuchElementException) { return ""; }
+    }
+
     public static IWebElement WaitFor(AppiumSession s, By by, int timeoutMs = 8000)
     {
         var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
@@ -99,6 +106,66 @@ public static class TestHelpers
 
     public static IWebElement WaitForId(AppiumSession s, string id, int timeoutMs = 8000) =>
         WaitFor(s, By.XPath($"//*[@AutomationId='{id}']"), timeoutMs);
+
+    /// <summary>
+    /// Robust click: try element.Click() first, fall back to an absolute-coord
+    /// touch tap when the element is reported as not pointer-interactable.
+    /// WinAppDriver only supports pen/touch in W3C Actions (mouse is rejected
+    /// with "Currently only pen and touch pointer input source types are
+    /// supported"). Touch at absolute viewport coords reliably clicks WPF
+    /// elements that have no exposed UIA Invoke pattern.
+    /// </summary>
+    public static void ClickAt(AppiumSession s, IWebElement el)
+    {
+        try
+        {
+            el.Click();
+            return;
+        }
+        catch (OpenQA.Selenium.ElementNotInteractableException)
+        {
+            // fall through to touch-tap
+        }
+
+        var loc = el.Location;
+        var size = el.Size;
+        int cx = loc.X + (size.Width / 2);
+        int cy = loc.Y + (size.Height / 2);
+
+        var touch = new OpenQA.Selenium.Interactions.PointerInputDevice(
+            OpenQA.Selenium.Interactions.PointerKind.Touch, "touch-click");
+        var seq = new OpenQA.Selenium.Interactions.ActionSequence(touch, 0);
+        seq.AddAction(touch.CreatePointerMove(
+            OpenQA.Selenium.Interactions.CoordinateOrigin.Viewport, cx, cy, TimeSpan.Zero));
+        seq.AddAction(touch.CreatePointerDown(OpenQA.Selenium.Interactions.MouseButton.Touch));
+        seq.AddAction(touch.CreatePause(TimeSpan.FromMilliseconds(60)));
+        seq.AddAction(touch.CreatePointerUp(OpenQA.Selenium.Interactions.MouseButton.Touch));
+        ((OpenQA.Selenium.IActionExecutor)s.Driver).PerformActions(
+            new List<OpenQA.Selenium.Interactions.ActionSequence> { seq });
+    }
+
+    /// <summary>
+    /// Find the IdentityItem Custom element whose row contains the given identity
+    /// name. Lets tests work irrespective of sort order on the landing screen.
+    /// </summary>
+    public static IWebElement IdentityRow(AppiumSession s, string identityName) =>
+        s.Driver.FindElement(By.XPath(
+            $"//Custom[@ClassName='IdentityItem' and .//Text[@Name='{identityName}']]"));
+
+    /// <summary>Open the identity-details screen by clicking the row whose name matches.</summary>
+    public static void OpenIdentityDetails(AppiumSession s, string identityName)
+    {
+        // The `MouseUp="OpenDetails"` handler is wired to TRANSPARENT Rectangle
+        // overlays inside the IdentityItem template -- those have no UIA peer.
+        // The outer Text wrapping the identity name sits visually *under* the
+        // hit-test rectangle, so clicking the Text doesn't fire OpenDetails.
+        //
+        // The IdentityItem Custom container DOES have a UIA peer, and its centre
+        // falls on the OpenDetails Rectangle. element.Click() routes to
+        // WinAppDriver's own click implementation at the centre point, which
+        // fires the WPF MouseUp on the Rectangle reliably.
+        IdentityRow(s, identityName).Click();
+    }
 
     public static SettingsTask VerifyPng(byte[] png, [CallerMemberName] string? testName = null)
     {
