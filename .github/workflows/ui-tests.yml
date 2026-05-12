@@ -1,0 +1,56 @@
+name: UI Tests
+
+# Per the repo convention: workflow only checks out + invokes scripts.
+# All logic lives in PowerShell so it can be reproduced locally with the same
+# commands.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - try-appium
+
+permissions:
+  contents: read
+
+jobs:
+  ui-tests:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Appium + WinAppDriver
+        shell: pwsh
+        run: ./UITests/ci-install.ps1
+
+      - name: Build + run UI tests
+        shell: pwsh
+        run: ./UITests/run-ui-tests.ps1 -AutoVerify
+
+      - name: Upload test results (gallery + TRX + baselines)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-test-results
+          # Include both TestResults\** and the .verified.png / .received.png
+          # baselines next to the test source so the gallery's relative paths
+          # (../UITests.Appium/Tests/X.verified.png) resolve once unzipped.
+          path: |
+            UITests/TestResults/**
+            UITests/UITests.Appium/Tests/*.verified.png
+            UITests/UITests.Appium/Tests/*.received.png
+          if-no-files-found: warn
+          retention-days: 30
