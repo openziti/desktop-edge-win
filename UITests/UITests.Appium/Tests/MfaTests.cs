@@ -13,7 +13,7 @@ namespace ZitiDesktopEdge.UITests.Tests;
 [Trait("Category", "Mfa")]
 public class MfaTests
 {
-    [Fact(Timeout = 120000)]
+    [Fact(Timeout = 10000)]
     public async Task Mfa_EnableFromLanding_PushesQrChallenge()
     {
         var name = nameof(Mfa_EnableFromLanding_PushesQrChallenge);
@@ -22,7 +22,7 @@ public class MfaTests
         SaveStep(s, name, "01-landing");
 
         OpenIdentityDetails(s, "enabled-id");
-        await Task.Delay(150);
+        await Task.Delay(350);
         SaveStep(s, name, "02-identity-details");
 
         // IdentityMFA is a MenuEditToggle Custom. The actual toggle (which fires
@@ -37,13 +37,13 @@ public class MfaTests
             if (s.Mock.ReceivedCommandNames.Contains("EnableMFA")) break;
             await Task.Delay(50);
         }
-        await Task.Delay(150); // QR render settle
+        await Task.Delay(350); // QR render settle
         SaveStep(s, name, "03-qr-dialog");
 
         Assert.Contains("EnableMFA", s.Mock.ReceivedCommandNames);
     }
 
-    [Fact(Timeout = 120000)]
+    [Fact(Timeout = 10000)]
     public async Task Mfa_NeededAtStart_RendersMfaPrompt()
     {
         var name = nameof(Mfa_NeededAtStart_RendersMfaPrompt);
@@ -51,14 +51,14 @@ public class MfaTests
             DefaultExePath(), FixturesDir(), fixtureFile: "mfa-needed.json");
         WaitForId(s, "ConnectLabel");
         WaitFor(s, By.XPath("//Text[@Name='mfa-needed-id']"));
-        await Task.Delay(150);
+        await Task.Delay(350);
         SaveStep(s, name, "01-landing-mfa-needed");
 
         var src = s.Driver.PageSource;
         Assert.Contains("mfa-needed-id", src);
     }
 
-    [Fact(Timeout = 120000)]
+    [Fact(Timeout = 10000)]
     public async Task Mfa_EnabledAtStart_RowShowsMfaIndicator()
     {
         var name = nameof(Mfa_EnabledAtStart_RowShowsMfaIndicator);
@@ -66,14 +66,14 @@ public class MfaTests
             DefaultExePath(), FixturesDir(), fixtureFile: "mfa-enabled.json");
         WaitForId(s, "ConnectLabel");
         WaitFor(s, By.XPath("//Text[@Name='mfa-enabled-id']"));
-        await Task.Delay(150);
+        await Task.Delay(350);
         SaveStep(s, name, "01-landing-mfa-enabled");
 
         var src = s.Driver.PageSource;
         Assert.Contains("mfa-enabled-id", src);
     }
 
-    [Fact(Timeout = 120000)]
+    [Fact(Timeout = 10000)]
     public async Task Mfa_DisableTogglePromptsForMfaCode()
     {
         // Disabling MFA does NOT immediately send RemoveMFA. MainWindow.MFAToggled
@@ -88,14 +88,14 @@ public class MfaTests
         SaveStep(s, name, "01-landing-mfa-enabled");
 
         OpenIdentityDetails(s, "mfa-enabled-id");
-        await Task.Delay(150);
+        await Task.Delay(350);
         SaveStep(s, name, "02-identity-details");
 
         var preEdits = s.Driver.FindElements(By.XPath("//Edit")).Count;
 
         var toggle = WaitFor(s, By.XPath("//*[@AutomationId='IdentityMFA']//*[@AutomationId='ToggleField']"));
         ClickAt(s, toggle);
-        await Task.Delay(200);
+        await Task.Delay(350);
         SaveStep(s, name, "03-after-toggle-off");
 
         // After the click, the MFA code prompt surfaces additional Edit controls
@@ -105,7 +105,7 @@ public class MfaTests
             $"Expected MFA code prompt to open additional Edit fields; before={preEdits}, after={postEdits}.");
     }
 
-    [Fact(Timeout = 120000)]
+    [Fact(Timeout = 10000)]
     public async Task Mfa_EnableFromLanding_QrSetupDialogRenders()
     {
         var name = nameof(Mfa_EnableFromLanding_QrSetupDialogRenders);
@@ -114,7 +114,7 @@ public class MfaTests
         SaveStep(s, name, "01-landing");
 
         OpenIdentityDetails(s, "enabled-id");
-        await Task.Delay(150);
+        await Task.Delay(350);
         SaveStep(s, name, "02-identity-details");
 
         // IdentityMFA is a MenuEditToggle Custom. The actual toggle (which fires
@@ -129,7 +129,7 @@ public class MfaTests
             if (s.Mock.ReceivedCommandNames.Contains("EnableMFA")) break;
             await Task.Delay(50);
         }
-        await Task.Delay(150); // QR render settle
+        await Task.Delay(350); // QR render settle
         SaveStep(s, name, "03-qr-dialog");
 
         // The setup dialog contains an Authenticator Code Edit control where the user
@@ -137,5 +137,101 @@ public class MfaTests
         // a stronger signal than just PageSource contains.
         var hasEdit = s.Driver.FindElements(By.XPath("//Edit")).Count > 0;
         Assert.True(hasEdit, "Expected at least one Edit control on the QR setup dialog");
+    }
+
+    /// <summary>
+    /// Disable-MFA flow with the accepted mock code (123456). After clicking
+    /// the toggle the UI surfaces MFAScreen mode 3 with an AuthCode TextBox;
+    /// typing 123456 + clicking Authenticate sends RemoveMFA{Code=123456}
+    /// which the mock accepts (Success=true).
+    /// </summary>
+    [Fact(Timeout = 15000)]
+    public async Task Mfa_DisableWithAcceptedCode_SendsRemoveMFAAndSucceeds()
+    {
+        var name = nameof(Mfa_DisableWithAcceptedCode_SendsRemoveMFAAndSucceeds);
+        await using var s = await AppiumSession.LaunchAsync(
+            DefaultExePath(), FixturesDir(), fixtureFile: "mfa-enabled.json");
+        WaitForId(s, "ConnectLabel");
+        WaitFor(s, By.XPath("//Text[@Name='mfa-enabled-id']"));
+        SaveStep(s, name, "01-landing-mfa-enabled");
+
+        OpenIdentityDetails(s, "mfa-enabled-id");
+        await Task.Delay(350);
+
+        var toggle = WaitFor(s, By.XPath("//*[@AutomationId='IdentityMFA']//*[@AutomationId='ToggleField']"));
+        ClickAt(s, toggle);
+        await Task.Delay(350);
+        SaveStep(s, name, "02-mfa-code-prompt");
+
+        var codeBox = WaitFor(s, By.XPath("//*[@AutomationId='AuthCode']"));
+        codeBox.SendKeys("123456");
+        await Task.Delay(150);
+        SaveStep(s, name, "03-code-typed");
+
+        WaitFor(s, By.XPath("//*[@AutomationId='AuthButton']")).Click();
+
+        var deadline = DateTime.UtcNow.AddSeconds(4);
+        while (DateTime.UtcNow < deadline)
+        {
+            if (s.Mock.ReceivedCommandNames.Contains("RemoveMFA")) break;
+            await Task.Delay(50);
+        }
+        await Task.Delay(300);
+        SaveStep(s, name, "04-after-authenticate");
+
+        Assert.Contains("RemoveMFA", s.Mock.ReceivedCommandNames);
+        var req = s.Mock.ReceivedRequests.Last(r => (string?)r["Command"] == "RemoveMFA");
+        Assert.Equal("123456", (string?)req["Data"]?["Code"]);
+    }
+
+    /// <summary>
+    /// Disable-MFA flow with the canonical rejection code (666666). The mock
+    /// returns Success=false and pushes an mfa event with Successful=false;
+    /// the WPF MFAScreen reacts by clearing the textbox and surfacing an
+    /// error toast/blurb. We just assert the AuthCode box is reset back to
+    /// empty (the canonical error-path UI signal).
+    /// </summary>
+    [Fact(Timeout = 15000)]
+    public async Task Mfa_DisableWithRejectedCode_ClearsTextBoxAndRetainsPrompt()
+    {
+        var name = nameof(Mfa_DisableWithRejectedCode_ClearsTextBoxAndRetainsPrompt);
+        await using var s = await AppiumSession.LaunchAsync(
+            DefaultExePath(), FixturesDir(), fixtureFile: "mfa-enabled.json");
+        WaitForId(s, "ConnectLabel");
+        WaitFor(s, By.XPath("//Text[@Name='mfa-enabled-id']"));
+
+        OpenIdentityDetails(s, "mfa-enabled-id");
+        await Task.Delay(350);
+
+        var toggle = WaitFor(s, By.XPath("//*[@AutomationId='IdentityMFA']//*[@AutomationId='ToggleField']"));
+        ClickAt(s, toggle);
+        await Task.Delay(350);
+
+        var codeBox = WaitFor(s, By.XPath("//*[@AutomationId='AuthCode']"));
+        codeBox.SendKeys("666666");
+        await Task.Delay(150);
+        SaveStep(s, name, "01-rejected-code-typed");
+
+        WaitFor(s, By.XPath("//*[@AutomationId='AuthButton']")).Click();
+
+        // Wait for the RemoveMFA round-trip then for the MFA prompt to react.
+        var deadline = DateTime.UtcNow.AddSeconds(4);
+        while (DateTime.UtcNow < deadline)
+        {
+            if (s.Mock.ReceivedCommandNames.Contains("RemoveMFA")) break;
+            await Task.Delay(50);
+        }
+        await Task.Delay(400);
+        SaveStep(s, name, "02-after-rejection");
+
+        Assert.Contains("RemoveMFA", s.Mock.ReceivedCommandNames);
+        var req = s.Mock.ReceivedRequests.Last(r => (string?)r["Command"] == "RemoveMFA");
+        Assert.Equal("666666", (string?)req["Data"]?["Code"]);
+
+        // The prompt should still be visible (no successful close) and the box
+        // should have been cleared by MFAScreen's failure path.
+        var codeBoxAfter = s.Driver.FindElements(By.XPath("//*[@AutomationId='AuthCode']"));
+        Assert.True(codeBoxAfter.Count > 0, "Expected MFA prompt to still be open after rejected code.");
+        Assert.Equal("", codeBoxAfter[0].Text);
     }
 }

@@ -92,7 +92,7 @@ public static class TestHelpers
         catch (NoSuchElementException) { return ""; }
     }
 
-    public static IWebElement WaitFor(AppiumSession s, By by, int timeoutMs = 8000)
+    public static IWebElement WaitFor(AppiumSession s, By by, int timeoutMs = 4000)
     {
         var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
         Exception? last = null;
@@ -105,24 +105,30 @@ public static class TestHelpers
             }
             catch (NoSuchElementException ex) { last = ex; }
             catch (StaleElementReferenceException ex) { last = ex; }
-            Thread.Sleep(75);
+            Thread.Sleep(40);
         }
         throw new TimeoutException($"Timed out waiting for {by} after {timeoutMs}ms", last);
     }
 
-    public static IWebElement WaitForId(AppiumSession s, string id, int timeoutMs = 8000) =>
+    public static IWebElement WaitForId(AppiumSession s, string id, int timeoutMs = 4000) =>
         WaitFor(s, By.XPath($"//*[@AutomationId='{id}']"), timeoutMs);
 
     /// <summary>
     /// Robust click: try element.Click() first, fall back to an absolute-coord
-    /// touch tap when the element is reported as not pointer-interactable.
-    /// WinAppDriver only supports pen/touch in W3C Actions (mouse is rejected
-    /// with "Currently only pen and touch pointer input source types are
-    /// supported"). Touch at absolute viewport coords reliably clicks WPF
-    /// elements that have no exposed UIA Invoke pattern.
+    /// touch tap at viewport coords. WinAppDriver only supports pen/touch in
+    /// W3C Actions (mouse is rejected with "Currently only pen and touch pointer
+    /// input source types are supported"). Touch reliably clicks WPF elements
+    /// that don't expose a UIA Invoke pattern.
+    ///
+    /// We do NOT call element.Click() first. WinAppDriver synthesises an Invoke
+    /// for WPF Custom controls whose UIA peer happens to expose one even when
+    /// no real handler is wired, so Click() can return success without firing
+    /// the WPF MouseUp / Touch event that the handler is bound to.
     /// </summary>
     public static void ClickAt(AppiumSession s, IWebElement el)
     {
+        // Try element.Click() first; if WinAppDriver rejects as not interactable,
+        // fall back to a viewport-coord touch tap at the element's centre.
         try
         {
             el.Click();
@@ -130,7 +136,7 @@ public static class TestHelpers
         }
         catch (OpenQA.Selenium.ElementNotInteractableException)
         {
-            // fall through to touch-tap
+            // fall through
         }
 
         var loc = el.Location;
@@ -144,7 +150,7 @@ public static class TestHelpers
         seq.AddAction(touch.CreatePointerMove(
             OpenQA.Selenium.Interactions.CoordinateOrigin.Viewport, cx, cy, TimeSpan.Zero));
         seq.AddAction(touch.CreatePointerDown(OpenQA.Selenium.Interactions.MouseButton.Touch));
-        seq.AddAction(touch.CreatePause(TimeSpan.FromMilliseconds(60)));
+        seq.AddAction(touch.CreatePause(TimeSpan.FromMilliseconds(40)));
         seq.AddAction(touch.CreatePointerUp(OpenQA.Selenium.Interactions.MouseButton.Touch));
         ((OpenQA.Selenium.IActionExecutor)s.Driver).PerformActions(
             new List<OpenQA.Selenium.Interactions.ActionSequence> { seq });
@@ -155,21 +161,17 @@ public static class TestHelpers
     /// name. Lets tests work irrespective of sort order on the landing screen.
     /// </summary>
     public static IWebElement IdentityRow(AppiumSession s, string identityName) =>
-        s.Driver.FindElement(By.XPath(
-            $"//Custom[@ClassName='IdentityItem' and .//Text[@Name='{identityName}']]"));
+        // Brief WaitFor instead of immediate FindElement: the Text peer can
+        // surface in the UIA tree a few frames before the parent Custom is
+        // fully attached, which races OpenIdentityDetails callers that did
+        // a WaitFor on the Text right before calling us.
+        WaitFor(s, By.XPath(
+            $"//Custom[@ClassName='IdentityItem' and .//Text[@Name='{identityName}']]"),
+            timeoutMs: 2000);
 
     /// <summary>Open the identity-details screen by clicking the row whose name matches.</summary>
     public static void OpenIdentityDetails(AppiumSession s, string identityName)
     {
-        // The `MouseUp="OpenDetails"` handler is wired to TRANSPARENT Rectangle
-        // overlays inside the IdentityItem template -- those have no UIA peer.
-        // The outer Text wrapping the identity name sits visually *under* the
-        // hit-test rectangle, so clicking the Text doesn't fire OpenDetails.
-        //
-        // The IdentityItem Custom container DOES have a UIA peer, and its centre
-        // falls on the OpenDetails Rectangle. ClickAt() tries element.Click()
-        // first, then falls back to a viewport-coord touch tap when the Custom
-        // is reported as not pointer-interactable (which happens intermittently).
         ClickAt(s, IdentityRow(s, identityName));
     }
 

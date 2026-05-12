@@ -14,7 +14,7 @@ namespace ZitiDesktopEdge.UITests.Tests;
 [Trait("Category", "IdentityDetailServices")]
 public class ServiceTests
 {
-    [Fact(Timeout = 120000)]
+    [Fact(Timeout = 10000)]
     public async Task Services_DetailListShowsAllThreeServices()
     {
         var name = nameof(Services_DetailListShowsAllThreeServices);
@@ -23,7 +23,7 @@ public class ServiceTests
         SaveStep(s, name, "01-landing");
 
         OpenIdentityDetails(s, "enabled-id");
-        await Task.Delay(200);
+        await Task.Delay(350);
         SaveStep(s, name, "02-identity-details");
 
         // Wait for at least one service row to render before snapshotting PageSource.
@@ -34,16 +34,19 @@ public class ServiceTests
         Assert.Contains("bastion.example", src);
     }
 
-    [Fact(Timeout = 120000)]
+    // Launch + landing wait + OpenIdentityDetails + DetailIcon click +
+    // panel render is right at the 10s edge on a cold cache; budget 15s.
+    [Fact(Timeout = 15000)]
     public async Task Services_ClickDetailIcon_OpensServicePanel()
     {
         var name = nameof(Services_ClickDetailIcon_OpensServicePanel);
         await using var s = await AppiumSession.LaunchAsync(DefaultExePath(), FixturesDir());
         WaitForId(s, "ConnectLabel");
+        WaitFor(s, By.XPath("//Text[@Name='enabled-id']"));
         SaveStep(s, name, "01-landing");
 
         OpenIdentityDetails(s, "enabled-id");
-        await Task.Delay(200);
+        await Task.Delay(350);
         SaveStep(s, name, "02-identity-details");
 
         // Each service row exposes a DetailIcon Image. Find the first and synthesize
@@ -51,7 +54,7 @@ public class ServiceTests
         var icons = s.Driver.FindElements(By.XPath("//Image[@AutomationId='DetailIcon']"));
         Assert.True(icons.Count > 0, "expected at least one DetailIcon image");
         ClickAt(s, icons[0]);
-        await Task.Delay(150);
+        await Task.Delay(350);
         SaveStep(s, name, "03-after-detail-icon-click");
 
         // DetailsArea contains DetailName/DetailUrl/DetailAddress text boxes. Assert
@@ -62,7 +65,9 @@ public class ServiceTests
         Assert.True(detail > 0, "expected DetailName/DetailUrl/DetailAddress to appear after clicking DetailIcon");
     }
 
-    [Fact(Timeout = 120000)]
+    // Launch + OpenIdentityDetails + Filter probe (locator fallback) + typing
+    // + debounce. Right at the 10s edge.
+    [Fact(Timeout = 15000)]
     public async Task Services_FilterNarrowsList()
     {
         var name = nameof(Services_FilterNarrowsList);
@@ -71,7 +76,7 @@ public class ServiceTests
         SaveStep(s, name, "01-landing");
 
         OpenIdentityDetails(s, "enabled-id");
-        await Task.Delay(200);
+        await Task.Delay(350);
         SaveStep(s, name, "02-identity-details");
 
         // Confirm all 3 are present pre-filter.
@@ -96,7 +101,7 @@ public class ServiceTests
         Assert.NotNull(filterInput);
 
         filterInput!.SendKeys("wiki");
-        await Task.Delay(200); // debounce / filter pass
+        await Task.Delay(350); // debounce / filter pass
         SaveStep(s, name, "03-after-typing-wiki");
 
         var src = s.Driver.PageSource;
@@ -104,22 +109,25 @@ public class ServiceTests
         Assert.DoesNotContain("prometheus.example", src);
     }
 
-    [Fact(Timeout = 120000)]
+    [Fact(Timeout = 10000)]
     public async Task Services_ForgetIdentityButton_IsRendered()
     {
         var name = nameof(Services_ForgetIdentityButton_IsRendered);
         await using var s = await AppiumSession.LaunchAsync(DefaultExePath(), FixturesDir());
         WaitForId(s, "ConnectLabel");
+        WaitFor(s, By.XPath("//Text[@Name='enabled-id']"));
         SaveStep(s, name, "01-landing");
 
         OpenIdentityDetails(s, "enabled-id");
-        await Task.Delay(200);
+        await Task.Delay(350);
         SaveStep(s, name, "02-identity-details");
 
         Assert.Contains("Forget", s.Driver.PageSource);
     }
 
-    [Fact(Timeout = 120000)]
+    // Loads alternate fixture + opens details + 8s inner wait loop for any
+    // service name to render. Inherently > 10s on cold cache.
+    [Fact(Timeout = 15000)]
     public async Task Services_AlternateFixtureShowsDifferentNames()
     {
         var name = nameof(Services_AlternateFixtureShowsDifferentNames);
@@ -130,7 +138,7 @@ public class ServiceTests
         SaveStep(s, name, "01-landing-with-services-fixture");
 
         OpenIdentityDetails(s, "with-3-services-id");
-        await Task.Delay(200);
+        await Task.Delay(350);
         SaveStep(s, name, "02-identity-details");
 
         // Wait for at least one of the three to render, then snapshot PageSource.
@@ -140,7 +148,7 @@ public class ServiceTests
             var src = s.Driver.PageSource;
             if (src.Contains("jenkins.example") || src.Contains("grafana.example") || src.Contains("postgres.example"))
                 break;
-            await Task.Delay(150);
+            await Task.Delay(350);
         }
 
         var page = s.Driver.PageSource;
