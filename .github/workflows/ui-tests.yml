@@ -5,10 +5,12 @@ name: UI Tests
 # commands.
 
 on:
+  # Manual run, against any branch (pick the branch in the GitHub UI / gh CLI).
   workflow_dispatch:
-  push:
-    branches:
-      - try-appium
+  # Run as part of release publication. Catches regressions before the artifact
+  # is in users' hands without burning CI minutes on every push.
+  release:
+    types: [published]
 
 permissions:
   contents: read
