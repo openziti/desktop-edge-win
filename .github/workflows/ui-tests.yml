@@ -1,7 +1,7 @@
 name: UI Tests
 
-# Per the repo convention: workflow only checks out + invokes scripts.
-# All logic lives in PowerShell so it can be reproduced locally with the same
+# Per the repo convention: workflow only checks out + invokes scripts. All
+# logic lives in PowerShell so it can be reproduced locally with the same
 # commands.
 
 on:
@@ -12,11 +12,21 @@ on:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
+
+# A single concurrency group lets a newer commit cancel an in-flight Pages
+# deployment from an older one.
+concurrency:
+  group: ui-tests-pages
+  cancel-in-progress: false
 
 jobs:
   ui-tests:
     runs-on: windows-latest
     timeout-minutes: 30
+    outputs:
+      gallery-uploaded: ${{ steps.upload-pages.outcome }}
 
     steps:
       - name: Checkout
@@ -40,17 +50,30 @@ jobs:
         shell: pwsh
         run: ./UITests/run-ui-tests.ps1 -AutoVerify
 
-      - name: Upload test results (gallery + TRX + baselines)
+      - name: Upload TestResults artifact (zip)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ui-test-results
-          # Include both TestResults\** and the .verified.png / .received.png
-          # baselines next to the test source so the gallery's relative paths
-          # (../UITests.Appium/Tests/X.verified.png) resolve once unzipped.
-          path: |
-            UITests/TestResults/**
-            UITests/UITests.Appium/Tests/*.verified.png
-            UITests/UITests.Appium/Tests/*.received.png
+          path: UITests/TestResults/**
           if-no-files-found: warn
           retention-days: 30
+
+      - name: Upload Pages artifact (gallery for browsing)
+        id: upload-pages
+        if: always()
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: UITests/TestResults
+
+  deploy-pages:
+    needs: ui-tests
+    if: always() && needs.ui-tests.outputs.gallery-uploaded == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

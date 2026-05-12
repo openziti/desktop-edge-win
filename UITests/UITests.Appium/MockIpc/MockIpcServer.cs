@@ -42,6 +42,37 @@ public sealed class MockIpcServer : IAsyncDisposable
         get { lock (_recvLock) return _receivedMonitor.Select(r => (string?)r["Op"] ?? "").ToArray(); }
     }
 
+    /// <summary>
+    /// Simulate the tunneler reporting a successful external-auth login for the
+    /// given identity. Clicking the "Authenticate with Provider" button in real
+    /// life launches a browser via Process.Start(url) -- we don't want a real
+    /// browser popping up during a test run. Pushing this event reproduces the
+    /// post-login state that ZDEW expects to see from ziti-edge-tunnel: an
+    /// identity event with Action="added" and NeedsExtAuth=false, which the
+    /// MainWindow handler treats as a successful authentication.
+    /// </summary>
+    public void PushExtAuthSuccess(string identifier)
+    {
+        var identities = _landingStatus["Identities"] as JArray;
+        var id = identities?
+            .OfType<JObject>()
+            .FirstOrDefault(i => string.Equals((string?)i["Identifier"], identifier, StringComparison.OrdinalIgnoreCase));
+        if (id == null) throw new InvalidOperationException($"PushExtAuthSuccess: no identity '{identifier}' in fixture.");
+
+        // Clear the ext-auth requirement on the cached status so any subsequent
+        // Status query reflects the post-login state.
+        id["NeedsExtAuth"] = false;
+
+        var evt = new JObject
+        {
+            ["Op"] = "identity",
+            ["Action"] = "added",
+            ["Fingerprint"] = id["FingerPrint"],
+            ["Id"] = id.DeepClone(),
+        };
+        _eventPush.Writer.TryWrite(evt);
+    }
+
     public MockIpcServer(string pipePrefix, string fixturesDir, string fixtureFile = "landing-status.json")
     {
         PipePrefix = pipePrefix;
@@ -140,27 +171,53 @@ public sealed class MockIpcServer : IAsyncDisposable
         };
     }
 
+    /// <summary>
+    /// The 6-digit MFA code the mock accepts. Anything else is rejected; the
+    /// magic 666666 is rejected with an explicit "wrong code" failure so tests
+    /// can drive both happy- and error-path flows.
+    /// </summary>
+    public const string AcceptedMfaCode = "123456";
+    public const string RejectedMfaCode = "666666";
+
     private JObject HandleMfaResult(JObject data, string action)
     {
         var identifier = (string?)data["Identifier"] ?? "";
+        var code = (string?)data["Code"] ?? "";
         var fingerprint = (_landingStatus["Identities"] as JArray)?
             .OfType<JObject>()
             .FirstOrDefault(i => string.Equals((string?)i["Identifier"], identifier, StringComparison.OrdinalIgnoreCase))
             ?["FingerPrint"]?.ToString() ?? "MOCKFP";
 
-        // Push the matching mfa event so the UI's status updates (e.g. RemoveMFA
-        // flips MfaEnabled back to false, VerifyMFA dismisses the QR dialog).
+        // Gate on the submitted code: only VerifyMFA / SubmitMFA / RemoveMFA carry
+        // a user-entered token. Enrollment flows don't, so a missing code is
+        // treated as success (the user is at the QR step, not the verify step).
+        bool successful;
+        if (string.IsNullOrEmpty(code))
+        {
+            successful = true; // enrollment path, no code yet
+        }
+        else
+        {
+            successful = code == AcceptedMfaCode;
+        }
+
         var evt = new JObject
         {
             ["Op"] = "mfa",
             ["Action"] = action,
             ["Identifier"] = identifier,
             ["Fingerprint"] = fingerprint,
-            ["Successful"] = true,
+            ["Successful"] = successful,
         };
+        if (!successful)
+        {
+            evt["Error"] = code == RejectedMfaCode
+                ? "MFA code rejected by mock (666666 is the canonical fail code)."
+                : $"MFA code '{code}' is not a recognised mock code (try 123456 to succeed or 666666 to fail).";
+        }
         _eventPush.Writer.TryWrite(evt);
 
-        return new JObject { ["Success"] = true, ["Code"] = 0 };
+        return new JObject { ["Success"] = successful, ["Code"] = successful ? 0 : 1 };
     }
 
     private JObject HandleExternalAuth(JObject data)
