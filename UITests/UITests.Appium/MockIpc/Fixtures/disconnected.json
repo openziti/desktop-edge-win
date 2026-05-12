@@ -1,0 +1,39 @@
+{
+  "Active": false,
+  "Duration": 0,
+  "StartTime": "2026-05-12T00:00:00.000000Z",
+  "Identities": [
+    {
+      "Name": "disconnected-id",
+      "Identifier": "c:\\fake\\ids\\disconnected-id.json",
+      "FingerPrint": "FPDISCONNECTED",
+      "Active": false,
+      "Loaded": true,
+      "IdFileStatus": false,
+      "NeedsExtAuth": false,
+      "MfaEnabled": false,
+      "MfaNeeded": false,
+      "Metrics": { "Up": 0, "Down": 0 },
+      "MfaMinTimeout": 0,
+      "MfaMaxTimeout": 0,
+      "MfaMinTimeoutRem": 0,
+      "MfaMaxTimeoutRem": 0,
+      "MinTimeoutRemInSvcEvent": 0,
+      "MaxTimeoutRemInSvcEvent": 0,
+      "Deleted": false,
+      "Notified": false
+    }
+  ],
+  "IpInfo": { "Ip": "100.150.0.0", "Subnet": "255.255.0.0", "MTU": 65535, "DNS": "100.150.0.1" },
+  "LogLevel": "info",
+  "ServiceVersion": { "Version": "v0.0.0-mock", "BuildDate": "Mock" },
+  "TunIpv4": "100.150.0.0",
+  "TunIpv4Mask": 16,
+  "AddDns": false,
+  "ApiPageSize": 25,
+  "TunName": "ziti-tun-mock",
+  "L2Enabled": false,
+  "PcapInterface": "",
+  "TapInfo": {},
+  "ConfigDir": "c:\\fake\\ids"
+}

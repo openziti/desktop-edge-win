@@ -418,7 +418,21 @@ namespace ZitiDesktopEdge {
         private System.ComponentModel.IContainer components;
         private MainViewModel props = null;
         public MainWindow() {
+            bool testMode = Environment.GetEnvironmentVariable("ZDEW_UI_TEST") == "1";
+            if (testMode) {
+                this.AllowsTransparency = false;
+                this.WindowStyle = WindowStyle.SingleBorderWindow;
+            } else {
+                this.AllowsTransparency = true;
+                this.WindowStyle = WindowStyle.None;
+            }
             InitializeComponent();
+            if (testMode) {
+                UIBorder.Margin = new Thickness(0);
+                UIBorder.BorderThickness = new Thickness(0);
+                UIBorder.CornerRadius = new CornerRadius(0);
+                UIBorder.Effect = null;
+            }
 
             props = new MainViewModel();
             DataContext = props;
@@ -428,7 +442,9 @@ namespace ZitiDesktopEdge {
             SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
             string nlogFile = Path.Combine(ExecutionDirectory, ThisAssemblyName + "-log.config");
 
-            ToastNotificationManagerCompat.OnActivated += ToastNotificationManagerCompat_OnActivated;
+            if (Environment.GetEnvironmentVariable("ZDEW_ENABLE_TOASTS") == "1") {
+                ToastNotificationManagerCompat.OnActivated += ToastNotificationManagerCompat_OnActivated;
+            }
 
             bool byFile = false;
             if (File.Exists(nlogFile)) {
@@ -847,6 +863,13 @@ namespace ZitiDesktopEdge {
         }
 
         async private void MainWindow_Loaded(object sender, RoutedEventArgs e) {
+
+            if (Environment.GetEnvironmentVariable("ZDEW_UI_TEST") == "1") {
+                this.ShowInTaskbar = true;
+                this.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                this.Show();
+                this.Activate();
+            }
 
             Window window = Window.GetWindow(App.Current.MainWindow);
             ZitiDesktopEdge.App app = (ZitiDesktopEdge.App)App.Current;

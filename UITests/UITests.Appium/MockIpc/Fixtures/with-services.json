@@ -1,0 +1,80 @@
+{
+  "Active": true,
+  "Duration": 0,
+  "StartTime": "2026-05-12T00:00:00.000000Z",
+  "Identities": [
+    {
+      "Name": "with-3-services-id",
+      "Identifier": "c:\\fake\\ids\\with-3-services-id.json",
+      "FingerPrint": "FPWITH3SERVICES",
+      "Active": true,
+      "Loaded": true,
+      "Config": { "ztAPI": "https://controller.example", "ztAPIs": ["https://controller.example"] },
+      "ControllerVersion": "v1.6.15",
+      "IdFileStatus": false,
+      "NeedsExtAuth": false,
+      "MfaEnabled": false,
+      "MfaNeeded": false,
+      "Services": [
+        {
+          "Id": "svc-jenkins",
+          "Name": "jenkins.example",
+          "Protocols": ["tcp"],
+          "Addresses": [{ "IsHost": true, "HostName": "jenkins.example", "Prefix": 0 }],
+          "Ports": [{ "High": 443, "Low": 443 }],
+          "OwnsIntercept": true,
+          "IsAccessible": true,
+          "Timeout": -1,
+          "TimeoutRemaining": -1,
+          "Permissions": { "Bind": false, "Dial": true }
+        },
+        {
+          "Id": "svc-grafana",
+          "Name": "grafana.example",
+          "Protocols": ["tcp"],
+          "Addresses": [{ "IsHost": true, "HostName": "grafana.example", "Prefix": 0 }],
+          "Ports": [{ "High": 3000, "Low": 3000 }],
+          "OwnsIntercept": true,
+          "IsAccessible": true,
+          "Timeout": -1,
+          "TimeoutRemaining": -1,
+          "Permissions": { "Bind": false, "Dial": true }
+        },
+        {
+          "Id": "svc-database",
+          "Name": "postgres.example",
+          "Protocols": ["tcp"],
+          "Addresses": [{ "IsHost": true, "HostName": "postgres.example", "Prefix": 0 }],
+          "Ports": [{ "High": 5432, "Low": 5432 }],
+          "OwnsIntercept": true,
+          "IsAccessible": true,
+          "Timeout": -1,
+          "TimeoutRemaining": -1,
+          "Permissions": { "Bind": false, "Dial": true }
+        }
+      ],
+      "Metrics": { "Up": 0, "Down": 0 },
+      "MfaMinTimeout": -1,
+      "MfaMaxTimeout": -1,
+      "MfaMinTimeoutRem": -1,
+      "MfaMaxTimeoutRem": -1,
+      "MinTimeoutRemInSvcEvent": -1,
+      "MaxTimeoutRemInSvcEvent": -1,
+      "ServiceUpdatedTime": "2026-05-12T00:00:00.000000Z",
+      "Deleted": false,
+      "Notified": false
+    }
+  ],
+  "IpInfo": { "Ip": "100.150.0.0", "Subnet": "255.255.0.0", "MTU": 65535, "DNS": "100.150.0.1" },
+  "LogLevel": "info",
+  "ServiceVersion": { "Version": "v0.0.0-mock", "BuildDate": "Mock" },
+  "TunIpv4": "100.150.0.0",
+  "TunIpv4Mask": 16,
+  "AddDns": false,
+  "ApiPageSize": 25,
+  "TunName": "ziti-tun-mock",
+  "L2Enabled": false,
+  "PcapInterface": "",
+  "TapInfo": {},
+  "ConfigDir": "c:\\fake\\ids"
+}

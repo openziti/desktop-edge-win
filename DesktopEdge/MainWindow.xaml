@@ -29,10 +29,10 @@
         MaxWidth="{StaticResource MaxWindowWidth}"
         ResizeMode="NoResize" 
         ClipToBounds="False"
-        Icon="Assets/Images/icon.png" AllowsTransparency="True" 
+        Icon="Assets/Images/icon.png"
         Closing="Window_Closing"
         PreviewMouseDown="MainUI_PreviewMouseDown"
-        WindowStyle="None" Loaded="MainWindow_Loaded" Background="#000F0F23"
+        Loaded="MainWindow_Loaded" Background="#000F0F23"
     >
     <Window.Resources>
         <Style TargetType="Image">
@@ -182,7 +182,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="100"/>
                 </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0" Cursor="Hand" Orientation="Vertical" Margin="14,16,14,14" MouseLeftButtonUp="ShowMenu">
+                <StackPanel x:Name="MainMenuButton" AutomationProperties.AutomationId="MainMenuButton" Grid.Column="0" Cursor="Hand" Orientation="Vertical" Margin="14,16,14,14" MouseLeftButtonUp="ShowMenu">
                     <Image Source="/Assets/Images/hamburger.png" Margin="5,0,0,-4" Width="26" Height="26" HorizontalAlignment="Left">
                         <Image.Effect>
                             <DropShadowEffect Color="white" BlurRadius="1" ShadowDepth="1" Direction="90" Opacity="1" />
@@ -210,7 +210,7 @@
                            HorizontalAlignment="Center"
                            />
                 </StackPanel>
-                <StackPanel x:Name="AddIdAreaButton" Grid.Column="2" Cursor="Hand" Orientation="Vertical" Margin="14,16,14,14" MouseLeftButtonUp="AddIdentityContextMenu">
+                <StackPanel x:Name="AddIdAreaButton" AutomationProperties.AutomationId="AddIdAreaButton" Grid.Column="2" Cursor="Hand" Orientation="Vertical" Margin="14,16,14,14" MouseLeftButtonUp="AddIdentityContextMenu">
                     <Image Source="/Assets/Images/identity.png" Margin="0,0,5,-4" Width="26" Height="26" HorizontalAlignment="Right">
                         <Image.Effect>
                             <DropShadowEffect Color="white" BlurRadius="1" ShadowDepth="1" Direction="90" Opacity="1" />
