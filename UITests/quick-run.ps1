@@ -13,7 +13,15 @@
 #>
 [CmdletBinding()]
 param(
-    [string[]] $ResetBaselines = @('*'),
+    # Default = leave baselines alone. Pass -ResetBaselines '*' to nuke all
+    # baselines so AutoVerify regenerates them, or -ResetBaselines 'Visual_*'
+    # for a glob match. Leaving baselines alone avoids churning the working
+    # tree with .verified.png diffs on every iteration.
+    [string[]] $ResetBaselines = @(),
+    # Pass -AutoVerify to rewrite .verified.png baselines on every run (used
+    # when you actively want new baselines committed). Default: off, so a
+    # run that produces slightly different bytes won't dirty the working tree.
+    [switch]   $AutoVerify,
     [switch]   $NoOpenGallery,
     [switch]   $Build,
     # One or more categories to narrow the run. Known values:
@@ -49,7 +57,8 @@ foreach ($pattern in $ResetBaselines) {
 
 # Run the tests, buffer a filtered transcript (TestResults dir gets wiped mid-run,
 # so we accumulate in memory and write the file at the end).
-$runArgs = @{ AutoVerify = $true }
+$runArgs = @{}
+if ($AutoVerify) { $runArgs.AutoVerify = $true }
 if (-not $Build) { $runArgs.SkipBuild = $true }
 
 if ($Category -and $Category.Count -gt 0) {

@@ -16,7 +16,7 @@ public class LandingReadOnlyTests : IClassFixture<LandingSession>
     public LandingReadOnlyTests(LandingSession f) => _f = f;
     private AppiumSession S => _f.Session;
 
-    [Fact(Timeout = 60000)]
+    [Fact(Timeout = 10000)]
     public async Task Elements_ResolveByAccessibilityId()
     {
         Assert.True(ById(S, "ConnectLabel").Displayed);
@@ -25,7 +25,7 @@ public class LandingReadOnlyTests : IClassFixture<LandingSession>
         await Task.CompletedTask;
     }
 
-    [Fact(Timeout = 60000)]
+    [Fact(Timeout = 10000)]
     public async Task IdentityList_ShowsBothMockIdentities()
     {
         Assert.True(WaitFor(S, By.XPath("//Text[@Name='enabled-id']")).Displayed);
@@ -33,7 +33,7 @@ public class LandingReadOnlyTests : IClassFixture<LandingSession>
         await Task.CompletedTask;
     }
 
-    [Fact(Timeout = 60000)]
+    [Fact(Timeout = 10000)]
     public async Task IdentityList_ReflectsActiveAndInactiveStatus()
     {
         // Find by name -- UI sorts identities alphabetically so order is not predictable
@@ -48,7 +48,7 @@ public class LandingReadOnlyTests : IClassFixture<LandingSession>
         await Task.CompletedTask;
     }
 
-    [Fact(Timeout = 60000)]
+    [Fact(Timeout = 10000)]
     public async Task SortHeaders_AllVisible()
     {
         Assert.Equal("Status", ById(S, "SortByStatus").Text);
@@ -57,7 +57,7 @@ public class LandingReadOnlyTests : IClassFixture<LandingSession>
         await Task.CompletedTask;
     }
 
-    [Fact(Timeout = 60000)]
+    [Fact(Timeout = 10000)]
     public async Task ConnectedTime_IsDisplayed()
     {
         var time = ById(S, "ConnectedTime").Text;
@@ -65,7 +65,7 @@ public class LandingReadOnlyTests : IClassFixture<LandingSession>
         await Task.CompletedTask;
     }
 
-    [Fact(Timeout = 60000)]
+    [Fact(Timeout = 10000)]
     public async Task ServiceCount_ShowsThreeForEnabled_DashForDisabled()
     {
         var enabledRow  = IdentityRow(S, "enabled-id");
@@ -78,14 +78,14 @@ public class LandingReadOnlyTests : IClassFixture<LandingSession>
         await Task.CompletedTask;
     }
 
-    [Fact(Timeout = 60000)]
+    [Fact(Timeout = 10000)]
     public async Task ConnectLabel_ReadsTapToDisconnect_WhenActive()
     {
         Assert.Equal("Tap to Disconnect", ById(S, "ConnectLabel").Text);
         await Task.CompletedTask;
     }
 
-    [Fact(Timeout = 60000)]
+    [Fact(Timeout = 10000)]
     public async Task DumpPageSource()
     {
         var src = S.Driver.PageSource;

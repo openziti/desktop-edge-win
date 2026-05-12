@@ -16,26 +16,19 @@ public static class FixtureBuilder
     /// </summary>
     public static JObject SortableMixed()
     {
+        // 5-identity fixture for sort tests. Each PageSource fetch on the
+        // full UIA tree is the dominant cost in sort tests (~3-5s for 15 rows
+        // vs ~1-2s for 5). Names are mixed-case and span A/B/C/O/Z so we
+        // still cover case-insensitive ordering with anchors at both ends.
         var status = SkeletonStatus();
         var arr = (JArray)status["Identities"]!;
-        // Order on disk is shuffled -- the UI is expected to sort to a deterministic order.
         var entries = new[]
         {
             Identity("zebra-prod",     active: true),
             Identity("Bravo-Staging",  active: false),
             Identity("ALPHA-DEV",      active: true,  mfaEnabled: true),
-            Identity("delta-vpn",      active: false),
-            Identity("CharlieEdge",    active: true,  needsExtAuth: true),
-            Identity("foxtrot-lab",    active: true,  mfaEnabled: true, mfaNeeded: true),
-            Identity("Echo-bastion",   active: true),
-            Identity("hotel-test",     active: false),
-            Identity("INDIA-corp",     active: true),
-            Identity("juliet-prod",    active: true,  mfaEnabled: true),
-            Identity("Kilo-dev",       active: false, needsExtAuth: true),
-            Identity("lima-mfa",       active: true,  mfaEnabled: true, mfaNeeded: true),
-            Identity("mike-rd",        active: true),
-            Identity("november-edge",  active: false),
             Identity("oscar-prod",     active: true),
+            Identity("CharlieEdge",    active: false, needsExtAuth: true),
         };
         foreach (var e in entries) arr.Add(e);
         return status;

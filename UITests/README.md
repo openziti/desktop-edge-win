@@ -81,16 +81,32 @@ UITests\quick-run.ps1
 
 That script:
 
-1. Removes any `.verified.png` baselines under `UITests\UITests.Appium\Tests\` so AutoVerify regenerates them
-   (pass `-ResetBaselines @('Visual_*','LogLevel_*')` to only nuke specific patterns).
-2. Invokes `run-ui-tests.ps1 -AutoVerify -SkipBuild`, which auto-starts `appium` if it isn't already
+1. Invokes `run-ui-tests.ps1 -SkipBuild`, which auto-starts `appium` if it isn't already
    listening on port 4723.
-3. Filters wire-protocol JSON spam out of stdout and writes a clean log to
+2. Filters wire-protocol JSON spam out of stdout and writes a clean log to
    `UITests\TestResults\run-output.txt`.
-4. Opens `UITests\TestResults\gallery.html` in the default browser.
+3. Opens `UITests\TestResults\gallery.html` in the default browser.
 
 Pass `-Build` to force a full `nuget restore` + `msbuild` rebuild before running. By default it skips the
 build to keep iteration fast.
+
+### Visual baselines (Verify / AutoVerify)
+
+By default `quick-run.ps1` **does not** regenerate `.verified.png` baselines or pass `-AutoVerify`.
+Iterating doesn't dirty the working tree with diff-only baseline noise. When you do want to refresh
+baselines (e.g. after an intentional UI change):
+
+```powershell
+# Regenerate everything
+UITests\quick-run.ps1 -AutoVerify -ResetBaselines '*'
+
+# Regenerate just a few
+UITests\quick-run.ps1 -AutoVerify -ResetBaselines @('Visual_*','LogLevel_*')
+```
+
+Without `-AutoVerify`, a pixel-level mismatch produces a `.received.png` next to the baseline (for
+review) but does not overwrite the baseline. Without `-ResetBaselines`, no baselines are deleted
+ahead of time.
 
 ### First run vs subsequent runs
 
@@ -209,14 +225,29 @@ UITests/
    - `VerifyPng(png)` -- runs Verify-style baseline comparison, also drops the latest run into
      `TestResults\screenshots\` for the gallery's single-shot column.
 
-3. Always tag with `[Fact(Timeout = 120000)]` so a hang fails the test instead of blocking the suite.
+3. Always tag with `[Fact(Timeout = 10000)]`. Anything that genuinely needs longer (multi-hop menu
+   navigation, alt-fixture loads, the Sort walkthrough) should bump per-test to 15000 (or 30000
+   for `Sort_FullWalkthrough`) and include a comment explaining why. Untagged tests can hang the
+   whole suite.
 
 4. Asserting on mock IPC traffic:
    - Tunneler commands (DataClient channel): `s.Mock.ReceivedCommandNames`, `s.Mock.ReceivedRequests`
    - Service commands (MonitorClient channel, `Op`/`Action` shape): `s.Mock.ReceivedMonitorOps`,
      `s.Mock.ReceivedMonitorRequests`
 
-5. For new mock IPC handlers (a Command the UI sends that the mock doesn't yet recognize):
+5. Mock helpers for simulating tunneler-side events (so tests don't have to drive flows that pop
+   real OS dialogs/browsers):
+   - `s.Mock.PushExtAuthSuccess(identifier)` -- emits an `Op=identity Action=added` event with
+     `NeedsExtAuth=false`, the same shape `ziti-edge-tunnel` sends post-OIDC-login. Use this
+     instead of clicking `AuthenticateWithProvider`, which calls `Process.Start(url)` and would
+     launch a real browser.
+   - MFA code gating: `SubmitMFA` / `VerifyMFA` / `RemoveMFA` check the submitted `Code` field.
+     `123456` (== `MockIpcServer.AcceptedMfaCode`) returns `Success=true`; `666666`
+     (== `MockIpcServer.RejectedMfaCode`) returns `Success=false` with an explicit "rejected"
+     error. Any other code is also rejected. Enrollment flows that don't carry a code still
+     succeed.
+
+6. For new mock IPC handlers (a Command the UI sends that the mock doesn't yet recognize):
    - Add a case in `BuildReply` (data IPC) or extend `BuildMonitorReply` (monitor IPC).
    - If the UI expects a follow-up async event, enqueue it on `_eventPush.Writer.TryWrite(...)`.
 

@@ -8,6 +8,20 @@ namespace ZitiDesktopEdge.UITests.Drivers;
 
 public sealed class AppiumSession : IAsyncDisposable
 {
+    /// <summary>
+    /// Ceiling for the time spent waiting for the WPF MainWindowHandle to
+    /// materialise after Process.Start. Empirically the handle appears in
+    /// ~600-900ms; longer = something is wrong, fail fast instead of masking.
+    /// Polling interval is <see cref="WindowPollIntervalMs"/>.
+    /// </summary>
+    public static readonly TimeSpan LaunchWindowTimeout = TimeSpan.FromSeconds(2);
+
+    /// <summary>Poll interval while waiting for MainWindowHandle != 0.</summary>
+    private const int WindowPollIntervalMs = 40;
+
+    /// <summary>Backoff between driver-init retries while window is settling.</summary>
+    private const int DriverInitBackoffMs = 80;
+
     public WindowsDriver Driver { get; }
     public MockIpcServer Mock { get; }
     private readonly Process _uiProcess;
@@ -54,7 +68,7 @@ public sealed class AppiumSession : IAsyncDisposable
         TimeSpan? waitForWindow)
     {
         appiumServer ??= new Uri("http://127.0.0.1:4723/");
-        waitForWindow ??= TimeSpan.FromSeconds(15);
+        waitForWindow ??= LaunchWindowTimeout;
 
         if (!File.Exists(exePath))
             throw new FileNotFoundException($"ZitiDesktopEdge.exe not found at: {exePath}");
@@ -81,7 +95,7 @@ public sealed class AppiumSession : IAsyncDisposable
             IntPtr hwnd = uiProc.MainWindowHandle;
             if (hwnd == IntPtr.Zero)
             {
-                await Task.Delay(75);
+                await Task.Delay(WindowPollIntervalMs);
                 continue;
             }
             try
@@ -99,7 +113,7 @@ public sealed class AppiumSession : IAsyncDisposable
             catch (Exception ex)
             {
                 lastErr = ex;
-                await Task.Delay(150);
+                await Task.Delay(DriverInitBackoffMs);
             }
         }
 
