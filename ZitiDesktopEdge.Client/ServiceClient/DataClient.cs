@@ -113,8 +113,9 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         // ziti edge tunnel
-        private const string DefaultIpcPipe = @"ziti-edge-tunnel.sock";
-        private const string DefaultEventPipe = @"ziti-edge-tunnel-event.sock";
+        private static readonly string PipePrefix = Environment.GetEnvironmentVariable("ZDEW_IPC_PIPE_PREFIX") ?? "";
+        private static readonly string DefaultIpcPipe = PipePrefix + @"ziti-edge-tunnel.sock";
+        private static readonly string DefaultEventPipe = PipePrefix + @"ziti-edge-tunnel-event.sock";
 
         private string ipcPipe;
         private string eventPipe;
