@@ -17,7 +17,8 @@ param(
     [string] $Configuration = "Debug",
     [int]    $AppiumPort    = 4723,
     [switch] $SkipBuild,
-    [switch] $AutoVerify    # passthrough: set ZDEW_AUTO_VERIFY=1 -- accepts new baselines
+    [switch] $AutoVerify,   # passthrough: set ZDEW_AUTO_VERIFY=1 -- accepts new baselines
+    [string] $Filter        # passthrough: --filter "<expr>" e.g. "Category=Mfa"
 )
 
 $ErrorActionPreference = "Stop"
@@ -118,10 +119,16 @@ $screenshotsDir = Join-Path $resultsDir "screenshots"
 try {
     if ($AutoVerify) { $env:ZDEW_AUTO_VERIFY = "1" }
     Write-Host "==> dotnet test"
-    & dotnet test $testCsproj `
-        --logger "console;verbosity=normal" `
-        --logger "trx;LogFileName=results.trx" `
-        --results-directory $resultsDir
+    $dotnetTestArgs = @(
+        $testCsproj,
+        '--logger', 'console;verbosity=normal',
+        '--logger', 'trx;LogFileName=results.trx',
+        '--results-directory', $resultsDir
+    )
+    if ($Filter) {
+        $dotnetTestArgs += @('--filter', $Filter)
+    }
+    & dotnet test @dotnetTestArgs
     $testExit = $LASTEXITCODE
 } finally {
     if ($startedAppium -and $appiumProc -and -not $appiumProc.HasExited) {
@@ -202,6 +209,17 @@ if (Test-Path $trxPath) {
     }
 }
 
+# Copy baseline + received PNGs into TestResults\baselines\ so the gallery is
+# self-contained and can be served from GitHub Pages (no relative ..\paths).
+$galleryBaselineDir = Join-Path $resultsDir "baselines"
+New-Item -ItemType Directory -Force -Path $galleryBaselineDir | Out-Null
+if (Test-Path $baselinesDir) {
+    Get-ChildItem $baselinesDir -Filter "*.verified.png" -ErrorAction SilentlyContinue |
+        ForEach-Object { Copy-Item $_.FullName $galleryBaselineDir -Force }
+    Get-ChildItem $baselinesDir -Filter "*.received.png" -ErrorAction SilentlyContinue |
+        ForEach-Object { Copy-Item $_.FullName $galleryBaselineDir -Force }
+}
+
 # Generate visual gallery HTML
 try {
     # Pull EVERY test from the TRX so assertion-only tests are visible too
@@ -251,7 +269,7 @@ try {
         if ($stepFiles.Count -gt 0) {
             [void]$cards.AppendLine("  <div class=`"row strip`">")
             foreach ($sf in $stepFiles) {
-                $stepRel = "screenshots\$($t.Name)\$($sf.Name)"
+                $stepRel = "screenshots/$($t.Name)/$($sf.Name)"
                 $stepCap = $sf.BaseName
                 [void]$cards.AppendLine("    <figure><figcaption>$stepCap</figcaption><img src=`"$stepRel`" /></figure>")
             }
@@ -259,14 +277,14 @@ try {
         } elseif ($hasBaseline -or $hasLatest) {
             [void]$cards.AppendLine("  <div class=`"row`">")
             if ($hasBaseline) {
-                $brel = "..\UITests.Appium\Tests\$([System.IO.Path]::GetFileName($baselineFile))"
+                $brel = "baselines/$([System.IO.Path]::GetFileName($baselineFile))"
                 [void]$cards.AppendLine("    <figure><figcaption>baseline</figcaption><img src=`"$brel`" /></figure>")
             }
             if ($hasLatest) {
-                [void]$cards.AppendLine("    <figure><figcaption>latest run</figcaption><img src=`"screenshots\$($t.Name).png`" /></figure>")
+                [void]$cards.AppendLine("    <figure><figcaption>latest run</figcaption><img src=`"screenshots/$($t.Name).png`" /></figure>")
             }
             if ($hasReceived) {
-                $rrel = "..\UITests.Appium\Tests\$([System.IO.Path]::GetFileName($receivedFile))"
+                $rrel = "baselines/$([System.IO.Path]::GetFileName($receivedFile))"
                 [void]$cards.AppendLine("    <figure><figcaption>.received.png (rejected)</figcaption><img src=`"$rrel`" /></figure>")
             }
             [void]$cards.AppendLine("  </div>")
@@ -306,6 +324,9 @@ $($cards.ToString())
 </body></html>
 "@
     $html | Set-Content -LiteralPath $galleryPath -Encoding utf8
+    # Also write an index.html alias so GitHub Pages serves the gallery as the
+    # site root without an explicit ?file=gallery.html
+    Copy-Item -LiteralPath $galleryPath -Destination (Join-Path $resultsDir "index.html") -Force
     Write-Host "==> gallery: $galleryPath"
 } catch {
     Write-Warning "Failed to generate gallery: $_"
