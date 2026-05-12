@@ -13,7 +13,11 @@ namespace ZitiDesktopEdge.UITests.Tests;
 [TestLifecycleLog]
 public class SmokeTests
 {
+    // Per-test traits go on the methods below since SmokeTests spans multiple
+    // categories. Adding Category trait per-test would be too noisy; we tag the
+    // big buckets via method-level [Trait] below.
     [Fact(Timeout = 120000)]
+    [Trait("Category", "MainScreen")]
     public async Task MainWindow_LaunchesAndRenders()
     {
         await using var session = await AppiumSession.LaunchAsync(DefaultExePath(), FixturesDir());
@@ -26,6 +30,7 @@ public class SmokeTests
     }
 
     [Fact(Timeout = 120000)]
+    [Trait("Category", "MainScreen")]
     public async Task MainMenu_OpensOnHamburgerClick()
     {
         await using var session = await AppiumSession.LaunchAsync(DefaultExePath(), FixturesDir());
@@ -47,6 +52,7 @@ public class SmokeTests
     }
 
     [Fact(Timeout = 120000)]
+    [Trait("Category", "MainScreen")]
     public async Task IdentityToggle_Click_FlipsBetaToEnabled()
     {
         await using var session = await AppiumSession.LaunchAsync(DefaultExePath(), FixturesDir());
@@ -54,7 +60,7 @@ public class SmokeTests
 
         var toggles = session.Driver.FindElements(By.XPath("//*[@AutomationId='ToggleSwitch']"));
         Assert.Equal(2, toggles.Count);
-        toggles[1].Click();
+        ClickAt(session, toggles[1]);
 
         var deadline = DateTime.UtcNow.AddSeconds(5);
         while (DateTime.UtcNow < deadline)
@@ -73,6 +79,7 @@ public class SmokeTests
     }
 
     [Fact(Timeout = 120000)]
+    [Trait("Category", "MainScreen")]
     public async Task Visual_Disconnected()
     {
         await using var session = await AppiumSession.LaunchAsync(
@@ -87,6 +94,7 @@ public class SmokeTests
     }
 
     [Fact(Timeout = 120000)]
+    [Trait("Category", "MainScreen")]
     public async Task Visual_NoIdentities()
     {
         await using var session = await AppiumSession.LaunchAsync(
@@ -101,6 +109,7 @@ public class SmokeTests
     }
 
     [Fact(Timeout = 120000)]
+    [Trait("Category", "MainScreen")]
     public async Task Visual_NeedsExtAuth()
     {
         await using var session = await AppiumSession.LaunchAsync(
@@ -116,6 +125,7 @@ public class SmokeTests
     }
 
     [Fact(Timeout = 120000)]
+    [Trait("Category", "MainScreen")]
     public async Task Visual_WithServices()
     {
         await using var session = await AppiumSession.LaunchAsync(
@@ -142,6 +152,7 @@ public class SmokeTests
     }
 
     [Fact(Timeout = 120000)]
+    [Trait("Category", "LogLevel")]
     public async Task LogLevel_WalkThroughDebugThenTrace()
     {
         var name = nameof(LogLevel_WalkThroughDebugThenTrace);
@@ -191,6 +202,7 @@ public class SmokeTests
     }
 
     [Fact(Timeout = 120000)]
+    [Trait("Category", "TunnelSettings")]
     public async Task TunnelConfig_OpensConfigScreen()
     {
         var name = nameof(TunnelConfig_OpensConfigScreen);
@@ -213,6 +225,7 @@ public class SmokeTests
     }
 
     [Fact(Timeout = 120000)]
+    [Trait("Category", "IdentityDetail")]
     public async Task IdentityDetails_OpensOnIdentityClick()
     {
         var name = nameof(IdentityDetails_OpensOnIdentityClick);
@@ -220,10 +233,7 @@ public class SmokeTests
         WaitForId(s, "ConnectLabel");
         SaveStep(s, name, "01-landing");
 
-        // Click into the first identity row -- the IdName Text bubbles up to
-        // the IdentityItem's MouseUp=OpenDetails handler.
-        var firstIdName = s.Driver.FindElements(By.XPath("//*[@AutomationId='IdName']")).First();
-        firstIdName.Click();
+        OpenIdentityDetails(s, "enabled-id");
         await Task.Delay(500); // animation settle
         SaveStep(s, name, "02-identity-details-open");
 
@@ -233,6 +243,7 @@ public class SmokeTests
     }
 
     [Fact(Timeout = 120000)]
+    [Trait("Category", "Mfa")]
     public async Task MFA_EnableShowsQRDialog()
     {
         var name = nameof(MFA_EnableShowsQRDialog);
@@ -240,9 +251,7 @@ public class SmokeTests
         WaitForId(s, "ConnectLabel");
         SaveStep(s, name, "01-landing");
 
-        // Open the enabled identity's detail screen
-        var firstIdName = s.Driver.FindElements(By.XPath("//*[@AutomationId='IdName']")).First();
-        firstIdName.Click();
+        OpenIdentityDetails(s, "enabled-id");
         await Task.Delay(500);
         SaveStep(s, name, "02-identity-details");
 
@@ -269,6 +278,7 @@ public class SmokeTests
     }
 
     [Fact(Timeout = 120000)]
+    [Trait("Category", "TunnelSettings")]
     public async Task TunnelConfig_ClickEditValuesShowsForm()
     {
         var name = nameof(TunnelConfig_ClickEditValuesShowsForm);
@@ -289,6 +299,7 @@ public class SmokeTests
     }
 
     [Fact(Timeout = 120000)]
+    [Trait("Category", "TunnelSettings")]
     public async Task TunnelConfig_EditValuesAndSave_SendsUpdateInterfaceConfig()
     {
         var name = nameof(TunnelConfig_EditValuesAndSave_SendsUpdateInterfaceConfig);
@@ -327,6 +338,7 @@ public class SmokeTests
     }
 
     [Fact(Timeout = 120000)]
+    [Trait("Category", "IdentityDetail")]
     public async Task ExtAuth_AuthorizeClick_SendsExternalAuthCommand()
     {
         var name = nameof(ExtAuth_AuthorizeClick_SendsExternalAuthCommand);
@@ -336,9 +348,7 @@ public class SmokeTests
         WaitFor(s, By.XPath("//Text[@Name='needs-ext-auth-id']"));
         SaveStep(s, name, "01-landing-with-ext-auth-identity");
 
-        // Click into the identity detail
-        var idName = s.Driver.FindElements(By.XPath("//*[@AutomationId='IdName']")).First();
-        idName.Click();
+        OpenIdentityDetails(s, "needs-ext-auth-id");
         await Task.Delay(500);
         SaveStep(s, name, "02-identity-details-shows-auth-button");
 
@@ -361,6 +371,7 @@ public class SmokeTests
     }
 
     [Fact(Timeout = 120000)]
+    [Trait("Category", "IdentityDetailServices")]
     public async Task IdentityDetails_ShowsServiceList()
     {
         var name = nameof(IdentityDetails_ShowsServiceList);
@@ -368,8 +379,7 @@ public class SmokeTests
         WaitForId(s, "ConnectLabel");
         SaveStep(s, name, "01-landing-with-services");
 
-        var idName = s.Driver.FindElements(By.XPath("//*[@AutomationId='IdName']")).First();
-        idName.Click();
+        OpenIdentityDetails(s, "enabled-id");
         await Task.Delay(600);
         SaveStep(s, name, "02-identity-details-with-3-services");
 
@@ -378,25 +388,28 @@ public class SmokeTests
     }
 
     [Fact(Timeout = 120000)]
+    [Trait("Category", "MainScreen")]
     public async Task ManyIdentities_LandingShowsScrollableList()
     {
         var name = nameof(ManyIdentities_LandingShowsScrollableList);
         var status = FixtureBuilder.ManyMixedIdentities(count: 50);
         await using var s = await AppiumSession.LaunchAsync(DefaultExePath(), status);
         WaitForId(s, "ConnectLabel");
-        // Let the 50-row list render
-        await Task.Delay(1500);
+        await Task.Delay(1500); // let the 50-row list virtualise / paint
         SaveStep(s, name, "01-50-identities");
 
-        // Assert at least one of each flavor is present in the UIA tree
-        Assert.True(WaitFor(s, By.XPath("//Text[@Name='enabled-00']")).Displayed);
-        Assert.True(WaitFor(s, By.XPath("//Text[@Name='disabled-01']")).Displayed);
-        // mfa + ext-auth flavors live further down; just confirm the row label exists
-        Assert.True(s.Driver.FindElements(By.XPath("//Text[@Name='mfa-required-02']")).Count > 0);
-        Assert.True(s.Driver.FindElements(By.XPath("//Text[@Name='ext-auth-03']")).Count > 0);
+        // Doing 4 separate FindElement queries against a UIA tree with 50 identities is
+        // extremely slow (~10s each). One PageSource fetch + string contains is orders
+        // of magnitude faster.
+        var src = s.Driver.PageSource;
+        Assert.Contains("enabled-00", src);
+        Assert.Contains("disabled-01", src);
+        Assert.Contains("mfa-required-02", src);
+        Assert.Contains("ext-auth-03", src);
     }
 
     [Fact(Timeout = 120000)]
+    [Trait("Category", "MainScreen")]
     public async Task Visual_AfterTogglingBetaIdentityOn()
     {
         await using var session = await AppiumSession.LaunchAsync(DefaultExePath(), FixturesDir());
@@ -404,7 +417,7 @@ public class SmokeTests
 
         var toggles = session.Driver.FindElements(By.XPath("//*[@AutomationId='ToggleSwitch']"));
         Assert.Equal(2, toggles.Count);
-        toggles[1].Click();
+        ClickAt(session, toggles[1]);
 
         var deadline = DateTime.UtcNow.AddSeconds(5);
         while (DateTime.UtcNow < deadline)

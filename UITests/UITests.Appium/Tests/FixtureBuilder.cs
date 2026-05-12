@@ -8,6 +8,39 @@ namespace ZitiDesktopEdge.UITests.Tests;
 /// </summary>
 public static class FixtureBuilder
 {
+    /// <summary>
+    /// Returns ~15 identities with deliberately varied capitalisation and assorted
+    /// states (enabled/disabled, MFA-needed, MFA-already-enabled, ext-auth-needed)
+    /// so sort tests can exercise alphabetical ordering across cases plus
+    /// status / services columns.
+    /// </summary>
+    public static JObject SortableMixed()
+    {
+        var status = SkeletonStatus();
+        var arr = (JArray)status["Identities"]!;
+        // Order on disk is shuffled -- the UI is expected to sort to a deterministic order.
+        var entries = new[]
+        {
+            Identity("zebra-prod",     active: true),
+            Identity("Bravo-Staging",  active: false),
+            Identity("ALPHA-DEV",      active: true,  mfaEnabled: true),
+            Identity("delta-vpn",      active: false),
+            Identity("CharlieEdge",    active: true,  needsExtAuth: true),
+            Identity("foxtrot-lab",    active: true,  mfaEnabled: true, mfaNeeded: true),
+            Identity("Echo-bastion",   active: true),
+            Identity("hotel-test",     active: false),
+            Identity("INDIA-corp",     active: true),
+            Identity("juliet-prod",    active: true,  mfaEnabled: true),
+            Identity("Kilo-dev",       active: false, needsExtAuth: true),
+            Identity("lima-mfa",       active: true,  mfaEnabled: true, mfaNeeded: true),
+            Identity("mike-rd",        active: true),
+            Identity("november-edge",  active: false),
+            Identity("oscar-prod",     active: true),
+        };
+        foreach (var e in entries) arr.Add(e);
+        return status;
+    }
+
     public static JObject ManyMixedIdentities(int count = 50)
     {
         var status = SkeletonStatus();

@@ -1,0 +1,41 @@
+{
+  "Active": true,
+  "Duration": 0,
+  "StartTime": "2026-05-12T00:00:00.000000Z",
+  "Identities": [
+    {
+      "Name": "mfa-enabled-id",
+      "Identifier": "c:\\fake\\ids\\mfa-enabled-id.json",
+      "FingerPrint": "FPMFAENABLED",
+      "Active": true,
+      "Loaded": true,
+      "Config": { "ztAPI": "https://controller.example", "ztAPIs": ["https://controller.example"] },
+      "ControllerVersion": "v1.6.15",
+      "IdFileStatus": false,
+      "NeedsExtAuth": false,
+      "MfaEnabled": true,
+      "MfaNeeded": false,
+      "Metrics": { "Up": 0, "Down": 0 },
+      "MfaMinTimeout": 300,
+      "MfaMaxTimeout": 600,
+      "MfaMinTimeoutRem": 280,
+      "MfaMaxTimeoutRem": 540,
+      "MinTimeoutRemInSvcEvent": 280,
+      "MaxTimeoutRemInSvcEvent": 540,
+      "Deleted": false,
+      "Notified": false
+    }
+  ],
+  "IpInfo": { "Ip": "100.150.0.0", "Subnet": "255.255.0.0", "MTU": 65535, "DNS": "100.150.0.1" },
+  "LogLevel": "info",
+  "ServiceVersion": { "Version": "v0.0.0-mock", "BuildDate": "Mock" },
+  "TunIpv4": "100.150.0.0",
+  "TunIpv4Mask": 16,
+  "AddDns": false,
+  "ApiPageSize": 25,
+  "TunName": "ziti-tun-mock",
+  "L2Enabled": false,
+  "PcapInterface": "",
+  "TapInfo": {},
+  "ConfigDir": "c:\\fake\\ids"
+}

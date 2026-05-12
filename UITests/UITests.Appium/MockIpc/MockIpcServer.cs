@@ -133,8 +133,34 @@ public sealed class MockIpcServer : IAsyncDisposable
             "ExternalAuth" => HandleExternalAuth(data),
             "UpdateInterfaceConfig" => HandleUpdateInterfaceConfig(data),
             "EnableMFA" => HandleEnableMFA(data),
+            "VerifyMFA" => HandleMfaResult(data, "enrollment_verification"),
+            "RemoveMFA" => HandleMfaResult(data, "enrollment_remove"),
+            "SubmitMFA" => HandleMfaResult(data, "mfa_auth_status"),
             _ => new JObject { ["Success"] = true, ["Code"] = 0 },
         };
+    }
+
+    private JObject HandleMfaResult(JObject data, string action)
+    {
+        var identifier = (string?)data["Identifier"] ?? "";
+        var fingerprint = (_landingStatus["Identities"] as JArray)?
+            .OfType<JObject>()
+            .FirstOrDefault(i => string.Equals((string?)i["Identifier"], identifier, StringComparison.OrdinalIgnoreCase))
+            ?["FingerPrint"]?.ToString() ?? "MOCKFP";
+
+        // Push the matching mfa event so the UI's status updates (e.g. RemoveMFA
+        // flips MfaEnabled back to false, VerifyMFA dismisses the QR dialog).
+        var evt = new JObject
+        {
+            ["Op"] = "mfa",
+            ["Action"] = action,
+            ["Identifier"] = identifier,
+            ["Fingerprint"] = fingerprint,
+            ["Successful"] = true,
+        };
+        _eventPush.Writer.TryWrite(evt);
+
+        return new JObject { ["Success"] = true, ["Code"] = 0 };
     }
 
     private JObject HandleExternalAuth(JObject data)

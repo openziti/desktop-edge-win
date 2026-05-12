@@ -9,6 +9,7 @@ namespace ZitiDesktopEdge.UITests.Tests;
 /// class share a single UI launch via LandingSession.
 /// </summary>
 [TestLifecycleLog]
+[Trait("Category", "MainScreen")]
 public class LandingReadOnlyTests : IClassFixture<LandingSession>
 {
     private readonly LandingSession _f;
@@ -35,11 +36,15 @@ public class LandingReadOnlyTests : IClassFixture<LandingSession>
     [Fact(Timeout = 60000)]
     public async Task IdentityList_ReflectsActiveAndInactiveStatus()
     {
-        var statuses = S.Driver.FindElements(By.XPath("//*[@AutomationId='ToggleStatus']"))
-            .Select(e => e.Text).ToList();
-        Assert.Equal(2, statuses.Count);
-        Assert.Equal("ENABLED", statuses[0]);
-        Assert.Equal("DISABLED", statuses[1]);
+        // Find by name -- UI sorts identities alphabetically so order is not predictable
+        // from the fixture order.
+        var enabledRow  = IdentityRow(S, "enabled-id");
+        var disabledRow = IdentityRow(S, "disabled-at-start-id");
+
+        Assert.Equal("ENABLED",
+            enabledRow.FindElement(By.XPath(".//*[@AutomationId='ToggleStatus']")).Text);
+        Assert.Equal("DISABLED",
+            disabledRow.FindElement(By.XPath(".//*[@AutomationId='ToggleStatus']")).Text);
         await Task.CompletedTask;
     }
 
@@ -61,14 +66,15 @@ public class LandingReadOnlyTests : IClassFixture<LandingSession>
     }
 
     [Fact(Timeout = 60000)]
-    public async Task ServiceCount_ShowsZeroForAlpha_AndDashForBeta()
+    public async Task ServiceCount_ShowsThreeForEnabled_DashForDisabled()
     {
-        var counts = S.Driver.FindElements(By.XPath("//*[@AutomationId='ServiceCount']"))
-            .Select(e => e.Text).ToList();
-        Assert.Equal(2, counts.Count);
-        // enabled-id now has 3 services in the landing fixture
-        Assert.Equal("3", counts[0]);
-        Assert.Equal("-", counts[1]);
+        var enabledRow  = IdentityRow(S, "enabled-id");
+        var disabledRow = IdentityRow(S, "disabled-at-start-id");
+
+        Assert.Equal("3",
+            enabledRow.FindElement(By.XPath(".//*[@AutomationId='ServiceCount']")).Text);
+        Assert.Equal("-",
+            disabledRow.FindElement(By.XPath(".//*[@AutomationId='ServiceCount']")).Text);
         await Task.CompletedTask;
     }
 

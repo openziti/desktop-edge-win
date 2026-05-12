@@ -15,7 +15,15 @@
 param(
     [string[]] $ResetBaselines = @('*'),
     [switch]   $NoOpenGallery,
-    [switch]   $Build
+    [switch]   $Build,
+    # One or more categories to narrow the run. Known values:
+    #   MainScreen, IdentityDetail, IdentityDetailServices, Mfa, Sort,
+    #   TunnelSettings, LogLevel, AutomaticUpdate.
+    # Examples:
+    #   -Category Mfa                       (just MFA tests)
+    #   -Category Mfa,Sort,TunnelSettings   (all three)
+    # Empty -> run everything.
+    [string[]] $Category
 )
 
 $ErrorActionPreference = "Continue"
@@ -43,6 +51,12 @@ foreach ($pattern in $ResetBaselines) {
 # so we accumulate in memory and write the file at the end).
 $runArgs = @{ AutoVerify = $true }
 if (-not $Build) { $runArgs.SkipBuild = $true }
+
+if ($Category -and $Category.Count -gt 0) {
+    # dotnet test filter syntax uses '|' for OR between expressions
+    $runArgs.Filter = ($Category | ForEach-Object { "Category=$_" }) -join '|'
+    Write-Host "==> filtering to: $($runArgs.Filter)"
+}
 
 Write-Host "==> running run-ui-tests.ps1 ($(($runArgs.Keys | ForEach-Object { '-' + $_ }) -join ' '))"
 & (Join-Path $here "run-ui-tests.ps1") @runArgs *>&1 |
