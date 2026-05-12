@@ -23,7 +23,7 @@ public class ServiceTests
         SaveStep(s, name, "01-landing");
 
         OpenIdentityDetails(s, "enabled-id");
-        await Task.Delay(600);
+        await Task.Delay(200);
         SaveStep(s, name, "02-identity-details");
 
         // Wait for at least one service row to render before snapshotting PageSource.
@@ -43,7 +43,7 @@ public class ServiceTests
         SaveStep(s, name, "01-landing");
 
         OpenIdentityDetails(s, "enabled-id");
-        await Task.Delay(600);
+        await Task.Delay(200);
         SaveStep(s, name, "02-identity-details");
 
         // Each service row exposes a DetailIcon Image. Find the first and synthesize
@@ -51,7 +51,7 @@ public class ServiceTests
         var icons = s.Driver.FindElements(By.XPath("//Image[@AutomationId='DetailIcon']"));
         Assert.True(icons.Count > 0, "expected at least one DetailIcon image");
         ClickAt(s, icons[0]);
-        await Task.Delay(500);
+        await Task.Delay(150);
         SaveStep(s, name, "03-after-detail-icon-click");
 
         // DetailsArea contains DetailName/DetailUrl/DetailAddress text boxes. Assert
@@ -71,7 +71,7 @@ public class ServiceTests
         SaveStep(s, name, "01-landing");
 
         OpenIdentityDetails(s, "enabled-id");
-        await Task.Delay(600);
+        await Task.Delay(200);
         SaveStep(s, name, "02-identity-details");
 
         // Confirm all 3 are present pre-filter.
@@ -96,7 +96,7 @@ public class ServiceTests
         Assert.NotNull(filterInput);
 
         filterInput!.SendKeys("wiki");
-        await Task.Delay(500); // debounce / filter pass
+        await Task.Delay(200); // debounce / filter pass
         SaveStep(s, name, "03-after-typing-wiki");
 
         var src = s.Driver.PageSource;
@@ -113,7 +113,7 @@ public class ServiceTests
         SaveStep(s, name, "01-landing");
 
         OpenIdentityDetails(s, "enabled-id");
-        await Task.Delay(600);
+        await Task.Delay(200);
         SaveStep(s, name, "02-identity-details");
 
         Assert.Contains("Forget", s.Driver.PageSource);
@@ -130,7 +130,7 @@ public class ServiceTests
         SaveStep(s, name, "01-landing-with-services-fixture");
 
         OpenIdentityDetails(s, "with-3-services-id");
-        await Task.Delay(600);
+        await Task.Delay(200);
         SaveStep(s, name, "02-identity-details");
 
         // Wait for at least one of the three to render, then snapshot PageSource.

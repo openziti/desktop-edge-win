@@ -175,13 +175,13 @@ public class SmokeTests
         SaveStep(s, name, "04-loglevel-submenu");
 
         WaitForId(s, "LogDebug").Click();
-        await Task.Delay(400);
+        await Task.Delay(150);
         SaveStep(s, name, "05-after-clicking-debug");
 
         // Menu stays open after SetLevel -- click Trace directly without re-navigating.
         // (Clicking MAIN again toggles the menu CLOSED, so don't.)
         WaitForId(s, "LogTrace").Click();
-        await Task.Delay(400);
+        await Task.Delay(150);
         SaveStep(s, name, "06-after-clicking-trace");
 
         // The Set Logging Level menu sends to ziti-monitor via the monitor IPC
@@ -220,7 +220,7 @@ public class SmokeTests
         SaveStep(s, name, "03-advanced-shown");
 
         WaitFor(s, By.XPath("//*[@Name='Tunnel Config']")).Click();
-        await Task.Delay(400);
+        await Task.Delay(150);
         SaveStep(s, name, "04-tunnel-config-screen");
     }
 
@@ -234,7 +234,7 @@ public class SmokeTests
         SaveStep(s, name, "01-landing");
 
         OpenIdentityDetails(s, "enabled-id");
-        await Task.Delay(500); // animation settle
+        await Task.Delay(150); // animation settle
         SaveStep(s, name, "02-identity-details-open");
 
         // Identity detail screen exposes IdName / IdServer / ForgetIdentityButton
@@ -252,7 +252,7 @@ public class SmokeTests
         SaveStep(s, name, "01-landing");
 
         OpenIdentityDetails(s, "enabled-id");
-        await Task.Delay(500);
+        await Task.Delay(150);
         SaveStep(s, name, "02-identity-details");
 
         // Toggle Multi Factor Auth on
@@ -267,7 +267,7 @@ public class SmokeTests
             if (s.Mock.ReceivedCommandNames.Contains("EnableMFA")) break;
             await Task.Delay(50);
         }
-        await Task.Delay(700); // QR render settle
+        await Task.Delay(250); // QR render settle
         SaveStep(s, name, "03-after-clicking-mfa-toggle");
 
         Assert.Contains("EnableMFA", s.Mock.ReceivedCommandNames);
@@ -289,12 +289,12 @@ public class SmokeTests
         OpenMainMenu(s);
         WaitFor(s, By.XPath("//*[@Name='Advanced Settings']")).Click();
         WaitFor(s, By.XPath("//*[@Name='Tunnel Config']")).Click();
-        await Task.Delay(400);
+        await Task.Delay(150);
         SaveStep(s, name, "02-tunnel-config-screen");
 
         // "Edit Values" is a StyledButton -- the inner label text is queryable.
         WaitFor(s, By.XPath("//*[@Name='Edit Values']")).Click();
-        await Task.Delay(400);
+        await Task.Delay(150);
         SaveStep(s, name, "03-after-clicking-edit-values");
     }
 
@@ -310,11 +310,11 @@ public class SmokeTests
         OpenMainMenu(s);
         WaitFor(s, By.XPath("//*[@Name='Advanced Settings']")).Click();
         WaitFor(s, By.XPath("//*[@Name='Tunnel Config']")).Click();
-        await Task.Delay(300);
+        await Task.Delay(100);
         SaveStep(s, name, "02-tunnel-config-screen");
 
         WaitFor(s, By.XPath("//*[@Name='Edit Values']")).Click();
-        await Task.Delay(400);
+        await Task.Delay(150);
         SaveStep(s, name, "03-edit-form");
 
         // The Save button on the edit form (SaveConfigButton) -- label is "Save".
@@ -326,7 +326,7 @@ public class SmokeTests
             if (s.Mock.ReceivedCommandNames.Contains("UpdateInterfaceConfig")) break;
             await Task.Delay(50);
         }
-        await Task.Delay(300);
+        await Task.Delay(100);
         SaveStep(s, name, "04-after-save");
 
         Assert.Contains("UpdateInterfaceConfig", s.Mock.ReceivedCommandNames);
@@ -349,8 +349,16 @@ public class SmokeTests
         SaveStep(s, name, "01-landing-with-ext-auth-identity");
 
         OpenIdentityDetails(s, "needs-ext-auth-id");
-        await Task.Delay(500);
+        await Task.Delay(150);
         SaveStep(s, name, "02-identity-details-shows-auth-button");
+
+        // The AuthenticateWithProvider button starts Collapsed; it only becomes
+        // visible after a row is selected in the ProviderList ListBox. Click the
+        // first provider entry, then the button.
+        var firstProvider = WaitFor(s, By.XPath("//List[@Name='ProviderList']/ListItem[1]"));
+        ClickAt(s, firstProvider);
+        await Task.Delay(100);
+        SaveStep(s, name, "02b-provider-selected");
 
         WaitFor(s, By.XPath("//*[@AutomationId='AuthenticateWithProvider']")).Click();
 
@@ -360,7 +368,7 @@ public class SmokeTests
             if (s.Mock.ReceivedCommandNames.Contains("ExternalAuth")) break;
             await Task.Delay(50);
         }
-        await Task.Delay(400);
+        await Task.Delay(150);
         SaveStep(s, name, "03-after-authorize-click");
 
         Assert.Contains("ExternalAuth", s.Mock.ReceivedCommandNames);
@@ -380,7 +388,7 @@ public class SmokeTests
         SaveStep(s, name, "01-landing-with-services");
 
         OpenIdentityDetails(s, "enabled-id");
-        await Task.Delay(600);
+        await Task.Delay(200);
         SaveStep(s, name, "02-identity-details-with-3-services");
 
         // Validate at least one of the services we put in the fixture renders.
@@ -414,6 +422,10 @@ public class SmokeTests
     {
         await using var session = await AppiumSession.LaunchAsync(DefaultExePath(), FixturesDir());
         WaitForId(session, "ConnectLabel");
+        // Wait for both rows to render before snapshotting toggles -- the second
+        // IdentityItem occasionally lags the first by a frame or two.
+        WaitFor(session, By.XPath("//Text[@Name='disabled-at-start-id']"));
+        await Task.Delay(200);
 
         var toggles = session.Driver.FindElements(By.XPath("//*[@AutomationId='ToggleSwitch']"));
         Assert.Equal(2, toggles.Count);
@@ -431,5 +443,66 @@ public class SmokeTests
         var png = ElementScreenshot(window);
         Assert.NotEmpty(png);
         await VerifyPng(png);
+    }
+
+    [Fact(Timeout = 120000)]
+    [Trait("Category", "IdentityDetail")]
+    public async Task ExtAuth_ClickIsDefaultProviderCheckbox_TogglesDefault()
+    {
+        var name = nameof(ExtAuth_ClickIsDefaultProviderCheckbox_TogglesDefault);
+        await using var s = await AppiumSession.LaunchAsync(
+            DefaultExePath(), FixturesDir(), fixtureFile: "needs-ext-auth.json");
+        WaitForId(s, "ConnectLabel");
+        WaitFor(s, By.XPath("//Text[@Name='needs-ext-auth-id']"));
+        SaveStep(s, name, "01-landing");
+
+        OpenIdentityDetails(s, "needs-ext-auth-id");
+        await Task.Delay(150);
+        SaveStep(s, name, "02-identity-details");
+
+        // The IsDefaultProvider CheckBox stays disabled until a provider is selected.
+        var firstProvider = WaitFor(s, By.XPath("//List[@Name='ProviderList']/ListItem[1]"));
+        ClickAt(s, firstProvider);
+        await Task.Delay(100);
+        SaveStep(s, name, "03-provider-selected");
+
+        var check = WaitFor(s, By.XPath("//*[@AutomationId='IsDefaultProvider']"));
+        ClickAt(s, check);
+        await Task.Delay(100);
+        SaveStep(s, name, "04-after-checking-default");
+
+        // Click again to uncheck -- proves the control is interactive.
+        ClickAt(s, check);
+        await Task.Delay(100);
+        SaveStep(s, name, "05-after-unchecking-default");
+    }
+
+    [Fact(Timeout = 120000)]
+    [Trait("Category", "MainScreen")]
+    public async Task AddIdentity_ClickButton_OpensAddIdentityDialog()
+    {
+        var name = nameof(AddIdentity_ClickButton_OpensAddIdentityDialog);
+        await using var s = await AppiumSession.LaunchAsync(DefaultExePath(), FixturesDir());
+        WaitForId(s, "ConnectLabel");
+        SaveStep(s, name, "01-landing");
+
+        // AddIdAreaButton is a StackPanel that WPF doesn't expose a UIA peer for
+        // even with AutomationProperties.AutomationId set. The two child Labels
+        // ("ADD" and "IDENTITY") do expose peers though -- click the "ADD" Text.
+        // MouseLeftButtonUp on the StackPanel bubbles up from the child click.
+        var btn = WaitFor(s, By.XPath("//Text[@Name='ADD']"));
+        ClickAt(s, btn);
+        await Task.Delay(150);
+        SaveStep(s, name, "02-after-add-identity-click");
+
+        // The Add Identity dialog surfaces the AddIdentityByURL / signer picker
+        // panels. Just assert *something* changed in the tree -- the existence of
+        // an Edit (URL field) or button labelled with related text is enough.
+        var src = s.Driver.PageSource;
+        var opened = src.Contains("AddIdentityByURL", StringComparison.OrdinalIgnoreCase)
+                  || src.Contains("3rd Party", StringComparison.OrdinalIgnoreCase)
+                  || src.Contains("Add Identity", StringComparison.OrdinalIgnoreCase)
+                  || src.Contains("Signer", StringComparison.OrdinalIgnoreCase);
+        Assert.True(opened, "Clicking AddIdAreaButton should reveal Add Identity / signer panel content.");
     }
 }

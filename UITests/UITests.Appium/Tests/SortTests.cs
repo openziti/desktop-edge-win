@@ -7,25 +7,28 @@ using static ZitiDesktopEdge.UITests.Tests.TestHelpers;
 namespace ZitiDesktopEdge.UITests.Tests;
 
 /// <summary>
-/// Tests for the landing-screen identity sort headers (Status / Name / Services).
-/// All tests use the 15-identity SortableMixed fixture with mixed capitalisation
-/// and varied states. PageSource regex extraction is used instead of per-row
-/// FindElement queries -- the latter is ~10s per query against a 15-row tree.
+/// Single comprehensive sort-headers walkthrough against the 15-identity
+/// SortableMixed fixture. Clicks Status x2, Name x2, Services x2 and asserts
+/// the active-arrow + ordering behaviour at each step.
+///
+/// Why one big test instead of five small ones:
+///   * Sort state is persisted via Properties.Settings.Save(), so individual
+///     tests leaked state into each other and depended on undefined run order.
+///   * Each fresh AppiumSession is ~3-5s of overhead; folding the cases into
+///     one launch is meaningfully faster than five launches.
 /// </summary>
 [TestLifecycleLog]
 [Trait("Category", "Sort")]
 public class SortTests
 {
     /// <summary>
-    /// Pull the rendered identity names off the landing list, in tree order, by
-    /// regex-matching the IdName Text elements in PageSource. Orders of magnitude
-    /// faster than FindElements + .Text round-trips for 15 rows.
+    /// Pull the rendered identity names off the landing list, in tree order,
+    /// via PageSource regex. Orders of magnitude faster than per-row queries
+    /// against a 15-row tree.
     /// </summary>
     private static List<string> RenderedIdentityOrder(AppiumSession s)
     {
         var src = s.Driver.PageSource;
-        // The serialized UIA XML may emit attributes in either order. Try
-        // AutomationId-first, then Name-first, and merge in document order.
         var names = new List<string>();
         var idFirst = new Regex("AutomationId=\"IdName\"[^>]*?\\bName=\"([^\"]+)\"");
         var nameFirst = new Regex("\\bName=\"([^\"]+)\"[^>]*?AutomationId=\"IdName\"");
@@ -37,175 +40,135 @@ public class SortTests
         return names;
     }
 
-    [Fact(Timeout = 120000)]
-    public async Task Sort_ClickNameHeader_SortsAlphabetically()
+    /// <summary>
+    /// Returns the active sort arrow's text. The arrow TextBlock for an inactive
+    /// column is Collapsed and not in the UIA tree, so only one of the three
+    /// queries returns a value.
+    /// </summary>
+    private static (string column, string arrow) ActiveSortArrow(AppiumSession s)
     {
-        // The UI's DEFAULT sort is by Status (active first, then insertion order),
-        // not alphabetical. To get alphabetical order we have to activate the Name
-        // sort first by clicking its header.
-        var name = nameof(Sort_ClickNameHeader_SortsAlphabetically);
-        await using var s = await AppiumSession.LaunchAsync(DefaultExePath(), FixtureBuilder.SortableMixed());
-        WaitForId(s, "ConnectLabel");
-        await Task.Delay(800);
-        SaveStep(s, name, "01-landing-default-sort-by-status");
-
-        ById(s, "SortByName").Click();
-        await Task.Delay(500);
-        SaveStep(s, name, "02-after-name-sort-active");
-
-        var order = RenderedIdentityOrder(s);
-        Assert.NotEmpty(order);
-        var alphaIdx = order.FindIndex(n => n.Equals("ALPHA-DEV", StringComparison.OrdinalIgnoreCase));
-        var zebraIdx = order.FindIndex(n => n.Equals("zebra-prod", StringComparison.OrdinalIgnoreCase));
-        Assert.True(alphaIdx >= 0 && zebraIdx >= 0);
-        Assert.True(alphaIdx < zebraIdx,
-            $"After clicking SortByName, expected ALPHA-DEV (#{alphaIdx}) before zebra-prod (#{zebraIdx}). Order: [{string.Join(", ", order)}]");
+        var status = TryGetTextById(s, "SortByStatusArrow");
+        if (!string.IsNullOrEmpty(status)) return ("Status", status);
+        var nameArrow = TryGetTextById(s, "SortByNameArrow");
+        if (!string.IsNullOrEmpty(nameArrow)) return ("Name", nameArrow);
+        var services = TryGetTextById(s, "SortByServicesArrow");
+        if (!string.IsNullOrEmpty(services)) return ("Services", services);
+        return ("", "");
     }
 
-    [Fact(Timeout = 120000)]
-    public async Task Sort_ClickNameHeader_TogglesArrowBothWays()
+    /// <summary>
+    /// Find the position of a name in the rendered order, case-insensitively.
+    /// Returns -1 if not found.
+    /// </summary>
+    private static int IndexOf(List<string> order, string needle) =>
+        order.FindIndex(n => n.Equals(needle, StringComparison.OrdinalIgnoreCase));
+
+    [Fact(Timeout = 240000)]
+    public async Task Sort_FullWalkthrough_StatusNameServicesEachClickedTwice()
     {
-        var name = nameof(Sort_ClickNameHeader_TogglesArrowBothWays);
+        var name = nameof(Sort_FullWalkthrough_StatusNameServicesEachClickedTwice);
         await using var s = await AppiumSession.LaunchAsync(DefaultExePath(), FixtureBuilder.SortableMixed());
         WaitForId(s, "ConnectLabel");
-        await Task.Delay(800);
-        SaveStep(s, name, "01-landing-default-sort-by-status");
+        await Task.Delay(300); // let all 15 rows render
+        SaveStep(s, name, "01-landing-persisted-sort");
 
-        // Default sort is Status, so SortByNameArrow is not in the UIA tree yet.
-        Assert.Equal("", TryGetTextById(s, "SortByNameArrow"));
-
-        // Click 1: Name header becomes active sort -- arrow appears.
-        ById(s, "SortByName").Click();
-        await Task.Delay(400);
-        SaveStep(s, name, "02-after-first-name-click");
-        var arrow1 = TryGetTextById(s, "SortByNameArrow");
-        Assert.True(arrow1 == "▲" || arrow1 == "▼",
-            $"Expected SortByNameArrow to render ▲ or ▼ after first click, got '{arrow1}'");
-
-        // Click 2: same header -> arrow flips direction.
-        ById(s, "SortByName").Click();
-        await Task.Delay(400);
-        SaveStep(s, name, "03-after-second-name-click");
-        var arrow2 = TryGetTextById(s, "SortByNameArrow");
-        Assert.True(arrow2 == "▲" || arrow2 == "▼");
-        Assert.NotEqual(arrow1, arrow2);
-
-        // Click 3: click the arrow itself -> flips back to arrow1.
-        ById(s, "SortByNameArrow").Click();
-        await Task.Delay(400);
-        SaveStep(s, name, "04-after-clicking-arrow-itself");
-        var arrow3 = TryGetTextById(s, "SortByNameArrow");
-        Assert.Equal(arrow1, arrow3);
-    }
-
-    [Fact(Timeout = 120000)]
-    public async Task Sort_ClickStatusHeader_GroupsByStatus()
-    {
-        var name = nameof(Sort_ClickStatusHeader_GroupsByStatus);
-        await using var s = await AppiumSession.LaunchAsync(DefaultExePath(), FixtureBuilder.SortableMixed());
-        WaitForId(s, "ConnectLabel");
-        await Task.Delay(800);
-        SaveStep(s, name, "01-landing-before-status-click");
-
+        // --- STATUS, click 1 ---------------------------------------------------
         ById(s, "SortByStatus").Click();
-        await Task.Delay(500);
-        SaveStep(s, name, "02-after-status-header-click");
+        await Task.Delay(150);
+        SaveStep(s, name, "02-after-status-click-1");
+        var (col1, arr1) = ActiveSortArrow(s);
+        Assert.Equal("Status", col1);
+        Assert.True(arr1 == "▲" || arr1 == "▼");
 
-        // Use PageSource character offsets of ENABLED / DISABLED status Text nodes to
-        // verify they cluster contiguously. After grouping there should be no
-        // alternation between the two states -- i.e. one contiguous run each.
-        var src = s.Driver.PageSource;
-        var enabledIdxs = Regex.Matches(src, "Name=\"ENABLED\"").Select(m => m.Index).ToList();
-        var disabledIdxs = Regex.Matches(src, "Name=\"DISABLED\"").Select(m => m.Index).ToList();
-        Assert.NotEmpty(enabledIdxs);
-        Assert.NotEmpty(disabledIdxs);
+        // ENABLED + DISABLED clusters (no interleaving) after sorting by status.
+        var src1 = s.Driver.PageSource;
+        var enabled1 = Regex.Matches(src1, "Name=\"ENABLED\"").Select(m => m.Index).ToList();
+        var disabled1 = Regex.Matches(src1, "Name=\"DISABLED\"").Select(m => m.Index).ToList();
+        Assert.NotEmpty(enabled1);
+        Assert.NotEmpty(disabled1);
+        var grouped = enabled1.Max() < disabled1.Min() || disabled1.Max() < enabled1.Min();
+        Assert.True(grouped, "ENABLED and DISABLED labels should cluster contiguously after Status sort.");
 
-        // All ENABLED indices fall on one side of all DISABLED indices (no interleaving).
-        var allEnabledBeforeAllDisabled = enabledIdxs.Max() < disabledIdxs.Min();
-        var allDisabledBeforeAllEnabled = disabledIdxs.Max() < enabledIdxs.Min();
-        Assert.True(allEnabledBeforeAllDisabled || allDisabledBeforeAllEnabled,
-            "Expected ENABLED and DISABLED status labels to cluster (no interleaving) after sorting by status.");
-    }
+        // --- STATUS, click 2 (toggles direction, stays on Status) -------------
+        ById(s, "SortByStatus").Click();
+        await Task.Delay(150);
+        SaveStep(s, name, "03-after-status-click-2");
+        var (col2, arr2) = ActiveSortArrow(s);
+        Assert.Equal("Status", col2);
+        Assert.True(arr2 == "▲" || arr2 == "▼");
+        Assert.NotEqual(arr1, arr2);
 
-    [Fact(Timeout = 120000)]
-    public async Task Sort_ClickServicesHeader_TogglesBothWays()
-    {
-        var name = nameof(Sort_ClickServicesHeader_TogglesBothWays);
-        await using var s = await AppiumSession.LaunchAsync(DefaultExePath(), FixtureBuilder.SortableMixed());
-        WaitForId(s, "ConnectLabel");
-        await Task.Delay(800);
-        SaveStep(s, name, "01-landing-services-arrow-absent");
+        // Still clustered after the direction flip.
+        var src2 = s.Driver.PageSource;
+        var enabled2 = Regex.Matches(src2, "Name=\"ENABLED\"").Select(m => m.Index).ToList();
+        var disabled2 = Regex.Matches(src2, "Name=\"DISABLED\"").Select(m => m.Index).ToList();
+        Assert.True(enabled2.Max() < disabled2.Min() || disabled2.Max() < enabled2.Min(),
+            "Cluster invariant must hold after the Status direction flip.");
 
-        // Each column only renders its arrow when it's the ACTIVE sort. Services
-        // isn't the default, so before we click anything its arrow shouldn't exist.
-        Assert.Equal("", TryGetTextById(s, "SortByServicesArrow"));
+        // --- NAME, click 1 (switches column, defaults to Descending) ----------
+        ById(s, "SortByName").Click();
+        await Task.Delay(150);
+        SaveStep(s, name, "04-after-name-click-1");
+        var (col3, arr3) = ActiveSortArrow(s);
+        Assert.Equal("Name", col3);
+        Assert.Equal("▼", arr3); // SetSort() switches direction back to Descending when changing column
 
-        // Step 1: click the Services label text -- arrow should appear.
+        // Descending alphabetical: zebra-prod precedes ALPHA-DEV.
+        var order3 = RenderedIdentityOrder(s);
+        Assert.True(order3.Count >= 15, $"Expected >=15 rows, got {order3.Count}: [{string.Join(", ", order3)}]");
+        var zebra3 = IndexOf(order3, "zebra-prod");
+        var alpha3 = IndexOf(order3, "ALPHA-DEV");
+        Assert.True(zebra3 >= 0 && alpha3 >= 0,
+            $"zebra-prod ({zebra3}) and ALPHA-DEV ({alpha3}) must both render. Order: [{string.Join(", ", order3)}]");
+        Assert.True(zebra3 < alpha3,
+            $"Descending Name sort: zebra-prod (#{zebra3}) should precede ALPHA-DEV (#{alpha3}).");
+
+        // --- NAME, click 2 (flips to Ascending) -------------------------------
+        ById(s, "SortByName").Click();
+        await Task.Delay(150);
+        SaveStep(s, name, "05-after-name-click-2");
+        var (col4, arr4) = ActiveSortArrow(s);
+        Assert.Equal("Name", col4);
+        Assert.Equal("▲", arr4);
+
+        // Ascending alphabetical: ALPHA-DEV first, zebra-prod last.
+        // Also verify case-insensitivity: ALPHA-DEV < Bravo-Staging < CharlieEdge.
+        var order4 = RenderedIdentityOrder(s);
+        var alpha4 = IndexOf(order4, "ALPHA-DEV");
+        var bravo4 = IndexOf(order4, "Bravo-Staging");
+        var charlie4 = IndexOf(order4, "CharlieEdge");
+        var oscar4 = IndexOf(order4, "oscar-prod");
+        var zebra4 = IndexOf(order4, "zebra-prod");
+        Assert.True(alpha4 >= 0 && bravo4 >= 0 && charlie4 >= 0 && oscar4 >= 0 && zebra4 >= 0,
+            $"All five anchor identities must render. Order: [{string.Join(", ", order4)}]");
+        Assert.True(alpha4 < bravo4 && bravo4 < charlie4 && charlie4 < oscar4 && oscar4 < zebra4,
+            $"Ascending case-insensitive Name sort expected ALPHA<Bravo<Charlie<oscar<zebra; got {alpha4}/{bravo4}/{charlie4}/{oscar4}/{zebra4} in [{string.Join(", ", order4)}]");
+
+        // --- SERVICES, click 1 (switches column, defaults to Descending) ------
         ById(s, "SortByServices").Click();
-        await Task.Delay(400);
-        SaveStep(s, name, "02-after-clicking-services-label");
+        await Task.Delay(150);
+        SaveStep(s, name, "06-after-services-click-1");
+        var (col5, arr5) = ActiveSortArrow(s);
+        Assert.Equal("Services", col5);
+        Assert.Equal("▼", arr5);
 
-        var arrowFirst = TryGetTextById(s, "SortByServicesArrow");
-        Assert.True(arrowFirst == "▲" || arrowFirst == "▼",
-            $"Expected SortByServicesArrow to render ▲ or ▼ after first click, got '{arrowFirst}'");
-
-        // Step 2: click the arrow itself -- direction should flip.
-        ById(s, "SortByServicesArrow").Click();
-        await Task.Delay(400);
-        SaveStep(s, name, "03-after-clicking-arrow-once");
-
-        var arrowSecond = TryGetTextById(s, "SortByServicesArrow");
-        Assert.True(arrowSecond == "▲" || arrowSecond == "▼",
-            $"Expected SortByServicesArrow to render ▲ or ▼ after arrow click, got '{arrowSecond}'");
-        Assert.NotEqual(arrowFirst, arrowSecond);
-
-        // Step 3: click the arrow again -- should flip back to the first state.
-        ById(s, "SortByServicesArrow").Click();
-        await Task.Delay(400);
-        SaveStep(s, name, "04-after-clicking-arrow-twice");
-
-        var arrowThird = TryGetTextById(s, "SortByServicesArrow");
-        Assert.Equal(arrowFirst, arrowThird);
+        // --- SERVICES, click 2 (flips direction, stays on Services) -----------
+        ById(s, "SortByServices").Click();
+        await Task.Delay(150);
+        SaveStep(s, name, "07-after-services-click-2");
+        var (col6, arr6) = ActiveSortArrow(s);
+        Assert.Equal("Services", col6);
+        Assert.Equal("▲", arr6);
 
         // The list must still render all 15 identities through every toggle.
-        var order = RenderedIdentityOrder(s);
-        Assert.True(order.Count >= 15, $"Expected >=15 rendered identities, got {order.Count}");
-    }
+        var finalOrder = RenderedIdentityOrder(s);
+        Assert.True(finalOrder.Count >= 15,
+            $"After full Status/Name/Services walkthrough, expected >=15 rows, got {finalOrder.Count}");
 
-    [Fact(Timeout = 120000)]
-    public async Task Sort_CaseInsensitivity_AlphaBeforeBravoBeforeCharlie()
-    {
-        var name = nameof(Sort_CaseInsensitivity_AlphaBeforeBravoBeforeCharlie);
-        await using var s = await AppiumSession.LaunchAsync(DefaultExePath(), FixtureBuilder.SortableMixed());
-        WaitForId(s, "ConnectLabel");
-        await Task.Delay(800);
-        SaveStep(s, name, "01-landing-default-sort-by-status");
-
-        // Activate alphabetical sort before checking case-insensitivity.
-        ById(s, "SortByName").Click();
-        await Task.Delay(500);
-        SaveStep(s, name, "02-after-name-sort-active");
-
-        var order = RenderedIdentityOrder(s);
-        Assert.NotEmpty(order);
-
-        int IdxOf(string needle) => order.FindIndex(n => n.Equals(needle, StringComparison.OrdinalIgnoreCase));
-
-        var alpha = IdxOf("ALPHA-DEV");
-        var bravo = IdxOf("Bravo-Staging");
-        var charlie = IdxOf("CharlieEdge");
-        var zebra = IdxOf("zebra-prod");
-        var oscar = IdxOf("oscar-prod");
-
-        Assert.True(alpha >= 0, $"ALPHA-DEV missing in [{string.Join(", ", order)}]");
-        Assert.True(bravo >= 0, $"Bravo-Staging missing in [{string.Join(", ", order)}]");
-        Assert.True(charlie >= 0, $"CharlieEdge missing in [{string.Join(", ", order)}]");
-        Assert.True(zebra >= 0, $"zebra-prod missing in [{string.Join(", ", order)}]");
-        Assert.True(oscar >= 0, $"oscar-prod missing in [{string.Join(", ", order)}]");
-
-        Assert.True(alpha < bravo, $"alpha (#{alpha}) should precede bravo (#{bravo})");
-        Assert.True(bravo < charlie, $"bravo (#{bravo}) should precede charlie (#{charlie})");
-        Assert.True(charlie < oscar, $"charlie (#{charlie}) should precede oscar (#{oscar})");
-        Assert.True(oscar < zebra, $"oscar (#{oscar}) should precede zebra (#{zebra})");
+        // --- Return to a known sort so subsequent test runs are deterministic.
+        // SetSort persists to Properties.Settings; leave Status active.
+        ById(s, "SortByStatus").Click();
+        await Task.Delay(200);
+        SaveStep(s, name, "08-final-reset-to-status");
     }
 }

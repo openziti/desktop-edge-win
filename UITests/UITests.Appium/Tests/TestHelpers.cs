@@ -40,8 +40,14 @@ public static class TestHelpers
         catch { /* best effort */ }
     }
 
-    public static void SaveStep(AppiumSession s, string testName, string stepName) =>
-        SaveStep(Capture(s), testName, stepName);
+    public static void SaveStep(AppiumSession s, string testName, string stepName)
+    {
+        // Capture occasionally throws WebDriverException when an overlay opens or
+        // the window handle is in flux. Screenshots are nice-to-have; never let
+        // them fail the actual test assertion.
+        try { SaveStep(Capture(s), testName, stepName); }
+        catch { /* best effort */ }
+    }
 
     /// <summary>
     /// Click the hamburger to open the main menu. The "MAIN" Text click bubbles
@@ -161,10 +167,10 @@ public static class TestHelpers
         // hit-test rectangle, so clicking the Text doesn't fire OpenDetails.
         //
         // The IdentityItem Custom container DOES have a UIA peer, and its centre
-        // falls on the OpenDetails Rectangle. element.Click() routes to
-        // WinAppDriver's own click implementation at the centre point, which
-        // fires the WPF MouseUp on the Rectangle reliably.
-        IdentityRow(s, identityName).Click();
+        // falls on the OpenDetails Rectangle. ClickAt() tries element.Click()
+        // first, then falls back to a viewport-coord touch tap when the Custom
+        // is reported as not pointer-interactable (which happens intermittently).
+        ClickAt(s, IdentityRow(s, identityName));
     }
 
     public static SettingsTask VerifyPng(byte[] png, [CallerMemberName] string? testName = null)
