@@ -17,6 +17,7 @@ public sealed class LandingSession : IAsyncLifetime
         Session = await AppiumSession.LaunchAsync(
             TestHelpers.DefaultExePath(), TestHelpers.FixturesDir());
         TestHelpers.WaitForId(Session, "ConnectLabel");
+        await TestHelpers.PrepareTestWindow(Session);
     }
 
     public async Task DisposeAsync()

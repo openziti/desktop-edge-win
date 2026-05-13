@@ -22,6 +22,31 @@ public sealed class MockIpcServer : IAsyncDisposable
     private readonly List<JObject> _receivedMonitor = new();
     private readonly Channel<JObject> _eventPush = Channel.CreateUnbounded<JObject>();
 
+    // Queue of next responses for AddIdentity. Each entry is either a
+    // success (with assigned identity name) or a failure (with error message).
+    private readonly Queue<AddIdentityNextResponse> _addIdentityQueue = new();
+    private readonly object _addIdentityLock = new();
+
+    private record AddIdentityNextResponse(bool Success, string? Name, string? Error);
+
+    // Per-identity TOTP secret (base32) generated on EnableMFA. VerifyMFA
+    // validates submitted codes against this secret using real RFC 6238 TOTP.
+    private readonly Dictionary<string, string> _mfaSecrets = new(StringComparer.OrdinalIgnoreCase);
+    private readonly object _mfaSecretsLock = new();
+
+    /// <summary>
+    /// Returns the base32 TOTP secret minted for the given identity by the most
+    /// recent EnableMFA call, or null if EnableMFA hasn't run for it yet. Tests
+    /// use this to compute the correct TOTP code via Totp.Compute(secret).
+    /// </summary>
+    public string? GetMfaSecret(string identifier)
+    {
+        lock (_mfaSecretsLock)
+        {
+            return _mfaSecrets.TryGetValue(identifier, out var s) ? s : null;
+        }
+    }
+
     public IReadOnlyList<JObject> ReceivedRequests
     {
         get { lock (_recvLock) return _received.ToArray(); }
@@ -51,6 +76,24 @@ public sealed class MockIpcServer : IAsyncDisposable
     /// identity event with Action="added" and NeedsExtAuth=false, which the
     /// MainWindow handler treats as a successful authentication.
     /// </summary>
+    /// <summary>
+    /// Queue the next AddIdentity IPC response. Each call to this is consumed
+    /// by exactly one AddIdentity command from the UI. On success, the mock
+    /// appends a fresh identity with the given name to its cached landing
+    /// status (so subsequent Status queries / events reflect it) and returns
+    /// a populated Identity payload. On failure, returns Success=false with
+    /// the supplied error message; the WPF surfaces this as a blurb.
+    /// </summary>
+    public void EnqueueAddIdentitySuccess(string identityName)
+    {
+        lock (_addIdentityLock) _addIdentityQueue.Enqueue(new AddIdentityNextResponse(true, identityName, null));
+    }
+
+    public void EnqueueAddIdentityFailure(string error = "Mock-controlled AddIdentity failure")
+    {
+        lock (_addIdentityLock) _addIdentityQueue.Enqueue(new AddIdentityNextResponse(false, null, error));
+    }
+
     public void PushExtAuthSuccess(string identifier)
     {
         var identities = _landingStatus["Identities"] as JArray;
@@ -161,12 +204,14 @@ public sealed class MockIpcServer : IAsyncDisposable
                 ["Data"] = _landingStatus,
             },
             "IdentityOnOff" => HandleIdentityOnOff(data),
+            "AddIdentity" => HandleAddIdentity(data),
             "ExternalAuth" => HandleExternalAuth(data),
             "UpdateInterfaceConfig" => HandleUpdateInterfaceConfig(data),
             "EnableMFA" => HandleEnableMFA(data),
             "VerifyMFA" => HandleMfaResult(data, "enrollment_verification"),
             "RemoveMFA" => HandleMfaResult(data, "enrollment_remove"),
             "SubmitMFA" => HandleMfaResult(data, "mfa_auth_status"),
+            "GenerateMFACodes" => HandleGenerateMFACodes(data),
             _ => new JObject { ["Success"] = true, ["Code"] = 0 },
         };
     }
@@ -188,17 +233,33 @@ public sealed class MockIpcServer : IAsyncDisposable
             .FirstOrDefault(i => string.Equals((string?)i["Identifier"], identifier, StringComparison.OrdinalIgnoreCase))
             ?["FingerPrint"]?.ToString() ?? "MOCKFP";
 
-        // Gate on the submitted code: only VerifyMFA / SubmitMFA / RemoveMFA carry
-        // a user-entered token. Enrollment flows don't, so a missing code is
-        // treated as success (the user is at the QR step, not the verify step).
+        // Gate on the submitted code:
+        //   * empty code -> enrollment path (no token yet) -> success
+        //   * "666666" (RejectedMfaCode) -> canonical failure path for tests
+        //     that want a deterministic rejection
+        //   * "123456" (AcceptedMfaCode) -> legacy magic-accept for tests that
+        //     don't want to drive real TOTP (e.g. disable-MFA flow where the
+        //     code isn't generated from a known secret)
+        //   * otherwise -> real RFC 6238 TOTP validation against the secret
+        //     issued by HandleEnableMFA
         bool successful;
         if (string.IsNullOrEmpty(code))
         {
-            successful = true; // enrollment path, no code yet
+            successful = true;
+        }
+        else if (code == RejectedMfaCode)
+        {
+            successful = false;
+        }
+        else if (code == AcceptedMfaCode)
+        {
+            successful = true;
         }
         else
         {
-            successful = code == AcceptedMfaCode;
+            string? secret;
+            lock (_mfaSecretsLock) _mfaSecrets.TryGetValue(identifier, out secret);
+            successful = secret != null && Totp.Validate(secret, code);
         }
 
         var evt = new JObject
@@ -215,9 +276,197 @@ public sealed class MockIpcServer : IAsyncDisposable
                 ? "MFA code rejected by mock (666666 is the canonical fail code)."
                 : $"MFA code '{code}' is not a recognised mock code (try 123456 to succeed or 666666 to fail).";
         }
-        _eventPush.Writer.TryWrite(evt);
+
+        // On a successful enrollment_verification, persist MfaEnabled=true on
+        // the cached identity so subsequent IdentityOnOff cycles (disable then
+        // re-enable) can correctly drive the "identity has MFA, needs re-auth"
+        // state.
+        if (successful && action == "enrollment_verification")
+        {
+            var ident = (_landingStatus["Identities"] as JArray)?
+                .OfType<JObject>()
+                .FirstOrDefault(i => string.Equals((string?)i["Identifier"], identifier, StringComparison.OrdinalIgnoreCase));
+            if (ident != null) ident["MfaEnabled"] = true;
+        }
+        // RemoveMFA success clears MfaEnabled.
+        if (successful && action == "enrollment_remove")
+        {
+            var ident = (_landingStatus["Identities"] as JArray)?
+                .OfType<JObject>()
+                .FirstOrDefault(i => string.Equals((string?)i["Identifier"], identifier, StringComparison.OrdinalIgnoreCase));
+            if (ident != null)
+            {
+                ident["MfaEnabled"] = false;
+                ident["MfaNeeded"] = false;
+            }
+        }
+
+        // CRITICAL ORDERING: push the event AFTER a small delay so the reply for
+        // VerifyMFA gets back to the WPF (and DoSetupAuthenticate's OnClose
+        // runs) BEFORE the enrollment_verification event arrives. Without this
+        // delay, WPF's data and event pipes race -- if the event wins,
+        // ShowMFARecoveryCodes opens the recovery screen and then OnClose
+        // immediately hides it. Real ziti-edge-tunnel emits the response and
+        // event from the same socket in deterministic order; our two-pipe mock
+        // can interleave, so we serialise here.
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(120);
+            _eventPush.Writer.TryWrite(evt);
+        });
 
         return new JObject { ["Success"] = successful, ["Code"] = successful ? 0 : 1 };
+    }
+
+    private JObject HandleAddIdentity(JObject data)
+    {
+        AddIdentityNextResponse resp;
+        lock (_addIdentityLock)
+        {
+            resp = _addIdentityQueue.Count > 0
+                ? _addIdentityQueue.Dequeue()
+                : new AddIdentityNextResponse(true, "mock-default", null);
+        }
+
+        if (!resp.Success)
+        {
+            return new JObject
+            {
+                ["Success"] = false,
+                ["Code"] = 1,
+                ["Error"] = resp.Error ?? "Mock-controlled AddIdentity failure",
+            };
+        }
+
+        // Append a fresh identity to the cached landing status so later Status
+        // queries + IdentityOnOff lookups see it. Shape mirrors the JSON
+        // fixtures.
+        var name = resp.Name ?? "mock-identity";
+        var newId = new JObject
+        {
+            ["Name"] = name,
+            ["Identifier"] = $"c:\\fake\\ids\\{name}.json",
+            ["FingerPrint"] = "FP" + name.Replace("-", "").ToUpperInvariant(),
+            ["Active"] = true,
+            ["Loaded"] = true,
+            ["Config"] = new JObject
+            {
+                ["ztAPI"] = "https://controller.example",
+                ["ztAPIs"] = new JArray("https://controller.example"),
+            },
+            ["ControllerVersion"] = "v1.6.15-mock",
+            ["IdFileStatus"] = false,
+            ["NeedsExtAuth"] = false,
+            ["ExtAuthProviders"] = new JArray(),
+            ["MfaEnabled"] = false,
+            ["MfaNeeded"] = false,
+            // Two stock services per dynamically-added identity: one dial-only,
+            // one bind-only. Lets tests on the details screen exercise the
+            // service list rendering with mixed-permission rows.
+            ["Services"] = new JArray
+            {
+                new JObject
+                {
+                    ["Id"] = $"svc-dial-{name}",
+                    ["Name"] = $"{name}.dial.example",
+                    ["Protocols"] = new JArray("tcp"),
+                    ["Addresses"] = new JArray(new JObject
+                    {
+                        ["IsHost"] = true,
+                        ["HostName"] = $"{name}.dial.example",
+                        ["Prefix"] = 0,
+                    }),
+                    ["Ports"] = new JArray(new JObject { ["Low"] = 443, ["High"] = 443 }),
+                    ["OwnsIntercept"] = true,
+                    ["IsAccessible"] = true,
+                    ["Timeout"] = -1,
+                    ["TimeoutRemaining"] = -1,
+                    ["Permissions"] = new JObject { ["Bind"] = false, ["Dial"] = true },
+                },
+                new JObject
+                {
+                    ["Id"] = $"svc-bind-{name}",
+                    ["Name"] = $"{name}.bind.example",
+                    ["Protocols"] = new JArray("tcp"),
+                    ["Addresses"] = new JArray(new JObject
+                    {
+                        ["IsHost"] = true,
+                        ["HostName"] = $"{name}.bind.example",
+                        ["Prefix"] = 0,
+                    }),
+                    ["Ports"] = new JArray(new JObject { ["Low"] = 8080, ["High"] = 8080 }),
+                    ["OwnsIntercept"] = false,
+                    ["IsAccessible"] = true,
+                    ["Timeout"] = -1,
+                    ["TimeoutRemaining"] = -1,
+                    ["Permissions"] = new JObject { ["Bind"] = true, ["Dial"] = false },
+                },
+            },
+            ["Metrics"] = new JObject { ["Up"] = 0, ["Down"] = 0 },
+            ["MfaMinTimeout"] = 0,
+            ["MfaMaxTimeout"] = 0,
+            ["MfaMinTimeoutRem"] = 0,
+            ["MfaMaxTimeoutRem"] = 0,
+            ["MinTimeoutRemInSvcEvent"] = 0,
+            ["MaxTimeoutRemInSvcEvent"] = 0,
+            ["Deleted"] = false,
+            ["Notified"] = false,
+        };
+
+        var identities = (JArray)_landingStatus["Identities"]!;
+        identities.Add(newId);
+
+        return new JObject
+        {
+            ["Success"] = true,
+            ["Code"] = 0,
+            ["Data"] = newId,
+        };
+    }
+
+    private JObject HandleGenerateMFACodes(JObject data)
+    {
+        var identifier = (string?)data["Identifier"] ?? "";
+        var code = (string?)data["Code"] ?? "";
+
+        // Same code-gate as HandleMfaResult.
+        bool valid;
+        if (string.IsNullOrEmpty(code)) valid = false;
+        else if (code == RejectedMfaCode) valid = false;
+        else if (code == AcceptedMfaCode) valid = true;
+        else
+        {
+            string? secret;
+            lock (_mfaSecretsLock) _mfaSecrets.TryGetValue(identifier, out secret);
+            valid = secret != null && Totp.Validate(secret, code);
+        }
+
+        if (!valid)
+        {
+            return new JObject
+            {
+                ["Success"] = false,
+                ["Code"] = 1,
+                ["Error"] = "Invalid MFA code for regenerate.",
+            };
+        }
+
+        // Issue 20 freshly-numbered recovery codes so the test can visually
+        // confirm the regenerate happened (codes differ from the initial set).
+        var newCodes = new JArray();
+        var rnd = new Random();
+        for (int i = 0; i < 20; i++) newCodes.Add($"REGEN{i:D2}{rnd.Next(100, 999)}");
+
+        return new JObject
+        {
+            ["Success"] = true,
+            ["Code"] = 0,
+            ["Data"] = new JObject
+            {
+                ["Identifier"] = identifier,
+                ["RecoveryCodes"] = newCodes,
+            },
+        };
     }
 
     private JObject HandleExternalAuth(JObject data)
@@ -266,7 +515,14 @@ public sealed class MockIpcServer : IAsyncDisposable
             .FirstOrDefault(i => string.Equals((string?)i["Identifier"], identifier, StringComparison.OrdinalIgnoreCase))
             ?["FingerPrint"]?.ToString() ?? "MOCKFP";
 
-        var url = "otpauth://totp/openziti.io:MOCK?issuer=openziti.io&secret=MOCKSECRET234567";
+        // Generate a REAL RFC 6238 TOTP secret + persist per-identity. The
+        // VerifyMFA handler validates submitted codes against this secret;
+        // tests use GetMfaSecret(identifier) + Totp.Compute() to produce the
+        // matching code.
+        var secret = Totp.GenerateSecret();
+        lock (_mfaSecretsLock) _mfaSecrets[identifier] = secret;
+
+        var url = $"otpauth://totp/openziti.io:{Uri.EscapeDataString(identifier)}?issuer=openziti.io&secret={secret}";
         var codes = new JArray(
             "AAAAAA", "BBBBBB", "CCCCCC", "DDDDDD", "EEEEEE",
             "FFFFFF", "GGGGGG", "HHHHHH", "IIIIII", "JJJJJJ",
@@ -314,6 +570,18 @@ public sealed class MockIpcServer : IAsyncDisposable
         if (id != null)
         {
             id["Active"] = onOff;
+
+            // Re-enabling an identity that has MFA configured triggers a fresh
+            // auth challenge: real ziti-edge-tunnel reports MfaNeeded=true on
+            // the post-enable status. Disable always clears MfaNeeded.
+            if (onOff && (bool?)id["MfaEnabled"] == true)
+            {
+                id["MfaNeeded"] = true;
+            }
+            else if (!onOff)
+            {
+                id["MfaNeeded"] = false;
+            }
         }
 
         // Push the controller event the real ziti-edge-tunnel would emit so the
