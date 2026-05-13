@@ -2137,18 +2137,29 @@ namespace ZitiDesktopEdge {
         }
 
         private async void AddIdentity_Click(object sender, RoutedEventArgs e) {
-            UIModel.HideOnLostFocus = false;
-            OpenFileDialog jwtDialog = new OpenFileDialog();
-            UIModel.HideOnLostFocus = true;
-            jwtDialog.DefaultExt = ".jwt";
-            jwtDialog.Filter = "Ziti Identities (*.jwt)|*.jwt";
+            // ZDEW_UI_TEST: skip the OS OpenFileDialog (Appium can't drive it
+            // reliably). Test code writes a JWT to %TEMP%\zdew-test-add-identity.jwt
+            // before clicking; we read that path here. Same code path otherwise.
+            string chosenPath = null;
+            if (Environment.GetEnvironmentVariable("ZDEW_UI_TEST") == "1") {
+                var testPath = Path.Combine(Path.GetTempPath(), "zdew-test-add-identity.jwt");
+                if (File.Exists(testPath)) chosenPath = testPath;
+                else { logger.Warn("ZDEW_UI_TEST: expected JWT at {} but file missing", testPath); return; }
+            } else {
+                UIModel.HideOnLostFocus = false;
+                OpenFileDialog jwtDialog = new OpenFileDialog();
+                UIModel.HideOnLostFocus = true;
+                jwtDialog.DefaultExt = ".jwt";
+                jwtDialog.Filter = "Ziti Identities (*.jwt)|*.jwt";
+                if (jwtDialog.ShowDialog() == true) chosenPath = jwtDialog.FileName;
+            }
 
-            if (jwtDialog.ShowDialog() == true) {
+            if (chosenPath != null) {
                 ShowLoad("Adding Identity", "Please wait while the identity is added");
-                string fileContent = File.ReadAllText(jwtDialog.FileName);
+                string fileContent = File.ReadAllText(chosenPath);
                 EnrollIdentifierPayload payload = new EnrollIdentifierPayload();
                 payload.UseKeychain = false;
-                string jwtFile = Path.GetFileName(jwtDialog.FileName);
+                string jwtFile = Path.GetFileName(chosenPath);
                 payload.IdentityFilename = Path.GetFileNameWithoutExtension(jwtFile);
                 payload.JwtContent = fileContent.Trim();
                 string[] jwtParts = fileContent?.Split('.');

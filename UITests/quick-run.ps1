@@ -22,6 +22,13 @@ param(
     # when you actively want new baselines committed). Default: off, so a
     # run that produces slightly different bytes won't dirty the working tree.
     [switch]   $AutoVerify,
+    # Pass -Trace to enable per-test timing trace (sets ZDEW_TEST_TRACE=1 for
+    # the duration of the run). Stdout / run-output.txt will get
+    #   [TRACE] t=<total>ms +<step>ms <op>
+    # lines for every ClickAt / WaitFor / ById / SaveStep call plus any inline
+    # Trace.Mark / Trace.Time the test body adds. Use this to attribute wall
+    # time when chasing a slow test.
+    [switch]   $Trace,
     [switch]   $NoOpenGallery,
     [switch]   $Build,
     # One or more categories to narrow the run. Known values:
@@ -60,6 +67,13 @@ foreach ($pattern in $ResetBaselines) {
 $runArgs = @{}
 if ($AutoVerify) { $runArgs.AutoVerify = $true }
 if (-not $Build) { $runArgs.SkipBuild = $true }
+
+if ($Trace) {
+    Write-Host "==> tracing enabled (ZDEW_TEST_TRACE=1)"
+    $env:ZDEW_TEST_TRACE = "1"
+} else {
+    Remove-Item Env:ZDEW_TEST_TRACE -ErrorAction SilentlyContinue
+}
 
 if ($Category -and $Category.Count -gt 0) {
     # dotnet test filter syntax uses '|' for OR between expressions

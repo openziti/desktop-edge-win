@@ -22,7 +22,7 @@ public class MfaTests
         SaveStep(s, name, "01-landing");
 
         OpenIdentityDetails(s, "enabled-id");
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "02-identity-details");
 
         // IdentityMFA is a MenuEditToggle Custom. The actual toggle (which fires
@@ -37,7 +37,7 @@ public class MfaTests
             if (s.Mock.ReceivedCommandNames.Contains("EnableMFA")) break;
             await Task.Delay(50);
         }
-        await Task.Delay(350); // QR render settle
+        await Trace.Settle(350); // QR render settle
         SaveStep(s, name, "03-qr-dialog");
 
         Assert.Contains("EnableMFA", s.Mock.ReceivedCommandNames);
@@ -51,7 +51,7 @@ public class MfaTests
             DefaultExePath(), FixturesDir(), fixtureFile: "mfa-needed.json");
         WaitForId(s, "ConnectLabel");
         WaitFor(s, By.XPath("//Text[@Name='mfa-needed-id']"));
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "01-landing-mfa-needed");
 
         var src = s.Driver.PageSource;
@@ -66,7 +66,7 @@ public class MfaTests
             DefaultExePath(), FixturesDir(), fixtureFile: "mfa-enabled.json");
         WaitForId(s, "ConnectLabel");
         WaitFor(s, By.XPath("//Text[@Name='mfa-enabled-id']"));
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "01-landing-mfa-enabled");
 
         var src = s.Driver.PageSource;
@@ -88,14 +88,14 @@ public class MfaTests
         SaveStep(s, name, "01-landing-mfa-enabled");
 
         OpenIdentityDetails(s, "mfa-enabled-id");
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "02-identity-details");
 
         var preEdits = s.Driver.FindElements(By.XPath("//Edit")).Count;
 
         var toggle = WaitFor(s, By.XPath("//*[@AutomationId='IdentityMFA']//*[@AutomationId='ToggleField']"));
         ClickAt(s, toggle);
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "03-after-toggle-off");
 
         // After the click, the MFA code prompt surfaces additional Edit controls
@@ -114,7 +114,7 @@ public class MfaTests
         SaveStep(s, name, "01-landing");
 
         OpenIdentityDetails(s, "enabled-id");
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "02-identity-details");
 
         // IdentityMFA is a MenuEditToggle Custom. The actual toggle (which fires
@@ -129,7 +129,7 @@ public class MfaTests
             if (s.Mock.ReceivedCommandNames.Contains("EnableMFA")) break;
             await Task.Delay(50);
         }
-        await Task.Delay(350); // QR render settle
+        await Trace.Settle(350); // QR render settle
         SaveStep(s, name, "03-qr-dialog");
 
         // The setup dialog contains an Authenticator Code Edit control where the user
@@ -156,16 +156,16 @@ public class MfaTests
         SaveStep(s, name, "01-landing-mfa-enabled");
 
         OpenIdentityDetails(s, "mfa-enabled-id");
-        await Task.Delay(350);
+        await Trace.Settle(350);
 
         var toggle = WaitFor(s, By.XPath("//*[@AutomationId='IdentityMFA']//*[@AutomationId='ToggleField']"));
         ClickAt(s, toggle);
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "02-mfa-code-prompt");
 
         var codeBox = WaitFor(s, By.XPath("//*[@AutomationId='AuthCode']"));
         codeBox.SendKeys("123456");
-        await Task.Delay(150);
+        await Trace.Settle(150);
         SaveStep(s, name, "03-code-typed");
 
         WaitFor(s, By.XPath("//*[@AutomationId='AuthButton']")).Click();
@@ -176,7 +176,7 @@ public class MfaTests
             if (s.Mock.ReceivedCommandNames.Contains("RemoveMFA")) break;
             await Task.Delay(50);
         }
-        await Task.Delay(300);
+        await Trace.Settle(300);
         SaveStep(s, name, "04-after-authenticate");
 
         Assert.Contains("RemoveMFA", s.Mock.ReceivedCommandNames);
@@ -201,15 +201,15 @@ public class MfaTests
         WaitFor(s, By.XPath("//Text[@Name='mfa-enabled-id']"));
 
         OpenIdentityDetails(s, "mfa-enabled-id");
-        await Task.Delay(350);
+        await Trace.Settle(350);
 
         var toggle = WaitFor(s, By.XPath("//*[@AutomationId='IdentityMFA']//*[@AutomationId='ToggleField']"));
         ClickAt(s, toggle);
-        await Task.Delay(350);
+        await Trace.Settle(350);
 
         var codeBox = WaitFor(s, By.XPath("//*[@AutomationId='AuthCode']"));
         codeBox.SendKeys("666666");
-        await Task.Delay(150);
+        await Trace.Settle(150);
         SaveStep(s, name, "01-rejected-code-typed");
 
         WaitFor(s, By.XPath("//*[@AutomationId='AuthButton']")).Click();
@@ -221,7 +221,7 @@ public class MfaTests
             if (s.Mock.ReceivedCommandNames.Contains("RemoveMFA")) break;
             await Task.Delay(50);
         }
-        await Task.Delay(400);
+        await Trace.Settle(400);
         SaveStep(s, name, "02-after-rejection");
 
         Assert.Contains("RemoveMFA", s.Mock.ReceivedCommandNames);

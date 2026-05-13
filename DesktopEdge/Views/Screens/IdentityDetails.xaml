@@ -435,7 +435,7 @@
                 <Label Content="Timeout" Style="{StaticResource DetailRowLabel}"/>
                 <TextBox x:Name="TimeoutDetails" Style="{StaticResource DetailRowTextBox}"/>
             </StackPanel>
-            <Image Source="/Assets/Images/closeBlack.png" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,40,40,0" Width="10" Height="10" Cursor="Hand" MouseUp="CloseDetails"></Image>
+            <Image x:Name="CloseDetailsButton" AutomationProperties.AutomationId="CloseDetailsButton" Source="/Assets/Images/closeBlack.png" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,40,40,0" Width="10" Height="10" Cursor="Hand" MouseUp="CloseDetails"></Image>
         </Grid>
 
         <!-- Confirmation Prompt for confirming deletion -->
