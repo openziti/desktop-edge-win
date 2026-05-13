@@ -135,6 +135,7 @@ or many:
 | `Sort`                    | Sort header clicks, alphabetical / case-insensitive / status group |
 | `TunnelSettings`          | Tunnel Config screen open, Edit Values, Save                       |
 | `LogLevel`                | Set Logging Level walkthrough                                      |
+| `AddIdentityFlow`         | End-to-end JWT enroll + MFA + regenerate + forget (one long test)  |
 | `AutomaticUpdate`         | (placeholder for future auto-update tests)                         |
 
 ```powershell
