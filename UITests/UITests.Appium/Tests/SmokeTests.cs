@@ -43,7 +43,7 @@ public class SmokeTests
         mainText.Click();
 
         WaitFor(session, By.XPath("//*[@Name='Identities']"));
-        await Task.Delay(350); // animation settle
+        await Trace.Settle(350); // animation settle
 
         var window = WindowElement(session);
         var png = ElementScreenshot(window);
@@ -91,7 +91,7 @@ public class SmokeTests
         await using var session = await AppiumSession.LaunchAsync(
             DefaultExePath(), FixturesDir(), fixtureFile: "disconnected.json");
         WaitForId(session, "ConnectLabel");
-        await Task.Delay(350);
+        await Trace.Settle(350);
 
         var window = WindowElement(session);
         var png = ElementScreenshot(window);
@@ -106,7 +106,7 @@ public class SmokeTests
         await using var session = await AppiumSession.LaunchAsync(
             DefaultExePath(), FixturesDir(), fixtureFile: "no-identities.json");
         WaitForId(session, "ConnectLabel");
-        await Task.Delay(350);
+        await Trace.Settle(350);
 
         var window = WindowElement(session);
         var png = ElementScreenshot(window);
@@ -122,7 +122,7 @@ public class SmokeTests
             DefaultExePath(), FixturesDir(), fixtureFile: "needs-ext-auth.json");
         WaitForId(session, "ConnectLabel");
         WaitFor(session, By.XPath("//Text[@Name='needs-ext-auth-id']"));
-        await Task.Delay(350);
+        await Trace.Settle(350);
 
         var window = WindowElement(session);
         var png = ElementScreenshot(window);
@@ -148,7 +148,7 @@ public class SmokeTests
                 if (sc == "3") break;
             }
             catch (NoSuchElementException) { }
-            await Task.Delay(350);
+            await Trace.Settle(350);
         }
 
         var window = WindowElement(session);
@@ -169,27 +169,27 @@ public class SmokeTests
         SaveStep(s, name, "01-landing");
 
         OpenMainMenu(s);
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "02-main-menu");
 
         WaitFor(s, By.XPath("//*[@Name='Advanced Settings']")).Click();
         WaitFor(s, By.XPath("//*[@Name='Set Logging Level']"));
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "03-advanced-shown");
 
         WaitFor(s, By.XPath("//*[@Name='Set Logging Level']")).Click();
         WaitForId(s, "LogTrace");
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "04-loglevel-submenu");
 
         WaitForId(s, "LogDebug").Click();
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "05-after-clicking-debug");
 
         // Menu stays open after SetLevel -- click Trace directly without re-navigating.
         // (Clicking MAIN again toggles the menu CLOSED, so don't.)
         WaitForId(s, "LogTrace").Click();
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "06-after-clicking-trace");
 
         // The Set Logging Level menu sends to ziti-monitor via the monitor IPC
@@ -221,16 +221,16 @@ public class SmokeTests
         SaveStep(s, name, "01-landing");
 
         OpenMainMenu(s);
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "02-main-menu");
 
         WaitFor(s, By.XPath("//*[@Name='Advanced Settings']")).Click();
         WaitFor(s, By.XPath("//*[@Name='Tunnel Config']"));
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "03-advanced-shown");
 
         WaitFor(s, By.XPath("//*[@Name='Tunnel Config']")).Click();
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "04-tunnel-config-screen");
     }
 
@@ -244,7 +244,7 @@ public class SmokeTests
         SaveStep(s, name, "01-landing");
 
         OpenIdentityDetails(s, "enabled-id");
-        await Task.Delay(350); // animation settle
+        await Trace.Settle(350); // animation settle
         SaveStep(s, name, "02-identity-details-open");
 
         // Identity detail screen exposes IdName / IdServer / ForgetIdentityButton
@@ -264,7 +264,7 @@ public class SmokeTests
         SaveStep(s, name, "01-landing");
 
         OpenIdentityDetails(s, "enabled-id");
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "02-identity-details");
 
         // Toggle Multi Factor Auth on. IdentityMFA is a MenuEditToggle Custom;
@@ -305,12 +305,12 @@ public class SmokeTests
         OpenMainMenu(s);
         WaitFor(s, By.XPath("//*[@Name='Advanced Settings']")).Click();
         WaitFor(s, By.XPath("//*[@Name='Tunnel Config']")).Click();
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "02-tunnel-config-screen");
 
         // "Edit Values" is a StyledButton -- the inner label text is queryable.
         WaitFor(s, By.XPath("//*[@Name='Edit Values']")).Click();
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "03-after-clicking-edit-values");
     }
 
@@ -327,11 +327,11 @@ public class SmokeTests
         OpenMainMenu(s);
         WaitFor(s, By.XPath("//*[@Name='Advanced Settings']")).Click();
         WaitFor(s, By.XPath("//*[@Name='Tunnel Config']")).Click();
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "02-tunnel-config-screen");
 
         WaitFor(s, By.XPath("//*[@Name='Edit Values']")).Click();
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "03-edit-form");
 
         // The Save button on the edit form (SaveConfigButton) -- label is "Save".
@@ -343,7 +343,7 @@ public class SmokeTests
             if (s.Mock.ReceivedCommandNames.Contains("UpdateInterfaceConfig")) break;
             await Task.Delay(50);
         }
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "04-after-save");
 
         Assert.Contains("UpdateInterfaceConfig", s.Mock.ReceivedCommandNames);
@@ -378,7 +378,7 @@ public class SmokeTests
         Assert.Contains("ExtAuthRequired", srcBefore);
 
         OpenIdentityDetails(s, "needs-ext-auth-id");
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "02-identity-details-shows-auth-button");
 
         // Confirm a provider list is visible -- a real user would pick one
@@ -386,7 +386,7 @@ public class SmokeTests
         // Process.Start(browserUrl) on the way out.
         var firstProvider = WaitFor(s, By.XPath("//List[@AutomationId='ProviderList']/ListItem[1]"));
         ClickAt(s, firstProvider);
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "03-provider-selected");
 
         // Simulate the tunneler-side success event. ExternalAuth IPC was never
@@ -420,7 +420,7 @@ public class SmokeTests
         SaveStep(s, name, "01-landing-with-services");
 
         OpenIdentityDetails(s, "enabled-id");
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "02-identity-details-with-3-services");
 
         // Validate at least one of the services we put in the fixture renders.
@@ -458,7 +458,7 @@ public class SmokeTests
         // Wait for both rows to render before snapshotting toggles -- the second
         // IdentityItem occasionally lags the first by a frame or two.
         WaitFor(session, By.XPath("//Text[@Name='disabled-at-start-id']"));
-        await Task.Delay(350);
+        await Trace.Settle(350);
 
         // Target the toggle inside the disabled-at-start row (same reasoning
         // as IdentityToggle_Click_FlipsBetaToEnabled -- index-by-position is
@@ -474,7 +474,7 @@ public class SmokeTests
             if (session.Mock.ReceivedCommandNames.Contains("IdentityOnOff")) break;
             await Task.Delay(50);
         }
-        await Task.Delay(350); // animation settle
+        await Trace.Settle(350); // animation settle
 
         var window = WindowElement(session);
         var png = ElementScreenshot(window);
@@ -494,23 +494,23 @@ public class SmokeTests
         SaveStep(s, name, "01-landing");
 
         OpenIdentityDetails(s, "needs-ext-auth-id");
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "02-identity-details");
 
         // The IsDefaultProvider CheckBox stays disabled until a provider is selected.
         var firstProvider = WaitFor(s, By.XPath("//List[@AutomationId='ProviderList']/ListItem[1]"));
         ClickAt(s, firstProvider);
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "03-provider-selected");
 
         var check = WaitFor(s, By.XPath("//*[@AutomationId='IsDefaultProvider']"));
         ClickAt(s, check);
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "04-after-checking-default");
 
         // Click again to uncheck -- proves the control is interactive.
         ClickAt(s, check);
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "05-after-unchecking-default");
     }
 
@@ -535,7 +535,7 @@ public class SmokeTests
         var srcBefore = s.Driver.PageSource;
         var btn = WaitFor(s, By.XPath("//Text[@Name='ADD']"));
         ClickAt(s, btn);
-        await Task.Delay(350);
+        await Trace.Settle(350);
         SaveStep(s, name, "02-after-add-identity-click");
 
         var srcAfter = s.Driver.PageSource;
