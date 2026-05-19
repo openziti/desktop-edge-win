@@ -387,6 +387,13 @@
                                CompleteExternalAuth="CompleteExternalAuthEvent"
         />
 
+        <!-- First-run / no-identities welcome (below ModalBg so the modal dim covers it
+             when AddIdentityByURL / AddIdentityCA open on top) -->
+        <local:GetStarted x:Name="GetStartedScreen"
+                          Margin="0,0,0,0"
+                          AddJwtRequested="GetStartedScreen_AddJwt"
+                          AddUrlRequested="GetStartedScreen_AddUrl"
+                          ClosedByUser="GetStartedScreen_ClosedByUser"/>
         <!-- Modal Background -->
         <Rectangle x:Name="ModalBg" MouseDown="Window_MouseDown" Margin="10,10,10,10" Fill="Black" RadiusY="10" RadiusX="10" Opacity="0" Visibility="Collapsed"></Rectangle>
         <!-- MFA Setup Prompt -->

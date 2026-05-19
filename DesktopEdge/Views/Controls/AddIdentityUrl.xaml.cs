@@ -124,10 +124,43 @@ namespace ZitiDesktopEdge {
             JoinNetworkBtn.Disable();
         }
 
-        private void ControllerURL_TextChanged(object sender, TextChangedEventArgs e) {
-            if (ControllerURL.ActualWidth > 0) {
-                ControllerURL.MaxWidth = ControllerURL.ActualWidth;
+        /// <summary>
+        /// Reset the textbox for a fresh entry: if the clipboard holds an http(s) URL, paste it;
+        /// otherwise restore the placeholder. Either way, focus the field and select all so the
+        /// first keystroke replaces it.
+        /// </summary>
+        public void PrepareForEntry() {
+            string clipboardUrl = TryReadHttpUrlFromClipboard();
+            ControllerURL.Text = clipboardUrl ?? AddIdentityViewModel.UrlPlaceholder;
+            // TextChanged only fires when the value actually changes. If the user reopens the
+            // dialog with the same clipboard URL already in the field, the validator never runs
+            // and the Join button stays in its previous state -- so kick it manually.
+            UpdateUrlValidity();
+            // Defer focus/select until after the dialog's fade-in layout pass; otherwise
+            // SelectAll runs before the TextBox is actually focusable and gets dropped.
+            Dispatcher.BeginInvoke(new Action(() => {
+                ControllerURL.Focus();
+                ControllerURL.SelectAll();
+            }), System.Windows.Threading.DispatcherPriority.Input);
+        }
+
+        private static string TryReadHttpUrlFromClipboard() {
+            try {
+                if (!Clipboard.ContainsText()) return null;
+                string text = Clipboard.GetText()?.Trim();
+                if (string.IsNullOrEmpty(text)) return null;
+                if (Uri.TryCreate(text, UriKind.Absolute, out Uri uri)
+                    && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)) {
+                    return text;
+                }
+                return null;
+            } catch (Exception ex) {
+                logger.Warn(ex, "could not read clipboard for URL prefill");
+                return null;
             }
+        }
+
+        private void ControllerURL_TextChanged(object sender, TextChangedEventArgs e) {
             AddIdentityViewModel.Reset();
             UpdateUrlValidity();
         }

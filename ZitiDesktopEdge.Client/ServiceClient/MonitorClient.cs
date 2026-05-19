@@ -56,6 +56,12 @@ namespace ZitiDesktopEdge.ServiceClient {
 
         public bool IsServiceCapturingFeedback => (DateTime.UtcNow - LastFeedbackHeartbeat).TotalSeconds < 10;
 
+        // Serializes the send/read RPC pairs so concurrent callers don't get each other's
+        // responses off the shared pipe. Without this, e.g. clicking "Capture Feedback" and
+        // then "Check for updates" from the tray will interleave on `ipcReader` and deadlock
+        // both awaits forever.
+        private readonly SemaphoreSlim _rpcLock = new SemaphoreSlim(1, 1);
+
         protected virtual void ServiceStatusEvent(MonitorServiceStatusEvent e) {
             OnServiceStatusEvent?.Invoke(this, e);
         }
@@ -121,52 +127,67 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         async public Task<MonitorServiceStatusEvent> StopServiceAsync() {
-            ActionEvent action = new ActionEvent() { Op = "Stop", Action = "Normal" };
-            await sendMonitorClientAsync(action);
-            return await readMonitorClientAsync<MonitorServiceStatusEvent>(ipcReader);
+            await _rpcLock.WaitAsync();
+            try {
+                ActionEvent action = new ActionEvent() { Op = "Stop", Action = "Normal" };
+                await sendMonitorClientAsync(action);
+                return await readMonitorClientAsync<MonitorServiceStatusEvent>(ipcReader);
+            } finally { _rpcLock.Release(); }
         }
 
         async public Task<MonitorServiceStatusEvent> StartServiceAsync(TimeSpan timeout) {
-            ActionEvent action = new ActionEvent() { Op = "Start", Action = "Normal" };
-            await sendMonitorClientAsync(action);
-            return await readMonitorClientAsync<MonitorServiceStatusEvent>(ipcReader, timeout);
+            await _rpcLock.WaitAsync();
+            try {
+                ActionEvent action = new ActionEvent() { Op = "Start", Action = "Normal" };
+                await sendMonitorClientAsync(action);
+                return await readMonitorClientAsync<MonitorServiceStatusEvent>(ipcReader, timeout);
+            } finally { _rpcLock.Release(); }
         }
 
         async public Task<MonitorServiceStatusEvent> ForceTerminateAsync() {
-            ActionEvent action = new ActionEvent() { Op = "Stop", Action = "Force" };
+            await _rpcLock.WaitAsync();
             try {
-                await sendMonitorClientAsync(action);
-                return await readMonitorClientAsync<MonitorServiceStatusEvent>(ipcReader);
-            } catch (Exception ex) {
-                Logger.Error(ex, "Unexpected error");
-            }
-            return null;
+                ActionEvent action = new ActionEvent() { Op = "Stop", Action = "Force" };
+                try {
+                    await sendMonitorClientAsync(action);
+                    return await readMonitorClientAsync<MonitorServiceStatusEvent>(ipcReader);
+                } catch (Exception ex) {
+                    Logger.Error(ex, "Unexpected error");
+                }
+                return null;
+            } finally { _rpcLock.Release(); }
         }
 
         async public Task<MonitorServiceStatusEvent> StatusAsync() {
-            ActionEvent action = new ActionEvent() { Op = "Status", Action = "" };
+            await _rpcLock.WaitAsync();
             try {
-                await sendMonitorClientAsync(action);
-                return await readMonitorClientAsync<MonitorServiceStatusEvent>(ipcReader);
-            } catch (Exception ex) {
-                Logger.Error(ex, "Unexpected error");
-            }
-            return null;
+                ActionEvent action = new ActionEvent() { Op = "Status", Action = "" };
+                try {
+                    await sendMonitorClientAsync(action);
+                    return await readMonitorClientAsync<MonitorServiceStatusEvent>(ipcReader);
+                } catch (Exception ex) {
+                    Logger.Error(ex, "Unexpected error");
+                }
+                return null;
+            } finally { _rpcLock.Release(); }
         }
 
         async public Task<MonitorServiceStatusEvent> CaptureLogsAsync() {
-            ActionEvent action = new ActionEvent() { Op = "CaptureLogs", Action = "Normal" };
-            await sendMonitorClientAsync(action);
+            await _rpcLock.WaitAsync();
+            try {
+                ActionEvent action = new ActionEvent() { Op = "CaptureLogs", Action = "Normal" };
+                await sendMonitorClientAsync(action);
 
-            LastFeedbackHeartbeat = DateTime.UtcNow;
-            Task<MonitorServiceStatusEvent> readTask = readMonitorClientAsync<MonitorServiceStatusEvent>(ipcReader, TimeSpan.FromMinutes(30));
-            while (!readTask.IsCompleted) {
-                await Task.WhenAny(readTask, Task.Delay(2000));
-                if (!IsServiceCapturingFeedback) {
-                    throw new MonitorServiceException("Feedback collection stopped responding.");
+                LastFeedbackHeartbeat = DateTime.UtcNow;
+                Task<MonitorServiceStatusEvent> readTask = readMonitorClientAsync<MonitorServiceStatusEvent>(ipcReader, TimeSpan.FromMinutes(30));
+                while (!readTask.IsCompleted) {
+                    await Task.WhenAny(readTask, Task.Delay(2000));
+                    if (!IsServiceCapturingFeedback) {
+                        throw new MonitorServiceException("Feedback collection stopped responding.");
+                    }
                 }
-            }
-            return await readTask;
+                return await readTask;
+            } finally { _rpcLock.Release(); }
         }
 
         async public Task<SvcResponse> SetLogLevelAsync(string level) {
@@ -174,45 +195,66 @@ namespace ZitiDesktopEdge.ServiceClient {
                 //only the data client understands verbose - so use trace...
                 level = "TRACE";
             }
-            ActionEvent action = new ActionEvent() { Op = "SetLogLevel", Action = level };
-            await sendMonitorClientAsync(action);
-            return await readMonitorClientAsync<SvcResponse>(ipcReader);
+            await _rpcLock.WaitAsync();
+            try {
+                ActionEvent action = new ActionEvent() { Op = "SetLogLevel", Action = level };
+                await sendMonitorClientAsync(action);
+                return await readMonitorClientAsync<SvcResponse>(ipcReader);
+            } finally { _rpcLock.Release(); }
         }
 
         async public Task<StatusCheck> DoUpdateCheck() {
-            ActionEvent action = new ActionEvent() { Op = "DoUpdateCheck", Action = "" };
-            await sendMonitorClientAsync(action);
-            return await readMonitorClientAsync<StatusCheck>(ipcReader);
+            await _rpcLock.WaitAsync();
+            try {
+                ActionEvent action = new ActionEvent() { Op = "DoUpdateCheck", Action = "" };
+                await sendMonitorClientAsync(action);
+                return await readMonitorClientAsync<StatusCheck>(ipcReader);
+            } finally { _rpcLock.Release(); }
         }
 
         async public Task<SvcResponse> TriggerUpdate(bool forceDefer = false) {
-            ActionEvent action = new ActionEvent() { Op = "TriggerUpdate", Action = forceDefer ? "defer" : "" };
-            await sendMonitorClientAsync(action);
-            return await readMonitorClientAsync<SvcResponse>(ipcReader);
+            await _rpcLock.WaitAsync();
+            try {
+                ActionEvent action = new ActionEvent() { Op = "TriggerUpdate", Action = forceDefer ? "defer" : "" };
+                await sendMonitorClientAsync(action);
+                return await readMonitorClientAsync<SvcResponse>(ipcReader);
+            } finally { _rpcLock.Release(); }
         }
 
         async public Task<SvcResponse> SetAutomaticUpgradeDisabledAsync(bool disabled) {
-            ActionEvent action = new ActionEvent() { Op = "SetAutomaticUpgradeDisabled", Action = (disabled ? "true" : "false") };
-            await sendMonitorClientAsync(action);
-            return await readMonitorClientAsync<SvcResponse>(ipcReader);
+            await _rpcLock.WaitAsync();
+            try {
+                ActionEvent action = new ActionEvent() { Op = "SetAutomaticUpgradeDisabled", Action = (disabled ? "true" : "false") };
+                await sendMonitorClientAsync(action);
+                return await readMonitorClientAsync<SvcResponse>(ipcReader);
+            } finally { _rpcLock.Release(); }
         }
 
         async public Task<SvcResponse> SetAutomaticUpgradeURLAsync(string url) {
-            ActionEvent action = new ActionEvent() { Op = "SetAutomaticUpgradeURL", Action = (url) };
-            await sendMonitorClientAsync(action);
-            return await readMonitorClientAsync<SvcResponse>(ipcReader);
+            await _rpcLock.WaitAsync();
+            try {
+                ActionEvent action = new ActionEvent() { Op = "SetAutomaticUpgradeURL", Action = (url) };
+                await sendMonitorClientAsync(action);
+                return await readMonitorClientAsync<SvcResponse>(ipcReader);
+            } finally { _rpcLock.Release(); }
         }
 
         async public Task<SvcResponse> SetMaintenanceWindowStartAsync(int? hour) {
-            ActionEvent action = new ActionEvent() { Op = "SetMaintenanceWindowStart", Action = hour?.ToString() ?? "" };
-            await sendMonitorClientAsync(action);
-            return await readMonitorClientAsync<SvcResponse>(ipcReader);
+            await _rpcLock.WaitAsync();
+            try {
+                ActionEvent action = new ActionEvent() { Op = "SetMaintenanceWindowStart", Action = hour?.ToString() ?? "" };
+                await sendMonitorClientAsync(action);
+                return await readMonitorClientAsync<SvcResponse>(ipcReader);
+            } finally { _rpcLock.Release(); }
         }
 
         async public Task<SvcResponse> SetMaintenanceWindowEndAsync(int? hour) {
-            ActionEvent action = new ActionEvent() { Op = "SetMaintenanceWindowEnd", Action = hour?.ToString() ?? "" };
-            await sendMonitorClientAsync(action);
-            return await readMonitorClientAsync<SvcResponse>(ipcReader);
+            await _rpcLock.WaitAsync();
+            try {
+                ActionEvent action = new ActionEvent() { Op = "SetMaintenanceWindowEnd", Action = hour?.ToString() ?? "" };
+                await sendMonitorClientAsync(action);
+                return await readMonitorClientAsync<SvcResponse>(ipcReader);
+            } finally { _rpcLock.Release(); }
         }
     }
 }
