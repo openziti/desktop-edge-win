@@ -423,6 +423,10 @@ namespace ZitiDesktopEdge {
         private bool trayUpdateCheckInFlight;
         private const string TrayCheckForUpdatesDefaultLabel = "&Check for updates now";
         private const string BrandHeaderTag = "brand-header";
+        // Items tagged with this string are disabled when a feedback capture is in flight
+        // (anything that hits the MonitorClient RPC channel). Items WITHOUT the tag stay
+        // enabled -- e.g. Help links, Open log folder, Show welcome screen, Open ZDEW.
+        private const string IpcGatedTag = "ipc-gated";
         // Anchor + tracked-items pair for the dynamic Identities section in the tray menu.
         // Identity items live immediately ABOVE trayIdentitiesAnchor and are tracked so we can
         // remove + rebuild them when the identity list changes.
@@ -430,6 +434,10 @@ namespace ZitiDesktopEdge {
         private readonly List<System.Windows.Forms.ToolStripItem> trayIdentityItems = new List<System.Windows.Forms.ToolStripItem>();
         // Switch-tunneler submenu. Hidden unless more than one instance is running.
         private System.Windows.Forms.ToolStripMenuItem trayTunnelerSubmenu;
+        // Inserted at the top of the menu while a feedback capture is in flight, removed when
+        // the heartbeat goes stale. Visible cue paired with the disabled-everything-else gate.
+        private System.Windows.Forms.ToolStripLabel trayFeedbackStatusLabel;
+        private System.Windows.Forms.ToolStripSeparator trayFeedbackStatusSeparator;
         private System.ComponentModel.IContainer components;
         private MainViewModel props = null;
         public MainWindow() {
@@ -760,15 +768,20 @@ namespace ZitiDesktopEdge {
             // instance is detected. Populated lazily via RebuildTrayTunnelersSection on menu
             // open, equivalent to the Ctrl+Shift+T dev picker.
             trayTunnelerSubmenu = new System.Windows.Forms.ToolStripMenuItem("Switch &Tunneler") {
-                Visible = false
+                Visible = false,
+                Tag = IpcGatedTag
             };
             menu.Items.Add(trayTunnelerSubmenu);
 
-            var addByJwt = new System.Windows.Forms.ToolStripMenuItem("Add Identity by &JWT...");
+            var addByJwt = new System.Windows.Forms.ToolStripMenuItem("Add Identity by &JWT...") {
+                Tag = IpcGatedTag
+            };
             addByJwt.Click += (s, e) => { BringWindowForward(); AddIdentity_Click(s, new RoutedEventArgs()); };
             menu.Items.Add(addByJwt);
 
-            var addByUrl = new System.Windows.Forms.ToolStripMenuItem("Add Identity by &URL...");
+            var addByUrl = new System.Windows.Forms.ToolStripMenuItem("Add Identity by &URL...") {
+                Tag = IpcGatedTag
+            };
             addByUrl.Click += (s, e) => { BringWindowForward(); ShowJoinByUrl(); };
             menu.Items.Add(addByUrl);
 
@@ -776,7 +789,9 @@ namespace ZitiDesktopEdge {
 
             // Logging submenu: set-level submenu first, then log folder below it.
             var logging = new System.Windows.Forms.ToolStripMenuItem("&Logging");
-            trayLogLevelItem = new System.Windows.Forms.ToolStripMenuItem("Set &Log Level");
+            trayLogLevelItem = new System.Windows.Forms.ToolStripMenuItem("Set &Log Level") {
+                Tag = IpcGatedTag
+            };
             foreach (string level in new[] { "trace", "verbose", "debug", "info", "warn", "error" }) {
                 string capturedLevel = level;
                 var item = new System.Windows.Forms.ToolStripMenuItem(
@@ -798,25 +813,37 @@ namespace ZitiDesktopEdge {
 
             // Help submenu: welcome reopen, update check + apply, feedback, community/support.
             var help = new System.Windows.Forms.ToolStripMenuItem("&Help");
-            var showWelcome = new System.Windows.Forms.ToolStripMenuItem("&Show Welcome screen");
+            var showWelcome = new System.Windows.Forms.ToolStripMenuItem("&Show Welcome screen") {
+                // Also gated by the feedback flow: the welcome screen layers over the main
+                // window, which during feedback is already showing the LoadingScreen modal.
+                Tag = IpcGatedTag
+            };
             showWelcome.Click += (s, e) => { BringWindowForward(); ShowWelcomeScreen(); };
             help.DropDownItems.Add(showWelcome);
             help.DropDownItems.Add(new System.Windows.Forms.ToolStripSeparator());
 
-            trayCheckUpdatesItem = new System.Windows.Forms.ToolStripMenuItem(TrayCheckForUpdatesDefaultLabel);
+            trayCheckUpdatesItem = new System.Windows.Forms.ToolStripMenuItem(TrayCheckForUpdatesDefaultLabel) {
+                Tag = IpcGatedTag
+            };
             trayCheckUpdatesItem.Click += TrayCheckForUpdates_Click;
             help.DropDownItems.Add(trayCheckUpdatesItem);
 
             trayUpdateNowItem = new System.Windows.Forms.ToolStripMenuItem("&Update Now") {
-                Visible = false
+                Visible = false,
+                Tag = IpcGatedTag
             };
             trayUpdateNowItem.Click += TrayUpdateNow_Click;
             help.DropDownItems.Add(trayUpdateNowItem);
 
             help.DropDownItems.Add(new System.Windows.Forms.ToolStripSeparator());
 
-            var captureFeedback = new System.Windows.Forms.ToolStripMenuItem("Capture &Feedback...");
-            captureFeedback.Click += (s, e) => MainMenu.CollectFeedbackLogs(s, null);
+            var captureFeedback = new System.Windows.Forms.ToolStripMenuItem("Capture &Feedback...") {
+                Tag = IpcGatedTag
+            };
+            captureFeedback.Click += (s, e) => {
+                BringWindowForward();
+                MainMenu.CollectFeedbackLogs(s, null);
+            };
             help.DropDownItems.Add(captureFeedback);
 
             help.DropDownItems.Add(new System.Windows.Forms.ToolStripSeparator());
@@ -835,11 +862,12 @@ namespace ZitiDesktopEdge {
             closeUi.Click += contextMenuItem_Click;
             menu.Items.Add(closeUi);
 
-            // Refresh the tunneler submenu every time the menu is about to open. The actual
-            // enumeration is async and dispatches updates back to the UI; if it's not done by
-            // the time the user clicks the submenu, they'll see whatever the previous open
-            // populated. Acceptable for a dev-flow picker.
+            // Refresh the tunneler submenu every time the menu is about to open, and gate
+            // every interactive item if a feedback capture is currently in flight (the
+            // RPC channel is single-threaded; clicking anything else would either short-
+            // circuit with "Feedback in progress" or block on the rpc lock for up to 30 min).
             menu.Opening += (s, e) => {
+                ApplyFeedbackGate();
                 _ = RebuildTrayTunnelersSectionAsync();
             };
 
@@ -1008,6 +1036,58 @@ namespace ZitiDesktopEdge {
             GetStartedScreen.ViewModel.Show();
         }
 
+        /// <summary>
+        /// Walk the top-level tray items and disable every interactive one while a feedback
+        /// capture is in progress. Skips the brand header (never interactive), separators,
+        /// and Close UI (must remain available so the user can always exit the tray app).
+        /// Called from menu.Opening so the state is always fresh.
+        /// </summary>
+        private void ApplyFeedbackGate() {
+            if (trayMenu == null) return;
+            var mc = Application.Current.Properties["MonitorClient"] as MonitorClient;
+            bool feedbackInFlight = mc != null && mc.IsServiceCapturingFeedback;
+            bool enabled = !feedbackInFlight;
+
+            // Insert / remove the visible "Collecting feedback..." status row right after the
+            // brand-header + first separator (so it reads as a peer of the brand row, not
+            // buried under enable-toggled items). Both the label and its trailing separator
+            // are tracked so removal is precise.
+            if (feedbackInFlight && trayFeedbackStatusLabel == null) {
+                trayFeedbackStatusLabel = new System.Windows.Forms.ToolStripLabel("Collecting feedback...") {
+                    Font = new System.Drawing.Font(System.Drawing.SystemFonts.MenuFont, System.Drawing.FontStyle.Italic),
+                    ForeColor = System.Drawing.Color.FromArgb(0xCC, 0x55, 0x00)
+                };
+                trayFeedbackStatusSeparator = new System.Windows.Forms.ToolStripSeparator();
+                // Index 2 = right after brand-header (0) + its separator (1).
+                trayMenu.Items.Insert(2, trayFeedbackStatusLabel);
+                trayMenu.Items.Insert(3, trayFeedbackStatusSeparator);
+            } else if (!feedbackInFlight && trayFeedbackStatusLabel != null) {
+                trayMenu.Items.Remove(trayFeedbackStatusLabel);
+                trayMenu.Items.Remove(trayFeedbackStatusSeparator);
+                trayFeedbackStatusLabel.Dispose();
+                trayFeedbackStatusSeparator.Dispose();
+                trayFeedbackStatusLabel = null;
+                trayFeedbackStatusSeparator = null;
+            }
+
+            // Granular gating: only items explicitly tagged with IpcGatedTag (touched the
+            // MonitorClient RPC channel one way or another) get disabled. Everything else --
+            // Help submenu, Open log folder, Show Welcome, Open ZDEW, external URL links --
+            // stays available. Recurses into submenus so deeply-nested items get gated too.
+            ToggleIpcGatedItems(trayMenu.Items, enabled);
+        }
+
+        private static void ToggleIpcGatedItems(System.Windows.Forms.ToolStripItemCollection items, bool enabled) {
+            foreach (System.Windows.Forms.ToolStripItem item in items) {
+                if (item.Tag as string == IpcGatedTag) {
+                    item.Enabled = enabled;
+                }
+                if (item is System.Windows.Forms.ToolStripMenuItem mi && mi.HasDropDownItems) {
+                    ToggleIpcGatedItems(mi.DropDownItems, enabled);
+                }
+            }
+        }
+
         private void OpenLogFolder() {
             try {
                 Process.Start(new ProcessStartInfo(ExpectedLogPathRoot) { UseShellExecute = true });
@@ -1077,7 +1157,9 @@ namespace ZitiDesktopEdge {
                 string status = DescribeIdentityStatus(id);
                 string text = $"-  {id.Name}    {svcCount} svc  ·  {status}";
 
-                var item = new System.Windows.Forms.ToolStripMenuItem(text);
+                var item = new System.Windows.Forms.ToolStripMenuItem(text) {
+                    Tag = IpcGatedTag
+                };
                 item.Click += (s, e) => {
                     BringWindowForward();
                     IdentityMenu.Identity = captured;
