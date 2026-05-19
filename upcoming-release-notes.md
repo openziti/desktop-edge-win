@@ -9,6 +9,30 @@
       token enrollment), a new picker dialog appears
     * When the controller asks the user to authenticate in a browser, ZDEW launches it and
       the identity arrives once sign-in completes
+* Welcome screen for first-run / no-identities state ([#1006](https://github.com/openziti/desktop-edge-win/issues/1006))
+    * Appears automatically when the app has zero identities, dismissable per session
+    * Inline "Add by JWT" / "Add by URL" links route straight into the existing add-identity
+      flows
+    * Pasting a URL from the clipboard pre-fills the Add-by-URL field and pre-selects the text
+      so the first keystroke replaces it
+    * NetFoundry logo doubles as a drag handle (left-click drag to detach, right-click to
+      reattach) -- same gesture as the central Z
+    * Window expands while the welcome screen is shown and animates back to the normal height
+      on close
+* Tray-icon context menu rebuilt ([#1007](https://github.com/openziti/desktop-edge-win/issues/1007))
+    * "By NetFoundry vX.Y.Z" branding header with the NF mark
+    * "Open OpenZiti Desktop Edge" brings the main window forward
+    * Identities section (visible when at least one is enrolled) shows each identity with
+      service count and status; clicking opens that identity's details panel
+    * "Switch Tunneler" submenu (visible only when more than one ziti-edge-tunnel instance is
+      running) mirrors the Ctrl+Shift+T dev picker
+    * Add Identity by JWT / URL shortcuts -- same handlers as the in-app + button
+    * Logging submenu: Set Log Level (Trace/Verbose/Debug/Info/Warn/Error with live
+      checkmark) plus Open log folder
+    * Help submenu: Show Welcome screen, Check for updates (with in-place spinner that keeps
+      the menu open while running, and an "Update Now (vX.Y.Z)" entry that appears when an
+      update is staged), Capture Feedback, Discourse Community, NetFoundry Support
+    * "Close UI" preserved at the bottom
 
 ## Bugs fixed
 n/a

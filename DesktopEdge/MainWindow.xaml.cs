@@ -737,7 +737,7 @@ namespace ZitiDesktopEdge {
             // cancels close when it's clicked -- effectively a non-interactive label that still
             // looks vivid.
             string version = asm.GetName().Version?.ToString() ?? "";
-            var brandHeader = new System.Windows.Forms.ToolStripMenuItem($"By NetFoundry  v{version}") {
+            var brandHeader = new System.Windows.Forms.ToolStripMenuItem($"Ziti Desktop Edge - By NetFoundry  v{version}") {
                 Image = LoadEmbeddedImage("pack://application:,,,/Assets/Images/netfoundry-icon.png"),
                 ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.SizeToFit,
                 Tag = BrandHeaderTag
@@ -747,7 +747,7 @@ namespace ZitiDesktopEdge {
 
             menu.Renderer = new NonInteractiveHeaderRenderer();
 
-            var openZdew = new System.Windows.Forms.ToolStripMenuItem("&Open OpenZiti Desktop Edge");
+            var openZdew = new System.Windows.Forms.ToolStripMenuItem("&Open Ziti Desktop Edge");
             openZdew.Click += (s, e) => BringWindowForward();
             menu.Items.Add(openZdew);
 
@@ -1116,11 +1116,16 @@ namespace ZitiDesktopEdge {
             }
 
             this.Dispatcher.Invoke(() => {
-                // Tear down previous items + dispose them.
-                foreach (System.Windows.Forms.ToolStripItem oldItem in trayTunnelerSubmenu.DropDownItems) {
+                // Tear down previous items. ToolStripItem.Dispose() removes the item from its
+                // owner's collection, so iterating DropDownItems while disposing skips every
+                // other entry -- the source of the "every other click" symptom. Snapshot
+                // first, clear the collection in one shot, then dispose the snapshot.
+                var oldItems = new System.Windows.Forms.ToolStripItem[trayTunnelerSubmenu.DropDownItems.Count];
+                trayTunnelerSubmenu.DropDownItems.CopyTo(oldItems, 0);
+                trayTunnelerSubmenu.DropDownItems.Clear();
+                foreach (var oldItem in oldItems) {
                     oldItem.Dispose();
                 }
-                trayTunnelerSubmenu.DropDownItems.Clear();
 
                 if (ordered.Count <= 1) {
                     trayTunnelerSubmenu.Visible = false;
