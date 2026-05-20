@@ -51,7 +51,7 @@ using Ziti.Desktop.Edge.Utils;
 
 namespace ZitiDesktopEdge {
 
-    public partial class MainWindow : Window {
+    public partial class MainWindow : Window, ZitiDesktopEdge.Tray.ITrayHost {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         public string RECOVER = "RECOVER";
@@ -286,6 +286,7 @@ namespace ZitiDesktopEdge {
         private void ShowJoinByUrl() {
             AnimateDialogIn(AddIdentityByURL);
             ShowModal();
+            AddIdentityByURL.PrepareForEntry();
         }
         
         private void AnimateDialogIn(UserControl dialog) {
@@ -413,8 +414,10 @@ namespace ZitiDesktopEdge {
             semaphoreSlim.Release();
         }
 
-        private System.Windows.Forms.ContextMenu contextMenu;
-        private System.Windows.Forms.MenuItem contextMenuItem;
+        // System-tray context menu + its dynamic sections. Lives in ZitiDesktopEdge.Tray;
+        // calls back into MainWindow through ITrayHost for actions that touch the rest of
+        // the app.
+        private ZitiDesktopEdge.Tray.TrayMenuController tray;
         private System.ComponentModel.IContainer components;
         private MainViewModel props = null;
         public MainWindow() {
@@ -469,22 +472,16 @@ namespace ZitiDesktopEdge {
 
 
             this.components = new System.ComponentModel.Container();
-            this.contextMenu = new System.Windows.Forms.ContextMenu();
-            this.contextMenuItem = new System.Windows.Forms.MenuItem();
-            this.contextMenu.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] { this.contextMenuItem });
-
-            this.contextMenuItem.Index = 0;
-            this.contextMenuItem.Text = "&Close UI";
-            this.contextMenuItem.Click += new System.EventHandler(this.contextMenuItem_Click);
-
+            this.tray = new ZitiDesktopEdge.Tray.TrayMenuController(this, this.Dispatcher);
 
             notifyIcon = new System.Windows.Forms.NotifyIcon();
             notifyIcon.Visible = true;
-            notifyIcon.Click += TargetNotifyIcon_Click;
-            notifyIcon.Visible = true;
             notifyIcon.BalloonTipClosed += NotifyIcon_BalloonTipClosed;
+            // Only subscribe MouseClick (button-aware). The plain Click event fires for both
+            // mouse buttons and races MouseClick, which would steal focus on right-click and
+            // sometimes eat the first activation.
             notifyIcon.MouseClick += NotifyIcon_MouseClick;
-            notifyIcon.ContextMenu = this.contextMenu;
+            notifyIcon.ContextMenuStrip = this.tray.Menu;
 
             IdentityMenu.OnDetach += HandleDetached;
             IdentityMenu.OnAttach += HandleAttach;
@@ -719,15 +716,63 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        private void contextMenuItem_Click(object Sender, EventArgs e) {
-            Application.Current.Shutdown();
+        // -----------------------------------------------------------------------------------
+        // ITrayHost: callbacks the TrayMenuController invokes for menu actions. Kept as a
+        // small surface so the controller doesn't depend on MainWindow directly.
+        // -----------------------------------------------------------------------------------
+
+        public void BringWindowForward() {
+            try {
+                this.Show();
+                this.Activate();
+            } catch (Exception ex) {
+                logger.Warn(ex, "could not bring window forward from tray");
+            }
+        }
+
+        public void ShowAddIdentityByJwt() {
+            AddIdentity_Click(this, new RoutedEventArgs());
+        }
+
+        public void ShowAddIdentityByUrl() {
+            ShowJoinByUrl();
+        }
+
+        /// <summary>
+        /// Reopen the welcome screen and expand the window to fit it. Bypasses the
+        /// session-dismissal flag in the VM.
+        /// </summary>
+        public void ShowWelcomeScreen() {
+            // Clear any in-flight close-animation clock so our imperative Height write sticks.
+            this.BeginAnimation(HeightProperty, null);
+            this.Height = defaultHeight + GetStartedExtraHeight;
+            GetStartedScreen.ViewModel.Show();
+        }
+
+        public void OpenIdentityDetails(ZitiIdentity identity) {
+            IdentityMenu.Identity = identity;
+        }
+
+        private void HelpCircle_MouseUp(object sender, MouseButtonEventArgs e) {
+            if (!UIUtils.IsLeftClick(e)) return;
+            ShowWelcomeScreen();
+        }
+
+        public Task<bool> SetLogLevelAsync(string level) {
+            return LogLevelChanged(level);
+        }
+
+        public Task SwitchTunnelerAsync(string discriminator) {
+            return SwitchToInstanceAsync(discriminator);
+        }
+
+        public void StartFeedbackCapture() {
+            MainMenu.CollectFeedbackLogs(this, null);
         }
 
         private void NotifyIcon_MouseClick(object sender, System.Windows.Forms.MouseEventArgs e) {
             if (e.Button == System.Windows.Forms.MouseButtons.Left) {
-                System.Windows.Forms.MouseEventArgs mea = (System.Windows.Forms.MouseEventArgs)e;
-                this.Show();
-                this.Activate();
+                BringWindowForward();
                 //Do the awesome left clickness
             } else if (e.Button == System.Windows.Forms.MouseButtons.Right) {
                 //Do the wickedy right clickness
@@ -756,6 +801,53 @@ namespace ZitiDesktopEdge {
                 _isAttached = true;
                 MainMenu.Retach();
             }
+        }
+
+        private const double GetStartedExtraHeight = 120;
+
+        private void GetStartedScreen_AddJwt(object sender, EventArgs e) {
+            AddIdentity_Click(sender, new RoutedEventArgs());
+        }
+
+        private void GetStartedScreen_AddUrl(object sender, EventArgs e) {
+            ShowJoinByUrl();
+        }
+
+        private void GetStartedScreen_ClosedByUser(object sender, EventArgs e) {
+            var anim = new DoubleAnimation(defaultHeight, TimeSpan.FromSeconds(0.22)) {
+                FillBehavior = FillBehavior.Stop,
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+            };
+            anim.Completed += (s, ev) => {
+                // Release the animation clock so future imperative Height writes take effect,
+                // and lock in the final value to avoid a one-frame snap.
+                this.BeginAnimation(HeightProperty, null);
+                this.Height = defaultHeight;
+            };
+            this.BeginAnimation(HeightProperty, anim);
+        }
+
+        /// <summary>
+        /// Detach + start a window drag, invoked from inside another control's MouseDown handler
+        /// (e.g. the welcome screen logo). Equivalent to a left-click on the main Z image.
+        /// </summary>
+        internal void BeginDetachDrag() {
+            try {
+                _isAttached = false;
+                MainMenu.Detach();
+                this.DragMove();
+            } catch {
+                logger.Trace("error when BeginDetachDrag was called?");
+            }
+        }
+
+        /// <summary>
+        /// Reattach the window, invoked from inside another control's MouseUp handler
+        /// (e.g. the welcome screen logo). Equivalent to a right-click on the main Z image.
+        /// </summary>
+        internal void Reattach() {
+            _isAttached = true;
+            MainMenu.Retach();
         }
 
         private void HandleDetached(MouseButtonEventArgs e) {
@@ -809,18 +901,6 @@ namespace ZitiDesktopEdge {
             });
         }
 
-        private void TargetNotifyIcon_Click(object sender, EventArgs e) {
-            this.Dispatcher.Invoke(() => {
-                try {
-                    this.Show();
-                    this.Activate();
-                    Application.Current.MainWindow.Activate();
-                } catch(Exception ex) {
-                    logger.Error("UNEXPECTED error when trying to click the notification icon?", ex);
-                }
-            });
-        }
-
         private void UpdateServiceView() {
             if (_isServiceInError) {
                 AddIdAreaButton.Opacity = 0.1;
@@ -842,8 +922,7 @@ namespace ZitiDesktopEdge {
 
         private void App_ReceiveString(string obj) {
             Console.WriteLine(obj);
-            this.Show();
-            this.Activate();
+            BringWindowForward();
         }
 
         async private void MainWindow_Loaded(object sender, RoutedEventArgs e) {
@@ -1119,6 +1198,7 @@ namespace ZitiDesktopEdge {
                     state.StagingDownloadPending     = evt.StagingDownloadPending;
                     state.DeferInstallToRestartLocked = evt.DeferInstallToRestartLocked;
                     MainMenu.ShowUpdateAvailable();
+                    tray.RefreshUpdateState();
                     logger.Debug("MonitorClient_OnServiceStatusEvent: {0}", evt.Status);
                     Application.Current.Properties["ReleaseStream"] = evt.ReleaseStream;
 
@@ -1216,6 +1296,7 @@ namespace ZitiDesktopEdge {
                         state.DeferInstallToRestartLocked  = evt.DeferInstallToRestartLocked;
                         SetAutomaticUpdateEnabled(evt.AutomaticUpgradeDisabled, evt.AutomaticUpgradeURL);
                         MainMenu.ShowUpdateAvailable();
+                    tray.RefreshUpdateState();
                         AlertCanvas.Visibility = Visibility.Visible;
 
                         if (isToastEnabled()) {
@@ -1719,6 +1800,7 @@ namespace ZitiDesktopEdge {
 				}*/
                 this.MainMenu.LogLevel = e.Status.LogLevel;
                 Ziti.Desktop.Edge.Utils.UIUtils.SetLogLevel(e.Status.LogLevel);
+                tray.RefreshLogLevelChecks(e.Status.LogLevel);
                 InitializeTimer((int)e.Status.Duration);
                 LoadStatusFromService(e.Status);
                 LoadIdentities(true);
@@ -1735,6 +1817,7 @@ namespace ZitiDesktopEdge {
                 this.Dispatcher.Invoke(() => {
                     this.MainMenu.LogLevel = e.LogLevel;
                     Ziti.Desktop.Edge.Utils.UIUtils.SetLogLevel(e.LogLevel);
+                    tray.RefreshLogLevelChecks(e.LogLevel);
                 });
             }
         }
@@ -1924,6 +2007,9 @@ namespace ZitiDesktopEdge {
                 ZitiIdentity[] ids = GetSortedIdentities();
                 MainMenu.SetupIdList(ids);
                 props.IdentityCount = ids.Length;
+                GetStartedScreen.ViewModel.UpdateForState(serviceClient.Connected, ids.Length);
+                MainMenu.ShowWelcomeButton.Visibility = ids.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+                tray.RebuildIdentities(ids);
                 if (ids.Length > 0 && serviceClient.Connected) {
                     double height = defaultHeight + (ids.Length * 60);
                     if (height > _maxHeight) {
@@ -1961,7 +2047,8 @@ namespace ZitiDesktopEdge {
                     IdList.BeginAnimation(FrameworkElement.HeightProperty, animation);
                     IdListScroller.Visibility = Visibility.Visible;
                 } else {
-                    this.Height = defaultHeight;
+                    // Make room for the welcome screen when it's about to show.
+                    this.Height = defaultHeight + (GetStartedScreen.ViewModel.IsOpen ? GetStartedExtraHeight : 0);
                     MainMenu.IdentitiesButton.Visibility = Visibility.Collapsed;
                     IdListScroller.Visibility = Visibility.Collapsed;
 
@@ -2517,4 +2604,5 @@ namespace ZitiDesktopEdge {
         public event EventHandler CanExecuteChanged;
 #pragma warning restore CS0067 //The event 'ActionCommand.CanExecuteChanged' is never used
     }
+
 }

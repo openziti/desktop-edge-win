@@ -148,6 +148,12 @@
     <Compile Include="ViewModels\AddIdentityViewModel.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
     <Compile Include="ViewModels\IdentityDetailsViewModel.cs" />
+    <Compile Include="ViewModels\GetStartedViewModel.cs" />
+    <Compile Include="Tray\ITrayHost.cs" />
+    <Compile Include="Tray\TrayMenuController.cs" />
+    <Compile Include="Views\Screens\GetStarted.xaml.cs">
+      <DependentUpon>GetStarted.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\Controls\ConfirmationDialog.xaml.cs">
       <DependentUpon>ConfirmationDialog.xaml</DependentUpon>
     </Compile>
@@ -332,6 +338,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Views\Screens\GetStarted.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">
@@ -376,6 +386,8 @@
     <Resource Include="Assets\Images\icon.ico" />
     <Resource Include="Assets\Images\icon.png" />
     <Resource Include="Assets\Images\identity.png" />
+    <Resource Include="Assets\Images\netfoundry-logo.png" />
+    <Resource Include="Assets\Images\netfoundry-icon.png" />
     <Resource Include="Assets\Images\jwt.png" />
     <Resource Include="Assets\Images\loading.png" />
     <Resource Include="Assets\Images\logo.png" />

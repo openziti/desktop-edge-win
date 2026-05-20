@@ -124,10 +124,49 @@ namespace ZitiDesktopEdge {
             JoinNetworkBtn.Disable();
         }
 
-        private void ControllerURL_TextChanged(object sender, TextChangedEventArgs e) {
-            if (ControllerURL.ActualWidth > 0) {
-                ControllerURL.MaxWidth = ControllerURL.ActualWidth;
+        /// <summary>
+        /// Reset the textbox for a fresh entry: if the clipboard holds an http(s) URL, paste it;
+        /// otherwise restore the placeholder. Either way, focus the field and select all so the
+        /// first keystroke replaces it.
+        /// </summary>
+        public void PrepareForEntry() {
+            string clipboardUrl = TryReadHttpUrlFromClipboard();
+            ControllerURL.Text = clipboardUrl ?? AddIdentityViewModel.UrlPlaceholder;
+            // Defer BOTH the validity refresh and the focus/select to Loaded priority. Two
+            // reasons:
+            //   1. `Grid_Loaded` runs `JoinNetworkBtn.Disable()` to set the initial state.
+            //      On paths where this UserControl is shown for the first time in the session
+            //      (e.g. the welcome screen "Add by URL" link on a zero-identities install),
+            //      Grid_Loaded fires AFTER ShowJoinByUrl's PrepareForEntry call, so a
+            //      synchronous Enable() here gets overwritten by Disable() moments later.
+            //   2. TextChanged only fires when the value actually changes, so if the user
+            //      reopens the dialog with the same clipboard URL already in the field, the
+            //      validator never runs -- the explicit call below covers that case too.
+            //   3. SelectAll runs before the TextBox is focusable otherwise and gets dropped.
+            Dispatcher.BeginInvoke(new Action(() => {
+                UpdateUrlValidity();
+                ControllerURL.Focus();
+                ControllerURL.SelectAll();
+            }), System.Windows.Threading.DispatcherPriority.Loaded);
+        }
+
+        private static string TryReadHttpUrlFromClipboard() {
+            try {
+                if (!Clipboard.ContainsText()) return null;
+                string text = Clipboard.GetText()?.Trim();
+                if (string.IsNullOrEmpty(text)) return null;
+                if (Uri.TryCreate(text, UriKind.Absolute, out Uri uri)
+                    && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)) {
+                    return text;
+                }
+                return null;
+            } catch (Exception ex) {
+                logger.Warn(ex, "could not read clipboard for URL prefill");
+                return null;
             }
+        }
+
+        private void ControllerURL_TextChanged(object sender, TextChangedEventArgs e) {
             AddIdentityViewModel.Reset();
             UpdateUrlValidity();
         }

@@ -57,6 +57,29 @@ namespace ZitiDesktopEdge {
             }
         }
 
+        private string _iconText;
+        /// <summary>
+        /// Optional text glyph (e.g. "?") shown in place of the bitmap icon. When set,
+        /// hides the Image control and shows the TextBlock. Useful for items where a
+        /// PNG asset doesn't exist or would feel out of place next to a pure glyph.
+        /// </summary>
+        public string IconText {
+            get {
+                return _iconText;
+            }
+            set {
+                this._iconText = value;
+                if (string.IsNullOrEmpty(value)) {
+                    IconTextHost.Visibility = Visibility.Collapsed;
+                    IconCtrl.Visibility = Visibility.Visible;
+                } else {
+                    IconTextCtrl.Text = value;
+                    IconTextHost.Visibility = Visibility.Visible;
+                    IconCtrl.Visibility = Visibility.Collapsed;
+                }
+            }
+        }
+
 
         public OZMenuItem() {
             InitializeComponent();
