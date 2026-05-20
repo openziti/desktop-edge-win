@@ -57,6 +57,22 @@
             <Image Name="IconCtrl"
                    Source="/Assets/Images/advanced.png"
                    Width="20" Height="20"/>
+            <Border Name="IconTextHost"
+                    Visibility="Collapsed"
+                    Width="22" Height="22"
+                    CornerRadius="11"
+                    Background="#1676FE"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+                <TextBlock Name="IconTextCtrl"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"
+                           FontSize="14"
+                           FontWeight="Bold"
+                           Foreground="White"
+                           Margin="0,-1,0,0"/>
+            </Border>
             <Label Name="LabelCtrl"
                    Grid.Column="1"
                    Content="Main Menu"

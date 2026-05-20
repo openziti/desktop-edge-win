@@ -51,7 +51,7 @@ using Ziti.Desktop.Edge.Utils;
 
 namespace ZitiDesktopEdge {
 
-    public partial class MainWindow : Window {
+    public partial class MainWindow : Window, ZitiDesktopEdge.Tray.ITrayHost {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         public string RECOVER = "RECOVER";
@@ -414,30 +414,10 @@ namespace ZitiDesktopEdge {
             semaphoreSlim.Release();
         }
 
-        private System.Windows.Forms.ContextMenuStrip trayMenu;
-        private System.Windows.Forms.ToolStripMenuItem trayLogLevelItem;
-        private System.Windows.Forms.ToolStripMenuItem trayCheckUpdatesItem;
-        private System.Windows.Forms.ToolStripMenuItem trayUpdateNowItem;
-        private System.Windows.Forms.Timer trayCheckSpinnerTimer;
-        private int trayCheckSpinnerFrame;
-        private bool trayUpdateCheckInFlight;
-        private const string TrayCheckForUpdatesDefaultLabel = "&Check for updates now";
-        private const string BrandHeaderTag = "brand-header";
-        // Items tagged with this string are disabled when a feedback capture is in flight
-        // (anything that hits the MonitorClient RPC channel). Items WITHOUT the tag stay
-        // enabled -- e.g. Help links, Open log folder, Show welcome screen, Open ZDEW.
-        private const string IpcGatedTag = "ipc-gated";
-        // Anchor + tracked-items pair for the dynamic Identities section in the tray menu.
-        // Identity items live immediately ABOVE trayIdentitiesAnchor and are tracked so we can
-        // remove + rebuild them when the identity list changes.
-        private System.Windows.Forms.ToolStripSeparator trayIdentitiesAnchor;
-        private readonly List<System.Windows.Forms.ToolStripItem> trayIdentityItems = new List<System.Windows.Forms.ToolStripItem>();
-        // Switch-tunneler submenu. Hidden unless more than one instance is running.
-        private System.Windows.Forms.ToolStripMenuItem trayTunnelerSubmenu;
-        // Inserted at the top of the menu while a feedback capture is in flight, removed when
-        // the heartbeat goes stale. Visible cue paired with the disabled-everything-else gate.
-        private System.Windows.Forms.ToolStripLabel trayFeedbackStatusLabel;
-        private System.Windows.Forms.ToolStripSeparator trayFeedbackStatusSeparator;
+        // System-tray context menu + its dynamic sections. Lives in ZitiDesktopEdge.Tray;
+        // calls back into MainWindow through ITrayHost for actions that touch the rest of
+        // the app.
+        private ZitiDesktopEdge.Tray.TrayMenuController tray;
         private System.ComponentModel.IContainer components;
         private MainViewModel props = null;
         public MainWindow() {
@@ -492,7 +472,7 @@ namespace ZitiDesktopEdge {
 
 
             this.components = new System.ComponentModel.Container();
-            this.trayMenu = BuildTrayContextMenu();
+            this.tray = new ZitiDesktopEdge.Tray.TrayMenuController(this, this.Dispatcher);
 
             notifyIcon = new System.Windows.Forms.NotifyIcon();
             notifyIcon.Visible = true;
@@ -501,7 +481,7 @@ namespace ZitiDesktopEdge {
             // mouse buttons and races MouseClick, which would steal focus on right-click and
             // sometimes eat the first activation.
             notifyIcon.MouseClick += NotifyIcon_MouseClick;
-            notifyIcon.ContextMenuStrip = this.trayMenu;
+            notifyIcon.ContextMenuStrip = this.tray.Menu;
 
             IdentityMenu.OnDetach += HandleDetached;
             IdentityMenu.OnAttach += HandleAttach;
@@ -736,287 +716,12 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        private System.Windows.Forms.ContextMenuStrip BuildTrayContextMenu() {
-            var menu = new System.Windows.Forms.ContextMenuStrip();
+        // -----------------------------------------------------------------------------------
+        // ITrayHost: callbacks the TrayMenuController invokes for menu actions. Kept as a
+        // small surface so the controller doesn't depend on MainWindow directly.
+        // -----------------------------------------------------------------------------------
 
-            // Branding header. ToolStripMenuItem (so the icon lands in the standard image
-            // margin column), Enabled=true (so text+icon render at full colour, not greyed),
-            // tagged so the custom renderer skips its hover background and the Closing event
-            // cancels close when it's clicked -- effectively a non-interactive label that still
-            // looks vivid.
-            string version = asm.GetName().Version?.ToString() ?? "";
-            var brandHeader = new System.Windows.Forms.ToolStripMenuItem($"Ziti Desktop Edge - By NetFoundry  v{version}") {
-                Image = LoadEmbeddedImage("pack://application:,,,/Assets/Images/netfoundry-icon.png"),
-                ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.SizeToFit,
-                Tag = BrandHeaderTag
-            };
-            menu.Items.Add(brandHeader);
-            menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
-
-            menu.Renderer = new NonInteractiveHeaderRenderer();
-
-            var openZdew = new System.Windows.Forms.ToolStripMenuItem("&Open Ziti Desktop Edge");
-            openZdew.Click += (s, e) => BringWindowForward();
-            menu.Items.Add(openZdew);
-
-            // Dynamic identities section is inserted just above this anchor by
-            // RebuildTrayIdentitiesSection. If there are zero identities, nothing renders here.
-            trayIdentitiesAnchor = new System.Windows.Forms.ToolStripSeparator();
-            menu.Items.Add(trayIdentitiesAnchor);
-
-            // Tunneler picker submenu: only shown when more than one ziti-edge-tunnel
-            // instance is detected. Populated lazily via RebuildTrayTunnelersSection on menu
-            // open, equivalent to the Ctrl+Shift+T dev picker.
-            trayTunnelerSubmenu = new System.Windows.Forms.ToolStripMenuItem("Switch &Tunneler") {
-                Visible = false,
-                Tag = IpcGatedTag
-            };
-            menu.Items.Add(trayTunnelerSubmenu);
-
-            var addByJwt = new System.Windows.Forms.ToolStripMenuItem("Add Identity by &JWT...") {
-                Tag = IpcGatedTag
-            };
-            addByJwt.Click += (s, e) => { BringWindowForward(); AddIdentity_Click(s, new RoutedEventArgs()); };
-            menu.Items.Add(addByJwt);
-
-            var addByUrl = new System.Windows.Forms.ToolStripMenuItem("Add Identity by &URL...") {
-                Tag = IpcGatedTag
-            };
-            addByUrl.Click += (s, e) => { BringWindowForward(); ShowJoinByUrl(); };
-            menu.Items.Add(addByUrl);
-
-            menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
-
-            // Logging submenu: set-level submenu first, then log folder below it.
-            var logging = new System.Windows.Forms.ToolStripMenuItem("&Logging");
-            trayLogLevelItem = new System.Windows.Forms.ToolStripMenuItem("Set &Log Level") {
-                Tag = IpcGatedTag
-            };
-            foreach (string level in new[] { "trace", "verbose", "debug", "info", "warn", "error" }) {
-                string capturedLevel = level;
-                var item = new System.Windows.Forms.ToolStripMenuItem(
-                    char.ToUpper(level[0]) + level.Substring(1)) {
-                    CheckOnClick = false
-                };
-                item.Click += async (s, e) => {
-                    await LogLevelChanged(capturedLevel);
-                    RefreshTrayLogLevelChecks(capturedLevel);
-                };
-                trayLogLevelItem.DropDownItems.Add(item);
-            }
-            logging.DropDownItems.Add(trayLogLevelItem);
-            logging.DropDownItems.Add(new System.Windows.Forms.ToolStripSeparator());
-            var openLogs = new System.Windows.Forms.ToolStripMenuItem("Open log &folder");
-            openLogs.Click += (s, e) => OpenLogFolder();
-            logging.DropDownItems.Add(openLogs);
-            menu.Items.Add(logging);
-
-            // Help submenu: welcome reopen, update check + apply, feedback, community/support.
-            var help = new System.Windows.Forms.ToolStripMenuItem("&Help");
-            var showWelcome = new System.Windows.Forms.ToolStripMenuItem("&Show Welcome screen") {
-                // Also gated by the feedback flow: the welcome screen layers over the main
-                // window, which during feedback is already showing the LoadingScreen modal.
-                Tag = IpcGatedTag
-            };
-            showWelcome.Click += (s, e) => { BringWindowForward(); ShowWelcomeScreen(); };
-            help.DropDownItems.Add(showWelcome);
-            help.DropDownItems.Add(new System.Windows.Forms.ToolStripSeparator());
-
-            trayCheckUpdatesItem = new System.Windows.Forms.ToolStripMenuItem(TrayCheckForUpdatesDefaultLabel) {
-                Tag = IpcGatedTag
-            };
-            trayCheckUpdatesItem.Click += TrayCheckForUpdates_Click;
-            help.DropDownItems.Add(trayCheckUpdatesItem);
-
-            trayUpdateNowItem = new System.Windows.Forms.ToolStripMenuItem("&Update Now") {
-                Visible = false,
-                Tag = IpcGatedTag
-            };
-            trayUpdateNowItem.Click += TrayUpdateNow_Click;
-            help.DropDownItems.Add(trayUpdateNowItem);
-
-            help.DropDownItems.Add(new System.Windows.Forms.ToolStripSeparator());
-
-            var captureFeedback = new System.Windows.Forms.ToolStripMenuItem("Capture &Feedback...") {
-                Tag = IpcGatedTag
-            };
-            captureFeedback.Click += (s, e) => {
-                BringWindowForward();
-                MainMenu.CollectFeedbackLogs(s, null);
-            };
-            help.DropDownItems.Add(captureFeedback);
-
-            help.DropDownItems.Add(new System.Windows.Forms.ToolStripSeparator());
-
-            var community = new System.Windows.Forms.ToolStripMenuItem("OpenZiti Discourse &Community");
-            community.Click += (s, e) => OpenExternalUrl("https://openziti.discourse.group/");
-            help.DropDownItems.Add(community);
-            var nfSupport = new System.Windows.Forms.ToolStripMenuItem("&NetFoundry Support");
-            nfSupport.Click += (s, e) => OpenExternalUrl("https://netfoundry.io/support/");
-            help.DropDownItems.Add(nfSupport);
-            menu.Items.Add(help);
-
-            menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
-
-            var closeUi = new System.Windows.Forms.ToolStripMenuItem("&Close UI");
-            closeUi.Click += contextMenuItem_Click;
-            menu.Items.Add(closeUi);
-
-            // Refresh the tunneler submenu every time the menu is about to open, and gate
-            // every interactive item if a feedback capture is currently in flight (the
-            // RPC channel is single-threaded; clicking anything else would either short-
-            // circuit with "Feedback in progress" or block on the rpc lock for up to 30 min).
-            menu.Opening += (s, e) => {
-                ApplyFeedbackGate();
-                _ = RebuildTrayTunnelersSectionAsync();
-            };
-
-            // Track whether the most-recent ItemClicked targeted the brand header so we can
-            // cancel the close that would otherwise fire. ToolStripItem.Click runs BEFORE
-            // ContextMenuStrip.Closing, so setting a flag here is safe.
-            bool brandHeaderClickedRecently = false;
-            brandHeader.Click += (s, e) => brandHeaderClickedRecently = true;
-
-            // Cancel close when: (a) a Check-for-Updates request is in flight (so the user
-            // actually sees the result), or (b) the click that triggered the close was on the
-            // brand header (which is a label, not an action).
-            menu.Closing += (s, e) => {
-                if (e.CloseReason == System.Windows.Forms.ToolStripDropDownCloseReason.ItemClicked) {
-                    if (brandHeaderClickedRecently) {
-                        brandHeaderClickedRecently = false;
-                        e.Cancel = true;
-                        return;
-                    }
-                    if (trayUpdateCheckInFlight) {
-                        e.Cancel = true;
-                    }
-                }
-            };
-            // When the menu finally closes, reset the Check-for-Updates label back to its
-            // default so the next open is clean. (Don't reset while in-flight or right after,
-            // since that would erase the result the user just saw.)
-            menu.Closed += (s, e) => {
-                if (trayUpdateCheckInFlight) return;
-                if (trayCheckUpdatesItem != null) {
-                    trayCheckUpdatesItem.Text = TrayCheckForUpdatesDefaultLabel;
-                    trayCheckUpdatesItem.Enabled = true;
-                }
-            };
-
-            return menu;
-        }
-
-        private async void TrayCheckForUpdates_Click(object sender, EventArgs e) {
-            if (trayCheckUpdatesItem == null) return;
-            var monitorClient = Application.Current.Properties["MonitorClient"] as MonitorClient;
-            // The RPC channel is single-threaded; if a feedback capture is currently holding
-            // it, our DoUpdateCheck would block on the lock for up to 30 minutes. Short-circuit
-            // with a readable message instead of leaving the spinner running forever.
-            if (monitorClient != null && monitorClient.IsServiceCapturingFeedback) {
-                trayCheckUpdatesItem.Text = "Busy collecting feedback -- try again shortly";
-                return;
-            }
-            trayUpdateCheckInFlight = true;
-            StartTrayCheckSpinner();
-            trayCheckUpdatesItem.Enabled = false;
-            try {
-                if (monitorClient == null) {
-                    StopTrayCheckSpinner("Monitor service offline");
-                    return;
-                }
-                var r = await monitorClient.DoUpdateCheck();
-                if (r == null) {
-                    StopTrayCheckSpinner("Error checking -- see logs");
-                    return;
-                }
-                bool updateAvail = r.UpdateAvailable;
-                if (state != null) state.UpdateAvailable = updateAvail;
-                RefreshTrayUpdateState();
-                string pendingVer = state?.PendingUpdate?.Version;
-                string result = updateAvail
-                    ? (string.IsNullOrEmpty(pendingVer) ? "Update available" : $"Update available: v{pendingVer}")
-                    : "No updates available";
-                StopTrayCheckSpinner(result);
-            } catch (Exception ex) {
-                logger.Error(ex, "tray update check failed");
-                StopTrayCheckSpinner("Error checking -- see logs");
-            } finally {
-                trayUpdateCheckInFlight = false;
-                // Leave the result label in place. menu.Closed restores the default on next
-                // dismissal so the user gets a clean state next time they open the menu.
-                trayCheckUpdatesItem.Enabled = true;
-            }
-        }
-
-        // Cheap ASCII spinner: low risk for cross-font rendering and reads as motion at 120ms.
-        private static readonly string[] TrayCheckSpinnerFrames = { "|", "/", "-", "\\" };
-
-        private void StartTrayCheckSpinner() {
-            trayCheckSpinnerFrame = 0;
-            if (trayCheckSpinnerTimer == null) {
-                trayCheckSpinnerTimer = new System.Windows.Forms.Timer { Interval = 120 };
-                trayCheckSpinnerTimer.Tick += (s, e) => {
-                    if (trayCheckUpdatesItem == null) return;
-                    string frame = TrayCheckSpinnerFrames[trayCheckSpinnerFrame % TrayCheckSpinnerFrames.Length];
-                    trayCheckUpdatesItem.Text = $"Checking for updates {frame}";
-                    trayCheckSpinnerFrame++;
-                };
-            }
-            trayCheckUpdatesItem.Text = "Checking for updates |";
-            trayCheckSpinnerTimer.Start();
-        }
-
-        private void StopTrayCheckSpinner(string finalLabel) {
-            trayCheckSpinnerTimer?.Stop();
-            if (trayCheckUpdatesItem != null) {
-                trayCheckUpdatesItem.Text = finalLabel;
-            }
-        }
-
-        private async void TrayUpdateNow_Click(object sender, EventArgs e) {
-            if (trayUpdateNowItem == null) return;
-            var monitorClient = Application.Current.Properties["MonitorClient"] as MonitorClient;
-            if (monitorClient != null && monitorClient.IsServiceCapturingFeedback) {
-                trayUpdateNowItem.Text = "Busy collecting feedback -- try again shortly";
-                return;
-            }
-            try {
-                trayUpdateNowItem.Enabled = false;
-                if (monitorClient == null) {
-                    trayUpdateNowItem.Text = "Monitor service offline";
-                    return;
-                }
-                var r = await monitorClient.TriggerUpdate(forceDefer: false);
-                if (r == null) {
-                    trayUpdateNowItem.Text = "Error requesting update";
-                } else if (!string.IsNullOrEmpty(r.Message)) {
-                    trayUpdateNowItem.Text = r.Message;
-                }
-            } catch (Exception ex) {
-                logger.Error(ex, "tray update-now failed");
-                trayUpdateNowItem.Text = "Error -- see logs";
-            } finally {
-                trayUpdateNowItem.Enabled = true;
-            }
-        }
-
-        /// <summary>
-        /// Reflect the current <see cref="ZDEWViewState.UpdateAvailable"/> in the tray menu --
-        /// shows or hides the "Update Now" item and labels it with the pending version.
-        /// </summary>
-        internal void RefreshTrayUpdateState() {
-            if (trayUpdateNowItem == null) return;
-            bool show = state != null && state.UpdateAvailable;
-            trayUpdateNowItem.Visible = show;
-            if (show) {
-                string ver = state.PendingUpdate?.Version;
-                trayUpdateNowItem.Text = string.IsNullOrEmpty(ver)
-                    ? "&Update Now"
-                    : $"&Update Now (v{ver})";
-            }
-        }
-
-        private void BringWindowForward() {
+        public void BringWindowForward() {
             try {
                 this.Show();
                 this.Activate();
@@ -1025,236 +730,44 @@ namespace ZitiDesktopEdge {
             }
         }
 
+        public void ShowAddIdentityByJwt() {
+            AddIdentity_Click(this, new RoutedEventArgs());
+        }
+
+        public void ShowAddIdentityByUrl() {
+            ShowJoinByUrl();
+        }
+
         /// <summary>
         /// Reopen the welcome screen and expand the window to fit it. Bypasses the
         /// session-dismissal flag in the VM.
         /// </summary>
-        internal void ShowWelcomeScreen() {
+        public void ShowWelcomeScreen() {
             // Clear any in-flight close-animation clock so our imperative Height write sticks.
             this.BeginAnimation(HeightProperty, null);
             this.Height = defaultHeight + GetStartedExtraHeight;
             GetStartedScreen.ViewModel.Show();
         }
 
-        /// <summary>
-        /// Walk the top-level tray items and disable every interactive one while a feedback
-        /// capture is in progress. Skips the brand header (never interactive), separators,
-        /// and Close UI (must remain available so the user can always exit the tray app).
-        /// Called from menu.Opening so the state is always fresh.
-        /// </summary>
-        private void ApplyFeedbackGate() {
-            if (trayMenu == null) return;
-            var mc = Application.Current.Properties["MonitorClient"] as MonitorClient;
-            bool feedbackInFlight = mc != null && mc.IsServiceCapturingFeedback;
-            bool enabled = !feedbackInFlight;
-
-            // Insert / remove the visible "Collecting feedback..." status row right after the
-            // brand-header + first separator (so it reads as a peer of the brand row, not
-            // buried under enable-toggled items). Both the label and its trailing separator
-            // are tracked so removal is precise.
-            if (feedbackInFlight && trayFeedbackStatusLabel == null) {
-                trayFeedbackStatusLabel = new System.Windows.Forms.ToolStripLabel("Collecting feedback...") {
-                    Font = new System.Drawing.Font(System.Drawing.SystemFonts.MenuFont, System.Drawing.FontStyle.Italic),
-                    ForeColor = System.Drawing.Color.FromArgb(0xCC, 0x55, 0x00)
-                };
-                trayFeedbackStatusSeparator = new System.Windows.Forms.ToolStripSeparator();
-                // Index 2 = right after brand-header (0) + its separator (1).
-                trayMenu.Items.Insert(2, trayFeedbackStatusLabel);
-                trayMenu.Items.Insert(3, trayFeedbackStatusSeparator);
-            } else if (!feedbackInFlight && trayFeedbackStatusLabel != null) {
-                trayMenu.Items.Remove(trayFeedbackStatusLabel);
-                trayMenu.Items.Remove(trayFeedbackStatusSeparator);
-                trayFeedbackStatusLabel.Dispose();
-                trayFeedbackStatusSeparator.Dispose();
-                trayFeedbackStatusLabel = null;
-                trayFeedbackStatusSeparator = null;
-            }
-
-            // Granular gating: only items explicitly tagged with IpcGatedTag (touched the
-            // MonitorClient RPC channel one way or another) get disabled. Everything else --
-            // Help submenu, Open log folder, Show Welcome, Open ZDEW, external URL links --
-            // stays available. Recurses into submenus so deeply-nested items get gated too.
-            ToggleIpcGatedItems(trayMenu.Items, enabled);
+        public void OpenIdentityDetails(ZitiIdentity identity) {
+            IdentityMenu.Identity = identity;
         }
 
-        private static void ToggleIpcGatedItems(System.Windows.Forms.ToolStripItemCollection items, bool enabled) {
-            foreach (System.Windows.Forms.ToolStripItem item in items) {
-                if (item.Tag as string == IpcGatedTag) {
-                    item.Enabled = enabled;
-                }
-                if (item is System.Windows.Forms.ToolStripMenuItem mi && mi.HasDropDownItems) {
-                    ToggleIpcGatedItems(mi.DropDownItems, enabled);
-                }
-            }
+        private void HelpCircle_MouseUp(object sender, MouseButtonEventArgs e) {
+            if (!UIUtils.IsLeftClick(e)) return;
+            ShowWelcomeScreen();
         }
 
-        private void OpenLogFolder() {
-            try {
-                Process.Start(new ProcessStartInfo(ExpectedLogPathRoot) { UseShellExecute = true });
-            } catch (Exception ex) {
-                logger.Warn(ex, "could not open log folder {0}", ExpectedLogPathRoot);
-            }
+        public Task<bool> SetLogLevelAsync(string level) {
+            return LogLevelChanged(level);
         }
 
-        /// <summary>
-        /// Load a `<Resource>`-bundled image into a System.Drawing.Image suitable for use as
-        /// a ToolStripItem.Image. The image keeps an internal reference to its source stream
-        /// so we deliberately hold the MemoryStream alive for the lifetime of the bitmap.
-        /// </summary>
-        private System.Drawing.Image LoadEmbeddedImage(string packUri) {
-            try {
-                var sri = Application.GetResourceStream(new Uri(packUri, UriKind.Absolute));
-                if (sri == null) return null;
-                var ms = new System.IO.MemoryStream();
-                sri.Stream.CopyTo(ms);
-                ms.Position = 0;
-                return new System.Drawing.Bitmap(ms);
-            } catch (Exception ex) {
-                logger.Warn(ex, "could not load embedded image {0}", packUri);
-                return null;
-            }
+        public Task SwitchTunnelerAsync(string discriminator) {
+            return SwitchToInstanceAsync(discriminator);
         }
 
-        private void OpenExternalUrl(string url) {
-            try {
-                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-            } catch (Exception ex) {
-                logger.Warn(ex, "could not open URL {0}", url);
-            }
-        }
-
-        /// <summary>
-        /// Rebuild the dynamic Identities section of the tray context menu. Removes any
-        /// previously inserted items and inserts a header + one row per identity directly above
-        /// <see cref="trayIdentitiesAnchor"/>. Each row shows name, service count, and status;
-        /// clicking opens the identity details panel for that identity.
-        /// </summary>
-        private void RebuildTrayIdentitiesSection(ZitiIdentity[] ids) {
-            if (trayMenu == null || trayIdentitiesAnchor == null) return;
-
-            // Tear down the previous render.
-            foreach (var item in trayIdentityItems) {
-                trayMenu.Items.Remove(item);
-                item.Dispose();
-            }
-            trayIdentityItems.Clear();
-
-            if (ids == null || ids.Length == 0) return;
-
-            int anchorIndex = trayMenu.Items.IndexOf(trayIdentitiesAnchor);
-            if (anchorIndex < 0) return;
-
-            var header = new System.Windows.Forms.ToolStripMenuItem("Identities") {
-                Enabled = false
-            };
-            trayMenu.Items.Insert(anchorIndex, header);
-            trayIdentityItems.Add(header);
-            anchorIndex++;
-
-            foreach (var id in ids) {
-                ZitiIdentity captured = id;
-                int svcCount = id.Services?.Count ?? 0;
-                string status = DescribeIdentityStatus(id);
-                string text = $"-  {id.Name}    {svcCount} svc  ·  {status}";
-
-                var item = new System.Windows.Forms.ToolStripMenuItem(text) {
-                    Tag = IpcGatedTag
-                };
-                item.Click += (s, e) => {
-                    BringWindowForward();
-                    IdentityMenu.Identity = captured;
-                };
-                trayMenu.Items.Insert(anchorIndex, item);
-                trayIdentityItems.Add(item);
-                anchorIndex++;
-            }
-        }
-
-        /// <summary>
-        /// Refresh the "Switch Tunneler" submenu. Hidden when there's only one (or zero)
-        /// ziti-edge-tunnel instance running, since there's nothing useful to switch to.
-        /// Otherwise lists each instance, marks the active one, and wires click handlers
-        /// that route through <see cref="SwitchToInstanceAsync"/> (same path as the dev
-        /// Ctrl+Shift+T picker).
-        /// </summary>
-        private async Task RebuildTrayTunnelersSectionAsync() {
-            if (trayTunnelerSubmenu == null) return;
-            IReadOnlyList<TunnelInstanceDiscovery.TunnelInstance> discovered;
-            try {
-                discovered = await TunnelInstanceDiscovery.EnumerateAsync();
-            } catch (Exception ex) {
-                logger.Debug(ex, "tunneler enumeration failed");
-                this.Dispatcher.Invoke(() => trayTunnelerSubmenu.Visible = false);
-                return;
-            }
-
-            // Same ordering as the picker window: default first (synthetic if not actually
-            // online), then everything else in discovery order.
-            var ordered = new List<TunnelInstanceDiscovery.TunnelInstance>();
-            var def = discovered.FirstOrDefault(i => string.IsNullOrEmpty(i.Discriminator));
-            ordered.Add(def ?? TunnelInstanceDiscovery.OfflineDefault());
-            foreach (var inst in discovered) {
-                if (!string.IsNullOrEmpty(inst.Discriminator)) ordered.Add(inst);
-            }
-
-            this.Dispatcher.Invoke(() => {
-                // Tear down previous items. ToolStripItem.Dispose() removes the item from its
-                // owner's collection, so iterating DropDownItems while disposing skips every
-                // other entry -- the source of the "every other click" symptom. Snapshot
-                // first, clear the collection in one shot, then dispose the snapshot.
-                var oldItems = new System.Windows.Forms.ToolStripItem[trayTunnelerSubmenu.DropDownItems.Count];
-                trayTunnelerSubmenu.DropDownItems.CopyTo(oldItems, 0);
-                trayTunnelerSubmenu.DropDownItems.Clear();
-                foreach (var oldItem in oldItems) {
-                    oldItem.Dispose();
-                }
-
-                if (ordered.Count <= 1) {
-                    trayTunnelerSubmenu.Visible = false;
-                    return;
-                }
-
-                string activeDisc = serviceClient?.Discriminator ?? "";
-                foreach (var inst in ordered) {
-                    string instDisc = inst.Discriminator ?? "";
-                    bool isActive = string.Equals(instDisc, activeDisc, StringComparison.Ordinal) && inst.IsOnline;
-                    string suffix = isActive ? "   (active)" : (!inst.IsOnline ? "   (not running)" : "");
-
-                    var item = new System.Windows.Forms.ToolStripMenuItem(inst.DisplayLabel + suffix) {
-                        Checked = isActive,
-                        CheckOnClick = false
-                    };
-                    if (isActive) {
-                        // Active row is non-interactive; clicking shouldn't reconnect to self.
-                        item.Enabled = false;
-                    } else {
-                        string capturedDisc = inst.Discriminator;
-                        item.Click += async (s, e) => await SwitchToInstanceAsync(capturedDisc);
-                    }
-                    trayTunnelerSubmenu.DropDownItems.Add(item);
-                }
-                trayTunnelerSubmenu.Visible = true;
-            });
-        }
-
-        private static string DescribeIdentityStatus(ZitiIdentity id) {
-            if (!id.IsEnabled) return "Disabled";
-            if (id.IsTimedOut) return "Locked";
-            if (id.IsTimingOut) return "Timing out";
-            if (id.IsMFANeeded) return "MFA needed";
-            if (id.NeedsExtAuth) return "Auth needed";
-            return "Active";
-        }
-
-        private void RefreshTrayLogLevelChecks(string current) {
-            if (trayLogLevelItem == null) return;
-            foreach (System.Windows.Forms.ToolStripMenuItem item in trayLogLevelItem.DropDownItems) {
-                item.Checked = string.Equals(item.Text, current, StringComparison.OrdinalIgnoreCase);
-            }
-        }
-
-        private void contextMenuItem_Click(object Sender, EventArgs e) {
-            Application.Current.Shutdown();
+        public void StartFeedbackCapture() {
+            MainMenu.CollectFeedbackLogs(this, null);
         }
 
         private void NotifyIcon_MouseClick(object sender, System.Windows.Forms.MouseEventArgs e) {
@@ -1700,7 +1213,7 @@ namespace ZitiDesktopEdge {
                     state.StagingDownloadPending     = evt.StagingDownloadPending;
                     state.DeferInstallToRestartLocked = evt.DeferInstallToRestartLocked;
                     MainMenu.ShowUpdateAvailable();
-                    RefreshTrayUpdateState();
+                    tray.RefreshUpdateState();
                     logger.Debug("MonitorClient_OnServiceStatusEvent: {0}", evt.Status);
                     Application.Current.Properties["ReleaseStream"] = evt.ReleaseStream;
 
@@ -1798,7 +1311,7 @@ namespace ZitiDesktopEdge {
                         state.DeferInstallToRestartLocked  = evt.DeferInstallToRestartLocked;
                         SetAutomaticUpdateEnabled(evt.AutomaticUpgradeDisabled, evt.AutomaticUpgradeURL);
                         MainMenu.ShowUpdateAvailable();
-                    RefreshTrayUpdateState();
+                    tray.RefreshUpdateState();
                         AlertCanvas.Visibility = Visibility.Visible;
 
                         if (isToastEnabled()) {
@@ -2302,7 +1815,7 @@ namespace ZitiDesktopEdge {
 				}*/
                 this.MainMenu.LogLevel = e.Status.LogLevel;
                 Ziti.Desktop.Edge.Utils.UIUtils.SetLogLevel(e.Status.LogLevel);
-                RefreshTrayLogLevelChecks(e.Status.LogLevel);
+                tray.RefreshLogLevelChecks(e.Status.LogLevel);
                 InitializeTimer((int)e.Status.Duration);
                 LoadStatusFromService(e.Status);
                 LoadIdentities(true);
@@ -2319,7 +1832,7 @@ namespace ZitiDesktopEdge {
                 this.Dispatcher.Invoke(() => {
                     this.MainMenu.LogLevel = e.LogLevel;
                     Ziti.Desktop.Edge.Utils.UIUtils.SetLogLevel(e.LogLevel);
-                    RefreshTrayLogLevelChecks(e.LogLevel);
+                    tray.RefreshLogLevelChecks(e.LogLevel);
                 });
             }
         }
@@ -2509,8 +2022,9 @@ namespace ZitiDesktopEdge {
                 ZitiIdentity[] ids = GetSortedIdentities();
                 MainMenu.SetupIdList(ids);
                 props.IdentityCount = ids.Length;
-                GetStartedScreen.ViewModel.UpdateForIdentityCount(ids.Length);
-                RebuildTrayIdentitiesSection(ids);
+                GetStartedScreen.ViewModel.UpdateForState(serviceClient.Connected, ids.Length);
+                MainMenu.ShowWelcomeButton.Visibility = ids.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+                tray.RebuildIdentities(ids);
                 if (ids.Length > 0 && serviceClient.Connected) {
                     double height = defaultHeight + (ids.Length * 60);
                     if (height > _maxHeight) {
@@ -3106,22 +2620,4 @@ namespace ZitiDesktopEdge {
 #pragma warning restore CS0067 //The event 'ActionCommand.CanExecuteChanged' is never used
     }
 
-    /// <summary>
-    /// ToolStripProfessionalRenderer that paints no hover/focus highlight for items marked as
-    /// non-interactive headers via `Tag = "brand-header"`. Used by the tray ContextMenuStrip so
-    /// the "By NetFoundry" row reads as a label even though it's an Enabled ToolStripMenuItem
-    /// (Enabled=true keeps the text and icon at full color rather than greyed).
-    /// </summary>
-    internal class NonInteractiveHeaderRenderer : System.Windows.Forms.ToolStripProfessionalRenderer {
-        // Must match MainWindow.BrandHeaderTag. Inlined here to avoid an internal-visibility
-        // dance for a single string constant.
-        private const string BrandHeaderTag = "brand-header";
-
-        protected override void OnRenderMenuItemBackground(System.Windows.Forms.ToolStripItemRenderEventArgs e) {
-            if (e.Item?.Tag as string == BrandHeaderTag) {
-                return;
-            }
-            base.OnRenderMenuItemBackground(e);
-        }
-    }
 }

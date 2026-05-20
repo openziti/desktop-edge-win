@@ -370,6 +370,28 @@
         <Canvas x:Name="AlertCanvas" ClipToBounds="False" Visibility="Collapsed">
             <Image Source="/Assets/Images/UpdateWarn.png" Canvas.Left="50" Canvas.Top="32" Width="14" Height="14"></Image>
         </Canvas>
+        <!-- Subtle "show welcome" affordance: a 26px question-mark circle in the bottom-right
+             corner of the window. Click to reopen the welcome screen. -->
+        <Border x:Name="HelpCircle"
+                Width="26" Height="26"
+                CornerRadius="13"
+                Background="#1676FE"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Margin="0,0,18,18"
+                Cursor="Hand"
+                ToolTip="Show welcome screen"
+                MouseUp="HelpCircle_MouseUp">
+            <TextBlock Text="?"
+                       Foreground="White"
+                       FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"
+                       FontSize="14"
+                       FontWeight="Bold"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Margin="0,-1,0,0"
+                       IsHitTestVisible="False"/>
+        </Border>
         <!-- Form for debugging -->
         <!--debug:Debugging x:Name="DebugForm" Visibility="Collapsed" /-->
         <!-- Menu UI -->

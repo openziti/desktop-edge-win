@@ -132,16 +132,22 @@ namespace ZitiDesktopEdge {
         public void PrepareForEntry() {
             string clipboardUrl = TryReadHttpUrlFromClipboard();
             ControllerURL.Text = clipboardUrl ?? AddIdentityViewModel.UrlPlaceholder;
-            // TextChanged only fires when the value actually changes. If the user reopens the
-            // dialog with the same clipboard URL already in the field, the validator never runs
-            // and the Join button stays in its previous state -- so kick it manually.
-            UpdateUrlValidity();
-            // Defer focus/select until after the dialog's fade-in layout pass; otherwise
-            // SelectAll runs before the TextBox is actually focusable and gets dropped.
+            // Defer BOTH the validity refresh and the focus/select to Loaded priority. Two
+            // reasons:
+            //   1. `Grid_Loaded` runs `JoinNetworkBtn.Disable()` to set the initial state.
+            //      On paths where this UserControl is shown for the first time in the session
+            //      (e.g. the welcome screen "Add by URL" link on a zero-identities install),
+            //      Grid_Loaded fires AFTER ShowJoinByUrl's PrepareForEntry call, so a
+            //      synchronous Enable() here gets overwritten by Disable() moments later.
+            //   2. TextChanged only fires when the value actually changes, so if the user
+            //      reopens the dialog with the same clipboard URL already in the field, the
+            //      validator never runs -- the explicit call below covers that case too.
+            //   3. SelectAll runs before the TextBox is focusable otherwise and gets dropped.
             Dispatcher.BeginInvoke(new Action(() => {
+                UpdateUrlValidity();
                 ControllerURL.Focus();
                 ControllerURL.SelectAll();
-            }), System.Windows.Threading.DispatcherPriority.Input);
+            }), System.Windows.Threading.DispatcherPriority.Loaded);
         }
 
         private static string TryReadHttpUrlFromClipboard() {

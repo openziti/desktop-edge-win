@@ -35,10 +35,17 @@ namespace ZitiDesktopEdge.ViewModels {
         public Visibility Visibility => _isOpen ? Visibility.Visible : Visibility.Collapsed;
 
         /// <summary>
-        /// Show when there are zero identities, unless the user has explicitly dismissed it
-        /// for this session. Reset the dismissal once identities exist again.
+        /// Show only when the ziti service is connected AND there are zero identities, unless
+        /// the user has explicitly dismissed it for this session. While the service is
+        /// disconnected the welcome screen is force-hidden -- the user can't actually add an
+        /// identity without the service running, so the "Service Not Started" overlay takes
+        /// precedence. Dismissal state is preserved across reconnects.
         /// </summary>
-        public void UpdateForIdentityCount(int identityCount) {
+        public void UpdateForState(bool serviceConnected, int identityCount) {
+            if (!serviceConnected) {
+                IsOpen = false;
+                return;
+            }
             if (identityCount > 0) {
                 IsOpen = false;
                 _userDismissed = false;

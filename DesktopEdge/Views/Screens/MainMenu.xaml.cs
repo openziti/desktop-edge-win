@@ -256,6 +256,12 @@ namespace ZitiDesktopEdge {
             UpdateState();
         }
 
+        private void ShowWelcomeFromMenu(object sender, MouseButtonEventArgs e) {
+            // Close the main menu first so the welcome screen has the foreground to itself.
+            this.Visibility = Visibility.Collapsed;
+            MainWindow?.ShowWelcomeScreen();
+        }
+
         private void ShowAdvanced(object sender, MouseButtonEventArgs e) {
             menuState = "Advanced";
             UpdateState();
