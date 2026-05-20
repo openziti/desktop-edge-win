@@ -772,9 +772,7 @@ namespace ZitiDesktopEdge {
 
         private void NotifyIcon_MouseClick(object sender, System.Windows.Forms.MouseEventArgs e) {
             if (e.Button == System.Windows.Forms.MouseButtons.Left) {
-                System.Windows.Forms.MouseEventArgs mea = (System.Windows.Forms.MouseEventArgs)e;
-                this.Show();
-                this.Activate();
+                BringWindowForward();
                 //Do the awesome left clickness
             } else if (e.Button == System.Windows.Forms.MouseButtons.Right) {
                 //Do the wickedy right clickness
@@ -903,18 +901,6 @@ namespace ZitiDesktopEdge {
             });
         }
 
-        private void TargetNotifyIcon_Click(object sender, EventArgs e) {
-            this.Dispatcher.Invoke(() => {
-                try {
-                    this.Show();
-                    this.Activate();
-                    Application.Current.MainWindow.Activate();
-                } catch(Exception ex) {
-                    logger.Error("UNEXPECTED error when trying to click the notification icon?", ex);
-                }
-            });
-        }
-
         private void UpdateServiceView() {
             if (_isServiceInError) {
                 AddIdAreaButton.Opacity = 0.1;
@@ -936,8 +922,7 @@ namespace ZitiDesktopEdge {
 
         private void App_ReceiveString(string obj) {
             Console.WriteLine(obj);
-            this.Show();
-            this.Activate();
+            BringWindowForward();
         }
 
         async private void MainWindow_Loaded(object sender, RoutedEventArgs e) {

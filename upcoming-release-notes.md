@@ -1,4 +1,4 @@
-# Release 2.11.1.0
+# Release 2.11.2.0
 ## What's New
 * Enroll to cert / token via external JWT signers
     * Joining a network by URL now discovers the controller's external JWT signers and routes
@@ -11,14 +11,11 @@
       the identity arrives once sign-in completes
 * Welcome screen for first-run / no-identities state ([#1006](https://github.com/openziti/desktop-edge-win/issues/1006))
     * Appears automatically when the app has zero identities, dismissable per session
-    * Inline "Add by JWT" / "Add by URL" links route straight into the existing add-identity
-      flows
+    * Inline "Add by JWT" / "Add by URL" links route straight into the existing add-identity flow
     * Pasting a URL from the clipboard pre-fills the Add-by-URL field and pre-selects the text
       so the first keystroke replaces it
     * NetFoundry logo doubles as a drag handle (left-click drag to detach, right-click to
       reattach) -- same gesture as the central Z
-    * Window expands while the welcome screen is shown and animates back to the normal height
-      on close
 * Tray-icon context menu rebuilt ([#1007](https://github.com/openziti/desktop-edge-win/issues/1007))
     * "By NetFoundry vX.Y.Z" branding header with the NF mark
     * "Open OpenZiti Desktop Edge" brings the main window forward
