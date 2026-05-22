@@ -284,7 +284,7 @@ namespace ZitiDesktopEdge.ServiceClient {
             Logger.Warn("{0}-{1}-{2}: {3}", source, direction, channel, msg);
 #else
             if (false == msg?.Contains("\"metrics\"")) {
-                Logger.Warn("{0}-{1}-{2}: {3}", source, direction, channel, msg);
+                Logger.Warn("IPC: {0}-{1}-{2}: {3}", source, direction, channel, msg);
             }
 #endif
 #else
