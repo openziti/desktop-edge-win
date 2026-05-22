@@ -52,13 +52,45 @@ Enroll the generated JWTs into ZDEW using the "add identity" button in the top r
 
 For the full list of test cases to run before a release, see [`manual-testing.md`](./manual-testing.md).
 
-## Run Signature Validation Tests
+## Run Unit Tests
 
-The test project only covers PE signature validation used by the update service. It does not test the UI or service client. Requires .NET 6.0 SDK.
+Two test projects, both targeting .NET 8.0 SDK:
+
+- `ZitiUpdateService.Tests/` -- covers the `ziti-monitor` Windows service: PE signature
+  validation, maintenance-window cadence math (Daily/Weekly/Monthly + ByWeekday ordinal
+  resolution), InstallationCritical age-threshold, snap-to-window arithmetic, plus
+  full-calendar verification of every documented compliance preset across all 12 months
+  of 2025. ~350 test cases, ~300ms runtime.
+- `ZitiDesktopEdge.Tests/` -- placeholder for future WPF tray-UI tests. No tests yet.
+
+Canonical entry point (what CI runs):
 
 ```powershell
-dotnet test ZitiDesktopEdgeTests/ZitiDesktopEdgeTests.csproj
+# All tests (surfaces the 2 documented SignedFilesTest cert/path failures locally)
+.\scripts\run-tests.ps1
+
+# What CI runs -- filters out the SignedFilesTest cases (tracked separately)
+.\scripts\run-tests.ps1 -CiMode
+
+# Only cadence tests
+.\scripts\run-tests.ps1 -Filter "FullyQualifiedName~MaintenanceWindow"
+
+# Only one compliance preset
+.\scripts\run-tests.ps1 -Filter "FullyQualifiedName~Preset_CJIS"
 ```
+
+The script auto-discovers any `*.Tests.csproj` under the repo root, so adding a new
+test project doesn't require workflow or script edits.
+
+You can also call `dotnet test` directly:
+
+```powershell
+dotnet test ZitiUpdateService.Tests/ZitiUpdateService.Tests.csproj
+```
+
+In Visual Studio: both test projects are in `ZitiDesktopEdge.sln` (gated out of Release
+config so `Installer\build.ps1` is unaffected). Test Explorer (`Ctrl+E,T`) discovers
+them automatically.
 
 ## Build the Installer
 
@@ -79,7 +111,8 @@ ZitiDesktopEdge.Client/    IPC client library (UI <-> ziti-edge-tunnel service)
 ZitiUpdateService/         Windows service for polling and applying updates
 ZitiUpgradeSentinel/       Post-upgrade cleanup utility
 AWSSigner.NET/             AWS KMS code signing integration
-ZitiDesktopEdgeTests/      Unit tests (.NET 6.0)
+ZitiUpdateService.Tests/   Unit tests for the monitor service (.NET 8.0)
+ZitiDesktopEdge.Tests/     Placeholder for future WPF UI tests (.NET 8.0)
 Installer/                 Advanced Installer project and build script
 scripts/                   Automation scripts (see below)
 release-streams/           Update channel JSON files (stable, latest, beta)

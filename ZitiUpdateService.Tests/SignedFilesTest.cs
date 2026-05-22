@@ -2,7 +2,7 @@ using System.Net;
 using System.Security.Cryptography;
 using ZitiUpdateService.Checkers.PeFile;
 
-namespace ZitiDesktopEdgeTests {
+namespace ZitiUpdateService.Tests {
 	[TestClass]
 	public class SignedFilesTest {
 		static SignedFilesTest() {

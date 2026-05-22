@@ -51,9 +51,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{
 		.github\workflows\installer.build.yml = .github\workflows\installer.build.yml
 		.github\workflows\mattermost-ziti-webhook.yml = .github\workflows\mattermost-ziti-webhook.yml
 		.github\workflows\publish.yml = .github\workflows\publish.yml
+		.github\workflows\tests.yml = .github\workflows\tests.yml
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AWSSigner.NET", "AWSSigner.NET\AWSSigner.NET.csproj", "{8E160C43-62B9-4A2A-8E0E-6FCFCFA997FF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ZitiUpdateService.Tests", "ZitiUpdateService.Tests\ZitiUpdateService.Tests.csproj", "{7C2D3F1A-5B4E-4F9C-8A1B-2E3D4F5A6B7C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ZitiDesktopEdge.Tests", "ZitiDesktopEdge.Tests\ZitiDesktopEdge.Tests.csproj", "{8E4F5A2B-6C5D-4A0E-9B2C-3F4E5A6B7C8E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "offline-upgrades", "offline-upgrades", "{EC5400E6-D734-48F8-A2E5-CE5EE041B87E}"
 	ProjectSection(SolutionItems) = preProject
@@ -182,6 +187,28 @@ Global
 		{8E160C43-62B9-4A2A-8E0E-6FCFCFA997FF}.Release|x64.Build.0 = Release|Any CPU
 		{8E160C43-62B9-4A2A-8E0E-6FCFCFA997FF}.Release|x86.ActiveCfg = Release|Any CPU
 		{8E160C43-62B9-4A2A-8E0E-6FCFCFA997FF}.Release|x86.Build.0 = Release|Any CPU
+		{7C2D3F1A-5B4E-4F9C-8A1B-2E3D4F5A6B7C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C2D3F1A-5B4E-4F9C-8A1B-2E3D4F5A6B7C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C2D3F1A-5B4E-4F9C-8A1B-2E3D4F5A6B7C}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{7C2D3F1A-5B4E-4F9C-8A1B-2E3D4F5A6B7C}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{7C2D3F1A-5B4E-4F9C-8A1B-2E3D4F5A6B7C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7C2D3F1A-5B4E-4F9C-8A1B-2E3D4F5A6B7C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7C2D3F1A-5B4E-4F9C-8A1B-2E3D4F5A6B7C}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C2D3F1A-5B4E-4F9C-8A1B-2E3D4F5A6B7C}.Release|ARM.ActiveCfg = Debug|Any CPU
+		{7C2D3F1A-5B4E-4F9C-8A1B-2E3D4F5A6B7C}.Release|ARM64.ActiveCfg = Debug|Any CPU
+		{7C2D3F1A-5B4E-4F9C-8A1B-2E3D4F5A6B7C}.Release|x64.ActiveCfg = Debug|Any CPU
+		{7C2D3F1A-5B4E-4F9C-8A1B-2E3D4F5A6B7C}.Release|x86.ActiveCfg = Debug|Any CPU
+		{8E4F5A2B-6C5D-4A0E-9B2C-3F4E5A6B7C8E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8E4F5A2B-6C5D-4A0E-9B2C-3F4E5A6B7C8E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8E4F5A2B-6C5D-4A0E-9B2C-3F4E5A6B7C8E}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{8E4F5A2B-6C5D-4A0E-9B2C-3F4E5A6B7C8E}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{8E4F5A2B-6C5D-4A0E-9B2C-3F4E5A6B7C8E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{8E4F5A2B-6C5D-4A0E-9B2C-3F4E5A6B7C8E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{8E4F5A2B-6C5D-4A0E-9B2C-3F4E5A6B7C8E}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{8E4F5A2B-6C5D-4A0E-9B2C-3F4E5A6B7C8E}.Release|ARM.ActiveCfg = Debug|Any CPU
+		{8E4F5A2B-6C5D-4A0E-9B2C-3F4E5A6B7C8E}.Release|ARM64.ActiveCfg = Debug|Any CPU
+		{8E4F5A2B-6C5D-4A0E-9B2C-3F4E5A6B7C8E}.Release|x64.ActiveCfg = Debug|Any CPU
+		{8E4F5A2B-6C5D-4A0E-9B2C-3F4E5A6B7C8E}.Release|x86.ActiveCfg = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
