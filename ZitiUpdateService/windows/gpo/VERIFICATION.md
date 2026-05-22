@@ -264,6 +264,105 @@ Restart-Service "Ziti Update Service" -Force
 
 ---
 
+### Cadence test strategy (read before running G-4w / G-4m / G-4nw)
+
+The cadence math -- which calendar day qualifies for each `(Frequency, MonthlyMode, Ordinal,
+DayOfWeek, DayOfMonth)` combination -- is covered by **unit tests** in
+`ZitiUpdateService.Tests/MaintenanceWindowEvaluatorTests.cs`. That suite includes:
+
+- Every Ordinal x DayOfWeek combination across 4-weekday months, 5-weekday months, and
+  leap-year February.
+- The `LastDay=32` sentinel for `MonthlyMode=ByDate`.
+- The "Last != Fourth" divergence in 5-weekday months (explicit assertions).
+- Six **preset snapshot tests** (`Preset_CJIS_*`, `Preset_DisaStig_*`, `Preset_PciDss_*`,
+  `Preset_NistFedrampModerate_*`, `Preset_NercCip_*`, `Preset_Hitrust_*`) that pin the
+  recipes documented in `ZitiUpdateService/POLICY-ADMIN-GUIDE.md` "Recommended settings
+  for regulated fleets" so the markdown and the evaluator stay in lockstep.
+
+Run them with:
+
+```powershell
+dotnet test ZitiUpdateService.Tests/ZitiUpdateService.Tests.csproj --filter "FullyQualifiedName~MaintenanceWindowEvaluator"
+```
+
+Do **not** verify the math by setting the VM's system clock. Clock-skewing a Windows VM
+breaks CRL fetch in the auto-updater (see `offline-upgrades/CLAUDE.md`), AD/Kerberos if
+domain-joined, DST behavior, and the service's own log timestamps. The manual tests
+below verify only the **wiring**: registry write -> log line + UI state + service-restart
+survival. Math correctness is the unit tests' job.
+
+---
+
+### G-4w: Weekly cadence wiring smoke
+
+**Setup:**
+```powershell
+Remove-PolicyKey
+Set-Policy "MaintenanceWindowStart"     22 DWord
+Set-Policy "MaintenanceWindowEnd"        6 DWord
+Set-Policy "MaintenanceWindowFrequency"  1 DWord   # Weekly
+Set-Policy "MaintenanceWindowDayOfWeek"  0 DWord   # Sunday
+Restart-Service "Ziti Update Service" -Force
+```
+
+**Pass criteria:**
+- Service log "Policy overrides loaded:" line lists `MaintenanceWindowFrequency=Weekly`
+  and `MaintenanceWindowDayOfWeek=0`.
+- UI Automatic Upgrades: banner visible. Frequency combo greyed showing "Weekly";
+  DayOfWeek combo visible+greyed showing "Sunday"; MonthlyMode / Ordinal / DayOfMonth
+  controls hidden.
+- (Math correctness is covered by `Weekly_QualifiesOnlyOnConfiguredDayOfWeek` in the
+  unit tests; not retested here.)
+
+---
+
+### G-4nw: Monthly ByWeekday wiring smoke (Patch Tuesday slot)
+
+**Setup:**
+```powershell
+Remove-PolicyKey
+Set-Policy "MaintenanceWindowStart"          22 DWord
+Set-Policy "MaintenanceWindowEnd"             6 DWord
+Set-Policy "MaintenanceWindowFrequency"       2 DWord   # Monthly
+Set-Policy "MaintenanceWindowMonthlyMode"     1 DWord   # ByWeekday
+Set-Policy "MaintenanceWindowMonthlyOrdinal"  3 DWord   # Third
+Set-Policy "MaintenanceWindowDayOfWeek"       2 DWord   # Tuesday
+Restart-Service "Ziti Update Service" -Force
+```
+
+**Pass criteria:**
+- Service log "Policy overrides loaded:" lists `MaintenanceWindowMonthlyMode=ByWeekday`,
+  `MaintenanceWindowMonthlyOrdinal=Third`, `MaintenanceWindowDayOfWeek=2`.
+- UI Frequency=Monthly, MonthlyMode=By weekday, Ordinal=Third, DayOfWeek=Tuesday; DayOfMonth
+  combo hidden. All five controls greyed.
+- (Third-Tuesday resolution covered by `Preset_NistFedrampModerate_*` and `Preset_Hitrust_*`.
+  Last != Fourth covered by `Preset_NercCip_*` and `ResolveNthWeekdayOfMonth_ReturnsExpectedDay`
+  rows for a 5-Friday and 5-Tuesday month.)
+
+---
+
+### G-4m: Monthly ByDate + LastDay sentinel wiring smoke
+
+**Setup:**
+```powershell
+Remove-PolicyKey
+Set-Policy "MaintenanceWindowStart"      2 DWord
+Set-Policy "MaintenanceWindowEnd"        4 DWord
+Set-Policy "MaintenanceWindowFrequency"  2 DWord   # Monthly
+Set-Policy "MaintenanceWindowMonthlyMode" 0 DWord  # ByDate
+Set-Policy "MaintenanceWindowDayOfMonth" 32 DWord  # last day sentinel
+Restart-Service "Ziti Update Service" -Force
+```
+
+**Pass criteria:**
+- Service log lists `MaintenanceWindowMonthlyMode=ByDate`, `MaintenanceWindowDayOfMonth=32`.
+- UI Frequency=Monthly, MonthlyMode=By date, DayOfMonth combo shows "Last day" and is
+  greyed; Ordinal / DayOfWeek controls hidden.
+- (LastDay sentinel resolution covered by `MonthlyByDate_LastDaySentinel_ResolvesPerMonth`
+  and `MonthlyByDate_LastDaySentinel_LeapFebruary` in the unit tests.)
+
+---
+
 ### G-5: Partial lock — only one value locked
 
 **Setup:**

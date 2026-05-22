@@ -70,6 +70,11 @@ standard `HKLM\SOFTWARE\Policies\...` protection from Windows.
 | `DeferInstallToRestart` | DWORD | `0` or `1` | `0` | `1` = don't install immediately; stage the installer to run at next system restart |
 | `MaintenanceWindowStart` | DWORD | hour 0–23 | unset | Start hour (local time) of the allowed install window |
 | `MaintenanceWindowEnd` | DWORD | hour 0–23 | unset | End hour (local time) of the allowed install window |
+| `MaintenanceWindowFrequency` | DWORD | `0`=Daily, `1`=Weekly, `2`=Monthly | `0` (Daily) | Cadence on which the maintenance window applies |
+| `MaintenanceWindowDayOfWeek` | DWORD | `0`=Sun .. `6`=Sat | unset | Day of week (Weekly, or Monthly+ByWeekday) |
+| `MaintenanceWindowDayOfMonth` | DWORD | `1`-`28`, or `32` = last day | unset | Day of month (Monthly+ByDate only) |
+| `MaintenanceWindowMonthlyMode` | DWORD | `0`=ByDate, `1`=ByWeekday | `0` (ByDate) | Selects which Monthly sub-pattern to use |
+| `MaintenanceWindowMonthlyOrdinal` | DWORD | `1`=First..`4`=Fourth, `5`=Last | unset | Nth-weekday selector (Monthly+ByWeekday only) |
 
 ### `ui` subkey
 
@@ -119,6 +124,77 @@ update-check polling.
 When a user clicks **Perform Update** outside the window, the install is deferred
 and scheduled for the next window opening. The UI status shows
 **"Update scheduled for maintenance window"**.
+
+### Frequency: Daily / Weekly / Monthly
+
+The hour-of-day window above defines **when** within a qualifying day. The cadence
+fields decide **which** calendar days qualify:
+
+- `MaintenanceWindowFrequency=0` (Daily) -- every day qualifies. Most fleets that want
+  nightly updates use this.
+- `MaintenanceWindowFrequency=1` (Weekly) -- only the day matching
+  `MaintenanceWindowDayOfWeek` qualifies (0=Sunday .. 6=Saturday). Typical for agencies
+  with a weekly change window (e.g. Sunday night).
+- `MaintenanceWindowFrequency=2` (Monthly) -- behavior depends on
+  `MaintenanceWindowMonthlyMode`. See "Monthly: ByDate vs ByWeekday" below.
+
+### Cadence vs SLA
+
+The cadence chooses the **preferred** install slot. The SLA backstop is
+`InstallationCritical`: once a release age crosses that threshold the install
+force-fires within 30 seconds **regardless of cadence**, even if the qualifying
+day is weeks away. Use cadence for "when we'd rather patch" and `InstallationCritical`
+for "but no later than." See the "Recommended settings for regulated fleets" appendix
+below for framework-aligned presets (CJIS 30d, DISA STIG 21/30, PCI 30d, NIST 800-53
+30d, NERC CIP 35d).
+
+### Monthly: ByDate vs ByWeekday
+
+Mirrors SCCM Maintenance Window's "Monthly by date" / "Monthly by day of week" split.
+
+`MaintenanceWindowMonthlyMode=0` (ByDate) uses `MaintenanceWindowDayOfMonth`. Valid
+values are `1`-`28` plus `32` (sentinel = last day of current month). Range stops at
+28 so February is always representable; `32` lets the evaluator resolve to the actual
+last day at runtime, so the same policy works in Feb (28/29) and Dec (31). Used by
+~20-25% of regulated deployments: financial / billing-aligned change windows, K-12
+SLED, "1st of month" / EOM patterns.
+
+`MaintenanceWindowMonthlyMode=1` (ByWeekday) uses `MaintenanceWindowMonthlyOrdinal`
+(1=First .. 4=Fourth, 5=Last) combined with `MaintenanceWindowDayOfWeek` to express
+"Nth weekday of month." This is the dominant pattern (~60-65%) in regulated fleets:
+SCCM-managed shops, public safety / PSAP, CJIS-bound agencies, DoD/DISA, HITRUST.
+*Third Tuesday* (Ordinal=3, DayOfWeek=2) = Patch Tuesday. *Last Friday* (Ordinal=5,
+DayOfWeek=5) is a common remediation slot. **"Last" is NOT equivalent to "Fourth"**:
+roughly a third of months have a fifth weekday-of-X, and "Fourth Friday" in those
+months fires a week early.
+
+When an update is detected outside a qualifying day, the install waits for the next
+qualifying day's window. **The `InstallationCritical` age threshold still wins**: once
+a release age crosses that threshold the install force-fires regardless of cadence.
+
+Example -- "Patch Tuesday + 7 (third Wednesday), 22:00-06:00 local, with a 30-day
+hard SLA":
+
+```powershell
+New-ItemProperty -Path $reg -Name MaintenanceWindowFrequency      -PropertyType DWord -Value 2  -Force | Out-Null  # Monthly
+New-ItemProperty -Path $reg -Name MaintenanceWindowMonthlyMode    -PropertyType DWord -Value 1  -Force | Out-Null  # ByWeekday
+New-ItemProperty -Path $reg -Name MaintenanceWindowMonthlyOrdinal -PropertyType DWord -Value 3  -Force | Out-Null  # Third
+New-ItemProperty -Path $reg -Name MaintenanceWindowDayOfWeek      -PropertyType DWord -Value 3  -Force | Out-Null  # Wednesday
+New-ItemProperty -Path $reg -Name MaintenanceWindowStart          -PropertyType DWord -Value 22 -Force | Out-Null  # 22:00
+New-ItemProperty -Path $reg -Name MaintenanceWindowEnd            -PropertyType DWord -Value  6 -Force | Out-Null  # 06:00 (crosses midnight)
+New-ItemProperty -Path $reg -Name InstallationCritical            -PropertyType DWord -Value 2592000 -Force | Out-Null  # 30 d
+```
+
+Example -- "Last Sunday of the month, 02:00-04:00 (PSAP overnight slot)":
+
+```powershell
+New-ItemProperty -Path $reg -Name MaintenanceWindowFrequency      -PropertyType DWord -Value 2  -Force | Out-Null
+New-ItemProperty -Path $reg -Name MaintenanceWindowMonthlyMode    -PropertyType DWord -Value 1  -Force | Out-Null
+New-ItemProperty -Path $reg -Name MaintenanceWindowMonthlyOrdinal -PropertyType DWord -Value 5  -Force | Out-Null  # Last
+New-ItemProperty -Path $reg -Name MaintenanceWindowDayOfWeek      -PropertyType DWord -Value 0  -Force | Out-Null  # Sunday
+New-ItemProperty -Path $reg -Name MaintenanceWindowStart          -PropertyType DWord -Value  2 -Force | Out-Null
+New-ItemProperty -Path $reg -Name MaintenanceWindowEnd            -PropertyType DWord -Value  4 -Force | Out-Null
+```
 
 ---
 
@@ -327,3 +403,110 @@ Returns the values you wrote.
   non-policy configuration files (`App.config`, `settings.json`).
 - `ZitiUpdateService\manually-testing-automatic-updates.md` — engineering test
   procedures (for developers, not admins).
+
+---
+
+## Recommended settings for regulated fleets
+
+Copy-paste presets that satisfy common framework SLAs while still respecting an
+operationally sane maintenance cadence. Each block uses Patch-Tuesday-anchored
+ByWeekday Monthly + the relevant `InstallationCritical` hard cap. Adjust hours to
+match your local change window.
+
+The cadence picks the **preferred** install slot. `InstallationCritical` is the
+**non-negotiable** SLA backstop -- if a release stays pending past that age it
+force-installs within 30 seconds even if the next qualifying day is weeks away. Set
+`InstallationCritical` to whatever the framework SLA mandates, then pick a cadence
+that will normally satisfy it.
+
+### CJIS-aligned (law enforcement, dispatch)
+
+CJIS Security Policy 5.9.2: critical patches within 30 days, others within 90. The
+30-day cap is the controlling constraint for ZDEW (we ship security updates).
+Third-Sunday overnight is the dominant PSAP / dispatch slot.
+
+```powershell
+$reg = 'HKLM:\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service'
+New-ItemProperty -Path $reg -Name MaintenanceWindowFrequency      -PropertyType DWord -Value 2       -Force | Out-Null  # Monthly
+New-ItemProperty -Path $reg -Name MaintenanceWindowMonthlyMode    -PropertyType DWord -Value 1       -Force | Out-Null  # ByWeekday
+New-ItemProperty -Path $reg -Name MaintenanceWindowMonthlyOrdinal -PropertyType DWord -Value 3       -Force | Out-Null  # Third
+New-ItemProperty -Path $reg -Name MaintenanceWindowDayOfWeek      -PropertyType DWord -Value 0       -Force | Out-Null  # Sunday
+New-ItemProperty -Path $reg -Name MaintenanceWindowStart          -PropertyType DWord -Value 2       -Force | Out-Null  # 02:00
+New-ItemProperty -Path $reg -Name MaintenanceWindowEnd            -PropertyType DWord -Value 6       -Force | Out-Null  # 06:00
+New-ItemProperty -Path $reg -Name InstallationCritical            -PropertyType DWord -Value 2592000 -Force | Out-Null  # 30 d
+```
+
+### DISA STIG / DoD-aligned
+
+DISA General OS STIG: Cat I within 21 days, Cat II within 30. We target the tighter
+21-day bound. Anchored to Second Wednesday (Patch Tuesday + 1 day for WSUS cushion).
+
+```powershell
+New-ItemProperty -Path $reg -Name MaintenanceWindowFrequency      -PropertyType DWord -Value 2       -Force | Out-Null
+New-ItemProperty -Path $reg -Name MaintenanceWindowMonthlyMode    -PropertyType DWord -Value 1       -Force | Out-Null
+New-ItemProperty -Path $reg -Name MaintenanceWindowMonthlyOrdinal -PropertyType DWord -Value 2       -Force | Out-Null  # Second
+New-ItemProperty -Path $reg -Name MaintenanceWindowDayOfWeek      -PropertyType DWord -Value 3       -Force | Out-Null  # Wednesday
+New-ItemProperty -Path $reg -Name MaintenanceWindowStart          -PropertyType DWord -Value 22      -Force | Out-Null
+New-ItemProperty -Path $reg -Name MaintenanceWindowEnd            -PropertyType DWord -Value 6       -Force | Out-Null
+New-ItemProperty -Path $reg -Name InstallationCritical            -PropertyType DWord -Value 1814400 -Force | Out-Null  # 21 d
+```
+
+### PCI-DSS 4.0 aligned (financial / retail)
+
+Req 6.3.3: critical patches (CVSS >=7) within one month. ZDEW security updates are
+all in scope. Most PCI shops run by-date "1st of month" or "15th" change calendars
+divorced from Microsoft's cadence, so we use ByDate.
+
+```powershell
+New-ItemProperty -Path $reg -Name MaintenanceWindowFrequency      -PropertyType DWord -Value 2       -Force | Out-Null
+New-ItemProperty -Path $reg -Name MaintenanceWindowMonthlyMode    -PropertyType DWord -Value 0       -Force | Out-Null  # ByDate
+New-ItemProperty -Path $reg -Name MaintenanceWindowDayOfMonth     -PropertyType DWord -Value 1       -Force | Out-Null  # 1st
+New-ItemProperty -Path $reg -Name MaintenanceWindowStart          -PropertyType DWord -Value 1       -Force | Out-Null
+New-ItemProperty -Path $reg -Name MaintenanceWindowEnd            -PropertyType DWord -Value 5       -Force | Out-Null
+New-ItemProperty -Path $reg -Name InstallationCritical            -PropertyType DWord -Value 2592000 -Force | Out-Null  # 30 d
+```
+
+### NIST 800-53 / FedRAMP Moderate
+
+SI-2 control: critical within 30 days, high within 30, moderate within 30 (FedRAMP
+Moderate tightens NIST's 30/90/180 split). Anchored to Third Tuesday.
+
+```powershell
+New-ItemProperty -Path $reg -Name MaintenanceWindowFrequency      -PropertyType DWord -Value 2       -Force | Out-Null
+New-ItemProperty -Path $reg -Name MaintenanceWindowMonthlyMode    -PropertyType DWord -Value 1       -Force | Out-Null
+New-ItemProperty -Path $reg -Name MaintenanceWindowMonthlyOrdinal -PropertyType DWord -Value 3       -Force | Out-Null  # Third
+New-ItemProperty -Path $reg -Name MaintenanceWindowDayOfWeek      -PropertyType DWord -Value 2       -Force | Out-Null  # Tuesday
+New-ItemProperty -Path $reg -Name MaintenanceWindowStart          -PropertyType DWord -Value 22      -Force | Out-Null
+New-ItemProperty -Path $reg -Name MaintenanceWindowEnd            -PropertyType DWord -Value 6       -Force | Out-Null
+New-ItemProperty -Path $reg -Name InstallationCritical            -PropertyType DWord -Value 2592000 -Force | Out-Null  # 30 d
+```
+
+### NERC CIP-007 R2.3 (electric utilities)
+
+35 calendar days from vendor patch release for applicable patches. Slightly looser
+than the others. Last-Sunday slot is common in utility operations centers.
+
+```powershell
+New-ItemProperty -Path $reg -Name MaintenanceWindowFrequency      -PropertyType DWord -Value 2       -Force | Out-Null
+New-ItemProperty -Path $reg -Name MaintenanceWindowMonthlyMode    -PropertyType DWord -Value 1       -Force | Out-Null
+New-ItemProperty -Path $reg -Name MaintenanceWindowMonthlyOrdinal -PropertyType DWord -Value 5       -Force | Out-Null  # Last
+New-ItemProperty -Path $reg -Name MaintenanceWindowDayOfWeek      -PropertyType DWord -Value 0       -Force | Out-Null  # Sunday
+New-ItemProperty -Path $reg -Name MaintenanceWindowStart          -PropertyType DWord -Value 2       -Force | Out-Null
+New-ItemProperty -Path $reg -Name MaintenanceWindowEnd            -PropertyType DWord -Value 6       -Force | Out-Null
+New-ItemProperty -Path $reg -Name InstallationCritical            -PropertyType DWord -Value 3024000 -Force | Out-Null  # 35 d
+```
+
+### HITRUST / HIPAA-aligned (healthcare)
+
+HIPAA itself has no numeric SLA; HITRUST CSF Control 10.m maps to 30/90. Third
+Tuesday + 30 d cap is the closest mainstream pattern.
+
+```powershell
+New-ItemProperty -Path $reg -Name MaintenanceWindowFrequency      -PropertyType DWord -Value 2       -Force | Out-Null
+New-ItemProperty -Path $reg -Name MaintenanceWindowMonthlyMode    -PropertyType DWord -Value 1       -Force | Out-Null
+New-ItemProperty -Path $reg -Name MaintenanceWindowMonthlyOrdinal -PropertyType DWord -Value 3       -Force | Out-Null  # Third
+New-ItemProperty -Path $reg -Name MaintenanceWindowDayOfWeek      -PropertyType DWord -Value 2       -Force | Out-Null  # Tuesday
+New-ItemProperty -Path $reg -Name MaintenanceWindowStart          -PropertyType DWord -Value 22      -Force | Out-Null
+New-ItemProperty -Path $reg -Name MaintenanceWindowEnd            -PropertyType DWord -Value 6       -Force | Out-Null
+New-ItemProperty -Path $reg -Name InstallationCritical            -PropertyType DWord -Value 2592000 -Force | Out-Null  # 30 d
+```

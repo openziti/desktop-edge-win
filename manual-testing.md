@@ -41,6 +41,18 @@ These are the tests you need to make sure to perform per release.
 - add identity by url, authenticate, turn off UI, ensure identity does not indicate it needs auth
 - add identity by url, authenticate, restart zet, ensure the identity requires ext auth when zet starts
 
+### Automatic Upgrades / Maintenance window
+- open Automatic Upgrades panel, set Frequency=Daily, save, reopen: state round-trips
+- Frequency=Weekly, pick a DayOfWeek, save, reopen: DayOfWeek combo visible+correct
+- Frequency=Monthly, MonthlyMode=By date, pick a DayOfMonth + "Last day", save, reopen
+- Frequency=Monthly, MonthlyMode=By weekday, pick Ordinal + DayOfWeek (e.g. Third Tuesday),
+  save, reopen: Ordinal + DayOfWeek combos visible, DayOfMonth hidden
+- write `MaintenanceWindowFrequency=2` + `MaintenanceWindowMonthlyMode=1` + `Ordinal=3` +
+  `DayOfWeek=2` to the policy registry: UI banner appears, all five cadence controls
+  greyed and pre-populated to "Monthly / By weekday / Third / Tuesday", Save Settings hidden
+- (cadence math correctness is unit-tested in `ZitiUpdateService.Tests/MaintenanceWindowEvaluatorTests.cs`
+  -- don't try to verify "did it install on the third Tuesday" manually; the unit tests do that)
+
 ### Toast Notifications
 - ext auth success while UI is minimized: toast appears with identity name
 - ext auth success while UI is active: no toast (user can see the state change)

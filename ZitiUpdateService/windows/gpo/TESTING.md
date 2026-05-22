@@ -271,6 +271,14 @@ If an update is available, the service log should show:
 | 6 | No policy key | Any IPC mutation | Normal success |
 | 7 | Value removed, restart | SetAutomaticUpdateDisabled IPC | Success |
 | 8 | InstallationCriticalSeconds = 0 | Update available | Force-install within 30 s |
+| 9 | MaintenanceWindowFrequency / MonthlyMode / Ordinal / DayOfWeek / DayOfMonth set | Startup | All five values in `Policy overrides loaded` log; UI cadence controls greyed |
+
+> Cadence **math correctness** (which calendar day qualifies for which configuration) is
+> covered by `ZitiUpdateService.Tests/MaintenanceWindowEvaluatorTests.cs` -- run with
+> `dotnet test ZitiUpdateService.Tests/ZitiUpdateService.Tests.csproj --filter "FullyQualifiedName~MaintenanceWindowEvaluator"`.
+> Manual VM tests (Test 9, plus G-4w / G-4nw / G-4m in VERIFICATION.md) verify only the
+> **wiring**: registry-write -> log line + UI state. Do NOT set the VM clock to verify
+> cadence math -- it breaks CRL fetch, AD, DST, and log timestamps.
 
 ---
 

@@ -168,6 +168,11 @@ setting:
 | Defer Install Until Restart      | `./Device/Vendor/MSFT/Registry/HKLM/SOFTWARE/Policies/NetFoundry/Ziti%20Desktop%20Edge%20for%20Windows/ziti-monitor-service/DeferInstallToRestart`        | Integer | `1`           |
 | Maintenance Window Start (hour)  | `./Device/Vendor/MSFT/Registry/HKLM/SOFTWARE/Policies/NetFoundry/Ziti%20Desktop%20Edge%20for%20Windows/ziti-monitor-service/MaintenanceWindowStart`       | Integer | `22`          |
 | Maintenance Window End (hour)    | `./Device/Vendor/MSFT/Registry/HKLM/SOFTWARE/Policies/NetFoundry/Ziti%20Desktop%20Edge%20for%20Windows/ziti-monitor-service/MaintenanceWindowEnd`         | Integer | `6`           |
+| Maintenance Window Frequency     | `./Device/Vendor/MSFT/Registry/HKLM/SOFTWARE/Policies/NetFoundry/Ziti%20Desktop%20Edge%20for%20Windows/ziti-monitor-service/MaintenanceWindowFrequency`   | Integer | `1` (Weekly)  |
+| Maintenance Window Day Of Week   | `./Device/Vendor/MSFT/Registry/HKLM/SOFTWARE/Policies/NetFoundry/Ziti%20Desktop%20Edge%20for%20Windows/ziti-monitor-service/MaintenanceWindowDayOfWeek`   | Integer | `0` (Sunday)  |
+| Maintenance Window Day Of Month  | `./Device/Vendor/MSFT/Registry/HKLM/SOFTWARE/Policies/NetFoundry/Ziti%20Desktop%20Edge%20for%20Windows/ziti-monitor-service/MaintenanceWindowDayOfMonth`  | Integer | `32` (last)   |
+| Maintenance Window Monthly Mode  | `./Device/Vendor/MSFT/Registry/HKLM/SOFTWARE/Policies/NetFoundry/Ziti%20Desktop%20Edge%20for%20Windows/ziti-monitor-service/MaintenanceWindowMonthlyMode` | Integer | `1` (ByWeekday) |
+| Maintenance Window Ordinal       | `./Device/Vendor/MSFT/Registry/HKLM/SOFTWARE/Policies/NetFoundry/Ziti%20Desktop%20Edge%20for%20Windows/ziti-monitor-service/MaintenanceWindowMonthlyOrdinal` | Integer | `3` (Third) |
 
 > Spaces in the path must be URL-encoded as `%20` in the OMA-URI. Value names themselves contain no spaces.
 
@@ -230,7 +235,9 @@ The repo ships a helper at `Set-PolicyRegistryValues.ps1` that takes one paramet
     -InstallationCritical 259200 `
     -DeferInstallToRestart 1 `
     -MaintenanceWindowStart 22 `
-    -MaintenanceWindowEnd 6
+    -MaintenanceWindowEnd 6 `
+    -MaintenanceWindowFrequency 1 `   # 0=Daily, 1=Weekly, 2=Monthly
+    -MaintenanceWindowDayOfWeek 0     # Sunday; only used when Frequency=1
 ```
 
 Or with `reg.exe`:
@@ -257,6 +264,12 @@ reg add "HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-mo
     /v MaintenanceWindowStart /t REG_DWORD /d 22 /f
 reg add "HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service" ^
     /v MaintenanceWindowEnd /t REG_DWORD /d 6 /f
+
+REM Restrict the window to Sunday nights only (Frequency=1=Weekly, DayOfWeek=0=Sunday)
+reg add "HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service" ^
+    /v MaintenanceWindowFrequency /t REG_DWORD /d 1 /f
+reg add "HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service" ^
+    /v MaintenanceWindowDayOfWeek /t REG_DWORD /d 0 /f
 ```
 
 To remove a single policy lock (revert that field to settings.json/App.config):
