@@ -15,6 +15,7 @@
 */
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.ServiceProcess;
@@ -121,8 +122,7 @@ namespace ZitiUpdateService {
             svr.TriggerUpdate = TriggerUpdate;
             svr.SetAutomaticUpdateDisabled = SetAutomaticUpdateDisabled;
             svr.SetAutomaticUpdateURL = SetAutomaticUpdateURL;
-            svr.SetMaintenanceWindowStart = SetMaintenanceWindowStart;
-            svr.SetMaintenanceWindowEnd = SetMaintenanceWindowEnd;
+            svr.SetMaintenanceWindow = SetMaintenanceWindow;
 
             string assemblyVersionStr = Assembly.GetExecutingAssembly().GetName().Version.ToString(); //fetch from ziti?
             assemblyVersion = new Version(assemblyVersionStr);
@@ -250,6 +250,16 @@ namespace ZitiUpdateService {
             evt.MaintenanceWindowStartLocked      = PolicySettings.IsLocked("MaintenanceWindowStart");
             evt.MaintenanceWindowEnd              = PolicySettings.EffectiveMaintenanceWindowEnd(CurrentSettings);
             evt.MaintenanceWindowEndLocked        = PolicySettings.IsLocked("MaintenanceWindowEnd");
+            evt.MaintenanceWindowFrequency        = PolicySettings.EffectiveMaintenanceWindowFrequency(CurrentSettings);
+            evt.MaintenanceWindowFrequencyLocked  = PolicySettings.IsLocked("MaintenanceWindowFrequency");
+            evt.MaintenanceWindowDayOfWeek        = PolicySettings.EffectiveMaintenanceWindowDayOfWeek(CurrentSettings);
+            evt.MaintenanceWindowDayOfWeekLocked  = PolicySettings.IsLocked("MaintenanceWindowDayOfWeek");
+            evt.MaintenanceWindowDayOfMonth       = PolicySettings.EffectiveMaintenanceWindowDayOfMonth(CurrentSettings);
+            evt.MaintenanceWindowDayOfMonthLocked = PolicySettings.IsLocked("MaintenanceWindowDayOfMonth");
+            evt.MaintenanceWindowMonthlyMode      = PolicySettings.EffectiveMaintenanceWindowMonthlyMode(CurrentSettings);
+            evt.MaintenanceWindowMonthlyModeLocked = PolicySettings.IsLocked("MaintenanceWindowMonthlyMode");
+            evt.MaintenanceWindowMonthlyOrdinal   = PolicySettings.EffectiveMaintenanceWindowMonthlyOrdinal(CurrentSettings);
+            evt.MaintenanceWindowMonthlyOrdinalLocked = PolicySettings.IsLocked("MaintenanceWindowMonthlyOrdinal");
             evt.DeferInstallToRestartLocked       = PolicySettings.IsLocked("DeferInstallToRestart");
             evt.DeferredInstallPending            = _deferredInstallPending;
             evt.DeferToRestartPending             = _deferToRestartPending;
@@ -279,26 +289,69 @@ namespace ZitiUpdateService {
                 evt.Message                     ?? "(null)");
         }
 
-        private SvcResponse SetMaintenanceWindowStart(int? hour) {
-            if (PolicySettings.IsLocked("MaintenanceWindowStart")) {
-                return new SvcResponse { Code = (int)ErrorCodes.MANAGED_BY_POLICY, Error = "MaintenanceWindowStart is managed by policy", Message = "Failure" };
-            }
-            if (hour.HasValue && (hour.Value < 0 || hour.Value > 23)) {
-                return new SvcResponse { Code = (int)ErrorCodes.INVALID_VALUE, Error = $"MaintenanceWindowStart must be 0-23, got {hour.Value}", Message = "Failure" };
-            }
-            CurrentSettings.MaintenanceWindowStart = hour;
-            CurrentSettings.Write();
-            return new SvcResponse { Message = "Success" };
-        }
+        // Cadence field names whose policy locks must all be free before a maintenance-window
+        // write is accepted. The UI greys the whole panel out when *any* of these is locked,
+        // so a request landing here while a lock is present is defense in depth.
+        private static readonly string[] MaintenanceWindowPolicyFields = {
+            "MaintenanceWindowStart",
+            "MaintenanceWindowEnd",
+            "MaintenanceWindowFrequency",
+            "MaintenanceWindowMonthlyMode",
+            "MaintenanceWindowDayOfWeek",
+            "MaintenanceWindowDayOfMonth",
+            "MaintenanceWindowMonthlyOrdinal",
+        };
 
-        private SvcResponse SetMaintenanceWindowEnd(int? hour) {
-            if (PolicySettings.IsLocked("MaintenanceWindowEnd")) {
-                return new SvcResponse { Code = (int)ErrorCodes.MANAGED_BY_POLICY, Error = "MaintenanceWindowEnd is managed by policy", Message = "Failure" };
+        private SvcResponse SetMaintenanceWindow(MaintenanceWindowConfigRequest req) {
+            if (req == null) {
+                return new SvcResponse { Code = (int)ErrorCodes.INVALID_VALUE, Error = "MaintenanceWindow request payload was null", Message = "Failure" };
             }
-            if (hour.HasValue && (hour.Value < 0 || hour.Value > 23)) {
-                return new SvcResponse { Code = (int)ErrorCodes.INVALID_VALUE, Error = $"MaintenanceWindowEnd must be 0-23, got {hour.Value}", Message = "Failure" };
+
+            var lockedFields = new List<string>();
+            foreach (string key in MaintenanceWindowPolicyFields) {
+                if (PolicySettings.IsLocked(key)) lockedFields.Add(key);
             }
-            CurrentSettings.MaintenanceWindowEnd = hour;
+            if (lockedFields.Count > 0) {
+                return new SvcResponse {
+                    Code = (int)ErrorCodes.MANAGED_BY_POLICY,
+                    Error = $"MaintenanceWindow is managed by policy ({string.Join(", ", lockedFields)})",
+                    Message = "Failure",
+                };
+            }
+
+            if (req.Start.HasValue && (req.Start.Value < 0 || req.Start.Value > 23)) {
+                return new SvcResponse { Code = (int)ErrorCodes.INVALID_VALUE, Error = $"MaintenanceWindowStart must be 0-23, got {req.Start.Value}", Message = "Failure" };
+            }
+            if (req.End.HasValue && (req.End.Value < 0 || req.End.Value > 23)) {
+                return new SvcResponse { Code = (int)ErrorCodes.INVALID_VALUE, Error = $"MaintenanceWindowEnd must be 0-23, got {req.End.Value}", Message = "Failure" };
+            }
+            if (!Enum.IsDefined(typeof(MaintenanceWindowFrequency), req.Frequency)) {
+                return new SvcResponse { Code = (int)ErrorCodes.INVALID_VALUE, Error = $"MaintenanceWindowFrequency value {(int)req.Frequency} is not valid", Message = "Failure" };
+            }
+            if (!Enum.IsDefined(typeof(MaintenanceWindowMonthlyMode), req.MonthlyMode)) {
+                return new SvcResponse { Code = (int)ErrorCodes.INVALID_VALUE, Error = $"MaintenanceWindowMonthlyMode value {(int)req.MonthlyMode} is not valid", Message = "Failure" };
+            }
+            if (req.DayOfWeek.HasValue && (req.DayOfWeek.Value < 0 || req.DayOfWeek.Value > 6)) {
+                return new SvcResponse { Code = (int)ErrorCodes.INVALID_VALUE, Error = $"MaintenanceWindowDayOfWeek must be 0-6, got {req.DayOfWeek.Value}", Message = "Failure" };
+            }
+            if (req.DayOfMonth.HasValue) {
+                bool valid = req.DayOfMonth.Value == MaintenanceWindowDayOfMonthSentinel.LastDay
+                             || (req.DayOfMonth.Value >= 1 && req.DayOfMonth.Value <= 28);
+                if (!valid) {
+                    return new SvcResponse { Code = (int)ErrorCodes.INVALID_VALUE, Error = $"MaintenanceWindowDayOfMonth must be 1-28 or {MaintenanceWindowDayOfMonthSentinel.LastDay} (last day), got {req.DayOfMonth.Value}", Message = "Failure" };
+                }
+            }
+            if (req.MonthlyOrdinal.HasValue && !Enum.IsDefined(typeof(MaintenanceWindowMonthlyOrdinal), req.MonthlyOrdinal.Value)) {
+                return new SvcResponse { Code = (int)ErrorCodes.INVALID_VALUE, Error = $"MaintenanceWindowMonthlyOrdinal value {(int)req.MonthlyOrdinal.Value} is not valid", Message = "Failure" };
+            }
+
+            CurrentSettings.MaintenanceWindowStart          = req.Start;
+            CurrentSettings.MaintenanceWindowEnd            = req.End;
+            CurrentSettings.MaintenanceWindowFrequency      = req.Frequency;
+            CurrentSettings.MaintenanceWindowMonthlyMode    = req.MonthlyMode;
+            CurrentSettings.MaintenanceWindowDayOfWeek      = req.DayOfWeek;
+            CurrentSettings.MaintenanceWindowDayOfMonth     = req.DayOfMonth;
+            CurrentSettings.MaintenanceWindowMonthlyOrdinal = req.MonthlyOrdinal;
             CurrentSettings.Write();
             return new SvcResponse { Message = "Success" };
         }
@@ -1248,6 +1301,10 @@ namespace ZitiUpdateService {
             Logger.Warn("SKIPUPDATE IS SET - NOT PERFORMING UPDATE of version: {} published at {}", check.GetNextVersion(), check.PublishDate);
             Logger.Warn("SKIPUPDATE IS SET - NOT PERFORMING UPDATE of version: {} published at {}", check.GetNextVersion(), check.PublishDate);
             Logger.Warn("SKIPUPDATE IS SET - NOT PERFORMING UPDATE of version: {} published at {}", check.GetNextVersion(), check.PublishDate);
+            // SendUpgradeProgress("Downloading") and ("Verifying") already fired by the time
+            // we get here. Without a terminal event the UI stays on "Update in progress" forever
+            // in dev builds. Emit a failure so the panel clears.
+            SendUpgradeFailure("SKIPUPDATE flag set -- install skipped in dev build");
 #endif
         }
 
@@ -1480,61 +1537,85 @@ namespace ZitiUpdateService {
         }
 
         private DateTime InstallDateFromPublishDate(DateTime publishDate) {
-            // check.PublishDate is UTC (comes from the release-stream JSON). Convert to local
-            // before adding the critical-install TimeSpan so SnapToMaintenanceWindow compares
-            // against local-time window bounds (its .Hour check assumes local time), and so the
-            // resulting InstallTime is consistent with the other InstallTime assignments that
-            // use DateTime.Now (local).
-            DateTime raw = publishDate.ToLocalTime() + PolicySettings.EffectiveInstallationCritical();
-            return SnapToMaintenanceWindow(raw);
+            // The pure evaluator handles the UTC->local conversion and snap-to-window
+            // composition. We still apply the local-instance Logger.Warn behavior via
+            // SnapToMaintenanceWindow above if the snap fails to find a qualifying day.
+            return MaintenanceWindowEvaluator.InstallDateFromPublishDate(
+                publishDate,
+                PolicySettings.EffectiveInstallationCritical(),
+                PolicySettings.EffectiveMaintenanceWindowStart(CurrentSettings),
+                PolicySettings.EffectiveMaintenanceWindowEnd(CurrentSettings),
+                PolicySettings.EffectiveMaintenanceWindowFrequency(CurrentSettings),
+                PolicySettings.EffectiveMaintenanceWindowMonthlyMode(CurrentSettings),
+                PolicySettings.EffectiveMaintenanceWindowDayOfWeek(CurrentSettings),
+                PolicySettings.EffectiveMaintenanceWindowDayOfMonth(CurrentSettings),
+                PolicySettings.EffectiveMaintenanceWindowMonthlyOrdinal(CurrentSettings));
         }
 
         private bool InstallationIsCritical(DateTime publishDate) {
-            // publishDate is UTC (from the release-stream JSON). Convert to local so the
-            // comparison against DateTime.Now (local) is timezone-consistent. Without this
-            // conversion, users in negative UTC offsets would see the critical threshold
-            // appear to be in the future and never auto-install.
-            return DateTime.Now > publishDate.ToLocalTime() + PolicySettings.EffectiveInstallationCritical();
+            return InstallationCriticalEvaluator.IsCritical(
+                DateTime.Now, publishDate, PolicySettings.EffectiveInstallationCritical());
         }
 
         /// <summary>
         /// Returns true when the current wall-clock time falls inside the effective
         /// maintenance window, or when no window is configured (any time is allowed).
+        /// Honors the Frequency (Daily/Weekly/Monthly) cadence in addition to the
+        /// hour-of-day Start/End range.
         /// </summary>
         private bool IsCurrentlyInMaintenanceWindow() {
             int? start = PolicySettings.EffectiveMaintenanceWindowStart(CurrentSettings);
             int? end   = PolicySettings.EffectiveMaintenanceWindowEnd(CurrentSettings);
             if (!start.HasValue || !end.HasValue) return true;
             if (start.Value == end.Value) return true;  // 0/0 or equal values = any time
-            return IsInWindow(DateTime.Now.Hour, start.Value, end.Value);
+
+            DateTime now = DateTime.Now;
+            if (!IsCalendarDayQualifying(now)) return false;
+            return IsInWindow(now.Hour, start.Value, end.Value);
         }
 
         /// <summary>
-        /// Snaps <paramref name="dt"/> forward to the next opening of the maintenance window.
-        /// Returns <paramref name="dt"/> unchanged when no window is configured or the time
-        /// already falls within the window.
+        /// Instance overload: gathers the cadence policy values from CurrentSettings
+        /// and delegates to the pure static evaluator.
         /// </summary>
+        private bool IsCalendarDayQualifying(DateTime dt) {
+            return MaintenanceWindowEvaluator.IsCalendarDayQualifying(
+                dt,
+                PolicySettings.EffectiveMaintenanceWindowFrequency(CurrentSettings),
+                PolicySettings.EffectiveMaintenanceWindowMonthlyMode(CurrentSettings),
+                PolicySettings.EffectiveMaintenanceWindowDayOfWeek(CurrentSettings),
+                PolicySettings.EffectiveMaintenanceWindowDayOfMonth(CurrentSettings),
+                PolicySettings.EffectiveMaintenanceWindowMonthlyOrdinal(CurrentSettings));
+        }
+
+        private static DateTime ResolveNthWeekdayOfMonth(int year, int month, DayOfWeek dow, MaintenanceWindowMonthlyOrdinal ordinal)
+            => MaintenanceWindowEvaluator.ResolveNthWeekdayOfMonth(year, month, dow, ordinal);
+
+        /// <summary>Instance overload: gathers cadence policy and delegates to the pure evaluator.</summary>
         private DateTime SnapToMaintenanceWindow(DateTime dt) {
-            int? start = PolicySettings.EffectiveMaintenanceWindowStart(CurrentSettings);
-            int? end   = PolicySettings.EffectiveMaintenanceWindowEnd(CurrentSettings);
-            if (!start.HasValue || !end.HasValue) return dt;
-            if (start.Value == end.Value) return dt;  // any time
-
-            if (IsInWindow(dt.Hour, start.Value, end.Value)) return dt;
-
-            // Advance to the next occurrence of the window start hour
-            DateTime candidate = dt.Date.AddHours(start.Value);
-            if (candidate <= dt) candidate = candidate.AddDays(1);
-            return candidate;
-        }
-
-        private bool IsInWindow(int hour, int windowStart, int windowEnd) {
-            if (windowStart < windowEnd) {
-                return hour >= windowStart && hour < windowEnd;
+            DateTime snapped = MaintenanceWindowEvaluator.SnapToMaintenanceWindow(
+                dt,
+                PolicySettings.EffectiveMaintenanceWindowStart(CurrentSettings),
+                PolicySettings.EffectiveMaintenanceWindowEnd(CurrentSettings),
+                PolicySettings.EffectiveMaintenanceWindowFrequency(CurrentSettings),
+                PolicySettings.EffectiveMaintenanceWindowMonthlyMode(CurrentSettings),
+                PolicySettings.EffectiveMaintenanceWindowDayOfWeek(CurrentSettings),
+                PolicySettings.EffectiveMaintenanceWindowDayOfMonth(CurrentSettings),
+                PolicySettings.EffectiveMaintenanceWindowMonthlyOrdinal(CurrentSettings));
+            if (snapped == dt && !MaintenanceWindowEvaluator.IsCalendarDayQualifying(
+                    dt,
+                    PolicySettings.EffectiveMaintenanceWindowFrequency(CurrentSettings),
+                    PolicySettings.EffectiveMaintenanceWindowMonthlyMode(CurrentSettings),
+                    PolicySettings.EffectiveMaintenanceWindowDayOfWeek(CurrentSettings),
+                    PolicySettings.EffectiveMaintenanceWindowDayOfMonth(CurrentSettings),
+                    PolicySettings.EffectiveMaintenanceWindowMonthlyOrdinal(CurrentSettings))) {
+                Logger.Warn("SnapToMaintenanceWindow: no qualifying day found within one year; returning unsnapped value");
             }
-            // Crosses midnight (e.g. 22:00–04:00)
-            return hour >= windowStart || hour < windowEnd;
+            return snapped;
         }
+
+        private bool IsInWindow(int hour, int windowStart, int windowEnd) =>
+            MaintenanceWindowEvaluator.IsInWindow(hour, windowStart, windowEnd);
 
         private void NotifyInstallationUpdates(InstallationNotificationEvent evt) {
             NotifyInstallationUpdates(evt, false);

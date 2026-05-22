@@ -37,6 +37,11 @@ namespace ZitiUpdateService.Utils {
         public bool DeferInstallToRestart { get; set; }       // stage the update and apply it on the next service/system restart
         public int? MaintenanceWindowStart { get; set; }      // hour (0-23) when installs may begin; null = no window
         public int? MaintenanceWindowEnd { get; set; }        // hour (0-23) when installs must stop; if equal to Start = no window; if < Start = window crosses midnight
+        public MaintenanceWindowFrequency MaintenanceWindowFrequency { get; set; } = MaintenanceWindowFrequency.Daily;
+        public int? MaintenanceWindowDayOfWeek { get; set; }  // 0=Sunday .. 6=Saturday; honored when Frequency=Weekly OR (Monthly + MonthlyMode=ByWeekday)
+        public int? MaintenanceWindowDayOfMonth { get; set; } // 1-28, or 32 (LastDay) for "last day"; honored when Frequency=Monthly + MonthlyMode=ByDate
+        public MaintenanceWindowMonthlyMode MaintenanceWindowMonthlyMode { get; set; } = MaintenanceWindowMonthlyMode.ByDate;
+        public MaintenanceWindowMonthlyOrdinal? MaintenanceWindowMonthlyOrdinal { get; set; } // First..Last; honored when Frequency=Monthly + MonthlyMode=ByWeekday
 
         public event System.EventHandler<ControllerEvent> OnConfigurationChange;
 
@@ -47,6 +52,11 @@ namespace ZitiUpdateService.Utils {
             AlivenessChecksBeforeAction = DefaultAlivenessChecks;
             MaintenanceWindowStart = null; // null = any time (no window restriction)
             MaintenanceWindowEnd   = null;
+            MaintenanceWindowFrequency = MaintenanceWindowFrequency.Daily;
+            MaintenanceWindowDayOfWeek = null;
+            MaintenanceWindowDayOfMonth = null;
+            MaintenanceWindowMonthlyMode = MaintenanceWindowMonthlyMode.ByDate;
+            MaintenanceWindowMonthlyOrdinal = null;
         }
 
         public Settings() {
@@ -154,6 +164,11 @@ namespace ZitiUpdateService.Utils {
             this.DeferInstallToRestart = source.DeferInstallToRestart;
             this.MaintenanceWindowStart = source.MaintenanceWindowStart;
             this.MaintenanceWindowEnd = source.MaintenanceWindowEnd;
+            this.MaintenanceWindowFrequency = source.MaintenanceWindowFrequency;
+            this.MaintenanceWindowDayOfWeek = source.MaintenanceWindowDayOfWeek;
+            this.MaintenanceWindowDayOfMonth = source.MaintenanceWindowDayOfMonth;
+            this.MaintenanceWindowMonthlyMode = source.MaintenanceWindowMonthlyMode;
+            this.MaintenanceWindowMonthlyOrdinal = source.MaintenanceWindowMonthlyOrdinal;
             if (source.AlivenessChecksBeforeAction != null) {
                 AlivenessChecksBeforeAction = source.AlivenessChecksBeforeAction;
             } else {
