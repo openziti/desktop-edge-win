@@ -62,10 +62,8 @@ namespace ZitiDesktopEdge.Server {
         public SetAutomaticUpdateDisabledDelegate SetAutomaticUpdateDisabled { get; set; }
         public SetAutomaticUpdateURLDelegate SetAutomaticUpdateURL { get; set; }
 
-        public delegate SvcResponse SetMaintenanceWindowStartDelegate(int? hour);
-        public delegate SvcResponse SetMaintenanceWindowEndDelegate(int? hour);
-        public SetMaintenanceWindowStartDelegate SetMaintenanceWindowStart { get; set; }
-        public SetMaintenanceWindowEndDelegate SetMaintenanceWindowEnd { get; set; }
+        public delegate SvcResponse SetMaintenanceWindowDelegate(MaintenanceWindowConfigRequest req);
+        public SetMaintenanceWindowDelegate SetMaintenanceWindow { get; set; }
 
         public IPCServer() {
             ipcPipeName = PipeName;
@@ -273,12 +271,15 @@ namespace ZitiDesktopEdge.Server {
                     case "setautomaticupgradeurl":
                         r = SetAutomaticUpdateURL(ae.Action);
                         break;
-                    case "setmaintenancewindowstart":
-                        r = SetMaintenanceWindowStart(string.IsNullOrEmpty(ae.Action) ? (int?)null : int.Parse(ae.Action));
+                    case "setmaintenancewindow": {
+                        // Re-deserialize as the subclass to pick up the extra fields. The
+                        // initial ActionEvent deserialization at the top of this method only
+                        // grabs Op + Action; the 7 cadence fields live alongside Op on the
+                        // wire and require the typed shape to bind.
+                        var req = serializer.Deserialize<MaintenanceWindowConfigRequest>(new JsonTextReader(new StringReader(json)));
+                        r = SetMaintenanceWindow(req);
                         break;
-                    case "setmaintenancewindowend":
-                        r = SetMaintenanceWindowEnd(string.IsNullOrEmpty(ae.Action) ? (int?)null : int.Parse(ae.Action));
-                        break;
+                    }
                     default:
                         r.Message = "FAILURE";
                         r.Code = -3;
