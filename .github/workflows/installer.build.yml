@@ -72,6 +72,16 @@ jobs:
           nuget-api-key: ${{ secrets.NuGetAPIKey }}
       - name: Restore nuget packages
         run: nuget restore ZitiDesktopEdge.sln
+      - name: Setup .NET SDK for unit tests
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Run unit tests
+        shell: pwsh
+        # Same script as the standalone tests.yml workflow. CI mode filters out
+        # SignedFilesTest.* (see commit-plan.md follow-ups). If a test failure
+        # makes it past CI, the installer build will not run.
+        run: .\scripts\run-tests.ps1 -CiMode -NoLogo
       - shell: pwsh
         name: Register Advanced Installer
         run: |

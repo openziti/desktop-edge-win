@@ -1,0 +1,42 @@
+name: Unit Tests
+
+# Runs the ZDEW unit test suite on every push and pull request.
+# All logic lives in scripts/run-tests.ps1 so the same command works locally:
+#   .\scripts\run-tests.ps1 -CiMode -NoLogo
+#
+# CI skips SignedFilesTest.* because two of those tests fail outside the
+# developer's main checkout (expired 2022 cert; hardcoded local path to
+# Installer/Output/). See commit-plan.md follow-ups.
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['main']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # The packages.config projects (ZitiDesktopEdge.Client / ZitiUpdateService)
+      # need `nuget restore` before `dotnet test` will build them; run-tests.ps1
+      # invokes it but needs nuget.exe on PATH.
+      - uses: nuget/setup-nuget@v2
+
+      - name: Run tests
+        shell: pwsh
+        run: .\scripts\run-tests.ps1 -CiMode -NoLogo
