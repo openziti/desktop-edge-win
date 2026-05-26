@@ -155,14 +155,13 @@ Mirrors SCCM Maintenance Window's "Monthly by date" / "Monthly by day of week" s
 `MaintenanceWindowMonthlyMode=0` (ByDate) uses `MaintenanceWindowDayOfMonth`. Valid
 values are `1`-`28` plus `32` (sentinel = last day of current month). Range stops at
 28 so February is always representable; `32` lets the evaluator resolve to the actual
-last day at runtime, so the same policy works in Feb (28/29) and Dec (31). Used by
-~20-25% of regulated deployments: financial / billing-aligned change windows, K-12
-SLED, "1st of month" / EOM patterns.
+last day at runtime, so the same policy works in Feb (28/29) and Dec (31). Common in
+financial / billing-aligned change windows, K-12 SLED, "1st of month" / EOM patterns.
 
 `MaintenanceWindowMonthlyMode=1` (ByWeekday) uses `MaintenanceWindowMonthlyOrdinal`
 (1=First .. 4=Fourth, 5=Last) combined with `MaintenanceWindowDayOfWeek` to express
-"Nth weekday of month." This is the dominant pattern (~60-65%) in regulated fleets:
-SCCM-managed shops, public safety / PSAP, CJIS-bound agencies, DoD/DISA, HITRUST.
+"Nth weekday of month." Common in SCCM-managed shops, public safety / PSAP, CJIS-bound
+agencies, DoD/DISA, HITRUST.
 *Third Tuesday* (Ordinal=3, DayOfWeek=2) = Patch Tuesday. *Last Friday* (Ordinal=5,
 DayOfWeek=5) is a common remediation slot. **"Last" is NOT equivalent to "Fourth"**:
 roughly a third of months have a fifth weekday-of-X, and "Fourth Friday" in those
@@ -232,6 +231,33 @@ service auto-installs the release without waiting for a user click.
 > opportunity for staged rollout. Use a non-zero value unless you specifically want
 > this.
 
+### Suppress all automatic installs (911 / PSAP / air-gapped lockdown)
+
+For fleets that must never auto-install updates without manual approval (911 / PSAP
+dispatch, classified air-gapped, regulatory hold), combine an astronomically large
+`InstallationCritical` with `DeferInstallToRestart`:
+
+```powershell
+$reg = "HKLM:\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service"
+# ~68 years -- no release ever ages into "critical"
+New-ItemProperty -Path $reg -Name InstallationCritical  -PropertyType DWord -Value 2147483647 -Force | Out-Null
+# Never install live; always stage for next restart
+New-ItemProperty -Path $reg -Name DeferInstallToRestart -PropertyType DWord -Value 1          -Force | Out-Null
+```
+
+What this does:
+- Updates are still detected, downloaded, verified, and signature-checked on the normal poll cadence.
+- The user is still notified that an update is available.
+- The installer is staged via the `NetFoundry\ZitiDesktopEdge-PendingUpdate` scheduled task,
+  which only fires on next system restart — and only if the admin has not removed the policy.
+- The `InstallationCritical` age threshold never trips, so the critical-bypass path that would
+  otherwise force-install never executes either.
+- There is no server-side signal that can override this. Removing the policy (or lowering
+  `InstallationCritical`) is the only way to permit installs again.
+
+Pair this with `AutomaticUpdatesDisabled=0` (or unset) so the *detection* side keeps working —
+otherwise the client doesn't even know an update exists.
+
 ---
 
 ## Deployment methods
@@ -292,7 +318,7 @@ reg add "HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-mo
 ```
 
 A helper script is included at
-`ZitiUpdateService\windows\gpo\Set-GpoRegistryValues.ps1` that wraps these registry
+`ZitiUpdateService\windows\gpo\Set-PolicyRegistryValues.ps1` that wraps these registry
 writes with parameter validation.
 
 ---
@@ -399,25 +425,20 @@ Returns the values you wrote.
 - `ZitiUpdateService\windows\gpo\README.md` — specifics of the ADMX templates.
 - `ZitiUpdateService\windows\gpo\DEPLOYMENT.md` — step-by-step deployment walkthroughs
   for GPO and Intune.
-- `ZitiUpdateService\AUTOUPDATE-CONFIG.md` — lower-level reference for the
+- `ZitiUpdateService\CONFIGURATION.md` — lower-level reference for the
   non-policy configuration files (`App.config`, `settings.json`).
-- `ZitiUpdateService\manually-testing-automatic-updates.md` — engineering test
-  procedures (for developers, not admins).
+- `ZitiUpdateService\test-run.md` — engineering test runbook (for developers, not admins).
 
 ---
 
 ## Recommended settings for regulated fleets
 
-Copy-paste presets that satisfy common framework SLAs while still respecting an
-operationally sane maintenance cadence. Each block uses Patch-Tuesday-anchored
-ByWeekday Monthly + the relevant `InstallationCritical` hard cap. Adjust hours to
-match your local change window.
-
-The cadence picks the **preferred** install slot. `InstallationCritical` is the
-**non-negotiable** SLA backstop -- if a release stays pending past that age it
-force-installs within 30 seconds even if the next qualifying day is weeks away. Set
-`InstallationCritical` to whatever the framework SLA mandates, then pick a cadence
-that will normally satisfy it.
+Copy-paste presets that satisfy common framework SLAs. The cadence picks the
+**preferred** install slot; `InstallationCritical` is the **non-negotiable** SLA
+backstop -- if a release stays pending past that age it force-installs within 30
+seconds even if the next qualifying day is weeks away. Each block uses
+Patch-Tuesday-anchored ByWeekday Monthly + the relevant `InstallationCritical` hard
+cap; adjust hours to match your local change window.
 
 ### CJIS-aligned (law enforcement, dispatch)
 

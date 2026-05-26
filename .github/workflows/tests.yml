@@ -6,7 +6,7 @@ name: Unit Tests
 #
 # CI skips SignedFilesTest.* because two of those tests fail outside the
 # developer's main checkout (expired 2022 cert; hardcoded local path to
-# Installer/Output/). See commit-plan.md follow-ups.
+# Installer/Output/).
 
 on:
   push:

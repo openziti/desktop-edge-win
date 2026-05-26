@@ -122,8 +122,9 @@ namespace ZitiUpdateService.Tests {
 
         [TestMethod]
         public void IsCritical_HugeThreshold_NeverFires() {
-            // The "never auto-install" recipe from ZitiUpdateService/CLAUDE.md:
-            // set InstallationCritical to ~68 years. Any realistic release never crosses it.
+            // The "never auto-install" recipe documented in POLICY-ADMIN-GUIDE.md
+            // ("Suppress all automatic installs"): set InstallationCritical to ~68 years.
+            // Any realistic release never crosses it.
             DateTime now        = new DateTime(2026, 5, 14, 12, 0, 0, DateTimeKind.Local);
             DateTime publishUtc = new DateTime(2026, 1,  1,  0, 0, 0, DateTimeKind.Utc);
             Assert.IsFalse(InstallationCriticalEvaluator.IsCritical(now, publishUtc, TimeSpan.FromSeconds(int.MaxValue)));

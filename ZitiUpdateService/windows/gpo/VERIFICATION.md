@@ -286,7 +286,7 @@ dotnet test ZitiUpdateService.Tests/ZitiUpdateService.Tests.csproj --filter "Ful
 ```
 
 Do **not** verify the math by setting the VM's system clock. Clock-skewing a Windows VM
-breaks CRL fetch in the auto-updater (see `offline-upgrades/CLAUDE.md`), AD/Kerberos if
+breaks CRL fetch in the auto-updater (see `offline-upgrades/README.md`), AD/Kerberos if
 domain-joined, DST behavior, and the service's own log timestamps. The manual tests
 below verify only the **wiring**: registry write -> log line + UI state + service-restart
 survival. Math correctness is the unit tests' job.

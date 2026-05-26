@@ -33,9 +33,7 @@ param(
     [switch] $NoLogo,
     # CI mode adds the standard CI-skip filter (SignedFilesTest tests fail in
     # environments without the developer's local installer output / refreshed
-    # signed artifacts -- tracked separately, see commit-plan.md and
-    # project_signed_files_test_broken memory). Combined with -Filter if both
-    # are supplied.
+    # signed artifacts). Combined with -Filter if both are supplied.
     [switch] $CiMode
 )
 

@@ -261,7 +261,9 @@
     <!-- ================================================================
          MaintenanceWindowDayOfWeek
          Writes:  HKLM\...\ziti-monitor-service\MaintenanceWindowDayOfWeek  (REG_DWORD)
-         0 = Sunday ... 6 = Saturday. Honored only when Frequency = Weekly.
+         0 = Sunday ... 6 = Saturday. Honored when Frequency = Weekly, OR when
+         Frequency = Monthly and MonthlyMode = ByWeekday (in which case it
+         combines with MaintenanceWindowMonthlyOrdinal to form "Nth weekday").
          ================================================================ -->
     <policy name="ZMS_MaintenanceWindowDayOfWeek"
             class="Machine"

@@ -177,11 +177,10 @@ All three fall back to the corresponding fields in `settings.json` when not set;
 Sub-mode for Monthly cadence. Honored only when `MaintenanceWindowFrequency=2`.
 
 - `MaintenanceWindowMonthlyMode=0` (ByDate) -- use `MaintenanceWindowDayOfMonth` (e.g. always the 1st, or the
-  last day). Common in financial / billing-aligned shops, K-12 SLED, "1st of month" change calendars
-  (~20-25% of regulated deployments).
+  last day). Common in financial / billing-aligned shops, K-12 SLED, "1st of month" change calendars.
 - `MaintenanceWindowMonthlyMode=1` (ByWeekday) -- use `MaintenanceWindowMonthlyOrdinal` +
   `MaintenanceWindowDayOfWeek` to express "Nth weekday of month" (e.g. *Third Tuesday* = Patch Tuesday).
-  Dominant in SCCM-managed fleets, public-safety/PSAP, CJIS, DoD, HITRUST (~60-65% of regulated deployments).
+  Common in SCCM-managed fleets, public-safety/PSAP, CJIS, DoD, HITRUST.
 
 `MaintenanceWindowMonthlyOrdinal` values:
 

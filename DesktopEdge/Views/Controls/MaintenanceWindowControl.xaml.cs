@@ -146,8 +146,7 @@ namespace ZitiDesktopEdge {
         }
 
         /// <summary>
-        /// Push saved-state values into the combos. Suspends the SelectionChanged hooks
-        /// during the bulk-set so visibility doesn't recompute mid-apply.
+        /// Push saved-state values into the combos and recompute visibility once at the end.
         /// </summary>
         public void ApplyFromState(
                 int? windowStart, int? windowEnd,

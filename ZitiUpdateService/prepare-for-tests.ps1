@@ -1,7 +1,7 @@
 # prepare-for-tests.ps1
 #
 # Prepares a machine for the manual-test runbook in
-# ZitiUpdateService\manually-testing-automatic-updates.md / test-run.md.
+# ZitiUpdateService\test-run.md.
 #
 #  1. Verifies PowerShell 7+
 #  2. Verifies elevation

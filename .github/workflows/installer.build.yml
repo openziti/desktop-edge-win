@@ -79,8 +79,9 @@ jobs:
       - name: Run unit tests
         shell: pwsh
         # Same script as the standalone tests.yml workflow. CI mode filters out
-        # SignedFilesTest.* (see commit-plan.md follow-ups). If a test failure
-        # makes it past CI, the installer build will not run.
+        # SignedFilesTest.* (two of those tests rely on local installer output that
+        # is not present on a fresh CI checkout). If a test failure makes it past
+        # CI, the installer build will not run.
         run: .\scripts\run-tests.ps1 -CiMode -NoLogo
       - shell: pwsh
         name: Register Advanced Installer

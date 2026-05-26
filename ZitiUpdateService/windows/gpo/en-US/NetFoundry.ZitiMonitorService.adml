@@ -257,8 +257,15 @@ Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\
       <!-- ZMS_MaintenanceWindowDayOfWeek -->
       <string id="ZMS_MaintenanceWindowDayOfWeek">Configure Maintenance Window Day Of Week</string>
       <string id="ZMS_MaintenanceWindowDayOfWeek_Help">
-Specifies which day of the week the maintenance window applies on, when
-MaintenanceWindowFrequency is set to Weekly. Ignored otherwise.
+Specifies which day of the week the maintenance window applies on.
+
+Honored when:
+  - MaintenanceWindowFrequency = Weekly, OR
+  - MaintenanceWindowFrequency = Monthly and MaintenanceWindowMonthlyMode = ByWeekday
+    (combined with MaintenanceWindowMonthlyOrdinal -- e.g. Ordinal=Third + DayOfWeek=Tuesday
+    yields "Third Tuesday", the Patch Tuesday pattern).
+
+Ignored for Daily, and for Monthly + ByDate.
 
 Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service\MaintenanceWindowDayOfWeek (REG_DWORD, 0=Sunday .. 6=Saturday)
       </string>
@@ -274,11 +281,19 @@ Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\
       <string id="ZMS_MaintenanceWindowDayOfMonth">Configure Maintenance Window Day Of Month</string>
       <string id="ZMS_MaintenanceWindowDayOfMonth_Help">
 Specifies which day of the month the maintenance window applies on, when
-MaintenanceWindowFrequency is set to Monthly. Ignored otherwise.
+MaintenanceWindowFrequency is set to Monthly AND MaintenanceWindowMonthlyMode = ByDate.
+Ignored otherwise.
 
 Valid values are 1-28, or 32 (sentinel meaning "last day of the current month").
 The range stops at 28 so that February is always representable. Use 32 to mean
 "always the final day of the month" regardless of month length.
+
+IMPORTANT: values 29, 30, and 31 are NOT valid and will be ignored by the service.
+The Group Policy editor accepts them only because the ADMX <decimal> element cannot
+express a disjoint range. If you want "the 30th of every month" semantics, use 32
+("last day of the month") instead -- it covers Feb, the short months, and the long
+months consistently. The helper script Set-PolicyRegistryValues.ps1 rejects 29/30/31
+explicitly via ValidateScript.
 
 Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service\MaintenanceWindowDayOfMonth (REG_DWORD, 1-28 or 32)
       </string>
@@ -386,7 +401,7 @@ Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\
 
       <presentation id="ZMS_MaintenanceWindowDayOfWeek">
         <dropdownList refId="MaintenanceWindowDayOfWeek_Enum" defaultItem="0">
-          Day of week (Weekly only):
+          Day of week (Weekly, or Monthly + ByWeekday):
         </dropdownList>
       </presentation>
 
