@@ -1,9 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!--
+    Placeholder test project for the WPF tray UI (the DesktopEdge project).
+    No tests yet. The companion ZitiUpdateService.Tests project covers the
+    Windows service. WPF UI testing is non-trivial (STA threads, visual tree,
+    dispatcher), so treat this project as the landing pad when we start
+    adding view-model, converter, or behavior unit tests.
+
+    Until tests exist here, this csproj does not reference DesktopEdge.csproj
+    so the build stays clean. Add the ProjectReference when adding the first
+    test class.
+  -->
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
 
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
@@ -11,17 +23,9 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="3.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
     <PackageReference Include="MSTest.TestAdapter" Version="2.2.10" />
     <PackageReference Include="MSTest.TestFramework" Version="2.2.10" />
-    <PackageReference Include="NLog" Version="5.2.8" />
-    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="8.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\ZitiUpdateService\ZitiUpdateService.csproj" />
   </ItemGroup>
 
   <ItemGroup>

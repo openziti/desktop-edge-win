@@ -59,6 +59,12 @@ namespace ZitiDesktopEdge {
         public delegate void ShowBlurb(string message);
         public event ShowBlurb OnShowBlurb;
         public string menuState = "Main";
+        // True while SaveSettingsButton_Click_Async is mid-flight. Each Set* IPC await returns
+        // a service config-change event that fires policyViewModel.PropertyChanged, which would
+        // otherwise call UpdateState() and re-render the panel with whatever the viewmodel has
+        // at that instant (partially-applied state). Suppress the re-render until the save
+        // completes, then run UpdateState() once.
+        private bool _suppressPolicyVmReRender = false;
         public string LogLevel = "";
         private string appVersion = null;
         public double MainHeight = 500;
@@ -221,12 +227,14 @@ namespace ZitiDesktopEdge {
             state = (ZDEWViewState)Application.Current.Properties["ZDEWViewState"];
             policyViewModel = (ManagedSettingsViewModel)Application.Current.Properties["ManagedSettingsViewModel"];
             policyViewModel.PropertyChanged += (s, e) => {
-                if (menuState == "ConfigureAutomaticUpgrades") {
+                if (menuState == "ConfigureAutomaticUpgrades" && !_suppressPolicyVmReRender) {
                     Dispatcher.Invoke(UpdateState);
                 }
             };
 
-            PopulateHourCombos();
+            // PopulateHourCombos / PopulateFrequencyAndDayCombos are now owned by the
+            // MaintenanceWindowControl's constructor; no init wiring needed here.
+            AutomaticUpgradesToggle.OnToggled += AutomaticUpgradesToggle_OnToggled;
 
             try {
                 ShowUnexpectedFailure = bool.Parse(ConfigurationManager.AppSettings.Get("ShowUnexpectedFailure"));
@@ -296,26 +304,25 @@ namespace ZitiDesktopEdge {
             UpdateState();
         }
 
-        async private void SetAutomaticUpgradesMenuAction(object sender, MouseButtonEventArgs e) {
+        async private void AutomaticUpgradesToggle_OnToggled(bool enabled) {
             if (policyViewModel.AutomaticUpgradesPolicyControlled) {
                 MainWindow.ShowError("Managed by your organization", "Automatic upgrade settings are controlled by your organization and cannot be changed.");
+                // Revert visual state since the change is rejected.
+                AutomaticUpgradesToggle.OnToggled -= AutomaticUpgradesToggle_OnToggled;
+                AutomaticUpgradesToggle.Enabled   = !enabled;
+                AutomaticUpgradesToggle.OnToggled += AutomaticUpgradesToggle_OnToggled;
                 return;
             }
-            bool disableAutomaticUpgrades = false;
-            if (sender == AutomaticUpgradesItemOff) {
-                disableAutomaticUpgrades = true;
-            }
+            bool disableAutomaticUpgrades = !enabled;
             var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
             try {
                 SvcResponse r = await monitorClient.SetAutomaticUpgradeDisabledAsync(disableAutomaticUpgrades);
                 if (r.Code != 0) {
                     logger.Error(r?.Error);
                 } else {
-                    // optimistic update; the incoming service event will confirm
-                    this.AutomaticUpgradesItemOn.IsSelected  = !disableAutomaticUpgrades;
-                    this.AutomaticUpgradesItemOff.IsSelected = disableAutomaticUpgrades;
+                    AutomaticUpgradesToggleLabel.Content = enabled ? "ENABLED" : "DISABLED";
                     ApplyUpgradesDetailsDimming(policyViewModel.AutomaticUpgradesPolicyControlled, disableAutomaticUpgrades);
-                    this.OnShowBlurb?.Invoke("Settings Saved.");
+                    this.OnShowBlurb?.Invoke("Automatic upgrades " + AutomaticUpgradesToggleLabel.Content);
                 }
             } catch (MonitorServiceException) {
                 MainWindow.ShowError("Could Not Set Automatic Update", "The monitor service is offline");
@@ -429,11 +436,10 @@ namespace ZitiDesktopEdge {
                 PolicyManagedBanner.Visibility = policyControlled ? Visibility.Visible : Visibility.Collapsed;
 
                 AutomaticUpgradesHeading.Opacity         = policyControlled ? 0.3 : 1.0;
-                AutomaticUpgradesItemOn.IsEnabled        = !policyControlled;
-                AutomaticUpgradesItemOff.IsEnabled       = !policyControlled;
-                AutomaticUpgradesItemOn.Opacity          = policyControlled ? 0.3 : 1.0;
-                AutomaticUpgradesItemOff.Opacity         = policyControlled ? 0.3 : 1.0;
-                ApplyUpgradesDetailsDimming(policyControlled, this.AutomaticUpgradesItemOff.IsSelected);
+                AutomaticUpgradesToggle.IsEnabled        = !policyControlled;
+                AutomaticUpgradesToggle.Opacity          = policyControlled ? 0.3 : 1.0;
+                AutomaticUpgradesToggleLabel.Opacity     = policyControlled ? 0.3 : 1.0;
+                ApplyUpgradesDetailsDimming(policyControlled, policyViewModel.AutomaticUpdatesDisabled);
             } else if (menuState == "Config") {
                 MenuTitle.Content = "Tunnel Config";
                 ConfigItems.Visibility = Visibility.Visible;
@@ -613,65 +619,49 @@ namespace ZitiDesktopEdge {
         }
 
         private void SetAutomaticUpgradesState() {
-            this.AutomaticUpgradesItemOn.IsSelected  = !policyViewModel.AutomaticUpdatesDisabled;
-            this.AutomaticUpgradesItemOff.IsSelected = policyViewModel.AutomaticUpdatesDisabled;
+            bool enabled = !policyViewModel.AutomaticUpdatesDisabled;
+            // Suspend the OnToggled handler while we set state from the policy / service event
+            // so we don't echo the change back to the service as if it were a user click.
+            AutomaticUpgradesToggle.OnToggled -= AutomaticUpgradesToggle_OnToggled;
+            AutomaticUpgradesToggle.Enabled   = enabled;
+            AutomaticUpgradesToggle.OnToggled += AutomaticUpgradesToggle_OnToggled;
+            AutomaticUpgradesToggleLabel.Content = enabled ? "ENABLED" : "DISABLED";
             this.UpdateUrl.Text = policyViewModel.AutomaticUpdateURL ?? GithubAPI.ProdUrl;
         }
 
         private void ApplyUpgradesDetailsDimming(bool policyControlled, bool upgradesDisabled) {
             bool detailsEditable = !policyControlled && !upgradesDisabled;
-            bool anyTime = MaintenanceWindowAnyTime.IsChecked == true;
-            UpdateUrlHeading.Opacity              = detailsEditable ? 1.0 : 0.3;
-            UpdateUrl.IsEnabled                   = detailsEditable;
-            UpdateUrl.Opacity                     = detailsEditable ? 1.0 : 0.3;
-            UpdateUrlWarning.Visibility           = detailsEditable ? Visibility.Visible : Visibility.Collapsed;
-            ResetUrlButton.Visibility             = detailsEditable ? Visibility.Visible : Visibility.Collapsed;
-            MaintenanceWindowHeading.Opacity      = detailsEditable ? 1.0 : 0.3;
-            CheckForUpdate.IsEnabled              = !upgradesDisabled;
-            CheckForUpdate.Opacity                = upgradesDisabled ? 0.3 : 1.0;
+            UpdateUrlHeading.Opacity    = detailsEditable ? 1.0 : 0.3;
+            UpdateUrl.IsEnabled         = detailsEditable;
+            UpdateUrl.Opacity           = detailsEditable ? 1.0 : 0.3;
+            UpdateUrlWarning.Visibility = detailsEditable ? Visibility.Visible : Visibility.Collapsed;
+            ResetUrlButton.Visibility   = detailsEditable ? Visibility.Visible : Visibility.Collapsed;
+            CheckForUpdate.IsEnabled    = !upgradesDisabled;
+            CheckForUpdate.Opacity      = upgradesDisabled ? 0.3 : 1.0;
             if (upgradesDisabled) {
                 CheckForUpdateStatus.Visibility   = Visibility.Collapsed;
                 TriggerUpdateButton.Visibility    = Visibility.Collapsed;
                 DeferToRestartCheckbox.Visibility = Visibility.Collapsed;
                 ForceUpdate.Visibility            = Visibility.Collapsed;
             }
-            MaintenanceWindowAnyTime.IsEnabled    = detailsEditable;
-            MaintenanceWindowAnyTime.Opacity      = detailsEditable ? 1.0 : 0.3;
-            MaintenanceWindowStartCombo.IsEnabled = detailsEditable && !anyTime;
-            MaintenanceWindowStartCombo.Opacity   = detailsEditable ? 1.0 : 0.3;
-            MaintenanceWindowEndCombo.IsEnabled   = detailsEditable && !anyTime;
-            MaintenanceWindowEndCombo.Opacity     = detailsEditable ? 1.0 : 0.3;
-            SaveSettingsButton.Visibility         = detailsEditable ? Visibility.Visible : Visibility.Collapsed;
+            // MaintenanceWindowControl owns its own heading-dim + per-combo IsEnabled/opacity
+            // logic from a single IsEditable flag (including the AnyTime checkbox's sub-rule).
+            MaintenanceWindow.IsEditable  = detailsEditable;
+            SaveSettingsButton.Visibility = detailsEditable ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private void PopulateHourCombos() {
-            var hours = new System.Collections.Generic.List<string>();
-            for (int h = 0; h < 24; h++) {
-                hours.Add($"{h:D2}:00");
-            }
-            MaintenanceWindowStartCombo.ItemsSource = hours;
-            MaintenanceWindowEndCombo.ItemsSource   = hours;
-        }
-
+        // Pushes the saved-state cadence values into the extracted MaintenanceWindowControl.
+        // The control owns all combo lifecycle (populate, visibility, value-extraction) -- this
+        // method just forwards what the view model has.
         private void SetMaintenanceWindowState() {
-            int start = policyViewModel.MaintenanceWindowStart ?? 0;
-            int end   = policyViewModel.MaintenanceWindowEnd   ?? 0;
-            MaintenanceWindowStartCombo.SelectedIndex = start;
-            MaintenanceWindowEndCombo.SelectedIndex   = end;
-            bool anyTime = start == 0 && end == 0;
-            MaintenanceWindowAnyTime.IsChecked = anyTime;
-        }
-
-        private void MaintenanceWindowAnyTime_Changed(object sender, RoutedEventArgs e) {
-            bool anyTime = MaintenanceWindowAnyTime.IsChecked == true;
-            bool detailsEditable = !policyViewModel.AutomaticUpgradesPolicyControlled
-                                && !policyViewModel.AutomaticUpdatesDisabled;
-            if (anyTime) {
-                MaintenanceWindowStartCombo.SelectedIndex = 0;
-                MaintenanceWindowEndCombo.SelectedIndex   = 0;
-            }
-            MaintenanceWindowStartCombo.IsEnabled = detailsEditable && !anyTime;
-            MaintenanceWindowEndCombo.IsEnabled   = detailsEditable && !anyTime;
+            MaintenanceWindow.ApplyFromState(
+                windowStart: policyViewModel.MaintenanceWindowStart,
+                windowEnd:   policyViewModel.MaintenanceWindowEnd,
+                frequency:   policyViewModel.MaintenanceWindowFrequency,
+                monthlyMode: policyViewModel.MaintenanceWindowMonthlyMode,
+                dayOfWeek:   policyViewModel.MaintenanceWindowDayOfWeek,
+                dayOfMonth:  policyViewModel.MaintenanceWindowDayOfMonth,
+                monthlyOrdinal: policyViewModel.MaintenanceWindowMonthlyOrdinal);
         }
 
         async private void SaveSettingsButton_Click(object sender, MouseButtonEventArgs e) {
@@ -683,15 +673,14 @@ namespace ZitiDesktopEdge {
                 MainWindow.ShowError("Managed by your organization", "These settings are controlled by your organization and cannot be changed.");
                 return;
             }
+            // Block PropertyChanged-driven UpdateState() re-renders for the full save burst.
+            // Each Set* IPC return event fires the viewmodel listener, and re-rendering with
+            // partially-applied state flashes the panel. We re-enable + re-render once at end.
+            _suppressPolicyVmReRender = true;
             try {
                 MonitorClient monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
 
-                // Capture UI values before any await; service events during awaits
-                // can trigger UpdateState() which resets combos to stale viewmodel values.
-                string url       = UpdateUrl.Text;
-                int    startHour = MaintenanceWindowStartCombo.SelectedIndex;
-                int    endHour   = MaintenanceWindowEndCombo.SelectedIndex;
-
+                string url = UpdateUrl.Text;
                 SvcResponse urlResponse = await monitorClient.SetAutomaticUpgradeURLAsync(url);
                 if (urlResponse == null || urlResponse.Code != 0) {
                     logger.Error("SetAutomaticUpgradeURLAsync failed: {0}", urlResponse?.Error ?? "(null response)");
@@ -700,26 +689,33 @@ namespace ZitiDesktopEdge {
                 }
                 state.AutomaticUpdateURL = url;
 
-                SvcResponse startResponse = await monitorClient.SetMaintenanceWindowStartAsync(startHour);
-                if (startResponse == null || startResponse.Code != 0) {
-                    logger.Error("SetMaintenanceWindowStartAsync failed: {0}", startResponse?.Error ?? "(null response)");
-                    MainWindow.ShowError("Error Saving Settings", !string.IsNullOrEmpty(startResponse?.Error) ? startResponse.Error : "Could not set maintenance window start.");
+                var mwResult = await MaintenanceWindow.PersistAsync(monitorClient);
+                if (!mwResult.Success) {
+                    logger.Error("{0} failed: {1}", mwResult.FailedOperation, mwResult.ErrorMessage);
+                    MainWindow.ShowError("Error Saving Settings", mwResult.ErrorMessage);
                     return;
                 }
+                state.MaintenanceWindowStart          = mwResult.StartHour;
+                state.MaintenanceWindowEnd            = mwResult.EndHour;
+                state.MaintenanceWindowFrequency      = mwResult.Frequency;
+                state.MaintenanceWindowMonthlyMode    = mwResult.MonthlyMode;
+                state.MaintenanceWindowDayOfWeek      = mwResult.DayOfWeek;
+                state.MaintenanceWindowDayOfMonth     = mwResult.DayOfMonth;
+                state.MaintenanceWindowMonthlyOrdinal = mwResult.MonthlyOrdinal;
 
-                SvcResponse endResponse = await monitorClient.SetMaintenanceWindowEndAsync(endHour);
-                if (endResponse == null || endResponse.Code != 0) {
-                    logger.Error("SetMaintenanceWindowEndAsync failed: {0}", endResponse?.Error ?? "(null response)");
-                    MainWindow.ShowError("Error Saving Settings", !string.IsNullOrEmpty(endResponse?.Error) ? endResponse.Error : "Could not set maintenance window end.");
-                    return;
-                }
-                state.MaintenanceWindowStart = startHour;
-                state.MaintenanceWindowEnd   = endHour;
                 this.OnShowBlurb?.Invoke("Settings Saved.");
             } catch (MonitorServiceException) {
                 MainWindow.ShowError("Could Not Save Settings", "The monitor service is offline");
             } catch (Exception ex) {
                 logger.Error("unexpected error saving automatic upgrade settings", ex);
+            } finally {
+                // Always re-enable PropertyChanged-driven re-renders, even on error, so the
+                // panel can't get stuck stale. Run one final UpdateState() so the panel
+                // reflects whatever ended up in the viewmodel after the save burst settled.
+                _suppressPolicyVmReRender = false;
+                if (menuState == "ConfigureAutomaticUpgrades") {
+                    UpdateState();
+                }
             }
         }
 

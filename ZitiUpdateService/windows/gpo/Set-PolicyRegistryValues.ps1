@@ -63,6 +63,36 @@
     If less than MaintenanceWindowStart, the window crosses midnight.
     Example: Start=22, End=6 means installations are allowed from 10 PM to 6 AM.
 
+.PARAMETER MaintenanceWindowFrequency
+    Overrides settings.json: MaintenanceWindowFrequency
+    Cadence selector for the maintenance window: 0=Daily, 1=Weekly, 2=Monthly.
+    Daily: any day qualifies.
+    Weekly: only the configured MaintenanceWindowDayOfWeek qualifies.
+    Monthly: only the configured MaintenanceWindowDayOfMonth qualifies.
+
+.PARAMETER MaintenanceWindowDayOfWeek
+    Overrides settings.json: MaintenanceWindowDayOfWeek
+    Day of week (0=Sunday .. 6=Saturday). Honored only when MaintenanceWindowFrequency=1 (Weekly).
+
+.PARAMETER MaintenanceWindowDayOfMonth
+    Overrides settings.json: MaintenanceWindowDayOfMonth
+    Day of month (1-28), or 32 (last day of month). Honored only when MaintenanceWindowFrequency=2 (Monthly)
+    AND MaintenanceWindowMonthlyMode=0 (ByDate).
+    Range stops at 28 so February is always representable; use 32 for "last day of the month".
+
+.PARAMETER MaintenanceWindowMonthlyMode
+    Overrides settings.json: MaintenanceWindowMonthlyMode
+    Sub-mode selector for Monthly. 0=ByDate (use DayOfMonth), 1=ByWeekday (use Ordinal + DayOfWeek).
+    Honored only when MaintenanceWindowFrequency=2 (Monthly).
+    Mirrors SCCM Maintenance Window's "Monthly by date" / "Monthly by day of week" split.
+
+.PARAMETER MaintenanceWindowMonthlyOrdinal
+    Overrides settings.json: MaintenanceWindowMonthlyOrdinal
+    Ordinal for "Nth weekday of month" mode: 1=First, 2=Second, 3=Third, 4=Fourth, 5=Last.
+    Honored only when Frequency=2 (Monthly) and MonthlyMode=1 (ByWeekday).
+    Combine with -MaintenanceWindowDayOfWeek to express the full slot (e.g. 3 + 2 = "Third Tuesday").
+    "Last" handles 4-vs-5-weekday months correctly; "Fourth" does NOT (a third of months have a 5th).
+
 .EXAMPLE
     # Disable automatic updates and check every 30 minutes
     .\Set-PolicyRegistryValues.ps1 -AutomaticUpdatesDisabled 1 -UpdateTimer 1800
@@ -106,6 +136,23 @@ param(
     [ValidateRange(0, 23)]
     [Nullable[int]] $MaintenanceWindowEnd = $null,
 
+    [ValidateSet(0, 1, 2)]
+    [Nullable[int]] $MaintenanceWindowFrequency = $null,
+
+    [ValidateRange(0, 6)]
+    [Nullable[int]] $MaintenanceWindowDayOfWeek = $null,
+
+    # 1-28 are real day-of-month values; 32 is the sentinel for "last day of the current month".
+    [ValidateScript({ $_ -ge 1 -and $_ -le 28 -or $_ -eq 32 })]
+    [Nullable[int]] $MaintenanceWindowDayOfMonth = $null,
+
+    [ValidateSet(0, 1)]
+    [Nullable[int]] $MaintenanceWindowMonthlyMode = $null,
+
+    # 1=First .. 4=Fourth, 5=Last
+    [ValidateRange(1, 5)]
+    [Nullable[int]] $MaintenanceWindowMonthlyOrdinal = $null,
+
     [switch] $WhatIf
 )
 
@@ -145,6 +192,11 @@ Add-DwordValue  'AlivenessChecksBeforeAction'  $AlivenessChecksBeforeAction  'se
 Add-DwordValue  'DeferInstallToRestart'        $DeferInstallToRestart        'settings.json'                  'DeferInstallToRestart'        $false
 Add-DwordValue  'MaintenanceWindowStart'       $MaintenanceWindowStart       'settings.json'                  'MaintenanceWindowStart'       $false
 Add-DwordValue  'MaintenanceWindowEnd'         $MaintenanceWindowEnd         'settings.json'                  'MaintenanceWindowEnd'         $false
+Add-DwordValue  'MaintenanceWindowFrequency'   $MaintenanceWindowFrequency   'settings.json'                  'MaintenanceWindowFrequency'   $true
+Add-DwordValue  'MaintenanceWindowDayOfWeek'   $MaintenanceWindowDayOfWeek   'settings.json'                  'MaintenanceWindowDayOfWeek'   $true
+Add-DwordValue  'MaintenanceWindowDayOfMonth'  $MaintenanceWindowDayOfMonth  'settings.json'                  'MaintenanceWindowDayOfMonth'  $true
+Add-DwordValue  'MaintenanceWindowMonthlyMode' $MaintenanceWindowMonthlyMode 'settings.json'                  'MaintenanceWindowMonthlyMode' $true
+Add-DwordValue  'MaintenanceWindowMonthlyOrdinal' $MaintenanceWindowMonthlyOrdinal 'settings.json'             'MaintenanceWindowMonthlyOrdinal' $true
 Add-DwordValue  'UpdateTimer'                  $UpdateTimer                  'ZitiUpdateService.exe.config'   'UpdateTimer'                  $false
 Add-DwordValue  'InstallationReminder'         $InstallationReminder         'ZitiUpdateService.exe.config'   'InstallationReminder'         $false
 Add-DwordValue  'InstallationCritical'         $InstallationCritical         'ZitiUpdateService.exe.config'   'InstallationCritical'         $false

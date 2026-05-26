@@ -23,6 +23,50 @@ using System.Collections.Generic;
 /// between the service and the client.
 /// </summary>
 namespace ZitiDesktopEdge.DataStructures {
+    /// <summary>
+    /// Cadence selector for the installation maintenance window. The hour-of-day Start/End
+    /// still defines the time-of-day; this enum decides which calendar days qualify.
+    /// </summary>
+    public enum MaintenanceWindowFrequency {
+        Daily = 0,
+        Weekly = 1,
+        Monthly = 2,
+    }
+
+    /// <summary>
+    /// Sub-mode for <see cref="MaintenanceWindowFrequency.Monthly"/>:
+    /// <c>ByDate</c> picks a fixed day of the month (1-28, or LastDay sentinel),
+    /// <c>ByWeekday</c> picks the Nth weekday of the month (e.g. "Third Tuesday").
+    /// Mirrors SCCM's "Monthly by date" / "Monthly by day of week" split.
+    /// </summary>
+    public enum MaintenanceWindowMonthlyMode {
+        ByDate = 0,
+        ByWeekday = 1,
+    }
+
+    /// <summary>
+    /// Ordinal for <see cref="MaintenanceWindowMonthlyMode.ByWeekday"/>. <c>Last</c>
+    /// is a first-class value because "Last Friday" and "Fourth Friday" diverge in
+    /// roughly a third of months (the Fourth/Last gap is the most common bug-source
+    /// for maintenance-window misfires in SCCM-managed fleets).
+    /// </summary>
+    public enum MaintenanceWindowMonthlyOrdinal {
+        First = 1,
+        Second = 2,
+        Third = 3,
+        Fourth = 4,
+        Last = 5,
+    }
+
+    /// <summary>
+    /// Sentinel value for <c>MaintenanceWindowDayOfMonth</c> meaning "last day of the
+    /// current month". Chosen so it is outside the legal 1-28 range and not a valid
+    /// month-day; the evaluator substitutes the actual last day at runtime.
+    /// </summary>
+    public static class MaintenanceWindowDayOfMonthSentinel {
+        public const int LastDay = 32;
+    }
+
     public enum LogLevelEnum {
         FATAL = 0,
         ERROR = 1,
@@ -492,6 +536,23 @@ namespace ZitiDesktopEdge.DataStructures {
         public string LogLevel { get; set; }
     }
 
+    /// <summary>
+    /// Inbound IPC request that atomically updates every maintenance-window field. The
+    /// monitor service validates the whole payload, then writes settings.json once. Replaces
+    /// the prior 7-call per-field burst (SetMaintenanceWindowStart / End / Frequency /
+    /// MonthlyMode / DayOfWeek / DayOfMonth / MonthlyOrdinal) so there's no half-applied
+    /// state on partial failure and no 7x JSON rewrite.
+    /// </summary>
+    public class MaintenanceWindowConfigRequest : ActionEvent {
+        public int? Start { get; set; }
+        public int? End { get; set; }
+        public MaintenanceWindowFrequency Frequency { get; set; }
+        public MaintenanceWindowMonthlyMode MonthlyMode { get; set; }
+        public int? DayOfWeek { get; set; }
+        public int? DayOfMonth { get; set; }
+        public MaintenanceWindowMonthlyOrdinal? MonthlyOrdinal { get; set; }
+    }
+
     public class MonitorServiceStatusEvent : SvcResponse {
         public string Status { get; set; }
         public string ReleaseStream { get; set; }
@@ -511,6 +572,16 @@ namespace ZitiDesktopEdge.DataStructures {
         public bool   MaintenanceWindowStartLocked { get; set; }
         public int?   MaintenanceWindowEnd { get; set; }
         public bool   MaintenanceWindowEndLocked { get; set; }
+        public MaintenanceWindowFrequency MaintenanceWindowFrequency { get; set; }
+        public bool   MaintenanceWindowFrequencyLocked { get; set; }
+        public int?   MaintenanceWindowDayOfWeek { get; set; }
+        public bool   MaintenanceWindowDayOfWeekLocked { get; set; }
+        public int?   MaintenanceWindowDayOfMonth { get; set; }
+        public bool   MaintenanceWindowDayOfMonthLocked { get; set; }
+        public MaintenanceWindowMonthlyMode MaintenanceWindowMonthlyMode { get; set; }
+        public bool   MaintenanceWindowMonthlyModeLocked { get; set; }
+        public MaintenanceWindowMonthlyOrdinal? MaintenanceWindowMonthlyOrdinal { get; set; }
+        public bool   MaintenanceWindowMonthlyOrdinalLocked { get; set; }
         public bool   DeferInstallToRestartLocked { get; set; }
 
         /// <summary>

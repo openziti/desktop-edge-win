@@ -61,6 +61,11 @@ whichever is first), the WMI watcher takes over and the poll-loop stops.
 | Defer Install Until Restart            | `DeferInstallToRestart`       | `REG_DWORD`| `0` or `1`                         |
 | Maintenance Window Start Hour          | `MaintenanceWindowStart`      | `REG_DWORD`| hour; 0–23                         |
 | Maintenance Window End Hour            | `MaintenanceWindowEnd`        | `REG_DWORD`| hour; 0–23                         |
+| Maintenance Window Frequency           | `MaintenanceWindowFrequency`  | `REG_DWORD`| `0`=Daily, `1`=Weekly, `2`=Monthly |
+| Maintenance Window Day Of Week         | `MaintenanceWindowDayOfWeek`  | `REG_DWORD`| 0=Sun .. 6=Sat (Weekly only)       |
+| Maintenance Window Day Of Month        | `MaintenanceWindowDayOfMonth` | `REG_DWORD`| 1-28, or 32 = last day (Monthly + ByDate) |
+| Maintenance Window Monthly Mode        | `MaintenanceWindowMonthlyMode`| `REG_DWORD`| `0`=ByDate, `1`=ByWeekday (e.g. 3rd Tue) |
+| Maintenance Window Monthly Ordinal     | `MaintenanceWindowMonthlyOrdinal`| `REG_DWORD`| `1`=First..`4`=Fourth, `5`=Last (ByWeekday only) |
 
 > **Format note.** Policy values that represent durations (`UpdateTimer`, `InstallationReminder`,
 > `InstallationCritical`) are stored as **seconds** in the registry. The same settings in `App.config` use
@@ -146,6 +151,48 @@ Clearing the window keys (or `DeferInstallToRestart`) while a deferred install i
 to fire **immediately** rather than waiting for the next poll tick.
 
 Both fall back to the corresponding fields in `settings.json` (default unset = no window) when not set.
+
+#### `MaintenanceWindowFrequency` / `MaintenanceWindowDayOfWeek` / `MaintenanceWindowDayOfMonth`
+
+Cadence selector on top of the hour-of-day window above. `MaintenanceWindowFrequency` decides which calendar
+days qualify:
+
+- `0` (Daily) -- every day qualifies. `DayOfWeek` / `DayOfMonth` are ignored.
+- `1` (Weekly) -- only the day matching `MaintenanceWindowDayOfWeek` (0=Sunday .. 6=Saturday) qualifies.
+- `2` (Monthly) -- only the day matching `MaintenanceWindowDayOfMonth` (1-28, or 32 = last day) qualifies.
+
+The hour-of-day Start/End still applies *within* the qualifying day. When an update is detected outside a
+qualifying day, the install waits for the next qualifying day's window. The `InstallationCritical` age
+threshold overrides this -- once a release crosses that age it is force-installed regardless of cadence.
+
+`DayOfMonth` is capped at 28 (Feb always representable) plus the sentinel `32` meaning "last day of the
+current month". The evaluator resolves `32` to the actual last day at runtime, so a `32` policy works
+identically in February (28 or 29) and December (31).
+
+All three fall back to the corresponding fields in `settings.json` when not set; the schema defaults to
+`Frequency=Daily` and the day fields unset.
+
+#### `MaintenanceWindowMonthlyMode` / `MaintenanceWindowMonthlyOrdinal`
+
+Sub-mode for Monthly cadence. Honored only when `MaintenanceWindowFrequency=2`.
+
+- `MaintenanceWindowMonthlyMode=0` (ByDate) -- use `MaintenanceWindowDayOfMonth` (e.g. always the 1st, or the
+  last day). Common in financial / billing-aligned shops, K-12 SLED, "1st of month" change calendars.
+- `MaintenanceWindowMonthlyMode=1` (ByWeekday) -- use `MaintenanceWindowMonthlyOrdinal` +
+  `MaintenanceWindowDayOfWeek` to express "Nth weekday of month" (e.g. *Third Tuesday* = Patch Tuesday).
+  Common in SCCM-managed fleets, public-safety/PSAP, CJIS, DoD, HITRUST.
+
+`MaintenanceWindowMonthlyOrdinal` values:
+
+- `1`=First, `2`=Second, `3`=Third, `4`=Fourth -- count forward from the start of the month. Always exists.
+- `5`=Last -- always the latest occurrence in the month. **Not the same as Fourth** in roughly a third of
+  months (any month with a 5th weekday-of-X). PSAP, DoD, and SCCM admins specifically ask for "Last Friday"
+  as a remediation/cleanup slot; this is a first-class value, not a workaround.
+
+Mirrors SCCM Maintenance Window's "Monthly by date" / "Monthly by day of week" split and Task Scheduler's
+`ScheduleByMonth` / `ScheduleByMonthDayOfWeek` triggers. GPO's native `WindowsUpdate.admx` uses
+`ScheduledInstallFirst..FourthWeek` DWORDs but lacks a "Last" -- we ship Last because the absence is a
+documented operational pain point in SCCM-style deployments.
 
 ---
 

@@ -65,6 +65,11 @@ namespace ZitiUpdateService.Utils {
         private static bool?   _deferInstallToRestart;
         private static int?    _maintenanceWindowStart;
         private static int?    _maintenanceWindowEnd;
+        private static MaintenanceWindowFrequency? _maintenanceWindowFrequency;
+        private static int?    _maintenanceWindowDayOfWeek;
+        private static int?    _maintenanceWindowDayOfMonth;
+        private static MaintenanceWindowMonthlyMode? _maintenanceWindowMonthlyMode;
+        private static MaintenanceWindowMonthlyOrdinal? _maintenanceWindowMonthlyOrdinal;
 
         /// <summary>
         /// Reads all policy values from the registry.  Called once at startup and again
@@ -81,6 +86,11 @@ namespace ZitiUpdateService.Utils {
             _deferInstallToRestart       = null;
             _maintenanceWindowStart      = null;
             _maintenanceWindowEnd        = null;
+            _maintenanceWindowFrequency  = null;
+            _maintenanceWindowDayOfWeek  = null;
+            _maintenanceWindowDayOfMonth = null;
+            _maintenanceWindowMonthlyMode = null;
+            _maintenanceWindowMonthlyOrdinal = null;
 
             try {
                 using (RegistryKey key = Registry.LocalMachine.OpenSubKey(RegistryPath)) {
@@ -103,11 +113,18 @@ namespace ZitiUpdateService.Utils {
                     ReadDword(key,  "DeferInstallToRestart",          v => _deferInstallToRestart       = v != 0);
                     ReadDword(key,  "MaintenanceWindowStart",         v => _maintenanceWindowStart      = Math.Min(23, Math.Max(0, v)));
                     ReadDword(key,  "MaintenanceWindowEnd",           v => _maintenanceWindowEnd        = Math.Min(23, Math.Max(0, v)));
+                    ReadDword(key,  "MaintenanceWindowFrequency",     v => _maintenanceWindowFrequency  = ParseFrequency(v));
+                    ReadDword(key,  "MaintenanceWindowDayOfWeek",     v => _maintenanceWindowDayOfWeek  = Math.Min(6, Math.Max(0, v)));
+                    ReadDword(key,  "MaintenanceWindowDayOfMonth",    v => _maintenanceWindowDayOfMonth = ClampDayOfMonth(v));
+                    ReadDword(key,  "MaintenanceWindowMonthlyMode",   v => _maintenanceWindowMonthlyMode = ParseMonthlyMode(v));
+                    ReadDword(key,  "MaintenanceWindowMonthlyOrdinal",v => _maintenanceWindowMonthlyOrdinal = ParseOrdinal(v));
 
                     Logger.Info("Policy overrides loaded: " +
                                 "AutomaticUpdatesDisabled={0}, AutomaticUpdateURL={1}, UpdateTimer={2}, " +
                                 "InstallationReminder={3}, InstallationCritical={4}, AlivenessChecksBeforeAction={5}, " +
-                                "DeferInstallToRestart={6}, MaintenanceWindowStart={7}, MaintenanceWindowEnd={8}",
+                                "DeferInstallToRestart={6}, MaintenanceWindowStart={7}, MaintenanceWindowEnd={8}, " +
+                                "MaintenanceWindowFrequency={9}, MaintenanceWindowDayOfWeek={10}, MaintenanceWindowDayOfMonth={11}, " +
+                                "MaintenanceWindowMonthlyMode={12}, MaintenanceWindowMonthlyOrdinal={13}",
                         _disableAutomaticUpdates?.ToString()         ?? "(not set)",
                         _updateStreamURL                             ?? "(not set)",
                         _updateIntervalSeconds?.ToString()           ?? "(not set)",
@@ -116,7 +133,12 @@ namespace ZitiUpdateService.Utils {
                         _alivenessChecksBeforeAction?.ToString()     ?? "(not set)",
                         _deferInstallToRestart?.ToString()           ?? "(not set)",
                         _maintenanceWindowStart?.ToString()          ?? "(not set)",
-                        _maintenanceWindowEnd?.ToString()            ?? "(not set)");
+                        _maintenanceWindowEnd?.ToString()            ?? "(not set)",
+                        _maintenanceWindowFrequency?.ToString()      ?? "(not set)",
+                        _maintenanceWindowDayOfWeek?.ToString()      ?? "(not set)",
+                        _maintenanceWindowDayOfMonth?.ToString()     ?? "(not set)",
+                        _maintenanceWindowMonthlyMode?.ToString()    ?? "(not set)",
+                        _maintenanceWindowMonthlyOrdinal?.ToString() ?? "(not set)");
                 }
             } catch (Exception ex) {
                 Logger.Error(ex, "Unexpected error reading policy registry settings");
@@ -138,6 +160,11 @@ namespace ZitiUpdateService.Utils {
                 case "DeferInstallToRestart":       return _deferInstallToRestart.HasValue;
                 case "MaintenanceWindowStart":      return _maintenanceWindowStart.HasValue;
                 case "MaintenanceWindowEnd":        return _maintenanceWindowEnd.HasValue;
+                case "MaintenanceWindowFrequency":  return _maintenanceWindowFrequency.HasValue;
+                case "MaintenanceWindowDayOfWeek":  return _maintenanceWindowDayOfWeek.HasValue;
+                case "MaintenanceWindowDayOfMonth": return _maintenanceWindowDayOfMonth.HasValue;
+                case "MaintenanceWindowMonthlyMode":    return _maintenanceWindowMonthlyMode.HasValue;
+                case "MaintenanceWindowMonthlyOrdinal": return _maintenanceWindowMonthlyOrdinal.HasValue;
                 default:                            return false;
             }
         }
@@ -156,7 +183,12 @@ namespace ZitiUpdateService.Utils {
             _alivenessChecksBeforeAction.HasValue ||
             _deferInstallToRestart.HasValue   ||
             _maintenanceWindowStart.HasValue  ||
-            _maintenanceWindowEnd.HasValue;
+            _maintenanceWindowEnd.HasValue    ||
+            _maintenanceWindowFrequency.HasValue ||
+            _maintenanceWindowDayOfWeek.HasValue ||
+            _maintenanceWindowDayOfMonth.HasValue ||
+            _maintenanceWindowMonthlyMode.HasValue ||
+            _maintenanceWindowMonthlyOrdinal.HasValue;
 
         // ---- Effective-value helpers -------------------------------------------------
         // Each returns the policy value if set, otherwise falls back to the supplied
@@ -199,6 +231,21 @@ namespace ZitiUpdateService.Utils {
 
         internal static int? EffectiveMaintenanceWindowEnd(Settings s) =>
             _maintenanceWindowEnd ?? s.MaintenanceWindowEnd;
+
+        internal static MaintenanceWindowFrequency EffectiveMaintenanceWindowFrequency(Settings s) =>
+            _maintenanceWindowFrequency ?? s.MaintenanceWindowFrequency;
+
+        internal static int? EffectiveMaintenanceWindowDayOfWeek(Settings s) =>
+            _maintenanceWindowDayOfWeek ?? s.MaintenanceWindowDayOfWeek;
+
+        internal static int? EffectiveMaintenanceWindowDayOfMonth(Settings s) =>
+            _maintenanceWindowDayOfMonth ?? s.MaintenanceWindowDayOfMonth;
+
+        internal static MaintenanceWindowMonthlyMode EffectiveMaintenanceWindowMonthlyMode(Settings s) =>
+            _maintenanceWindowMonthlyMode ?? s.MaintenanceWindowMonthlyMode;
+
+        internal static MaintenanceWindowMonthlyOrdinal? EffectiveMaintenanceWindowMonthlyOrdinal(Settings s) =>
+            _maintenanceWindowMonthlyOrdinal ?? s.MaintenanceWindowMonthlyOrdinal;
 
         internal static TimeSpan EffectiveInstallationCritical() {
             if (_installationCriticalSeconds.HasValue) {
@@ -306,14 +353,16 @@ namespace ZitiUpdateService.Utils {
             }
         }
 
-        private static (bool? disable, string url, int? interval, int? reminder, int? critical, int? aliveness, bool? defer, int? winStart, int? winEnd) SnapshotFields() =>
+        private static (bool? disable, string url, int? interval, int? reminder, int? critical, int? aliveness, bool? defer, int? winStart, int? winEnd, MaintenanceWindowFrequency? freq, int? dow, int? dom, MaintenanceWindowMonthlyMode? mmode, MaintenanceWindowMonthlyOrdinal? mord) SnapshotFields() =>
             (_disableAutomaticUpdates, _updateStreamURL, _updateIntervalSeconds,
              _installationReminderSeconds, _installationCriticalSeconds, _alivenessChecksBeforeAction,
-             _deferInstallToRestart, _maintenanceWindowStart, _maintenanceWindowEnd);
+             _deferInstallToRestart, _maintenanceWindowStart, _maintenanceWindowEnd,
+             _maintenanceWindowFrequency, _maintenanceWindowDayOfWeek, _maintenanceWindowDayOfMonth,
+             _maintenanceWindowMonthlyMode, _maintenanceWindowMonthlyOrdinal);
 
         private static void LogFieldChanges(
-            (bool? disable, string url, int? interval, int? reminder, int? critical, int? aliveness, bool? defer, int? winStart, int? winEnd) before,
-            (bool? disable, string url, int? interval, int? reminder, int? critical, int? aliveness, bool? defer, int? winStart, int? winEnd) after) {
+            (bool? disable, string url, int? interval, int? reminder, int? critical, int? aliveness, bool? defer, int? winStart, int? winEnd, MaintenanceWindowFrequency? freq, int? dow, int? dom, MaintenanceWindowMonthlyMode? mmode, MaintenanceWindowMonthlyOrdinal? mord) before,
+            (bool? disable, string url, int? interval, int? reminder, int? critical, int? aliveness, bool? defer, int? winStart, int? winEnd, MaintenanceWindowFrequency? freq, int? dow, int? dom, MaintenanceWindowMonthlyMode? mmode, MaintenanceWindowMonthlyOrdinal? mord) after) {
 
             void Log(string name, object oldVal, object newVal) {
                 string o = oldVal?.ToString() ?? "(not set)";
@@ -331,6 +380,11 @@ namespace ZitiUpdateService.Utils {
             Log("DeferInstallToRestart",       before.defer,     after.defer);
             Log("MaintenanceWindowStart",      before.winStart,  after.winStart);
             Log("MaintenanceWindowEnd",        before.winEnd,    after.winEnd);
+            Log("MaintenanceWindowFrequency",  before.freq,      after.freq);
+            Log("MaintenanceWindowDayOfWeek",  before.dow,       after.dow);
+            Log("MaintenanceWindowDayOfMonth", before.dom,       after.dom);
+            Log("MaintenanceWindowMonthlyMode",    before.mmode, after.mmode);
+            Log("MaintenanceWindowMonthlyOrdinal", before.mord,  after.mord);
         }
 
         // ---- Private helpers --------------------------------------------------------
@@ -341,6 +395,37 @@ namespace ZitiUpdateService.Utils {
                 setter(i);
                 Logger.Debug("Policy registry: {0} = {1}", name, i);
             }
+        }
+
+        // Accepts the underlying integer of MaintenanceWindowFrequency; out-of-range values fall back to Daily.
+        private static MaintenanceWindowFrequency ParseFrequency(int v) {
+            if (Enum.IsDefined(typeof(MaintenanceWindowFrequency), v)) {
+                return (MaintenanceWindowFrequency)v;
+            }
+            Logger.Warn("Policy MaintenanceWindowFrequency={0} out of range, falling back to Daily", v);
+            return MaintenanceWindowFrequency.Daily;
+        }
+
+        private static MaintenanceWindowMonthlyMode ParseMonthlyMode(int v) {
+            if (Enum.IsDefined(typeof(MaintenanceWindowMonthlyMode), v)) {
+                return (MaintenanceWindowMonthlyMode)v;
+            }
+            Logger.Warn("Policy MaintenanceWindowMonthlyMode={0} out of range, falling back to ByDate", v);
+            return MaintenanceWindowMonthlyMode.ByDate;
+        }
+
+        private static MaintenanceWindowMonthlyOrdinal? ParseOrdinal(int v) {
+            if (Enum.IsDefined(typeof(MaintenanceWindowMonthlyOrdinal), v)) {
+                return (MaintenanceWindowMonthlyOrdinal)v;
+            }
+            Logger.Warn("Policy MaintenanceWindowMonthlyOrdinal={0} not a valid ordinal (1=First..5=Last), ignoring", v);
+            return null;
+        }
+
+        // Day-of-month is 1-28 (avoids Feb/30 edge cases) plus the LastDay sentinel (32 = last day of current month).
+        private static int ClampDayOfMonth(int v) {
+            if (v == MaintenanceWindowDayOfMonthSentinel.LastDay) return v;
+            return Math.Min(28, Math.Max(1, v));
         }
 
         private static void ReadString(RegistryKey key, string name, Action<string> setter) {

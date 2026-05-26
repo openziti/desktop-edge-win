@@ -14,6 +14,33 @@ Only stop mid-test if the **Expected** outcome does not happen.
 
 ---
 
+## Scope: this is a wiring / integration plan, not a math suite
+
+The Tests 1-20 below verify **service behavior end-to-end** -- policy reload, IPC, deferred
+install, scheduled tasks, UI lock state. They use the simple "hour-of-day Start/End"
+maintenance window for the install-deferral scenarios because that's enough to exercise
+the install path.
+
+The cadence math (Frequency, MonthlyMode, Ordinal, DayOfWeek, DayOfMonth -- including
+LastDay sentinel and Last-vs-Fourth divergence) is covered by **unit tests** at
+`ZitiUpdateService.Tests/MaintenanceWindowEvaluatorTests.cs`. Run them with:
+
+```powershell
+dotnet test ZitiUpdateService.Tests/ZitiUpdateService.Tests.csproj --filter "FullyQualifiedName~MaintenanceWindowEvaluator"
+```
+
+That suite includes six **preset snapshot tests** (`Preset_CJIS_*`, `Preset_DisaStig_*`,
+`Preset_PciDss_*`, `Preset_NistFedrampModerate_*`, `Preset_NercCip_*`, `Preset_Hitrust_*`)
+that pin the recipes in `POLICY-ADMIN-GUIDE.md`. If you edit a preset in that doc, the
+matching snapshot test must change too; CI fails otherwise. This is the doc/code-drift
+backstop.
+
+Wiring-only smoke tests for the new cadence policies (registry write -> log line + UI
+state) live in `windows/gpo/VERIFICATION.md` cases G-4w / G-4nw / G-4m. No clock travel
+required.
+
+---
+
 ## Audience — read the section that fits you
 
 ### 👤 If you're a human

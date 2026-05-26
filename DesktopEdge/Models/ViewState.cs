@@ -16,6 +16,7 @@
 
 using NLog;
 using System;
+using ZitiDesktopEdge.DataStructures;
 
 namespace Ziti.Desktop.Edge.Models {
     public class ZDEWViewState {
@@ -42,6 +43,11 @@ namespace Ziti.Desktop.Edge.Models {
 
         public int? MaintenanceWindowStart { get; set; }
         public int? MaintenanceWindowEnd { get; set; }
+        public MaintenanceWindowFrequency MaintenanceWindowFrequency { get; set; } = MaintenanceWindowFrequency.Daily;
+        public int? MaintenanceWindowDayOfWeek { get; set; }
+        public int? MaintenanceWindowDayOfMonth { get; set; }
+        public MaintenanceWindowMonthlyMode MaintenanceWindowMonthlyMode { get; set; } = MaintenanceWindowMonthlyMode.ByDate;
+        public MaintenanceWindowMonthlyOrdinal? MaintenanceWindowMonthlyOrdinal { get; set; }
 
         public bool UpdateAvailable { get; set; }
         public bool DeferredInstallPending { get; set; }

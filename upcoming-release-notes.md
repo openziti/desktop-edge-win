@@ -30,6 +30,13 @@
       the menu open while running, and an "Update Now (vX.Y.Z)" entry that appears when an
       update is staged), Capture Feedback, Discourse Community, NetFoundry Support
     * "Close UI" preserved at the bottom
+* Maintenance window can now run daily, weekly, or monthly
+    * Weekly: pick a day of the week
+    * Monthly: pick a specific day of the month, or pick an ordinal weekday like the third
+      Tuesday or the last Friday
+    * Hour-of-day start and end still applies within the qualifying day
+    * Settings available via Group Policy, the bundled helper script, and the Automatic
+      Upgrades panel in the app
 
 ## Bugs fixed
 n/a

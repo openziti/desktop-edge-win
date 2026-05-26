@@ -233,5 +233,135 @@
       </elements>
     </policy>
 
+    <!-- ================================================================
+         MaintenanceWindowFrequency
+         Writes:  HKLM\...\ziti-monitor-service\MaintenanceWindowFrequency  (REG_DWORD)
+         0 = Daily, 1 = Weekly, 2 = Monthly
+         Weekly/Monthly require a matching DayOfWeek / DayOfMonth value to qualify.
+         ================================================================ -->
+    <policy name="ZMS_MaintenanceWindowFrequency"
+            class="Machine"
+            displayName="$(string.ZMS_MaintenanceWindowFrequency)"
+            explainText="$(string.ZMS_MaintenanceWindowFrequency_Help)"
+            presentation="$(presentation.ZMS_MaintenanceWindowFrequency)"
+            key="SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service">
+      <parentCategory ref="CAT_ZitiMonitorService"/>
+      <supportedOn ref="SUPPORTED_ZitiMonitorService"/>
+      <elements>
+        <enum id="MaintenanceWindowFrequency_Enum"
+              valueName="MaintenanceWindowFrequency"
+              required="true">
+          <item displayName="$(string.ZMS_MaintenanceWindowFrequency_Daily)"><value><decimal value="0"/></value></item>
+          <item displayName="$(string.ZMS_MaintenanceWindowFrequency_Weekly)"><value><decimal value="1"/></value></item>
+          <item displayName="$(string.ZMS_MaintenanceWindowFrequency_Monthly)"><value><decimal value="2"/></value></item>
+        </enum>
+      </elements>
+    </policy>
+
+    <!-- ================================================================
+         MaintenanceWindowDayOfWeek
+         Writes:  HKLM\...\ziti-monitor-service\MaintenanceWindowDayOfWeek  (REG_DWORD)
+         0 = Sunday ... 6 = Saturday. Honored when Frequency = Weekly, OR when
+         Frequency = Monthly and MonthlyMode = ByWeekday (in which case it
+         combines with MaintenanceWindowMonthlyOrdinal to form "Nth weekday").
+         ================================================================ -->
+    <policy name="ZMS_MaintenanceWindowDayOfWeek"
+            class="Machine"
+            displayName="$(string.ZMS_MaintenanceWindowDayOfWeek)"
+            explainText="$(string.ZMS_MaintenanceWindowDayOfWeek_Help)"
+            presentation="$(presentation.ZMS_MaintenanceWindowDayOfWeek)"
+            key="SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service">
+      <parentCategory ref="CAT_ZitiMonitorService"/>
+      <supportedOn ref="SUPPORTED_ZitiMonitorService"/>
+      <elements>
+        <enum id="MaintenanceWindowDayOfWeek_Enum"
+              valueName="MaintenanceWindowDayOfWeek"
+              required="true">
+          <item displayName="$(string.ZMS_MaintenanceWindowDayOfWeek_Sunday)"><value><decimal value="0"/></value></item>
+          <item displayName="$(string.ZMS_MaintenanceWindowDayOfWeek_Monday)"><value><decimal value="1"/></value></item>
+          <item displayName="$(string.ZMS_MaintenanceWindowDayOfWeek_Tuesday)"><value><decimal value="2"/></value></item>
+          <item displayName="$(string.ZMS_MaintenanceWindowDayOfWeek_Wednesday)"><value><decimal value="3"/></value></item>
+          <item displayName="$(string.ZMS_MaintenanceWindowDayOfWeek_Thursday)"><value><decimal value="4"/></value></item>
+          <item displayName="$(string.ZMS_MaintenanceWindowDayOfWeek_Friday)"><value><decimal value="5"/></value></item>
+          <item displayName="$(string.ZMS_MaintenanceWindowDayOfWeek_Saturday)"><value><decimal value="6"/></value></item>
+        </enum>
+      </elements>
+    </policy>
+
+    <!-- ================================================================
+         MaintenanceWindowDayOfMonth
+         Writes:  HKLM\...\ziti-monitor-service\MaintenanceWindowDayOfMonth  (REG_DWORD)
+         Valid: 1-28, or 32 (sentinel = last day of current month).
+         Range stops at 28 so February is always representable; use 32 for
+         "always the final day of the month".
+         ================================================================ -->
+    <policy name="ZMS_MaintenanceWindowDayOfMonth"
+            class="Machine"
+            displayName="$(string.ZMS_MaintenanceWindowDayOfMonth)"
+            explainText="$(string.ZMS_MaintenanceWindowDayOfMonth_Help)"
+            presentation="$(presentation.ZMS_MaintenanceWindowDayOfMonth)"
+            key="SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service">
+      <parentCategory ref="CAT_ZitiMonitorService"/>
+      <supportedOn ref="SUPPORTED_ZitiMonitorService"/>
+      <elements>
+        <decimal id="MaintenanceWindowDayOfMonth_Decimal"
+                 valueName="MaintenanceWindowDayOfMonth"
+                 minValue="1" maxValue="32" required="true"/>
+      </elements>
+    </policy>
+
+    <!-- ================================================================
+         MaintenanceWindowMonthlyMode
+         Writes:  HKLM\...\ziti-monitor-service\MaintenanceWindowMonthlyMode  (REG_DWORD)
+         0 = ByDate (use MaintenanceWindowDayOfMonth)
+         1 = ByWeekday (use MaintenanceWindowMonthlyOrdinal + MaintenanceWindowDayOfWeek)
+         Honored only when MaintenanceWindowFrequency = Monthly.
+         ================================================================ -->
+    <policy name="ZMS_MaintenanceWindowMonthlyMode"
+            class="Machine"
+            displayName="$(string.ZMS_MaintenanceWindowMonthlyMode)"
+            explainText="$(string.ZMS_MaintenanceWindowMonthlyMode_Help)"
+            presentation="$(presentation.ZMS_MaintenanceWindowMonthlyMode)"
+            key="SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service">
+      <parentCategory ref="CAT_ZitiMonitorService"/>
+      <supportedOn ref="SUPPORTED_ZitiMonitorService"/>
+      <elements>
+        <enum id="MaintenanceWindowMonthlyMode_Enum"
+              valueName="MaintenanceWindowMonthlyMode"
+              required="true">
+          <item displayName="$(string.ZMS_MaintenanceWindowMonthlyMode_ByDate)"><value><decimal value="0"/></value></item>
+          <item displayName="$(string.ZMS_MaintenanceWindowMonthlyMode_ByWeekday)"><value><decimal value="1"/></value></item>
+        </enum>
+      </elements>
+    </policy>
+
+    <!-- ================================================================
+         MaintenanceWindowMonthlyOrdinal
+         Writes:  HKLM\...\ziti-monitor-service\MaintenanceWindowMonthlyOrdinal  (REG_DWORD)
+         1=First, 2=Second, 3=Third, 4=Fourth, 5=Last.
+         Honored only when Frequency=Monthly and MonthlyMode=ByWeekday.
+         Mirrors SCCM Maintenance Window "Week of month" + Task Scheduler ScheduleByMonthDayOfWeek.
+         ================================================================ -->
+    <policy name="ZMS_MaintenanceWindowMonthlyOrdinal"
+            class="Machine"
+            displayName="$(string.ZMS_MaintenanceWindowMonthlyOrdinal)"
+            explainText="$(string.ZMS_MaintenanceWindowMonthlyOrdinal_Help)"
+            presentation="$(presentation.ZMS_MaintenanceWindowMonthlyOrdinal)"
+            key="SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service">
+      <parentCategory ref="CAT_ZitiMonitorService"/>
+      <supportedOn ref="SUPPORTED_ZitiMonitorService"/>
+      <elements>
+        <enum id="MaintenanceWindowMonthlyOrdinal_Enum"
+              valueName="MaintenanceWindowMonthlyOrdinal"
+              required="true">
+          <item displayName="$(string.ZMS_MaintenanceWindowMonthlyOrdinal_First)"><value><decimal value="1"/></value></item>
+          <item displayName="$(string.ZMS_MaintenanceWindowMonthlyOrdinal_Second)"><value><decimal value="2"/></value></item>
+          <item displayName="$(string.ZMS_MaintenanceWindowMonthlyOrdinal_Third)"><value><decimal value="3"/></value></item>
+          <item displayName="$(string.ZMS_MaintenanceWindowMonthlyOrdinal_Fourth)"><value><decimal value="4"/></value></item>
+          <item displayName="$(string.ZMS_MaintenanceWindowMonthlyOrdinal_Last)"><value><decimal value="5"/></value></item>
+        </enum>
+      </elements>
+    </policy>
+
   </policies>
 </policyDefinitions>

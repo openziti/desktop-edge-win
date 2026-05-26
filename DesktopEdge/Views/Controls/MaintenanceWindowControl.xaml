@@ -1,0 +1,251 @@
+<!--
+    Copyright NetFoundry Inc.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+-->
+<UserControl x:Class="ZitiDesktopEdge.MaintenanceWindowControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:ZitiDesktopEdge"
+             mc:Ignorable="d"
+             d:DesignWidth="380">
+    <StackPanel Orientation="Vertical">
+        <Label x:Name="MaintenanceWindowHeading" FontWeight="Bold" FontSize="16">Installation maintenance window:</Label>
+        <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"/>
+        <!-- 2-column grid (right-aligned label | controls), each cadence field on its own row.
+             Flat ComboBox/CheckBox restyle is scoped to this Grid only via Grid.Resources so
+             other ComboBoxes in the host (e.g. ConfigMaskNew in MainMenu) keep their styles. -->
+        <Grid Margin="0,8,0,0">
+            <Grid.Resources>
+                <SolidColorBrush x:Key="MwBg" Color="#FFFFFF"/>
+                <SolidColorBrush x:Key="MwBorder" Color="#D1D5DB"/>
+                <SolidColorBrush x:Key="MwBorderHover" Color="#9CA3AF"/>
+                <SolidColorBrush x:Key="MwBorderFocus" Color="#1676FE"/>
+                <SolidColorBrush x:Key="MwFg" Color="#0F0F23"/>
+                <SolidColorBrush x:Key="MwItemHover" Color="#F3F4F6"/>
+                <SolidColorBrush x:Key="MwItemSelected" Color="#E5F0FF"/>
+
+                <Style TargetType="Label">
+                    <Setter Property="VerticalAlignment" Value="Center"/>
+                    <Setter Property="HorizontalAlignment" Value="Right"/>
+                    <Setter Property="Padding" Value="0,0,8,0"/>
+                    <Setter Property="Foreground" Value="{StaticResource MwFg}"/>
+                </Style>
+
+                <Style x:Key="MwComboToggle" TargetType="ToggleButton">
+                    <Setter Property="OverridesDefaultStyle" Value="True"/>
+                    <Setter Property="IsTabStop" Value="False"/>
+                    <Setter Property="Focusable" Value="False"/>
+                    <Setter Property="ClickMode" Value="Press"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ToggleButton">
+                                <Border Background="Transparent"/>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+
+                <Style TargetType="ComboBox">
+                    <Setter Property="VerticalAlignment" Value="Center"/>
+                    <Setter Property="MinWidth" Value="100"/>
+                    <Setter Property="Margin" Value="0,3,0,3"/>
+                    <Setter Property="Height" Value="28"/>
+                    <Setter Property="Padding" Value="10,0,28,0"/>
+                    <Setter Property="FontSize" Value="13"/>
+                    <Setter Property="Foreground" Value="{StaticResource MwFg}"/>
+                    <Setter Property="Background" Value="{StaticResource MwBg}"/>
+                    <Setter Property="BorderBrush" Value="{StaticResource MwBorder}"/>
+                    <Setter Property="BorderThickness" Value="1"/>
+                    <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                    <Setter Property="VerticalContentAlignment" Value="Center"/>
+                    <Setter Property="SnapsToDevicePixels" Value="True"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ComboBox">
+                                <Grid>
+                                    <Border x:Name="MainBorder"
+                                            Background="{TemplateBinding Background}"
+                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                            BorderThickness="{TemplateBinding BorderThickness}"
+                                            CornerRadius="5"/>
+                                    <ToggleButton x:Name="ToggleButton"
+                                                  Style="{StaticResource MwComboToggle}"
+                                                  IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                    <ContentPresenter IsHitTestVisible="False"
+                                                      Content="{TemplateBinding SelectionBoxItem}"
+                                                      ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                                      ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                                      Margin="{TemplateBinding Padding}"
+                                                      VerticalAlignment="Center"
+                                                      HorizontalAlignment="Left"/>
+                                    <Path x:Name="Chevron" Data="M 0 0 L 5 5 L 10 0"
+                                          Stroke="#6B7280" StrokeThickness="1.4"
+                                          HorizontalAlignment="Right" VerticalAlignment="Center"
+                                          Margin="0,0,10,0" IsHitTestVisible="False"/>
+                                    <Popup x:Name="Popup" Placement="Bottom"
+                                           IsOpen="{TemplateBinding IsDropDownOpen}"
+                                           AllowsTransparency="True" Focusable="False"
+                                           PopupAnimation="Fade">
+                                        <Grid SnapsToDevicePixels="True"
+                                              MinWidth="{TemplateBinding ActualWidth}"
+                                              MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                              Margin="0,2,4,4">
+                                            <Border Background="{StaticResource MwBg}"
+                                                    BorderBrush="{StaticResource MwBorder}"
+                                                    BorderThickness="1" CornerRadius="5">
+                                                <Border.Effect>
+                                                    <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.15"/>
+                                                </Border.Effect>
+                                            </Border>
+                                            <ScrollViewer Margin="3" SnapsToDevicePixels="True">
+                                                <StackPanel IsItemsHost="True"
+                                                            KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                            </ScrollViewer>
+                                        </Grid>
+                                    </Popup>
+                                </Grid>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="MainBorder" Property="BorderBrush"
+                                                Value="{StaticResource MwBorderHover}"/>
+                                    </Trigger>
+                                    <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                        <Setter TargetName="MainBorder" Property="BorderBrush"
+                                                Value="{StaticResource MwBorderFocus}"/>
+                                    </Trigger>
+                                    <Trigger Property="IsEnabled" Value="False">
+                                        <Setter Property="Opacity" Value="0.55"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+
+                <Style TargetType="ComboBoxItem">
+                    <Setter Property="Padding" Value="10,5"/>
+                    <Setter Property="FontSize" Value="13"/>
+                    <Setter Property="Foreground" Value="{StaticResource MwFg}"/>
+                    <Setter Property="SnapsToDevicePixels" Value="True"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ComboBoxItem">
+                                <Border x:Name="Bd"
+                                        Background="Transparent"
+                                        Padding="{TemplateBinding Padding}"
+                                        CornerRadius="3">
+                                    <ContentPresenter VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Bd" Property="Background"
+                                                Value="{StaticResource MwItemHover}"/>
+                                    </Trigger>
+                                    <Trigger Property="IsHighlighted" Value="True">
+                                        <Setter TargetName="Bd" Property="Background"
+                                                Value="{StaticResource MwItemSelected}"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+
+                <Style TargetType="CheckBox">
+                    <Setter Property="Foreground" Value="{StaticResource MwFg}"/>
+                    <Setter Property="FontSize" Value="13"/>
+                    <Setter Property="VerticalContentAlignment" Value="Center"/>
+                    <Setter Property="SnapsToDevicePixels" Value="True"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="CheckBox">
+                                <StackPanel Orientation="Horizontal" Background="Transparent">
+                                    <Border x:Name="Box" Width="16" Height="16" CornerRadius="3"
+                                            Background="{StaticResource MwBg}"
+                                            BorderBrush="{StaticResource MwBorder}"
+                                            BorderThickness="1"
+                                            VerticalAlignment="Center">
+                                        <Path x:Name="Check" Data="M 2 6 L 6 10 L 12 3"
+                                              Stroke="#FFFFFF" StrokeThickness="2"
+                                              Visibility="Collapsed"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                                    </Border>
+                                    <ContentPresenter Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsChecked" Value="True">
+                                        <Setter TargetName="Box" Property="Background"
+                                                Value="{StaticResource MwBorderFocus}"/>
+                                        <Setter TargetName="Box" Property="BorderBrush"
+                                                Value="{StaticResource MwBorderFocus}"/>
+                                        <Setter TargetName="Check" Property="Visibility" Value="Visible"/>
+                                    </Trigger>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Box" Property="BorderBrush"
+                                                Value="{StaticResource MwBorderHover}"/>
+                                    </Trigger>
+                                    <Trigger Property="IsEnabled" Value="False">
+                                        <Setter Property="Opacity" Value="0.55"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </Grid.Resources>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="80"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Label x:Name="MaintenanceWindowFrequencyLabel" Grid.Row="0" Grid.Column="0" Content="Frequency"/>
+            <ComboBox x:Name="MaintenanceWindowFrequencyCombo" Grid.Row="0" Grid.Column="1"
+                      HorizontalAlignment="Left" Width="112"
+                      SelectionChanged="MaintenanceWindowFrequency_Changed"/>
+
+            <Label x:Name="MaintenanceWindowMonthlyModeLabel" Grid.Row="1" Grid.Column="0"
+                   Content="Mode" Visibility="Collapsed"/>
+            <ComboBox x:Name="MaintenanceWindowMonthlyModeCombo" Grid.Row="1" Grid.Column="1"
+                      HorizontalAlignment="Left" Width="112" Visibility="Collapsed"
+                      SelectionChanged="MaintenanceWindowMonthlyMode_Changed"/>
+
+            <Label x:Name="MaintenanceWindowDayOfWeekLabel" Grid.Row="2" Grid.Column="0"
+                   Content="On" Visibility="Collapsed"/>
+            <Label x:Name="MaintenanceWindowDayOfMonthLabel" Grid.Row="2" Grid.Column="0"
+                   Content="On day" Visibility="Collapsed"/>
+            <Label x:Name="MaintenanceWindowOrdinalLabel" Grid.Row="2" Grid.Column="0"
+                   Content="On the" Visibility="Collapsed"/>
+            <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
+                <ComboBox x:Name="MaintenanceWindowOrdinalCombo" Width="112" Margin="0,3,6,3"
+                          Visibility="Collapsed"/>
+                <ComboBox x:Name="MaintenanceWindowDayOfWeekCombo" Width="112" Visibility="Collapsed"/>
+                <ComboBox x:Name="MaintenanceWindowDayOfMonthCombo" Width="112" Visibility="Collapsed"/>
+            </StackPanel>
+
+            <Label Grid.Row="3" Grid.Column="0" Content="From"/>
+            <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal">
+                <ComboBox x:Name="MaintenanceWindowStartCombo" MinWidth="70"/>
+                <Label Content="to" Padding="8,0"/>
+                <ComboBox x:Name="MaintenanceWindowEndCombo" MinWidth="70"/>
+                <CheckBox x:Name="MaintenanceWindowAnyTime" Content="Any time" VerticalAlignment="Center"
+                          Margin="14,0,0,0"
+                          Checked="MaintenanceWindowAnyTime_Changed"
+                          Unchecked="MaintenanceWindowAnyTime_Changed"/>
+            </StackPanel>
+        </Grid>
+    </StackPanel>
+</UserControl>

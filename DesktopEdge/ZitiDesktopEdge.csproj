@@ -218,6 +218,9 @@
     </Compile>
     <Compile Include="Models\ZitiIdentity.cs" />
     <Compile Include="Models\ZitiService.cs" />
+    <Compile Include="Views\Controls\MaintenanceWindowControl.xaml.cs">
+      <DependentUpon>MaintenanceWindowControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\Controls\Toggler.xaml.cs">
       <DependentUpon>Toggler.xaml</DependentUpon>
     </Compile>
@@ -329,6 +332,10 @@
     <Page Include="Themes\Generic.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\Controls\MaintenanceWindowControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Views\Controls\Toggler.xaml">
       <SubType>Designer</SubType>

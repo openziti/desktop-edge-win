@@ -582,8 +582,12 @@ namespace ZitiDesktopEdge {
         private async Task OpenTunnelInstancePickerAsync() {
             try {
                 var instances = await TunnelInstanceDiscovery.EnumerateAsync();
-                if (instances.Count <= 1) {
-                    logger.Debug("Ctrl+Shift+T ignored — only {0} tunneler instance running", instances.Count);
+                // Fire whenever a non-default tunneler exists, regardless of count. Covers the
+                // "only the alternate is running" case where there's still a meaningful switch
+                // (back to default). The picker synthesizes the default row when needed.
+                bool hasNonDefault = instances.Any(i => !string.IsNullOrEmpty(i.Discriminator));
+                if (!hasNonDefault) {
+                    logger.Debug("Ctrl+Shift+T ignored — no non-default tunneler instances ({0} total)", instances.Count);
                     return;
                 }
             } catch (Exception ex) {
@@ -2009,6 +2013,7 @@ namespace ZitiDesktopEdge {
                 props.IdentityCount = ids.Length;
                 GetStartedScreen.ViewModel.UpdateForState(serviceClient.Connected, ids.Length);
                 MainMenu.ShowWelcomeButton.Visibility = ids.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+                HelpCircle.Visibility                  = ids.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
                 tray.RebuildIdentities(ids);
                 if (ids.Length > 0 && serviceClient.Connected) {
                     double height = defaultHeight + (ids.Length * 60);
@@ -2101,8 +2106,6 @@ namespace ZitiDesktopEdge {
                     ConnectButton.Visibility = Visibility.Visible;
                     DisconnectButton.Visibility = Visibility.Collapsed;
                     IdentityMenu.Visibility = Visibility.Collapsed;
-                    MainMenu.Visibility = Visibility.Collapsed;
-                    HideBlurb();
                     MainMenu.Disconnected();
                     DownloadSpeed.Content = "0.0";
                     UploadSpeed.Content = "0.0";

@@ -77,21 +77,23 @@ and that the values take effect even if `settings.json` or `App.config` say some
 different.
 
 ```powershell
-Set-Policy "DisableAutomaticUpdates"    1                                             DWord
-Set-Policy "UpdateStreamURL"            "https://updates.internal.example.com/ziti"  String
-Set-Policy "UpdateIntervalSeconds"      3600                                          DWord
-Set-Policy "InstallationReminderSeconds" 7200                                         DWord
-Set-Policy "InstallationCriticalSeconds" 172800                                       DWord
-Set-Policy "AlivenessChecksBeforeAction" 24                                           DWord
+Set-Policy "AutomaticUpdatesDisabled"    1                                             DWord
+Set-Policy "AutomaticUpdateURL"          "https://updates.internal.example.com/ziti"  String
+Set-Policy "UpdateTimer"                 3600                                          DWord
+Set-Policy "InstallationReminder"        7200                                          DWord
+Set-Policy "InstallationCritical"        172800                                        DWord
+Set-Policy "AlivenessChecksBeforeAction" 24                                            DWord
 ```
 
-Restart the service and look for these lines in the log
-(`%APPDATA%\NetFoundry\ZitiUpdateService\` or the installation log directory):
+Restart the service and look for the `Policy overrides loaded:` line in the log
+(`%PROGRAMFILES(X86)%\NetFoundry Inc\Ziti Desktop Edge\logs\ZitiMonitorService\ZitiUpdateService.log`).
+The line contains every supported field name; the six set above should show non-null values:
 
 ```
-[INFO] Policy overrides loaded — DisableAutomaticUpdates=True, UpdateStreamURL=https://...,
-       UpdateIntervalSeconds=3600, InstallationReminderSeconds=7200,
-       InstallationCriticalSeconds=172800, AlivenessChecksBeforeAction=24
+Policy overrides loaded: AutomaticUpdatesDisabled=True, AutomaticUpdateURL=https://...,
+UpdateTimer=3600, InstallationReminder=7200, InstallationCritical=172800,
+AlivenessChecksBeforeAction=24, DeferInstallToRestart=(null), MaintenanceWindowStart=(null),
+MaintenanceWindowEnd=(null), MaintenanceWindowFrequency=(null), ...
 ```
 
 **Pass criteria:** all six values appear in the `Policy overrides loaded` log line; none of
@@ -106,29 +108,29 @@ the `settings.json` or `App.config` defaults are used in their place.
 
 ```powershell
 Remove-PolicyKey
-Set-Policy "DisableAutomaticUpdates" 1 DWord
+Set-Policy "AutomaticUpdatesDisabled" 1 DWord
 ```
 
 Restart the service. Expected log:
 
 ```
-[INFO] Policy overrides loaded — DisableAutomaticUpdates=True, UpdateStreamURL=(not set),
-       UpdateIntervalSeconds=(not set), ...
+Policy overrides loaded: AutomaticUpdatesDisabled=True, AutomaticUpdateURL=(null),
+UpdateTimer=(null), InstallationReminder=(null), ...
 ```
 
 **Pass criteria:**
-- `DisableAutomaticUpdates` is `True` in the log
-- All other values show `(not set)` — they are taken from `settings.json` / `App.config`
+- `AutomaticUpdatesDisabled` is `True` in the log
+- All other values show `(null)` — they are taken from `settings.json` / `App.config`
 
 ---
 
-## Test 3 — Runtime block: SetAutomaticUpdateDisabled
+## Test 3 — Runtime block: SetAutomaticUpgradeDisabled
 
-**Goal:** verify that sending a `SetAutomaticUpdateDisabled` IPC command while
-`DisableAutomaticUpdates` is policy-locked returns an error and does not change the setting.
+**Goal:** verify that sending a `SetAutomaticUpgradeDisabled` IPC command while
+`AutomaticUpdatesDisabled` is policy-locked returns an error and does not change the setting.
 
 ```powershell
-Set-Policy "DisableAutomaticUpdates" 0 DWord   # locked to "enabled"
+Set-Policy "AutomaticUpdatesDisabled" 0 DWord   # locked to "enabled"
 Restart-MonitorService
 ```
 
@@ -136,33 +138,33 @@ Now use the Ziti Desktop Edge UI (Settings → toggle automatic updates) or any 
 to attempt to disable automatic updates. Expected IPC response:
 
 ```json
-{ "Message": "Failure", "Code": 3, "Error": "DisableAutomaticUpdates is managed by policy" }
+{ "Message": "Failure", "Code": 3, "Error": "DisableAutomaticUpdates is managed by Group Policy" }
 ```
 
 And in the service log:
 
 ```
-[WARN] DisableAutomaticUpdates is managed by policy — change rejected
+DisableAutomaticUpdates is managed by Group Policy, change rejected
 ```
 
 **Pass criteria:** response `Code` is `3` (`MANAGED_BY_POLICY`), setting does not change.
 
 ---
 
-## Test 4 — Runtime block: SetAutomaticUpdateURL
+## Test 4 — Runtime block: SetAutomaticUpgradeURL
 
-**Goal:** verify that attempting to change the update URL while `UpdateStreamURL` is
+**Goal:** verify that attempting to change the update URL while `AutomaticUpdateURL` is
 policy-locked is rejected.
 
 ```powershell
-Set-Policy "UpdateStreamURL" "https://gpo.example.com/ziti" String
+Set-Policy "AutomaticUpdateURL" "https://gpo.example.com/ziti" String
 Restart-MonitorService
 ```
 
 Attempt to change the URL via the UI or IPC. Expected response:
 
 ```json
-{ "Message": "Failure", "Code": 3, "Error": "UpdateStreamURL is managed by policy" }
+{ "Message": "Failure", "Code": 3, "Error": "AutomaticUpdateURL is managed by policy" }
 ```
 
 **Pass criteria:** response `Code` is `3`, URL does not change.
@@ -172,17 +174,17 @@ Attempt to change the URL via the UI or IPC. Expected response:
 ## Test 5 — Runtime block: SetReleaseStream
 
 **Goal:** verify that switching between beta/stable release streams is silently blocked
-when `UpdateStreamURL` is policy-locked (since policy owns the stream URL entirely).
+when `AutomaticUpdateURL` is policy-locked (since policy owns the stream URL entirely).
 
 ```powershell
-Set-Policy "UpdateStreamURL" "https://gpo.example.com/ziti" String
+Set-Policy "AutomaticUpdateURL" "https://gpo.example.com/ziti" String
 Restart-MonitorService
 ```
 
 Attempt to switch the release stream via the UI. Expected service log:
 
 ```
-[WARN] UpdateStreamURL is managed by policy — SetReleaseStream rejected
+AutomaticUpdateURL is managed by policy — SetReleaseStream rejected
 ```
 
 No error is returned to the caller (the command is a fire-and-forget void call), but the
@@ -204,15 +206,15 @@ Restart-MonitorService
 Expected log:
 
 ```
-[DEBUG] GPO registry key absent — no policy overrides in effect
+GPO registry key absent — no policy overrides in effect
 ```
 
 Confirm:
 - No `Policy overrides loaded` line appears
-- `SetAutomaticUpdateDisabled` and `SetAutomaticUpdateURL` IPC commands succeed normally
+- `SetAutomaticUpgradeDisabled` and `SetAutomaticUpgradeURL` IPC commands succeed normally
 - The release stream switch works normally
 
-**Pass criteria:** only the "key absent" debug line; all IPC mutations succeed.
+**Pass criteria:** only the "key absent" log line; all IPC mutations succeed.
 
 ---
 
@@ -223,35 +225,35 @@ behaviour.
 
 ```powershell
 # Start with updates locked disabled
-Set-Policy "DisableAutomaticUpdates" 1 DWord
+Set-Policy "AutomaticUpdatesDisabled" 1 DWord
 Restart-MonitorService
 # (verify IPC block from Test 3) ...
 
 # Remove the lock
-Remove-Policy "DisableAutomaticUpdates"
+Remove-Policy "AutomaticUpdatesDisabled"
 Restart-MonitorService
 ```
 
-After restart, `SetAutomaticUpdateDisabled` IPC commands should succeed again.
+After restart, `SetAutomaticUpgradeDisabled` IPC commands should succeed again.
 
 **Pass criteria:** after restart with the value removed, the setting can be changed via IPC.
 
 ---
 
-## Test 8 — InstallationCriticalSeconds = 0 (force-install immediately)
+## Test 8 — InstallationCritical = 0 (force-install immediately)
 
 **Goal:** verify that setting the critical threshold to `0` causes the service to treat
 any detected update as immediately critical and schedule installation within 30 seconds.
 
 ```powershell
-Set-Policy "InstallationCriticalSeconds" 0 DWord
+Set-Policy "InstallationCritical" 0 DWord
 Restart-MonitorService
 ```
 
 If an update is available, the service log should show:
 
 ```
-[WARN] Installation is critical! ... approximate install time: <~30 seconds from now>
+Installation is critical! ... approximate install time: <~30 seconds from now>
 ```
 
 **Pass criteria:** `Installation is critical!` log line appears shortly after service start
@@ -264,13 +266,21 @@ If an update is available, the service log should show:
 | Test | Policy state | Action | Expected outcome |
 |---|---|---|---|
 | 1 | All six values set | Startup | All six values in `Policy overrides loaded` log |
-| 2 | DisableAutomaticUpdates only | Startup | Only that field non-null in log |
-| 3 | DisableAutomaticUpdates set | SetAutomaticUpdateDisabled IPC | `Code: 3`, WARN logged |
-| 4 | UpdateStreamURL set | SetAutomaticUpdateURL IPC | `Code: 3`, WARN logged |
-| 5 | UpdateStreamURL set | SetReleaseStream IPC | WARN logged, no error returned |
+| 2 | AutomaticUpdatesDisabled only | Startup | Only that field non-null in log |
+| 3 | AutomaticUpdatesDisabled set | SetAutomaticUpgradeDisabled IPC | `Code: 3`, WARN logged |
+| 4 | AutomaticUpdateURL set | SetAutomaticUpgradeURL IPC | `Code: 3`, WARN logged |
+| 5 | AutomaticUpdateURL set | SetReleaseStream IPC | WARN logged, no error returned |
 | 6 | No policy key | Any IPC mutation | Normal success |
-| 7 | Value removed, restart | SetAutomaticUpdateDisabled IPC | Success |
-| 8 | InstallationCriticalSeconds = 0 | Update available | Force-install within 30 s |
+| 7 | Value removed, restart | SetAutomaticUpgradeDisabled IPC | Success |
+| 8 | InstallationCritical = 0 | Update available | Force-install within 30 s |
+| 9 | MaintenanceWindowFrequency / MonthlyMode / Ordinal / DayOfWeek / DayOfMonth set | Startup | All five values in `Policy overrides loaded` log; UI cadence controls greyed |
+
+> Cadence **math correctness** (which calendar day qualifies for which configuration) is
+> covered by `ZitiUpdateService.Tests/MaintenanceWindowEvaluatorTests.cs` -- run with
+> `dotnet test ZitiUpdateService.Tests/ZitiUpdateService.Tests.csproj --filter "FullyQualifiedName~MaintenanceWindowEvaluator"`.
+> Manual VM tests (Test 9, plus G-4w / G-4nw / G-4m in VERIFICATION.md) verify only the
+> **wiring**: registry-write -> log line + UI state. Do NOT set the VM clock to verify
+> cadence math -- it breaks CRL fetch, AD, DST, and log timestamps.
 
 ---
 

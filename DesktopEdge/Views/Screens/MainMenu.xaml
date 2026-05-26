@@ -224,10 +224,24 @@
                         </TextBlock>
                     </Border>
 
-                    <Label x:Name="AutomaticUpgradesHeading" FontWeight="Bold" FontSize="16" Margin="{StaticResource MarginTop10}">Automatic upgrades:</Label>
-                    <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
-                    <local:SubOptionItem x:Name="AutomaticUpgradesItemOn" HorizontalAlignment="Stretch" Width="Auto" Label="Enabled" MouseUp="SetAutomaticUpgradesMenuAction"></local:SubOptionItem>
-                    <local:SubOptionItem x:Name="AutomaticUpgradesItemOff" HorizontalAlignment="Stretch" Width="Auto" Label="Disabled" MouseUp="SetAutomaticUpgradesMenuAction"></local:SubOptionItem>
+                    <Grid VerticalAlignment="Center" Margin="{StaticResource MarginTop10}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Label x:Name="AutomaticUpgradesHeading" Grid.Column="0"
+                               HorizontalAlignment="Left" VerticalAlignment="Center"
+                               FontWeight="Bold" FontSize="16">Automatic upgrades:</Label>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal"
+                                    HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <Label x:Name="AutomaticUpgradesToggleLabel" VerticalAlignment="Center"
+                                   Content="DISABLED" FontSize="14"
+                                   Typography.Capitals="AllSmallCaps"/>
+                            <local:Toggler x:Name="AutomaticUpgradesToggle" VerticalAlignment="Center"
+                                           Focusable="True" Margin="10,0,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                    <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2" Margin="0,10,0,0"></Rectangle>
 
                     <Label x:Name="UpdateUrlHeading" FontWeight="Bold" FontSize="16"  Margin="{StaticResource MarginTop10}">URL used to discover new upgrades:</Label>
 
@@ -259,18 +273,12 @@
                             <Label Content=""/>
                         </StackPanel>
                     </StackPanel>
-                    <Label x:Name="MaintenanceWindowHeading" FontWeight="Bold" FontSize="16">Installation maintenance window:</Label>
-                    <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0" VerticalAlignment="Center">
-                        <Label VerticalAlignment="Center" Padding="5,0,6,0">From</Label>
-                        <ComboBox x:Name="MaintenanceWindowStartCombo" Width="80"/>
-                        <Label VerticalAlignment="Center" Padding="6,0">to</Label>
-                        <ComboBox x:Name="MaintenanceWindowEndCombo" Width="80"/>
-                        <CheckBox x:Name="MaintenanceWindowAnyTime" Content="Any time" VerticalAlignment="Center"
-                                  Margin="12,0,0,0"
-                                  Checked="MaintenanceWindowAnyTime_Changed"
-                                  Unchecked="MaintenanceWindowAnyTime_Changed"/>
-                    </StackPanel>
+                    <!-- Maintenance window UI extracted to keep this file readable. The control
+                         exposes Frequency, MonthlyMode, WindowStart, WindowEnd, DayOfWeekToPersist,
+                         DayOfMonthToPersist, OrdinalToPersist getters and an ApplyFromState() method.
+                         The Save Settings button below reads those getters; UpdateState() pushes
+                         policy state into the control via ApplyFromState. -->
+                    <local:MaintenanceWindowControl x:Name="MaintenanceWindow"/>
                     <local:StyledButton x:Name="SaveSettingsButton" OnClick="SaveSettingsButton_Click" Label="Save Settings" Margin="{StaticResource MarginTop10}"/>
 
                     <local:StyledButton x:Name="CheckForUpdate" OnClick="CheckForUpdate_OnClick" Label="Check for Updates Now" Margin="{StaticResource MarginTop10}"></local:StyledButton>

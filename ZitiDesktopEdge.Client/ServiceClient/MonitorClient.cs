@@ -239,20 +239,11 @@ namespace ZitiDesktopEdge.ServiceClient {
             } finally { _rpcLock.Release(); }
         }
 
-        async public Task<SvcResponse> SetMaintenanceWindowStartAsync(int? hour) {
+        async public Task<SvcResponse> SetMaintenanceWindowAsync(MaintenanceWindowConfigRequest req) {
             await _rpcLock.WaitAsync();
             try {
-                ActionEvent action = new ActionEvent() { Op = "SetMaintenanceWindowStart", Action = hour?.ToString() ?? "" };
-                await sendMonitorClientAsync(action);
-                return await readMonitorClientAsync<SvcResponse>(ipcReader);
-            } finally { _rpcLock.Release(); }
-        }
-
-        async public Task<SvcResponse> SetMaintenanceWindowEndAsync(int? hour) {
-            await _rpcLock.WaitAsync();
-            try {
-                ActionEvent action = new ActionEvent() { Op = "SetMaintenanceWindowEnd", Action = hour?.ToString() ?? "" };
-                await sendMonitorClientAsync(action);
+                req.Op = "SetMaintenanceWindow";
+                await sendMonitorClientAsync(req);
                 return await readMonitorClientAsync<SvcResponse>(ipcReader);
             } finally { _rpcLock.Release(); }
         }

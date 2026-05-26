@@ -57,11 +57,21 @@ namespace ZitiDesktopEdge.ViewModels {
                                                   || evt.AlivenessChecksBeforeActionLocked
                                                   || evt.MaintenanceWindowStartLocked
                                                   || evt.MaintenanceWindowEndLocked
+                                                  || evt.MaintenanceWindowFrequencyLocked
+                                                  || evt.MaintenanceWindowDayOfWeekLocked
+                                                  || evt.MaintenanceWindowDayOfMonthLocked
+                                                  || evt.MaintenanceWindowMonthlyModeLocked
+                                                  || evt.MaintenanceWindowMonthlyOrdinalLocked
                                                   || evt.DeferInstallToRestartLocked;
             AutomaticUpdatesDisabled              = bool.TryParse(evt.AutomaticUpgradeDisabled, out bool d) && d;
             AutomaticUpdateURL                    = evt.AutomaticUpgradeURL;
             MaintenanceWindowStart                = evt.MaintenanceWindowStart;
             MaintenanceWindowEnd                  = evt.MaintenanceWindowEnd;
+            MaintenanceWindowFrequency            = evt.MaintenanceWindowFrequency;
+            MaintenanceWindowDayOfWeek            = evt.MaintenanceWindowDayOfWeek;
+            MaintenanceWindowDayOfMonth           = evt.MaintenanceWindowDayOfMonth;
+            MaintenanceWindowMonthlyMode          = evt.MaintenanceWindowMonthlyMode;
+            MaintenanceWindowMonthlyOrdinal       = evt.MaintenanceWindowMonthlyOrdinal;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
         }
 
@@ -95,6 +105,11 @@ namespace ZitiDesktopEdge.ViewModels {
         public string AutomaticUpdateURL       { get; private set; }
         public int?   MaintenanceWindowStart   { get; private set; }
         public int?   MaintenanceWindowEnd     { get; private set; }
+        public MaintenanceWindowFrequency MaintenanceWindowFrequency { get; private set; } = MaintenanceWindowFrequency.Daily;
+        public int?   MaintenanceWindowDayOfWeek  { get; private set; }
+        public int?   MaintenanceWindowDayOfMonth { get; private set; }
+        public MaintenanceWindowMonthlyMode MaintenanceWindowMonthlyMode { get; private set; } = MaintenanceWindowMonthlyMode.ByDate;
+        public MaintenanceWindowMonthlyOrdinal? MaintenanceWindowMonthlyOrdinal { get; private set; }
 
         // ---- Policy lock indicators (bind to Visibility for "managed by your organization" labels) ----
 

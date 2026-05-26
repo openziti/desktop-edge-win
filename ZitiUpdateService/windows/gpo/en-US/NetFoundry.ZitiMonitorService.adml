@@ -229,6 +229,117 @@ settings.json is used. If not set there either, no maintenance window is enforce
 Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service\MaintenanceWindowEnd (REG_DWORD, 0–23)
       </string>
 
+      <!-- ZMS_MaintenanceWindowFrequency -->
+      <string id="ZMS_MaintenanceWindowFrequency">Configure Maintenance Window Frequency</string>
+      <string id="ZMS_MaintenanceWindowFrequency_Help">
+Specifies the cadence on which the maintenance window applies.
+
+  Daily   — every day qualifies; the Start/End hours alone decide when installs are allowed.
+  Weekly  — only the configured Day Of Week qualifies (e.g. Sunday). Other days are skipped.
+  Monthly — only the configured Day Of Month qualifies (e.g. the 1st). Other days are skipped.
+
+If an update is detected outside a qualifying day, installation waits for the next
+qualifying day's window. The InstallationCritical threshold still overrides this --
+once a release crosses that age it is force-installed regardless of the cadence.
+
+When this policy is Enabled, the specified frequency is used and the MaintenanceWindowFrequency
+value in settings.json is ignored.
+
+When this policy is Disabled or Not Configured, the MaintenanceWindowFrequency value in
+settings.json is used (default: Daily).
+
+Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service\MaintenanceWindowFrequency (REG_DWORD, 0=Daily, 1=Weekly, 2=Monthly)
+      </string>
+      <string id="ZMS_MaintenanceWindowFrequency_Daily">Daily</string>
+      <string id="ZMS_MaintenanceWindowFrequency_Weekly">Weekly</string>
+      <string id="ZMS_MaintenanceWindowFrequency_Monthly">Monthly</string>
+
+      <!-- ZMS_MaintenanceWindowDayOfWeek -->
+      <string id="ZMS_MaintenanceWindowDayOfWeek">Configure Maintenance Window Day Of Week</string>
+      <string id="ZMS_MaintenanceWindowDayOfWeek_Help">
+Specifies which day of the week the maintenance window applies on.
+
+Honored when:
+  - MaintenanceWindowFrequency = Weekly, OR
+  - MaintenanceWindowFrequency = Monthly and MaintenanceWindowMonthlyMode = ByWeekday
+    (combined with MaintenanceWindowMonthlyOrdinal -- e.g. Ordinal=Third + DayOfWeek=Tuesday
+    yields "Third Tuesday", the Patch Tuesday pattern).
+
+Ignored for Daily, and for Monthly + ByDate.
+
+Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service\MaintenanceWindowDayOfWeek (REG_DWORD, 0=Sunday .. 6=Saturday)
+      </string>
+      <string id="ZMS_MaintenanceWindowDayOfWeek_Sunday">Sunday</string>
+      <string id="ZMS_MaintenanceWindowDayOfWeek_Monday">Monday</string>
+      <string id="ZMS_MaintenanceWindowDayOfWeek_Tuesday">Tuesday</string>
+      <string id="ZMS_MaintenanceWindowDayOfWeek_Wednesday">Wednesday</string>
+      <string id="ZMS_MaintenanceWindowDayOfWeek_Thursday">Thursday</string>
+      <string id="ZMS_MaintenanceWindowDayOfWeek_Friday">Friday</string>
+      <string id="ZMS_MaintenanceWindowDayOfWeek_Saturday">Saturday</string>
+
+      <!-- ZMS_MaintenanceWindowDayOfMonth -->
+      <string id="ZMS_MaintenanceWindowDayOfMonth">Configure Maintenance Window Day Of Month</string>
+      <string id="ZMS_MaintenanceWindowDayOfMonth_Help">
+Specifies which day of the month the maintenance window applies on, when
+MaintenanceWindowFrequency is set to Monthly AND MaintenanceWindowMonthlyMode = ByDate.
+Ignored otherwise.
+
+Valid values are 1-28, or 32 (sentinel meaning "last day of the current month").
+The range stops at 28 so that February is always representable. Use 32 to mean
+"always the final day of the month" regardless of month length.
+
+IMPORTANT: values 29, 30, and 31 are NOT valid and will be ignored by the service.
+The Group Policy editor accepts them only because the ADMX <decimal> element cannot
+express a disjoint range. If you want "the 30th of every month" semantics, use 32
+("last day of the month") instead -- it covers Feb, the short months, and the long
+months consistently. The helper script Set-PolicyRegistryValues.ps1 rejects 29/30/31
+explicitly via ValidateScript.
+
+Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service\MaintenanceWindowDayOfMonth (REG_DWORD, 1-28 or 32)
+      </string>
+
+      <!-- ZMS_MaintenanceWindowMonthlyMode -->
+      <string id="ZMS_MaintenanceWindowMonthlyMode">Configure Maintenance Window Monthly Mode</string>
+      <string id="ZMS_MaintenanceWindowMonthlyMode_Help">
+Sub-mode selector for the Monthly cadence. Honored only when MaintenanceWindowFrequency = Monthly.
+
+  By Date    -- use MaintenanceWindowDayOfMonth (e.g. always the 15th, or the last day).
+                Common in financial / billing-aligned shops, K-12 SLED, and "1st of month" change calendars.
+  By Weekday -- use MaintenanceWindowMonthlyOrdinal + MaintenanceWindowDayOfWeek
+                (e.g. "Third Tuesday" -- the Patch Tuesday pattern).
+                Dominant in SCCM-managed fleets, public safety / PSAP, CJIS, DoD, HITRUST.
+
+Mirrors SCCM Maintenance Window's "Monthly by date" / "Monthly by day of week" split.
+
+Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service\MaintenanceWindowMonthlyMode (REG_DWORD, 0=ByDate, 1=ByWeekday)
+      </string>
+      <string id="ZMS_MaintenanceWindowMonthlyMode_ByDate">By Date (day-of-month)</string>
+      <string id="ZMS_MaintenanceWindowMonthlyMode_ByWeekday">By Weekday (e.g. Third Tuesday)</string>
+
+      <!-- ZMS_MaintenanceWindowMonthlyOrdinal -->
+      <string id="ZMS_MaintenanceWindowMonthlyOrdinal">Configure Maintenance Window Monthly Ordinal</string>
+      <string id="ZMS_MaintenanceWindowMonthlyOrdinal_Help">
+Selects which occurrence of the configured weekday within the month qualifies.
+Honored only when Frequency = Monthly and MonthlyMode = ByWeekday.
+
+  First / Second / Third / Fourth -- counts the Nth occurrence from the start of the month.
+                                     Always exists; First/Second/Third/Fourth Tuesday is always a real date.
+  Last                            -- always the latest occurrence in the month, regardless of whether
+                                     there are 4 or 5 weekdays of that type. This is NOT the same as
+                                     Fourth in roughly a third of all months. PSAP / DoD / SCCM admins
+                                     specifically request "Last Friday" as a remediation slot.
+
+Combine with MaintenanceWindowDayOfWeek to express the full slot (e.g. Ordinal=Third + DayOfWeek=Tuesday
+= "Third Tuesday" = Patch Tuesday).
+
+Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service\MaintenanceWindowMonthlyOrdinal (REG_DWORD, 1=First .. 5=Last)
+      </string>
+      <string id="ZMS_MaintenanceWindowMonthlyOrdinal_First">First</string>
+      <string id="ZMS_MaintenanceWindowMonthlyOrdinal_Second">Second</string>
+      <string id="ZMS_MaintenanceWindowMonthlyOrdinal_Third">Third</string>
+      <string id="ZMS_MaintenanceWindowMonthlyOrdinal_Fourth">Fourth</string>
+      <string id="ZMS_MaintenanceWindowMonthlyOrdinal_Last">Last</string>
+
     </stringTable>
 
     <presentationTable>
@@ -280,6 +391,37 @@ Registry value: HKLM\SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\
                         defaultValue="0" spinStep="1">
           End hour (0–23, 24-hour clock; same as start = no window; less than start = crosses midnight):
         </decimalTextBox>
+      </presentation>
+
+      <presentation id="ZMS_MaintenanceWindowFrequency">
+        <dropdownList refId="MaintenanceWindowFrequency_Enum" defaultItem="0">
+          Frequency:
+        </dropdownList>
+      </presentation>
+
+      <presentation id="ZMS_MaintenanceWindowDayOfWeek">
+        <dropdownList refId="MaintenanceWindowDayOfWeek_Enum" defaultItem="0">
+          Day of week (Weekly, or Monthly + ByWeekday):
+        </dropdownList>
+      </presentation>
+
+      <presentation id="ZMS_MaintenanceWindowDayOfMonth">
+        <decimalTextBox refId="MaintenanceWindowDayOfMonth_Decimal"
+                        defaultValue="1" spinStep="1">
+          Day of month (1-28, or 32 for last day; Monthly + ByDate only):
+        </decimalTextBox>
+      </presentation>
+
+      <presentation id="ZMS_MaintenanceWindowMonthlyMode">
+        <dropdownList refId="MaintenanceWindowMonthlyMode_Enum" defaultItem="0">
+          Monthly mode:
+        </dropdownList>
+      </presentation>
+
+      <presentation id="ZMS_MaintenanceWindowMonthlyOrdinal">
+        <dropdownList refId="MaintenanceWindowMonthlyOrdinal_Enum" defaultItem="2">
+          Ordinal (Monthly + ByWeekday only; defaults to Third for Patch Tuesday):
+        </dropdownList>
       </presentation>
 
     </presentationTable>
