@@ -67,7 +67,7 @@ namespace ZitiDesktopEdge {
         private int _right = 75;
         private int _left = 75;
         private int _top = 30;
-        private int defaultHeight = 560;
+        private int defaultHeight = 600;
         public int NotificationsShownCount = 0;
         private double _maxHeight = 805d;
         public string CurrentIcon = "white";
@@ -1516,6 +1516,7 @@ namespace ZitiDesktopEdge {
                 _isServiceInError = false;
                 UpdateServiceView();
                 SetNotifyIcon("white");
+                GetStartedScreen.ViewModel.Hide(); // hide get started until tunnel status returns
                 LoadIdentities(true);
                 UpdateAlternateTunnelFooter();
             });
@@ -1524,6 +1525,7 @@ namespace ZitiDesktopEdge {
         private void ServiceClient_OnClientDisconnected(object sender, object e) {
             this.Dispatcher.Invoke(() => {
                 ResetTunnelerScopedState();
+                GetStartedScreen.ViewModel.Hide(); // hide the get started when disconnected
                 if (e != null) {
                     logger.Debug(e.ToString());
                 }
@@ -1808,6 +1810,7 @@ namespace ZitiDesktopEdge {
                 InitializeTimer((int)e.Status.Duration);
                 LoadStatusFromService(e.Status);
                 LoadIdentities(true);
+                GetStartedScreen.ViewModel.UpdateForState(serviceClient.Connected, identities.Count);
                 IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
                 if (deets.IsVisible) {
                     deets.UpdateView();
@@ -2011,17 +2014,18 @@ namespace ZitiDesktopEdge {
                 ZitiIdentity[] ids = GetSortedIdentities();
                 MainMenu.SetupIdList(ids);
                 props.IdentityCount = ids.Length;
-                GetStartedScreen.ViewModel.UpdateForState(serviceClient.Connected, ids.Length);
                 MainMenu.ShowWelcomeButton.Visibility = ids.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
                 HelpCircle.Visibility                  = ids.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
                 tray.RebuildIdentities(ids);
+                if (ids.Length > 0) {
+                    GetStartedScreen.ViewModel.Hide(); // if there's any identities close the get started screen
+                }
                 if (ids.Length > 0 && serviceClient.Connected) {
                     double height = defaultHeight + (ids.Length * 60);
                     if (height > _maxHeight) {
                         height = _maxHeight;
                     }
                     this.Height = height;
-                    IdentityMenu.SetHeight(this.Height - 160);
                     MainMenu.IdentitiesButton.Visibility = Visibility.Visible;
                     foreach (var id in ids) {
                         IdentityItem idItem = new IdentityItem();
@@ -2140,6 +2144,11 @@ namespace ZitiDesktopEdge {
             }
         }
         public void Placement() {
+            // MainHeight needs to track live window height even when detached, otherwise the
+            // Identity-detail scroll sizes from a stale value and pushes the Forget button
+            // off the bottom. SetLocation also positions the window against the tray, which
+            // only applies when docked.
+            IdentityMenu.MainHeight = MainView.ActualHeight;
             if (_isAttached) {
                 SetLocation();
             }
