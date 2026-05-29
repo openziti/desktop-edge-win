@@ -39,7 +39,7 @@ namespace ZitiDesktopEdge.ViewModels {
         /// the user has explicitly dismissed it for this session. While the service is
         /// disconnected the welcome screen is force-hidden -- the user can't actually add an
         /// identity without the service running, so the "Service Not Started" overlay takes
-        /// precedence. Dismissal state is preserved across reconnects.
+        /// precedence.
         /// </summary>
         public void UpdateForState(bool serviceConnected, int identityCount) {
             if (!serviceConnected) {
@@ -53,6 +53,14 @@ namespace ZitiDesktopEdge.ViewModels {
             }
             if (_userDismissed) return;
             IsOpen = true;
+        }
+
+        /// <summary>
+        /// Force-hide without clearing the session dismissal. Used on service connect/disconnect
+        /// so the panel stays hidden until the next tunnel_status decides.
+        /// </summary>
+        public void Hide() {
+            IsOpen = false;
         }
 
         public void Close() {
