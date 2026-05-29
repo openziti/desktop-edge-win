@@ -1,4 +1,4 @@
-# Release 2.11.2.0
+# Release 2.11.2.2
 ## What's New
 * Enroll to cert / token via external JWT signers
     * Joining a network by URL now discovers the controller's external JWT signers and routes
