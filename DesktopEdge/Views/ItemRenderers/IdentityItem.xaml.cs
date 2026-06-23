@@ -43,6 +43,8 @@ namespace ZitiDesktopEdge {
         public event StatusChanged OnStatusChanged;
         public delegate void OnAuthenticate(ZitiIdentity identity);
         public event OnAuthenticate AuthenticateTOTP;
+        public delegate void OnEnableMFA(ZitiIdentity identity);
+        public event OnEnableMFA EnableMFARequested;
         public delegate void OnIdentityChanged(ZitiIdentity identity);
         public event OnIdentityChanged IdentityChanged;
         public delegate void OnBlurb(ZitiIdentity identity);
@@ -391,6 +393,10 @@ namespace ZitiDesktopEdge {
                 MFAAuthenticate(sender, e);
             } else if (ExtAuthRequired.Visibility == Visibility.Visible) {
                 ShowExtAuthList(sender, e);
+            } else if (_identity.IsEnabled && _identity.IsMFANeeded && !_identity.IsMFAEnabled) {
+                // "enable mfa" bubble: open details so the enrollment callback targets this identity, then start enrollment.
+                OpenDetails(sender, e);
+                EnableMFARequested?.Invoke(_identity);
             } else {
                 OpenDetails(sender, e);
             }

@@ -228,6 +228,9 @@ namespace ZitiDesktopEdge {
                     if (mfa.Successful) {
                         _notificationThrottle.Remove(mfa.Identifier);
                     }
+                } else if (mfa.Action == "enrollment_required") {
+                    // Policy mandates MFA enrollment. Don't open setup; the user starts it from the Enable MFA toggle.
+                    logger.Debug("MFA enrollment required for identity {0}", mfa.Identifier);
                 } else {
                     await ShowBlurbAsync("Unexpected error when processing MFA", "");
                     logger.Error("unexpected action: " + mfa.Action);
@@ -2037,6 +2040,7 @@ namespace ZitiDesktopEdge {
                         else idItem.ToggleStatus.Content = "DISABLED";
 
                         idItem.AuthenticateTOTP += IdItem_Authenticate;
+                        idItem.EnableMFARequested += IdItem_EnableMFA;
                         idItem.OnStatusChanged += Id_OnStatusChanged;
                         idItem.Identity = id;
                         idItem.IdentityChanged += IdItem_IdentityChanged;
@@ -2088,6 +2092,16 @@ namespace ZitiDesktopEdge {
 
         private void IdItem_Authenticate(ZitiIdentity identity) {
             ShowAuthenticate(identity);
+        }
+
+        private async void IdItem_EnableMFA(ZitiIdentity identity) {
+            if (!identity.IsEnabled) {
+                await ShowBlurbAsync("Identity disabled, MFA cannot continue.", "");
+                return;
+            }
+            ShowLoad("Generating MFA", "MFA Setup Commencing, please wait");
+            await serviceClient.EnableMFA(identity.Identifier);
+            HideLoad();
         }
 
         private void Id_OnStatusChanged(bool attached) {
