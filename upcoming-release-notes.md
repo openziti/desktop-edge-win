@@ -1,6 +1,6 @@
 # Release 2.11.2.4
 ## What's New
-n/a
+- Clicking "enable MFA" on an identity in the main UI now opens the MFA setup view directly when MFA needs to be enabled.
 
 ## Bugs fixed
 - https://github.com/openziti/desktop-edge-win/issues/947
