@@ -12,15 +12,16 @@
 
 ## General Overview
 
-Release notes are maintained in `upcoming-release-notes.md` as a working file. As changes are made between releases,
-update this file with the relevant details. When a release is cut, `prepare-beta.ps1` adds the version header
-and dependency info, and the publish action uses it for the GitHub release body. Release notes through 2.10.1.0
-are archived in `release-notes-archive/`. Notes for later versions can be found on the
-[Releases](https://github.com/openziti/desktop-edge-win/releases) page.
+Release notes are maintained in a single `release-notes.md`. As changes are made, add a `# Release <version>`
+block at the top of the file (with `## What's New`, `## Bugs fixed`, `## Other changes`) and fill it in as the
+work lands. When a release is cut, `prepare-beta.ps1` stamps that block with the dependency info (creating the
+block if it does not exist yet), and the publish action uses it for the GitHub release body. Notes through
+2.10.1.0 are archived in `release-notes-archive/`; versions released under the earlier rolling process are on
+the [Releases](https://github.com/openziti/desktop-edge-win/releases) page.
 
 The ["Create Release"](https://github.com/openziti/desktop-edge-win/actions/workflows/publish.yml) action runs
-`scripts/publish-release.sh` which validates `upcoming-release-notes.md`, creates a GitHub release, uploads artifacts,
-and publishes the `win32crypto` build to JFrog.
+`scripts/publish-release.sh` which validates the `# Release <version>` block in `release-notes.md`, creates a
+GitHub release, uploads artifacts, and publishes the `win32crypto` build to JFrog.
 
 After creating the release, verify the changelog looks correct in GitHub.
 
@@ -28,7 +29,7 @@ After creating the release, verify the changelog looks correct in GitHub.
 
 Once satisfied with local testing (see below), to make a new release here are the rough steps to follow:
 
-* ensure `upcoming-release-notes.md` is up to date with the changes for this release
+* ensure the `# Release <version>` block at the top of `release-notes.md` is up to date with the changes for this release
 * run `prepare-beta.ps1` with the version and optionally a new ZET version. If no ZET version is provided, the current version from `Installer/build.ps1` is used
   ```
   .\scripts\prepare-beta.ps1 -DesktopEdgeVersion <version> -ZetVersion <zet-version>
