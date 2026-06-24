@@ -353,7 +353,25 @@ namespace ZitiUpdateService {
             CurrentSettings.MaintenanceWindowDayOfMonth     = req.DayOfMonth;
             CurrentSettings.MaintenanceWindowMonthlyOrdinal = req.MonthlyOrdinal;
             CurrentSettings.Write();
+            RefreshPendingInstallNotification();
             return new SvcResponse { Message = "Success" };
+        }
+
+        /// <summary>
+        /// Recomputes the pending update's projected install time against the current
+        /// maintenance window and pushes a fresh notification. Called after a window change
+        /// so the UI reflects the new schedule immediately instead of waiting for the next
+        /// update check. No-op when no update is pending (or updates are policy-disabled).
+        /// </summary>
+        private void RefreshPendingInstallNotification() {
+            InstallationNotificationEvent info = lastInstallationNotification;
+            if (info == null) return;
+            ApplyEffectiveSettings(info);
+            info.InstallTime = InstallationIsCritical(info.PublishTime)
+                ? SnapToMaintenanceWindow(DateTime.Now)
+                : InstallDateFromPublishDate(info.PublishTime);
+            Logger.Info("Maintenance window changed; recomputed install time for {0} to {1} (local)", info.ZDEVersion, info.InstallTime);
+            NotifyInstallationUpdates(info, true);
         }
 
         private SvcResponse SetAutomaticUpdateDisabled(bool disabled) {
