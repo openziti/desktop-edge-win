@@ -180,11 +180,9 @@ namespace ZitiUpdateService.Tests {
         // 5. IsInWindow direct call with start == end. When start==end, the production code
         //    falls into the cross-midnight branch (`hour >= start || hour < end`), and since
         //    start==end that expression simplifies to `hour >= X || hour < X` which is
-        //    ALWAYS TRUE for any X. This matches the "any time" semantics used by callers.
-        //
-        //    Pinning this here means SnapToMaintenanceWindow's start==end short-circuit
-        //    (line 112 of the evaluator) and IsInWindow are in agreement: both treat
-        //    start==end as "every hour qualifies".
+        //    ALWAYS TRUE for any X. This is the "any time of day" half of the semantics:
+        //    every hour qualifies. The calendar-day cadence (Weekly/Monthly) is enforced
+        //    separately by IsCalendarDayQualifying, so start==end frees the hour only.
         // ---------------------------------------------------------------------------------
 
         [DataTestMethod]

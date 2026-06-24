@@ -353,7 +353,25 @@ namespace ZitiUpdateService {
             CurrentSettings.MaintenanceWindowDayOfMonth     = req.DayOfMonth;
             CurrentSettings.MaintenanceWindowMonthlyOrdinal = req.MonthlyOrdinal;
             CurrentSettings.Write();
+            RefreshPendingInstallNotification();
             return new SvcResponse { Message = "Success" };
+        }
+
+        /// <summary>
+        /// Recomputes the pending update's projected install time against the current
+        /// maintenance window and pushes a fresh notification. Called after a window change
+        /// so the UI reflects the new schedule immediately instead of waiting for the next
+        /// update check. No-op when no update is pending (or updates are policy-disabled).
+        /// </summary>
+        private void RefreshPendingInstallNotification() {
+            InstallationNotificationEvent info = lastInstallationNotification;
+            if (info == null) return;
+            ApplyEffectiveSettings(info);
+            info.InstallTime = InstallationIsCritical(info.PublishTime)
+                ? SnapToMaintenanceWindow(DateTime.Now)
+                : InstallDateFromPublishDate(info.PublishTime);
+            Logger.Info("Maintenance window changed; recomputed install time for {0} to {1} (local)", info.ZDEVersion, info.InstallTime);
+            NotifyInstallationUpdates(info, true);
         }
 
         private SvcResponse SetAutomaticUpdateDisabled(bool disabled) {
@@ -381,7 +399,7 @@ namespace ZitiUpdateService {
             int? start = PolicySettings.EffectiveMaintenanceWindowStart(CurrentSettings);
             int? end   = PolicySettings.EffectiveMaintenanceWindowEnd(CurrentSettings);
             bool anyTime = !start.HasValue || !end.HasValue || start.Value == end.Value;
-            bool inWindow = anyTime || IsCurrentlyInMaintenanceWindow();
+            bool inWindow = IsCurrentlyInMaintenanceWindow();
 
             Logger.Info("TriggerUpdate requested. MaintenanceWindow={0}-{1}, anyTime={2}, inWindow={3}, now={4}",
                 start.HasValue ? start.Value.ToString() : "null",
@@ -1567,10 +1585,10 @@ namespace ZitiUpdateService {
             int? start = PolicySettings.EffectiveMaintenanceWindowStart(CurrentSettings);
             int? end   = PolicySettings.EffectiveMaintenanceWindowEnd(CurrentSettings);
             if (!start.HasValue || !end.HasValue) return true;
-            if (start.Value == end.Value) return true;  // 0/0 or equal values = any time
 
             DateTime now = DateTime.Now;
             if (!IsCalendarDayQualifying(now)) return false;
+            if (start.Value == end.Value) return true;  // any time of day on a qualifying day
             return IsInWindow(now.Hour, start.Value, end.Value);
         }
 

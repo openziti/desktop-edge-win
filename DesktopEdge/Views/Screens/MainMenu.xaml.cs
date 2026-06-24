@@ -183,39 +183,12 @@ namespace ZitiDesktopEdge {
             }
 
             if (state.PendingUpdate.TimeLeft > 0) {
-                DateTime installTime = SnapInstallTimeToWindow(state.PendingUpdate.InstallTime);
-                UpdateTimeLeft.Content = $"Automatic update to {state.PendingUpdate.Version} will occur on or after {installTime.ToString("g")}";
+                UpdateTimeLeft.Content = $"Automatic update to {state.PendingUpdate.Version} will occur on or after {state.PendingUpdate.InstallTime.ToString("g")}";
                 UpdateTimeLeft.Visibility = Visibility.Visible;
                 CheckForUpdateStatus.Content = $"update {state.PendingUpdate.Version} is available";
                 CheckForUpdateStatus.Visibility = Visibility.Visible;
             }
             SetAutomaticUpgradesState();
-        }
-
-        /// <summary>
-        /// Snaps <paramref name="installTime"/> forward to the next opening of the current
-        /// maintenance window. Returns it unchanged when no window is set (any time).
-        /// Mirrors the same logic in UpdateService so the UI stays correct even before
-        /// the service sends a fresh InstallationNotificationEvent after a window change.
-        /// </summary>
-        private DateTime SnapInstallTimeToWindow(DateTime installTime) {
-            int? start = policyViewModel.MaintenanceWindowStart;
-            int? end   = policyViewModel.MaintenanceWindowEnd;
-            if (!start.HasValue || !end.HasValue) return installTime;
-            if (start.Value == end.Value) return installTime;  // 0/0 or equal = any time
-
-            if (IsInMaintenanceWindow(installTime.Hour, start.Value, end.Value)) return installTime;
-
-            DateTime candidate = installTime.Date.AddHours(start.Value);
-            if (candidate <= installTime) candidate = candidate.AddDays(1);
-            return candidate;
-        }
-
-        private bool IsInMaintenanceWindow(int hour, int windowStart, int windowEnd) {
-            if (windowStart < windowEnd) {
-                return hour >= windowStart && hour < windowEnd;
-            }
-            return hour >= windowStart || hour < windowEnd;  // crosses midnight
         }
 
         internal MainWindow MainWindow { get; set; }

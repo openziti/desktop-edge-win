@@ -100,6 +100,9 @@ namespace ZitiUpdateService.Utils {
         /// then aligns the hour to <paramref name="windowStart"/>. Capped at one year forward
         /// to guarantee termination even with a pathological config; if no qualifying day is
         /// found inside the cap the input is returned unchanged.
+        ///
+        /// An "any time" window (windowStart == windowEnd) still honors the Weekly/Monthly
+        /// day cadence and lands at 00:00 of the next qualifying day.
         /// </summary>
         public static DateTime SnapToMaintenanceWindow(
                 DateTime dt,
@@ -109,18 +112,19 @@ namespace ZitiUpdateService.Utils {
                 int? dayOfWeek, int? dayOfMonth,
                 MaintenanceWindowMonthlyOrdinal? monthlyOrdinal) {
             if (!windowStart.HasValue || !windowEnd.HasValue) return dt;
-            if (windowStart.Value == windowEnd.Value) return dt; // any time
 
+            bool anyTime = windowStart.Value == windowEnd.Value;
             bool dayQualifies = IsCalendarDayQualifying(dt, frequency, monthlyMode, dayOfWeek, dayOfMonth, monthlyOrdinal);
-            if (dayQualifies && IsInWindow(dt.Hour, windowStart.Value, windowEnd.Value)) return dt;
+            if (dayQualifies && (anyTime || IsInWindow(dt.Hour, windowStart.Value, windowEnd.Value))) return dt;
 
-            DateTime candidate = dt.Date.AddHours(windowStart.Value);
+            int snapHour = anyTime ? 0 : windowStart.Value;
+            DateTime candidate = dt.Date.AddHours(snapHour);
             if (candidate <= dt) candidate = candidate.AddDays(1);
 
             DateTime ceiling = dt.AddYears(1);
             while (candidate <= ceiling) {
                 if (IsCalendarDayQualifying(candidate, frequency, monthlyMode, dayOfWeek, dayOfMonth, monthlyOrdinal)) return candidate;
-                candidate = candidate.Date.AddDays(1).AddHours(windowStart.Value);
+                candidate = candidate.Date.AddDays(1).AddHours(snapHour);
             }
             return dt;
         }
