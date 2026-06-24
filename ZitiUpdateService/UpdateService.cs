@@ -381,7 +381,7 @@ namespace ZitiUpdateService {
             int? start = PolicySettings.EffectiveMaintenanceWindowStart(CurrentSettings);
             int? end   = PolicySettings.EffectiveMaintenanceWindowEnd(CurrentSettings);
             bool anyTime = !start.HasValue || !end.HasValue || start.Value == end.Value;
-            bool inWindow = anyTime || IsCurrentlyInMaintenanceWindow();
+            bool inWindow = IsCurrentlyInMaintenanceWindow();
 
             Logger.Info("TriggerUpdate requested. MaintenanceWindow={0}-{1}, anyTime={2}, inWindow={3}, now={4}",
                 start.HasValue ? start.Value.ToString() : "null",
@@ -1567,10 +1567,10 @@ namespace ZitiUpdateService {
             int? start = PolicySettings.EffectiveMaintenanceWindowStart(CurrentSettings);
             int? end   = PolicySettings.EffectiveMaintenanceWindowEnd(CurrentSettings);
             if (!start.HasValue || !end.HasValue) return true;
-            if (start.Value == end.Value) return true;  // 0/0 or equal values = any time
 
             DateTime now = DateTime.Now;
             if (!IsCalendarDayQualifying(now)) return false;
+            if (start.Value == end.Value) return true;  // any time of day on a qualifying day
             return IsInWindow(now.Hour, start.Value, end.Value);
         }
 

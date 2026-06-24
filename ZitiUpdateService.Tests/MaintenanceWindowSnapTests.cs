@@ -122,6 +122,28 @@ namespace ZitiUpdateService.Tests {
         }
 
         [TestMethod]
+        public void Snap_WeeklyAnyTime_OnNonQualifyingDay_SkipsToNextQualifyingDayAtMidnight() {
+            // Any-time (start==end) frees the hour but the weekly day cadence still applies.
+            DateTime dt = new DateTime(2026, 5, 11, 12, 0, 0); // Monday
+            DateTime result = Snap(dt,
+                windowStart: 0, windowEnd: 0,
+                frequency: MaintenanceWindowFrequency.Weekly,
+                dayOfWeek: (int)DayOfWeek.Sunday);
+            Assert.AreEqual(new DateTime(2026, 5, 17, 0, 0, 0), result);
+            Assert.AreEqual(DayOfWeek.Sunday, result.DayOfWeek);
+        }
+
+        [TestMethod]
+        public void Snap_WeeklyAnyTime_OnQualifyingDay_ReturnsInputUnchanged() {
+            DateTime dt = new DateTime(2026, 5, 17, 14, 0, 0); // Sunday
+            DateTime result = Snap(dt,
+                windowStart: 0, windowEnd: 0,
+                frequency: MaintenanceWindowFrequency.Weekly,
+                dayOfWeek: (int)DayOfWeek.Sunday);
+            Assert.AreEqual(dt, result);
+        }
+
+        [TestMethod]
         public void Snap_MonthlyByWeekday_ThirdTuesday_AfterCurrentMonthSlot_GoesToNextMonth() {
             // Third Tuesday of May 2026 is May 19. If dt is May 20 noon -> snap to next month's
             // Third Tuesday (June 16, 2026).
