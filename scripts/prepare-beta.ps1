@@ -187,6 +187,7 @@ if ($blockMatch.Success) {
     }
 
     $newBlock = "$block`n`n$depsSection"
+    $releaseEntry = $newBlock
     $remainder = $content.Substring($blockMatch.Index + $blockMatch.Length)
 
     if ($remainder.Trim() -eq "") {
@@ -211,6 +212,7 @@ n/a
 $depsSection
 "@
     $skeleton = ($skeleton -replace "`r`n", "`n").TrimEnd()
+    $releaseEntry = $skeleton
     $content = "$skeleton`n`n" + $content.TrimStart("`n")
     Info "No # Release $DesktopEdgeVersion block found - created one at the top"
 }
@@ -225,9 +227,9 @@ Ok "release-notes.md updated"
 
 if ($DryRun) {
     Log ""
-    Log "release-notes.md preview:"
+    Log "Release notes preview:"
     Log "------------------------------------------------------------------------"
-    Log $content
+    Log $releaseEntry
     Log "------------------------------------------------------------------------"
 }
 
