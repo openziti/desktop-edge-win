@@ -18,4 +18,6 @@ jobs:
 
       - name: Verify stream download URLs
         shell: pwsh
-        run: ./scripts/verify-streams.ps1
+        run: ./scripts/verify-streams.ps1 -CheckGitHubLatest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

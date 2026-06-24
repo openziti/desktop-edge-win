@@ -5,7 +5,8 @@
 #   .\verify-streams.ps1
 #   .\verify-streams.ps1 -StreamsDir .\release-streams
 param(
-    [string]$StreamsDir = (Join-Path (Split-Path $PSScriptRoot -Parent) "release-streams")
+    [string]$StreamsDir = (Join-Path (Split-Path $PSScriptRoot -Parent) "release-streams"),
+    [switch]$CheckGitHubLatest
 )
 
 $failed = $false
@@ -39,3 +40,20 @@ if ($failed) {
 }
 
 Write-Host "All URLs OK." -ForegroundColor Green
+
+if ($CheckGitHubLatest) {
+    $latestJson = Join-Path $StreamsDir "latest.json"
+    if (-not (Test-Path $latestJson)) { Write-Error "latest.json not found at $latestJson"; exit 1 }
+
+    $tag = (Get-Content $latestJson -Raw | ConvertFrom-Json).tag_name
+    if (-not $tag) { Write-Error "latest.json has no tag_name"; exit 1 }
+
+    $ghLatest = gh release view --json tagName --jq .tagName
+    if ($LASTEXITCODE -ne 0) { Write-Error "could not read GitHub's latest release"; exit 1 }
+
+    if ($ghLatest -ne $tag) {
+        Write-Error "GitHub latest ($ghLatest) does not match latest.json ($tag). Mark $tag as latest on GitHub."
+        exit 1
+    }
+    Write-Host "GitHub latest matches latest.json: $tag" -ForegroundColor Green
+}
