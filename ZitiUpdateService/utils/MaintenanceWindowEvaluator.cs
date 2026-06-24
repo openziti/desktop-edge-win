@@ -101,9 +101,8 @@ namespace ZitiUpdateService.Utils {
         /// to guarantee termination even with a pathological config; if no qualifying day is
         /// found inside the cap the input is returned unchanged.
         ///
-        /// "Any time" (windowStart == windowEnd) frees the hour but not the calendar-day
-        /// cadence: a Weekly/Monthly window still snaps to the next qualifying day, landing at
-        /// 00:00 since every hour of that day qualifies.
+        /// An "any time" window (windowStart == windowEnd) still honors the Weekly/Monthly
+        /// day cadence and lands at 00:00 of the next qualifying day.
         /// </summary>
         public static DateTime SnapToMaintenanceWindow(
                 DateTime dt,
