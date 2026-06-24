@@ -144,6 +144,31 @@ namespace ZitiUpdateService.Tests {
         }
 
         [TestMethod]
+        public void Snap_MonthlyByDateAnyTime_OnNonQualifyingDay_SkipsToNextMatchingDateAtMidnight() {
+            // Monthly ByDate=1, any-time. May 14 noon lands on June 1 at 00:00.
+            DateTime dt = new DateTime(2026, 5, 14, 12, 0, 0);
+            DateTime result = Snap(dt,
+                windowStart: 0, windowEnd: 0,
+                frequency: MaintenanceWindowFrequency.Monthly,
+                monthlyMode: MaintenanceWindowMonthlyMode.ByDate,
+                dayOfMonth: 1);
+            Assert.AreEqual(new DateTime(2026, 6, 1, 0, 0, 0), result);
+        }
+
+        [TestMethod]
+        public void Snap_MonthlyByWeekdayAnyTime_OnNonQualifyingDay_SkipsToNextOrdinalDayAtMidnight() {
+            // Third Tuesday, any-time. May 20 (after May's third Tuesday, the 19th) lands on June 16 at 00:00.
+            DateTime dt = new DateTime(2026, 5, 20, 12, 0, 0);
+            DateTime result = Snap(dt,
+                windowStart: 0, windowEnd: 0,
+                frequency: MaintenanceWindowFrequency.Monthly,
+                monthlyMode: MaintenanceWindowMonthlyMode.ByWeekday,
+                dayOfWeek: (int)DayOfWeek.Tuesday,
+                monthlyOrdinal: MaintenanceWindowMonthlyOrdinal.Third);
+            Assert.AreEqual(new DateTime(2026, 6, 16, 0, 0, 0), result);
+        }
+
+        [TestMethod]
         public void Snap_MonthlyByWeekday_ThirdTuesday_AfterCurrentMonthSlot_GoesToNextMonth() {
             // Third Tuesday of May 2026 is May 19. If dt is May 20 noon -> snap to next month's
             // Third Tuesday (June 16, 2026).
