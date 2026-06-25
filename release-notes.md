@@ -8,6 +8,12 @@ n/a
 ## Other changes
 n/a
 
+## Dependencies
+* ziti-tunneler: v1.18.0
+* ziti-sdk:      1.18.0
+* tlsuv:         v0.41.4[OpenSSL 3.6.2 7 Apr 2026]
+* tlsuv:         v0.41.4[win32crypto(CNG): ncrypt[1.0] ]
+
 # Release 2.11.2.4
 ## What's New
 - Clicking "enable MFA" on an identity in the main UI now opens the MFA setup view directly when MFA needs to be enabled.
