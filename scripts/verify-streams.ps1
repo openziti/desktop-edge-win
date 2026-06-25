@@ -48,6 +48,14 @@ if ($CheckGitHubLatest) {
     $tag = (Get-Content $latestJson -Raw | ConvertFrom-Json).tag_name
     if (-not $tag) { Write-Error "latest.json has no tag_name"; exit 1 }
 
+    $win32Json = Join-Path $StreamsDir "latest-win32crypto.json"
+    if (-not (Test-Path $win32Json)) { Write-Error "latest-win32crypto.json not found at $win32Json"; exit 1 }
+    $win32Tag = (Get-Content $win32Json -Raw | ConvertFrom-Json).tag_name
+    if ($win32Tag -ne $tag) {
+        Write-Error "latest-win32crypto.json ($win32Tag) does not match latest.json ($tag)."
+        exit 1
+    }
+
     $ghLatest = gh release view --json tagName --jq .tagName
     if ($LASTEXITCODE -ne 0) { Write-Error "could not read GitHub's latest release"; exit 1 }
 

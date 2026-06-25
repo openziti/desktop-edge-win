@@ -7,7 +7,10 @@ if ! grep -qE "^# Release ${version}\$" release-notes.md; then
   exit 1
 fi
 
-release_notes=$(awk '/^# Release /{if (seen++) exit} seen' release-notes.md)
+release_notes=$(awk -v ver="# Release ${version}" '
+  grab && /^# Release / && $0 != ver {exit}
+  $0 == ver {grab=1}
+  grab' release-notes.md)
 
 if [[ "$release_notes" != \#\ Release\ "$version"* ]]; then
   echo "❌ release_notes does not start with '# Release $version'" >&2
