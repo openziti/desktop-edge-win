@@ -15,9 +15,10 @@
 Release notes are maintained in a single `release-notes.md`. As changes are made, add a `# Release <version>`
 block at the top of the file (with `## What's New`, `## Bugs fixed`, `## Other changes`) and fill it in as the
 work lands. When a release is cut, `prepare-beta.ps1` stamps that block with the dependency info (creating the
-block if it does not exist yet), and the publish action uses it for the GitHub release body. Notes through
-2.10.1.0 are archived in `release-notes-archive/`; versions released under the earlier rolling process are on
-the [Releases](https://github.com/openziti/desktop-edge-win/releases) page.
+block if it does not exist yet), and the publish action uses it for the GitHub release body. At the start of
+each year the prior year's entries are moved out of `release-notes.md` into a dated file under
+`release-notes-archive/` (for example `release-notes-2025.md`), keeping `release-notes.md` to the current year.
+Past release notes are archived there by year.
 
 The ["Create Release"](https://github.com/openziti/desktop-edge-win/actions/workflows/publish.yml) action runs
 `scripts/publish-release.sh` which validates the `# Release <version>` block in `release-notes.md`, creates a
