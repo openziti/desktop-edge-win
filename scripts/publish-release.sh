@@ -2,12 +2,15 @@
 set -euo pipefail
 
 version="$1"
-if ! grep -qE "^# Release ${version}\$" upcoming-release-notes.md; then
-  echo "❌ Version ${version} not found in upcoming-release-notes.md!"
+if ! grep -qE "^# Release ${version}\$" release-notes.md; then
+  echo "❌ Version ${version} not found in release-notes.md!"
   exit 1
 fi
 
-release_notes=$(awk '/^# Release /{if (seen++) exit} seen' upcoming-release-notes.md)
+release_notes=$(awk -v ver="# Release ${version}" '
+  grab && /^# Release / && $0 != ver {exit}
+  $0 == ver {grab=1}
+  grab' release-notes.md)
 
 if [[ "$release_notes" != \#\ Release\ "$version"* ]]; then
   echo "❌ release_notes does not start with '# Release $version'" >&2

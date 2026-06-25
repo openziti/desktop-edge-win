@@ -149,39 +149,81 @@ if (-not $DryRun) {
 Ok "version file written"
 
 # ── Build release notes ──────────────────────────────────────────────────────
+#
+# Notes live in a single, append-as-you-go release-notes.md. The author writes a
+# "# Release <version>" block as work happens. Here we stamp dependencies onto that
+# block (creating it if absent) and leave every other entry untouched.
 
-$releaseNotesPath = "$repoRoot\upcoming-release-notes.md"
+$releaseNotesPath = "$repoRoot\release-notes.md"
 
-$currentNotes = ([System.IO.File]::ReadAllText($releaseNotesPath) -replace "`r`n", "`n").Trim()
+$content = [System.IO.File]::ReadAllText($releaseNotesPath) -replace "`r`n", "`n"
 
-# Strip the top-level header block (e.g. "# Next Release" or "# Release X.Y.Z.W"),
-# keep only the ## section content. Also strip any trailing ## Dependencies block
-# since it will be regenerated from the downloaded binaries.
-$currentNotes = $currentNotes -replace "(?s)^# [^\n]*\n.*?(?=## )", ""
-$currentNotes = $currentNotes -replace "(?s)\n## Dependencies.*$", ""
-
-# Inject "updated to ziti-edge-tunnel" into What's New if this is a ZET bump
-if ($isZetBump) {
-    $currentNotes = $currentNotes -replace "(## What's New\n)", "`$1* updated to ziti-edge-tunnel $ZetVersion`n"
-}
-
-# Append dependencies
 $depsSection = @"
-
 ## Dependencies
 * ziti-tunneler: $zetTunneler
 * ziti-sdk:      $zitiSdk
 * tlsuv:         $tlsuvOpenSsl
 * tlsuv:         $tlsuvWin32
 "@
+$depsSection = ($depsSection -replace "`r`n", "`n").TrimEnd()
 
-$releaseEntry = "# Release $DesktopEdgeVersion`n$currentNotes`n$depsSection`n" -replace "`r`n", "`n"
+$verEscaped = [regex]::Escape($DesktopEdgeVersion)
+$blockRx = [regex]::new("(?ms)^# Release $verEscaped\b.*?(?=^# Release |\z)")
+$blockMatch = $blockRx.Match($content)
 
-Info "Updating upcoming-release-notes.md with version header and dependencies"
-if (-not $DryRun) {
-    [System.IO.File]::WriteAllText($releaseNotesPath, $releaseEntry, [System.Text.UTF8Encoding]::new($false))
+if ($blockMatch.Success) {
+    $block = $blockMatch.Value.TrimEnd()
+
+    # Drop any existing dependencies from this block; they are regenerated below.
+    $block = ($block -replace "(?s)\n## Dependencies.*$", "").TrimEnd()
+
+    # On a ZET bump, surface the version in What's New unless it is already there.
+    if ($isZetBump -and $block -notmatch 'updated to ziti-edge-tunnel') {
+        $zetLine = "* updated to ziti-edge-tunnel $ZetVersion"
+        $block = $block -replace "(## What's New\r?\n)", "`$1$zetLine`n"
+        # If What's New was just a placeholder, drop the leftover n/a.
+        $naPattern = [regex]::Escape($zetLine) + "(\r?\n)n/a[ \t]*\r?\n"
+        $block = [regex]::Replace($block, $naPattern, ($zetLine + '$1'))
+    }
+
+    $newBlock = "$block`n`n$depsSection"
+    $releaseEntry = $newBlock
+    $remainder = $content.Substring($blockMatch.Index + $blockMatch.Length)
+
+    if ($remainder.Trim() -eq "") {
+        $content = $content.Substring(0, $blockMatch.Index) + $newBlock + "`n"
+    } else {
+        $content = $content.Substring(0, $blockMatch.Index) + $newBlock + "`n`n" + $remainder.TrimStart("`n")
+    }
+    Info "Stamped dependencies onto existing # Release $DesktopEdgeVersion block"
+} else {
+    $whatsNew = if ($isZetBump) { "* updated to ziti-edge-tunnel $ZetVersion" } else { "n/a" }
+    $skeleton = @"
+# Release $DesktopEdgeVersion
+## What's New
+$whatsNew
+
+## Bugs fixed
+n/a
+
+## Other changes
+n/a
+
+$depsSection
+"@
+    $skeleton = ($skeleton -replace "`r`n", "`n").TrimEnd()
+    $releaseEntry = $skeleton
+    $content = "$skeleton`n`n" + $content.TrimStart("`n")
+    Info "No # Release $DesktopEdgeVersion block found - created one at the top"
 }
-Ok "upcoming-release-notes.md updated"
+
+$content = $content.TrimEnd() + "`n"
+
+Info "Updating release-notes.md with version header and dependencies"
+if (-not $DryRun) {
+    [System.IO.File]::WriteAllText($releaseNotesPath, $content, [System.Text.UTF8Encoding]::new($false))
+}
+Ok "release-notes.md updated"
 
 if ($DryRun) {
     Log ""
@@ -197,7 +239,7 @@ Log ""
 Log "Files to commit:"
 if ($isZetBump) { Info "Installer/build.ps1                   -> ZET $ZetVersion" }
 Info "version                               -> $DesktopEdgeVersion"
-Info "upcoming-release-notes.md             -> $DesktopEdgeVersion entry"
+Info "release-notes.md                      -> $DesktopEdgeVersion entry"
 Log ""
 
 # ── Commit ────────────────────────────────────────────────────────────────────
@@ -209,7 +251,7 @@ if ($isZetBump) {
 }
 Info "Committing: $commitMsg"
 if (-not $DryRun) {
-    $filesToAdd = @("version", "upcoming-release-notes.md")
+    $filesToAdd = @("version", "release-notes.md")
     if ($isZetBump) { $filesToAdd += "Installer/build.ps1" }
     git add @filesToAdd
     git diff --cached --quiet
