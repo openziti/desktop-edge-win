@@ -1,3 +1,13 @@
+# Release 2.11.2.6
+## What's New
+n/a
+
+## Bugs fixed
+* [Issue 1025](https://github.com/openziti/desktop-edge-win/issues/1025) - Skip the empty "Configure Enrollment" dialog when the controller offers a single enroll-to JWT signer
+
+## Other changes
+n/a
+
 # Release 2.11.2.5
 ## What's New
 n/a
