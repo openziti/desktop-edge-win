@@ -84,13 +84,11 @@ namespace ZitiDesktopEdge {
             set { if (value) EnrollMode = "device-certificate"; }
         }
 
-        public Visibility EnrollModeRadiosVisibility {
-            get {
-                if (_selectedSigner == null) return Visibility.Collapsed;
-                if (!_selectedSigner.EnrollToCertEnabled) return Visibility.Collapsed;
-                return Visibility.Visible;
-            }
-        }
+        public bool ShowEnrollModeRadios => _selectedSigner != null && _selectedSigner.EnrollToCertEnabled;
+
+        public Visibility EnrollModeRadiosVisibility => ShowEnrollModeRadios ? Visibility.Visible : Visibility.Collapsed;
+
+        public bool ShowEnrollmentChoices => ShowSignerPicker || ShowEnrollModeRadios;
 
         public void LoadSigners(string signersResponseBody) {
             Signers.Clear();
@@ -120,7 +118,7 @@ namespace ZitiDesktopEdge {
         public bool CanJoin {
             get {
                 if (ShowSignerPicker && SelectedSigner == null) return false;
-                if (EnrollModeRadiosVisibility == Visibility.Visible && EnrollMode == null) return false;
+                if (ShowEnrollModeRadios && EnrollMode == null) return false;
                 return true;
             }
         }

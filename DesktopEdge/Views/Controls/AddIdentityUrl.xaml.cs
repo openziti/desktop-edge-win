@@ -54,9 +54,7 @@ namespace ZitiDesktopEdge {
             AddIdentityViewModel.ControllerBaseUrl = raw.GetLeftPart(UriPartial.Authority);
             AddIdentityViewModel.IdentityFilename = raw.Host + "_" + raw.Port;
 
-            bool needsChoice = AddIdentityViewModel.ShowSignerPicker
-                            || AddIdentityViewModel.EnrollModeRadiosVisibility == Visibility.Visible;
-            if (needsChoice) {
+            if (AddIdentityViewModel.ShowEnrollmentChoices) {
                 OnNeedsSignerChoice?.Invoke(AddIdentityViewModel, this);
                 return;
             }
