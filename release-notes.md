@@ -4,6 +4,7 @@ n/a
 
 ## Bugs fixed
 * [Issue 1025](https://github.com/openziti/desktop-edge-win/issues/1025) - Skip the empty "Configure Enrollment" dialog when the controller offers a single enroll-to JWT signer
+* [Issue 1029](https://github.com/openziti/desktop-edge-win/issues/1029) - Prevent a UI crash when opening application logs while the UI log folder is missing
 
 ## Other changes
 n/a
