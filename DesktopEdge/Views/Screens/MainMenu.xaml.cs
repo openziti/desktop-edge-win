@@ -378,8 +378,14 @@ namespace ZitiDesktopEdge {
             } else if (menuState == "UILogs") {
                 MenuTitle.Content = "Advanced Settings";
                 AdvancedItems.Visibility = Visibility.Visible;
-                OpenLogFile("UI", MainWindow.ExpectedLogPathUI);
                 BackArrow.Visibility = Visibility.Visible;
+                // UI log folder is provisioned by the monitor service. Clicking "application logs" after deleting the folder crashes the UI. See Issue #1029.
+                if (!Directory.Exists(Path.GetDirectoryName(MainWindow.ExpectedLogPathUI))) {
+                    logger.Error("UI log folder not found at {0}", MainWindow.ExpectedLogPathUI);
+                    this.OnShowBlurb?.Invoke("No UI log folder found");
+                    return;
+                }
+                OpenLogFile("UI", MainWindow.ExpectedLogPathUI);
             } else if (menuState == "LogLevel") {
                 ResetLevels();
 
