@@ -233,9 +233,9 @@ namespace ZitiDesktopEdge {
 
             DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
             SvcResponse resp = await serviceClient.VerifyMFA(this.zid.Identifier, code);
+            // only close on failure. on success the enrollment_verification event swaps this
+            // screen over to the recovery codes, closing here too would race and dismiss them
             if (resp.Code != 0) {
-                this.OnClose?.Invoke(false, this);
-            } else {
                 this.OnClose?.Invoke(false, this);
             }
         }
