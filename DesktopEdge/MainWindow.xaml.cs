@@ -2004,6 +2004,7 @@ namespace ZitiDesktopEdge {
                     IdentityItem item = (IdentityItem)IdList.Children[i];
                     item.StopTimers();
                 }
+                int previousIdentityCount = IdList.Children.Count;
                 IdList.Children.Clear();
                 var desktopWorkingArea = SystemParameters.WorkArea;
                 if (_maxHeight > (desktopWorkingArea.Height - 10)) {
@@ -2055,8 +2056,10 @@ namespace ZitiDesktopEdge {
                             if (id.Identifier == IdentityMenu.Identity.Identifier) IdentityMenu.Identity = id;
                         }
                     }
-                    // no animation, this runs on every identity event
-                    IdList.Height = ids.Length * 64;
+                    // animate only when the identity count changes, not on every event
+                    if (ids.Length != previousIdentityCount) {
+                        IdList.BeginAnimation(FrameworkElement.HeightProperty, new DoubleAnimation(IdList.ActualHeight, ids.Length * 64, TimeSpan.FromSeconds(.2)));
+                    }
                     IdListScroller.Visibility = Visibility.Visible;
                 } else {
                     // Make room for the welcome screen when it's about to show.
