@@ -30,7 +30,6 @@ using System.Windows.Data;
 using System.Diagnostics.Eventing.Reader;
 using System.ComponentModel.Design.Serialization;
 using System.Security.Cryptography;
-using System.Windows.Threading;
 using ZitiDesktopEdge.ViewModels;
 
 namespace ZitiDesktopEdge {
@@ -70,7 +69,6 @@ namespace ZitiDesktopEdge {
         public event CommonDelegates.ShowBlurb ShowBlurb;
 
         private System.Windows.Forms.Timer _timer;
-        public double MainHeight = 500;
         private ScrollViewer _scroller;
         private ZitiService _info;
 
@@ -96,48 +94,11 @@ namespace ZitiDesktopEdge {
                 IdentityDetailsViewModel.Identity = _identity;
                 IdentityDetailsViewModel.LoadServices();
                 ServiceCount.Content = IdentityDetailsViewModel.ServiceCountLabel;
-                // set once, MatchMainViewHeight corrects it
-                if (double.IsNaN(MainDetailScroll.Height)) {
-                    MainDetailScroll.Height = MainHeight - 300;
-                }
                 UpdateView();
-                if (!IsVisible) {
-                    // measure while still hidden so the first open comes up at the right size
-                    FrameworkElement root = (FrameworkElement)Content;
-                    root.Measure(new Size(MaxWidth, double.PositiveInfinity));
-                    MatchMainViewHeight(root.DesiredSize.Height);
-                }
                 IdentityArea.Opacity = 1.0;
                 IdentityArea.Visibility = Visibility.Visible;
                 this.Visibility = Visibility.Visible;
-                Dispatcher.BeginInvoke(new Action(MatchMainViewHeight), DispatcherPriority.Loaded);
             }
-        }
-
-        // resize the service list until this page is the same height as the main view,
-        // otherwise it docks closer to the taskbar. Must run after render.
-        private void MatchMainViewHeight() {
-            if (!IsVisible) {
-                return;
-            }
-            MatchMainViewHeight(IdentityArea.DesiredSize.Height);
-        }
-
-        private void MatchMainViewHeight(double pageHeight) {
-            if (MainDetailScroll.Visibility != Visibility.Visible) {
-                return;
-            }
-            // MainView's margins net to -10
-            double targetHeight = MainHeight - 10;
-            double delta = targetHeight - pageHeight;
-            if (Math.Abs(delta) < 0.5) {
-                return;
-            }
-            double fitted = MainDetailScroll.Height + delta;
-            if (fitted < 60) {
-                fitted = 60;
-            }
-            MainDetailScroll.Height = fitted;
         }
 
         public IdentityItem SelectedIdentity { get; set; }
@@ -412,10 +373,6 @@ namespace ZitiDesktopEdge {
             this.Visibility = Visibility.Collapsed;
         }
 
-        public void SetHeight(double height) {
-            MainDetailScroll.Height = height;
-        }
-
         private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
             if (this.Visibility == Visibility.Visible && ForgetIdentityConfirmView.Visibility == Visibility.Collapsed) {
                 ForgetIdentityConfirmView.Visibility = Visibility.Visible;
@@ -666,7 +623,6 @@ namespace ZitiDesktopEdge {
                 ExternalProviderPanel.Visibility = Visibility.Collapsed;
                 ServicesPanel.Visibility = Visibility.Visible;
                 ExternalProviderStatusAndDetails.ToolTip = "Click to configure external auth providers";
-                Dispatcher.BeginInvoke(new Action(MatchMainViewHeight), DispatcherPriority.Loaded);
             } else {
                 //hide all panels, show the provider panel
                 ExternalProviderPanel.Visibility = Visibility.Visible;

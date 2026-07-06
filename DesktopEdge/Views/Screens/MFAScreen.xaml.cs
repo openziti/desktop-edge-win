@@ -112,8 +112,6 @@ namespace ZitiDesktopEdge {
             SecretCode.Text = secret;
 
             _url = url;
-            // 510 + the 30px show margins = 570, MainView's minimum. Taller grows the window.
-            MFAArea.Height = 510;
             MFAAuthArea.Visibility = Visibility.Collapsed;
             MFASetupArea.Visibility = Visibility.Visible;
             MFARecoveryArea.Visibility = Visibility.Collapsed;
@@ -133,7 +131,6 @@ namespace ZitiDesktopEdge {
             MainBrush.Visibility = Visibility.Visible;
             CloseBlack.Visibility = Visibility.Visible;
             CloseWhite.Visibility = Visibility.Collapsed;
-            MFAArea.Height = 380;
             if (codes.Length > 0) {
                 for (int i = 0; i < codes.Length; i++) {
                     TextBox label = new TextBox();
@@ -172,7 +169,6 @@ namespace ZitiDesktopEdge {
                 MFARecoveryArea.Visibility = Visibility.Collapsed;
                 SeperationColor.Visibility = Visibility.Collapsed;
                 MFAAuthArea.Visibility = Visibility.Visible;
-                MFAArea.Height = 220;
                 AuthCode.Focusable = true;
                 AuthCode.Focus();
             } else {

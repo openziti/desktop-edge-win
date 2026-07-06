@@ -2133,6 +2133,7 @@ namespace ZitiDesktopEdge {
 
         private void SetLocation() {
             var desktopWorkingArea = SystemParameters.WorkArea;
+            double renderedHeight = MainView.ActualHeight;
 
             Rectangle trayRectangle = WinAPI.GetTrayRectangle();
             if (trayRectangle.Top < 20) {
@@ -2146,25 +2147,15 @@ namespace ZitiDesktopEdge {
             } else if (desktopWorkingArea.Right == (double)trayRectangle.Left) {
                 this.Position = "Right";
                 this.Left = desktopWorkingArea.Right - this.Width - 20;
-                this.Top = desktopWorkingArea.Bottom - _mainViewHeight - 75;
+                this.Top = desktopWorkingArea.Bottom - renderedHeight - 75;
             } else {
                 this.Position = "Bottom";
                 this.Left = desktopWorkingArea.Right - this.Width - 75;
-                this.Top = desktopWorkingArea.Bottom - _mainViewHeight;
+                this.Top = desktopWorkingArea.Bottom - renderedHeight;
             }
         }
-        private double _mainViewHeight;
 
         public void Placement() {
-            // don't measure while an overlay is up, they feed their own height back (#1020)
-            if (IdentityMenu.Visibility != Visibility.Visible && MFASetup.Visibility != Visibility.Visible) {
-                _mainViewHeight = MainView.ActualHeight;
-            }
-            // MainHeight needs to track MainView's height even when detached, otherwise the
-            // Identity-detail scroll sizes from a stale value and pushes the Forget button
-            // off the bottom. SetLocation also positions the window against the tray, which
-            // only applies when docked.
-            IdentityMenu.MainHeight = _mainViewHeight;
             if (_isAttached) {
                 SetLocation();
             }
