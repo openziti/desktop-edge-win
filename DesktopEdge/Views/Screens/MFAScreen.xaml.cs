@@ -112,7 +112,8 @@ namespace ZitiDesktopEdge {
             SecretCode.Text = secret;
 
             _url = url;
-            MFAArea.Height = 515;
+            // 510 + the 30px show margins = 570, MainView's minimum. Taller grows the window.
+            MFAArea.Height = 510;
             MFAAuthArea.Visibility = Visibility.Collapsed;
             MFASetupArea.Visibility = Visibility.Visible;
             MFARecoveryArea.Visibility = Visibility.Collapsed;

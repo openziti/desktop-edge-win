@@ -2005,7 +2005,6 @@ namespace ZitiDesktopEdge {
                     item.StopTimers();
                 }
                 IdList.Children.Clear();
-                IdList.Height = 0;
                 var desktopWorkingArea = SystemParameters.WorkArea;
                 if (_maxHeight > (desktopWorkingArea.Height - 10)) {
                     _maxHeight = desktopWorkingArea.Height - 10;
@@ -2056,8 +2055,8 @@ namespace ZitiDesktopEdge {
                             if (id.Identifier == IdentityMenu.Identity.Identifier) IdentityMenu.Identity = id;
                         }
                     }
-                    DoubleAnimation animation = new DoubleAnimation((double)(ids.Length * 64), TimeSpan.FromSeconds(.2));
-                    IdList.BeginAnimation(FrameworkElement.HeightProperty, animation);
+                    // no animation, this runs on every identity event
+                    IdList.Height = ids.Length * 64;
                     IdListScroller.Visibility = Visibility.Visible;
                 } else {
                     // Make room for the welcome screen when it's about to show.
@@ -2135,9 +2134,6 @@ namespace ZitiDesktopEdge {
         private void SetLocation() {
             var desktopWorkingArea = SystemParameters.WorkArea;
 
-            var renderedHeight = MainView.ActualHeight;
-            IdentityMenu.MainHeight = renderedHeight;
-
             Rectangle trayRectangle = WinAPI.GetTrayRectangle();
             if (trayRectangle.Top < 20) {
                 this.Position = "Top";
@@ -2150,19 +2146,25 @@ namespace ZitiDesktopEdge {
             } else if (desktopWorkingArea.Right == (double)trayRectangle.Left) {
                 this.Position = "Right";
                 this.Left = desktopWorkingArea.Right - this.Width - 20;
-                this.Top = desktopWorkingArea.Bottom - renderedHeight - 75;
+                this.Top = desktopWorkingArea.Bottom - _mainViewHeight - 75;
             } else {
                 this.Position = "Bottom";
                 this.Left = desktopWorkingArea.Right - this.Width - 75;
-                this.Top = desktopWorkingArea.Bottom - renderedHeight;
+                this.Top = desktopWorkingArea.Bottom - _mainViewHeight;
             }
         }
+        private double _mainViewHeight;
+
         public void Placement() {
-            // MainHeight needs to track live window height even when detached, otherwise the
+            // don't measure while an overlay is up, they feed their own height back (#1020)
+            if (IdentityMenu.Visibility != Visibility.Visible && MFASetup.Visibility != Visibility.Visible) {
+                _mainViewHeight = MainView.ActualHeight;
+            }
+            // MainHeight needs to track MainView's height even when detached, otherwise the
             // Identity-detail scroll sizes from a stale value and pushes the Forget button
             // off the bottom. SetLocation also positions the window against the tray, which
             // only applies when docked.
-            IdentityMenu.MainHeight = MainView.ActualHeight;
+            IdentityMenu.MainHeight = _mainViewHeight;
             if (_isAttached) {
                 SetLocation();
             }
