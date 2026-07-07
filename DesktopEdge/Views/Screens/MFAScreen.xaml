@@ -22,7 +22,7 @@
              mc:Ignorable="d"
              d:DesignHeight="570"
              d:DesignWidth="420">
-    <Grid x:Name="MFAArea" Visibility="Visible" Margin="0,0,0,0">
+    <Grid x:Name="MFAArea" Visibility="Visible" Margin="0,0,0,0" VerticalAlignment="Center">
         <Border Margin="10,10,10,10" BorderBrush="Black" BorderThickness="8" CornerRadius="10">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="20" Direction="1" RenderingBias="Quality" ShadowDepth="1" Opacity="1"/>

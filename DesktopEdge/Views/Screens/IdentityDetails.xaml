@@ -74,12 +74,14 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="1*"/>
-                <!-- Content before -->
-                <RowDefinition Height="*" />
-                <!-- Space for the StackPanel -->
+                <!-- header and identity fields -->
+                <RowDefinition Height="Auto"/>
+                <!-- service list -->
+                <RowDefinition Height="*"/>
+                <!-- forget button -->
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <StackPanel Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,0,0,0">
+            <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Stretch">
                 <!-- Header Controls -->
                 <Grid Margin="0,0,0,10">
                     <Grid.ColumnDefinitions>
@@ -142,8 +144,15 @@
                                       Margin="20,0,20,5" Recovery="MFARecovery" Authenticate="MFAAuthenticate"
                                       Toggle="ToggleMFA"></local:MenuEditToggle>
                 <local:Filter x:Name="FilterServices" OnFilter="DoFilter" VerticalAlignment="Top" Margin="10,5,10,0" />
-                <StackPanel Name="ServicesPanel" d:Visibility="Collapsed">
-                    <Grid Name="MainDetailScroll" Margin="10,0,10,0">
+            </StackPanel>
+
+            <Grid Grid.Row="1" Grid.Column="0">
+                <Grid Name="ServicesPanel" d:Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid Name="MainDetailScroll" Grid.Row="0" Margin="10,0,10,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="95*"/>
                             <ColumnDefinition Width="34*"/>
@@ -239,8 +248,8 @@
                             </ListView.ItemTemplate>
                         </ListView>
                     </Grid>
-                    <Label x:Name="ServiceCount" HorizontalAlignment="Center" Content="0 Services" Margin="0,0,0,0" Foreground="Gray" FontWeight="Bold" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
-                </StackPanel>
+                    <Label x:Name="ServiceCount" Grid.Row="1" HorizontalAlignment="Center" Content="0 Services" Margin="0,0,0,0" Foreground="Gray" FontWeight="Bold" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
+                </Grid>
                 <StackPanel Name="ExternalProviderPanel" Visibility="Visible">
                     <Grid MaxHeight="160" Margin="10,0,10,0">
                         <Grid.ColumnDefinitions>
@@ -384,8 +393,8 @@
                                Foreground="#FFFFFF"></Label>
                     </Grid>
                 </StackPanel>
-            </StackPanel>
-            <local:StyledButton x:Name="ForgetIdentityButton" Grid.Row="1"
+            </Grid>
+            <local:StyledButton x:Name="ForgetIdentityButton" Grid.Row="2"
                                 MinWidth="310"
                                 BgColor="#F4044D"
                                 Label="Forget This Identity"

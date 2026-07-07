@@ -112,7 +112,6 @@ namespace ZitiDesktopEdge {
             SecretCode.Text = secret;
 
             _url = url;
-            MFAArea.Height = 515;
             MFAAuthArea.Visibility = Visibility.Collapsed;
             MFASetupArea.Visibility = Visibility.Visible;
             MFARecoveryArea.Visibility = Visibility.Collapsed;
@@ -132,7 +131,6 @@ namespace ZitiDesktopEdge {
             MainBrush.Visibility = Visibility.Visible;
             CloseBlack.Visibility = Visibility.Visible;
             CloseWhite.Visibility = Visibility.Collapsed;
-            MFAArea.Height = 380;
             if (codes.Length > 0) {
                 for (int i = 0; i < codes.Length; i++) {
                     TextBox label = new TextBox();
@@ -171,7 +169,6 @@ namespace ZitiDesktopEdge {
                 MFARecoveryArea.Visibility = Visibility.Collapsed;
                 SeperationColor.Visibility = Visibility.Collapsed;
                 MFAAuthArea.Visibility = Visibility.Visible;
-                MFAArea.Height = 220;
                 AuthCode.Focusable = true;
                 AuthCode.Focus();
             } else {
@@ -236,9 +233,9 @@ namespace ZitiDesktopEdge {
 
             DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
             SvcResponse resp = await serviceClient.VerifyMFA(this.zid.Identifier, code);
+            // only close on failure. on success the enrollment_verification event swaps this
+            // screen over to the recovery codes, closing here too would race and dismiss them
             if (resp.Code != 0) {
-                this.OnClose?.Invoke(false, this);
-            } else {
                 this.OnClose?.Invoke(false, this);
             }
         }

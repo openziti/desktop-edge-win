@@ -2004,8 +2004,8 @@ namespace ZitiDesktopEdge {
                     IdentityItem item = (IdentityItem)IdList.Children[i];
                     item.StopTimers();
                 }
+                int previousIdentityCount = IdList.Children.Count;
                 IdList.Children.Clear();
-                IdList.Height = 0;
                 var desktopWorkingArea = SystemParameters.WorkArea;
                 if (_maxHeight > (desktopWorkingArea.Height - 10)) {
                     _maxHeight = desktopWorkingArea.Height - 10;
@@ -2056,8 +2056,10 @@ namespace ZitiDesktopEdge {
                             if (id.Identifier == IdentityMenu.Identity.Identifier) IdentityMenu.Identity = id;
                         }
                     }
-                    DoubleAnimation animation = new DoubleAnimation((double)(ids.Length * 64), TimeSpan.FromSeconds(.2));
-                    IdList.BeginAnimation(FrameworkElement.HeightProperty, animation);
+                    // animate only when the identity count changes, not on every event
+                    if (ids.Length != previousIdentityCount) {
+                        IdList.BeginAnimation(FrameworkElement.HeightProperty, new DoubleAnimation(IdList.ActualHeight, ids.Length * 64, TimeSpan.FromSeconds(.2)));
+                    }
                     IdListScroller.Visibility = Visibility.Visible;
                 } else {
                     // Make room for the welcome screen when it's about to show.
@@ -2134,9 +2136,7 @@ namespace ZitiDesktopEdge {
 
         private void SetLocation() {
             var desktopWorkingArea = SystemParameters.WorkArea;
-
-            var renderedHeight = MainView.ActualHeight;
-            IdentityMenu.MainHeight = renderedHeight;
+            double renderedHeight = MainView.ActualHeight;
 
             Rectangle trayRectangle = WinAPI.GetTrayRectangle();
             if (trayRectangle.Top < 20) {
@@ -2157,12 +2157,8 @@ namespace ZitiDesktopEdge {
                 this.Top = desktopWorkingArea.Bottom - renderedHeight;
             }
         }
+
         public void Placement() {
-            // MainHeight needs to track live window height even when detached, otherwise the
-            // Identity-detail scroll sizes from a stale value and pushes the Forget button
-            // off the bottom. SetLocation also positions the window against the tray, which
-            // only applies when docked.
-            IdentityMenu.MainHeight = MainView.ActualHeight;
             if (_isAttached) {
                 SetLocation();
             }

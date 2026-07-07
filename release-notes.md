@@ -1,3 +1,14 @@
+# Release 2.11.2.7
+## What's New
+n/a
+
+## Bugs fixed
+* [Issue 1020](https://github.com/openziti/desktop-edge-win/issues/1020) - Identity events no longer resize the identity details view
+* [Issue 1033](https://github.com/openziti/desktop-edge-win/issues/1033) - MFA recovery codes no longer disappear immediately after entering the setup code
+
+## Other changes
+n/a
+
 # Release 2.11.2.6
 ## What's New
 * updated to ziti-edge-tunnel v1.18.1

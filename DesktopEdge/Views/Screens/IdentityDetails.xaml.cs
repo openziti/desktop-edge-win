@@ -69,7 +69,6 @@ namespace ZitiDesktopEdge {
         public event CommonDelegates.ShowBlurb ShowBlurb;
 
         private System.Windows.Forms.Timer _timer;
-        public double MainHeight = 500;
         private ScrollViewer _scroller;
         private ZitiService _info;
 
@@ -95,9 +94,6 @@ namespace ZitiDesktopEdge {
                 IdentityDetailsViewModel.Identity = _identity;
                 IdentityDetailsViewModel.LoadServices();
                 ServiceCount.Content = IdentityDetailsViewModel.ServiceCountLabel;
-                double newHeight = MainHeight - 300;
-                MainDetailScroll.MaxHeight = newHeight;
-                MainDetailScroll.Height = newHeight;
                 UpdateView();
                 IdentityArea.Opacity = 1.0;
                 IdentityArea.Visibility = Visibility.Visible;
@@ -375,10 +371,6 @@ namespace ZitiDesktopEdge {
         }
         private void HideMenu(object sender, MouseButtonEventArgs e) {
             this.Visibility = Visibility.Collapsed;
-        }
-
-        public void SetHeight(double height) {
-            MainDetailScroll.Height = height;
         }
 
         private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
