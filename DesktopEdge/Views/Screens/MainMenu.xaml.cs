@@ -67,7 +67,6 @@ namespace ZitiDesktopEdge {
         private bool _suppressPolicyVmReRender = false;
         public string LogLevel = "";
         private string appVersion = null;
-        public double MainHeight = 500;
 
         private ZDEWViewState state;
         private ManagedSettingsViewModel policyViewModel;
