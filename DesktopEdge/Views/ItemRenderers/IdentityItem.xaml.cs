@@ -230,7 +230,6 @@ namespace ZitiDesktopEdge {
                 } else {
                     if (_identity.IsMFANeeded) {
                         ServiceCountAreaLabel.Content = "enable mfa";
-                        hideMfa();
                         ServiceCountArea.Visibility = Visibility.Collapsed;
                         MfaSetupNeeded.Visibility = Visibility.Visible;
                         MainArea.Opacity = 0.6;

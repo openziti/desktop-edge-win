@@ -1401,12 +1401,12 @@ namespace ZitiDesktopEdge {
                     .AddArgument("identifier", identity.Identifier);
                 message = $"{displayName} requires a TOTP to access services.";
             } else {
-                // MFA is required but isn't set up yet: prompt setup, not authentication 
+                // MFA is required but isn't set up yet: prompt setup, not authentication
                 button = new ToastButton()
                     .SetContent("Set Up MFA")
                     .AddArgument("action", "mfa-setup")
                     .AddArgument("identifier", identity.Identifier);
-                message = $"{displayName} requires MFA set up to access services.";
+                message = $"{displayName} requires MFA setup to access services.";
             }
             _notificationThrottle.Queue(identity.Identifier, message, button);
         }
@@ -1708,6 +1708,7 @@ namespace ZitiDesktopEdge {
                     var found = identities.Find(i => i.Identifier == e.Id.Identifier);
                     found.IsConnected = true;
                     found.IsMFANeeded = e.Id.MfaNeeded;
+                    found.IsMFAEnabled = e.Id.MfaEnabled;
                     found.NeedsExtAuth = e.Id.NeedsExtAuth;
                     for (int i = 0; i < identities.Count; i++) {
                         if (identities[i].Identifier == found.Identifier) {
