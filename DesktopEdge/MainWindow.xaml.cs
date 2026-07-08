@@ -143,10 +143,19 @@ namespace ZitiDesktopEdge {
             HideLoad();
             this.Dispatcher.Invoke(async () => {
                 if (mfa.Action == "enrollment_challenge") {
-                    string url = HttpUtility.UrlDecode(mfa.ProvisioningUrl);
-                    string secret = HttpUtility.ParseQueryString(url)["secret"];
-                    this.IdentityMenu.Identity.RecoveryCodes = mfa?.RecoveryCodes?.ToArray();
-                    SetupMFA(this.IdentityMenu.Identity, url, secret);
+                    if (mfa.Successful) {
+                        string url = HttpUtility.UrlDecode(mfa.ProvisioningUrl);
+                        string secret = HttpUtility.ParseQueryString(url)["secret"];
+                        this.IdentityMenu.Identity.RecoveryCodes = mfa?.RecoveryCodes?.ToArray();
+                        SetupMFA(this.IdentityMenu.Identity, url, secret);
+                    } else {
+                        logger.Error("MFA enrollment challenge failed for identity {0}: {1}", mfa.Identifier, mfa.Error);
+                        // flip the toggle back since setup never started
+                        if (IdentityMenu.Identity != null && IdentityMenu.Identity.Identifier == mfa.Identifier) {
+                            IdentityMenu.IdentityMFA.IsOn = IdentityMenu.Identity.IsMFAEnabled;
+                        }
+                        await ShowBlurbAsync("MFA setup failed to start", "");
+                    }
                 } else if (mfa.Action == "auth_challenge") {
                     for (int i = 0; i < identities.Count; i++) {
                         if (identities[i].Identifier == mfa.Identifier) {
