@@ -554,6 +554,19 @@ namespace ZitiDesktopEdge {
                                 });
                             }
                         }
+                    } else if (value == "mfa-setup") {
+                        string setupIdentifier = null;
+                        args.TryGetValue("identifier", out setupIdentifier);
+                        if (setupIdentifier != null) {
+                            var found = identities.Find(i => i.Identifier == setupIdentifier);
+                            if (found != null) {
+                                this.Dispatcher.Invoke(() => {
+                                    // open the identity so the enrollment_challenge targets it, then start setup
+                                    OpenIdentityDetails(found);
+                                    IdItem_EnableMFA(found);
+                                });
+                            }
+                        }
                     }
                 }
                 this.Show();
@@ -1379,11 +1392,23 @@ namespace ZitiDesktopEdge {
 
         private void QueueMfaNotification(ZitiIdentity identity) {
             string displayName = string.IsNullOrEmpty(identity.Name) ? identity.Identifier : identity.Name;
-            var button = new ToastButton()
-                .SetContent("Authenticate")
-                .AddArgument("action", "mfa-auth")
-                .AddArgument("identifier", identity.Identifier);
-            _notificationThrottle.Queue(identity.Identifier, $"{displayName} requires MFA authentication.", button);
+            ToastButton button;
+            string message;
+            if (identity.IsMFAEnabled) {
+                button = new ToastButton()
+                    .SetContent("Authenticate")
+                    .AddArgument("action", "mfa-auth")
+                    .AddArgument("identifier", identity.Identifier);
+                message = $"{displayName} requires a TOTP to access services.";
+            } else {
+                // MFA is required but isn't set up yet: prompt setup, not authentication 
+                button = new ToastButton()
+                    .SetContent("Set Up MFA")
+                    .AddArgument("action", "mfa-setup")
+                    .AddArgument("identifier", identity.Identifier);
+                message = $"{displayName} requires MFA set up to access services.";
+            }
+            _notificationThrottle.Queue(identity.Identifier, message, button);
         }
 
         private async Task StartExtAuth(ZitiIdentity identity) {
