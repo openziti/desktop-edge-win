@@ -149,7 +149,6 @@ namespace ZitiDesktopEdge {
                         this.IdentityMenu.Identity.RecoveryCodes = mfa?.RecoveryCodes?.ToArray();
                         SetupMFA(this.IdentityMenu.Identity, url, secret);
                     } else {
-                        logger.Error("MFA enrollment challenge failed for identity {0}: {1}", mfa.Identifier, mfa.Error);
                         // flip the toggle back since setup never started
                         if (IdentityMenu.Identity != null && IdentityMenu.Identity.Identifier == mfa.Identifier) {
                             IdentityMenu.IdentityMFA.IsOn = IdentityMenu.Identity.IsMFAEnabled;

@@ -616,7 +616,6 @@ namespace ZitiDesktopEdge.DataStructures {
     public class MfaEvent : ActionEvent {
         public string Identifier { get; set; }
         public bool Successful { get; set; }
-        public string Error { get; set; }
         public string ProvisioningUrl { get; set; }
         public List<string> RecoveryCodes { get; set; }
     }
