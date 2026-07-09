@@ -71,7 +71,6 @@ namespace ZitiDesktopEdge {
         public int NotificationsShownCount = 0;
         private double _maxHeight = 805d;
         public string CurrentIcon = "white";
-        private string[] suffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };
         private string _blurbUrl = "";
 
         private DateTime NextNotificationTime;
@@ -915,13 +914,11 @@ namespace ZitiDesktopEdge {
                 AddIdButton.Opacity = 0.1;
                 AddIdButton.IsEnabled = false;
                 ConnectButton.Opacity = 0.1;
-                StatArea.Opacity = 0.1;
             } else {
                 AddIdAreaButton.Opacity = 1.0;
                 AddIdAreaButton.IsEnabled = true;
                 AddIdButton.Opacity = 1.0;
                 AddIdButton.IsEnabled = true;
-                StatArea.Opacity = 1.0;
                 ConnectButton.Opacity = 1.0;
             }
             TunnelConnected(!_isServiceInError);
@@ -943,7 +940,6 @@ namespace ZitiDesktopEdge {
             serviceClient.OnClientConnected += ServiceClient_OnClientConnected;
             serviceClient.OnClientDisconnected += ServiceClient_OnClientDisconnected;
             serviceClient.OnIdentityEvent += ServiceClient_OnIdentityEvent;
-            serviceClient.OnMetricsEvent += ServiceClient_OnMetricsEvent;
             serviceClient.OnServiceEvent += ServiceClient_OnServiceEvent;
             serviceClient.OnTunnelStatusEvent += ServiceClient_OnTunnelStatusEvent;
             serviceClient.OnMfaEvent += ServiceClient_OnMfaEvent;
@@ -1567,9 +1563,6 @@ namespace ZitiDesktopEdge {
             _startDate = default(DateTime);
             ConnectedTime.Content = "00:00:00";
 
-            DownloadSpeed.Content = "0.0";
-            UploadSpeed.Content = "0.0";
-
             _notificationThrottle?.Clear();
             NextNotificationTime = DateTime.Now;
 
@@ -1713,34 +1706,6 @@ namespace ZitiDesktopEdge {
                 }
             });
             logger.Debug($"IDENTITY EVENT. Action: {e.Action} identifier: {zid.Identifier}");
-        }
-
-        private void ServiceClient_OnMetricsEvent(object sender, List<Identity> ids) {
-            if (ids != null) {
-                long totalUp = 0;
-                long totalDown = 0;
-                foreach (var id in ids) {
-                    //logger.Debug($"==== MetricsEvent : id {id.Name} down: {id.Metrics.Down} up:{id.Metrics.Up}");
-                    if (id?.Metrics != null) {
-                        totalDown += id.Metrics.Down;
-                        totalUp += id.Metrics.Up;
-                    }
-                }
-                this.Dispatcher.Invoke(() => {
-                    SetSpeed(totalUp, UploadSpeed, UploadSpeedLabel);
-                    SetSpeed(totalDown, DownloadSpeed, DownloadSpeedLabel);
-                });
-            }
-        }
-
-        public void SetSpeed(decimal bytes, Label speed, Label speedLabel) {
-            int counter = 0;
-            while (Math.Round(bytes / 1024) >= 1) {
-                bytes = bytes / 1024;
-                counter++;
-            }
-            speed.Content = bytes.ToString("0.0");
-            speedLabel.Content = suffixes[counter];
         }
 
         private void ServiceClient_OnServiceEvent(object sender, ServiceEvent e) {
@@ -2127,8 +2092,6 @@ namespace ZitiDesktopEdge {
                     DisconnectButton.Visibility = Visibility.Collapsed;
                     IdentityMenu.Visibility = Visibility.Collapsed;
                     MainMenu.Disconnected();
-                    DownloadSpeed.Content = "0.0";
-                    UploadSpeed.Content = "0.0";
                     props.Disconnected();
                 }
             });

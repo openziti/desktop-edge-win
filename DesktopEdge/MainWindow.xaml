@@ -263,36 +263,6 @@
                     <Label HorizontalAlignment="Center"  Content="STOP" Foreground="White" Padding="0,105,0,0"/>
                 </Grid>
             </Canvas>
-            <Grid x:Name="StatArea" HorizontalAlignment="Stretch" Width="Auto" Margin="0,30,0,0" Visibility="Collapsed">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0" Orientation="Vertical">
-                    <Grid HorizontalAlignment="Stretch" Width="Auto">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="40"/>
-                        </Grid.ColumnDefinitions>
-                        <Label Grid.Column="0" Content="Download Speed" Foreground="White" HorizontalAlignment="Right" FontSize="14" ></Label>
-                        <Image Grid.Column="1" Source="/Assets/Images/down.png" Width="20" HorizontalAlignment="Left" Height="20"></Image>
-                    </Grid>
-                    <Label Name="DownloadSpeed" Margin="0,-16,0,0" Foreground="#0069FF" Content="0" FontSize="40" HorizontalAlignment="Center"  />
-                    <Label Name="DownloadSpeedLabel" Foreground="White" Margin="0,-20,0,30" Content="KBps" FontSize="11" HorizontalAlignment="Center"  />
-                </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Vertical">
-                    <Grid HorizontalAlignment="Stretch" Width="Auto">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="50"/>
-                        </Grid.ColumnDefinitions>
-                        <Label Grid.Column="0" Content="Upload Speed" Foreground="White" HorizontalAlignment="Right" FontSize="14" ></Label>
-                        <Image Grid.Column="1" Source="/Assets/Images/up.png" Width="20" HorizontalAlignment="Left" Height="20"></Image>
-                    </Grid>
-                    <Label Name="UploadSpeed" Margin="0,-16,0,0" Foreground="#FF0047" Content="0" FontSize="40" HorizontalAlignment="Center"  />
-                    <Label Name="UploadSpeedLabel" Foreground="White" Margin="0,-20,0,30" Content="KBps" FontSize="11" HorizontalAlignment="Center"  />
-                </StackPanel>
-            </Grid>
             <Grid HorizontalAlignment="Stretch" Margin="0,8,0,8" Grid.IsSharedSizeScope="True">
                 <!-- Mock the grid definitions for identity items so the headers align with list items -->
                 <Grid.RowDefinitions>
