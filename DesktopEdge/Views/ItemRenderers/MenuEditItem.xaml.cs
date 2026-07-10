@@ -45,13 +45,15 @@ namespace ZitiDesktopEdge {
                 MainLabel.Text = this._label;
             }
         }
+        public static readonly DependencyProperty ValueProperty = DependencyProperty.Register(
+            "Value",
+            typeof(string),
+            typeof(MenuEditItem),
+            new PropertyMetadata(""));
+
         public string Value {
-            get {
-                return MainEdit.Text;
-            }
-            set {
-                MainEdit.Text = value;
-            }
+            get => (string)GetValue(ValueProperty);
+            set => SetValue(ValueProperty, value);
         }
         public bool IsLocked {
             get {
