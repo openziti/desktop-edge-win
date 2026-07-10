@@ -39,6 +39,7 @@ namespace ZitiDesktopEdge {
             InitializeComponent();
             ViewModel = new GetStartedViewModel();
             DataContext = ViewModel;
+            ViewModel.Closed += OnViewModelClosed;
         }
 
         private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e) {
@@ -46,8 +47,7 @@ namespace ZitiDesktopEdge {
             e.Handled = true;
         }
 
-        private void CloseButton_Click(object sender, MouseButtonEventArgs e) {
-            ViewModel.Close();
+        private void OnViewModelClosed(object sender, EventArgs e) {
             ClosedByUser?.Invoke(this, EventArgs.Empty);
         }
 

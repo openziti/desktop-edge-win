@@ -191,7 +191,7 @@
                                 Width="160"
                                 HorizontalAlignment="Center"
                                 Margin="0,12,0,0"
-                                OnClick="CloseButton_Click"/>
+                                Command="{Binding CloseCommand}"/>
         </Grid>
 
         <Image Source="/Assets/Images/close.png"

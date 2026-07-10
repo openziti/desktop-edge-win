@@ -14,13 +14,27 @@
 	limitations under the License.
 */
 
+using System;
 using System.ComponentModel;
 using System.Windows;
+using ZitiDesktopEdge;
 
 namespace ZitiDesktopEdge.ViewModels {
     public class GetStartedViewModel : INotifyPropertyChanged {
         private bool _isOpen;
         private bool _userDismissed;
+
+        public event EventHandler Closed;
+        public ActionCommand CloseCommand { get; }
+
+        public GetStartedViewModel() {
+            CloseCommand = new ActionCommand(CloseFromButton, () => true);
+        }
+
+        private void CloseFromButton() {
+            Close();
+            Closed?.Invoke(this, EventArgs.Empty);
+        }
 
         public bool IsOpen {
             get => _isOpen;
