@@ -50,13 +50,14 @@ namespace ZitiDesktopEdge {
         public delegate void LoadEvent(bool isComplete, string title, string message);
         public event LoadEvent OnLoad;
         public event CommonDelegates.CloseAction OnClose;
-        private string _url = "";
         public delegate void ErrorOccurred(string message);
         public event ErrorOccurred OnError;
         private string[] _codes = new string[0];
         private ZitiIdentity zid;
-        private bool _executing = false;
-        public int Type { get; set; }
+        public int Type {
+            get { return ViewModel.Type; }
+            set { ViewModel.Type = value; }
+        }
 
         public ZitiIdentity Identity {
             get {
@@ -67,12 +68,32 @@ namespace ZitiDesktopEdge {
             }
         }
 
+        public MFAScreenViewModel ViewModel { get; } = new MFAScreenViewModel();
+
         public MFAScreen() {
             InitializeComponent();
+            DataContext = ViewModel;
+            ViewModel.LoadRequested += OnVmLoad;
+            ViewModel.CloseRequested += OnVmClose;
+            ViewModel.ErrorRaised += OnVmError;
+            ViewModel.FocusAuthRequested += OnFocusAuth;
         }
 
-        private void ExecuteClose(object sender, MouseButtonEventArgs e) {
-            this.OnClose?.Invoke(false, this);
+        private void OnFocusAuth() {
+            AuthCode.Focusable = true;
+            AuthCode.Focus();
+        }
+
+        private void OnVmLoad(bool complete, string title, string message) {
+            this.OnLoad?.Invoke(complete, title, message);
+        }
+
+        private void OnVmClose(bool success) {
+            this.OnClose?.Invoke(success, this);
+        }
+
+        private void OnVmError(string message) {
+            this.OnError?.Invoke(message);
         }
 
         private void ShowError(string message) {
@@ -96,41 +117,23 @@ namespace ZitiDesktopEdge {
         }
 
         public void ShowSetup(ZitiIdentity identity, string url, string secret) {
-            SetupCode.Text = "";
+            ViewModel.SetupCode = "";
             this.zid = identity;
-            MFAImage.Visibility = Visibility.Visible;
-            SecretCode.Visibility = Visibility.Collapsed;
-            CloseBlack.Visibility = Visibility.Visible;
-            CloseWhite.Visibility = Visibility.Collapsed;
-            SecretButton.Content = "Show Secret";
-            IdName.Content = identity.Name;
+            ViewModel.Identity = identity;
+            ViewModel.IdName = identity.Name;
+            ViewModel.ShowSetupMode();
             Logger.Debug($"MFA Url: {url}");
-            AuthBrush.Visibility = Visibility.Collapsed;
-            MainBrush.Visibility = Visibility.Visible;
-
             MFAImage.Source = CreateQRFromUrl(url);
             SecretCode.Text = secret;
-
-            _url = url;
-            MFAAuthArea.Visibility = Visibility.Collapsed;
-            MFASetupArea.Visibility = Visibility.Visible;
-            MFARecoveryArea.Visibility = Visibility.Collapsed;
-            SeperationColor.Visibility = Visibility.Visible;
+            ViewModel.Url = url;
             SetupCode.Focus();
         }
 
         public void ShowRecovery(string[] codes, ZitiIdentity identity) {
             this.zid = identity;
-            MFASetupArea.Visibility = Visibility.Collapsed;
-            MFAAuthArea.Visibility = Visibility.Collapsed;
-            SeperationColor.Visibility = Visibility.Collapsed;
-            MFARecoveryArea.Visibility = Visibility.Visible;
+            ViewModel.Identity = identity;
             RecoveryList.Children.Clear();
             _codes = codes;
-            AuthBrush.Visibility = Visibility.Collapsed;
-            MainBrush.Visibility = Visibility.Visible;
-            CloseBlack.Visibility = Visibility.Visible;
-            CloseWhite.Visibility = Visibility.Collapsed;
             if (codes.Length > 0) {
                 for (int i = 0; i < codes.Length; i++) {
                     TextBox label = new TextBox();
@@ -144,74 +147,22 @@ namespace ZitiDesktopEdge {
                     label.VerticalContentAlignment = VerticalAlignment.Center;
                     RecoveryList.Children.Add(label);
                 }
-                RecoveryList.Visibility = Visibility.Visible;
-                NoRecovery.Visibility = Visibility.Collapsed;
-                SaveButton.Visibility = Visibility.Visible;
+                ViewModel.ShowRecoveryMode(true);
             } else {
-
                 ShowMFA(this.zid, 2);
-                SaveButton.Visibility = Visibility.Collapsed;
-                RecoveryList.Visibility = Visibility.Collapsed;
-                NoRecovery.Visibility = Visibility.Visible;
             }
         }
 
         public void ShowMFA(ZitiIdentity identity, int type) {
             if (identity.IsEnabled) {
                 this.Type = type;
-                AuthCode.Text = "";
-                AuthBrush.Visibility = Visibility.Visible;
-                MainBrush.Visibility = Visibility.Collapsed;
-                CloseBlack.Visibility = Visibility.Collapsed;
-                CloseWhite.Visibility = Visibility.Visible;
+                ViewModel.AuthCode = "";
                 this.zid = identity;
-                MFASetupArea.Visibility = Visibility.Collapsed;
-                MFARecoveryArea.Visibility = Visibility.Collapsed;
-                SeperationColor.Visibility = Visibility.Collapsed;
-                MFAAuthArea.Visibility = Visibility.Visible;
-                AuthCode.Focusable = true;
-                AuthCode.Focus();
+                ViewModel.Identity = identity;
+                ViewModel.ShowAuthMode();
             } else {
                 ShowError("Identity disabled, MFA cannot continue.");
             }
-        }
-
-        private BitmapImage LoadImage(string url) {
-            var imgUrl = new Uri(url);
-            var imageData = new WebClient().DownloadData(imgUrl);
-            var bitmapImage = new BitmapImage { CacheOption = BitmapCacheOption.OnLoad };
-            bitmapImage.BeginInit();
-            bitmapImage.StreamSource = new MemoryStream(imageData);
-            bitmapImage.EndInit();
-            return bitmapImage;
-        }
-
-        private void GoTo(object sender, MouseButtonEventArgs e) {
-            if (_url != null && _url.Length > 0) {
-                Process.Start(new ProcessStartInfo(_url) { UseShellExecute = true });
-            } else {
-                this.OnError?.Invoke("Invalid MFA Url");
-            }
-        }
-
-        async private void GetMFACodes(object sender, MouseButtonEventArgs e) {
-            DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
-            string code = AuthCode.Text;
-            Logger.Debug("AuthMFA successful.");
-            MfaRecoveryCodesResponse getcodes = await serviceClient.GetMFACodes(this.zid.Identifier, code);
-            if (getcodes.Code != 0) {
-                Logger.Error("AuthMFA failed. " + getcodes.Error);
-            }
-            Logger.Error("DATA: {0}", getcodes.Data);
-        }
-        async private void GenerateMFACodes(object sender, MouseButtonEventArgs e) {
-            DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
-            string code = AuthCode.Text;
-            MfaRecoveryCodesResponse gencodes = await serviceClient.GenerateMFACodes(this.zid.Identifier, code);
-            if (gencodes.Code != 0) {
-                Logger.Error("AuthMFA failed. " + gencodes.Error);
-            }
-            Logger.Error("DATA: {0}", gencodes.Data);
         }
 
         private void SaveCodes(object sender, MouseButtonEventArgs e) {
@@ -228,116 +179,15 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        async private void DoSetupAuthenticate(object sender, MouseButtonEventArgs e) {
-            string code = SetupCode.Text;
-
-            DataClient serviceClient = serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
-            SvcResponse resp = await serviceClient.VerifyMFA(this.zid.Identifier, code);
-            // only close on failure. on success the enrollment_verification event swaps this
-            // screen over to the recovery codes, closing here too would race and dismiss them
-            if (resp.Code != 0) {
-                this.OnClose?.Invoke(false, this);
-            }
-        }
-
-        /// <summary>
-        /// Call the MFA Functions
-        /// 
-        /// Types:
-        /// 1 = Normal MFA Authentication
-        /// 2 = Get Recovery Codes
-        /// 3 = Remove MFA
-        /// 4 = Generate New MFA Codes
-        /// </summary>
-        async private void DoAuthenticate(object sender, MouseButtonEventArgs e) {
-            if (!this._executing) {
-
-                this._executing = true;
-                string code = AuthCode.Text;
-
-                if (code.Trim().Length > 0) {
-
-                    DataClient serviceClient = (DataClient)Application.Current.Properties["ServiceClient"];
-                    this.OnLoad?.Invoke(false, "Authentication", "One Moment Please...");
-                    if (this.Type == 1) {
-                        SvcResponse authResult = await serviceClient.AuthMFA(this.zid.Identifier, code);
-                        if (authResult?.Code != 0) {
-                            Logger.Error("AuthMFA failed. " + authResult.Error);
-                            this.OnError?.Invoke("Authentication Failed");
-                            this._executing = false;
-                        } else {
-                            this.zid.IsMFANeeded = true;
-                            this.OnClose?.Invoke(true, this);
-                            this._executing = false;
-                        }
-                        this.OnLoad?.Invoke(true, "", "");
-                    } else if (this.Type == 2) {
-                        MfaRecoveryCodesResponse codeResponse = await serviceClient.GetMFACodes(this.zid.Identifier, code);
-                        if (codeResponse?.Code != 0) {
-                            Logger.Error("AuthMFA failed. " + codeResponse.Error);
-                            AuthCode.Text = "";
-                            this.OnError?.Invoke("Authentication Failed");
-                            this._executing = false;
-                        } else {
-                            this.zid.RecoveryCodes = codeResponse.Data.RecoveryCodes;
-                            this.OnClose?.Invoke(true, this);
-                            this._executing = false;
-                        }
-                        this.OnLoad?.Invoke(true, "", "");
-                    } else if (this.Type == 3) {
-                        SvcResponse authResult = await serviceClient.RemoveMFA(this.zid.Identifier, code);
-                        if (authResult?.Code != 0) {
-                            Logger.Error("AuthMFA failed. " + authResult.Error);
-                            AuthCode.Text = "";
-                            this.OnError?.Invoke("Authentication Failed");
-                            this._executing = false;
-                        } else {
-                            this.OnClose?.Invoke(true, this);
-                            this._executing = false;
-                        }
-                        this.OnLoad?.Invoke(true, "", "");
-                    } else if (this.Type == 4) {
-                        MfaRecoveryCodesResponse codeResponse = await serviceClient.GenerateMFACodes(this.zid.Identifier, code);
-                        if (codeResponse?.Code != 0) {
-                            Logger.Error("AuthMFA failed. " + codeResponse?.Error);
-                            AuthCode.Text = "";
-                            this.OnError?.Invoke("Authentication Failed");
-                        } else {
-                            this.zid.RecoveryCodes = codeResponse.Data.RecoveryCodes;
-                            this.OnClose?.Invoke(true, this);
-                        }
-                        this._executing = false;
-                        this.OnLoad?.Invoke(true, "", "");
-                    }
-                }
-            }
-        }
-
-        private void RegenerateCodes(object sender, MouseButtonEventArgs e) {
-            ShowMFA(this.zid, 4);
-        }
-
-        private void ShowSecret(object sender, MouseButtonEventArgs e) {
-            if (SecretCode.Visibility == Visibility.Visible) {
-                MFAImage.Visibility = Visibility.Visible;
-                SecretCode.Visibility = Visibility.Collapsed;
-                SecretButton.Content = "Show Secret";
-            } else {
-                MFAImage.Visibility = Visibility.Collapsed;
-                SecretCode.Visibility = Visibility.Visible;
-                SecretButton.Content = "Show QR Code";
-            }
-        }
-
         private void HandleKey(object sender, KeyEventArgs e) {
             if (e.Key == Key.Return) {
-                DoSetupAuthenticate(sender, null);
+                ViewModel.AuthSetupCommand.Execute(null);
             }
         }
 
         private void AuthCode_KeyUp(object sender, KeyEventArgs e) {
             if (e.Key == Key.Return) {
-                DoAuthenticate(sender, null);
+                ViewModel.AuthCommand.Execute(null);
             }
         }
     }
