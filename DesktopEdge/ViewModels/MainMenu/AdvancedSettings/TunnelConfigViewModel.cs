@@ -23,7 +23,7 @@ using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.ServiceClient;
 
 namespace ZitiDesktopEdge {
-    public class MainMenuViewModel : INotifyPropertyChanged {
+    public class TunnelConfigViewModel : INotifyPropertyChanged {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private bool _l2Enabled;
         public bool L2Enabled {
@@ -104,7 +104,7 @@ namespace ZitiDesktopEdge {
 
         public ActionCommand SaveConfigCommand { get; }
 
-        public MainMenuViewModel() {
+        public TunnelConfigViewModel() {
             SaveConfigCommand = new ActionCommand(SaveConfig, () => true);
         }
 

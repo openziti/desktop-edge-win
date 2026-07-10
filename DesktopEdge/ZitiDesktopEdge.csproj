@@ -148,9 +148,10 @@
     <Compile Include="ViewModels\AddIdentityViewModel.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
     <Compile Include="ViewModels\IdentityDetailsViewModel.cs" />
-    <Compile Include="ViewModels\GetStartedViewModel.cs" />
+    <Compile Include="ViewModels\MainMenu\GetStartedViewModel.cs" />
     <Compile Include="ViewModels\MFAScreenViewModel.cs" />
-    <Compile Include="ViewModels\MainMenuViewModel.cs" />
+    <Compile Include="ViewModels\MainMenu\MainMenuViewModel.cs" />
+    <Compile Include="ViewModels\MainMenu\AdvancedSettings\TunnelConfigViewModel.cs" />
     <Compile Include="ActionCommand.cs" />
     <Compile Include="Tray\ITrayHost.cs" />
     <Compile Include="Tray\TrayMenuController.cs" />

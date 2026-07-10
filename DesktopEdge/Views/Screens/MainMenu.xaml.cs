@@ -157,8 +157,8 @@ namespace ZitiDesktopEdge {
         public MainMenu() {
             InitializeComponent();
             this.DataContext = ViewModel;
-            ViewModel.BlurbRequested += OnVmBlurb;
-            ViewModel.ConfigSaved += OnVmConfigSaved;
+            ViewModel.TunnelConfig.BlurbRequested += OnVmBlurb;
+            ViewModel.TunnelConfig.ConfigSaved += OnVmConfigSaved;
             Application.Current.MainWindow.Title = "Ziti Desktop Edge";
             state = (ZDEWViewState)Application.Current.Properties["ZDEWViewState"];
             policyViewModel = (ManagedSettingsViewModel)Application.Current.Properties["ManagedSettingsViewModel"];
@@ -387,16 +387,16 @@ namespace ZitiDesktopEdge {
                 ConfigItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
 
-                ViewModel.ConfigPageSize = ((Application.Current.Properties.Contains("ApiPageSize")) ? Application.Current.Properties["ApiPageSize"].ToString() : "25");
-                ViewModel.ConfigIp = Application.Current.Properties["ip"]?.ToString();
-                ViewModel.ConfigSubnet = Application.Current.Properties["subnet"]?.ToString();
-                ViewModel.ConfigMtu = Application.Current.Properties["mtu"]?.ToString();
-                ViewModel.ConfigDns = Application.Current.Properties["dns"]?.ToString();
-                ViewModel.ConfigDnsEnabled = Application.Current.Properties["dnsenabled"]?.ToString();
-                ViewModel.ConfigL2Enabled = ((Application.Current.Properties.Contains("L2Enabled")) ? Application.Current.Properties["L2Enabled"].ToString() : "False");
+                ViewModel.TunnelConfig.ConfigPageSize = ((Application.Current.Properties.Contains("ApiPageSize")) ? Application.Current.Properties["ApiPageSize"].ToString() : "25");
+                ViewModel.TunnelConfig.ConfigIp = Application.Current.Properties["ip"]?.ToString();
+                ViewModel.TunnelConfig.ConfigSubnet = Application.Current.Properties["subnet"]?.ToString();
+                ViewModel.TunnelConfig.ConfigMtu = Application.Current.Properties["mtu"]?.ToString();
+                ViewModel.TunnelConfig.ConfigDns = Application.Current.Properties["dns"]?.ToString();
+                ViewModel.TunnelConfig.ConfigDnsEnabled = Application.Current.Properties["dnsenabled"]?.ToString();
+                ViewModel.TunnelConfig.ConfigL2Enabled = ((Application.Current.Properties.Contains("L2Enabled")) ? Application.Current.Properties["L2Enabled"].ToString() : "False");
                 string storedPcap = (Application.Current.Properties.Contains("PcapInterface")) ? Application.Current.Properties["PcapInterface"]?.ToString() : "";
-                ViewModel.ConfigUsePcap = (!string.IsNullOrEmpty(storedPcap)).ToString();
-                ViewModel.ConfigPcapInterface = storedPcap;
+                ViewModel.TunnelConfig.ConfigUsePcap = (!string.IsNullOrEmpty(storedPcap)).ToString();
+                ViewModel.TunnelConfig.ConfigPcapInterface = storedPcap;
                 bool dnsEnabled;
                 if(Boolean.TryParse(Application.Current.Properties["dnsenabled"]?.ToString(), out dnsEnabled)) {
                     if (dnsEnabled) {
@@ -815,19 +815,19 @@ namespace ZitiDesktopEdge {
         /// Show the Edit Modal and blur the background
         /// </summary>
         private void ShowEdit_Click(object sender, MouseButtonEventArgs e) {
-            ViewModel.EditIp = ViewModel.ConfigIp;
-            ViewModel.EditPageSize = ViewModel.ConfigPageSize;
-            ViewModel.ClampPageSize();
+            ViewModel.TunnelConfig.EditIp = ViewModel.TunnelConfig.ConfigIp;
+            ViewModel.TunnelConfig.EditPageSize = ViewModel.TunnelConfig.ConfigPageSize;
+            ViewModel.TunnelConfig.ClampPageSize();
             for (int i = 0; i < ConfigMaskNew.Items.Count; i++) {
                 ComboBoxItem item = (ComboBoxItem)ConfigMaskNew.Items.GetItemAt(i);
-                if (item.Content.ToString().IndexOf(ViewModel.ConfigSubnet) > 0) {
+                if (item.Content.ToString().IndexOf(ViewModel.TunnelConfig.ConfigSubnet) > 0) {
                     ConfigMaskNew.SelectedIndex = i;
                     break;
                 }
             }
             if (Application.Current.Properties.Contains("dnsenabled")) {
-                ViewModel.EditAddDns = (bool)Application.Current.Properties["dnsenabled"];
-                if (ViewModel.EditAddDns) {
+                ViewModel.TunnelConfig.EditAddDns = (bool)Application.Current.Properties["dnsenabled"];
+                if (ViewModel.TunnelConfig.EditAddDns) {
                     AddDnsNew.Visibility = Visibility.Visible;
                 } else {
                     // uncomment when we want to remove AddDnsNew.Visibility = Visibility.Collapsed;
@@ -837,23 +837,23 @@ namespace ZitiDesktopEdge {
             }
 
             if (Application.Current.Properties.Contains("L2Enabled")) {
-                ViewModel.L2Enabled = (bool)Application.Current.Properties["L2Enabled"];
+                ViewModel.TunnelConfig.L2Enabled = (bool)Application.Current.Properties["L2Enabled"];
             } else {
-                ViewModel.L2Enabled = false;
+                ViewModel.TunnelConfig.L2Enabled = false;
             }
 
-            ViewModel.PcapInterfaces.Clear();
+            ViewModel.TunnelConfig.PcapInterfaces.Clear();
             foreach (var nic in NetworkInterface.GetAllNetworkInterfaces()
                 .Where(n => n.NetworkInterfaceType != NetworkInterfaceType.Loopback)
                 .OrderBy(n => n.Name)) {
-                ViewModel.PcapInterfaces.Add(nic.Name);
+                ViewModel.TunnelConfig.PcapInterfaces.Add(nic.Name);
             }
             if (Application.Current.Properties.Contains("PcapInterface")) {
                 string storedPcapInterface = Application.Current.Properties["PcapInterface"]?.ToString();
-                ViewModel.SelectedPcapInterface = storedPcapInterface;
-                ViewModel.UsePcap = !string.IsNullOrEmpty(storedPcapInterface);
+                ViewModel.TunnelConfig.SelectedPcapInterface = storedPcapInterface;
+                ViewModel.TunnelConfig.UsePcap = !string.IsNullOrEmpty(storedPcapInterface);
             } else {
-                ViewModel.UsePcap = false;
+                ViewModel.TunnelConfig.UsePcap = false;
             }
 
             EditArea.Opacity = 0;
@@ -986,7 +986,7 @@ namespace ZitiDesktopEdge {
         }
 
         private void ConfigePageSizeNew_LostFocus(object sender, RoutedEventArgs e) {
-            ViewModel.ClampPageSize();
+            ViewModel.TunnelConfig.ClampPageSize();
         }
 
         private void ResetUrlButton_Click(object sender, RoutedEventArgs e) {

@@ -294,7 +294,7 @@
 
                 </StackPanel>
 
-                <StackPanel Name="ConfigItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
+                <StackPanel Name="ConfigItems" DataContext="{Binding TunnelConfig}" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <local:MenuEditItem x:Name="ConfigIp" HorizontalAlignment="Stretch" Width="Auto" Label="IPv4 Address:" Value="{Binding ConfigIp}"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigSubnet" HorizontalAlignment="Stretch" Width="Auto" Label="Subnet Mask:" Value="{Binding ConfigSubnet}"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigMtu" HorizontalAlignment="Stretch" Width="Auto" Label="MTU:" Value="{Binding ConfigMtu}"></local:MenuEditItem>
@@ -325,7 +325,7 @@
         <Rectangle x:Name="ModalBg" MouseDown="Window_MouseDown" Margin="10,10,10,10" Fill="Black" RadiusY="10" RadiusX="10" Opacity="0" Visibility="Collapsed"></Rectangle>
 
         <!-- Modal For modifying the config data -->
-        <Grid x:Name="EditArea" Visibility="Collapsed" Height="520" Margin="0,0,0,0">
+        <Grid x:Name="EditArea" DataContext="{Binding TunnelConfig}" Visibility="Collapsed" Height="520" Margin="0,0,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"></ColumnDefinition>
             </Grid.ColumnDefinitions>
