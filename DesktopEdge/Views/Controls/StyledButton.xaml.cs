@@ -60,6 +60,28 @@ namespace ZitiDesktopEdge {
             set => SetValue(ButtonMarginProperty, value);
         }
 
+        public static readonly DependencyProperty CommandProperty = DependencyProperty.Register(
+            "Command",
+            typeof(ICommand),
+            typeof(StyledButton),
+            new PropertyMetadata(null));
+
+        public ICommand Command {
+            get => (ICommand)GetValue(CommandProperty);
+            set => SetValue(CommandProperty, value);
+        }
+
+        public static readonly DependencyProperty CommandParameterProperty = DependencyProperty.Register(
+            "CommandParameter",
+            typeof(object),
+            typeof(StyledButton),
+            new PropertyMetadata(null));
+
+        public object CommandParameter {
+            get => GetValue(CommandParameterProperty);
+            set => SetValue(CommandParameterProperty, value);
+        }
+
         public StyledButton() {
             InitializeComponent();
         }
@@ -100,6 +122,9 @@ namespace ZitiDesktopEdge {
         /// <param name="e"></param>
         private void DoClick(object sender, MouseButtonEventArgs e) {
             this.OnClick?.Invoke(sender, e);
+            if (Command != null && Command.CanExecute(CommandParameter)) {
+                Command.Execute(CommandParameter);
+            }
         }
 
         public void Disable() {
