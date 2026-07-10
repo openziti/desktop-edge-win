@@ -228,7 +228,7 @@ namespace ZitiDesktopEdge {
                 }
             }
 
-            ForgetIdentityConfirmView.Visibility = Visibility.Collapsed;
+            IdentityDetailsViewModel.ConfirmForgetVisibility = Visibility.Collapsed;
         }
         private void PopulateExternalProviders(IdentityDetails deets) {
             string policyProvider = policyViewModel.PolicyDefaultExtAuthProvider;
@@ -365,48 +365,24 @@ namespace ZitiDesktopEdge {
 
         public IdentityDetails() {
             InitializeComponent();
-            DataContext = this;
+            DataContext = IdentityDetailsViewModel;
             ServiceList.ItemsSource = IdentityDetailsViewModel.Services;
             policyViewModel = (ManagedSettingsViewModel)Application.Current.Properties["ManagedSettingsViewModel"];
+            IdentityDetailsViewModel.IdentityForgotten += OnVmIdentityForgotten;
+            IdentityDetailsViewModel.RemoveFailed += OnVmRemoveFailed;
         }
         private void HideMenu(object sender, MouseButtonEventArgs e) {
             this.Visibility = Visibility.Collapsed;
         }
 
-        private void ForgetIdentity(object sender, MouseButtonEventArgs e) {
-            if (this.Visibility == Visibility.Visible && ForgetIdentityConfirmView.Visibility == Visibility.Collapsed) {
-                ForgetIdentityConfirmView.Visibility = Visibility.Visible;
-            }
-        }
-
-        private void CancelConfirmButton_Click(object sender, RoutedEventArgs e) {
-            ForgetIdentityConfirmView.Visibility = Visibility.Collapsed;
-        }
-
-        async private void ConfirmButton_Click(object sender, RoutedEventArgs e) {
+        private void OnVmIdentityForgotten(ZitiIdentity forgotten) {
             this.Visibility = Visibility.Collapsed;
-            DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-            try {
-                ForgetIdentityConfirmView.Visibility = Visibility.Collapsed;
-                await client.RemoveIdentityAsync(_identity.Identifier);
+            OnForgot?.Invoke(forgotten);
+        }
 
-                ZitiIdentity forgotten = new ZitiIdentity();
-                foreach (var id in identities) {
-                    if (id.Identifier == _identity.Identifier) {
-                        forgotten = id;
-                        identities.Remove(id);
-                        break;
-                    }
-                }
-
-                OnForgot?.Invoke(forgotten);
-            } catch (DataStructures.ServiceException se) {
-                Logger.Error(se, se.Message);
-                OnError(se.Message);
-            } catch (Exception ex) {
-                Logger.Error(ex, "Unexpected: " + ex.Message);
-                OnError("An unexpected error has occured while removing the identity. Please verify the service is still running and try again.");
-            }
+        private void OnVmRemoveFailed(string message) {
+            this.Visibility = Visibility.Collapsed;
+            OnError(message);
         }
 
         private void ToggleMFA(bool isOn) {

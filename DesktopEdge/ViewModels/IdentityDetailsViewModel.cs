@@ -14,14 +14,22 @@
 	limitations under the License.
 */
 
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.Windows;
+using NLog;
+using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.Models;
+using ZitiDesktopEdge.ServiceClient;
 
 namespace ZitiDesktopEdge {
     public class IdentityDetailsViewModel : INotifyPropertyChanged {
         private const int ServicesPerPage = 50;
+
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private ZitiIdentity _identity;
         private ZitiService[] _sortedServices;
@@ -31,8 +39,54 @@ namespace ZitiDesktopEdge {
         private bool _isLoaded;
         private int _totalServices;
         private string _serviceCountLabel = "0 Services";
+        private Visibility _confirmForgetVisibility = Visibility.Collapsed;
 
         public ObservableCollection<ZitiService> Services { get; } = new ObservableCollection<ZitiService>();
+
+        public event Action<ZitiIdentity> IdentityForgotten;
+        public event Action<string> RemoveFailed;
+
+        public ActionCommand ShowConfirmForgetCommand { get; }
+        public ActionCommand CancelForgetCommand { get; }
+        public ActionCommand ConfirmForgetCommand { get; }
+
+        public IdentityDetailsViewModel() {
+            ShowConfirmForgetCommand = new ActionCommand(() => ConfirmForgetVisibility = Visibility.Visible, () => true);
+            CancelForgetCommand = new ActionCommand(() => ConfirmForgetVisibility = Visibility.Collapsed, () => true);
+            ConfirmForgetCommand = new ActionCommand(ConfirmForget, () => true);
+        }
+
+        public Visibility ConfirmForgetVisibility {
+            get { return _confirmForgetVisibility; }
+            set {
+                _confirmForgetVisibility = value;
+                OnPropertyChanged(nameof(ConfirmForgetVisibility));
+            }
+        }
+
+        private async void ConfirmForget() {
+            ConfirmForgetVisibility = Visibility.Collapsed;
+            DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
+            try {
+                await client.RemoveIdentityAsync(_identity.Identifier);
+                List<ZitiIdentity> ids = (List<ZitiIdentity>)Application.Current.Properties["Identities"];
+                ZitiIdentity forgotten = new ZitiIdentity();
+                foreach (ZitiIdentity id in ids) {
+                    if (id.Identifier == _identity.Identifier) {
+                        forgotten = id;
+                        ids.Remove(id);
+                        break;
+                    }
+                }
+                IdentityForgotten?.Invoke(forgotten);
+            } catch (ServiceException se) {
+                Logger.Error(se, se.Message);
+                RemoveFailed?.Invoke(se.Message);
+            } catch (Exception ex) {
+                Logger.Error(ex, "Unexpected: " + ex.Message);
+                RemoveFailed?.Invoke("An unexpected error has occured while removing the identity. Please verify the service is still running and try again.");
+            }
+        }
 
         public ZitiIdentity Identity {
             get { return _identity; }
