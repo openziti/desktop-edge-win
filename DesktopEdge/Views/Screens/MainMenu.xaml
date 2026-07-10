@@ -81,13 +81,13 @@
                     <local:OZMenuItem x:Name="SetAutomaticUpgradeMenuItem" HorizontalAlignment="Stretch" Icon="/Assets/Images/processing.png" Width="Auto" Label="Configure Automatic Upgrades" MouseUp="ShowAutomaticUpgradesMenuAction"></local:OZMenuItem>
                     <local:StyledButton x:Name="EditFreqButton" Visibility="Collapsed" OnClick="EditFreqButton_OnClick" Label="Change Notification Frequency" Grid.Row="8" Margin="0,20,0,0"></local:StyledButton>
                 </StackPanel>
-                <StackPanel Name="LogLevelItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
-                    <local:SubOptionItem x:Name="LogError" HorizontalAlignment="Stretch" Width="Auto" Label="Error" MouseUp="SetLevel"></local:SubOptionItem>
-                    <local:SubOptionItem x:Name="LogWarn" HorizontalAlignment="Stretch" Width="Auto" Label="Warn" MouseUp="SetLevel"></local:SubOptionItem>
-                    <local:SubOptionItem x:Name="LogInfo" HorizontalAlignment="Stretch" Width="Auto" Label="Info" MouseUp="SetLevel"></local:SubOptionItem>
-                    <local:SubOptionItem x:Name="LogDebug" HorizontalAlignment="Stretch" Width="Auto" Label="Debug" MouseUp="SetLevel"></local:SubOptionItem>
-                    <local:SubOptionItem x:Name="LogVerbose" HorizontalAlignment="Stretch" Width="Auto" Label="Verbose" MouseUp="SetLevel"></local:SubOptionItem>
-                    <local:SubOptionItem x:Name="LogTrace" HorizontalAlignment="Stretch" Width="Auto" Label="Trace" MouseUp="SetLevel"></local:SubOptionItem>
+                <StackPanel Name="LogLevelItems" DataContext="{Binding LogLevel}" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
+                    <local:SubOptionItem x:Name="LogError" HorizontalAlignment="Stretch" Width="Auto" Label="Error" IsSelected="{Binding IsError}" MouseUp="SetLevel"></local:SubOptionItem>
+                    <local:SubOptionItem x:Name="LogWarn" HorizontalAlignment="Stretch" Width="Auto" Label="Warn" IsSelected="{Binding IsWarn}" MouseUp="SetLevel"></local:SubOptionItem>
+                    <local:SubOptionItem x:Name="LogInfo" HorizontalAlignment="Stretch" Width="Auto" Label="Info" IsSelected="{Binding IsInfo}" MouseUp="SetLevel"></local:SubOptionItem>
+                    <local:SubOptionItem x:Name="LogDebug" HorizontalAlignment="Stretch" Width="Auto" Label="Debug" IsSelected="{Binding IsDebug}" MouseUp="SetLevel"></local:SubOptionItem>
+                    <local:SubOptionItem x:Name="LogVerbose" HorizontalAlignment="Stretch" Width="Auto" Label="Verbose" IsSelected="{Binding IsVerbose}" MouseUp="SetLevel"></local:SubOptionItem>
+                    <local:SubOptionItem x:Name="LogTrace" HorizontalAlignment="Stretch" Width="Auto" Label="Trace" IsSelected="{Binding IsTrace}" MouseUp="SetLevel"></local:SubOptionItem>
                 </StackPanel>
                 <StackPanel Name="AutomaticUpgradesItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <StackPanel.Resources>

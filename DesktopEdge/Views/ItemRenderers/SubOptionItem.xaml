@@ -19,8 +19,11 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ZitiDesktopEdge"
-             mc:Ignorable="d" 
+             mc:Ignorable="d"
              d:DesignHeight="50" HorizontalAlignment="Stretch" d:DesignWidth="375" Cursor="Hand">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </UserControl.Resources>
     <UserControl.Triggers>
         <EventTrigger RoutedEvent="UserControl.MouseEnter" >
             <BeginStoryboard>
@@ -54,7 +57,7 @@
                     <ColumnDefinition Width="50"/>
                 </Grid.ColumnDefinitions>
                 <Label Name="MainLabel" Grid.Column="0" Content="Main Menu" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
-                <Image x:Name="SelectedCheck" Grid.Column="1" Cursor="Hand" Source="/Assets/Images/Success.png" Width="20" Height="20" Margin="0,0,0,0" />
+                <Image x:Name="SelectedCheck" Visibility="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=local:SubOptionItem}, Converter={StaticResource BoolToVis}}" Grid.Column="1" Cursor="Hand" Source="/Assets/Images/Success.png" Width="20" Height="20" Margin="0,0,0,0" />
             </Grid>
             <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
         </StackPanel>

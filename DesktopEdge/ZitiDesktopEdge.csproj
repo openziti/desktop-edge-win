@@ -152,6 +152,7 @@
     <Compile Include="ViewModels\MFAScreenViewModel.cs" />
     <Compile Include="ViewModels\MainMenu\MainMenuViewModel.cs" />
     <Compile Include="ViewModels\MainMenu\AdvancedSettings\TunnelConfigViewModel.cs" />
+    <Compile Include="ViewModels\MainMenu\AdvancedSettings\LogLevelViewModel.cs" />
     <Compile Include="ActionCommand.cs" />
     <Compile Include="Tray\ITrayHost.cs" />
     <Compile Include="Tray\TrayMenuController.cs" />

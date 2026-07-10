@@ -65,7 +65,10 @@ namespace ZitiDesktopEdge {
         // at that instant (partially-applied state). Suppress the re-render until the save
         // completes, then run UpdateState() once.
         private bool _suppressPolicyVmReRender = false;
-        public string LogLevel = "";
+        public string LogLevel {
+            get => ViewModel.LogLevel.CurrentLevel;
+            set => ViewModel.LogLevel.CurrentLevel = value;
+        }
         private string appVersion = null;
 
         private ZDEWViewState state;
@@ -536,18 +539,6 @@ namespace ZitiDesktopEdge {
 
         private void ResetLevels() {
             if (this.LogLevel == "") this.LogLevel = "error";
-            LogVerbose.IsSelected = false;
-            LogDebug.IsSelected = false;
-            LogInfo.IsSelected = false;
-            LogError.IsSelected = false;
-            LogWarn.IsSelected = false;
-            LogTrace.IsSelected = false;
-            if (this.LogLevel == "verbose") LogVerbose.IsSelected = true;
-            else if (this.LogLevel == "debug") LogDebug.IsSelected = true;
-            else if (this.LogLevel == "info") LogInfo.IsSelected = true;
-            else if (this.LogLevel == "error") LogError.IsSelected = true;
-            else if (this.LogLevel == "warn") LogWarn.IsSelected = true;
-            else if (this.LogLevel == "trace") LogTrace.IsSelected = true;
         }
 
         async private void SetLevel(object sender, MouseButtonEventArgs e) {

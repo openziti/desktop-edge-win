@@ -19,6 +19,7 @@ using System.ComponentModel;
 namespace ZitiDesktopEdge {
     public class MainMenuViewModel : INotifyPropertyChanged {
         public TunnelConfigViewModel TunnelConfig { get; } = new TunnelConfigViewModel();
+        public LogLevelViewModel LogLevel { get; } = new LogLevelViewModel();
 
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged(string propertyName) {

@@ -35,7 +35,6 @@ namespace ZitiDesktopEdge {
     public partial class SubOptionItem : UserControl {
 
         private string _label = "";
-        private bool _isSelected = false;
 
         public string Label {
             get {
@@ -47,15 +46,15 @@ namespace ZitiDesktopEdge {
             }
         }
 
+        public static readonly DependencyProperty IsSelectedProperty = DependencyProperty.Register(
+            "IsSelected",
+            typeof(bool),
+            typeof(SubOptionItem),
+            new PropertyMetadata(false));
+
         public bool IsSelected {
-            get {
-                return _isSelected;
-            }
-            set {
-                this._isSelected = value;
-                if (this._isSelected) SelectedCheck.Visibility = Visibility.Visible;
-                else SelectedCheck.Visibility = Visibility.Collapsed;
-            }
+            get => (bool)GetValue(IsSelectedProperty);
+            set => SetValue(IsSelectedProperty, value);
         }
 
         public SubOptionItem() {
