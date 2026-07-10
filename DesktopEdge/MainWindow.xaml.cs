@@ -428,6 +428,7 @@ namespace ZitiDesktopEdge {
 
             props = new MainViewModel();
             DataContext = props;
+            props.SortChanged += OnSortChanged;
 
             NextNotificationTime = DateTime.Now;
             _notificationThrottle = new NotificationThrottle(ShowToast, "Authorization Required", "{0} identities require authorization.");
@@ -897,11 +898,7 @@ namespace ZitiDesktopEdge {
 
         private void SetCantDisplay(string title, string detailMessage, Visibility closeButtonVisibility) {
             this.Dispatcher.Invoke(() => {
-                NoServiceView.Visibility = Visibility.Visible;
-                CloseErrorButton.IsEnabled = true;
-                CloseErrorButton.Visibility = closeButtonVisibility;
-                ErrorMsg.Content = title;
-                ErrorMsgDetail.Content = detailMessage;
+                props.ShowNoService(title, detailMessage, closeButtonVisibility == Visibility.Visible);
                 SetNotifyIcon("red");
                 _isServiceInError = true;
                 UpdateServiceView();
@@ -1423,25 +1420,7 @@ namespace ZitiDesktopEdge {
             // real bad - means it's stuck probably. Ask the user if they want to try to force it...
             logger.Warn("Waiting for service to stop... Service did not reach stopped state in the expected amount of time.");
             SetCantDisplay("The Service Appears Stuck", "Would you like to try to force close the service?", Visibility.Visible);
-            CloseErrorButton.Content = "Force Quit";
-            CloseErrorButton.Click -= CloseError;
-            CloseErrorButton.Click += ForceQuitButtonClick;
-        }
-
-        async private void ForceQuitButtonClick(object sender, RoutedEventArgs e) {
-            if (!UIUtils.IsLeftClick(e)) return;
-            if (!UIUtils.MouseUpForMouseDown(e)) return;
-            // Targets the default Windows-service-managed tunneler regardless
-            // of which instance is currently being viewed.
-            MonitorServiceStatusEvent status = await monitorClient.ForceTerminateAsync();
-            if (status.IsStopped()) {
-                //good
-                CloseErrorButton.Click += CloseError; //reset the close button...
-                CloseErrorButton.Click -= ForceQuitButtonClick;
-            } else {
-                //bad...
-                SetCantDisplay("The Service Is Still Running", "Current status is: " + status.Status, Visibility.Visible);
-            }
+            props.SetForceQuitMode();
         }
 
         async private void StartZitiService(object sender, RoutedEventArgs e) {
@@ -1456,21 +1435,20 @@ namespace ZitiDesktopEdge {
                     logger.Debug("ERROR: {0} : {1}", r.Message, r.Error);
                 } else {
                     logger.Info("Service started!");
-                    CloseErrorButton.Click -= StartZitiService;
-                    CloseError(null, null);
+                    props.CloseServiceError();
                 }
             } catch (MonitorServiceException me) {
                 logger.Warn("the monitor service appears offline. {0}", me);
-                CloseErrorButton.IsEnabled = true;
+                props.CloseButtonEnabled = true;
                 HideLoad();
                 ShowError("Error Starting Service", "The monitor service is offline");
             } catch (Exception ex) {
                 logger.Error(ex, "UNEXPECTED ERROR!");
-                CloseErrorButton.IsEnabled = true;
+                props.CloseButtonEnabled = true;
                 HideLoad();
                 ShowError("Unexpected Error", "Code 2:" + ex.Message);
             }
-            CloseErrorButton.IsEnabled = true;
+            props.CloseButtonEnabled = true;
             // HideLoad();
         }
 
@@ -1515,7 +1493,7 @@ namespace ZitiDesktopEdge {
         private void ServiceClient_OnClientConnected(object sender, object e) {
             this.Dispatcher.Invoke(() => {
                 MainMenu.Connected();
-                NoServiceView.Visibility = Visibility.Collapsed;
+                props.HideNoService();
                 _isServiceInError = false;
                 UpdateServiceView();
                 SetNotifyIcon("white");
@@ -1861,7 +1839,7 @@ namespace ZitiDesktopEdge {
             if (status != null) {
                 _isServiceInError = false;
                 UpdateServiceView();
-                NoServiceView.Visibility = Visibility.Collapsed;
+                props.HideNoService();
                 SetNotifyIcon("green");
 
                 AddIdAreaButton.IsEnabled = true;
@@ -1979,18 +1957,7 @@ namespace ZitiDesktopEdge {
             Application.Current.MainWindow.Icon = System.Windows.Media.Imaging.BitmapFrame.Create(iconUri);
         }
 
-        private void SortByName_Click(object sender, MouseButtonEventArgs e) {
-            props.SetSort("Name");
-            LoadIdentities(true);
-        }
-
-        private void SortByServices_Click(object sender, MouseButtonEventArgs e) {
-            props.SetSort("Services");
-            LoadIdentities(true);
-        }
-
-        private void SortByStatus_Click(object sender, MouseButtonEventArgs e) {
-            props.SetSort("Status");
+        private void OnSortChanged(object sender, EventArgs e) {
             LoadIdentities(true);
         }
 
@@ -2373,25 +2340,17 @@ namespace ZitiDesktopEdge {
         }
 
         public void ShowError(string title, string message) {
-            ShowError(title, message, null);
+            this.Dispatcher.Invoke(() => {
+                props.ShowServiceError(title, message);
+            });
         }
 
         public void ShowError(string title, string message, UIElement additionalElements) {
             this.Dispatcher.Invoke(() => {
-                ErrorTitle.Text = title;
-                ErrorDetails.Text = message;
+                props.ShowServiceError(title, message);
                 if (additionalElements != null) {
                     ErrorPanel.Children.Add(additionalElements);
                 }
-                ErrorView.Visibility = Visibility.Visible;
-            });
-        }
-
-        private void CloseError(object sender, RoutedEventArgs e) {
-            this.Dispatcher.Invoke(() => {
-                ErrorView.Visibility = Visibility.Collapsed;
-                NoServiceView.Visibility = Visibility.Collapsed;
-                CloseErrorButton.IsEnabled = true;
             });
         }
 
@@ -2404,18 +2363,14 @@ namespace ZitiDesktopEdge {
                     OverrideKeychain.Visibility = Visibility.Collapsed;
                     payload.UseKeychain = false;
                     await AddId(payload);
-                });
+                }, () => true);
                 OverrideKeychain.CancelFunc = new ActionCommand(() => {
                     HideModal();
                     OverrideKeychain.Visibility = Visibility.Collapsed;
-                });
+                }, () => true);
                 ShowModal();
                 OverrideKeychain.Visibility = Visibility.Visible;
             });
-        }
-
-        private void CloseApp(object sender, RoutedEventArgs e) {
-            Application.Current.Shutdown();
         }
 
         private void MainUI_Deactivated(object sender, EventArgs e) {
@@ -2606,25 +2561,6 @@ namespace ZitiDesktopEdge {
         private async void IdentityMenu_ShowBlurb(Blurb blurb) {
             await ShowBlurbAsync(blurb);
         }
-    }
-
-    public class ActionCommand : ICommand {
-        private readonly Action _action;
-
-        public ActionCommand(Action action) {
-            _action = action;
-        }
-
-        public void Execute(object parameter) {
-            _action();
-        }
-
-        public bool CanExecute(object parameter) {
-            return true;
-        }
-#pragma warning disable CS0067 //The event 'ActionCommand.CanExecuteChanged' is never used
-        public event EventHandler CanExecuteChanged;
-#pragma warning restore CS0067 //The event 'ActionCommand.CanExecuteChanged' is never used
     }
 
 }

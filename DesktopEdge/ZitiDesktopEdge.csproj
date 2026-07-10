@@ -149,6 +149,8 @@
     <Compile Include="ViewModels\MainViewModel.cs" />
     <Compile Include="ViewModels\IdentityDetailsViewModel.cs" />
     <Compile Include="ViewModels\GetStartedViewModel.cs" />
+    <Compile Include="ViewModels\MFAScreenViewModel.cs" />
+    <Compile Include="ActionCommand.cs" />
     <Compile Include="Tray\ITrayHost.cs" />
     <Compile Include="Tray\TrayMenuController.cs" />
     <Compile Include="Views\Screens\GetStarted.xaml.cs">

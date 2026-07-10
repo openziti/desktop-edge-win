@@ -19,9 +19,14 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
+using System.Windows.Input;
+using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.Models;
+using ZitiDesktopEdge.ServiceClient;
 
 namespace ZitiDesktopEdge {
+    public enum ErrorButtonMode { Close, ForceQuit }
+
     public class MainViewModel : INotifyPropertyChanged {
         private string _connectLabelContent = "Tap to Connect";
         private string _sortOption;
@@ -32,6 +37,127 @@ namespace ZitiDesktopEdge {
         public MainViewModel() {
             _sortOption = Properties.Settings.Default.SortOption;
             _sortDirection = Properties.Settings.Default.SortDirection;
+            CloseErrorCommand = new ActionCommand(ExecuteCloseError, () => CloseButtonEnabled);
+            DismissErrorCommand = new ActionCommand(CloseServiceError, () => true);
+            SortCommand = new ActionCommand(SortBy, parameter => true);
+        }
+
+        public event EventHandler SortChanged;
+        public ActionCommand SortCommand { get; }
+
+        private void SortBy(object sortOption) {
+            SetSort((string)sortOption);
+            SortChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        public ICommand QuitCommand { get; } = new ActionCommand(() => Application.Current.Shutdown(), () => true);
+
+        public ActionCommand CloseErrorCommand { get; }
+        public ActionCommand DismissErrorCommand { get; }
+
+        private Visibility _noServiceVisibility = Visibility.Collapsed;
+        private Visibility _errorViewVisibility = Visibility.Collapsed;
+        private string _noServiceTitle = "Service Not Started";
+        private string _noServiceDetail = "Start the Ziti Tunnel Service to get started";
+        private string _errorTitle = "An Error Occurred";
+        private string _errorDetails = "An Unknown Error Occurred, you could try restarting the service and the interface to continue";
+        private string _closeButtonContent = "Close Error";
+        private Visibility _closeButtonVisibility = Visibility.Visible;
+        private bool _closeButtonEnabled = true;
+        private ErrorButtonMode _errorButtonMode = ErrorButtonMode.Close;
+
+        public Visibility NoServiceVisibility {
+            get { return _noServiceVisibility; }
+            private set { _noServiceVisibility = value; OnPropertyChanged(nameof(NoServiceVisibility)); }
+        }
+
+        public Visibility ErrorViewVisibility {
+            get { return _errorViewVisibility; }
+            private set { _errorViewVisibility = value; OnPropertyChanged(nameof(ErrorViewVisibility)); }
+        }
+
+        public string NoServiceTitle {
+            get { return _noServiceTitle; }
+            private set { _noServiceTitle = value; OnPropertyChanged(nameof(NoServiceTitle)); }
+        }
+
+        public string NoServiceDetail {
+            get { return _noServiceDetail; }
+            private set { _noServiceDetail = value; OnPropertyChanged(nameof(NoServiceDetail)); }
+        }
+
+        public string ErrorTitle {
+            get { return _errorTitle; }
+            private set { _errorTitle = value; OnPropertyChanged(nameof(ErrorTitle)); }
+        }
+
+        public string ErrorDetails {
+            get { return _errorDetails; }
+            private set { _errorDetails = value; OnPropertyChanged(nameof(ErrorDetails)); }
+        }
+
+        public string CloseButtonContent {
+            get { return _closeButtonContent; }
+            private set { _closeButtonContent = value; OnPropertyChanged(nameof(CloseButtonContent)); }
+        }
+
+        public Visibility CloseButtonVisibility {
+            get { return _closeButtonVisibility; }
+            private set { _closeButtonVisibility = value; OnPropertyChanged(nameof(CloseButtonVisibility)); }
+        }
+
+        public bool CloseButtonEnabled {
+            get { return _closeButtonEnabled; }
+            set { _closeButtonEnabled = value; OnPropertyChanged(nameof(CloseButtonEnabled)); }
+        }
+
+        public void ShowNoService(string title, string detail, bool closeButtonVisible) {
+            NoServiceTitle = title;
+            NoServiceDetail = detail;
+            CloseButtonVisibility = closeButtonVisible ? Visibility.Visible : Visibility.Collapsed;
+            CloseButtonEnabled = true;
+            NoServiceVisibility = Visibility.Visible;
+        }
+
+        public void HideNoService() {
+            NoServiceVisibility = Visibility.Collapsed;
+        }
+
+        public void ShowServiceError(string title, string message) {
+            ErrorTitle = title;
+            ErrorDetails = message;
+            ErrorViewVisibility = Visibility.Visible;
+        }
+
+        public void CloseServiceError() {
+            NoServiceVisibility = Visibility.Collapsed;
+            ErrorViewVisibility = Visibility.Collapsed;
+            CloseButtonEnabled = true;
+            SetCloseMode();
+        }
+
+        public void SetForceQuitMode() {
+            _errorButtonMode = ErrorButtonMode.ForceQuit;
+            CloseButtonContent = "Force Quit";
+        }
+
+        private void SetCloseMode() {
+            _errorButtonMode = ErrorButtonMode.Close;
+            CloseButtonContent = "Close Error";
+        }
+
+        private async void ExecuteCloseError() {
+            if (_errorButtonMode != ErrorButtonMode.ForceQuit) {
+                CloseServiceError();
+                return;
+            }
+            MonitorClient monitor = (MonitorClient)Application.Current.Properties["MonitorClient"];
+            MonitorServiceStatusEvent status = await monitor.ForceTerminateAsync();
+            if (status.IsStopped()) {
+                SetCloseMode();
+            } else {
+                ShowNoService("The Service Is Still Running", "Current status is: " + status.Status, true);
+            }
         }
 
         public string ConnectLabelContent {

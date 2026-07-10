@@ -317,18 +317,27 @@
                             <ColumnDefinition Width="*" SharedSizeGroup="Name"/>
                             <ColumnDefinition Width="80" SharedSizeGroup="Services"/>
                         </Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0" Style="{StaticResource HeaderStackPanelStyle}" MouseDown="SortByStatus_Click">
+                        <StackPanel Grid.Column="0" Style="{StaticResource HeaderStackPanelStyle}">
+                            <StackPanel.InputBindings>
+                                <MouseBinding MouseAction="LeftClick" Command="{Binding SortCommand}" CommandParameter="Status"/>
+                            </StackPanel.InputBindings>
                             <Label x:Name="SortByStatus" Content="Status" Style="{StaticResource SortLabelStyle}"/>
                             <TextBlock x:Name="SortByStatusArrow" Style="{StaticResource SortArrowStyle}" Text="{Binding SortArrowText}"
                                        Visibility="{Binding StatusArrowVisibility}"/>
                         </StackPanel>
-                        <StackPanel Grid.Column="1" Style="{StaticResource HeaderStackPanelStyle}" MouseDown="SortByName_Click"
+                        <StackPanel Grid.Column="1" Style="{StaticResource HeaderStackPanelStyle}"
                                     HorizontalAlignment="Left">
+                            <StackPanel.InputBindings>
+                                <MouseBinding MouseAction="LeftClick" Command="{Binding SortCommand}" CommandParameter="Name"/>
+                            </StackPanel.InputBindings>
                             <Label x:Name="SortByName" Content="Name" Style="{StaticResource SortLabelStyle}"/>
                             <TextBlock x:Name="SortByNameArrow" Style="{StaticResource SortArrowStyle}" Text="{Binding SortArrowText}"
                                        Visibility="{Binding NameArrowVisibility}"/>
                         </StackPanel>
-                        <StackPanel Grid.Column="2" Style="{StaticResource HeaderStackPanelStyle}" MouseDown="SortByServices_Click">
+                        <StackPanel Grid.Column="2" Style="{StaticResource HeaderStackPanelStyle}">
+                            <StackPanel.InputBindings>
+                                <MouseBinding MouseAction="LeftClick" Command="{Binding SortCommand}" CommandParameter="Services"/>
+                            </StackPanel.InputBindings>
                             <Label x:Name="SortByServices" Content="Services" Style="{StaticResource SortLabelStyle}"/>
                             <TextBlock x:Name="SortByServicesArrow" Style="{StaticResource SortArrowStyle}" Text="{Binding SortArrowText}"
                                        Visibility="{Binding ServicesArrowVisibility}"/>
@@ -471,7 +480,7 @@
             </Grid>
         </Grid>
 
-        <Grid x:Name="NoServiceView" Visibility="Collapsed" Margin="10,10,10,10">
+        <Grid x:Name="NoServiceView" Visibility="{Binding NoServiceVisibility}" Margin="10,10,10,10">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="Black" Opacity="0.9"/>
@@ -486,22 +495,22 @@
                     <RowDefinition Height="30"></RowDefinition>
                     <RowDefinition Height="*"></RowDefinition>
                 </Grid.RowDefinitions>
-                <Label x:Name="ErrorMsg" Foreground="White" Content="Service Not Started" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" />
-                <Label x:Name="ErrorMsgDetail" Foreground="LightGray" Content="Start the Ziti Tunnel Service to get started" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14" />
+                <Label x:Name="ErrorMsg" Foreground="White" Content="{Binding NoServiceTitle}" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" />
+                <Label x:Name="ErrorMsgDetail" Foreground="LightGray" Content="{Binding NoServiceDetail}" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14" />
 
                 <Grid Grid.Row="4">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="1*"></ColumnDefinition>
                         <ColumnDefinition Width="1*"></ColumnDefinition>
                     </Grid.ColumnDefinitions>
-                    <Button x:Name="CloseErrorButton" Grid.Column="0" Margin="40,0,20,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#0068F9" Content="Close Error" Click="CloseError" >
+                    <Button x:Name="CloseErrorButton" Grid.Column="0" Margin="40,0,20,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#0068F9" Content="{Binding CloseButtonContent}" IsEnabled="{Binding CloseButtonEnabled}" Visibility="{Binding CloseButtonVisibility}" Command="{Binding CloseErrorCommand}" >
                         <Button.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="5"/>
                             </Style>
                         </Button.Resources>
                     </Button>
-                    <Button x:Name="QuitButton" Grid.Column="1" Margin="20,0,40,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#F4044D" Content="Quit App" Click="CloseApp" >
+                    <Button x:Name="QuitButton" Grid.Column="1" Margin="20,0,40,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#F4044D" Content="Quit App" Command="{Binding QuitCommand}" >
                         <Button.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="5"/>
@@ -537,7 +546,7 @@
             </Grid>
         </Grid>
 
-        <Grid x:Name="ErrorView" MouseDown="Window_MouseDown" Visibility="Collapsed" Margin="10,10,10,10">
+        <Grid x:Name="ErrorView" MouseDown="Window_MouseDown" Visibility="{Binding ErrorViewVisibility}" Margin="10,10,10,10">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="Black" Opacity="0.9"/>
@@ -557,14 +566,14 @@
                     <RowDefinition Height="30"></RowDefinition>
                     <RowDefinition Height="*"></RowDefinition>
                 </Grid.RowDefinitions>
-                <TextBlock x:Name="ErrorTitle" TextWrapping="WrapWithOverflow" Width="400" Foreground="White" Text="An Error Occurred" Grid.Row="1" TextAlignment="Center" VerticalAlignment="Center" FontSize="24" />
+                <TextBlock x:Name="ErrorTitle" TextWrapping="WrapWithOverflow" Width="400" Foreground="White" Text="{Binding ErrorTitle}" Grid.Row="1" TextAlignment="Center" VerticalAlignment="Center" FontSize="24" />
                 <StackPanel x:Name="ErrorPanel"
                             Grid.Row="2"
                             Width="400">
                     <TextBlock x:Name="ErrorDetails"
                                TextWrapping="WrapWithOverflow" Foreground="LightGray"
                                Padding="10"
-                               Text="An Unknown Error Occurred, you could try restarting the service and the interface to continue"
+                               Text="{Binding ErrorDetails}"
                                
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center"
@@ -578,14 +587,14 @@
                         <ColumnDefinition Width="1*"></ColumnDefinition>
                         <ColumnDefinition Width="1*"></ColumnDefinition>
                     </Grid.ColumnDefinitions>
-                    <Button Grid.Column="0" Margin="40,0,20,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#0068F9" Content="Close Error" Click="CloseError" >
+                    <Button Grid.Column="0" Margin="40,0,20,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#0068F9" Content="Close Error" Command="{Binding DismissErrorCommand}" >
                         <Button.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="5"/>
                             </Style>
                         </Button.Resources>
                     </Button>
-                    <Button Grid.Column="1" Margin="20,0,40,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#F4044D" Content="Quit App" Click="CloseApp" >
+                    <Button Grid.Column="1" Margin="20,0,40,0" Cursor="Hand" BorderThickness="0" Foreground="#FFFFFF" Background="#F4044D" Content="Quit App" Command="{Binding QuitCommand}" >
                         <Button.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="5"/>
