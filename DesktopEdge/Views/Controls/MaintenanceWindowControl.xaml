@@ -236,10 +236,10 @@
                 <ComboBox x:Name="MaintenanceWindowDayOfMonthCombo" Width="112" Visibility="Collapsed"/>
             </StackPanel>
 
-            <Label Grid.Row="3" Grid.Column="0" Content="From"/>
+            <Label x:Name="MaintenanceWindowFromLabel" Grid.Row="3" Grid.Column="0" Content="From"/>
             <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal">
                 <ComboBox x:Name="MaintenanceWindowStartCombo" MinWidth="70"/>
-                <Label Content="to" Padding="8,0"/>
+                <Label x:Name="MaintenanceWindowToLabel" Content="to" Padding="8,0"/>
                 <ComboBox x:Name="MaintenanceWindowEndCombo" MinWidth="70"/>
                 <CheckBox x:Name="MaintenanceWindowAnyTime" Content="Any time" VerticalAlignment="Center"
                           Margin="14,0,0,0"

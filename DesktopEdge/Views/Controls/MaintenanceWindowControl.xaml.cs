@@ -317,6 +317,8 @@ namespace ZitiDesktopEdge {
             MaintenanceWindowAnyTime.IsEnabled = _isEditable;
             MaintenanceWindowAnyTime.Opacity   = opacity;
 
+            MaintenanceWindowFromLabel.Opacity = opacity;
+            MaintenanceWindowToLabel.Opacity   = opacity;
             MaintenanceWindowStartCombo.IsEnabled = _isEditable && !anyTime;
             MaintenanceWindowStartCombo.Opacity   = opacity;
             MaintenanceWindowEndCombo.IsEnabled   = _isEditable && !anyTime;

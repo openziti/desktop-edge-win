@@ -259,9 +259,9 @@ namespace ZitiDesktopEdge {
                 if (r.Code != 0) {
                     logger.Error(r?.Error);
                 } else {
-                    AutomaticUpgradesToggleLabel.Content = enabled ? "ENABLED" : "DISABLED";
+                    ViewModel.AutomaticUpdates.Enabled = enabled;
                     ApplyUpgradesDetailsDimming(policyViewModel.AutomaticUpgradesPolicyControlled, disableAutomaticUpgrades);
-                    this.OnShowBlurb?.Invoke("Automatic upgrades " + AutomaticUpgradesToggleLabel.Content);
+                    this.OnShowBlurb?.Invoke("Automatic upgrades " + ViewModel.AutomaticUpdates.ToggleLabel);
                 }
             } catch (MonitorServiceException) {
                 MainWindow.ShowError("Could Not Set Automatic Update", "The monitor service is offline");
@@ -364,21 +364,19 @@ namespace ZitiDesktopEdge {
                 BackArrow.Visibility = Visibility.Visible;
 
                 if (!policyViewModel.IsMonitorConnected) {
-                    // Service is offline — show the offline banner, hide all settings so stale
-                    // values from the last connection are never displayed.
-                    MonitorOfflineBanner.Visibility       = Visibility.Visible;
-                    AutomaticUpgradesContent.Visibility   = Visibility.Collapsed;
+                    // Service is offline — the banner shows and settings hide (both bound to
+                    // MonitorConnected) so stale values from the last connection are never displayed.
+                    ViewModel.AutomaticUpdates.MonitorConnected = false;
                     return;
                 }
 
-                MonitorOfflineBanner.Visibility     = Visibility.Collapsed;
-                AutomaticUpgradesContent.Visibility = Visibility.Visible;
+                ViewModel.AutomaticUpdates.MonitorConnected = true;
 
                 SetAutomaticUpgradesState();
                 SetMaintenanceWindowState();
 
                 bool policyControlled = policyViewModel.AutomaticUpgradesPolicyControlled;
-                PolicyManagedBanner.Visibility = policyControlled ? Visibility.Visible : Visibility.Collapsed;
+                ViewModel.AutomaticUpdates.PolicyControlled = policyControlled;
 
                 AutomaticUpgradesHeading.Opacity         = policyControlled ? 0.3 : 1.0;
                 AutomaticUpgradesToggle.IsEnabled        = !policyControlled;
@@ -558,19 +556,14 @@ namespace ZitiDesktopEdge {
             AutomaticUpgradesToggle.OnToggled -= AutomaticUpgradesToggle_OnToggled;
             AutomaticUpgradesToggle.Enabled   = enabled;
             AutomaticUpgradesToggle.OnToggled += AutomaticUpgradesToggle_OnToggled;
-            AutomaticUpgradesToggleLabel.Content = enabled ? "ENABLED" : "DISABLED";
-            this.UpdateUrl.Text = policyViewModel.AutomaticUpdateURL ?? GithubAPI.ProdUrl;
+            ViewModel.AutomaticUpdates.Enabled = enabled;
+            ViewModel.AutomaticUpdates.UpdateUrl = policyViewModel.AutomaticUpdateURL ?? GithubAPI.ProdUrl;
         }
 
         private void ApplyUpgradesDetailsDimming(bool policyControlled, bool upgradesDisabled) {
-            bool detailsEditable = !policyControlled && !upgradesDisabled;
-            UpdateUrlHeading.Opacity    = detailsEditable ? 1.0 : 0.3;
-            UpdateUrl.IsEnabled         = detailsEditable;
-            UpdateUrl.Opacity           = detailsEditable ? 1.0 : 0.3;
-            UpdateUrlWarning.Visibility = detailsEditable ? Visibility.Visible : Visibility.Collapsed;
-            ResetUrlButton.Visibility   = detailsEditable ? Visibility.Visible : Visibility.Collapsed;
-            CheckForUpdate.IsEnabled    = !upgradesDisabled;
-            CheckForUpdate.Opacity      = upgradesDisabled ? 0.3 : 1.0;
+            // The URL/check-for-update/save dimming is bound to the view model's DetailsEditable.
+            ViewModel.AutomaticUpdates.PolicyControlled = policyControlled;
+            ViewModel.AutomaticUpdates.Enabled = !upgradesDisabled;
             if (upgradesDisabled) {
                 CheckForUpdateStatus.Visibility   = Visibility.Collapsed;
                 TriggerUpdateButton.Visibility    = Visibility.Collapsed;
@@ -579,8 +572,7 @@ namespace ZitiDesktopEdge {
             }
             // MaintenanceWindowControl owns its own heading-dim + per-combo IsEnabled/opacity
             // logic from a single IsEditable flag (including the AnyTime checkbox's sub-rule).
-            MaintenanceWindow.IsEditable  = detailsEditable;
-            SaveSettingsButton.Visibility = detailsEditable ? Visibility.Visible : Visibility.Collapsed;
+            MaintenanceWindow.IsEditable = !policyControlled && !upgradesDisabled;
         }
 
         // Pushes the saved-state cadence values into the extracted MaintenanceWindowControl.
@@ -613,7 +605,7 @@ namespace ZitiDesktopEdge {
             try {
                 MonitorClient monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
 
-                string url = UpdateUrl.Text;
+                string url = ViewModel.AutomaticUpdates.UpdateUrl;
                 SvcResponse urlResponse = await monitorClient.SetAutomaticUpgradeURLAsync(url);
                 if (urlResponse == null || urlResponse.Code != 0) {
                     logger.Error("SetAutomaticUpgradeURLAsync failed: {0}", urlResponse?.Error ?? "(null response)");
@@ -654,11 +646,11 @@ namespace ZitiDesktopEdge {
 
         async private void CheckForUpdate_OnClick(object sender, MouseButtonEventArgs e) {
             logger.Info("checking for update...");
+            ViewModel.AutomaticUpdates.IsChecking = true;
             CheckForUpdateStatus.Content = "Checking for updates...";
+            CheckForUpdateStatus.Visibility = Visibility.Visible;
             await Task.Delay(1000);
             try {
-                CheckForUpdate.IsEnabled = false;
-                CheckForUpdateStatus.Visibility = Visibility.Visible;
                 var monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
                 var r = await monitorClient.DoUpdateCheck();
                 checkResponse(r, "Error When Checking for Update", "An error occurred while trying check for update.");
@@ -671,8 +663,9 @@ namespace ZitiDesktopEdge {
             } catch (Exception ex) {
                 logger.Error(ex, "unexpected error in update check: {0}", ex.Message);
                 CheckForUpdateStatus.Content = "Error checking for updates. See logs.";
+            } finally {
+                ViewModel.AutomaticUpdates.IsChecking = false;
             }
-            CheckForUpdate.IsEnabled = true;
         }
 
         async private void TriggerUpdate_RoutedEventArgs_Click(object sender, RoutedEventArgs e) {
@@ -982,7 +975,7 @@ namespace ZitiDesktopEdge {
 
         private void ResetUrlButton_Click(object sender, RoutedEventArgs e) {
             if (policyViewModel.AutomaticUpgradesPolicyControlled) return;
-            UpdateUrl.Text = GithubAPI.ProdUrl;
+            ViewModel.AutomaticUpdates.UpdateUrl = GithubAPI.ProdUrl;
         }
 
 

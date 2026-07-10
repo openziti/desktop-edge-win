@@ -89,7 +89,7 @@
                     <local:SubOptionItem x:Name="LogVerbose" HorizontalAlignment="Stretch" Width="Auto" Label="Verbose" IsSelected="{Binding IsVerbose}" MouseUp="SetLevel"></local:SubOptionItem>
                     <local:SubOptionItem x:Name="LogTrace" HorizontalAlignment="Stretch" Width="Auto" Label="Trace" IsSelected="{Binding IsTrace}" MouseUp="SetLevel"></local:SubOptionItem>
                 </StackPanel>
-                <StackPanel Name="AutomaticUpgradesItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
+                <StackPanel Name="AutomaticUpgradesItems" DataContext="{Binding AutomaticUpdates}" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <StackPanel.Resources>
                         <Style TargetType="{x:Type Button}" x:Key="BasicButton">
                             <Setter Property="Background" Value="Transparent" />
@@ -207,7 +207,7 @@
                     </StackPanel.Resources>
 
                     <!-- Shown when the ziti-monitor service is not running; hides stale cached values -->
-                    <Border x:Name="MonitorOfflineBanner" Visibility="Collapsed"
+                    <Border x:Name="MonitorOfflineBanner" Visibility="{Binding MonitorOfflineVisibility}"
                             Background="#3a1a1a" CornerRadius="5" Margin="0,0,0,4" Padding="10,7">
                         <TextBlock Foreground="White" FontSize="12" TextWrapping="Wrap">
                             ziti-monitor service is not running. Settings will appear when the service starts.
@@ -215,9 +215,9 @@
                     </Border>
 
                     <!-- All settings content — hidden when monitor is offline so stale values are never shown -->
-                    <StackPanel x:Name="AutomaticUpgradesContent" Orientation="Vertical">
+                    <StackPanel x:Name="AutomaticUpgradesContent" Visibility="{Binding ContentVisibility}" Orientation="Vertical">
 
-                    <Border x:Name="PolicyManagedBanner" Visibility="Collapsed"
+                    <Border x:Name="PolicyManagedBanner" Visibility="{Binding PolicyManagedVisibility}"
                             Background="#1a3a6e" CornerRadius="5" Margin="0,0,0,4" Padding="10,7">
                         <TextBlock Foreground="White" FontSize="12" TextWrapping="Wrap">
                             &#x1F512; Managed by your organization
@@ -235,7 +235,7 @@
                         <StackPanel Grid.Column="1" Orientation="Horizontal"
                                     HorizontalAlignment="Right" VerticalAlignment="Center">
                             <Label x:Name="AutomaticUpgradesToggleLabel" VerticalAlignment="Center"
-                                   Content="DISABLED" FontSize="14"
+                                   Content="{Binding ToggleLabel}" FontSize="14"
                                    Typography.Capitals="AllSmallCaps"/>
                             <local:Toggler x:Name="AutomaticUpgradesToggle" VerticalAlignment="Center"
                                            Focusable="True" Margin="10,0,0,0"/>
@@ -243,14 +243,14 @@
                     </Grid>
                     <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2" Margin="0,10,0,0"></Rectangle>
 
-                    <Label x:Name="UpdateUrlHeading" FontWeight="Bold" FontSize="16"  Margin="{StaticResource MarginTop10}">URL used to discover new upgrades:</Label>
+                    <Label x:Name="UpdateUrlHeading" Opacity="{Binding DetailsOpacity}" FontWeight="Bold" FontSize="16"  Margin="{StaticResource MarginTop10}">URL used to discover new upgrades:</Label>
 
                     <Rectangle HorizontalAlignment="Stretch" Height="1" Fill="#7d8faf" Opacity="0.2"></Rectangle>
-                    <StackPanel x:Name="UpdateUrlWarning" Orientation="Horizontal">
+                    <StackPanel x:Name="UpdateUrlWarning" Visibility="{Binding UrlWarningVisibility}" Orientation="Horizontal">
                         <Label x:Name="UpdateUrlWarningLabel" Opacity="0.6">Change only if you understand the associated risks</Label>
                     </StackPanel>
                     <StackPanel Margin="0,0,0,0">
-                        <TextBox x:Name="UpdateUrl" Padding="5" TextChanged="UpdateUrl_TextChanged" Width="325" BorderThickness="1" TextAlignment="Left" FontSize="13" Foreground="Black" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                        <TextBox x:Name="UpdateUrl" Text="{Binding UpdateUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding UrlEnabled}" Opacity="{Binding DetailsOpacity}" Padding="5" TextChanged="UpdateUrl_TextChanged" Width="325" BorderThickness="1" TextAlignment="Left" FontSize="13" Foreground="Black" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
                             <TextBox.Resources>
                                 <Style TargetType="{x:Type Border}">
                                     <Setter Property="CornerRadius" Value="5"/>
@@ -258,7 +258,7 @@
                             </TextBox.Resources>
                         </TextBox>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0">
-                            <Button x:Name="ResetUrlButton" Click="ResetUrlButton_Click" Content="Reset" VerticalAlignment="Top"
+                            <Button x:Name="ResetUrlButton" Visibility="{Binding ResetButtonVisibility}" Click="ResetUrlButton_Click" Content="Reset" VerticalAlignment="Top"
                                     BorderThickness="1,0,1,1" Opacity=".6"
                                     >
                                 <Button.Resources>
@@ -279,9 +279,9 @@
                          The Save Settings button below reads those getters; UpdateState() pushes
                          policy state into the control via ApplyFromState. -->
                     <local:MaintenanceWindowControl x:Name="MaintenanceWindow"/>
-                    <local:StyledButton x:Name="SaveSettingsButton" OnClick="SaveSettingsButton_Click" Label="Save Settings" Margin="{StaticResource MarginTop10}"/>
+                    <local:StyledButton x:Name="SaveSettingsButton" Visibility="{Binding SaveButtonVisibility}" OnClick="SaveSettingsButton_Click" Label="Save Settings" Margin="{StaticResource MarginTop10}"/>
 
-                    <local:StyledButton x:Name="CheckForUpdate" OnClick="CheckForUpdate_OnClick" Label="Check for Updates Now" Margin="{StaticResource MarginTop10}"></local:StyledButton>
+                    <local:StyledButton x:Name="CheckForUpdate" IsEnabled="{Binding CheckForUpdateEnabled}" OnClick="CheckForUpdate_OnClick" Label="Check for Updates Now" Margin="{StaticResource MarginTop10}"></local:StyledButton>
                     <Label HorizontalAlignment="Center" x:Name="CheckForUpdateStatus" Content=""></Label>
 
                     <Button x:Name="TriggerUpdateButton"
