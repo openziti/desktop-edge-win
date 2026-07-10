@@ -47,7 +47,7 @@ namespace ZitiDesktopEdge {
     /// <summary>
     /// Interaction logic for MainMenu.xaml
     /// </summary>
-    public partial class MainMenu : UserControl, INotifyPropertyChanged {
+    public partial class MainMenu : UserControl {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         public delegate void AttachementChanged(bool attached);
@@ -73,45 +73,7 @@ namespace ZitiDesktopEdge {
 
         public bool ShowUnexpectedFailure { get; set; }
 
-        private bool _l2Enabled;
-        public bool L2Enabled {
-            get { return _l2Enabled; }
-            set {
-                _l2Enabled = value;
-                if (!value) { UsePcap = false; }
-                OnPropertyChanged(nameof(L2Enabled));
-                OnPropertyChanged(nameof(IsPcapDropdownEnabled));
-            }
-        }
-
-        // Only relevant when L2Enabled is true. Controls whether a PcapInterface is sent to the tunneler.
-        private bool _usePcap;
-        public bool UsePcap {
-            get { return _usePcap; }
-            set {
-                _usePcap = value;
-                if (!value) { SelectedPcapInterface = null; }
-                OnPropertyChanged(nameof(UsePcap));
-                OnPropertyChanged(nameof(IsPcapDropdownEnabled));
-            }
-        }
-
-        public bool IsPcapDropdownEnabled {
-            get { return L2Enabled && UsePcap; }
-        }
-
-        public ObservableCollection<string> PcapInterfaces { get; } = new ObservableCollection<string>();
-
-        private string _selectedPcapInterface;
-        public string SelectedPcapInterface {
-            get { return _selectedPcapInterface; }
-            set { _selectedPcapInterface = value; OnPropertyChanged(nameof(SelectedPcapInterface)); }
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged(string propertyName) {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
+        public MainMenuViewModel ViewModel { get; } = new MainMenuViewModel();
 
         private void ResetDeferCheckbox() {
             DeferToRestartCheckbox.IsChecked = false;
@@ -194,7 +156,9 @@ namespace ZitiDesktopEdge {
 
         public MainMenu() {
             InitializeComponent();
-            this.DataContext = this;
+            this.DataContext = ViewModel;
+            ViewModel.BlurbRequested += OnVmBlurb;
+            ViewModel.ConfigSaved += OnVmConfigSaved;
             Application.Current.MainWindow.Title = "Ziti Desktop Edge";
             state = (ZDEWViewState)Application.Current.Properties["ZDEWViewState"];
             policyViewModel = (ManagedSettingsViewModel)Application.Current.Properties["ManagedSettingsViewModel"];
@@ -423,16 +387,16 @@ namespace ZitiDesktopEdge {
                 ConfigItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
 
-                ConfigPageSize.Value = ((Application.Current.Properties.Contains("ApiPageSize")) ? Application.Current.Properties["ApiPageSize"].ToString() : "25");
-                ConfigIp.Value = Application.Current.Properties["ip"]?.ToString();
-                ConfigSubnet.Value = Application.Current.Properties["subnet"]?.ToString();
-                ConfigMtu.Value = Application.Current.Properties["mtu"]?.ToString();
-                ConfigDns.Value = Application.Current.Properties["dns"]?.ToString();
-                ConfigDnsEnabled.Value = Application.Current.Properties["dnsenabled"]?.ToString();
-                ConfigL2Enabled.Value = ((Application.Current.Properties.Contains("L2Enabled")) ? Application.Current.Properties["L2Enabled"].ToString() : "False");
+                ViewModel.ConfigPageSize = ((Application.Current.Properties.Contains("ApiPageSize")) ? Application.Current.Properties["ApiPageSize"].ToString() : "25");
+                ViewModel.ConfigIp = Application.Current.Properties["ip"]?.ToString();
+                ViewModel.ConfigSubnet = Application.Current.Properties["subnet"]?.ToString();
+                ViewModel.ConfigMtu = Application.Current.Properties["mtu"]?.ToString();
+                ViewModel.ConfigDns = Application.Current.Properties["dns"]?.ToString();
+                ViewModel.ConfigDnsEnabled = Application.Current.Properties["dnsenabled"]?.ToString();
+                ViewModel.ConfigL2Enabled = ((Application.Current.Properties.Contains("L2Enabled")) ? Application.Current.Properties["L2Enabled"].ToString() : "False");
                 string storedPcap = (Application.Current.Properties.Contains("PcapInterface")) ? Application.Current.Properties["PcapInterface"]?.ToString() : "";
-                ConfigUsePcap.Value = (!string.IsNullOrEmpty(storedPcap)).ToString();
-                ConfigPcapInterface.Value = storedPcap;
+                ViewModel.ConfigUsePcap = (!string.IsNullOrEmpty(storedPcap)).ToString();
+                ViewModel.ConfigPcapInterface = storedPcap;
                 bool dnsEnabled;
                 if(Boolean.TryParse(Application.Current.Properties["dnsenabled"]?.ToString(), out dnsEnabled)) {
                     if (dnsEnabled) {
@@ -820,53 +784,6 @@ namespace ZitiDesktopEdge {
         }
 
         /// <summary>
-        /// Save the config information to the properties and queue for update.
-        /// </summary>
-        async private void UpdateConfig() {
-            if (L2Enabled && UsePcap && string.IsNullOrEmpty(SelectedPcapInterface)) {
-                this.OnShowBlurb?.Invoke("Select a Pcap Interface");
-                return;
-            }
-
-            Properties.Settings.Default.Save();
-
-            logger.Info("updating config...");
-            DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-            try {
-                ComboBoxItem selectedMask = (ComboBoxItem)ConfigMaskNew.SelectedValue;
-                int prefixLength = Int32.Parse(selectedMask.Tag.ToString());
-                bool addDns = Convert.ToBoolean(AddDnsNew.IsChecked);
-                ConfigDnsEnabled.Value = addDns.ToString();
-                CheckRange();
-                int pageSize = Int32.Parse(ConfigePageSizeNew.Text);
-                ConfigPageSize.Value = ConfigePageSizeNew.Text;
-
-                ConfigL2Enabled.Value = L2Enabled.ToString();
-                ConfigUsePcap.Value = (L2Enabled && UsePcap).ToString();
-                string pcapInterface = (L2Enabled && UsePcap) ? SelectedPcapInterface ?? "" : "";
-                ConfigPcapInterface.Value = pcapInterface;
-
-                SvcResponse response = await client.UpdateInterfaceConfigAsync(ConfigIpNew.Text, prefixLength, addDns, pageSize, L2Enabled, pcapInterface);
-                if (response.Code != 0) {
-                    this.OnShowBlurb?.Invoke("Error: " + response.Error);
-                    logger.Debug("ERROR: {0} : {1}", response.Message, response.Error);
-                } else {
-                    Application.Current.Properties["L2Enabled"] = L2Enabled;
-                    Application.Current.Properties["PcapInterface"] = pcapInterface;
-                    this.OnShowBlurb?.Invoke("Config Save, Please Restart Ziti to Update");
-                    this.CloseEdit();
-                }
-                logger.Info("Got response from update interface config task : {0}", response);
-            } catch (DataStructures.ServiceException se) {
-                this.OnShowBlurb?.Invoke("Error: " + se.Message);
-                logger.Error(se, "service exception in update check: {0}", se.Message);
-            } catch (Exception ex) {
-                this.OnShowBlurb?.Invoke("Error: " + ex.Message);
-                logger.Error(ex, "unexpected error in update check: {0}", ex.Message);
-            }
-        }
-
-        /// <summary>
         /// Save the frequency information to the properties and queue for update.
         /// </summary>
         async private void UpdateFrequency() {
@@ -898,19 +815,19 @@ namespace ZitiDesktopEdge {
         /// Show the Edit Modal and blur the background
         /// </summary>
         private void ShowEdit_Click(object sender, MouseButtonEventArgs e) {
-            ConfigIpNew.Text = ConfigIp.Value;
-            ConfigePageSizeNew.Text = ConfigPageSize.Value;
-            CheckRange();
+            ViewModel.EditIp = ViewModel.ConfigIp;
+            ViewModel.EditPageSize = ViewModel.ConfigPageSize;
+            ViewModel.ClampPageSize();
             for (int i = 0; i < ConfigMaskNew.Items.Count; i++) {
                 ComboBoxItem item = (ComboBoxItem)ConfigMaskNew.Items.GetItemAt(i);
-                if (item.Content.ToString().IndexOf(ConfigSubnet.Value) > 0) {
+                if (item.Content.ToString().IndexOf(ViewModel.ConfigSubnet) > 0) {
                     ConfigMaskNew.SelectedIndex = i;
                     break;
                 }
             }
             if (Application.Current.Properties.Contains("dnsenabled")) {
-                AddDnsNew.IsChecked = (bool)Application.Current.Properties["dnsenabled"];
-                if (true == AddDnsNew.IsChecked) {
+                ViewModel.EditAddDns = (bool)Application.Current.Properties["dnsenabled"];
+                if (ViewModel.EditAddDns) {
                     AddDnsNew.Visibility = Visibility.Visible;
                 } else {
                     // uncomment when we want to remove AddDnsNew.Visibility = Visibility.Collapsed;
@@ -920,23 +837,23 @@ namespace ZitiDesktopEdge {
             }
 
             if (Application.Current.Properties.Contains("L2Enabled")) {
-                L2Enabled = (bool)Application.Current.Properties["L2Enabled"];
+                ViewModel.L2Enabled = (bool)Application.Current.Properties["L2Enabled"];
             } else {
-                L2Enabled = false;
+                ViewModel.L2Enabled = false;
             }
 
-            PcapInterfaces.Clear();
+            ViewModel.PcapInterfaces.Clear();
             foreach (var nic in NetworkInterface.GetAllNetworkInterfaces()
                 .Where(n => n.NetworkInterfaceType != NetworkInterfaceType.Loopback)
                 .OrderBy(n => n.Name)) {
-                PcapInterfaces.Add(nic.Name);
+                ViewModel.PcapInterfaces.Add(nic.Name);
             }
             if (Application.Current.Properties.Contains("PcapInterface")) {
                 string storedPcapInterface = Application.Current.Properties["PcapInterface"]?.ToString();
-                SelectedPcapInterface = storedPcapInterface;
-                UsePcap = !string.IsNullOrEmpty(storedPcapInterface);
+                ViewModel.SelectedPcapInterface = storedPcapInterface;
+                ViewModel.UsePcap = !string.IsNullOrEmpty(storedPcapInterface);
             } else {
-                UsePcap = false;
+                ViewModel.UsePcap = false;
             }
 
             EditArea.Opacity = 0;
@@ -1039,8 +956,12 @@ namespace ZitiDesktopEdge {
             CloseEdit();
         }
 
-        private void SaveConfig_Click(object sender, MouseButtonEventArgs e) {
-            this.UpdateConfig();
+        private void OnVmBlurb(string message) {
+            this.OnShowBlurb?.Invoke(message);
+        }
+
+        private void OnVmConfigSaved() {
+            CloseEdit();
         }
 
         private void SaveFrequencyButton_OnClick(object sender, MouseButtonEventArgs e) {
@@ -1065,17 +986,7 @@ namespace ZitiDesktopEdge {
         }
 
         private void ConfigePageSizeNew_LostFocus(object sender, RoutedEventArgs e) {
-            CheckRange();
-        }
-
-        private void CheckRange() {
-            int defaultVal = 250;
-            string setVal = ConfigePageSizeNew.Text;
-            int value = defaultVal;
-            if (Int32.TryParse(ConfigePageSizeNew.Text, out value)) {
-            }
-            if (value < 10 || value > 500) value = defaultVal;
-            ConfigePageSizeNew.Text = value.ToString();
+            ViewModel.ClampPageSize();
         }
 
         private void ResetUrlButton_Click(object sender, RoutedEventArgs e) {

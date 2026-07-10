@@ -150,6 +150,7 @@
     <Compile Include="ViewModels\IdentityDetailsViewModel.cs" />
     <Compile Include="ViewModels\GetStartedViewModel.cs" />
     <Compile Include="ViewModels\MFAScreenViewModel.cs" />
+    <Compile Include="ViewModels\MainMenuViewModel.cs" />
     <Compile Include="ActionCommand.cs" />
     <Compile Include="Tray\ITrayHost.cs" />
     <Compile Include="Tray\TrayMenuController.cs" />

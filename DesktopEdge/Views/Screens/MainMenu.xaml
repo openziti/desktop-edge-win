@@ -295,15 +295,15 @@
                 </StackPanel>
 
                 <StackPanel Name="ConfigItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
-                    <local:MenuEditItem x:Name="ConfigIp" HorizontalAlignment="Stretch" Width="Auto" Label="IPv4 Address:"></local:MenuEditItem>
-                    <local:MenuEditItem x:Name="ConfigSubnet" HorizontalAlignment="Stretch" Width="Auto" Label="Subnet Mask:"></local:MenuEditItem>
-                    <local:MenuEditItem x:Name="ConfigMtu" HorizontalAlignment="Stretch" Width="Auto" Label="MTU:"></local:MenuEditItem>
-                    <local:MenuEditItem x:Name="ConfigDns" HorizontalAlignment="Stretch" Width="Auto" Label="DNS Server:"></local:MenuEditItem>
-                    <local:MenuEditItem x:Name="ConfigPageSize" HorizontalAlignment="Stretch" Width="Auto" Label="Api Page Size (10-500):"></local:MenuEditItem>
-                    <local:MenuEditItem x:Name="ConfigDnsEnabled" HorizontalAlignment="Stretch" Width="Auto" Label="Add Dns:" Visibility="Visible"></local:MenuEditItem>
-                    <local:MenuEditItem x:Name="ConfigL2Enabled" HorizontalAlignment="Stretch" Width="Auto" Label="L2 Enabled:"></local:MenuEditItem>
-                    <local:MenuEditItem x:Name="ConfigUsePcap" HorizontalAlignment="Stretch" Width="Auto" Label="Use Pcap:"></local:MenuEditItem>
-                    <local:MenuEditItem x:Name="ConfigPcapInterface" HorizontalAlignment="Stretch" Width="Auto" Label="Pcap Interface:"></local:MenuEditItem>
+                    <local:MenuEditItem x:Name="ConfigIp" HorizontalAlignment="Stretch" Width="Auto" Label="IPv4 Address:" Value="{Binding ConfigIp}"></local:MenuEditItem>
+                    <local:MenuEditItem x:Name="ConfigSubnet" HorizontalAlignment="Stretch" Width="Auto" Label="Subnet Mask:" Value="{Binding ConfigSubnet}"></local:MenuEditItem>
+                    <local:MenuEditItem x:Name="ConfigMtu" HorizontalAlignment="Stretch" Width="Auto" Label="MTU:" Value="{Binding ConfigMtu}"></local:MenuEditItem>
+                    <local:MenuEditItem x:Name="ConfigDns" HorizontalAlignment="Stretch" Width="Auto" Label="DNS Server:" Value="{Binding ConfigDns}"></local:MenuEditItem>
+                    <local:MenuEditItem x:Name="ConfigPageSize" HorizontalAlignment="Stretch" Width="Auto" Label="Api Page Size (10-500):" Value="{Binding ConfigPageSize}"></local:MenuEditItem>
+                    <local:MenuEditItem x:Name="ConfigDnsEnabled" HorizontalAlignment="Stretch" Width="Auto" Label="Add Dns:" Visibility="Visible" Value="{Binding ConfigDnsEnabled}"></local:MenuEditItem>
+                    <local:MenuEditItem x:Name="ConfigL2Enabled" HorizontalAlignment="Stretch" Width="Auto" Label="L2 Enabled:" Value="{Binding ConfigL2Enabled}"></local:MenuEditItem>
+                    <local:MenuEditItem x:Name="ConfigUsePcap" HorizontalAlignment="Stretch" Width="Auto" Label="Use Pcap:" Value="{Binding ConfigUsePcap}"></local:MenuEditItem>
+                    <local:MenuEditItem x:Name="ConfigPcapInterface" HorizontalAlignment="Stretch" Width="Auto" Label="Pcap Interface:" Value="{Binding ConfigPcapInterface}"></local:MenuEditItem>
                     <local:StyledButton x:Name="EditButton" OnClick="ShowEdit_Click" Label="Edit Values" Grid.Row="8" Margin="0,20,0,0"></local:StyledButton>
                 </StackPanel>
                 <ScrollViewer Name="IdListScrollView" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" CanContentScroll="True" ClipToBounds="True" Visibility="Collapsed">
@@ -342,7 +342,7 @@
             <StackPanel x:Name="DetailPanel" Grid.Column="0" Orientation="Vertical" Margin="20,20,20,20" VerticalAlignment="Center" FocusVisualStyle="{x:Null}">
 
                 <Label Content="IP Address" Padding="10,0,0,0"  FontWeight="Bold" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
-                <TextBox x:Name="ConfigIpNew" Padding="10" Margin="10,10,10,10" Height="40" BorderThickness="1" TextAlignment="Left" FontSize="14" Foreground="Black" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
+                <TextBox x:Name="ConfigIpNew" Text="{Binding EditIp, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Padding="10" Margin="10,10,10,10" Height="40" BorderThickness="1" TextAlignment="Left" FontSize="14" Foreground="Black" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans">
                     <TextBox.Resources>
                         <Style TargetType="{x:Type Border}">
                             <Setter Property="CornerRadius" Value="7"/>
@@ -351,7 +351,7 @@
                 </TextBox>
 
                 <Label Content="Subnet Mask" Padding="10,0,0,0" FontWeight="Bold" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
-                <ComboBox x:Name="ConfigMaskNew" Padding="10" Margin="10,10,10,10" FontSize="14" Height="40" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black" BorderBrush="#FFACACAC" Style="{DynamicResource ComboStyle}">
+                <ComboBox x:Name="ConfigMaskNew" SelectedValuePath="Tag" SelectedValue="{Binding EditPrefix, Mode=TwoWay}" Padding="10" Margin="10,10,10,10" FontSize="14" Height="40" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black" BorderBrush="#FFACACAC" Style="{DynamicResource ComboStyle}">
                     <ComboBoxItem Content="/1 - 128.0.0.0" Tag="1" IsSelected="True"/>
                     <ComboBoxItem Content="/2 - 192.0.0.0" Tag="2"/>
                     <ComboBoxItem Content="/3 - 224.0.0.0" Tag="3"/>
@@ -387,7 +387,7 @@
                 </ComboBox>
 
                 <Label Content="Api Page Size (10-500)" Padding="10,0,0,0" FontWeight="Bold" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
-                <TextBox x:Name="ConfigePageSizeNew" Padding="10" Margin="10,10,10,10" Height="40" BorderThickness="1" TextAlignment="Left" FontSize="14" Foreground="Black" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" KeyDown="ConfigePageSizeNew_KeyDown" LostFocus="ConfigePageSizeNew_LostFocus">
+                <TextBox x:Name="ConfigePageSizeNew" Text="{Binding EditPageSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Padding="10" Margin="10,10,10,10" Height="40" BorderThickness="1" TextAlignment="Left" FontSize="14" Foreground="Black" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" KeyDown="ConfigePageSizeNew_KeyDown" LostFocus="ConfigePageSizeNew_LostFocus">
                     <TextBox.Resources>
                         <Style TargetType="{x:Type Border}">
                             <Setter Property="CornerRadius" Value="7"/>
@@ -395,7 +395,7 @@
                     </TextBox.Resources>
                 </TextBox>
 
-                <CheckBox x:Name="AddDnsNew" Content="Add DNS" IsChecked="True" Margin="10" Visibility="Visible"/>
+                <CheckBox x:Name="AddDnsNew" Content="Add DNS" IsChecked="{Binding EditAddDns, Mode=TwoWay}" Margin="10" Visibility="Visible"/>
 
                 <CheckBox Content="L2 Enabled" IsChecked="{Binding L2Enabled}" Margin="10" Visibility="Visible"/>
                 <CheckBox Content="Use Pcap" IsChecked="{Binding UsePcap}" IsEnabled="{Binding L2Enabled}" Margin="10" Visibility="Visible"/>
@@ -403,7 +403,7 @@
                 <Label Content="Pcap Interface" Padding="10,0,0,0" FontWeight="Bold" FontSize="14" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black"></Label>
                 <ComboBox ItemsSource="{Binding PcapInterfaces}" SelectedItem="{Binding SelectedPcapInterface}" IsEnabled="{Binding IsPcapDropdownEnabled}" Padding="10" Margin="10,10,10,10" FontSize="14" Height="40" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" Foreground="Black" BorderBrush="#FFACACAC" Style="{DynamicResource ComboStyle}"/>
 
-                <local:StyledButton x:Name="SaveConfigButton" OnClick="SaveConfig_Click" Label="Save" Grid.Row="8"></local:StyledButton>
+                <local:StyledButton x:Name="SaveConfigButton" Command="{Binding SaveConfigCommand}" Label="Save" Grid.Row="8"></local:StyledButton>
 
             </StackPanel>
             <Image Source="/Assets/Images/closeBlack.png" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,40,40,0" Width="10" Height="10" Cursor="Hand" MouseUp="CloseEditConfig"></Image>
