@@ -50,7 +50,7 @@ namespace ZitiDesktopEdge {
             SortChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        public ICommand QuitCommand { get; } = new ActionCommand(() => Application.Current.Shutdown(), () => true);
+        public ActionCommand QuitCommand { get; } = new ActionCommand(() => Application.Current.Shutdown(), () => true);
 
         public ActionCommand CloseErrorCommand { get; }
         public ActionCommand DismissErrorCommand { get; }
