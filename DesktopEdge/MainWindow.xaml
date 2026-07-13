@@ -416,7 +416,6 @@
                                OnLoading="DoLoading"
                                OnShowMFA="ShowAuthenticate"
                                ShowBlurb="IdentityMenu_ShowBlurb"
-                               CompleteExternalAuth="CompleteExternalAuthEvent"
         />
 
         <!-- First-run / no-identities welcome (below ModalBg so the modal dim covers it

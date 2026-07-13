@@ -144,10 +144,11 @@
     <Compile Include="Models\ManagedSettingsState.cs" />
     <Compile Include="Models\ViewState.cs" />
     <Compile Include="Utils\ManagedSettingsReader.cs" />
+    <Compile Include="ViewModels\ViewModelBase.cs" />
     <Compile Include="ViewModels\ManagedSettingsViewModel.cs" />
     <Compile Include="ViewModels\AddIdentityViewModel.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
-    <Compile Include="ViewModels\IdentityDetailsViewModel.cs" />
+    <Compile Include="ViewModels\IdentityViewModel.cs" />
     <Compile Include="ViewModels\MainMenu\GetStartedViewModel.cs" />
     <Compile Include="ViewModels\MFAScreenViewModel.cs" />
     <Compile Include="ViewModels\MainMenu\MainMenuViewModel.cs" />

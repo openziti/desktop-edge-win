@@ -55,8 +55,8 @@ namespace ZitiDesktopEdge {
         private string[] _codes = new string[0];
         private ZitiIdentity zid;
         public int Type {
-            get { return ViewModel.Type; }
-            set { ViewModel.Type = value; }
+            get { return MFAScreenViewModel.Type; }
+            set { MFAScreenViewModel.Type = value; }
         }
 
         public ZitiIdentity Identity {
@@ -68,15 +68,15 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        public MFAScreenViewModel ViewModel { get; } = new MFAScreenViewModel();
+        public MFAScreenViewModel MFAScreenViewModel { get; } = new MFAScreenViewModel();
 
         public MFAScreen() {
             InitializeComponent();
-            DataContext = ViewModel;
-            ViewModel.LoadRequested += OnVmLoad;
-            ViewModel.CloseRequested += OnVmClose;
-            ViewModel.ErrorRaised += OnVmError;
-            ViewModel.FocusAuthRequested += OnFocusAuth;
+            DataContext = MFAScreenViewModel;
+            MFAScreenViewModel.LoadRequested += OnVmLoad;
+            MFAScreenViewModel.CloseRequested += OnVmClose;
+            MFAScreenViewModel.ErrorRaised += OnVmError;
+            MFAScreenViewModel.FocusAuthRequested += OnFocusAuth;
         }
 
         private void OnFocusAuth() {
@@ -117,21 +117,21 @@ namespace ZitiDesktopEdge {
         }
 
         public void ShowSetup(ZitiIdentity identity, string url, string secret) {
-            ViewModel.SetupCode = "";
+            MFAScreenViewModel.SetupCode = "";
             this.zid = identity;
-            ViewModel.Identity = identity;
-            ViewModel.IdName = identity.Name;
-            ViewModel.ShowSetupMode();
+            MFAScreenViewModel.Identity = identity;
+            MFAScreenViewModel.IdName = identity.Name;
+            MFAScreenViewModel.ShowSetupMode();
             Logger.Debug($"MFA Url: {url}");
             MFAImage.Source = CreateQRFromUrl(url);
             SecretCode.Text = secret;
-            ViewModel.Url = url;
+            MFAScreenViewModel.Url = url;
             SetupCode.Focus();
         }
 
         public void ShowRecovery(string[] codes, ZitiIdentity identity) {
             this.zid = identity;
-            ViewModel.Identity = identity;
+            MFAScreenViewModel.Identity = identity;
             RecoveryList.Children.Clear();
             _codes = codes;
             if (codes.Length > 0) {
@@ -147,7 +147,7 @@ namespace ZitiDesktopEdge {
                     label.VerticalContentAlignment = VerticalAlignment.Center;
                     RecoveryList.Children.Add(label);
                 }
-                ViewModel.ShowRecoveryMode(true);
+                MFAScreenViewModel.ShowRecoveryMode(true);
             } else {
                 ShowMFA(this.zid, 2);
             }
@@ -156,10 +156,10 @@ namespace ZitiDesktopEdge {
         public void ShowMFA(ZitiIdentity identity, int type) {
             if (identity.IsEnabled) {
                 this.Type = type;
-                ViewModel.AuthCode = "";
+                MFAScreenViewModel.AuthCode = "";
                 this.zid = identity;
-                ViewModel.Identity = identity;
-                ViewModel.ShowAuthMode();
+                MFAScreenViewModel.Identity = identity;
+                MFAScreenViewModel.ShowAuthMode();
             } else {
                 ShowError("Identity disabled, MFA cannot continue.");
             }
@@ -181,13 +181,13 @@ namespace ZitiDesktopEdge {
 
         private void HandleKey(object sender, KeyEventArgs e) {
             if (e.Key == Key.Return) {
-                ViewModel.AuthSetupCommand.Execute(null);
+                MFAScreenViewModel.AuthSetupCommand.Execute(null);
             }
         }
 
         private void AuthCode_KeyUp(object sender, KeyEventArgs e) {
             if (e.Key == Key.Return) {
-                ViewModel.AuthCommand.Execute(null);
+                MFAScreenViewModel.AuthCommand.Execute(null);
             }
         }
     }

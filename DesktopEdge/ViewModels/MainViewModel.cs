@@ -16,7 +16,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
@@ -27,12 +27,14 @@ using ZitiDesktopEdge.ServiceClient;
 namespace ZitiDesktopEdge {
     public enum ErrorButtonMode { Close, ForceQuit }
 
-    public class MainViewModel : INotifyPropertyChanged {
+    public class MainViewModel : ViewModelBase {
         private string _connectLabelContent = "Tap to Connect";
         private string _sortOption;
         private string _sortDirection;
         private bool _isConnected;
         private int _identityCount;
+
+        public ObservableCollection<ZitiIdentity> Identities { get; } = new ObservableCollection<ZitiIdentity>();
 
         public MainViewModel() {
             _sortOption = Properties.Settings.Default.SortOption;
@@ -275,12 +277,6 @@ namespace ZitiDesktopEdge {
             _isConnected = true;
             ConnectLabelContent = "Tap to Disconnect";
             OnPropertyChanged(nameof(ColumnHeaderVisibility));
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        protected void OnPropertyChanged(string propertyName) {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }

@@ -66,8 +66,8 @@ namespace ZitiDesktopEdge {
         // completes, then run UpdateState() once.
         private bool _suppressPolicyVmReRender = false;
         public string LogLevel {
-            get => ViewModel.LogLevel.CurrentLevel;
-            set => ViewModel.LogLevel.CurrentLevel = value;
+            get => MainMenuViewModel.LogLevel.CurrentLevel;
+            set => MainMenuViewModel.LogLevel.CurrentLevel = value;
         }
         private string appVersion = null;
 
@@ -76,7 +76,7 @@ namespace ZitiDesktopEdge {
 
         public bool ShowUnexpectedFailure { get; set; }
 
-        public MainMenuViewModel ViewModel { get; } = new MainMenuViewModel();
+        public MainMenuViewModel MainMenuViewModel { get; } = new MainMenuViewModel();
 
         private void ResetDeferCheckbox() {
             DeferToRestartCheckbox.IsChecked = false;
@@ -159,9 +159,9 @@ namespace ZitiDesktopEdge {
 
         public MainMenu() {
             InitializeComponent();
-            this.DataContext = ViewModel;
-            ViewModel.TunnelConfig.BlurbRequested += OnVmBlurb;
-            ViewModel.TunnelConfig.ConfigSaved += OnVmConfigSaved;
+            this.DataContext = MainMenuViewModel;
+            MainMenuViewModel.TunnelConfig.BlurbRequested += OnVmBlurb;
+            MainMenuViewModel.TunnelConfig.ConfigSaved += OnVmConfigSaved;
             Application.Current.MainWindow.Title = "Ziti Desktop Edge";
             state = (ZDEWViewState)Application.Current.Properties["ZDEWViewState"];
             policyViewModel = (ManagedSettingsViewModel)Application.Current.Properties["ManagedSettingsViewModel"];
@@ -259,9 +259,9 @@ namespace ZitiDesktopEdge {
                 if (r.Code != 0) {
                     logger.Error(r?.Error);
                 } else {
-                    ViewModel.AutomaticUpdates.Enabled = enabled;
+                    MainMenuViewModel.AutomaticUpdates.Enabled = enabled;
                     ApplyUpgradesDetailsDimming(policyViewModel.AutomaticUpgradesPolicyControlled, disableAutomaticUpgrades);
-                    this.OnShowBlurb?.Invoke("Automatic upgrades " + ViewModel.AutomaticUpdates.ToggleLabel);
+                    this.OnShowBlurb?.Invoke("Automatic upgrades " + MainMenuViewModel.AutomaticUpdates.ToggleLabel);
                 }
             } catch (MonitorServiceException) {
                 MainWindow.ShowError("Could Not Set Automatic Update", "The monitor service is offline");
@@ -366,17 +366,17 @@ namespace ZitiDesktopEdge {
                 if (!policyViewModel.IsMonitorConnected) {
                     // Service is offline — the banner shows and settings hide (both bound to
                     // MonitorConnected) so stale values from the last connection are never displayed.
-                    ViewModel.AutomaticUpdates.MonitorConnected = false;
+                    MainMenuViewModel.AutomaticUpdates.MonitorConnected = false;
                     return;
                 }
 
-                ViewModel.AutomaticUpdates.MonitorConnected = true;
+                MainMenuViewModel.AutomaticUpdates.MonitorConnected = true;
 
                 SetAutomaticUpgradesState();
                 SetMaintenanceWindowState();
 
                 bool policyControlled = policyViewModel.AutomaticUpgradesPolicyControlled;
-                ViewModel.AutomaticUpdates.PolicyControlled = policyControlled;
+                MainMenuViewModel.AutomaticUpdates.PolicyControlled = policyControlled;
 
                 AutomaticUpgradesHeading.Opacity         = policyControlled ? 0.3 : 1.0;
                 AutomaticUpgradesToggle.IsEnabled        = !policyControlled;
@@ -388,16 +388,16 @@ namespace ZitiDesktopEdge {
                 ConfigItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
 
-                ViewModel.TunnelConfig.ConfigPageSize = ((Application.Current.Properties.Contains("ApiPageSize")) ? Application.Current.Properties["ApiPageSize"].ToString() : "25");
-                ViewModel.TunnelConfig.ConfigIp = Application.Current.Properties["ip"]?.ToString();
-                ViewModel.TunnelConfig.ConfigSubnet = Application.Current.Properties["subnet"]?.ToString();
-                ViewModel.TunnelConfig.ConfigMtu = Application.Current.Properties["mtu"]?.ToString();
-                ViewModel.TunnelConfig.ConfigDns = Application.Current.Properties["dns"]?.ToString();
-                ViewModel.TunnelConfig.ConfigDnsEnabled = Application.Current.Properties["dnsenabled"]?.ToString();
-                ViewModel.TunnelConfig.ConfigL2Enabled = ((Application.Current.Properties.Contains("L2Enabled")) ? Application.Current.Properties["L2Enabled"].ToString() : "False");
+                MainMenuViewModel.TunnelConfig.ConfigPageSize = ((Application.Current.Properties.Contains("ApiPageSize")) ? Application.Current.Properties["ApiPageSize"].ToString() : "25");
+                MainMenuViewModel.TunnelConfig.ConfigIp = Application.Current.Properties["ip"]?.ToString();
+                MainMenuViewModel.TunnelConfig.ConfigSubnet = Application.Current.Properties["subnet"]?.ToString();
+                MainMenuViewModel.TunnelConfig.ConfigMtu = Application.Current.Properties["mtu"]?.ToString();
+                MainMenuViewModel.TunnelConfig.ConfigDns = Application.Current.Properties["dns"]?.ToString();
+                MainMenuViewModel.TunnelConfig.ConfigDnsEnabled = Application.Current.Properties["dnsenabled"]?.ToString();
+                MainMenuViewModel.TunnelConfig.ConfigL2Enabled = ((Application.Current.Properties.Contains("L2Enabled")) ? Application.Current.Properties["L2Enabled"].ToString() : "False");
                 string storedPcap = (Application.Current.Properties.Contains("PcapInterface")) ? Application.Current.Properties["PcapInterface"]?.ToString() : "";
-                ViewModel.TunnelConfig.ConfigUsePcap = (!string.IsNullOrEmpty(storedPcap)).ToString();
-                ViewModel.TunnelConfig.ConfigPcapInterface = storedPcap;
+                MainMenuViewModel.TunnelConfig.ConfigUsePcap = (!string.IsNullOrEmpty(storedPcap)).ToString();
+                MainMenuViewModel.TunnelConfig.ConfigPcapInterface = storedPcap;
                 bool dnsEnabled;
                 if(Boolean.TryParse(Application.Current.Properties["dnsenabled"]?.ToString(), out dnsEnabled)) {
                     if (dnsEnabled) {
@@ -556,14 +556,14 @@ namespace ZitiDesktopEdge {
             AutomaticUpgradesToggle.OnToggled -= AutomaticUpgradesToggle_OnToggled;
             AutomaticUpgradesToggle.Enabled   = enabled;
             AutomaticUpgradesToggle.OnToggled += AutomaticUpgradesToggle_OnToggled;
-            ViewModel.AutomaticUpdates.Enabled = enabled;
-            ViewModel.AutomaticUpdates.UpdateUrl = policyViewModel.AutomaticUpdateURL ?? GithubAPI.ProdUrl;
+            MainMenuViewModel.AutomaticUpdates.Enabled = enabled;
+            MainMenuViewModel.AutomaticUpdates.UpdateUrl = policyViewModel.AutomaticUpdateURL ?? GithubAPI.ProdUrl;
         }
 
         private void ApplyUpgradesDetailsDimming(bool policyControlled, bool upgradesDisabled) {
             // The URL/check-for-update/save dimming is bound to the view model's DetailsEditable.
-            ViewModel.AutomaticUpdates.PolicyControlled = policyControlled;
-            ViewModel.AutomaticUpdates.Enabled = !upgradesDisabled;
+            MainMenuViewModel.AutomaticUpdates.PolicyControlled = policyControlled;
+            MainMenuViewModel.AutomaticUpdates.Enabled = !upgradesDisabled;
             if (upgradesDisabled) {
                 CheckForUpdateStatus.Visibility   = Visibility.Collapsed;
                 TriggerUpdateButton.Visibility    = Visibility.Collapsed;
@@ -605,7 +605,7 @@ namespace ZitiDesktopEdge {
             try {
                 MonitorClient monitorClient = (MonitorClient)Application.Current.Properties["MonitorClient"];
 
-                string url = ViewModel.AutomaticUpdates.UpdateUrl;
+                string url = MainMenuViewModel.AutomaticUpdates.UpdateUrl;
                 SvcResponse urlResponse = await monitorClient.SetAutomaticUpgradeURLAsync(url);
                 if (urlResponse == null || urlResponse.Code != 0) {
                     logger.Error("SetAutomaticUpgradeURLAsync failed: {0}", urlResponse?.Error ?? "(null response)");
@@ -646,7 +646,7 @@ namespace ZitiDesktopEdge {
 
         async private void CheckForUpdate_OnClick(object sender, MouseButtonEventArgs e) {
             logger.Info("checking for update...");
-            ViewModel.AutomaticUpdates.IsChecking = true;
+            MainMenuViewModel.AutomaticUpdates.IsChecking = true;
             CheckForUpdateStatus.Content = "Checking for updates...";
             CheckForUpdateStatus.Visibility = Visibility.Visible;
             await Task.Delay(1000);
@@ -664,7 +664,7 @@ namespace ZitiDesktopEdge {
                 logger.Error(ex, "unexpected error in update check: {0}", ex.Message);
                 CheckForUpdateStatus.Content = "Error checking for updates. See logs.";
             } finally {
-                ViewModel.AutomaticUpdates.IsChecking = false;
+                MainMenuViewModel.AutomaticUpdates.IsChecking = false;
             }
         }
 
@@ -799,19 +799,19 @@ namespace ZitiDesktopEdge {
         /// Show the Edit Modal and blur the background
         /// </summary>
         private void ShowEdit_Click(object sender, MouseButtonEventArgs e) {
-            ViewModel.TunnelConfig.EditIp = ViewModel.TunnelConfig.ConfigIp;
-            ViewModel.TunnelConfig.EditPageSize = ViewModel.TunnelConfig.ConfigPageSize;
-            ViewModel.TunnelConfig.ClampPageSize();
+            MainMenuViewModel.TunnelConfig.EditIp = MainMenuViewModel.TunnelConfig.ConfigIp;
+            MainMenuViewModel.TunnelConfig.EditPageSize = MainMenuViewModel.TunnelConfig.ConfigPageSize;
+            MainMenuViewModel.TunnelConfig.ClampPageSize();
             for (int i = 0; i < ConfigMaskNew.Items.Count; i++) {
                 ComboBoxItem item = (ComboBoxItem)ConfigMaskNew.Items.GetItemAt(i);
-                if (item.Content.ToString().IndexOf(ViewModel.TunnelConfig.ConfigSubnet) > 0) {
+                if (item.Content.ToString().IndexOf(MainMenuViewModel.TunnelConfig.ConfigSubnet) > 0) {
                     ConfigMaskNew.SelectedIndex = i;
                     break;
                 }
             }
             if (Application.Current.Properties.Contains("dnsenabled")) {
-                ViewModel.TunnelConfig.EditAddDns = (bool)Application.Current.Properties["dnsenabled"];
-                if (ViewModel.TunnelConfig.EditAddDns) {
+                MainMenuViewModel.TunnelConfig.EditAddDns = (bool)Application.Current.Properties["dnsenabled"];
+                if (MainMenuViewModel.TunnelConfig.EditAddDns) {
                     AddDnsNew.Visibility = Visibility.Visible;
                 } else {
                     // uncomment when we want to remove AddDnsNew.Visibility = Visibility.Collapsed;
@@ -821,23 +821,23 @@ namespace ZitiDesktopEdge {
             }
 
             if (Application.Current.Properties.Contains("L2Enabled")) {
-                ViewModel.TunnelConfig.L2Enabled = (bool)Application.Current.Properties["L2Enabled"];
+                MainMenuViewModel.TunnelConfig.L2Enabled = (bool)Application.Current.Properties["L2Enabled"];
             } else {
-                ViewModel.TunnelConfig.L2Enabled = false;
+                MainMenuViewModel.TunnelConfig.L2Enabled = false;
             }
 
-            ViewModel.TunnelConfig.PcapInterfaces.Clear();
+            MainMenuViewModel.TunnelConfig.PcapInterfaces.Clear();
             foreach (var nic in NetworkInterface.GetAllNetworkInterfaces()
                 .Where(n => n.NetworkInterfaceType != NetworkInterfaceType.Loopback)
                 .OrderBy(n => n.Name)) {
-                ViewModel.TunnelConfig.PcapInterfaces.Add(nic.Name);
+                MainMenuViewModel.TunnelConfig.PcapInterfaces.Add(nic.Name);
             }
             if (Application.Current.Properties.Contains("PcapInterface")) {
                 string storedPcapInterface = Application.Current.Properties["PcapInterface"]?.ToString();
-                ViewModel.TunnelConfig.SelectedPcapInterface = storedPcapInterface;
-                ViewModel.TunnelConfig.UsePcap = !string.IsNullOrEmpty(storedPcapInterface);
+                MainMenuViewModel.TunnelConfig.SelectedPcapInterface = storedPcapInterface;
+                MainMenuViewModel.TunnelConfig.UsePcap = !string.IsNullOrEmpty(storedPcapInterface);
             } else {
-                ViewModel.TunnelConfig.UsePcap = false;
+                MainMenuViewModel.TunnelConfig.UsePcap = false;
             }
 
             EditArea.Opacity = 0;
@@ -970,12 +970,12 @@ namespace ZitiDesktopEdge {
         }
 
         private void ConfigePageSizeNew_LostFocus(object sender, RoutedEventArgs e) {
-            ViewModel.TunnelConfig.ClampPageSize();
+            MainMenuViewModel.TunnelConfig.ClampPageSize();
         }
 
         private void ResetUrlButton_Click(object sender, RoutedEventArgs e) {
             if (policyViewModel.AutomaticUpgradesPolicyControlled) return;
-            ViewModel.AutomaticUpdates.UpdateUrl = GithubAPI.ProdUrl;
+            MainMenuViewModel.AutomaticUpdates.UpdateUrl = GithubAPI.ProdUrl;
         }
 
 

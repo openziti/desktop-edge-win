@@ -24,7 +24,7 @@ using ZitiDesktopEdge.ViewModels;
 
 namespace ZitiDesktopEdge {
     public partial class GetStarted : UserControl {
-        public GetStartedViewModel ViewModel { get; }
+        public GetStartedViewModel GetStartedViewModel { get; }
 
         /// <summary>Raised when the user clicks the inline "Add by JWT" link.</summary>
         public event EventHandler AddJwtRequested;
@@ -37,9 +37,9 @@ namespace ZitiDesktopEdge {
 
         public GetStarted() {
             InitializeComponent();
-            ViewModel = new GetStartedViewModel();
-            DataContext = ViewModel;
-            ViewModel.Closed += OnViewModelClosed;
+            GetStartedViewModel = new GetStartedViewModel();
+            DataContext = GetStartedViewModel;
+            GetStartedViewModel.Closed += OnViewModelClosed;
         }
 
         private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e) {
@@ -52,7 +52,7 @@ namespace ZitiDesktopEdge {
         }
 
         private void CloseImage_MouseUp(object sender, MouseButtonEventArgs e) {
-            ViewModel.Close();
+            GetStartedViewModel.Close();
             ClosedByUser?.Invoke(this, EventArgs.Empty);
         }
 

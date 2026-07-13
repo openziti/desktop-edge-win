@@ -31,7 +31,6 @@ namespace ZitiDesktopEdge {
         public delegate void CloseAction(bool isComplete, UserControl sender);
         public delegate void JoinAction(bool isComplete, UserControl sender);
         public delegate void JoinNetwork(string URL);
-        public delegate void CompleteExternalAuth(ZitiIdentity identity, string provider);
         public delegate void ShowBlurb(Blurb blurb);
     }
 

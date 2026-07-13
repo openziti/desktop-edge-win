@@ -16,14 +16,13 @@
 
 using System;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Windows;
 using NLog;
 using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.ServiceClient;
 
 namespace ZitiDesktopEdge {
-    public class TunnelConfigViewModel : INotifyPropertyChanged {
+    public class TunnelConfigViewModel : ViewModelBase {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private bool _l2Enabled;
         public bool L2Enabled {
@@ -153,11 +152,6 @@ namespace ZitiDesktopEdge {
                 BlurbRequested?.Invoke("Error: " + ex.Message);
                 Logger.Error(ex, "unexpected error in update config: {0}", ex.Message);
             }
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged(string propertyName) {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }

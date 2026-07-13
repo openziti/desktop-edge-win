@@ -59,7 +59,6 @@ namespace ZitiDesktopEdge {
         public event Attach OnAttach;
         public delegate void OnAuthenticate(ZitiIdentity identity);
         public event OnAuthenticate AuthenticateTOTP;
-        public event CommonDelegates.CompleteExternalAuth CompleteExternalAuth;
         public delegate void OnRecovery(ZitiIdentity identity);
         public event OnRecovery Recovery;
         public delegate void LoadingEvent(bool isComplete);
@@ -72,15 +71,9 @@ namespace ZitiDesktopEdge {
         private ScrollViewer _scroller;
         private ZitiService _info;
 
-        public IdentityDetailsViewModel IdentityDetailsViewModel { get; } = new IdentityDetailsViewModel();
+        public IdentityViewModel IdentityViewModel { get; } = new IdentityViewModel();
 
         internal MainWindow MainWindow { get; set; }
-
-        private List<ZitiIdentity> identities {
-            get {
-                return (List<ZitiIdentity>)Application.Current.Properties["Identities"];
-            }
-        }
 
         private ZitiIdentity _identity;
 
@@ -91,9 +84,9 @@ namespace ZitiDesktopEdge {
             set {
                 FilterServices.Clear();
                 _identity = value;
-                IdentityDetailsViewModel.Identity = _identity;
-                IdentityDetailsViewModel.LoadServices();
-                ServiceCount.Content = IdentityDetailsViewModel.ServiceCountLabel;
+                IdentityViewModel.Identity = _identity;
+                IdentityViewModel.LoadServices();
+                ServiceCount.Content = IdentityViewModel.ServiceCountSummary;
                 UpdateView();
                 IdentityArea.Opacity = 1.0;
                 IdentityArea.Visibility = Visibility.Visible;
@@ -228,7 +221,7 @@ namespace ZitiDesktopEdge {
                 }
             }
 
-            IdentityDetailsViewModel.ConfirmForgetVisibility = Visibility.Collapsed;
+            IdentityViewModel.ConfirmForgetVisibility = Visibility.Collapsed;
         }
         private void PopulateExternalProviders(IdentityDetails deets) {
             string policyProvider = policyViewModel.PolicyDefaultExtAuthProvider;
@@ -365,11 +358,11 @@ namespace ZitiDesktopEdge {
 
         public IdentityDetails() {
             InitializeComponent();
-            DataContext = IdentityDetailsViewModel;
-            ServiceList.ItemsSource = IdentityDetailsViewModel.Services;
+            DataContext = IdentityViewModel;
+            ServiceList.ItemsSource = IdentityViewModel.Services;
             policyViewModel = (ManagedSettingsViewModel)Application.Current.Properties["ManagedSettingsViewModel"];
-            IdentityDetailsViewModel.IdentityForgotten += OnVmIdentityForgotten;
-            IdentityDetailsViewModel.RemoveFailed += OnVmRemoveFailed;
+            IdentityViewModel.IdentityForgotten += OnVmIdentityForgotten;
+            IdentityViewModel.RemoveFailed += OnVmRemoveFailed;
         }
         private void HideMenu(object sender, MouseButtonEventArgs e) {
             this.Visibility = Visibility.Collapsed;
@@ -441,7 +434,7 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        private void AuthenticateWithExtAuthProvider(object sender, MouseButtonEventArgs e) {
+        private async void AuthenticateWithExtAuthProvider(object sender, MouseButtonEventArgs e) {
             if (_identity.NeedsExtAuth) {
                 if(ProviderList.SelectedItem == null) {
                     Logger.Warn("no provider selected");
@@ -451,7 +444,12 @@ namespace ZitiDesktopEdge {
                 if (IsDefaultProvider.IsChecked ?? false) {
                     _identity.SetDefaultProvider(selectedProvider);
                 }
-                this.CompleteExternalAuth.Invoke(this.Identity, selectedProvider);
+                try {
+                    await IdentityViewModel.CompleteExternalAuthAsync(selectedProvider);
+                } catch (Exception ex) {
+                    Logger.Error("external auth failed: [{}]", ex.Message);
+                    OnError?.Invoke("Failed to Authenticate");
+                }
             } else {
                 Logger.Warn("Ext Auth not neecessary - ExtAuthProvider should not be called. Report this as a bug.");
             }
@@ -476,7 +474,7 @@ namespace ZitiDesktopEdge {
         }
 
         private void Scrolled(object sender, ScrollChangedEventArgs e) {
-            if (!IdentityDetailsViewModel.IsLoaded || !IdentityDetailsViewModel.HasSortedServices) {
+            if (!IdentityViewModel.IsLoaded || !IdentityViewModel.HasSortedServices) {
                 return;
             }
             if (_scroller == null) {
@@ -487,7 +485,7 @@ namespace ZitiDesktopEdge {
 
             if (maxVerticalOffset > 0 && verticalOffset >= maxVerticalOffset) {
                 double savedOffset = verticalOffset;
-                int added = IdentityDetailsViewModel.LoadNextPage();
+                int added = IdentityViewModel.LoadNextPage();
                 if (added > 0) {
                     _scroller.ScrollToVerticalOffset(savedOffset);
                 }
@@ -495,7 +493,7 @@ namespace ZitiDesktopEdge {
         }
 
         private void DoFilter(FilterData filterData) {
-            IdentityDetailsViewModel.ApplyFilter(filterData.SearchFor, filterData.SortBy, filterData.SortHow);
+            IdentityViewModel.ApplyFilter(filterData.SearchFor, filterData.SortBy, filterData.SortHow);
             UpdateView();
             _scroller?.ScrollToVerticalOffset(0);
         }
@@ -532,7 +530,7 @@ namespace ZitiDesktopEdge {
 
         private void VisibilityChanged(object sender, DependencyPropertyChangedEventArgs e) {
             if (this.Visibility == Visibility.Collapsed) {
-                IdentityDetailsViewModel.Clear();
+                IdentityViewModel.Clear();
             }
         }
 

@@ -14,11 +14,10 @@
 	limitations under the License.
 */
 
-using System.ComponentModel;
 using System.Windows;
 
 namespace ZitiDesktopEdge {
-    public class AutomaticUpdatesViewModel : INotifyPropertyChanged {
+    public class AutomaticUpdatesViewModel : ViewModelBase {
         private bool _monitorConnected;
         private bool _enabled;
         private bool _policyControlled;
@@ -77,11 +76,6 @@ namespace ZitiDesktopEdge {
             OnPropertyChanged(nameof(ResetButtonVisibility));
             OnPropertyChanged(nameof(SaveButtonVisibility));
             OnPropertyChanged(nameof(CheckForUpdateEnabled));
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged(string name) {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
     }
 }

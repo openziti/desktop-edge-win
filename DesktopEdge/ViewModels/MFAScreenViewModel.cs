@@ -15,7 +15,6 @@
 */
 
 using System;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
 using NLog;
@@ -26,7 +25,7 @@ using ZitiDesktopEdge.ServiceClient;
 namespace ZitiDesktopEdge {
     public enum MfaMode { Setup, Recovery, Auth }
 
-    public class MFAScreenViewModel : INotifyPropertyChanged {
+    public class MFAScreenViewModel : ViewModelBase {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private MfaMode _mode = MfaMode.Setup;
@@ -218,11 +217,6 @@ namespace ZitiDesktopEdge {
             OnPropertyChanged(nameof(RecoveryListVisibility));
             OnPropertyChanged(nameof(NoRecoveryVisibility));
             OnPropertyChanged(nameof(SaveButtonVisibility));
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged(string name) {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
     }
 }

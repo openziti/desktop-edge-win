@@ -17,6 +17,7 @@ Copyright NetFoundry Inc.
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Input;
 using System.IO;
@@ -112,9 +113,9 @@ namespace ZitiDesktopEdge {
             LoadIdentities(true);
         }
 
-        private List<ZitiIdentity> identities {
+        private ObservableCollection<ZitiIdentity> identities {
             get {
-                return (List<ZitiIdentity>)Application.Current.Properties["Identities"];
+                return _viewModel.Identities;
             }
         }
 
@@ -126,7 +127,7 @@ namespace ZitiDesktopEdge {
             if (isOn) {
                 ShowLoad("Generating MFA", "MFA Setup Commencing, please wait");
 
-                await serviceClient.EnableMFA(this.IdentityMenu.Identity.Identifier);
+                await IdentityMenu.IdentityViewModel.EnableMfaAsync();
             } else {
                 this.ShowMFA(IdentityMenu.Identity, 3);
             }
@@ -160,7 +161,7 @@ namespace ZitiDesktopEdge {
                     }
                 } else if (mfa.Action == "enrollment_verification") {
                     if (mfa.Successful) {
-                        var found = identities.Find(id => id.Identifier == mfa.Identifier);
+                        var found = identities.FirstOrDefault(id => id.Identifier == mfa.Identifier);
                         for (int i = 0; i < identities.Count; i++) {
                             if (identities[i].Identifier == mfa.Identifier) {
                                 identities[i].WasNotified = false;
@@ -185,7 +186,7 @@ namespace ZitiDesktopEdge {
                     }
                 } else if (mfa.Action == "enrollment_remove") {
                     if (mfa.Successful) {
-                        var found = identities.Find(id => id.Identifier == mfa.Identifier);
+                        var found = identities.FirstOrDefault(id => id.Identifier == mfa.Identifier);
                         for (int i = 0; i < identities.Count; i++) {
                             if (identities[i].Identifier == mfa.Identifier) {
                                 identities[i].WasNotified = false;
@@ -208,7 +209,7 @@ namespace ZitiDesktopEdge {
                         await ShowBlurbAsync("MFA Removal Failed", "");
                     }
                 } else if (mfa.Action == "mfa_auth_status") {
-                    var found = identities.Find(id => id.Identifier == mfa.Identifier);
+                    var found = identities.FirstOrDefault(id => id.Identifier == mfa.Identifier);
                     for (int i = 0; i < identities.Count; i++) {
                         if (identities[i].Identifier == mfa.Identifier) {
                             identities[i].WasNotified = false;
@@ -422,13 +423,13 @@ namespace ZitiDesktopEdge {
         // the app.
         private ZitiDesktopEdge.Tray.TrayMenuController tray;
         private System.ComponentModel.IContainer components;
-        private MainViewModel props = null;
+        private MainViewModel _viewModel = null;
         public MainWindow() {
             InitializeComponent();
 
-            props = new MainViewModel();
-            DataContext = props;
-            props.SortChanged += OnSortChanged;
+            _viewModel = new MainViewModel();
+            DataContext = _viewModel;
+            _viewModel.SortChanged += OnSortChanged;
 
             NextNotificationTime = DateTime.Now;
             _notificationThrottle = new NotificationThrottle(ShowToast, "Authorization Required", "{0} identities require authorization.");
@@ -537,7 +538,7 @@ namespace ZitiDesktopEdge {
                         string extAuthIdentifier = null;
                         args.TryGetValue("identifier", out extAuthIdentifier);
                         if (extAuthIdentifier != null) {
-                            var found = identities.Find(i => i.Identifier == extAuthIdentifier);
+                            var found = identities.FirstOrDefault(i => i.Identifier == extAuthIdentifier);
                             if (found != null) {
                                 this.Dispatcher.Invoke(async () => {
                                     await StartExtAuth(found);
@@ -548,7 +549,7 @@ namespace ZitiDesktopEdge {
                         string mfaIdentifier = null;
                         args.TryGetValue("identifier", out mfaIdentifier);
                         if (mfaIdentifier != null) {
-                            var found = identities.Find(i => i.Identifier == mfaIdentifier);
+                            var found = identities.FirstOrDefault(i => i.Identifier == mfaIdentifier);
                             if (found != null) {
                                 this.Dispatcher.Invoke(() => {
                                     MFAAuthenticate(found);
@@ -754,7 +755,7 @@ namespace ZitiDesktopEdge {
             // Clear any in-flight close-animation clock so our imperative Height write sticks.
             this.BeginAnimation(HeightProperty, null);
             this.Height = defaultHeight + GetStartedExtraHeight;
-            GetStartedScreen.ViewModel.Show();
+            GetStartedScreen.GetStartedViewModel.Show();
         }
 
         public void OpenIdentityDetails(ZitiIdentity identity) {
@@ -898,7 +899,7 @@ namespace ZitiDesktopEdge {
 
         private void SetCantDisplay(string title, string detailMessage, Visibility closeButtonVisibility) {
             this.Dispatcher.Invoke(() => {
-                props.ShowNoService(title, detailMessage, closeButtonVisibility == Visibility.Visible);
+                _viewModel.ShowNoService(title, detailMessage, closeButtonVisibility == Visibility.Visible);
                 SetNotifyIcon("red");
                 _isServiceInError = true;
                 UpdateServiceView();
@@ -962,7 +963,7 @@ namespace ZitiDesktopEdge {
             monitorClient.OnReconnectFailure += MonitorClient_OnReconnectFailure;
             Application.Current.Properties.Add("MonitorClient", monitorClient);
 
-            Application.Current.Properties.Add("Identities", new List<ZitiIdentity>());
+            Application.Current.Properties["Identities"] = _viewModel.Identities;
             MainMenu.OnAttachmentChange += AttachmentChanged;
             MainMenu.OnLogLevelChanged += LogLevelChanged;
             MainMenu.OnShowBlurb += MainMenu_OnShowBlurb;
@@ -983,7 +984,7 @@ namespace ZitiDesktopEdge {
         }
 
         private async void ServiceClient_OnAuthenticationEvent(object sender, AuthenticationEvent e) {
-            ZitiIdentity found = identities.Find(i => i.Identifier == e.Identifier);
+            ZitiIdentity found = identities.FirstOrDefault(i => i.Identifier == e.Identifier);
             if (found != null) {
                 if (e.Action == "error") {
                     found.AuthInProgress = false;
@@ -1016,7 +1017,7 @@ namespace ZitiDesktopEdge {
         }
 
         private void ServiceClient_OnBulkServiceEvent(object sender, BulkServiceEvent e) {
-            var found = identities.Find(id => id.Identifier == e.Identifier);
+            var found = identities.FirstOrDefault(id => id.Identifier == e.Identifier);
             if (found == null) {
                 logger.Warn($"{e.Action} service event for {e.Identifier} but the provided identity identifier was not found!");
                 return;
@@ -1045,7 +1046,7 @@ namespace ZitiDesktopEdge {
             var displayMFARequired = false;
             var displayMFATimeout = false;
             foreach (var notification in e.Notification) {
-                var found = identities.Find(id => id.Identifier == notification.Identifier);
+                var found = identities.FirstOrDefault(id => id.Identifier == notification.Identifier);
                 if (found == null) {
                     logger.Warn($"{e.Op} event for {notification.Identifier} but the provided identity identifier was not found!");
                     continue;
@@ -1089,7 +1090,7 @@ namespace ZitiDesktopEdge {
             // it is not allowing me to click/perform any operation on the identity
             // the color of the title is also too dark, and it is not clearly visible, when the identity is disconnected 
             /* if (e.Action == "connected") {
-				var found = identities.Find(i => i.Identifier == e.Identifier);
+				var found = identities.FirstOrDefault(i => i.Identifier == e.Identifier);
 				found.IsConnected = true;
 				for (int i = 0; i < identities.Count; i++) {
 					if (identities[i].Identifier == found.Identifier) {
@@ -1099,7 +1100,7 @@ namespace ZitiDesktopEdge {
 				}
 				LoadIdentities(true);
 			} else if (e.Action == "disconnected") {
-				var found = identities.Find(i => i.Identifier == e.Identifier);
+				var found = identities.FirstOrDefault(i => i.Identifier == e.Identifier);
 				found.IsConnected = false;
 				for (int i = 0; i < identities.Count; i++) {
 					if (identities[i].Identifier == found.Identifier) {
@@ -1420,7 +1421,7 @@ namespace ZitiDesktopEdge {
             // real bad - means it's stuck probably. Ask the user if they want to try to force it...
             logger.Warn("Waiting for service to stop... Service did not reach stopped state in the expected amount of time.");
             SetCantDisplay("The Service Appears Stuck", "Would you like to try to force close the service?", Visibility.Visible);
-            props.SetForceQuitMode();
+            _viewModel.SetForceQuitMode();
         }
 
         async private void StartZitiService(object sender, RoutedEventArgs e) {
@@ -1435,20 +1436,20 @@ namespace ZitiDesktopEdge {
                     logger.Debug("ERROR: {0} : {1}", r.Message, r.Error);
                 } else {
                     logger.Info("Service started!");
-                    props.CloseServiceError();
+                    _viewModel.CloseServiceError();
                 }
             } catch (MonitorServiceException me) {
                 logger.Warn("the monitor service appears offline. {0}", me);
-                props.CloseButtonEnabled = true;
+                _viewModel.CloseButtonEnabled = true;
                 HideLoad();
                 ShowError("Error Starting Service", "The monitor service is offline");
             } catch (Exception ex) {
                 logger.Error(ex, "UNEXPECTED ERROR!");
-                props.CloseButtonEnabled = true;
+                _viewModel.CloseButtonEnabled = true;
                 HideLoad();
                 ShowError("Unexpected Error", "Code 2:" + ex.Message);
             }
-            props.CloseButtonEnabled = true;
+            _viewModel.CloseButtonEnabled = true;
             // HideLoad();
         }
 
@@ -1493,11 +1494,11 @@ namespace ZitiDesktopEdge {
         private void ServiceClient_OnClientConnected(object sender, object e) {
             this.Dispatcher.Invoke(() => {
                 MainMenu.Connected();
-                props.HideNoService();
+                _viewModel.HideNoService();
                 _isServiceInError = false;
                 UpdateServiceView();
                 SetNotifyIcon("white");
-                GetStartedScreen.ViewModel.Hide(); // hide get started until tunnel status returns
+                GetStartedScreen.GetStartedViewModel.Hide(); // hide get started until tunnel status returns
                 LoadIdentities(true);
                 UpdateAlternateTunnelFooter();
             });
@@ -1506,7 +1507,7 @@ namespace ZitiDesktopEdge {
         private void ServiceClient_OnClientDisconnected(object sender, object e) {
             this.Dispatcher.Invoke(() => {
                 ResetTunnelerScopedState();
-                GetStartedScreen.ViewModel.Hide(); // hide the get started when disconnected
+                GetStartedScreen.GetStartedViewModel.Hide(); // hide the get started when disconnected
                 if (e != null) {
                     logger.Debug(e.ToString());
                 }
@@ -1597,7 +1598,7 @@ namespace ZitiDesktopEdge {
 
             this.Dispatcher.Invoke(async () => {
                 if (e.Action == "added" || e.Action == "needs_ext_login") {
-                    var found = identities.Find(i => i.Identifier == e.Id.Identifier);
+                    var found = identities.FirstOrDefault(i => i.Identifier == e.Id.Identifier);
                     if (found == null) {
                         zid.IsMFAEnabled = false; // this is an added identity, it cannot have mfa enabled yet
                         AddIdentity(zid);
@@ -1658,7 +1659,7 @@ namespace ZitiDesktopEdge {
                     await Task.Delay(2000);
                     LoadIdentities(true);
                 } else if (e.Action == "connected") {
-                    var found = identities.Find(i => i.Identifier == e.Id.Identifier);
+                    var found = identities.FirstOrDefault(i => i.Identifier == e.Id.Identifier);
                     found.IsConnected = true;
                     found.IsMFANeeded = e.Id.MfaNeeded;
                     found.NeedsExtAuth = e.Id.NeedsExtAuth;
@@ -1676,7 +1677,7 @@ namespace ZitiDesktopEdge {
                     }
                     LoadIdentities(true);
                 } else if (e.Action == "disconnected") {
-                    var found = identities.Find(i => i.Identifier == e.Id.Identifier);
+                    var found = identities.FirstOrDefault(i => i.Identifier == e.Id.Identifier);
                     found.IsConnected = false;
                     for (int i = 0; i < identities.Count; i++) {
                         if (identities[i].Identifier == found.Identifier) {
@@ -1725,7 +1726,7 @@ namespace ZitiDesktopEdge {
             if (e == null) return;
 
             logger.Debug($"==== ServiceEvent : action:{e.Action} identifier:{e.Identifier} name:{e.Service.Name} ");
-            var found = identities.Find(id => id.Identifier == e.Identifier);
+            var found = identities.FirstOrDefault(id => id.Identifier == e.Identifier);
             if (found == null) {
                 logger.Debug($"{e.Action} service event for {e.Service.Name} but the provided identity identifier {e.Identifier} is not found!");
                 return;
@@ -1791,7 +1792,7 @@ namespace ZitiDesktopEdge {
                 InitializeTimer((int)e.Status.Duration);
                 LoadStatusFromService(e.Status);
                 LoadIdentities(true);
-                GetStartedScreen.ViewModel.UpdateForState(serviceClient.Connected, identities.Count);
+                GetStartedScreen.GetStartedViewModel.UpdateForState(serviceClient.Connected, identities.Count);
                 IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
                 if (deets.IsVisible) {
                     deets.UpdateView();
@@ -1839,7 +1840,7 @@ namespace ZitiDesktopEdge {
             if (status != null) {
                 _isServiceInError = false;
                 UpdateServiceView();
-                props.HideNoService();
+                _viewModel.HideNoService();
                 SetNotifyIcon("green");
 
                 AddIdAreaButton.IsEnabled = true;
@@ -1905,7 +1906,7 @@ namespace ZitiDesktopEdge {
 
         private void updateViewWithIdentity(Identity id) {
             var zid = ZitiIdentity.FromClient(id);
-            var found = identities.Find(fid => fid.Identifier == id.Identifier);
+            var found = identities.FirstOrDefault(fid => fid.Identifier == id.Identifier);
             if(found != null) {
                 identities.Remove(found);
                 zid.IsMFAEnabled = found.IsMFAEnabled;
@@ -1962,7 +1963,7 @@ namespace ZitiDesktopEdge {
         }
 
         private ZitiIdentity[] GetSortedIdentities() {
-            return props.GetSortedIdentities(identities);
+            return _viewModel.GetSortedIdentities(identities);
         }
 
         private void LoadIdentities(Boolean repaint) {
@@ -1983,12 +1984,12 @@ namespace ZitiDesktopEdge {
                 IdList.MaxHeight = _maxHeight - 480;
                 ZitiIdentity[] ids = GetSortedIdentities();
                 MainMenu.SetupIdList(ids);
-                props.IdentityCount = ids.Length;
+                _viewModel.IdentityCount = ids.Length;
                 MainMenu.ShowWelcomeButton.Visibility = ids.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
                 HelpCircle.Visibility                  = ids.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
                 tray.RebuildIdentities(ids);
                 if (ids.Length > 0) {
-                    GetStartedScreen.ViewModel.Hide(); // if there's any identities close the get started screen
+                    GetStartedScreen.GetStartedViewModel.Hide(); // if there's any identities close the get started screen
                 }
                 if (ids.Length > 0 && serviceClient.Connected) {
                     double height = defaultHeight + (ids.Length * 60);
@@ -2001,21 +2002,10 @@ namespace ZitiDesktopEdge {
                         IdentityItem idItem = new IdentityItem();
                         idItem.ShowError = ShowError;
 
-
-                        idItem.ToggleStatus.IsEnabled = id.IsEnabled;
-                        if (id.IsEnabled) idItem.ToggleStatus.Content = "ENABLED";
-                        else idItem.ToggleStatus.Content = "DISABLED";
-
                         idItem.AuthenticateTOTP += IdItem_Authenticate;
                         idItem.EnableMFARequested += IdItem_EnableMFA;
-                        idItem.OnStatusChanged += Id_OnStatusChanged;
                         idItem.Identity = id;
                         idItem.IdentityChanged += IdItem_IdentityChanged;
-                        idItem.BlurbEvent += IdItem_BlurbEvent;
-                        if (repaint) {
-                            idItem.RefreshUI();
-                        }
-                        idItem.CompleteExternalAuth += CompleteExternalAuthEvent;
 
                         IdList.Children.Add(idItem);
 
@@ -2030,7 +2020,7 @@ namespace ZitiDesktopEdge {
                     IdListScroller.Visibility = Visibility.Visible;
                 } else {
                     // Make room for the welcome screen when it's about to show.
-                    this.Height = defaultHeight + (GetStartedScreen.ViewModel.IsOpen ? GetStartedExtraHeight : 0);
+                    this.Height = defaultHeight + (GetStartedScreen.GetStartedViewModel.IsOpen ? GetStartedExtraHeight : 0);
                     MainMenu.IdentitiesButton.Visibility = Visibility.Collapsed;
                     IdListScroller.Visibility = Visibility.Collapsed;
 
@@ -2041,12 +2031,6 @@ namespace ZitiDesktopEdge {
                 Placement();
                 SetNotifyIcon("");
             });
-        }
-
-        private async void IdItem_BlurbEvent(ZitiIdentity identity) {
-            if(identity.AuthInProgress) {
-                await ShowBlurbAsync("Authentication in progress", "Please check your browser");
-            }
         }
 
         private void IdItem_IdentityChanged(ZitiIdentity identity) {
@@ -2069,15 +2053,8 @@ namespace ZitiDesktopEdge {
                 return;
             }
             ShowLoad("Generating MFA", "MFA Setup Commencing, please wait");
-            await serviceClient.EnableMFA(identity.Identifier);
+            await IdentityMenu.IdentityViewModel.EnableMfaAsync();
             HideLoad();
-        }
-
-        private void Id_OnStatusChanged(bool attached) {
-            for (int i = 0; i < IdList.Children.Count; i++) {
-                IdentityItem item = IdList.Children[i] as IdentityItem;
-                if (item.ToggleSwitch.Enabled) break;
-            }
         }
 
         private void TunnelConnected(bool isConnected) {
@@ -2088,7 +2065,7 @@ namespace ZitiDesktopEdge {
                     MainMenu.Connected();
                     HideLoad();
                     SetNotifyIcon("green");
-                    props.Connected();
+                    _viewModel.Connected();
                 } else {
                     ConnectButton.Visibility = Visibility.Visible;
                     DisconnectButton.Visibility = Visibility.Collapsed;
@@ -2096,7 +2073,7 @@ namespace ZitiDesktopEdge {
                     MainMenu.Disconnected();
                     DownloadSpeed.Content = "0.0";
                     UploadSpeed.Content = "0.0";
-                    props.Disconnected();
+                    _viewModel.Disconnected();
                 }
             });
         }
@@ -2341,13 +2318,13 @@ namespace ZitiDesktopEdge {
 
         public void ShowError(string title, string message) {
             this.Dispatcher.Invoke(() => {
-                props.ShowServiceError(title, message);
+                _viewModel.ShowServiceError(title, message);
             });
         }
 
         public void ShowError(string title, string message, UIElement additionalElements) {
             this.Dispatcher.Invoke(() => {
-                props.ShowServiceError(title, message);
+                _viewModel.ShowServiceError(title, message);
                 if (additionalElements != null) {
                     ErrorPanel.Children.Add(additionalElements);
                 }
@@ -2543,15 +2520,6 @@ namespace ZitiDesktopEdge {
                 ShowError("Unexpected Error", "Code 2:" + ex.Message);
             }
             HideLoad();
-        }
-
-        private async void CompleteExternalAuthEvent(ZitiIdentity identity, string provider) {
-            try {
-                await identity.PerformExternalAuthEvent(serviceClient, provider);
-            } catch (Exception ex) {
-                logger.Error("external auth failed: [{}]", ex.Message);
-                ShowError("Failed to Authenticate", ex.Message);
-            }
         }
 
         private void MainUI_PreviewMouseDown(object sender, MouseButtonEventArgs e) {

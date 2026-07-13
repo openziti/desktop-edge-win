@@ -14,10 +14,14 @@
 	limitations under the License.
 */
 
+using System.ComponentModel;
+
 namespace ZitiDesktopEdge {
-    public class MainMenuViewModel : ViewModelBase {
-        public TunnelConfigViewModel TunnelConfig { get; } = new TunnelConfigViewModel();
-        public LogLevelViewModel LogLevel { get; } = new LogLevelViewModel();
-        public AutomaticUpdatesViewModel AutomaticUpdates { get; } = new AutomaticUpdatesViewModel();
+    public abstract class ViewModelBase : INotifyPropertyChanged {
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected void OnPropertyChanged(string propertyName) {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
 }

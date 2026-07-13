@@ -16,7 +16,6 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 
@@ -32,7 +31,7 @@ namespace ZitiDesktopEdge {
         public bool EnrollToTokenEnabled { get; set; }
     }
 
-    public class AddIdentityViewModel : INotifyPropertyChanged {
+    public class AddIdentityViewModel : ViewModelBase {
         private ExternalJwtSigner _selectedSigner;
         private string _enrollMode;
         private bool _showSignerPicker;
@@ -144,12 +143,6 @@ namespace ZitiDesktopEdge {
 
         private string ResolveWireProvider() {
             return _showSignerPicker ? _selectedSigner?.Name : null;
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        protected void OnPropertyChanged(string propertyName) {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
         private static readonly JsonSerializerSettings DeserializationSettings = new JsonSerializerSettings {

@@ -14,7 +14,6 @@
 	limitations under the License.
 */
 
-using System.ComponentModel;
 using Ziti.Desktop.Edge.Models;
 using ZitiDesktopEdge.DataStructures;
 
@@ -28,15 +27,13 @@ namespace ZitiDesktopEdge.ViewModels {
     /// The policy source may be Group Policy, Intune, MDM, or any tool that writes
     /// to HKLM\SOFTWARE\Policies\NetFoundry\...
     /// </summary>
-    public sealed class ManagedSettingsViewModel : INotifyPropertyChanged {
+    public sealed class ManagedSettingsViewModel : ViewModelBase {
         private ManagedSettingsState _state = new ManagedSettingsState();
-
-        public event PropertyChangedEventHandler PropertyChanged;
 
         public void ApplyState(ManagedSettingsState state) {
             _state = state;
             // empty string refreshes all bindings on this object
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
+            OnPropertyChanged(string.Empty);
         }
 
         /// <summary>
@@ -72,7 +69,7 @@ namespace ZitiDesktopEdge.ViewModels {
             MaintenanceWindowDayOfMonth           = evt.MaintenanceWindowDayOfMonth;
             MaintenanceWindowMonthlyMode          = evt.MaintenanceWindowMonthlyMode;
             MaintenanceWindowMonthlyOrdinal       = evt.MaintenanceWindowMonthlyOrdinal;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
+            OnPropertyChanged(string.Empty);
         }
 
         // ---- Monitor service connection state ----
@@ -87,7 +84,7 @@ namespace ZitiDesktopEdge.ViewModels {
             get => _isMonitorConnected;
             set {
                 _isMonitorConnected = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsMonitorConnected)));
+                OnPropertyChanged(nameof(IsMonitorConnected));
             }
         }
 

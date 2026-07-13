@@ -15,12 +15,11 @@
 */
 
 using System;
-using System.ComponentModel;
 using System.Windows;
 using ZitiDesktopEdge;
 
 namespace ZitiDesktopEdge.ViewModels {
-    public class GetStartedViewModel : INotifyPropertyChanged {
+    public class GetStartedViewModel : ViewModelBase {
         private bool _isOpen;
         private bool _userDismissed;
 
@@ -90,9 +89,5 @@ namespace ZitiDesktopEdge.ViewModels {
             _userDismissed = false;
             IsOpen = true;
         }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged(string name) =>
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }

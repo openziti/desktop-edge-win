@@ -14,10 +14,8 @@
 	limitations under the License.
 */
 
-using System.ComponentModel;
-
 namespace ZitiDesktopEdge {
-    public class LogLevelViewModel : INotifyPropertyChanged {
+    public class LogLevelViewModel : ViewModelBase {
         private string _currentLevel = "";
         public string CurrentLevel {
             get { return _currentLevel; }
@@ -39,10 +37,5 @@ namespace ZitiDesktopEdge {
         public bool IsDebug => _currentLevel == "debug";
         public bool IsVerbose => _currentLevel == "verbose";
         public bool IsTrace => _currentLevel == "trace";
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged(string name) {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-        }
     }
 }
