@@ -1,6 +1,6 @@
 # Release 2.11.2.7
 ## What's New
-n/a
+* updated to ziti-edge-tunnel v1.18.2
 
 ## Bugs fixed
 * [Issue 1020](https://github.com/openziti/desktop-edge-win/issues/1020) - Identity events no longer resize the identity details view
@@ -8,6 +8,12 @@ n/a
 
 ## Other changes
 n/a
+
+## Dependencies
+* ziti-tunneler: v1.18.2
+* ziti-sdk:      1.18.1
+* tlsuv:         v0.41.4[OpenSSL 3.6.3 9 Jun 2026]
+* tlsuv:         v0.41.4[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.11.2.6
 ## What's New
