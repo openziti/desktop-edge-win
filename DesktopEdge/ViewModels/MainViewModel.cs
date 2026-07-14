@@ -36,6 +36,25 @@ namespace ZitiDesktopEdge {
 
         public ObservableCollection<ZitiIdentity> Identities { get; } = new ObservableCollection<ZitiIdentity>();
 
+        public ZitiIdentity FindIdentity(string identifier) {
+            return Identities.FirstOrDefault(i => i.Identifier == identifier);
+        }
+
+        public void AddIdentity(ZitiIdentity identity) {
+            if (FindIdentity(identity.Identifier) == null) {
+                Identities.Add(identity);
+            }
+        }
+
+        public void RemoveIdentity(ZitiIdentity identity) {
+            for (int i = 0; i < Identities.Count; i++) {
+                if (Identities[i].Identifier == identity.Identifier) {
+                    Identities.RemoveAt(i);
+                    return;
+                }
+            }
+        }
+
         public MainViewModel() {
             _sortOption = Properties.Settings.Default.SortOption;
             _sortDirection = Properties.Settings.Default.SortDirection;
