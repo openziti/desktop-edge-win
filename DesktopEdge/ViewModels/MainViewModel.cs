@@ -55,6 +55,24 @@ namespace ZitiDesktopEdge {
             }
         }
 
+        private bool _isServiceInError;
+        public bool IsServiceInError {
+            get { return _isServiceInError; }
+            set {
+                _isServiceInError = value;
+                OnPropertyChanged(nameof(IsServiceInError));
+                OnPropertyChanged(nameof(ServiceErrorOpacity));
+            }
+        }
+
+        public double ServiceErrorOpacity => _isServiceInError ? 0.1 : 1.0;
+
+        private bool _addIdentityEnabled = true;
+        public bool AddIdentityEnabled {
+            get { return _addIdentityEnabled; }
+            set { _addIdentityEnabled = value; OnPropertyChanged(nameof(AddIdentityEnabled)); }
+        }
+
         public MainViewModel() {
             _sortOption = Properties.Settings.Default.SortOption;
             _sortDirection = Properties.Settings.Default.SortDirection;
@@ -219,6 +237,8 @@ namespace ZitiDesktopEdge {
         }
 
         public Visibility ColumnHeaderVisibility => _isConnected && _identityCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility ConnectButtonVisibility => _isConnected ? Visibility.Collapsed : Visibility.Visible;
+        public Visibility DisconnectButtonVisibility => _isConnected ? Visibility.Visible : Visibility.Collapsed;
 
         public Visibility NameArrowVisibility => SortOption == "Name" ? Visibility.Visible : Visibility.Collapsed;
         public Visibility StatusArrowVisibility => SortOption == "Status" ? Visibility.Visible : Visibility.Collapsed;
@@ -290,12 +310,16 @@ namespace ZitiDesktopEdge {
             _isConnected = false;
             ConnectLabelContent = "Tap to Connect";
             OnPropertyChanged(nameof(ColumnHeaderVisibility));
+            OnPropertyChanged(nameof(ConnectButtonVisibility));
+            OnPropertyChanged(nameof(DisconnectButtonVisibility));
         }
 
         public void Connected() {
             _isConnected = true;
             ConnectLabelContent = "Tap to Disconnect";
             OnPropertyChanged(nameof(ColumnHeaderVisibility));
+            OnPropertyChanged(nameof(ConnectButtonVisibility));
+            OnPropertyChanged(nameof(DisconnectButtonVisibility));
         }
     }
 }

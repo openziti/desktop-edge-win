@@ -63,7 +63,6 @@ namespace ZitiDesktopEdge {
         private DataClient serviceClient = null;
         MonitorClient monitorClient = null;
         private bool _isAttached = true;
-        private bool _isServiceInError = false;
         private NotificationThrottle _notificationThrottle;
         private int _right = 75;
         private int _left = 75;
@@ -72,7 +71,6 @@ namespace ZitiDesktopEdge {
         public int NotificationsShownCount = 0;
         private double _maxHeight = 805d;
         public string CurrentIcon = "white";
-        private string[] suffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };
         private string _blurbUrl = "";
 
         private DateTime NextNotificationTime;
@@ -884,28 +882,14 @@ namespace ZitiDesktopEdge {
             this.Dispatcher.Invoke(() => {
                 _viewModel.ShowNoService(title, detailMessage, closeButtonVisibility == Visibility.Visible);
                 SetNotifyIcon("red");
-                _isServiceInError = true;
+                _viewModel.IsServiceInError = true;
                 UpdateServiceView();
             });
         }
 
         private void UpdateServiceView() {
-            if (_isServiceInError) {
-                AddIdAreaButton.Opacity = 0.1;
-                AddIdAreaButton.IsEnabled = false;
-                AddIdButton.Opacity = 0.1;
-                AddIdButton.IsEnabled = false;
-                ConnectButton.Opacity = 0.1;
-                StatArea.Opacity = 0.1;
-            } else {
-                AddIdAreaButton.Opacity = 1.0;
-                AddIdAreaButton.IsEnabled = true;
-                AddIdButton.Opacity = 1.0;
-                AddIdButton.IsEnabled = true;
-                StatArea.Opacity = 1.0;
-                ConnectButton.Opacity = 1.0;
-            }
-            TunnelConnected(!_isServiceInError);
+            _viewModel.AddIdentityEnabled = !_viewModel.IsServiceInError;
+            TunnelConnected(!_viewModel.IsServiceInError);
         }
 
         private void App_ReceiveString(string obj) {
@@ -924,7 +908,6 @@ namespace ZitiDesktopEdge {
             serviceClient.OnClientConnected += ServiceClient_OnClientConnected;
             serviceClient.OnClientDisconnected += ServiceClient_OnClientDisconnected;
             serviceClient.OnIdentityEvent += ServiceClient_OnIdentityEvent;
-            serviceClient.OnMetricsEvent += ServiceClient_OnMetricsEvent;
             serviceClient.OnServiceEvent += ServiceClient_OnServiceEvent;
             serviceClient.OnTunnelStatusEvent += ServiceClient_OnTunnelStatusEvent;
             serviceClient.OnMfaEvent += ServiceClient_OnMfaEvent;
@@ -1471,7 +1454,7 @@ namespace ZitiDesktopEdge {
             this.Dispatcher.Invoke(() => {
                 MainMenu.Connected();
                 _viewModel.HideNoService();
-                _isServiceInError = false;
+                _viewModel.IsServiceInError = false;
                 UpdateServiceView();
                 SetNotifyIcon("white");
                 GetStartedScreen.GetStartedViewModel.Hide(); // hide get started until tunnel status returns
@@ -1505,7 +1488,7 @@ namespace ZitiDesktopEdge {
         /// Must be invoked on the UI thread.
         /// </summary>
         private void ResetTunnelerScopedState() {
-            AddIdAreaButton.IsEnabled = false;
+            _viewModel.AddIdentityEnabled = false;
             IdentityMenu.Visibility = Visibility.Collapsed;
             MFASetup.Visibility = Visibility.Collapsed;
             HideModal();
@@ -1521,9 +1504,6 @@ namespace ZitiDesktopEdge {
             StopTunnelUptimeTimer();
             _startDate = default(DateTime);
             ConnectedTime.Content = "00:00:00";
-
-            DownloadSpeed.Content = "0.0";
-            UploadSpeed.Content = "0.0";
 
             _notificationThrottle?.Clear();
             NextNotificationTime = DateTime.Now;
@@ -1652,34 +1632,6 @@ namespace ZitiDesktopEdge {
             logger.Debug($"IDENTITY EVENT. Action: {e.Action} identifier: {zid.Identifier}");
         }
 
-        private void ServiceClient_OnMetricsEvent(object sender, List<Identity> ids) {
-            if (ids != null) {
-                long totalUp = 0;
-                long totalDown = 0;
-                foreach (var id in ids) {
-                    //logger.Debug($"==== MetricsEvent : id {id.Name} down: {id.Metrics.Down} up:{id.Metrics.Up}");
-                    if (id?.Metrics != null) {
-                        totalDown += id.Metrics.Down;
-                        totalUp += id.Metrics.Up;
-                    }
-                }
-                this.Dispatcher.Invoke(() => {
-                    SetSpeed(totalUp, UploadSpeed, UploadSpeedLabel);
-                    SetSpeed(totalDown, DownloadSpeed, DownloadSpeedLabel);
-                });
-            }
-        }
-
-        public void SetSpeed(decimal bytes, Label speed, Label speedLabel) {
-            int counter = 0;
-            while (Math.Round(bytes / 1024) >= 1) {
-                bytes = bytes / 1024;
-                counter++;
-            }
-            speed.Content = bytes.ToString("0.0");
-            speedLabel.Content = suffixes[counter];
-        }
-
         private void ServiceClient_OnServiceEvent(object sender, ServiceEvent e) {
             if (e == null) return;
 
@@ -1789,12 +1741,12 @@ namespace ZitiDesktopEdge {
 
         private void LoadStatusFromService(TunnelStatus status) {
             if (status != null) {
-                _isServiceInError = false;
+                _viewModel.IsServiceInError = false;
                 UpdateServiceView();
                 _viewModel.HideNoService();
                 SetNotifyIcon("green");
 
-                AddIdAreaButton.IsEnabled = true;
+                _viewModel.AddIdentityEnabled = true;
                 if (!Application.Current.Properties.Contains("ip")) {
                     Application.Current.Properties.Add("ip", status?.IpInfo?.Ip);
                 } else {
@@ -1976,7 +1928,6 @@ namespace ZitiDesktopEdge {
                     IdListScroller.Visibility = Visibility.Collapsed;
 
                 }
-                AddIdButton.Visibility = Visibility.Visible;
                 AddIdAreaButton.Visibility = Visibility.Visible;
 
                 Placement();
@@ -2005,19 +1956,13 @@ namespace ZitiDesktopEdge {
         private void TunnelConnected(bool isConnected) {
             this.Dispatcher.Invoke(() => {
                 if (isConnected) {
-                    ConnectButton.Visibility = Visibility.Collapsed;
-                    DisconnectButton.Visibility = Visibility.Visible;
                     MainMenu.Connected();
                     HideLoad();
                     SetNotifyIcon("green");
                     _viewModel.Connected();
                 } else {
-                    ConnectButton.Visibility = Visibility.Visible;
-                    DisconnectButton.Visibility = Visibility.Collapsed;
                     IdentityMenu.Visibility = Visibility.Collapsed;
                     MainMenu.Disconnected();
-                    DownloadSpeed.Content = "0.0";
-                    UploadSpeed.Content = "0.0";
                     _viewModel.Disconnected();
                 }
             });
