@@ -226,7 +226,6 @@ namespace ZitiDesktopEdge {
                 logger.Info("Timer Started for full timout in " + maxto + "  seconds from identity " + _identity.Name + ".");
             }
             int minto = GetMinTimeout();
-            logger.Info("Min/Max For " + _identity.Name + " " + minto + " " + maxto);
             if (minto > -1) {
                 if (minto > 0) {
                     if (_timingTimer != null) _timingTimer.Stop();

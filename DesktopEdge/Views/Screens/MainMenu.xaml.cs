@@ -58,7 +58,6 @@ namespace ZitiDesktopEdge {
         public event Detched OnDetach;
         public delegate void ShowBlurb(string message);
         public event ShowBlurb OnShowBlurb;
-        public string menuState = "Main";
         // True while SaveSettingsButton_Click_Async is mid-flight. Each Set* IPC await returns
         // a service config-change event that fires policyViewModel.PropertyChanged, which would
         // otherwise call UpdateState() and re-render the panel with whatever the viewmodel has
@@ -166,7 +165,7 @@ namespace ZitiDesktopEdge {
             state = (ZDEWViewState)Application.Current.Properties["ZDEWViewState"];
             policyViewModel = (ManagedSettingsViewModel)Application.Current.Properties["ManagedSettingsViewModel"];
             policyViewModel.PropertyChanged += (s, e) => {
-                if (menuState == "ConfigureAutomaticUpgrades" && !_suppressPolicyVmReRender) {
+                if (MainMenuViewModel.MenuState == "ConfigureAutomaticUpgrades" && !_suppressPolicyVmReRender) {
                     Dispatcher.Invoke(UpdateState);
                 }
             };
@@ -186,7 +185,7 @@ namespace ZitiDesktopEdge {
         }
 
         private void HideMenu(object sender, MouseButtonEventArgs e) {
-            menuState = "Menu";
+            MainMenuViewModel.MenuState = "Menu";
             UpdateState();
             MainMenuArea.Visibility = Visibility.Collapsed;
         }
@@ -199,7 +198,7 @@ namespace ZitiDesktopEdge {
         }
 
         private void ShowAbout(object sender, MouseButtonEventArgs e) {
-            menuState = "About";
+            MainMenuViewModel.MenuState = "About";
             UpdateState();
         }
 
@@ -210,23 +209,23 @@ namespace ZitiDesktopEdge {
         }
 
         private void ShowAdvanced(object sender, MouseButtonEventArgs e) {
-            menuState = "Advanced";
+            MainMenuViewModel.MenuState = "Advanced";
             UpdateState();
         }
         private void ShowIdentities(object sender, MouseButtonEventArgs e) {
-            menuState = "Identities";
+            MainMenuViewModel.MenuState = "Identities";
             UpdateState();
         }
         private void ShowConfig(object sender, MouseButtonEventArgs e) {
-            menuState = "Config";
+            MainMenuViewModel.MenuState = "Config";
             UpdateState();
         }
         private void ShowLogs(object sender, MouseButtonEventArgs e) {
-            menuState = "Logs";
+            MainMenuViewModel.MenuState = "Logs";
             UpdateState();
         }
         private void ShowUILogs(object sender, MouseButtonEventArgs e) {
-            menuState = "UILogs";
+            MainMenuViewModel.MenuState = "UILogs";
             UpdateState();
         }
         private void ShowReleaseStreamMenuAction(object sender, MouseButtonEventArgs e) {
@@ -234,12 +233,12 @@ namespace ZitiDesktopEdge {
             logger.Info("this is ShowReleaseStreamMenuAction at info");
             logger.Debug("this is ShowReleaseStreamMenuAction at debug");
             logger.Trace("this is ShowReleaseStreamMenuAction at trace");
-            menuState = "SetReleaseStream";
+            MainMenuViewModel.MenuState = "SetReleaseStream";
             UpdateState();
         }
 
         private void ShowAutomaticUpgradesMenuAction(object sender, MouseButtonEventArgs e) {
-            menuState = "ConfigureAutomaticUpgrades";
+            MainMenuViewModel.MenuState = "ConfigureAutomaticUpgrades";
             UpdateState();
         }
 
@@ -279,7 +278,7 @@ namespace ZitiDesktopEdge {
         }
 
         private void SetLogLevel(object sender, MouseButtonEventArgs e) {
-            menuState = "LogLevel";
+            MainMenuViewModel.MenuState = "LogLevel";
             UpdateState();
         }
 
@@ -288,17 +287,6 @@ namespace ZitiDesktopEdge {
             if (h > 0) {
                 IdListScrollView.Height = h;
             }
-            IdListScrollView.Visibility = Visibility.Collapsed;
-            MainItems.Visibility = Visibility.Collapsed;
-            AboutItems.Visibility = Visibility.Collapsed;
-            MainItemsButton.Visibility = Visibility.Collapsed;
-            AboutItemsArea.Visibility = Visibility.Collapsed;
-            BackArrow.Visibility = Visibility.Collapsed;
-            AdvancedItems.Visibility = Visibility.Collapsed;
-            LogsItems.Visibility = Visibility.Collapsed;
-            ConfigItems.Visibility = Visibility.Collapsed;
-            LogLevelItems.Visibility = Visibility.Collapsed;
-            AutomaticUpgradesItems.Visibility = Visibility.Collapsed;
             Visibility visibilityFromUpdateAvail = state.UpdateAvailable && !policyViewModel.AutomaticUpdatesDisabled ? Visibility.Visible : Visibility.Collapsed;
             TriggerUpdateButton.Visibility = visibilityFromUpdateAvail;
             ForceUpdate.Visibility = visibilityFromUpdateAvail;
@@ -306,12 +294,7 @@ namespace ZitiDesktopEdge {
                 ? Visibility.Visible : Visibility.Collapsed;
             CheckForUpdateStatus.Visibility = visibilityFromUpdateAvail;
 
-            if (menuState == "About") {
-                MenuTitle.Content = "About";
-                AboutItemsArea.Visibility = Visibility.Visible;
-                AboutItems.Visibility = Visibility.Visible;
-                BackArrow.Visibility = Visibility.Visible;
-
+            if (MainMenuViewModel.MenuState == "About") {
                 string version = "";
                 try {
                     TunnelStatus s = (TunnelStatus)Application.Current.Properties["CurrentTunnelStatus"];
@@ -329,22 +312,11 @@ namespace ZitiDesktopEdge {
                 // Interface Version
                 VersionInfo.Content = $"App: {appVersion} Service: {version} {crypto}";
 
-            } else if (menuState == "Advanced") {
-                MenuTitle.Content = "Advanced Settings";
-                AdvancedItems.Visibility = Visibility.Visible;
-                BackArrow.Visibility = Visibility.Visible;
-            } else if (menuState == "Logs") {
-                MenuTitle.Content = "Advanced Settings";
-                AdvancedItems.Visibility = Visibility.Visible;
+            } else if (MainMenuViewModel.MenuState == "Logs") {
                 //string targetFile = NativeMethods.GetFinalPathName(MainWindow.ExpectedLogPathServices);
                 string targetFile = MainWindow.ExpectedLogPathServices;
-
                 OpenLogFile("service", targetFile);
-                BackArrow.Visibility = Visibility.Visible;
-            } else if (menuState == "UILogs") {
-                MenuTitle.Content = "Advanced Settings";
-                AdvancedItems.Visibility = Visibility.Visible;
-                BackArrow.Visibility = Visibility.Visible;
+            } else if (MainMenuViewModel.MenuState == "UILogs") {
                 // UI log folder is provisioned by the monitor service. Clicking "application logs" after deleting the folder crashes the UI. See Issue #1029.
                 if (!Directory.Exists(Path.GetDirectoryName(MainWindow.ExpectedLogPathUI))) {
                     logger.Error("UI log folder not found at {0}", MainWindow.ExpectedLogPathUI);
@@ -352,17 +324,9 @@ namespace ZitiDesktopEdge {
                     return;
                 }
                 OpenLogFile("UI", MainWindow.ExpectedLogPathUI);
-            } else if (menuState == "LogLevel") {
+            } else if (MainMenuViewModel.MenuState == "LogLevel") {
                 ResetLevels();
-
-                MenuTitle.Content = "Set Log Level";
-                LogLevelItems.Visibility = Visibility.Visible;
-                BackArrow.Visibility = Visibility.Visible;
-            } else if (menuState == "ConfigureAutomaticUpgrades") {
-                MenuTitle.Content = "Automatic Upgrades";
-                AutomaticUpgradesItems.Visibility = Visibility.Visible;
-                BackArrow.Visibility = Visibility.Visible;
-
+            } else if (MainMenuViewModel.MenuState == "ConfigureAutomaticUpgrades") {
                 if (!policyViewModel.IsMonitorConnected) {
                     // Service is offline — the banner shows and settings hide (both bound to
                     // MonitorConnected) so stale values from the last connection are never displayed.
@@ -383,11 +347,7 @@ namespace ZitiDesktopEdge {
                 AutomaticUpgradesToggle.Opacity          = policyControlled ? 0.3 : 1.0;
                 AutomaticUpgradesToggleLabel.Opacity     = policyControlled ? 0.3 : 1.0;
                 ApplyUpgradesDetailsDimming(policyControlled, policyViewModel.AutomaticUpdatesDisabled);
-            } else if (menuState == "Config") {
-                MenuTitle.Content = "Tunnel Config";
-                ConfigItems.Visibility = Visibility.Visible;
-                BackArrow.Visibility = Visibility.Visible;
-
+            } else if (MainMenuViewModel.MenuState == "Config") {
                 MainMenuViewModel.TunnelConfig.ConfigPageSize = ((Application.Current.Properties.Contains("ApiPageSize")) ? Application.Current.Properties["ApiPageSize"].ToString() : "25");
                 MainMenuViewModel.TunnelConfig.ConfigIp = Application.Current.Properties["ip"]?.ToString();
                 MainMenuViewModel.TunnelConfig.ConfigSubnet = Application.Current.Properties["subnet"]?.ToString();
@@ -408,14 +368,6 @@ namespace ZitiDesktopEdge {
                 } else {
                     // uncomment when we want to remove ConfigDnsEnabled.Visibility = Visibility.Collapsed;
                 }
-            } else if (menuState == "Identities") {
-                MenuTitle.Content = "Identities";
-                IdListScrollView.Visibility = Visibility.Visible;
-                BackArrow.Visibility = Visibility.Visible;
-            } else {
-                MenuTitle.Content = "Main Menu";
-                MainItems.Visibility = Visibility.Visible;
-                MainItemsButton.Visibility = Visibility.Visible;
             }
 
             // ShowUpdateAvailable();
@@ -443,11 +395,7 @@ namespace ZitiDesktopEdge {
         }
 
         private void GoBack(object sender, MouseButtonEventArgs e) {
-            if (menuState == "Config" || menuState == "LogLevel" || menuState == "UILogs" || menuState == "SetReleaseStream" || menuState == "ConfigureAutomaticUpgrades") {
-                menuState = "Advanced";
-            } else {
-                menuState = "Menu";
-            }
+            MainMenuViewModel.NavigateBack();
             UpdateState();
         }
         private void ShowPrivacy(object sender, MouseButtonEventArgs e) {
@@ -638,7 +586,7 @@ namespace ZitiDesktopEdge {
                 // panel can't get stuck stale. Run one final UpdateState() so the panel
                 // reflects whatever ended up in the viewmodel after the save burst settled.
                 _suppressPolicyVmReRender = false;
-                if (menuState == "ConfigureAutomaticUpgrades") {
+                if (MainMenuViewModel.MenuState == "ConfigureAutomaticUpgrades") {
                     UpdateState();
                 }
             }
@@ -701,7 +649,7 @@ namespace ZitiDesktopEdge {
                     UpdateTimeLeft.Content = "Update Requested at " + DateTime.Now;
                     TriggerUpdateButton.Visibility = Visibility.Collapsed;
                     logger.Info(r?.ToString());
-                    menuState = "Menu";
+                    MainMenuViewModel.MenuState = "Menu";
                     UpdateState();
                     MainMenuArea.Visibility = Visibility.Collapsed;
                 }

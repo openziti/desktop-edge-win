@@ -42,17 +42,17 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="70"/>
                     </Grid.ColumnDefinitions>
-                    <StackPanel Name="BackArrow" Cursor="Hand" Grid.Column="0" Orientation="Horizontal" Visibility="Collapsed" MouseLeftButtonUp="GoBack">
+                    <StackPanel Name="BackArrow" Cursor="Hand" Grid.Column="0" Orientation="Horizontal" Visibility="{Binding BackArrowVisibility}" MouseLeftButtonUp="GoBack">
                         <Image Source="/Assets/Images/lastArrow.png" Width="20" Height="20"></Image>
                         <Label FontSize="12" FontWeight="SemiBold" Content="Back" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                     </StackPanel>
                     <Label Name="MenuTitle" Cursor="ScrollAll" MouseDown="Window_MouseDown"
-                           Grid.Column="1" Content="Main Menu" HorizontalAlignment="Center"
+                           Grid.Column="1" Content="{Binding MenuTitle}" HorizontalAlignment="Center"
                            FontSize="14" FontWeight="SemiBold" Foreground="#0F0F23"></Label>
                     <Image Grid.Column="2" Cursor="Hand" Source="/Assets/Images/x.png" Height="20" Margin="50,4,0,5" MouseUp="HideMenu"></Image>
                 </Grid>
                 <Rectangle Style="{StaticResource SectionDivider}"/>
-                <StackPanel Name="MainItems" Orientation="Vertical" HorizontalAlignment="Stretch">
+                <StackPanel Name="MainItems" Visibility="{Binding MainItemsVisibility}" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <local:OZMenuItem x:Name="ShowWelcomeButton" Label="Show Welcome Screen" IconText="?" MouseUp="ShowWelcomeFromMenu" Visibility="Collapsed"></local:OZMenuItem>
                     <local:OZMenuItem x:Name="IdentitiesButton" Label="Identities" Icon="/Assets/Images/identities.png" MouseUp="ShowIdentities"></local:OZMenuItem>
                     <local:OZMenuItem HorizontalAlignment="Stretch" Width="Auto" MouseUp="ShowAdvanced" Label="Advanced Settings" Icon="/Assets/Images/advanced.png"></local:OZMenuItem>
@@ -71,9 +71,9 @@
                     </Button>
                     <CheckBox x:Name="DeferToRestartCheckbox" Visibility="Collapsed" HorizontalAlignment="Center" Margin="20,6,40,0" Foreground="#0F0F23" Content="Install on next restart" Checked="DeferToRestartCheckbox_Changed" Unchecked="DeferToRestartCheckbox_Changed"/>
                 </StackPanel>
-                <StackPanel Name="AboutItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
+                <StackPanel Name="AboutItems" Visibility="{Binding AboutVisibility}" Orientation="Vertical" HorizontalAlignment="Stretch">
                 </StackPanel>
-                <StackPanel Name="AdvancedItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
+                <StackPanel Name="AdvancedItems" Visibility="{Binding AdvancedItemsVisibility}" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <local:OZMenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/wrench.png" Width="Auto" Label="Tunnel Config" MouseUp="ShowConfig"></local:OZMenuItem>
                     <local:OZMenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/logs.png" Width="Auto" Label="Service Logs" MouseUp="ShowLogs"></local:OZMenuItem>
                     <local:OZMenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/logs.png" Width="Auto" Label="Application Logs" MouseUp="ShowUILogs"></local:OZMenuItem>
@@ -81,7 +81,7 @@
                     <local:OZMenuItem x:Name="SetAutomaticUpgradeMenuItem" HorizontalAlignment="Stretch" Icon="/Assets/Images/processing.png" Width="Auto" Label="Configure Automatic Upgrades" MouseUp="ShowAutomaticUpgradesMenuAction"></local:OZMenuItem>
                     <local:StyledButton x:Name="EditFreqButton" Visibility="Collapsed" OnClick="EditFreqButton_OnClick" Label="Change Notification Frequency" Grid.Row="8" Margin="0,20,0,0"></local:StyledButton>
                 </StackPanel>
-                <StackPanel Name="LogLevelItems" DataContext="{Binding LogLevel}" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
+                <StackPanel Name="LogLevelItems" DataContext="{Binding LogLevel}" Visibility="{Binding DataContext.LogLevelItemsVisibility, ElementName=MainMenuArea}" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <local:SubOptionItem x:Name="LogError" HorizontalAlignment="Stretch" Width="Auto" Label="Error" IsSelected="{Binding IsError}" MouseUp="SetLevel"></local:SubOptionItem>
                     <local:SubOptionItem x:Name="LogWarn" HorizontalAlignment="Stretch" Width="Auto" Label="Warn" IsSelected="{Binding IsWarn}" MouseUp="SetLevel"></local:SubOptionItem>
                     <local:SubOptionItem x:Name="LogInfo" HorizontalAlignment="Stretch" Width="Auto" Label="Info" IsSelected="{Binding IsInfo}" MouseUp="SetLevel"></local:SubOptionItem>
@@ -89,7 +89,7 @@
                     <local:SubOptionItem x:Name="LogVerbose" HorizontalAlignment="Stretch" Width="Auto" Label="Verbose" IsSelected="{Binding IsVerbose}" MouseUp="SetLevel"></local:SubOptionItem>
                     <local:SubOptionItem x:Name="LogTrace" HorizontalAlignment="Stretch" Width="Auto" Label="Trace" IsSelected="{Binding IsTrace}" MouseUp="SetLevel"></local:SubOptionItem>
                 </StackPanel>
-                <StackPanel Name="AutomaticUpgradesItems" DataContext="{Binding AutomaticUpdates}" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
+                <StackPanel Name="AutomaticUpgradesItems" DataContext="{Binding AutomaticUpdates}" Visibility="{Binding DataContext.AutomaticUpgradesItemsVisibility, ElementName=MainMenuArea}" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <StackPanel.Resources>
                         <Style TargetType="{x:Type Button}" x:Key="BasicButton">
                             <Setter Property="Background" Value="Transparent" />
@@ -294,7 +294,7 @@
 
                 </StackPanel>
 
-                <StackPanel Name="ConfigItems" DataContext="{Binding TunnelConfig}" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
+                <StackPanel Name="ConfigItems" DataContext="{Binding TunnelConfig}" Visibility="{Binding DataContext.ConfigItemsVisibility, ElementName=MainMenuArea}" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <local:MenuEditItem x:Name="ConfigIp" HorizontalAlignment="Stretch" Width="Auto" Label="IPv4 Address:" Value="{Binding ConfigIp}"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigSubnet" HorizontalAlignment="Stretch" Width="Auto" Label="Subnet Mask:" Value="{Binding ConfigSubnet}"></local:MenuEditItem>
                     <local:MenuEditItem x:Name="ConfigMtu" HorizontalAlignment="Stretch" Width="Auto" Label="MTU:" Value="{Binding ConfigMtu}"></local:MenuEditItem>
@@ -306,18 +306,18 @@
                     <local:MenuEditItem x:Name="ConfigPcapInterface" HorizontalAlignment="Stretch" Width="Auto" Label="Pcap Interface:" Value="{Binding ConfigPcapInterface}"></local:MenuEditItem>
                     <local:StyledButton x:Name="EditButton" OnClick="ShowEdit_Click" Label="Edit Values" Grid.Row="8" Margin="0,20,0,0"></local:StyledButton>
                 </StackPanel>
-                <ScrollViewer Name="IdListScrollView" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" CanContentScroll="True" ClipToBounds="True" Visibility="Collapsed">
+                <ScrollViewer Name="IdListScrollView" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" CanContentScroll="True" ClipToBounds="True" Visibility="{Binding IdentitiesVisibility}">
                     <StackPanel Name="IdListView" Orientation="Vertical" IsItemsHost="False"></StackPanel>
                 </ScrollViewer>
                 <TextBox Name="LicensesItems" Height="400" Width="{Binding ActualWidth, ElementName=MainStack}" TextWrapping="Wrap" Visibility="Collapsed"></TextBox>
                 <TextBox Name="LogsItems" Height="400" Width="{Binding ActualWidth, ElementName=MainStack}" TextWrapping="Wrap" Visibility="Collapsed" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"></TextBox>
 
-                <StackPanel Name="AboutItemsArea" Orientation="Vertical" HorizontalAlignment="Stretch" Visibility="Collapsed">
+                <StackPanel Name="AboutItemsArea" Orientation="Vertical" HorizontalAlignment="Stretch" Visibility="{Binding AboutVisibility}">
                     <Label Name="VersionInfo" FontSize="14" HorizontalAlignment="Center" Padding="0,30,0,0" Foreground="#638190" Margin="0,-20,0,0" FontFamily="pack:Up//application:,,,/Assets/Fonts/#Open Sans"></Label>
                     <Label Name="VersionOlder" Content=" checking version information " HorizontalAlignment="Center" FontSize="14" Padding="0,30,0,0" Foreground="#F4044D" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                     <Label Name="VersionNewer" Content="" HorizontalAlignment="Center" FontSize="14" Padding="0,30,0,0" Foreground="#0069FF" Margin="0,-20,0,0" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                 </StackPanel>
-                <Label Name="MainItemsButton" Margin="{StaticResource MarginTop10}" Foreground="#F4044D" FontWeight="SemiBold" Content="Quit Ziti Desktop Edge" Cursor="Hand" MouseUp="CloseApp" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Center"></Label>
+                <Label Name="MainItemsButton" Visibility="{Binding MainItemsVisibility}" Margin="{StaticResource MarginTop10}" Foreground="#F4044D" FontWeight="SemiBold" Content="Quit Ziti Desktop Edge" Cursor="Hand" MouseUp="CloseApp" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans" HorizontalAlignment="Center"></Label>
             </StackPanel>
         </Grid>
 

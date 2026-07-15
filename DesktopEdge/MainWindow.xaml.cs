@@ -1233,12 +1233,12 @@ namespace ZitiDesktopEdge {
         private void MonitorClient_OnCaptureFeedbackProgressEvent(object sender, MonitorServiceStatusEvent evt) {
             if (evt == null || string.IsNullOrEmpty(evt.Message)) return;
             this.Dispatcher.Invoke(() => {
-                if (LoadingScreen.Visibility == Visibility.Visible) {
+                if (_viewModel.LoadingVisibility == Visibility.Visible) {
                     string current = MainMenu?.LogLevel ?? "";
                     string level = string.IsNullOrEmpty(current) ? "UNKNOWN" : current.ToUpper();
                     bool isVerbose = current == "trace" || current == "verbose" || current == "debug";
                     string warning = isVerbose ? " (may take several minutes)" : "";
-                    LoadingDetails.Text = $"Log level: {level}{warning}\n{evt.Message}";
+                    _viewModel.LoadingDetail = $"Log level: {level}{warning}\n{evt.Message}";
                 }
             });
         }
@@ -1261,7 +1261,7 @@ namespace ZitiDesktopEdge {
                         SetAutomaticUpdateEnabled(evt.AutomaticUpgradeDisabled, evt.AutomaticUpgradeURL);
                         MainMenu.ShowUpdateAvailable();
                     tray.RefreshUpdateState();
-                        AlertCanvas.Visibility = Visibility.Visible;
+                        _viewModel.SetUpdateAlert(true);
 
                         if (isToastEnabled()) {
                             if (!state.AutomaticUpdatesDisabled) {
@@ -1503,7 +1503,7 @@ namespace ZitiDesktopEdge {
 
             StopTunnelUptimeTimer();
             _startDate = default(DateTime);
-            ConnectedTime.Content = "00:00:00";
+            _viewModel.ConnectedTime = "00:00:00";
 
             _notificationThrottle?.Clear();
             NextNotificationTime = DateTime.Now;
@@ -1835,8 +1835,7 @@ namespace ZitiDesktopEdge {
 
         internal void RefreshNotifyIcon() {
             SetNotifyIcon("");
-            AlertCanvas.Visibility = (state.UpdateAvailable && !state.AutomaticUpdatesDisabled)
-                ? Visibility.Visible : Visibility.Collapsed;
+            _viewModel.SetUpdateAlert(state.UpdateAvailable && !state.AutomaticUpdatesDisabled);
         }
 
         private void SetNotifyIcon(string iconPrefix) {
@@ -1889,7 +1888,6 @@ namespace ZitiDesktopEdge {
                 MainMenu.SetupIdList(ids);
                 _viewModel.IdentityCount = ids.Length;
                 MainMenu.ShowWelcomeButton.Visibility = ids.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
-                HelpCircle.Visibility                  = ids.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
                 tray.RebuildIdentities(ids);
                 if (ids.Length > 0) {
                     GetStartedScreen.GetStartedViewModel.Hide(); // if there's any identities close the get started screen
@@ -1901,7 +1899,7 @@ namespace ZitiDesktopEdge {
                     }
                     this.Height = height;
                     MainMenu.IdentitiesButton.Visibility = Visibility.Visible;
-                    foreach (var id in ids) {
+                    foreach (ZitiIdentity id in ids) {
                         IdentityItem idItem = new IdentityItem();
                         idItem.ShowError = ShowError;
 
@@ -2139,10 +2137,10 @@ namespace ZitiDesktopEdge {
             int hours = span.Hours;
             int minutes = span.Minutes;
             int seconds = span.Seconds;
-            var hoursString = (hours > 9) ? hours.ToString() : "0" + hours;
-            var minutesString = (minutes > 9) ? minutes.ToString() : "0" + minutes;
-            var secondsString = (seconds > 9) ? seconds.ToString() : "0" + seconds;
-            ConnectedTime.Content = hoursString + ":" + minutesString + ":" + secondsString;
+            string hoursString = (hours > 9) ? hours.ToString() : "0" + hours;
+            string minutesString = (minutes > 9) ? minutes.ToString() : "0" + minutes;
+            string secondsString = (seconds > 9) ? seconds.ToString() : "0" + seconds;
+            _viewModel.ConnectedTime = hoursString + ":" + minutesString + ":" + secondsString;
         }
 
         private void InitializeTimer(int millisAgoStarted) {
@@ -2180,18 +2178,14 @@ namespace ZitiDesktopEdge {
 
         internal void ShowLoad(string title, string msg) {
             this.Dispatcher.Invoke(() => {
-                LoadingDetails.Text = msg;
-                LoadingTitle.Content = title;
-                LoadProgress.IsIndeterminate = true;
-                LoadingScreen.Visibility = Visibility.Visible;
+                _viewModel.ShowLoad(title, msg);
                 UpdateLayout();
             });
         }
 
         internal void HideLoad() {
             this.Dispatcher.Invoke(() => {
-                LoadingScreen.Visibility = Visibility.Collapsed;
-                LoadProgress.IsIndeterminate = false;
+                _viewModel.HideLoad();
             });
         }
 

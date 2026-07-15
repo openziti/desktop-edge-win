@@ -257,7 +257,7 @@
                     <Image Source="/Assets/Images/connected.png" Height="140" HorizontalAlignment="Center" />
                 </Grid>
                 <Grid Width="{Binding ActualWidth, ElementName=DisconnectButton}" Height="140">
-                    <Label Name="ConnectedTime" HorizontalAlignment="Center" Content="00:00:00" Foreground="White" Padding="0,90,0,0"/>
+                    <Label Name="ConnectedTime" HorizontalAlignment="Center" Content="{Binding ConnectedTime}" Foreground="White" Padding="0,90,0,0"/>
                 </Grid>
                 <Grid Width="{Binding ActualWidth, ElementName=DisconnectButton}" Height="140">
                     <Label HorizontalAlignment="Center"  Content="STOP" Foreground="White" Padding="0,105,0,0"/>
@@ -340,7 +340,7 @@
                            Text=""/>
             </Border>
         </StackPanel>
-        <Canvas x:Name="AlertCanvas" ClipToBounds="False" Visibility="Collapsed">
+        <Canvas x:Name="AlertCanvas" ClipToBounds="False" Visibility="{Binding UpdateAlertVisibility}">
             <Image Source="/Assets/Images/UpdateWarn.png" Canvas.Left="50" Canvas.Top="32" Width="14" Height="14"></Image>
         </Canvas>
         <!-- Subtle "show welcome" affordance: a 26px question-mark circle in the bottom-right
@@ -354,7 +354,8 @@
                 Margin="0,0,18,18"
                 Cursor="Hand"
                 ToolTip="Show welcome screen"
-                MouseUp="HelpCircle_MouseUp">
+                MouseUp="HelpCircle_MouseUp"
+                Visibility="{Binding HelpCircleVisibility}">
             <TextBlock Text="?"
                        Foreground="White"
                        FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"
@@ -484,7 +485,7 @@
             </Grid>
         </Grid>
 
-        <Grid x:Name="LoadingScreen" MouseDown="Window_MouseDown" Visibility="Collapsed" Margin="10,10,10,10">
+        <Grid x:Name="LoadingScreen" MouseDown="Window_MouseDown" Visibility="{Binding LoadingVisibility}" Margin="10,10,10,10">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="Black" Opacity="0.9"/>
@@ -503,9 +504,9 @@
                     <RowDefinition Height="10"></RowDefinition>
                     <RowDefinition Height="*"></RowDefinition>
                 </Grid.RowDefinitions>
-                <Label x:Name="LoadingTitle" Foreground="White" Content="Loading" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" />
-                <TextBlock x:Name="LoadingDetails" TextWrapping="WrapWithOverflow" Foreground="LightGray" Padding="10" Text="${x:DefaultLoadText}" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" FontSize="14" />
-                <ProgressBar x:Name="LoadProgress" Width="100" Grid.Row="3" IsEnabled="True" />
+                <Label x:Name="LoadingTitle" Foreground="White" Content="{Binding LoadingTitle}" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" />
+                <TextBlock x:Name="LoadingDetails" TextWrapping="WrapWithOverflow" Foreground="LightGray" Padding="10" Text="{Binding LoadingDetail}" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" FontSize="14" />
+                <ProgressBar x:Name="LoadProgress" Width="100" Grid.Row="3" IsEnabled="True" IsIndeterminate="{Binding LoadingIndeterminate}" />
             </Grid>
         </Grid>
 

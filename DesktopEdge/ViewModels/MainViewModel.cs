@@ -73,6 +73,14 @@ namespace ZitiDesktopEdge {
             set { _addIdentityEnabled = value; OnPropertyChanged(nameof(AddIdentityEnabled)); }
         }
 
+        private bool _updateAlertVisible;
+        public Visibility UpdateAlertVisibility => _updateAlertVisible ? Visibility.Visible : Visibility.Collapsed;
+
+        public void SetUpdateAlert(bool visible) {
+            _updateAlertVisible = visible;
+            OnPropertyChanged(nameof(UpdateAlertVisibility));
+        }
+
         public MainViewModel() {
             _sortOption = Properties.Settings.Default.SortOption;
             _sortDirection = Properties.Settings.Default.SortDirection;
@@ -162,6 +170,43 @@ namespace ZitiDesktopEdge {
             NoServiceVisibility = Visibility.Collapsed;
         }
 
+        private Visibility _loadingVisibility = Visibility.Collapsed;
+        private string _loadingTitle = "Loading";
+        private string _loadingDetail = "";
+        private bool _loadingIndeterminate;
+
+        public Visibility LoadingVisibility {
+            get { return _loadingVisibility; }
+            private set { _loadingVisibility = value; OnPropertyChanged(nameof(LoadingVisibility)); }
+        }
+
+        public string LoadingTitle {
+            get { return _loadingTitle; }
+            private set { _loadingTitle = value; OnPropertyChanged(nameof(LoadingTitle)); }
+        }
+
+        public string LoadingDetail {
+            get { return _loadingDetail; }
+            set { _loadingDetail = value; OnPropertyChanged(nameof(LoadingDetail)); }
+        }
+
+        public bool LoadingIndeterminate {
+            get { return _loadingIndeterminate; }
+            private set { _loadingIndeterminate = value; OnPropertyChanged(nameof(LoadingIndeterminate)); }
+        }
+
+        public void ShowLoad(string title, string detail) {
+            LoadingTitle = title;
+            LoadingDetail = detail;
+            LoadingIndeterminate = true;
+            LoadingVisibility = Visibility.Visible;
+        }
+
+        public void HideLoad() {
+            LoadingVisibility = Visibility.Collapsed;
+            LoadingIndeterminate = false;
+        }
+
         public void ShowServiceError(string title, string message) {
             ErrorTitle = title;
             ErrorDetails = message;
@@ -207,6 +252,12 @@ namespace ZitiDesktopEdge {
             }
         }
 
+        private string _connectedTime = "00:00:00";
+        public string ConnectedTime {
+            get { return _connectedTime; }
+            set { _connectedTime = value; OnPropertyChanged(nameof(ConnectedTime)); }
+        }
+
         public string SortOption {
             get { return _sortOption; }
             private set {
@@ -233,12 +284,14 @@ namespace ZitiDesktopEdge {
                 _identityCount = value;
                 OnPropertyChanged(nameof(IdentityCount));
                 OnPropertyChanged(nameof(ColumnHeaderVisibility));
+                OnPropertyChanged(nameof(HelpCircleVisibility));
             }
         }
 
         public Visibility ColumnHeaderVisibility => _isConnected && _identityCount > 0 ? Visibility.Visible : Visibility.Collapsed;
         public Visibility ConnectButtonVisibility => _isConnected ? Visibility.Collapsed : Visibility.Visible;
         public Visibility DisconnectButtonVisibility => _isConnected ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility HelpCircleVisibility => _identityCount == 0 ? Visibility.Visible : Visibility.Collapsed;
 
         public Visibility NameArrowVisibility => SortOption == "Name" ? Visibility.Visible : Visibility.Collapsed;
         public Visibility StatusArrowVisibility => SortOption == "Status" ? Visibility.Visible : Visibility.Collapsed;
