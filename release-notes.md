@@ -1,3 +1,19 @@
+# Release 2.11.2.8
+## What's New
+* updated to ziti-edge-tunnel v1.18.3
+
+## Bugs fixed
+n/a
+
+## Other changes
+n/a
+
+## Dependencies
+* ziti-tunneler: v1.18.3
+* ziti-sdk:      1.18.1
+* tlsuv:         v0.41.4[OpenSSL 3.6.3 9 Jun 2026]
+* tlsuv:         v0.41.4[win32crypto(CNG): ncrypt[1.0] ]
+
 # Release 2.11.2.7
 ## What's New
 * updated to ziti-edge-tunnel v1.18.2
