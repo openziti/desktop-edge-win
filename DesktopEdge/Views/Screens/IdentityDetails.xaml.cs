@@ -71,7 +71,7 @@ namespace ZitiDesktopEdge {
         private ScrollViewer _scroller;
         private ZitiService _info;
 
-        public IdentityViewModel IdentityViewModel { get; } = new IdentityViewModel();
+        public IdentityViewModel IdentityViewModel { get; private set; }
 
         internal MainWindow MainWindow { get; set; }
 
@@ -84,7 +84,7 @@ namespace ZitiDesktopEdge {
             set {
                 FilterServices.Clear();
                 _identity = value;
-                IdentityViewModel.Identity = _identity;
+                SetIdentityViewModel(value.Identifier);
                 IdentityViewModel.LoadServices();
                 ServiceCount.Content = IdentityViewModel.ServiceCountSummary;
                 UpdateView();
@@ -177,7 +177,6 @@ namespace ZitiDesktopEdge {
             //top row detail icons
             ExternalProviderStatusAndDetails.Visibility = Visibility.Collapsed;
 
-            IdentityMFA.IsOn = _identity.IsMFAEnabled;
             IdentityMFA.ToggleField.IsEnabled = true;
             IdentityMFA.ToggleField.Opacity = 1;
             IdServer.Value = _identity.ControllerUrl;
@@ -358,9 +357,17 @@ namespace ZitiDesktopEdge {
 
         public IdentityDetails() {
             InitializeComponent();
+            policyViewModel = (ManagedSettingsViewModel)Application.Current.Properties["ManagedSettingsViewModel"];
+        }
+
+        private void SetIdentityViewModel(string identifier) {
+            if (IdentityViewModel != null) {
+                IdentityViewModel.IdentityForgotten -= OnVmIdentityForgotten;
+                IdentityViewModel.RemoveFailed -= OnVmRemoveFailed;
+            }
+            IdentityViewModel = ((MainWindow)Application.Current.MainWindow).FindIdentityViewModel(identifier);
             DataContext = IdentityViewModel;
             ServiceList.ItemsSource = IdentityViewModel.Services;
-            policyViewModel = (ManagedSettingsViewModel)Application.Current.Properties["ManagedSettingsViewModel"];
             IdentityViewModel.IdentityForgotten += OnVmIdentityForgotten;
             IdentityViewModel.RemoveFailed += OnVmRemoveFailed;
         }
@@ -379,6 +386,7 @@ namespace ZitiDesktopEdge {
         }
 
         private void ToggleMFA(bool isOn) {
+            IdentityMFA.ToggleField.Enabled = _identity.IsMFAEnabled;
             if (_identity.IsConnected && _identity.NeedsExtAuth) {
                 return;
             }
@@ -530,7 +538,7 @@ namespace ZitiDesktopEdge {
 
         private void VisibilityChanged(object sender, DependencyPropertyChangedEventArgs e) {
             if (this.Visibility == Visibility.Collapsed) {
-                IdentityViewModel.Clear();
+                IdentityViewModel?.Clear();
             }
         }
 

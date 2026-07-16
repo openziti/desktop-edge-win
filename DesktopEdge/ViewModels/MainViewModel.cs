@@ -65,10 +65,34 @@ namespace ZitiDesktopEdge {
         }
 
         public void ClearIdentities() {
-            foreach (IdentityViewModel vm in IdentityViewModels) {
-                vm.StopTimers();
+            foreach (IdentityViewModel identityViewModel in IdentityViewModels) {
+                identityViewModel.StopTimers();
             }
             IdentityViewModels.Clear();
+        }
+
+        public bool AnyIdentityTimingOut() {
+            foreach (IdentityViewModel identityViewModel in IdentityViewModels) {
+                if (identityViewModel.Identity.IsTimingOut) return true;
+            }
+            return false;
+        }
+
+        public bool AnyIdentityTimedOut() {
+            foreach (IdentityViewModel identityViewModel in IdentityViewModels) {
+                if (identityViewModel.Identity.IsTimedOut) return true;
+            }
+            return false;
+        }
+
+        public void UpdateIdentity(Identity id) {
+            ZitiIdentity zid = ZitiIdentity.FromClient(id);
+            ZitiIdentity found = FindIdentity(id.Identifier);
+            if (found != null) {
+                RemoveIdentity(found);
+                zid.IsMFAEnabled = found.IsMFAEnabled;
+            }
+            AddIdentity(zid);
         }
 
         private bool _isServiceInError;
@@ -339,7 +363,8 @@ namespace ZitiDesktopEdge {
             return 4;
         }
 
-        public ZitiIdentity[] GetSortedIdentities(IEnumerable<ZitiIdentity> identities) {
+        public ZitiIdentity[] GetSortedIdentities() {
+            IEnumerable<ZitiIdentity> identities = IdentityViewModels.Select(identityViewModel => identityViewModel.Identity);
             bool descending = SortDirection == "Descending";
             IEnumerable<ZitiIdentity> sorted;
             switch (SortOption) {

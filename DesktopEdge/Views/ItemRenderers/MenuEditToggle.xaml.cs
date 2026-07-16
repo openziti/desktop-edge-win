@@ -56,13 +56,16 @@ namespace ZitiDesktopEdge {
                 this.MainLabel.Text = this._label;
             }
         }
+        public static readonly DependencyProperty IsOnProperty =
+            DependencyProperty.Register(nameof(IsOn), typeof(bool), typeof(MenuEditToggle), new PropertyMetadata(false, OnIsOnChanged));
+
         public bool IsOn {
-            get {
-                return ToggleField.Enabled;
-            }
-            set {
-                ToggleField.Enabled = value;
-            }
+            get { return (bool)GetValue(IsOnProperty); }
+            set { SetValue(IsOnProperty, value); }
+        }
+
+        private static void OnIsOnChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) {
+            ((MenuEditToggle)d).ToggleField.Enabled = (bool)e.NewValue;
         }
 
         public ZitiIdentity Identity {

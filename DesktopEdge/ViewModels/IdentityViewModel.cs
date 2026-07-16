@@ -98,6 +98,103 @@ namespace ZitiDesktopEdge {
             await _identity.PerformExternalAuthEvent((DataClient)Application.Current.Properties["ServiceClient"], provider);
         }
 
+        // Adds a service to the identity. Returns true when a failing MFA posture check means the
+        // caller should raise an MFA notification (kept in the view so the OS toast/throttle stays there).
+        public bool ApplyServiceAdded(Service added) {
+            ZitiService zs = new ZitiService(added);
+            ZitiService existing = _identity.Services.Find(s => s.Name == zs.Name);
+            if (existing != null) {
+                logger.Debug("the service named " + zs.Name + " is already accounted for on this identity.");
+                return false;
+            }
+            logger.Debug("Service Added: " + zs.Name);
+            _identity.Services.Add(zs);
+            if (!zs.HasFailingPostureCheck()) {
+                return false;
+            }
+            _identity.HasServiceFailingPostureCheck = true;
+            bool needsMfaNotification = false;
+            foreach (ZitiService service in _identity.Services) {
+                if (service != null && service.PostureChecks != null && service.PostureChecks.Any(p => !p.IsPassing && p.QueryType == "MFA")) {
+                    _identity.IsMFANeeded = true;
+                    needsMfaNotification = true;
+                }
+            }
+            return needsMfaNotification;
+        }
+
+        public void ApplyServiceRemoved(Service removed) {
+            logger.Debug("removing the service named: {0}", removed.Name);
+            _identity.Services.RemoveAll(s => s.Name == removed.Name);
+        }
+
+        public void ApplyIdentityUpdate(Identity id) {
+            ZitiIdentity zid = ZitiIdentity.FromClient(id);
+            if (!string.IsNullOrEmpty(zid.Name)) _identity.Name = zid.Name;
+            if (!string.IsNullOrEmpty(zid.ControllerUrl)) _identity.ControllerUrl = zid.ControllerUrl;
+            if (!string.IsNullOrEmpty(zid.ContollerVersion)) _identity.ContollerVersion = zid.ContollerVersion;
+            _identity.IsEnabled = zid.IsEnabled;
+            _identity.IsMFAEnabled = id.MfaEnabled;
+            _identity.IsConnected = true;
+            _identity.NeedsExtAuth = id.NeedsExtAuth;
+            _identity.ExtAuthProviders = id.ExtAuthProviders;
+        }
+
+        public void ApplyConnected(Identity id) {
+            _identity.IsConnected = true;
+            _identity.IsMFANeeded = id.MfaNeeded;
+            _identity.NeedsExtAuth = id.NeedsExtAuth;
+        }
+
+        public void ApplyDisconnected() {
+            _identity.IsConnected = false;
+        }
+
+        public void ApplyMfaVerified() {
+            _identity.WasNotified = false;
+            _identity.WasFullNotified = false;
+            _identity.IsMFANeeded = false;
+            _identity.IsMFAEnabled = true;
+            _identity.IsTimingOut = false;
+            _identity.LastUpdatedTime = DateTime.Now;
+            for (int j = 0; j < _identity.Services.Count; j++) {
+                _identity.Services[j].TimeUpdated = DateTime.Now;
+                _identity.Services[j].TimeoutRemaining = _identity.Services[j].Timeout;
+            }
+        }
+
+        public void ApplyMfaRemoved() {
+            _identity.WasNotified = false;
+            _identity.WasFullNotified = false;
+            _identity.IsMFAEnabled = false;
+            _identity.IsMFANeeded = false;
+            _identity.LastUpdatedTime = DateTime.Now;
+            _identity.IsTimingOut = false;
+            for (int j = 0; j < _identity.Services.Count; j++) {
+                _identity.Services[j].TimeUpdated = DateTime.Now;
+                _identity.Services[j].TimeoutRemaining = -1;
+            }
+        }
+
+        public void ApplyMfaChallenge() {
+            _identity.WasNotified = false;
+            _identity.WasFullNotified = false;
+            _identity.IsMFANeeded = true;
+            _identity.IsTimingOut = false;
+        }
+
+        public void ApplyMfaAuthStatus(bool successful) {
+            _identity.WasNotified = false;
+            _identity.WasFullNotified = false;
+            _identity.IsTimingOut = false;
+            _identity.IsMFANeeded = !successful;
+            _identity.LastUpdatedTime = DateTime.Now;
+            for (int j = 0; j < _identity.Services.Count; j++) {
+                _identity.Services[j].TimeUpdated = DateTime.Now;
+                _identity.Services[j].TimeoutRemaining = _identity.Services[j].Timeout;
+            }
+        }
+
         // ---- Row display state (bound by IdentityItem) ----
 
         public string Name => _identity.Name;
@@ -108,6 +205,7 @@ namespace ZitiDesktopEdge {
                 : _identity.ControllerUrl + " at " + _identity.ContollerVersion;
 
         public bool IsEnabled => _identity.IsEnabled;
+        public bool IsMFAEnabled => _identity.IsMFAEnabled;
         public string ToggleStatusText => _identity.IsEnabled ? "ENABLED" : "DISABLED";
         public string ServiceCountText => _identity.IsEnabled ? _identity.Services.Count.ToString() : "-";
 

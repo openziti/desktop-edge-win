@@ -111,12 +111,6 @@ namespace ZitiDesktopEdge {
             LoadIdentities(true);
         }
 
-        // Read-only snapshot of the identities behind the view models, for the read-only sites below.
-        private System.Collections.Generic.List<ZitiIdentity> identities {
-            get {
-                return _viewModel.IdentityViewModels.Select(vm => vm.Identity).ToList();
-            }
-        }
 
         /// <summary>
         /// The MFA Toggle was toggled
@@ -148,28 +142,17 @@ namespace ZitiDesktopEdge {
                     this.IdentityMenu.Identity.RecoveryCodes = mfa?.RecoveryCodes?.ToArray();
                     SetupMFA(this.IdentityMenu.Identity, url, secret);
                 } else if (mfa.Action == "auth_challenge") {
-                    ZitiIdentity found = _viewModel.FindIdentity(mfa.Identifier);
-                    if (found != null) {
-                        found.WasNotified = false;
-                        found.WasFullNotified = false;
-                        found.IsMFANeeded = true;
-                        found.IsTimingOut = false;
-                        QueueMfaNotification(found);
+                    IdentityViewModel identityViewModel = _viewModel.FindViewModel(mfa.Identifier);
+                    if (identityViewModel != null) {
+                        identityViewModel.ApplyMfaChallenge();
+                        QueueMfaNotification(identityViewModel.Identity);
                     }
                 } else if (mfa.Action == "enrollment_verification") {
                     if (mfa.Successful) {
-                        ZitiIdentity found = _viewModel.FindIdentity(mfa.Identifier);
-                        if (found != null) {
-                            found.WasNotified = false;
-                            found.WasFullNotified = false;
-                            found.IsMFANeeded = false;
-                            found.IsMFAEnabled = true;
-                            found.IsTimingOut = false;
-                            found.LastUpdatedTime = DateTime.Now;
-                            for (int j = 0; j < found.Services.Count; j++) {
-                                found.Services[j].TimeUpdated = DateTime.Now;
-                                found.Services[j].TimeoutRemaining = found.Services[j].Timeout;
-                            }
+                        IdentityViewModel identityViewModel = _viewModel.FindViewModel(mfa.Identifier);
+                        ZitiIdentity found = identityViewModel?.Identity;
+                        if (identityViewModel != null) {
+                            identityViewModel.ApplyMfaVerified();
                         }
                         if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Identifier == mfa.Identifier) this.IdentityMenu.Identity = found;
                         ShowMFARecoveryCodes(found);
@@ -178,18 +161,11 @@ namespace ZitiDesktopEdge {
                     }
                 } else if (mfa.Action == "enrollment_remove") {
                     if (mfa.Successful) {
-                        ZitiIdentity found = _viewModel.FindIdentity(mfa.Identifier);
-                        if (found != null) {
-                            found.WasNotified = false;
-                            found.WasFullNotified = false;
-                            found.IsMFAEnabled = false;
-                            found.IsMFANeeded = false;
-                            found.LastUpdatedTime = DateTime.Now;
-                            found.IsTimingOut = false;
-                            for (int j = 0; j < found.Services.Count; j++) {
-                                found.Services[j].TimeUpdated = DateTime.Now;
-                                found.Services[j].TimeoutRemaining = -1;
-                            }
+                        IdentityViewModel identityViewModel = _viewModel.FindViewModel(mfa.Identifier);
+                        ZitiIdentity found = identityViewModel?.Identity;
+                        if (identityViewModel != null) {
+                            identityViewModel.ApplyMfaRemoved();
+                            identityViewModel.Refresh();
                         }
                         if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Identifier == mfa.Identifier) this.IdentityMenu.Identity = found;
                         await ShowBlurbAsync("MFA disabled, access may be limited", "");
@@ -197,17 +173,10 @@ namespace ZitiDesktopEdge {
                         await ShowBlurbAsync("MFA Removal Failed", "");
                     }
                 } else if (mfa.Action == "mfa_auth_status") {
-                    ZitiIdentity found = _viewModel.FindIdentity(mfa.Identifier);
-                    if (found != null) {
-                        found.WasNotified = false;
-                        found.WasFullNotified = false;
-                        found.IsTimingOut = false;
-                        found.IsMFANeeded = !mfa.Successful;
-                        found.LastUpdatedTime = DateTime.Now;
-                        for (int j = 0; j < found.Services.Count; j++) {
-                            found.Services[j].TimeUpdated = DateTime.Now;
-                            found.Services[j].TimeoutRemaining = found.Services[j].Timeout;
-                        }
+                    IdentityViewModel identityViewModel = _viewModel.FindViewModel(mfa.Identifier);
+                    ZitiIdentity found = identityViewModel?.Identity;
+                    if (identityViewModel != null) {
+                        identityViewModel.ApplyMfaAuthStatus(mfa.Successful);
                     }
                     if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Identifier == mfa.Identifier) this.IdentityMenu.Identity = found;
                     if (mfa.Successful) {
@@ -499,11 +468,9 @@ namespace ZitiDesktopEdge {
                         string[] values = items[0].Split('=');
                         if (values.Length == 2) {
                             string identifier = values[1];
-                            for (int i = 0; i < identities.Count; i++) {
-                                if (identities[i].Identifier == identifier) {
-                                    ShowMFA(identities[i], 1);
-                                    break;
-                                }
+                            ZitiIdentity found = _viewModel.FindIdentity(identifier);
+                            if (found != null) {
+                                ShowMFA(found, 1);
                             }
                         }
                     }
@@ -983,29 +950,30 @@ namespace ZitiDesktopEdge {
         }
 
         private void ServiceClient_OnBulkServiceEvent(object sender, BulkServiceEvent e) {
-            ZitiIdentity found = _viewModel.FindIdentity(e.Identifier);
-            if (found == null) {
+            IdentityViewModel identityViewModel = _viewModel.FindViewModel(e.Identifier);
+            if (identityViewModel == null) {
                 logger.Warn($"{e.Action} service event for {e.Identifier} but the provided identity identifier was not found!");
                 return;
-            } else {
-                if (e.RemovedServices != null) {
-                    foreach (Service removed in e.RemovedServices) {
-                        removeService(found, removed);
-                    }
-                }
-                if (e.AddedServices != null) {
-                    foreach (Service added in e.AddedServices) {
-                        addService(found, added);
-                    }
-                }
-                LoadIdentities(true);
-                this.Dispatcher.Invoke(() => {
-                    IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
-                    if (deets.IsVisible) {
-                        deets.UpdateView();
-                    }
-                });
             }
+            if (e.RemovedServices != null) {
+                foreach (Service removed in e.RemovedServices) {
+                    identityViewModel.ApplyServiceRemoved(removed);
+                }
+            }
+            bool needsMfaNotification = false;
+            if (e.AddedServices != null) {
+                foreach (Service added in e.AddedServices) {
+                    if (identityViewModel.ApplyServiceAdded(added)) needsMfaNotification = true;
+                }
+            }
+            if (needsMfaNotification) QueueMfaNotification(identityViewModel.Identity);
+            LoadIdentities(true);
+            this.Dispatcher.Invoke(() => {
+                IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
+                if (deets.IsVisible) {
+                    deets.UpdateView();
+                }
+            });
         }
 
         private void ServiceClient_OnNotificationEvent(object sender, NotificationEvent e) {
@@ -1549,7 +1517,8 @@ namespace ZitiDesktopEdge {
 
             this.Dispatcher.Invoke(async () => {
                 if (e.Action == "added" || e.Action == "needs_ext_login") {
-                    ZitiIdentity found = _viewModel.FindIdentity(e.Id.Identifier);
+                    IdentityViewModel identityViewModel = _viewModel.FindViewModel(e.Id.Identifier);
+                    ZitiIdentity found = identityViewModel?.Identity;
                     if (found == null) {
                         zid.IsMFAEnabled = false; // this is an added identity, it cannot have mfa enabled yet
                         AddIdentity(zid);
@@ -1586,45 +1555,36 @@ namespace ZitiDesktopEdge {
                             }
                             found.NeedsExtAuth = e.Id.NeedsExtAuth;
                         }
-                        if (zid.Name != null && zid.Name.Length > 0) found.Name = zid.Name;
-                        if (zid.ControllerUrl != null && zid.ControllerUrl.Length > 0) found.ControllerUrl = zid.ControllerUrl;
-                        if (zid.ContollerVersion != null && zid.ContollerVersion.Length > 0) found.ContollerVersion = zid.ContollerVersion;
-                        found.IsEnabled = zid.IsEnabled;
-                        found.IsMFAEnabled = e.Id.MfaEnabled;
-                        found.IsConnected = true;
-                        found.NeedsExtAuth = e.Id.NeedsExtAuth;
-                        found.ExtAuthProviders = e.Id.ExtAuthProviders;
+                        identityViewModel.ApplyIdentityUpdate(e.Id);
                         if (!found.NeedsExtAuth) {
                             _notificationThrottle.Remove(found.Identifier);
                         }
                         LoadIdentities(true);
                     }
                 } else if (e.Action == "updated") {
-                    // Reflect ZET's authoritative MFA state. The OnMfaEvent hand-set only adds immediacy;
-                    // this clears any stale flags (e.g. after a failed disable) since the wire is the source of truth.
-                    ZitiIdentity found = _viewModel.FindIdentity(e.Id.Identifier);
-                    if (found != null) {
-                        found.IsMFAEnabled = e.Id.MfaEnabled;
-                        found.IsMFANeeded = e.Id.MfaNeeded;
+                    IdentityViewModel identityViewModel = _viewModel.FindViewModel(e.Id.Identifier);
+                    if (identityViewModel != null) {
+                        identityViewModel.Identity.IsMFAEnabled = e.Id.MfaEnabled;
+                        identityViewModel.Identity.IsMFANeeded = e.Id.MfaNeeded;
+                        identityViewModel.Refresh();
                     }
                     //this indicates that all updates have been sent to the UI... wait for 2 seconds then trigger any ui updates needed
                     await Task.Delay(2000);
                     LoadIdentities(true);
                 } else if (e.Action == "connected") {
-                    ZitiIdentity found = _viewModel.FindIdentity(e.Id.Identifier);
-                    found.IsConnected = true;
-                    found.IsMFANeeded = e.Id.MfaNeeded;
-                    found.NeedsExtAuth = e.Id.NeedsExtAuth;
-                    if (found.IsMFANeeded) {
-                        QueueMfaNotification(found);
-                    }
-                    if (found.NeedsExtAuth) {
-                        QueueExtAuthNotification(found);
+                    IdentityViewModel identityViewModel = _viewModel.FindViewModel(e.Id.Identifier);
+                    if (identityViewModel != null) {
+                        identityViewModel.ApplyConnected(e.Id);
+                        if (identityViewModel.Identity.IsMFANeeded) {
+                            QueueMfaNotification(identityViewModel.Identity);
+                        }
+                        if (identityViewModel.Identity.NeedsExtAuth) {
+                            QueueExtAuthNotification(identityViewModel.Identity);
+                        }
                     }
                     LoadIdentities(true);
                 } else if (e.Action == "disconnected") {
-                    ZitiIdentity found = _viewModel.FindIdentity(e.Id.Identifier);
-                    found.IsConnected = false;
+                    _viewModel.FindViewModel(e.Id.Identifier)?.ApplyDisconnected();
                     LoadIdentities(true);
                 } else {
                     logger.Warn("unexpected action received: {}", e.Action);
@@ -1638,16 +1598,16 @@ namespace ZitiDesktopEdge {
             if (e == null) return;
 
             logger.Debug($"==== ServiceEvent : action:{e.Action} identifier:{e.Identifier} name:{e.Service.Name} ");
-            ZitiIdentity found = _viewModel.FindIdentity(e.Identifier);
-            if (found == null) {
+            IdentityViewModel identityViewModel = _viewModel.FindViewModel(e.Identifier);
+            if (identityViewModel == null) {
                 logger.Debug($"{e.Action} service event for {e.Service.Name} but the provided identity identifier {e.Identifier} is not found!");
                 return;
             }
 
             if (e.Action == "added") {
-                addService(found, e.Service);
+                if (identityViewModel.ApplyServiceAdded(e.Service)) QueueMfaNotification(identityViewModel.Identity);
             } else {
-                removeService(found, e.Service);
+                identityViewModel.ApplyServiceRemoved(e.Service);
             }
             LoadIdentities(true);
             this.Dispatcher.Invoke(() => {
@@ -1656,33 +1616,6 @@ namespace ZitiDesktopEdge {
                     deets.UpdateView();
                 }
             });
-        }
-
-        private void addService(ZitiIdentity found, Service added) {
-            ZitiService zs = new ZitiService(added);
-            var svc = found.Services.Find(s => s.Name == zs.Name);
-            if (svc == null) {
-                logger.Debug("Service Added: " + zs.Name);
-                found.Services.Add(zs);
-
-                if (zs.HasFailingPostureCheck()) {
-                    found.HasServiceFailingPostureCheck = true;
-
-                    foreach (var service in found.Services) {
-                        if (service != null && service.PostureChecks != null && service.PostureChecks.Any(p => !p.IsPassing && p.QueryType == "MFA")) {
-                            found.IsMFANeeded = true;
-                            QueueMfaNotification(found);
-                        }
-                    }
-                }
-            } else {
-                logger.Debug("the service named " + zs.Name + " is already accounted for on this identity.");
-            }
-        }
-
-        private void removeService(ZitiIdentity found, Service removed) {
-            logger.Debug("removing the service named: {0}", removed.Name);
-            found.Services.RemoveAll(s => s.Name == removed.Name);
         }
 
         private void ServiceClient_OnTunnelStatusEvent(object sender, TunnelStatusEvent e) {
@@ -1704,7 +1637,7 @@ namespace ZitiDesktopEdge {
                 InitializeTimer((int)e.Status.Duration);
                 LoadStatusFromService(e.Status);
                 LoadIdentities(true);
-                GetStartedScreen.GetStartedViewModel.UpdateForState(serviceClient.Connected, identities.Count);
+                GetStartedScreen.GetStartedViewModel.UpdateForState(serviceClient.Connected, _viewModel.IdentityViewModels.Count);
                 IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
                 if (deets.IsVisible) {
                     deets.UpdateView();
@@ -1792,10 +1725,11 @@ namespace ZitiDesktopEdge {
                     Application.Current.Properties["PcapInterface"] = status?.PcapInterface;
                 }
                 
-                foreach (var id in status.Identities) {
-                    updateViewWithIdentity(id);
+                foreach (Identity id in status.Identities) {
+                    _viewModel.UpdateIdentity(id);
                 }
-                foreach (var zid in identities) {
+                foreach (IdentityViewModel identityViewModel in _viewModel.IdentityViewModels) {
+                    ZitiIdentity zid = identityViewModel.Identity;
                     if (!zid.IsEnabled) continue;
                     if (zid.NeedsExtAuth) {
                         QueueExtAuthNotification(zid);
@@ -1809,30 +1743,8 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        private void updateViewWithIdentity(Identity id) {
-            ZitiIdentity zid = ZitiIdentity.FromClient(id);
-            ZitiIdentity found = _viewModel.FindIdentity(id.Identifier);
-            if (found != null) {
-                _viewModel.RemoveIdentity(found);
-                zid.IsMFAEnabled = found.IsMFAEnabled;
-            }
-            _viewModel.AddIdentity(zid);
-        }
-
-        private bool IsTimingOut() {
-            if (identities != null) {
-                for (int i = 0; i < identities.Count; i++) {
-                    if (identities[i].IsTimingOut) return true;
-                }
-            }
-            return false;
-        }
-
-        private bool IsTimedOut() {
-            if (identities != null) {
-                return identities.Any(i => i.IsTimedOut);
-            }
-            return false;
+        internal IdentityViewModel FindIdentityViewModel(string identifier) {
+            return _viewModel.FindViewModel(identifier);
         }
 
         internal void RefreshNotifyIcon() {
@@ -1846,10 +1758,10 @@ namespace ZitiDesktopEdge {
             if (state.UpdateAvailable && !state.AutomaticUpdatesDisabled) {
                 icon += "-update";
             } else {
-                if (IsTimedOut()) {
+                if (_viewModel.AnyIdentityTimedOut()) {
                     icon += "-mfa";
                 } else {
-                    if (IsTimingOut()) {
+                    if (_viewModel.AnyIdentityTimingOut()) {
                         icon += "-timer";
                     }
                 }
@@ -1866,16 +1778,12 @@ namespace ZitiDesktopEdge {
             LoadIdentities(true);
         }
 
-        private ZitiIdentity[] GetSortedIdentities() {
-            return _viewModel.GetSortedIdentities(identities);
-        }
-
         private void LoadIdentities(Boolean repaint) {
             this.Dispatcher.Invoke(() => {
                 int previousIdentityCount = _viewModel.IdentityViewModels.Count;
                 // re-render each row from its identity's current state (bindings update; no rebuild)
-                foreach (IdentityViewModel vm in _viewModel.IdentityViewModels) {
-                    vm.Refresh();
+                foreach (IdentityViewModel identityViewModel in _viewModel.IdentityViewModels) {
+                    identityViewModel.Refresh();
                 }
                 Rect desktopWorkingArea = SystemParameters.WorkArea;
                 if (_maxHeight > (desktopWorkingArea.Height - 10)) {
@@ -1885,11 +1793,11 @@ namespace ZitiDesktopEdge {
                     _maxHeight = 100;
                 }
                 IdList.MaxHeight = _maxHeight - 480;
-                ZitiIdentity[] ids = GetSortedIdentities();
+                ZitiIdentity[] ids = _viewModel.GetSortedIdentities();
                 // put the rows in sorted order (the ItemsControl shows them in collection order)
                 for (int i = 0; i < ids.Length; i++) {
-                    IdentityViewModel vm = _viewModel.FindViewModel(ids[i].Identifier);
-                    int current = _viewModel.IdentityViewModels.IndexOf(vm);
+                    IdentityViewModel identityViewModel = _viewModel.FindViewModel(ids[i].Identifier);
+                    int current = _viewModel.IdentityViewModels.IndexOf(identityViewModel);
                     if (current != i) _viewModel.IdentityViewModels.Move(current, i);
                 }
                 _viewModel.IdentityCount = ids.Length;
@@ -2230,16 +2138,6 @@ namespace ZitiDesktopEdge {
 				this.Visibility = Visibility.Collapsed;
 #endif
             }
-        }
-
-        int cur = 0;
-        LogLevelEnum[] levels = new LogLevelEnum[] { LogLevelEnum.FATAL, LogLevelEnum.ERROR, LogLevelEnum.WARN, LogLevelEnum.INFO, LogLevelEnum.DEBUG, LogLevelEnum.TRACE, LogLevelEnum.VERBOSE };
-        public LogLevelEnum NextLevel() {
-            cur++;
-            if (cur > 6) {
-                cur = 0;
-            }
-            return levels[cur];
         }
 
         private void IdList_LayoutUpdated(object sender, EventArgs e) {
