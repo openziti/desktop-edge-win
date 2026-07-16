@@ -319,8 +319,19 @@
                               VerticalScrollBarVisibility="Auto" FocusVisualStyle="{x:Null}" CanContentScroll="True"
                               ClipToBounds="True" PanningMode="VerticalOnly" PanningRatio=".1" Grid.Row="1"
                               utils:WheelScroll.ByItem="True">
-                    <StackPanel Name="IdList" Orientation="Vertical" IsItemsHost="False"
-                                LayoutUpdated="IdList_LayoutUpdated" FocusVisualStyle="{x:Null}"/>
+                    <ItemsControl Name="IdList" ItemsSource="{Binding IdentityViewModels}"
+                                  LayoutUpdated="IdList_LayoutUpdated" FocusVisualStyle="{x:Null}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Vertical"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <local:IdentityItem/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </ScrollViewer>
             </Grid>
             <Border x:Name="AlternateTunnelFooter"

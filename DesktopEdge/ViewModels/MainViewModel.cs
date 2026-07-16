@@ -34,25 +34,41 @@ namespace ZitiDesktopEdge {
         private bool _isConnected;
         private int _identityCount;
 
-        public ObservableCollection<ZitiIdentity> Identities { get; } = new ObservableCollection<ZitiIdentity>();
+        // The only identity collection: one persistent view model per identity, bound by the list.
+        public ObservableCollection<IdentityViewModel> IdentityViewModels { get; } = new ObservableCollection<IdentityViewModel>();
+
+        public IdentityViewModel FindViewModel(string identifier) {
+            for (int i = 0; i < IdentityViewModels.Count; i++) {
+                if (IdentityViewModels[i].Identity.Identifier == identifier) return IdentityViewModels[i];
+            }
+            return null;
+        }
 
         public ZitiIdentity FindIdentity(string identifier) {
-            return Identities.FirstOrDefault(i => i.Identifier == identifier);
+            return FindViewModel(identifier)?.Identity;
         }
 
         public void AddIdentity(ZitiIdentity identity) {
-            if (FindIdentity(identity.Identifier) == null) {
-                Identities.Add(identity);
+            if (FindViewModel(identity.Identifier) == null) {
+                IdentityViewModels.Add(new IdentityViewModel(identity));
             }
         }
 
         public void RemoveIdentity(ZitiIdentity identity) {
-            for (int i = 0; i < Identities.Count; i++) {
-                if (Identities[i].Identifier == identity.Identifier) {
-                    Identities.RemoveAt(i);
+            for (int i = 0; i < IdentityViewModels.Count; i++) {
+                if (IdentityViewModels[i].Identity.Identifier == identity.Identifier) {
+                    IdentityViewModels[i].StopTimers();
+                    IdentityViewModels.RemoveAt(i);
                     return;
                 }
             }
+        }
+
+        public void ClearIdentities() {
+            foreach (IdentityViewModel vm in IdentityViewModels) {
+                vm.StopTimers();
+            }
+            IdentityViewModels.Clear();
         }
 
         private bool _isServiceInError;

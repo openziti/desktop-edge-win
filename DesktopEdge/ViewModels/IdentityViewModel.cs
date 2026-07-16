@@ -364,16 +364,7 @@ namespace ZitiDesktopEdge {
             DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
             try {
                 await client.RemoveIdentityAsync(_identity.Identifier);
-                ObservableCollection<ZitiIdentity> ids = (ObservableCollection<ZitiIdentity>)Application.Current.Properties["Identities"];
-                ZitiIdentity forgotten = new ZitiIdentity();
-                foreach (ZitiIdentity id in ids) {
-                    if (id.Identifier == _identity.Identifier) {
-                        forgotten = id;
-                        ids.Remove(id);
-                        break;
-                    }
-                }
-                IdentityForgotten?.Invoke(forgotten);
+                IdentityForgotten?.Invoke(_identity);
             } catch (ServiceException se) {
                 logger.Error(se, se.Message);
                 RemoveFailed?.Invoke(se.Message);

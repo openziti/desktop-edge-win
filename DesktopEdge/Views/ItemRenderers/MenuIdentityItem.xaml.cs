@@ -14,22 +14,11 @@
 	limitations under the License.
 */
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.DataStructures;
-using ZitiDesktopEdge.ServiceClient;
 using Ziti.Desktop.Edge.Utils;
 
 namespace ZitiDesktopEdge {
@@ -38,39 +27,36 @@ namespace ZitiDesktopEdge {
     /// </summary>
     public partial class MenuIdentityItem : UserControl {
 
-        private string _label = "";
-        private ZitiIdentity _identity;
-
-        public string Label {
-            get {
-                return _label;
-            }
-            set {
-                this._label = value;
-                MainLabel.Text = this._label;
-            }
-        }
-
-        public ZitiIdentity Identity {
-            get {
-                return _identity;
-            }
-            set {
-                _identity = value;
-            }
-        }
+        private IdentityViewModel IdentityViewModel => DataContext as IdentityViewModel;
+        public ZitiIdentity Identity => IdentityViewModel?.Identity;
 
         public MenuIdentityItem() {
             InitializeComponent();
             ToggleSwitch.OnToggled += ToggleIdentity;
+            DataContextChanged += OnDataContextChanged;
+        }
+
+        private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e) {
+            IdentityViewModel oldViewModel = e.OldValue as IdentityViewModel;
+            if (oldViewModel != null) {
+                oldViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            }
+            IdentityViewModel newViewModel = e.NewValue as IdentityViewModel;
+            if (newViewModel != null) {
+                newViewModel.PropertyChanged += OnViewModelPropertyChanged;
+                ToggleSwitch.Enabled = newViewModel.Identity.IsEnabled;
+            }
+        }
+
+        // Toggler.Enabled is not bindable, so keep it in step with the VM whenever it re-renders.
+        private void OnViewModelPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e) {
+            if (IdentityViewModel != null) ToggleSwitch.Enabled = IdentityViewModel.Identity.IsEnabled;
         }
 
         async private void ToggleIdentity(bool on) {
             try {
-                DataClient client = (DataClient)Application.Current.Properties["ServiceClient"];
-                DataStructures.Identity id = await client.IdentityOnOffAsync(_identity.Identifier, on);
-                this.Identity.IsEnabled = on;
-            } catch (DataStructures.ServiceException se) {
+                await IdentityViewModel.SetEnabledAsync(on);
+            } catch (ServiceException se) {
                 MessageBox.Show(se.AdditionalInfo, se.Message);
             } catch (Exception ex) {
                 MessageBox.Show("Error", ex.Message);

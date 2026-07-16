@@ -111,9 +111,10 @@ namespace ZitiDesktopEdge {
             LoadIdentities(true);
         }
 
-        private ObservableCollection<ZitiIdentity> identities {
+        // Read-only snapshot of the identities behind the view models, for the read-only sites below.
+        private System.Collections.Generic.List<ZitiIdentity> identities {
             get {
-                return _viewModel.Identities;
+                return _viewModel.IdentityViewModels.Select(vm => vm.Identity).ToList();
             }
         }
 
@@ -187,7 +188,7 @@ namespace ZitiDesktopEdge {
                             found.IsTimingOut = false;
                             for (int j = 0; j < found.Services.Count; j++) {
                                 found.Services[j].TimeUpdated = DateTime.Now;
-                                found.Services[j].TimeoutRemaining = 0;
+                                found.Services[j].TimeoutRemaining = -1;
                             }
                         }
                         if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Identifier == mfa.Identifier) this.IdentityMenu.Identity = found;
@@ -929,7 +930,6 @@ namespace ZitiDesktopEdge {
             monitorClient.OnReconnectFailure += MonitorClient_OnReconnectFailure;
             Application.Current.Properties.Add("MonitorClient", monitorClient);
 
-            Application.Current.Properties["Identities"] = _viewModel.Identities;
             MainMenu.OnAttachmentChange += AttachmentChanged;
             MainMenu.OnLogLevelChanged += LogLevelChanged;
             MainMenu.OnShowBlurb += MainMenu_OnShowBlurb;
@@ -1494,12 +1494,7 @@ namespace ZitiDesktopEdge {
             HideModal();
             MainMenu.Disconnected();
 
-            for (int i = 0; i < IdList.Children.Count; i++) {
-                IdentityItem item = (IdentityItem)IdList.Children[i];
-                item.StopTimers();
-            }
-            IdList.Children.Clear();
-            identities.Clear();
+            _viewModel.ClearIdentities();
 
             StopTunnelUptimeTimer();
             _startDate = default(DateTime);
@@ -1605,6 +1600,13 @@ namespace ZitiDesktopEdge {
                         LoadIdentities(true);
                     }
                 } else if (e.Action == "updated") {
+                    // Reflect ZET's authoritative MFA state. The OnMfaEvent hand-set only adds immediacy;
+                    // this clears any stale flags (e.g. after a failed disable) since the wire is the source of truth.
+                    ZitiIdentity found = _viewModel.FindIdentity(e.Id.Identifier);
+                    if (found != null) {
+                        found.IsMFAEnabled = e.Id.MfaEnabled;
+                        found.IsMFANeeded = e.Id.MfaNeeded;
+                    }
                     //this indicates that all updates have been sent to the UI... wait for 2 seconds then trigger any ui updates needed
                     await Task.Delay(2000);
                     LoadIdentities(true);
@@ -1870,13 +1872,12 @@ namespace ZitiDesktopEdge {
 
         private void LoadIdentities(Boolean repaint) {
             this.Dispatcher.Invoke(() => {
-                for (int i = 0; i < IdList.Children.Count; i++) {
-                    IdentityItem item = (IdentityItem)IdList.Children[i];
-                    item.StopTimers();
+                int previousIdentityCount = _viewModel.IdentityViewModels.Count;
+                // re-render each row from its identity's current state (bindings update; no rebuild)
+                foreach (IdentityViewModel vm in _viewModel.IdentityViewModels) {
+                    vm.Refresh();
                 }
-                int previousIdentityCount = IdList.Children.Count;
-                IdList.Children.Clear();
-                var desktopWorkingArea = SystemParameters.WorkArea;
+                Rect desktopWorkingArea = SystemParameters.WorkArea;
                 if (_maxHeight > (desktopWorkingArea.Height - 10)) {
                     _maxHeight = desktopWorkingArea.Height - 10;
                 }
@@ -1885,7 +1886,12 @@ namespace ZitiDesktopEdge {
                 }
                 IdList.MaxHeight = _maxHeight - 480;
                 ZitiIdentity[] ids = GetSortedIdentities();
-                MainMenu.SetupIdList(ids);
+                // put the rows in sorted order (the ItemsControl shows them in collection order)
+                for (int i = 0; i < ids.Length; i++) {
+                    IdentityViewModel vm = _viewModel.FindViewModel(ids[i].Identifier);
+                    int current = _viewModel.IdentityViewModels.IndexOf(vm);
+                    if (current != i) _viewModel.IdentityViewModels.Move(current, i);
+                }
                 _viewModel.IdentityCount = ids.Length;
                 MainMenu.ShowWelcomeButton.Visibility = ids.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
                 tray.RebuildIdentities(ids);
@@ -1899,18 +1905,8 @@ namespace ZitiDesktopEdge {
                     }
                     this.Height = height;
                     MainMenu.IdentitiesButton.Visibility = Visibility.Visible;
-                    foreach (ZitiIdentity id in ids) {
-                        IdentityItem idItem = new IdentityItem();
-                        idItem.ShowError = ShowError;
-
-                        idItem.AuthenticateTOTP += IdItem_Authenticate;
-                        idItem.EnableMFARequested += IdItem_EnableMFA;
-                        idItem.Identity = id;
-                        idItem.IdentityChanged += IdItem_IdentityChanged;
-
-                        IdList.Children.Add(idItem);
-
-                        if (IdentityMenu.Visibility == Visibility.Visible) {
+                    if (IdentityMenu.Visibility == Visibility.Visible) {
+                        foreach (ZitiIdentity id in ids) {
                             if (id.Identifier == IdentityMenu.Identity.Identifier) IdentityMenu.Identity = id;
                         }
                     }
@@ -1933,15 +1929,7 @@ namespace ZitiDesktopEdge {
             });
         }
 
-        private void IdItem_IdentityChanged(ZitiIdentity identity) {
-            SetNotifyIcon("");
-        }
-
-        private void IdItem_Authenticate(ZitiIdentity identity) {
-            ShowAuthenticate(identity);
-        }
-
-        private async void IdItem_EnableMFA(ZitiIdentity identity) {
+        internal async void IdItem_EnableMFA(ZitiIdentity identity) {
             if (!identity.IsEnabled) {
                 await ShowBlurbAsync("Identity disabled, MFA cannot continue.", "");
                 return;
@@ -2343,7 +2331,7 @@ namespace ZitiDesktopEdge {
             HideBlurb();
         }
 
-        private void ShowAuthenticate(ZitiIdentity identity) {
+        internal void ShowAuthenticate(ZitiIdentity identity) {
             MFAAuthenticate(identity);
         }
 

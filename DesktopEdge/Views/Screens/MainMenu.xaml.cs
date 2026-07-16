@@ -665,18 +665,6 @@ namespace ZitiDesktopEdge {
             ForceUpdate.Content = deferred ? "Update on Restart" : "Update Now";
         }
 
-        public void SetupIdList(ZitiIdentity[] ids) {
-            IdListView.Children.Clear();
-            for (int i = 0; i < ids.Length; i++) {
-                MenuIdentityItem item = new MenuIdentityItem();
-                item.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
-                item.Label = ids[i].Name;
-                item.Identity = ids[i];
-                item.ToggleSwitch.Enabled = ids[i].IsEnabled;
-                IdListView.Children.Add(item);
-            }
-        }
-
         public void SetAppUpgradeAvailableText(string msg) {
             this.Dispatcher.Invoke(() => {
                 VersionOlder.Content = msg;

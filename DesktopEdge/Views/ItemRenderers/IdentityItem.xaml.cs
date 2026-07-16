@@ -39,45 +39,37 @@ namespace ZitiDesktopEdge {
     public partial class IdentityItem : System.Windows.Controls.UserControl {
 
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
-        public delegate void OnAuthenticate(ZitiIdentity identity);
-        public event OnAuthenticate AuthenticateTOTP;
-        public delegate void OnEnableMFA(ZitiIdentity identity);
-        public event OnEnableMFA EnableMFARequested;
-        public delegate void OnIdentityChanged(ZitiIdentity identity);
-        public event OnIdentityChanged IdentityChanged;
+        private MainWindow MainWindow => (MainWindow)Application.Current.MainWindow;
+        private IdentityViewModel IdentityViewModel => DataContext as IdentityViewModel;
+        public ZitiIdentity Identity => IdentityViewModel?.Identity;
 
-        public Action<string, string> ShowError;
-
-        public ZitiIdentity _identity;
-        public IdentityViewModel IdentityViewModel { get; private set; }
-        public ZitiIdentity Identity {
-            get {
-                return _identity;
-            }
-            set {
-                _identity = value;
-                if (IdentityViewModel != null) IdentityViewModel.IdentityChanged -= OnViewModelIdentityChanged;
-                IdentityViewModel = new IdentityViewModel(value);
-                IdentityViewModel.IdentityChanged += OnViewModelIdentityChanged;
-                DataContext = IdentityViewModel;
-                ToggleSwitch.Enabled = value.IsEnabled;
-            }
-        }
-
-        private void OnViewModelIdentityChanged(ZitiIdentity id) {
-            IdentityChanged?.Invoke(id);
-        }
-
-        /// <summary>
-        /// Object constructor, setup the events for the control
-        /// </summary>
         public IdentityItem() {
             InitializeComponent();
             ToggleSwitch.OnToggled += ToggleIdentity;
+            DataContextChanged += OnDataContextChanged;
         }
 
-        public void StopTimers() {
-            IdentityViewModel?.StopTimers();
+        private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e) {
+            IdentityViewModel oldViewModel = e.OldValue as IdentityViewModel;
+            if (oldViewModel != null) {
+                oldViewModel.IdentityChanged -= OnViewModelIdentityChanged;
+                oldViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            }
+            IdentityViewModel newViewModel = e.NewValue as IdentityViewModel;
+            if (newViewModel != null) {
+                newViewModel.IdentityChanged += OnViewModelIdentityChanged;
+                newViewModel.PropertyChanged += OnViewModelPropertyChanged;
+                ToggleSwitch.Enabled = newViewModel.Identity.IsEnabled;
+            }
+        }
+
+        // Toggler.Enabled is not bindable, so keep it in step with the VM whenever it re-renders.
+        private void OnViewModelPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e) {
+            if (IdentityViewModel != null) ToggleSwitch.Enabled = IdentityViewModel.Identity.IsEnabled;
+        }
+
+        private void OnViewModelIdentityChanged(ZitiIdentity id) {
+            MainWindow.RefreshNotifyIcon();
         }
 
         async private void ToggleIdentity(bool on) {
@@ -108,7 +100,7 @@ namespace ZitiDesktopEdge {
 
         private void MFAAuthenticate(object sender, System.Windows.Input.MouseButtonEventArgs e) {
             if (Identity.IsEnabled) {
-                this.AuthenticateTOTP?.Invoke(_identity);
+                MainWindow.ShowAuthenticate(Identity);
             }
         }
 
@@ -123,10 +115,10 @@ namespace ZitiDesktopEdge {
                 MFAAuthenticate(sender, e);
             } else if (ExtAuthRequired.Visibility == Visibility.Visible) {
                 ShowExtAuthList(sender, e);
-            } else if (_identity.IsEnabled && _identity.IsMFANeeded && !_identity.IsMFAEnabled) {
+            } else if (Identity.IsEnabled && Identity.IsMFANeeded && !Identity.IsMFAEnabled) {
                 // "enable mfa" bubble: open details so the enrollment callback targets this identity, then start enrollment.
                 OpenDetails(sender, e);
-                EnableMFARequested?.Invoke(_identity);
+                MainWindow.IdItem_EnableMFA(Identity);
             } else {
                 OpenDetails(sender, e);
             }
@@ -137,43 +129,43 @@ namespace ZitiDesktopEdge {
                 await IdentityViewModel.CompleteExternalAuthAsync(provider);
             } catch (Exception ex) {
                 logger.Error("external auth failed: [{}]", ex.Message);
-                ShowError("Failed to Authenticate", ex.Message);
+                MainWindow.ShowError("Failed to Authenticate", ex.Message);
             }
         }
 
         private async void CompleteDefaultExtAuth(object sender, System.Windows.Input.MouseButtonEventArgs e) {
             try {
-                if(!_identity.NeedsExtAuth) {
+                if(!Identity.NeedsExtAuth) {
                     return;
                 }
-                if (_identity?.ExtAuthProviders?.Count > 0) {
+                if (Identity?.ExtAuthProviders?.Count > 0) {
                     try {
-                        string defaultProvider = _identity.GetDefaultProviderId();
+                        string defaultProvider = Identity.GetDefaultProviderId();
                         await IdentityViewModel.CompleteExternalAuthAsync(defaultProvider);
                     } catch (Exception ex) {
-                        ShowError("Unexpected Error", "Please report this issue: " + ex.Message);
+                        MainWindow.ShowError("Unexpected Error", "Please report this issue: " + ex.Message);
                         logger.Error("external auth failed: [{}]", ex.Message);
                     }
                 } else {
-                    ShowError("Failed to Authenticate", "No external providers found! This is a configuration error. Inform your network administrator.");
+                    MainWindow.ShowError("Failed to Authenticate", "No external providers found! This is a configuration error. Inform your network administrator.");
                 }
             } catch (Exception ex) {
                 logger.Error("unexpected error!", ex);
-                ShowError("UNEXPECTED ERROR", "Please report this issue: " + ex.Message);
-                _identity.AuthInProgress = false;
+                MainWindow.ShowError("UNEXPECTED ERROR", "Please report this issue: " + ex.Message);
+                Identity.AuthInProgress = false;
             }
         }
 
         private void ShowExtAuthList(object sender, System.Windows.Input.MouseEventArgs e) {
-            if (!_identity.NeedsExtAuth) {
+            if (!Identity.NeedsExtAuth) {
                 return;
             }
             IconContext.IsEnabled = false;
             IconContext.Visibility = Visibility.Collapsed;
-            string defaultProvider = _identity.GetDefaultProvider();
+            string defaultProvider = Identity.GetDefaultProvider();
             var fe = sender as FrameworkElement;
             if (fe?.ContextMenu != null && defaultProvider == null) {
-                if (_identity?.ExtAuthProviders?.Count > 1) {
+                if (Identity?.ExtAuthProviders?.Count > 1) {
                     IconContext.IsEnabled = true;
                     IconContext.Visibility = Visibility.Visible;
 
@@ -181,8 +173,8 @@ namespace ZitiDesktopEdge {
                     contextMenu.Items.Clear();
 
                     // Add menu items dynamically
-                    _identity.ExtAuthProviders.Sort();
-                    foreach (var provider in _identity.ExtAuthProviders) {
+                    Identity.ExtAuthProviders.Sort();
+                    foreach (var provider in Identity.ExtAuthProviders) {
                         var menuItem = new MenuItem();
                         menuItem.Click += (s, mouseEventArgs) => {
                             CompleteExtAuth(provider);
@@ -193,8 +185,8 @@ namespace ZitiDesktopEdge {
                         menuItem.Template = controlTemplate;
                         contextMenu.Items.Add(menuItem);
                     }
-                } else if (_identity?.ExtAuthProviders?.Count == 1) {
-                    CompleteExtAuth(_identity?.ExtAuthProviders[0]);
+                } else if (Identity?.ExtAuthProviders?.Count == 1) {
+                    CompleteExtAuth(Identity?.ExtAuthProviders[0]);
                 } else {
                     CompleteExtAuth(null);
                 }
