@@ -210,6 +210,7 @@
     <Compile Include="Utils\WheelScroll.cs" />
     <Compile Include="ServiceClientEventHandlers.cs" />
     <Compile Include="MonitorClientEventHandlers.cs" />
+    <Compile Include="NotificationService.cs" />
     <Compile Include="Views\ItemRenderers\MenuEditItem.xaml.cs">
       <DependentUpon>MenuEditItem.xaml</DependentUpon>
     </Compile>

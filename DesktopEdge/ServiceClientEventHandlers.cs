@@ -15,6 +15,7 @@
 */
 
 using System;
+using System.Windows;
 using NLog;
 using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.Models;
@@ -24,8 +25,6 @@ namespace ZitiDesktopEdge {
     public interface IUiActions {
         void RefreshIdentities();
         void RefreshDetailsIfOpen();
-        void QueueMfaNotification(ZitiIdentity identity);
-        void ShowError(string title, string message);
         void ShowAuthenticationFailed(ZitiIdentity identity);
         void ServiceConnected();
         void ServiceDisconnected(object error);
@@ -40,11 +39,13 @@ namespace ZitiDesktopEdge {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         private readonly DataClient _serviceClient;
         private readonly MainViewModel _viewModel;
+        private readonly INotificationService _notifications;
         private readonly IUiActions _ui;
 
-        public ServiceClientEventHandlers(DataClient serviceClient, MainViewModel viewModel, IUiActions ui) {
+        public ServiceClientEventHandlers(DataClient serviceClient, MainViewModel viewModel, INotificationService notifications, IUiActions ui) {
             _serviceClient = serviceClient;
             _viewModel = viewModel;
+            _notifications = notifications;
             _ui = ui;
             serviceClient.OnServiceEvent += OnServiceEvent;
             serviceClient.OnBulkServiceEvent += OnBulkServiceEvent;
@@ -116,7 +117,7 @@ namespace ZitiDesktopEdge {
 
         private void OnCommunicationError(object sender, Exception e) {
             _serviceClient.Reconnect();
-            _ui.ShowError("Operation Timed Out", e.Message);
+            Application.Current.Dispatcher.Invoke(() => _viewModel.ShowServiceError("Operation Timed Out", e.Message));
         }
 
         private void OnServiceEvent(object sender, ServiceEvent e) {
@@ -130,7 +131,7 @@ namespace ZitiDesktopEdge {
             }
 
             if (e.Action == "added") {
-                if (identityViewModel.ApplyServiceAdded(e.Service)) _ui.QueueMfaNotification(identityViewModel.Identity);
+                if (identityViewModel.ApplyServiceAdded(e.Service)) _notifications.QueueMfaNotification(identityViewModel.Identity);
             } else {
                 identityViewModel.ApplyServiceRemoved(e.Service);
             }
@@ -155,7 +156,7 @@ namespace ZitiDesktopEdge {
                     if (identityViewModel.ApplyServiceAdded(added)) needsMfaNotification = true;
                 }
             }
-            if (needsMfaNotification) _ui.QueueMfaNotification(identityViewModel.Identity);
+            if (needsMfaNotification) _notifications.QueueMfaNotification(identityViewModel.Identity);
             _ui.RefreshIdentities();
             _ui.RefreshDetailsIfOpen();
         }

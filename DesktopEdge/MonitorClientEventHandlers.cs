@@ -15,15 +15,18 @@
 */
 
 using System;
+using System.Windows;
 using NLog;
 using ZitiDesktopEdge.ServiceClient;
 
 namespace ZitiDesktopEdge {
     public class MonitorClientEventHandlers {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+        private readonly MainViewModel _viewModel;
         private readonly IUiActions _ui;
 
-        public MonitorClientEventHandlers(MonitorClient monitorClient, IUiActions ui) {
+        public MonitorClientEventHandlers(MonitorClient monitorClient, MainViewModel viewModel, IUiActions ui) {
+            _viewModel = viewModel;
             _ui = ui;
             monitorClient.OnClientConnected += OnClientConnected;
             monitorClient.OnCommunicationError += OnCommunicationError;
@@ -35,7 +38,7 @@ namespace ZitiDesktopEdge {
         }
 
         private void OnCommunicationError(object sender, Exception e) {
-            _ui.ShowError("Communication Error with monitor?", e.Message);
+            Application.Current.Dispatcher.Invoke(() => _viewModel.ShowServiceError("Communication Error with monitor?", e.Message));
         }
     }
 }

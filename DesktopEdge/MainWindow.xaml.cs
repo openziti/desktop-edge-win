@@ -65,12 +65,11 @@ namespace ZitiDesktopEdge {
         private ServiceClientEventHandlers _serviceClientEventHandlers = null;
         private MonitorClientEventHandlers _monitorClientEventHandlers = null;
         private bool _isAttached = true;
-        private NotificationThrottle _notificationThrottle;
+        private INotificationService _notifications;
         private int _right = 75;
         private int _left = 75;
         private int _top = 30;
         private int defaultHeight = 600;
-        public int NotificationsShownCount = 0;
         private double _maxHeight = 805d;
         public string CurrentIcon = "white";
         private string _blurbUrl = "";
@@ -147,7 +146,7 @@ namespace ZitiDesktopEdge {
                     IdentityViewModel identityViewModel = _viewModel.FindViewModel(mfa.Identifier);
                     if (identityViewModel != null) {
                         identityViewModel.ApplyMfaChallenge();
-                        QueueMfaNotification(identityViewModel.Identity);
+                        _notifications.QueueMfaNotification(identityViewModel.Identity);
                     }
                 } else if (mfa.Action == "enrollment_verification") {
                     if (mfa.Successful) {
@@ -182,7 +181,7 @@ namespace ZitiDesktopEdge {
                     }
                     if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Identifier == mfa.Identifier) this.IdentityMenu.Identity = found;
                     if (mfa.Successful) {
-                        _notificationThrottle.Remove(mfa.Identifier);
+                        _notifications.Remove(mfa.Identifier);
                     }
                 } else if (mfa.Action == "enrollment_required") {
                     // Policy mandates MFA enrollment. Don't open setup; the user starts it from the Enable MFA toggle.
@@ -385,7 +384,7 @@ namespace ZitiDesktopEdge {
             _viewModel.SortChanged += OnSortChanged;
 
             NextNotificationTime = DateTime.Now;
-            _notificationThrottle = new NotificationThrottle(ShowToast, "Authorization Required", "{0} identities require authorization.");
+            _notifications = new NotificationService();
             SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
             string nlogFile = Path.Combine(ExecutionDirectory, ThisAssemblyName + "-log.config");
 
@@ -828,11 +827,11 @@ namespace ZitiDesktopEdge {
             this.Show();
             this.Visibility = Visibility.Visible;
             this.Opacity = 1;
-            _notificationThrottle.Suppress = true;
+            _notifications.Suppress = true;
         }
 
         private void MainWindow_Deactivated(object sender, EventArgs e) {
-            _notificationThrottle.Suppress = false;
+            _notifications.Suppress = false;
             if (this._isAttached) {
                 this.Visibility = Visibility.Hidden;
             }
@@ -875,7 +874,7 @@ namespace ZitiDesktopEdge {
 
             // add a new service client
             serviceClient = new DataClient("UI-DataClient");
-            _serviceClientEventHandlers = new ServiceClientEventHandlers(serviceClient, _viewModel, this);
+            _serviceClientEventHandlers = new ServiceClientEventHandlers(serviceClient, _viewModel, _notifications, this);
             Application.Current.Properties.Add("ServiceClient", serviceClient);
 
             monitorClient = new MonitorClient("UI-MonitorClient");
@@ -884,7 +883,7 @@ namespace ZitiDesktopEdge {
             monitorClient.OnCaptureFeedbackProgressEvent += MonitorClient_OnCaptureFeedbackProgressEvent;
             monitorClient.OnShutdownEvent += MonitorClient_OnShutdownEvent;
             monitorClient.OnReconnectFailure += MonitorClient_OnReconnectFailure;
-            _monitorClientEventHandlers = new MonitorClientEventHandlers(monitorClient, this);
+            _monitorClientEventHandlers = new MonitorClientEventHandlers(monitorClient, _viewModel, this);
             Application.Current.Properties.Add("MonitorClient", monitorClient);
 
             MainMenu.OnAttachmentChange += AttachmentChanged;
@@ -908,11 +907,11 @@ namespace ZitiDesktopEdge {
 
         public void ShowAuthenticationFailed(ZitiIdentity identity) {
             Dispatcher.BeginInvoke(new Action(async () => {
-                if (_notificationThrottle.Suppress) {
+                if (_notifications.Suppress) {
                     await ShowBlurbAsync("Authentication Failed", "External Auth Failed");
                 } else {
                     string displayName = string.IsNullOrEmpty(identity.Name) ? identity.Identifier : identity.Name;
-                    ShowToast("Authentication Failed", $"{displayName} failed to authenticate externally.", null);
+                    _notifications.ShowToast("Authentication Failed", $"{displayName} failed to authenticate externally.", null);
                 }
             }));
         }
@@ -1009,7 +1008,7 @@ namespace ZitiDesktopEdge {
                     if (evt.Code != 0) {
                         logger.Error("CODE: " + evt.Code);
                         if (MainMenu.ShowUnexpectedFailure) {
-                            ShowToast("The data channel has stopped unexpectedly", $"If this keeps happening please collect logs and report the issue.", feedbackToastButton);
+                            _notifications.ShowToast("The data channel has stopped unexpectedly", $"If this keeps happening please collect logs and report the issue.", feedbackToastButton);
                         }
                     }
                     state.DeferredInstallPending     = evt.DeferredInstallPending;
@@ -1118,21 +1117,21 @@ namespace ZitiDesktopEdge {
                     tray.RefreshUpdateState();
                         _viewModel.SetUpdateAlert(true);
 
-                        if (isToastEnabled()) {
+                        if (_notifications.IsToastEnabled) {
                             if (!state.AutomaticUpdatesDisabled) {
                                 if (remaining.TotalSeconds < 60) {
                                     //this is an immediate update - show a different message
-                                    ShowToast("Ziti Desktop Edge will initiate auto installation in the next minute!");
+                                    _notifications.ShowToast("Ziti Desktop Edge will initiate auto installation in the next minute!");
                                 } else {
                                     if (DateTime.Now > NextNotificationTime) {
-                                        ShowToast($"Update {evt.ZDEVersion} is available for Ziti Desktop Edge and will be automatically installed by " + evt.InstallTime);
+                                        _notifications.ShowToast($"Update {evt.ZDEVersion} is available for Ziti Desktop Edge and will be automatically installed by " + evt.InstallTime);
                                         NextNotificationTime = DateTime.Now + evt.NotificationDuration;
                                     } else {
                                         logger.Debug("Skipping notification. Time until next notification {} seconds which is at {}", (int)((NextNotificationTime - DateTime.Now).TotalSeconds), NextNotificationTime);
                                     }
                                 }
                             } else {
-                                ShowToast("New version available", $"Version {evt.ZDEVersion} is available for Ziti Desktop Edge", null);
+                                _notifications.ShowToast("New version available", $"Version {evt.ZDEVersion} is available for Ziti Desktop Edge", null);
                             }
                             SetNotifyIcon("");
                             // display a tag in UI and a button for the update software
@@ -1147,48 +1146,6 @@ namespace ZitiDesktopEdge {
             });
         }
 
-        private bool isToastEnabled() {
-            bool result;
-            //only show notifications once if automatic updates are disabled
-            if (NotificationsShownCount == 0) {
-                result = true; //regardless - if never notified, always return true
-            } else {
-                result = !state.AutomaticUpdatesDisabled;
-            }
-            return result;
-        }
-
-        private void ShowToast(string header, string message, ToastButton button) {
-            try {
-                logger.Debug("showing toast: {} {}", header, message);
-                var builder = new ToastContentBuilder()
-                    .AddArgument("notbutton", "click")
-                    .AddText(header)
-                    .AddText(message);
-                if (button != null) {
-                    builder.AddButton(button);
-                }
-                builder.Show();
-                NotificationsShownCount++;
-            } catch {
-                logger.Warn("couldn't show toast: {} {}", header, message);
-            }
-        }
-
-
-        private void ShowToast(string message) {
-            ShowToast("Important Notice", message, null);
-        }
-
-        private void QueueExtAuthNotification(ZitiIdentity identity) {
-            string displayName = string.IsNullOrEmpty(identity.Name) ? identity.Identifier : identity.Name;
-            var button = new ToastButton()
-                .SetContent("Authenticate")
-                .AddArgument("action", "ext-auth")
-                .AddArgument("identifier", identity.Identifier);
-            _notificationThrottle.Queue(identity.Identifier, $"{displayName} requires external authentication to access services.", button);
-        }
-
         public void RefreshIdentities() {
             LoadIdentities(true);
         }
@@ -1201,14 +1158,6 @@ namespace ZitiDesktopEdge {
             });
         }
 
-        public void QueueMfaNotification(ZitiIdentity identity) {
-            string displayName = string.IsNullOrEmpty(identity.Name) ? identity.Identifier : identity.Name;
-            var button = new ToastButton()
-                .SetContent("Authenticate")
-                .AddArgument("action", "mfa-auth")
-                .AddArgument("identifier", identity.Identifier);
-            _notificationThrottle.Queue(identity.Identifier, $"{displayName} requires MFA authentication.", button);
-        }
 
         private async Task StartExtAuth(ZitiIdentity identity) {
             try {
@@ -1360,7 +1309,7 @@ namespace ZitiDesktopEdge {
             _startDate = default(DateTime);
             _viewModel.ConnectedTime = "00:00:00";
 
-            _notificationThrottle?.Clear();
+            _notifications?.Clear();
             NextNotificationTime = DateTime.Now;
 
             var props = Application.Current.Properties;
@@ -1416,7 +1365,7 @@ namespace ZitiDesktopEdge {
                         AddIdentity(zid);
                         LoadIdentities(true);
                         if (zid.NeedsExtAuth) {
-                            QueueExtAuthNotification(zid);
+                            _notifications.QueueExtAuthNotification(zid);
                         }
                     } else {
                         bool isAdd = e.Action == "added";
@@ -1428,7 +1377,7 @@ namespace ZitiDesktopEdge {
                         if (found.AuthInProgress) {
                             // ext auth started: dequeue the authenticate toast and reset state
                             if (isExtLogin) {
-                                _notificationThrottle.Remove(found.Identifier);
+                                _notifications.Remove(found.Identifier);
                                 found.AuthInProgress = false;
                                 found.NeedsExtAuth = e.Id.NeedsExtAuth;
                             }
@@ -1436,20 +1385,20 @@ namespace ZitiDesktopEdge {
                             // ext auth completed: identity no longer needs ext auth
                             if (isAdd && found.NeedsExtAuth && !e.Id.NeedsExtAuth) {
                                 logger.Info("Identity: {} successfully authenticated", found.Identifier);
-                                _notificationThrottle.Remove(found.Identifier);
-                                if (!_notificationThrottle.Suppress) {
+                                _notifications.Remove(found.Identifier);
+                                if (!_notifications.Suppress) {
                                     string displayName = string.IsNullOrEmpty(found.Name) ? found.Identifier : found.Name;
-                                    ShowToast("Authentication Successful", $"{displayName} has been authenticated.", null);
+                                    _notifications.ShowToast("Authentication Successful", $"{displayName} has been authenticated.", null);
                                 }
                                 // identity still needs ext auth and no auth is currently in progress: queue a toast
                             } else if (isExtLogin && e.Id.NeedsExtAuth) {
-                                QueueExtAuthNotification(found);
+                                _notifications.QueueExtAuthNotification(found);
                             }
                             found.NeedsExtAuth = e.Id.NeedsExtAuth;
                         }
                         identityViewModel.ApplyIdentityUpdate(e.Id);
                         if (!found.NeedsExtAuth) {
-                            _notificationThrottle.Remove(found.Identifier);
+                            _notifications.Remove(found.Identifier);
                         }
                         LoadIdentities(true);
                     }
@@ -1468,10 +1417,10 @@ namespace ZitiDesktopEdge {
                     if (identityViewModel != null) {
                         identityViewModel.ApplyConnected(e.Id);
                         if (identityViewModel.Identity.IsMFANeeded) {
-                            QueueMfaNotification(identityViewModel.Identity);
+                            _notifications.QueueMfaNotification(identityViewModel.Identity);
                         }
                         if (identityViewModel.Identity.NeedsExtAuth) {
-                            QueueExtAuthNotification(identityViewModel.Identity);
+                            _notifications.QueueExtAuthNotification(identityViewModel.Identity);
                         }
                     }
                     LoadIdentities(true);
@@ -1593,10 +1542,10 @@ namespace ZitiDesktopEdge {
                     ZitiIdentity zid = identityViewModel.Identity;
                     if (!zid.IsEnabled) continue;
                     if (zid.NeedsExtAuth) {
-                        QueueExtAuthNotification(zid);
+                        _notifications.QueueExtAuthNotification(zid);
                     }
                     if (zid.IsMFANeeded) {
-                        QueueMfaNotification(zid);
+                        _notifications.QueueMfaNotification(zid);
                     }
                 }
             } else {
