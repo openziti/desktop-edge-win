@@ -143,11 +143,12 @@ namespace ZitiDesktopEdge {
             HideLoad();
             this.Dispatcher.Invoke(async () => {
                 if (mfa.Action == "enrollment_challenge") {
+                    var found = identities.Find(id => id.Identifier == mfa.Identifier);
                     if (mfa.Successful) {
                         string url = HttpUtility.UrlDecode(mfa.ProvisioningUrl);
                         string secret = HttpUtility.ParseQueryString(url)["secret"];
-                        this.IdentityMenu.Identity.RecoveryCodes = mfa?.RecoveryCodes?.ToArray();
-                        SetupMFA(this.IdentityMenu.Identity, url, secret);
+                        found.RecoveryCodes = mfa?.RecoveryCodes?.ToArray();
+                        SetupMFA(found, url, secret);
                     } else {
                         // flip the toggle back since setup never started
                         if (IdentityMenu.Identity != null && IdentityMenu.Identity.Identifier == mfa.Identifier) {
@@ -569,8 +570,6 @@ namespace ZitiDesktopEdge {
                             var found = identities.Find(i => i.Identifier == setupIdentifier);
                             if (found != null) {
                                 this.Dispatcher.Invoke(() => {
-                                    // open the identity so the enrollment_challenge targets it, then start setup
-                                    OpenIdentityDetails(found);
                                     IdItem_EnableMFA(found);
                                 });
                             }

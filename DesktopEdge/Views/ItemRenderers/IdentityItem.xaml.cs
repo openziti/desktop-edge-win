@@ -394,8 +394,6 @@ namespace ZitiDesktopEdge {
             } else if (ExtAuthRequired.Visibility == Visibility.Visible) {
                 ShowExtAuthList(sender, e);
             } else if (_identity.IsEnabled && _identity.IsMFANeeded && !_identity.IsMFAEnabled) {
-                // "enable mfa" bubble: open details so the enrollment callback targets this identity, then start enrollment.
-                OpenDetails(sender, e);
                 EnableMFARequested?.Invoke(_identity);
             } else {
                 OpenDetails(sender, e);

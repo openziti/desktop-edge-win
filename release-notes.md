@@ -1,3 +1,14 @@
+# Release 2.11.2.9
+## What's New
+* New "enable MFA" icon and setup toast
+
+## Bugs fixed
+* [Issue 1035](https://github.com/openziti/desktop-edge-win/issues/1035) - MFA setup toast opens the setup view, not the TOTP "authorize" screen
+* MFA enrollment that fails to start now surfaces an error and resets the toggle
+
+## Other changes
+n/a
+
 # Release 2.11.2.8
 ## What's New
 * updated to ziti-edge-tunnel v1.18.3
