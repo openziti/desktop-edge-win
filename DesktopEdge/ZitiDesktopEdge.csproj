@@ -208,6 +208,8 @@
     <Compile Include="Utils\NotificationThrottle.cs" />
     <Compile Include="Utils\UIUtils.cs" />
     <Compile Include="Utils\WheelScroll.cs" />
+    <Compile Include="ServiceClientEventHandlers.cs" />
+    <Compile Include="MonitorClientEventHandlers.cs" />
     <Compile Include="Views\ItemRenderers\MenuEditItem.xaml.cs">
       <DependentUpon>MenuEditItem.xaml</DependentUpon>
     </Compile>

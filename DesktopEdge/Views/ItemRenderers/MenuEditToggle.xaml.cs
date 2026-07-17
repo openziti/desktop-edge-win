@@ -68,6 +68,18 @@ namespace ZitiDesktopEdge {
             ((MenuEditToggle)d).ToggleField.Enabled = (bool)e.NewValue;
         }
 
+        public static readonly DependencyProperty AuthOffVisibilityProperty =
+            DependencyProperty.Register(nameof(AuthOffVisibility), typeof(Visibility), typeof(MenuEditToggle), new PropertyMetadata(Visibility.Collapsed, OnAuthOffVisibilityChanged));
+
+        public Visibility AuthOffVisibility {
+            get => (Visibility)GetValue(AuthOffVisibilityProperty);
+            set => SetValue(AuthOffVisibilityProperty, value);
+        }
+
+        private static void OnAuthOffVisibilityChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) {
+            ((MenuEditToggle)d).AuthOff.Visibility = (Visibility)e.NewValue;
+        }
+
         public ZitiIdentity Identity {
             get {
                 return _identity;

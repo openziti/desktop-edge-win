@@ -49,20 +49,20 @@
                    Width="30" Height="30"
                    Cursor="Hand"
                    MouseUp="MFARecovery"
-                   Visibility="Visible"
+                   Visibility="Collapsed"
             />
         <Image Name="AuthOff" Source="/Assets/Images/mfaoff.png"
                    Grid.Column="2"
                    Width="30" Height="30"
                    Cursor="Hand"
                    MouseUp="MFAAuthenticate"
-                   Visibility="Visible"
+                   Visibility="Collapsed"
             />
         <Image Name="AuthOn"
                    Source="/Assets/Images/mfaon.png"
                    Grid.Column="2"
                    Width="30" Height="30"
-                   Visibility="Visible"
+                   Visibility="Collapsed"
             />
         <local:Toggler x:Name="ToggleField"
                            Grid.Column="4"

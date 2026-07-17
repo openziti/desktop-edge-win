@@ -206,6 +206,45 @@ namespace ZitiDesktopEdge {
 
         public bool IsEnabled => _identity.IsEnabled;
         public bool IsMFAEnabled => _identity.IsMFAEnabled;
+        public string ControllerUrl => _identity.ControllerUrl;
+
+        private bool _showProviderConfig;
+
+        public bool ShowProviderConfig {
+            get { return _showProviderConfig; }
+            set {
+                _showProviderConfig = value;
+                OnPropertyChanged(nameof(ShowProviderConfig));
+                OnPropertyChanged(nameof(ServicesPanelVisibility));
+                OnPropertyChanged(nameof(ExternalProviderPanelVisibility));
+            }
+        }
+
+        private bool ServicesMode => !_identity.NeedsExtAuth && !_identity.IsMFANeeded && _identity.IsEnabled;
+
+        public Visibility ServicesPanelVisibility =>
+            ServicesMode && !_showProviderConfig ? Visibility.Visible : Visibility.Collapsed;
+
+        public Visibility TotpPanelVisibility =>
+            !_identity.NeedsExtAuth && _identity.IsMFANeeded ? Visibility.Visible : Visibility.Collapsed;
+
+        public Visibility ExternalProviderPanelVisibility =>
+            _identity.NeedsExtAuth || (ServicesMode && _showProviderConfig) ? Visibility.Visible : Visibility.Collapsed;
+
+        public Visibility ExternalProviderLabelVisibility =>
+            _identity.NeedsExtAuth ? Visibility.Visible : Visibility.Collapsed;
+
+        public Visibility ProviderGearVisibility =>
+            ServicesMode && _identity.ExtAuthProviders != null && _identity.ExtAuthProviders.Count > 0
+                ? Visibility.Visible : Visibility.Collapsed;
+
+        public Visibility MfaAuthOffVisibility =>
+            _identity.IsMFANeeded && _identity.IsMFAEnabled && _identity.IsEnabled
+            && (_identity.Services == null || _identity.Services.Count == 0)
+                ? Visibility.Visible : Visibility.Collapsed;
+
+        public string NoAuthServicesText =>
+            _identity.IsMFAEnabled ? "You must authenticate to access services" : "You must enable MFA to access services";
         public string ToggleStatusText => _identity.IsEnabled ? "ENABLED" : "DISABLED";
         public string ServiceCountText => _identity.IsEnabled ? _identity.Services.Count.ToString() : "-";
 

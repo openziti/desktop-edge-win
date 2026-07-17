@@ -334,6 +334,12 @@
                     </ItemsControl>
                 </ScrollViewer>
             </Grid>
+            <Grid HorizontalAlignment="Stretch" Margin="0,20,0,10" Width="Auto">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Label Name="AddIdButton" Padding="0,0,0,0" Grid.Column="0" Margin="0,0,0,0" Content=""  Foreground="#0069FF" FontSize="12 " HorizontalAlignment="Center" VerticalAlignment="Center" ></Label>
+            </Grid>
             <Border x:Name="AlternateTunnelFooter"
                     Visibility="Collapsed"
                     Margin="14,0,14,10"

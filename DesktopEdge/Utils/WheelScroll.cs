@@ -18,6 +18,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 // Replaces the WpfMouseWheelLib.dll, which crashed under rapid
 // mouse wheel input. See https://github.com/openziti/desktop-edge-win/issues/823
@@ -70,17 +71,31 @@ namespace Ziti.Desktop.Edge.Utils {
                 notches = args.Delta > 0 ? 1 : -1;
             }
 
-            // LineUp/LineDown advance by exactly one IScrollInfo line. With
-            // CanContentScroll=True over a panel that supports logical
-            // scrolling (StackPanel, VirtualizingStackPanel), one line is one
-            // child item, which is the behavior we want.
-            if (notches > 0) {
+            // Scroll by one row per notch. When the content scrolls logically
+            // (IScrollInfo panel) one line is one item; otherwise it is pixels,
+            // so advance by a measured row height.
+            double itemHeight = GetItemHeight(scrollViewer);
+            if (itemHeight > 0) {
+                scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - notches * itemHeight);
+            } else if (notches > 0) {
                 for (int i = 0; i < notches; i++) scrollViewer.LineUp();
             } else {
                 for (int i = 0; i < -notches; i++) scrollViewer.LineDown();
             }
 
             args.Handled = true;
+        }
+
+        private static double GetItemHeight(DependencyObject root) {
+            if (root is Panel panel && panel.IsItemsHost && panel.Children.Count > 0) {
+                return (panel.Children[0] as FrameworkElement)?.ActualHeight ?? 0;
+            }
+            int count = VisualTreeHelper.GetChildrenCount(root);
+            for (int i = 0; i < count; i++) {
+                double height = GetItemHeight(VisualTreeHelper.GetChild(root, i));
+                if (height > 0) return height;
+            }
+            return 0;
         }
     }
 }

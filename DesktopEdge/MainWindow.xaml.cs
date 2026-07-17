@@ -52,7 +52,7 @@ using Ziti.Desktop.Edge.Utils;
 
 namespace ZitiDesktopEdge {
 
-    public partial class MainWindow : Window, ZitiDesktopEdge.Tray.ITrayHost {
+    public partial class MainWindow : Window, ZitiDesktopEdge.Tray.ITrayHost, IUiActions {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         public string RECOVER = "RECOVER";
@@ -62,6 +62,8 @@ namespace ZitiDesktopEdge {
         private System.Windows.Forms.Timer _tunnelUptimeTimer;
         private DataClient serviceClient = null;
         MonitorClient monitorClient = null;
+        private ServiceClientEventHandlers _serviceClientEventHandlers = null;
+        private MonitorClientEventHandlers _monitorClientEventHandlers = null;
         private bool _isAttached = true;
         private NotificationThrottle _notificationThrottle;
         private int _right = 75;
@@ -133,7 +135,7 @@ namespace ZitiDesktopEdge {
         /// </summary>
         /// <param name="sender">The service client</param>
         /// <param name="e">The MFA Event</param>
-        private void ServiceClient_OnMfaEvent(object sender, MfaEvent mfa) {
+        public void HandleMfaEvent(MfaEvent mfa) {
             HideLoad();
             this.Dispatcher.Invoke(async () => {
                 if (mfa.Action == "enrollment_challenge") {
@@ -873,28 +875,16 @@ namespace ZitiDesktopEdge {
 
             // add a new service client
             serviceClient = new DataClient("UI-DataClient");
-            serviceClient.OnClientConnected += ServiceClient_OnClientConnected;
-            serviceClient.OnClientDisconnected += ServiceClient_OnClientDisconnected;
-            serviceClient.OnIdentityEvent += ServiceClient_OnIdentityEvent;
-            serviceClient.OnServiceEvent += ServiceClient_OnServiceEvent;
-            serviceClient.OnTunnelStatusEvent += ServiceClient_OnTunnelStatusEvent;
-            serviceClient.OnMfaEvent += ServiceClient_OnMfaEvent;
-            serviceClient.OnLogLevelEvent += ServiceClient_OnLogLevelEvent;
-            serviceClient.OnBulkServiceEvent += ServiceClient_OnBulkServiceEvent;
-            serviceClient.OnNotificationEvent += ServiceClient_OnNotificationEvent;
-            serviceClient.OnControllerEvent += ServiceClient_OnControllerEvent;
-            serviceClient.OnAuthenticationEvent += ServiceClient_OnAuthenticationEvent;
-            serviceClient.OnCommunicationError += ServiceClient_OnCommunicationError;
+            _serviceClientEventHandlers = new ServiceClientEventHandlers(serviceClient, _viewModel, this);
             Application.Current.Properties.Add("ServiceClient", serviceClient);
 
             monitorClient = new MonitorClient("UI-MonitorClient");
-            monitorClient.OnClientConnected += MonitorClient_OnClientConnected;
             monitorClient.OnNotificationEvent += MonitorClient_OnInstallationNotificationEvent;
             monitorClient.OnServiceStatusEvent += MonitorClient_OnServiceStatusEvent;
             monitorClient.OnCaptureFeedbackProgressEvent += MonitorClient_OnCaptureFeedbackProgressEvent;
             monitorClient.OnShutdownEvent += MonitorClient_OnShutdownEvent;
-            monitorClient.OnCommunicationError += MonitorClient_OnCommunicationError;
             monitorClient.OnReconnectFailure += MonitorClient_OnReconnectFailure;
+            _monitorClientEventHandlers = new MonitorClientEventHandlers(monitorClient, this);
             Application.Current.Properties.Add("MonitorClient", monitorClient);
 
             MainMenu.OnAttachmentChange += AttachmentChanged;
@@ -916,129 +906,26 @@ namespace ZitiDesktopEdge {
             Placement();
         }
 
-        private async void ServiceClient_OnAuthenticationEvent(object sender, AuthenticationEvent e) {
-            ZitiIdentity found = _viewModel.FindIdentity(e.Identifier);
-            if (found != null) {
-                if (e.Action == "error") {
-                    found.AuthInProgress = false;
-                    await Dispatcher.BeginInvoke(new Action(async () => {
-                        if (_notificationThrottle.Suppress) {
-                            await ShowBlurbAsync("Authentication Failed", "External Auth Failed");
-                        } else {
-                            string displayName = string.IsNullOrEmpty(found.Name) ? found.Identifier : found.Name;
-                            ShowToast("Authentication Failed", $"{displayName} failed to authenticate externally.", null);
-
-                        }
-                    }));
+        public void ShowAuthenticationFailed(ZitiIdentity identity) {
+            Dispatcher.BeginInvoke(new Action(async () => {
+                if (_notificationThrottle.Suppress) {
+                    await ShowBlurbAsync("Authentication Failed", "External Auth Failed");
+                } else {
+                    string displayName = string.IsNullOrEmpty(identity.Name) ? identity.Identifier : identity.Name;
+                    ShowToast("Authentication Failed", $"{displayName} failed to authenticate externally.", null);
                 }
-            }
+            }));
         }
 
-        private void ServiceClient_OnCommunicationError(object sender, Exception e) {
-            serviceClient.Reconnect();
-            string msg = "Operation Timed Out";
-            ShowError(msg, e.Message);
-        }
-
-        private void MonitorClient_OnCommunicationError(object sender, Exception e) {
-            string msg = "Communication Error with monitor?";
-            ShowError(msg, e.Message);
+        public void MonitorConnected() {
+            MainMenu.SetAppUpgradeAvailableText("");
+            ZitiDesktopEdge.ViewModels.ManagedSettingsViewModel policyViewModel = Application.Current.Properties["ManagedSettingsViewModel"] as ZitiDesktopEdge.ViewModels.ManagedSettingsViewModel;
+            if (policyViewModel != null) policyViewModel.IsMonitorConnected = true;
         }
 
         private void MainMenu_OnShowBlurb(string message) {
             _ = ShowBlurbAsync(message, "", "info");
         }
-
-        private void ServiceClient_OnBulkServiceEvent(object sender, BulkServiceEvent e) {
-            IdentityViewModel identityViewModel = _viewModel.FindViewModel(e.Identifier);
-            if (identityViewModel == null) {
-                logger.Warn($"{e.Action} service event for {e.Identifier} but the provided identity identifier was not found!");
-                return;
-            }
-            if (e.RemovedServices != null) {
-                foreach (Service removed in e.RemovedServices) {
-                    identityViewModel.ApplyServiceRemoved(removed);
-                }
-            }
-            bool needsMfaNotification = false;
-            if (e.AddedServices != null) {
-                foreach (Service added in e.AddedServices) {
-                    if (identityViewModel.ApplyServiceAdded(added)) needsMfaNotification = true;
-                }
-            }
-            if (needsMfaNotification) QueueMfaNotification(identityViewModel.Identity);
-            LoadIdentities(true);
-            this.Dispatcher.Invoke(() => {
-                IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
-                if (deets.IsVisible) {
-                    deets.UpdateView();
-                }
-            });
-        }
-
-        private void ServiceClient_OnNotificationEvent(object sender, NotificationEvent e) {
-            bool displayMFARequired = false;
-            bool displayMFATimeout = false;
-            foreach (Notification notification in e.Notification) {
-                ZitiIdentity found = _viewModel.FindIdentity(notification.Identifier);
-                if (found == null) {
-                    logger.Warn($"{e.Op} event for {notification.Identifier} but the provided identity identifier was not found!");
-                    continue;
-                } else {
-                    found.TimeoutMessage = notification.Message;
-                    found.MaxTimeout = notification.MfaMaximumTimeout;
-                    found.MinTimeout = notification.MfaMinimumTimeout;
-
-                    if (notification.MfaMinimumTimeout == 0) {
-                        // display mfa token icon
-                        displayMFARequired = true;
-                    } else {
-                        displayMFATimeout = true;
-                    }
-                }
-            }
-
-            // we may need to display mfa icon, based on the timer in UI, remove found.MFAInfo.ShowMFA setting in this function. 
-            // the below function can show mfa icon even after user authenticates successfully, in race conditions
-            if (displayMFARequired || displayMFATimeout) {
-                this.Dispatcher.Invoke(() => {
-                    IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
-                    if (deets.IsVisible) {
-                        deets.UpdateView();
-                    }
-                });
-            }
-            LoadIdentities(true);
-        }
-
-        private void ServiceClient_OnControllerEvent(object sender, ControllerEvent e) {
-            logger.Debug($"==== ControllerEvent    : action:{e.Action} identifier:{e.Identifier}");
-            // commenting this block, because when it receives the disconnected events, identities are disabled and
-            // it is not allowing me to click/perform any operation on the identity
-            // the color of the title is also too dark, and it is not clearly visible, when the identity is disconnected 
-            /* if (e.Action == "connected") {
-				var found = identities.FirstOrDefault(i => i.Identifier == e.Identifier);
-				found.IsConnected = true;
-				for (int i = 0; i < identities.Count; i++) {
-					if (identities[i].Identifier == found.Identifier) {
-						identities[i] = found;
-						break;
-					}
-				}
-				LoadIdentities(true);
-			} else if (e.Action == "disconnected") {
-				var found = identities.FirstOrDefault(i => i.Identifier == e.Identifier);
-				found.IsConnected = false;
-				for (int i = 0; i < identities.Count; i++) {
-					if (identities[i].Identifier == found.Identifier) {
-						identities[i] = found;
-						break;
-					}
-				}
-				LoadIdentities(true);
-			} */
-        }
-
 
         string nextVersionStr = null;
         private void MonitorClient_OnReconnectFailure(object sender, object e) {
@@ -1302,7 +1189,19 @@ namespace ZitiDesktopEdge {
             _notificationThrottle.Queue(identity.Identifier, $"{displayName} requires external authentication to access services.", button);
         }
 
-        private void QueueMfaNotification(ZitiIdentity identity) {
+        public void RefreshIdentities() {
+            LoadIdentities(true);
+        }
+
+        public void RefreshDetailsIfOpen() {
+            this.Dispatcher.Invoke(() => {
+                if (IdentityMenu.IsVisible) {
+                    IdentityMenu.UpdateView();
+                }
+            });
+        }
+
+        public void QueueMfaNotification(ZitiIdentity identity) {
             string displayName = string.IsNullOrEmpty(identity.Name) ? identity.Identifier : identity.Name;
             var button = new ToastButton()
                 .SetContent("Authenticate")
@@ -1385,13 +1284,6 @@ namespace ZitiDesktopEdge {
             LoadIdentities(true);
         }
 
-        private void MonitorClient_OnClientConnected(object sender, object e) {
-            logger.Debug("MonitorClient_OnClientConnected");
-            MainMenu.SetAppUpgradeAvailableText("");
-            var policyViewModel = Application.Current.Properties["ManagedSettingsViewModel"] as ZitiDesktopEdge.ViewModels.ManagedSettingsViewModel;
-            if (policyViewModel != null) policyViewModel.IsMonitorConnected = true;
-        }
-
         async private Task<bool> LogLevelChanged(string level) {
             int logsSet = 0;
             try {
@@ -1418,7 +1310,7 @@ namespace ZitiDesktopEdge {
             ShowError("Identity Error", message);
         }
 
-        private void ServiceClient_OnClientConnected(object sender, object e) {
+        public void ServiceConnected() {
             this.Dispatcher.Invoke(() => {
                 MainMenu.Connected();
                 _viewModel.HideNoService();
@@ -1431,12 +1323,12 @@ namespace ZitiDesktopEdge {
             });
         }
 
-        private void ServiceClient_OnClientDisconnected(object sender, object e) {
+        public void ServiceDisconnected(object error) {
             this.Dispatcher.Invoke(() => {
                 ResetTunnelerScopedState();
                 GetStartedScreen.GetStartedViewModel.Hide(); // hide the get started when disconnected
-                if (e != null) {
-                    logger.Debug(e.ToString());
+                if (error != null) {
+                    logger.Debug(error.ToString());
                 }
                 SetNotifyIcon("red");
                 ShowServiceNotStarted();
@@ -1509,7 +1401,7 @@ namespace ZitiDesktopEdge {
         /// </summary>
         /// <param name="sender">The sending service</param>
         /// <param name="e">The identity event</param>
-        private void ServiceClient_OnIdentityEvent(object sender, IdentityEvent e) {
+        public void HandleIdentityEvent(IdentityEvent e) {
             if (e == null) return;
 
             ZitiIdentity zid = ZitiIdentity.FromClient(e.Id);
@@ -1594,48 +1486,19 @@ namespace ZitiDesktopEdge {
             logger.Debug($"IDENTITY EVENT. Action: {e.Action} identifier: {zid.Identifier}");
         }
 
-        private void ServiceClient_OnServiceEvent(object sender, ServiceEvent e) {
-            if (e == null) return;
-
-            logger.Debug($"==== ServiceEvent : action:{e.Action} identifier:{e.Identifier} name:{e.Service.Name} ");
-            IdentityViewModel identityViewModel = _viewModel.FindViewModel(e.Identifier);
-            if (identityViewModel == null) {
-                logger.Debug($"{e.Action} service event for {e.Service.Name} but the provided identity identifier {e.Identifier} is not found!");
-                return;
-            }
-
-            if (e.Action == "added") {
-                if (identityViewModel.ApplyServiceAdded(e.Service)) QueueMfaNotification(identityViewModel.Identity);
-            } else {
-                identityViewModel.ApplyServiceRemoved(e.Service);
-            }
-            LoadIdentities(true);
-            this.Dispatcher.Invoke(() => {
-                IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
-                if (deets.IsVisible) {
-                    deets.UpdateView();
-                }
-            });
-        }
-
-        private void ServiceClient_OnTunnelStatusEvent(object sender, TunnelStatusEvent e) {
-            if (e == null) return; //just skip it for now...
+        public void ApplyTunnelStatus(TunnelStatus status) {
             logger.Debug($"==== TunnelStatusEvent: ");
             Application.Current.Properties.Remove("CurrentTunnelStatus");
-            Application.Current.Properties.Add("CurrentTunnelStatus", e.Status);
+            Application.Current.Properties.Add("CurrentTunnelStatus", status);
 #if DEBUG && DEBUG_DUMP
-            e.Status.Dump(Console.Out);
+            status.Dump(Console.Out);
 #endif
             this.Dispatcher.Invoke(() => {
-                /*if (e.ApiVersion != DataClient.EXPECTED_API_VERSION) {
-					SetCantDisplay("Version mismatch!", "The version of the Service is not compatible", Visibility.Visible);
-					return;
-				}*/
-                this.MainMenu.LogLevel = e.Status.LogLevel;
-                Ziti.Desktop.Edge.Utils.UIUtils.SetLogLevel(e.Status.LogLevel);
-                tray.RefreshLogLevelChecks(e.Status.LogLevel);
-                InitializeTimer((int)e.Status.Duration);
-                LoadStatusFromService(e.Status);
+                this.MainMenu.LogLevel = status.LogLevel;
+                Ziti.Desktop.Edge.Utils.UIUtils.SetLogLevel(status.LogLevel);
+                tray.RefreshLogLevelChecks(status.LogLevel);
+                InitializeTimer((int)status.Duration);
+                LoadStatusFromService(status);
                 LoadIdentities(true);
                 GetStartedScreen.GetStartedViewModel.UpdateForState(serviceClient.Connected, _viewModel.IdentityViewModels.Count);
                 IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
@@ -1645,15 +1508,13 @@ namespace ZitiDesktopEdge {
             });
         }
 
-        private void ServiceClient_OnLogLevelEvent(object sender, LogLevelEvent e) {
-            if (e.LogLevel != null) {
-                SetLogLevel_monitor(e.LogLevel);
-                this.Dispatcher.Invoke(() => {
-                    this.MainMenu.LogLevel = e.LogLevel;
-                    Ziti.Desktop.Edge.Utils.UIUtils.SetLogLevel(e.LogLevel);
-                    tray.RefreshLogLevelChecks(e.LogLevel);
-                });
-            }
+        public void ApplyLogLevel(string logLevel) {
+            SetLogLevel_monitor(logLevel);
+            this.Dispatcher.Invoke(() => {
+                this.MainMenu.LogLevel = logLevel;
+                Ziti.Desktop.Edge.Utils.UIUtils.SetLogLevel(logLevel);
+                tray.RefreshLogLevelChecks(logLevel);
+            });
         }
 
         async private void SetLogLevel_monitor(string loglevel) {
@@ -1792,7 +1653,7 @@ namespace ZitiDesktopEdge {
                 if (_maxHeight < 100) {
                     _maxHeight = 100;
                 }
-                IdList.MaxHeight = _maxHeight - 480;
+                IdListScroller.MaxHeight = _maxHeight - 480;
                 ZitiIdentity[] ids = _viewModel.GetSortedIdentities();
                 // put the rows in sorted order (the ItemsControl shows them in collection order)
                 for (int i = 0; i < ids.Length; i++) {

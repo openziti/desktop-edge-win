@@ -106,7 +106,7 @@
                         />
                         <Image Name="ExternalProviderStatusAndDetails" Height="25" Cursor="Hand"
                                Margin="5,0,0,0"
-                               Visibility="Visible"
+                               Visibility="{Binding ProviderGearVisibility}"
                                d:Visibility="Visible"
                                Source="/Assets/Images/ext-auth-ok.png"
                                HorizontalAlignment="Left"
@@ -136,19 +136,20 @@
                     />
                 </Grid>
                 <Rectangle Margin="20,0,20,10" Fill="#070826" Height="1" RadiusY="10" RadiusX="10" Opacity="0.1"></Rectangle>
-                <local:MenuEditItem Margin="20,0,20,5" x:Name="IdName" Label="Name" IsLocked="True" />
+                <local:MenuEditItem Margin="20,0,20,5" x:Name="IdName" Label="Name" IsLocked="True" Value="{Binding Name}" ToolTip="{Binding Name}" />
                 <Rectangle Margin="20,0,20,10" Fill="#070826" Height="1" RadiusY="10" RadiusX="10" Opacity="0.1"></Rectangle>
-                <local:MenuEditItem x:Name="IdServer" Margin="20,0,20,5" Label="Network" IsLocked="True" />
+                <local:MenuEditItem x:Name="IdServer" Margin="20,0,20,5" Label="Network" IsLocked="True" Value="{Binding ControllerUrl}" ToolTip="{Binding ControllerUrl}" />
                 <Rectangle Margin="20,0,20,5" Fill="#070826" Height="1" RadiusY="10" RadiusX="10" Opacity="0.1"></Rectangle>
                 <local:MenuEditToggle x:Name="IdentityMFA" HorizontalAlignment="Stretch" Label="Multi Factor Auth" PreviewMouseDown="IdentityMFA_PreviewMouseDown" PreviewMouseUp="IdentityMFA_PreviewMouseUp"
                                       Margin="20,0,20,5" Recovery="MFARecovery" Authenticate="MFAAuthenticate"
                                       IsOn="{Binding IsMFAEnabled}"
+                                      AuthOffVisibility="{Binding MfaAuthOffVisibility}"
                                       Toggle="ToggleMFA"></local:MenuEditToggle>
                 <local:Filter x:Name="FilterServices" OnFilter="DoFilter" VerticalAlignment="Top" Margin="10,5,10,0" />
             </StackPanel>
 
             <Grid Grid.Row="1" Grid.Column="0">
-                <Grid Name="ServicesPanel" d:Visibility="Collapsed">
+                <Grid Name="ServicesPanel" Visibility="{Binding ServicesPanelVisibility}" d:Visibility="Collapsed">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
@@ -249,9 +250,9 @@
                             </ListView.ItemTemplate>
                         </ListView>
                     </Grid>
-                    <Label x:Name="ServiceCount" Grid.Row="1" HorizontalAlignment="Center" Content="0 Services" Margin="0,0,0,0" Foreground="Gray" FontWeight="Bold" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
+                    <Label x:Name="ServiceCount" Grid.Row="1" Visibility="Collapsed" HorizontalAlignment="Center" Content="0 Services" Margin="0,0,0,0" Foreground="Gray" FontWeight="Bold" FontSize="12" FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"></Label>
                 </Grid>
-                <StackPanel Name="ExternalProviderPanel" Visibility="Visible">
+                <StackPanel Name="ExternalProviderPanel" Visibility="{Binding ExternalProviderPanelVisibility}">
                     <Grid MaxHeight="160" Margin="10,0,10,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="3*"/>
@@ -260,8 +261,9 @@
                         </Grid.ColumnDefinitions>
                     </Grid>
                     <Label x:Name="ExternalProviderLabel" Grid.ColumnSpan="3" Width="Auto"
+                           Visibility="{Binding ExternalProviderLabelVisibility}"
                            HorizontalAlignment="Center"
-                           Content="You must authenticate to access services" 
+                           Content="You must authenticate to access services"
                            FontWeight="Bold"
                            FontSize="12"
                            FontFamily="pack://application:,,,/Assets/Fonts/#Open Sans"
@@ -360,13 +362,13 @@
                         </StackPanel>
                     </Border>
                 </StackPanel>
-                <StackPanel Name="TOTPPanel" Visibility="Collapsed">
-                    <TextBox Name="NoAuthServices" 
+                <StackPanel Name="TOTPPanel" Visibility="{Binding TotpPanelVisibility}">
+                    <TextBox Name="NoAuthServices"
                              Grid.Column="0" Grid.Row="5"
                              Height="30" FontWeight="Bold"
                              Margin="10,0,10,0"
                              TextAlignment="Center"
-                             Text="You must authenticate to access services" IsReadOnly="True"
+                             Text="{Binding NoAuthServicesText, Mode=OneWay}" IsReadOnly="True"
                              HorizontalAlignment="Stretch"
                              BorderThickness="0" ClipToBounds="True"
                              VerticalAlignment="Center"

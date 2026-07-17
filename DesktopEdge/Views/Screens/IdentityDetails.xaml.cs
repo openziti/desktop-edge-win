@@ -85,6 +85,7 @@ namespace ZitiDesktopEdge {
                 FilterServices.Clear();
                 _identity = value;
                 SetIdentityViewModel(value.Identifier);
+                IdentityViewModel.ShowProviderConfig = false;
                 IdentityViewModel.LoadServices();
                 ServiceCount.Content = IdentityViewModel.ServiceCountSummary;
                 UpdateView();
@@ -113,111 +114,18 @@ namespace ZitiDesktopEdge {
         }
 
 
-        private void MFAEnabledAndNeeded() {
-            if (_identity.Services.Count > 0) {
-                MainDetailScroll.Visibility = Visibility.Visible;
-            } else {
-                if (Identity.IsEnabled) {
-                    IdentityMFA.AuthOff.Visibility = Visibility.Visible;
-                    AuthMessageBg.Visibility = Visibility.Visible;
-                    AuthMessageLabel.Visibility = Visibility.Visible;
-                    NoAuthServices.Visibility = Visibility.Visible;
-                    NoAuthServices.Text = "You must authenticate to access services";
-                }
-            }
-        }
-
-        private void ExternalAuthNeeded() {
-            if(!Identity.NeedsExtAuth) {
-                MainDetailScroll.Visibility = Visibility.Visible;
-            } else {
-                AuthMessageBg.Visibility = Visibility.Visible;
-                AuthMessageLabel.Visibility = Visibility.Visible;
-                NoAuthServices.Visibility = Visibility.Visible;
-                //ExtProviderView.Visibility = Visibility.Visible;
-            }
-        }
-
-        private void MFAEnabledAndNotNeeded() {
-            MainDetailScroll.Visibility = Visibility.Visible;
-            IdentityMFA.AuthOn.Visibility = Visibility.Visible;
-        }
-
-        private void MFANotEnabledAndNotNeeded() {
-            MainDetailScroll.Visibility = Visibility.Visible;
-        }
-
-        private void MFANotEnabledAndNeeded() {
-            if (_identity.Services.Count > 0) {
-                MainDetailScroll.Visibility = Visibility.Visible;
-            } else {
-                AuthMessageLabel.Visibility = Visibility.Visible;
-                NoAuthServices.Visibility = Visibility.Visible;
-                NoAuthServices.Text = "You must enable MFA to access services";
-            }
-        }
-
         public void UpdateView() {
             if (_scroller == null) {
                 _scroller = GetScrollViewer(ServiceList) as ScrollViewer;
             }
 
-            MainDetailScroll.Visibility = Visibility.Collapsed;
-            AuthMessageBg.Visibility = Visibility.Collapsed;
-            AuthMessageLabel.Visibility = Visibility.Collapsed;
-            NoAuthServices.Visibility = Visibility.Collapsed;
-            IdentityMFA.AuthOn.Visibility = Visibility.Collapsed;
-            IdentityMFA.AuthOff.Visibility = Visibility.Collapsed;
-            IdentityMFA.RecoveryButton.Visibility = Visibility.Collapsed;
-            ServiceCount.Visibility = Visibility.Collapsed;
-            TOTPPanel.Visibility = Visibility.Collapsed;
-            ExternalProviderPanel.Visibility = Visibility.Collapsed;
-            //never hide ServicesPanel.Visibility = Visibility.Collapsed;
-
-            //top row detail icons
-            ExternalProviderStatusAndDetails.Visibility = Visibility.Collapsed;
-
             IdentityMFA.ToggleField.IsEnabled = true;
             IdentityMFA.ToggleField.Opacity = 1;
-            IdServer.Value = _identity.ControllerUrl;
-            IdServer.ToolTip = _identity.ControllerUrl;
-            IdName.ToolTip = _identity.Name;
-            IdName.Value = _identity.Name;
-
-            if (_identity.IsMFANeeded) {
-                if (_identity.IsMFAEnabled) {
-                    // enabled and needed = needs to be authorized. show the lock icon and tell the user to auth
-                    MFAEnabledAndNeeded();
-                } else {
-                    // enabled and not needed = authorized. show the services should be enabled and authorized
-                    MFANotEnabledAndNeeded();
-                }
-            } else if (_identity.NeedsExtAuth) {
-                ExternalAuthNeeded();
-            } else {
-                MFANotEnabledAndNotNeeded();
-            }
 
             ProviderList.Items.Clear();
             IsDefaultProvider.IsChecked = false;
             if (Identity?.ExtAuthProviders?.Count > 0) {
                 PopulateExternalProviders(this);
-            }
-
-            if (Identity.NeedsExtAuth) {
-                ExternalProviderPanel.Visibility = Visibility.Visible;
-                ExternalProviderLabel.Visibility = Visibility.Visible;
-            } else if (Identity.IsMFANeeded) {
-                TOTPPanel.Visibility = Visibility.Visible;
-            } else {
-                if (Identity.IsEnabled) {
-                    ServicesPanel.Visibility = Visibility.Visible;
-                    if (Identity.ExtAuthProviders?.Count > 0) {
-                        ExternalProviderStatusAndDetails.Visibility = Visibility.Visible;
-                    }
-                } else {
-                    ServicesPanel.Visibility = Visibility.Collapsed;
-                }
             }
 
             IdentityViewModel.ConfirmForgetVisibility = Visibility.Collapsed;
@@ -600,18 +508,12 @@ namespace ZitiDesktopEdge {
         }
 
         private void ExternalProviderSettingsIcon_MouseUp(object sender, MouseButtonEventArgs e) {
-            if (ExternalProviderPanel.Visibility == Visibility.Visible) {
-                //hide all panels, show the provider panel
-                ExternalProviderPanel.Visibility = Visibility.Collapsed;
-                ServicesPanel.Visibility = Visibility.Visible;
-                ExternalProviderStatusAndDetails.ToolTip = "Click to configure external auth providers";
-            } else {
-                //hide all panels, show the provider panel
-                ExternalProviderPanel.Visibility = Visibility.Visible;
-                ServicesPanel.Visibility = Visibility.Collapsed;
+            IdentityViewModel.ShowProviderConfig = !IdentityViewModel.ShowProviderConfig;
+            if (IdentityViewModel.ShowProviderConfig) {
                 ExternalProviderStatusAndDetails.ToolTip = "Click to show service details";
                 AuthenticateWithProvider.Visibility = Visibility.Collapsed;
-                ExternalProviderLabel.Visibility = Visibility.Collapsed;
+            } else {
+                ExternalProviderStatusAndDetails.ToolTip = "Click to configure external auth providers";
             }
         }
 
