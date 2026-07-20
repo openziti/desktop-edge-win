@@ -1,6 +1,7 @@
 # Release 2.11.2.9
 ## What's New
 * New "enable MFA" icon and setup toast
+* [Issue 1028](https://github.com/openziti/desktop-edge-win/issues/1028) - Adding an identity by URL brings the UI forward when it's provisioned, and starts MFA setup if the identity requires it
 
 ## Bugs fixed
 * [Issue 1035](https://github.com/openziti/desktop-edge-win/issues/1035) - MFA setup toast opens the setup view, not the TOTP "authorize" screen

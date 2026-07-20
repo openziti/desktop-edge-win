@@ -241,7 +241,7 @@ namespace ZitiDesktopEdge {
                     }
                 } else if (mfa.Action == "enrollment_required") {
                     // Auto-start setup only for an identity just added by URL; otherwise the user uses the Enable MFA toggle.
-                    if (mfa.Identifier == _pendingAddByUrlIdentifier) {
+                    if (!string.IsNullOrEmpty(_pendingAddByUrlIdentifier) && mfa.Identifier == _pendingAddByUrlIdentifier) {
                         _pendingAddByUrlIdentifier = null;
                         BringWindowForward();
                         ZitiIdentity added = identities.Find(id => id.Identifier == mfa.Identifier);
@@ -1668,7 +1668,7 @@ namespace ZitiDesktopEdge {
                         if (zid.NeedsExtAuth) {
                             QueueExtAuthNotification(zid);
                         }
-                        if (zid.Identifier == _pendingAddByUrlIdentifier) BringWindowForward();
+                        if (!string.IsNullOrEmpty(_pendingAddByUrlIdentifier) && zid.Identifier == _pendingAddByUrlIdentifier) BringWindowForward();
                     } else {
                         var isAdd = e.Action == "added";
                         var isExtLogin = e.Action == "needs_ext_login";
