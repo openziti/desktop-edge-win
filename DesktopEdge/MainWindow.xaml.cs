@@ -150,7 +150,7 @@ namespace ZitiDesktopEdge {
                         found.RecoveryCodes = mfa?.RecoveryCodes?.ToArray();
                         SetupMFA(found, url, secret);
                     } else {
-                        // flip the toggle back since setup never started
+                        // setup never started: make sure the toggle reflects IsMFAEnabled
                         if (IdentityMenu.Identity != null && IdentityMenu.Identity.Identifier == mfa.Identifier) {
                             IdentityMenu.IdentityMFA.IsOn = IdentityMenu.Identity.IsMFAEnabled;
                         }
@@ -1406,7 +1406,7 @@ namespace ZitiDesktopEdge {
                     .SetContent("Authenticate")
                     .AddArgument("action", "mfa-auth")
                     .AddArgument("identifier", identity.Identifier);
-                message = $"{displayName} requires a TOTP to access services.";
+                message = $"{displayName} requires MFA to access services.";
             } else {
                 // MFA is required but isn't set up yet: prompt setup, not authentication
                 button = new ToastButton()
