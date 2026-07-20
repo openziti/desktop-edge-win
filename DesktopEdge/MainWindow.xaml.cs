@@ -143,10 +143,19 @@ namespace ZitiDesktopEdge {
             HideLoad();
             this.Dispatcher.Invoke(async () => {
                 if (mfa.Action == "enrollment_challenge") {
-                    string url = HttpUtility.UrlDecode(mfa.ProvisioningUrl);
-                    string secret = HttpUtility.ParseQueryString(url)["secret"];
-                    this.IdentityMenu.Identity.RecoveryCodes = mfa?.RecoveryCodes?.ToArray();
-                    SetupMFA(this.IdentityMenu.Identity, url, secret);
+                    var found = identities.Find(id => id.Identifier == mfa.Identifier);
+                    if (mfa.Successful) {
+                        string url = HttpUtility.UrlDecode(mfa.ProvisioningUrl);
+                        string secret = HttpUtility.ParseQueryString(url)["secret"];
+                        found.RecoveryCodes = mfa?.RecoveryCodes?.ToArray();
+                        SetupMFA(found, url, secret);
+                    } else {
+                        // setup never started: make sure the toggle reflects IsMFAEnabled
+                        if (IdentityMenu.Identity != null && IdentityMenu.Identity.Identifier == mfa.Identifier) {
+                            IdentityMenu.IdentityMFA.IsOn = IdentityMenu.Identity.IsMFAEnabled;
+                        }
+                        await ShowBlurbAsync("MFA setup failed to start", "");
+                    }
                 } else if (mfa.Action == "auth_challenge") {
                     for (int i = 0; i < identities.Count; i++) {
                         if (identities[i].Identifier == mfa.Identifier) {
@@ -551,6 +560,17 @@ namespace ZitiDesktopEdge {
                             if (found != null) {
                                 this.Dispatcher.Invoke(() => {
                                     MFAAuthenticate(found);
+                                });
+                            }
+                        }
+                    } else if (value == "mfa-setup") {
+                        string setupIdentifier = null;
+                        args.TryGetValue("identifier", out setupIdentifier);
+                        if (setupIdentifier != null) {
+                            var found = identities.Find(i => i.Identifier == setupIdentifier);
+                            if (found != null) {
+                                this.Dispatcher.Invoke(() => {
+                                    IdItem_EnableMFA(found);
                                 });
                             }
                         }
@@ -1379,11 +1399,23 @@ namespace ZitiDesktopEdge {
 
         private void QueueMfaNotification(ZitiIdentity identity) {
             string displayName = string.IsNullOrEmpty(identity.Name) ? identity.Identifier : identity.Name;
-            var button = new ToastButton()
-                .SetContent("Authenticate")
-                .AddArgument("action", "mfa-auth")
-                .AddArgument("identifier", identity.Identifier);
-            _notificationThrottle.Queue(identity.Identifier, $"{displayName} requires MFA authentication.", button);
+            ToastButton button;
+            string message;
+            if (identity.IsMFAEnabled) {
+                button = new ToastButton()
+                    .SetContent("Authenticate")
+                    .AddArgument("action", "mfa-auth")
+                    .AddArgument("identifier", identity.Identifier);
+                message = $"{displayName} requires MFA to access services.";
+            } else {
+                // MFA is required but isn't set up yet: prompt setup, not authentication
+                button = new ToastButton()
+                    .SetContent("Set Up MFA")
+                    .AddArgument("action", "mfa-setup")
+                    .AddArgument("identifier", identity.Identifier);
+                message = $"{displayName} requires MFA setup to access services.";
+            }
+            _notificationThrottle.Queue(identity.Identifier, message, button);
         }
 
         private async Task StartExtAuth(ZitiIdentity identity) {
@@ -1683,6 +1715,7 @@ namespace ZitiDesktopEdge {
                     var found = identities.Find(i => i.Identifier == e.Id.Identifier);
                     found.IsConnected = true;
                     found.IsMFANeeded = e.Id.MfaNeeded;
+                    found.IsMFAEnabled = e.Id.MfaEnabled;
                     found.NeedsExtAuth = e.Id.NeedsExtAuth;
                     for (int i = 0; i < identities.Count; i++) {
                         if (identities[i].Identifier == found.Identifier) {

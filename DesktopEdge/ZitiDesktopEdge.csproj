@@ -499,6 +499,7 @@
   <ItemGroup>
     <Resource Include="Assets\Images\mfaoff.png" />
     <Resource Include="Assets\Images\mfaon.png" />
+    <Resource Include="Assets\Images\mfasetup.png" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Assets\Images\recovery.png" />

@@ -58,10 +58,8 @@ namespace ZitiDesktopEdge {
         private float countdownComplete = -1;
         private int available = 0;
 
-        private static SWM.Color mfaOrange = SWM.Color.FromRgb(0xA1, 0x8B, 0x10);
         private static SWM.Color defaultBlue = SWM.Color.FromRgb(0x00, 0x68, 0xF9);
         private static SWM.Color disabledGray = SWM.Color.FromArgb(0xFF, 0xA9, 0xA9, 0xA9);
-        private static SWM.Brush MFANeededBrush = new SWM.SolidColorBrush(mfaOrange);
         private static SWM.Brush DefaultBrush = new SWM.SolidColorBrush(defaultBlue);
         private static SWM.Brush DisabledBrush = new SWM.SolidColorBrush(disabledGray);
 
@@ -178,6 +176,7 @@ namespace ZitiDesktopEdge {
             PostureTimedOut.Visibility = Visibility.Collapsed;
             ServiceCountArea.Visibility = Visibility.Collapsed;
             MfaRequired.Visibility = Visibility.Collapsed;
+            MfaSetupNeeded.Visibility = Visibility.Collapsed;
             ExtAuthRequired.Visibility = Visibility.Collapsed;
 
             ToggleSwitch.Enabled = _identity.IsEnabled;
@@ -186,6 +185,7 @@ namespace ZitiDesktopEdge {
             Action hideMfa = () => {
                 PostureTimedOut.Visibility = Visibility.Collapsed;
                 MfaRequired.Visibility = Visibility.Collapsed;
+                MfaSetupNeeded.Visibility = Visibility.Collapsed;
             };
             Action showMfa = () => {
                 if (_identity.IsTimedOut) {
@@ -229,10 +229,10 @@ namespace ZitiDesktopEdge {
                     }
                 } else {
                     if (_identity.IsMFANeeded) {
-                        ServiceCount.Content = _identity.Services.Count.ToString();
                         ServiceCountAreaLabel.Content = "enable mfa";
-                        showBubbles();
-                        ServiceCountBorder.Background = MFANeededBrush;
+                        ServiceCountArea.Visibility = Visibility.Collapsed;
+                        MfaSetupNeeded.Visibility = Visibility.Visible;
+                        MainArea.Opacity = 0.6;
                     } else {
                         ServiceCount.Content = _identity.Services.Count.ToString();
                         ServiceCountAreaLabel.Content = "services";
@@ -394,8 +394,6 @@ namespace ZitiDesktopEdge {
             } else if (ExtAuthRequired.Visibility == Visibility.Visible) {
                 ShowExtAuthList(sender, e);
             } else if (_identity.IsEnabled && _identity.IsMFANeeded && !_identity.IsMFAEnabled) {
-                // "enable mfa" bubble: open details so the enrollment callback targets this identity, then start enrollment.
-                OpenDetails(sender, e);
                 EnableMFARequested?.Invoke(_identity);
             } else {
                 OpenDetails(sender, e);
