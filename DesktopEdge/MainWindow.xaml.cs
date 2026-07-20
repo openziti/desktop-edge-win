@@ -2208,7 +2208,7 @@ namespace ZitiDesktopEdge {
             MainMenu.Visibility = Visibility.Visible;
         }
 
-        async private Task<Identity> AddId(EnrollIdentifierPayload payload) {
+        async private Task AddId(EnrollIdentifierPayload payload) {
 #if DEBUG
             Console.WriteLine("AddId.JwtContent\t: " + payload.JwtContent);
             Console.WriteLine("AddId.IdentityFilename\t: " + payload.IdentityFilename);
@@ -2224,22 +2224,20 @@ namespace ZitiDesktopEdge {
                     // External-auth enrollment: zet returns an auth URL instead of a full identity.
                     // Launch the browser; zet will emit a normal identity event once the user signs in.
                     if (!string.IsNullOrEmpty(createdId.Url)) {
+                        _pendingAddByUrlIdentifier = createdId.Identifier;
                         System.Diagnostics.Process.Start(createdId.Url);
-                        return createdId;
+                        return;
                     }
                     var zid = ZitiIdentity.FromClient(createdId);
                     AddIdentity(zid);
                     LoadIdentities(true);
                     await serviceClient.IdentityOnOffAsync(createdId.Identifier, true);
-                    return createdId;
                 } else {
                     // this never returns a value...
-                    return null;
                 }
             } catch (ServiceException e) {
                 HideLoad();
                 await ShowBlurbAsync("Unexpected error when adding identity!", e.Message);
-                return null;
             } catch (Exception e) {
                 ZdewLink linkControl = new ZdewLink {
                     NavigateUri = new Uri("https://openziti.discourse.group/"),
@@ -2250,7 +2248,6 @@ namespace ZitiDesktopEdge {
                     $"Please review the logs and consider providing a feedback bundle to the support forum.\nError: {e.Message}",
                     linkControl
                     );
-                return null;
             }
         }
 
@@ -2614,10 +2611,7 @@ namespace ZitiDesktopEdge {
         async void OnAddIdentityAction(EnrollIdentifierPayload payload, UserControl toClose) {
             try {
                 CloseJoinByUrl(false, toClose);
-                Identity created = await AddId(payload);
-                if (created != null && !string.IsNullOrEmpty(created.Identifier)) {
-                    _pendingAddByUrlIdentifier = created.Identifier;
-                }
+                await AddId(payload);
             } catch (ServiceException se) {
                 if (se.Code == 500) {
                     if (se?.OriginalResponse?.Error == "ZITI_KEY_GENERATION_FAILED") {
