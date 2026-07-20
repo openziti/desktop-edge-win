@@ -74,6 +74,8 @@ namespace ZitiDesktopEdge {
         private string[] suffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };
         private string _blurbUrl = "";
 
+        private string _pendingAddByUrlIdentifier;
+
         private DateTime NextNotificationTime;
         private static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
@@ -238,8 +240,15 @@ namespace ZitiDesktopEdge {
                         _notificationThrottle.Remove(mfa.Identifier);
                     }
                 } else if (mfa.Action == "enrollment_required") {
-                    // Policy mandates MFA enrollment. Don't open setup; the user starts it from the Enable MFA toggle.
-                    logger.Debug("MFA enrollment required for identity {0}", mfa.Identifier);
+                    // Auto-start setup only for an identity just added by URL; otherwise the user uses the Enable MFA toggle.
+                    if (mfa.Identifier == _pendingAddByUrlIdentifier) {
+                        _pendingAddByUrlIdentifier = null;
+                        BringWindowForward();
+                        ZitiIdentity added = identities.Find(id => id.Identifier == mfa.Identifier);
+                        if (added != null) IdItem_EnableMFA(added);
+                    } else {
+                        logger.Debug("MFA enrollment required for identity {0}", mfa.Identifier);
+                    }
                 } else {
                     await ShowBlurbAsync("Unexpected error when processing MFA", "");
                     logger.Error("unexpected action: " + mfa.Action);
@@ -1659,6 +1668,7 @@ namespace ZitiDesktopEdge {
                         if (zid.NeedsExtAuth) {
                             QueueExtAuthNotification(zid);
                         }
+                        if (zid.Identifier == _pendingAddByUrlIdentifier) BringWindowForward();
                     } else {
                         var isAdd = e.Action == "added";
                         var isExtLogin = e.Action == "needs_ext_login";
@@ -2077,7 +2087,6 @@ namespace ZitiDesktopEdge {
                         idItem.OnStatusChanged += Id_OnStatusChanged;
                         idItem.Identity = id;
                         idItem.IdentityChanged += IdItem_IdentityChanged;
-                        idItem.BlurbEvent += IdItem_BlurbEvent;
                         if (repaint) {
                             idItem.RefreshUI();
                         }
@@ -2107,12 +2116,6 @@ namespace ZitiDesktopEdge {
                 Placement();
                 SetNotifyIcon("");
             });
-        }
-
-        private async void IdItem_BlurbEvent(ZitiIdentity identity) {
-            if(identity.AuthInProgress) {
-                await ShowBlurbAsync("Authentication in progress", "Please check your browser");
-            }
         }
 
         private void IdItem_IdentityChanged(ZitiIdentity identity) {
@@ -2205,7 +2208,7 @@ namespace ZitiDesktopEdge {
             MainMenu.Visibility = Visibility.Visible;
         }
 
-        async private Task AddId(EnrollIdentifierPayload payload) {
+        async private Task<Identity> AddId(EnrollIdentifierPayload payload) {
 #if DEBUG
             Console.WriteLine("AddId.JwtContent\t: " + payload.JwtContent);
             Console.WriteLine("AddId.IdentityFilename\t: " + payload.IdentityFilename);
@@ -2222,18 +2225,21 @@ namespace ZitiDesktopEdge {
                     // Launch the browser; zet will emit a normal identity event once the user signs in.
                     if (!string.IsNullOrEmpty(createdId.Url)) {
                         System.Diagnostics.Process.Start(createdId.Url);
-                        return;
+                        return createdId;
                     }
                     var zid = ZitiIdentity.FromClient(createdId);
                     AddIdentity(zid);
                     LoadIdentities(true);
                     await serviceClient.IdentityOnOffAsync(createdId.Identifier, true);
+                    return createdId;
                 } else {
                     // this never returns a value...
+                    return null;
                 }
             } catch (ServiceException e) {
                 HideLoad();
                 await ShowBlurbAsync("Unexpected error when adding identity!", e.Message);
+                return null;
             } catch (Exception e) {
                 ZdewLink linkControl = new ZdewLink {
                     NavigateUri = new Uri("https://openziti.discourse.group/"),
@@ -2244,6 +2250,7 @@ namespace ZitiDesktopEdge {
                     $"Please review the logs and consider providing a feedback bundle to the support forum.\nError: {e.Message}",
                     linkControl
                     );
+                return null;
             }
         }
 
@@ -2607,7 +2614,10 @@ namespace ZitiDesktopEdge {
         async void OnAddIdentityAction(EnrollIdentifierPayload payload, UserControl toClose) {
             try {
                 CloseJoinByUrl(false, toClose);
-                await AddId(payload);
+                Identity created = await AddId(payload);
+                if (created != null && !string.IsNullOrEmpty(created.Identifier)) {
+                    _pendingAddByUrlIdentifier = created.Identifier;
+                }
             } catch (ServiceException se) {
                 if (se.Code == 500) {
                     if (se?.OriginalResponse?.Error == "ZITI_KEY_GENERATION_FAILED") {
