@@ -74,8 +74,6 @@ namespace ZitiDesktopEdge {
         private string[] suffixes = { "Bps", "kBps", "mBps", "gBps", "tBps", "pBps" };
         private string _blurbUrl = "";
 
-        private string _pendingAddByUrlIdentifier;
-
         private DateTime NextNotificationTime;
         private static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
@@ -240,15 +238,8 @@ namespace ZitiDesktopEdge {
                         _notificationThrottle.Remove(mfa.Identifier);
                     }
                 } else if (mfa.Action == "enrollment_required") {
-                    // Auto-start setup only for an identity just added by URL; otherwise the user uses the Enable MFA toggle.
-                    if (!string.IsNullOrEmpty(_pendingAddByUrlIdentifier) && mfa.Identifier == _pendingAddByUrlIdentifier) {
-                        _pendingAddByUrlIdentifier = null;
-                        BringWindowForward();
-                        ZitiIdentity added = identities.Find(id => id.Identifier == mfa.Identifier);
-                        if (added != null) IdItem_EnableMFA(added);
-                    } else {
-                        logger.Debug("MFA enrollment required for identity {0}", mfa.Identifier);
-                    }
+                    logger.Debug("MFA enrollment required for identity {0}", mfa.Identifier);
+                    BringWindowForward();
                 } else {
                     await ShowBlurbAsync("Unexpected error when processing MFA", "");
                     logger.Error("unexpected action: " + mfa.Action);
@@ -1668,7 +1659,7 @@ namespace ZitiDesktopEdge {
                         if (zid.NeedsExtAuth) {
                             QueueExtAuthNotification(zid);
                         }
-                        if (!string.IsNullOrEmpty(_pendingAddByUrlIdentifier) && zid.Identifier == _pendingAddByUrlIdentifier) BringWindowForward();
+                        BringWindowForward();
                     } else {
                         var isAdd = e.Action == "added";
                         var isExtLogin = e.Action == "needs_ext_login";
@@ -2224,7 +2215,6 @@ namespace ZitiDesktopEdge {
                     // External-auth enrollment: zet returns an auth URL instead of a full identity.
                     // Launch the browser; zet will emit a normal identity event once the user signs in.
                     if (!string.IsNullOrEmpty(createdId.Url)) {
-                        _pendingAddByUrlIdentifier = createdId.Identifier;
                         System.Diagnostics.Process.Start(createdId.Url);
                         return;
                     }
