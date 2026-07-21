@@ -238,8 +238,8 @@ namespace ZitiDesktopEdge {
                         _notificationThrottle.Remove(mfa.Identifier);
                     }
                 } else if (mfa.Action == "enrollment_required") {
-                    // Policy mandates MFA enrollment. Don't open setup; the user starts it from the Enable MFA toggle.
                     logger.Debug("MFA enrollment required for identity {0}", mfa.Identifier);
+                    BringWindowForward();
                 } else {
                     await ShowBlurbAsync("Unexpected error when processing MFA", "");
                     logger.Error("unexpected action: " + mfa.Action);
@@ -1659,6 +1659,7 @@ namespace ZitiDesktopEdge {
                         if (zid.NeedsExtAuth) {
                             QueueExtAuthNotification(zid);
                         }
+                        BringWindowForward();
                     } else {
                         var isAdd = e.Action == "added";
                         var isExtLogin = e.Action == "needs_ext_login";
@@ -2077,7 +2078,6 @@ namespace ZitiDesktopEdge {
                         idItem.OnStatusChanged += Id_OnStatusChanged;
                         idItem.Identity = id;
                         idItem.IdentityChanged += IdItem_IdentityChanged;
-                        idItem.BlurbEvent += IdItem_BlurbEvent;
                         if (repaint) {
                             idItem.RefreshUI();
                         }
@@ -2107,12 +2107,6 @@ namespace ZitiDesktopEdge {
                 Placement();
                 SetNotifyIcon("");
             });
-        }
-
-        private async void IdItem_BlurbEvent(ZitiIdentity identity) {
-            if(identity.AuthInProgress) {
-                await ShowBlurbAsync("Authentication in progress", "Please check your browser");
-            }
         }
 
         private void IdItem_IdentityChanged(ZitiIdentity identity) {

@@ -47,8 +47,6 @@ namespace ZitiDesktopEdge {
         public event OnEnableMFA EnableMFARequested;
         public delegate void OnIdentityChanged(ZitiIdentity identity);
         public event OnIdentityChanged IdentityChanged;
-        public delegate void OnBlurb(ZitiIdentity identity);
-        public event OnBlurb BlurbEvent;
         public event CommonDelegates.CompleteExternalAuth CompleteExternalAuth;
 
         public Action<string, string> ShowError; 
