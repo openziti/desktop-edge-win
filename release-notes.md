@@ -1,5 +1,6 @@
 # Release 2.11.2.9
 ## What's New
+* updated to ziti-edge-tunnel v1.18.4
 * New "enable MFA" icon and setup toast
 * [Issue 1028](https://github.com/openziti/desktop-edge-win/issues/1028) - Adding an identity by URL keeps the UI up instead of dismissing it and forcing a tray-icon reclick
 
@@ -9,6 +10,12 @@
 
 ## Other changes
 n/a
+
+## Dependencies
+* ziti-tunneler: v1.18.4
+* ziti-sdk:      1.18.3
+* tlsuv:         v0.42.3[OpenSSL 3.6.3 9 Jun 2026]
+* tlsuv:         v0.42.3[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.11.2.8
 ## What's New
