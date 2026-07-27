@@ -67,18 +67,36 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         /// <summary>
-        /// Construct a synthetic "default" TunnelInstance marked as offline.
-        /// Used by the picker so the default row is always visible even when
-        /// the default ziti-edge-tunnel isn't running — letting the user
-        /// come back to it after starting the service.
+        /// A TunnelInstance for a pipe nothing is listening on, so the UI can still offer it.
         /// </summary>
-        public static TunnelInstance OfflineDefault() {
+        public static TunnelInstance Offline(string discriminator) {
+            string disc = string.IsNullOrEmpty(discriminator) ? null : discriminator;
             return new TunnelInstance {
-                Discriminator = null,
-                PipeName = "ziti-edge-tunnel.sock",
-                EventPipeName = "ziti-edge-tunnel-event.sock",
+                Discriminator = disc,
+                PipeName = disc == null ? DefaultPipeName : DefaultPipeName + "." + disc,
+                EventPipeName = disc == null ? DefaultEventPipeName : DefaultEventPipeName + "." + disc,
                 IsOnline = false,
             };
+        }
+
+        /// <summary>
+        /// The instances to offer for switching: default first, then discovered alternates.
+        /// The active instance is always present, so a stopped alternate stays selectable
+        /// until the user switches off it instead of stranding them on it.
+        /// </summary>
+        public static IReadOnlyList<TunnelInstance> SwitchOptions(IReadOnlyList<TunnelInstance> discovered, string activeDiscriminator) {
+            List<TunnelInstance> ordered = new List<TunnelInstance>();
+            TunnelInstance def = discovered.FirstOrDefault(i => string.IsNullOrEmpty(i.Discriminator));
+            ordered.Add(def ?? Offline(null));
+            foreach (TunnelInstance inst in discovered) {
+                if (!string.IsNullOrEmpty(inst.Discriminator)) ordered.Add(inst);
+            }
+
+            string active = string.IsNullOrEmpty(activeDiscriminator) ? null : activeDiscriminator;
+            if (active != null && !ordered.Any(i => string.Equals(i.Discriminator, active, StringComparison.Ordinal))) {
+                ordered.Add(Offline(active));
+            }
+            return ordered;
         }
 
         /// <summary>

@@ -96,15 +96,7 @@ namespace ZitiDesktopEdge {
                 return;
             }
 
-            // Assemble the display list: default is always first, synthetic if
-            // it's not actually running. Everything else follows in the order
-            // discovery returned them.
-            var ordered = new List<TunnelInstanceDiscovery.TunnelInstance>();
-            var def = discovered.FirstOrDefault(i => string.IsNullOrEmpty(i.Discriminator));
-            ordered.Add(def ?? TunnelInstanceDiscovery.OfflineDefault());
-            foreach (var inst in discovered) {
-                if (!string.IsNullOrEmpty(inst.Discriminator)) ordered.Add(inst);
-            }
+            IReadOnlyList<TunnelInstanceDiscovery.TunnelInstance> ordered = TunnelInstanceDiscovery.SwitchOptions(discovered, activeDiscriminator);
 
             int liveCount = ordered.Count(i => i.IsOnline);
             statusLabel.Text = liveCount == 0
