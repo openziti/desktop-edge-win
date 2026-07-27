@@ -80,23 +80,19 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         /// <summary>
-        /// The instances to offer for switching: default first, then discovered alternates.
-        /// The active instance is always present, so a stopped alternate stays selectable
-        /// until the user switches off it instead of stranding them on it.
+        /// Default first, then discovered alternates. The active instance is always included so a
+        /// stopped one stays selectable until the user switches off it.
         /// </summary>
         public static IReadOnlyList<TunnelInstance> SwitchOptions(IReadOnlyList<TunnelInstance> discovered, string activeDiscriminator) {
-            List<TunnelInstance> ordered = new List<TunnelInstance>();
-            TunnelInstance def = discovered.FirstOrDefault(i => string.IsNullOrEmpty(i.Discriminator));
-            ordered.Add(def ?? Offline(null));
+            List<TunnelInstance> options = new List<TunnelInstance>();
+            options.Add(discovered.FirstOrDefault(i => string.IsNullOrEmpty(i.Discriminator)) ?? Offline(null));
             foreach (TunnelInstance inst in discovered) {
-                if (!string.IsNullOrEmpty(inst.Discriminator)) ordered.Add(inst);
+                if (!string.IsNullOrEmpty(inst.Discriminator)) options.Add(inst);
             }
-
-            string active = string.IsNullOrEmpty(activeDiscriminator) ? null : activeDiscriminator;
-            if (active != null && !ordered.Any(i => string.Equals(i.Discriminator, active, StringComparison.Ordinal))) {
-                ordered.Add(Offline(active));
+            if (!string.IsNullOrEmpty(activeDiscriminator) && !options.Any(i => i.Discriminator == activeDiscriminator)) {
+                options.Add(Offline(activeDiscriminator));
             }
-            return ordered;
+            return options;
         }
 
         /// <summary>
