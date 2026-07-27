@@ -604,13 +604,13 @@ namespace ZitiDesktopEdge {
 
         private async Task OpenTunnelInstancePickerAsync() {
             try {
-                var instances = await TunnelInstanceDiscovery.EnumerateAsync();
-                // Fire whenever a non-default tunneler exists, regardless of count. Covers the
-                // "only the alternate is running" case where there's still a meaningful switch
-                // (back to default). The picker synthesizes the default row when needed.
-                bool hasNonDefault = instances.Any(i => !string.IsNullOrEmpty(i.Discriminator));
-                if (!hasNonDefault) {
-                    logger.Debug("Ctrl+Shift+T ignored — no non-default tunneler instances ({0} total)", instances.Count);
+                IReadOnlyList<TunnelInstanceDiscovery.TunnelInstance> instances = await TunnelInstanceDiscovery.EnumerateAsync();
+                // Count what the picker will actually show, not what's running: the instance
+                // we're viewing stays on the list after its tunneler stops, and switching back
+                // to default is the only way off it.
+                IReadOnlyList<TunnelInstanceDiscovery.TunnelInstance> options = TunnelInstanceDiscovery.SwitchOptions(instances, serviceClient?.Discriminator);
+                if (options.Count <= 1) {
+                    logger.Debug("Ctrl+Shift+T ignored — nothing to switch to ({0} instances running)", instances.Count);
                     return;
                 }
             } catch (Exception ex) {

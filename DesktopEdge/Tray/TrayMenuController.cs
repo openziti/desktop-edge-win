@@ -429,15 +429,6 @@ namespace ZitiDesktopEdge.Tray {
                 return;
             }
 
-            // Same ordering as the picker window: default first (synthetic if not actually
-            // online), then everything else in discovery order.
-            var ordered = new List<TunnelInstanceDiscovery.TunnelInstance>();
-            var def = discovered.FirstOrDefault(i => string.IsNullOrEmpty(i.Discriminator));
-            ordered.Add(def ?? TunnelInstanceDiscovery.OfflineDefault());
-            foreach (var inst in discovered) {
-                if (!string.IsNullOrEmpty(inst.Discriminator)) ordered.Add(inst);
-            }
-
             dispatcher.Invoke(() => {
                 // Tear down previous items. ToolStripItem.Dispose() removes the item from its
                 // owner's collection, so iterating DropDownItems while disposing skips every
@@ -450,14 +441,16 @@ namespace ZitiDesktopEdge.Tray {
                     oldItem.Dispose();
                 }
 
+                DataClient serviceClient = Application.Current.Properties["ServiceClient"] as DataClient;
+                string activeDisc = serviceClient?.Discriminator ?? "";
+                IReadOnlyList<TunnelInstanceDiscovery.TunnelInstance> ordered = TunnelInstanceDiscovery.SwitchOptions(discovered, activeDisc);
+
                 if (ordered.Count <= 1) {
                     trayTunnelerSubmenu.Visible = false;
                     return;
                 }
 
-                var serviceClient = Application.Current.Properties["ServiceClient"] as DataClient;
-                string activeDisc = serviceClient?.Discriminator ?? "";
-                foreach (var inst in ordered) {
+                foreach (TunnelInstanceDiscovery.TunnelInstance inst in ordered) {
                     string instDisc = inst.Discriminator ?? "";
                     bool isActive = string.Equals(instDisc, activeDisc, StringComparison.Ordinal) && inst.IsOnline;
                     string suffix = isActive ? "   (active)" : (!inst.IsOnline ? "   (not running)" : "");
