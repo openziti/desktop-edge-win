@@ -19,9 +19,8 @@ using System.IO;
 using NLog;
 
 namespace ZitiUpdateService.Utils {
-    // A Windows upgrade moves the SYSTEM profile into a backup folder. ziti-edge-tunnel only
-    // recovers its own files, and this service regenerates default settings at startup before
-    // ziti-edge-tunnel even runs, so this service restores its own folder before Load()/Write().
+    // A Windows upgrade can move the SYSTEM profile into a backup folder.
+    // Restore settings from the backup folder so defaults aren't written when the service starts.
     public static class WindowsUpgradeBackup {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -42,7 +41,6 @@ namespace ZitiUpdateService.Utils {
                 foreach (string backupFile in Directory.GetFiles(backupFolder)) {
                     string liveFile = Path.Combine(folder, Path.GetFileName(backupFile));
                     if (File.Exists(liveFile)) {
-                        // never delete a backup that was not restored, Windows prunes Windows.old on its own
                         Logger.Warn("keeping existing file {0}, backup file left at {1}", liveFile, backupFile);
                         continue;
                     }

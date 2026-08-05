@@ -12,11 +12,7 @@ using ZitiUpdateService.Utils;
 
 namespace ZitiUpdateService.Tests {
     /// <summary>
-    /// Tests for the Windows-upgrade settings recovery (issue #1050). A Windows upgrade moves
-    /// the SYSTEM profile to Windows.old and the monitor service regenerates default settings
-    /// before ziti-edge-tunnel's own recovery runs, so the service restores its own folder.
-    /// Semantics mirror ziti-edge-tunnel's move_config_from_previous_windows_backup: an
-    /// existing live file wins, and a backup file is only deleted after a successful restore.
+    /// Ensure settings are restored after a Windows upgrade (issue #1050). Rationale is on <see cref="WindowsUpgradeBackup"/>.
     /// </summary>
     [TestClass]
     public class WindowsUpgradeBackupTests {
