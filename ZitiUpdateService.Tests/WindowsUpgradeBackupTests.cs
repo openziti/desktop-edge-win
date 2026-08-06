@@ -97,6 +97,17 @@ namespace ZitiUpdateService.Tests {
         }
 
         [TestMethod]
+        public void EmptyBackupFile_RejectedAndLeftInPlace() {
+            Directory.CreateDirectory(oldFolder);
+            File.WriteAllText(Path.Combine(oldFolder, "settings.json"), string.Empty);
+
+            WindowsUpgradeBackup.RestoreMissingFiles(liveFolder, new string[] { oldFolder, btFolder });
+
+            Assert.IsFalse(File.Exists(Path.Combine(liveFolder, "settings.json")), "empty backup must not be restored");
+            Assert.IsTrue(File.Exists(Path.Combine(oldFolder, "settings.json")), "rejected backup must not be deleted");
+        }
+
+        [TestMethod]
         public void NoBackupFolders_LeavesLiveFolderUntouched() {
             WindowsUpgradeBackup.RestoreMissingFiles(liveFolder, new string[] { oldFolder, btFolder });
 
