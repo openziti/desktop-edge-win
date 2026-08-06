@@ -1,3 +1,13 @@
+# Release 2.11.2.10
+## What's New
+n/a
+
+## Bugs fixed
+* [Issue 1050](https://github.com/openziti/desktop-edge-win/issues/1050) - Restore monitor service settings from Windows.old after a Windows upgrade
+
+## Other changes
+n/a
+
 # Release 2.11.2.9
 ## What's New
 * updated to ziti-edge-tunnel v1.18.4
