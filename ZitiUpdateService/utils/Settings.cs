@@ -67,6 +67,7 @@ namespace ZitiUpdateService.Utils {
             string file = "settings.json";
             Location = Path.Combine(folder, file);
             Directory.CreateDirectory(folder);
+            WindowsUpgradeBackup.RestoreMissingFiles(folder, WindowsUpgradeBackup.BackupFolders(folder));
             watcher = new FileSystemWatcher(folder);
             watcher.Filter = file;
 
