@@ -30,6 +30,7 @@ namespace Ziti.Desktop.Edge.Utils {
 
         private readonly Action<string, string, ToastButton> _sendNotification;
         private readonly Dictionary<string, Action> _pendingNotifications = new Dictionary<string, Action>();
+        private readonly HashSet<string> _notified = new HashSet<string>();
         private readonly DispatcherTimer _throttleTimer;
         private readonly string _header;
         private readonly string _summaryFormat;
@@ -49,10 +50,11 @@ namespace Ziti.Desktop.Edge.Utils {
         }
 
         /// <summary>
-        /// Adds a notification to the pending queue. Skips duplicates for the same identity.
-        /// Resets the 5-second window each time a new notification arrives.
+        /// Adds a notification to the pending queue. Skips identities already pending or already
+        /// notified. Resets the 5-second window each time a new notification arrives.
         /// </summary>
         public void Queue(string identityIdentifier, string message, ToastButton button) {
+            if (_notified.Contains(identityIdentifier)) return;
             if (_pendingNotifications.ContainsKey(identityIdentifier)) return;
             _pendingNotifications[identityIdentifier] = () => _sendNotification(_header, message, button);
             _throttleTimer.Stop();
@@ -64,6 +66,7 @@ namespace Ziti.Desktop.Edge.Utils {
         /// </summary>
         public void Remove(string identityIdentifier) {
             _pendingNotifications.Remove(identityIdentifier);
+            _notified.Remove(identityIdentifier);
         }
 
         /// <summary>
@@ -72,6 +75,7 @@ namespace Ziti.Desktop.Edge.Utils {
         public void Clear() {
             _throttleTimer.Stop();
             _pendingNotifications.Clear();
+            _notified.Clear();
         }
 
         /// <summary>
@@ -94,6 +98,7 @@ namespace Ziti.Desktop.Edge.Utils {
                 // Send the single notification
                 _pendingNotifications.Values.First()();
             }
+            _notified.UnionWith(_pendingNotifications.Keys);
             _pendingNotifications.Clear();
         }
     }
