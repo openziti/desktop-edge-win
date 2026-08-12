@@ -246,6 +246,8 @@ namespace ZitiDesktopEdge {
 
         private void ShowAdvanced(object sender, MouseButtonEventArgs e) {
             menuState = "Advanced";
+            // the toast's "Don't show again" button can change the setting outside this screen
+            AuthNotificationsToggle.Enabled = Properties.Settings.Default.AuthNotificationsEnabled;
             UpdateState();
         }
         private void ShowIdentities(object sender, MouseButtonEventArgs e) {

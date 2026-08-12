@@ -563,6 +563,11 @@ namespace ZitiDesktopEdge {
                                 });
                             }
                         }
+                    } else if (value == "mute-auth-notifications") {
+                        Properties.Settings.Default.AuthNotificationsEnabled = false;
+                        Properties.Settings.Default.Save();
+                        // opting out shouldn't pop the window
+                        return;
                     } else if (value == "mfa-setup") {
                         string setupIdentifier = null;
                         args.TryGetValue("identifier", out setupIdentifier);
@@ -1367,13 +1372,17 @@ namespace ZitiDesktopEdge {
         }
 
         private void ShowToast(string header, string message, ToastButton button) {
+            ShowToastWithButtons(header, message, button == null ? new ToastButton[0] : new ToastButton[] { button });
+        }
+
+        private void ShowToastWithButtons(string header, string message, ToastButton[] buttons) {
             try {
                 logger.Debug("showing toast: {} {}", header, message);
                 var builder = new ToastContentBuilder()
                     .AddArgument("notbutton", "click")
                     .AddText(header)
                     .AddText(message);
-                if (button != null) {
+                foreach (ToastButton button in buttons) {
                     builder.AddButton(button);
                 }
                 builder.Show();
@@ -1390,7 +1399,14 @@ namespace ZitiDesktopEdge {
 
         private void ShowAuthNotification(string header, string message, ToastButton button) {
             if (!Properties.Settings.Default.AuthNotificationsEnabled) return;
-            ShowToast(header, message, button);
+            ToastButton dontShowAgain = new ToastButton()
+                .SetContent("Don't show again")
+                .AddArgument("action", "mute-auth-notifications");
+            if (button == null) {
+                ShowToastWithButtons(header, message, new ToastButton[] { dontShowAgain });
+            } else {
+                ShowToastWithButtons(header, message, new ToastButton[] { button, dontShowAgain });
+            }
         }
 
         private void QueueExtAuthNotification(ZitiIdentity identity) {
