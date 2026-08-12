@@ -439,7 +439,7 @@ namespace ZitiDesktopEdge {
             DataContext = props;
 
             NextNotificationTime = DateTime.Now;
-            _notificationThrottle = new NotificationThrottle(ShowToast, "Authorization Required", "{0} identities require authorization.");
+            _notificationThrottle = new NotificationThrottle(ShowAuthNotification, "Authorization Required", "{0} identities require authorization.");
             SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
             string nlogFile = Path.Combine(ExecutionDirectory, ThisAssemblyName + "-log.config");
 
@@ -1386,6 +1386,11 @@ namespace ZitiDesktopEdge {
 
         private void ShowToast(string message) {
             ShowToast("Important Notice", message, null);
+        }
+
+        private void ShowAuthNotification(string header, string message, ToastButton button) {
+            if (!Properties.Settings.Default.AuthNotificationsEnabled) return;
+            ShowToast(header, message, button);
         }
 
         private void QueueExtAuthNotification(ZitiIdentity identity) {

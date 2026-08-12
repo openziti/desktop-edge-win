@@ -207,6 +207,8 @@ namespace ZitiDesktopEdge {
             // PopulateHourCombos / PopulateFrequencyAndDayCombos are now owned by the
             // MaintenanceWindowControl's constructor; no init wiring needed here.
             AutomaticUpgradesToggle.OnToggled += AutomaticUpgradesToggle_OnToggled;
+            AuthNotificationsToggle.Enabled = Properties.Settings.Default.AuthNotificationsEnabled;
+            AuthNotificationsToggle.OnToggled += AuthNotificationsToggle_OnToggled;
 
             try {
                 ShowUnexpectedFailure = bool.Parse(ConfigurationManager.AppSettings.Get("ShowUnexpectedFailure"));
@@ -301,6 +303,11 @@ namespace ZitiDesktopEdge {
             } catch (Exception ex) {
                 logger.Error("unexpected error when setting automatic upgrade enabled", ex);
             }
+        }
+
+        private void AuthNotificationsToggle_OnToggled(bool enabled) {
+            Properties.Settings.Default.AuthNotificationsEnabled = enabled;
+            Properties.Settings.Default.Save();
         }
 
         private void checkResponse(SvcResponse r, string titleOnErr, string msgOnErr) {

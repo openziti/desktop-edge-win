@@ -69,5 +69,17 @@ namespace ZitiDesktopEdge.Properties {
                 this["SettingsUpgradeRequired"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool AuthNotificationsEnabled {
+            get {
+                return ((bool)(this["AuthNotificationsEnabled"]));
+            }
+            set {
+                this["AuthNotificationsEnabled"] = value;
+            }
+        }
     }
 }
