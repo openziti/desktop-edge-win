@@ -238,8 +238,9 @@ namespace ZitiDesktopEdge {
                         _notificationThrottle.Remove(mfa.Identifier);
                     }
                 } else if (mfa.Action == "enrollment_required") {
+                    // no window pop here: ziti-edge-tunnel re-sends this event on every refresh
+                    // cycle while auth is pending. the queued toast is the user-facing prompt.
                     logger.Debug("MFA enrollment required for identity {0}", mfa.Identifier);
-                    BringWindowForward();
                 } else {
                     await ShowBlurbAsync("Unexpected error when processing MFA", "");
                     logger.Error("unexpected action: " + mfa.Action);
@@ -1697,7 +1698,7 @@ namespace ZitiDesktopEdge {
                         found.IsConnected = true;
                         found.NeedsExtAuth = e.Id.NeedsExtAuth;
                         found.ExtAuthProviders = e.Id.ExtAuthProviders;
-                        if (!found.NeedsExtAuth) {
+                        if (!found.NeedsExtAuth && !e.Id.MfaNeeded) {
                             _notificationThrottle.Remove(found.Identifier);
                         }
                         for (int i = 0; i < identities.Count; i++) {
