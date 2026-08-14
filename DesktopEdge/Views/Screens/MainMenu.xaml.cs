@@ -71,6 +71,8 @@ namespace ZitiDesktopEdge {
         private ZDEWViewState state;
         private ManagedSettingsViewModel policyViewModel;
 
+        public NotificationSettingsViewModel NotificationSettingsViewModel { get; private set; }
+
         public bool ShowUnexpectedFailure { get; set; }
 
         private bool _l2Enabled;
@@ -198,6 +200,7 @@ namespace ZitiDesktopEdge {
             Application.Current.MainWindow.Title = "Ziti Desktop Edge";
             state = (ZDEWViewState)Application.Current.Properties["ZDEWViewState"];
             policyViewModel = (ManagedSettingsViewModel)Application.Current.Properties["ManagedSettingsViewModel"];
+            NotificationSettingsViewModel = (NotificationSettingsViewModel)Application.Current.Properties["NotificationSettingsViewModel"];
             policyViewModel.PropertyChanged += (s, e) => {
                 if (menuState == "ConfigureAutomaticUpgrades" && !_suppressPolicyVmReRender) {
                     Dispatcher.Invoke(UpdateState);
@@ -207,8 +210,6 @@ namespace ZitiDesktopEdge {
             // PopulateHourCombos / PopulateFrequencyAndDayCombos are now owned by the
             // MaintenanceWindowControl's constructor; no init wiring needed here.
             AutomaticUpgradesToggle.OnToggled += AutomaticUpgradesToggle_OnToggled;
-            AuthNotificationsToggle.Enabled = Properties.Settings.Default.AuthNotificationsEnabled;
-            AuthNotificationsToggle.OnToggled += AuthNotificationsToggle_OnToggled;
 
             try {
                 ShowUnexpectedFailure = bool.Parse(ConfigurationManager.AppSettings.Get("ShowUnexpectedFailure"));
@@ -246,6 +247,11 @@ namespace ZitiDesktopEdge {
 
         private void ShowAdvanced(object sender, MouseButtonEventArgs e) {
             menuState = "Advanced";
+            UpdateState();
+        }
+
+        private void ShowNotificationPreferences(object sender, MouseButtonEventArgs e) {
+            menuState = "NotificationPreferences";
             UpdateState();
         }
         private void ShowIdentities(object sender, MouseButtonEventArgs e) {
@@ -305,15 +311,6 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        private void ToggleAuthNotifications(object sender, MouseButtonEventArgs e) {
-            AuthNotificationsToggle.Toggle();
-        }
-
-        private void AuthNotificationsToggle_OnToggled(bool enabled) {
-            Properties.Settings.Default.AuthNotificationsEnabled = enabled;
-            Properties.Settings.Default.Save();
-        }
-
         private void checkResponse(SvcResponse r, string titleOnErr, string msgOnErr) {
             if (r == null) {
                 MainWindow.ShowError(titleOnErr, msgOnErr);
@@ -342,6 +339,7 @@ namespace ZitiDesktopEdge {
             LogsItems.Visibility = Visibility.Collapsed;
             ConfigItems.Visibility = Visibility.Collapsed;
             LogLevelItems.Visibility = Visibility.Collapsed;
+            NotificationItems.Visibility = Visibility.Collapsed;
             AutomaticUpgradesItems.Visibility = Visibility.Collapsed;
             Visibility visibilityFromUpdateAvail = state.UpdateAvailable && !policyViewModel.AutomaticUpdatesDisabled ? Visibility.Visible : Visibility.Collapsed;
             TriggerUpdateButton.Visibility = visibilityFromUpdateAvail;
@@ -401,6 +399,10 @@ namespace ZitiDesktopEdge {
 
                 MenuTitle.Content = "Set Log Level";
                 LogLevelItems.Visibility = Visibility.Visible;
+                BackArrow.Visibility = Visibility.Visible;
+            } else if (menuState == "NotificationPreferences") {
+                MenuTitle.Content = "Notification Preferences";
+                NotificationItems.Visibility = Visibility.Visible;
                 BackArrow.Visibility = Visibility.Visible;
             } else if (menuState == "ConfigureAutomaticUpgrades") {
                 MenuTitle.Content = "Automatic Upgrades";
@@ -489,7 +491,7 @@ namespace ZitiDesktopEdge {
         }
 
         private void GoBack(object sender, MouseButtonEventArgs e) {
-            if (menuState == "Config" || menuState == "LogLevel" || menuState == "UILogs" || menuState == "SetReleaseStream" || menuState == "ConfigureAutomaticUpgrades") {
+            if (menuState == "Config" || menuState == "LogLevel" || menuState == "UILogs" || menuState == "SetReleaseStream" || menuState == "ConfigureAutomaticUpgrades" || menuState == "NotificationPreferences") {
                 menuState = "Advanced";
             } else {
                 menuState = "Menu";

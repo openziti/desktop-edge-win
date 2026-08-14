@@ -35,6 +35,7 @@ using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.ServiceClient;
 using ZitiDesktopEdge.Utility;
+using ZitiDesktopEdge.ViewModels;
 
 using NLog;
 using NLog.Config;
@@ -86,6 +87,7 @@ namespace ZitiDesktopEdge {
         public static string ExpectedLogPathServices;
 
         private static ZDEWViewState state;
+        private static NotificationSettingsViewModel notificationSettings;
 
         public static UIElement MouseDownControl;
         // Global MouseDown for all controls inside the window
@@ -98,6 +100,7 @@ namespace ZitiDesktopEdge {
             asm = System.Reflection.Assembly.GetExecutingAssembly();
             ThisAssemblyName = asm.GetName().Name;
             state = (ZDEWViewState)Application.Current.Properties["ZDEWViewState"];
+            notificationSettings = (NotificationSettingsViewModel)Application.Current.Properties["NotificationSettingsViewModel"];
 #if DEBUG
             ExecutionDirectory = @"C:\Program Files (x86)\NetFoundry Inc\Ziti Desktop Edge";
 #else
@@ -515,10 +518,6 @@ namespace ZitiDesktopEdge {
         private static ToastButton feedbackToastButton = new ToastButton()
                         .SetContent("Click here to collect logs")
                         .AddArgument("action", "feedback");
-
-        private static readonly ToastButton muteAuthNotificationsButton = new ToastButton()
-                        .SetContent("Don't show again")
-                        .AddArgument("action", "mute-auth-notifications");
 
         private void ToastNotificationManagerCompat_OnActivated(ToastNotificationActivatedEventArgsCompat e) {
             this.Dispatcher.Invoke(() => {
@@ -1019,7 +1018,7 @@ namespace ZitiDesktopEdge {
                             await ShowBlurbAsync("Authentication Failed", "External Auth Failed");
                         } else {
                             string displayName = string.IsNullOrEmpty(found.Name) ? found.Identifier : found.Name;
-                            ShowToast("Authentication Failed", $"{displayName} failed to authenticate externally.");
+                            ShowAuthResultNotification("Authentication Failed", $"{displayName} failed to authenticate externally.");
 
                         }
                     }));
@@ -1220,7 +1219,7 @@ namespace ZitiDesktopEdge {
 
                     if (evt.Code != 0) {
                         logger.Error("CODE: " + evt.Code);
-                        if (MainMenu.ShowUnexpectedFailure) {
+                        if (MainMenu.ShowUnexpectedFailure && notificationSettings.ConnectionNotificationsEnabled) {
                             ShowToast("The data channel has stopped unexpectedly", $"If this keeps happening please collect logs and report the issue.", feedbackToastButton);
                         }
                     }
@@ -1331,20 +1330,23 @@ namespace ZitiDesktopEdge {
                         AlertCanvas.Visibility = Visibility.Visible;
 
                         if (isToastEnabled()) {
-                            if (!state.AutomaticUpdatesDisabled) {
-                                if (remaining.TotalSeconds < 60) {
-                                    //this is an immediate update - show a different message
-                                    ShowToast("Ziti Desktop Edge will initiate auto installation in the next minute!");
-                                } else {
-                                    if (DateTime.Now > NextNotificationTime) {
-                                        ShowToast($"Update {evt.ZDEVersion} is available for Ziti Desktop Edge and will be automatically installed by " + evt.InstallTime);
-                                        NextNotificationTime = DateTime.Now + evt.NotificationDuration;
+                            // the tray badge is not a notification preference, so it is set either way
+                            if (notificationSettings.UpdateNotificationsEnabled) {
+                                if (!state.AutomaticUpdatesDisabled) {
+                                    if (remaining.TotalSeconds < 60) {
+                                        //this is an immediate update - show a different message
+                                        ShowToast("Ziti Desktop Edge will initiate auto installation in the next minute!");
                                     } else {
-                                        logger.Debug("Skipping notification. Time until next notification {} seconds which is at {}", (int)((NextNotificationTime - DateTime.Now).TotalSeconds), NextNotificationTime);
+                                        if (DateTime.Now > NextNotificationTime) {
+                                            ShowToast($"Update {evt.ZDEVersion} is available for Ziti Desktop Edge and will be automatically installed by " + evt.InstallTime);
+                                            NextNotificationTime = DateTime.Now + evt.NotificationDuration;
+                                        } else {
+                                            logger.Debug("Skipping notification. Time until next notification {} seconds which is at {}", (int)((NextNotificationTime - DateTime.Now).TotalSeconds), NextNotificationTime);
+                                        }
                                     }
+                                } else {
+                                    ShowToast("New version available", $"Version {evt.ZDEVersion} is available for Ziti Desktop Edge");
                                 }
-                            } else {
-                                ShowToast("New version available", $"Version {evt.ZDEVersion} is available for Ziti Desktop Edge");
                             }
                             SetNotifyIcon("");
                             // display a tag in UI and a button for the update software
@@ -1393,12 +1395,17 @@ namespace ZitiDesktopEdge {
         }
 
         private void ShowAuthNotification(string header, string message, ToastButton button) {
-            if (!Properties.Settings.Default.AuthNotificationsEnabled) return;
+            if (!notificationSettings.AuthNotificationsEnabled) return;
             if (button == null) {
                 ShowToast(header, message);
             } else {
                 ShowToast(header, message, button);
             }
+        }
+
+        private void ShowAuthResultNotification(string header, string message) {
+            if (!notificationSettings.AuthResultNotificationsEnabled) return;
+            ShowToast(header, message);
         }
 
         private void QueueExtAuthNotification(ZitiIdentity identity) {
@@ -1694,7 +1701,7 @@ namespace ZitiDesktopEdge {
                                 _notificationThrottle.Remove(found.Identifier);
                                 if (!_notificationThrottle.Suppress) {
                                     string displayName = string.IsNullOrEmpty(found.Name) ? found.Identifier : found.Name;
-                                    ShowToast("Authentication Successful", $"{displayName} has been authenticated.");
+                                    ShowAuthResultNotification("Authentication Successful", $"{displayName} has been authenticated.");
                                 }
                                 // identity still needs ext auth and no auth is currently in progress: queue a toast
                             } else if (isExtLogin && e.Id.NeedsExtAuth) {

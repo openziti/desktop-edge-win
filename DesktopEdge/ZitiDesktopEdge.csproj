@@ -145,6 +145,7 @@
     <Compile Include="Models\ViewState.cs" />
     <Compile Include="Utils\ManagedSettingsReader.cs" />
     <Compile Include="ViewModels\ManagedSettingsViewModel.cs" />
+    <Compile Include="ViewModels\NotificationSettingsViewModel.cs" />
     <Compile Include="ViewModels\AddIdentityViewModel.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
     <Compile Include="ViewModels\IdentityDetailsViewModel.cs" />
@@ -212,6 +213,9 @@
     </Compile>
     <Compile Include="Views\ItemRenderers\SubMenuItem.xaml.cs">
       <DependentUpon>SubMenuItem.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\ItemRenderers\ToggleOptionItem.xaml.cs">
+      <DependentUpon>ToggleOptionItem.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\ItemRenderers\MenuItem.xaml.cs">
       <DependentUpon>MenuItem.xaml</DependentUpon>
@@ -322,6 +326,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Views\ItemRenderers\SubMenuItem.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\ItemRenderers\ToggleOptionItem.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
