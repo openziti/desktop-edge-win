@@ -518,6 +518,10 @@ namespace ZitiDesktopEdge {
                         .SetContent("Click here to collect logs")
                         .AddArgument("action", "feedback");
 
+        private static readonly ToastButton muteAuthNotificationsButton = new ToastButton()
+                        .SetContent("Don't show again")
+                        .AddArgument("action", "mute-auth-notifications");
+
         private void ToastNotificationManagerCompat_OnActivated(ToastNotificationActivatedEventArgsCompat e) {
             this.Dispatcher.Invoke(() => {
                 if (e.Argument != null && e.Argument.Length > 0) {
@@ -1022,7 +1026,7 @@ namespace ZitiDesktopEdge {
                             await ShowBlurbAsync("Authentication Failed", "External Auth Failed");
                         } else {
                             string displayName = string.IsNullOrEmpty(found.Name) ? found.Identifier : found.Name;
-                            ShowToast("Authentication Failed", $"{displayName} failed to authenticate externally.", null);
+                            ShowToast("Authentication Failed", $"{displayName} failed to authenticate externally.");
 
                         }
                     }));
@@ -1347,7 +1351,7 @@ namespace ZitiDesktopEdge {
                                     }
                                 }
                             } else {
-                                ShowToast("New version available", $"Version {evt.ZDEVersion} is available for Ziti Desktop Edge", null);
+                                ShowToast("New version available", $"Version {evt.ZDEVersion} is available for Ziti Desktop Edge");
                             }
                             SetNotifyIcon("");
                             // display a tag in UI and a button for the update software
@@ -1373,11 +1377,7 @@ namespace ZitiDesktopEdge {
             return result;
         }
 
-        private void ShowToast(string header, string message, ToastButton button) {
-            ShowToastWithButtons(header, message, button == null ? new ToastButton[0] : new ToastButton[] { button });
-        }
-
-        private void ShowToastWithButtons(string header, string message, ToastButton[] buttons) {
+        private void ShowToast(string header, string message, params ToastButton[] buttons) {
             try {
                 logger.Debug("showing toast: {} {}", header, message);
                 var builder = new ToastContentBuilder()
@@ -1396,18 +1396,15 @@ namespace ZitiDesktopEdge {
 
 
         private void ShowToast(string message) {
-            ShowToast("Important Notice", message, null);
+            ShowToast("Important Notice", message);
         }
 
         private void ShowAuthNotification(string header, string message, ToastButton button) {
             if (!Properties.Settings.Default.AuthNotificationsEnabled) return;
-            ToastButton dontShowAgain = new ToastButton()
-                .SetContent("Don't show again")
-                .AddArgument("action", "mute-auth-notifications");
             if (button == null) {
-                ShowToastWithButtons(header, message, new ToastButton[] { dontShowAgain });
+                ShowToast(header, message, muteAuthNotificationsButton);
             } else {
-                ShowToastWithButtons(header, message, new ToastButton[] { button, dontShowAgain });
+                ShowToast(header, message, button, muteAuthNotificationsButton);
             }
         }
 
@@ -1704,7 +1701,7 @@ namespace ZitiDesktopEdge {
                                 _notificationThrottle.Remove(found.Identifier);
                                 if (!_notificationThrottle.Suppress) {
                                     string displayName = string.IsNullOrEmpty(found.Name) ? found.Identifier : found.Name;
-                                    ShowToast("Authentication Successful", $"{displayName} has been authenticated.", null);
+                                    ShowToast("Authentication Successful", $"{displayName} has been authenticated.");
                                 }
                                 // identity still needs ext auth and no auth is currently in progress: queue a toast
                             } else if (isExtLogin && e.Id.NeedsExtAuth) {

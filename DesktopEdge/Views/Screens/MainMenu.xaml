@@ -89,9 +89,9 @@
                         <Label Grid.Column="1" Content="Authentication Notifications" VerticalAlignment="Center"
                                HorizontalAlignment="Stretch" FontSize="14" Foreground="Black"/>
                         <local:Toggler x:Name="AuthNotificationsToggle" Grid.Column="2" HorizontalAlignment="Right"
-                                       VerticalAlignment="Center" Focusable="True" Margin="0,0,10,0"/>
+                                       VerticalAlignment="Center" Margin="0,0,10,0"/>
                     </Grid>
-                    <Rectangle Height="1" Fill="#7d8faf" Opacity="0.2" HorizontalAlignment="Stretch"/>
+                    <Rectangle Style="{StaticResource SectionDivider}"/>
                     <local:StyledButton x:Name="EditFreqButton" Visibility="Collapsed" OnClick="EditFreqButton_OnClick" Label="Change Notification Frequency" Grid.Row="8" Margin="0,20,0,0"></local:StyledButton>
                 </StackPanel>
                 <StackPanel Name="LogLevelItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
