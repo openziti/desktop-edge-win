@@ -307,6 +307,10 @@ namespace ZitiDesktopEdge {
             }
         }
 
+        private void ToggleAuthNotifications(object sender, MouseButtonEventArgs e) {
+            AuthNotificationsToggle.Toggle();
+        }
+
         private void AuthNotificationsToggle_OnToggled(bool enabled) {
             Properties.Settings.Default.AuthNotificationsEnabled = enabled;
             Properties.Settings.Default.Save();
