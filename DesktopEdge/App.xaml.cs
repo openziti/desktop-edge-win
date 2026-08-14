@@ -63,6 +63,7 @@ namespace ZitiDesktopEdge {
                 ManagedSettingsViewModel policyViewModel = new ManagedSettingsViewModel();
                 policyViewModel.ApplyState(policyState);
                 Current.Properties["ManagedSettingsViewModel"] = policyViewModel;
+                Current.Properties["NotificationSettingsViewModel"] = new NotificationSettingsViewModel();
 
                 const string appName = "Ziti Desktop Edge";
 

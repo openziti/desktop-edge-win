@@ -79,18 +79,7 @@
                     <local:OZMenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/logs.png" Width="Auto" Label="Application Logs" MouseUp="ShowUILogs"></local:OZMenuItem>
                     <local:OZMenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/advanced.png" Width="Auto" Label="Set Logging Level" MouseUp="SetLogLevel"></local:OZMenuItem>
                     <local:OZMenuItem x:Name="SetAutomaticUpgradeMenuItem" HorizontalAlignment="Stretch" Icon="/Assets/Images/processing.png" Width="Auto" Label="Configure Automatic Upgrades" MouseUp="ShowAutomaticUpgradesMenuAction"></local:OZMenuItem>
-                    <Grid Height="49" Background="Transparent" Cursor="Hand" MouseUp="ToggleAuthNotifications">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="50"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="50"/>
-                        </Grid.ColumnDefinitions>
-                        <Image Source="/Assets/Images/notifications.png" Width="20" Height="20"/>
-                        <Label Grid.Column="1" Content="Auth Notifications" VerticalAlignment="Center"
-                               HorizontalAlignment="Stretch" FontSize="14" Foreground="Black"/>
-                        <local:Toggler x:Name="AuthNotificationsToggle" Grid.Column="2" HorizontalAlignment="Right"
-                                       VerticalAlignment="Center" Margin="0,0,10,0"/>
-                    </Grid>
+                    <local:OZMenuItem HorizontalAlignment="Stretch" Icon="/Assets/Images/notifications.png" Width="Auto" Label="Notification Preferences" MouseUp="ShowNotificationPreferences"></local:OZMenuItem>
                     <Rectangle Style="{StaticResource SectionDivider}"/>
                     <local:StyledButton x:Name="EditFreqButton" Visibility="Collapsed" OnClick="EditFreqButton_OnClick" Label="Change Notification Frequency" Grid.Row="8" Margin="0,20,0,0"></local:StyledButton>
                 </StackPanel>
@@ -101,6 +90,16 @@
                     <local:SubOptionItem x:Name="LogDebug" HorizontalAlignment="Stretch" Width="Auto" Label="Debug" MouseUp="SetLevel"></local:SubOptionItem>
                     <local:SubOptionItem x:Name="LogVerbose" HorizontalAlignment="Stretch" Width="Auto" Label="Verbose" MouseUp="SetLevel"></local:SubOptionItem>
                     <local:SubOptionItem x:Name="LogTrace" HorizontalAlignment="Stretch" Width="Auto" Label="Trace" MouseUp="SetLevel"></local:SubOptionItem>
+                </StackPanel>
+                <StackPanel Name="NotificationItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
+                    <local:ToggleOptionItem HorizontalAlignment="Stretch" Width="Auto" Label="Authorization Requests"
+                                            IsOn="{Binding NotificationSettingsViewModel.AuthNotificationsEnabled}"></local:ToggleOptionItem>
+                    <local:ToggleOptionItem HorizontalAlignment="Stretch" Width="Auto" Label="Authentication Results"
+                                            IsOn="{Binding NotificationSettingsViewModel.AuthResultNotificationsEnabled}"></local:ToggleOptionItem>
+                    <local:ToggleOptionItem HorizontalAlignment="Stretch" Width="Auto" Label="Connection Problems"
+                                            IsOn="{Binding NotificationSettingsViewModel.ConnectionNotificationsEnabled}"></local:ToggleOptionItem>
+                    <local:ToggleOptionItem HorizontalAlignment="Stretch" Width="Auto" Label="Updates"
+                                            IsOn="{Binding NotificationSettingsViewModel.UpdateNotificationsEnabled}"></local:ToggleOptionItem>
                 </StackPanel>
                 <StackPanel Name="AutomaticUpgradesItems" Visibility="Collapsed" Orientation="Vertical" HorizontalAlignment="Stretch">
                     <StackPanel.Resources>
