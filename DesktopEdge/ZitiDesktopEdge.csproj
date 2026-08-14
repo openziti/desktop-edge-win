@@ -399,6 +399,7 @@
     <Resource Include="Assets\Images\loading.png" />
     <Resource Include="Assets\Images\logo.png" />
     <Resource Include="Assets\Images\next.png" />
+    <Resource Include="Assets\Images\notifications.png" />
     <Resource Include="Assets\Images\off.png" />
     <Resource Include="Assets\Images\offline.png" />
     <Resource Include="Assets\Images\on.png" />
