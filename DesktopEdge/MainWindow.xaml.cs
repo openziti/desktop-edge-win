@@ -212,6 +212,7 @@ namespace ZitiDesktopEdge {
                             }
                         }
                         if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Identifier == mfa.Identifier) this.IdentityMenu.Identity = found;
+                        _notificationThrottle.Remove(mfa.Identifier);
                         await ShowBlurbAsync("MFA disabled, access may be limited", "");
                     } else {
                         await ShowBlurbAsync("MFA Removal Failed", "");
@@ -1719,7 +1720,8 @@ namespace ZitiDesktopEdge {
                         found.IsConnected = true;
                         found.NeedsExtAuth = e.Id.NeedsExtAuth;
                         found.ExtAuthProviders = e.Id.ExtAuthProviders;
-                        if (!found.NeedsExtAuth && !e.Id.MfaNeeded) {
+                        found.IsMFANeeded = e.Id.MfaNeeded;
+                        if (!found.NeedsExtAuth && !found.IsMFANeeded) {
                             _notificationThrottle.Remove(found.Identifier);
                         }
                         for (int i = 0; i < identities.Count; i++) {
@@ -1901,6 +1903,7 @@ namespace ZitiDesktopEdge {
                 }
             }
             identities.Remove(idToRemove);
+            _notificationThrottle.Remove(forgotten.Identifier);
             LoadIdentities(false);
         }
 
@@ -1968,7 +1971,10 @@ namespace ZitiDesktopEdge {
                     updateViewWithIdentity(id);
                 }
                 foreach (var zid in identities) {
-                    if (!zid.IsEnabled) continue;
+                    if (!zid.IsEnabled) {
+                        _notificationThrottle.Remove(zid.Identifier);
+                        continue;
+                    }
                     if (zid.NeedsExtAuth) {
                         QueueExtAuthNotification(zid);
                     }

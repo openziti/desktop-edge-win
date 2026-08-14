@@ -32,6 +32,7 @@ namespace Ziti.Desktop.Edge.Utils {
         private readonly Dictionary<string, Action> _pendingNotifications = new Dictionary<string, Action>();
         private readonly HashSet<string> _notified = new HashSet<string>();
         private readonly DispatcherTimer _throttleTimer;
+        private readonly Dispatcher _dispatcher;
         private readonly string _header;
         private readonly string _summaryFormat;
 
@@ -45,6 +46,7 @@ namespace Ziti.Desktop.Edge.Utils {
             _sendNotification = sendNotification;
             _header = header;
             _summaryFormat = summaryFormat;
+            _dispatcher = Dispatcher.CurrentDispatcher;
             _throttleTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
             _throttleTimer.Tick += (s, e) => SendPendingNotifications();
         }
@@ -54,6 +56,11 @@ namespace Ziti.Desktop.Edge.Utils {
         /// notified. Resets the 5-second window each time a new notification arrives.
         /// </summary>
         public void Queue(string identityIdentifier, string message, ToastButton button) {
+            // reached from the IPC reader thread via addService, where DispatcherTimer.Stop/Start throw on VerifyAccess
+            if (!_dispatcher.CheckAccess()) {
+                _dispatcher.Invoke(() => Queue(identityIdentifier, message, button));
+                return;
+            }
             if (_notified.Contains(identityIdentifier)) return;
             if (_pendingNotifications.ContainsKey(identityIdentifier)) return;
             _pendingNotifications[identityIdentifier] = () => _sendNotification(_header, message, button);
