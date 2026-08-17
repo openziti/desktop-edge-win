@@ -1699,7 +1699,7 @@ namespace ZitiDesktopEdge {
                         found.IsConnected = true;
                         found.NeedsExtAuth = e.Id.NeedsExtAuth;
                         found.ExtAuthProviders = e.Id.ExtAuthProviders;
-                        found.IsMFANeeded = e.Id.MfaNeeded;
+                        found.IsMFANeeded = zid.IsMFANeeded;
                         if (!found.NeedsExtAuth && !found.IsMFANeeded) {
                             _notificationThrottle.Remove(found.Identifier);
                         }
