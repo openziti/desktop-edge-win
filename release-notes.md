@@ -4,6 +4,8 @@ n/a
 
 ## Bugs fixed
 * [Issue 1050](https://github.com/openziti/desktop-edge-win/issues/1050) - Restore monitor service settings from Windows.old after a Windows upgrade
+* [Issue 1053](https://github.com/openziti/desktop-edge-win/issues/1053) - Toast identities needing authorization once instead of on every service refresh
+* The window no longer takes focus every time an identity reports that MFA enrollment is required
 
 ## Other changes
 n/a

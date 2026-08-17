@@ -188,6 +188,7 @@ namespace ZitiDesktopEdge {
                             }
                         }
                         if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Identifier == mfa.Identifier) this.IdentityMenu.Identity = found;
+                        _notificationThrottle.Remove(mfa.Identifier);
                         ShowMFARecoveryCodes(found);
                     } else {
                         await ShowBlurbAsync("Provided code could not be verified", "");
@@ -212,6 +213,7 @@ namespace ZitiDesktopEdge {
                             }
                         }
                         if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Identifier == mfa.Identifier) this.IdentityMenu.Identity = found;
+                        _notificationThrottle.Remove(mfa.Identifier);
                         await ShowBlurbAsync("MFA disabled, access may be limited", "");
                     } else {
                         await ShowBlurbAsync("MFA Removal Failed", "");
@@ -238,8 +240,9 @@ namespace ZitiDesktopEdge {
                         _notificationThrottle.Remove(mfa.Identifier);
                     }
                 } else if (mfa.Action == "enrollment_required") {
+                    // no window pop here: ziti-edge-tunnel re-sends this event on every refresh
+                    // cycle while auth is pending. the queued toast is the user-facing prompt.
                     logger.Debug("MFA enrollment required for identity {0}", mfa.Identifier);
-                    BringWindowForward();
                 } else {
                     await ShowBlurbAsync("Unexpected error when processing MFA", "");
                     logger.Error("unexpected action: " + mfa.Action);
@@ -1697,7 +1700,8 @@ namespace ZitiDesktopEdge {
                         found.IsConnected = true;
                         found.NeedsExtAuth = e.Id.NeedsExtAuth;
                         found.ExtAuthProviders = e.Id.ExtAuthProviders;
-                        if (!found.NeedsExtAuth) {
+                        found.IsMFANeeded = zid.IsMFANeeded;
+                        if (!found.NeedsExtAuth && !found.IsMFANeeded) {
                             _notificationThrottle.Remove(found.Identifier);
                         }
                         for (int i = 0; i < identities.Count; i++) {
@@ -1879,6 +1883,7 @@ namespace ZitiDesktopEdge {
                 }
             }
             identities.Remove(idToRemove);
+            _notificationThrottle.Remove(forgotten.Identifier);
             LoadIdentities(false);
         }
 
@@ -1946,7 +1951,10 @@ namespace ZitiDesktopEdge {
                     updateViewWithIdentity(id);
                 }
                 foreach (var zid in identities) {
-                    if (!zid.IsEnabled) continue;
+                    if (!zid.IsEnabled) {
+                        _notificationThrottle.Remove(zid.Identifier);
+                        continue;
+                    }
                     if (zid.NeedsExtAuth) {
                         QueueExtAuthNotification(zid);
                     }
