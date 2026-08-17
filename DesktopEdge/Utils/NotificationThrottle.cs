@@ -72,6 +72,7 @@ namespace Ziti.Desktop.Edge.Utils {
         /// Removes a single identity from the seen set so it can trigger notifications again.
         /// </summary>
         public void Remove(string identityIdentifier) {
+            if (string.IsNullOrEmpty(identityIdentifier)) return;
             _pendingNotifications.Remove(identityIdentifier);
             _notified.Remove(identityIdentifier);
         }

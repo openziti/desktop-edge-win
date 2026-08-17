@@ -188,6 +188,7 @@ namespace ZitiDesktopEdge {
                             }
                         }
                         if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Identifier == mfa.Identifier) this.IdentityMenu.Identity = found;
+                        _notificationThrottle.Remove(mfa.Identifier);
                         ShowMFARecoveryCodes(found);
                     } else {
                         await ShowBlurbAsync("Provided code could not be verified", "");
