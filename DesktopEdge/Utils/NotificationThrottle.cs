@@ -58,7 +58,7 @@ namespace Ziti.Desktop.Edge.Utils {
         public void Queue(string identityIdentifier, string message, ToastButton button) {
             // reached from the IPC reader thread via addService, where DispatcherTimer.Stop/Start throw on VerifyAccess
             if (!_dispatcher.CheckAccess()) {
-                _dispatcher.Invoke(() => Queue(identityIdentifier, message, button));
+                _dispatcher.BeginInvoke(new Action(() => Queue(identityIdentifier, message, button)));
                 return;
             }
             if (_notified.Contains(identityIdentifier)) return;
