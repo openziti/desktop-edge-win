@@ -50,6 +50,13 @@ namespace ZitiDesktopEdge {
         protected override void OnStartup(StartupEventArgs e) {
             UpgradeSentinel.RemoveUpgradeSentinelExe();
             try {
+                // AssemblyVersion changes every release, moving user.config; carry prior settings forward
+                if (ZitiDesktopEdge.Properties.Settings.Default.SettingsUpgradeRequired) {
+                    ZitiDesktopEdge.Properties.Settings.Default.Upgrade();
+                    ZitiDesktopEdge.Properties.Settings.Default.SettingsUpgradeRequired = false;
+                    ZitiDesktopEdge.Properties.Settings.Default.Save();
+                }
+
                 Current.Properties["ZDEWViewState"] = new ZDEWViewState();
 
                 ManagedSettingsState policyState = ManagedSettingsReader.Read();
