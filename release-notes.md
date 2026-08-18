@@ -4,6 +4,7 @@ n/a
 
 ## Bugs fixed
 * [Issue 1050](https://github.com/openziti/desktop-edge-win/issues/1050) - Restore monitor service settings from Windows.old after a Windows upgrade
+* [Issue 1054](https://github.com/openziti/desktop-edge-win/issues/1054) - Preserve the identity list sort order and default ext-auth providers across upgrades
 
 ## Other changes
 n/a
