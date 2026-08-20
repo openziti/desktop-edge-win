@@ -1,5 +1,22 @@
 # Release 2.11.2.10
 ## What's New
+* updated to ziti-edge-tunnel v1.18.7
+
+## Bugs fixed
+n/a
+
+## Other changes
+n/a
+
+## Dependencies
+* ziti-tunneler: v1.18.7
+* ziti-sdk:      1.18.7
+* tlsuv:         v0.42.4[OpenSSL 3.6.3 9 Jun 2026]
+* tlsuv:         v0.42.4[win32crypto(CNG): ncrypt[1.0] ]
+
+# Release 2.11.3.0
+
+## What's New
 n/a
 
 ## Bugs fixed
@@ -7,9 +24,10 @@ n/a
 * [Issue 1054](https://github.com/openziti/desktop-edge-win/issues/1054) - Preserve the identity list sort order and default ext-auth providers across upgrades
 
 ## Other changes
-n/a
+* updated referenced tunneler to 1.18.7
 
 # Release 2.11.2.9
+
 ## What's New
 * updated to ziti-edge-tunnel v1.18.4
 * New "enable MFA" icon and setup toast
@@ -29,6 +47,7 @@ n/a
 * tlsuv:         v0.42.3[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.11.2.8
+
 ## What's New
 * updated to ziti-edge-tunnel v1.18.3
 
@@ -62,6 +81,7 @@ n/a
 * tlsuv:         v0.41.4[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.11.2.6
+
 ## What's New
 * updated to ziti-edge-tunnel v1.18.1
 
@@ -79,6 +99,7 @@ n/a
 * tlsuv:         v0.41.4[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.11.2.5
+
 ## What's New
 n/a
 
@@ -95,6 +116,7 @@ n/a
 * tlsuv:         v0.41.4[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.11.2.4
+
 ## What's New
 - Clicking "enable MFA" on an identity in the main UI now opens the MFA setup view directly when MFA needs to be enabled.
 
@@ -111,6 +133,7 @@ n/a
 * tlsuv:         v0.41.3[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.11.2.3
+
 ## What's New
 n/a
 
@@ -205,6 +228,7 @@ n/a
 * tlsuv:         v0.41.3[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.11.0.0
+
 ## What's New
 * [Issue 985](https://github.com/openziti/desktop-edge-win/issues/985) - Allow registry settings to override and lock ZDEW local/file settings
   * Organizational policy enforcement via the Windows registry
@@ -294,6 +318,7 @@ n/a
 * tlsuv:         v0.41.3[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.10.7.0
+
 ## What's New
 * updated to [ziti-edge-tunnel v1.16.1](https://github.com/openziti/ziti-tunnel-sdk-c/releases/tag/v1.16.1)
 
@@ -310,6 +335,7 @@ n/a
 * tlsuv:         v0.41.3[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.10.6.0
+
 ## What's New
 * [Issue 818](https://github.com/openziti/desktop-edge-win/issues/818) - Added update progress UI
   * Update service sends progress and failure status to the UI during updates
@@ -331,6 +357,7 @@ n/a
 * tlsuv:         v0.41.3[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.10.5.0
+
 ## What's New
 * updated to ziti-edge-tunnel v1.15.1
 
@@ -347,6 +374,7 @@ n/a
 * tlsuv:         v0.41.1[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.10.4.0
+
 ## What's New
 * updated to ziti-edge-tunnel v1.14.6
 
@@ -363,6 +391,7 @@ n/a
 * tlsuv:         v0.41.1[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.10.3.0
+
 ## What's New
 Support for L2 services.
 
@@ -379,6 +408,7 @@ n/a
 * tlsuv:         v0.41.1[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.10.1.0
+
 ## What's New
 * updated to ziti-edge-tunnel v1.14.1
 
@@ -395,6 +425,7 @@ n/a
 * tlsuv:         v0.41.1[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.10.0.0
+
 ## What's New
 * updated to ziti-edge-tunnel v1.14.0
 * Added L2 networking support to tunnel configuration
@@ -416,6 +447,7 @@ n/a
 * tlsuv:         v0.41.1[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.9.8.0
+
 ## What's New
 * Added column headers to allow ascending/descending sorting of identities based on:
     * Status (enabled/disabled)
@@ -440,6 +472,7 @@ n/a
 * tlsuv:         v0.41.1[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.9.7.2
+
 ## What's New
 * updated to ziti-edge-tunnel v1.11.5
 
@@ -456,6 +489,7 @@ n/a
 * tlsuv:         v0.41.1[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.9.7.1
+
 ## What's New
 * updated to ziti-edge-tunnel v1.11.4
 
@@ -472,6 +506,7 @@ n/a
 * tlsuv:         v0.41.1[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.9.7.0
+
 ## What's New
 * updated to ziti-edge-tunnel v1.11.2
 
@@ -488,6 +523,7 @@ n/a
 * tlsuv:         v0.41.1[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.9.6.1
+
 ## What's New
 * updated to ziti-edge-tunnel v1.11.1
 
@@ -504,6 +540,7 @@ n/a
 * tlsuv:         v0.40.13[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.9.6.0
+
 ## What's New
 * updated to ziti-edge-tunnel v1.11.1
 
@@ -520,6 +557,7 @@ n/a
 * tlsuv:         v0.40.13[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.9.5.0
+
 ## What's New
 * uses 1.11.0 tunneler with fix for legacy authentication issues
 
@@ -536,6 +574,7 @@ n/a
 * tlsuv:         v0.40.13[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.9.4.1
+
 ## What's New
 * reverted to 1.9.6 tunneler for stable stream only to address legacy auth-related issues reported
   This version is only intended for the __stable__ stream.
@@ -553,6 +592,7 @@ n/a
 * tlsuv:         v0.39.7[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.9.4.0
+
 ## What's New
 * updated dependencies
 
@@ -569,6 +609,7 @@ n/a
 * tlsuv:         v0.40.10[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.9.3.0
+
 ## What's New
 * updated dependencies
 
@@ -585,6 +626,7 @@ n/a
 * tlsuv:         v0.40.9[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.9.2.0
+
 ## What's New
 * updated dependencies
 
@@ -601,6 +643,7 @@ n/a
 * tlsuv:         v0.40.5[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.9.1.0
+
 ## What's New
 * updated dependencies
 
