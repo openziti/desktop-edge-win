@@ -96,7 +96,7 @@
                                             IsOn="{Binding NotificationSettingsViewModel.AuthNotificationsEnabled}"></local:ToggleOptionItem>
                     <local:ToggleOptionItem HorizontalAlignment="Stretch" Width="Auto" Label="Authentication Results"
                                             IsOn="{Binding NotificationSettingsViewModel.AuthResultNotificationsEnabled}"></local:ToggleOptionItem>
-                    <local:ToggleOptionItem HorizontalAlignment="Stretch" Width="Auto" Label="Connection Problems"
+                    <local:ToggleOptionItem HorizontalAlignment="Stretch" Width="Auto" Label="Tunneler Crash"
                                             IsOn="{Binding NotificationSettingsViewModel.ConnectionNotificationsEnabled}"></local:ToggleOptionItem>
                     <local:ToggleOptionItem HorizontalAlignment="Stretch" Width="Auto" Label="Updates"
                                             IsOn="{Binding NotificationSettingsViewModel.UpdateNotificationsEnabled}"></local:ToggleOptionItem>
