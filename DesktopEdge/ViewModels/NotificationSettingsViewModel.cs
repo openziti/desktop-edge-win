@@ -27,7 +27,8 @@ namespace ZitiDesktopEdge.ViewModels {
     public sealed class NotificationSettingsViewModel : INotifyPropertyChanged {
 
         private bool _authResultNotificationsEnabled = true;
-        private bool _connectionNotificationsEnabled = true;
+        // Off by default, matching the ShowUnexpectedFailure appSetting this toggle replaced.
+        private bool _connectionNotificationsEnabled = false;
         private bool _updateNotificationsEnabled = true;
 
         public event PropertyChangedEventHandler PropertyChanged;

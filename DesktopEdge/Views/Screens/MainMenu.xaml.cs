@@ -32,7 +32,6 @@ using System.Windows.Media.Animation;
 using ZitiDesktopEdge.Models;
 using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.ServiceClient;
-using System.Configuration;
 using Ziti.Desktop.Edge.Models;
 using System.Threading;
 using System.Threading.Tasks;
@@ -72,8 +71,6 @@ namespace ZitiDesktopEdge {
         private ManagedSettingsViewModel policyViewModel;
 
         public NotificationSettingsViewModel NotificationSettingsViewModel { get; private set; }
-
-        public bool ShowUnexpectedFailure { get; set; }
 
         private bool _l2Enabled;
         public bool L2Enabled {
@@ -210,13 +207,6 @@ namespace ZitiDesktopEdge {
             // PopulateHourCombos / PopulateFrequencyAndDayCombos are now owned by the
             // MaintenanceWindowControl's constructor; no init wiring needed here.
             AutomaticUpgradesToggle.OnToggled += AutomaticUpgradesToggle_OnToggled;
-
-            try {
-                ShowUnexpectedFailure = bool.Parse(ConfigurationManager.AppSettings.Get("ShowUnexpectedFailure"));
-            } catch {
-                //if we can't parse the config - leave it as false...
-                ShowUnexpectedFailure = false; //setting it here in case anyone changes the default above
-            }
 
             appVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
         }

@@ -1221,7 +1221,7 @@ namespace ZitiDesktopEdge {
 
                     if (evt.Code != 0) {
                         logger.Error("CODE: " + evt.Code);
-                        if (MainMenu.ShowUnexpectedFailure && notificationSettings.ConnectionNotificationsEnabled) {
+                        if (notificationSettings.ConnectionNotificationsEnabled) {
                             ShowToast("The data channel has stopped unexpectedly", $"If this keeps happening please collect logs and report the issue.", feedbackToastButton);
                         }
                     }
