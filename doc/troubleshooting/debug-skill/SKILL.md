@@ -130,9 +130,22 @@ An empty `NrptPolicy.txt` is normal (it means no NRPT policy is applied), not a 
 
 **`ziti-tunneler.log` duplicates the current day's rolled file.** The live log and
 `ziti-tunneler.log.<today>0000.log` hold the same lines. Any `cat`/`grep` across `ziti-tunneler.log*` therefore
-double-counts every event from the collection day, and lifecycle tables come out with phantom duplicate
-restarts. Either enumerate only the rolled files, or pipe through `sort -u` on the timestamp when you are
-counting or building a chronology. This bites hardest in step 6.
+double-counts every event from the collection day: lifecycle tables come out with phantom duplicate restarts,
+and per-day error counts for the collection day come out at roughly twice their true value.
+
+**So there are two globs, and which one you use depends on what you are asking.** Check first which files
+exist:
+
+```bash
+ls -1 /abs/path/capture/service/ziti-tunneler*
+```
+
+- **Counting, bucketing, or building a chronology** -- use the rolled files only,
+  `ziti-tunneler.log.*`. They cover the whole window including the collection day, with no duplication.
+- **Reading the newest lines**, or if no rolled file exists for the collection day (the bundle was taken
+  before the first roll) -- use `ziti-tunneler.log` as well, and dedupe with `sort -u` before you count.
+
+Steps 6, 9b and 10 are all counting steps, so their commands use `ziti-tunneler.log.*`.
 
 **Some rolled logs contain binary garbage** where a write was torn by an abrupt process death. `grep` then
 reports `Binary file ... matches` and silently gives you nothing. Use `grep -a` for the entire analysis, not
@@ -187,7 +200,7 @@ enable trace logging, reproduce and recapture -- and confirm in the logs whether
 # was trace/verbose logging actually on?
 grep -ahoE "ziti_log_set_level\(\) set log level: .*" /abs/path/capture/service/ziti-tunneler*.log*
 # per-level line counts, to see what detail you actually have
-grep -ahoE "\] +(TRACE|VERBOSE|DEBUG|INFO|WARN|ERROR) " /abs/path/capture/service/ziti-tunneler*.log* \
+grep -ahoE "\] +(TRACE|VERBOSE|DEBUG|INFO|WARN|ERROR) " /abs/path/capture/service/ziti-tunneler.log.* \
   | sort | uniq -c
 ```
 
@@ -200,15 +213,18 @@ report -- and it stops the team from re-analyzing the same bundle.
 Banners first:
 
 ```bash
-grep -ah "service begins\|service ends" /abs/path/capture/service/ziti-tunneler*.log*
+grep -ah "service begins\|service ends" /abs/path/capture/service/ziti-tunneler.log.*
 ```
 
 Then process starts independently, because a banner can be missing when a log rolls mid-startup:
 
 ```bash
 grep -ahoE "^\[[^]]+\].*ziti_log_init\(\) Ziti C SDK version .*starting at \([^)]+\)" \
-  /abs/path/capture/service/ziti-tunneler*.log*
+  /abs/path/capture/service/ziti-tunneler.log.*
 ```
+
+Rolled files only, per step 3 -- the live `ziti-tunneler.log` repeats the collection day and will invent a
+duplicate restart in the table below.
 
 Build a chronological table. Collapse `service ends` immediately followed by `service begins` into one
 **Restart** row.
@@ -262,8 +278,10 @@ grep -ah "OnShutdown was called\|OnStop was called\|OnStart\|aliveness check" \
 - `ziti-monitor OnStop was called` -- intentional stop, typically an update. Check whether the version
   changes on the next start.
 - `aliveness check ... appears blocked and has been for N times. AlivenessChecksBeforeAction:12` -- **report
-  the peak N reached, and whether it ever hit the threshold.** Partial counts that reset (3 of 12 during a
-  post-boot storm) are noise; only reaching 12 means the monitor killed the tunneler. Treating any
+  the peak N reached, and whether it ever hit the threshold.** Read the threshold off the same line rather
+  than assuming 12 -- 12 is only the default, and `AlivenessChecksBeforeAction` is settable by policy or
+  `settings.json` anywhere in 1–720. Partial counts that reset (3 of 12 during a post-boot storm) are noise;
+  only reaching the printed threshold means the monitor killed the tunneler. Treating any
   aliveness warning as a stall produces false findings -- this fires routinely during startup and
   resume-from-sleep.
 
@@ -459,7 +477,7 @@ proof, but it converted a shapeless "it happens everywhere" into a one-week A/B 
 **Attribute by date, not by machine.** Bucket the signature errors per machine per day:
 
 ```bash
-grep -ah "<signature>" /abs/path/capture/service/ziti-tunneler*.log* | grep -aoE "^\[[0-9-]{10}" \
+grep -ah "<signature>" /abs/path/capture/service/ziti-tunneler.log.* | grep -aoE "^\[[0-9-]{10}" \
   | sort | uniq -c
 ```
 
@@ -472,7 +490,7 @@ the difference between a useful reply and a wrong one.
 availability number:
 
 ```bash
-grep -ahc "on_hosted_client_connect" /abs/path/capture/service/ziti-tunneler*.log*
+grep -ahc "on_hosted_client_connect" /abs/path/capture/service/ziti-tunneler.log.*
 ```
 
 Divide by the expected poll count (window length ÷ the caller's polling interval, which you can read off the
@@ -493,14 +511,14 @@ surface at `WARN`, and an ERROR-only pass will miss them entirely.
 Counts per file first, to spot spikes:
 
 ```bash
-grep -ac "ERROR" /abs/path/capture/service/ziti-tunneler*.log*
-grep -ac "WARN"  /abs/path/capture/service/ziti-tunneler*.log*
+grep -ac "ERROR" /abs/path/capture/service/ziti-tunneler.log.*
+grep -ac "WARN"  /abs/path/capture/service/ziti-tunneler.log.*
 ```
 
 Then bucket the messages by shape -- collapse bracketed values and digits so variants group together:
 
 ```bash
-grep -ah "ERROR" /abs/path/capture/service/ziti-tunneler*.log* \
+grep -ah "ERROR" /abs/path/capture/service/ziti-tunneler.log.* \
   | sed -E 's/^\[[^]]+\][[:space:]]+ERROR //' \
   | sed -E 's/\[[^]]*\]/[]/g' \
   | sed -E 's/[0-9]+/N/g' \
@@ -511,7 +529,7 @@ Repeat with `WARN` (and `s/[[:space:]]+WARN //`). For any high-count warning, ch
 a fixed interval means a retry loop, not a burst:
 
 ```bash
-grep -ah "<the warning text>" /abs/path/capture/service/ziti-tunneler*.log* | head -20
+grep -ah "<the warning text>" /abs/path/capture/service/ziti-tunneler.log.* | head -20
 ```
 
 #### Category 1: network / control plane
@@ -541,7 +559,7 @@ fail until that client's own tunnel is up. Not a ZDE defect -- check for the res
 
 ```bash
 grep -ahoE "^\[[^]]+\].*endpoint_status_change\(\) Received power (resume|suspend) event" \
-  /abs/path/capture/service/ziti-tunneler*.log*
+  /abs/path/capture/service/ziti-tunneler.log.*
 ```
 
 #### Category 2: service / dial
