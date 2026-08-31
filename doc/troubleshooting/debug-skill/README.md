@@ -1,4 +1,4 @@
-# debug-ziti-desktop-edge-win — Claude Skill
+# debug-ziti-desktop-edge-win -- Claude Skill
 
 A Claude Code skill that analyzes a ZDEW feedback zip and produces a structured diagnostic report.
 
@@ -23,48 +23,65 @@ working directory, and it uses that instead.
 
 ## What it does
 
-1. **Locates the bundle** — invocation arg, working directory, or ticket attachment. Reads the ticket
+1. **Locates the bundle** -- invocation arg, working directory, or ticket attachment. Reads the ticket
    comments, including internal ones, to find the hypothesis under test.
-2. **Dates the machine** — OS build, boot time, and `Original Install Date`, which an in-place Windows
+2. **Dates the machine** -- OS build, boot time, and `Original Install Date`, which an in-place Windows
    upgrade resets and which therefore dates the upgrade.
-3. **Checks log coverage** — ZDEW prunes its own logs on startup, so bundles collected days later often do
+3. **Checks log coverage** -- ZDEW prunes its own logs on startup, so bundles collected days later often do
    not contain the incident. This gates everything downstream.
-4. **Verifies prior asks** — whether the restart or trace-logging that support requested actually happened.
-5. **Service lifecycle** — starts, stops, reboots, monitor actions, aliveness peaks.
-6. **Crash / stall dumps.**
-7. **Config and identity handling** — the `Windows.old` / `Windows.~BT` restore path, for settings-loss and
+4. **Verifies prior asks** -- whether the restart or trace-logging that support requested actually happened.
+5. **Service lifecycle** -- starts, stops, reboots, monitor actions, aliveness peaks. An orphan
+   `service begins` with no matching `service ends` is the crash marker, once reboots are subtracted via the
+   monitor's `OnShutdown`.
+6. **Crash / stall dumps** -- which of the two writers produced each dump, mtime converted from machine-local
+   to UTC, correlation against the identity certificate's `Not Before`, and exception record plus registers
+   read straight out of the dump without a debugger, plus the WinDbg steps for a full symbolized stack.
+7. **Config and identity handling** -- the `Windows.old` / `Windows.~BT` restore path, for settings-loss and
    identity-loss tickets.
-8. **Tun adapter, DNS range, routes** — configured vs default range, and which adapter actually owns each
+8. **Tun adapter, DNS range, routes** -- configured vs default range, and which adapter actually owns each
    contested CGNAT route.
-9. **Errors and warnings** — bucketed by message shape, split into network / service-dial / routing-NRPT,
+9. **Errors and warnings** -- bucketed by message shape, split into network / service-dial / routing-NRPT,
    with resume-from-sleep and midnight-OIDC baselines so normal churn isn't escalated.
-10. **`.ziti` dump** — controllers, channels, connections, API session, per identity.
+10. **`.ziti` dump** -- controllers, channels, connections, API session, per identity.
 
 ## What it handles
 
-- **Single feedback zip** — standard capture from one machine
-- **Aggregated zip** — a zip of timestamped feedback zips; each inner capture is extracted and analyzed
+- **Single feedback zip** -- standard capture from one machine
+- **Aggregated zip** -- a zip of timestamped feedback zips; each inner capture is extracted and analyzed
   separately
+- **Fleet ticket** -- many separate bundles on one ticket, one per machine, named after the host. All of them
+  are downloaded, then compared against each other: find the quiet machine and diff it against a loud one,
+  bucket signature errors per machine per day to separate infrastructure from local, and measure inbound
+  reachability from `on_hosted_client_connect` counts
 
 ## Handling the data
 
 A feedback bundle is confidential customer material. Identity `.json` files contain enrollment tokens, private
 keys, and client certificates; `.ziti` dumps contain session certificates and tokens; the system and UI logs
-contain usernames, hostnames, domains, internal IPs, and internal service names. The skill keeps the extracted
-tree out of committed directories, quotes the minimum log text needed as evidence, and never puts identity
-file contents or tokens in a report.
+contain usernames, hostnames, domains, internal IPs, and internal service names. The skill keeps bundles and
+the extracted tree out of any repo, in a durable per-ticket archive under `C:\temp\support\nfsupport\` (or
+`C:\temp\support\` if the former does not exist) whose full path it reports before it starts. It quotes the
+minimum log text needed as evidence, and never puts identity file contents or tokens in a report.
 
 ## Design notes
 
 The skill is opinionated about a few failure modes that produced wrong answers in practice:
 
 - Absence of a log line is not evidence until log coverage, log level, and rolled files are all checked.
-- `WARN` is scanned as well as `ERROR` — some of the highest-volume real defects never reach `ERROR`.
+- `WARN` is scanned as well as `ERROR` -- some of the highest-volume real defects never reach `ERROR`.
 - Routes in `100.64.0.0/10` are attributed by interface, because Zscaler, Netskope, GlobalProtect and dock
   NICs all live in CGNAT space and get mistaken for ZDE.
 - `uptime[Ns]` in a `.ziti` dump is per-identity context uptime, not process uptime.
-- A list of known misleading strings, including `1168(The operation completed successfully.` — a failure
+- `ziti-tunneler.log` duplicates the current day's rolled file, so a naive glob double-counts every event
+  from the collection day and invents phantom restarts.
+- `System Boot Time` drifts under Fast Startup and has been observed *after* a monitor shutdown event. Reboots
+  are identified from `OnShutdown`, not from boot time.
+- `err=-N` from `on_tcp_client_err()` is an lwIP `err_t`, not a libuv errno. `-13` is `ERR_ABRT` and is
+  high-volume noise that has already misdirected one analysis.
+- A list of known misleading strings, including `1168(The operation completed successfully.` -- a failure
   whose message text says the opposite.
+- One dump is never generalized to the rest; exception records are compared across dumps before any shared
+  cause is claimed.
 
 ## Output
 
