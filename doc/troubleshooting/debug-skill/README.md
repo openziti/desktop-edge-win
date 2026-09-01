@@ -2,13 +2,31 @@
 
 A Claude Code skill that analyzes a ZDEW feedback zip and produces a structured diagnostic report.
 
-Self-contained: all commands are inline in `SKILL.md`. Nothing to install, no helper scripts to run.
+Self-contained: all commands are inline in the markdown. Nothing to install, no helper scripts to run.
+
+`SKILL.md` is the spine that runs on every ticket -- locate the bundle, extract it, date the machine, check log
+coverage, verify prior asks, build the service lifecycle. It ends in a dispatch table that names which
+`references/` file to read for the ticket in hand. Those files hold the deep procedure per area and are loaded
+only when their trigger fires, so a straightforward bundle never pays for the crash-dump or fleet-comparison
+material.
+
+| File | Read when |
+|---|---|
+| `references/ziti-dump.md` | the capture has a `*.ziti` file (almost always) |
+| `references/errors-and-warnings.md` | characterizing what the logs complain about (almost always) |
+| `references/crash-dumps.md` | a `.dmp` exists, or the lifecycle shows an ungraceful exit |
+| `references/config-identity-restore.md` | settings or identities went missing, typically after a Windows update |
+| `references/tun-dns-routes.md` | DNS, IP range, or a suspected conflict with another VPN/ZTNA client |
+| `references/fleet-comparison.md` | the ticket carries more than one capture |
+| `references/report-template.md` | at write-up |
 
 ## Setup
 
+Copy the whole directory -- the skill reads `references/` at run time.
+
 ```bash
 mkdir -p ~/.claude/skills/debug-ziti-desktop-edge-win
-cp SKILL.md ~/.claude/skills/debug-ziti-desktop-edge-win/
+cp -r SKILL.md references ~/.claude/skills/debug-ziti-desktop-edge-win/
 ```
 
 ## Usage
