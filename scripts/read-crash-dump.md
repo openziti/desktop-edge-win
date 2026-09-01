@@ -1,12 +1,10 @@
 # read-crash-dump.ps1
 
-Turns a `ziti-edge-tunnel` crash dump into a readable stack, so a `.dmp` on a support ticket becomes a
-function name and a source line instead of an opaque blob.
+Symbolizes a `ziti-edge-tunnel` crash or stall dump: prints the faulting address, the registers, and a
+backtrace with function names and source lines.
 
-> **This is new and has not been used outside the machine it was written on.** If you are one of the first
-> people to run it, expect something to be wrong. The most useful thing you can report back is **what you had
-> to install**, because the prerequisites below are the author's best reconstruction and have never been
-> followed on a clean machine.
+> **Status: new, and only run on the machine it was written on.** The install steps below have not been
+> followed on a clean machine. Report what you actually had to install.
 
 ## What you need first
 
@@ -99,45 +97,41 @@ process  : ziti-edge-tunnel.exe
 - **`process`** is read from the dump itself, not the filename. If it says anything other than
   `ziti-edge-tunnel.exe`, the dump is of a different program and the script says so and stops.
 
-Then the stack, most recent call first. The first frame with a source file is the top of OpenZiti code; the
-`ucrtbase.dll` frame above it is a C library function like `strcmp` and rarely tells you anything.
+The stack follows, most recent call first. Frame 0 is usually a C library function such as `strcmp` inside
+`ucrtbase.dll`. The first frame with a source file is the top of OpenZiti code.
 
 ### The summary table
 
-More than one dump gets a table at the end. On a fleet ticket this is usually the actual answer:
+Two or more dumps produce a table at the end:
 
 ```
-MACHINE                KIND   WRITTEN            FAULT ADDR           TOP FRAME
-host-01     crash  2026-08-24 11:43Z  0x0                  ziti_send_posture_data (posture.c:198)  <- ziti_pr_ticker_cb
-host-02    crash  2026-08-20 02:10Z  0xffffffffffffffff   ziti_send_posture_data (posture.c:218)  <- process_connect
+MACHINE  KIND   WRITTEN            FAULT ADDR           TOP FRAME
+host-01  crash  2026-08-24 11:43Z  0x0                  ziti_send_posture_data (posture.c:198)  <- ziti_pr_ticker_cb
+host-02  crash  2026-08-20 02:10Z  0xffffffffffffffff   ziti_send_posture_data (posture.c:218)  <- process_connect
 
 3 distinct crash signatures - do not report these as one cause without checking:
 ```
 
-The `<-` names the calling function. The same line reached from two different callers is often two different
-problems, so the signature count is deliberately conservative.
+`<-` names the calling function. Signatures are grouped by faulting address, top frame, and caller, so the
+same source line reached from two callers counts as two signatures.
 
 ### "carries no usable evidence"
 
-Some dumps tell you nothing, and the script says which and why:
+- **0 bytes** -- `MiniDumpWriteDump` failed. A lost diagnostic, not a crash.
+- **WRONG PROCESS** -- a dump of `ZitiDesktopEdge.exe` under the tunneler's filename. Known ZDEW defect. The
+  tunneler dump for that machine was overwritten.
 
-- **0 bytes** -- the dump failed to write. A lost diagnostic, not a crash.
-- **WRONG PROCESS** -- a snapshot of the tray UI stored under the tunneler's filename. A known ZDEW defect;
-  the real dump for that machine was overwritten.
-
-Both are worth reporting on the ticket. Neither means the machine is healthy.
+Report both on the ticket. Neither indicates a healthy machine.
 
 ## When it cannot symbolize
-
-Occasionally you will see:
 
 ```
 WARNING  : does not match the dump (exe stamp 0x69d3f28e/size 29908992, dump wants 0x69b886a7/size 29908992)
            same image size, different build date ...
 ```
 
-That means the machine is running a build that is not one of the published releases, so no download can match
-it. Getting a stack needs `ziti-edge-tunnel.exe` copied off that machine, then:
+The machine is running a build that is not a published release, so no download matches it. Copy
+`ziti-edge-tunnel.exe` off that machine and pass its folder:
 
 ```powershell
 .\read-crash-dump.ps1 <dump> -exeDir C:\path\to\folder\holding\that\exe
@@ -145,10 +139,9 @@ it. Getting a stack needs `ziti-edge-tunnel.exe` copied off that machine, then:
 
 ## Known gaps
 
-- The install instructions above have not been followed on a clean machine. Please report what was actually
-  needed.
+- The install instructions above have not been followed on a clean machine. Report what was actually needed.
 - Tested on Windows PowerShell 5.1 and PowerShell 7.6.5.
-- Stall dumps (`ziti-edge-tunnel.stalled.dmp`) written by ZDEW before the 2026-09 monitor fix are frequently
-  0 bytes or the wrong process. That is a bug in ZDEW, not in this script.
-- Sensitive data: dumps and bundles are customer material and contain hostnames, usernames and session state.
-  Keep them out of anything public, and quote the minimum needed when pasting into a ticket.
+- `ziti-edge-tunnel.stalled.dmp` files written by ZDEW before the 2026-09 monitor fix are often 0 bytes or the
+  wrong process. ZDEW defect, not a script defect.
+- Dumps and bundles contain customer hostnames, usernames and session state. Keep them out of public issues
+  and quote the minimum needed on a ticket.
