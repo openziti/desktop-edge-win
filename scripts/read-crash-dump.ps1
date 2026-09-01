@@ -10,6 +10,21 @@ It works out which ziti-edge-tunnel build produced the dump, downloads that exac
 ziti-tunnel-sdk-c releases, and proves the download matches before trusting it. Nothing is staged by
 hand.
 
+The version comes from the bundle around the dump: the .ziti dump's "Application: name@version"
+line, whose tlsuv entry also says which of the two Windows builds is installed, and failing that the
+tunneler's startup banner. When there is no bundle, or when the dump is older than the version the
+bundle reports, the dump's own module record names the build that wrote it and the matching release
+is hunted down from that. All of this happens without being asked.
+
+Give it any of these and it works out the rest:
+
+  a .dmp                one dump
+  a feedback .zip       unpacked to temp, every dump inside it read
+  any folder            searched all the way down, so a whole ticket works
+
+More than one dump gets a comparison table at the end. That table is the point on a fleet ticket:
+one dump tells you where it broke, the set tells you whether they all broke the same way.
+
 Dumps written before the MiniDumpWithModuleHeaders fix carry no unwind data of their own, so the
 matching binary is what makes them readable at all. Dumps written after it still need the binary for
 function names, because MinGW keeps debug info as DWARF inside the exe and no PDB is ever published.
@@ -18,8 +33,9 @@ Whatever is missing, the script degrades instead of failing: no debugger still g
 address and instruction pointer, no addr2line still gets you ordered frames as module offsets.
 
 .PARAMETER path
-A .dmp file, a feedback zip, or a directory holding an unpacked bundle. Directories and zips are
-searched for both ziti-edge-tunnel.crash.dmp and ziti-edge-tunnel.stalled.dmp.
+A .dmp file, a feedback zip, or any folder. Folders are searched all the way down for every .dmp,
+so a single machine's bundle and a whole ticket of them both work. If a folder holds only zips and
+no dumps, the zips are unpacked and searched instead.
 
 .PARAMETER version
 ZET version to symbolize against, e.g. v1.11.4. Read from the bundle when not given.
@@ -34,11 +50,21 @@ Where downloaded builds are kept. Defaults to %LOCALAPPDATA%\zet-symbols.
 Symbolize even when the binary does not match the dump. The output is then unreliable and is marked
 as such.
 
+.PARAMETER searchLimit
+When the version read from the bundle does not match the dump, the matching build is hunted down by
+trying releases until one verifies. This happens on its own; the limit caps how many are tried before
+giving up. Defaults to 8.
+
+.EXAMPLE
+.\read-crash-dump.ps1 C:\temp\support\nfsupport\16157
+
+Every dump on the whole ticket, every machine, plus the comparison table.
+
 .EXAMPLE
 .\read-crash-dump.ps1 C:\temp\support\16157\kiosk17047-rivonia
 
 .EXAMPLE
-.\read-crash-dump.ps1 .\ziti-edge-tunnel.crash.dmp -version v1.11.4
+.\read-crash-dump.ps1 .\ziti-edge-tunnel.crash.dmp
 #>
 
 param (
@@ -46,7 +72,8 @@ param (
     [string]$version,
     [string]$exeDir,
     [string]$cache = (Join-Path $env:LOCALAPPDATA "zet-symbols"),
-    [switch]$force
+    [switch]$force,
+    [int]$searchLimit = 8
 )
 
 $ErrorActionPreference = "Stop"
@@ -195,6 +222,10 @@ function Read-PeInfo {
 
 # ------------------------------------------------------------ bundle inspection
 
+# Three shapes of input, so that nobody has to know which one they have: a single .dmp, a feedback
+# zip, or any folder at all. Folders are always searched all the way down, because a ticket folder
+# holds one folder per machine and the dumps sit two levels inside each - asking for a flag to reach
+# them would only ever be answered yes.
 function Find-Dumps {
     param([string]$root)
 
@@ -204,12 +235,26 @@ function Find-Dumps {
             $dest = Join-Path ([System.IO.Path]::GetTempPath()) ("zet-dump-" + [guid]::NewGuid().ToString("N").Substring(0, 8))
             Write-Host "unpacking $root"
             Expand-Archive -Path $root -DestinationPath $dest -Force
-            return @(Get-ChildItem -Path $dest -Recurse -Filter "*.dmp" | ForEach-Object { $_.FullName })
+            return @(Get-ChildItem -Path $dest -Recurse -Filter "*.dmp" |
+                     Sort-Object FullName | ForEach-Object { $_.FullName })
         }
-        throw "not a dump or a zip: $root"
+        Write-Host "That file is not a crash dump or a feedback zip: $root"
+        Write-Host "Give me a .dmp, a feedback .zip, or the folder holding them."
+        return @()
     }
 
-    Get-ChildItem -Path $root -Recurse -Filter "*.dmp" | ForEach-Object { $_.FullName }
+    # A ticket folder may still hold the zips it was extracted from. The extracted copies are the
+    # same dumps, so unpacking them again would report every dump twice.
+    $found = @(Get-ChildItem -Path $root -Recurse -Filter "*.dmp" -ErrorAction SilentlyContinue |
+               Sort-Object FullName | ForEach-Object { $_.FullName })
+    if ($found.Count -eq 0) {
+        $zips = @(Get-ChildItem -Path $root -Recurse -Filter "*.zip" -ErrorAction SilentlyContinue)
+        if ($zips.Count -gt 0) {
+            Write-Host ("no dumps here yet, but {0} zip(s) are - unpacking them" -f $zips.Count)
+            foreach ($z in $zips) { $found += Find-Dumps -root $z.FullName }
+        }
+    }
+    return $found
 }
 
 # One bundle is one machine. A fleet ticket holds many side by side, so the search for a version has
@@ -224,6 +269,81 @@ function Get-BundleRoot {
         $dir = $dir.Parent
     }
     return (Split-Path -Parent $dumpPath)
+}
+
+# A dump's timestamp is the one number in the file that is not self-describing. Zip entries store a
+# bare wall clock with no zone, so extracting a customer's bundle stamps the file with THEIR local
+# time, which the filesystem then hands back as if it were OURS. Converting that to UTC applies the
+# analyst's offset to the customer's clock and is wrong by the difference between the two.
+#
+# The tunneler prints both clocks in one line at startup, so the machine that wrote the dump also
+# tells us its offset. Use that, and never the local machine's.
+function Get-BundleUtcOffset {
+    param([string]$dumpPath, [datetime]$wall)
+
+    $root = Get-BundleRoot -dumpPath $dumpPath
+    $service = Join-Path $root "service"
+    $searchIn = if (Test-Path $service) { $service } else { $root }
+
+    # Best source: the tunneler printed both clocks itself. Only exists if it restarted during the
+    # window, which on a healthy machine it never does.
+    #
+    # Every banner is collected rather than the first one found, because a machine in a zone that
+    # observes DST has a different offset either side of the changeover, and these dumps are often
+    # months older than the logs around them. The banner nearest the dump is the one that was true
+    # when the dump was written.
+    $banners = @()
+    $logs = Get-ChildItem -Path $searchIn -Filter "ziti-tunneler.log*" -ErrorAction SilentlyContinue
+    foreach ($log in $logs) {
+        $hits = Select-String -Path $log.FullName `
+                    -Pattern "initialized at\s*:.*?(\d{2}):(\d{2}):(\d{2}).*?\(local time\).*?(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\s*\(UTC\)"
+        foreach ($hit in $hits) {
+            $g = $hit.Matches[0].Groups
+            $local = ([int]$g[1].Value * 3600) + ([int]$g[2].Value * 60) + [int]$g[3].Value
+            $utc   = ([int]$g[7].Value * 3600) + ([int]$g[8].Value * 60) + [int]$g[9].Value
+            $diff  = $local - $utc
+            if ($diff -gt 43200)  { $diff -= 86400 }
+            if ($diff -lt -43200) { $diff += 86400 }
+            $when = New-Object DateTime ([int]$g[4].Value), ([int]$g[5].Value), ([int]$g[6].Value), `
+                                        ([int]$g[7].Value), ([int]$g[8].Value), ([int]$g[9].Value)
+            $banners += [pscustomobject]@{
+                Offset = [TimeSpan]::FromSeconds($diff)
+                When   = $when
+                Log    = $log.Name
+            }
+        }
+    }
+
+    if ($banners.Count -gt 0) {
+        $best = $banners | Sort-Object { [Math]::Abs((New-TimeSpan -Start $_.When -End $wall).Ticks) } |
+                Select-Object -First 1
+        $spread = @($banners | Select-Object -ExpandProperty Offset -Unique)
+        $note = if ($spread.Count -gt 1) { ", offset varies across the window so the nearest was used" } else { "" }
+        return [pscustomobject]@{
+            Offset = $best.Offset
+            Source = ("startup banner of {0:yyyy-MM-dd} in {1}{2}" -f $best.When, $best.Log, $note)
+        }
+    }
+
+    # Fallback: systeminfo.txt is captured on every bundle and names the zone outright. This is the
+    # standard-time offset, so a dump written under DST reads an hour off - which is still far closer
+    # than applying our own offset, and South Africa and most affected fleets do not observe DST.
+    $root2 = Get-BundleRoot -dumpPath $dumpPath
+    $sysinfo = Join-Path $root2 "systeminfo.txt"
+    if (Test-Path $sysinfo) {
+        $hit = Select-String -Path $sysinfo -List -Pattern "Time Zone:\s*\(UTC([+-])(\d{2}):(\d{2})\)"
+        if ($hit) {
+            $g = $hit.Matches[0].Groups
+            $secs = ([int]$g[2].Value * 3600) + ([int]$g[3].Value * 60)
+            if ($g[1].Value -eq "-") { $secs = -$secs }
+            return [pscustomobject]@{
+                Offset = [TimeSpan]::FromSeconds($secs)
+                Source = "Time Zone in systeminfo.txt"
+            }
+        }
+    }
+
+    return $null
 }
 
 function Get-BundleVersion {
@@ -303,6 +423,54 @@ function Get-ZetExe {
         $exe = $found.FullName
     }
     return $exe
+}
+
+# The dump names the build that wrote it: the module list carries ziti-edge-tunnel.exe's
+# TimeDateStamp and SizeOfImage, and those two identify a release exactly. So when the version read
+# out of the bundle turns out to be the wrong one - which happens whenever a dump is older than the
+# install, since these filenames are fixed and get overwritten - the dump can still be matched by
+# trying releases until one verifies. Every candidate is proven against the dump before use, so this
+# cannot silently symbolize against the wrong binary.
+# Ordered for the case that actually happens. A dump that does not match the installed version is
+# almost always OLDER than it - the file is overwritten by each event, so the one sitting in a bundle
+# can predate the current install by months. Walking the newest releases first therefore searches
+# away from the answer; this walks outward from the installed version, older side first.
+function Get-ReleaseTags {
+    param([string]$near)
+
+    $url = "https://api.github.com/repos/$repo/releases?per_page=100"
+    try {
+        $releases = Invoke-RestMethod -Uri $url -Headers @{ "User-Agent" = "read-crash-dump" }
+    } catch {
+        Write-Host "           could not list releases - $($_.Exception.Message)"
+        return @()
+    }
+    $tags = @($releases | Where-Object { -not $_.draft } | ForEach-Object { $_.tag_name })
+    if (-not $near) { return $tags }
+
+    $asVersion = {
+        param($t)
+        try { return [version]($t -replace "^v", "") } catch { return $null }
+    }
+    $pivot = & $asVersion $near
+    if (-not $pivot) { return $tags }
+
+    $older = @(); $newer = @()
+    foreach ($t in $tags) {
+        $v = & $asVersion $t
+        if (-not $v) { continue }
+        if ($v -lt $pivot) { $older += $t } elseif ($v -gt $pivot) { $newer += $t }
+    }
+    # older descending (nearest below the install first), then newer ascending
+    return @($older | Sort-Object { & $asVersion $_ } -Descending) +
+           @($newer | Sort-Object { & $asVersion $_ })
+}
+
+function Test-ExeMatchesDump {
+    param([string]$exePath, $zetModule)
+    if (-not (Test-Path $exePath) -or -not $zetModule) { return $false }
+    $pe = Read-PeInfo -exePath $exePath
+    return ($pe.TimeDateStamp -eq $zetModule.TimeDateStamp -and $pe.SizeOfImage -eq $zetModule.SizeOfImage)
 }
 
 # ------------------------------------------------------------- tool discovery
@@ -482,10 +650,84 @@ function Write-Frames {
     }
 }
 
+# ------------------------------------------------------------------ registers
+
+# x86-64 only implements 48 address bits, so a valid user pointer has bits 63-48 all zero. A value
+# that fails this can never have been a live address, which separates "freed and reused" from "never
+# set" - the two look identical once the fault address comes back unreportable.
+function Test-NonCanonical {
+    param([uint64]$v)
+    if ($v -lt 0x10000) { return $false }   # small integers are not pointers
+    $hi = $v -shr 48
+    return -not ($hi -eq 0 -or $hi -eq 0xFFFF)
+}
+
+# Registers frequently still hold the string a failed str* call was walking. The shape of that
+# string usually names which field was bad.
+function Get-AsciiFragment {
+    param([uint64]$v)
+    $bytes = [BitConverter]::GetBytes($v)
+    $text = ""
+    foreach ($b in $bytes) {
+        if ($b -eq 0) { break }
+        if ($b -lt 0x20 -or $b -gt 0x7e) { return $null }
+        $text += [char]$b
+    }
+    if ($text.Length -lt 4) { return $null }
+    return $text
+}
+
+function Write-Registers {
+    param($dump)
+
+    Write-Host ""
+    Write-Host "registers:"
+    $names = @($dump.Registers.Keys)
+    for ($i = 0; $i -lt $names.Count; $i += 4) {
+        $cells = @()
+        for ($j = $i; $j -lt [Math]::Min($i + 4, $names.Count); $j++) {
+            $cells += ("{0,-4} {1:x16}" -f $names[$j], $dump.Registers[$names[$j]])
+        }
+        Write-Host ("  " + ($cells -join "  "))
+    }
+
+    $flagged = @()
+    foreach ($n in $names) {
+        $v = $dump.Registers[$n]
+        if (Test-NonCanonical -v $v) { $flagged += ("{0}=0x{1:x}" -f $n, $v) }
+    }
+    if ($flagged.Count -gt 0) {
+        Write-Host ("  non-canonical (never a valid address, so a freed/garbage pointer): " + ($flagged -join ", "))
+    }
+
+    $strings = @()
+    foreach ($n in $names) {
+        $frag = Get-AsciiFragment -v $dump.Registers[$n]
+        if ($frag) { $strings += ("{0}=""{1}""" -f $n, $frag) }
+    }
+    if ($strings.Count -gt 0) {
+        Write-Host ("  ascii fragments (surviving str* arguments): " + ($strings -join ", "))
+    }
+}
+
 # --------------------------------------------------------------------- report
 
 function Show-Dump {
     param([string]$dumpPath)
+
+    # Filled in as we learn things and read back by the caller, so that every early return still
+    # contributes a row to the cross-dump table. On a fleet ticket that table is the actual finding:
+    # one dump tells you where it broke, the set tells you whether they broke the same way.
+    $script:lastSummary = [pscustomobject]@{
+        Machine = (Split-Path -Leaf (Get-BundleRoot -dumpPath $dumpPath))
+        Kind    = if ($dumpPath -match "stalled") { "stall" } else { "crash" }
+        Written = ""
+        Process = ""
+        Fault   = ""
+        Rip     = ""
+        Top     = ""
+        Via     = ""
+    }
 
     Write-Host ""
     Write-Host ("=" * 100)
@@ -493,10 +735,32 @@ function Show-Dump {
 
     $info = Get-Item $dumpPath
     Write-Host ("size    : {0:N0} bytes" -f $info.Length)
-    Write-Host ("written : {0:u}" -f $info.LastWriteTimeUtc)
+
+    # LastWriteTime's wall clock is the source machine's local time (see Get-BundleUtcOffset).
+    # LastWriteTimeUtc would re-stamp it with our offset, so it is never used here.
+    $wall = $info.LastWriteTime
+    $tz = Get-BundleUtcOffset -dumpPath $dumpPath -wall $wall
+    $writtenUtc = $null
+    if ($tz) {
+        $writtenUtc = $wall - $tz.Offset
+        # TimeSpan formatting has no positive/negative section syntax, so the sign is applied here.
+        $sign = if ($tz.Offset.Ticks -lt 0) { "-" } else { "+" }
+        $offText = "{0}{1:00}:{2:00}" -f $sign, [Math]::Abs($tz.Offset.Hours), [Math]::Abs($tz.Offset.Minutes)
+        Write-Host ("written : {0:yyyy-MM-dd HH:mm:ss} UTC   (machine clock said {1:HH:mm:ss}, UTC{2} per {3})" -f `
+                    $writtenUtc, $wall, $offText, $tz.Source)
+    } else {
+        Write-Host ("written : {0:yyyy-MM-dd HH:mm:ss} on the machine's own clock" -f $wall)
+        Write-Host "          Nothing in this bundle says which timezone that is, so it is NOT UTC and"
+        Write-Host "          cannot be lined up against log timestamps until you know the offset."
+    }
+
+    $script:lastSummary.Written = if ($writtenUtc) { "{0:yyyy-MM-dd HH:mm}Z" -f $writtenUtc } `
+                                  else { "{0:yyyy-MM-dd HH:mm}?" -f $wall }
 
     if ($info.Length -eq 0) {
         Write-Host "MiniDumpWriteDump failed outright - a 0-byte dump is a lost diagnostic, not a crash."
+        $script:lastSummary.Process = "(none)"
+        $script:lastSummary.Top = "0-byte - write failed"
         return
     }
 
@@ -507,11 +771,14 @@ function Show-Dump {
         $ripModule = Get-ModuleFor -dump $dump -addr $dump.Rip
         Write-Host ("exception: 0x{0:x8}   faulting address: 0x{1:x}" -f $dump.ExceptionCode, $dump.FaultAddress)
         Write-Host ("rip      : 0x{0:x}   {1}" -f $dump.Rip, (Format-ModuleOffset -module $ripModule -addr $dump.Rip))
+        $script:lastSummary.Fault = ("0x{0:x}" -f $dump.FaultAddress)
+        $script:lastSummary.Rip = (Format-ModuleOffset -module $ripModule -addr $dump.Rip)
 
         if ($dump.FaultAddress -eq 0) {
             Write-Host "note     : NULL dereference"
         } elseif ($dump.FaultAddress -eq [uint64]::MaxValue) {
-            Write-Host "note     : address unreportable - suspect a garbage pointer, check for non-canonical registers"
+            Write-Host "note     : address unreportable - the OS could not name the page, which points at a"
+            Write-Host "           garbage pointer rather than a plain NULL. See the registers below."
         }
     } else {
         Write-Host "kind     : no exception record - this is a stall snapshot, not a crash"
@@ -522,13 +789,29 @@ function Show-Dump {
     if ($dump.Modules.Count -gt 0) {
         $image = Split-Path -Leaf $dump.Modules[0].Name
         Write-Host "process  : $image"
+        $script:lastSummary.Process = $image
         if ($image -ne "ziti-edge-tunnel.exe") {
             Write-Host "WARNING  : this dump is of $image, not ziti-edge-tunnel.exe, whatever the filename says"
+            $script:lastSummary.Top = "WRONG PROCESS ($image)"
+
+            # Nothing downstream can help: there is no ziti code in this process, so the tunneler
+            # binary would symbolize nothing and its threads are all CLR and Win32 waits. Printing
+            # thirty of those stacks buries the one line that matters.
+            Write-Host ""
+            Write-Host "Not reading any further. The monitor service names every dump it writes"
+            Write-Host "ziti-edge-tunnel.stalled.dmp regardless of which process it actually dumped, so this"
+            Write-Host "is a snapshot of the tray UI and says nothing about the tunneler. The real stall"
+            Write-Host "dump for this machine, if there ever was one, was overwritten by this file."
+            return
         }
     }
 
     if (-not $zet) {
         Write-Host "note     : no ziti-edge-tunnel.exe among the $($dump.Modules.Count) recorded modules"
+    }
+
+    if ($dump.HasException -and ($dump.FaultAddress -eq 0 -or $dump.FaultAddress -eq [uint64]::MaxValue)) {
+        Write-Registers -dump $dump
     }
 
     # find the binary
@@ -545,12 +828,73 @@ function Show-Dump {
                 $ver = $found.Version
                 $flavor = $found.Flavor
                 Write-Host "version  : $ver$flavor (from $($found.Source))"
+
+                # The bundle reports the version installed the day it was collected. These dump
+                # filenames are fixed and get overwritten, so a dump can be months older than the
+                # install that is being read here, and older than every surviving log.
+                $oldestLog = Get-ChildItem -Path (Split-Path -Parent $found.Source) -Filter "ziti-tunneler.log*" `
+                                 -ErrorAction SilentlyContinue |
+                             Sort-Object LastWriteTime | Select-Object -First 1
+                if ($oldestLog -and $wall -lt $oldestLog.LastWriteTime.Date) {
+                    Write-Host ("           this dump predates the oldest surviving log ({0:yyyy-MM-dd}), so that version" -f $oldestLog.LastWriteTime)
+                    Write-Host "           is the one installed now, not necessarily the one that wrote the dump"
+                }
             }
         }
         if (-not $ver) {
-            Write-Host "version  : unknown - pass -version or -exeDir to symbolize"
+            Write-Host "version  : unknown - no .ziti or startup banner beside this dump"
         } else {
             $exe = Get-ZetExe -ver $ver -flavor $flavor
+
+            # The two Windows builds share a version, and the log fallback cannot tell them apart -
+            # only the .ziti header names the TLS backend. So when the first pick does not verify,
+            # try the twin before giving up; it costs one download and is right about half the time.
+            if ($zet -and -not (Test-ExeMatchesDump -exePath $exe -zetModule $zet)) {
+                $twin = if ($flavor) { "" } else { "-win32crypto" }
+                Write-Host "           first pick does not match the dump, trying the $(if ($twin) { $twin } else { 'standard' }) build"
+                try {
+                    $alt = Get-ZetExe -ver $ver -flavor $twin
+                    if (Test-ExeMatchesDump -exePath $alt -zetModule $zet) {
+                        $exe = $alt; $flavor = $twin
+                        Write-Host "           the $twin build matches"
+                    } else {
+                        Write-Host "           that one does not match either, so neither published $ver build wrote this dump"
+                    }
+                } catch {
+                    Write-Host "           no $twin build published for $ver"
+                }
+            }
+        }
+
+        # Last resort: ask the dump which build it was. This runs by itself rather than behind a
+        # flag, because the person holding a dump has no way to know a flag would have helped.
+        # A size match with a stamp mismatch means a rebuild of the same version, which no release
+        # will carry. Searching for it would download the whole release history and find nothing.
+        $rebuild = $false
+        if ($zet -and $exe -and (Test-Path $exe)) {
+            $peNow = Read-PeInfo -exePath $exe
+            $rebuild = ($peNow.SizeOfImage -eq $zet.SizeOfImage -and $peNow.TimeDateStamp -ne $zet.TimeDateStamp)
+        }
+
+        if (-not $rebuild -and $zet -and (-not $exe -or -not (Test-ExeMatchesDump -exePath $exe -zetModule $zet))) {
+            Write-Host "           looking for the build that wrote this dump, this may take a minute"
+            $tried = 0
+            foreach ($tag in (Get-ReleaseTags -near $ver)) {
+                if ($tried -ge $searchLimit) {
+                    Write-Host "           gave up after $searchLimit releases - raise -searchLimit to keep looking"
+                    break
+                }
+                $tried++
+                foreach ($f in @("", "-win32crypto")) {
+                    try { $candidate = Get-ZetExe -ver $tag -flavor $f } catch { continue }
+                    if (Test-ExeMatchesDump -exePath $candidate -zetModule $zet) {
+                        Write-Host "           matched $tag$f"
+                        $exe = $candidate
+                        break
+                    }
+                }
+                if ($exe -and (Test-ExeMatchesDump -exePath $exe -zetModule $zet)) { break }
+            }
         }
     }
 
@@ -569,6 +913,14 @@ function Show-Dump {
             Write-Host "binary   : $exe"
             Write-Host ("WARNING  : does not match the dump (exe stamp 0x{0:x}/size {1}, dump wants 0x{2:x}/size {3})" -f `
                         $pe.TimeDateStamp, $pe.SizeOfImage, $zet.TimeDateStamp, $zet.SizeOfImage)
+            if ($pe.SizeOfImage -eq $zet.SizeOfImage) {
+                $dumpBuilt = ([datetime]"1970-01-01Z").AddSeconds($zet.TimeDateStamp)
+                $exeBuilt  = ([datetime]"1970-01-01Z").AddSeconds($pe.TimeDateStamp)
+                Write-Host ("           same image size, different build date: the dump's binary was built {0:yyyy-MM-dd}," -f $dumpBuilt)
+                Write-Host ("           the downloaded one {0:yyyy-MM-dd}. That points at one version compiled twice," -f $exeBuilt)
+                Write-Host "           so the release history was not searched. If you need this stack, take"
+                Write-Host "           ziti-edge-tunnel.exe off the machine itself and pass -exeDir."
+            }
             if (-not $force) {
                 Write-Host "           symbolizing anyway would give wrong lines. Re-run with -force to override."
                 $exe = $null
@@ -602,13 +954,27 @@ function Show-Dump {
         if (-not $interesting) {
             Write-Host ""
             Write-Host "No thread stacks could be walked."
+            $script:lastSummary.Top = "stall - no stacks could be walked"
             return
         }
+        $named = $null
         foreach ($t in $interesting) {
             Write-Host ""
             Write-Host ("--- thread {0} ---" -f $t.Id)
-            Write-Frames -rows (Resolve-Frames -dump $dump -addr2line $addr2line -exePath $exe `
-                                               -preferredBase $preferredBase -addresses $t.Addresses)
+            $rows = Resolve-Frames -dump $dump -addr2line $addr2line -exePath $exe `
+                                   -preferredBase $preferredBase -addresses $t.Addresses
+            Write-Frames -rows $rows
+            if (-not $named) { $named = $rows | Where-Object { $_.Location } | Select-Object -First 1 }
+        }
+
+        # A stall has no faulting frame, so the summary row would otherwise be blank for the one
+        # kind of dump where "it walked at all" is the finding.
+        $script:lastSummary.Top = if ($named) {
+            "stall - {0} ({1})" -f $named.Function, $named.Location
+        } elseif ($exe) {
+            "stall - {0} threads, no ziti frames named" -f $interesting.Count
+        } else {
+            "stall - {0} threads, unsymbolized (no matching binary)" -f $interesting.Count
         }
         return
     }
@@ -622,28 +988,94 @@ function Show-Dump {
         return
     }
 
-    Write-Frames -rows (Resolve-Frames -dump $dump -addr2line $addr2line -exePath $exe `
-                                       -preferredBase $preferredBase -addresses $addresses)
+    $rows = Resolve-Frames -dump $dump -addr2line $addr2line -exePath $exe `
+                           -preferredBase $preferredBase -addresses $addresses
+    Write-Frames -rows $rows
+
+    # The first frame with source attached is the top of OUR code - the ucrtbase frame above it is
+    # only ever strcmp/strdup and says nothing about which call was wrong.
+    #
+    # The CALLER is kept too. The same faulting line reached from a timer and from a controller
+    # response callback is not the same bug, and collapsing the two hides the one difference across
+    # a fleet that says whether the trigger is time-based or traffic-based.
+    $named = @($rows | Where-Object { $_.Location } | Select-Object -First 2)
+    if ($named.Count -gt 0) {
+        $script:lastSummary.Top = ("{0} ({1})" -f $named[0].Function, $named[0].Location)
+        if ($named.Count -gt 1) {
+            $script:lastSummary.Via = $named[1].Function
+        }
+    }
+}
+
+function Write-Summary {
+    param($rows)
+
+    Write-Host ""
+    Write-Host ("=" * 100)
+    Write-Host "SUMMARY"
+    Write-Host ""
+    $w = [Math]::Max(8, ($rows | ForEach-Object { $_.Machine.Length } | Measure-Object -Maximum).Maximum)
+    $fmt = "{0,-$w} {1,-6} {2,-18} {3,-20} {4}"
+    Write-Host ($fmt -f "MACHINE", "KIND", "WRITTEN", "FAULT ADDR", "TOP FRAME")
+    foreach ($r in ($rows | Sort-Object Machine, Kind)) {
+        $top = if ($r.Via) { "{0}  <- {1}" -f $r.Top, $r.Via } else { $r.Top }
+        Write-Host ($fmt -f $r.Machine, $r.Kind, $r.Written, $r.Fault, $top)
+    }
+
+    # Distinct crash signatures. Claiming one shared cause across a fleet is only defensible once
+    # every dump has been shown to fault the same way, and the exceptions are what show it. The
+    # caller is part of the signature: same line, different caller, different bug to chase.
+    $faults = $rows | Where-Object { $_.Fault } | Group-Object Fault, Top, Via
+    if ($faults.Count -gt 1) {
+        Write-Host ""
+        Write-Host "$($faults.Count) distinct crash signatures - do not report these as one cause without checking:"
+        foreach ($g in ($faults | Sort-Object Count -Descending)) {
+            $parts = $g.Name -split ", "
+            $via = if ($parts.Count -gt 2 -and $parts[2]) { " via " + $parts[2] } else { "" }
+            Write-Host ("  {0,2}x  {1}  {2}{3}" -f $g.Count, $parts[0], $parts[1], $via)
+        }
+    }
+
+    $bad = @($rows | Where-Object { $_.Top -match "^(WRONG PROCESS|0-byte|failed:)" })
+    if ($bad.Count -gt 0) {
+        Write-Host ""
+        Write-Host ("{0} of {1} dumps carry no usable evidence:" -f $bad.Count, $rows.Count)
+        foreach ($g in ($bad | Group-Object { ($_.Top -split "[(:]")[0].Trim() } | Sort-Object Count -Descending)) {
+            Write-Host ("  {0,2}x  {1}" -f $g.Count, $g.Name)
+        }
+    }
 }
 
 # ----------------------------------------------------------------------- main
 
 if (-not (Test-Path $path)) {
-    Write-Host "no such path: $path"
+    Write-Host "There is nothing at that path: $path"
     exit 1
 }
 
 $dumps = @(Find-Dumps -root $path)
 if ($dumps.Count -eq 0) {
-    Write-Host "no .dmp files under $path"
+    Write-Host ""
+    Write-Host "No crash dumps found under $path"
+    Write-Host ""
+    Write-Host "A dump is named ziti-edge-tunnel.crash.dmp or ziti-edge-tunnel.stalled.dmp. If the"
+    Write-Host "bundle has neither, the tunneler did not crash or stall on that machine while the"
+    Write-Host "logs it kept were being written - which is itself worth saying on the ticket."
     exit 1
 }
 
 Write-Host ("found {0} dump(s)" -f $dumps.Count)
+foreach ($d in $dumps) { Write-Host ("  " + $d) }
+$summaries = @()
 foreach ($d in $dumps) {
+    $script:lastSummary = $null
     try {
         Show-Dump -dumpPath $d
     } catch {
         Write-Host "failed on ${d}: $($_.Exception.Message)"
+        if ($script:lastSummary) { $script:lastSummary.Top = "failed: $($_.Exception.Message)" }
     }
+    if ($script:lastSummary) { $summaries += $script:lastSummary }
 }
+
+if ($summaries.Count -gt 1) { Write-Summary -rows $summaries }
