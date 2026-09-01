@@ -32,10 +32,35 @@ function names, because MinGW keeps debug info as DWARF inside the exe and no PD
 Whatever is missing, the script degrades instead of failing: no debugger still gets you the faulting
 address and instruction pointer, no addr2line still gets you ordered frames as module offsets.
 
+TWO PREREQUISITES, both free, both one-time:
+
+  cdb          Debugging Tools for Windows, from the Windows SDK installer. Untick everything except
+               "Debugging Tools for Windows". Without it there is no backtrace at all.
+               https://developer.microsoft.com/windows/downloads/windows-sdk/
+
+  addr2line    MSYS2, then: pacman -S --needed mingw-w64-x86_64-binutils
+               Without it the stack appears as raw module offsets instead of function names.
+               https://www.msys2.org/
+
+Take the default install locations and this script finds both by itself. Run it with -checkTools to
+see what you have and what you are missing.
+
 .PARAMETER path
 A .dmp file, a feedback zip, or any folder. Folders are searched all the way down for every .dmp,
 so a single machine's bundle and a whole ticket of them both work. If a folder holds only zips and
 no dumps, the zips are unpacked and searched instead.
+
+.PARAMETER checkTools
+Report which prerequisites are installed and how to get the missing ones, then exit. Run this once
+before your first real dump.
+
+.PARAMETER addr2lineDir
+Directory holding addr2line.exe, when it is somewhere this script does not look by itself. Taken as
+final: if it is not there, addr2line is reported missing rather than searched for elsewhere. Point
+this at an empty directory to see what the run looks like without it.
+
+.PARAMETER cdbDir
+Directory holding cdb.exe. Same rules as -addr2lineDir.
 
 .PARAMETER version
 ZET version to symbolize against, e.g. v1.11.4. Read from the bundle when not given.
@@ -56,19 +81,22 @@ trying releases until one verifies. This happens on its own; the limit caps how 
 giving up. Defaults to 8.
 
 .EXAMPLE
-.\read-crash-dump.ps1 C:\temp\support\nfsupport\16157
+.\read-crash-dump.ps1 C:\temp\support\12345
 
 Every dump on the whole ticket, every machine, plus the comparison table.
 
 .EXAMPLE
-.\read-crash-dump.ps1 C:\temp\support\16157\kiosk17047-rivonia
+.\read-crash-dump.ps1 C:\temp\support\12345\host-01
 
 .EXAMPLE
 .\read-crash-dump.ps1 .\ziti-edge-tunnel.crash.dmp
 #>
 
 param (
-    [Parameter(Mandatory = $true, Position = 0)][string]$path,
+    [Parameter(Position = 0)][string]$path,
+    [switch]$checkTools,
+    [string]$addr2lineDir,
+    [string]$cdbDir,
     [string]$version,
     [string]$exeDir,
     [string]$cache = (Join-Path $env:LOCALAPPDATA "zet-symbols"),
@@ -492,7 +520,16 @@ function Find-Tool {
     return $null
 }
 
+# An explicit -cdbDir / -addr2lineDir wins outright and does not fall back to the search. Otherwise
+# naming a directory that turns out to be wrong silently gets you a different tool than the one you
+# asked for, and there is no way to make the script report a tool as missing when it is installed.
 function Find-Cdb {
+    if ($cdbDir) {
+        $explicit = Join-Path $cdbDir "cdb.exe"
+        if (Test-Path $explicit) { return $explicit }
+        return $null
+    }
+
     Find-Tool -name "cdb" -candidates @(
         "${env:ProgramFiles(x86)}\Windows Kits\10\Debuggers\x64\cdb.exe",
         "$env:ProgramFiles\Windows Kits\10\Debuggers\x64\cdb.exe",
@@ -501,14 +538,93 @@ function Find-Cdb {
     )
 }
 
+# The mingw64 build is checked ahead of anything on PATH. Several addr2line builds exist on a typical
+# dev box and only the x86_64-w64-mingw32 one reads the DWARF that ZET's release binaries carry -- the
+# MSYS build under /usr/bin targets MSYS itself and is the one PATH usually finds first.
 function Find-Addr2line {
-    Find-Tool -name "addr2line" -candidates @(
-        "$env:ProgramFiles\JetBrains\*\bin\mingw\bin\addr2line.exe",
+    if ($addr2lineDir) {
+        $explicit = Join-Path $addr2lineDir "addr2line.exe"
+        if (Test-Path $explicit) { return $explicit }
+        return $null
+    }
+
+    $mingw = @(
         "C:\msys64\mingw64\bin\addr2line.exe",
+        "D:\msys64\mingw64\bin\addr2line.exe",
         "D:\tools\msys64\mingw64\bin\addr2line.exe",
+        "$env:ProgramFiles\JetBrains\*\bin\mingw\bin\addr2line.exe"
+    )
+    foreach ($c in $mingw) {
+        if ($c -match "\*") {
+            $hit = Get-ChildItem -Path $c -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($hit) { return $hit.FullName }
+        } elseif (Test-Path $c) {
+            return $c
+        }
+    }
+
+    Find-Tool -name "addr2line" -candidates @(
+        "C:\msys64\usr\bin\addr2line.exe",
+        "D:\tools\msys64\usr\bin\addr2line.exe",
         "C:\ProgramData\chocolatey\bin\addr2line.exe",
         "$env:ProgramFiles\Git\usr\bin\addr2line.exe"
     )
+}
+
+# ---------------------------------------------------------------- prerequisites
+
+function Test-Prerequisites {
+    $cdb = Find-Cdb
+    $addr2line = Find-Addr2line
+
+    Write-Host ""
+    Write-Host "prerequisite check"
+    Write-Host ""
+
+    if ($cdb) {
+        Write-Host "  [ok]      cdb          $cdb"
+    } else {
+        Write-Host "  [MISSING] cdb          no debugger found"
+    }
+    if ($addr2line) {
+        Write-Host "  [ok]      addr2line    $addr2line"
+    } else {
+        Write-Host "  [MISSING] addr2line    no symbolizer found"
+    }
+
+    if ($cdb -and $addr2line) {
+        Write-Host ""
+        Write-Host "  All set - you will get full stacks with function names and source lines."
+        return $true
+    }
+
+    Write-Host ""
+    if (-not $cdb) {
+        Write-Host "  cdb is the debugger that walks the stack. Without it you get the faulting address"
+        Write-Host "  and nothing else - no backtrace at all."
+        Write-Host ""
+        Write-Host "  Install: Debugging Tools for Windows, part of the Windows SDK."
+        Write-Host "    1. https://developer.microsoft.com/windows/downloads/windows-sdk/"
+        Write-Host "    2. Run the installer. Untick everything EXCEPT 'Debugging Tools for Windows'."
+        Write-Host "    3. It lands in C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\ and this"
+        Write-Host "       script finds it there by itself. No PATH change needed."
+        Write-Host ""
+    }
+    if (-not $addr2line) {
+        Write-Host "  addr2line turns addresses into function names and source lines. Without it the"
+        Write-Host "  stack still comes out, but every frame reads as ziti-edge-tunnel.exe+0x4cb70c."
+        Write-Host ""
+        Write-Host "  Install: MSYS2, then the mingw-w64 binutils package."
+        Write-Host "    1. https://www.msys2.org/  -- take the default install location, C:\msys64"
+        Write-Host "    2. Open 'MSYS2 MINGW64' from the Start menu and run:"
+        Write-Host "         pacman -S --needed mingw-w64-x86_64-binutils"
+        Write-Host "    3. That puts addr2line in C:\msys64\mingw64\bin and this script finds it there."
+        Write-Host ""
+        Write-Host "  If you already have MSYS2 somewhere else, the mingw64\bin\addr2line.exe under it is"
+        Write-Host "  the one to use. Pass -addr2lineDir if it is not in one of the usual places."
+        Write-Host ""
+    }
+    return $false
 }
 
 # ------------------------------------------------------------------ unwinding
@@ -937,8 +1053,9 @@ function Show-Dump {
 
     if (-not $cdb) {
         Write-Host ""
-        Write-Host "No debugger found, so there is no stack - only the faulting frame above."
-        Write-Host "Install the Windows SDK Debugging Tools to get the full backtrace."
+        Write-Host "No debugger found, so the stack cannot be walked. Everything known about the crash"
+        Write-Host "is above, plus the single faulting frame below. Install the Windows SDK Debugging"
+        Write-Host "Tools and re-run for the full backtrace."
         if ($dump.HasException -and $exe -and $addr2line) {
             Write-Frames -rows (Resolve-Frames -dump $dump -addr2line $addr2line -exePath $exe `
                                                -preferredBase $preferredBase -addresses @($dump.Rip))
@@ -1048,9 +1165,28 @@ function Write-Summary {
 
 # ----------------------------------------------------------------------- main
 
+if ($checkTools) {
+    if (Test-Prerequisites) { exit 0 } else { exit 1 }
+}
+
+if (-not $path) {
+    Write-Host "Give me a .dmp, a feedback .zip, or the folder holding them."
+    Write-Host "  .\read-crash-dump.ps1 C:\temp\support\<ticket>"
+    Write-Host ""
+    Write-Host "Run .\read-crash-dump.ps1 -checkTools first to confirm you have what you need."
+    exit 1
+}
+
 if (-not (Test-Path $path)) {
     Write-Host "There is nothing at that path: $path"
     exit 1
+}
+
+# Missing tools degrade the output rather than stopping the run, but silently producing a worse
+# answer is how someone concludes a dump is unreadable when it is only unsymbolized.
+if (-not (Test-Prerequisites)) {
+    Write-Host "  Continuing anyway - the output below will be less useful than it could be."
+    Write-Host ""
 }
 
 $dumps = @(Find-Dumps -root $path)
