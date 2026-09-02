@@ -1,3 +1,15 @@
+# Release 2.11.3.1
+
+## What's New
+n/a
+
+## Bugs fixed
+* the version reported to the controller is now the installed Ziti Desktop Edge version rather than
+  the bundled ziti-edge-tunnel version
+
+## Other changes
+* updated to ziti-edge-tunnel v1.18.7.1
+
 # Release 2.11.3.0
 
 ## What's New
