@@ -1,3 +1,14 @@
+# Release 2.11.3.2
+
+## What's New
+n/a
+
+## Bugs fixed
+n/a
+
+## Other changes
+* updated to ziti-edge-tunnel v1.18.7.2
+
 # Release 2.11.3.1
 
 ## What's New
