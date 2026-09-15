@@ -934,7 +934,8 @@ namespace ZitiUpdateService {
                         zetSemaphore.Release();
 
                         Logger.Warn("forcefully stopping ziti-edge-tunnel as it has been blocked for too long");
-                        stopProcessForcefully("ziti-edge-tunnel", "data service [ziti]");
+                        // sole writer of ziti-edge-tunnel.stalled.dmp
+                        stopProcessForcefully("ziti-edge-tunnel", "data service [ziti]", "stalled");
 
                         Logger.Info("immediately restarting ziti-edge-tunnel");
                         ServiceActions.StartService(); //attempt to start the service
@@ -1393,11 +1394,16 @@ namespace ZitiUpdateService {
             }
             if (!cleanStop) {
                 Logger.Debug("Stopping ziti-edge-tunnel forcefully.");
-                stopProcessForcefully("ziti-edge-tunnel", "data service [ziti]");
+                // not a stall - the service ignored a clean stop for 30s
+                stopProcessForcefully("ziti-edge-tunnel", "data service [ziti]", "hung-on-stop");
             }
         }
 
-        private void stopProcessForcefully(string processName, string description) {
+        /// <summary>
+        /// Kills every process matching <paramref name="processName"/>, capturing a minidump of each first.
+        /// </summary>
+        /// <param name="dumpReason">Reason half of the dump filename. Null skips the dump.</param>
+        private void stopProcessForcefully(string processName, string description, string dumpReason) {
             try {
                 string logLocation = Path.Combine(exeLocation, "logs");
 
@@ -1414,7 +1420,15 @@ namespace ZitiUpdateService {
 
                 foreach (Process worker in workers) {
                     try {
-                        MiniDump.CreateMemoryDump(worker, Path.Combine(logLocation, "ziti-edge-tunnel.stalled.dmp"));
+                        if (dumpReason != null) {
+                            // name comes from the process actually dumped, not the caller, so
+                            // ziti-edge-tunnel.stalled.dmp can only ever be a stalled ziti-edge-tunnel.
+                            // pid suffix keeps multiple matches from overwriting each other.
+                            string suffix = workers.Length > 1 ? "." + worker.Id : "";
+                            string dumpFile = Path.Combine(logLocation,
+                                worker.ProcessName + "." + dumpReason + suffix + ".dmp");
+                            MiniDump.CreateMemoryDump(worker, dumpFile);
+                        }
                         Logger.Info("Killing: {0}", worker);
                         if (!worker.CloseMainWindow()) {
                             //don't care right now because when called on the UI it just gets 'hidden'
@@ -1444,7 +1458,8 @@ namespace ZitiUpdateService {
 
             await Task.Delay(1000); //wait for the event to send and give the UI time to close...
 
-            stopProcessForcefully("ZitiDesktopEdge", "UI");
+            // routine upgrade path, not a stall
+            stopProcessForcefully("ZitiDesktopEdge", "UI", "did-not-exit");
         }
 
         private static void Svc_OnShutdownEvent(object sender, StatusEvent e) {
