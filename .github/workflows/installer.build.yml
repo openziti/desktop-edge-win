@@ -45,10 +45,10 @@ jobs:
       - name: Set up environment variable
         run: echo "ZITI_EDGE_TUNNEL_BUILD=${{ github.event.inputs.zet }}" >> $GITHUB_ENV
       - name: Git Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: microsoft/setup-msbuild@v2
+      - uses: microsoft/setup-msbuild@v3
       - if: github.event_name == 'push'
         run: echo "GIT_BRANCH=$($env:GITHUB_REF.replace('refs/heads/', ''))" >> $env:GITHUB_ENV
       - if: github.event_name == 'pull_request'
@@ -67,13 +67,13 @@ jobs:
         run: choco install advanced-installer --version="$(cat .\adv-inst-version)" --yes
       - name: Setting up VERSION env var
         run: echo "VERSION=$(cat .\version)" >> $env:GITHUB_ENV
-      - uses: nuget/setup-nuget@v2
+      - uses: nuget/setup-nuget@v4
         with:
           nuget-api-key: ${{ secrets.NuGetAPIKey }}
       - name: Restore nuget packages
         run: nuget restore ZitiDesktopEdge.sln
       - name: Setup .NET SDK for unit tests
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 8.0.x
       - name: Run unit tests
@@ -99,7 +99,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: .\Installer\build.ps1
       - name: Upload installer onto job
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ZitiDesktopEdgeClient-${{ env.VERSION }}
           path: "Installer/Output/Ziti Desktop Edge Client-*"
@@ -109,7 +109,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: .\Installer\build.ps1 -Win32Crypto:$true
       - name: Upload win32crypto installer onto job
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ZitiDesktopEdgeClient-${{ env.VERSION }}-win32crypto
           path: "Installer/Output/Ziti Desktop Edge Client-*"
@@ -117,13 +117,13 @@ jobs:
         shell: pwsh
         run: .\scripts\build-admin-templates-zip.ps1 -Version "${env:VERSION}"
       - name: Upload admin templates zip
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ZDEW-AdminTemplates-${{ env.VERSION }}
           path: "Installer/Output/ZDEW-AdminTemplates-*"
       - name: Job Failure - Upload the signing log job
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: SigningLogs
           path: '**/*AWSSigner.log*'
