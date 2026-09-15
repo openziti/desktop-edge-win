@@ -25,17 +25,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 8.0.x
 
       # The packages.config projects (ZitiDesktopEdge.Client / ZitiUpdateService)
       # need `nuget restore` before `dotnet test` will build them; run-tests.ps1
       # invokes it but needs nuget.exe on PATH.
-      - uses: nuget/setup-nuget@v2
+      - uses: nuget/setup-nuget@v4
 
       - name: Run tests
         shell: pwsh
