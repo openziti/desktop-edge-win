@@ -308,10 +308,6 @@ $outputPath = "${scriptPath}\Output\Ziti Desktop Edge Client-${version}.exe.json
 echo "REMOVING .back files: ${scriptPath}\*back*"
 Remove-Item "${scriptPath}\*back*" -Recurse -ErrorAction SilentlyContinue
 
-echo "Copying json file to beta${versionQualifier}.json"
-copy $outputPath "$checkoutRoot\release-streams\beta${versionQualifier}.json"
-
-
 if($revertGitAfter) {
   # An array, splatted. As a single space-joined string git sees one pathspec and matches nothing, leaving
   # the version-stamped files dirty after every build.
