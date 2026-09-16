@@ -40,7 +40,7 @@
     <ROW Property="ALLUSERS" Value="1"/>
     <ROW Property="ARPCOMMENTS" Value="This installer database contains the logic and data required to install [|ProductName]." ValueLocId="*"/>
     <ROW Property="ARPHELPTELEPHONE" Value="support@openziti.io"/>
-    <ROW Property="ARPNOREPAIR" MultiBuildValue="AnyCPU_Release:1"/>
+    <ROW Property="ARPNOREPAIR" MultiBuildValue="AnyCPU_Release:1#BuildEXE_1:1"/>
     <ROW Property="ARPPRODUCTICON" Value="ziti.exe" Type="8"/>
     <ROW Property="ARPURLINFOABOUT" Value="https://openenziti.io"/>
     <ROW Property="AppLogoIcon" Value="applogoicon" MultiBuildValue="AnyCPU_Release:ziti.ico#BuildEXE_1:ziti.ico" Type="1" MsiKey="AppLogoIcon"/>
@@ -64,7 +64,6 @@
     <ROW Property="WindowsTypeNT5XDisplay" MultiBuildValue="AnyCPU_Release:Windows XP/2003#BuildEXE_1:Windows XP/2003" ValueLocId="-"/>
     <ROW Property="WindowsTypeNT60" MultiBuildValue="AnyCPU_Release:Windows Vista/Server 2008#BuildEXE_1:Windows Vista/Server 2008" ValueLocId="-"/>
     <ROW Property="WindowsTypeNT60Display" MultiBuildValue="AnyCPU_Release:Windows Vista/Server 2008#BuildEXE_1:Windows Vista/Server 2008" ValueLocId="-"/>
-    <ROW Property="ZITI_DESKTOP_SHORTCUT" Value="0"/>
     <ROW Property="ZITI_ENABLE_FIPS" Value="0"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiDirsComponent">
@@ -145,7 +144,7 @@
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BuildComponent">
     <ROW BuildKey="AnyCPU_Release" BuildName="BuildEXE" BuildOrder="1" BuildType="0" PackageFolder="Output" PackageFileName="Ziti Desktop Edge Client-[|ProductVersion]" Languages="en" InstallationType="4" CabsLocation="1" PackageType="1" FilesInsideExe="true" ExeIconPath="..\ziti.ico" ExtractionFolder="[AppDataFolder][|Manufacturer]\[|ProductName] [|ProductVersion]\install" ExtUI="true" UseLargeSchema="true" ExeName="Ziti Desktop Edge Client-[|ProductVersion]"/>
-    <ROW BuildKey="BuildEXE_1" BuildName="BuildMSI" BuildOrder="2" BuildType="0" PackageFolder="Output" PackageFileName="Ziti Desktop Edge Client-[|ProductVersion]" Languages="en" InstallationType="4" ExtUI="true" UseLargeSchema="true"/>
+    <ROW BuildKey="BuildEXE_1" BuildName="BuildMSI" BuildOrder="2" BuildType="0" PackageFolder="Output" PackageFileName="Ziti Desktop Edge Client-[|ProductVersion]" Languages="en" InstallationType="4" CabsLocation="1" PackageType="1" FilesInsideExe="true" ExtractionFolder="[AppDataFolder][|Manufacturer]\[|ProductName] [|ProductVersion]\install" ExtUI="true" UseLargeSchema="true"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.DictionaryComponent">
     <ROW Path="&lt;AI_DICTS&gt;ui.ail"/>
@@ -188,8 +187,8 @@
     <ROW Action="AI_ProcessFailActions" Description="Generating actions to configure service failure actions" DescriptionLocId="ActionText.Description.AI_ProcessFailActions" Template="Service: [1]" TemplateLocId="ActionText.Template.AI_ProcessFailActions"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiAppSearchComponent">
-    <ROW Property="AI_SETUPEXEPATH" Signature_="AI_EXE_PATH_LM" Builds="AnyCPU_Release"/>
-    <ROW Property="AI_SETUPEXEPATH" Signature_="AI_EXE_PATH_CU" Builds="AnyCPU_Release"/>
+    <ROW Property="AI_SETUPEXEPATH" Signature_="AI_EXE_PATH_LM" Builds="AnyCPU_Release;BuildEXE_1"/>
+    <ROW Property="AI_SETUPEXEPATH" Signature_="AI_EXE_PATH_CU" Builds="AnyCPU_Release;BuildEXE_1"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiBinaryComponent">
     <ROW Name="Prereq.dll" SourcePath="&lt;AI_CUSTACTS&gt;Prereq.dll"/>
@@ -213,6 +212,7 @@
     <ROW Name="frame_top_mid_inactive.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;frame_top_mid_inactive.bmp"/>
     <ROW Name="frame_top_right.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;frame_top_right.bmp"/>
     <ROW Name="frame_top_right_inactive.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;frame_top_right_inactive.bmp"/>
+    <ROW Name="img_checkbox.png" SourcePath="&lt;AI_RES&gt;binary\img_checkbox.png"/>
     <ROW Name="lzmaextractor.dll" SourcePath="&lt;AI_CUSTACTS&gt;lzmaextractor.dll"/>
     <ROW Name="sys_close_down.bmp" SourcePath="&lt;AI_FRAME_BTNS&gt;sys_close_down.bmp"/>
     <ROW Name="sys_close_hot.bmp" SourcePath="&lt;AI_FRAME_BTNS&gt;sys_close_hot.bmp"/>
@@ -224,11 +224,23 @@
     <ROW Name="sys_min_normal.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;sys_min_normal.bmp"/>
     <ROW Name="ziti.ico" SourcePath="Generated Images\ziti.ico"/>
   </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiCheckBoxComponent">
+    <ROW Property="ENABLE_FIPS" Value="1"/>
+    <ROW Property="ZITI_DESKTOP_SHORTCUT" Value="1"/>
+  </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiConditionComponent">
     <ROW Feature_="EnableFIPS" Level="1" Condition="ZITI_ENABLE_FIPS=&quot;1&quot;"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiControlComponent">
     <ROW Dialog_="CustomizeDlg" Control="Text" Type="Text" X="12" Y="76" Width="423" Height="23" Attributes="196611" Text="Select which components of [ProductName] will be installed" Order="700" TextLocId="Azure.Control.Text.CustomizeDlg#Text" MsiKey="CustomizeDlg#Text"/>
+    <ROW Dialog_="FolderDlg" Control="FolderEdit" Type="PathEdit" X="55" Y="109" Width="305" Height="18" Attributes="7" Property="APPDIR" Help="|" Order="400" HelpLocId="Control.Help.FolderDlg#FolderEdit" MsiKey="FolderDlg#FolderEdit"/>
+    <ROW Dialog_="FolderDlg" Control="Browse" Type="PushButton" X="365" Y="109" Width="70" Height="18" Attributes="3" Text="[ButtonText_Browse]" Help="|" Order="500" TextLocId="-" HelpLocId="Control.Help.FolderDlg#Browse" MsiKey="FolderDlg#Browse"/>
+    <ROW Dialog_="FolderDlg" Control="RemainingSpaceLabel" Type="Text" X="55" Y="184" Width="160" Height="11" Attributes="196611" Property="REMAINING_SPACE_LABEL_PROP" Text="Remaining free space on drive: " Order="1200" TextLocId="Azure.Control.Text.FolderDlg#RemainingSpaceLabel" MsiKey="FolderDlg#RemainingSpaceLabel"/>
+    <ROW Dialog_="FolderDlg" Control="AvailableSpaceLabel" Type="Text" X="55" Y="173" Width="160" Height="11" Attributes="196611" Property="AVAILABLE_SPACE_LABEL_PROP" Text="Space available on drive: " Order="1300" TextLocId="Azure.Control.Text.FolderDlg#AvailableSpaceLabel" MsiKey="FolderDlg#AvailableSpaceLabel"/>
+    <ROW Dialog_="FolderDlg" Control="TotalSpaceLabel" Type="Text" X="55" Y="161" Width="160" Height="11" Attributes="196611" Property="TOTAL_SPACE_LABEL_PROP" Text="Total space required on drive:" Order="1400" TextLocId="Azure.Control.Text.FolderDlg#TotalSpaceLabel" MsiKey="FolderDlg#TotalSpaceLabel"/>
+    <ROW Dialog_="FolderDlg" Control="ImageCheckBox_2" Type="ImageCheckBox" X="55" Y="286" Width="378" Height="13" Attributes="3" Property="ZITI_DESKTOP_SHORTCUT" Text="img_checkbox.png" Order="1600" ExtType="ImageCheckBox" ExtData="Create a shortcut on the desktop"/>
+    <ROW Dialog_="FolderDlg" Control="ImageCheckBox_1" Type="ImageCheckBox" X="55" Y="268" Width="380" Height="13" Attributes="3" Property="ENABLE_FIPS" Text="img_checkbox.png" Order="1700" ExtType="ImageCheckBox" ExtData="Enable FIPS Mode"/>
+    <ROW Dialog_="FolderDlg" Control="Text_1" Type="Text" X="55" Y="253" Width="205" Height="15" Attributes="65539" Property="TEXT_1_PROP" Text="Additional Options" TextStyle="DlgFontBold8" Order="1800"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiControlEventComponent">
     <ROW Dialog_="WelcomeDlg" Control_="Next" Event="NewDialog" Argument="FolderDlg" Condition="AI_INSTALL" Ordering="1"/>
@@ -339,7 +351,7 @@
     <ROW Action="AI_ResolveKnownFolders" Sequence="52"/>
     <ROW Action="AI_EnableDebugLog" Sequence="51"/>
     <ROW Action="AI_AppSearchEx" Sequence="102"/>
-    <ROW Action="AI_ExtractFiles" Sequence="1399" Builds="AnyCPU_Release"/>
+    <ROW Action="AI_ExtractFiles" Sequence="1399" Builds="AnyCPU_Release;BuildEXE_1"/>
     <ROW Action="AI_DATA_SETTER" Sequence="1398"/>
     <ROW Action="AI_ProcessFailActions" Sequence="5848"/>
     <ROW Action="AI_DATA_SETTER_1" Sequence="5847"/>
@@ -348,15 +360,15 @@
     <ROW Action="AI_AiRestoreDeferredImpersonate" Sequence="6597"/>
     <ROW Action="AI_AiRestoreDeferred" Sequence="6598"/>
     <ROW Action="AI_AiBackupRollbackImpersonate" Sequence="1501"/>
-    <ROW Action="AI_BACKUP_AI_SETUPEXEPATH" Sequence="99" Builds="AnyCPU_Release"/>
-    <ROW Action="AI_RESTORE_AI_SETUPEXEPATH" Condition="AI_SETUPEXEPATH_ORIGINAL" Sequence="101" Builds="AnyCPU_Release"/>
-    <ROW Action="AI_DeleteCadLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="199" Builds="AnyCPU_Release"/>
-    <ROW Action="AI_DeleteRCadLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="198" Builds="AnyCPU_Release"/>
-    <ROW Action="AI_ExtractCadLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="197" Builds="AnyCPU_Release"/>
-    <ROW Action="AI_FindExeLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="196" Builds="AnyCPU_Release"/>
-    <ROW Action="AI_ExtractLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="1549" Builds="AnyCPU_Release"/>
-    <ROW Action="AI_DeleteRLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="1548" Builds="AnyCPU_Release"/>
-    <ROW Action="AI_DeleteLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="6599" Builds="AnyCPU_Release"/>
+    <ROW Action="AI_BACKUP_AI_SETUPEXEPATH" Sequence="99" Builds="AnyCPU_Release;BuildEXE_1"/>
+    <ROW Action="AI_RESTORE_AI_SETUPEXEPATH" Condition="AI_SETUPEXEPATH_ORIGINAL" Sequence="101" Builds="AnyCPU_Release;BuildEXE_1"/>
+    <ROW Action="AI_DeleteCadLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="199" Builds="AnyCPU_Release;BuildEXE_1"/>
+    <ROW Action="AI_DeleteRCadLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="198" Builds="AnyCPU_Release;BuildEXE_1"/>
+    <ROW Action="AI_ExtractCadLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="197" Builds="AnyCPU_Release;BuildEXE_1"/>
+    <ROW Action="AI_FindExeLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="196" Builds="AnyCPU_Release;BuildEXE_1"/>
+    <ROW Action="AI_ExtractLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="1549" Builds="AnyCPU_Release;BuildEXE_1"/>
+    <ROW Action="AI_DeleteRLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="1548" Builds="AnyCPU_Release;BuildEXE_1"/>
+    <ROW Action="AI_DeleteLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="6599" Builds="AnyCPU_Release;BuildEXE_1"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiInstallUISequenceComponent">
     <ROW Action="AI_RESTORE_LOCATION" Condition="APPDIR=&quot;&quot;" Sequence="749"/>
@@ -373,7 +385,7 @@
     <ROW Condition="(VersionNT &lt;&gt; 400)" Description="[ProductName] cannot be installed on [WindowsTypeNT40Display]." DescriptionLocId="AI.LaunchCondition.NoNT40" IsPredefined="true" Builds="AnyCPU_Release;BuildEXE_1"/>
     <ROW Condition="(VersionNT &lt;&gt; 500)" Description="[ProductName] cannot be installed on [WindowsTypeNT50Display]." DescriptionLocId="AI.LaunchCondition.NoNT50" IsPredefined="true" Builds="AnyCPU_Release;BuildEXE_1"/>
     <ROW Condition="(VersionNT &lt;&gt; 600)" Description="[ProductName] cannot be installed on [WindowsTypeNT60Display]." DescriptionLocId="AI.LaunchCondition.NoNT60" IsPredefined="true" Builds="AnyCPU_Release;BuildEXE_1"/>
-    <ROW Condition="SETUPEXEDIR OR (REMOVE=&quot;ALL&quot;)" Description="This package can only be run from a bootstrapper." DescriptionLocId="AI.LaunchCondition.RequireBootstrapper" IsPredefined="true" Builds="AnyCPU_Release"/>
+    <ROW Condition="SETUPEXEDIR OR (REMOVE=&quot;ALL&quot;)" Description="This package can only be run from a bootstrapper." DescriptionLocId="AI.LaunchCondition.RequireBootstrapper" IsPredefined="true" Builds="AnyCPU_Release;BuildEXE_1"/>
     <ROW Condition="VersionNT" Description="[ProductName] cannot be installed on [WindowsType9XDisplay]." DescriptionLocId="AI.LaunchCondition.No9X" IsPredefined="true" Builds="AnyCPU_Release;BuildEXE_1"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiRegLocatorComponent">
