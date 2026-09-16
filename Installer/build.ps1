@@ -352,4 +352,12 @@ $log = ".\deps-info${versionQualifier}.txt"
 
 Get-Content $log
 
+# What this build actually produced. Worth printing because a missing artifact is otherwise invisible: the
+# build reports success, and the only clue is a file date nobody reads. Expect an .exe and an .msi, each
+# with a .sha256, plus the .exe.json.
+echo ""
+echo "========================== artifacts =========================="
+Get-ChildItem "${scriptPath}\Output" -Filter "Ziti Desktop Edge Client-${version}.*" |
+    Format-Table Name, Length, LastWriteTime -AutoSize | Out-String | Write-Host
+
 echo "========================== build.ps1 completed =========================="
