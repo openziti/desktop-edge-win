@@ -248,6 +248,19 @@ $action = '/SetVersion'
 echo "issuing $ADVINST /edit $ADVPROJECT $action $version (service version: $serviceVersion) - see https://www.advancedinstaller.com/user-guide/set-version.html"
 & $ADVINST /edit $ADVPROJECT $action $version
 
+# Clear this version's artifacts first, leaving other versions alone. A build that stops producing one of
+# its outputs -- a misconfigured Advanced Installer build type will do it -- otherwise leaves the previous
+# file in place, and everything downstream treats it as current: it gets hashed, listed in the release JSON
+# and installed during testing. The only symptom is a file date nobody looks at.
+$stale = Get-ChildItem "${scriptPath}\Output" -Filter "Ziti Desktop Edge Client-${version}.*" -ErrorAction Ignore
+if ($stale) {
+    echo "Removing previous artifacts for ${version}"
+    $stale | ForEach-Object {
+        echo "  $($_.Name)"
+        Remove-Item $_.FullName -Force -ErrorAction Ignore
+    }
+}
+
 $action = '/build'
 echo "Assembling installer using AdvancedInstaller at: $ADVINST $action $ADVPROJECT"
 & $ADVINST $action $ADVPROJECT
@@ -299,7 +312,10 @@ if (Test-Path "${msiAbsPath}") {
     echo "Generating SHA256 for MSI: ${msiAbsPath}"
     (Get-FileHash "${msiAbsPath}").Hash > "${scriptPath}\Output\Ziti Desktop Edge Client-${version}.msi.sha256"
 } else {
-    echo "MSI not found at ${msiAbsPath} - skipping SHA256"
+    # Reaching here means the BuildMSI build produced nothing. The usual cause is its package type having
+    # been switched to an EXE, which makes it a duplicate of BuildEXE and silently stops producing an MSI.
+    Write-Warning "MSI not found at ${msiAbsPath} - the BuildMSI build produced no .msi file"
+    Write-Warning "  check Package Definition -> Builds -> BuildMSI is still an MSI package, not an EXE"
 }
 
 $outputPath = "${scriptPath}\Output\Ziti Desktop Edge Client-${version}.exe.json"
