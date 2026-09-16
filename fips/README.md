@@ -39,19 +39,24 @@ questionnaire, or filling in an audit response.
 
 ## Documentation index
 
-**Start here if you just need to build the module: [runbook.md](doc/runbook.md).** Four commands, about an hour.
+**Start here if you just need to build the module: [runbook.md](doc/runbook.md).** 
 
 | Document | What it covers |
 | --- | --- |
-| [runbook.md](doc/runbook.md) | The operator's page: build, verify, publish, tear down |
-| [New-AzureFipsBuildVm.ps1](scripts/New-AzureFipsBuildVm.ps1) | Builds the module end to end on an Azure Windows 10 VM. What the runbook drives |
-| [Test-FipsWithTunneler.ps1](scripts/Test-FipsWithTunneler.ps1) | Proves the module loads inside `ziti-edge-tunnel`. Runs locally |
-| [Publish-FipsProvider.ps1](scripts/Publish-FipsProvider.ps1) | Publishes a build as a GitHub release and writes `provider.json` |
-| [Get-FipsProvider.ps1](../Installer/Get-FipsProvider.ps1) | Fetches the pinned artifacts with hash verification, for `Installer/build.ps1` |
-| [Build-FipsProvider.ps1](scripts/Build-FipsProvider.ps1) | The compile itself, with the evidence manifest. Runs inside the build VM |
+| [runbook.md](doc/runbook.md) | A list of commands to quickly build a FIPS provider, verify, publish, and tear down a VM |
 | [build-fips-provider.md](doc/build-fips-provider.md) | Why the build is the way it is, and the publishing rules |
 | [verify-fips-provider.md](doc/verify-fips-provider.md) | Bench verification of a freshly built module, before it goes near the installer |
 | [zdew-integration.md](doc/zdew-integration.md) | How `ziti-edge-tunnel` finds and loads the provider, and what ZDEW has to place on disk |
 | [implementation-plan.md](doc/implementation-plan.md) | The work items to get this shipped, in order, with the known gaps |
 | [compliance-position.md](doc/compliance-position.md) | What we may and may not claim, the operational-environment scope, and the evidence we retain |
 | [test-plan.md](doc/test-plan.md) | How to prove, on a real machine, that validated cryptography is in use |
+
+## Scripts index
+
+| Script | What it does |
+| --- | --- |
+| [New-AzureFipsBuildVm.ps1](scripts/New-AzureFipsBuildVm.ps1) | Builds the module end to end on an Azure Windows 10 VM. What the runbook drives |
+| [Build-FipsProvider.ps1](scripts/Build-FipsProvider.ps1) | The compile itself, with the evidence manifest. Runs inside the build VM |
+| [Test-FipsWithTunneler.ps1](scripts/Test-FipsWithTunneler.ps1) | Proves the module loads inside `ziti-edge-tunnel`, ran locally |
+| [Publish-FipsProvider.ps1](scripts/Publish-FipsProvider.ps1) | Publishes a build as a GitHub release and writes `provider.json` |
+| [Get-FipsProvider.ps1](../Installer/Get-FipsProvider.ps1) | Fetches the pinned artifacts with hash verification, for `Installer/build.ps1` |
