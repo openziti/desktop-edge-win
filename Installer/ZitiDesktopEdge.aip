@@ -219,7 +219,7 @@
     <ROW Name="ziti.ico" SourcePath="Generated Images\ziti.ico"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiConditionComponent">
-    <ROW Feature_="EnableFIPS" Level="1" Condition="ZITI_ENABLE_FIPS"/>
+    <ROW Feature_="EnableFIPS" Level="1" Condition="ZITI_ENABLE_FIPS=&quot;1&quot;"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiControlComponent">
     <ROW Dialog_="CustomizeDlg" Control="Text" Type="Text" X="12" Y="76" Width="423" Height="23" Attributes="196611" Text="Select which components of [ProductName] will be installed" Order="700" TextLocId="Azure.Control.Text.CustomizeDlg#Text" MsiKey="CustomizeDlg#Text"/>
