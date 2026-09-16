@@ -52,7 +52,7 @@
     <ROW Property="ProductName" Value="Ziti Desktop Edge"/>
     <ROW Property="ProductVersion" Value="2.5.0.13" Options="32"/>
     <ROW Property="REBOOT" MultiBuildValue="AnyCPU_Release:Suppress#BuildEXE_1:Suppress"/>
-    <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
+    <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR;ZITI_ENABLE_FIPS;ZITI_DESKTOP_SHORTCUT"/>
     <ROW Property="UpgradeCode" Value="{CB7E173A-663D-4A23-BB22-D1E8D885C2F3}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="AnyCPU_Release:Windows 9x/ME#BuildEXE_1:Windows 9x/ME" ValueLocId="-"/>
     <ROW Property="WindowsType9XDisplay" MultiBuildValue="AnyCPU_Release:Windows 9x/ME#BuildEXE_1:Windows 9x/ME" ValueLocId="-"/>
@@ -64,6 +64,7 @@
     <ROW Property="WindowsTypeNT5XDisplay" MultiBuildValue="AnyCPU_Release:Windows XP/2003#BuildEXE_1:Windows XP/2003" ValueLocId="-"/>
     <ROW Property="WindowsTypeNT60" MultiBuildValue="AnyCPU_Release:Windows Vista/Server 2008#BuildEXE_1:Windows Vista/Server 2008" ValueLocId="-"/>
     <ROW Property="WindowsTypeNT60Display" MultiBuildValue="AnyCPU_Release:Windows Vista/Server 2008#BuildEXE_1:Windows Vista/Server 2008" ValueLocId="-"/>
+    <ROW Property="ZITI_DESKTOP_SHORTCUT" Value="0"/>
     <ROW Property="ZITI_ENABLE_FIPS" Value="0"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiDirsComponent">
@@ -225,7 +226,7 @@
     <ROW Name="ziti.ico" SourcePath="Generated Images\ziti.ico"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiCheckBoxComponent">
-    <ROW Property="ENABLE_FIPS" Value="1"/>
+    <ROW Property="ZITI_ENABLE_FIPS" Value="1"/>
     <ROW Property="ZITI_DESKTOP_SHORTCUT" Value="1"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiConditionComponent">
@@ -239,7 +240,7 @@
     <ROW Dialog_="FolderDlg" Control="AvailableSpaceLabel" Type="Text" X="55" Y="173" Width="160" Height="11" Attributes="196611" Property="AVAILABLE_SPACE_LABEL_PROP" Text="Space available on drive: " Order="1300" TextLocId="Azure.Control.Text.FolderDlg#AvailableSpaceLabel" MsiKey="FolderDlg#AvailableSpaceLabel"/>
     <ROW Dialog_="FolderDlg" Control="TotalSpaceLabel" Type="Text" X="55" Y="161" Width="160" Height="11" Attributes="196611" Property="TOTAL_SPACE_LABEL_PROP" Text="Total space required on drive:" Order="1400" TextLocId="Azure.Control.Text.FolderDlg#TotalSpaceLabel" MsiKey="FolderDlg#TotalSpaceLabel"/>
     <ROW Dialog_="FolderDlg" Control="ImageCheckBox_2" Type="ImageCheckBox" X="55" Y="286" Width="378" Height="13" Attributes="3" Property="ZITI_DESKTOP_SHORTCUT" Text="img_checkbox.png" Order="1600" ExtType="ImageCheckBox" ExtData="Create a shortcut on the desktop"/>
-    <ROW Dialog_="FolderDlg" Control="ImageCheckBox_1" Type="ImageCheckBox" X="55" Y="268" Width="380" Height="13" Attributes="3" Property="ENABLE_FIPS" Text="img_checkbox.png" Order="1700" ExtType="ImageCheckBox" ExtData="Enable FIPS Mode"/>
+    <ROW Dialog_="FolderDlg" Control="ImageCheckBox_1" Type="ImageCheckBox" X="55" Y="268" Width="380" Height="13" Attributes="3" Property="ZITI_ENABLE_FIPS" Text="img_checkbox.png" Order="1700" ExtType="ImageCheckBox" ExtData="Enable FIPS Mode (only enable FIPS if you understand the implications of doing so)"/>
     <ROW Dialog_="FolderDlg" Control="Text_1" Type="Text" X="55" Y="253" Width="205" Height="15" Attributes="65539" Property="TEXT_1_PROP" Text="Additional Options" TextStyle="DlgFontBold8" Order="1800"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiControlEventComponent">
