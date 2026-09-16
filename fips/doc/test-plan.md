@@ -11,12 +11,19 @@ run without access to the build environment.
 
 ```powershell
 $appdir = "C:\Program Files (x86)\NetFoundry Inc\Ziti Desktop Edge"
-Get-ChildItem $appdir -Include fips.dll, openssl.exe, openssl.cnf, fipsmodule.cnf -Recurse |
-    Select-Object Name, Length, LastWriteTime
+Get-ChildItem "$appdir\*" -Include fips.dll, openssl.exe, libcrypto-3-x64.dll, libssl-3-x64.dll,
+    vcruntime140.dll, openssl.cnf, fipsmodule.cnf | Select-Object Name, Length, LastWriteTime
 ```
 
-All four must exist. `fipsmodule.cnf` should be newer than or equal to `fips.dll`: it is generated after the
-module is placed and is keyed to that module's bytes.
+All seven must exist. Five are installed by the MSI: `fips.dll` is the validated module, `openssl.exe` is the
+tool that configures it, and the other three are what `openssl.exe` needs in order to run -- it imports both
+OpenSSL DLLs and the C runtime.
+
+The remaining two are generated on this machine at install time and are never shipped. `fipsmodule.cnf` should
+be newer than or equal to `fips.dll`: it is generated after the module is placed and is keyed to its bytes.
+
+Their absence on a machine is not a fault. FIPS is off by default; it is installed only when
+`ZITI_ENABLE_FIPS=1` is set, by the installer checkbox or on the command line.
 
 ## 2 -- the module is the one we shipped, and it is signed
 
@@ -43,8 +50,15 @@ This is a read-only check. It does not rewrite `fipsmodule.cnf`.
 
 ```powershell
 Get-Content "$appdir\openssl.cnf"
-& "$appdir\openssl.exe" list -providers -config "$appdir\openssl.cnf"
+
+$env:OPENSSL_CONF = "$appdir\openssl.cnf"
+& "$appdir\openssl.exe" list -providers
+$env:OPENSSL_CONF = $null
 ```
+
+The configuration is supplied through the environment because `list` has no `-config` option in 3.1.2. Set it
+for this shell only. Nothing machine-wide should be set: the tunneler finds the same file by looking next to
+its own executable, and a machine-wide `OPENSSL_CONF` would apply to every OpenSSL process on the box.
 
 Expected provider list: `base` and `fips`, both `active`, with the FIPS provider reporting version `3.1.2`. The
 `default` provider must **not** appear. `openssl.cnf` must contain `default_properties = fips=yes`.

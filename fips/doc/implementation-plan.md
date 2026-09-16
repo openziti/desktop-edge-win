@@ -49,13 +49,13 @@ hash lets a customer verify our claim without asking us for anything.
       so it cannot displace a ZDEW product release. All four artifacts plus `evidence.zip` attached.
 - [x] `fips/provider.json` generated and verified: every pinned hash matches a fresh download from the
       published URLs.
-- [ ] Commit `fips/provider.json`.
-- [ ] `Installer/build.ps1`: call `Installer/Get-FipsProvider.ps1` with `-Manifest "${checkoutRoot}\fips\provider.json"`
+- [x] Commit `fips/provider.json`.
+- [x] `Installer/build.ps1`: call `Installer/Get-FipsProvider.ps1` with `-Manifest "${checkoutRoot}\fips\provider.json"`
       and `-Destination "${buildPath}\service"`
       alongside the existing `ziti-edge-tunnel` fetch, so the FIPS files land next to `ziti-edge-tunnel.exe`
       exactly as they will on the target machine. It fails the build on a hash mismatch.
-- [ ] Decide whether a FIPS-less build should skip the fetch. Recommendation: always fetch. The files are inert
-      unless `openssl.cnf` exists, and having the MSI able to install the feature is the point.
+- [x] **Decided:** always fetch. The files are inert unless `openssl.cnf` exists, and they are gated by the
+      `EnableFIPS` feature, so a machine that does not ask for FIPS never receives them.
 - [ ] Record the FIPS provider version and `fips.dll` hash in `scripts/build-summary.txt` and in the build log
       next to the existing `ziti-edge-tunnel version -v` capture.
 
@@ -67,32 +67,50 @@ root `CLAUDE.md`. What follows is the specification to agree before any AIP work
 The earlier attempt already built most of this and it was reverted. Recovering it is useful; shipping it as it
 stood is not, because of the upgrade gap below.
 
-- [ ] Optional feature `EnableFIPS` (`Level=4`), enabled by a `MsiConditionComponent` row on the
-      `ZITI_ENABLE_FIPS` property.
-- [ ] `fips.dll` and `openssl.exe` as components in `APPDIR` with `DigSign="true"`.
-- [ ] An `OptionalFeatsDlg` page carrying the checkbox, defaulted **off**, with text that tells the reader they
-      almost certainly do not want it.
-- [ ] Deferred, elevated custom action after `InstallFiles`: write `openssl.cnf` with `[APPDIR]` substituted and
-      forward slashes, run `openssl.exe fipsinstall`, and fail the install on a non-zero exit.
-- [ ] Custom action on uninstall that removes `openssl.cnf` and `fipsmodule.cnf`. (The earlier attempt had this;
-      keep it. Note that ZDEW uninstall already has a known gap around leftover state -- the pending-update
-      scheduled task -- so do not add another.)
+- [x] Optional feature `EnableFIPS`, Installation Behavior "Not installed" with **Installed if**
+      `ZITI_ENABLE_FIPS="1"`. The quotes matter: Advanced Installer accepts the unquoted `ZITI_ENABLE_FIPS=1`
+      and it then never matches, because MSI evaluates a string property against an integer literal as false.
+- [x] `fips.dll`, `openssl.exe`, `libcrypto-3-x64.dll` and `libssl-3-x64.dll` as components in `APPDIR` with
+      `DigSign="true"`; `vcruntime140.dll` alongside them without it, since Microsoft already signed it.
+- [x] A checkbox on `FolderDlg`, defaulted **off**, with text telling the reader to enable it only if they
+      understand the implications. `FolderDlg` rather than `OptionalFeatsDlg` because it is the only page
+      between Welcome and VerifyReady on a fresh install.
+- [x] Deferred, elevated `SetFipsConfig` custom action after `InstallFiles`: runs `openssl.exe fipsinstall
+      -pedantic`, writes `openssl.cnf` with `APPDIR` substituted and forward slashes, confirms the provider
+      activates, and fails the install on any error. Conditioned `&EnableFIPS=3`, so it also runs on upgrades.
+- [x] `RemoveFipsConfig` removes `openssl.cnf` and `fipsmodule.cnf`, conditioned `&EnableFIPS=2` so it covers
+      both uninstall and a maintenance run that unticks the feature. Verified: neither file is left behind.
 
-### The upgrade gap -- fix this or the feature is a lie
+### The upgrade gap
 
 The earlier attempt conditioned the generation action on `NOT Installed AND ZITI_ENABLE_FIPS`. ZDEW's
-auto-updater runs the new MSI **silently**. In a silent major upgrade nothing sets `ZITI_ENABLE_FIPS`, so the
-feature's condition evaluates false, the feature is not installed, the custom action does not run, and a machine
-that was in FIPS mode quietly stops being in FIPS mode at the next automatic update. No error, no log entry, no
-UI change.
+auto-updater runs the new MSI **silently**, and in a silent major upgrade nothing sets `ZITI_ENABLE_FIPS`, so
+a machine that was in FIPS mode would quietly stop being in FIPS mode at its next automatic update.
 
-Required behaviour:
+What actually happens is the opposite, and it was observed rather than reasoned about. Every build gets a new
+`ProductCode`, so every install over an existing one is a major upgrade, which means `MigrateFeatureStates`
+runs. From an install log:
 
-- [ ] Persist the choice at install time: `HKLM\SOFTWARE\NetFoundry\Ziti Desktop Edge`, `FipsEnabled` (REG_DWORD).
-- [ ] `AppSearch` that value into `ZITI_ENABLE_FIPS` early in the install sequence, so a silent upgrade inherits
-      the machine's existing setting.
-- [ ] Run the generation action on **every** install and major upgrade, not only first install. `fipsmodule.cnf`
-      is keyed to the bytes of `fips.dll`; a new `fips.dll` needs a new `fipsmodule.cnf`.
+```
+PROPERTY CHANGE: Modifying ZITI_ENABLE_FIPS property. Its current value is '0'. Its new value: '1'.
+MigrateFeatureStates: based on existing product, setting feature 'EnableFIPS' to 'Absent' state.
+Feature: EnableFIPS; Installed: Absent;   Request: Absent;   Action: Absent
+```
+
+The previous installation's feature selection wins over the current command line. That is the behaviour we
+want for the silent case -- a FIPS machine stays a FIPS machine, and `SetFipsConfig` re-runs because it is
+conditioned on `&EnableFIPS=3` rather than on `NOT Installed`, so a new `fips.dll` gets a matching
+`fipsmodule.cnf`.
+
+It also means **FIPS cannot be turned on by upgrading**. Passing `ZITI_ENABLE_FIPS=1` to an upgrade of a
+non-FIPS installation does nothing. Enabling it on an existing install needs `ADDLOCAL=EnableFIPS` or a clean
+install. Document that; it will otherwise be reported as a bug.
+
+Still outstanding:
+
+- [ ] Persist the choice at install time: `HKLM\SOFTWARE\NetFoundry\Ziti Desktop Edge`, `FipsEnabled`
+      (REG_DWORD), so the setting is legible outside MSI's feature state -- for support, for inventory, and
+      for the tray UI.
 - [ ] A managed-policy override, so MDM and Group Policy can *require* FIPS regardless of what the interactive
       installer was told. This belongs with ZDEW's other managed policies -- see
       `ZitiUpdateService/POLICY-ADMIN-GUIDE.md` and `ZitiUpdateService/windows/gpo/`. Regulated fleets configure

@@ -1,3 +1,29 @@
+# Release 2.12.0.0
+## What's New
+* Optional FIPS 140-3 validated cryptography. When enabled, all Ziti TLS and key management is performed by
+  the OpenSSL FIPS Provider 3.1.2, validated under FIPS 140-3 as
+  [CMVP certificate #4985](https://csrc.nist.gov/projects/cryptographic-module-validation-program/certificate/4985)
+  (sunset 10 March 2030). Ziti Desktop Edge itself is not a validated module and is not submitted to the CMVP.
+
+  Off by default. Enable it by ticking "Enable FIPS Mode" during installation, or install unattended with
+  `msiexec /i "Ziti Desktop Edge Client-2.12.0.0.msi" ZITI_ENABLE_FIPS=1 /qn`.
+
+  The installer generates the module configuration on each machine and runs the module's power-on
+  self-tests; the install fails if they do not pass. To confirm afterwards, look for this line in
+  `logs\service\ziti-tunneler.log`:
+
+      - openssl config : configured using ...\openssl.cnf found by default location
+
+  Known limitation: the validated module does not implement X25519 or Ed25519.
+* Optional desktop shortcut. Tick "Create a shortcut on the desktop" during installation, or pass
+  `ZITI_DESKTOP_SHORTCUT=1`. Off by default; previous releases created no desktop shortcut.
+
+## Bugs fixed
+n/a
+
+## Other changes
+n/a
+
 # Release 2.11.7.0
 ## What's New
 * updated to ziti-edge-tunnel v1.19.0
