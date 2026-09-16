@@ -87,10 +87,16 @@
     <ROW Component="ZitiDesktopEdge.exe" ComponentId="{FDDCF14B-4FAF-469F-810E-0877A0DD5F3B}" Directory_="APPDIR" Attributes="0" KeyPath="ZitiDesktopEdge.exe"/>
     <ROW Component="ZitiUpdateService.exe" ComponentId="{01B4F535-D4A3-44CD-BB2D-A3A905A095D6}" Directory_="APPDIR" Attributes="0" KeyPath="ZitiUpdateService.exe"/>
     <ROW Component="ZitiUpgradeSentinel.exe" ComponentId="{9C87C05E-2E44-4CF7-896D-E37030BE67CB}" Directory_="APPDIR" Attributes="0" KeyPath="ZitiUpgradeSentinel.exe"/>
+    <ROW Component="fips.dll" ComponentId="{8E15D302-06F8-4256-8C4A-601DBFF2DD72}" Directory_="APPDIR" Attributes="256" KeyPath="fips.dll"/>
+    <ROW Component="libcrypto3x64.dll" ComponentId="{40AB46B6-FDF3-44BA-9887-D47D81EA4CCB}" Directory_="APPDIR" Attributes="256" KeyPath="libcrypto3x64.dll"/>
+    <ROW Component="libssl3x64.dll" ComponentId="{D1C081D1-2B22-47B8-8C98-C00ECC28E831}" Directory_="APPDIR" Attributes="256" KeyPath="libssl3x64.dll"/>
+    <ROW Component="openssl.exe" ComponentId="{F034E125-E4A1-425B-A163-86AF9D9D8BD6}" Directory_="APPDIR" Attributes="256" KeyPath="openssl.exe"/>
+    <ROW Component="vcruntime140.dll" ComponentId="{DA2FD572-097B-47B7-A2BD-2E758A715723}" Directory_="APPDIR" Attributes="256" KeyPath="vcruntime140.dll"/>
     <ROW Component="wintun.dll" ComponentId="{9A0B9D43-D06F-4456-BBCF-C99A90D19D8C}" Directory_="APPDIR" Attributes="256" KeyPath="wintun.dll"/>
     <ROW Component="zitiedgetunnel.exe" ComponentId="{53505232-48E9-44C1-B2FB-77472C1C4732}" Directory_="APPDIR" Attributes="256" KeyPath="zitiedgetunnel.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiFeatsComponent">
+    <ROW Feature="EnableFIPS" Title="EnableFIPS" Description="Description" Display="3" Level="4" Directory_="APPDIR" Attributes="0"/>
     <ROW Feature="MainFeature" Title="MainFeature" Description="Description" Display="1" Level="1" Directory_="APPDIR" Attributes="0"/>
     <ATTRIBUTE name="CurrentFeature" value="MainFeature"/>
   </COMPONENT>
@@ -111,6 +117,11 @@
     <ROW File="Microsoft.Toolkit.Uwp.Notifications.dll" Component_="Microsoft.Toolkit.Uwp.Notifications.dll" FileName="MICROS~1.DLL|Microsoft.Toolkit.Uwp.Notifications.dll" Attributes="0" SourcePath="..\DesktopEdge\bin\Release\Microsoft.Toolkit.Uwp.Notifications.dll" SelfReg="false"/>
     <ROW File="zitiedgetunnel.exe" Component_="zitiedgetunnel.exe" FileName="ZITI-E~1.EXE|ziti-edge-tunnel.exe" Attributes="0" SourcePath="build\service\ziti-edge-tunnel.exe" SelfReg="false" DigSign="true"/>
     <ROW File="ZitiUpgradeSentinel.exe" Component_="ZitiUpgradeSentinel.exe" FileName="UPGRAD~1.EXE|ZitiUpgradeSentinel.exe" Attributes="0" SourcePath="..\ZitiUpgradeSentinel\bin\Release\ZitiUpgradeSentinel.exe" SelfReg="false" DigSign="true"/>
+    <ROW File="fips.dll" Component_="fips.dll" FileName="fips.dll" Attributes="0" SourcePath="build\service\fips.dll" SelfReg="false" DigSign="true"/>
+    <ROW File="openssl.exe" Component_="openssl.exe" FileName="openssl.exe" Attributes="0" SourcePath="build\service\openssl.exe" SelfReg="false" DigSign="true"/>
+    <ROW File="libcrypto3x64.dll" Component_="libcrypto3x64.dll" FileName="LIBCRY~1.DLL|libcrypto-3-x64.dll" Attributes="0" SourcePath="build\service\libcrypto-3-x64.dll" SelfReg="false" DigSign="true"/>
+    <ROW File="libssl3x64.dll" Component_="libssl3x64.dll" FileName="LIBSSL~1.DLL|libssl-3-x64.dll" Attributes="0" SourcePath="build\service\libssl-3-x64.dll" SelfReg="false" DigSign="true"/>
+    <ROW File="vcruntime140.dll" Component_="vcruntime140.dll" FileName="VCRUNT~1.DLL|vcruntime140.dll" Attributes="0" SourcePath="build\service\vcruntime140.dll" SelfReg="false"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.AiPersistentDataComponent">
     <ROW PersistentRow="ZitiUpdateServicelog.config" Type="0" Condition="OLDPRODUCTS"/>
@@ -207,6 +218,9 @@
     <ROW Name="sys_min_normal.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;sys_min_normal.bmp"/>
     <ROW Name="ziti.ico" SourcePath="Generated Images\ziti.ico"/>
   </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiConditionComponent">
+    <ROW Feature_="EnableFIPS" Level="1" Condition="ZITI_ENABLE_FIPS"/>
+  </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiControlComponent">
     <ROW Dialog_="CustomizeDlg" Control="Text" Type="Text" X="12" Y="76" Width="423" Height="23" Attributes="196611" Text="Select which components of [ProductName] will be installed" Order="700" TextLocId="Azure.Control.Text.CustomizeDlg#Text" MsiKey="CustomizeDlg#Text"/>
   </COMPONENT>
@@ -300,6 +314,11 @@
     <ROW Feature_="MainFeature" Component_="Microsoft.Toolkit.Uwp.Notifications.dll"/>
     <ROW Feature_="MainFeature" Component_="zitiedgetunnel.exe"/>
     <ROW Feature_="MainFeature" Component_="ZitiUpgradeSentinel.exe"/>
+    <ROW Feature_="EnableFIPS" Component_="fips.dll"/>
+    <ROW Feature_="EnableFIPS" Component_="openssl.exe"/>
+    <ROW Feature_="EnableFIPS" Component_="libcrypto3x64.dll"/>
+    <ROW Feature_="EnableFIPS" Component_="libssl3x64.dll"/>
+    <ROW Feature_="EnableFIPS" Component_="vcruntime140.dll"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiIconsComponent">
     <ROW Name="ziti.exe" SourcePath="..\ziti.ico" Index="0"/>
