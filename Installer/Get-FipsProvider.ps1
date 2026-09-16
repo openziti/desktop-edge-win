@@ -161,16 +161,6 @@ another way. Do not install the redistributable machine-wide on end-user machine
         Write-Warning ("vcruntime140.dll $($crt.VersionInfo.FileVersion) is older than the toolset that " +
             "built fips.dll (14.29, VS 2019). Install a newer VC++ toolset on this machine.")
     }
-
-    # Recorded so "which CRT shipped with which fips.dll" is answerable later.
-    [ordered]@{
-        file        = "vcruntime140.dll"
-        fileVersion = $crt.VersionInfo.FileVersion
-        sha256      = $crtHash
-        sourcePath  = $crt.DirectoryName
-        stagedAtUtc = (Get-Date).ToUniversalTime().ToString("o")
-        note        = "Outside the FIPS module boundary. Refreshing it does not affect CMVP #4985."
-    } | ConvertTo-Json | Set-Content -Path (Join-Path $Destination "vcruntime140.json") -Encoding UTF8
 }
 
 Write-Host ""
