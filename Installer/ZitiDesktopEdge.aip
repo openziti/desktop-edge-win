@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<DOCUMENT Type="Advanced Installer" CreateVersion="17.4.1" version="23.6" PreviousModules="professional" Modules="enterprise" RootPath="." Language="en" Id="{7315FE7B-0418-4F38-8B12-6C0594276D30}">
+<DOCUMENT Type="Advanced Installer" CreateVersion="17.4.1" version="24.0" PreviousModules="professional" Modules="enterprise" RootPath="." Language="en" Id="{7315FE7B-0418-4F38-8B12-6C0594276D30}">
   <COMPONENT cid="caphyon.advinst.msicomp.ProjectOptionsComponent">
     <ROW Name="HiddenItems" Value="ActSyncAppComponent;CPLAppletComponent;AutorunComponent;GameUxComponent;SilverlightSlnComponent;SharePointSlnComponent"/>
   </COMPONENT>
@@ -135,7 +135,7 @@
     <ROW Path="&lt;AI_DICTS&gt;ui_en.ail"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.DigCertStoreComponent">
-    <ROW SignOptions="7" SignTool="0" UseSha256="1" Store="User\MY" CustomToolPath="AWSSigner.NET\AWSSigner.NET.exe"/>
+    <ROW SignOptions="7" SignTool="0" UseSha256="1" Subject="CN=TestingCertForDebugging" Store="User\MY" CustomToolPath="AWSSigner.NET\AWSSigner.NET.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.FragmentComponent">
     <ROW Fragment="CommonUI.aip" Path="&lt;AI_FRAGS&gt;CommonUI.aip"/>
