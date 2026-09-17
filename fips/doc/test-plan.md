@@ -70,20 +70,46 @@ reachable -- regardless of whether the FIPS provider also loaded.
 
 **Do not use `ziti-edge-tunnel.exe version -v` for this.** That subcommand prints from a default TLS context
 and returns before the tunneler resolves `openssl.cnf`, so it reports no `[FIPS]` marker even on a correctly
-configured machine. The marker only appears on the `run` path, which is what the service uses.
+configured machine. The marker appears on the `run` path, which is what the service uses.
 
-The running service's log is the evidence. At each start:
+## 5a -- the negative control
+
+Any of the checks above can be satisfied by files sitting on disk. This one cannot. Rename `fips.dll` and
+restart the `ziti` service: it will fail to start, because `openssl.cnf` names a module that is no longer
+there. Rename it back and the service starts again.
+
+That is the cheapest demonstration that the configuration is load-bearing rather than decorative, and it is
+worth running once on any machine whose FIPS state is being certified.
+
+Note the failure mode: the tunneler **exits without logging an error**. The log simply stops after the
+identity-loading lines. A `ziti` service that will not start, with no explanation in its log, means the
+provider could not be loaded.
+
+The running service's log is the evidence, and it carries two separate lines. Check both -- they can disagree,
+and the disagreement is the interesting case.
+
+**That the configuration was found**, logged once at each service start:
 
 ```
 	- openssl config   : configured using C:\...\Ziti Desktop Edge\openssl.cnf found by default location
 ```
 
-```powershell
-Select-String -Path "$appdir\logs\service\ziti-tunneler.log*" -Pattern "openssl config" | Select-Object -Last 5
+**That FIPS ended up active**, logged once per identity as its Ziti context starts:
+
+```
+ztx[1] using tlsuv[v0.44.0/OpenSSL 3.6.3 9 Jun 2026 [FIPS]]
 ```
 
-Absence of that line means no configuration was loaded and the tunneler is using OpenSSL's built-in
-implementations, not the validated module.
+```powershell
+Select-String -Path "$appdir\logs\service\ziti-tunneler.log*" -Pattern "openssl config|using tlsuv" |
+    Select-Object -Last 10
+```
+
+The first line says a file was read. The second says the provider is active and constraining algorithm
+selection, and it is the one that matters. A machine can show the first without the second: that happens when
+the tunneler starts before its configuration is written, which is why `SetFipsConfig` is sequenced before
+`StartServices` -- see [zdew-integration.md](zdew-integration.md). If you see it, restarting the `ziti`
+service will fix that machine, and the install ordering is what needs investigating.
 
 To confirm the module itself loads and passes its self-tests on this machine, independently of the service,
 point `OPENSSL_CONF` at the installed config and ask the tunneler binary directly:

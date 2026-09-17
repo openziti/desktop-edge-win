@@ -52,6 +52,37 @@ All five shipped files belong to the optional `EnableFIPS` feature, so none of t
 did not ask for FIPS. The two generated files are removed again by the `RemoveFipsConfig` custom action when
 the feature is removed or the product is uninstalled -- MSI does not track them, so nothing else would.
 
+### The config must exist before the service starts
+
+`SetFipsConfig` is sequenced at **5701**, after `InstallFiles` (4000) and before `InstallServices` (5800) and
+`StartServices` (5900). That ordering is the whole point and it is easy to lose: Advanced Installer's default
+placement for a deferred action is after `PublishProduct`, around 6400, which is *after* the service has
+already been started.
+
+With the action at 6400, the tunneler starts before its configuration exists:
+
+- on a fresh install there is no `openssl.cnf` at all, so it comes up with no FIPS
+- on an upgrade `fipsmodule.cnf` still belongs to the previous `fips.dll`, and its HMAC does not match the new
+  one, so the provider cannot load
+
+In both cases the service keeps running without the validated module until something restarts it, while
+`openssl.cnf` sits on disk looking correct. It was observed exactly once, in a log where a context started
+during an upgrade reported
+
+```
+ztx[1] using tlsuv[v0.44.0/OpenSSL 3.6.3 9 Jun 2026]
+```
+
+and the same context after a manual service restart reported
+
+```
+ztx[1] using tlsuv[v0.44.0/OpenSSL 3.6.3 9 Jun 2026 [FIPS]]
+```
+
+Setting `OPENSSL_CONF` machine-wide would hide this rather than fix it, and it would affect every OpenSSL
+process on the machine. Do not do that. The exe-adjacent lookup is sufficient; it just has to have something
+to find.
+
 `fipsmodule.cnf` holds an HMAC over the bytes of `fips.dll` plus the results of the power-on self-tests. It is
 machine-specific and file-specific by design: that is the module's integrity check. Never ship a pre-generated
 copy, and regenerate it whenever `fips.dll` changes.
