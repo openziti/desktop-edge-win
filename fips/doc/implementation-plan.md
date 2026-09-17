@@ -149,15 +149,63 @@ that policy at its own mirror. Those customers have to be told directly.
 
 ## Phase 5 -- surfacing real state
 
-- [ ] Replace the presence check in `DesktopEdge/Views/Screens/MainMenu.xaml.cs`. The earlier attempt showed the
-      FIPS panel when `File.Exists(fips.dll)` was true, which is proof that a file was copied and nothing more.
-- [ ] Read the actual state from the tunneler: the `[FIPS]` marker in the `tlsuv` version string, or the
-      `- openssl config : configured using ... found by ...` startup log line. Both are described in
-      [zdew-integration.md](zdew-integration.md#proving-it-at-runtime).
-- [ ] Show the provider version and a link to CMVP certificate #4985, not a Wikipedia article on FIPS 140-2. The
-      module is validated under **140-3**, and 140-2 validations move to the CMVP historical list in
-      September 2026.
-- [ ] Log the FIPS state in the monitor service log and include it in support bundles, so the
+### Where it goes
+
+The About screen already has the line. `DesktopEdge/Views/Screens/MainMenu.xaml.cs` renders:
+
+```
+App: 2.11.7.0 Service: v1.19.0 openssl
+```
+
+built as `$"App: {appVersion} Service: {version} {crypto}"`. That trailing word is the natural home for FIPS
+state, and it sits beside the service version, which is what someone reads when they want to know what is
+actually running.
+
+### Why it cannot simply be extended
+
+`crypto` is a compile-time constant:
+
+```csharp
+#if WIN32CRYPTO
+    string crypto = "win32crypto";
+#else
+    string crypto = "openssl";
+#endif
+```
+
+FIPS is neither a compile-time nor an install-time fact from the UI's point of view -- it is whether the
+*running* tunneler loaded the provider. Deriving it from the build, or from `File.Exists(fips.dll)` as the
+earlier attempt did, is the same mistake in a new place: it reports that a file was copied.
+
+The data is not available to ask for. `TunnelStatus.ServiceVersion`
+(`ZitiDesktopEdge.Client/DataStructures/DataStructures.cs:412`) carries `Version`, `Revision` and `BuildDate`
+and nothing about the TLS backend, so the IPC payload has to grow before the UI can render anything truthful.
+
+### Shipped as a stopgap in 2.12.0.0
+
+The About line appends `(FIPS 140-3)` when `openssl.cnf` exists in the install directory. That file is written
+only after `fipsinstall` passes this machine's power-on self-tests and the provider is confirmed to activate,
+and it is deleted again on failure or on feature removal -- so it reports that the installer configured FIPS
+here, which is a real signal and not take-1's "a file was copied".
+
+What it does not report is whether the tunneler running right now loaded it. Replace it with the work below
+rather than leaving it indefinitely.
+
+### Work
+
+- [ ] Decide where the truth comes from. In order of preference:
+      1. the tunneler reports it in the status payload -- needs an upstream change, and is the only source
+         that is authoritative by construction
+      2. `ziti-monitor` parses the tunneler's own startup line, `- openssl config : configured using <path>
+         found by <how>`, and forwards it -- no upstream change, and still describes the running process
+      3. anything derived from files on disk -- rejected, see above
+- [ ] Carry it on `ServiceVersion` (or alongside it) so the UI has something to bind to.
+- [ ] Render it in the About line. Include the provider version, and link CMVP certificate #4985 rather than a
+      Wikipedia article on FIPS 140-2: the module is validated under **140-3**, and 140-2 validations move to
+      the CMVP historical list in September 2026.
+- [ ] Say something unambiguous when FIPS is **off**, so a customer who believes they enabled it finds out
+      here rather than during an audit.
+- [ ] Log the state in the monitor service log and include it in support bundles, so the
       `debug-ziti-desktop-edge-win` workflow can tell whether a reporting machine was in FIPS mode.
 
 ## Phase 6 -- documentation and release
