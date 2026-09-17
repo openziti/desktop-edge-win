@@ -150,9 +150,13 @@ Run, and record the result of each:
 
 ## 7 -- the setting survives an upgrade
 
-The failure this catches is described in
-[implementation-plan.md](implementation-plan.md#the-upgrade-gap----fix-this-or-the-feature-is-a-lie): an
-automatic silent upgrade that drops FIPS mode without saying so.
+The failure this catches is an automatic silent upgrade that drops FIPS mode without saying so. Verified
+working, but it depends on `SetFipsConfig` running before `StartServices` and on `MigrateFeatureStates`
+carrying the feature -- both easy to disturb. See
+[zdew-integration.md](zdew-integration.md#the-config-must-exist-before-the-service-starts).
+
+Note also that FIPS cannot be *enabled* by upgrading: `ZITI_ENABLE_FIPS=1` passed to an upgrade is ignored,
+because the previous installation's feature selection wins.
 
 1. Note the current state -- steps 4 and 5 above.
 2. Trigger an automatic update (`Restart-Service ziti-monitor` forces an immediate check).

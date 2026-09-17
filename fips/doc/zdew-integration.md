@@ -202,7 +202,7 @@ with the peer:
 `e2ee_tls` was added in ziti-sdk-c 1.19.0. For a FIPS claim that covers E2EE payloads and not merely the
 transport, the mode has to be constrained to `tls` (or `aes-gcm`, with Microsoft's certificate cited instead of
 OpenSSL's) on both ends. That is a network-policy decision, not an installer setting, and it needs confirming
-with the SDK maintainers -- see the open questions in [implementation-plan.md](implementation-plan.md).
+with the SDK maintainers.
 
 **Update verification.** `ziti-monitor` checks Authenticode signatures and talks HTTPS to the release stream
 using Windows CryptoAPI and .NET Framework, both of which use Microsoft's validated modules when the machine has

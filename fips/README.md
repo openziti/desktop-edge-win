@@ -47,7 +47,6 @@ questionnaire, or filling in an audit response.
 | [build-fips-provider.md](doc/build-fips-provider.md) | Why the build is the way it is, and the publishing rules |
 | [verify-fips-provider.md](doc/verify-fips-provider.md) | Bench verification of a freshly built module, before it goes near the installer |
 | [zdew-integration.md](doc/zdew-integration.md) | How `ziti-edge-tunnel` finds and loads the provider, and what ZDEW has to place on disk |
-| [implementation-plan.md](doc/implementation-plan.md) | The work items to get this shipped, in order, with the known gaps |
 | [compliance-position.md](doc/compliance-position.md) | What we may and may not claim, the operational-environment scope, and the evidence we retain |
 | [test-plan.md](doc/test-plan.md) | How to prove, on a real machine, that validated cryptography is in use |
 
