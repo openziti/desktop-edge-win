@@ -82,7 +82,11 @@ if (Test-Path $vswhere) {
         Get-ChildItem (Join-Path $_ "VC\Redist\MSVC") -Recurse -Filter "vcruntime140.dll" `
             -ErrorAction SilentlyContinue |
             Where-Object { $_.DirectoryName -match '\\x64\\Microsoft\.VC\d+\.CRT$' }
-    } | Sort-Object { [version]$_.VersionInfo.FileVersion } -Descending | Select-Object -First 1
+    } | Sort-Object {
+        # Not FileVersion -- that display string can carry a build-lab suffix that [version] cannot parse.
+        $v = $_.VersionInfo
+        [version]::new($v.FileMajorPart, $v.FileMinorPart, $v.FileBuildPart, $v.FilePrivatePart)
+    } -Descending | Select-Object -First 1
     if ($crt) {
         Copy-Item $crt.FullName -Destination $StageDir -Force
         Write-Host "  vcruntime140.dll $($crt.VersionInfo.FileVersion)"

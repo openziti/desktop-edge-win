@@ -41,6 +41,18 @@ param(
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
+function Get-BinaryFileVersion {
+    <#
+        FileVersion is a free-form display string. Microsoft ships build-lab suffixes in it -- the GitHub
+        Actions runner's vcruntime140.dll reports "14.29.30157.0 built by: cloudtest" -- and casting that
+        to [version] throws. The numeric fields carry the same four parts without the prose.
+    #>
+    param([System.IO.FileInfo]$File)
+
+    $v = $File.VersionInfo
+    [version]::new($v.FileMajorPart, $v.FileMinorPart, $v.FileBuildPart, $v.FilePrivatePart)
+}
+
 if (-not (Test-Path $Manifest)) {
     throw ("FIPS provider manifest not found at $Manifest. " +
         "Publish a provider release first: fips/scripts/Publish-FipsProvider.ps1")
@@ -130,11 +142,11 @@ if (-not $SkipCrt) {
                 Where-Object {
                     $_.DirectoryName -match '\\Redist\\MSVC\\[\d.]+\\x64\\Microsoft\.VC\d+\.CRT$'
                 } |
-                Sort-Object { [version]$_.VersionInfo.FileVersion } -Descending |
+                Sort-Object { Get-BinaryFileVersion $_ } -Descending |
                 Select-Object -First 1
 
             if ($found -and (-not $crt -or
-                [version]$found.VersionInfo.FileVersion -gt [version]$crt.VersionInfo.FileVersion)) {
+                (Get-BinaryFileVersion $found) -gt (Get-BinaryFileVersion $crt))) {
                 $crt = $found
             }
         }
@@ -157,7 +169,7 @@ another way. Do not install the redistributable machine-wide on end-user machine
     # The CRT is normally newer than the compiler that built the module, which is the supported direction:
     # the VC runtime is binary compatible forward across v140/141/142/143/145, so a VS 2019-compiled
     # fips.dll runs against it. The reverse is not true, so flag an older one.
-    if ([version]$crt.VersionInfo.FileVersion -lt [version]"14.29") {
+    if ((Get-BinaryFileVersion $crt) -lt [version]"14.29") {
         Write-Warning ("vcruntime140.dll $($crt.VersionInfo.FileVersion) is older than the toolset that " +
             "built fips.dll (14.29, VS 2019). Install a newer VC++ toolset on this machine.")
     }
