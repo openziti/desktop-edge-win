@@ -357,6 +357,30 @@ namespace ZitiDesktopEdge {
                 string crypto = "win32crypto";
 #else
                 string crypto = "openssl";
+
+                // openssl.cnf is what makes ziti-edge-tunnel load the validated FIPS provider, and it is only
+                // written by the installer after 'openssl fipsinstall' passes the module's power-on self-tests
+                // on this machine and the provider is confirmed to activate. A failure at either step removes
+                // it again, and uninstalling the FIPS feature removes it too, so its presence is a real signal
+                // rather than evidence that a file was copied.
+                //
+                // It is still a stopgap. It says the installer configured FIPS here, not that the tunneler
+                // running right now loaded it -- the two differ if fips.dll is deleted afterwards. The
+                // authoritative answer has to come from the tunneler over IPC; see
+                // fips/doc/implementation-plan.md, phase 5. Keep the wording below matched to what is actually
+                // being checked.
+                // The content check matters as much as the file's presence. A hand-written openssl.cnf that
+                // activates the default provider instead of fips would leave the tunneler working normally
+                // with FIPS off, which is the one way this reports a false positive. default_properties is
+                // what constrains every algorithm fetch to a FIPS implementation, so require it.
+                try {
+                    string opensslCnf = Path.Combine(MainWindow.ExecutionDirectory, "openssl.cnf");
+                    if (File.Exists(opensslCnf) && File.ReadAllText(opensslCnf).Contains("fips=yes")) {
+                        crypto += " (FIPS 140-3)";
+                    }
+                } catch (Exception e) {
+                    logger.Warn(e, "Could not determine FIPS state");
+                }
 #endif
 
                 // Interface Version

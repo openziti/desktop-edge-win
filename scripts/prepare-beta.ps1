@@ -7,16 +7,21 @@
 #   .\prepare-beta.ps1 -DesktopEdgeVersion 2.9.6.0 -ZetVersion v1.11.1
 #   .\prepare-beta.ps1 -DesktopEdgeVersion 2.9.6.0 -ZetVersion v1.11.1 -DryRun
 #   .\prepare-beta.ps1 -DesktopEdgeVersion 2.10.2.0
+#   .\prepare-beta.ps1 -DryRun                      # version comes from the version file
 #
 # Prerequisites:
 #   - git configured with push access to the repo
 #   - gh CLI installed and authenticated (https://cli.github.com) for PR creation
 #
 param(
-    [Parameter(Mandatory = $true)]
+    # Defaults to the contents of the version file, which is what the previous run of
+    # build-test-release.ps1 left there.
     [string]$DesktopEdgeVersion,
 
     [string]$ZetVersion,
+
+    # Skip the confirmation of which branch the release is cut from. For automation.
+    [switch]$Yes,
 
     [switch]$DryRun
 )
@@ -37,6 +42,14 @@ Log ""
 Log "========================================================"
 Log "  prepare-beta.ps1"
 Log "========================================================"
+if (-not $DesktopEdgeVersion) {
+    $versionFile = "$repoRoot\version"
+    if (-not (Test-Path $versionFile)) { Die "no -DesktopEdgeVersion given and no version file at $versionFile" }
+
+    $DesktopEdgeVersion = (Get-Content $versionFile -Raw).Trim()
+    Info "Using version from the version file: $DesktopEdgeVersion"
+}
+
 $isZetBump = [bool]$ZetVersion
 
 if (-not $ZetVersion) {
@@ -74,12 +87,49 @@ Push-Location $repoRoot
 try {
 
 # ── Create branch ─────────────────────────────────────────────────────────────
+#
+# The release branch is cut from whatever is checked out right now, and everything on it ships. That is
+# usually main, but cutting from a feature branch is legitimate when the release is that feature -- so the
+# base is confirmed rather than assumed.
+
+$currentBranch = (git rev-parse --abbrev-ref HEAD).Trim()
+$currentCommit = (git log -1 --format='%h %s').Trim()
+
+Log ""
+Info "Release branch : $branch"
+Info "Cut from       : $currentBranch"
+Info "At             : $currentCommit"
+Log ""
+
+if ($currentBranch -ne "main") {
+    Write-Host -ForegroundColor Yellow "  [warn] Not on main. Everything on '$currentBranch' will be part of this release."
+}
+
+if (-not $DryRun -and -not $Yes) {
+    $answer = Read-Host "  Cut $branch from '$currentBranch'? [y/N]"
+    if ($answer -notmatch '^(y|yes)$') { Die "aborted" }
+}
 
 Info "Creating branch: $branch"
 if (-not $DryRun) {
     $branchExists = git branch --list $branch
     if ($branchExists) {
-        Info "Branch already exists locally, switching to it"
+        # A leftover branch from an earlier attempt is the trap here: checking it out silently makes a stale
+        # commit the base, and the release then contains none of the work that is checked out right now.
+        # Refuse unless it already contains HEAD.
+        git merge-base --is-ancestor HEAD $branch
+        if ($LASTEXITCODE -ne 0) {
+            $existingCommit = (git log -1 --format='%h %s (%ar)' $branch).Trim()
+            Write-Host -ForegroundColor Red " [error] Branch '$branch' already exists and does not contain the current HEAD."
+            Write-Host -ForegroundColor Red "         existing : $existingCommit"
+            Write-Host -ForegroundColor Red "         HEAD     : $currentCommit"
+            Write-Host -ForegroundColor Red ""
+            Write-Host -ForegroundColor Red "         Using it would release the older commit. Delete it first:"
+            Write-Host -ForegroundColor Red "           git branch -D $branch"
+            Write-Host -ForegroundColor Red "           git push origin --delete $branch    # if it was pushed"
+            exit 1
+        }
+        Info "Branch already exists and contains HEAD, switching to it"
         git checkout $branch
     } else {
         git checkout -b $branch
