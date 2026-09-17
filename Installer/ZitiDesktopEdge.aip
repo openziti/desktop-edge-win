@@ -186,6 +186,7 @@
   <COMPONENT cid="caphyon.advinst.msicomp.MsiAppSearchComponent">
     <ROW Property="AI_SETUPEXEPATH" Signature_="AI_EXE_PATH_LM" Builds="AnyCPU_Release"/>
     <ROW Property="AI_SETUPEXEPATH" Signature_="AI_EXE_PATH_CU" Builds="AnyCPU_Release"/>
+    <ROW Property="ZITI_DESKTOP_SHORTCUT" Signature_="ZITI_DESKTOP_SHORTCUT_FOUND"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiBinaryComponent">
     <ROW Name="PowerShellScriptLauncher.dll" SourcePath="&lt;AI_CUSTACTS&gt;PowerShellScriptLauncher.dll"/>
@@ -396,12 +397,13 @@
   <COMPONENT cid="caphyon.advinst.msicomp.MsiRegLocatorComponent">
     <ROW Signature_="AI_EXE_PATH_CU" Root="1" Key="Software\Caphyon\Advanced Installer\LZMA\[ProductCode]\[ProductVersion]" Name="AI_ExePath" Type="2"/>
     <ROW Signature_="AI_EXE_PATH_LM" Root="2" Key="Software\Caphyon\Advanced Installer\LZMA\[ProductCode]\[ProductVersion]" Name="AI_ExePath" Type="2"/>
+    <ROW Signature_="ZITI_DESKTOP_SHORTCUT_FOUND" Root="2" Key="Software\[Manufacturer]\[ProductName]" Name="DesktopShortcut" Type="2"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiRegsComponent">
     <ROW Registry="AI_ExePath" Root="-1" Key="Software\Caphyon\Advanced Installer\LZMA\[ProductCode]\[ProductVersion]" Name="AI_ExePath" Value="[AI_SETUPEXEPATH]" Component_="AI_ExePath"/>
     <ROW Registry="AdvancedInstaller" Root="-1" Key="Software\Caphyon\Advanced Installer" Name="\"/>
     <ROW Registry="Caphyon" Root="-1" Key="Software\Caphyon" Name="\"/>
-    <ROW Registry="DesktopShortcut" Root="1" Key="Software\[Manufacturer]\[ProductName]" Name="DesktopShortcut" Value="#1" Component_="DesktopShortcut" VirtualValue="#"/>
+    <ROW Registry="DesktopShortcut" Root="-1" Key="Software\[Manufacturer]\[ProductName]" Name="DesktopShortcut" Value="1" Component_="DesktopShortcut"/>
     <ROW Registry="LZMA" Root="-1" Key="Software\Caphyon\Advanced Installer\LZMA" Name="\"/>
     <ROW Registry="Manufacturer" Root="-1" Key="Software\[Manufacturer]" Name="\"/>
     <ROW Registry="Manufacturer_1" Root="1" Key="Software\[Manufacturer]" Name="\"/>
