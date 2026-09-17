@@ -111,13 +111,41 @@ Still outstanding:
 - [ ] Persist the choice at install time: `HKLM\SOFTWARE\NetFoundry\Ziti Desktop Edge`, `FipsEnabled`
       (REG_DWORD), so the setting is legible outside MSI's feature state -- for support, for inventory, and
       for the tray UI.
-- [ ] A managed-policy override, so MDM and Group Policy can *require* FIPS regardless of what the interactive
-      installer was told. This belongs with ZDEW's other managed policies -- see
-      `ZitiUpdateService/POLICY-ADMIN-GUIDE.md` and `ZitiUpdateService/windows/gpo/`. Regulated fleets configure
-      by policy, not by clicking a checkbox on 4,000 machines.
-- [ ] Decide what happens when policy says "required" and `fipsinstall` fails. Recommendation: refuse to start
-      the tunneler and say why, rather than silently running non-approved cryptography on a machine whose
-      administrator has declared it must not.
+### Managed policy
+
+Regulated fleets configure by policy, not by clicking a checkbox on 4,000 machines, so "require FIPS" has to
+be expressible through Group Policy and MDM. ZDEW already has that machinery --
+`ZitiUpdateService/windows/gpo/NetFoundry.ZitiMonitorService.admx`, documented in
+`ZitiUpdateService/POLICY-ADMIN-GUIDE.md` -- but FIPS does not fit its existing shape, and that needs
+deciding before any of it is built.
+
+Every policy today (`UpdateTimer`, `InstallationCritical`, the maintenance window settings) is read **at
+runtime** by `ziti-monitor`, which can act on a changed value immediately. FIPS is not a runtime setting. It
+is MSI feature state fixed at install time, and a policy cannot switch on a feature whose files are not on
+disk. So there are two halves, and only one of them enforces anything:
+
+- [ ] **Installer side.** `AppSearch` the policy value into `ZITI_ENABLE_FIPS` so a policied machine installs
+      the feature without anyone passing a command line. On its own this only works for fresh installs:
+      `MigrateFeatureStates` makes an existing installation's feature selection win on every upgrade, so
+      turning FIPS *on* for a machine that lacks it also needs `ADDLOCAL=EnableFIPS`. Decide whether the
+      installer forces that when policy requires FIPS, or whether policy-driven enablement is a documented
+      reinstall.
+- [ ] **Runtime side.** `ziti-monitor` reads the policy and refuses to start the tunneler when policy requires
+      FIPS and the machine is not in FIPS mode, logging why. This is the half that actually enforces, and it
+      is also the answer to "what happens when `fipsinstall` fails on a machine whose administrator declared
+      it must not run non-approved cryptography".
+- [ ] Decide what the policy is named and where it lives in the ADMX tree, alongside the existing update
+      settings rather than in a category of its own.
+- [ ] `POLICY-ADMIN-GUIDE.md` carries compliance presets (CJIS, DISA STIG, PCI, NIST, NERC CIP, HITRUST).
+      Whoever reads those is the exact audience for FIPS, so the install flag belongs next to the update
+      cadence settings in the same presets.
+
+### Automatic update URL
+
+`AutomaticUpdateURL_Text` lets a fleet override the update stream URL entirely. Anything that depends on
+changing what a stream file advertises -- notably the `-win32crypto` migration in
+[../../doc/win32crypto-deprecation.md](../../doc/win32crypto-deprecation.md) -- does not reach a fleet pointing
+that policy at its own mirror. Those customers have to be told directly.
 
 ## Phase 5 -- surfacing real state
 

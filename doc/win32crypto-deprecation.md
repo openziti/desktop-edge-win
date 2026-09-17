@@ -53,6 +53,9 @@ VM before relying on it.
 - [ ] Note it in `BUILDING.md`.
 - [ ] Tell known `-win32crypto` customers directly. The install base is small enough to name, and a release
       note is not a migration plan.
+- [ ] Identify any fleet using the `AutomaticUpdateURL` policy
+      (`ZitiUpdateService/windows/gpo/NetFoundry.ZitiMonitorService.admx`). That policy overrides the update
+      stream URL, so repointing `stable-win32crypto.json` never reaches them. They must be migrated by hand.
 
 ### Through the window -- keep publishing, add no features
 

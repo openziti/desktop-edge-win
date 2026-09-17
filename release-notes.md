@@ -1,12 +1,30 @@
 # Release 2.12.0.0
-## What's New
-* Optional FIPS 140-3 validated cryptography. When enabled, all Ziti TLS and key management is performed by
-  the OpenSSL FIPS Provider 3.1.2, validated under FIPS 140-3 as
-  [CMVP certificate #4985](https://csrc.nist.gov/projects/cryptographic-module-validation-program/certificate/4985)
-  (sunset 10 March 2030). Ziti Desktop Edge itself is not a validated module and is not submitted to the CMVP.
 
-  Off by default. Enable it by ticking "Enable FIPS Mode" during installation, or install unattended with
-  `msiexec /i "Ziti Desktop Edge Client-2.12.0.0.msi" ZITI_ENABLE_FIPS=1 /qn`.
+> ## DEPRECATION NOTICE -- the `-win32crypto` build is going away
+>
+> **The separate `-win32crypto` distribution is deprecated as of this release and will stop being published
+> after 16 March 2027.**
+>
+> **If you run `-win32crypto` for FIPS:** move to the standard build and enable FIPS at install time. See the
+> FIPS entry below.
+>
+> **If you run it for any other reason:** tell us before March 2027 so we can take it into account.
+> Until then it will continue being published and promoted alongside the standard build.
+
+
+## What's New
+* Optional FIPS 140-3 validated cryptography. When enabled, the tunneler (`ziti-edge-tunnel.exe`) performs all
+  of its cryptography using the OpenSSL FIPS Provider 3.1.2, validated under FIPS 140-3 as
+  [CMVP certificate #4985](https://csrc.nist.gov/projects/cryptographic-module-validation-program/certificate/4985)
+  (sunset 10 March 2030). That is the OpenZiti data plane and control plane. Ziti Desktop Edge itself is not a
+  validated module and is not submitted to the CMVP.
+
+  The monitor service (`ziti-monitor`) is not covered. It handles no OpenZiti traffic and no identity keys; its
+  update-channel HTTPS and installer signature checks use Windows Schannel and CryptoAPI, which are
+  Microsoft's own validated modules. The tray application performs no cryptography.
+
+  FIPS mode is determined at installation time and is off by default. Enable it by ticking "Enable FIPS Mode"
+  during installation, or install unattended with `msiexec /i "Ziti Desktop Edge Client-2.12.0.0.msi" ZITI_ENABLE_FIPS=1 /qn`.
 
   The installer generates the module configuration on each machine and runs the module's power-on
   self-tests; the install fails if they do not pass. To confirm afterwards, look for this line in

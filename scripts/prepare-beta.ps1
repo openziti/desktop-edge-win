@@ -7,13 +7,15 @@
 #   .\prepare-beta.ps1 -DesktopEdgeVersion 2.9.6.0 -ZetVersion v1.11.1
 #   .\prepare-beta.ps1 -DesktopEdgeVersion 2.9.6.0 -ZetVersion v1.11.1 -DryRun
 #   .\prepare-beta.ps1 -DesktopEdgeVersion 2.10.2.0
+#   .\prepare-beta.ps1 -DryRun                      # version comes from the version file
 #
 # Prerequisites:
 #   - git configured with push access to the repo
 #   - gh CLI installed and authenticated (https://cli.github.com) for PR creation
 #
 param(
-    [Parameter(Mandatory = $true)]
+    # Defaults to the contents of the version file, which is what the previous run of
+    # build-test-release.ps1 left there.
     [string]$DesktopEdgeVersion,
 
     [string]$ZetVersion,
@@ -37,6 +39,14 @@ Log ""
 Log "========================================================"
 Log "  prepare-beta.ps1"
 Log "========================================================"
+if (-not $DesktopEdgeVersion) {
+    $versionFile = "$repoRoot\version"
+    if (-not (Test-Path $versionFile)) { Die "no -DesktopEdgeVersion given and no version file at $versionFile" }
+
+    $DesktopEdgeVersion = (Get-Content $versionFile -Raw).Trim()
+    Info "Using version from the version file: $DesktopEdgeVersion"
+}
+
 $isZetBump = [bool]$ZetVersion
 
 if (-not $ZetVersion) {

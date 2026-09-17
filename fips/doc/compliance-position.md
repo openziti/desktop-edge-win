@@ -24,9 +24,12 @@ That role assignment drives everything else:
 
 **Use this wording:**
 
-> Ziti Desktop Edge for Windows uses FIPS 140-3 validated cryptography. When FIPS mode is enabled, all TLS and
-> key-management operations are performed by the OpenSSL FIPS Provider version 3.1.2, validated under CMVP
-> certificate #4985.
+> Ziti Desktop Edge for Windows uses FIPS 140-3 validated cryptography. When FIPS mode is enabled, the
+> tunneler (`ziti-edge-tunnel.exe`) performs all of its cryptography using the OpenSSL FIPS Provider version
+> 3.1.2, validated under CMVP certificate #4985. That covers the OpenZiti data plane and control plane.
+
+Naming the component is the point: the claim is about the tunneler, not about every process ZDEW installs.
+See [what the claim covers](#what-the-claim-covers) before rewording it.
 
 **Do not use this wording:**
 
@@ -37,6 +40,41 @@ That role assignment drives everything else:
 
 "FIPS Inside" is an accurate informal shorthand: the product bundles and uses a validated module, and the product
 itself was never a candidate for validation.
+
+## What the claim covers
+
+ZDEW is three processes. Only one of them uses the OpenSSL FIPS Provider, and anyone answering a
+questionnaire needs to be able to say which, without hesitating.
+
+| Process | Cryptography it performs | Provided by |
+| --- | --- | --- |
+| `ziti-edge-tunnel.exe` (service `ziti`) | Ziti data plane and control plane: all TLS, key generation, enrollment, certificate handling | **OpenSSL FIPS Provider 3.1.2, CMVP #4985** |
+| `ZitiUpdateService.exe` (service `ziti-monitor`) | HTTPS to the release stream; Authenticode signature verification on downloaded updates | Windows Schannel, CryptoAPI and .NET |
+| `ZitiDesktopEdge.exe` (tray UI) | None | -- |
+
+Both planes are covered: the **data plane**, application traffic carried over an OpenZiti connection, and the
+**control plane**, the tunneler's sessions with the controller and routers, enrollment, and the identity
+private keys behind both. That is what customers mean when they ask whether their zero-trust traffic uses
+validated cryptography.
+
+The monitor service is a different matter and should be described differently rather than quietly folded in:
+
+- It performs no OpenZiti cryptography and handles no identity key material.
+- Its cryptography is Microsoft's -- Schannel for HTTPS, CryptoAPI for Authenticode. Those are themselves
+  FIPS-validated modules with their own CMVP certificates, held by Microsoft, and on a machine with the
+  Windows FIPS algorithm policy enabled they run in their approved modes. So "not covered by certificate
+  #4985" is not the same as "unvalidated"; it is covered by a different certificate that is not ours.
+- Routing it through the OpenSSL FIPS Provider is not possible without rewriting it away from .NET's crypto
+  stack, and would replace Microsoft's validated implementations with ours to no benefit.
+
+**How to answer the question honestly:** the tunneler carries the data and control planes, and its
+cryptography is performed by the OpenSSL FIPS Provider under certificate #4985. Update-channel HTTPS and
+installer signature verification happen in a separate process, using the operating system's own validated
+modules. No cryptography in the product falls outside those two.
+
+If a customer requires everything on the machine to run in approved mode, that is the Windows FIPS algorithm
+policy, which is their configuration decision and covers the Microsoft side. It does not affect OpenSSL and
+the FIPS provider does not need it. See [zdew-integration.md](zdew-integration.md).
 
 The reason the careful version is the right version is not legal timidity. Regulatory frameworks that reference
 FIPS -- CJIS, the DISA STIGs, FedRAMP, PCI DSS -- require the *use of validated cryptographic modules*. They do
