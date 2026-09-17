@@ -373,8 +373,8 @@
     <ROW Action="AI_DeleteLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="6599" Builds="AnyCPU_Release"/>
     <ROW Action="SetFipsConfig" Condition="( ( NOT Installed ) OR ( Installed AND REMOVE &lt;&gt; &quot;ALL&quot; AND AI_INSTALL_MODE &lt;&gt; &quot;Remove&quot; ) ) AND ( &amp;EnableFIPS=3 )" Sequence="5701"/>
     <ROW Action="AI_DATA_SETTER_2" Condition="( ( NOT Installed ) OR ( Installed AND REMOVE &lt;&gt; &quot;ALL&quot; AND AI_INSTALL_MODE &lt;&gt; &quot;Remove&quot; ) ) AND ( &amp;EnableFIPS=3 )" Sequence="5700"/>
-    <ROW Action="RemoveFipsConfig" Condition="&amp;EnableFIPS=2" Sequence="6402"/>
-    <ROW Action="AI_DATA_SETTER_3" Condition="&amp;EnableFIPS=2" Sequence="6401"/>
+    <ROW Action="RemoveFipsConfig" Condition="&amp;EnableFIPS=2" Sequence="5703"/>
+    <ROW Action="AI_DATA_SETTER_3" Condition="&amp;EnableFIPS=2" Sequence="5702"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiInstallUISequenceComponent">
     <ROW Action="AI_RESTORE_LOCATION" Condition="APPDIR=&quot;&quot;" Sequence="749"/>
