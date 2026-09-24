@@ -32,7 +32,11 @@ public sealed class MockIpcServer : IAsyncDisposable
     private readonly Queue<AddIdentityNextResponse> _addIdentityQueue = new();
     private readonly object _addIdentityLock = new();
 
-    private record AddIdentityNextResponse(bool Success, string? Name, string? Error);
+    private record AddIdentityNextResponse(bool Success, string? Name, string? Error, bool RequiresMfa);
+
+    // Services of identities added with EnqueueAddIdentityRequiringMfa, withheld until MFA passes like ZET does.
+    // Touch only under _landingStatusLock.
+    private readonly Dictionary<string, JArray> _servicesAfterMfa = new(StringComparer.OrdinalIgnoreCase);
 
     // Base32 secret per identity from EnableMFA. VerifyMFA checks codes against it with real RFC 6238 TOTP.
     private readonly Dictionary<string, string> _mfaSecrets = new(StringComparer.OrdinalIgnoreCase);
@@ -76,12 +80,21 @@ public sealed class MockIpcServer : IAsyncDisposable
     /// </summary>
     public void EnqueueAddIdentitySuccess(string identityName)
     {
-        lock (_addIdentityLock) _addIdentityQueue.Enqueue(new AddIdentityNextResponse(true, identityName, null));
+        lock (_addIdentityLock) _addIdentityQueue.Enqueue(new AddIdentityNextResponse(true, identityName, null, false));
     }
 
     public void EnqueueAddIdentityFailure(string error)
     {
-        lock (_addIdentityLock) _addIdentityQueue.Enqueue(new AddIdentityNextResponse(false, null, error));
+        lock (_addIdentityLock) _addIdentityQueue.Enqueue(new AddIdentityNextResponse(false, null, error, false));
+    }
+
+    /// <summary>
+    /// Queue an AddIdentity for an identity whose auth policy requires TOTP. Like ZET 1.19, the identity has no services
+    /// until an MFA code passes, and adding it sends a status event then an mfa enrollment_required event.
+    /// </summary>
+    public void EnqueueAddIdentityRequiringMfa(string identityName)
+    {
+        lock (_addIdentityLock) _addIdentityQueue.Enqueue(new AddIdentityNextResponse(true, identityName, null, true));
     }
 
     /// <summary>
@@ -172,7 +185,13 @@ public sealed class MockIpcServer : IAsyncDisposable
         }
     }
 
-    private record Answer(string Reply, List<JObject> EventsAfterReply);
+    /// <summary>
+    /// EventsAfterStatusSave go out StatusFileSaveMs after EventsAfterReply: ZET writes its status file between the two
+    /// on a successful MFA change (ziti-edge-tunnel.c, TunnelEvent_MFAStatusEvent), about 35ms in a 1.19 capture.
+    /// </summary>
+    private record Answer(string Reply, List<JObject> EventsAfterReply, List<JObject> EventsAfterStatusSave);
+
+    private const int StatusFileSaveMs = 50;
 
     /// <summary>Read one JSON request per line and write answer's reply, then push its follow-up events.</summary>
     private async Task ServeRequestsAsync(NamedPipeServerStream srv, Func<string, Answer> answer, CancellationToken ct)
@@ -193,6 +212,11 @@ public sealed class MockIpcServer : IAsyncDisposable
                 Answer reply = answer(line);
                 await writer.WriteLineAsync(reply.Reply);
                 foreach (JObject evt in reply.EventsAfterReply) PushEvent(evt);
+                if (reply.EventsAfterStatusSave.Count > 0)
+                {
+                    await Task.Delay(StatusFileSaveMs, ct);
+                    foreach (JObject evt in reply.EventsAfterStatusSave) PushEvent(evt);
+                }
             }
         }
     }
@@ -200,19 +224,21 @@ public sealed class MockIpcServer : IAsyncDisposable
     private Answer AnswerDataRequest(string line)
     {
         List<JObject> eventsAfterReply = new List<JObject>();
+        List<JObject> eventsAfterStatusSave = new List<JObject>();
         try
         {
             JObject req = JObject.Parse(line);
             lock (_recvLock) _received.Add(req);
             // serialized inside the lock: the Status reply holds _landingStatus itself
             lock (_landingStatusLock)
-                return new Answer(BuildReply(req, eventsAfterReply).ToString(Formatting.None), eventsAfterReply);
+                return new Answer(BuildReply(req, eventsAfterReply, eventsAfterStatusSave).ToString(Formatting.None),
+                    eventsAfterReply, eventsAfterStatusSave);
         }
         catch (Exception ex)
         {
             return new Answer(
                 new JObject { ["Success"] = false, ["Code"] = 1, ["Error"] = ex.Message }.ToString(Formatting.None),
-                new List<JObject>());
+                new List<JObject>(), new List<JObject>());
         }
     }
 
@@ -222,12 +248,12 @@ public sealed class MockIpcServer : IAsyncDisposable
         {
             JObject req = JObject.Parse(line);
             lock (_recvLock) _receivedMonitor.Add(req);
-            return new Answer(BuildMonitorReply(req).ToString(Formatting.None), new List<JObject>());
+            return new Answer(BuildMonitorReply(req).ToString(Formatting.None), new List<JObject>(), new List<JObject>());
         }
         catch (Exception ex)
         {
             return new Answer(new JObject { ["Code"] = 1, ["Message"] = ex.Message }.ToString(Formatting.None),
-                new List<JObject>());
+                new List<JObject>(), new List<JObject>());
         }
     }
 
@@ -261,7 +287,7 @@ public sealed class MockIpcServer : IAsyncDisposable
     /// Reply to one command. Handlers add to eventsAfterReply what ZET sends once the reply is out, and the caller
     /// pushes those after writing the reply.
     /// </summary>
-    private JObject BuildReply(JObject req, List<JObject> eventsAfterReply)
+    private JObject BuildReply(JObject req, List<JObject> eventsAfterReply, List<JObject> eventsAfterStatusSave)
     {
         string command = (string?)req["Command"] ?? "";
         JObject data = req["Data"] as JObject ?? new JObject();
@@ -275,13 +301,13 @@ public sealed class MockIpcServer : IAsyncDisposable
                 ["Data"] = _landingStatus,
             },
             "IdentityOnOff" => HandleIdentityOnOff(data, eventsAfterReply),
-            "AddIdentity" => HandleAddIdentity(data),
+            "AddIdentity" => HandleAddIdentity(data, eventsAfterReply),
             "ExternalAuth" => HandleExternalAuth(data),
             "UpdateInterfaceConfig" => HandleUpdateInterfaceConfig(data),
             "EnableMFA" => HandleEnableMFA(data),
-            "VerifyMFA" => HandleMfaResult(data, "enrollment_verification", eventsAfterReply),
-            "RemoveMFA" => HandleMfaResult(data, "enrollment_remove", eventsAfterReply),
-            "SubmitMFA" => HandleMfaResult(data, "mfa_auth_status", eventsAfterReply),
+            "VerifyMFA" => HandleMfaResult(data, "enrollment_verification", eventsAfterReply, eventsAfterStatusSave),
+            "RemoveMFA" => HandleMfaResult(data, "enrollment_remove", eventsAfterReply, eventsAfterStatusSave),
+            "SubmitMFA" => HandleMfaResult(data, "mfa_auth_status", eventsAfterReply, eventsAfterStatusSave),
             "GenerateMFACodes" => HandleGenerateMFACodes(data),
             "RemoveIdentity" => HandleRemoveIdentity(data),
             "SetLogLevel" => new JObject { ["Success"] = true, ["Code"] = 0 },
@@ -308,7 +334,8 @@ public sealed class MockIpcServer : IAsyncDisposable
     public const string AcceptedMfaCode = "123456";
     public const string RejectedMfaCode = "666666";
 
-    private JObject HandleMfaResult(JObject data, string action, List<JObject> eventsAfterReply)
+    private JObject HandleMfaResult(JObject data, string action, List<JObject> eventsAfterReply,
+        List<JObject> eventsAfterStatusSave)
     {
         string identifier = (string?)data["Identifier"] ?? "";
         string code = (string?)data["Code"] ?? "";
@@ -360,7 +387,16 @@ public sealed class MockIpcServer : IAsyncDisposable
         }
 
         if (updated != null) eventsAfterReply.Add(updated);
-        eventsAfterReply.Add(evt);
+        // A successful change saves the status file before the mfa event, a failure sends it straight away.
+        if (successful && ident != null)
+        {
+            eventsAfterStatusSave.Add(evt);
+            if (updated != null) eventsAfterStatusSave.AddRange(ReleaseServicesAfterMfa(ident));
+        }
+        else
+        {
+            eventsAfterReply.Add(evt);
+        }
 
         // ZET 1.19 fails a bad code with Code 500 and the controller's message.
         return successful
@@ -368,14 +404,52 @@ public sealed class MockIpcServer : IAsyncDisposable
             : new JObject { ["Success"] = false, ["Code"] = 500, ["Error"] = (string?)evt["Error"] };
     }
 
-    private JObject HandleAddIdentity(JObject data)
+    /// <summary>
+    /// For an identity added with EnqueueAddIdentityRequiringMfa, the events ZET 1.19 sends once MFA passes: identity
+    /// "added" now loaded, a bulkservice event adding the services, then identity "updated" carrying them. Empty for
+    /// any other identity.
+    /// </summary>
+    private List<JObject> ReleaseServicesAfterMfa(JObject ident)
+    {
+        List<JObject> events = new List<JObject>();
+        if (!_servicesAfterMfa.TryGetValue((string)ident["Identifier"]!, out JArray? services)) return events;
+
+        ident["Loaded"] = true;
+        events.Add(new JObject
+        {
+            ["Op"] = "identity",
+            ["Action"] = "added",
+            ["Fingerprint"] = ident["FingerPrint"],
+            ["Id"] = ident.DeepClone(),
+        });
+        ident["Services"] = services.DeepClone();
+        events.Add(new JObject
+        {
+            ["Op"] = "bulkservice",
+            ["Action"] = "updated",
+            ["Identifier"] = ident["Identifier"],
+            ["Fingerprint"] = ident["FingerPrint"],
+            ["AddedServices"] = services.DeepClone(),
+            ["RemovedServices"] = new JArray(),
+        });
+        events.Add(new JObject
+        {
+            ["Op"] = "identity",
+            ["Action"] = "updated",
+            ["Fingerprint"] = ident["FingerPrint"],
+            ["Id"] = ident.DeepClone(),
+        });
+        return events;
+    }
+
+    private JObject HandleAddIdentity(JObject data, List<JObject> eventsAfterReply)
     {
         AddIdentityNextResponse resp;
         lock (_addIdentityLock)
         {
             resp = _addIdentityQueue.Count > 0
                 ? _addIdentityQueue.Dequeue()
-                : new AddIdentityNextResponse(true, "mock-default", null);
+                : new AddIdentityNextResponse(true, "mock-default", null, false);
         }
 
         if (!resp.Success)
@@ -461,6 +535,25 @@ public sealed class MockIpcServer : IAsyncDisposable
 
         JArray identities = (JArray)_landingStatus["Identities"]!;
         identities.Add(newId);
+
+        if (resp.RequiresMfa)
+        {
+            // Captured from ZET 1.19: the reply has no Data, the app picks the identity up from the status event.
+            _servicesAfterMfa[(string)newId["Identifier"]!] = (JArray)newId["Services"]!;
+            newId["Services"] = new JArray();
+            newId["Loaded"] = false;
+            newId["MfaNeeded"] = true;
+            eventsAfterReply.Add(new JObject { ["Op"] = "status", ["Status"] = _landingStatus.DeepClone() });
+            eventsAfterReply.Add(new JObject
+            {
+                ["Op"] = "mfa",
+                ["Action"] = "enrollment_required",
+                ["Identifier"] = newId["Identifier"],
+                ["Fingerprint"] = newId["FingerPrint"],
+                ["Successful"] = false,
+            });
+            return new JObject { ["Success"] = true, ["Code"] = 0 };
+        }
 
         return new JObject
         {
@@ -615,6 +708,26 @@ public sealed class MockIpcServer : IAsyncDisposable
             }
             else
             {
+                // An identity that needs MFA for its services loses them while off, so turning it back on shows none.
+                if (!onOff && _servicesAfterMfa.ContainsKey(identifier))
+                {
+                    events.Add(new JObject
+                    {
+                        ["Op"] = "bulkservice",
+                        ["Action"] = "updated",
+                        ["Identifier"] = id["Identifier"],
+                        ["Fingerprint"] = id["FingerPrint"],
+                        ["RemovedServices"] = id["Services"]?.DeepClone() ?? new JArray(),
+                    });
+                    id["Services"] = new JArray();
+                    events.Add(new JObject
+                    {
+                        ["Op"] = "identity",
+                        ["Action"] = "updated",
+                        ["Fingerprint"] = id["FingerPrint"],
+                        ["Id"] = id.DeepClone(),
+                    });
+                }
                 events.Add(new JObject
                 {
                     ["Op"] = "identity",

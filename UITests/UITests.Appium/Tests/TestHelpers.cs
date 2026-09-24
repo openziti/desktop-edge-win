@@ -39,6 +39,37 @@ public static class TestHelpers
 
     public static byte[] Capture(AppiumSession s) => s.CaptureWindow();
 
+    /// <summary>Under ZDEW_UI_TEST the app reads the JWT to add from here instead of opening a file dialog.</summary>
+    private static string TestJwtPath => Path.Combine(Path.GetTempPath(), "zdew-test-add-identity.jwt");
+
+    /// <summary>
+    /// A JWT carrying every field the app reads: `em` picks the enrollment path ("ott" sends AddIdentity), and a
+    /// DEBUG-only Console.WriteLine throws when iss, sub, jti or aud is null.
+    /// </summary>
+    public static string FakeJwt()
+    {
+        string payload = "{\"iss\":\"mock\",\"sub\":\"mock\",\"jti\":\"mock\",\"aud\":[\"mock\"],\"em\":\"ott\"}";
+        string b64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(payload));
+        return $"header.{b64}.signature";
+    }
+
+    public static void WriteFakeJwt() => File.WriteAllText(TestJwtPath, FakeJwt());
+
+    /// <summary>Click "Add Identity", then "With JWT" in its context menu.</summary>
+    public static void ClickAddIdentityWithJwt(AppiumSession s)
+    {
+        // AddIdAreaButton has no UIA peer. Its "ADD" label does, and the MouseLeftButtonUp bubbles up to it.
+        IWebElement addText = WaitFor(s, By.XPath("//Text[@Name='ADD']"));
+        ClickAt(s, addText);
+
+        IWebElement withJwt = WaitFor(s, By.XPath("//*[@Name='With JWT']"));
+        ClickAt(s, withJwt);
+    }
+
+    /// <summary>An element inside the IdentityItem row holding this name.</summary>
+    public static By InIdentityRow(string identityName, string automationId) => By.XPath(
+        $"//Custom[@ClassName='IdentityItem' and .//Text[@Name='{identityName}']]//*[@AutomationId='{automationId}']");
+
     /// <summary>
     /// Writes TestResults\screenshots\&lt;testName&gt;\&lt;step&gt;.png, which the gallery shows as the test's
     /// step strip.

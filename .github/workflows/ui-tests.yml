@@ -8,15 +8,16 @@ on:
   # On release rather than every push, to save CI minutes.
   release:
     types: [published]
+  pull_request:
 
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# One group so Pages deployments queue instead of overlapping.
+# One group per ref: Pages deployments from release-next queue instead of overlapping, and PRs don't wait on each other.
 concurrency:
-  group: ui-tests-pages
+  group: ui-tests-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:

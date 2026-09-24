@@ -127,6 +127,80 @@ public class MfaTests
         Assert.Empty(s.Driver.FindElements(By.XPath("//*[@AutomationId='AuthCode']")));
     }
 
+    /// <summary>
+    /// An identity whose auth policy requires MFA, from adding it to reaching its services: set up MFA from the row,
+    /// then after turning it off and on, authenticate from the row. The mock replays what ZET 1.19 sent for a
+    /// quickstart identity under an auth policy with --secondary-req-totp.
+    /// </summary>
+    [Fact(Timeout = 60000)]
+    [Trait("Category", "Screenshots")]
+    public async Task RequiredMfaGatesServices()
+    {
+        string name = nameof(RequiredMfaGatesServices);
+        const string identity = "mfa-policy-id";
+        const string identifier = "c:\\fake\\ids\\mfa-policy-id.json";
+        await using AppiumSession s = await AppiumSession.LaunchAsync(DefaultExePath(), Fixture("no-identities.json"));
+        WaitForId(s, "ConnectLabel");
+        DismissWelcome(s);
+        await PrepareTestWindow(s);
+
+        // Add it: the row asks to set up MFA and shows no services.
+        WriteFakeJwt();
+        s.Mock.EnqueueAddIdentityRequiringMfa(identity);
+        ClickAddIdentityWithJwt(s);
+        IWebElement setupNeeded = WaitFor(s, InIdentityRow(identity, "MfaSetupNeeded"));
+        Assert.Empty(s.Driver.FindElements(InIdentityRow(identity, "ServiceCount")));
+        await Trace.Settle(350);
+        SaveStep(s, name, "01-added-mfa-setup-needed");
+        await VerifyScreen(Capture(s), "setup-needed-row");
+
+        // Set up MFA from the row with a real code for the secret the dialog shows.
+        ClickAt(s, setupNeeded);
+        JObject enable = WaitForCommand(s, "EnableMFA", 0);
+        Assert.Equal(identifier, (string?)enable["Data"]?["Identifier"]);
+        ClickAt(s, WaitForId(s, "SecretButton"));
+        string secret = WaitForId(s, "SecretCode").Text;
+        WaitForId(s, "SetupCode").SendKeys(Totp.Compute(secret, DateTimeOffset.UtcNow));
+        SaveStep(s, name, "02-setup-code-typed");
+        WaitForId(s, "AuthSetupButton").Click();
+        WaitForCommand(s, "VerifyMFA", 0);
+        WaitFor(s, By.XPath("//Text[@Name='MFA Recovery Codes']"));
+        ClickUntilGone(s, By.XPath("//*[@AutomationId='CloseBlack']"));
+
+        // Enrolled: the mock's two services arrive and the setup prompt is gone.
+        Assert.Equal("2", WaitFor(s, InIdentityRow(identity, "ServiceCount")).Text);
+        Assert.Empty(s.Driver.FindElements(InIdentityRow(identity, "MfaSetupNeeded")));
+        Assert.Empty(s.Driver.FindElements(InIdentityRow(identity, "MfaRequired")));
+        await Trace.Settle(350);
+        SaveStep(s, name, "03-enrolled-services");
+
+        // Off and back on: the services are gone again and the row asks to authenticate.
+        int onOffsBefore = CommandCount(s, "IdentityOnOff");
+        ClickAt(s, WaitFor(s, InIdentityRow(identity, "ToggleSwitch")));
+        WaitForCommand(s, "IdentityOnOff", onOffsBefore);
+        WaitFor(s, By.XPath(
+            $"//Custom[@ClassName='IdentityItem' and .//Text[@Name='{identity}']]//*[@AutomationId='ToggleStatus' and @Name='DISABLED']"));
+        ClickAt(s, WaitFor(s, InIdentityRow(identity, "ToggleSwitch")));
+        WaitForCommand(s, "IdentityOnOff", onOffsBefore + 1);
+        IWebElement mfaRequired = WaitFor(s, InIdentityRow(identity, "MfaRequired"));
+        Assert.Empty(s.Driver.FindElements(InIdentityRow(identity, "ServiceCount")));
+        await Trace.Settle(350);
+        SaveStep(s, name, "04-back-on-authenticate");
+        await VerifyScreen(Capture(s), "authenticate-row");
+
+        // Authenticate from the row: the services come back.
+        ClickAt(s, mfaRequired);
+        WaitForId(s, "AuthCode").SendKeys(Totp.Compute(secret, DateTimeOffset.UtcNow));
+        WaitForId(s, "AuthButton").Click();
+        JObject submit = WaitForCommand(s, "SubmitMFA", 0);
+        Assert.Equal(identifier, (string?)submit["Data"]?["Identifier"]);
+        Assert.Equal("2", WaitFor(s, InIdentityRow(identity, "ServiceCount")).Text);
+        Assert.Empty(s.Driver.FindElements(InIdentityRow(identity, "MfaRequired")));
+        await Trace.Settle(350);
+        SaveStep(s, name, "05-authenticated-services");
+        await VerifyScreen(Capture(s), "services-row");
+    }
+
     /// <summary>A rejected code keeps the prompt open and MFAScreen clears the code box.</summary>
     [Fact(Timeout = 30000)]
     public async Task InvalidCodeKeepsMfaPrompt()
