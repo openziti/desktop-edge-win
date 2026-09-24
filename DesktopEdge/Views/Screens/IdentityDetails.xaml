@@ -21,7 +21,7 @@
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
              xmlns:local="clr-namespace:ZitiDesktopEdge"
              mc:Ignorable="d"
-             MaxWidth="{StaticResource MaxWindowWidth}"
+             Width="{StaticResource MaxWindowWidth}"
              x:Name="IdentityArea"
              d:DesignHeight="500" d:DesignWidth="450" IsVisibleChanged="VisibilityChanged">
     <UserControl.Resources>
@@ -127,6 +127,7 @@
                                VerticalAlignment="Center"
                     />
                     <Image Grid.Column="2"
+                           AutomationProperties.AutomationId="IdentityDetailsClose"
                            Cursor="Hand"
                            Source="/Assets/Images/x.png"
                            Width="20" Height="20"
@@ -163,7 +164,7 @@
                                   ScrollViewer.IsDeferredScrollingEnabled="True"
                                   ScrollViewer.ScrollChanged="Scrolled"
                                   VirtualizingPanel.VirtualizationMode="Recycling"
-                                  ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                   Focusable="False" IsManipulationEnabled="False"
                                   BorderThickness="0" Background="Transparent"
                                   Margin="15,15,15,15"
@@ -194,7 +195,7 @@
                                 <DataTemplate>
                                     <Grid Height="32">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="225"/>
+                                            <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="30"/>
                                             <ColumnDefinition Width="100"/>
                                             <ColumnDefinition x:Name="TimerColumn" Width="20" />
@@ -202,7 +203,7 @@
                                             <ColumnDefinition x:Name="DetailColumn" Width="20" />
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Orientation="Vertical" Height="30" Grid.Column="0" VerticalAlignment="Center">
-                                            <TextBlock Name="MainLabel" Style="{StaticResource HeaderTextBlock}"
+                                            <TextBlock Name="MainLabel" Style="{StaticResource HeaderTextBlock}" TextTrimming="CharacterEllipsis"
                                                        Text="{Binding Name}"
                                             />
                                             <TextBlock Name="MainEdit" Style="{StaticResource RowTextBlock}"
@@ -444,7 +445,7 @@
                 <Label Content="Timeout" Style="{StaticResource DetailRowLabel}"/>
                 <TextBox x:Name="TimeoutDetails" Style="{StaticResource DetailRowTextBox}"/>
             </StackPanel>
-            <Image x:Name="CloseDetailsButton" AutomationProperties.AutomationId="CloseDetailsButton" Source="/Assets/Images/closeBlack.png" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,40,40,0" Width="10" Height="10" Cursor="Hand" MouseUp="CloseDetails"></Image>
+            <Image AutomationProperties.AutomationId="ServiceDetailsClose" Source="/Assets/Images/closeBlack.png" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,40,40,0" Width="10" Height="10" Cursor="Hand" MouseUp="CloseDetails"></Image>
         </Grid>
 
         <!-- Confirmation Prompt for confirming deletion -->

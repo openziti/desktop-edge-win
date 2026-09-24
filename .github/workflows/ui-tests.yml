@@ -1,14 +1,11 @@
 name: UI Tests
 
-# Per the repo convention: workflow only checks out + invokes scripts. All
-# logic lives in PowerShell so it can be reproduced locally with the same
-# commands.
+# The workflow only checks out and calls the UITests scripts, so a run reproduces locally with the same commands.
 
 on:
-  # Manual run, against any branch (pick the branch in the GitHub UI / gh CLI).
+  # Manual run against any branch.
   workflow_dispatch:
-  # Run as part of release publication. Catches regressions before the artifact
-  # is in users' hands without burning CI minutes on every push.
+  # On release rather than every push, to save CI minutes.
   release:
     types: [published]
 
@@ -17,8 +14,7 @@ permissions:
   pages: write
   id-token: write
 
-# A single concurrency group lets a newer commit cancel an in-flight Pages
-# deployment from an older one.
+# One group so Pages deployments queue instead of overlapping.
 concurrency:
   group: ui-tests-pages
   cancel-in-progress: false
@@ -32,39 +28,40 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup .NET 9 SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '9.0.x'
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Install Appium + WinAppDriver
         shell: pwsh
-        run: ./UITests/ci-install.ps1
+        run: ./UITests/ci-install.ps1 -SetDisplayResolution
 
       - name: Build + run UI tests
         shell: pwsh
-        run: ./UITests/run-ui-tests.ps1 -AutoVerify
+        run: ./UITests/run-ui-tests.ps1
 
       - name: Upload TestResults artifact (zip)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ui-test-results
           path: UITests/TestResults/**
           if-no-files-found: warn
           retention-days: 30
 
+      # The github-pages environment only accepts release-next, so elsewhere this and deploy-pages are skipped.
       - name: Upload Pages artifact (gallery for browsing)
         id: upload-pages
-        if: always()
-        uses: actions/upload-pages-artifact@v3
+        if: always() && github.ref == 'refs/heads/release-next'
+        uses: actions/upload-pages-artifact@v5
         with:
           path: UITests/TestResults
 
@@ -78,4 +75,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

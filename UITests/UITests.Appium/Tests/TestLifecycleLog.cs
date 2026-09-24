@@ -4,10 +4,7 @@ using Xunit.Sdk;
 namespace ZitiDesktopEdge.UITests.Tests;
 
 /// <summary>
-/// xUnit before/after attribute that logs which test is starting and how long
-/// it took to the console. Applied at the class level so every [Fact] in the
-/// class gets the bookend lines -- makes it obvious which test is hanging when
-/// the suite gets stuck.
+/// Logs START and DONE lines around each test, so a hung suite shows which test is stuck.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
 public sealed class TestLifecycleLogAttribute : BeforeAfterTestAttribute
@@ -22,7 +19,7 @@ public sealed class TestLifecycleLogAttribute : BeforeAfterTestAttribute
 
     public override void After(MethodInfo methodUnderTest)
     {
-        var dur = DateTime.UtcNow - _start;
+        TimeSpan dur = DateTime.UtcNow - _start;
         Console.WriteLine($"<=== DONE  : {methodUnderTest.DeclaringType?.Name}.{methodUnderTest.Name} in {dur.TotalSeconds:F1}s");
     }
 }

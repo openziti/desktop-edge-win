@@ -3,51 +3,44 @@ using Newtonsoft.Json.Linq;
 namespace ZitiDesktopEdge.UITests.Tests;
 
 /// <summary>
-/// Programmatic builders for richer mock-IPC status fixtures than the committed
-/// JSON files can comfortably express -- e.g. 50 identities with mixed states.
+/// Status fixtures too large or varied for a committed JSON file, e.g. 50 identities with mixed states.
 /// </summary>
 public static class FixtureBuilder
 {
     /// <summary>
-    /// Returns ~15 identities with deliberately varied capitalisation and assorted
-    /// states (enabled/disabled, MFA-needed, MFA-already-enabled, ext-auth-needed)
-    /// so sort tests can exercise alphabetical ordering across cases plus
-    /// status / services columns.
+    /// Five identities with mixed case and mixed states (enabled, disabled, MFA enabled, ext-auth needed) for the
+    /// sort tests. Five, not more, because each PageSource fetch dominates a sort test (about 1-2s for 5 rows,
+    /// 3-5s for 15). The names span A to Z so case-insensitive ordering has anchors at both ends.
     /// </summary>
     public static JObject SortableMixed()
     {
-        // 5-identity fixture for sort tests. Each PageSource fetch on the
-        // full UIA tree is the dominant cost in sort tests (~3-5s for 15 rows
-        // vs ~1-2s for 5). Names are mixed-case and span A/B/C/O/Z so we
-        // still cover case-insensitive ordering with anchors at both ends.
-        var status = SkeletonStatus();
-        var arr = (JArray)status["Identities"]!;
-        var entries = new[]
+        JObject status = SkeletonStatus();
+        JArray arr = (JArray)status["Identities"]!;
+        JObject[] entries = new[]
         {
-            Identity("zebra-prod",     active: true),
-            Identity("Bravo-Staging",  active: false),
-            Identity("ALPHA-DEV",      active: true,  mfaEnabled: true),
-            Identity("oscar-prod",     active: true),
-            Identity("CharlieEdge",    active: false, needsExtAuth: true),
+            Identity("zebra-prod",    active: true,  mfaEnabled: false, mfaNeeded: false, needsExtAuth: false),
+            Identity("Bravo-Staging", active: false, mfaEnabled: false, mfaNeeded: false, needsExtAuth: false),
+            Identity("ALPHA-DEV",     active: true,  mfaEnabled: true,  mfaNeeded: false, needsExtAuth: false),
+            Identity("oscar-prod",    active: true,  mfaEnabled: false, mfaNeeded: false, needsExtAuth: false),
+            Identity("CharlieEdge",   active: false, mfaEnabled: false, mfaNeeded: false, needsExtAuth: true),
         };
-        foreach (var e in entries) arr.Add(e);
+        foreach (JObject e in entries) arr.Add(e);
         return status;
     }
 
-    public static JObject ManyMixedIdentities(int count = 50)
+    public static JObject ManyMixedIdentities(int count)
     {
-        var status = SkeletonStatus();
-        var arr = (JArray)status["Identities"]!;
+        JObject status = SkeletonStatus();
+        JArray arr = (JArray)status["Identities"]!;
 
         for (int i = 0; i < count; i++)
         {
-            var flavor = i % 4;
-            var (name, id) = flavor switch
+            JObject id = (i % 4) switch
             {
-                0 => ($"enabled-{i:D2}",       Identity($"enabled-{i:D2}", active: true)),
-                1 => ($"disabled-{i:D2}",      Identity($"disabled-{i:D2}", active: false)),
-                2 => ($"mfa-required-{i:D2}",  Identity($"mfa-required-{i:D2}", active: true, mfaNeeded: true, mfaEnabled: true)),
-                _ => ($"ext-auth-{i:D2}",      Identity($"ext-auth-{i:D2}", active: true, needsExtAuth: true)),
+                0 => Identity($"enabled-{i:D2}", active: true, mfaEnabled: false, mfaNeeded: false, needsExtAuth: false),
+                1 => Identity($"disabled-{i:D2}", active: false, mfaEnabled: false, mfaNeeded: false, needsExtAuth: false),
+                2 => Identity($"mfa-required-{i:D2}", active: true, mfaEnabled: true, mfaNeeded: true, needsExtAuth: false),
+                _ => Identity($"ext-auth-{i:D2}", active: true, mfaEnabled: false, mfaNeeded: false, needsExtAuth: true),
             };
             arr.Add(id);
         }
@@ -56,12 +49,12 @@ public static class FixtureBuilder
 
     private static JObject Identity(
         string name,
-        bool active = true,
-        bool mfaEnabled = false,
-        bool mfaNeeded = false,
-        bool needsExtAuth = false)
+        bool active,
+        bool mfaEnabled,
+        bool mfaNeeded,
+        bool needsExtAuth)
     {
-        var o = new JObject
+        JObject o = new JObject
         {
             ["Name"] = name,
             ["Identifier"] = $"c:\\fake\\ids\\{name}.json",

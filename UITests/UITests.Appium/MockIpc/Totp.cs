@@ -2,40 +2,33 @@ using System.Security.Cryptography;
 
 namespace ZitiDesktopEdge.UITests.MockIpc;
 
-/// <summary>
-/// RFC 6238 TOTP (HMAC-SHA1, 30s period, 6 digits) plus RFC 4648 base32 codec.
-/// Used by MockIpcServer to issue real otpauth secrets on EnableMFA and to
-/// validate codes submitted via VerifyMFA against the current time window.
-/// Tests can call MockIpcServer.GetMfaSecret + this class's Compute to generate
-/// the same code the mock will accept.
-/// </summary>
+/// <summary>RFC 6238 TOTP (HMAC-SHA1, 30s period, 6 digits) with an RFC 4648 base32 codec.</summary>
 public static class Totp
 {
     private const string Base32Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
     private const int PeriodSeconds = 30;
     private const int Digits = 6;
+    private const int SecretBytes = 20;
+    // One period either side tolerates 30s of clock skew.
+    private const int AllowedSkewWindows = 1;
 
-    /// <summary>Generate a random base32-encoded secret of the requested byte length.</summary>
-    public static string GenerateSecret(int bytes = 20)
+    /// <summary>Base32 text of 20 random bytes.</summary>
+    public static string GenerateSecret()
     {
-        var buf = new byte[bytes];
+        byte[] buf = new byte[SecretBytes];
         RandomNumberGenerator.Fill(buf);
         return Base32Encode(buf);
     }
 
-    /// <summary>
-    /// Compute the TOTP code for the given base32 secret at the given UTC time
-    /// (defaults to now). Returns a zero-padded 6-digit string.
-    /// </summary>
-    public static string Compute(string base32Secret, DateTimeOffset? utc = null)
+    /// <summary>Zero-padded 6-digit code for the secret at <paramref name="utc"/>.</summary>
+    public static string Compute(string base32Secret, DateTimeOffset utc)
     {
-        var t = utc ?? DateTimeOffset.UtcNow;
-        long counter = t.ToUnixTimeSeconds() / PeriodSeconds;
-        var counterBytes = new byte[8];
+        long counter = utc.ToUnixTimeSeconds() / PeriodSeconds;
+        byte[] counterBytes = new byte[8];
         for (int i = 7; i >= 0; i--) { counterBytes[i] = (byte)(counter & 0xFF); counter >>= 8; }
-        var key = Base32Decode(base32Secret);
-        using var hmac = new HMACSHA1(key);
-        var hash = hmac.ComputeHash(counterBytes);
+        byte[] key = Base32Decode(base32Secret);
+        using HMACSHA1 hmac = new HMACSHA1(key);
+        byte[] hash = hmac.ComputeHash(counterBytes);
         int offset = hash[hash.Length - 1] & 0x0F;
         int binary = ((hash[offset] & 0x7F) << 24)
                    | ((hash[offset + 1] & 0xFF) << 16)
@@ -45,17 +38,13 @@ public static class Totp
         return otp.ToString(new string('0', Digits));
     }
 
-    /// <summary>
-    /// Validate a submitted code against the current and adjacent time windows
-    /// (±1 = ±30s of clock skew tolerance). Mirrors how RFC 6238 implementations
-    /// typically validate.
-    /// </summary>
-    public static bool Validate(string base32Secret, string submittedCode, int allowedSkewWindows = 1)
+    /// <summary>True when the code matches the current window or one period either side of it.</summary>
+    public static bool Validate(string base32Secret, string submittedCode)
     {
-        var now = DateTimeOffset.UtcNow;
-        for (int delta = -allowedSkewWindows; delta <= allowedSkewWindows; delta++)
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        for (int delta = -AllowedSkewWindows; delta <= AllowedSkewWindows; delta++)
         {
-            var t = now.AddSeconds(delta * PeriodSeconds);
+            DateTimeOffset t = now.AddSeconds(delta * PeriodSeconds);
             if (Compute(base32Secret, t) == submittedCode) return true;
         }
         return false;
@@ -63,9 +52,9 @@ public static class Totp
 
     public static string Base32Encode(byte[] data)
     {
-        var sb = new System.Text.StringBuilder();
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
         int buffer = 0, bits = 0;
-        foreach (var b in data)
+        foreach (byte b in data)
         {
             buffer = (buffer << 8) | b;
             bits += 8;
@@ -81,13 +70,14 @@ public static class Totp
 
     public static byte[] Base32Decode(string s)
     {
-        s = s.TrimEnd('=').ToUpperInvariant();
-        var bytes = new List<byte>((s.Length * 5 + 7) / 8);
+        string text = s.TrimEnd('=').ToUpperInvariant();
+        List<byte> bytes = new List<byte>((text.Length * 5 + 7) / 8);
         int buffer = 0, bits = 0;
-        foreach (var c in s)
+        foreach (char c in text)
         {
             int v = Base32Alphabet.IndexOf(c);
-            if (v < 0) continue;
+            if (v < 0)
+                throw new FormatException($"'{c}' is not a base32 character in secret '{s}'");
             buffer = (buffer << 5) | v;
             bits += 5;
             if (bits >= 8)

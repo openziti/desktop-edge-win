@@ -66,65 +66,44 @@ Accept the UAC prompt. WinAppDriver only needs to be installed once per machine.
 ### 7. (Optional) Focus Assist / Do Not Disturb
 
 Toast notifications from other apps (Teams, Slack, Outlook) can steal focus mid-test and produce
-flaky failures. Element-level screenshots aren't affected (they pull the window's own bitmap), but
+flaky failures. Screenshots aren't affected (`Capture` draws the window itself with Win32 PrintWindow), but
 input synthesis can be. Toggle Do Not Disturb on for the duration of a test run:
 
 - Windows 11: Win+N -> click the bell icon, choose Do Not Disturb.
 
 ## How to run
 
-From the `try-appium` worktree root:
+`run-ui-tests.ps1` builds the app in Debug, starts `appium` on port 4723 if it isn't already listening, runs
+the suite, and writes `TestResults\report.md`, `gallery.html` and `run-output.txt`.
 
 ```powershell
-UITests\quick-run.ps1
+# first run: builds the app and the tests
+UITests\run-ui-tests.ps1 -OpenGallery
+# later runs: skip the app build
+UITests\run-ui-tests.ps1 -SkipBuild -OpenGallery
 ```
 
-That script:
-
-1. Invokes `run-ui-tests.ps1 -SkipBuild`, which auto-starts `appium` if it isn't already
-   listening on port 4723.
-2. Filters wire-protocol JSON spam out of stdout and writes a clean log to
-   `UITests\TestResults\run-output.txt`.
-3. Opens `UITests\TestResults\gallery.html` in the default browser.
-
-Pass `-Build` to force a full `nuget restore` + `msbuild` rebuild before running. By default it skips the
-build to keep iteration fast.
+Other switches: `-Category` or `-Filter` to run a subset, `-Trace` for per-step timing lines, `-AutoVerify` and
+`-ResetBaselines` for screenshot baselines.
 
 ### Visual baselines (Verify / AutoVerify)
 
-By default `quick-run.ps1` **does not** regenerate `.verified.png` baselines or pass `-AutoVerify`.
-Iterating doesn't dirty the working tree with diff-only baseline noise. When you do want to refresh
-baselines (e.g. after an intentional UI change):
+A run leaves `.verified.png` baselines alone. A screenshot that differs past the ImageMagick tolerance fails and
+writes a `.received.png` beside its baseline for review. After an intentional UI change, accept new baselines:
 
 ```powershell
 # Regenerate everything
-UITests\quick-run.ps1 -AutoVerify -ResetBaselines '*'
+UITests\run-ui-tests.ps1 -SkipBuild -AutoVerify -ResetBaselines '*'
 
 # Regenerate just a few
-UITests\quick-run.ps1 -AutoVerify -ResetBaselines @('Visual_*','LogLevel_*')
+UITests\run-ui-tests.ps1 -SkipBuild -AutoVerify -ResetBaselines @('Visual_*','MainMenu_*')
 ```
-
-Without `-AutoVerify`, a pixel-level mismatch produces a `.received.png` next to the baseline (for
-review) but does not overwrite the baseline. Without `-ResetBaselines`, no baselines are deleted
-ahead of time.
-
-### First run vs subsequent runs
-
-- **First run**: needs `-Build` so the WPF app and test project actually exist:
-  ```powershell
-  UITests\quick-run.ps1 -Build
-  ```
-- **Subsequent runs**: skip the build, just iterate on tests:
-  ```powershell
-  UITests\quick-run.ps1
-  ```
 
 ### Running a subset of tests
 
 #### By category
 
-Every test is tagged with a `Category` trait. `quick-run.ps1 -Category` accepts one
-or many:
+Every test is tagged with a `Category` trait. `-Category` accepts one or many:
 
 | Category                  | Tests                                                              |
 | ------------------------- | ------------------------------------------------------------------ |
@@ -136,17 +115,15 @@ or many:
 | `TunnelSettings`          | Tunnel Config screen open, Edit Values, Save                       |
 | `LogLevel`                | Set Logging Level walkthrough                                      |
 | `AddIdentityFlow`         | End-to-end JWT enroll + MFA + regenerate + forget (one long test)  |
-| `AutomaticUpdate`         | (placeholder for future auto-update tests)                         |
+| `Screenshots`             | Every test that compares a screenshot against a baseline           |
+| `Placement`               | Docked window stays inside the work area as its size changes       |
 
 ```powershell
 # just one category
-UITests\quick-run.ps1 -Category Mfa
+UITests\run-ui-tests.ps1 -SkipBuild -Category Mfa
 
 # multiple categories at once (comma-separated)
-UITests\quick-run.ps1 -Category Mfa,Sort,TunnelSettings
-
-# everything (no filter)
-UITests\quick-run.ps1
+UITests\run-ui-tests.ps1 -SkipBuild -Category Mfa,Sort,TunnelSettings
 ```
 
 Under the hood this passes `--filter "Category=Mfa|Category=Sort|..."` to
@@ -161,7 +138,7 @@ dotnet test UITests\UITests.Appium\UITests.Appium.csproj `
 
 ```powershell
 dotnet test UITests\UITests.Appium\UITests.Appium.csproj `
-    --filter "FullyQualifiedName~MFA_EnableShowsQRDialog"
+    --filter "FullyQualifiedName~EnablingMfaShowsSetupDialog"
 ```
 
 ## What gets produced
@@ -173,7 +150,7 @@ After a run, `UITests\TestResults\` contains:
 | `gallery.html`               | Side-by-side visual review. Every test as a card, multi-step screenshots inline. |
 | `report.md`                  | Markdown summary: pass/fail table + failure details.                        |
 | `results.trx`                | Visual Studio test-results format. Open in VS Test Explorer for full output. |
-| `run-output.txt`             | Filtered stdout (wire-protocol JSON noise dropped).                         |
+| `run-output.txt`             | The console log without the wire-protocol JSON (the console keeps it).     |
 | `screenshots\<TestName>\*.png` | Per-step captures saved by tests that use `SaveStep`.                     |
 
 Verify-style baselines (committed to git for diff reviews) live next to the test source files:
@@ -188,8 +165,7 @@ UITests\UITests.Appium\Tests\SmokeTests.<Name>.received.png   <- only on mismatc
 ```
 UITests/
   README.md                              <-- this file
-  quick-run.ps1                          <-- nuke baselines + run + open gallery
-  run-ui-tests.ps1                       <-- the heavy lifter; manages appium + dotnet test
+  run-ui-tests.ps1                       <-- builds, manages appium, runs dotnet test, writes the reports
   UITests.sln
   UITests.Appium/
     UITests.Appium.csproj                <-- net9.0-windows xUnit + Appium 5 + Verify
@@ -226,10 +202,11 @@ UITests/
    - `VerifyPng(png)` -- runs Verify-style baseline comparison, also drops the latest run into
      `TestResults\screenshots\` for the gallery's single-shot column.
 
-3. Always tag with `[Fact(Timeout = 10000)]`. Anything that genuinely needs longer (multi-hop menu
-   navigation, alt-fixture loads, the Sort walkthrough) should bump per-test to 15000 (or 30000
-   for `Sort_FullWalkthrough`) and include a comment explaining why. Untagged tests can hang the
-   whole suite.
+3. Always tag with `[Fact(Timeout = 20000)]`. Anything that genuinely needs longer (multi-hop menu
+   navigation, alt-fixture loads, the Sort walkthrough) should bump per-test to 30000 (or 40000
+   for `SortHeadersReorderIdentities`) and include a comment explaining why. Limits are about twice a local
+   run because the GitHub Windows runner is that much slower. Untagged tests can hang the whole
+   suite.
 
 4. Asserting on mock IPC traffic:
    - Tunneler commands (DataClient channel): `s.Mock.ReceivedCommandNames`, `s.Mock.ReceivedRequests`
@@ -243,10 +220,10 @@ UITests/
      instead of clicking `AuthenticateWithProvider`, which calls `Process.Start(url)` and would
      launch a real browser.
    - MFA code gating: `SubmitMFA` / `VerifyMFA` / `RemoveMFA` check the submitted `Code` field.
-     `123456` (== `MockIpcServer.AcceptedMfaCode`) returns `Success=true`; `666666`
-     (== `MockIpcServer.RejectedMfaCode`) returns `Success=false` with an explicit "rejected"
-     error. Any other code is also rejected. Enrollment flows that don't carry a code still
-     succeed.
+     `123456` (`MockIpcServer.AcceptedMfaCode`) always succeeds and `666666`
+     (`MockIpcServer.RejectedMfaCode`) always fails, like ZET 1.19 does for a bad code: `Success=false`,
+     `Code=500`, "the token provided was invalid". Any other code is checked as a real TOTP against the
+     secret from `EnableMFA`. Enrollment flows that don't carry a code still succeed.
 
 6. For new mock IPC handlers (a Command the UI sends that the mock doesn't yet recognize):
    - Add a case in `BuildReply` (data IPC) or extend `BuildMonitorReply` (monitor IPC).
@@ -261,7 +238,7 @@ UITests/
 | `Appium could not attach to ZDEW window within ...`                                       | UI process crashed; check `DesktopEdge\bin\Debug\` for a crash dump or look at the run log. |
 | `Timed out waiting for By.XPath: //*[@Name='Advanced Settings']`                          | A WPF custom control's UIA peer didn't expose what we expect. Try by `AutomationId` instead. |
 | Test hangs, last log line is `START : SmokeTests.X`                                       | That test is stuck. The `[Fact(Timeout = ...)]` should abort eventually; Ctrl+C otherwise. |
-| Multiple tests are screenshotting an unfamiliar UAC prompt                                | Production toast registration triggered. ZDEW_DISABLE_TOASTS / ZDEW_ENABLE_TOASTS gating. |
+| Multiple tests are screenshotting an unfamiliar UAC prompt                                | Toast registration ran, so `ZDEW_UI_TEST` was not set on the launched process. |
 | `Cannot process argument transformation on parameter 'AppiumPort'`                        | Powershell parameter splatting bug. Use named-parameter hashtable (`@{ Foo = $true }`). |
 
 ## ZDEW source changes the test harness depends on
@@ -269,13 +246,12 @@ UITests/
 The tests rely on a handful of small env-var-gated hooks in the product code. These ship in the
 binary but are inert unless the env var is set:
 
-- `ZDEW_UI_TEST=1` -- forces `MainWindow.Show()` + `ShowInTaskbar=true` so Appium can attach without
-  driving the system tray icon. Also disables window transparency + chrome for clean screenshots.
+- `ZDEW_UI_TEST=1` -- sets `ShowInTaskbar=true` and activates the window so Appium can attach without
+  driving the system tray icon. Also disables window transparency + chrome for clean screenshots, and skips toast
+  activation registration so test runs don't write COM activator entries to HKCU.
 - `ZDEW_IPC_PIPE_PREFIX=<prefix>` -- prefixes both pipe names (`ziti-edge-tunnel.sock` and
   `OpenZiti\ziti-monitor\ipc`) so the test mock can host pipes without colliding with a running
   production service.
-- `ZDEW_ENABLE_TOASTS=1` -- toast registration is opt-in (production needs this set somehow). Tests
-  leave it unset so test runs don't write COM activator entries to HKCU.
 
 Search for these strings in `DesktopEdge/MainWindow.xaml.cs` and `ZitiDesktopEdge.Client/` to see
 exactly where they branch.

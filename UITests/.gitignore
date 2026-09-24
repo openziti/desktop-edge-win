@@ -6,9 +6,7 @@ obj/
 TestResults/
 page-source.xml
 
-# Verify-test artifacts: keep *.verified.png (the baselines) but never commit
-# the .received.png that only appears on a baseline mismatch -- those are
-# meant for local review, not history.
+# Only written on a baseline mismatch, for local review.
 *.received.png
 
 # Appium server stdout/stderr captured by run-ui-tests.ps1

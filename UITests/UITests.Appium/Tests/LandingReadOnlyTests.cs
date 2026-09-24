@@ -4,10 +4,7 @@ using static ZitiDesktopEdge.UITests.Tests.TestHelpers;
 
 namespace ZitiDesktopEdge.UITests.Tests;
 
-/// <summary>
-/// Read-only assertions against the default landing screen. All tests in this
-/// class share a single UI launch via LandingSession.
-/// </summary>
+/// <summary>Read-only checks of the default landing screen, sharing one launch through LandingSession.</summary>
 [TestLifecycleLog]
 [Trait("Category", "MainScreen")]
 public class LandingReadOnlyTests : IClassFixture<LandingSession>
@@ -16,7 +13,7 @@ public class LandingReadOnlyTests : IClassFixture<LandingSession>
     public LandingReadOnlyTests(LandingSession f) => _f = f;
     private AppiumSession S => _f.Session;
 
-    [Fact(Timeout = 10000)]
+    [Fact(Timeout = 20000)]
     public async Task Elements_ResolveByAccessibilityId()
     {
         Assert.True(ById(S, "ConnectLabel").Displayed);
@@ -25,7 +22,7 @@ public class LandingReadOnlyTests : IClassFixture<LandingSession>
         await Task.CompletedTask;
     }
 
-    [Fact(Timeout = 10000)]
+    [Fact(Timeout = 20000)]
     public async Task IdentityList_ShowsBothMockIdentities()
     {
         Assert.True(WaitFor(S, By.XPath("//Text[@Name='enabled-id']")).Displayed);
@@ -33,13 +30,12 @@ public class LandingReadOnlyTests : IClassFixture<LandingSession>
         await Task.CompletedTask;
     }
 
-    [Fact(Timeout = 10000)]
+    [Fact(Timeout = 20000)]
     public async Task IdentityList_ReflectsActiveAndInactiveStatus()
     {
-        // Find by name -- UI sorts identities alphabetically so order is not predictable
-        // from the fixture order.
-        var enabledRow  = IdentityRow(S, "enabled-id");
-        var disabledRow = IdentityRow(S, "disabled-at-start-id");
+        // By name, since the UI's sort order doesn't follow the fixture order.
+        IWebElement enabledRow = IdentityRow(S, "enabled-id");
+        IWebElement disabledRow = IdentityRow(S, "disabled-at-start-id");
 
         Assert.Equal("ENABLED",
             enabledRow.FindElement(By.XPath(".//*[@AutomationId='ToggleStatus']")).Text);
@@ -48,7 +44,7 @@ public class LandingReadOnlyTests : IClassFixture<LandingSession>
         await Task.CompletedTask;
     }
 
-    [Fact(Timeout = 10000)]
+    [Fact(Timeout = 20000)]
     public async Task SortHeaders_AllVisible()
     {
         Assert.Equal("Status", ById(S, "SortByStatus").Text);
@@ -57,19 +53,19 @@ public class LandingReadOnlyTests : IClassFixture<LandingSession>
         await Task.CompletedTask;
     }
 
-    [Fact(Timeout = 10000)]
+    [Fact(Timeout = 20000)]
     public async Task ConnectedTime_IsDisplayed()
     {
-        var time = ById(S, "ConnectedTime").Text;
+        string time = ById(S, "ConnectedTime").Text;
         Assert.Matches(@"^\d{2}:\d{2}:\d{2}$", time);
         await Task.CompletedTask;
     }
 
-    [Fact(Timeout = 10000)]
+    [Fact(Timeout = 20000)]
     public async Task ServiceCount_ShowsThreeForEnabled_DashForDisabled()
     {
-        var enabledRow  = IdentityRow(S, "enabled-id");
-        var disabledRow = IdentityRow(S, "disabled-at-start-id");
+        IWebElement enabledRow = IdentityRow(S, "enabled-id");
+        IWebElement disabledRow = IdentityRow(S, "disabled-at-start-id");
 
         Assert.Equal("3",
             enabledRow.FindElement(By.XPath(".//*[@AutomationId='ServiceCount']")).Text);
@@ -78,18 +74,18 @@ public class LandingReadOnlyTests : IClassFixture<LandingSession>
         await Task.CompletedTask;
     }
 
-    [Fact(Timeout = 10000)]
+    [Fact(Timeout = 20000)]
     public async Task ConnectLabel_ReadsTapToDisconnect_WhenActive()
     {
         Assert.Equal("Tap to Disconnect", ById(S, "ConnectLabel").Text);
         await Task.CompletedTask;
     }
 
-    [Fact(Timeout = 10000)]
+    [Fact(Timeout = 20000)]
     public async Task DumpPageSource()
     {
-        var src = S.Driver.PageSource;
-        var path = Path.Combine(RepoRoot(), "UITests", "page-source.xml");
+        string src = S.Driver.PageSource;
+        string path = Path.Combine(RepoRoot(), "UITests", "page-source.xml");
         File.WriteAllText(path, src);
         Assert.True(src.Length > 0);
         await Task.CompletedTask;

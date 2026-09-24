@@ -53,6 +53,7 @@ namespace ZitiDesktopEdge {
 
     public partial class MainWindow : Window, ZitiDesktopEdge.Tray.ITrayHost {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly bool _uiTestMode = Environment.GetEnvironmentVariable("ZDEW_UI_TEST") == "1";
 
         public string RECOVER = "RECOVER";
         public System.Windows.Forms.NotifyIcon notifyIcon;
@@ -67,7 +68,6 @@ namespace ZitiDesktopEdge {
         private int _right = 75;
         private int _left = 75;
         private int _top = 30;
-        private int defaultHeight = 600;
         public int NotificationsShownCount = 0;
         private double _maxHeight = 805d;
         public string CurrentIcon = "white";
@@ -433,20 +433,12 @@ namespace ZitiDesktopEdge {
         private System.ComponentModel.IContainer components;
         private MainViewModel props = null;
         public MainWindow() {
-            bool testMode = Environment.GetEnvironmentVariable("ZDEW_UI_TEST") == "1";
-            if (testMode) {
-                this.AllowsTransparency = false;
-                this.WindowStyle = WindowStyle.SingleBorderWindow;
-            } else {
-                this.AllowsTransparency = true;
-                this.WindowStyle = WindowStyle.None;
-            }
+            this.AllowsTransparency = true;
+            this.WindowStyle = WindowStyle.None;
             InitializeComponent();
-            if (testMode) {
-                UIBorder.Margin = new Thickness(0);
-                UIBorder.BorderThickness = new Thickness(0);
-                UIBorder.CornerRadius = new CornerRadius(0);
-                UIBorder.Effect = null;
+            if (_uiTestMode) {
+                // PrintWindow drops alpha, so over a transparent background the drop shadow captures as solid black.
+                this.Background = System.Windows.Media.Brushes.White;
             }
 
             props = new MainViewModel();
@@ -457,7 +449,8 @@ namespace ZitiDesktopEdge {
             SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
             string nlogFile = Path.Combine(ExecutionDirectory, ThisAssemblyName + "-log.config");
 
-            if (Environment.GetEnvironmentVariable("ZDEW_ENABLE_TOASTS") == "1") {
+            // Subscribing registers a COM activator under HKCU, which UI test runs must not leave behind.
+            if (!_uiTestMode) {
                 ToastNotificationManagerCompat.OnActivated += ToastNotificationManagerCompat_OnActivated;
             }
 
@@ -782,13 +775,9 @@ namespace ZitiDesktopEdge {
         }
 
         /// <summary>
-        /// Reopen the welcome screen and expand the window to fit it. Bypasses the
-        /// session-dismissal flag in the VM.
+        /// Reopen the welcome screen. Bypasses the session-dismissal flag in the VM.
         /// </summary>
         public void ShowWelcomeScreen() {
-            // Clear any in-flight close-animation clock so our imperative Height write sticks.
-            this.BeginAnimation(HeightProperty, null);
-            this.Height = defaultHeight + GetStartedExtraHeight;
             GetStartedScreen.ViewModel.Show();
         }
 
@@ -846,28 +835,12 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        private const double GetStartedExtraHeight = 120;
-
         private void GetStartedScreen_AddJwt(object sender, EventArgs e) {
             AddIdentity_Click(sender, new RoutedEventArgs());
         }
 
         private void GetStartedScreen_AddUrl(object sender, EventArgs e) {
             ShowJoinByUrl();
-        }
-
-        private void GetStartedScreen_ClosedByUser(object sender, EventArgs e) {
-            var anim = new DoubleAnimation(defaultHeight, TimeSpan.FromSeconds(0.22)) {
-                FillBehavior = FillBehavior.Stop,
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
-            };
-            anim.Completed += (s, ev) => {
-                // Release the animation clock so future imperative Height writes take effect,
-                // and lock in the final value to avoid a one-frame snap.
-                this.BeginAnimation(HeightProperty, null);
-                this.Height = defaultHeight;
-            };
-            this.BeginAnimation(HeightProperty, anim);
         }
 
         /// <summary>
@@ -970,10 +943,8 @@ namespace ZitiDesktopEdge {
 
         async private void MainWindow_Loaded(object sender, RoutedEventArgs e) {
 
-            if (Environment.GetEnvironmentVariable("ZDEW_UI_TEST") == "1") {
+            if (_uiTestMode) {
                 this.ShowInTaskbar = true;
-                this.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-                this.Show();
                 this.Activate();
             }
 
@@ -1869,8 +1840,9 @@ namespace ZitiDesktopEdge {
                 tray.RefreshLogLevelChecks(e.Status.LogLevel);
                 InitializeTimer((int)e.Status.Duration);
                 LoadStatusFromService(e.Status);
-                LoadIdentities(true);
+                // before LoadIdentities, which sizes the window from GetStartedScreen.ViewModel.IsOpen
                 GetStartedScreen.ViewModel.UpdateForState(serviceClient.Connected, identities.Count);
+                LoadIdentities(true);
                 IdentityDetails deets = ((MainWindow)Application.Current.MainWindow).IdentityMenu;
                 if (deets.IsVisible) {
                     deets.UpdateView();
@@ -2081,11 +2053,6 @@ namespace ZitiDesktopEdge {
                     GetStartedScreen.ViewModel.Hide(); // if there's any identities close the get started screen
                 }
                 if (ids.Length > 0 && serviceClient.Connected) {
-                    double height = defaultHeight + (ids.Length * 60);
-                    if (height > _maxHeight) {
-                        height = _maxHeight;
-                    }
-                    this.Height = height;
                     MainMenu.IdentitiesButton.Visibility = Visibility.Visible;
                     foreach (var id in ids) {
                         IdentityItem idItem = new IdentityItem();
@@ -2118,8 +2085,6 @@ namespace ZitiDesktopEdge {
                     }
                     IdListScroller.Visibility = Visibility.Visible;
                 } else {
-                    // Make room for the welcome screen when it's about to show.
-                    this.Height = defaultHeight + (GetStartedScreen.ViewModel.IsOpen ? GetStartedExtraHeight : 0);
                     MainMenu.IdentitiesButton.Visibility = Visibility.Collapsed;
                     IdListScroller.Visibility = Visibility.Collapsed;
 
@@ -2187,23 +2152,25 @@ namespace ZitiDesktopEdge {
         private void SetLocation() {
             var desktopWorkingArea = SystemParameters.WorkArea;
             double renderedHeight = MainView.ActualHeight;
+            // Not ActualWidth: the window's left edge must not move when identity details or the welcome screen widen it.
+            double widestWidth = (double)FindResource("MaxWindowWidth");
 
             Rectangle trayRectangle = WinAPI.GetTrayRectangle();
             if (trayRectangle.Top < 20) {
                 this.Position = "Top";
                 this.Top = desktopWorkingArea.Top + _top;
-                this.Left = desktopWorkingArea.Right - this.Width - _right;
+                this.Left = desktopWorkingArea.Right - widestWidth - _right;
             } else if (trayRectangle.Left < 20) {
                 this.Position = "Left";
                 this.Left = _left;
                 this.Top = desktopWorkingArea.Bottom - this.ActualHeight - 75;
             } else if (desktopWorkingArea.Right == (double)trayRectangle.Left) {
                 this.Position = "Right";
-                this.Left = desktopWorkingArea.Right - this.Width - 20;
+                this.Left = desktopWorkingArea.Right - widestWidth - 20;
                 this.Top = desktopWorkingArea.Bottom - renderedHeight - 75;
             } else {
                 this.Position = "Bottom";
-                this.Left = desktopWorkingArea.Right - this.Width - 75;
+                this.Left = desktopWorkingArea.Right - widestWidth - 75;
                 this.Top = desktopWorkingArea.Bottom - renderedHeight;
             }
         }
@@ -2212,6 +2179,10 @@ namespace ZitiDesktopEdge {
             if (_isAttached) {
                 SetLocation();
             }
+        }
+
+        private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e) {
+            Placement();
         }
 
         private void OpenIdentity(ZitiIdentity identity) {
@@ -2273,11 +2244,10 @@ namespace ZitiDesktopEdge {
         }
 
         private async void AddIdentity_Click(object sender, RoutedEventArgs e) {
-            // ZDEW_UI_TEST: skip the OS OpenFileDialog (Appium can't drive it
-            // reliably). Test code writes a JWT to %TEMP%\zdew-test-add-identity.jwt
-            // before clicking; we read that path here. Same code path otherwise.
+            // Appium can't reliably drive the OS OpenFileDialog, so under ZDEW_UI_TEST the JWT comes from the file the
+            // test writes to %TEMP%\zdew-test-add-identity.jwt.
             string chosenPath = null;
-            if (Environment.GetEnvironmentVariable("ZDEW_UI_TEST") == "1") {
+            if (_uiTestMode) {
                 var testPath = Path.Combine(Path.GetTempPath(), "zdew-test-add-identity.jwt");
                 if (File.Exists(testPath)) chosenPath = testPath;
                 else { logger.Warn("ZDEW_UI_TEST: expected JWT at {} but file missing", testPath); return; }

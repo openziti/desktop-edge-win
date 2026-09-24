@@ -3,10 +3,8 @@ using ZitiDesktopEdge.UITests.Drivers;
 namespace ZitiDesktopEdge.UITests.Tests;
 
 /// <summary>
-/// xUnit class-fixture that launches one UI process against the default
-/// landing-status.json fixture and shares the Appium session across every
-/// test in the consuming class. Cuts per-test launch overhead from ~3s to ~0.3s
-/// for read-only assertions.
+/// One UI process on landing-status.json shared by every test in the class, for read-only assertions: a launch
+/// costs about 3s, a shared test about 0.3s.
 /// </summary>
 public sealed class LandingSession : IAsyncLifetime
 {
@@ -15,7 +13,7 @@ public sealed class LandingSession : IAsyncLifetime
     public async Task InitializeAsync()
     {
         Session = await AppiumSession.LaunchAsync(
-            TestHelpers.DefaultExePath(), TestHelpers.FixturesDir());
+            TestHelpers.DefaultExePath(), TestHelpers.Fixture("landing-status.json"));
         TestHelpers.WaitForId(Session, "ConnectLabel");
         await TestHelpers.PrepareTestWindow(Session);
     }

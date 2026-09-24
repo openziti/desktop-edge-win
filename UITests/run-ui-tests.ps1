@@ -2,24 +2,29 @@
 <#
     run-ui-tests.ps1
 
-    Builds the ZDEW WPF UI in Debug, ensures Appium is reachable, then runs the
-    UITests.Appium xUnit suite.
+    Builds the ZDEW WPF UI in Debug, ensures Appium is reachable, runs the UITests.Appium xUnit suite, then writes
+    TestResults\report.md, gallery.html and run-output.txt (the console log without the wire-protocol JSON).
 
     Assumes `appium` is on PATH. The script will start a background `appium`
     process if one is not already listening on the chosen port, and stop it on
     exit.
 
-    All logic lives here so a future GitHub Actions workflow can simply
-    `pwsh -File UITests\run-ui-tests.ps1` after checkout.
+    All logic lives here, so .github/workflows/ui-tests.yml only calls this script after checkout.
 #>
 [CmdletBinding()]
 param(
-    [string] $Configuration = "Debug",
-    [int]    $AppiumPort    = 4723,
-    [switch] $SkipBuild,
-    [switch] $AutoVerify,   # passthrough: set ZDEW_AUTO_VERIFY=1 -- accepts new baselines
-    [string] $Filter        # passthrough: --filter "<expr>" e.g. "Category=Mfa"
+    [int]      $AppiumPort    = 4723,
+    [switch]   $SkipBuild,
+    [switch]   $AutoVerify,       # sets ZDEW_AUTO_VERIFY=1, which accepts new baselines
+    [string]   $Filter,           # passthrough: --filter "<expr>" e.g. "FullyQualifiedName~Sort"
+    [string[]] $Category,         # e.g. -Category Mfa,Sort, ORed into the filter
+    [string[]] $ResetBaselines,   # globs like 'Visual_*' deleted first, so -AutoVerify rewrites them
+    [switch]   $Trace,            # sets ZDEW_TEST_TRACE=1 for per-step timing lines
+    [switch]   $OpenGallery
 )
+
+if ($Filter -and $Category) { throw "Pass -Filter or -Category, not both." }
+if ($Category) { $Filter = ($Category | ForEach-Object { "Category=$_" }) -join '|' }
 
 $ErrorActionPreference = "Stop"
 $repoRoot   = Resolve-Path (Join-Path $PSScriptRoot "..")
@@ -62,8 +67,9 @@ if (-not $SkipBuild) {
     if ($LASTEXITCODE -ne 0) { throw "nuget restore failed" }
 
     $msbuild = Find-MSBuild
-    Write-Host "==> msbuild $Configuration ($msbuild)"
-    & $msbuild $solution "/p:Configuration=$Configuration" /v:minimal /nologo
+    # Debug only: Release enforces single-instance (App.xaml.cs), so each test's launch would hand off to the last one.
+    Write-Host "==> msbuild Debug ($msbuild)"
+    & $msbuild $solution "/p:Configuration=Debug" /v:minimal /nologo
     if ($LASTEXITCODE -ne 0) { throw "msbuild failed" }
 }
 
@@ -113,12 +119,22 @@ if (Test-Path $resultsDir) { Remove-Item $resultsDir -Recurse -Force }
 $trxPath = Join-Path $resultsDir "results.trx"
 $reportPath = Join-Path $resultsDir "report.md"
 $galleryPath = Join-Path $resultsDir "gallery.html"
+$runLogPath = Join-Path $resultsDir "run-output.txt"
 $baselinesDir = Join-Path $uiTestsDir "UITests.Appium\Tests"
 $screenshotsDir = Join-Path $resultsDir "screenshots"
 
+foreach ($pattern in $ResetBaselines) {
+    Get-ChildItem (Join-Path $baselinesDir "*.$pattern.verified.png") | ForEach-Object {
+        Write-Host "==> removing baseline $($_.Name)"
+        Remove-Item -LiteralPath $_.FullName
+    }
+}
+
+$runLog = [System.Collections.Generic.List[string]]::new()
 try {
     if ($AutoVerify) { $env:ZDEW_AUTO_VERIFY = "1" }
-    Write-Host "==> dotnet test"
+    if ($Trace) { $env:ZDEW_TEST_TRACE = "1" }
+    Write-Host "==> dotnet test $(if ($Filter) { "--filter $Filter" })"
     $dotnetTestArgs = @(
         $testCsproj,
         '--logger', 'console;verbosity=normal',
@@ -128,22 +144,40 @@ try {
     if ($Filter) {
         $dotnetTestArgs += @('--filter', $Filter)
     }
-    & dotnet test @dotnetTestArgs
+    & dotnet test @dotnetTestArgs 2>&1 | ForEach-Object {
+        $line = "$_"
+        Write-Host $line
+        # The console keeps the wire-protocol JSON for diagnosis, run-output.txt drops it.
+        if ($line -notmatch 'UI-DataClient-(send|read)-|ZitiDesktopEdge\.Models\.ZitiIdentity\s+Identity:') {
+            $runLog.Add($line)
+        }
+    }
     $testExit = $LASTEXITCODE
 } finally {
+    # the script runs in the caller's session, so a leaked value auto-accepts baselines on every later run
+    Remove-Item Env:ZDEW_AUTO_VERIFY -ErrorAction SilentlyContinue
+    Remove-Item Env:ZDEW_TEST_TRACE -ErrorAction SilentlyContinue
     if ($startedAppium -and $appiumProc -and -not $appiumProc.HasExited) {
         Write-Host "==> stopping appium (pid $($appiumProc.Id))"
         try { Stop-Process -Id $appiumProc.Id -Force -ErrorAction SilentlyContinue } catch {}
     }
 }
 
-# Generate markdown report from TRX
-if (Test-Path $trxPath) {
-    try {
-        [xml]$trx = Get-Content -LiteralPath $trxPath
-        $ns = New-Object System.Xml.XmlNamespaceManager $trx.NameTable
-        $ns.AddNamespace("t", "http://microsoft.com/schemas/VisualStudio/TeamTest/2010")
+New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
+$runLog -join "`n" | Set-Content -LiteralPath $runLogPath -Encoding utf8
 
+# Parsed once for the report and the gallery
+$trx = $null
+$ns = $null
+if (Test-Path $trxPath) {
+    [xml]$trx = Get-Content -LiteralPath $trxPath
+    $ns = New-Object System.Xml.XmlNamespaceManager $trx.NameTable
+    $ns.AddNamespace("t", "http://microsoft.com/schemas/VisualStudio/TeamTest/2010")
+}
+
+# Generate markdown report from TRX
+if ($trx) {
+    try {
         $counters = $trx.SelectSingleNode("//t:ResultSummary/t:Counters", $ns)
         $total   = [int]$counters.total
         $passed  = [int]$counters.passed
@@ -209,8 +243,7 @@ if (Test-Path $trxPath) {
     }
 }
 
-# Copy baseline + received PNGs into TestResults\baselines\ so the gallery is
-# self-contained and can be served from GitHub Pages (no relative ..\paths).
+# Copied into TestResults so the gallery has no ..\ paths and works from GitHub Pages.
 $galleryBaselineDir = Join-Path $resultsDir "baselines"
 New-Item -ItemType Directory -Force -Path $galleryBaselineDir | Out-Null
 if (Test-Path $baselinesDir) {
@@ -222,13 +255,10 @@ if (Test-Path $baselinesDir) {
 
 # Generate visual gallery HTML
 try {
-    # Pull EVERY test from the TRX so assertion-only tests are visible too
+    # Every test from the TRX, so assertion-only tests get a card too
     $allTests = @()
-    if (Test-Path $trxPath) {
-        [xml]$trx2 = Get-Content -LiteralPath $trxPath
-        $ns2 = New-Object System.Xml.XmlNamespaceManager $trx2.NameTable
-        $ns2.AddNamespace("t", "http://microsoft.com/schemas/VisualStudio/TeamTest/2010")
-        foreach ($r in $trx2.SelectNodes("//t:UnitTestResult", $ns2)) {
+    if ($trx) {
+        foreach ($r in $trx.SelectNodes("//t:UnitTestResult", $ns)) {
             # testName like "ZitiDesktopEdge.UITests.Tests.SmokeTests.MainWindow_LaunchesAndRenders"
             $full = $r.testName
             $short = ($full -split '\.')[-1]
@@ -324,10 +354,11 @@ $($cards.ToString())
 </body></html>
 "@
     $html | Set-Content -LiteralPath $galleryPath -Encoding utf8
-    # Also write an index.html alias so GitHub Pages serves the gallery as the
-    # site root without an explicit ?file=gallery.html
+    # index.html so GitHub Pages serves the gallery at the site root
     Copy-Item -LiteralPath $galleryPath -Destination (Join-Path $resultsDir "index.html") -Force
     Write-Host "==> gallery: $galleryPath"
+    Write-Host "==> log:     $runLogPath"
+    if ($OpenGallery) { Start-Process $galleryPath }
 } catch {
     Write-Warning "Failed to generate gallery: $_"
 }

@@ -16,34 +16,36 @@ public sealed class MockIpcServer : IAsyncDisposable
 
     private readonly CancellationTokenSource _cts = new();
     private readonly List<Task> _serverLoops = new();
+    // Mutated by command handlers on IPC threads and read by event clients: touch it only under _landingStatusLock.
     private readonly JObject _landingStatus;
+    private readonly object _landingStatusLock = new();
     private readonly object _recvLock = new();
     private readonly List<JObject> _received = new();
     private readonly List<JObject> _receivedMonitor = new();
-    private readonly Channel<JObject> _eventPush = Channel.CreateUnbounded<JObject>();
+    // One queue per connected event client, like ZET broadcasting to every client. Pushes with no client connected wait
+    // in _pendingEvents for the next one.
+    private readonly List<Channel<JObject>> _eventClients = new();
+    private readonly List<JObject> _pendingEvents = new();
+    private readonly object _eventClientsLock = new();
 
-    // Queue of next responses for AddIdentity. Each entry is either a
-    // success (with assigned identity name) or a failure (with error message).
+    // One entry consumed per AddIdentity command from the UI.
     private readonly Queue<AddIdentityNextResponse> _addIdentityQueue = new();
     private readonly object _addIdentityLock = new();
 
     private record AddIdentityNextResponse(bool Success, string? Name, string? Error);
 
-    // Per-identity TOTP secret (base32) generated on EnableMFA. VerifyMFA
-    // validates submitted codes against this secret using real RFC 6238 TOTP.
+    // Base32 secret per identity from EnableMFA. VerifyMFA checks codes against it with real RFC 6238 TOTP.
     private readonly Dictionary<string, string> _mfaSecrets = new(StringComparer.OrdinalIgnoreCase);
     private readonly object _mfaSecretsLock = new();
 
     /// <summary>
-    /// Returns the base32 TOTP secret minted for the given identity by the most
-    /// recent EnableMFA call, or null if EnableMFA hasn't run for it yet. Tests
-    /// use this to compute the correct TOTP code via Totp.Compute(secret).
+    /// The secret from the identity's latest EnableMFA, or null before one. Pass it to Totp.Compute for a valid code.
     /// </summary>
     public string? GetMfaSecret(string identifier)
     {
         lock (_mfaSecretsLock)
         {
-            return _mfaSecrets.TryGetValue(identifier, out var s) ? s : null;
+            return _mfaSecrets.TryGetValue(identifier, out string? s) ? s : null;
         }
     }
 
@@ -68,59 +70,57 @@ public sealed class MockIpcServer : IAsyncDisposable
     }
 
     /// <summary>
-    /// Simulate the tunneler reporting a successful external-auth login for the
-    /// given identity. Clicking the "Authenticate with Provider" button in real
-    /// life launches a browser via Process.Start(url) -- we don't want a real
-    /// browser popping up during a test run. Pushing this event reproduces the
-    /// post-login state that ZDEW expects to see from ziti-edge-tunnel: an
-    /// identity event with Action="added" and NeedsExtAuth=false, which the
-    /// MainWindow handler treats as a successful authentication.
-    /// </summary>
-    /// <summary>
-    /// Queue the next AddIdentity IPC response. Each call to this is consumed
-    /// by exactly one AddIdentity command from the UI. On success, the mock
-    /// appends a fresh identity with the given name to its cached landing
-    /// status (so subsequent Status queries / events reflect it) and returns
-    /// a populated Identity payload. On failure, returns Success=false with
-    /// the supplied error message; the WPF surfaces this as a blurb.
+    /// Queue the reply for the next AddIdentity command. Success appends an identity with this name to the cached
+    /// status, so later Status queries and events include it. Failure replies Success=false with the error, which the
+    /// UI shows as a blurb.
     /// </summary>
     public void EnqueueAddIdentitySuccess(string identityName)
     {
         lock (_addIdentityLock) _addIdentityQueue.Enqueue(new AddIdentityNextResponse(true, identityName, null));
     }
 
-    public void EnqueueAddIdentityFailure(string error = "Mock-controlled AddIdentity failure")
+    public void EnqueueAddIdentityFailure(string error)
     {
         lock (_addIdentityLock) _addIdentityQueue.Enqueue(new AddIdentityNextResponse(false, null, error));
     }
 
+    /// <summary>
+    /// Stand-in for a finished external-auth login, since the real Authenticate button opens a browser with
+    /// Process.Start. Emits what ZET sends after the login: an identity "added" event with NeedsExtAuth=false.
+    /// </summary>
     public void PushExtAuthSuccess(string identifier)
     {
-        var identities = _landingStatus["Identities"] as JArray;
-        var id = identities?
-            .OfType<JObject>()
-            .FirstOrDefault(i => string.Equals((string?)i["Identifier"], identifier, StringComparison.OrdinalIgnoreCase));
-        if (id == null) throw new InvalidOperationException($"PushExtAuthSuccess: no identity '{identifier}' in fixture.");
-
-        // Clear the ext-auth requirement on the cached status so any subsequent
-        // Status query reflects the post-login state.
-        id["NeedsExtAuth"] = false;
-
-        var evt = new JObject
+        JObject evt;
+        lock (_landingStatusLock)
         {
-            ["Op"] = "identity",
-            ["Action"] = "added",
-            ["Fingerprint"] = id["FingerPrint"],
-            ["Id"] = id.DeepClone(),
-        };
-        _eventPush.Writer.TryWrite(evt);
+            JObject? id = FindIdentity(identifier);
+            if (id == null) throw new InvalidOperationException($"PushExtAuthSuccess: no identity '{identifier}' in fixture.");
+
+            // so later Status queries match the post-login state
+            id["NeedsExtAuth"] = false;
+
+            evt = new JObject
+            {
+                ["Op"] = "identity",
+                ["Action"] = "added",
+                ["Fingerprint"] = id["FingerPrint"],
+                ["Id"] = id.DeepClone(),
+            };
+        }
+        PushEvent(evt);
     }
 
-    public MockIpcServer(string pipePrefix, string fixturesDir, string fixtureFile = "landing-status.json")
+    private void PushEvent(JObject evt)
     {
-        PipePrefix = pipePrefix;
-        var path = Path.Combine(fixturesDir, fixtureFile);
-        _landingStatus = JObject.Parse(File.ReadAllText(path));
+        lock (_eventClientsLock)
+        {
+            if (_eventClients.Count == 0)
+            {
+                _pendingEvents.Add(evt);
+                return;
+            }
+            foreach (Channel<JObject> client in _eventClients) client.Writer.TryWrite(evt);
+        }
     }
 
     public MockIpcServer(string pipePrefix, JObject landingStatus)
@@ -129,71 +129,142 @@ public sealed class MockIpcServer : IAsyncDisposable
         _landingStatus = landingStatus;
     }
 
-    public void Start()
+    /// <summary>Case-insensitive, like ZET's identifier lookups. Call under _landingStatusLock.</summary>
+    private JObject? FindIdentity(string identifier) =>
+        (_landingStatus["Identities"] as JArray)?
+            .OfType<JObject>()
+            .FirstOrDefault(i => string.Equals((string?)i["Identifier"], identifier, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>The gate for a submitted MFA code. Callers decide what an empty code means.</summary>
+    private bool IsCodeValid(string identifier, string code)
     {
-        _serverLoops.Add(Task.Run(() => DataIpcLoopAsync(_cts.Token)));
-        _serverLoops.Add(Task.Run(() => DataEventLoopAsync(_cts.Token)));
-        _serverLoops.Add(Task.Run(() => MonitorIpcLoopAsync(_cts.Token)));
-        _serverLoops.Add(Task.Run(() => QuietPipeLoopAsync(MonitorEventPipeName, _cts.Token)));
+        if (code == RejectedMfaCode) return false;
+        if (code == AcceptedMfaCode) return true;
+        string? secret;
+        lock (_mfaSecretsLock) _mfaSecrets.TryGetValue(identifier, out secret);
+        return secret != null && Totp.Validate(secret, code);
     }
 
-    private async Task DataIpcLoopAsync(CancellationToken ct)
+    public void Start()
+    {
+        _serverLoops.Add(Task.Run(() => AcceptLoopAsync(DataIpcPipeName, PipeDirection.InOut,
+            (srv, ct) => ServeRequestsAsync(srv, AnswerDataRequest, ct), _cts.Token)));
+        _serverLoops.Add(Task.Run(() => AcceptLoopAsync(DataEventPipeName, PipeDirection.Out,
+            HandleDataEventClientAsync, _cts.Token)));
+        _serverLoops.Add(Task.Run(() => AcceptLoopAsync(MonitorIpcPipeName, PipeDirection.InOut,
+            (srv, ct) => ServeRequestsAsync(srv, AnswerMonitorRequest, ct), _cts.Token)));
+        // The UI connects to the monitor's event pipe but the tests never push monitor events.
+        _serverLoops.Add(Task.Run(() => AcceptLoopAsync(MonitorEventPipeName, PipeDirection.InOut,
+            HoldOpenAsync, _cts.Token)));
+    }
+
+    /// <summary>Accept clients on one pipe until cancelled, each served by handler on its own task.</summary>
+    private async Task AcceptLoopAsync(string pipeName, PipeDirection direction,
+        Func<NamedPipeServerStream, CancellationToken, Task> handler, CancellationToken ct)
     {
         while (!ct.IsCancellationRequested)
         {
-            NamedPipeServerStream srv;
-            try
-            {
-                srv = new NamedPipeServerStream(
-                    DataIpcPipeName,
-                    PipeDirection.InOut,
-                    NamedPipeServerStream.MaxAllowedServerInstances,
-                    PipeTransmissionMode.Byte,
-                    PipeOptions.Asynchronous);
-            }
-            catch (Exception) { return; }
-
+            NamedPipeServerStream srv = CreatePipe(pipeName, direction);
             try { await srv.WaitForConnectionAsync(ct); }
-            catch { srv.Dispose(); return; }
+            catch (OperationCanceledException) { srv.Dispose(); return; }
 
-            _ = Task.Run(() => HandleDataIpcClientAsync(srv, ct), ct);
+            _ = Task.Run(() => handler(srv, ct), ct);
         }
     }
 
-    private async Task HandleDataIpcClientAsync(NamedPipeServerStream srv, CancellationToken ct)
+    private record Answer(string Reply, List<JObject> EventsAfterReply);
+
+    /// <summary>Read one JSON request per line and write answer's reply, then push its follow-up events.</summary>
+    private async Task ServeRequestsAsync(NamedPipeServerStream srv, Func<string, Answer> answer, CancellationToken ct)
     {
         using (srv)
-        using (var reader = new StreamReader(srv, new UTF8Encoding(false), false, 16 * 1024, leaveOpen: true))
-        using (var writer = new StreamWriter(srv, new UTF8Encoding(false)) { AutoFlush = true, NewLine = "\n" })
+        using (StreamReader reader = new StreamReader(srv, new UTF8Encoding(false), false, 16 * 1024, leaveOpen: true))
+        using (StreamWriter writer = new StreamWriter(srv, new UTF8Encoding(false)) { AutoFlush = true, NewLine = "\n" })
         {
             while (srv.IsConnected && !ct.IsCancellationRequested)
             {
                 string? line;
                 try { line = await reader.ReadLineAsync().WaitAsync(ct); }
-                catch { return; }
+                // the app closed its end of the pipe, or the mock is shutting down
+                catch (Exception ex) when (ex is IOException or ObjectDisposedException or OperationCanceledException) { return; }
                 if (line == null) return;
                 if (string.IsNullOrWhiteSpace(line)) continue;
 
-                JObject reply;
-                try
-                {
-                    var req = JObject.Parse(line);
-                    lock (_recvLock) _received.Add(req);
-                    reply = BuildReply(req);
-                }
-                catch (Exception ex)
-                {
-                    reply = new JObject { ["Success"] = false, ["Code"] = 1, ["Error"] = ex.Message };
-                }
-                await writer.WriteLineAsync(reply.ToString(Formatting.None));
+                Answer reply = answer(line);
+                await writer.WriteLineAsync(reply.Reply);
+                foreach (JObject evt in reply.EventsAfterReply) PushEvent(evt);
             }
         }
     }
 
-    private JObject BuildReply(JObject req)
+    private Answer AnswerDataRequest(string line)
     {
-        var command = (string?)req["Command"] ?? "";
-        var data = req["Data"] as JObject ?? new JObject();
+        List<JObject> eventsAfterReply = new List<JObject>();
+        try
+        {
+            JObject req = JObject.Parse(line);
+            lock (_recvLock) _received.Add(req);
+            // serialized inside the lock: the Status reply holds _landingStatus itself
+            lock (_landingStatusLock)
+                return new Answer(BuildReply(req, eventsAfterReply).ToString(Formatting.None), eventsAfterReply);
+        }
+        catch (Exception ex)
+        {
+            return new Answer(
+                new JObject { ["Success"] = false, ["Code"] = 1, ["Error"] = ex.Message }.ToString(Formatting.None),
+                new List<JObject>());
+        }
+    }
+
+    private Answer AnswerMonitorRequest(string line)
+    {
+        try
+        {
+            JObject req = JObject.Parse(line);
+            lock (_recvLock) _receivedMonitor.Add(req);
+            return new Answer(BuildMonitorReply(req).ToString(Formatting.None), new List<JObject>());
+        }
+        catch (Exception ex)
+        {
+            return new Answer(new JObject { ["Code"] = 1, ["Message"] = ex.Message }.ToString(Formatting.None),
+                new List<JObject>());
+        }
+    }
+
+    private static async Task HoldOpenAsync(NamedPipeServerStream srv, CancellationToken ct)
+    {
+        using (srv)
+        {
+            try { await Task.Delay(Timeout.Infinite, ct); }
+            catch (OperationCanceledException) { }
+        }
+    }
+
+    private static NamedPipeServerStream CreatePipe(string pipeName, PipeDirection direction)
+    {
+        try
+        {
+            return new NamedPipeServerStream(
+                pipeName,
+                direction,
+                NamedPipeServerStream.MaxAllowedServerInstances,
+                PipeTransmissionMode.Byte,
+                PipeOptions.Asynchronous);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            throw new IOException($"Mock IPC could not create pipe '{pipeName}': {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Reply to one command. Handlers add to eventsAfterReply what ZET sends once the reply is out, and the caller
+    /// pushes those after writing the reply.
+    /// </summary>
+    private JObject BuildReply(JObject req, List<JObject> eventsAfterReply)
+    {
+        string command = (string?)req["Command"] ?? "";
+        JObject data = req["Data"] as JObject ?? new JObject();
 
         return command switch
         {
@@ -203,66 +274,51 @@ public sealed class MockIpcServer : IAsyncDisposable
                 ["Code"] = 0,
                 ["Data"] = _landingStatus,
             },
-            "IdentityOnOff" => HandleIdentityOnOff(data),
+            "IdentityOnOff" => HandleIdentityOnOff(data, eventsAfterReply),
             "AddIdentity" => HandleAddIdentity(data),
             "ExternalAuth" => HandleExternalAuth(data),
             "UpdateInterfaceConfig" => HandleUpdateInterfaceConfig(data),
             "EnableMFA" => HandleEnableMFA(data),
-            "VerifyMFA" => HandleMfaResult(data, "enrollment_verification"),
-            "RemoveMFA" => HandleMfaResult(data, "enrollment_remove"),
-            "SubmitMFA" => HandleMfaResult(data, "mfa_auth_status"),
+            "VerifyMFA" => HandleMfaResult(data, "enrollment_verification", eventsAfterReply),
+            "RemoveMFA" => HandleMfaResult(data, "enrollment_remove", eventsAfterReply),
+            "SubmitMFA" => HandleMfaResult(data, "mfa_auth_status", eventsAfterReply),
             "GenerateMFACodes" => HandleGenerateMFACodes(data),
-            _ => new JObject { ["Success"] = true, ["Code"] = 0 },
+            "RemoveIdentity" => HandleRemoveIdentity(data),
+            "SetLogLevel" => new JObject { ["Success"] = true, ["Code"] = 0 },
+            // Fail loudly so a command the mock does not model shows up in the test instead of passing silently.
+            _ => new JObject { ["Success"] = false, ["Code"] = 500, ["Error"] = $"mock IPC has no handler for command '{command}'" },
         };
     }
 
+    private JObject HandleRemoveIdentity(JObject data)
+    {
+        string identifier = (string?)data["Identifier"] ?? "";
+        JObject? id = FindIdentity(identifier);
+        if (id == null)
+            return new JObject { ["Success"] = false, ["Code"] = 1, ["Error"] = $"mock has no identity '{identifier}'" };
+        // so later Status queries no longer list it
+        id.Remove();
+        return new JObject { ["Success"] = true, ["Code"] = 0 };
+    }
+
     /// <summary>
-    /// The 6-digit MFA code the mock accepts. Anything else is rejected; the
-    /// magic 666666 is rejected with an explicit "wrong code" failure so tests
-    /// can drive both happy- and error-path flows.
+    /// AcceptedMfaCode always passes, for flows with no known secret, and RejectedMfaCode always fails. Any other
+    /// code is checked as real TOTP against the secret from EnableMFA.
     /// </summary>
     public const string AcceptedMfaCode = "123456";
     public const string RejectedMfaCode = "666666";
 
-    private JObject HandleMfaResult(JObject data, string action)
+    private JObject HandleMfaResult(JObject data, string action, List<JObject> eventsAfterReply)
     {
-        var identifier = (string?)data["Identifier"] ?? "";
-        var code = (string?)data["Code"] ?? "";
-        var fingerprint = (_landingStatus["Identities"] as JArray)?
-            .OfType<JObject>()
-            .FirstOrDefault(i => string.Equals((string?)i["Identifier"], identifier, StringComparison.OrdinalIgnoreCase))
-            ?["FingerPrint"]?.ToString() ?? "MOCKFP";
+        string identifier = (string?)data["Identifier"] ?? "";
+        string code = (string?)data["Code"] ?? "";
+        JObject? ident = FindIdentity(identifier);
+        string fingerprint = ident?["FingerPrint"]?.ToString() ?? "MOCKFP";
 
-        // Gate on the submitted code:
-        //   * empty code -> enrollment path (no token yet) -> success
-        //   * "666666" (RejectedMfaCode) -> canonical failure path for tests
-        //     that want a deterministic rejection
-        //   * "123456" (AcceptedMfaCode) -> legacy magic-accept for tests that
-        //     don't want to drive real TOTP (e.g. disable-MFA flow where the
-        //     code isn't generated from a known secret)
-        //   * otherwise -> real RFC 6238 TOTP validation against the secret
-        //     issued by HandleEnableMFA
-        bool successful;
-        if (string.IsNullOrEmpty(code))
-        {
-            successful = true;
-        }
-        else if (code == RejectedMfaCode)
-        {
-            successful = false;
-        }
-        else if (code == AcceptedMfaCode)
-        {
-            successful = true;
-        }
-        else
-        {
-            string? secret;
-            lock (_mfaSecretsLock) _mfaSecrets.TryGetValue(identifier, out secret);
-            successful = secret != null && Totp.Validate(secret, code);
-        }
+        // An empty code is the enrollment path, which carries no token yet.
+        bool successful = string.IsNullOrEmpty(code) || IsCodeValid(identifier, code);
 
-        var evt = new JObject
+        JObject evt = new JObject
         {
             ["Op"] = "mfa",
             ["Action"] = action,
@@ -272,28 +328,30 @@ public sealed class MockIpcServer : IAsyncDisposable
         };
         if (!successful)
         {
-            evt["Error"] = code == RejectedMfaCode
-                ? "MFA code rejected by mock (666666 is the canonical fail code)."
-                : $"MFA code '{code}' is not a recognised mock code (try 123456 to succeed or 666666 to fail).";
+            // the controller's message, as ZET 1.19 relays it
+            evt["Error"] = "the token provided was invalid";
         }
 
-        // On a successful enrollment_verification, persist MfaEnabled=true on
-        // the cached identity so subsequent IdentityOnOff cycles (disable then
-        // re-enable) can correctly drive the "identity has MFA, needs re-auth"
-        // state.
-        if (successful && action == "enrollment_verification")
+        // Like ZET's TunnelEvent_MFAStatusEvent: a verified or submitted code marks MFA enabled and satisfied, and an
+        // identity "updated" event goes out before the mfa event.
+        JObject? updated = null;
+        if (successful && (action == "enrollment_verification" || action == "mfa_auth_status"))
         {
-            var ident = (_landingStatus["Identities"] as JArray)?
-                .OfType<JObject>()
-                .FirstOrDefault(i => string.Equals((string?)i["Identifier"], identifier, StringComparison.OrdinalIgnoreCase));
-            if (ident != null) ident["MfaEnabled"] = true;
+            if (ident != null)
+            {
+                ident["MfaEnabled"] = true;
+                ident["MfaNeeded"] = false;
+                updated = new JObject
+                {
+                    ["Op"] = "identity",
+                    ["Action"] = "updated",
+                    ["Fingerprint"] = ident["FingerPrint"],
+                    ["Id"] = ident.DeepClone(),
+                };
+            }
         }
-        // RemoveMFA success clears MfaEnabled.
         if (successful && action == "enrollment_remove")
         {
-            var ident = (_landingStatus["Identities"] as JArray)?
-                .OfType<JObject>()
-                .FirstOrDefault(i => string.Equals((string?)i["Identifier"], identifier, StringComparison.OrdinalIgnoreCase));
             if (ident != null)
             {
                 ident["MfaEnabled"] = false;
@@ -301,21 +359,13 @@ public sealed class MockIpcServer : IAsyncDisposable
             }
         }
 
-        // CRITICAL ORDERING: push the event AFTER a small delay so the reply for
-        // VerifyMFA gets back to the WPF (and DoSetupAuthenticate's OnClose
-        // runs) BEFORE the enrollment_verification event arrives. Without this
-        // delay, WPF's data and event pipes race -- if the event wins,
-        // ShowMFARecoveryCodes opens the recovery screen and then OnClose
-        // immediately hides it. Real ziti-edge-tunnel emits the response and
-        // event from the same socket in deterministic order; our two-pipe mock
-        // can interleave, so we serialise here.
-        _ = Task.Run(async () =>
-        {
-            await Task.Delay(120);
-            _eventPush.Writer.TryWrite(evt);
-        });
+        if (updated != null) eventsAfterReply.Add(updated);
+        eventsAfterReply.Add(evt);
 
-        return new JObject { ["Success"] = successful, ["Code"] = successful ? 0 : 1 };
+        // ZET 1.19 fails a bad code with Code 500 and the controller's message.
+        return successful
+            ? new JObject { ["Success"] = true, ["Code"] = 0 }
+            : new JObject { ["Success"] = false, ["Code"] = 500, ["Error"] = (string?)evt["Error"] };
     }
 
     private JObject HandleAddIdentity(JObject data)
@@ -338,11 +388,9 @@ public sealed class MockIpcServer : IAsyncDisposable
             };
         }
 
-        // Append a fresh identity to the cached landing status so later Status
-        // queries + IdentityOnOff lookups see it. Shape mirrors the JSON
-        // fixtures.
-        var name = resp.Name ?? "mock-identity";
-        var newId = new JObject
+        // Cached so later Status queries and IdentityOnOff lookups see it. The shape mirrors the JSON fixtures.
+        string name = resp.Name ?? "mock-identity";
+        JObject newId = new JObject
         {
             ["Name"] = name,
             ["Identifier"] = $"c:\\fake\\ids\\{name}.json",
@@ -360,9 +408,7 @@ public sealed class MockIpcServer : IAsyncDisposable
             ["ExtAuthProviders"] = new JArray(),
             ["MfaEnabled"] = false,
             ["MfaNeeded"] = false,
-            // Two stock services per dynamically-added identity: one dial-only,
-            // one bind-only. Lets tests on the details screen exercise the
-            // service list rendering with mixed-permission rows.
+            // One dial-only and one bind-only service, so the details screen renders mixed-permission rows.
             ["Services"] = new JArray
             {
                 new JObject
@@ -413,7 +459,7 @@ public sealed class MockIpcServer : IAsyncDisposable
             ["Notified"] = false,
         };
 
-        var identities = (JArray)_landingStatus["Identities"]!;
+        JArray identities = (JArray)_landingStatus["Identities"]!;
         identities.Add(newId);
 
         return new JObject
@@ -426,20 +472,11 @@ public sealed class MockIpcServer : IAsyncDisposable
 
     private JObject HandleGenerateMFACodes(JObject data)
     {
-        var identifier = (string?)data["Identifier"] ?? "";
-        var code = (string?)data["Code"] ?? "";
+        string identifier = (string?)data["Identifier"] ?? "";
+        string code = (string?)data["Code"] ?? "";
 
-        // Same code-gate as HandleMfaResult.
-        bool valid;
-        if (string.IsNullOrEmpty(code)) valid = false;
-        else if (code == RejectedMfaCode) valid = false;
-        else if (code == AcceptedMfaCode) valid = true;
-        else
-        {
-            string? secret;
-            lock (_mfaSecretsLock) _mfaSecrets.TryGetValue(identifier, out secret);
-            valid = secret != null && Totp.Validate(secret, code);
-        }
+        // Unlike HandleMfaResult, an empty code fails: regenerating always needs one.
+        bool valid = !string.IsNullOrEmpty(code) && IsCodeValid(identifier, code);
 
         if (!valid)
         {
@@ -451,10 +488,9 @@ public sealed class MockIpcServer : IAsyncDisposable
             };
         }
 
-        // Issue 20 freshly-numbered recovery codes so the test can visually
-        // confirm the regenerate happened (codes differ from the initial set).
-        var newCodes = new JArray();
-        var rnd = new Random();
+        // REGEN-prefixed so a test can tell regenerated codes from the initial set.
+        JArray newCodes = new JArray();
+        Random rnd = new Random();
         for (int i = 0; i < 20; i++) newCodes.Add($"REGEN{i:D2}{rnd.Next(100, 999)}");
 
         return new JObject
@@ -471,9 +507,9 @@ public sealed class MockIpcServer : IAsyncDisposable
 
     private JObject HandleExternalAuth(JObject data)
     {
-        var identifier = (string?)data["Identifier"] ?? "";
-        var provider = (string?)data["Provider"] ?? "mock-provider";
-        var fakeUrl = $"https://idp.example/auth?provider={provider}&state=MOCKSTATE&redirect=http://localhost:54321/auth/callback";
+        string identifier = (string?)data["Identifier"] ?? "";
+        string provider = (string?)data["Provider"] ?? "mock-provider";
+        string fakeUrl = $"https://idp.example/auth?provider={provider}&state=MOCKSTATE&redirect=http://localhost:54321/auth/callback";
         return new JObject
         {
             ["Success"] = true,
@@ -488,10 +524,9 @@ public sealed class MockIpcServer : IAsyncDisposable
 
     private JObject HandleUpdateInterfaceConfig(JObject data)
     {
-        // Apply the new values to our cached status so the UI keeps a consistent
-        // picture if anyone queries Status again.
-        var l3 = data["L3"] as JObject;
-        var l2 = data["L2"] as JObject;
+        // Cached so later Status queries return the saved values.
+        JObject? l3 = data["L3"] as JObject;
+        JObject? l2 = data["L2"] as JObject;
         if (l3 != null)
         {
             _landingStatus["TunIpv4"] = l3["TunIPv4"];
@@ -509,28 +544,21 @@ public sealed class MockIpcServer : IAsyncDisposable
 
     private JObject HandleEnableMFA(JObject data)
     {
-        var identifier = (string?)data["Identifier"] ?? "";
-        var fingerprint = (_landingStatus["Identities"] as JArray)?
-            .OfType<JObject>()
-            .FirstOrDefault(i => string.Equals((string?)i["Identifier"], identifier, StringComparison.OrdinalIgnoreCase))
-            ?["FingerPrint"]?.ToString() ?? "MOCKFP";
+        string identifier = (string?)data["Identifier"] ?? "";
+        string fingerprint = FindIdentity(identifier)?["FingerPrint"]?.ToString() ?? "MOCKFP";
 
-        // Generate a REAL RFC 6238 TOTP secret + persist per-identity. The
-        // VerifyMFA handler validates submitted codes against this secret;
-        // tests use GetMfaSecret(identifier) + Totp.Compute() to produce the
-        // matching code.
-        var secret = Totp.GenerateSecret();
+        string secret = Totp.GenerateSecret();
         lock (_mfaSecretsLock) _mfaSecrets[identifier] = secret;
 
-        var url = $"otpauth://totp/openziti.io:{Uri.EscapeDataString(identifier)}?issuer=openziti.io&secret={secret}";
-        var codes = new JArray(
+        string url = $"otpauth://totp/openziti.io:{Uri.EscapeDataString(identifier)}?issuer=openziti.io&secret={secret}";
+        JArray codes = new JArray(
             "AAAAAA", "BBBBBB", "CCCCCC", "DDDDDD", "EEEEEE",
             "FFFFFF", "GGGGGG", "HHHHHH", "IIIIII", "JJJJJJ",
             "KKKKKK", "LLLLLL", "MMMMMM", "NNNNNN", "OOOOOO",
             "PPPPPP", "QQQQQQ", "RRRRRR", "SSSSSS", "TTTTTT");
 
-        // Push the matching enrollment_challenge event so the UI shows the QR dialog.
-        var challenge = new JObject
+        // The UI opens the QR dialog on this event, not on the reply.
+        JObject challenge = new JObject
         {
             ["Op"] = "mfa",
             ["Action"] = "enrollment_challenge",
@@ -540,7 +568,7 @@ public sealed class MockIpcServer : IAsyncDisposable
             ["ProvisioningUrl"] = url,
             ["RecoveryCodes"] = codes,
         };
-        _eventPush.Writer.TryWrite(challenge);
+        PushEvent(challenge);
 
         return new JObject
         {
@@ -556,57 +584,53 @@ public sealed class MockIpcServer : IAsyncDisposable
         };
     }
 
-    private JObject HandleIdentityOnOff(JObject data)
+    private JObject HandleIdentityOnOff(JObject data, List<JObject> eventsAfterReply)
     {
-        var identifier = (string?)data["Identifier"] ?? "";
-        var onOff = (bool?)data["OnOff"] ?? false;
+        string identifier = (string?)data["Identifier"] ?? "";
+        bool onOff = (bool?)data["OnOff"] ?? false;
 
-        // Locate and mutate the identity in our cached status so the UI keeps
-        // a consistent picture if anyone queries Status again.
-        var identities = _landingStatus["Identities"] as JArray;
-        JObject? id = identities?
-            .OfType<JObject>()
-            .FirstOrDefault(i => string.Equals((string?)i["Identifier"], identifier, StringComparison.OrdinalIgnoreCase));
+        // Cached so later Status queries match.
+        JObject? id = FindIdentity(identifier);
         if (id != null)
         {
             id["Active"] = onOff;
+            if (!onOff) id["MfaNeeded"] = false;
 
-            // Re-enabling an identity that has MFA configured triggers a fresh
-            // auth challenge: real ziti-edge-tunnel reports MfaNeeded=true on
-            // the post-enable status. Disable always clears MfaNeeded.
+            // Captured from ZET 1.19 after the reply. Off: identity "added" with Active=false, then controller
+            // "disconnected". On: identity "added" then controller "connected", except that an MFA identity
+            // re-authenticates instead, which ZET reports as a status event then an mfa auth_challenge event.
+            List<JObject> events = new List<JObject>();
             if (onOff && (bool?)id["MfaEnabled"] == true)
             {
                 id["MfaNeeded"] = true;
+                events.Add(new JObject { ["Op"] = "status", ["Status"] = _landingStatus.DeepClone() });
+                events.Add(new JObject
+                {
+                    ["Op"] = "mfa",
+                    ["Action"] = "auth_challenge",
+                    ["Identifier"] = id["Identifier"],
+                    ["Fingerprint"] = id["FingerPrint"],
+                    ["Successful"] = false,
+                });
             }
-            else if (!onOff)
+            else
             {
-                id["MfaNeeded"] = false;
+                events.Add(new JObject
+                {
+                    ["Op"] = "identity",
+                    ["Action"] = "added",
+                    ["Fingerprint"] = id["FingerPrint"],
+                    ["Id"] = id.DeepClone(),
+                });
+                events.Add(new JObject
+                {
+                    ["Op"] = "controller",
+                    ["Action"] = onOff ? "connected" : "disconnected",
+                    ["Identifier"] = id["Identifier"],
+                    ["Fingerprint"] = id["FingerPrint"],
+                });
             }
-        }
-
-        // Push the controller event the real ziti-edge-tunnel would emit so the
-        // UI flips the ENABLED/DISABLED label and dot colour.
-        if (id != null)
-        {
-            var evt = new JObject
-            {
-                ["Op"] = "controller",
-                ["Action"] = onOff ? "connected" : "disconnected",
-                ["Identifier"] = id["Identifier"],
-                ["Fingerprint"] = id["FingerPrint"],
-            };
-            _eventPush.Writer.TryWrite(evt);
-
-            // And an identity/updated push so the toggle state is reflected in the
-            // identity model (some UI bindings key on this, not just controller).
-            var updated = new JObject
-            {
-                ["Op"] = "identity",
-                ["Action"] = "updated",
-                ["Fingerprint"] = id["FingerPrint"],
-                ["Id"] = id,
-            };
-            _eventPush.Writer.TryWrite(updated);
+            eventsAfterReply.AddRange(events);
         }
 
         return new JObject
@@ -625,158 +649,45 @@ public sealed class MockIpcServer : IAsyncDisposable
         };
     }
 
-    private async Task DataEventLoopAsync(CancellationToken ct)
-    {
-        while (!ct.IsCancellationRequested)
-        {
-            NamedPipeServerStream srv;
-            try
-            {
-                srv = new NamedPipeServerStream(
-                    DataEventPipeName,
-                    PipeDirection.Out,
-                    NamedPipeServerStream.MaxAllowedServerInstances,
-                    PipeTransmissionMode.Byte,
-                    PipeOptions.Asynchronous);
-            }
-            catch { return; }
-
-            try { await srv.WaitForConnectionAsync(ct); }
-            catch { srv.Dispose(); return; }
-
-            _ = Task.Run(() => HandleDataEventClientAsync(srv, ct), ct);
-        }
-    }
-
     private async Task HandleDataEventClientAsync(NamedPipeServerStream srv, CancellationToken ct)
     {
         using (srv)
-        using (var writer = new StreamWriter(srv, new UTF8Encoding(false)) { AutoFlush = true, NewLine = "\n" })
+        using (StreamWriter writer = new StreamWriter(srv, new UTF8Encoding(false)) { AutoFlush = true, NewLine = "\n" })
         {
-            var statusPush = new JObject { ["Op"] = "status", ["Status"] = _landingStatus };
+            // Like ZET, a new event client gets exactly one status message (ipc_event.c on_events_client).
+            JObject statusPush;
+            lock (_landingStatusLock) statusPush = new JObject { ["Op"] = "status", ["Status"] = _landingStatus.DeepClone() };
             await writer.WriteLineAsync(statusPush.ToString(Formatting.None));
 
-            foreach (var id in _landingStatus["Identities"] as JArray ?? new JArray())
+            Channel<JObject> events = Channel.CreateUnbounded<JObject>();
+            lock (_eventClientsLock)
             {
-                var added = new JObject
-                {
-                    ["Op"] = "identity",
-                    ["Action"] = "added",
-                    ["Fingerprint"] = id["FingerPrint"],
-                    ["Id"] = id,
-                };
-                await writer.WriteLineAsync(added.ToString(Formatting.None));
-
-                if ((bool?)id["NeedsExtAuth"] == true)
-                {
-                    var ext = new JObject
-                    {
-                        ["Op"] = "identity",
-                        ["Action"] = "needs_ext_login",
-                        ["Fingerprint"] = id["FingerPrint"],
-                        ["Id"] = id,
-                    };
-                    await writer.WriteLineAsync(ext.ToString(Formatting.None));
-                }
-
-                if (id["Services"] is JArray svcs && svcs.Count > 0)
-                {
-                    var updated = new JObject
-                    {
-                        ["Op"] = "identity",
-                        ["Action"] = "updated",
-                        ["Fingerprint"] = id["FingerPrint"],
-                        ["Id"] = id,
-                    };
-                    await writer.WriteLineAsync(updated.ToString(Formatting.None));
-                }
-
-                if ((bool?)id["Active"] == true)
-                {
-                    var ctrl = new JObject
-                    {
-                        ["Op"] = "controller",
-                        ["Action"] = "connected",
-                        ["Identifier"] = id["Identifier"],
-                        ["Fingerprint"] = id["FingerPrint"],
-                    };
-                    await writer.WriteLineAsync(ctrl.ToString(Formatting.None));
-                }
+                foreach (JObject pending in _pendingEvents) events.Writer.TryWrite(pending);
+                _pendingEvents.Clear();
+                _eventClients.Add(events);
             }
-
-            // Drain pushed events for the lifetime of this connection.
             try
             {
-                await foreach (var evt in _eventPush.Reader.ReadAllAsync(ct))
+                await foreach (JObject evt in events.Reader.ReadAllAsync(ct))
                 {
-                    if (!srv.IsConnected) return;
                     await writer.WriteLineAsync(evt.ToString(Formatting.None));
                 }
             }
             catch (OperationCanceledException) { }
+            // the UI dropped this pipe: other clients got their own copy of every event
             catch (IOException) { }
-        }
-    }
-
-    private async Task MonitorIpcLoopAsync(CancellationToken ct)
-    {
-        while (!ct.IsCancellationRequested)
-        {
-            NamedPipeServerStream srv;
-            try
+            finally
             {
-                srv = new NamedPipeServerStream(
-                    MonitorIpcPipeName,
-                    PipeDirection.InOut,
-                    NamedPipeServerStream.MaxAllowedServerInstances,
-                    PipeTransmissionMode.Byte,
-                    PipeOptions.Asynchronous);
-            }
-            catch { return; }
-
-            try { await srv.WaitForConnectionAsync(ct); }
-            catch { srv.Dispose(); return; }
-
-            _ = Task.Run(() => HandleMonitorIpcClientAsync(srv, ct), ct);
-        }
-    }
-
-    private async Task HandleMonitorIpcClientAsync(NamedPipeServerStream srv, CancellationToken ct)
-    {
-        using (srv)
-        using (var reader = new StreamReader(srv, new UTF8Encoding(false), false, 16 * 1024, leaveOpen: true))
-        using (var writer = new StreamWriter(srv, new UTF8Encoding(false)) { AutoFlush = true, NewLine = "\n" })
-        {
-            while (srv.IsConnected && !ct.IsCancellationRequested)
-            {
-                string? line;
-                try { line = await reader.ReadLineAsync().WaitAsync(ct); }
-                catch { return; }
-                if (line == null) return;
-                if (string.IsNullOrWhiteSpace(line)) continue;
-
-                JObject reply;
-                try
-                {
-                    var req = JObject.Parse(line);
-                    lock (_recvLock) _receivedMonitor.Add(req);
-                    reply = BuildMonitorReply(req);
-                }
-                catch (Exception ex)
-                {
-                    reply = new JObject { ["Code"] = 1, ["Message"] = ex.Message };
-                }
-                await writer.WriteLineAsync(reply.ToString(Formatting.None));
+                lock (_eventClientsLock) _eventClients.Remove(events);
             }
         }
     }
 
     private JObject BuildMonitorReply(JObject req)
     {
-        // The real ZitiUpdateService monitor IPC uses {Op, Action} requests and
-        // replies with a SvcResponse-shaped {Code, Message, ...}. For most ops
-        // a simple Code:0 success is enough to keep the UI moving.
-        var op = (string?)req["Op"] ?? "";
+        // The monitor IPC takes {Op, Action} and answers a SvcResponse {Code, Message}. A Code 0 reply keeps the UI
+        // moving for every op the tests drive.
+        string op = (string?)req["Op"] ?? "";
         return new JObject
         {
             ["Code"] = 0,
@@ -785,41 +696,11 @@ public sealed class MockIpcServer : IAsyncDisposable
         };
     }
 
-    private async Task QuietPipeLoopAsync(string pipeName, CancellationToken ct)
-    {
-        while (!ct.IsCancellationRequested)
-        {
-            NamedPipeServerStream srv;
-            try
-            {
-                srv = new NamedPipeServerStream(
-                    pipeName,
-                    PipeDirection.InOut,
-                    NamedPipeServerStream.MaxAllowedServerInstances,
-                    PipeTransmissionMode.Byte,
-                    PipeOptions.Asynchronous);
-            }
-            catch { return; }
-
-            try { await srv.WaitForConnectionAsync(ct); }
-            catch { srv.Dispose(); return; }
-
-            _ = Task.Run(async () =>
-            {
-                using (srv)
-                {
-                    try { await Task.Delay(Timeout.Infinite, ct); }
-                    catch { }
-                }
-            }, ct);
-        }
-    }
-
     public async ValueTask DisposeAsync()
     {
         _cts.Cancel();
-        try { await Task.WhenAll(_serverLoops).WaitAsync(TimeSpan.FromSeconds(2)); }
-        catch { }
+        // Loops return on cancel, so anything thrown here is a real pipe fault from earlier in the test.
+        await Task.WhenAll(_serverLoops).WaitAsync(TimeSpan.FromSeconds(2));
         _cts.Dispose();
     }
 }

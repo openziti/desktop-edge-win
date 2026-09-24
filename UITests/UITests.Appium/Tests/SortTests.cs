@@ -7,59 +7,37 @@ using static ZitiDesktopEdge.UITests.Tests.TestHelpers;
 namespace ZitiDesktopEdge.UITests.Tests;
 
 /// <summary>
-/// Single comprehensive sort-headers walkthrough against the 15-identity
-/// SortableMixed fixture. Clicks Status x2, Name x2, Services x2 and asserts
-/// the active-arrow + ordering behaviour at each step.
-///
-/// Performance notes:
-///   - Sort header clicks don't animate (no fade / slide); they just re-render
-///     the list. 150ms settle is plenty.
-///   - SaveStep is ~700ms a pop. Capture only the 4 most visually distinct
-///     states, not every click.
-///   - PageSource for a 15-row tree is the dominant cost. Fetch once per assert
-///     block, never twice for the same UI state.
+/// Clicks the Status, Services and Name headers twice each on the SortableMixed fixture, checking the active arrow
+/// and, at the end, the name order. SaveStep costs about 700ms and PageSource dominates, so it captures four states
+/// and fetches the tree once per check.
 /// </summary>
 [TestLifecycleLog]
 [Trait("Category", "Sort")]
 public class SortTests
 {
-    // Sort header clicks don't animate -- the list just re-renders synchronously
-    // on the WPF dispatcher thread. WinAppDriver's element.Click() round-trip
-    // (~200-500ms) is already plenty for the UIA tree to repopulate; no extra
-    // settle wait needed.
-    private const int SortSettleMs = 0;
-
     private static List<string> NamesFromSource(string src)
     {
-        var names = new List<string>();
-        var idFirst = new Regex("AutomationId=\"IdName\"[^>]*?\\bName=\"([^\"]+)\"");
-        var nameFirst = new Regex("\\bName=\"([^\"]+)\"[^>]*?AutomationId=\"IdName\"");
-        foreach (Match m in idFirst.Matches(src)) names.Add(m.Groups[1].Value);
-        if (names.Count == 0)
-        {
-            foreach (Match m in nameFirst.Matches(src)) names.Add(m.Groups[1].Value);
-        }
+        List<string> names = new List<string>();
+        // WinAppDriver's page source writes AutomationId before Name.
+        Regex idThenName = new Regex("AutomationId=\"IdName\"[^>]*?\\bName=\"([^\"]+)\"");
+        foreach (Match m in idThenName.Matches(src)) names.Add(m.Groups[1].Value);
         return names;
     }
 
     /// <summary>
-    /// Returns the active sort column + its arrow text. Only one of the three
-    /// SortByXArrow TextBlocks is Visible at a time; the others are Collapsed
-    /// and not in the UIA tree.
+    /// The active sort column and its arrow. Only one SortByXArrow is visible at a time, and collapsed ones are not in
+    /// the tree, so one union XPath finds it in a single round trip.
     /// </summary>
-    // Single WinAppDriver round-trip via union XPath + FindElements (no throw).
-    // The previous 3-probe-with-try/catch version cost 600-2000ms per call
-    // because NoSuchElementException unwinds through the HTTP boundary.
     private static (string column, string arrow) ActiveSortArrow(AppiumSession s)
     {
-        var arrows = s.Driver.FindElements(By.XPath(
+        System.Collections.ObjectModel.ReadOnlyCollection<AppiumElement> arrows = s.Driver.FindElements(By.XPath(
             "//*[@AutomationId='SortByStatusArrow'] | " +
             "//*[@AutomationId='SortByNameArrow'] | " +
             "//*[@AutomationId='SortByServicesArrow']"));
         if (arrows.Count == 0) return ("", "");
-        var el = arrows[0];
-        var id = el.GetAttribute("AutomationId") ?? "";
-        var col = id switch
+        AppiumElement el = arrows[0];
+        string id = el.GetAttribute("AutomationId") ?? "";
+        string col = id switch
         {
             "SortByStatusArrow" => "Status",
             "SortByNameArrow" => "Name",
@@ -72,62 +50,95 @@ public class SortTests
     private static int IndexOf(List<string> order, string needle) =>
         order.FindIndex(n => n.Equals(needle, StringComparison.OrdinalIgnoreCase));
 
-    [Fact(Timeout = 20000)]
-    public async Task Sort_FullWalkthrough_StatusNameServicesEachClickedTwice()
+    /// <summary>Every name in first is listed, and all of them come before every name in rest.</summary>
+    private static void AssertGroupedFirst(List<string> order, string[] first, string[] rest)
+    {
+        int lastOfFirst = -1;
+        foreach (string needle in first)
+        {
+            int index = IndexOf(order, needle);
+            Assert.True(index >= 0, $"Expected '{needle}' in [{string.Join(", ", order)}]");
+            lastOfFirst = Math.Max(lastOfFirst, index);
+        }
+        foreach (string needle in rest)
+        {
+            int index = IndexOf(order, needle);
+            Assert.True(index > lastOfFirst,
+                $"Expected [{string.Join(", ", first)}] before '{needle}' in [{string.Join(", ", order)}]");
+        }
+    }
+
+    // Enabled state in SortableMixed.
+    private static readonly string[] Disabled = { "Bravo-Staging", "CharlieEdge" };
+    private static readonly string[] Enabled = { "zebra-prod", "ALPHA-DEV", "oscar-prod" };
+
+    [Fact(Timeout = 40000)]
+    public async Task SortHeadersReorderIdentities()
     {
         Trace.Begin();
-        var name = nameof(Sort_FullWalkthrough_StatusNameServicesEachClickedTwice);
+        string name = nameof(SortHeadersReorderIdentities);
 
-        await using var s = await Trace.TimeAsync("AppiumSession.LaunchAsync",
+        await using AppiumSession s = await Trace.TimeAsync("AppiumSession.LaunchAsync",
             () => AppiumSession.LaunchAsync(DefaultExePath(), FixtureBuilder.SortableMixed()));
         WaitForId(s, "ConnectLabel");
         await Trace.Settle(200);
         SaveStep(s, name, "01-landing-persisted-sort");
+        // The sort persists in the user's user.config between runs, so the Status result depends on where it starts.
+        (string startColumn, string startArrow) = ActiveSortArrow(s);
 
-        // Cache the three sort header elements ONCE. ById walks the UIA tree
-        // (~700ms each); resolving 8 separate clicks across 3 elements would
-        // cost ~5.6s of duplicate lookups.
-        var statusHdr   = Trace.Time("ById(SortByStatus) [cached]",   () => ById(s, "SortByStatus"));
-        var nameHdr     = Trace.Time("ById(SortByName) [cached]",     () => ById(s, "SortByName"));
-        var servicesHdr = Trace.Time("ById(SortByServices) [cached]", () => ById(s, "SortByServices"));
+        // Resolved once: each ById walks the tree for about 700ms.
+        IWebElement statusHdr = Trace.Time("ById(SortByStatus) [cached]",   () => ById(s, "SortByStatus"));
+        IWebElement nameHdr = Trace.Time("ById(SortByName) [cached]",     () => ById(s, "SortByName"));
+        IWebElement servicesHdr = Trace.Time("ById(SortByServices) [cached]", () => ById(s, "SortByServices"));
 
-        // --- STATUS x2: only probe arrow after the SECOND click ---------------
+        // Status twice, arrow checked only after the second click.
         Trace.Time("click Status #1", () => statusHdr.Click());
         Trace.Time("click Status #2", () => statusHdr.Click());
-        var (col2, arr2) = ActiveSortArrow(s);
+        (string col2, string arr2) = ActiveSortArrow(s);
         Trace.Mark($"  arrow after Status x2 -> {col2}/{arr2}");
         Assert.Equal("Status", col2);
-        Assert.True(arr2 == "▲" || arr2 == "▼");
+        // A new column sorts descending and a second click flips it (MainViewModel.SetSort). Already on Status, the
+        // two clicks flip twice and land back on the starting direction.
+        Assert.Equal(startColumn == "Status" ? startArrow : "▲", arr2);
         SaveStep(s, name, "02-after-status-x2");
+        // Status sorts by enabled state, and ascending (▲) puts disabled identities first.
+        List<string> statusOrder = NamesFromSource(s.Driver.PageSource);
+        if (arr2 == "▲") AssertGroupedFirst(statusOrder, Disabled, Enabled);
+        else AssertGroupedFirst(statusOrder, Enabled, Disabled);
 
-        // --- SERVICES x2: switches column then flips direction --------------
+        // Services twice: the first click switches column, the second flips direction.
         Trace.Time("click Services #1", () => servicesHdr.Click());
         Trace.Time("click Services #2", () => servicesHdr.Click());
-        var (col4, arr4) = ActiveSortArrow(s);
+        (string col4, string arr4) = ActiveSortArrow(s);
         Trace.Mark($"  arrow after Services x2 -> {col4}/{arr4}");
         Assert.Equal("Services", col4);
         Assert.Equal("▲", arr4);
         SaveStep(s, name, "03-after-services-x2");
+        // Services sorts by auth state before service count, and no fixture identity has services. Ascending puts
+        // CharlieEdge, the only one needing external auth, ahead of the rest.
+        AssertGroupedFirst(NamesFromSource(s.Driver.PageSource),
+            new[] { "CharlieEdge" }, new[] { "zebra-prod", "Bravo-Staging", "ALPHA-DEV", "oscar-prod" });
 
-        // --- NAME x2: switches column (-> Descending), then flips to Ascending
+        // Name twice: the first click switches column to descending, the second flips to ascending.
         Trace.Time("click Name #1", () => nameHdr.Click());
         Trace.Time("click Name #2", () => nameHdr.Click());
-        var (col6, arr6) = ActiveSortArrow(s);
+        (string col6, string arr6) = ActiveSortArrow(s);
         Trace.Mark($"  arrow after Name x2 -> {col6}/{arr6}");
         Assert.Equal("Name", col6);
         Assert.Equal("▲", arr6);
         SaveStep(s, name, "04-after-name-x2-ascending");
 
-        // We're now in Name Ascending; verify case-insensitive ordering on the
-        // SAME PageSource (avoid a second fetch later).
-        var order = Trace.Time("PageSource + NamesFromSource",
+        // Name ascending must ignore case.
+        List<string> order = Trace.Time("PageSource + NamesFromSource",
             () => NamesFromSource(s.Driver.PageSource));
         Assert.True(order.Count >= 5, $"Expected >=5 rows, got {order.Count}");
-        var alpha = IndexOf(order, "ALPHA-DEV");
-        var bravo = IndexOf(order, "Bravo-Staging");
-        var charlie = IndexOf(order, "CharlieEdge");
-        var oscar = IndexOf(order, "oscar-prod");
-        var zebra = IndexOf(order, "zebra-prod");
+        int alpha = IndexOf(order, "ALPHA-DEV");
+        int bravo = IndexOf(order, "Bravo-Staging");
+        int charlie = IndexOf(order, "CharlieEdge");
+        int oscar = IndexOf(order, "oscar-prod");
+        int zebra = IndexOf(order, "zebra-prod");
+        Assert.True(alpha >= 0 && bravo >= 0 && charlie >= 0 && oscar >= 0 && zebra >= 0,
+            $"Expected every fixture name in the list, got [{string.Join(", ", order)}]");
         Assert.True(alpha < bravo && bravo < charlie && charlie < oscar && oscar < zebra,
             $"Ascending Name case-insensitive: expected ALPHA<Bravo<Charlie<oscar<zebra, got {alpha}/{bravo}/{charlie}/{oscar}/{zebra} in [{string.Join(", ", order)}]");
     }

@@ -14,7 +14,10 @@
 #>
 [CmdletBinding()]
 param(
-    [string] $WadVersion = "1.2.1"
+    [string] $WadVersion = "1.2.1",
+    # Windows Server only (the GitHub runner). Its default display is too short for the window,
+    # which lands partly off-screen.
+    [switch] $SetDisplayResolution
 )
 
 $ErrorActionPreference = "Stop"
@@ -54,6 +57,12 @@ if ((Test-Path $wad1) -or (Test-Path $wad2)) {
         throw "WinAppDriver install did not produce WinAppDriver.exe at either Program Files location"
     }
     Write-Host "==> WinAppDriver installed"
+}
+
+# 4. Display resolution
+if ($SetDisplayResolution) {
+    Write-Host "==> setting display resolution to 1920x1080"
+    Set-DisplayResolution -Width 1920 -Height 1080 -Force
 }
 
 Write-Host ""
