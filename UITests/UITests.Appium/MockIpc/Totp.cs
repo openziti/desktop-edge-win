@@ -2,23 +2,12 @@ using System.Security.Cryptography;
 
 namespace ZitiDesktopEdge.UITests.MockIpc;
 
-/// <summary>RFC 6238 TOTP (HMAC-SHA1, 30s period, 6 digits) with an RFC 4648 base32 codec.</summary>
+/// <summary>RFC 6238 TOTP (HMAC-SHA1, 30s period, 6 digits) from an RFC 4648 base32 secret.</summary>
 public static class Totp
 {
     private const string Base32Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
     private const int PeriodSeconds = 30;
     private const int Digits = 6;
-    private const int SecretBytes = 20;
-    // One period either side tolerates 30s of clock skew.
-    private const int AllowedSkewWindows = 1;
-
-    /// <summary>Base32 text of 20 random bytes.</summary>
-    public static string GenerateSecret()
-    {
-        byte[] buf = new byte[SecretBytes];
-        RandomNumberGenerator.Fill(buf);
-        return Base32Encode(buf);
-    }
 
     /// <summary>Zero-padded 6-digit code for the secret at <paramref name="utc"/>.</summary>
     public static string Compute(string base32Secret, DateTimeOffset utc)
@@ -38,37 +27,7 @@ public static class Totp
         return otp.ToString(new string('0', Digits));
     }
 
-    /// <summary>True when the code matches the current window or one period either side of it.</summary>
-    public static bool Validate(string base32Secret, string submittedCode)
-    {
-        DateTimeOffset now = DateTimeOffset.UtcNow;
-        for (int delta = -AllowedSkewWindows; delta <= AllowedSkewWindows; delta++)
-        {
-            DateTimeOffset t = now.AddSeconds(delta * PeriodSeconds);
-            if (Compute(base32Secret, t) == submittedCode) return true;
-        }
-        return false;
-    }
-
-    public static string Base32Encode(byte[] data)
-    {
-        System.Text.StringBuilder sb = new System.Text.StringBuilder();
-        int buffer = 0, bits = 0;
-        foreach (byte b in data)
-        {
-            buffer = (buffer << 8) | b;
-            bits += 8;
-            while (bits >= 5)
-            {
-                bits -= 5;
-                sb.Append(Base32Alphabet[(buffer >> bits) & 0x1F]);
-            }
-        }
-        if (bits > 0) sb.Append(Base32Alphabet[(buffer << (5 - bits)) & 0x1F]);
-        return sb.ToString();
-    }
-
-    public static byte[] Base32Decode(string s)
+    private static byte[] Base32Decode(string s)
     {
         string text = s.TrimEnd('=').ToUpperInvariant();
         List<byte> bytes = new List<byte>((text.Length * 5 + 7) / 8);

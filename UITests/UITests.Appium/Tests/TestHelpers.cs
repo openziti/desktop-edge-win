@@ -37,7 +37,7 @@ public static class TestHelpers
     public static string DefaultExePath() =>
         Path.Combine(RepoRoot(), "DesktopEdge", "bin", "Debug", "ZitiDesktopEdge.exe");
 
-    /// <summary>A committed status fixture from MockIpc/Fixtures, e.g. "mfa-enabled.json".</summary>
+    /// <summary>A committed status fixture from MockIpc/Fixtures, e.g. "needs-ext-auth.json".</summary>
     public static JObject Fixture(string fileName) =>
         JObject.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "MockIpc", "Fixtures", fileName)));
 

@@ -20,14 +20,20 @@ public class RemoveMfaTests
         _fixture = fixture;
     }
 
+    /// <summary>Turn MFA off from the identity's details, which opens the prompt for the removal code.</summary>
+    private static void OpenRemovalPrompt(AppiumSession s, string identityName)
+    {
+        OpenIdentityDetails(s, identityName);
+        ClickAt(s, WaitFor(s, By.XPath("//*[@AutomationId='IdentityMFA']//*[@AutomationId='ToggleField']")));
+        WaitForId(s, "AuthCode");
+    }
+
     /// <summary>Enroll, then remove MFA from the identity's details with the code the enrollment picks.</summary>
     private async Task RemoveAccepts(string name, string identityName, Func<MfaEnrollment, string> pickCode)
     {
         await using AppiumSession s = await LaunchAsync(_fixture, name);
         MfaEnrollment enrollment = AddIdentityAndEnrollMfa(_fixture, s, identityName);
-        OpenIdentityDetails(s, identityName);
-        ClickAt(s, WaitFor(s, By.XPath("//*[@AutomationId='IdentityMFA']//*[@AutomationId='ToggleField']")));
-        WaitForId(s, "AuthCode");
+        OpenRemovalPrompt(s, identityName);
         await Trace.Settle(350);
         SaveStep(s, name, "01-remove-code-prompt");
         await VerifyScreen(Capture(s), "remove-code-prompt", name);
@@ -65,5 +71,33 @@ public class RemoveMfaTests
         Trace.Begin();
         await RemoveAccepts(nameof(RemoveAcceptsRecoveryCode), "test_mfa_remove_recovery_code",
             e => e.RecoveryCodes[0]);
+    }
+
+    [Fact(Timeout = 180000)]
+    public async Task RemoveRejectsInvalidTotp()
+    {
+        Trace.Begin();
+        string name = nameof(RemoveRejectsInvalidTotp);
+        const string identityName = "test_mfa_remove_invalid_totp";
+
+        await using AppiumSession s = await LaunchAsync(_fixture, name);
+        AddIdentityAndEnrollMfa(_fixture, s, identityName);
+        OpenRemovalPrompt(s, identityName);
+        WaitForId(s, "AuthCode").SendKeys("000000");
+        SaveStep(s, name, "01-code-typed");
+        WaitForId(s, "AuthButton").Click();
+        WaitForController(s, By.XPath("//*[@AutomationId='Blurb' and @Name='Authentication Failed']"),
+            "the prompt says authentication failed");
+        await Trace.Settle(350);
+        // ShowBlurbAsync hides the blurb 2.5s after showing it, so this capture comes before the slower asserts.
+        byte[] rejected = Capture(s);
+        SaveStep(rejected, name, "02-after-rejection");
+        await VerifyScreen(rejected, "after-rejection", name);
+
+        JObject reply = ZetReplyTo(s.Relay!, "\"Command\":\"RemoveMFA\"");
+        Assert.Equal(500, (int?)reply["Code"]);
+        Assert.Contains("the token provided was invalid", (string?)reply["Error"]);
+        // MFAScreen keeps the prompt open and clears the code on a failed RemoveMFA reply.
+        Assert.Equal("", WaitForId(s, "AuthCode").Text);
     }
 }

@@ -21,7 +21,9 @@ public sealed class Quickstart : IAsyncDisposable
     private sealed record CliResult(int ExitCode, string Stdout, string Stderr);
 
     public string Home { get; }
-    private string CliConfigDir => Path.Combine(Home, "cli-config");
+    // Apart from quickstart's own config dir: quickstart rewrites its ziti-cli.json while it runs, and a CLI login
+    // writing the same file mid-read makes quickstart exit on "unexpected end of JSON input".
+    private string CliConfigDir => Path.Combine(Home, "harness-cli-config");
     private readonly LoggedProcess _process;
 
     private Quickstart(string home, LoggedProcess process)
@@ -42,7 +44,7 @@ public sealed class Quickstart : IAsyncDisposable
             },
             new Dictionary<string, string>
             {
-                ["ZITI_CONFIG_DIR"] = Path.Combine(home, "cli-config"),
+                ["ZITI_CONFIG_DIR"] = Path.Combine(home, "quickstart-cli-config"),
                 ["PFXLOG_NO_JSON"] = "true",
             },
             Path.Combine(home, "quickstart.log"));

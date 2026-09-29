@@ -17,7 +17,7 @@ param(
     [switch]   $SkipBuild,
     [switch]   $AutoVerify,       # sets ZDEW_AUTO_VERIFY=1, which accepts new baselines
     [string]   $Filter,           # passthrough: --filter "<expr>" e.g. "FullyQualifiedName~Sort"
-    [string[]] $Category,         # e.g. -Category Mfa,Sort, ORed into the filter
+    [string[]] $Category,         # e.g. -Category MainScreen,Sort, ORed into the filter
     [string[]] $ResetBaselines,   # globs like 'Visual_*' deleted first, so -AutoVerify rewrites them
     [switch]   $Trace,            # sets ZDEW_TEST_TRACE=1 for per-step timing lines
     [switch]   $OpenGallery

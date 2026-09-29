@@ -28,10 +28,6 @@ public sealed class MockIpcServer : IAsyncDisposable
     private readonly List<JObject> _pendingEvents = new();
     private readonly object _eventClientsLock = new();
 
-    // Base32 secret per identity from EnableMFA. VerifyMFA checks codes against it with real RFC 6238 TOTP.
-    private readonly Dictionary<string, string> _mfaSecrets = new(StringComparer.OrdinalIgnoreCase);
-    private readonly object _mfaSecretsLock = new();
-
     public IReadOnlyList<JObject> ReceivedRequests
     {
         get { lock (_recvLock) return _received.ToArray(); }
@@ -98,16 +94,6 @@ public sealed class MockIpcServer : IAsyncDisposable
             .OfType<JObject>()
             .FirstOrDefault(i => string.Equals((string?)i["Identifier"], identifier, StringComparison.OrdinalIgnoreCase));
 
-    /// <summary>The gate for a submitted MFA code. Callers decide what an empty code means.</summary>
-    private bool IsCodeValid(string identifier, string code)
-    {
-        if (code == RejectedMfaCode) return false;
-        if (code == AcceptedMfaCode) return true;
-        string? secret;
-        lock (_mfaSecretsLock) _mfaSecrets.TryGetValue(identifier, out secret);
-        return secret != null && Totp.Validate(secret, code);
-    }
-
     public void Start()
     {
         _serverLoops.Add(Task.Run(() => IpcPipes.AcceptLoopAsync(DataIpcPipeName, PipeDirection.InOut,
@@ -127,13 +113,7 @@ public sealed class MockIpcServer : IAsyncDisposable
             HoldOpenAsync, _cts.Token)));
     }
 
-    /// <summary>
-    /// EventsAfterStatusSave go out StatusFileSaveMs after EventsAfterReply: ZET writes its status file between the two
-    /// on a successful MFA change (ziti-edge-tunnel.c, TunnelEvent_MFAStatusEvent), about 35ms in a 1.19 capture.
-    /// </summary>
-    private record Answer(string Reply, List<JObject> EventsAfterReply, List<JObject> EventsAfterStatusSave);
-
-    private const int StatusFileSaveMs = 50;
+    private record Answer(string Reply, List<JObject> EventsAfterReply);
 
     /// <summary>Read one JSON request per line and write answer's reply, then push its follow-up events.</summary>
     private async Task ServeRequestsAsync(NamedPipeServerStream srv, Func<string, Answer> answer, CancellationToken ct)
@@ -154,11 +134,6 @@ public sealed class MockIpcServer : IAsyncDisposable
                 Answer reply = answer(line);
                 await writer.WriteLineAsync(reply.Reply);
                 foreach (JObject evt in reply.EventsAfterReply) PushEvent(evt);
-                if (reply.EventsAfterStatusSave.Count > 0)
-                {
-                    await Task.Delay(StatusFileSaveMs, ct);
-                    foreach (JObject evt in reply.EventsAfterStatusSave) PushEvent(evt);
-                }
             }
         }
     }
@@ -166,21 +141,19 @@ public sealed class MockIpcServer : IAsyncDisposable
     private Answer AnswerDataRequest(string line)
     {
         List<JObject> eventsAfterReply = new List<JObject>();
-        List<JObject> eventsAfterStatusSave = new List<JObject>();
         try
         {
             JObject req = JObject.Parse(line);
             lock (_recvLock) _received.Add(req);
             // serialized inside the lock: the Status reply holds _landingStatus itself
             lock (_landingStatusLock)
-                return new Answer(BuildReply(req, eventsAfterReply, eventsAfterStatusSave).ToString(Formatting.None),
-                    eventsAfterReply, eventsAfterStatusSave);
+                return new Answer(BuildReply(req, eventsAfterReply).ToString(Formatting.None), eventsAfterReply);
         }
         catch (Exception ex)
         {
             return new Answer(
                 new JObject { ["Success"] = false, ["Code"] = 1, ["Error"] = ex.Message }.ToString(Formatting.None),
-                new List<JObject>(), new List<JObject>());
+                new List<JObject>());
         }
     }
 
@@ -190,12 +163,12 @@ public sealed class MockIpcServer : IAsyncDisposable
         {
             JObject req = JObject.Parse(line);
             lock (_recvLock) _receivedMonitor.Add(req);
-            return new Answer(BuildMonitorReply(req).ToString(Formatting.None), new List<JObject>(), new List<JObject>());
+            return new Answer(BuildMonitorReply(req).ToString(Formatting.None), new List<JObject>());
         }
         catch (Exception ex)
         {
             return new Answer(new JObject { ["Code"] = 1, ["Message"] = ex.Message }.ToString(Formatting.None),
-                new List<JObject>(), new List<JObject>());
+                new List<JObject>());
         }
     }
 
@@ -212,7 +185,7 @@ public sealed class MockIpcServer : IAsyncDisposable
     /// Reply to one command. Handlers add to eventsAfterReply what ZET sends once the reply is out, and the caller
     /// pushes those after writing the reply.
     /// </summary>
-    private JObject BuildReply(JObject req, List<JObject> eventsAfterReply, List<JObject> eventsAfterStatusSave)
+    private JObject BuildReply(JObject req, List<JObject> eventsAfterReply)
     {
         string command = (string?)req["Command"] ?? "";
         JObject data = req["Data"] as JObject ?? new JObject();
@@ -228,11 +201,6 @@ public sealed class MockIpcServer : IAsyncDisposable
             "IdentityOnOff" => HandleIdentityOnOff(data, eventsAfterReply),
             "ExternalAuth" => HandleExternalAuth(data),
             "UpdateInterfaceConfig" => HandleUpdateInterfaceConfig(data),
-            "EnableMFA" => HandleEnableMFA(data, eventsAfterReply),
-            "VerifyMFA" => HandleMfaResult(data, "enrollment_verification", eventsAfterReply, eventsAfterStatusSave),
-            "RemoveMFA" => HandleMfaResult(data, "enrollment_remove", eventsAfterReply, eventsAfterStatusSave),
-            "SubmitMFA" => HandleMfaResult(data, "mfa_auth_status", eventsAfterReply, eventsAfterStatusSave),
-            "GenerateMFACodes" => HandleGenerateMFACodes(data),
             "RemoveIdentity" => HandleRemoveIdentity(data),
             "SetLogLevel" => new JObject { ["Success"] = true, ["Code"] = 0 },
             // Fail loudly so a command the mock does not model shows up in the test instead of passing silently.
@@ -249,117 +217,6 @@ public sealed class MockIpcServer : IAsyncDisposable
         // so later Status queries no longer list it
         id.Remove();
         return new JObject { ["Success"] = true, ["Code"] = 0 };
-    }
-
-    /// <summary>
-    /// AcceptedMfaCode always passes, for flows with no known secret, and RejectedMfaCode always fails. Any other
-    /// code is checked as real TOTP against the secret from EnableMFA.
-    /// </summary>
-    public const string AcceptedMfaCode = "123456";
-    public const string RejectedMfaCode = "666666";
-
-    private JObject HandleMfaResult(JObject data, string action, List<JObject> eventsAfterReply,
-        List<JObject> eventsAfterStatusSave)
-    {
-        string identifier = (string?)data["Identifier"] ?? "";
-        string code = (string?)data["Code"] ?? "";
-        JObject? ident = FindIdentity(identifier);
-        string fingerprint = ident?["FingerPrint"]?.ToString() ?? "MOCKFP";
-
-        // An empty code is the enrollment path, which carries no token yet.
-        bool successful = string.IsNullOrEmpty(code) || IsCodeValid(identifier, code);
-
-        JObject evt = new JObject
-        {
-            ["Op"] = "mfa",
-            ["Action"] = action,
-            ["Identifier"] = identifier,
-            ["Fingerprint"] = fingerprint,
-            ["Successful"] = successful,
-        };
-        if (!successful)
-        {
-            // the controller's message, as ZET 1.19 relays it
-            evt["Error"] = "the token provided was invalid";
-        }
-
-        // Like ZET's TunnelEvent_MFAStatusEvent: a verified or submitted code marks MFA enabled and satisfied, and an
-        // identity "updated" event goes out before the mfa event.
-        JObject? updated = null;
-        if (successful && (action == "enrollment_verification" || action == "mfa_auth_status"))
-        {
-            if (ident != null)
-            {
-                ident["MfaEnabled"] = true;
-                ident["MfaNeeded"] = false;
-                updated = new JObject
-                {
-                    ["Op"] = "identity",
-                    ["Action"] = "updated",
-                    ["Fingerprint"] = ident["FingerPrint"],
-                    ["Id"] = ident.DeepClone(),
-                };
-            }
-        }
-        if (successful && action == "enrollment_remove")
-        {
-            if (ident != null)
-            {
-                ident["MfaEnabled"] = false;
-                ident["MfaNeeded"] = false;
-            }
-        }
-
-        if (updated != null) eventsAfterReply.Add(updated);
-        // A successful change saves the status file before the mfa event, a failure sends it straight away.
-        if (successful && ident != null)
-        {
-            eventsAfterStatusSave.Add(evt);
-        }
-        else
-        {
-            eventsAfterReply.Add(evt);
-        }
-
-        // ZET 1.19 fails a bad code with Code 500 and the controller's message.
-        return successful
-            ? new JObject { ["Success"] = true, ["Code"] = 0 }
-            : new JObject { ["Success"] = false, ["Code"] = 500, ["Error"] = (string?)evt["Error"] };
-    }
-
-    private JObject HandleGenerateMFACodes(JObject data)
-    {
-        string identifier = (string?)data["Identifier"] ?? "";
-        string code = (string?)data["Code"] ?? "";
-
-        // Unlike HandleMfaResult, an empty code fails: regenerating always needs one.
-        bool valid = !string.IsNullOrEmpty(code) && IsCodeValid(identifier, code);
-
-        if (!valid)
-        {
-            return new JObject
-            {
-                ["Success"] = false,
-                ["Code"] = 1,
-                ["Error"] = "Invalid MFA code for regenerate.",
-            };
-        }
-
-        // REGEN-prefixed so a test can tell regenerated codes from the initial set.
-        JArray newCodes = new JArray();
-        Random rnd = new Random();
-        for (int i = 0; i < 20; i++) newCodes.Add($"REGEN{i:D2}{rnd.Next(100, 999)}");
-
-        return new JObject
-        {
-            ["Success"] = true,
-            ["Code"] = 0,
-            ["Data"] = new JObject
-            {
-                ["Identifier"] = identifier,
-                ["RecoveryCodes"] = newCodes,
-            },
-        };
     }
 
     private JObject HandleExternalAuth(JObject data)
@@ -399,48 +256,6 @@ public sealed class MockIpcServer : IAsyncDisposable
         return new JObject { ["Success"] = true, ["Code"] = 0 };
     }
 
-    private JObject HandleEnableMFA(JObject data, List<JObject> eventsAfterReply)
-    {
-        string identifier = (string?)data["Identifier"] ?? "";
-        string fingerprint = FindIdentity(identifier)?["FingerPrint"]?.ToString() ?? "MOCKFP";
-
-        string secret = Totp.GenerateSecret();
-        lock (_mfaSecretsLock) _mfaSecrets[identifier] = secret;
-
-        string url = $"otpauth://totp/openziti.io:{Uri.EscapeDataString(identifier)}?issuer=openziti.io&secret={secret}";
-        JArray codes = new JArray(
-            "AAAAAA", "BBBBBB", "CCCCCC", "DDDDDD", "EEEEEE",
-            "FFFFFF", "GGGGGG", "HHHHHH", "IIIIII", "JJJJJJ",
-            "KKKKKK", "LLLLLL", "MMMMMM", "NNNNNN", "OOOOOO",
-            "PPPPPP", "QQQQQQ", "RRRRRR", "SSSSSS", "TTTTTT");
-
-        // The UI opens the QR dialog on this event, not on the reply. ZET 1.19 sends it after the reply.
-        JObject challenge = new JObject
-        {
-            ["Op"] = "mfa",
-            ["Action"] = "enrollment_challenge",
-            ["Identifier"] = identifier,
-            ["Fingerprint"] = fingerprint,
-            ["Successful"] = true,
-            ["ProvisioningUrl"] = url,
-            ["RecoveryCodes"] = codes,
-        };
-        eventsAfterReply.Add(challenge);
-
-        return new JObject
-        {
-            ["Success"] = true,
-            ["Code"] = 0,
-            ["Data"] = new JObject
-            {
-                ["Identifier"] = identifier,
-                ["IsVerified"] = false,
-                ["ProvisioningUrl"] = url,
-                ["RecoveryCodes"] = codes,
-            },
-        };
-    }
-
     private JObject HandleIdentityOnOff(JObject data, List<JObject> eventsAfterReply)
     {
         string identifier = (string?)data["Identifier"] ?? "";
@@ -451,43 +266,23 @@ public sealed class MockIpcServer : IAsyncDisposable
         if (id != null)
         {
             id["Active"] = onOff;
-            if (!onOff) id["MfaNeeded"] = false;
 
             // Captured from ZET 1.19 after the reply. Off: identity "added" with Active=false, then controller
-            // "disconnected". On: identity "added" then controller "connected", except that an MFA identity
-            // re-authenticates instead, which ZET reports as a status event then an mfa auth_challenge event.
-            List<JObject> events = new List<JObject>();
-            if (onOff && (bool?)id["MfaEnabled"] == true)
+            // "disconnected". On: identity "added" then controller "connected".
+            eventsAfterReply.Add(new JObject
             {
-                id["MfaNeeded"] = true;
-                events.Add(new JObject { ["Op"] = "status", ["Status"] = _landingStatus.DeepClone() });
-                events.Add(new JObject
-                {
-                    ["Op"] = "mfa",
-                    ["Action"] = "auth_challenge",
-                    ["Identifier"] = id["Identifier"],
-                    ["Fingerprint"] = id["FingerPrint"],
-                    ["Successful"] = false,
-                });
-            }
-            else
+                ["Op"] = "identity",
+                ["Action"] = "added",
+                ["Fingerprint"] = id["FingerPrint"],
+                ["Id"] = id.DeepClone(),
+            });
+            eventsAfterReply.Add(new JObject
             {
-                events.Add(new JObject
-                {
-                    ["Op"] = "identity",
-                    ["Action"] = "added",
-                    ["Fingerprint"] = id["FingerPrint"],
-                    ["Id"] = id.DeepClone(),
-                });
-                events.Add(new JObject
-                {
-                    ["Op"] = "controller",
-                    ["Action"] = onOff ? "connected" : "disconnected",
-                    ["Identifier"] = id["Identifier"],
-                    ["Fingerprint"] = id["FingerPrint"],
-                });
-            }
-            eventsAfterReply.AddRange(events);
+                ["Op"] = "controller",
+                ["Action"] = onOff ? "connected" : "disconnected",
+                ["Identifier"] = id["Identifier"],
+                ["Fingerprint"] = id["FingerPrint"],
+            });
         }
 
         return new JObject

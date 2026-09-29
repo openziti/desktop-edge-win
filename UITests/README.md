@@ -110,34 +110,33 @@ Every test is tagged with a `Category` trait. `-Category` accepts one or many:
 | `MainScreen`              | Landing screen rendering, identity list, toggles, sort headers     |
 | `IdentityDetail`          | Opening identity-detail screen, ext-auth Authorize click           |
 | `IdentityDetailServices`  | Service list, detail icon, filter, Forget button                   |
-| `Mfa`                     | Enable, disable, MFA-needed, MFA-enabled-at-start, QR dialog       |
 | `Sort`                    | Sort header clicks, alphabetical / case-insensitive / status group |
 | `TunnelSettings`          | Tunnel Config screen open, Edit Values, Save                       |
-| `LogLevel`                | Set Logging Level walkthrough                                      |
+| `Integration`             | UI twins of the ziti-tunnel-sdk-c integration tests, against ZET   |
 | `Screenshots`             | Every test that compares a screenshot against a baseline           |
 | `Placement`               | Docked window stays inside the work area as its size changes       |
 
 ```powershell
 # just one category
-UITests\run-ui-tests.ps1 -SkipBuild -Category Mfa
+UITests\run-ui-tests.ps1 -SkipBuild -Category Sort
 
 # multiple categories at once (comma-separated)
-UITests\run-ui-tests.ps1 -SkipBuild -Category Mfa,Sort,TunnelSettings
+UITests\run-ui-tests.ps1 -SkipBuild -Category MainScreen,Sort,TunnelSettings
 ```
 
-Under the hood this passes `--filter "Category=Mfa|Category=Sort|..."` to
+Under the hood this passes `--filter "Category=MainScreen|Category=Sort|..."` to
 `dotnet test`. The same OR syntax works directly:
 
 ```powershell
 dotnet test UITests\UITests.Appium\UITests.Appium.csproj `
-    --filter "Category=Mfa|Category=Sort"
+    --filter "Category=MainScreen|Category=Sort"
 ```
 
 #### By individual test name
 
 ```powershell
 dotnet test UITests\UITests.Appium\UITests.Appium.csproj `
-    --filter "FullyQualifiedName~ValidCodeRemovesMfa"
+    --filter "FullyQualifiedName~SortTests"
 ```
 
 ## What gets produced
@@ -221,11 +220,6 @@ UITests/
      `NeedsExtAuth=false`, the same shape `ziti-edge-tunnel` sends post-OIDC-login. Use this
      instead of clicking `AuthenticateWithProvider`, which calls `Process.Start(url)` and would
      launch a real browser.
-   - MFA code gating: `SubmitMFA` / `VerifyMFA` / `RemoveMFA` check the submitted `Code` field.
-     `123456` (`MockIpcServer.AcceptedMfaCode`) always succeeds and `666666`
-     (`MockIpcServer.RejectedMfaCode`) always fails, like ZET 1.19 does for a bad code: `Success=false`,
-     `Code=500`, "the token provided was invalid". Any other code is checked as a real TOTP against the
-     secret from `EnableMFA`. Enrollment flows that don't carry a code still succeed.
 
 6. For new mock IPC handlers (a Command the UI sends that the mock doesn't yet recognize):
    - Add a case in `BuildReply` (data IPC) or extend `BuildMonitorReply` (monitor IPC).
