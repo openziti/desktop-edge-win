@@ -20,13 +20,9 @@ public class RemoveMfaTests
         _fixture = fixture;
     }
 
-    [Fact(Timeout = 180000)]
-    public async Task RemoveAcceptsValidTotp()
+    /// <summary>Enroll, then remove MFA from the identity's details with the code the enrollment picks.</summary>
+    private async Task RemoveAccepts(string name, string identityName, Func<MfaEnrollment, string> pickCode)
     {
-        Trace.Begin();
-        string name = nameof(RemoveAcceptsValidTotp);
-        const string identityName = "test_mfa_remove_valid_totp";
-
         await using AppiumSession s = await LaunchAsync(_fixture, name);
         MfaEnrollment enrollment = AddIdentityAndEnrollMfa(_fixture, s, identityName);
         OpenIdentityDetails(s, identityName);
@@ -38,7 +34,7 @@ public class RemoveMfaTests
         // RemoveMFA only goes out once a code is submitted.
         Assert.False(UiSent(s.Relay!, "RemoveMFA"));
 
-        WaitForId(s, "AuthCode").SendKeys(Totp.Compute(enrollment.Secret, DateTimeOffset.UtcNow));
+        WaitForId(s, "AuthCode").SendKeys(pickCode(enrollment));
         SaveStep(s, name, "02-code-typed");
         WaitForId(s, "AuthButton").Click();
         // IsMFAEnabled clears on ZET's enrollment_remove event, not on the RemoveMFA reply.
@@ -53,5 +49,21 @@ public class RemoveMfaTests
         await VerifyScreen(Capture(s), "removed-details", name);
         JObject reply = ZetReplyTo(s.Relay!, "\"Command\":\"RemoveMFA\"");
         Assert.Equal(0, (int?)reply["Code"]);
+    }
+
+    [Fact(Timeout = 180000)]
+    public async Task RemoveAcceptsValidTotp()
+    {
+        Trace.Begin();
+        await RemoveAccepts(nameof(RemoveAcceptsValidTotp), "test_mfa_remove_valid_totp",
+            e => Totp.Compute(e.Secret, DateTimeOffset.UtcNow));
+    }
+
+    [Fact(Timeout = 180000)]
+    public async Task RemoveAcceptsRecoveryCode()
+    {
+        Trace.Begin();
+        await RemoveAccepts(nameof(RemoveAcceptsRecoveryCode), "test_mfa_remove_recovery_code",
+            e => e.RecoveryCodes[0]);
     }
 }
