@@ -25,14 +25,14 @@
         ShowInTaskbar="False"
         x:Name="MainUI"
         Title="Ziti Desktop Edge" 
-        Width="{StaticResource MaxWindowWidth}"
-        MaxWidth="{StaticResource MaxWindowWidth}"
-        ResizeMode="NoResize" 
+        SizeToContent="WidthAndHeight"
+        SizeChanged="MainWindow_SizeChanged"
+        ResizeMode="NoResize"
         ClipToBounds="False"
-        Icon="Assets/Images/icon.png" AllowsTransparency="True" 
+        Icon="Assets/Images/icon.png"
         Closing="Window_Closing"
         PreviewMouseDown="MainUI_PreviewMouseDown"
-        WindowStyle="None" Loaded="MainWindow_Loaded" Background="#000F0F23"
+        Loaded="MainWindow_Loaded" Background="#000F0F23"
     >
     <Window.Resources>
         <Style TargetType="Image">
@@ -158,24 +158,27 @@
             </BeginStoryboard>
         </EventTrigger>
     </Window.Triggers>
-    <Grid x:Name="MainGrid" Margin="0,0,0,0">
+    <!-- Each child caps its own width: an Auto column measures wrapped text at infinite width and would widen the window. -->
+    <Grid x:Name="MainGrid" Margin="0,0,0,0" MinWidth="{StaticResource MainWindowWidth}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Border Margin="10,10,10,10" Name="UIBorder" BorderBrush="Black" BorderThickness="8" CornerRadius="10">
+        <!-- UIBorder, BgColor and MainView stay left-aligned at MainViewWidth so widening the window to MaxWindowWidth
+             only adds transparent space on the right, and shrinking back moves nothing visible. -->
+        <Border Margin="10,10,10,10" Width="{StaticResource MainViewWidth}" HorizontalAlignment="Left" Name="UIBorder" BorderBrush="Black" BorderThickness="8" CornerRadius="10">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="15" Direction="1" RenderingBias="Quality" ShadowDepth="1" Opacity="1"/>
             </Border.Effect>
         </Border>
-        <Rectangle Margin="10,10,10,10" Name="BgColor" Stroke="Black" RadiusY="10" RadiusX="10" ClipToBounds="True">
+        <Rectangle Margin="10,10,10,10" Width="{StaticResource MainViewWidth}" HorizontalAlignment="Left" Name="BgColor" Stroke="Black" RadiusY="10" RadiusX="10" ClipToBounds="True">
             <Rectangle.Fill>
                 <ImageBrush ImageSource="/Assets/Images/background.png" />
             </Rectangle.Fill>
         </Rectangle>
-        <StackPanel x:Name="MainView" Margin="10,10,10,-10" MinHeight="580" VerticalAlignment="Top">
+        <StackPanel x:Name="MainView" Margin="10,10,10,-10" MinHeight="580" Width="{StaticResource MainViewWidth}" HorizontalAlignment="Left" VerticalAlignment="Top">
             <Grid HorizontalAlignment="Stretch">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="100"/>
@@ -415,12 +418,11 @@
         <local:GetStarted x:Name="GetStartedScreen"
                           Margin="0,0,0,0"
                           AddJwtRequested="GetStartedScreen_AddJwt"
-                          AddUrlRequested="GetStartedScreen_AddUrl"
-                          ClosedByUser="GetStartedScreen_ClosedByUser"/>
+                          AddUrlRequested="GetStartedScreen_AddUrl"/>
         <!-- Modal Background -->
         <Rectangle x:Name="ModalBg" MouseDown="Window_MouseDown" Margin="10,10,10,10" Fill="Black" RadiusY="10" RadiusX="10" Opacity="0" Visibility="Collapsed"></Rectangle>
         <!-- MFA Setup Prompt -->
-        <local:MFAScreen x:Name="MFASetup" Visibility="Collapsed" Margin="0,0,0,0" OnClose="DoClose"></local:MFAScreen>
+        <local:MFAScreen x:Name="MFASetup" Visibility="Collapsed" Margin="0,0,0,0" MaxWidth="{StaticResource MainWindowWidth}" OnClose="DoClose"></local:MFAScreen>
         <local:AddIdentityUrl x:Name="AddIdentityByURL"
                               Visibility="Collapsed"
                               Margin="0,0,0,0"
@@ -431,18 +433,20 @@
         <local:AddIdentitySignerChoice x:Name="AddIdentitySignerPicker"
                               Visibility="Collapsed"
                               Margin="0,0,0,0"
+                              MaxWidth="{StaticResource MainWindowWidth}"
                               OnClose="CloseJoinByUrl"
                               Height="Auto"
                               OnAddIdentity="OnAddIdentityAction" />
         <local:AddIdentityCA x:Name="AddIdentityBy3rdPartyCA"
-                              Visibility="Collapsed" 
-                              Margin="0,0,0,0" 
+                              Visibility="Collapsed"
+                              Margin="0,0,0,0"
+                              MaxWidth="{StaticResource MainWindowWidth}"
                               OnClose="CloseJoinByUrl" 
                               Height="Auto" 
                               OnAddIdentity="OnAddIdentityAction" />
 
         <!-- Small messages screen that opens at the bottom -->
-        <Grid x:Name="BlurbArea" Visibility="Collapsed" Height="80" Margin="0,500,0,0" VerticalAlignment="Bottom">
+        <Grid x:Name="BlurbArea" Visibility="Collapsed" Height="80" Margin="0,500,0,0" MaxWidth="{StaticResource MainWindowWidth}" VerticalAlignment="Bottom">
             <Border Margin="10,10,10,10" BorderBrush="Black" BorderThickness="8" CornerRadius="10">
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="20" Direction="1" RenderingBias="Quality" ShadowDepth="1" Opacity="1"/>
@@ -467,11 +471,11 @@
                 <Image x:Name="RedBlurb" Source="/Assets/Images/WarningRed.png" Grid.Column="0" Width="30" Grid.Row="1" Height="30" Margin="0,0,0,0"></Image>
                 <Image x:Name="InfoBlurb" Visibility="Collapsed" Source="/Assets/Images/Warning.png" Grid.Column="0" Width="30" Grid.Row="1" Height="30" Margin="0,0,0,0"></Image>
                 <Label x:Name="Blurb" Content="An Update is available!" MouseUp="BlurbAction" Grid.Column="1" Padding="0,0,0,0" Grid.Row="1" Margin="0,0,0,0"  Foreground="#000000" FontSize="12" Cursor="Hand" HorizontalAlignment="Center" VerticalAlignment="Center"></Label>
-                <Image Source="/Assets/Images/closeBlack.png" Grid.Column="2" Width="10" Height="10" Grid.Row="1" Margin="0,0,0,0" Cursor="Hand" MouseUp="DoHideBlurb"></Image>
+                <Image AutomationProperties.AutomationId="BlurbClose" Source="/Assets/Images/closeBlack.png" Grid.Column="2" Width="10" Height="10" Grid.Row="1" Margin="0,0,0,0" Cursor="Hand" MouseUp="DoHideBlurb"></Image>
             </Grid>
         </Grid>
 
-        <Grid x:Name="NoServiceView" Visibility="Collapsed" Margin="10,10,10,10">
+        <Grid x:Name="NoServiceView" Visibility="Collapsed" Margin="10,10,10,10" MaxWidth="{StaticResource MainViewWidth}">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="Black" Opacity="0.9"/>
@@ -512,7 +516,7 @@
             </Grid>
         </Grid>
 
-        <Grid x:Name="LoadingScreen" MouseDown="Window_MouseDown" Visibility="Collapsed" Margin="10,10,10,10">
+        <Grid x:Name="LoadingScreen" MouseDown="Window_MouseDown" Visibility="Collapsed" Margin="10,10,10,10" MaxWidth="{StaticResource MainViewWidth}">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="Black" Opacity="0.9"/>
@@ -537,7 +541,7 @@
             </Grid>
         </Grid>
 
-        <Grid x:Name="ErrorView" MouseDown="Window_MouseDown" Visibility="Collapsed" Margin="10,10,10,10">
+        <Grid x:Name="ErrorView" MouseDown="Window_MouseDown" Visibility="Collapsed" Margin="10,10,10,10" MaxWidth="{StaticResource MainViewWidth}">
             <Rectangle RadiusX="10" RadiusY="10">
                 <Rectangle.Fill>
                     <SolidColorBrush Color="Black" Opacity="0.9"/>

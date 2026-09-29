@@ -1,0 +1,87 @@
+{
+  "Active": true,
+  "Duration": 0,
+  "StartTime": "2026-05-12T00:00:00.000000Z",
+  "Identities": [
+    {
+      "Name": "enabled-id",
+      "Identifier": "c:\\fake\\ids\\enabled-id.json",
+      "FingerPrint": "FPENABLED",
+      "Active": true,
+      "Loaded": true,
+      "Config": { "ztAPI": "https://controller.example", "ztAPIs": ["https://controller.example"] },
+      "ControllerVersion": "v1.6.15",
+      "IdFileStatus": false,
+      "NeedsExtAuth": false,
+      "MfaEnabled": false,
+      "MfaNeeded": false,
+      "Services": [
+        {
+          "Id": "svc-wiki", "Name": "wiki.example",
+          "Protocols": ["tcp"],
+          "Addresses": [{ "IsHost": true, "HostName": "wiki.example", "Prefix": 0 }],
+          "Ports": [{ "High": 443, "Low": 443 }],
+          "OwnsIntercept": true, "IsAccessible": true, "Timeout": -1, "TimeoutRemaining": -1,
+          "Permissions": { "Bind": false, "Dial": true }
+        },
+        {
+          "Id": "svc-monitor", "Name": "prometheus.example",
+          "Protocols": ["tcp"],
+          "Addresses": [{ "IsHost": true, "HostName": "prometheus.example", "Prefix": 0 }],
+          "Ports": [{ "High": 9090, "Low": 9090 }],
+          "OwnsIntercept": true, "IsAccessible": true, "Timeout": -1, "TimeoutRemaining": -1,
+          "Permissions": { "Bind": false, "Dial": true }
+        },
+        {
+          "Id": "svc-ssh", "Name": "bastion.example",
+          "Protocols": ["tcp"],
+          "Addresses": [{ "IsHost": true, "HostName": "bastion.example", "Prefix": 0 }],
+          "Ports": [{ "High": 22, "Low": 22 }],
+          "OwnsIntercept": true, "IsAccessible": true, "Timeout": -1, "TimeoutRemaining": -1,
+          "Permissions": { "Bind": false, "Dial": true }
+        }
+      ],
+      "Metrics": { "Up": 0, "Down": 0 },
+      "MfaMinTimeout": 0,
+      "MfaMaxTimeout": 0,
+      "MfaMinTimeoutRem": 0,
+      "MfaMaxTimeoutRem": 0,
+      "MinTimeoutRemInSvcEvent": 0,
+      "MaxTimeoutRemInSvcEvent": 0,
+      "Deleted": false,
+      "Notified": false
+    },
+    {
+      "Name": "disabled-at-start-id",
+      "Identifier": "c:\\fake\\ids\\disabled-at-start-id.json",
+      "FingerPrint": "FPDISABLEDATSTART",
+      "Active": false,
+      "Loaded": true,
+      "IdFileStatus": false,
+      "NeedsExtAuth": false,
+      "MfaEnabled": false,
+      "MfaNeeded": false,
+      "Metrics": { "Up": 0, "Down": 0 },
+      "MfaMinTimeout": 0,
+      "MfaMaxTimeout": 0,
+      "MfaMinTimeoutRem": 0,
+      "MfaMaxTimeoutRem": 0,
+      "MinTimeoutRemInSvcEvent": 0,
+      "MaxTimeoutRemInSvcEvent": 0,
+      "Deleted": false,
+      "Notified": false
+    }
+  ],
+  "IpInfo": { "Ip": "100.150.0.0", "Subnet": "255.255.0.0", "MTU": 65535, "DNS": "100.150.0.1" },
+  "LogLevel": "info",
+  "ServiceVersion": { "Version": "v0.0.0-mock", "BuildDate": "Mock" },
+  "TunIpv4": "100.150.0.0",
+  "TunIpv4Mask": 16,
+  "AddDns": false,
+  "ApiPageSize": 25,
+  "TunName": "ziti-tun-mock",
+  "L2Enabled": false,
+  "PcapInterface": "",
+  "TapInfo": {},
+  "ConfigDir": "c:\\fake\\ids"
+}

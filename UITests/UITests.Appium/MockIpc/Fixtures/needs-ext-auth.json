@@ -1,0 +1,42 @@
+{
+  "Active": true,
+  "Duration": 0,
+  "StartTime": "2026-05-12T00:00:00.000000Z",
+  "Identities": [
+    {
+      "Name": "needs-ext-auth-id",
+      "Identifier": "c:\\fake\\ids\\needs-ext-auth-id.json",
+      "FingerPrint": "FPNEEDSEXTAUTH",
+      "Active": true,
+      "Loaded": true,
+      "Config": { "ztAPI": "https://controller.example", "ztAPIs": ["https://controller.example"] },
+      "ControllerVersion": "v2.0.0-mock",
+      "IdFileStatus": false,
+      "NeedsExtAuth": true,
+      "ExtAuthProviders": ["keycloak", "auth0"],
+      "MfaEnabled": false,
+      "MfaNeeded": false,
+      "Metrics": { "Up": 0, "Down": 0 },
+      "MfaMinTimeout": 0,
+      "MfaMaxTimeout": 0,
+      "MfaMinTimeoutRem": 0,
+      "MfaMaxTimeoutRem": 0,
+      "MinTimeoutRemInSvcEvent": 0,
+      "MaxTimeoutRemInSvcEvent": 0,
+      "Deleted": false,
+      "Notified": false
+    }
+  ],
+  "IpInfo": { "Ip": "100.150.0.0", "Subnet": "255.255.0.0", "MTU": 65535, "DNS": "100.150.0.1" },
+  "LogLevel": "info",
+  "ServiceVersion": { "Version": "v0.0.0-mock", "BuildDate": "Mock" },
+  "TunIpv4": "100.150.0.0",
+  "TunIpv4Mask": 16,
+  "AddDns": false,
+  "ApiPageSize": 25,
+  "TunName": "ziti-tun-mock",
+  "L2Enabled": false,
+  "PcapInterface": "",
+  "TapInfo": {},
+  "ConfigDir": "c:\\fake\\ids"
+}
