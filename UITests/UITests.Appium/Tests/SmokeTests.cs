@@ -23,7 +23,7 @@ public class SmokeTests
 
         byte[] png = Capture(session);
         Assert.NotEmpty(png);
-        await VerifyPng(png);
+        await VerifyPng(TimerMasked(session, png));
     }
 
     [Fact(Timeout = 20000)]
@@ -55,7 +55,7 @@ public class SmokeTests
 
         byte[] png = Capture(session);
         Assert.NotEmpty(png);
-        await VerifyPng(png);
+        await VerifyPng(TimerMasked(session, png));
     }
 
     [Fact(Timeout = 20000)]
@@ -86,7 +86,7 @@ public class SmokeTests
 
         byte[] png = Capture(session);
         Assert.NotEmpty(png);
-        await VerifyPng(png);
+        await VerifyPng(TimerMasked(session, png));
     }
 
     [Fact(Timeout = 20000)]
@@ -104,7 +104,7 @@ public class SmokeTests
 
         byte[] png = Capture(session);
         Assert.NotEmpty(png);
-        await VerifyPng(png);
+        await VerifyPng(TimerMasked(session, png));
     }
 
     // Five menu steps, two screen baselines, form input and a Save click, hence the limit.

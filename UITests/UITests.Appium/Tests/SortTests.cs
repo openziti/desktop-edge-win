@@ -24,29 +24,6 @@ public class SortTests
         return names;
     }
 
-    /// <summary>
-    /// The active sort column and its arrow. Only one SortByXArrow is visible at a time, and collapsed ones are not in
-    /// the tree, so one union XPath finds it in a single round trip.
-    /// </summary>
-    private static (string column, string arrow) ActiveSortArrow(AppiumSession s)
-    {
-        System.Collections.ObjectModel.ReadOnlyCollection<AppiumElement> arrows = s.Driver.FindElements(By.XPath(
-            "//*[@AutomationId='SortByStatusArrow'] | " +
-            "//*[@AutomationId='SortByNameArrow'] | " +
-            "//*[@AutomationId='SortByServicesArrow']"));
-        if (arrows.Count == 0) return ("", "");
-        AppiumElement el = arrows[0];
-        string id = el.GetAttribute("AutomationId") ?? "";
-        string col = id switch
-        {
-            "SortByStatusArrow" => "Status",
-            "SortByNameArrow" => "Name",
-            "SortByServicesArrow" => "Services",
-            _ => "",
-        };
-        return (col, el.Text ?? "");
-    }
-
     private static int IndexOf(List<string> order, string needle) =>
         order.FindIndex(n => n.Equals(needle, StringComparison.OrdinalIgnoreCase));
 

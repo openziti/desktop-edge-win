@@ -39,7 +39,7 @@ public class AddIdentityTests
         WaitForController(s, AddFailureBlurb, "the add failure blurb shows");
         await Trace.Settle(500);
         SaveStep(s, name, "02-add-failure-blurb");
-        await VerifyScreen(Capture(s), "add-failure-blurb");
+        await VerifyScreen(TimerMasked(s, Capture(s)), "add-failure-blurb");
         // The blurb shows no detail from ZET, so only the reply proves why the add failed.
         JObject reply = ZetReplyTo(s.Relay!, "\"Command\":\"AddIdentity\"");
         Assert.Equal(500, (int?)reply["Code"]);
@@ -97,7 +97,7 @@ public class AddIdentityTests
         WaitForController(s, AddFailureBlurb, "the add failure blurb shows");
         await Trace.Settle(500);
         SaveStep(s, name, "01-add-failure-blurb");
-        await VerifyScreen(Capture(s), "add-failure-blurb");
+        await VerifyScreen(TimerMasked(s, Capture(s)), "add-failure-blurb");
         JObject reply = ZetReplyTo(s.Relay!, "\"Command\":\"AddIdentity\"");
         Assert.Equal(500, (int?)reply["Code"]);
         Assert.Contains("JWT not accepted by controller", (string?)reply["Error"]);

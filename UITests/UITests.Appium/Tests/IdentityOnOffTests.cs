@@ -30,19 +30,19 @@ public class IdentityOnOffTests
         WaitFor(s, ToggleStatus(identityName, "ENABLED"));
         await Trace.Settle(350);
         SaveStep(s, name, "01-added-enabled");
-        await VerifyScreen(Capture(s), "added-enabled");
+        await VerifyScreen(TimerMasked(s, Capture(s)), "added-enabled");
 
         ClickAt(s, WaitFor(s, InIdentityRow(identityName, "ToggleSwitch")));
         WaitForController(s, ToggleStatus(identityName, "DISABLED"), $"{identityName} shows DISABLED");
         await Trace.Settle(350);
         SaveStep(s, name, "02-toggled-off");
-        await VerifyScreen(Capture(s), "toggled-off");
+        await VerifyScreen(TimerMasked(s, Capture(s)), "toggled-off");
 
         ClickAt(s, WaitFor(s, InIdentityRow(identityName, "ToggleSwitch")));
         WaitForController(s, ToggleStatus(identityName, "ENABLED"), $"{identityName} shows ENABLED");
         await Trace.Settle(350);
         SaveStep(s, name, "03-toggled-on");
-        await VerifyScreen(Capture(s), "toggled-on");
+        await VerifyScreen(TimerMasked(s, Capture(s)), "toggled-on");
         Assert.True(UiSent(s.Relay!, "IdentityOnOff"));
     }
 }

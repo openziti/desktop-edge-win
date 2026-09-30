@@ -290,6 +290,53 @@ public static class TestHelpers
             new List<OpenQA.Selenium.Interactions.ActionSequence> { seq });
     }
 
+    /// <summary>
+    /// The active sort column and its arrow. Only one SortByXArrow is visible at a time, and collapsed ones are not in
+    /// the tree, so one union XPath finds it in a single round trip.
+    /// </summary>
+    public static (string column, string arrow) ActiveSortArrow(AppiumSession s)
+    {
+        ReadOnlyCollection<AppiumElement> arrows = s.Driver.FindElements(By.XPath(
+            "//*[@AutomationId='SortByStatusArrow'] | " +
+            "//*[@AutomationId='SortByNameArrow'] | " +
+            "//*[@AutomationId='SortByServicesArrow']"));
+        if (arrows.Count == 0) return ("", "");
+        AppiumElement el = arrows[0];
+        string id = el.GetAttribute("AutomationId") ?? "";
+        string col = id switch
+        {
+            "SortByStatusArrow" => "Status",
+            "SortByNameArrow" => "Name",
+            "SortByServicesArrow" => "Services",
+            _ => "",
+        };
+        return (col, el.Text ?? "");
+    }
+
+    /// <summary>
+    /// Sort the landing list by Name ascending, since the sort persists in the user's user.config and would otherwise
+    /// leak between tests into baselines. The headers only show while an identity is listed. Each click is single
+    /// and checked, because a retried header click flips the direction.
+    /// </summary>
+    public static void SortByNameAscending(AppiumSession s) =>
+        Trace.Time("SortByNameAscending", () =>
+        {
+            IWebElement nameHeader = WaitForId(s, "SortByName");
+            if (ActiveSortArrow(s).column != "Name")
+            {
+                ClickAt(s, nameHeader);
+                // SetSort puts a newly chosen column in descending order.
+                WaitUntil(s, "the list sorts by Name descending", AppResponseTimeout,
+                    () => ActiveSortArrow(s) == ("Name", "▼"));
+            }
+            if (ActiveSortArrow(s).arrow != "▲")
+            {
+                ClickAt(s, nameHeader);
+                WaitUntil(s, "the list sorts by Name ascending", AppResponseTimeout,
+                    () => ActiveSortArrow(s) == ("Name", "▲"));
+            }
+        });
+
     private static By IdentityRowXPath(string identityName) =>
         By.XPath($"//Custom[@ClassName='IdentityItem' and .//Text[@Name='{identityName}']]");
 
@@ -366,20 +413,45 @@ public static class TestHelpers
     /// </summary>
     public static byte[] Masked(AppiumSession s, byte[] png, params By[] masks)
     {
+        List<Rectangle> areas = new List<Rectangle>();
+        foreach (By mask in masks)
+        {
+            ReadOnlyCollection<AppiumElement> found = s.Driver.FindElements(mask);
+            if (found.Count == 0)
+                throw new NoSuchElementException($"mask {mask} matched no element, so its value would reach the baseline");
+            areas.AddRange(found.Select(el => new Rectangle(el.Location, el.Size)));
+        }
+        return PaintedOver(png, areas);
+    }
+
+    // ConnectedTime's top padding in MainWindow.xaml: its bounds start at the connect button's top, over the check mark,
+    // and stretch to the 140px grid, over STOP. The digits are one 12pt line below the padding.
+    private const int ConnectedTimeTextTop = 90;
+    private const int ConnectedTimeTextHeight = 16;
+
+    /// <summary>
+    /// The capture with only the connected timer's digits painted over, for screens where the landing timer shows,
+    /// even dimmed under an overlay. Not for screens that cover it opaquely: the paint would land on top of them.
+    /// </summary>
+    public static byte[] TimerMasked(AppiumSession s, byte[] png)
+    {
+        AppiumElement timer = s.Driver.FindElements(By.XPath("//*[@AutomationId='ConnectedTime']")).FirstOrDefault()
+            ?? throw new NoSuchElementException("ConnectedTime matched no element, so the running timer would reach the baseline");
+        Rectangle digits = new Rectangle(timer.Location.X, timer.Location.Y + ConnectedTimeTextTop,
+            timer.Size.Width, ConnectedTimeTextHeight);
+        return PaintedOver(png, new[] { digits });
+    }
+
+    // Appium reports locations relative to the session's top-level window, the same origin as the capture.
+    private static byte[] PaintedOver(byte[] png, IEnumerable<Rectangle> areas)
+    {
         using MemoryStream input = new MemoryStream(png);
         using Bitmap bitmap = new Bitmap(input);
         using (Graphics graphics = Graphics.FromImage(bitmap))
         {
-            foreach (By mask in masks)
+            foreach (Rectangle area in areas)
             {
-                ReadOnlyCollection<AppiumElement> found = s.Driver.FindElements(mask);
-                if (found.Count == 0)
-                    throw new NoSuchElementException($"mask {mask} matched no element, so its value would reach the baseline");
-                // Appium reports locations relative to the session's top-level window, the same origin as the capture.
-                foreach (AppiumElement el in found)
-                {
-                    graphics.FillRectangle(Brushes.Gray, new Rectangle(el.Location, el.Size));
-                }
+                graphics.FillRectangle(Brushes.Gray, area);
             }
         }
         using MemoryStream output = new MemoryStream();
@@ -387,10 +459,35 @@ public static class TestHelpers
         return output.ToArray();
     }
 
+    // A pixel within this colour distance of the baseline is unchanged. WPF's run-to-run anti-aliasing stays below it.
+    private static readonly Percentage PixelColorTolerance = new Percentage(2);
+
+    // A stable screen measures 0 changed pixels and a one-line text change several hundred.
+    private const double MaxChangedPixels = 50;
+
+    /// <summary>
+    /// Fails on more than MaxChangedPixels pixels off by more than PixelColorTolerance. An average metric like Fuzz
+    /// passes a changed line of text, because a local change barely moves an average over the whole capture.
+    /// </summary>
+    private static Task<CompareResult> CompareChangedPixels(Stream received, Stream verified,
+        IReadOnlyDictionary<string, object> context)
+    {
+        using MagickImage receivedImage = new MagickImage(received);
+        using MagickImage verifiedImage = new MagickImage(verified);
+        if (receivedImage.Width != verifiedImage.Width || receivedImage.Height != verifiedImage.Height)
+            return Task.FromResult(CompareResult.NotEqual(
+                $"the capture is {receivedImage.Width}x{receivedImage.Height}, the baseline {verifiedImage.Width}x{verifiedImage.Height}"));
+        receivedImage.ColorFuzz = PixelColorTolerance;
+        double changed = receivedImage.Compare(verifiedImage, ErrorMetric.Absolute);
+        if (changed > MaxChangedPixels)
+            return Task.FromResult(CompareResult.NotEqual(
+                $"{changed} pixels differ from the baseline by more than {PixelColorTolerance}, the limit is {MaxChangedPixels}"));
+        return Task.FromResult(CompareResult.Equal);
+    }
+
     private static SettingsTask ComparedToBaseline(SettingsTask task)
     {
-        // Byte-exact comparison fails between runs on the same machine (the connected timer shows through overlays).
-        task = task.ImageMagickComparer(0.05, ErrorMetric.Fuzz);
+        task = task.UseStreamComparer(CompareChangedPixels);
         if (Environment.GetEnvironmentVariable("ZDEW_AUTO_VERIFY") == "1")
         {
             task = task.AutoVerify();

@@ -33,9 +33,10 @@ public class MfaEnrollmentTests
         // Partially authenticated until TOTP is enrolled, so ZET sends no added event with the controller name and the
         // row keeps the file name. The prompt shows on ZET's enrollment_required event.
         WaitForController(s, InIdentityRow(AddedIdentityFileName, "MfaSetupNeeded"), "the row asks to set up MFA");
+        SortByNameAscending(s);
         await Trace.Settle(350);
         SaveStep(s, name, "01-setup-needed-row");
-        await VerifyScreen(Capture(s), "setup-needed-row");
+        await VerifyScreen(TimerMasked(s, Capture(s)), "setup-needed-row");
 
         // The QR dialog opens on ZET's enrollment_challenge event, not on the EnableMFA reply.
         ClickAt(s, WaitFor(s, InIdentityRow(AddedIdentityFileName, "MfaSetupNeeded")));
@@ -64,7 +65,7 @@ public class MfaEnrollmentTests
         WaitForGone(s, InIdentityRow(identityName, "MfaSetupNeeded"));
         await Trace.Settle(350);
         SaveStep(s, name, "05-enrolled-row");
-        await VerifyScreen(Capture(s), "enrolled-row");
+        await VerifyScreen(TimerMasked(s, Capture(s)), "enrolled-row");
         Assert.Empty(s.Driver.FindElements(InIdentityRow(identityName, "MfaRequired")));
     }
 

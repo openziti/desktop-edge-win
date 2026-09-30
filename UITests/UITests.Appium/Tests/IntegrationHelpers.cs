@@ -68,6 +68,7 @@ public static class IntegrationHelpers
         WriteTestJwt(fixture.Quickstart.GetJwtFromController(identityName));
         ClickAddIdentityWithJwt(s);
         WaitForController(s, By.XPath($"//Text[@Name='{identityName}']"), $"{identityName} shows on the landing list");
+        SortByNameAscending(s);
     }
 
     public record MfaEnrollment(string Secret, IReadOnlyList<string> RecoveryCodes);

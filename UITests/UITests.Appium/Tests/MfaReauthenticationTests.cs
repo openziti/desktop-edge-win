@@ -28,7 +28,7 @@ public class MfaReauthenticationTests
         TriggerReauthChallenge(s, identityName);
         await Trace.Settle(350);
         SaveStep(s, name, "01-authenticate-row");
-        await VerifyScreen(Capture(s), "authenticate-row", name);
+        await VerifyScreen(TimerMasked(s, Capture(s)), "authenticate-row", name);
 
         await AuthenticateFromRow(s, name, "02-code-typed", identityName, pickCode(enrollment));
         await Trace.Settle(350);
