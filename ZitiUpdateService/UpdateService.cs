@@ -534,7 +534,8 @@ namespace ZitiUpdateService {
                     r.Message = $"An update is available: {check.GetNextVersion()}";
                     r.UpdateAvailable = true;
                     Logger.Debug("Update {0} is published on {1}", check.GetNextVersion(), check.PublishDate);
-                    checkUpdateImmediately();
+                    // Off the IPC thread: a critical update sleeps 30s and installs inside CheckUpdate, and until this reply arrives the UI's next send on the pipe blocks.
+                    Task.Run(() => { checkUpdateImmediately(); });
                     break;
                 case 0:
                     r.Message = $"The current version [{assemblyVersion}] is the latest";
