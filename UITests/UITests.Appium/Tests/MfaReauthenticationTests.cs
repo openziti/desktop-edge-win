@@ -20,60 +20,6 @@ public class MfaReauthenticationTests
         _fixture = fixture;
     }
 
-    /// <summary>ZET's triggerReauthChallenge from the row: off and back on, until the row asks to authenticate.</summary>
-    private static void TriggerReauthChallenge(AppiumSession s, string identityName)
-    {
-        ClickAt(s, WaitFor(s, InIdentityRow(identityName, "ToggleSwitch")));
-        WaitForController(s, ToggleStatus(identityName, "DISABLED"), $"{identityName} shows DISABLED");
-        ClickAt(s, WaitFor(s, InIdentityRow(identityName, "ToggleSwitch")));
-        // Shows on ZET's auth_challenge event.
-        WaitForController(s, InIdentityRow(identityName, "MfaRequired"), "the row asks to authenticate");
-    }
-
-    /// <summary>Submit code from the row's MFA prompt, saving the typed code as step.</summary>
-    private static void SubmitFromRow(AppiumSession s, string name, string step, string identityName, string code)
-    {
-        ClickAt(s, WaitFor(s, InIdentityRow(identityName, "MfaRequired")));
-        WaitForId(s, "AuthCode").SendKeys(code);
-        SaveStep(s, name, step);
-        WaitForId(s, "AuthButton").Click();
-    }
-
-    /// <summary>Submit code from the row's MFA prompt and wait for ZET to clear the lock.</summary>
-    private static async Task AuthenticateFromRow(AppiumSession s, string name, string step, string identityName,
-        string code)
-    {
-        SubmitFromRow(s, name, step, identityName, code);
-        // Lets the SubmitMFA reply and ZET's mfa_auth_status event land before UIA polling loads the UI thread.
-        await Task.Delay(1000);
-
-        // Clears on ZET's mfa_auth_status event.
-        WaitUntil(s, "the row stops asking to authenticate", ControllerTimeout,
-            () => s.Driver.FindElements(InIdentityRow(identityName, "MfaRequired")).Count == 0);
-    }
-
-    /// <summary>
-    /// Submit code from the row's MFA prompt, assert ZET rejects it and the prompt stays open, and return the
-    /// capture taken while the failure blurb shows.
-    /// </summary>
-    private static async Task<byte[]> RejectFromRow(AppiumSession s, string name, string step, string identityName,
-        string code)
-    {
-        SubmitFromRow(s, name, step, identityName, code);
-        // MFAScreen keeps the prompt open on a failed SubmitMFA reply.
-        WaitForController(s, By.XPath("//*[@AutomationId='Blurb' and @Name='Authentication Failed']"),
-            "the prompt says authentication failed");
-        await Trace.Settle(350);
-        // ShowBlurbAsync hides the blurb 2.5s after showing it, so this capture comes before the slower asserts.
-        byte[] png = Capture(s);
-        JObject reply = ZetReplyTo(s.Relay!, "\"Command\":\"SubmitMFA\"");
-        Assert.Equal(500, (int?)reply["Code"]);
-        Assert.Contains("the token provided was invalid", (string?)reply["Error"]);
-        Assert.NotEmpty(s.Driver.FindElements(By.XPath("//*[@AutomationId='AuthCode']")));
-        Assert.NotEmpty(s.Driver.FindElements(InIdentityRow(identityName, "MfaRequired")));
-        return png;
-    }
-
     /// <summary>Enroll, trigger the reauth challenge, then authenticate with the code the enrollment picks.</summary>
     private async Task ReauthAccepts(string name, string identityName, Func<MfaEnrollment, string> pickCode)
     {

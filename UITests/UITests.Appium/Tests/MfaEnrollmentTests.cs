@@ -54,9 +54,7 @@ public class MfaEnrollmentTests
         WaitForController(s, By.XPath("//Text[@Name='MFA Recovery Codes']"), "the recovery codes show");
         await Trace.Settle(300);
         SaveStep(s, name, "04-mfa-recovery-codes");
-        // The codes are TextBoxes MFAScreen adds with no AutomationId.
-        await VerifyScreen(Masked(s, Capture(s), By.XPath("//Text[@Name='MFA Recovery Codes']/following-sibling::Edit")),
-            "mfa-recovery-codes");
+        await VerifyScreen(Masked(s, Capture(s), RecoveryCodeBoxes), "mfa-recovery-codes");
         JObject reply = ZetReplyTo(s.Relay!, "\"Command\":\"VerifyMFA\"");
         Assert.Equal(0, (int?)reply["Code"]);
 
@@ -88,11 +86,14 @@ public class MfaEnrollmentTests
 
         // MFAScreen closes the setup dialog when VerifyMFA fails, and ZET's failed enrollment_verification event
         // raises the blurb.
-        WaitForGone(s, By.XPath("//*[@AutomationId='SetupCode']"));
-        WaitFor(s, By.XPath("//*[@AutomationId='Blurb' and @Name='Provided code could not be verified']"));
-        await Trace.Settle(500);
-        SaveStep(s, name, "02-after-rejection");
-        await VerifyScreen(Capture(s), "after-rejection");
+        WaitForController(s, By.XPath("//*[@AutomationId='Blurb' and @Name='Provided code could not be verified']"),
+            "the blurb says the code could not be verified");
+        await Trace.Settle(350);
+        // ShowBlurbAsync hides the blurb 2.5s after showing it, so this capture comes before the slower checks.
+        byte[] rejected = Capture(s);
+        SaveStep(rejected, name, "02-after-rejection");
+        await VerifyScreen(rejected, "after-rejection");
+        Assert.Empty(s.Driver.FindElements(By.XPath("//*[@AutomationId='SetupCode']")));
         JObject reply = ZetReplyTo(s.Relay!, "\"Command\":\"VerifyMFA\"");
         Assert.Equal(500, (int?)reply["Code"]);
         Assert.Contains("the token provided was invalid", (string?)reply["Error"]);
