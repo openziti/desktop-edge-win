@@ -6,10 +6,15 @@
 # .\build-test-release.ps1 -version 1.2.3 -url https://lnxiskqx49x4.share.zrok.io/local -stream "dev" -published_at (Get-Date)
 # .\build-test-release.ps1 -version 1.2.3 -url https://lnxiskqx49x4.share.zrok.io/local -stream "dev" -published_at "2023-11-02T14:30:00"
 # .\build-test-release.ps1 -version 1.2.3 -url https://lnxiskqx49x4.share.zrok.io/local -stream "dev" -published_at "2023-11-02T14:30:00" -Win32Crypto:$true
-# .\build-test-release.ps1 -version 1.2.3 -increment -url http://sg4.parkplace-via-dhcp:8000/release-streams/local
+# .\build-test-release.ps1 -version 1.2.3 -increment patch -url http://sg4.parkplace-via-dhcp:8000/release-streams/local
+# .\build-test-release.ps1 -increment minor          # 2.11.7.0 -> 2.12.0.0, taking the current version from the version file
 param(
     [string]$version,
-    [switch]$increment = $false,  # bump the last version tuple before use
+    # Which tuple to bump before use. From 2.11.7.0: patch gives 2.11.8.0, minor gives 2.12.0.0, major gives
+    # 3.0.0.0, build gives 2.11.7.1. Everything after the bumped tuple resets to zero. Defaults to patch,
+    # which is how releases normally move; build exists for the occasional respin of the same release.
+    [ValidateSet("major", "minor", "patch", "build")]
+    [string]$increment = "patch",
     [string]$url = "http://localhost:8000/release-streams/local",
     [string]$stream = "local",
     [datetime]$published_at = (Get-Date).ToUniversalTime(),
@@ -65,11 +70,29 @@ if ($promote) {
 }
 
 $version = $version.Trim()
-if ($increment -and $version) {
-    $versionWithoutPrefix = $version -replace '^v', ''
-    $segments = $versionWithoutPrefix -split '\.'
-    $segments[-1] = [int]$segments[-1] + 1
-    $version = ($segments -join '.')
+# Bumps one tuple of a four-part version and resets everything after it, so a minor bump gives 2.12.0.0
+# rather than 2.12.7.0. Versions here are major.minor.patch.build.
+function Step-Version {
+    param(
+        [Parameter(Mandatory = $true)][string]$Version,
+        [Parameter(Mandatory = $true)][string]$Part
+    )
+
+    $index = @{ major = 0; minor = 1; patch = 2; build = 3 }[$Part]
+    $segments = ($Version -replace '^v', '') -split '\.'
+
+    $segments[$index] = [int]$segments[$index] + 1
+    for ($i = $index + 1; $i -lt $segments.Count; $i++) { $segments[$i] = 0 }
+
+    return ($segments -join '.')
+}
+
+# $increment has a default, so an explicit -version is only bumped when -increment was actually passed.
+# Without this a plain "-version 1.2.3" would silently build 1.2.4.0.
+$incrementRequested = $PSBoundParameters.ContainsKey("increment")
+
+if ($incrementRequested -and $version) {
+    $version = Step-Version -Version $version -Part $increment
     Write-Host -NoNewline "Incremented version to: "
     Write-Host -ForegroundColor Green "$version"
 }
@@ -79,11 +102,7 @@ if (-not $version) {
         Write-Host -NoNewline "Version not supplied. Using version from file and incrementing: "
         Write-Host -ForegroundColor Yellow "${version}"
 
-        # Increment the last tuple
-        $versionWithoutPrefix = $version -replace '^v', ''
-        $segments = $versionWithoutPrefix -split '\.'
-        $segments[-1] = [int]$segments[-1] + 1
-        $version = ($segments -join '.')
+        $version = Step-Version -Version $version -Part $increment
 
         Write-Host -NoNewline "New Version: "
         Write-Host -ForegroundColor Green "$version"
