@@ -19,11 +19,24 @@ public sealed class IntegrationFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _quickstart = await Quickstart.StartAsync(Path.Combine(Home, "quickstart"));
+        _quickstart = await Quickstart.StartAsync(RequiredBinary("ZITI_BIN"), Path.Combine(Home, "quickstart"));
         // A byte-for-byte copy of ziti-tunnel-sdk-c tests/integration/testdata/fixture.json, so each twin's identity
         // has the same name and auth policy as in the ZET test it mirrors.
         _quickstart.ImportFixture(Path.Combine(AppContext.BaseDirectory, "testdata", "fixture.json"));
-        _zet = await ZetProcess.StartAsync(ZetProcess.InstalledZetPath, ZetDiscriminator, Path.Combine(Home, "zet"));
+        _zet = await ZetProcess.StartAsync(RequiredBinary("ZET_BIN"), ZetDiscriminator, Path.Combine(Home, "zet"));
+    }
+
+    /// <summary>
+    /// The binary an environment variable names, the variables ziti-tunnel-sdk-c's run-ci.ps1 takes. run-ui-tests.ps1
+    /// requires both.
+    /// </summary>
+    private static string RequiredBinary(string variable)
+    {
+        string? path = Environment.GetEnvironmentVariable(variable);
+        if (string.IsNullOrEmpty(path))
+            throw new InvalidOperationException($"{variable} is not set. Run the integration tests through UITests\\run-ui-tests.ps1.");
+        if (!File.Exists(path)) throw new FileNotFoundException($"{variable}={path} does not exist", path);
+        return path;
     }
 
     public async Task DisposeAsync()

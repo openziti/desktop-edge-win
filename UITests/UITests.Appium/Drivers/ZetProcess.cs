@@ -11,8 +11,6 @@ namespace ZitiDesktopEdge.UITests.Drivers;
 /// </summary>
 public sealed class ZetProcess : IAsyncDisposable
 {
-    public const string InstalledZetPath = @"C:\Program Files (x86)\NetFoundry Inc\Ziti Desktop Edge\ziti-edge-tunnel.exe";
-
     // Outside the installed ZET's default 100.64.0.1/10, so both can tunnel at once.
     private const string DnsRange = "100.150.0.1/16";
     private static readonly TimeSpan PipeTimeout = TimeSpan.FromSeconds(30);

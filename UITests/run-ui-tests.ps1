@@ -10,6 +10,10 @@
     exit.
 
     All logic lives here, so .github/workflows/ui-tests.yml only calls this script after checkout.
+
+    Integration tests take their binaries the way ziti-tunnel-sdk-c's tests/integration/scripts/run-ci.ps1 does:
+      $env:ZET_BIN   Absolute path to a ziti-edge-tunnel.exe. CI downloads the release Installer\build.ps1 ships.
+      $env:ZITI_BIN  Absolute path to a ziti.exe for the quickstart. CI resolves it with openziti's setup-cli action.
 #>
 [CmdletBinding()]
 param(
@@ -27,8 +31,19 @@ if ($Filter -and $Category) { throw "Pass -Filter or -Category, not both." }
 if ($Category) { $Filter = ($Category | ForEach-Object { "Category=$_" }) -join '|' }
 # Integration starts its own controller and ziti-edge-tunnel, which needs elevation, so only -Category Integration runs it.
 if (-not $Filter) { $Filter = "Category!=Integration" }
+# -Filter alone can reach an Integration test too, so only the default filter skips its binaries.
+$runsIntegration = $Filter -ne "Category!=Integration"
 
 $ErrorActionPreference = "Stop"
+if ($runsIntegration) {
+    foreach ($variable in @("ZET_BIN", "ZITI_BIN")) {
+        $path = [Environment]::GetEnvironmentVariable($variable)
+        if (-not $path) { throw "Integration tests need `$env:$variable" }
+        if (-not (Test-Path -LiteralPath $path)) { throw "$variable=$path does not exist" }
+    }
+    Write-Host "==> ziti-edge-tunnel $(& $env:ZET_BIN version) at $($env:ZET_BIN)"
+    Write-Host "==> ziti $(& $env:ZITI_BIN version) at $($env:ZITI_BIN)"
+}
 $repoRoot   = Resolve-Path (Join-Path $PSScriptRoot "..")
 $uiTestsDir = $PSScriptRoot
 $solution   = Join-Path $repoRoot "ZitiDesktopEdge.sln"

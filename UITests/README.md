@@ -122,6 +122,11 @@ UITests\run-ui-tests.ps1 -SkipBuild -Category Sort
 
 # multiple categories at once (comma-separated)
 UITests\run-ui-tests.ps1 -SkipBuild -Category MainScreen,Sort,TunnelSettings
+
+# integration, from an elevated shell, with the binaries named the way ziti-tunnel-sdk-c's run-ci.ps1 takes them
+$env:ZET_BIN = "C:\path\to\ziti-edge-tunnel.exe"
+$env:ZITI_BIN = "C:\path\to\ziti.exe"
+UITests\run-ui-tests.ps1 -SkipBuild -Category Integration
 ```
 
 Under the hood this passes `--filter "Category=MainScreen|Category=Sort|..."` to

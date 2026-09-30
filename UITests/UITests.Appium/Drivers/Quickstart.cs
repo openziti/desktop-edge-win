@@ -4,7 +4,7 @@ using Newtonsoft.Json.Linq;
 namespace ZitiDesktopEdge.UITests.Drivers;
 
 /// <summary>
-/// A `ziti edge quickstart` controller and router in its own home directory, with the `ziti` CLI on PATH logged in
+/// A `ziti edge quickstart` controller and router in its own home directory, with the same `ziti` binary logged in
 /// through a config dir under that home, so the developer's own CLI login is never read or replaced.
 /// </summary>
 public sealed class Quickstart : IAsyncDisposable
@@ -24,18 +24,20 @@ public sealed class Quickstart : IAsyncDisposable
     // Apart from quickstart's own config dir: quickstart rewrites its ziti-cli.json while it runs, and a CLI login
     // writing the same file mid-read makes quickstart exit on "unexpected end of JSON input".
     private string CliConfigDir => Path.Combine(Home, "harness-cli-config");
+    private readonly string _zitiBin;
     private readonly LoggedProcess _process;
 
-    private Quickstart(string home, LoggedProcess process)
+    private Quickstart(string zitiBin, string home, LoggedProcess process)
     {
+        _zitiBin = zitiBin;
         Home = home;
         _process = process;
     }
 
-    public static async Task<Quickstart> StartAsync(string home)
+    public static async Task<Quickstart> StartAsync(string zitiBin, string home)
     {
         Directory.CreateDirectory(home);
-        LoggedProcess process = LoggedProcess.Start("ziti",
+        LoggedProcess process = LoggedProcess.Start(zitiBin,
             new[]
             {
                 "edge", "quickstart", $"--home={home}",
@@ -49,7 +51,7 @@ public sealed class Quickstart : IAsyncDisposable
             },
             Path.Combine(home, "quickstart.log"));
 
-        Quickstart quickstart = new Quickstart(home, process);
+        Quickstart quickstart = new Quickstart(zitiBin, home, process);
         try
         {
             await quickstart.WaitUntilReadyAsync();
@@ -138,7 +140,7 @@ public sealed class Quickstart : IAsyncDisposable
     {
         ProcessStartInfo psi = new ProcessStartInfo
         {
-            FileName = "ziti",
+            FileName = _zitiBin,
             UseShellExecute = false,
             CreateNoWindow = true,
             RedirectStandardOutput = true,
