@@ -99,6 +99,22 @@ public static class IntegrationHelpers
         return found!;
     }
 
+    /// <summary>
+    /// ZET's assertExpectedIdentityName: the first identity added event names the identity file, and a later one carries
+    /// the name the signer's name claims selector resolved to.
+    /// </summary>
+    public static void WaitForIdentityNamed(AppiumSession s, string uiLineFragment, string expectedName)
+    {
+        const string addedFragment = "\"Op\":\"identity\",\"Action\":\"added\"";
+        WaitUntil(s, $"ZET sends identity added named {expectedName} after {uiLineFragment}", ControllerTimeout, () =>
+        {
+            IReadOnlyList<RelayIpcServer.RecordedLine> recorded = s.Relay!.Recorded;
+            return recorded.Skip(LatestUiCmdLine(recorded, uiLineFragment) + 1)
+                .Where(r => r.From == "zet" && r.Pipe == "event" && r.Line.Contains(addedFragment))
+                .Any(r => (string?)JObject.Parse(r.Line)["Id"]?["Name"] == expectedName);
+        });
+    }
+
     /// <summary>ZET's MfaEvent.AssertSuccess on the first mfa event with action after the command.</summary>
     public static JObject AssertMfaEventSucceeded(AppiumSession s, string uiLineFragment, string action)
     {
@@ -157,14 +173,46 @@ public static class IntegrationHelpers
         return JoinEnrolledToNone(s);
     }
 
-    /// <summary>Click Join Network on the URL dialog and assert what ZET's EnrollUrlIdentityToNone does.</summary>
-    public static JObject JoinEnrolledToNone(AppiumSession s)
+    // AddIdentitySignerChoice's title. The dialog is collapsed, so out of the UIA tree, until the app opens it.
+    public static readonly By EnrollChoiceTitle = By.XPath("//*[@Name='Configure Enrollment']");
+
+    /// <summary>
+    /// Click Join Network on the URL dialog, then wait until the app either sends AddIdentity or opens the enrollment
+    /// choice dialog instead. Returns whether the choice dialog opened.
+    /// </summary>
+    public static bool JoinOpensEnrollChoice(AppiumSession s)
     {
         int addsBefore = UiCmdLineCount(s.Relay!, AddIdentityLine);
         WaitForId(s, "JoinNetworkBtn").Click();
-        // The app looks up the controller's ext-jwt signers before it sends AddIdentity.
+        // The app looks up the controller's ext-jwt signers before it does either.
+        WaitUntil(s, "the UI sends AddIdentity or opens the enrollment choice", ControllerTimeout,
+            () => UiCmdLineCount(s.Relay!, AddIdentityLine) > addsBefore
+                || s.Driver.FindElements(EnrollChoiceTitle).Count > 0);
+        return s.Driver.FindElements(EnrollChoiceTitle).Count > 0;
+    }
+
+    /// <summary>Click Join Network on the URL dialog and assert the app sends AddIdentity with no enrollment choice.</summary>
+    public static void JoinWithoutEnrollChoice(AppiumSession s) =>
+        Assert.False(JoinOpensEnrollChoice(s), "the app opened the enrollment choice instead of sending AddIdentity");
+
+    /// <summary>
+    /// Click Join Network on the open enrollment choice dialog. Returns the IdP URL from ZET's AddIdentity reply.
+    /// </summary>
+    public static string JoinFromEnrollChoice(AppiumSession s)
+    {
+        // Both dialogs have a JoinNetworkBtn, and the URL dialog's stays in the tree until its fade out collapses it.
+        WaitForGone(s, By.XPath("//*[@AutomationId='ControllerURL']"));
+        int addsBefore = UiCmdLineCount(s.Relay!, AddIdentityLine);
+        WaitForId(s, "JoinNetworkBtn").Click();
         WaitUntil(s, "the UI sends AddIdentity", ControllerTimeout,
             () => UiCmdLineCount(s.Relay!, AddIdentityLine) > addsBefore);
+        return EnrollmentUrlFromReply(s);
+    }
+
+    /// <summary>Click Join Network on the URL dialog and assert what ZET's EnrollUrlIdentityToNone does.</summary>
+    public static JObject JoinEnrolledToNone(AppiumSession s)
+    {
+        JoinWithoutEnrollChoice(s);
         JObject needsLogin = WaitForZetEventAfter(s, AddIdentityLine, "\"Op\":\"identity\",\"Action\":\"needs_ext_login\"");
         Assert.Equal(0, (int?)ZetReplyTo(s.Relay!, AddIdentityLine)["Code"]);
         string? identifier = (string?)needsLogin["Id"]!["Identifier"];
@@ -173,6 +221,22 @@ public static class IntegrationHelpers
         AssertUrlEnrolledToNoneIdentityFile(identifier!);
         WaitUntil(s, "the URL identity shows on the landing list", ControllerTimeout, () => IdentityRowCount(s) == 1);
         return needsLogin;
+    }
+
+    /// <summary>Runs <paramref name="body"/> with the working signer set to <paramref name="enrollment"/>.</summary>
+    public static async Task WithWorkingSigner(IntegrationFixture fixture, Quickstart.SignerEnrollment enrollment,
+        Func<Task> body)
+    {
+        fixture.Quickstart.UpdateExtJwtSigner(IntegrationFixture.WorkingSignerName, enrollment);
+        try
+        {
+            await body();
+        }
+        finally
+        {
+            CloseBrowsers();
+            fixture.Quickstart.UpdateExtJwtSigner(IntegrationFixture.WorkingSignerName, Quickstart.EnrollToNone);
+        }
     }
 
     /// <summary>ZET's AssertValidUrlEnrolledIdentityFile for enroll-to-cert, which checks what the JWT one does.</summary>
@@ -218,11 +282,28 @@ public static class IntegrationHelpers
     /// </summary>
     public static string JoinToEnrollmentUrl(AppiumSession s)
     {
-        int addsBefore = UiCmdLineCount(s.Relay!, AddIdentityLine);
-        WaitForId(s, "JoinNetworkBtn").Click();
-        // The app looks up the controller's ext-jwt signers before it sends AddIdentity.
-        WaitUntil(s, "the UI sends AddIdentity", ControllerTimeout,
-            () => UiCmdLineCount(s.Relay!, AddIdentityLine) > addsBefore);
+        JoinWithoutEnrollChoice(s);
+        return EnrollmentUrlFromReply(s);
+    }
+
+    /// <summary>
+    /// Deny the IdP login ZET is waiting on and wait for ZET to fail the AddIdentity. An abandoned login holds ZET's
+    /// loopback callback for 60s, and the next enrollment's code then lands on it and fails with "Invalid code_verifier".
+    /// </summary>
+    public static async Task DenyEnrollment(AppiumSession s, string authUrl)
+    {
+        await Dex.DenyIdPFlowAsync(authUrl);
+        // ZET answers the AddIdentity a second time when the login ends.
+        WaitUntil(s, "ZET fails the denied AddIdentity", ControllerTimeout, () =>
+        {
+            IReadOnlyList<RelayIpcServer.RecordedLine> recorded = s.Relay!.Recorded;
+            return recorded.Skip(LatestUiCmdLine(recorded, AddIdentityLine) + 1)
+                .Count(r => r.From == "zet" && r.Pipe == "cmd" && r.Line.Contains("\"Success\":false")) == 1;
+        });
+    }
+
+    private static string EnrollmentUrlFromReply(AppiumSession s)
+    {
         JObject reply = WaitForZetReplyTo(s, AddIdentityLine);
         Assert.Equal(0, (int?)reply["Code"]);
         string? url = (string?)reply["Data"]?["url"];
@@ -230,10 +311,20 @@ public static class IntegrationHelpers
         return url!;
     }
 
+    /// <summary>
+    /// ZET's assertGrantedServices: the fixture gates services on the attributes the signer's selector applies.
+    /// </summary>
+    public static void AssertGrantedServices(AppiumSession s, string uiLineFragment, IReadOnlyList<string> expected)
+    {
+        JObject bulk = WaitForZetEventAfter(s, uiLineFragment, "\"Op\":\"bulkservice\",\"Action\":\"updated\"");
+        List<string> granted = bulk["AddedServices"]!.Select(svc => (string)svc["Name"]!).ToList();
+        Assert.Equal(expected.OrderBy(n => n), granted.OrderBy(n => n));
+    }
+
     /// <summary>ZET's assertEnrollmentSucceeded up to the file check. Returns ZET's identity added event.</summary>
     public static JObject AssertEnrollmentAdded(AppiumSession s, string uiLineFragment)
     {
-        JObject added = WaitForZetEventAfter(s, uiLineFragment,"\"Op\":\"identity\",\"Action\":\"added\"");
+        JObject added = WaitForZetEventAfter(s, uiLineFragment, "\"Op\":\"identity\",\"Action\":\"added\"");
         Assert.True((bool?)added["Id"]!["Active"] == true, $"ZET's identity added event is not active: {added}");
         Assert.True((bool?)added["Id"]!["NeedsExtAuth"] == false, $"ZET's identity added event still needs ext auth: {added}");
         return added;

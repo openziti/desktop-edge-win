@@ -119,19 +119,31 @@ jobs:
         run: echo "ZITI_BIN=$RUNNER_TEMP/ziti-cli/bin/ziti.exe" >> "$GITHUB_ENV"
 
       # fetch-dex.ps1 sets GOTOOLCHAIN=auto, so any Go downloads the toolchain dex's go.mod asks for.
+      # fetch-dex.ps1 pins the dex version, so its hash is the cache key.
+      - name: Restore dex
+        id: dex-cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/dex/dex.exe
+          key: dex-${{ runner.os }}-${{ hashFiles('UITests/fetch-dex.ps1') }}
+
       - name: Set up Go
+        if: steps.dex-cache.outputs.cache-hit != 'true'
         uses: actions/setup-go@v7
         with:
           go-version: stable
           cache: false
 
       # dex publishes no binaries, so it is built the way ziti-tunnel-sdk-c's run-ci.ps1 builds it.
+      - name: Build dex
+        if: steps.dex-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: ./UITests/fetch-dex.ps1 -Dest (Join-Path $env:RUNNER_TEMP "dex")
+
       - name: Set IDP_BIN
         shell: pwsh
         run: |
-          $dest = Join-Path $env:RUNNER_TEMP "dex"
-          ./UITests/fetch-dex.ps1 -Dest $dest
-          "IDP_BIN=$(Join-Path $dest 'dex.exe')" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "IDP_BIN=$(Join-Path $env:RUNNER_TEMP 'dex' 'dex.exe')" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
       - name: Build + run integration UI tests
         shell: pwsh
