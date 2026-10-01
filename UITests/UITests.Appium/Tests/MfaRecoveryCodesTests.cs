@@ -46,7 +46,7 @@ public class MfaRecoveryCodesTests
         await Trace.Settle(350);
         byte[] regenerated = Capture(s);
         SaveStep(regenerated, name, "03-new-recovery-codes");
-        await VerifyScreen(Masked(s, regenerated, RecoveryCodeBoxes), "new-recovery-codes", name);
+        await VerifyScreen(MaskedCentered(s, regenerated, RecoveryCodeBoxes, RecoveryCodeMaskWidth), "new-recovery-codes", name);
         JObject reply = ZetReplyTo(s.Relay!, "\"Command\":\"GenerateMFACodes\"");
         Assert.Equal(0, (int?)reply["Code"]);
         List<string> newCodes = ReadRecoveryCodes(s);

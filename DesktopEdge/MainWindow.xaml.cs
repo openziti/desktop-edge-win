@@ -53,7 +53,7 @@ namespace ZitiDesktopEdge {
 
     public partial class MainWindow : Window, ZitiDesktopEdge.Tray.ITrayHost {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
-        private static readonly bool _uiTestMode = Environment.GetEnvironmentVariable("ZDEW_UI_TEST") == "1";
+        private static readonly bool _uiTestMode = App.UiTestMode;
 
         public string RECOVER = "RECOVER";
         public System.Windows.Forms.NotifyIcon notifyIcon;
@@ -2351,6 +2351,8 @@ namespace ZitiDesktopEdge {
 
         private void InitializeTimer(int millisAgoStarted) {
             StopTunnelUptimeTimer();
+            // Screen captures compare pixel for pixel, so the connected time stays at 00:00:00.
+            if (_uiTestMode) return;
             _startDate = DateTime.Now.Subtract(new TimeSpan(0, 0, 0, 0, millisAgoStarted));
             _tunnelUptimeTimer = new System.Windows.Forms.Timer();
             _tunnelUptimeTimer.Interval = 100;

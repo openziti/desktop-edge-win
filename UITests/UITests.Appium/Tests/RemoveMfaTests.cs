@@ -43,6 +43,11 @@ public class RemoveMfaTests
         WaitForId(s, "AuthCode").SendKeys(pickCode(enrollment));
         SaveStep(s, name, "02-code-typed");
         WaitForId(s, "AuthButton").Click();
+        WaitForBlurb(s, "MFA disabled, access may be limited");
+        // ShowBlurbAsync hides the blurb 2.5s after showing it, so this capture comes before the slower checks.
+        byte[] removed = Capture(s);
+        SaveStep(removed, name, "03-removed-details");
+        await VerifyScreen(removed, "removed-details", name);
         // IsMFAEnabled clears on ZET's enrollment_remove event, not on the RemoveMFA reply.
         WaitUntil(s, "ZET sends a successful enrollment_remove event", ControllerTimeout,
             () => s.Relay!.Recorded
@@ -50,9 +55,6 @@ public class RemoveMfaTests
                 .Select(r => JObject.Parse(r.Line))
                 .Any(e => (string?)e["Action"] == "enrollment_remove" && (bool?)e["Successful"] == true));
         WaitForGone(s, By.XPath("//*[@AutomationId='AuthCode']"));
-        await Trace.Settle(350);
-        SaveStep(s, name, "03-removed-details");
-        await VerifyScreen(Capture(s), "removed-details", name);
         JObject reply = ZetReplyTo(s.Relay!, "\"Command\":\"RemoveMFA\"");
         Assert.Equal(0, (int?)reply["Code"]);
     }
@@ -86,9 +88,7 @@ public class RemoveMfaTests
         WaitForId(s, "AuthCode").SendKeys("000000");
         SaveStep(s, name, "01-code-typed");
         WaitForId(s, "AuthButton").Click();
-        WaitForController(s, By.XPath("//*[@AutomationId='Blurb' and @Name='Authentication Failed']"),
-            "the prompt says authentication failed");
-        await Trace.Settle(350);
+        WaitForBlurb(s, "Authentication Failed");
         // ShowBlurbAsync hides the blurb 2.5s after showing it, so this capture comes before the slower asserts.
         byte[] rejected = Capture(s);
         SaveStep(rejected, name, "02-after-rejection");

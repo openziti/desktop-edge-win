@@ -13,8 +13,7 @@ namespace ZitiDesktopEdge.UITests.Tests;
 public class AddIdentityTests
 {
     private static readonly By JwtInvalidError = By.XPath("//*[@AutomationId='ErrorTitle' and @Name='JWT Invalid']");
-    private static readonly By AddFailureBlurb =
-        By.XPath("//*[@AutomationId='Blurb' and @Name='Unexpected error when adding identity!']");
+    private const string AddFailureBlurb = "Unexpected error when adding identity!";
 
     private readonly IntegrationFixture _fixture;
 
@@ -36,10 +35,11 @@ public class AddIdentityTests
 
         // AddIdentity left the same JWT in the file the app reads.
         ClickAddIdentityWithJwt(s);
-        WaitForController(s, AddFailureBlurb, "the add failure blurb shows");
-        await Trace.Settle(500);
-        SaveStep(s, name, "02-add-failure-blurb");
-        await VerifyScreen(TimerMasked(s, Capture(s)), "add-failure-blurb");
+        WaitForBlurb(s, AddFailureBlurb);
+        // ShowBlurbAsync hides the blurb 2.5s after showing it, so one capture serves both.
+        byte[] blurb = Capture(s);
+        SaveStep(blurb, name, "02-add-failure-blurb");
+        await VerifyScreen(blurb, "add-failure-blurb");
         // The blurb shows no detail from ZET, so only the reply proves why the add failed.
         JObject reply = ZetReplyTo(s.Relay!, "\"Command\":\"AddIdentity\"");
         Assert.Equal(500, (int?)reply["Code"]);
@@ -94,10 +94,11 @@ public class AddIdentityTests
         _fixture.Quickstart.DeleteIdentity(identityName);
         WriteTestJwt(jwt);
         ClickAddIdentityWithJwt(s);
-        WaitForController(s, AddFailureBlurb, "the add failure blurb shows");
-        await Trace.Settle(500);
-        SaveStep(s, name, "01-add-failure-blurb");
-        await VerifyScreen(TimerMasked(s, Capture(s)), "add-failure-blurb");
+        WaitForBlurb(s, AddFailureBlurb);
+        // ShowBlurbAsync hides the blurb 2.5s after showing it, so one capture serves both.
+        byte[] blurb = Capture(s);
+        SaveStep(blurb, name, "01-add-failure-blurb");
+        await VerifyScreen(blurb, "add-failure-blurb");
         JObject reply = ZetReplyTo(s.Relay!, "\"Command\":\"AddIdentity\"");
         Assert.Equal(500, (int?)reply["Code"]);
         Assert.Contains("JWT not accepted by controller", (string?)reply["Error"]);

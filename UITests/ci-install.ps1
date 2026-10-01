@@ -35,12 +35,17 @@ if (-not (Have-Command appium)) {
     Write-Host "==> appium already on PATH ($(appium --version 2>$null))"
 }
 
-# 2. appium-windows-driver (idempotent; appium prints a warning if already installed)
-Write-Host "==> ensuring appium-windows-driver"
-& appium driver install --source=npm appium-windows-driver 2>&1 |
-    Where-Object { $_ -notmatch 'already installed' } |
-    Write-Host
-# Non-zero exit when already installed is expected; ignore.
+# 2. appium-windows-driver. Installing over an installed driver fails with "already installed" and leaves it unloadable
+# ("Cannot find package 'appium'" on every session), so install only when it is missing.
+$installedDrivers = & appium driver list --installed --json | ConvertFrom-Json
+if ($LASTEXITCODE -ne 0) { throw "appium driver list failed" }
+if ($installedDrivers.windows) {
+    Write-Host "==> appium-windows-driver $($installedDrivers.windows.version) already installed"
+} else {
+    Write-Host "==> installing appium-windows-driver"
+    & appium driver install --source=npm appium-windows-driver
+    if ($LASTEXITCODE -ne 0) { throw "appium driver install appium-windows-driver failed" }
+}
 
 # 3. WinAppDriver
 $wad1 = "C:\Program Files (x86)\Windows Application Driver\WinAppDriver.exe"

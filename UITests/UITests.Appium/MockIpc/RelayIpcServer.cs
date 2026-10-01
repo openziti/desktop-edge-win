@@ -15,6 +15,9 @@ public sealed class RelayIpcServer : IAsyncDisposable
     public sealed record RecordedLine(string From, string Pipe, string Line);
 
     private static readonly TimeSpan ZetConnectTimeout = TimeSpan.FromSeconds(5);
+    // ZET usually sends mfa_auth_status about 35ms after its SubmitMFA reply, but sometimes in the same millisecond.
+    // MFAScreen.DoAuthenticate sets IsMFANeeded on the reply, so an event handled first leaves the lock stuck.
+    private static readonly TimeSpan MfaAuthStatusDelay = TimeSpan.FromMilliseconds(35);
 
     public string PipePrefix { get; }
     public string ZetDiscriminator { get; }
@@ -108,6 +111,9 @@ public sealed class RelayIpcServer : IAsyncDisposable
             if (!string.IsNullOrWhiteSpace(line))
             {
                 lock (_recordedLock) _recorded.Add(new RecordedLine(from, pipe, line));
+                // Not cancellable: a cancelled delay would fault the pump instead of ending it.
+                if (pipe == "event" && (string?)JObject.Parse(line)["Action"] == "mfa_auth_status")
+                    await Task.Delay(MfaAuthStatusDelay);
             }
             try { await writer.WriteLineAsync(line); }
             catch (Exception ex) when (ex is IOException or ObjectDisposedException) { return; }

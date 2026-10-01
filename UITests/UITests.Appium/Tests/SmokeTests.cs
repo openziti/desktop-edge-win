@@ -23,7 +23,7 @@ public class SmokeTests
 
         byte[] png = Capture(session);
         Assert.NotEmpty(png);
-        await VerifyPng(TimerMasked(session, png));
+        await VerifyPng(png);
     }
 
     [Fact(Timeout = 20000)]
@@ -55,7 +55,7 @@ public class SmokeTests
 
         byte[] png = Capture(session);
         Assert.NotEmpty(png);
-        await VerifyPng(TimerMasked(session, png));
+        await VerifyPng(png);
     }
 
     [Fact(Timeout = 20000)]
@@ -86,7 +86,7 @@ public class SmokeTests
 
         byte[] png = Capture(session);
         Assert.NotEmpty(png);
-        await VerifyPng(TimerMasked(session, png));
+        await VerifyPng(png);
     }
 
     [Fact(Timeout = 20000)]
@@ -104,11 +104,11 @@ public class SmokeTests
 
         byte[] png = Capture(session);
         Assert.NotEmpty(png);
-        await VerifyPng(TimerMasked(session, png));
+        await VerifyPng(png);
     }
 
     // Five menu steps, two screen baselines, form input and a Save click, hence the limit.
-    [Fact(Timeout = 40000)]
+    [Fact(Timeout = 60000)]
     [Trait("Category", "TunnelSettings")]
     [Trait("Category", "Screenshots")]
     public async Task TunnelConfig_EditValuesAndSave_SendsUpdateInterfaceConfig()
@@ -156,7 +156,7 @@ public class SmokeTests
         Assert.NotNull(cmd["Data"]?["L2"]);
     }
 
-    [Fact(Timeout = 20000)]
+    [Fact(Timeout = 30000)]
     [Trait("Category", "IdentityDetail")]
     [Trait("Category", "Screenshots")]
     public async Task ExtAuth_SuccessfulLoginEvent_ClearsNeedsExtAuth()
@@ -213,7 +213,7 @@ public class SmokeTests
     }
 
     // PrintWindow draws a window hidden behind the taskbar just fine, so screenshots can't catch placement.
-    [Fact(Timeout = 20000)]
+    [Fact(Timeout = 30000)]
     [Trait("Category", "Placement")]
     public async Task DockedWindowStaysOnScreen()
     {
@@ -285,7 +285,7 @@ public class SmokeTests
         Assert.Contains("ext-auth-03", src);
     }
 
-    [Fact(Timeout = 20000)]
+    [Fact(Timeout = 30000)]
     [Trait("Category", "IdentityDetail")]
     public async Task ExtAuth_ClickIsDefaultProviderCheckbox_TogglesDefault()
     {

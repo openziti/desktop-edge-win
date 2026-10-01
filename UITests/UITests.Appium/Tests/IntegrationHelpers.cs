@@ -49,6 +49,13 @@ public static class IntegrationHelpers
         WaitUntil(s, description, ControllerTimeout, () => s.Driver.FindElements(by).Any(e => e.Displayed));
 
     /// <summary>
+    /// Wait until the blurb says text. An XPath wait can take long enough on a prompt screen that the capture after it
+    /// misses the 2.5s blurb.
+    /// </summary>
+    public static void WaitForBlurb(AppiumSession s, string text) =>
+        WaitUntil(s, $"the blurb says '{text}'", ControllerTimeout, () => BlurbShows(s, text));
+
+    /// <summary>
     /// Empty the fixture's ZET and launch the app against it, recording to captures\testName.
     /// </summary>
     public static async Task<AppiumSession> LaunchAsync(IntegrationFixture fixture, string testName)
@@ -76,6 +83,9 @@ public static class IntegrationHelpers
     // The codes are TextBoxes MFAScreen adds with no AutomationId, and a TextBox's text is its UIA Value.
     public static readonly By RecoveryCodeBoxes =
         By.XPath("//Text[@Name='MFA Recovery Codes']/following-sibling::Edit");
+
+    // Six capital letters and digits draw about 50 to 70px wide.
+    public const int RecoveryCodeMaskWidth = 80;
 
     public static List<string> ReadRecoveryCodes(AppiumSession s) =>
         s.Driver.FindElements(RecoveryCodeBoxes).Select(e => e.Text).ToList();
@@ -156,9 +166,7 @@ public static class IntegrationHelpers
     {
         SubmitFromRow(s, name, step, identityName, code);
         // MFAScreen keeps the prompt open on a failed SubmitMFA reply.
-        WaitForController(s, By.XPath("//*[@AutomationId='Blurb' and @Name='Authentication Failed']"),
-            "the prompt says authentication failed");
-        await Trace.Settle(350);
+        WaitForBlurb(s, "Authentication Failed");
         // ShowBlurbAsync hides the blurb 2.5s after showing it, so this capture comes before the slower asserts.
         byte[] png = Capture(s);
         JObject reply = ZetReplyTo(s.Relay!, "\"Command\":\"SubmitMFA\"");

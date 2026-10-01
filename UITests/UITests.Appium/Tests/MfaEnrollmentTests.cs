@@ -36,7 +36,7 @@ public class MfaEnrollmentTests
         SortByNameAscending(s);
         await Trace.Settle(350);
         SaveStep(s, name, "01-setup-needed-row");
-        await VerifyScreen(TimerMasked(s, Capture(s)), "setup-needed-row");
+        await VerifyScreen(Capture(s), "setup-needed-row");
 
         // The QR dialog opens on ZET's enrollment_challenge event, not on the EnableMFA reply.
         ClickAt(s, WaitFor(s, InIdentityRow(AddedIdentityFileName, "MfaSetupNeeded")));
@@ -55,7 +55,7 @@ public class MfaEnrollmentTests
         WaitForController(s, By.XPath("//Text[@Name='MFA Recovery Codes']"), "the recovery codes show");
         await Trace.Settle(300);
         SaveStep(s, name, "04-mfa-recovery-codes");
-        await VerifyScreen(Masked(s, Capture(s), RecoveryCodeBoxes), "mfa-recovery-codes");
+        await VerifyScreen(MaskedCentered(s, Capture(s), RecoveryCodeBoxes, RecoveryCodeMaskWidth), "mfa-recovery-codes");
         JObject reply = ZetReplyTo(s.Relay!, "\"Command\":\"VerifyMFA\"");
         Assert.Equal(0, (int?)reply["Code"]);
 
@@ -65,7 +65,7 @@ public class MfaEnrollmentTests
         WaitForGone(s, InIdentityRow(identityName, "MfaSetupNeeded"));
         await Trace.Settle(350);
         SaveStep(s, name, "05-enrolled-row");
-        await VerifyScreen(TimerMasked(s, Capture(s)), "enrolled-row");
+        await VerifyScreen(Capture(s), "enrolled-row");
         Assert.Empty(s.Driver.FindElements(InIdentityRow(identityName, "MfaRequired")));
     }
 
@@ -87,9 +87,7 @@ public class MfaEnrollmentTests
 
         // MFAScreen closes the setup dialog when VerifyMFA fails, and ZET's failed enrollment_verification event
         // raises the blurb.
-        WaitForController(s, By.XPath("//*[@AutomationId='Blurb' and @Name='Provided code could not be verified']"),
-            "the blurb says the code could not be verified");
-        await Trace.Settle(350);
+        WaitForBlurb(s, "Provided code could not be verified");
         // ShowBlurbAsync hides the blurb 2.5s after showing it, so this capture comes before the slower checks.
         byte[] rejected = Capture(s);
         SaveStep(rejected, name, "02-after-rejection");

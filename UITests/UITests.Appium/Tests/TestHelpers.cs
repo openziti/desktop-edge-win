@@ -41,7 +41,17 @@ public static class TestHelpers
     public static JObject Fixture(string fileName) =>
         JObject.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "MockIpc", "Fixtures", fileName)));
 
-    public static byte[] Capture(AppiumSession s) => s.CaptureWindow();
+    // The app's fades run 0.3s, and WPF keeps redrawing text after one ends: a blurb's text changes until about 0.7s
+    // after it shows. Under 2.5s, when the blurb starts hiding.
+    private const int AnimationSettleMs = 1000;
+
+    public static byte[] Capture(AppiumSession s)
+    {
+        // Before the settle, so the hover fade back on the element a click left the cursor over ends inside it.
+        s.MoveCursorOffWindow();
+        Thread.Sleep(AnimationSettleMs);
+        return s.CaptureWindow();
+    }
 
     /// <summary>
     /// The identity file name the app gives every added identity, since it names it after the JWT file. ZET shows it as
@@ -411,35 +421,41 @@ public static class TestHelpers
     /// The capture with every element the masks match painted over, so values that change per run (QR codes, secrets,
     /// recovery codes) can sit on a baseline. A mask that matches nothing throws: its value would reach the baseline.
     /// </summary>
-    public static byte[] Masked(AppiumSession s, byte[] png, params By[] masks)
-    {
-        List<Rectangle> areas = new List<Rectangle>();
-        foreach (By mask in masks)
-        {
-            ReadOnlyCollection<AppiumElement> found = s.Driver.FindElements(mask);
-            if (found.Count == 0)
-                throw new NoSuchElementException($"mask {mask} matched no element, so its value would reach the baseline");
-            areas.AddRange(found.Select(el => new Rectangle(el.Location, el.Size)));
-        }
-        return PaintedOver(png, areas);
-    }
-
-    // ConnectedTime's top padding in MainWindow.xaml: its bounds start at the connect button's top, over the check mark,
-    // and stretch to the 140px grid, over STOP. The digits are one 12pt line below the padding.
-    private const int ConnectedTimeTextTop = 90;
-    private const int ConnectedTimeTextHeight = 16;
+    public static byte[] Masked(AppiumSession s, byte[] png, params By[] masks) =>
+        PaintedOver(png, masks.SelectMany(mask => MaskElements(s, mask)).Select(el => new Rectangle(el.Location, el.Size)));
 
     /// <summary>
-    /// The capture with only the connected timer's digits painted over, for screens where the landing timer shows,
-    /// even dimmed under an overlay. Not for screens that cover it opaquely: the paint would land on top of them.
+    /// The capture with a box of a fixed width painted over each element the mask matches, centred on it, for centred
+    /// elements that size to their per-run text, whose own bounds would change the baseline. width must exceed the
+    /// widest text.
     /// </summary>
-    public static byte[] TimerMasked(AppiumSession s, byte[] png)
+    public static byte[] MaskedCentered(AppiumSession s, byte[] png, By mask, int width) =>
+        PaintedOver(png, MaskElements(s, mask).Select(el =>
+            new Rectangle(el.Location.X + (el.Size.Width / 2) - (width / 2), el.Location.Y, width, el.Size.Height)));
+
+    private static ReadOnlyCollection<AppiumElement> MaskElements(AppiumSession s, By mask)
     {
-        AppiumElement timer = s.Driver.FindElements(By.XPath("//*[@AutomationId='ConnectedTime']")).FirstOrDefault()
-            ?? throw new NoSuchElementException("ConnectedTime matched no element, so the running timer would reach the baseline");
-        Rectangle digits = new Rectangle(timer.Location.X, timer.Location.Y + ConnectedTimeTextTop,
-            timer.Size.Width, ConnectedTimeTextHeight);
-        return PaintedOver(png, new[] { digits });
+        ReadOnlyCollection<AppiumElement> found = s.Driver.FindElements(mask);
+        if (found.Count == 0)
+            throw new NoSuchElementException($"mask {mask} matched no element, so its value would reach the baseline");
+        return found;
+    }
+
+    /// <summary>
+    /// One UIA search, since an XPath lookup walks the whole tree and a blurb shows for only 2.5s. FindElement, not
+    /// FindElements: on identity details WinAppDriver's AccessibilityId FindElements adds an element with an empty ID,
+    /// which Selenium throws on. Collapsed, the blurb is out of the UIA tree.
+    /// </summary>
+    public static bool BlurbShows(AppiumSession s, string text)
+    {
+        try
+        {
+            return s.Driver.FindElement(MobileBy.AccessibilityId("Blurb")).GetAttribute("Name") == text;
+        }
+        catch (NoSuchElementException)
+        {
+            return false;
+        }
     }
 
     // Appium reports locations relative to the session's top-level window, the same origin as the capture.

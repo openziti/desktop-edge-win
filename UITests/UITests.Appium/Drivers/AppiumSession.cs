@@ -124,6 +124,24 @@ internal static class Win32Window
     public static extern bool SystemParametersInfo(uint uiAction, uint uiParam, out RECT pvParam, uint fWinIni);
 
     public const uint SPI_GETWORKAREA = 0x0030;
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public struct POINT { public int X, Y; }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+    public static extern bool GetCursorPos(out POINT lpPoint);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+    public static extern bool SetCursorPos(int X, int Y);
+
+    /// <summary>Half the caret's blink period in ms, or 0 on failure. INFINITE means it does not blink.</summary>
+    [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+    public static extern uint GetCaretBlinkTime();
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+    public static extern bool SetCaretBlinkTime(uint uMSeconds);
+
+    public const uint INFINITE = 0xFFFFFFFF;
 }
 
 public sealed class AppiumSession : IAsyncDisposable
@@ -186,10 +204,9 @@ public sealed class AppiumSession : IAsyncDisposable
     /// </summary>
     public byte[] CaptureWindow() => Trace.Time("CaptureWindow", () =>
     {
-        if (!Win32Window.GetWindowRect(WindowHandle, out Win32Window.RECT r))
-            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(),
-                $"GetWindowRect failed for window handle {WindowHandle}");
-        using Bitmap bitmap = new Bitmap(r.Right - r.Left, r.Bottom - r.Top, PixelFormat.Format32bppArgb);
+        Rectangle window = WindowRect();
+        MoveCursorOffWindow(window);
+        using Bitmap bitmap = new Bitmap(window.Width, window.Height, PixelFormat.Format32bppArgb);
         using (Graphics graphics = Graphics.FromImage(bitmap))
         {
             IntPtr hdc = graphics.GetHdc();
@@ -205,12 +222,67 @@ public sealed class AppiumSession : IAsyncDisposable
         return png.ToArray();
     });
 
-    private AppiumSession(WindowsDriver driver, MockIpcServer mock, RelayIpcServer? relay, Process uiProcess)
+    private Rectangle WindowRect()
+    {
+        if (!Win32Window.GetWindowRect(WindowHandle, out Win32Window.RECT r))
+            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(),
+                $"GetWindowRect failed for window handle {WindowHandle}");
+        return Rectangle.FromLTRB(r.Left, r.Top, r.Right, r.Bottom);
+    }
+
+    // Long enough for WPF to take the mouse leave. A hover fade back (StyledButton's runs 0.3s) takes longer.
+    private const int HoverClearMs = 250;
+
+    public void MoveCursorOffWindow() => MoveCursorOffWindow(WindowRect());
+
+    /// <summary>
+    /// Move the cursor to the work area's top left when it is over the window, since a click leaves it there and the
+    /// capture would show whatever it hovers.
+    /// </summary>
+    private static void MoveCursorOffWindow(Rectangle window)
+    {
+        if (!Win32Window.GetCursorPos(out Win32Window.POINT cursor))
+            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), "GetCursorPos failed");
+        if (!window.Contains(cursor.X, cursor.Y)) return;
+        Rectangle workArea = WorkArea();
+        if (window.Contains(workArea.Left, workArea.Top))
+            throw new InvalidOperationException($"the window {window} covers the work area's top left, so the cursor has nowhere to go");
+        if (!Win32Window.SetCursorPos(workArea.Left, workArea.Top))
+            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(),
+                $"SetCursorPos({workArea.Left}, {workArea.Top}) failed");
+        Thread.Sleep(HoverClearMs);
+    }
+
+    private readonly uint _savedCaretBlinkTime;
+
+    private AppiumSession(WindowsDriver driver, MockIpcServer mock, RelayIpcServer? relay, Process uiProcess,
+        uint savedCaretBlinkTime)
     {
         Driver = driver;
         Mock = mock;
         Relay = relay;
         _uiProcess = uiProcess;
+        _savedCaretBlinkTime = savedCaretBlinkTime;
+    }
+
+    /// <summary>
+    /// Stop the caret blinking, so captures always draw it, and return the blink time to restore. The setting is
+    /// session-wide until logoff.
+    /// </summary>
+    private static uint StopCaretBlink()
+    {
+        uint saved = Win32Window.GetCaretBlinkTime();
+        if (saved == 0)
+            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), "GetCaretBlinkTime failed");
+        SetCaretBlinkTime(Win32Window.INFINITE);
+        return saved;
+    }
+
+    private static void SetCaretBlinkTime(uint blinkTime)
+    {
+        if (!Win32Window.SetCaretBlinkTime(blinkTime))
+            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(),
+                $"SetCaretBlinkTime({blinkTime}) failed");
     }
 
     private static readonly Uri AppiumServer = new Uri("http://127.0.0.1:4723/");
@@ -255,6 +327,7 @@ public sealed class AppiumSession : IAsyncDisposable
     private static async Task<AppiumSession> AttachAsync(string exePath, string prefix, MockIpcServer mock,
         RelayIpcServer? relay)
     {
+        uint savedCaretBlinkTime = StopCaretBlink();
         Process uiProc = Trace.Time("Process.Start(ZitiDesktopEdge.exe)", () =>
         {
             ProcessStartInfo psi = new ProcessStartInfo
@@ -321,12 +394,13 @@ public sealed class AppiumSession : IAsyncDisposable
         if (driver == null)
         {
             KillIfRunning(uiProc);
+            SetCaretBlinkTime(savedCaretBlinkTime);
             await mock.DisposeAsync();
             if (relay != null) await relay.DisposeAsync();
             throw new InvalidOperationException($"Appium could not attach to ZDEW window within {LaunchWindowTimeout}. Last error: {lastErr?.Message}", lastErr);
         }
 
-        return new AppiumSession(driver, mock, relay, uiProc);
+        return new AppiumSession(driver, mock, relay, uiProc, savedCaretBlinkTime);
     }
 
     private static void KillIfRunning(Process process)
@@ -352,6 +426,7 @@ public sealed class AppiumSession : IAsyncDisposable
         }
         Driver.Dispose();
         KillIfRunning(_uiProcess);
+        SetCaretBlinkTime(_savedCaretBlinkTime);
         await Mock.DisposeAsync();
         if (Relay != null) await Relay.DisposeAsync();
         // Kill returns before the process is gone. The next test's launch must not overlap a dying UI.
