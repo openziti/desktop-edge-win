@@ -1,3 +1,13 @@
+# Release 2.11.8.0
+## What's New
+n/a
+
+## Bugs fixed
+* [Issue 1091](https://github.com/openziti/desktop-edge-win/issues/1091) - Adding an identity by URL with an ext-jwt signer that only has enroll to cert enabled enrolls to a certificate instead of asking for an enroll mode
+
+## Other changes
+n/a
+
 # Release 2.11.7.0
 ## What's New
 * updated to ziti-edge-tunnel v1.19.0

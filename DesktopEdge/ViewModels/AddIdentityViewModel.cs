@@ -58,7 +58,7 @@ namespace ZitiDesktopEdge {
             get { return _selectedSigner; }
             set {
                 _selectedSigner = value;
-                EnrollMode = (value != null && value.EnrollToCertEnabled) ? "user-session" : null;
+                EnrollMode = ShowEnrollModeRadios ? "user-session" : null;
                 OnPropertyChanged(nameof(SelectedSigner));
                 OnPropertyChanged(nameof(EnrollModeRadiosVisibility));
             }
@@ -84,7 +84,7 @@ namespace ZitiDesktopEdge {
             set { if (value) EnrollMode = "device-certificate"; }
         }
 
-        public bool ShowEnrollModeRadios => _selectedSigner != null && _selectedSigner.EnrollToCertEnabled;
+        public bool ShowEnrollModeRadios => _selectedSigner != null && _selectedSigner.EnrollToCertEnabled && _selectedSigner.EnrollToTokenEnabled;
 
         public Visibility EnrollModeRadiosVisibility => ShowEnrollModeRadios ? Visibility.Visible : Visibility.Collapsed;
 
@@ -127,22 +127,23 @@ namespace ZitiDesktopEdge {
             return new EnrollIdentifierPayload {
                 ControllerURL = ControllerBaseUrl,
                 IdentityFilename = IdentityFilename,
-                EnrollMode = ResolveWireEnrollMode(),
-                Provider = ResolveWireProvider(),
+                EnrollMode = PayloadEnrollMode(),
+                Provider = PayloadProvider(),
             };
         }
 
-        private string ResolveWireEnrollMode() {
+        // The enroll mode ZET receives: "cert" or "token" from the signer's capabilities.
+        private string PayloadEnrollMode() {
             if (_selectedSigner == null) return null;
             bool cert = _selectedSigner.EnrollToCertEnabled;
             bool token = _selectedSigner.EnrollToTokenEnabled;
-            if (!cert && token) return "token";
-            if (_enrollMode == "device-certificate") return "cert";
-            if (_enrollMode == "user-session" && token) return "token";
+            if (cert && token) return _enrollMode == "device-certificate" ? "cert" : "token";
+            if (cert) return "cert";
+            if (token) return "token";
             return null;
         }
 
-        private string ResolveWireProvider() {
+        private string PayloadProvider() {
             return _showSignerPicker ? _selectedSigner?.Name : null;
         }
 
