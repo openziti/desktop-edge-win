@@ -21,6 +21,10 @@ public sealed class Quickstart : IAsyncDisposable
     private sealed record CliResult(int ExitCode, string Stdout, string Stderr);
 
     public string Home { get; }
+    public string RootCaPath => Path.Combine(Home, "pki", "root-ca", "certs", "root-ca.cert");
+    // The app's Add Identity by URL rejects a host without a dot, so it cannot take localhost. The controller's server
+    // certificate also names 127.0.0.1.
+    public static string UiControllerUrl => $"https://127.0.0.1:{CtrlPort}";
     // Apart from quickstart's own config dir: quickstart rewrites its ziti-cli.json while it runs, and a CLI login
     // writing the same file mid-read makes quickstart exit on "unexpected end of JSON input".
     private string CliConfigDir => Path.Combine(Home, "harness-cli-config");

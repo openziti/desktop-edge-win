@@ -16,14 +16,30 @@ public sealed class IntegrationFixture : IAsyncLifetime
 
     private Quickstart? _quickstart;
     private ZetProcess? _zet;
+    private bool _caTrusted;
 
     public async Task InitializeAsync()
     {
         _quickstart = await Quickstart.StartAsync(RequiredBinary("ZITI_BIN"), Path.Combine(Home, "quickstart"));
+        // The CA trust follows ZET's harness (main_test.go setup): a CA left by a crashed run goes first, because
+        // ziti 1.6's ops import fails against an OS-trusted controller, and this run's CA goes in after the import.
+        if (OsCaTrust.IsInstalled()) OsCaTrust.Remove();
         // A byte-for-byte copy of ziti-tunnel-sdk-c tests/integration/testdata/fixture.json, so each twin's identity
         // has the same name and auth policy as in the ZET test it mirrors.
         _quickstart.ImportFixture(Path.Combine(AppContext.BaseDirectory, "testdata", "fixture.json"));
-        _zet = await ZetProcess.StartAsync(RequiredBinary("ZET_BIN"), ZetDiscriminator, Path.Combine(Home, "zet"));
+        _caTrusted = true;
+        try
+        {
+            OsCaTrust.Install(_quickstart.RootCaPath);
+            _zet = await ZetProcess.StartAsync(RequiredBinary("ZET_BIN"), ZetDiscriminator, Path.Combine(Home, "zet"));
+        }
+        catch
+        {
+            _caTrusted = false;
+            // A failed install may have added nothing, and certutil -delstore fails when nothing matches.
+            if (OsCaTrust.IsInstalled()) OsCaTrust.Remove();
+            throw;
+        }
     }
 
     /// <summary>
@@ -41,7 +57,14 @@ public sealed class IntegrationFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        if (_zet != null) await _zet.DisposeAsync();
-        if (_quickstart != null) await _quickstart.DisposeAsync();
+        try
+        {
+            if (_zet != null) await _zet.DisposeAsync();
+        }
+        finally
+        {
+            if (_caTrusted) OsCaTrust.Remove();
+            if (_quickstart != null) await _quickstart.DisposeAsync();
+        }
     }
 }

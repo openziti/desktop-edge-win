@@ -147,10 +147,10 @@ internal static class Win32Window
 public sealed class AppiumSession : IAsyncDisposable
 {
     /// <summary>
-    /// Ceiling for MainWindowHandle to appear after Process.Start. It takes about 600-900ms locally, but a cold
-    /// GitHub Windows runner misses 2s.
+    /// Ceiling for MainWindowHandle to appear after Process.Start. It takes about 600-900ms locally, but the first
+    /// launch on a GitHub Windows runner has taken 20s (run 36895495952).
     /// </summary>
-    public static readonly TimeSpan LaunchWindowTimeout = TimeSpan.FromSeconds(10);
+    public static readonly TimeSpan LaunchWindowTimeout = TimeSpan.FromSeconds(30);
 
     private const int WindowPollIntervalMs = 40;
 
@@ -348,9 +348,8 @@ public sealed class AppiumSession : IAsyncDisposable
         // can lag it, so poll after.
         IntPtr hwnd = await Trace.TimeAsync("wait MainWindowHandle", async () =>
         {
-            await Task.Run(() => uiProc.WaitForInputIdle((int)LaunchWindowTimeout.TotalMilliseconds));
-
             DateTime deadline = DateTime.UtcNow + LaunchWindowTimeout;
+            await Task.Run(() => uiProc.WaitForInputIdle((int)LaunchWindowTimeout.TotalMilliseconds));
             while (DateTime.UtcNow < deadline)
             {
                 uiProc.Refresh();
@@ -397,6 +396,8 @@ public sealed class AppiumSession : IAsyncDisposable
             SetCaretBlinkTime(savedCaretBlinkTime);
             await mock.DisposeAsync();
             if (relay != null) await relay.DisposeAsync();
+            if (hwnd == IntPtr.Zero)
+                throw new TimeoutException($"ZDEW's main window never appeared within {LaunchWindowTimeout} of Process.Start");
             throw new InvalidOperationException($"Appium could not attach to ZDEW window within {LaunchWindowTimeout}. Last error: {lastErr?.Message}", lastErr);
         }
 

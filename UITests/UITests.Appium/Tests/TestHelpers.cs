@@ -64,15 +64,19 @@ public static class TestHelpers
 
     public static void WriteTestJwt(string jwt) => File.WriteAllText(TestJwtPath, jwt);
 
-    /// <summary>Click "Add Identity", then "With JWT" in its context menu.</summary>
-    public static void ClickAddIdentityWithJwt(AppiumSession s)
+    public static void ClickAddIdentityWithJwt(AppiumSession s) => ClickAddIdentityMenuItem(s, "With JWT");
+
+    public static void ClickAddIdentityWithUrl(AppiumSession s) => ClickAddIdentityMenuItem(s, "With URL");
+
+    /// <summary>Click "Add Identity", then menuItem in its context menu.</summary>
+    private static void ClickAddIdentityMenuItem(AppiumSession s, string menuItem)
     {
         // AddIdAreaButton has no UIA peer. Its "ADD" label does, and the MouseLeftButtonUp bubbles up to it.
         IWebElement addText = WaitFor(s, By.XPath("//Text[@Name='ADD']"));
         ClickAt(s, addText);
 
-        IWebElement withJwt = WaitFor(s, By.XPath("//*[@Name='With JWT']"));
-        ClickAt(s, withJwt);
+        IWebElement item = WaitFor(s, By.XPath($"//*[@Name='{menuItem}']"));
+        ClickAt(s, item);
     }
 
     /// <summary>An element inside the IdentityItem row holding this name.</summary>

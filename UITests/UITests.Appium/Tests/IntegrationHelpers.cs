@@ -22,6 +22,9 @@ public static class IntegrationHelpers
     public static bool UiSent(RelayIpcServer relay, string command) =>
         relay.Recorded.Any(r => r.From == "ui" && r.Pipe == "cmd" && r.Line.Contains($"\"Command\":\"{command}\""));
 
+    private static int UiCmdLineCount(RelayIpcServer relay, string uiLineFragment) =>
+        relay.Recorded.Count(r => r.From == "ui" && r.Pipe == "cmd" && r.Line.Contains(uiLineFragment));
+
     public const string AddIdentityLine = "\"Command\":\"AddIdentity\"";
     public const string EnableMfaLine = "\"Command\":\"EnableMFA\"";
     public const string VerifyMfaLine = "\"Command\":\"VerifyMFA\"";
@@ -93,6 +96,55 @@ public static class IntegrationHelpers
         JObject file = JObject.Parse(File.ReadAllText(path));
         foreach (string field in new[] { "ztAPI", "id.cert", "id.key", "id.ca" })
             Assert.False(string.IsNullOrEmpty((string?)file.SelectToken(field)), $"identity file {path} has no {field}");
+    }
+
+    /// <summary>ZET's AssertValidUrlEnrolledIdentityFile for enroll-to-none: a CA bundle and no cert or key.</summary>
+    public static void AssertUrlEnrolledToNoneIdentityFile(string path)
+    {
+        JObject file = JObject.Parse(File.ReadAllText(path));
+        foreach (string field in new[] { "ztAPI", "id.ca" })
+            Assert.False(string.IsNullOrEmpty((string?)file.SelectToken(field)), $"identity file {path} has no {field}");
+        foreach (string field in new[] { "id.cert", "id.key" })
+            Assert.True(string.IsNullOrEmpty((string?)file.SelectToken(field)), $"identity file {path} has {field} after enroll-to-none");
+    }
+
+    /// <summary>Open Add Identity, With URL, and type url over whatever the dialog prefilled from the clipboard.</summary>
+    public static void EnterControllerUrl(AppiumSession s, string url)
+    {
+        ClickAddIdentityWithUrl(s);
+        IWebElement box = WaitForId(s, "ControllerURL");
+        // IWebElement.Clear() doesn't reliably fire WPF's TextChanged, which resets the dialog's signer state.
+        box.SendKeys(Keys.Control + "a" + Keys.Control);
+        box.SendKeys(Keys.Delete);
+        box.SendKeys(url);
+    }
+
+    /// <summary>
+    /// Add an identity through Add Identity, With URL, against a controller with no ext-jwt signers, asserting what
+    /// ZET's EnrollUrlIdentityToNone does. Returns ZET's identity needs_ext_login event.
+    /// </summary>
+    public static JObject AddIdentityByUrl(AppiumSession s, string url)
+    {
+        EnterControllerUrl(s, url);
+        return JoinEnrolledToNone(s);
+    }
+
+    /// <summary>Click Join Network on the URL dialog and assert what ZET's EnrollUrlIdentityToNone does.</summary>
+    public static JObject JoinEnrolledToNone(AppiumSession s)
+    {
+        int addsBefore = UiCmdLineCount(s.Relay!, AddIdentityLine);
+        WaitForId(s, "JoinNetworkBtn").Click();
+        // The app looks up the controller's ext-jwt signers before it sends AddIdentity.
+        WaitUntil(s, "the UI sends AddIdentity", ControllerTimeout,
+            () => UiCmdLineCount(s.Relay!, AddIdentityLine) > addsBefore);
+        JObject needsLogin = WaitForZetEventAfter(s, AddIdentityLine, "\"Op\":\"identity\",\"Action\":\"needs_ext_login\"");
+        Assert.Equal(0, (int?)ZetReplyTo(s.Relay!, AddIdentityLine)["Code"]);
+        string? identifier = (string?)needsLogin["Id"]!["Identifier"];
+        Assert.False(string.IsNullOrEmpty(identifier), $"needs_ext_login has no Identifier: {needsLogin}");
+        Assert.True((bool?)needsLogin["Id"]!["NeedsExtAuth"] == true, $"needs_ext_login is not NeedsExtAuth: {needsLogin}");
+        AssertUrlEnrolledToNoneIdentityFile(identifier!);
+        WaitUntil(s, "the URL identity shows on the landing list", ControllerTimeout, () => IdentityRowCount(s) == 1);
+        return needsLogin;
     }
 
     public static void WaitForController(AppiumSession s, By by, string description) =>
