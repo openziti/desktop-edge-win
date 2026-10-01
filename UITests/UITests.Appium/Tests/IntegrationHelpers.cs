@@ -195,6 +195,36 @@ public static class IntegrationHelpers
     public static void JoinWithoutEnrollChoice(AppiumSession s) =>
         Assert.False(JoinOpensEnrollChoice(s), "the app opened the enrollment choice instead of sending AddIdentity");
 
+    // A RadioButton's UIA Name is empty when its content is a panel, so each is found by its label's TextBlock.
+    public static readonly By UserSessionRadio = By.XPath("//RadioButton[.//*[@Name='User session']]");
+    public static readonly By DeviceCertificateRadio = By.XPath("//RadioButton[.//*[@Name='Device certificate']]");
+    // Shown only when more than one signer can enroll.
+    public static readonly By SignerPickerLabel = By.XPath("//*[@Name='Identity Provider']");
+
+    /// <summary>Enter the controller URL and click Join Network, asserting the enrollment choice dialog opens.</summary>
+    public static async Task OpenEnrollChoice(AppiumSession s)
+    {
+        await PrepareTestWindow(s);
+        EnterControllerUrl(s, Quickstart.UiControllerUrl);
+        Assert.True(JoinOpensEnrollChoice(s), "the app sent AddIdentity without offering the enrollment choice");
+    }
+
+    public static void ChooseDeviceCertificate(AppiumSession s)
+    {
+        IWebElement deviceCertificate = WaitFor(s, DeviceCertificateRadio);
+        ClickAt(s, deviceCertificate);
+        WaitUntil(s, "Device certificate is selected", TimeSpan.FromSeconds(5), () => deviceCertificate.Selected);
+        Assert.False(WaitFor(s, UserSessionRadio).Selected, "User session stayed selected");
+    }
+
+    /// <summary>Assert the AddIdentity the app sent carries this enroll mode and no provider, as it does with one capable signer.</summary>
+    public static void AssertSentEnrollMode(AppiumSession s, string expected)
+    {
+        JObject sent = UiCommand(s.Relay!, AddIdentityLine);
+        Assert.Equal(expected, (string?)sent["Data"]!["EnrollMode"]);
+        Assert.Null((string?)sent["Data"]!["Provider"]);
+    }
+
     /// <summary>
     /// Click Join Network on the open enrollment choice dialog. Returns the IdP URL from ZET's AddIdentity reply.
     /// </summary>

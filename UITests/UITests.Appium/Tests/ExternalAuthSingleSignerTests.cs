@@ -215,12 +215,58 @@ public class ExternalAuthSingleSignerTests
         });
     }
 
+    // ZET's bothEnrollFlowsCompleteWhenBothEnabled, split at its two RunWithTimeout halves.
+    [Fact(Timeout = 120000)]
+    public async Task BothEnabledEnrollToCertCompletes()
+    {
+        Trace.Begin();
+        string name = nameof(BothEnabledEnrollToCertCompletes);
+        await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToCert = true, ToToken = true }, async () =>
+        {
+            await using AppiumSession s = await LaunchAsync(_fixture, name);
+            await OpenEnrollChoice(s);
+            ChooseDeviceCertificate(s);
+            await Trace.Settle(350);
+            SaveStep(s, name, "01-enroll-choice-device-certificate");
+            await VerifyScreen(Capture(s), "enroll-choice-device-certificate");
+            await FinishEnrollToCert(s, "test_ext_auth_cert_both", JoinFromEnrollChoice(s));
+            AssertSentEnrollMode(s, "cert");
+        });
+    }
+
+    [Fact(Timeout = 150000)]
+    public async Task BothEnabledEnrollToTokenCompletes()
+    {
+        Trace.Begin();
+        string name = nameof(BothEnabledEnrollToTokenCompletes);
+        await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToCert = true, ToToken = true }, async () =>
+        {
+            await using AppiumSession s = await LaunchAsync(_fixture, name);
+            await OpenEnrollChoice(s);
+            Assert.True(WaitFor(s, UserSessionRadio).Selected, "User session is not the default enrollment");
+            Assert.False(WaitFor(s, DeviceCertificateRadio).Selected, "Device certificate is selected by default");
+            // One signer, so there is no provider to pick.
+            Assert.Empty(s.Driver.FindElements(SignerPickerLabel));
+            await Trace.Settle(350);
+            SaveStep(s, name, "01-enroll-choice");
+            await VerifyScreen(Capture(s), "enroll-choice");
+
+            await FinishEnrollToToken(s, "test_ext_auth_token_both", JoinFromEnrollChoice(s));
+            AssertSentEnrollMode(s, "token");
+        });
+    }
+
     /// <summary>ZET's completeEnrollToCert through the URL dialog. Returns ZET's identity added event.</summary>
     private static async Task<JObject> CompleteEnrollToCert(AppiumSession s, string identityName)
     {
         await PrepareTestWindow(s);
         EnterControllerUrl(s, Quickstart.UiControllerUrl);
-        string authUrl = JoinToEnrollmentUrl(s);
+        return await FinishEnrollToCert(s, identityName, JoinToEnrollmentUrl(s));
+    }
+
+    /// <summary>ZET's completeEnrollToCert from ZET's AddIdentity reply on. Returns ZET's identity added event.</summary>
+    private static async Task<JObject> FinishEnrollToCert(AppiumSession s, string identityName, string authUrl)
+    {
         await Dex.DriveIdPFlowAsync(authUrl, $"{identityName}@test.com");
         JObject added = AssertEnrollmentAdded(s, AddIdentityLine);
         AssertUrlEnrolledToCertIdentityFile((string)added["Id"]!["Identifier"]!);
@@ -236,7 +282,15 @@ public class ExternalAuthSingleSignerTests
     {
         await PrepareTestWindow(s);
         EnterControllerUrl(s, Quickstart.UiControllerUrl);
-        string enrollUrl = JoinToEnrollmentUrl(s);
+        return await FinishEnrollToToken(s, identityName, JoinToEnrollmentUrl(s));
+    }
+
+    /// <summary>
+    /// ZET's completeEnrollToToken from ZET's AddIdentity reply on, then the row's login. Returns ZET's identity added
+    /// event.
+    /// </summary>
+    private static async Task<JObject> FinishEnrollToToken(AppiumSession s, string identityName, string enrollUrl)
+    {
         await Dex.DriveIdPFlowAsync(enrollUrl, $"{identityName}@test.com");
         WaitForNeedsExtLogin(s, AddIdentityLine);
         string loginUrl = LoginFromRow(s);
