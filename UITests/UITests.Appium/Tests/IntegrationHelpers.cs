@@ -22,21 +22,26 @@ public static class IntegrationHelpers
     public static bool UiSent(RelayIpcServer relay, string command) =>
         relay.Recorded.Any(r => r.From == "ui" && r.Pipe == "cmd" && r.Line.Contains($"\"Command\":\"{command}\""));
 
+    public const string AddIdentityLine = "\"Command\":\"AddIdentity\"";
+    public const string EnableMfaLine = "\"Command\":\"EnableMFA\"";
+    public const string VerifyMfaLine = "\"Command\":\"VerifyMFA\"";
+    public const string SubmitMfaLine = "\"Command\":\"SubmitMFA\"";
+
+    private static int LatestUiCmdLine(IReadOnlyList<RelayIpcServer.RecordedLine> recorded, string uiLineFragment)
+    {
+        for (int i = recorded.Count - 1; i >= 0; i--)
+        {
+            if (recorded[i].From == "ui" && recorded[i].Pipe == "cmd" && recorded[i].Line.Contains(uiLineFragment))
+                return i;
+        }
+        throw new InvalidOperationException($"the UI sent no cmd line containing {uiLineFragment}");
+    }
+
     /// <summary>ZET's reply on the cmd pipe to the latest UI command line containing uiLineFragment.</summary>
     public static JObject ZetReplyTo(RelayIpcServer relay, string uiLineFragment)
     {
         IReadOnlyList<RelayIpcServer.RecordedLine> recorded = relay.Recorded;
-        int sent = -1;
-        for (int i = recorded.Count - 1; i >= 0; i--)
-        {
-            if (recorded[i].From == "ui" && recorded[i].Pipe == "cmd" && recorded[i].Line.Contains(uiLineFragment))
-            {
-                sent = i;
-                break;
-            }
-        }
-        if (sent < 0)
-            throw new InvalidOperationException($"the UI sent no cmd line containing {uiLineFragment}");
+        int sent = LatestUiCmdLine(recorded, uiLineFragment);
         for (int i = sent + 1; i < recorded.Count; i++)
         {
             if (recorded[i].From == "zet" && recorded[i].Pipe == "cmd")
@@ -45,14 +50,49 @@ public static class IntegrationHelpers
         throw new InvalidOperationException($"ZET sent no reply to: {recorded[sent].Line}");
     }
 
-    /// <summary>ZET's latest line on the event pipe containing lineFragment.</summary>
-    public static JObject LatestZetEvent(RelayIpcServer relay, string lineFragment)
+    /// <summary>
+    /// Wait for ZET's first event line containing eventFragment after the latest UI command line containing
+    /// uiLineFragment, as ZET's tests wait for an event after their command.
+    /// </summary>
+    public static JObject WaitForZetEventAfter(AppiumSession s, string uiLineFragment, string eventFragment)
     {
-        RelayIpcServer.RecordedLine? found = relay.Recorded
-            .LastOrDefault(r => r.From == "zet" && r.Pipe == "event" && r.Line.Contains(lineFragment));
-        if (found == null)
-            throw new InvalidOperationException($"ZET sent no event line containing {lineFragment}");
-        return JObject.Parse(found.Line);
+        JObject? found = null;
+        WaitUntil(s, $"ZET sends an event containing {eventFragment} after {uiLineFragment}", ControllerTimeout, () =>
+        {
+            IReadOnlyList<RelayIpcServer.RecordedLine> recorded = s.Relay!.Recorded;
+            RelayIpcServer.RecordedLine? line = recorded.Skip(LatestUiCmdLine(recorded, uiLineFragment) + 1)
+                .FirstOrDefault(r => r.From == "zet" && r.Pipe == "event" && r.Line.Contains(eventFragment));
+            found = line == null ? null : JObject.Parse(line.Line);
+            return found != null;
+        });
+        return found!;
+    }
+
+    /// <summary>ZET's MfaEvent.AssertSuccess on the first mfa event with action after the command.</summary>
+    public static JObject AssertMfaEventSucceeded(AppiumSession s, string uiLineFragment, string action)
+    {
+        JObject mfa = WaitForZetEventAfter(s, uiLineFragment, $"\"Op\":\"mfa\",\"Action\":\"{action}\"");
+        Assert.True((bool?)mfa["Successful"] == true, $"ZET's mfa {action} event failed: {mfa}");
+        return mfa;
+    }
+
+    /// <summary>ZET's IdentityEvent.AssertMfaAuthenticated on the first identity updated event after the command.</summary>
+    public static void AssertMfaAuthenticated(AppiumSession s, string uiLineFragment)
+    {
+        JObject updated = WaitForZetEventAfter(s, uiLineFragment, "\"Op\":\"identity\",\"Action\":\"updated\"");
+        Assert.True((bool?)updated["Id"]!["MfaEnabled"] == true && (bool?)updated["Id"]!["MfaNeeded"] == false,
+            $"ZET's identity updated event is not MFA authenticated: {updated}");
+    }
+
+    public static string AddedIdentityFile(IntegrationFixture fixture) =>
+        Path.Combine(fixture.Zet.IdentityDir, $"{AddedIdentityFileName}.json");
+
+    /// <summary>ZET's AssertValidJwtEnrolledIdentityFile.</summary>
+    public static void AssertJwtEnrolledIdentityFile(string path)
+    {
+        JObject file = JObject.Parse(File.ReadAllText(path));
+        foreach (string field in new[] { "ztAPI", "id.cert", "id.key", "id.ca" })
+            Assert.False(string.IsNullOrEmpty((string?)file.SelectToken(field)), $"identity file {path} has no {field}");
     }
 
     public static void WaitForController(AppiumSession s, By by, string description) =>
@@ -79,13 +119,21 @@ public static class IntegrationHelpers
         return s;
     }
 
-    /// <summary>Add an identity from the imported fixture through Add Identity, With JWT.</summary>
-    public static void AddIdentity(IntegrationFixture fixture, AppiumSession s, string identityName)
+    /// <summary>
+    /// Add an identity from the imported fixture through Add Identity, With JWT, asserting what ZET's EnrollJwt does.
+    /// Returns ZET's identity added event.
+    /// </summary>
+    public static JObject AddIdentity(IntegrationFixture fixture, AppiumSession s, string identityName)
     {
         WriteTestJwt(fixture.Quickstart.GetJwtFromController(identityName));
         ClickAddIdentityWithJwt(s);
         WaitForController(s, By.XPath($"//Text[@Name='{identityName}']"), $"{identityName} shows on the landing list");
+        Assert.Equal(0, (int?)ZetReplyTo(s.Relay!, AddIdentityLine)["Code"]);
+        JObject added = WaitForZetEventAfter(s, AddIdentityLine, "\"Op\":\"identity\",\"Action\":\"added\"");
+        Assert.True((bool?)added["Id"]!["Active"] == true, $"ZET's identity added event is not active: {added}");
+        AssertJwtEnrolledIdentityFile(AddedIdentityFile(fixture));
         SortByNameAscending(s);
+        return added;
     }
 
     public record MfaEnrollment(string Secret, IReadOnlyList<string> RecoveryCodes);
@@ -111,7 +159,9 @@ public static class IntegrationHelpers
     public static MfaEnrollment EnrollMfaToRecoveryCodes(IntegrationFixture fixture, AppiumSession s,
         string identityName)
     {
-        AddIdentity(fixture, s, identityName);
+        JObject added = AddIdentity(fixture, s, identityName);
+        Assert.True((bool?)added["Id"]!["MfaEnabled"] == false, $"MFA is enabled before EnableMFA: {added}");
+        WaitForZetEventAfter(s, AddIdentityLine, "\"Op\":\"controller\",\"Action\":\"connected\"");
         OpenIdentityDetails(s, identityName);
         ClickAt(s, WaitFor(s, By.XPath("//*[@AutomationId='IdentityMFA']//*[@AutomationId='ToggleField']")));
         WaitForController(s, By.XPath("//*[@AutomationId='SetupCode']"), "the MFA setup dialog opens");
@@ -120,10 +170,25 @@ public static class IntegrationHelpers
         WaitForId(s, "SetupCode").SendKeys(Totp.Compute(secret, DateTimeOffset.UtcNow));
         WaitForId(s, "AuthSetupButton").Click();
         WaitForController(s, By.XPath("//Text[@Name='MFA Recovery Codes']"), "the recovery codes show");
+        AssertMfaEnrollmentVerified(s);
         List<string> recoveryCodes = ReadRecoveryCodes(s);
         if (recoveryCodes.Count == 0)
             throw new InvalidOperationException($"no recovery codes were shown after enrolling {identityName}");
         return new MfaEnrollment(secret, recoveryCodes);
+    }
+
+    /// <summary>The asserts ZET's EnrollAndVerifyMFA makes from EnableMFA on, once the recovery codes show.</summary>
+    public static void AssertMfaEnrollmentVerified(AppiumSession s)
+    {
+        JObject enable = ZetReplyTo(s.Relay!, EnableMfaLine);
+        Assert.Equal(0, (int?)enable["Code"]);
+        Assert.False(string.IsNullOrEmpty((string?)enable["Data"]!["ProvisioningUrl"]), $"EnableMFA reply has no ProvisioningUrl: {enable}");
+        Assert.NotEmpty(enable["Data"]!["RecoveryCodes"]!.Values<string>());
+        Assert.True((bool?)enable["Data"]!["IsVerified"] == false, $"EnableMFA reply is verified before VerifyMFA: {enable}");
+        AssertMfaEventSucceeded(s, EnableMfaLine, "enrollment_challenge");
+        Assert.Equal(0, (int?)ZetReplyTo(s.Relay!, VerifyMfaLine)["Code"]);
+        AssertMfaAuthenticated(s, VerifyMfaLine);
+        AssertMfaEventSucceeded(s, VerifyMfaLine, "enrollment_verification");
     }
 
     /// <summary>
@@ -158,7 +223,10 @@ public static class IntegrationHelpers
         WaitForId(s, "AuthButton").Click();
     }
 
-    /// <summary>Submit code from the row's MFA prompt and wait for ZET to clear the lock.</summary>
+    /// <summary>
+    /// Submit code from the row's MFA prompt, wait for ZET to clear the lock, and assert what ZET's reauth tests do
+    /// after a SubmitMFA that succeeds.
+    /// </summary>
     public static async Task AuthenticateFromRow(AppiumSession s, string name, string step, string identityName,
         string code)
     {
@@ -169,6 +237,9 @@ public static class IntegrationHelpers
         // Clears on ZET's mfa_auth_status event.
         WaitUntil(s, "the row stops asking to authenticate", ControllerTimeout,
             () => s.Driver.FindElements(InIdentityRow(identityName, "MfaRequired")).Count == 0);
+        Assert.Equal(0, (int?)ZetReplyTo(s.Relay!, SubmitMfaLine)["Code"]);
+        AssertMfaAuthenticated(s, SubmitMfaLine);
+        AssertMfaEventSucceeded(s, SubmitMfaLine, "mfa_auth_status");
     }
 
     /// <summary>
@@ -183,7 +254,7 @@ public static class IntegrationHelpers
         WaitForBlurb(s, "Authentication Failed");
         // ShowBlurbAsync hides the blurb 2.5s after showing it, so this capture comes before the slower asserts.
         byte[] png = Capture(s);
-        JObject reply = ZetReplyTo(s.Relay!, "\"Command\":\"SubmitMFA\"");
+        JObject reply = ZetReplyTo(s.Relay!, SubmitMfaLine);
         Assert.Equal(500, (int?)reply["Code"]);
         Assert.Contains("the token provided was invalid", (string?)reply["Error"]);
         Assert.NotEmpty(s.Driver.FindElements(By.XPath("//*[@AutomationId='AuthCode']")));

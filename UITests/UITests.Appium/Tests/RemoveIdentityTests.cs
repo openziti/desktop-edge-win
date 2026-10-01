@@ -24,14 +24,13 @@ public class RemoveIdentityTests
         Trace.Begin();
         string name = nameof(WithIdentifierFromEvent);
         const string identityName = "test_remove_id";
-        string identityFile = Path.Combine(_fixture.Zet.IdentityDir, $"{AddedIdentityFileName}.json");
+        string identityFile = AddedIdentityFile(_fixture);
 
         await using AppiumSession s = await LaunchAsync(_fixture, name);
         AddIdentity(_fixture, s, identityName);
         await Trace.Settle(350);
         SaveStep(s, name, "01-identity-added");
         await VerifyScreen(Capture(s), "identity-added");
-        Assert.True(File.Exists(identityFile), $"ZET wrote no identity file at {identityFile}");
 
         OpenIdentityDetails(s, identityName);
         ClickAt(s, WaitFor(s, By.XPath("//*[@AutomationId='ForgetIdentityButton']")));
@@ -44,7 +43,7 @@ public class RemoveIdentityTests
         await Trace.Settle(300);
         SaveStep(s, name, "03-identity-forgotten");
         await VerifyScreen(Capture(s), "identity-forgotten");
-        Assert.True(UiSent(s.Relay!, "RemoveIdentity"));
+        Assert.Equal(0, (int?)ZetReplyTo(s.Relay!, "\"Command\":\"RemoveIdentity\"")["Code"]);
         Assert.Equal(0, IdentityRowCount(s));
         Assert.False(File.Exists(identityFile), $"identity file should be removed after forget: {identityFile}");
     }

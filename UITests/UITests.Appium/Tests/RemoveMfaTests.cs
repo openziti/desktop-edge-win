@@ -49,11 +49,7 @@ public class RemoveMfaTests
         SaveStep(removed, name, "03-removed-details");
         await VerifyScreen(removed, "removed-details", name);
         // IsMFAEnabled clears on ZET's enrollment_remove event, not on the RemoveMFA reply.
-        WaitUntil(s, "ZET sends a successful enrollment_remove event", ControllerTimeout,
-            () => s.Relay!.Recorded
-                .Where(r => r.From == "zet" && r.Pipe == "event")
-                .Select(r => JObject.Parse(r.Line))
-                .Any(e => (string?)e["Action"] == "enrollment_remove" && (bool?)e["Successful"] == true));
+        AssertMfaEventSucceeded(s, "\"Command\":\"RemoveMFA\"", "enrollment_remove");
         WaitForGone(s, By.XPath("//*[@AutomationId='AuthCode']"));
         JObject reply = ZetReplyTo(s.Relay!, "\"Command\":\"RemoveMFA\"");
         Assert.Equal(0, (int?)reply["Code"]);

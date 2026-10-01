@@ -6,7 +6,11 @@ using static ZitiDesktopEdge.UITests.Tests.TestHelpers;
 
 namespace ZitiDesktopEdge.UITests.Tests;
 
-/// <summary>UI twin of TestAddIdentityByJwt in ziti-tunnel-sdk-c tests/integration/add_identity_test.go.</summary>
+/// <summary>
+/// UI twin of TestAddIdentityByJwt in ziti-tunnel-sdk-c tests/integration/add_identity_test.go. The filename subtests
+/// have no twin: the UI sends the picked JWT file's name, which Windows never lets hold a path separator or 5000
+/// characters.
+/// </summary>
 [TestLifecycleLog]
 [Trait("Category", "Integration")]
 [Collection(IntegrationCollection.Name)]

@@ -58,7 +58,6 @@ public class MfaRecoveryCodesTests
         CloseIdentityDetails(s);
         TriggerReauthChallenge(s, identityName);
         await AuthenticateFromRow(s, name, "04-new-code-typed", identityName, newCodes[0]);
-        Assert.Equal(0, (int?)ZetReplyTo(s.Relay!, "\"Command\":\"SubmitMFA\"")["Code"]);
         CloseIdentityDetails(s);
 
         TriggerReauthChallenge(s, identityName);

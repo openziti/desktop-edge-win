@@ -1,3 +1,4 @@
+using Newtonsoft.Json.Linq;
 using OpenQA.Selenium;
 using ZitiDesktopEdge.UITests.Drivers;
 using static ZitiDesktopEdge.UITests.Tests.IntegrationHelpers;
@@ -37,12 +38,20 @@ public class IdentityOnOffTests
         await Trace.Settle(350);
         SaveStep(s, name, "02-toggled-off");
         await VerifyScreen(Capture(s), "toggled-off");
+        Assert.Equal(0, (int?)ZetReplyTo(s.Relay!, OffLine)["Code"]);
+        WaitForZetEventAfter(s, OffLine, "\"Op\":\"controller\",\"Action\":\"disconnected\"");
 
         ClickAt(s, WaitFor(s, InIdentityRow(identityName, "ToggleSwitch")));
         WaitForController(s, ToggleStatus(identityName, "ENABLED"), $"{identityName} shows ENABLED");
         await Trace.Settle(350);
         SaveStep(s, name, "03-toggled-on");
         await VerifyScreen(Capture(s), "toggled-on");
-        Assert.True(UiSent(s.Relay!, "IdentityOnOff"));
+        Assert.Equal(0, (int?)ZetReplyTo(s.Relay!, OnLine)["Code"]);
+        JObject on = WaitForZetEventAfter(s, OnLine, "\"Op\":\"identity\",\"Action\":\"added\"");
+        Assert.True((bool?)on["Id"]!["Active"] == true, $"ZET's identity added event is not active after on: {on}");
+        WaitForZetEventAfter(s, OnLine, "\"Op\":\"controller\",\"Action\":\"connected\"");
     }
+
+    private const string OffLine = "\"OnOff\":false";
+    private const string OnLine = "\"OnOff\":true";
 }

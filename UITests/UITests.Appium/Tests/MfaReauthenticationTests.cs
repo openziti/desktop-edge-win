@@ -35,8 +35,6 @@ public class MfaReauthenticationTests
         // Clicking the row's lock also opened the details, which the prompt closes back to.
         SaveStep(s, name, "03-authenticated-details");
         await VerifyScreen(Capture(s), "authenticated-details", name);
-        JObject reply = ZetReplyTo(s.Relay!, "\"Command\":\"SubmitMFA\"");
-        Assert.Equal(0, (int?)reply["Code"]);
     }
 
     [Fact(Timeout = 180000)]

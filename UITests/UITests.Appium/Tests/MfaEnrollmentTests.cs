@@ -33,6 +33,8 @@ public class MfaEnrollmentTests
         // Partially authenticated until TOTP is enrolled, so ZET sends no added event with the controller name and the
         // row keeps the file name. The prompt shows on ZET's enrollment_required event.
         WaitForController(s, InIdentityRow(AddedIdentityFileName, "MfaSetupNeeded"), "the row asks to set up MFA");
+        Assert.Equal(0, (int?)ZetReplyTo(s.Relay!, AddIdentityLine)["Code"]);
+        WaitForZetEventAfter(s, AddIdentityLine, "\"Op\":\"mfa\",\"Action\":\"enrollment_required\"");
         SortByNameAscending(s);
         await Trace.Settle(350);
         SaveStep(s, name, "01-setup-needed-row");
@@ -56,11 +58,10 @@ public class MfaEnrollmentTests
         await Trace.Settle(300);
         SaveStep(s, name, "04-mfa-recovery-codes");
         await VerifyScreen(MaskedCentered(s, Capture(s), RecoveryCodeBoxes, RecoveryCodeMaskWidth, RecoveryDialogBackground), "mfa-recovery-codes");
-        JObject reply = ZetReplyTo(s.Relay!, "\"Command\":\"VerifyMFA\"");
-        Assert.Equal(0, (int?)reply["Code"]);
+        AssertMfaEnrollmentVerified(s);
         // The baseline masks the codes, so their text is checked against the enrollment_challenge event the app took
         // them from.
-        JObject challenge = LatestZetEvent(s.Relay!, "\"Action\":\"enrollment_challenge\"");
+        JObject challenge = AssertMfaEventSucceeded(s, EnableMfaLine, "enrollment_challenge");
         List<string> sent = challenge["RecoveryCodes"]!.Values<string>().Select(code => code!).ToList();
         Assert.NotEmpty(sent);
         Assert.Equal(sent, ReadRecoveryCodes(s));
@@ -84,9 +85,11 @@ public class MfaEnrollmentTests
 
         await using AppiumSession s = await LaunchAsync(_fixture, name);
         AddIdentity(_fixture, s, identityName);
+        WaitForZetEventAfter(s, AddIdentityLine, "\"Op\":\"controller\",\"Action\":\"connected\"");
         OpenIdentityDetails(s, identityName);
         ClickAt(s, WaitFor(s, By.XPath("//*[@AutomationId='IdentityMFA']//*[@AutomationId='ToggleField']")));
         WaitForController(s, By.XPath("//*[@AutomationId='SetupCode']"), "the MFA setup dialog opens");
+        Assert.Equal(0, (int?)ZetReplyTo(s.Relay!, EnableMfaLine)["Code"]);
         WaitForId(s, "SetupCode").SendKeys("000000");
         SaveStep(s, name, "01-invalid-code-typed");
         WaitForId(s, "AuthSetupButton").Click();
@@ -99,7 +102,7 @@ public class MfaEnrollmentTests
         SaveStep(rejected, name, "02-after-rejection");
         await VerifyScreen(rejected, "after-rejection");
         Assert.Empty(s.Driver.FindElements(By.XPath("//*[@AutomationId='SetupCode']")));
-        JObject reply = ZetReplyTo(s.Relay!, "\"Command\":\"VerifyMFA\"");
+        JObject reply = ZetReplyTo(s.Relay!, VerifyMfaLine);
         Assert.Equal(500, (int?)reply["Code"]);
         Assert.Contains("the token provided was invalid", (string?)reply["Error"]);
     }
