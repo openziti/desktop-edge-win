@@ -55,9 +55,15 @@ public class MfaEnrollmentTests
         WaitForController(s, By.XPath("//Text[@Name='MFA Recovery Codes']"), "the recovery codes show");
         await Trace.Settle(300);
         SaveStep(s, name, "04-mfa-recovery-codes");
-        await VerifyScreen(MaskedCentered(s, Capture(s), RecoveryCodeBoxes, RecoveryCodeMaskWidth), "mfa-recovery-codes");
+        await VerifyScreen(MaskedCentered(s, Capture(s), RecoveryCodeBoxes, RecoveryCodeMaskWidth, RecoveryDialogBackground), "mfa-recovery-codes");
         JObject reply = ZetReplyTo(s.Relay!, "\"Command\":\"VerifyMFA\"");
         Assert.Equal(0, (int?)reply["Code"]);
+        // The baseline masks the codes, so their text is checked against the enrollment_challenge event the app took
+        // them from.
+        JObject challenge = LatestZetEvent(s.Relay!, "\"Action\":\"enrollment_challenge\"");
+        List<string> sent = challenge["RecoveryCodes"]!.Values<string>().Select(code => code!).ToList();
+        Assert.NotEmpty(sent);
+        Assert.Equal(sent, ReadRecoveryCodes(s));
 
         ClickUntilGone(s, By.XPath("//*[@AutomationId='CloseBlack']"));
         // Fully authenticated now, so ZET's added event renames the row to the controller name.

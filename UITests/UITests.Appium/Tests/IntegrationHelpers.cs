@@ -45,6 +45,16 @@ public static class IntegrationHelpers
         throw new InvalidOperationException($"ZET sent no reply to: {recorded[sent].Line}");
     }
 
+    /// <summary>ZET's latest line on the event pipe containing lineFragment.</summary>
+    public static JObject LatestZetEvent(RelayIpcServer relay, string lineFragment)
+    {
+        RelayIpcServer.RecordedLine? found = relay.Recorded
+            .LastOrDefault(r => r.From == "zet" && r.Pipe == "event" && r.Line.Contains(lineFragment));
+        if (found == null)
+            throw new InvalidOperationException($"ZET sent no event line containing {lineFragment}");
+        return JObject.Parse(found.Line);
+    }
+
     public static void WaitForController(AppiumSession s, By by, string description) =>
         WaitUntil(s, description, ControllerTimeout, () => s.Driver.FindElements(by).Any(e => e.Displayed));
 
@@ -86,6 +96,10 @@ public static class IntegrationHelpers
 
     // Six capital letters and digits draw about 50 to 70px wide.
     public const int RecoveryCodeMaskWidth = 80;
+
+    // The dialog's gradient runs from 249 to 247 grey over the codes, inside the comparer's colour tolerance of this.
+    public static readonly System.Drawing.Brush RecoveryDialogBackground =
+        new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(248, 248, 248));
 
     public static List<string> ReadRecoveryCodes(AppiumSession s) =>
         s.Driver.FindElements(RecoveryCodeBoxes).Select(e => e.Text).ToList();

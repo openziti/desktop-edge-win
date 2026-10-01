@@ -46,11 +46,12 @@ public class MfaRecoveryCodesTests
         await Trace.Settle(350);
         byte[] regenerated = Capture(s);
         SaveStep(regenerated, name, "03-new-recovery-codes");
-        await VerifyScreen(MaskedCentered(s, regenerated, RecoveryCodeBoxes, RecoveryCodeMaskWidth), "new-recovery-codes", name);
+        await VerifyScreen(MaskedCentered(s, regenerated, RecoveryCodeBoxes, RecoveryCodeMaskWidth, RecoveryDialogBackground), "new-recovery-codes", name);
         JObject reply = ZetReplyTo(s.Relay!, "\"Command\":\"GenerateMFACodes\"");
         Assert.Equal(0, (int?)reply["Code"]);
         List<string> newCodes = ReadRecoveryCodes(s);
         Assert.NotEmpty(newCodes);
+        Assert.Equal(reply["Data"]!["RecoveryCodes"]!.Values<string>().Select(code => code!).ToList(), newCodes);
         Assert.Empty(newCodes.Intersect(enrollment.RecoveryCodes));
 
         ClickUntilGone(s, By.XPath("//*[@AutomationId='CloseBlack']"));

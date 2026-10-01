@@ -422,16 +422,19 @@ public static class TestHelpers
     /// recovery codes) can sit on a baseline. A mask that matches nothing throws: its value would reach the baseline.
     /// </summary>
     public static byte[] Masked(AppiumSession s, byte[] png, params By[] masks) =>
-        PaintedOver(png, masks.SelectMany(mask => MaskElements(s, mask)).Select(el => new Rectangle(el.Location, el.Size)));
+        PaintedOver(png, masks.SelectMany(mask => MaskElements(s, mask)).Select(el => new Rectangle(el.Location, el.Size)),
+            Brushes.Gray);
 
     /// <summary>
     /// The capture with a box of a fixed width painted over each element the mask matches, centred on it, for centred
     /// elements that size to their per-run text, whose own bounds would change the baseline. width must exceed the
-    /// widest text.
+    /// widest text. The box takes the background colour, because a centre rounded from an odd or even width moves its
+    /// edges by a pixel.
     /// </summary>
-    public static byte[] MaskedCentered(AppiumSession s, byte[] png, By mask, int width) =>
+    public static byte[] MaskedCentered(AppiumSession s, byte[] png, By mask, int width, Brush background) =>
         PaintedOver(png, MaskElements(s, mask).Select(el =>
-            new Rectangle(el.Location.X + (el.Size.Width / 2) - (width / 2), el.Location.Y, width, el.Size.Height)));
+            new Rectangle(el.Location.X + (el.Size.Width / 2) - (width / 2), el.Location.Y, width, el.Size.Height)),
+            background);
 
     private static ReadOnlyCollection<AppiumElement> MaskElements(AppiumSession s, By mask)
     {
@@ -459,7 +462,7 @@ public static class TestHelpers
     }
 
     // Appium reports locations relative to the session's top-level window, the same origin as the capture.
-    private static byte[] PaintedOver(byte[] png, IEnumerable<Rectangle> areas)
+    private static byte[] PaintedOver(byte[] png, IEnumerable<Rectangle> areas, Brush brush)
     {
         using MemoryStream input = new MemoryStream(png);
         using Bitmap bitmap = new Bitmap(input);
@@ -467,7 +470,7 @@ public static class TestHelpers
         {
             foreach (Rectangle area in areas)
             {
-                graphics.FillRectangle(Brushes.Gray, area);
+                graphics.FillRectangle(brush, area);
             }
         }
         using MemoryStream output = new MemoryStream();
