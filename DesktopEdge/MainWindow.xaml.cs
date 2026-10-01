@@ -213,8 +213,6 @@ namespace ZitiDesktopEdge {
                         }
                         if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Identifier == mfa.Identifier) this.IdentityMenu.Identity = found;
                         await ShowBlurbAsync("MFA disabled, access may be limited", "");
-                    } else {
-                        await ShowBlurbAsync("MFA Removal Failed", "");
                     }
                 } else if (mfa.Action == "mfa_auth_status") {
                     var found = identities.Find(id => id.Identifier == mfa.Identifier);
@@ -375,7 +373,10 @@ namespace ZitiDesktopEdge {
         /// <param name="sender">The animation</param>
         /// <param name="e">The event</param>
         private void ModalHideComplete(object sender, EventArgs e) {
-            ModalBg.Visibility = Visibility.Collapsed;
+            // A replaced fade's clock keeps running, so this fires even after ShowModal reopened it.
+            if (ModalBg.Opacity == 0) {
+                ModalBg.Visibility = Visibility.Collapsed;
+            }
         }
         private void CloseJoinByUrl(bool isComplete, UserControl sender) {
             AnimateDialogOut(sender);
@@ -389,7 +390,10 @@ namespace ZitiDesktopEdge {
             DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
             ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
             animation.Completed += (s, e) => {
-                sender.Visibility = Visibility.Collapsed;
+                // A replaced fade's clock keeps running, so this fires even after a reopen below replaced it.
+                if (sender.Opacity == 0) {
+                    sender.Visibility = Visibility.Collapsed;
+                }
             };
             sender.BeginAnimation(Grid.OpacityProperty, animation);
             sender.BeginAnimation(Grid.MarginProperty, animateThick);
