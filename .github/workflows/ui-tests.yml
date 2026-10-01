@@ -1,7 +1,7 @@
 name: UI Tests
 
 # The workflow only checks out and calls the UITests scripts, so a run reproduces locally with the same commands. The
-# integration job also fetches ZET and ziti first, as ziti-tunnel-sdk-c's integration-tests.yml does.
+# integration job also fetches ZET, ziti and dex first, as ziti-tunnel-sdk-c's integration-tests.yml does.
 
 on:
   # Manual run against any branch.
@@ -117,6 +117,21 @@ jobs:
       - name: Set ZITI_BIN
         shell: bash
         run: echo "ZITI_BIN=$RUNNER_TEMP/ziti-cli/bin/ziti.exe" >> "$GITHUB_ENV"
+
+      # fetch-dex.ps1 sets GOTOOLCHAIN=auto, so any Go downloads the toolchain dex's go.mod asks for.
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: stable
+          cache: false
+
+      # dex publishes no binaries, so it is built the way ziti-tunnel-sdk-c's run-ci.ps1 builds it.
+      - name: Set IDP_BIN
+        shell: pwsh
+        run: |
+          $dest = Join-Path $env:RUNNER_TEMP "dex"
+          ./UITests/fetch-dex.ps1 -Dest $dest
+          "IDP_BIN=$(Join-Path $dest 'dex.exe')" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
       - name: Build + run integration UI tests
         shell: pwsh

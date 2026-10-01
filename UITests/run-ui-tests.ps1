@@ -14,6 +14,7 @@
     Integration tests take their binaries the way ziti-tunnel-sdk-c's tests/integration/scripts/run-ci.ps1 does:
       $env:ZET_BIN   Absolute path to a ziti-edge-tunnel.exe. CI downloads the release Installer\build.ps1 ships.
       $env:ZITI_BIN  Absolute path to a ziti.exe for the quickstart. CI resolves it with openziti's setup-cli action.
+      $env:IDP_BIN   Absolute path to a dex.exe for the external auth tests. CI builds it with fetch-dex.ps1, a copy of ZET's.
 #>
 [CmdletBinding()]
 param(
@@ -36,13 +37,14 @@ $runsIntegration = $Filter -ne "Category!=Integration"
 
 $ErrorActionPreference = "Stop"
 if ($runsIntegration) {
-    foreach ($variable in @("ZET_BIN", "ZITI_BIN")) {
+    foreach ($variable in @("ZET_BIN", "ZITI_BIN", "IDP_BIN")) {
         $path = [Environment]::GetEnvironmentVariable($variable)
         if (-not $path) { throw "Integration tests need `$env:$variable" }
         if (-not (Test-Path -LiteralPath $path)) { throw "$variable=$path does not exist" }
     }
     Write-Host "==> ziti-edge-tunnel $(& $env:ZET_BIN version) at $($env:ZET_BIN)"
     Write-Host "==> ziti $(& $env:ZITI_BIN version) at $($env:ZITI_BIN)"
+    Write-Host "==> $(& $env:IDP_BIN version | Select-Object -First 1) at $($env:IDP_BIN)"
 }
 $repoRoot   = Resolve-Path (Join-Path $PSScriptRoot "..")
 $uiTestsDir = $PSScriptRoot

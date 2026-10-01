@@ -92,6 +92,67 @@ public sealed class Quickstart : IAsyncDisposable
 
     public void DeleteIdentity(string name) => RunChecked("edge", "delete", "identity", name);
 
+    /// <summary>The ext-jwt-signer settings ZET's CreateExtJwtSigner takes, claims property email and dex's scopes.</summary>
+    public sealed record ExtJwtSigner(string Name, string Issuer, string Jwks, string ClientId);
+
+    /// <summary>
+    /// The enrollment settings ZET's UpdateExtJwtSigner always writes. ZET writes /sub for an empty name selector and
+    /// default for an empty auth policy.
+    /// </summary>
+    public sealed record SignerEnrollment(bool ToCert, bool ToToken, string NameSelector, string AttrSelector,
+        string AuthPolicy);
+
+    public static readonly SignerEnrollment EnrollToNone = new(false, false, "/sub", "", "default");
+
+    /// <summary>Returns the new signer's id.</summary>
+    public string CreateExtJwtSigner(ExtJwtSigner signer)
+    {
+        List<string> args = new()
+        {
+            "edge", "create", "ext-jwt-signer", signer.Name, signer.Issuer,
+            "--jwks-endpoint", signer.Jwks, "--audience", Dex.Audience, "--client-id", signer.ClientId,
+            "--external-auth-url", signer.Issuer, "--claims-property", "email",
+        };
+        foreach (string scope in Dex.Scopes) args.AddRange(new[] { "--scopes", scope });
+        return RunChecked(args.ToArray()).Stdout.Trim();
+    }
+
+    public string? FindExtJwtSignerId(string name)
+    {
+        CliResult result = RunChecked("edge", "list", "ext-jwt-signers", $"name=\"{name}\"", "-j");
+        JArray signers = JObject.Parse(result.Stdout)["data"] as JArray ?? new JArray();
+        return signers.Count == 0 ? null : (string?)signers[0]["id"];
+    }
+
+    public void UpdateExtJwtSigner(string name, SignerEnrollment enrollment) =>
+        RunChecked("edge", "update", "ext-jwt-signer", name,
+            "--enroll-name-claims-selector", enrollment.NameSelector,
+            "--enroll-attr-claims-selector", enrollment.AttrSelector,
+            "--enroll-auth-policy", enrollment.AuthPolicy,
+            $"--enroll-to-cert={enrollment.ToCert.ToString().ToLowerInvariant()}",
+            $"--enroll-to-token={enrollment.ToToken.ToString().ToLowerInvariant()}");
+
+    public void DeleteExtJwtSigner(string name) => RunChecked("edge", "delete", "ext-jwt-signer", name);
+
+    /// <summary>An auth policy whose primary auth is ext-jwt through these signers.</summary>
+    public void CreateAuthPolicyForExtJwt(string name, IReadOnlyList<string> signerIds)
+    {
+        List<string> args = new() { "edge", "create", "auth-policy", name, "--primary-ext-jwt-allowed" };
+        foreach (string id in signerIds) args.AddRange(new[] { "--primary-ext-jwt-allowed-signers", id });
+        RunChecked(args.ToArray());
+    }
+
+    public void DeleteAuthPolicy(string name) => RunChecked("edge", "delete", "auth-policy", name);
+
+    public void SetAuthPolicySecondaryExtJwtSigner(string policy, string signerId) =>
+        RunChecked("edge", "update", "auth-policy", policy, "--secondary-req-ext-jwt-signer", signerId);
+
+    public void CreateIdentityWithExternalId(string name, string externalId, string authPolicy) =>
+        RunChecked("edge", "create", "identity", name, "--external-id", externalId, "-P", authPolicy);
+
+    public void SetIdentityAuthPolicy(string name, string authPolicy) =>
+        RunChecked("edge", "update", "identity", name, "-P", authPolicy);
+
     /// <summary>
     /// Log in once the controller answers, then wait for a raft leader: until one is elected the controller rejects
     /// every model update with CLUSTER_NO_LEADER.

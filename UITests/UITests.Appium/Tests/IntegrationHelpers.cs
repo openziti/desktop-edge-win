@@ -29,6 +29,8 @@ public static class IntegrationHelpers
     public const string EnableMfaLine = "\"Command\":\"EnableMFA\"";
     public const string VerifyMfaLine = "\"Command\":\"VerifyMFA\"";
     public const string SubmitMfaLine = "\"Command\":\"SubmitMFA\"";
+    // DataClient.ExternalAuthLogin sends this command.
+    public const string ExternalAuthLine = "\"Command\":\"ExternalAuth\"";
 
     private static int LatestUiCmdLine(IReadOnlyList<RelayIpcServer.RecordedLine> recorded, string uiLineFragment)
     {
@@ -40,17 +42,43 @@ public static class IntegrationHelpers
         throw new InvalidOperationException($"the UI sent no cmd line containing {uiLineFragment}");
     }
 
-    /// <summary>ZET's reply on the cmd pipe to the latest UI command line containing uiLineFragment.</summary>
-    public static JObject ZetReplyTo(RelayIpcServer relay, string uiLineFragment)
+    /// <summary>The latest UI command line containing uiLineFragment.</summary>
+    public static JObject UiCommand(RelayIpcServer relay, string uiLineFragment)
     {
         IReadOnlyList<RelayIpcServer.RecordedLine> recorded = relay.Recorded;
-        int sent = LatestUiCmdLine(recorded, uiLineFragment);
+        return JObject.Parse(recorded[LatestUiCmdLine(recorded, uiLineFragment)].Line);
+    }
+
+    private static JObject? FindZetReplyTo(IReadOnlyList<RelayIpcServer.RecordedLine> recorded, int sent)
+    {
         for (int i = sent + 1; i < recorded.Count; i++)
         {
             if (recorded[i].From == "zet" && recorded[i].Pipe == "cmd")
                 return JObject.Parse(recorded[i].Line);
         }
-        throw new InvalidOperationException($"ZET sent no reply to: {recorded[sent].Line}");
+        return null;
+    }
+
+    /// <summary>ZET's reply on the cmd pipe to the latest UI command line containing uiLineFragment.</summary>
+    public static JObject ZetReplyTo(RelayIpcServer relay, string uiLineFragment)
+    {
+        IReadOnlyList<RelayIpcServer.RecordedLine> recorded = relay.Recorded;
+        int sent = LatestUiCmdLine(recorded, uiLineFragment);
+        return FindZetReplyTo(recorded, sent)
+            ?? throw new InvalidOperationException($"ZET sent no reply to: {recorded[sent].Line}");
+    }
+
+    /// <summary>Wait for ZET's reply to the latest UI command line containing uiLineFragment, which must be sent.</summary>
+    public static JObject WaitForZetReplyTo(AppiumSession s, string uiLineFragment)
+    {
+        JObject? reply = null;
+        WaitUntil(s, $"ZET replies to {uiLineFragment}", ControllerTimeout, () =>
+        {
+            IReadOnlyList<RelayIpcServer.RecordedLine> recorded = s.Relay!.Recorded;
+            reply = FindZetReplyTo(recorded, LatestUiCmdLine(recorded, uiLineFragment));
+            return reply != null;
+        });
+        return reply!;
     }
 
     /// <summary>
@@ -145,6 +173,84 @@ public static class IntegrationHelpers
         AssertUrlEnrolledToNoneIdentityFile(identifier!);
         WaitUntil(s, "the URL identity shows on the landing list", ControllerTimeout, () => IdentityRowCount(s) == 1);
         return needsLogin;
+    }
+
+    /// <summary>ZET's AssertValidUrlEnrolledIdentityFile for enroll-to-cert, which checks what the JWT one does.</summary>
+    public static void AssertUrlEnrolledToCertIdentityFile(string path) => AssertJwtEnrolledIdentityFile(path);
+
+    /// <summary>ZET's AssertValidUrlEnrolledIdentityFile for enroll-to-token, which checks what the none one does.</summary>
+    public static void AssertUrlEnrolledToTokenIdentityFile(string path) => AssertUrlEnrolledToNoneIdentityFile(path);
+
+    // One row at a time, and its name is the controller's, which comes from a dex claim.
+    public static readonly By ExtAuthRequiredIcon = By.XPath("//*[@AutomationId='ExtAuthRequired']");
+
+    /// <summary>
+    /// ZET's GetExternalAuthURL from the row: click its ext auth icon, which with one provider logs in to it directly.
+    /// Returns the IdP URL from ZET's reply, which the app opens in the browser.
+    /// </summary>
+    public static string LoginFromRow(AppiumSession s)
+    {
+        // The browser opened for an earlier IdP URL can cover the icon, and the click is a real mouse click.
+        CloseBrowsers();
+        int loginsBefore = UiCmdLineCount(s.Relay!, ExternalAuthLine);
+        ClickAt(s, WaitFor(s, ExtAuthRequiredIcon));
+        WaitUntil(s, "the UI sends ExternalAuth", ControllerTimeout,
+            () => UiCmdLineCount(s.Relay!, ExternalAuthLine) > loginsBefore);
+        JObject reply = WaitForZetReplyTo(s, ExternalAuthLine);
+        Assert.Equal(0, (int?)reply["Code"]);
+        string? url = (string?)reply["Data"]?["url"];
+        Assert.False(string.IsNullOrEmpty(url), $"ExternalAuth reply has no Data.url: {reply}");
+        return url!;
+    }
+
+    /// <summary>ZET's wait for needs_ext_login after the command, until the row shows its ext auth icon.</summary>
+    public static JObject WaitForNeedsExtLogin(AppiumSession s, string uiLineFragment)
+    {
+        JObject needsLogin = WaitForZetEventAfter(s, uiLineFragment, "\"Op\":\"identity\",\"Action\":\"needs_ext_login\"");
+        Assert.True((bool?)needsLogin["Id"]!["NeedsExtAuth"] == true, $"needs_ext_login is not NeedsExtAuth: {needsLogin}");
+        WaitForController(s, ExtAuthRequiredIcon, "the row asks for external auth");
+        return needsLogin;
+    }
+
+    /// <summary>
+    /// Click Join Network on the URL dialog and assert what ZET's beginEnrollment does. Returns the IdP URL from ZET's
+    /// reply, which the app opens in the browser.
+    /// </summary>
+    public static string JoinToEnrollmentUrl(AppiumSession s)
+    {
+        int addsBefore = UiCmdLineCount(s.Relay!, AddIdentityLine);
+        WaitForId(s, "JoinNetworkBtn").Click();
+        // The app looks up the controller's ext-jwt signers before it sends AddIdentity.
+        WaitUntil(s, "the UI sends AddIdentity", ControllerTimeout,
+            () => UiCmdLineCount(s.Relay!, AddIdentityLine) > addsBefore);
+        JObject reply = WaitForZetReplyTo(s, AddIdentityLine);
+        Assert.Equal(0, (int?)reply["Code"]);
+        string? url = (string?)reply["Data"]?["url"];
+        Assert.False(string.IsNullOrEmpty(url), $"AddIdentity reply has no Data.url: {reply}");
+        return url!;
+    }
+
+    /// <summary>ZET's assertEnrollmentSucceeded up to the file check. Returns ZET's identity added event.</summary>
+    public static JObject AssertEnrollmentAdded(AppiumSession s, string uiLineFragment)
+    {
+        JObject added = WaitForZetEventAfter(s, uiLineFragment,"\"Op\":\"identity\",\"Action\":\"added\"");
+        Assert.True((bool?)added["Id"]!["Active"] == true, $"ZET's identity added event is not active: {added}");
+        Assert.True((bool?)added["Id"]!["NeedsExtAuth"] == false, $"ZET's identity added event still needs ext auth: {added}");
+        return added;
+    }
+
+    /// <summary>
+    /// Close the browser windows the app opened for an IdP URL. The test drives dex itself, so they only cover the app.
+    /// </summary>
+    public static void CloseBrowsers()
+    {
+        foreach (System.Diagnostics.Process browser in System.Diagnostics.Process.GetProcessesByName("msedge"))
+        {
+            using (browser)
+            {
+                browser.Kill(true);
+            }
+        }
     }
 
     public static void WaitForController(AppiumSession s, By by, string description) =>
