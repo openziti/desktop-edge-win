@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OpenQA.Selenium;
 using ZitiDesktopEdge.UITests.Drivers;
@@ -134,10 +135,32 @@ public static class IntegrationHelpers
     public static string AddedIdentityFile(IntegrationFixture fixture) =>
         Path.Combine(fixture.Zet.IdentityDir, $"{AddedIdentityFileName}.json");
 
+    private static readonly TimeSpan IdentityFileReadTimeout = TimeSpan.FromSeconds(5);
+
+    /// <summary>
+    /// The identity file, read again while ZET holds it open: ZET rewrites it after enrollment (the HA controller list),
+    /// and a read in between fails with a sharing violation or lands on a half-written file.
+    /// </summary>
+    private static JObject ReadIdentityFile(string path)
+    {
+        DateTime deadline = DateTime.UtcNow + IdentityFileReadTimeout;
+        while (true)
+        {
+            try
+            {
+                return JObject.Parse(File.ReadAllText(path));
+            }
+            catch (Exception e) when ((e is IOException || e is JsonReaderException) && DateTime.UtcNow < deadline)
+            {
+                Thread.Sleep(50);
+            }
+        }
+    }
+
     /// <summary>ZET's AssertValidJwtEnrolledIdentityFile.</summary>
     public static void AssertJwtEnrolledIdentityFile(string path)
     {
-        JObject file = JObject.Parse(File.ReadAllText(path));
+        JObject file = ReadIdentityFile(path);
         foreach (string field in new[] { "ztAPI", "id.cert", "id.key", "id.ca" })
             Assert.False(string.IsNullOrEmpty((string?)file.SelectToken(field)), $"identity file {path} has no {field}");
     }
@@ -145,7 +168,7 @@ public static class IntegrationHelpers
     /// <summary>ZET's AssertValidUrlEnrolledIdentityFile for enroll-to-none: a CA bundle and no cert or key.</summary>
     public static void AssertUrlEnrolledToNoneIdentityFile(string path)
     {
-        JObject file = JObject.Parse(File.ReadAllText(path));
+        JObject file = ReadIdentityFile(path);
         foreach (string field in new[] { "ztAPI", "id.ca" })
             Assert.False(string.IsNullOrEmpty((string?)file.SelectToken(field)), $"identity file {path} has no {field}");
         foreach (string field in new[] { "id.cert", "id.key" })

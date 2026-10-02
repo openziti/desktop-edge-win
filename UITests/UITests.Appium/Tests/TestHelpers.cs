@@ -244,8 +244,9 @@ public static class TestHelpers
         });
 
     /// <summary>
-    /// Write a window capture and the UIA page source for a failed wait, so a CI flake shows what
-    /// the test saw. Returns a sentence for the exception message: where they went, or why not.
+    /// Write the UIA page source, the visible top-level windows, a desktop capture and a window capture for a failed
+    /// wait, so a CI flake shows what the test saw and what else was on screen. Returns a sentence for the exception
+    /// message: where they went, or why not.
     /// </summary>
     private static string SaveTimeoutDiagnostics(AppiumSession s)
     {
@@ -255,10 +256,19 @@ public static class TestHelpers
         {
             Directory.CreateDirectory(dir);
             File.WriteAllText(Path.Combine(dir, $"{stamp}-page-source.xml"), s.Driver.PageSource);
+            File.WriteAllLines(Path.Combine(dir, $"{stamp}-windows.txt"),
+                AppiumSession.TopLevelWindows().Select(w =>
+                    $"{(w.IsForeground ? "*" : " ")} {w.Handle} pid={w.ProcessId} {w.ProcessName} {w.Bounds} '{w.Title}'" +
+                    (w.Handle == s.WindowHandle ? " (app under test)" : ""))
+                .Prepend($"app under test {s.WindowHandle} visible={s.IsWindowVisible}, * marks the foreground window")
+                .Concat(AppiumSession.ProcessOrigins("ZitiDesktopEdge.exe").Select(p =>
+                    $"ZitiDesktopEdge pid={p.ProcessId} started={p.CreationDate} parent={p.ParentProcessId} {p.ParentName} '{p.CommandLine}'")));
+            File.WriteAllBytes(Path.Combine(dir, $"{stamp}-desktop.png"), AppiumSession.CaptureDesktop());
             File.WriteAllBytes(Path.Combine(dir, $"{stamp}-window.png"), s.CaptureWindow());
             return $"Diagnostics saved as {dir}\\{stamp}-*.";
         }
-        catch (Exception ex) when (ex is WebDriverException or IOException or System.ComponentModel.Win32Exception)
+        catch (Exception ex) when (ex is WebDriverException or IOException or System.ComponentModel.Win32Exception
+            or System.Management.ManagementException)
         {
             return $"Diagnostics not saved: {ex.GetType().Name}: {ex.Message}";
         }
@@ -395,7 +405,12 @@ public static class TestHelpers
             DateTime deadline = DateTime.UtcNow.AddSeconds(2);
             while (DateTime.UtcNow < deadline)
             {
-                if (s.Driver.FindElements(closeXPath).Count == 0) return;
+                if (s.Driver.FindElements(closeXPath).Count == 0)
+                {
+                    // A hidden docked window drops every child from the tree too, so check the landing page shows.
+                    WaitFor(s, By.XPath("//Text[@Name='MAIN']"));
+                    return;
+                }
                 Thread.Sleep(30);
             }
             throw new TimeoutException("DismissWelcome: welcome screen still open after clicking Close");

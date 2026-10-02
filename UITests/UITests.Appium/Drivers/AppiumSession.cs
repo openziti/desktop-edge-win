@@ -142,7 +142,38 @@ internal static class Win32Window
     public static extern bool SetCaretBlinkTime(uint uMSeconds);
 
     public const uint INFINITE = 0xFFFFFFFF;
+
+    public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+    public static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    public static extern bool IsWindowVisible(IntPtr hWnd);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder lpString, int nMaxCount);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+    public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    public static extern IntPtr GetForegroundWindow();
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    public static extern int GetSystemMetrics(int nIndex);
+
+    public const int SM_CXSCREEN = 0;
+    public const int SM_CYSCREEN = 1;
 }
+
+/// <summary>A visible top-level window, in z-order, for a failed wait's diagnostics.</summary>
+public sealed record TopLevelWindow(IntPtr Handle, int ProcessId, string ProcessName, string Title, Rectangle Bounds,
+    bool IsForeground);
+
+/// <summary>A running process and what started it, for a failed wait's diagnostics.</summary>
+public sealed record ProcessOrigin(int ProcessId, int ParentProcessId, string ParentName, string CreationDate,
+    string CommandLine);
 
 public sealed class AppiumSession : IAsyncDisposable
 {
@@ -163,6 +194,8 @@ public sealed class AppiumSession : IAsyncDisposable
     private readonly Process _uiProcess;
 
     public IntPtr WindowHandle => _uiProcess.MainWindowHandle;
+
+    public bool IsWindowVisible => Win32Window.IsWindowVisible(WindowHandle);
 
     /// <summary>
     /// Move the WPF window by (dx, dy) physical pixels. The top edge is clamped to the screen because an off-screen
@@ -221,6 +254,65 @@ public sealed class AppiumSession : IAsyncDisposable
         bitmap.Save(png, ImageFormat.Png);
         return png.ToArray();
     });
+
+    /// <summary>PNG of the whole primary screen as the user sees it, to show what covers or replaced the window.</summary>
+    public static byte[] CaptureDesktop()
+    {
+        Rectangle screen = new Rectangle(0, 0, Win32Window.GetSystemMetrics(Win32Window.SM_CXSCREEN),
+            Win32Window.GetSystemMetrics(Win32Window.SM_CYSCREEN));
+        using Bitmap bitmap = new Bitmap(screen.Width, screen.Height, PixelFormat.Format32bppArgb);
+        using (Graphics graphics = Graphics.FromImage(bitmap))
+            graphics.CopyFromScreen(screen.Location, Point.Empty, screen.Size);
+        using MemoryStream png = new MemoryStream();
+        bitmap.Save(png, ImageFormat.Png);
+        return png.ToArray();
+    }
+
+    /// <summary>Visible top-level windows from the top of the z-order down.</summary>
+    public static IReadOnlyList<TopLevelWindow> TopLevelWindows()
+    {
+        IntPtr foreground = Win32Window.GetForegroundWindow();
+        List<IntPtr> handles = new List<IntPtr>();
+        if (!Win32Window.EnumWindows((hWnd, _) => { handles.Add(hWnd); return true; }, IntPtr.Zero))
+            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), "EnumWindows failed");
+        return handles.Where(Win32Window.IsWindowVisible).Select(hWnd =>
+        {
+            System.Text.StringBuilder title = new System.Text.StringBuilder(256);
+            Win32Window.GetWindowText(hWnd, title, title.Capacity);
+            Win32Window.GetWindowThreadProcessId(hWnd, out uint pid);
+            Win32Window.GetWindowRect(hWnd, out Win32Window.RECT r);
+            return new TopLevelWindow(hWnd, (int)pid, ProcessName((int)pid), title.ToString(),
+                Rectangle.FromLTRB(r.Left, r.Top, r.Right, r.Bottom), hWnd == foreground);
+        }).ToList();
+    }
+
+    /// <summary>Every running process with this image name, e.g. "ZitiDesktopEdge.exe", with its parent and command line.</summary>
+    public static IReadOnlyList<ProcessOrigin> ProcessOrigins(string imageName)
+    {
+        using System.Management.ManagementObjectSearcher searcher = new System.Management.ManagementObjectSearcher(
+            $"SELECT ProcessId, ParentProcessId, CreationDate, CommandLine FROM Win32_Process WHERE Name = '{imageName}'");
+        using System.Management.ManagementObjectCollection found = searcher.Get();
+        return found.Cast<System.Management.ManagementObject>().Select(p =>
+        {
+            int parent = (int)(uint)p["ParentProcessId"];
+            return new ProcessOrigin((int)(uint)p["ProcessId"], parent, ProcessName(parent),
+                (string?)p["CreationDate"] ?? "", (string?)p["CommandLine"] ?? "");
+        }).ToList();
+    }
+
+    /// <summary>The process's name, or why it has none: a window's process can exit while the list is built.</summary>
+    private static string ProcessName(int pid)
+    {
+        try
+        {
+            using Process p = Process.GetProcessById(pid);
+            return p.ProcessName;
+        }
+        catch (ArgumentException)
+        {
+            return "(exited)";
+        }
+    }
 
     private Rectangle WindowRect()
     {
@@ -433,5 +525,6 @@ public sealed class AppiumSession : IAsyncDisposable
         // Kill returns before the process is gone. The next test's launch must not overlap a dying UI.
         if (!_uiProcess.WaitForExit(10000))
             throw new TimeoutException($"UI process {_uiProcess.Id} still running 10s after Kill");
+        AppToasts.Clear(_uiProcess.StartInfo.FileName);
     }
 }

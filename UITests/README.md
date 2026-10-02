@@ -171,7 +171,7 @@ UITests/
   run-ui-tests.ps1                       <-- builds, manages appium, runs dotnet test, writes the reports
   UITests.sln
   UITests.Appium/
-    UITests.Appium.csproj                <-- net9.0-windows xUnit + Appium 5 + Verify
+    UITests.Appium.csproj                <-- net9.0-windows10.0.17763.0 xUnit + Appium 5 + Verify
     AssemblyInfo.cs                      <-- disables xUnit parallelism (single UI session safety)
     GlobalUsings.cs
     Drivers/
