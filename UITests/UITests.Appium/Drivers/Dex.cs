@@ -3,6 +3,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using System.Web;
 using Newtonsoft.Json.Linq;
+using Step = ZitiDesktopEdge.UITests.Tests.Step;
 
 namespace ZitiDesktopEdge.UITests.Drivers;
 
@@ -125,6 +126,7 @@ public sealed class Dex : IAsyncDisposable
             if (IsLoopbackCallback(current))
             {
                 await HitLoopbackAsync(client, current);
+                Step.Log($"logged in to dex as {email} and sent the code to {current.GetLeftPart(UriPartial.Path)}");
                 return;
             }
             using HttpResponseMessage hop = await client.GetAsync(current);
@@ -145,6 +147,7 @@ public sealed class Dex : IAsyncDisposable
         string state = query["state"] ?? throw new InvalidOperationException($"auth URL has no state: {authUrl}");
         using HttpClient client = new HttpClient { Timeout = HttpTimeout };
         await HitLoopbackAsync(client, new Uri($"{redirect}?error=access_denied&state={Uri.EscapeDataString(state)}"));
+        Step.Log($"denied the dex login at {redirect}");
     }
 
     private static async Task<Uri> FollowRedirectsTo200Async(HttpClient client, Uri start)

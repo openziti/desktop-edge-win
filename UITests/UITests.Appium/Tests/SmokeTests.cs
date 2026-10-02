@@ -18,7 +18,8 @@ public class SmokeTests
     [Trait("Category", "Screenshots")]
     public async Task MainWindow_LaunchesAndRenders()
     {
-        await using AppiumSession session = await AppiumSession.LaunchAsync(DefaultExePath(), Fixture("landing-status.json"));
+        await using AppiumSession session = await AppiumSession.LaunchAsync(DefaultExePath(),
+            Fixture("landing-status.json"), UiLogPath(nameof(MainWindow_LaunchesAndRenders)));
         WaitForId(session, "ConnectLabel");
 
         byte[] png = Capture(session);
@@ -31,7 +32,8 @@ public class SmokeTests
     [Trait("Category", "Screenshots")]
     public async Task MainMenu_OpensOnHamburgerClick()
     {
-        await using AppiumSession session = await AppiumSession.LaunchAsync(DefaultExePath(), Fixture("landing-status.json"));
+        await using AppiumSession session = await AppiumSession.LaunchAsync(DefaultExePath(),
+            Fixture("landing-status.json"), UiLogPath(nameof(MainMenu_OpensOnHamburgerClick)));
         WaitForId(session, "ConnectLabel");
 
         OpenMainMenu(session);
@@ -49,7 +51,7 @@ public class SmokeTests
     public async Task Visual_Disconnected()
     {
         await using AppiumSession session = await AppiumSession.LaunchAsync(
-            DefaultExePath(), Fixture("disconnected.json"));
+            DefaultExePath(), Fixture("disconnected.json"), UiLogPath(nameof(Visual_Disconnected)));
         WaitForId(session, "ConnectLabel");
         await Trace.Settle(350);
 
@@ -64,7 +66,7 @@ public class SmokeTests
     public async Task Visual_NoIdentities()
     {
         await using AppiumSession session = await AppiumSession.LaunchAsync(
-            DefaultExePath(), Fixture("no-identities.json"));
+            DefaultExePath(), Fixture("no-identities.json"), UiLogPath(nameof(Visual_NoIdentities)));
         WaitForId(session, "ConnectLabel");
         await Trace.Settle(350);
 
@@ -79,7 +81,7 @@ public class SmokeTests
     public async Task Visual_NeedsExtAuth()
     {
         await using AppiumSession session = await AppiumSession.LaunchAsync(
-            DefaultExePath(), Fixture("needs-ext-auth.json"));
+            DefaultExePath(), Fixture("needs-ext-auth.json"), UiLogPath(nameof(Visual_NeedsExtAuth)));
         WaitForId(session, "ConnectLabel");
         WaitFor(session, By.XPath("//Text[@Name='needs-ext-auth-id']"));
         await Trace.Settle(350);
@@ -95,7 +97,7 @@ public class SmokeTests
     public async Task Visual_WithServices()
     {
         await using AppiumSession session = await AppiumSession.LaunchAsync(
-            DefaultExePath(), Fixture("with-services.json"));
+            DefaultExePath(), Fixture("with-services.json"), UiLogPath(nameof(Visual_WithServices)));
         WaitForId(session, "ConnectLabel");
         WaitFor(session, By.XPath("//Text[@Name='with-3-services-id']"));
         // the service count reads "-" until the status event's services render
@@ -114,7 +116,8 @@ public class SmokeTests
     public async Task TunnelConfig_EditValuesAndSave_SendsUpdateInterfaceConfig()
     {
         string name = nameof(TunnelConfig_EditValuesAndSave_SendsUpdateInterfaceConfig);
-        await using AppiumSession s = await AppiumSession.LaunchAsync(DefaultExePath(), Fixture("landing-status.json"));
+        await using AppiumSession s = await AppiumSession.LaunchAsync(DefaultExePath(), Fixture("landing-status.json"),
+            UiLogPath(name));
         WaitForId(s, "ConnectLabel");
         SaveStep(s, name, "01-landing");
 
@@ -164,7 +167,7 @@ public class SmokeTests
         // Authenticate With Provider opens a real browser, so the test injects ZET's post-login event instead.
         string name = nameof(ExtAuth_SuccessfulLoginEvent_ClearsNeedsExtAuth);
         await using AppiumSession s = await AppiumSession.LaunchAsync(
-            DefaultExePath(), Fixture("needs-ext-auth.json"));
+            DefaultExePath(), Fixture("needs-ext-auth.json"), UiLogPath(name));
         WaitForId(s, "ConnectLabel");
         WaitFor(s, By.XPath("//Text[@Name='needs-ext-auth-id']"));
         SaveStep(s, name, "01-landing-with-ext-auth-identity");
@@ -197,7 +200,8 @@ public class SmokeTests
     public async Task IdentityDetails_ShowsServiceList()
     {
         string name = nameof(IdentityDetails_ShowsServiceList);
-        await using AppiumSession s = await AppiumSession.LaunchAsync(DefaultExePath(), Fixture("landing-status.json"));
+        await using AppiumSession s = await AppiumSession.LaunchAsync(DefaultExePath(), Fixture("landing-status.json"),
+            UiLogPath(name));
         WaitForId(s, "ConnectLabel");
         SaveStep(s, name, "01-landing-with-services");
 
@@ -221,7 +225,7 @@ public class SmokeTests
         // 5 rows nearly fill IdList.MaxHeight, so the main view is about as tall as it gets, and every row stays in
         // view whatever the persisted sort order, which OpenIdentityDetails needs.
         await using AppiumSession s = await AppiumSession.LaunchAsync(DefaultExePath(),
-            FixtureBuilder.ManyMixedIdentities(count: 5));
+            FixtureBuilder.ManyMixedIdentities(count: 5), UiLogPath(name));
         WaitForId(s, "ConnectLabel");
         WaitFor(s, By.XPath("//Text[@Name='enabled-00']"));
         await Trace.Settle(350);
@@ -244,7 +248,8 @@ public class SmokeTests
     public async Task DockedWelcomeStaysOnScreen()
     {
         string name = nameof(DockedWelcomeStaysOnScreen);
-        await using AppiumSession s = await AppiumSession.LaunchAsync(DefaultExePath(), Fixture("no-identities.json"));
+        await using AppiumSession s = await AppiumSession.LaunchAsync(DefaultExePath(), Fixture("no-identities.json"),
+            UiLogPath(name));
         WaitFor(s, By.XPath("//*[@AutomationId='GetStartedScreen']//*[@AutomationId='CloseButton']"));
         await Trace.Settle(350);
         AssertOnScreen(s, name, "01-welcome");
@@ -271,7 +276,7 @@ public class SmokeTests
         string name = nameof(ManyIdentities_LandingShowsScrollableList);
         // 25 rows is still far past the 4-5 visible, so the list scrolls, at half the PageSource cost of 50 (about 10s).
         JObject status = FixtureBuilder.ManyMixedIdentities(count: 25);
-        await using AppiumSession s = await AppiumSession.LaunchAsync(DefaultExePath(), status);
+        await using AppiumSession s = await AppiumSession.LaunchAsync(DefaultExePath(), status, UiLogPath(name));
         WaitForId(s, "ConnectLabel");
         // PageSource, not WaitFor: rows scrolled out of view report not displayed.
         string src = "";
@@ -291,7 +296,7 @@ public class SmokeTests
     {
         string name = nameof(ExtAuth_ClickIsDefaultProviderCheckbox_TogglesDefault);
         await using AppiumSession s = await AppiumSession.LaunchAsync(
-            DefaultExePath(), Fixture("needs-ext-auth.json"));
+            DefaultExePath(), Fixture("needs-ext-auth.json"), UiLogPath(name));
         WaitForId(s, "ConnectLabel");
         WaitFor(s, By.XPath("//Text[@Name='needs-ext-auth-id']"));
         SaveStep(s, name, "01-landing");
@@ -325,7 +330,8 @@ public class SmokeTests
     public async Task AddIdentityOffersJwtAndUrl()
     {
         string name = nameof(AddIdentityOffersJwtAndUrl);
-        await using AppiumSession s = await AppiumSession.LaunchAsync(DefaultExePath(), Fixture("landing-status.json"));
+        await using AppiumSession s = await AppiumSession.LaunchAsync(DefaultExePath(), Fixture("landing-status.json"),
+            UiLogPath(name));
         WaitForId(s, "ConnectLabel");
         SaveStep(s, name, "01-landing");
 

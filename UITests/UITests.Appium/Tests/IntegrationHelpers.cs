@@ -65,9 +65,15 @@ public static class IntegrationHelpers
     {
         IReadOnlyList<RelayIpcServer.RecordedLine> recorded = relay.Recorded;
         int sent = LatestUiCmdLine(recorded, uiLineFragment);
-        return FindZetReplyTo(recorded, sent)
+        JObject reply = FindZetReplyTo(recorded, sent)
             ?? throw new InvalidOperationException($"ZET sent no reply to: {recorded[sent].Line}");
+        LogReply(uiLineFragment, reply);
+        return reply;
     }
+
+    // Only the outcome fields: Data can carry an MFA secret or recovery codes.
+    private static void LogReply(string uiLineFragment, JObject reply) =>
+        Step.Log($"ZET replied to {uiLineFragment}: Success={reply["Success"]} Code={reply["Code"]} Error={reply["Error"]}");
 
     /// <summary>Wait for ZET's reply to the latest UI command line containing uiLineFragment, which must be sent.</summary>
     public static JObject WaitForZetReplyTo(AppiumSession s, string uiLineFragment)
@@ -79,6 +85,7 @@ public static class IntegrationHelpers
             reply = FindZetReplyTo(recorded, LatestUiCmdLine(recorded, uiLineFragment));
             return reply != null;
         });
+        LogReply(uiLineFragment, reply!);
         return reply!;
     }
 
@@ -408,14 +415,16 @@ public static class IntegrationHelpers
         WaitUntil(s, $"the blurb says '{text}'", ControllerTimeout, () => BlurbShows(s, text));
 
     /// <summary>
-    /// Empty the fixture's ZET and launch the app against it, recording to captures\testName.
+    /// Empty the fixture's ZET and launch the app against it, recording to captures\testName and logging to
+    /// logs\testName.
     /// </summary>
     public static async Task<AppiumSession> LaunchAsync(IntegrationFixture fixture, string testName)
     {
         await fixture.Zet.RemoveAllIdentitiesAsync();
         AppiumSession s = await AppiumSession.LaunchAgainstZetAsync(DefaultExePath(),
             IntegrationFixture.ZetDiscriminator,
-            Path.Combine(RepoRoot(), "UITests", "TestResults", "captures", $"{testName}.jsonl"));
+            Path.Combine(RepoRoot(), "UITests", "TestResults", "captures", $"{testName}.jsonl"),
+            UiLogPath(testName));
         WaitForId(s, "ConnectLabel");
         DismissWelcome(s);
         return s;
@@ -428,6 +437,7 @@ public static class IntegrationHelpers
     public static JObject AddIdentity(IntegrationFixture fixture, AppiumSession s, string identityName)
     {
         WriteTestJwt(fixture.Quickstart.GetJwtFromController(identityName));
+        Step.Log($"adding {identityName} with its JWT from the controller");
         ClickAddIdentityWithJwt(s);
         WaitForController(s, By.XPath($"//Text[@Name='{identityName}']"), $"{identityName} shows on the landing list");
         Assert.Equal(0, (int?)ZetReplyTo(s.Relay!, AddIdentityLine)["Code"]);

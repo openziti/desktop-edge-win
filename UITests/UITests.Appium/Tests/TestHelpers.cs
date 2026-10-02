@@ -83,6 +83,10 @@ public static class TestHelpers
     public static By InIdentityRow(string identityName, string automationId) => By.XPath(
         $"//Custom[@ClassName='IdentityItem' and .//Text[@Name='{identityName}']]//*[@AutomationId='{automationId}']");
 
+    /// <summary>TestResults\logs\&lt;testName&gt;\ui.log, the app's console output for that test's session.</summary>
+    public static string UiLogPath(string testName) =>
+        Path.Combine(RepoRoot(), "UITests", "TestResults", "logs", testName, "ui.log");
+
     /// <summary>
     /// Writes TestResults\screenshots\&lt;testName&gt;\&lt;step&gt;.png, which the gallery shows as the test's
     /// step strip.
@@ -105,6 +109,7 @@ public static class TestHelpers
                 return;
             }
             SaveStep(png, testName, stepName);
+            Step.Log($"saved step {testName}/{stepName}");
         });
 
     /// <summary>
@@ -145,7 +150,11 @@ public static class TestHelpers
                 DateTime probe = DateTime.UtcNow.AddMilliseconds(1500);
                 while (DateTime.UtcNow < probe)
                 {
-                    if (IsDisplayed(s, expected)) return;
+                    if (IsDisplayed(s, expected))
+                    {
+                        Step.Log($"clicked {target} until {expected} showed ({clicks} clicks)");
+                        return;
+                    }
                     Thread.Sleep(40);
                 }
             }
@@ -186,7 +195,8 @@ public static class TestHelpers
         {
             // FindElements returns empty on a miss. FindElement throws instead, and the throw across the WinAppDriver
             // HTTP boundary costs about 500ms per try.
-            DateTime deadline = DateTime.UtcNow + ElementTimeout;
+            DateTime start = DateTime.UtcNow;
+            DateTime deadline = start + ElementTimeout;
             int lastMatchCount = 0;
             while (DateTime.UtcNow < deadline)
             {
@@ -194,7 +204,11 @@ public static class TestHelpers
                 {
                     System.Collections.ObjectModel.ReadOnlyCollection<OpenQA.Selenium.Appium.AppiumElement> els = s.Driver.FindElements(by);
                     lastMatchCount = els.Count;
-                    if (els.Count > 0 && els[0].Displayed) return els[0];
+                    if (els.Count > 0 && els[0].Displayed)
+                    {
+                        Step.Log($"saw {by} after {(DateTime.UtcNow - start).TotalMilliseconds:F0}ms");
+                        return els[0];
+                    }
                 }
                 catch (StaleElementReferenceException) { /* retry */ }
                 Thread.Sleep(40);
@@ -229,12 +243,17 @@ public static class TestHelpers
     public static void WaitUntil(AppiumSession s, string description, TimeSpan timeout, Func<bool> condition) =>
         Trace.Time($"WaitUntil({description})", () =>
         {
-            DateTime deadline = DateTime.UtcNow + timeout;
+            DateTime start = DateTime.UtcNow;
+            DateTime deadline = start + timeout;
             while (DateTime.UtcNow < deadline)
             {
                 try
                 {
-                    if (condition()) return;
+                    if (condition())
+                    {
+                        Step.Log($"waited {(DateTime.UtcNow - start).TotalMilliseconds:F0}ms until {description}");
+                        return;
+                    }
                 }
                 catch (StaleElementReferenceException) { /* retry */ }
                 Thread.Sleep(50);
@@ -385,7 +404,11 @@ public static class TestHelpers
                 DateTime probe = DateTime.UtcNow.AddMilliseconds(2000);
                 while (DateTime.UtcNow < probe)
                 {
-                    if (!IsDisplayed(s, target)) return;
+                    if (!IsDisplayed(s, target))
+                    {
+                        Step.Log($"clicked {target} until it was gone ({clicks} clicks)");
+                        return;
+                    }
                     Thread.Sleep(40);
                 }
             }
@@ -425,6 +448,7 @@ public static class TestHelpers
 
     public static SettingsTask VerifyPng(byte[] png, [CallerMemberName] string? testName = null)
     {
+        Step.Log($"comparing {testName} to its baseline");
         WriteReviewScreenshot(Path.Combine(RepoRoot(), "UITests", "TestResults", "screenshots"), $"{testName}.png", png);
         return ComparedToBaseline(Verify(png, "png"));
     }
@@ -433,8 +457,11 @@ public static class TestHelpers
     /// Compare a mid-test screen to its own baseline, SmokeTests.&lt;test&gt;_&lt;screen&gt;.verified.png, so one
     /// journey can check several screens.
     /// </summary>
-    public static SettingsTask VerifyScreen(byte[] png, string screen, [CallerMemberName] string? testName = null) =>
-        ComparedToBaseline(Verify(png, "png").UseMethodName($"{testName}_{screen}"));
+    public static SettingsTask VerifyScreen(byte[] png, string screen, [CallerMemberName] string? testName = null)
+    {
+        Step.Log($"comparing {testName}_{screen} to its baseline");
+        return ComparedToBaseline(Verify(png, "png").UseMethodName($"{testName}_{screen}"));
+    }
 
     /// <summary>
     /// The capture with every element the masks match painted over, so values that change per run (QR codes, secrets,

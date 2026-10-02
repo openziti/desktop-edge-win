@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using OpenQA.Selenium.Appium;
 using OpenQA.Selenium.Appium.Windows;
 using ZitiDesktopEdge.UITests.MockIpc;
+using Step = ZitiDesktopEdge.UITests.Tests.Step;
 using Trace = ZitiDesktopEdge.UITests.Tests.Trace;
 
 namespace ZitiDesktopEdge.UITests.Drivers;
@@ -191,7 +192,8 @@ public sealed class AppiumSession : IAsyncDisposable
     public MockIpcServer Mock { get; }
     /// <summary>Set only by LaunchAgainstZetAsync, where Mock serves just the monitor pipes.</summary>
     public RelayIpcServer? Relay { get; }
-    private readonly Process _uiProcess;
+    private readonly ProcessOutputLog _ui;
+    private Process _uiProcess => _ui.Process;
 
     public IntPtr WindowHandle => _uiProcess.MainWindowHandle;
 
@@ -347,13 +349,13 @@ public sealed class AppiumSession : IAsyncDisposable
 
     private readonly uint _savedCaretBlinkTime;
 
-    private AppiumSession(WindowsDriver driver, MockIpcServer mock, RelayIpcServer? relay, Process uiProcess,
+    private AppiumSession(WindowsDriver driver, MockIpcServer mock, RelayIpcServer? relay, ProcessOutputLog ui,
         uint savedCaretBlinkTime)
     {
         Driver = driver;
         Mock = mock;
         Relay = relay;
-        _uiProcess = uiProcess;
+        _ui = ui;
         _savedCaretBlinkTime = savedCaretBlinkTime;
     }
 
@@ -380,10 +382,10 @@ public sealed class AppiumSession : IAsyncDisposable
     private static readonly Uri AppiumServer = new Uri("http://127.0.0.1:4723/");
 
     /// <summary>
-    /// Start a mock ZET and monitor serving landingStatus on fresh pipe names, launch the app against them, and attach
-    /// Appium to its window.
+    /// Start a mock ZET and monitor serving landingStatus on fresh pipe names, launch the app against them with its
+    /// console output in uiLogPath, and attach Appium to its window.
     /// </summary>
-    public static async Task<AppiumSession> LaunchAsync(string exePath, JObject landingStatus)
+    public static async Task<AppiumSession> LaunchAsync(string exePath, JObject landingStatus, string uiLogPath)
     {
         string prefix = $"zdew-test-{Guid.NewGuid():N}-";
         MockIpcServer mock = new MockIpcServer(prefix, landingStatus);
@@ -393,15 +395,16 @@ public sealed class AppiumSession : IAsyncDisposable
 
         Trace.Time("MockIpcServer.Start", () => mock.Start());
 
-        return await AttachAsync(exePath, prefix, mock, null);
+        return await AttachAsync(exePath, prefix, mock, null, uiLogPath);
     }
 
     /// <summary>
     /// Relay the app's data pipes to a real ziti-edge-tunnel started with -P zetDiscriminator, recording the traffic
-    /// to capturePath, with a mock monitor. Launch the app against them and attach Appium to its window.
+    /// to capturePath, with a mock monitor. Launch the app against them with its console output in uiLogPath and
+    /// attach Appium to its window.
     /// </summary>
     public static async Task<AppiumSession> LaunchAgainstZetAsync(string exePath, string zetDiscriminator,
-        string capturePath)
+        string capturePath, string uiLogPath)
     {
         string prefix = $"zdew-test-{Guid.NewGuid():N}-";
         MockIpcServer mock = new MockIpcServer(prefix, new JObject());
@@ -413,28 +416,30 @@ public sealed class AppiumSession : IAsyncDisposable
         await Trace.TimeAsync("RelayIpcServer.StartAsync", () => relay.StartAsync());
         Trace.Time("MockIpcServer.StartMonitorPipes", () => mock.StartMonitorPipes());
 
-        return await AttachAsync(exePath, prefix, mock, relay);
+        return await AttachAsync(exePath, prefix, mock, relay, uiLogPath);
     }
 
     private static async Task<AppiumSession> AttachAsync(string exePath, string prefix, MockIpcServer mock,
-        RelayIpcServer? relay)
+        RelayIpcServer? relay, string uiLogPath)
     {
         uint savedCaretBlinkTime = StopCaretBlink();
-        Process uiProc = Trace.Time("Process.Start(ZitiDesktopEdge.exe)", () =>
+        ProcessOutputLog ui = Trace.Time("Process.Start(ZitiDesktopEdge.exe)", () =>
         {
             ProcessStartInfo psi = new ProcessStartInfo
             {
                 FileName = exePath,
                 UseShellExecute = false,
                 CreateNoWindow = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
                 WorkingDirectory = Path.GetDirectoryName(exePath)!,
             };
             psi.EnvironmentVariables["ZDEW_UI_TEST"] = "1";
             psi.EnvironmentVariables["ZDEW_IPC_PIPE_PREFIX"] = prefix;
-            Process p = Process.Start(psi) ?? throw new InvalidOperationException("Failed to launch ZitiDesktopEdge.exe");
-            ChildProcessKiller.Adopt(p);
-            return p;
+            return ProcessOutputLog.Start(psi, uiLogPath);
         });
+        Process uiProc = ui.Process;
+        Step.Log($"started the app (pid {uiProc.Id}), its log is {uiLogPath}");
 
         // WaitForInputIdle returns once the UI thread pumps messages (after MainWindow.Show), but MainWindowHandle
         // can lag it, so poll after.
@@ -485,15 +490,17 @@ public sealed class AppiumSession : IAsyncDisposable
         if (driver == null)
         {
             KillIfRunning(uiProc);
+            ui.Dispose();
             SetCaretBlinkTime(savedCaretBlinkTime);
             await mock.DisposeAsync();
             if (relay != null) await relay.DisposeAsync();
             if (hwnd == IntPtr.Zero)
-                throw new TimeoutException($"ZDEW's main window never appeared within {LaunchWindowTimeout} of Process.Start");
-            throw new InvalidOperationException($"Appium could not attach to ZDEW window within {LaunchWindowTimeout}. Last error: {lastErr?.Message}", lastErr);
+                throw new TimeoutException($"ZDEW's main window never appeared within {LaunchWindowTimeout} of Process.Start. Log: {uiLogPath}");
+            throw new InvalidOperationException($"Appium could not attach to ZDEW window within {LaunchWindowTimeout}. Last error: {lastErr?.Message}. Log: {uiLogPath}", lastErr);
         }
 
-        return new AppiumSession(driver, mock, relay, uiProc, savedCaretBlinkTime);
+        Step.Log($"attached Appium to the app's window {hwnd}");
+        return new AppiumSession(driver, mock, relay, ui, savedCaretBlinkTime);
     }
 
     private static void KillIfRunning(Process process)
@@ -524,7 +531,8 @@ public sealed class AppiumSession : IAsyncDisposable
         if (Relay != null) await Relay.DisposeAsync();
         // Kill returns before the process is gone. The next test's launch must not overlap a dying UI.
         if (!_uiProcess.WaitForExit(10000))
-            throw new TimeoutException($"UI process {_uiProcess.Id} still running 10s after Kill");
+            throw new TimeoutException($"UI process {_uiProcess.Id} still running 10s after Kill. Log: {_ui.LogPath}");
         AppToasts.Clear(_uiProcess.StartInfo.FileName);
+        _ui.Dispose();
     }
 }

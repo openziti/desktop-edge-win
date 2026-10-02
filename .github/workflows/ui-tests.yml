@@ -162,6 +162,7 @@ jobs:
             UITests/TestResults/baselines/
             UITests/TestResults/captures/
             UITests/TestResults/screenshots/
+            UITests/TestResults/logs/
             UITests/TestResults/integration/zet/*.log
             UITests/TestResults/integration/quickstart/*.log
             UITests/TestResults/integration/idp/logs/*.log

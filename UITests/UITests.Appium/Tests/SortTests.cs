@@ -56,7 +56,7 @@ public class SortTests
         string name = nameof(SortHeadersReorderIdentities);
 
         await using AppiumSession s = await Trace.TimeAsync("AppiumSession.LaunchAsync",
-            () => AppiumSession.LaunchAsync(DefaultExePath(), FixtureBuilder.SortableMixed()));
+            () => AppiumSession.LaunchAsync(DefaultExePath(), FixtureBuilder.SortableMixed(), UiLogPath(name)));
         WaitForId(s, "ConnectLabel");
         await Trace.Settle(200);
         SaveStep(s, name, "01-landing-persisted-sort");

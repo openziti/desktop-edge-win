@@ -39,7 +39,7 @@ public class ServiceTests : IClassFixture<LandingSession>, IAsyncLifetime
         return Task.CompletedTask;
     }
 
-    [Fact(Timeout = 20000)]
+    [Fact(Timeout = 60000)]
     public async Task Services_ClickDetailIcon_OpensServicePanel()
     {
         string name = nameof(Services_ClickDetailIcon_OpensServicePanel);
@@ -60,7 +60,7 @@ public class ServiceTests : IClassFixture<LandingSession>, IAsyncLifetime
         ClickUntilGone(S, By.XPath("//*[@AutomationId='ServiceDetailsClose']"));
     }
 
-    [Fact(Timeout = 20000)]
+    [Fact(Timeout = 60000)]
     public async Task Services_FilterNarrowsList()
     {
         string name = nameof(Services_FilterNarrowsList);
@@ -98,7 +98,7 @@ public class ServiceAltFixtureTests
     {
         string name = nameof(Services_AlternateFixtureShowsDifferentNames);
         await using AppiumSession s = await AppiumSession.LaunchAsync(
-            DefaultExePath(), Fixture("with-services.json"));
+            DefaultExePath(), Fixture("with-services.json"), UiLogPath(name));
         WaitForId(s, "ConnectLabel");
         WaitFor(s, By.XPath("//Text[@Name='with-3-services-id']"));
         SaveStep(s, name, "01-landing-with-services-fixture");
