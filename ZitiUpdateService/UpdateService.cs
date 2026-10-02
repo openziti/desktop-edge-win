@@ -84,6 +84,7 @@ namespace ZitiUpdateService {
         private volatile bool _deferredInstallPending = false;
         private volatile bool _deferToRestartPending  = false;
         private volatile bool _stagingDownloadPending = false;
+        private readonly SemaphoreSlim installSemaphore = new SemaphoreSlim(1, 1);
 
         // Startup policy-polling: when HasPolicy is false at boot, poll every 5s until the
         // Group Policy registry keys appear (or until 2 minutes have elapsed).  This bounds
@@ -1264,6 +1265,19 @@ namespace ZitiUpdateService {
         }
 
         private void installZDE(UpdateCheck check) {
+            // TriggerUpdate, the deferred and policy paths, and the critical path in CheckUpdate each call this from their own thread
+            if (!installSemaphore.Wait(0)) {
+                Logger.Info("installZDE already in progress; skipping request for version {0}", check?.GetNextVersion());
+                return;
+            }
+            try {
+                runInstall(check);
+            } finally {
+                installSemaphore.Release();
+            }
+        }
+
+        private void runInstall(UpdateCheck check) {
             int? start = PolicySettings.EffectiveMaintenanceWindowStart(CurrentSettings);
             int? end   = PolicySettings.EffectiveMaintenanceWindowEnd(CurrentSettings);
             bool anyTime = !start.HasValue || !end.HasValue || start.Value == end.Value;
