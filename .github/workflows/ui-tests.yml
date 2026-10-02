@@ -149,12 +149,22 @@ jobs:
         shell: pwsh
         run: ./UITests/run-ui-tests.ps1 -Category Integration
 
-      - name: Upload TestResults artifact (zip)
+      - name: Upload integration test results and logs
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: ui-test-results-integration
-          path: UITests/TestResults/**
+          path: |
+            UITests/TestResults/report.md
+            UITests/TestResults/gallery.html
+            UITests/TestResults/run-output.txt
+            UITests/TestResults/results.trx
+            UITests/TestResults/baselines/
+            UITests/TestResults/captures/
+            UITests/TestResults/screenshots/
+            UITests/TestResults/integration/zet/*.log
+            UITests/TestResults/integration/quickstart/*.log
+            UITests/TestResults/integration/idp/logs/*.log
           if-no-files-found: warn
           retention-days: 30
 
