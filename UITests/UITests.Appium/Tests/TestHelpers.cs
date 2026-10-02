@@ -44,12 +44,17 @@ public static class TestHelpers
     // after it shows. Well under 2.5s, when the blurb starts hiding.
     private const int AnimationSettleMs = 1500;
 
+    // Longer than a frame, so an animation still running changes the next capture. The runner once drew a blurb
+    // mid slide 1.6s after ZET's reply (run 37035327093), so the settle alone does not prove the screen stopped.
+    private const int StableFrameGapMs = 200;
+    private const int StableFrameTimeoutMs = 1000;
+
     public static byte[] Capture(AppiumSession s)
     {
         // Before the settle, so the hover fade back on the element a click left the cursor over ends inside it.
         s.MoveCursorOffWindow();
         Thread.Sleep(AnimationSettleMs);
-        return s.CaptureWindow();
+        return StableCapture(s.CaptureWindow);
     }
 
     /// <summary><see cref="Capture"/> with the app's open popups, such as a ContextMenu, drawn over the window.</summary>
@@ -57,7 +62,32 @@ public static class TestHelpers
     {
         s.MoveCursorOffWindow();
         Thread.Sleep(AnimationSettleMs);
-        return s.CaptureWindowWithPopups();
+        return StableCapture(s.CaptureWindowWithPopups);
+    }
+
+    /// <summary>Capture until two captures <see cref="StableFrameGapMs"/> apart match, and return the second.</summary>
+    private static byte[] StableCapture(Func<byte[]> capture)
+    {
+        DateTime deadline = DateTime.UtcNow.AddMilliseconds(StableFrameTimeoutMs);
+        byte[] previous = capture();
+        int captures = 1;
+        while (true)
+        {
+            Thread.Sleep(StableFrameGapMs);
+            byte[] current = capture();
+            captures++;
+            if (current.AsSpan().SequenceEqual(previous))
+            {
+                if (captures > 2)
+                    Step.Log($"the window settled after {captures} captures");
+                return current;
+            }
+            if (DateTime.UtcNow > deadline)
+                throw new TimeoutException(
+                    $"the window kept changing for {StableFrameTimeoutMs}ms after the {AnimationSettleMs}ms settle " +
+                    $"({captures} captures {StableFrameGapMs}ms apart, no two in a row matched)");
+            previous = current;
+        }
     }
 
     /// <summary>
