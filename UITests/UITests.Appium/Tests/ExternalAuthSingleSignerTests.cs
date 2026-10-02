@@ -17,6 +17,9 @@ namespace ZitiDesktopEdge.UITests.Tests;
 [Collection(IntegrationCollection.Name)]
 public class ExternalAuthSingleSignerTests
 {
+    private const string TotpPolicy = "test_mfa_totp_policy";
+    private const string EnrollmentRequiredEvent = "\"Op\":\"mfa\",\"Action\":\"enrollment_required\"";
+
     private readonly IntegrationFixture _fixture;
 
     public ExternalAuthSingleSignerTests(IntegrationFixture fixture)
@@ -287,6 +290,56 @@ public class ExternalAuthSingleSignerTests
             AssertSentEnrollMode(s, "cert");
             AssertUrlEnrolledToNoneIdentityFile(identityFile);
         });
+    }
+
+    // ZET's RequireOidcAuth needs no check here: the quickstart controller always serves OIDC.
+    [Fact(Timeout = 120000)]
+    public async Task EnrollToCertUsesEnrollAuthPolicy()
+    {
+        string name = nameof(EnrollToCertUsesEnrollAuthPolicy);
+        const string identityName = "test_ext_auth_enroll_auth_policy";
+        await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToCert = true, AuthPolicy = TotpPolicy }, async () =>
+        {
+            await using AppiumSession s = await LaunchAsync(_fixture, name);
+            PrepareTestWindow(s);
+            EnterControllerUrl(s, Quickstart.UiControllerUrl);
+            await Dex.DriveIdPFlowAsync(JoinToEnrollmentUrl(s), $"{identityName}@test.com");
+            // A partial auth sends no identity added event, so the identifier comes from the mfa event.
+            JObject mfa = WaitForZetEventAfter(s, AddIdentityLine, EnrollmentRequiredEvent);
+            await AssertRowNeedsMfaSetup(s, name);
+            AssertJwtEnrolledIdentityFile((string)mfa["Identifier"]!);
+        });
+    }
+
+    [Fact(Timeout = 150000)]
+    public async Task EnrollToTokenUsesEnrollAuthPolicy()
+    {
+        string name = nameof(EnrollToTokenUsesEnrollAuthPolicy);
+        const string identityName = "test_ext_auth_token_enroll_auth_policy";
+        await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToToken = true, AuthPolicy = TotpPolicy }, async () =>
+        {
+            await using AppiumSession s = await LaunchAsync(_fixture, name);
+            PrepareTestWindow(s);
+            EnterControllerUrl(s, Quickstart.UiControllerUrl);
+            await Dex.DriveIdPFlowAsync(JoinToEnrollmentUrl(s), $"{identityName}@test.com");
+            string identityFile = (string)WaitForNeedsExtLogin(s, AddIdentityLine)["Id"]!["Identifier"]!;
+            await Dex.DriveIdPFlowAsync(LoginFromRow(s), $"{identityName}@test.com");
+            WaitForZetEventAfter(s, ExternalAuthLine, EnrollmentRequiredEvent);
+            await AssertRowNeedsMfaSetup(s, name);
+            AssertUrlEnrolledToNoneIdentityFile(identityFile);
+        });
+    }
+
+    /// <summary>
+    /// ZET's status check after enrollment_required: the row asks to set up MFA only while the identity is NeedsExtAuth
+    /// false, MfaNeeded true and MfaEnabled false.
+    /// </summary>
+    private static async Task AssertRowNeedsMfaSetup(AppiumSession s, string name)
+    {
+        WaitForController(s, By.XPath("//*[@AutomationId='MfaSetupNeeded']"), "the row asks to set up MFA");
+        Assert.DoesNotContain(s.Driver.FindElements(ExtAuthRequiredIcon), e => e.Displayed);
+        Assert.Equal(1, IdentityRowCount(s));
+        await VerifyStep(Capture(s), name, "01-setup-needed-row");
     }
 
     /// <summary>ZET's completeEnrollToCert through the URL dialog. Returns the identity file.</summary>
