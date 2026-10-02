@@ -31,7 +31,7 @@ public class ExternalAuthMultipleSignersTests
     {
         string name = nameof(EnrollToNoneMultipleSignersDefaultPolicyCompletes);
         const string identityName = "test_ext_auth_multi_default";
-        await WithExtraSigners(async () =>
+        await WithExtraSigners(async _ =>
         {
             await using AppiumSession s = await LaunchAsync(_fixture, name);
             PrepareTestWindow(s);
@@ -63,25 +63,74 @@ public class ExternalAuthMultipleSignersTests
         });
     }
 
+    [Fact(Timeout = 120000)]
+    public async Task EnrollToNoneMultipleSignersNamedPolicyCompletes()
+    {
+        string name = nameof(EnrollToNoneMultipleSignersNamedPolicyCompletes);
+        const string identityName = "test_ext_auth_multi_named";
+        const string policyName = "test_ext_auth_multi_named_policy";
+        await WithExtraSigners(async signerIds =>
+        {
+            _fixture.Quickstart.CreateAuthPolicyForExtJwt(policyName, signerIds);
+            try
+            {
+                _fixture.Quickstart.CreateIdentityWithExternalId(identityName, $"{identityName}@test.com", policyName);
+                try
+                {
+                    await using AppiumSession s = await LaunchAsync(_fixture, name);
+                    PrepareTestWindow(s);
+                    EnterControllerUrl(s, Quickstart.UiControllerUrl);
+                    JObject needsLogin = JoinEnrolledToNone(s);
+                    List<string> providers = needsLogin["Id"]!["ExtAuthProviders"]!.Select(p => (string)p!).ToList();
+                    Assert.Subset(new HashSet<string>(providers),
+                        new HashSet<string> { IntegrationFixture.WorkingSignerName, ExtraSignerA, ExtraSignerB });
+                    WaitForController(s, ExtAuthRequiredIcon, "the row asks for external auth");
+                    await VerifyStep(Capture(s), name, "01-identity-needs-ext-login");
+
+                    OpenProviderMenu(s, providers);
+                    await VerifyStep(CaptureWithPopups(s), name, "02-provider-menu");
+
+                    string loginUrl = LoginFromProviderMenu(s, IntegrationFixture.WorkingSignerName);
+                    await Dex.DriveIdPFlowAsync(loginUrl, $"{identityName}@test.com");
+                    JObject added = AssertEnrollmentAdded(s, ExternalAuthLine);
+                    AssertUrlEnrolledToNoneIdentityFile((string)added["Id"]!["Identifier"]!);
+                    WaitUntil(s, "the row stops asking for external auth", ControllerTimeout,
+                        () => !s.Driver.FindElements(ExtAuthRequiredIcon).Any(e => e.Displayed));
+                    await VerifyStep(Capture(s), name, "03-identity-enrolled");
+                }
+                finally
+                {
+                    _fixture.Quickstart.DeleteIdentity(identityName);
+                }
+            }
+            finally
+            {
+                // Before WithExtraSigners deletes the signers this policy allows.
+                _fixture.Quickstart.DeleteAuthPolicy(policyName);
+            }
+        });
+    }
+
     // The UI names a URL identity host_port until a controller event names it.
     private const string UrlIdentityName = "127.0.0.1_11280";
 
     private static readonly By ProviderMenuItems = By.XPath("//MenuItem");
 
     /// <summary>
-    /// ZET's setupExtraExtJwtSigners for the body, deleted after it. A default provider the body sets persists in the
-    /// user's user.config and would skip the next run's menu, so it is cleared before and after.
+    /// ZET's setupExtraExtJwtSigners for the body, deleted after it. The body gets the working and both extra signers'
+    /// ids. A default provider the body sets persists in the user's user.config and would skip the next run's menu,
+    /// so it is cleared before and after.
     /// </summary>
-    private async Task WithExtraSigners(Func<Task> body)
+    private async Task WithExtraSigners(Func<IReadOnlyList<string>, Task> body)
     {
         AppUserConfig.RemoveDefaultProvider(IntegrationFixture.WorkingSignerName);
-        _fixture.Quickstart.CreateExtJwtSigner(ExtraSigner(ExtraSignerA, Dex.ClientIdExtraA));
+        string extraA = _fixture.Quickstart.CreateExtJwtSigner(ExtraSigner(ExtraSignerA, Dex.ClientIdExtraA));
         try
         {
-            _fixture.Quickstart.CreateExtJwtSigner(ExtraSigner(ExtraSignerB, Dex.ClientIdExtraB));
+            string extraB = _fixture.Quickstart.CreateExtJwtSigner(ExtraSigner(ExtraSignerB, Dex.ClientIdExtraB));
             try
             {
-                await body();
+                await body(new[] { _fixture.WorkingSignerId, extraA, extraB });
             }
             finally
             {
@@ -129,9 +178,26 @@ public class ExternalAuthMultipleSignersTests
     private static string LoginFromRowWithDefault(AppiumSession s, string provider)
     {
         CloseBrowsers();
-        JObject reply = SendAndWaitForZetReply(s, ExternalAuthLine, () => ClickAt(s, WaitFor(s, ExtAuthRequiredIcon)));
-        Assert.Equal(provider, (string?)UiCommand(s.Relay!, ExternalAuthLine)["Data"]!["Provider"]);
+        string url = SendExternalAuth(s, provider, () => ClickAt(s, WaitFor(s, ExtAuthRequiredIcon)));
         Assert.DoesNotContain(s.Driver.FindElements(ProviderMenuItems), item => item.Displayed);
+        return url;
+    }
+
+    /// <summary>
+    /// ZET's GetExternalAuthURL from the open provider menu: picking provider logs in to it. Returns the IdP URL from
+    /// ZET's reply.
+    /// </summary>
+    private static string LoginFromProviderMenu(AppiumSession s, string provider)
+    {
+        By item = By.XPath($"//MenuItem[@Name='{MenuItemName(provider)}']");
+        return SendExternalAuth(s, provider, () => ClickAt(s, WaitFor(s, item)));
+    }
+
+    /// <summary>Run click, assert it sent ExternalAuth for provider and ZET replied with an IdP URL, and return it.</summary>
+    private static string SendExternalAuth(AppiumSession s, string provider, Action click)
+    {
+        JObject reply = SendAndWaitForZetReply(s, ExternalAuthLine, click);
+        Assert.Equal(provider, (string?)UiCommand(s.Relay!, ExternalAuthLine)["Data"]!["Provider"]);
         Assert.Equal(0, (int?)reply["Code"]);
         string? url = (string?)reply["Data"]?["url"];
         Assert.False(string.IsNullOrEmpty(url), $"ExternalAuth reply has no Data.url: {reply}");
