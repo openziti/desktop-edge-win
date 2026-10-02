@@ -52,6 +52,14 @@ public static class TestHelpers
         return s.CaptureWindow();
     }
 
+    /// <summary><see cref="Capture"/> with the app's open popups, such as a ContextMenu, drawn over the window.</summary>
+    public static byte[] CaptureWithPopups(AppiumSession s)
+    {
+        s.MoveCursorOffWindow();
+        Thread.Sleep(AnimationSettleMs);
+        return s.CaptureWindowWithPopups();
+    }
+
     /// <summary>
     /// The identity file name the app gives every added identity, since it names it after the JWT file. ZET shows it as
     /// the identity's name until an added event carries the controller name.
@@ -361,8 +369,9 @@ public static class TestHelpers
     private static By IdentityRowXPath(string identityName) =>
         By.XPath($"//Custom[@ClassName='IdentityItem' and .//Text[@Name='{identityName}']]");
 
+    // Not IdName: every IdentityItem row has one too, so it shows before details opens.
     public static void OpenIdentityDetails(AppiumSession s, string identityName) =>
-        ClickUntil(s, IdentityRowXPath(identityName), By.XPath("//*[@AutomationId='IdName']"));
+        ClickUntil(s, IdentityRowXPath(identityName), By.XPath("//*[@AutomationId='IdentityDetailsClose']"));
 
     /// <summary>
     /// Click target until it leaves the tree, for close buttons, since WPF sometimes drops a WinAppDriver click. No-op

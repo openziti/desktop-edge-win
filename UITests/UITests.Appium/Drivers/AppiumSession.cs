@@ -238,20 +238,56 @@ public sealed class AppiumSession : IAsyncDisposable
     {
         Rectangle window = WindowRect();
         MoveCursorOffWindow(window);
-        using Bitmap bitmap = new Bitmap(window.Width, window.Height, PixelFormat.Format32bppArgb);
+        using Bitmap bitmap = PrintedWindow(WindowHandle, window.Size);
+        using MemoryStream png = new MemoryStream();
+        bitmap.Save(png, ImageFormat.Png);
+        return png.ToArray();
+    }
+
+    /// <summary>
+    /// <see cref="CaptureWindow"/> with the app's visible popup windows (a ContextMenu is one) drawn over it where they
+    /// sit on screen, on a white canvas that grows to hold them. A popup's transparent corners capture black, because
+    /// PrintWindow forces alpha to 255. Element locations no longer match the capture's origin, so masks don't apply.
+    /// </summary>
+    public byte[] CaptureWindowWithPopups()
+    {
+        Rectangle window = WindowRect();
+        MoveCursorOffWindow(window);
+        // Drawn bottom up, so a popup above another stays on top.
+        List<TopLevelWindow> popups = TopLevelWindows()
+            .Where(w => w.ProcessId == _uiProcess.Id && w.Handle != WindowHandle).Reverse().ToList();
+        if (popups.Count == 0)
+            throw new InvalidOperationException($"the app (pid {_uiProcess.Id}) shows no popup window to capture");
+        Rectangle canvas = popups.Aggregate(window, (bounds, popup) => Rectangle.Union(bounds, popup.Bounds));
+        using Bitmap bitmap = new Bitmap(canvas.Width, canvas.Height, PixelFormat.Format32bppArgb);
         using (Graphics graphics = Graphics.FromImage(bitmap))
         {
-            IntPtr hdc = graphics.GetHdc();
-            bool printed = Win32Window.PrintWindow(WindowHandle, hdc, Win32Window.PW_RENDERFULLCONTENT);
-            int printError = Marshal.GetLastWin32Error();
-            graphics.ReleaseHdc(hdc);
-            if (!printed)
-                throw new System.ComponentModel.Win32Exception(printError,
-                    $"PrintWindow failed for window handle {WindowHandle}");
+            graphics.Clear(Color.White);
+            foreach ((IntPtr handle, Rectangle bounds) in popups.Select(p => (p.Handle, p.Bounds)).Prepend((WindowHandle, window)))
+            {
+                using Bitmap printed = PrintedWindow(handle, bounds.Size);
+                graphics.DrawImage(printed, bounds.X - canvas.X, bounds.Y - canvas.Y);
+            }
         }
         using MemoryStream png = new MemoryStream();
         bitmap.Save(png, ImageFormat.Png);
         return png.ToArray();
+    }
+
+    private static Bitmap PrintedWindow(IntPtr handle, Size size)
+    {
+        Bitmap bitmap = new Bitmap(size.Width, size.Height, PixelFormat.Format32bppArgb);
+        using Graphics graphics = Graphics.FromImage(bitmap);
+        IntPtr hdc = graphics.GetHdc();
+        bool printed = Win32Window.PrintWindow(handle, hdc, Win32Window.PW_RENDERFULLCONTENT);
+        int printError = Marshal.GetLastWin32Error();
+        graphics.ReleaseHdc(hdc);
+        if (!printed)
+        {
+            bitmap.Dispose();
+            throw new System.ComponentModel.Win32Exception(printError, $"PrintWindow failed for window handle {handle}");
+        }
+        return bitmap;
     }
 
     /// <summary>PNG of the whole primary screen as the user sees it, to show what covers or replaced the window.</summary>
