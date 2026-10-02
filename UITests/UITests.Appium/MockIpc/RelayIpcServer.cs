@@ -2,6 +2,7 @@ using System.IO.Pipes;
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Step = ZitiDesktopEdge.UITests.Tests.Step;
 
 namespace ZitiDesktopEdge.UITests.MockIpc;
 
@@ -91,6 +92,15 @@ public sealed class RelayIpcServer : IAsyncDisposable
         }
     }
 
+    // A reply logs only its outcome fields: Data can carry an MFA secret or recovery codes. metrics would bury the steps.
+    private static string? StepLine(string from, string pipe, JObject json) => (from, pipe) switch
+    {
+        ("ui", _) => $"app sent {json["Command"]}",
+        (_, "cmd") => $"ZET replied: Success={json["Success"]} Code={json["Code"]} Error={json["Error"]}",
+        _ when (string?)json["Op"] == "metrics" => null,
+        _ => $"ZET event {json["Op"]} {json["Action"]}",
+    };
+
     /// <summary>Copy lines from one pipe to the other until either end closes, recording each non-blank line.</summary>
     private async Task PumpAsync(Stream source, Stream target, string from, string pipe, CancellationToken ct)
     {
@@ -111,8 +121,11 @@ public sealed class RelayIpcServer : IAsyncDisposable
             if (!string.IsNullOrWhiteSpace(line))
             {
                 lock (_recordedLock) _recorded.Add(new RecordedLine(from, pipe, line));
+                JObject json = JObject.Parse(line);
+                string? step = StepLine(from, pipe, json);
+                if (step != null) Step.Log(step);
                 // Not cancellable: a cancelled delay would fault the pump instead of ending it.
-                if (pipe == "event" && (string?)JObject.Parse(line)["Action"] == "mfa_auth_status")
+                if (pipe == "event" && (string?)json["Action"] == "mfa_auth_status")
                     await Task.Delay(MfaAuthStatusDelay);
             }
             try { await writer.WriteLineAsync(line); }

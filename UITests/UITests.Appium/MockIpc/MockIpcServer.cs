@@ -3,6 +3,7 @@ using System.Text;
 using System.Threading.Channels;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Step = ZitiDesktopEdge.UITests.Tests.Step;
 
 namespace ZitiDesktopEdge.UITests.MockIpc;
 
@@ -145,6 +146,7 @@ public sealed class MockIpcServer : IAsyncDisposable
         {
             JObject req = JObject.Parse(line);
             lock (_recvLock) _received.Add(req);
+            Step.Log($"app sent {req["Command"]} to the mock");
             // serialized inside the lock: the Status reply holds _landingStatus itself
             lock (_landingStatusLock)
                 return new Answer(BuildReply(req, eventsAfterReply).ToString(Formatting.None), eventsAfterReply);

@@ -95,9 +95,9 @@ public class MfaEnrollmentTests
         WaitForId(s, "AuthSetupButton").Click();
 
         // MFAScreen closes the setup dialog when VerifyMFA fails, and ZET's failed enrollment_verification event
-        // raises the blurb.
-        WaitForBlurb(s, "Provided code could not be verified");
-        // ShowBlurbAsync hides the blurb 2.5s after showing it, so this capture comes before the slower checks.
+        // raises the blurb. The capture is timed from the event, since finding the blurb through UIA can take most of
+        // its 2.5s.
+        WaitForZetEventAfter(s, VerifyMfaLine, "\"Op\":\"mfa\",\"Action\":\"enrollment_verification\"");
         byte[] rejected = Capture(s);
         SaveStep(rejected, name, "02-after-rejection");
         await VerifyScreen(rejected, "after-rejection");

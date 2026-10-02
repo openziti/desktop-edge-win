@@ -43,13 +43,12 @@ public class RemoveMfaTests
         WaitForId(s, "AuthCode").SendKeys(pickCode(enrollment));
         SaveStep(s, name, "02-code-typed");
         WaitForId(s, "AuthButton").Click();
-        WaitForBlurb(s, "MFA disabled, access may be limited");
-        // ShowBlurbAsync hides the blurb 2.5s after showing it, so this capture comes before the slower checks.
+        // IsMFAEnabled clears and the "MFA disabled" blurb shows on ZET's enrollment_remove event, not on the reply.
+        // The capture is timed from the event, since finding the blurb through UIA can take most of its 2.5s.
+        AssertMfaEventSucceeded(s, "\"Command\":\"RemoveMFA\"", "enrollment_remove");
         byte[] removed = Capture(s);
         SaveStep(removed, name, "03-removed-details");
         await VerifyScreen(removed, "removed-details", name);
-        // IsMFAEnabled clears on ZET's enrollment_remove event, not on the RemoveMFA reply.
-        AssertMfaEventSucceeded(s, "\"Command\":\"RemoveMFA\"", "enrollment_remove");
         WaitForGone(s, By.XPath("//*[@AutomationId='AuthCode']"));
         JObject reply = ZetReplyTo(s.Relay!, "\"Command\":\"RemoveMFA\"");
         Assert.Equal(0, (int?)reply["Code"]);
@@ -84,13 +83,13 @@ public class RemoveMfaTests
         WaitForId(s, "AuthCode").SendKeys("000000");
         SaveStep(s, name, "01-code-typed");
         WaitForId(s, "AuthButton").Click();
-        WaitForBlurb(s, "Authentication Failed");
-        // ShowBlurbAsync hides the blurb 2.5s after showing it, so this capture comes before the slower asserts.
+        // MFAScreen shows "Authentication Failed" on the failed reply. The capture is timed from the reply, since
+        // finding the blurb through UIA can take most of its 2.5s.
+        JObject reply = WaitForZetReplyTo(s, "\"Command\":\"RemoveMFA\"");
         byte[] rejected = Capture(s);
         SaveStep(rejected, name, "02-after-rejection");
         await VerifyScreen(rejected, "after-rejection", name);
 
-        JObject reply = ZetReplyTo(s.Relay!, "\"Command\":\"RemoveMFA\"");
         Assert.Equal(500, (int?)reply["Code"]);
         Assert.Contains("the token provided was invalid", (string?)reply["Error"]);
         // MFAScreen keeps the prompt open and clears the code on a failed RemoveMFA reply.

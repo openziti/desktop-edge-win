@@ -65,15 +65,9 @@ public static class IntegrationHelpers
     {
         IReadOnlyList<RelayIpcServer.RecordedLine> recorded = relay.Recorded;
         int sent = LatestUiCmdLine(recorded, uiLineFragment);
-        JObject reply = FindZetReplyTo(recorded, sent)
+        return FindZetReplyTo(recorded, sent)
             ?? throw new InvalidOperationException($"ZET sent no reply to: {recorded[sent].Line}");
-        LogReply(uiLineFragment, reply);
-        return reply;
     }
-
-    // Only the outcome fields: Data can carry an MFA secret or recovery codes.
-    private static void LogReply(string uiLineFragment, JObject reply) =>
-        Step.Log($"ZET replied to {uiLineFragment}: Success={reply["Success"]} Code={reply["Code"]} Error={reply["Error"]}");
 
     /// <summary>Wait for ZET's reply to the latest UI command line containing uiLineFragment, which must be sent.</summary>
     public static JObject WaitForZetReplyTo(AppiumSession s, string uiLineFragment)
@@ -85,7 +79,6 @@ public static class IntegrationHelpers
             reply = FindZetReplyTo(recorded, LatestUiCmdLine(recorded, uiLineFragment));
             return reply != null;
         });
-        LogReply(uiLineFragment, reply!);
         return reply!;
     }
 
@@ -562,11 +555,10 @@ public static class IntegrationHelpers
         string code)
     {
         SubmitFromRow(s, name, step, identityName, code);
-        // MFAScreen keeps the prompt open on a failed SubmitMFA reply.
-        WaitForBlurb(s, "Authentication Failed");
-        // ShowBlurbAsync hides the blurb 2.5s after showing it, so this capture comes before the slower asserts.
+        // MFAScreen keeps the prompt open and shows "Authentication Failed" on a failed SubmitMFA reply. The capture is
+        // timed from the reply, since finding the blurb through UIA can take most of its 2.5s.
+        JObject reply = WaitForZetReplyTo(s, SubmitMfaLine);
         byte[] png = Capture(s);
-        JObject reply = ZetReplyTo(s.Relay!, SubmitMfaLine);
         Assert.Equal(500, (int?)reply["Code"]);
         Assert.Contains("the token provided was invalid", (string?)reply["Error"]);
         Assert.NotEmpty(s.Driver.FindElements(By.XPath("//*[@AutomationId='AuthCode']")));
