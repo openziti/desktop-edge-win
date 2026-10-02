@@ -48,18 +48,11 @@ public static class IntegrationHelpers
         return JObject.Parse(recorded[LatestUiCmdLine(recorded, uiLineFragment)].Line);
     }
 
-    private static JObject? FindZetReplyTo(IReadOnlyList<RelayIpcServer.RecordedLine> recorded, int sent)
-    {
-        for (int i = sent + 1; i < recorded.Count; i++)
-        {
-            if (recorded[i].From == "zet" && recorded[i].Pipe == "cmd")
-                return JObject.Parse(recorded[i].Line);
-        }
-        return null;
-    }
+    private static RelayIpcServer.RecordedLine? FindZetReplyTo(IReadOnlyList<RelayIpcServer.RecordedLine> recorded,
+        int sent) =>
+        recorded.Skip(sent + 1).FirstOrDefault(r => r.From == "zet" && r.Pipe == "cmd");
 
-    /// <summary>ZET's reply on the cmd pipe to the latest UI command line containing uiLineFragment.</summary>
-    public static JObject ZetReplyTo(RelayIpcServer relay, string uiLineFragment)
+    private static RelayIpcServer.RecordedLine ZetReplyLineTo(RelayIpcServer relay, string uiLineFragment)
     {
         IReadOnlyList<RelayIpcServer.RecordedLine> recorded = relay.Recorded;
         int sent = LatestUiCmdLine(recorded, uiLineFragment);
@@ -67,17 +60,37 @@ public static class IntegrationHelpers
             ?? throw new InvalidOperationException($"ZET sent no reply to: {recorded[sent].Line}");
     }
 
+    /// <summary>ZET's reply on the cmd pipe to the latest UI command line containing uiLineFragment.</summary>
+    public static JObject ZetReplyTo(RelayIpcServer relay, string uiLineFragment) =>
+        JObject.Parse(ZetReplyLineTo(relay, uiLineFragment).Line);
+
     /// <summary>Wait for ZET's reply to the latest UI command line containing uiLineFragment, which must be sent.</summary>
     public static JObject WaitForZetReplyTo(AppiumSession s, string uiLineFragment)
     {
-        JObject? reply = null;
+        RelayIpcServer.RecordedLine? reply = null;
         WaitUntil(s, $"ZET replies to {uiLineFragment}", ControllerTimeout, () =>
         {
             IReadOnlyList<RelayIpcServer.RecordedLine> recorded = s.Relay!.Recorded;
             reply = FindZetReplyTo(recorded, LatestUiCmdLine(recorded, uiLineFragment));
             return reply != null;
         });
-        return reply!;
+        return JObject.Parse(reply!.Line);
+    }
+
+    /// <summary>Capture the blurb the app raised on ZET's reply to the latest UI command line containing uiLineFragment.</summary>
+    public static byte[] CaptureBlurbOnReply(AppiumSession s, string uiLineFragment) =>
+        CaptureBlurb(s, ZetReplyLineTo(s.Relay!, uiLineFragment).ReceivedAtUtc);
+
+    /// <summary>
+    /// Capture the blurb the app raised on ZET's first event line containing eventFragment after the latest UI command
+    /// line containing uiLineFragment.
+    /// </summary>
+    public static byte[] CaptureBlurbOnEvent(AppiumSession s, string uiLineFragment, string eventFragment)
+    {
+        RelayIpcServer.RecordedLine line = FindZetEventAfter(s.Relay!.Recorded, uiLineFragment, eventFragment)
+            ?? throw new InvalidOperationException(
+                $"ZET sent no event containing {eventFragment} after {uiLineFragment}");
+        return CaptureBlurb(s, line.ReceivedAtUtc);
     }
 
     /// <summary>
@@ -98,17 +111,19 @@ public static class IntegrationHelpers
     /// </summary>
     public static JObject WaitForZetEventAfter(AppiumSession s, string uiLineFragment, string eventFragment)
     {
-        JObject? found = null;
+        RelayIpcServer.RecordedLine? found = null;
         WaitUntil(s, $"ZET sends an event containing {eventFragment} after {uiLineFragment}", ControllerTimeout, () =>
         {
-            IReadOnlyList<RelayIpcServer.RecordedLine> recorded = s.Relay!.Recorded;
-            RelayIpcServer.RecordedLine? line = recorded.Skip(LatestUiCmdLine(recorded, uiLineFragment) + 1)
-                .FirstOrDefault(r => r.From == "zet" && r.Pipe == "event" && r.Line.Contains(eventFragment));
-            found = line == null ? null : JObject.Parse(line.Line);
+            found = FindZetEventAfter(s.Relay!.Recorded, uiLineFragment, eventFragment);
             return found != null;
         });
-        return found!;
+        return JObject.Parse(found!.Line);
     }
+
+    private static RelayIpcServer.RecordedLine? FindZetEventAfter(IReadOnlyList<RelayIpcServer.RecordedLine> recorded,
+        string uiLineFragment, string eventFragment) =>
+        recorded.Skip(LatestUiCmdLine(recorded, uiLineFragment) + 1)
+            .FirstOrDefault(r => r.From == "zet" && r.Pipe == "event" && r.Line.Contains(eventFragment));
 
     /// <summary>
     /// ZET's assertExpectedIdentityName: the first identity added event names the identity file, and a later one carries
@@ -280,8 +295,7 @@ public static class IntegrationHelpers
     {
         EnterControllerUrl(s, Quickstart.UiControllerUrl);
         JObject reply = SendAndWaitForZetReply(s, AddIdentityLine, () => WaitForId(s, "JoinNetworkBtn").Click());
-        // The blurb shows on the reply and hides 2.5s later.
-        await VerifyStep(Capture(s), name, step);
+        await VerifyStep(CaptureBlurbOnReply(s, AddIdentityLine), name, step);
         // The blurb shows no detail from ZET, so only the reply proves why the add failed.
         Assert.Equal(500, (int?)reply["Code"]);
         Assert.Contains("identity exists with the same name", (string?)reply["Error"]);
@@ -549,10 +563,9 @@ public static class IntegrationHelpers
     public static byte[] RejectFromRow(AppiumSession s, string name, string step, string identityName,
         string code)
     {
-        // MFAScreen keeps the prompt open and shows "Authentication Failed" on a failed SubmitMFA reply. The capture is
-        // timed from the reply, since finding the blurb through UIA can take most of its 2.5s.
+        // MFAScreen keeps the prompt open and shows "Authentication Failed" on a failed SubmitMFA reply.
         JObject reply = SubmitFromRow(s, name, step, identityName, code);
-        byte[] png = Capture(s);
+        byte[] png = CaptureBlurbOnReply(s, SubmitMfaLine);
         Assert.Equal(500, (int?)reply["Code"]);
         Assert.Contains("the token provided was invalid", (string?)reply["Error"]);
         Assert.NotEmpty(s.Driver.FindElements(By.XPath("//*[@AutomationId='AuthCode']")));

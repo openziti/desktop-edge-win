@@ -65,6 +65,29 @@ public static class TestHelpers
         return StableCapture(s.CaptureWindowWithPopups);
     }
 
+    // MainWindow.ShowBlurbAsync starts hiding the blurb this long after it shows.
+    private const int BlurbShownMs = 2500;
+
+    /// <summary>
+    /// <see cref="Capture"/> of a blurb the app raised on a relay line received at shownAtUtc. The settle runs from that
+    /// line, not from now: a WinAppDriver click can return most of a second after ZET already replied (run
+    /// 37050265861), and a settle started then lands on the hide.
+    /// </summary>
+    public static byte[] CaptureBlurb(AppiumSession s, DateTime shownAtUtc)
+    {
+        s.MoveCursorOffWindow();
+        TimeSpan settleLeft = shownAtUtc.AddMilliseconds(AnimationSettleMs) - DateTime.UtcNow;
+        if (settleLeft > TimeSpan.Zero)
+            Thread.Sleep(settleLeft);
+        byte[] png = StableCapture(s.CaptureWindow);
+        double capturedAfterMs = (DateTime.UtcNow - shownAtUtc).TotalMilliseconds;
+        if (capturedAfterMs > BlurbShownMs)
+            throw new TimeoutException(
+                $"the blurb capture settled {capturedAfterMs:F0}ms after the relay line that raised it, past the " +
+                $"{BlurbShownMs}ms the blurb shows before it hides");
+        return png;
+    }
+
     /// <summary>Capture until two captures <see cref="StableFrameGapMs"/> apart match, and return the second.</summary>
     private static byte[] StableCapture(Func<byte[]> capture)
     {

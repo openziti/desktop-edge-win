@@ -44,7 +44,8 @@ public class RemoveMfaTests
         Assert.Equal(0, (int?)reply["Code"]);
         // The "MFA disabled" blurb shows on ZET's enrollment_remove event, not on the reply.
         AssertMfaEventSucceeded(s, RemoveMfaLine, "enrollment_remove");
-        await VerifyStep(Capture(s), name, "03-removed-details");
+        await VerifyStep(CaptureBlurbOnEvent(s, RemoveMfaLine, "\"Action\":\"enrollment_remove\""), name,
+            "03-removed-details");
         WaitForGone(s, By.XPath("//*[@AutomationId='AuthCode']"));
     }
 
@@ -71,7 +72,7 @@ public class RemoveMfaTests
         SaveStep(s, name, "01-code-typed");
         // MFAScreen shows "Authentication Failed" on the failed reply.
         JObject reply = SendAndWaitForZetReply(s, RemoveMfaLine, () => WaitForId(s, "AuthButton").Click());
-        await VerifyStep(Capture(s), name, "02-after-rejection");
+        await VerifyStep(CaptureBlurbOnReply(s, RemoveMfaLine), name, "02-after-rejection");
 
         Assert.Equal(500, (int?)reply["Code"]);
         Assert.Contains("the token provided was invalid", (string?)reply["Error"]);

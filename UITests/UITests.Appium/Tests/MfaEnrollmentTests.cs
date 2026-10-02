@@ -83,8 +83,9 @@ public class MfaEnrollmentTests
 
         // MFAScreen closes the setup dialog when VerifyMFA fails, and ZET's failed enrollment_verification event
         // raises the blurb.
-        WaitForZetEventAfter(s, VerifyMfaLine, "\"Op\":\"mfa\",\"Action\":\"enrollment_verification\"");
-        await VerifyStep(Capture(s), name, "02-after-rejection");
+        const string verificationEvent = "\"Op\":\"mfa\",\"Action\":\"enrollment_verification\"";
+        WaitForZetEventAfter(s, VerifyMfaLine, verificationEvent);
+        await VerifyStep(CaptureBlurbOnEvent(s, VerifyMfaLine, verificationEvent), name, "02-after-rejection");
         Assert.Empty(s.Driver.FindElements(By.XPath("//*[@AutomationId='SetupCode']")));
         Assert.Equal(500, (int?)reply["Code"]);
         Assert.Contains("the token provided was invalid", (string?)reply["Error"]);

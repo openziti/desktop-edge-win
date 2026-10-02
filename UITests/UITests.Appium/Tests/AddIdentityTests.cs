@@ -38,8 +38,7 @@ public class AddIdentityTests
 
         // AddIdentity left the same JWT in the file the app reads.
         JObject reply = SendAndWaitForZetReply(s, AddIdentityLine, () => ClickAddIdentityWithJwt(s));
-        // The blurb shows on the reply and hides 2.5s later.
-        await VerifyStep(Capture(s), name, "02-add-failure-blurb");
+        await VerifyStep(CaptureBlurbOnReply(s, AddIdentityLine), name, "02-add-failure-blurb");
         // The blurb shows no detail from ZET, so only the reply proves why the add failed.
         Assert.Equal(500, (int?)reply["Code"]);
         Assert.Contains("identity exists with the same name", (string?)reply["Error"]);
@@ -75,7 +74,7 @@ public class AddIdentityTests
         _fixture.Quickstart.DeleteIdentity(identityName);
         WriteTestJwt(jwt);
         JObject reply = SendAndWaitForZetReply(s, AddIdentityLine, () => ClickAddIdentityWithJwt(s));
-        await VerifyStep(Capture(s), name, "01-add-failure-blurb");
+        await VerifyStep(CaptureBlurbOnReply(s, AddIdentityLine), name, "01-add-failure-blurb");
         Assert.Equal(500, (int?)reply["Code"]);
         Assert.Contains("JWT not accepted by controller", (string?)reply["Error"]);
         Assert.Equal(0, IdentityRowCount(s));

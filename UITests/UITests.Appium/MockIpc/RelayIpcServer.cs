@@ -13,7 +13,7 @@ namespace ZitiDesktopEdge.UITests.MockIpc;
 /// </summary>
 public sealed class RelayIpcServer : IAsyncDisposable
 {
-    public sealed record RecordedLine(string From, string Pipe, string Line);
+    public sealed record RecordedLine(string From, string Pipe, string Line, DateTime ReceivedAtUtc);
 
     private static readonly TimeSpan ZetConnectTimeout = TimeSpan.FromSeconds(5);
     // ZET usually sends mfa_auth_status about 35ms after its SubmitMFA reply, but sometimes in the same millisecond.
@@ -120,7 +120,7 @@ public sealed class RelayIpcServer : IAsyncDisposable
 
             if (!string.IsNullOrWhiteSpace(line))
             {
-                lock (_recordedLock) _recorded.Add(new RecordedLine(from, pipe, line));
+                lock (_recordedLock) _recorded.Add(new RecordedLine(from, pipe, line, DateTime.UtcNow));
                 JObject json = JObject.Parse(line);
                 string? step = StepLine(from, pipe, json);
                 if (step != null) Step.Log(step);
