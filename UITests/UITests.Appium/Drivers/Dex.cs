@@ -1,7 +1,5 @@
-using System.Collections.Specialized;
 using System.Net;
 using System.Text.RegularExpressions;
-using System.Web;
 using Newtonsoft.Json.Linq;
 using Step = ZitiDesktopEdge.UITests.Tests.Step;
 
@@ -136,18 +134,6 @@ public sealed class Dex : IAsyncDisposable
                 ?? throw new InvalidOperationException($"no Location at {current} (status {(int)hop.StatusCode})"));
         }
         throw new InvalidOperationException($"the IdP redirect chain did not reach the loopback callback in {MaxHops} hops, last {current}");
-    }
-
-    /// <summary>What dex does when the user denies the login: send the browser to redirect_uri with an OAuth error.</summary>
-    public static async Task DenyIdPFlowAsync(string authUrl)
-    {
-        NameValueCollection query = HttpUtility.ParseQueryString(new Uri(authUrl).Query);
-        string redirect = query["redirect_uri"]
-            ?? throw new InvalidOperationException($"auth URL has no redirect_uri: {authUrl}");
-        string state = query["state"] ?? throw new InvalidOperationException($"auth URL has no state: {authUrl}");
-        using HttpClient client = new HttpClient { Timeout = HttpTimeout };
-        await HitLoopbackAsync(client, new Uri($"{redirect}?error=access_denied&state={Uri.EscapeDataString(state)}"));
-        Step.Log($"denied the dex login at {redirect}");
     }
 
     private static async Task<Uri> FollowRedirectsTo200Async(HttpClient client, Uri start)

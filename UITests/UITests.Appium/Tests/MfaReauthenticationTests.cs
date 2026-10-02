@@ -1,4 +1,3 @@
-using Newtonsoft.Json.Linq;
 using OpenQA.Selenium;
 using ZitiDesktopEdge.UITests.Drivers;
 using ZitiDesktopEdge.UITests.MockIpc;
@@ -26,65 +25,51 @@ public class MfaReauthenticationTests
         await using AppiumSession s = await LaunchAsync(_fixture, name);
         MfaEnrollment enrollment = AddIdentityAndEnrollMfa(_fixture, s, identityName);
         TriggerReauthChallenge(s, identityName);
-        await Trace.Settle(350);
-        SaveStep(s, name, "01-authenticate-row");
-        await VerifyScreen(Capture(s), "authenticate-row", name);
+        await VerifyStep(Capture(s), name, "01-authenticate-row");
 
-        await AuthenticateFromRow(s, name, "02-code-typed", identityName, pickCode(enrollment));
-        await Trace.Settle(350);
+        AuthenticateFromRow(s, name, "02-code-typed", identityName, pickCode(enrollment));
         // Clicking the row's lock also opened the details, which the prompt closes back to.
-        SaveStep(s, name, "03-authenticated-details");
-        await VerifyScreen(Capture(s), "authenticated-details", name);
+        await VerifyStep(Capture(s), name, "03-authenticated-details");
     }
 
     [Fact(Timeout = 180000)]
-    public async Task ReauthAcceptsValidTotp()
-    {
-        Trace.Begin();
+    public async Task ReauthAcceptsValidTotp() =>
         await ReauthAccepts(nameof(ReauthAcceptsValidTotp), "test_mfa_reauth_valid_totp",
             e => Totp.Compute(e.Secret, DateTimeOffset.UtcNow));
-    }
 
     [Fact(Timeout = 180000)]
-    public async Task ReauthAcceptsRecoveryCode()
-    {
-        Trace.Begin();
+    public async Task ReauthAcceptsRecoveryCode() =>
         await ReauthAccepts(nameof(ReauthAcceptsRecoveryCode), "test_mfa_reauth_recovery_code",
             e => e.RecoveryCodes[0]);
-    }
 
     [Fact(Timeout = 240000)]
     public async Task ReauthRejectsRecoveryCodeReuse()
     {
-        Trace.Begin();
         string name = nameof(ReauthRejectsRecoveryCodeReuse);
         const string identityName = "test_mfa_reauth_reused_recovery_code";
 
         await using AppiumSession s = await LaunchAsync(_fixture, name);
         string recoveryCode = AddIdentityAndEnrollMfa(_fixture, s, identityName).RecoveryCodes[0];
         TriggerReauthChallenge(s, identityName);
-        await AuthenticateFromRow(s, name, "01-code-typed", identityName, recoveryCode);
+        AuthenticateFromRow(s, name, "01-code-typed", identityName, recoveryCode);
         CloseIdentityDetails(s);
 
         TriggerReauthChallenge(s, identityName);
-        byte[] rejected = await RejectFromRow(s, name, "02-code-reused", identityName, recoveryCode);
-        SaveStep(rejected, name, "03-after-rejection");
+        byte[] rejected = RejectFromRow(s, name, "02-code-reused", identityName, recoveryCode);
         // The recovery code differs every run.
-        await VerifyScreen(Masked(s, rejected, By.XPath("//*[@AutomationId='AuthCode']")), "after-rejection", name);
+        await VerifyStep(Masked(s, rejected, By.XPath("//*[@AutomationId='AuthCode']")), name, "03-after-rejection");
     }
 
     [Fact(Timeout = 180000)]
     public async Task ReauthRejectsInvalidTotp()
     {
-        Trace.Begin();
         string name = nameof(ReauthRejectsInvalidTotp);
         const string identityName = "test_mfa_reauth_invalid_totp";
 
         await using AppiumSession s = await LaunchAsync(_fixture, name);
         AddIdentityAndEnrollMfa(_fixture, s, identityName);
         TriggerReauthChallenge(s, identityName);
-        byte[] rejected = await RejectFromRow(s, name, "01-code-typed", identityName, "000000");
-        SaveStep(rejected, name, "02-after-rejection");
-        await VerifyScreen(rejected, "after-rejection", name);
+        byte[] rejected = RejectFromRow(s, name, "01-code-typed", identityName, "000000");
+        await VerifyStep(rejected, name, "02-after-rejection");
     }
 }

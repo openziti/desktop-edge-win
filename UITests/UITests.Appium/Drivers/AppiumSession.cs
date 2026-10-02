@@ -7,7 +7,6 @@ using OpenQA.Selenium.Appium;
 using OpenQA.Selenium.Appium.Windows;
 using ZitiDesktopEdge.UITests.MockIpc;
 using Step = ZitiDesktopEdge.UITests.Tests.Step;
-using Trace = ZitiDesktopEdge.UITests.Tests.Trace;
 
 namespace ZitiDesktopEdge.UITests.Drivers;
 
@@ -203,15 +202,13 @@ public sealed class AppiumSession : IAsyncDisposable
     /// Move the WPF window by (dx, dy) physical pixels. The top edge is clamped to the screen because an off-screen
     /// area swallows clicks.
     /// </summary>
-    public void MoveWindowBy(int dx, int dy) => Trace.Time($"MoveWindowBy(dx={dx},dy={dy})", () =>
+    public void MoveWindowBy(int dx, int dy)
     {
-        if (!Win32Window.GetWindowRect(WindowHandle, out Win32Window.RECT r)) return;
-        int w = r.Right - r.Left;
-        int h = r.Bottom - r.Top;
+        Rectangle r = WindowRect();
         int top = Math.Max(0, r.Top + dy);
-        Win32Window.SetWindowPos(WindowHandle, IntPtr.Zero, r.Left + dx, top, w, h,
+        Win32Window.SetWindowPos(WindowHandle, IntPtr.Zero, r.Left + dx, top, r.Width, r.Height,
             Win32Window.SWP_NOZORDER | Win32Window.SWP_NOACTIVATE);
-    });
+    }
 
     /// <summary>The window's screen rectangle, its transparent drop shadow margin included.</summary>
     public Rectangle WindowBounds()
@@ -237,7 +234,7 @@ public sealed class AppiumSession : IAsyncDisposable
     /// screen edges never leak into it. PrintWindow returns a transparent window's pixels with alpha forced to 255,
     /// which is why test mode gives the window a white background for the drop shadow to show against.
     /// </summary>
-    public byte[] CaptureWindow() => Trace.Time("CaptureWindow", () =>
+    public byte[] CaptureWindow()
     {
         Rectangle window = WindowRect();
         MoveCursorOffWindow(window);
@@ -255,7 +252,7 @@ public sealed class AppiumSession : IAsyncDisposable
         using MemoryStream png = new MemoryStream();
         bitmap.Save(png, ImageFormat.Png);
         return png.ToArray();
-    });
+    }
 
     /// <summary>PNG of the whole primary screen as the user sees it, to show what covers or replaced the window.</summary>
     public static byte[] CaptureDesktop()
@@ -393,7 +390,7 @@ public sealed class AppiumSession : IAsyncDisposable
         if (!File.Exists(exePath))
             throw new FileNotFoundException($"ZitiDesktopEdge.exe not found at: {exePath}");
 
-        Trace.Time("MockIpcServer.Start", () => mock.Start());
+        mock.Start();
 
         return await AttachAsync(exePath, prefix, mock, null, uiLogPath);
     }
@@ -413,8 +410,8 @@ public sealed class AppiumSession : IAsyncDisposable
         if (!File.Exists(exePath))
             throw new FileNotFoundException($"ZitiDesktopEdge.exe not found at: {exePath}");
 
-        await Trace.TimeAsync("RelayIpcServer.StartAsync", () => relay.StartAsync());
-        Trace.Time("MockIpcServer.StartMonitorPipes", () => mock.StartMonitorPipes());
+        await relay.StartAsync();
+        mock.StartMonitorPipes();
 
         return await AttachAsync(exePath, prefix, mock, relay, uiLogPath);
     }
@@ -423,68 +420,54 @@ public sealed class AppiumSession : IAsyncDisposable
         RelayIpcServer? relay, string uiLogPath)
     {
         uint savedCaretBlinkTime = StopCaretBlink();
-        ProcessOutputLog ui = Trace.Time("Process.Start(ZitiDesktopEdge.exe)", () =>
+        ProcessStartInfo psi = new ProcessStartInfo
         {
-            ProcessStartInfo psi = new ProcessStartInfo
-            {
-                FileName = exePath,
-                UseShellExecute = false,
-                CreateNoWindow = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                WorkingDirectory = Path.GetDirectoryName(exePath)!,
-            };
-            psi.EnvironmentVariables["ZDEW_UI_TEST"] = "1";
-            psi.EnvironmentVariables["ZDEW_IPC_PIPE_PREFIX"] = prefix;
-            return ProcessOutputLog.Start(psi, uiLogPath);
-        });
+            FileName = exePath,
+            UseShellExecute = false,
+            CreateNoWindow = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            WorkingDirectory = Path.GetDirectoryName(exePath)!,
+        };
+        psi.EnvironmentVariables["ZDEW_UI_TEST"] = "1";
+        psi.EnvironmentVariables["ZDEW_IPC_PIPE_PREFIX"] = prefix;
+        ProcessOutputLog ui = ProcessOutputLog.Start(psi, uiLogPath);
         Process uiProc = ui.Process;
         Step.Log($"started the app (pid {uiProc.Id}), its log is {uiLogPath}");
 
         // WaitForInputIdle returns once the UI thread pumps messages (after MainWindow.Show), but MainWindowHandle
         // can lag it, so poll after.
-        IntPtr hwnd = await Trace.TimeAsync("wait MainWindowHandle", async () =>
+        IntPtr hwnd = IntPtr.Zero;
+        DateTime windowDeadline = DateTime.UtcNow + LaunchWindowTimeout;
+        await Task.Run(() => uiProc.WaitForInputIdle((int)LaunchWindowTimeout.TotalMilliseconds));
+        while (hwnd == IntPtr.Zero && DateTime.UtcNow < windowDeadline)
         {
-            DateTime deadline = DateTime.UtcNow + LaunchWindowTimeout;
-            await Task.Run(() => uiProc.WaitForInputIdle((int)LaunchWindowTimeout.TotalMilliseconds));
-            while (DateTime.UtcNow < deadline)
-            {
-                uiProc.Refresh();
-                IntPtr h = uiProc.MainWindowHandle;
-                if (h != IntPtr.Zero) return h;
-                await Task.Delay(WindowPollIntervalMs);
-            }
-            return IntPtr.Zero;
-        });
+            uiProc.Refresh();
+            hwnd = uiProc.MainWindowHandle;
+            if (hwnd == IntPtr.Zero) await Task.Delay(WindowPollIntervalMs);
+        }
 
         WindowsDriver? driver = null;
         Exception? lastErr = null;
-        if (hwnd != IntPtr.Zero)
+        DateTime driverDeadline = DateTime.UtcNow + LaunchWindowTimeout;
+        while (hwnd != IntPtr.Zero && driver == null && DateTime.UtcNow < driverDeadline)
         {
-            driver = await Trace.TimeAsync("new WindowsDriver (attach)", async () =>
+            try
             {
-                DateTime deadline = DateTime.UtcNow + LaunchWindowTimeout;
-                while (DateTime.UtcNow < deadline)
+                AppiumOptions opts = new AppiumOptions
                 {
-                    try
-                    {
-                        AppiumOptions opts = new AppiumOptions
-                        {
-                            PlatformName = "Windows",
-                            AutomationName = "Windows",
-                        };
-                        opts.AddAdditionalAppiumOption("appTopLevelWindow", "0x" + hwnd.ToInt64().ToString("X"));
-                        opts.AddAdditionalAppiumOption("newCommandTimeout", 60);
-                        return new WindowsDriver(AppiumServer, opts);
-                    }
-                    catch (Exception ex)
-                    {
-                        lastErr = ex;
-                        await Task.Delay(DriverInitBackoffMs);
-                    }
-                }
-                return null;
-            });
+                    PlatformName = "Windows",
+                    AutomationName = "Windows",
+                };
+                opts.AddAdditionalAppiumOption("appTopLevelWindow", "0x" + hwnd.ToInt64().ToString("X"));
+                opts.AddAdditionalAppiumOption("newCommandTimeout", 60);
+                driver = new WindowsDriver(AppiumServer, opts);
+            }
+            catch (Exception ex)
+            {
+                lastErr = ex;
+                await Task.Delay(DriverInitBackoffMs);
+            }
         }
 
         if (driver == null)

@@ -6,6 +6,7 @@ using ImageMagick;
 using Newtonsoft.Json.Linq;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Appium;
+using OpenQA.Selenium.Interactions;
 using ZitiDesktopEdge.UITests.Drivers;
 
 namespace ZitiDesktopEdge.UITests.Tests;
@@ -20,16 +21,14 @@ public static class TestHelpers
     /// Never resize it: a resize turns off the window's SizeToContent. Call once per session: detaching collapses
     /// DetachButton, so a second call times out.
     /// </summary>
-    public static async Task PrepareTestWindow(AppiumSession s) =>
-        await Trace.TimeAsync("PrepareTestWindow", async () =>
-        {
-            OpenMainMenu(s);
-            IWebElement detach = WaitFor(s, By.XPath("//*[@AutomationId='DetachButton']"));
-            ClickAt(s, detach);
-            await Trace.Settle(300);
-            s.MoveWindowBy(0, -TestWindowMoveUpPx);
-            await Trace.Settle(200);
-        });
+    public static void PrepareTestWindow(AppiumSession s)
+    {
+        OpenMainMenu(s);
+        By detach = By.XPath("//*[@AutomationId='DetachButton']");
+        ClickAt(s, WaitFor(s, detach));
+        WaitForGone(s, detach);
+        s.MoveWindowBy(0, -TestWindowMoveUpPx);
+    }
 
     public static string RepoRoot() =>
         Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
@@ -41,9 +40,9 @@ public static class TestHelpers
     public static JObject Fixture(string fileName) =>
         JObject.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "MockIpc", "Fixtures", fileName)));
 
-    // The app's fades run 0.3s, and WPF keeps redrawing text after one ends: a blurb's text changes until about 0.7s
-    // after it shows. Under 2.5s, when the blurb starts hiding.
-    private const int AnimationSettleMs = 1000;
+    // The app's fades run 0.3s, and WPF keeps redrawing text after one ends: a blurb's text changes until about 1.1s
+    // after it shows. Well under 2.5s, when the blurb starts hiding.
+    private const int AnimationSettleMs = 1500;
 
     public static byte[] Capture(AppiumSession s)
     {
@@ -91,26 +90,27 @@ public static class TestHelpers
     /// Writes TestResults\screenshots\&lt;testName&gt;\&lt;step&gt;.png, which the gallery shows as the test's
     /// step strip.
     /// </summary>
-    public static void SaveStep(byte[] png, string testName, string stepName) =>
+    public static void SaveStep(byte[] png, string testName, string stepName)
+    {
         WriteReviewScreenshot(Path.Combine(RepoRoot(), "UITests", "TestResults", "screenshots", testName),
             $"{stepName}.png", png);
+        Step.Log($"saved step {testName}/{stepName}");
+    }
 
     public static void SaveStep(AppiumSession s, string testName, string stepName) =>
-        Trace.Time($"SaveStep({stepName})", () =>
-        {
-            byte[] png;
-            try
-            {
-                png = Capture(s);
-            }
-            catch (System.ComponentModel.Win32Exception ex)
-            {
-                Console.Error.WriteLine($"[WARN] step {testName}/{stepName} not captured: {ex.Message}");
-                return;
-            }
-            SaveStep(png, testName, stepName);
-            Step.Log($"saved step {testName}/{stepName}");
-        });
+        SaveStep(Capture(s), testName, stepName);
+
+    /// <summary>
+    /// Save png as step stepName and compare it to its baseline, &lt;class&gt;.&lt;test&gt;_&lt;screen&gt;.verified.png,
+    /// where screen is stepName without its "NN-" order prefix. One journey can check several screens this way.
+    /// </summary>
+    public static SettingsTask VerifyStep(byte[] png, string testName, string stepName)
+    {
+        SaveStep(png, testName, stepName);
+        string screen = stepName.Substring(stepName.IndexOf('-') + 1);
+        Step.Log($"comparing {testName}_{screen} to its baseline");
+        return ComparedToBaseline(Verify(png, "png").UseMethodName($"{testName}_{screen}"));
+    }
 
     /// <summary>
     /// Review screenshots never fail a test: a write failure is logged to stderr, which xUnit shows even for passing
@@ -137,30 +137,29 @@ public static class TestHelpers
     /// Click target until expected is displayed, because WPF sometimes drops a WinAppDriver click. Navigation clicks
     /// only: retrying a toggle would flip it twice.
     /// </summary>
-    public static void ClickUntil(AppiumSession s, By target, By expected) =>
-        Trace.Time($"ClickUntil({target} shows {expected})", () =>
+    public static void ClickUntil(AppiumSession s, By target, By expected)
+    {
+        DateTime deadline = DateTime.UtcNow.AddSeconds(8);
+        int clicks = 0;
+        while (DateTime.UtcNow < deadline)
         {
-            DateTime deadline = DateTime.UtcNow.AddSeconds(8);
-            int clicks = 0;
-            while (DateTime.UtcNow < deadline)
+            ClickAt(s, WaitFor(s, target));
+            clicks++;
+            // Long enough for a slow runner's animation, so a registered click is never repeated.
+            DateTime probe = DateTime.UtcNow.AddMilliseconds(1500);
+            while (DateTime.UtcNow < probe)
             {
-                ClickAt(s, WaitFor(s, target));
-                clicks++;
-                // Long enough for a slow runner's animation, so a registered click is never repeated.
-                DateTime probe = DateTime.UtcNow.AddMilliseconds(1500);
-                while (DateTime.UtcNow < probe)
+                if (IsDisplayed(s, expected))
                 {
-                    if (IsDisplayed(s, expected))
-                    {
-                        Step.Log($"clicked {target} until {expected} showed ({clicks} clicks)");
-                        return;
-                    }
-                    Thread.Sleep(40);
+                    Step.Log($"clicked {target} until {expected} showed ({clicks} clicks)");
+                    return;
                 }
+                Thread.Sleep(40);
             }
-            string diagnostics = SaveTimeoutDiagnostics(s);
-            throw new TimeoutException($"{expected} never showed after {clicks} clicks on {target}. {diagnostics}");
-        });
+        }
+        string diagnostics = SaveTimeoutDiagnostics(s);
+        throw new TimeoutException($"{expected} never showed after {clicks} clicks on {target}. {diagnostics}");
+    }
 
     private static bool IsDisplayed(AppiumSession s, By by)
     {
@@ -174,49 +173,38 @@ public static class TestHelpers
         }
     }
 
-    public static IWebElement ById(AppiumSession s, string id) =>
-        Trace.Time($"ById({id})",
-            () => s.Driver.FindElement(By.XPath($"//*[@AutomationId='{id}']")));
-
-    /// <summary>Element text or empty string if the element isn't in the tree.</summary>
-    public static string TryGetTextById(AppiumSession s, string id) =>
-        Trace.Time($"TryGetTextById({id})", () =>
-        {
-            try { return ById(s, id).Text ?? ""; }
-            catch (NoSuchElementException) { return ""; }
-        });
+    /// <summary>The element's text, or an empty string when it isn't in the tree.</summary>
+    public static string TextById(AppiumSession s, string id) =>
+        s.Driver.FindElements(By.XPath($"//*[@AutomationId='{id}']")).FirstOrDefault()?.Text ?? "";
 
     // An added identity's row takes up to about 5s to render on the GitHub runner.
     private static readonly TimeSpan ElementTimeout = TimeSpan.FromSeconds(6);
 
     public static IWebElement WaitFor(AppiumSession s, By by)
     {
-        return Trace.Time($"WaitFor({by})", () =>
+        // FindElements returns empty on a miss. FindElement throws instead, and the throw across the WinAppDriver HTTP
+        // boundary costs about 500ms per try.
+        DateTime start = DateTime.UtcNow;
+        DateTime deadline = start + ElementTimeout;
+        int lastMatchCount = 0;
+        while (DateTime.UtcNow < deadline)
         {
-            // FindElements returns empty on a miss. FindElement throws instead, and the throw across the WinAppDriver
-            // HTTP boundary costs about 500ms per try.
-            DateTime start = DateTime.UtcNow;
-            DateTime deadline = start + ElementTimeout;
-            int lastMatchCount = 0;
-            while (DateTime.UtcNow < deadline)
+            try
             {
-                try
+                ReadOnlyCollection<AppiumElement> els = s.Driver.FindElements(by);
+                lastMatchCount = els.Count;
+                if (els.Count > 0 && els[0].Displayed)
                 {
-                    System.Collections.ObjectModel.ReadOnlyCollection<OpenQA.Selenium.Appium.AppiumElement> els = s.Driver.FindElements(by);
-                    lastMatchCount = els.Count;
-                    if (els.Count > 0 && els[0].Displayed)
-                    {
-                        Step.Log($"saw {by} after {(DateTime.UtcNow - start).TotalMilliseconds:F0}ms");
-                        return els[0];
-                    }
+                    Step.Log($"saw {by} after {(DateTime.UtcNow - start).TotalMilliseconds:F0}ms");
+                    return els[0];
                 }
-                catch (StaleElementReferenceException) { /* retry */ }
-                Thread.Sleep(40);
             }
-            string diagnostics = SaveTimeoutDiagnostics(s);
-            throw new TimeoutException(
-                $"Timed out waiting for {by} after {ElementTimeout.TotalMilliseconds}ms ({lastMatchCount} matched on the last try but none displayed). {diagnostics}");
-        });
+            catch (StaleElementReferenceException) { /* retry */ }
+            Thread.Sleep(40);
+        }
+        string diagnostics = SaveTimeoutDiagnostics(s);
+        throw new TimeoutException(
+            $"Timed out waiting for {by} after {ElementTimeout.TotalMilliseconds}ms ({lastMatchCount} matched on the last try but none displayed). {diagnostics}");
     }
 
     // The app answers a click within a second locally. The slack is for the GitHub runner.
@@ -240,27 +228,26 @@ public static class TestHelpers
     /// Poll condition until it holds, or throw with diagnostics, for waits that WaitFor, WaitForGone and
     /// WaitForCommand can't express. description completes "waiting until ..." in the timeout message.
     /// </summary>
-    public static void WaitUntil(AppiumSession s, string description, TimeSpan timeout, Func<bool> condition) =>
-        Trace.Time($"WaitUntil({description})", () =>
+    public static void WaitUntil(AppiumSession s, string description, TimeSpan timeout, Func<bool> condition)
+    {
+        DateTime start = DateTime.UtcNow;
+        DateTime deadline = start + timeout;
+        while (DateTime.UtcNow < deadline)
         {
-            DateTime start = DateTime.UtcNow;
-            DateTime deadline = start + timeout;
-            while (DateTime.UtcNow < deadline)
+            try
             {
-                try
+                if (condition())
                 {
-                    if (condition())
-                    {
-                        Step.Log($"waited {(DateTime.UtcNow - start).TotalMilliseconds:F0}ms until {description}");
-                        return;
-                    }
+                    Step.Log($"waited {(DateTime.UtcNow - start).TotalMilliseconds:F0}ms until {description}");
+                    return;
                 }
-                catch (StaleElementReferenceException) { /* retry */ }
-                Thread.Sleep(50);
             }
-            string diagnostics = SaveTimeoutDiagnostics(s);
-            throw new TimeoutException($"Timed out after {timeout.TotalSeconds}s waiting until {description}. {diagnostics}");
-        });
+            catch (StaleElementReferenceException) { /* retry */ }
+            Thread.Sleep(50);
+        }
+        string diagnostics = SaveTimeoutDiagnostics(s);
+        throw new TimeoutException($"Timed out after {timeout.TotalSeconds}s waiting until {description}. {diagnostics}");
+    }
 
     /// <summary>
     /// Write the UIA page source, the visible top-level windows, a desktop capture and a window capture for a failed
@@ -294,43 +281,33 @@ public static class TestHelpers
     }
 
     public static IWebElement WaitForId(AppiumSession s, string id) =>
-        Trace.Time($"WaitForId({id})",
-            () => WaitFor(s, By.XPath($"//*[@AutomationId='{id}']")));
+        WaitFor(s, By.XPath($"//*[@AutomationId='{id}']"));
 
     /// <summary>
     /// Click, falling back to a touch tap at the element's centre when WinAppDriver calls it not interactable. Its
     /// W3C actions only take pen and touch, and touch reaches WPF elements with no UIA Invoke pattern.
     /// </summary>
-    public static void ClickAt(AppiumSession s, IWebElement el) =>
-        Trace.Time("ClickAt", () => ClickAtCore(s, el));
-
-    private static void ClickAtCore(AppiumSession s, IWebElement el)
+    public static void ClickAt(AppiumSession s, IWebElement el)
     {
         try
         {
             el.Click();
             return;
         }
-        catch (OpenQA.Selenium.ElementNotInteractableException)
+        catch (ElementNotInteractableException)
         {
             // falls through to the touch tap
         }
 
-        System.Drawing.Point loc = el.Location;
-        System.Drawing.Size size = el.Size;
-        int cx = loc.X + (size.Width / 2);
-        int cy = loc.Y + (size.Height / 2);
-
-        OpenQA.Selenium.Interactions.PointerInputDevice touch = new OpenQA.Selenium.Interactions.PointerInputDevice(
-            OpenQA.Selenium.Interactions.PointerKind.Touch, "touch-click");
-        OpenQA.Selenium.Interactions.ActionSequence seq = new OpenQA.Selenium.Interactions.ActionSequence(touch, 0);
-        seq.AddAction(touch.CreatePointerMove(
-            OpenQA.Selenium.Interactions.CoordinateOrigin.Viewport, cx, cy, TimeSpan.Zero));
-        seq.AddAction(touch.CreatePointerDown(OpenQA.Selenium.Interactions.MouseButton.Touch));
+        int cx = el.Location.X + (el.Size.Width / 2);
+        int cy = el.Location.Y + (el.Size.Height / 2);
+        PointerInputDevice touch = new PointerInputDevice(PointerKind.Touch, "touch-click");
+        ActionSequence seq = new ActionSequence(touch, 0);
+        seq.AddAction(touch.CreatePointerMove(CoordinateOrigin.Viewport, cx, cy, TimeSpan.Zero));
+        seq.AddAction(touch.CreatePointerDown(MouseButton.Touch));
         seq.AddAction(touch.CreatePause(TimeSpan.FromMilliseconds(40)));
-        seq.AddAction(touch.CreatePointerUp(OpenQA.Selenium.Interactions.MouseButton.Touch));
-        ((OpenQA.Selenium.IActionExecutor)s.Driver).PerformActions(
-            new List<OpenQA.Selenium.Interactions.ActionSequence> { seq });
+        seq.AddAction(touch.CreatePointerUp(MouseButton.Touch));
+        ((IActionExecutor)s.Driver).PerformActions(new List<ActionSequence> { seq });
     }
 
     /// <summary>
@@ -361,24 +338,25 @@ public static class TestHelpers
     /// leak between tests into baselines. The headers only show while an identity is listed. Each click is single
     /// and checked, because a retried header click flips the direction.
     /// </summary>
-    public static void SortByNameAscending(AppiumSession s) =>
-        Trace.Time("SortByNameAscending", () =>
-        {
-            IWebElement nameHeader = WaitForId(s, "SortByName");
-            if (ActiveSortArrow(s).column != "Name")
-            {
-                ClickAt(s, nameHeader);
-                // SetSort puts a newly chosen column in descending order.
-                WaitUntil(s, "the list sorts by Name descending", AppResponseTimeout,
-                    () => ActiveSortArrow(s) == ("Name", "▼"));
-            }
-            if (ActiveSortArrow(s).arrow != "▲")
-            {
-                ClickAt(s, nameHeader);
-                WaitUntil(s, "the list sorts by Name ascending", AppResponseTimeout,
-                    () => ActiveSortArrow(s) == ("Name", "▲"));
-            }
-        });
+    public static void SortByNameAscending(AppiumSession s)
+    {
+        IWebElement nameHeader = WaitForId(s, "SortByName");
+        if (ActiveSortArrow(s).column != "Name")
+            ClickSortHeader(s, nameHeader, ("Name", "▼"));
+        if (ActiveSortArrow(s).arrow != "▲")
+            ClickSortHeader(s, nameHeader, ("Name", "▲"));
+    }
+
+    /// <summary>
+    /// One click on a sort header, waited on until the active arrow is expected. SetSort puts a newly chosen column in
+    /// descending order and flips the active one. Never retried, because a second click flips it again.
+    /// </summary>
+    public static void ClickSortHeader(AppiumSession s, IWebElement header, (string column, string arrow) expected)
+    {
+        ClickAt(s, header);
+        WaitUntil(s, $"the list sorts by {expected.column} {expected.arrow}", AppResponseTimeout,
+            () => ActiveSortArrow(s) == expected);
+    }
 
     private static By IdentityRowXPath(string identityName) =>
         By.XPath($"//Custom[@ClassName='IdentityItem' and .//Text[@Name='{identityName}']]");
@@ -390,54 +368,43 @@ public static class TestHelpers
     /// Click target until it leaves the tree, for close buttons, since WPF sometimes drops a WinAppDriver click. No-op
     /// when target isn't displayed. The UIA tree can take 700-1700ms to drop a closed element, hence the probe.
     /// </summary>
-    public static void ClickUntilGone(AppiumSession s, By target) =>
-        Trace.Time($"ClickUntilGone({target})", () =>
+    public static void ClickUntilGone(AppiumSession s, By target)
+    {
+        DateTime deadline = DateTime.UtcNow.AddSeconds(8);
+        int clicks = 0;
+        while (DateTime.UtcNow < deadline)
         {
-            DateTime deadline = DateTime.UtcNow.AddSeconds(8);
-            int clicks = 0;
-            while (DateTime.UtcNow < deadline)
+            IWebElement? shown = s.Driver.FindElements(target).FirstOrDefault(e => e.Displayed);
+            if (shown == null) return;
+            ClickAt(s, shown);
+            clicks++;
+            DateTime probe = DateTime.UtcNow.AddMilliseconds(2000);
+            while (DateTime.UtcNow < probe)
             {
-                IWebElement? shown = s.Driver.FindElements(target).FirstOrDefault(e => e.Displayed);
-                if (shown == null) return;
-                ClickAt(s, shown);
-                clicks++;
-                DateTime probe = DateTime.UtcNow.AddMilliseconds(2000);
-                while (DateTime.UtcNow < probe)
+                if (!IsDisplayed(s, target))
                 {
-                    if (!IsDisplayed(s, target))
-                    {
-                        Step.Log($"clicked {target} until it was gone ({clicks} clicks)");
-                        return;
-                    }
-                    Thread.Sleep(40);
+                    Step.Log($"clicked {target} until it was gone ({clicks} clicks)");
+                    return;
                 }
+                Thread.Sleep(40);
             }
-            string diagnostics = SaveTimeoutDiagnostics(s);
-            throw new TimeoutException($"{target} still shown after {clicks} clicks. {diagnostics}");
-        });
+        }
+        string diagnostics = SaveTimeoutDiagnostics(s);
+        throw new TimeoutException($"{target} still shown after {clicks} clicks. {diagnostics}");
+    }
 
     /// <summary>
     /// Close the welcome screen that covers the landing page whenever the service is connected
     /// with zero identities. Throws if it never appears.
     /// </summary>
-    public static void DismissWelcome(AppiumSession s) =>
-        Trace.Time("DismissWelcome", () =>
-        {
-            By closeXPath = By.XPath("//*[@AutomationId='GetStartedScreen']//*[@AutomationId='CloseButton']");
-            ClickAt(s, WaitFor(s, closeXPath));
-            DateTime deadline = DateTime.UtcNow.AddSeconds(2);
-            while (DateTime.UtcNow < deadline)
-            {
-                if (s.Driver.FindElements(closeXPath).Count == 0)
-                {
-                    // A hidden docked window drops every child from the tree too, so check the landing page shows.
-                    WaitFor(s, By.XPath("//Text[@Name='MAIN']"));
-                    return;
-                }
-                Thread.Sleep(30);
-            }
-            throw new TimeoutException("DismissWelcome: welcome screen still open after clicking Close");
-        });
+    public static void DismissWelcome(AppiumSession s)
+    {
+        By closeXPath = By.XPath("//*[@AutomationId='GetStartedScreen']//*[@AutomationId='CloseButton']");
+        ClickAt(s, WaitFor(s, closeXPath));
+        WaitForGone(s, closeXPath);
+        // A hidden docked window drops every child from the tree too, so check the landing page shows.
+        WaitFor(s, By.XPath("//Text[@Name='MAIN']"));
+    }
 
     /// <summary>
     /// Return from identity details to the landing list, for shared-session tests between cases. No-op when details
@@ -451,16 +418,6 @@ public static class TestHelpers
         Step.Log($"comparing {testName} to its baseline");
         WriteReviewScreenshot(Path.Combine(RepoRoot(), "UITests", "TestResults", "screenshots"), $"{testName}.png", png);
         return ComparedToBaseline(Verify(png, "png"));
-    }
-
-    /// <summary>
-    /// Compare a mid-test screen to its own baseline, SmokeTests.&lt;test&gt;_&lt;screen&gt;.verified.png, so one
-    /// journey can check several screens.
-    /// </summary>
-    public static SettingsTask VerifyScreen(byte[] png, string screen, [CallerMemberName] string? testName = null)
-    {
-        Step.Log($"comparing {testName}_{screen} to its baseline");
-        return ComparedToBaseline(Verify(png, "png").UseMethodName($"{testName}_{screen}"));
     }
 
     /// <summary>
@@ -491,19 +448,25 @@ public static class TestHelpers
     }
 
     /// <summary>
-    /// One UIA search, since an XPath lookup walks the whole tree and a blurb shows for only 2.5s. FindElement, not
-    /// FindElements: on identity details WinAppDriver's AccessibilityId FindElements adds an element with an empty ID,
-    /// which Selenium throws on. Collapsed, the blurb is out of the UIA tree.
+    /// One UIA search, since an XPath lookup walks the whole tree and a blurb shows for only 2.5s. Collapsed, the blurb
+    /// is out of the UIA tree.
     /// </summary>
-    public static bool BlurbShows(AppiumSession s, string text)
+    public static bool BlurbShows(AppiumSession s, string text) =>
+        FindByAccessibilityId(s, "Blurb")?.GetAttribute("Name") == text;
+
+    /// <summary>
+    /// One UIA search for the element, or null when it is not in the tree. FindElement, not FindElements:
+    /// WinAppDriver's AccessibilityId FindElements can add an element with an empty ID, which Selenium throws on.
+    /// </summary>
+    public static AppiumElement? FindByAccessibilityId(AppiumSession s, string automationId)
     {
         try
         {
-            return s.Driver.FindElement(MobileBy.AccessibilityId("Blurb")).GetAttribute("Name") == text;
+            return s.Driver.FindElement(MobileBy.AccessibilityId(automationId));
         }
         catch (NoSuchElementException)
         {
-            return false;
+            return null;
         }
     }
 

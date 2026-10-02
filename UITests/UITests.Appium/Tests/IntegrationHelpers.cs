@@ -20,16 +20,14 @@ public static class IntegrationHelpers
         $"//Custom[@ClassName='IdentityItem' and .//Text[@Name='{identityName}']]" +
         $"//*[@AutomationId='ToggleStatus' and @Name='{status}']");
 
-    public static bool UiSent(RelayIpcServer relay, string command) =>
-        relay.Recorded.Any(r => r.From == "ui" && r.Pipe == "cmd" && r.Line.Contains($"\"Command\":\"{command}\""));
-
-    private static int UiCmdLineCount(RelayIpcServer relay, string uiLineFragment) =>
+    public static int UiCmdLineCount(RelayIpcServer relay, string uiLineFragment) =>
         relay.Recorded.Count(r => r.From == "ui" && r.Pipe == "cmd" && r.Line.Contains(uiLineFragment));
 
     public const string AddIdentityLine = "\"Command\":\"AddIdentity\"";
     public const string EnableMfaLine = "\"Command\":\"EnableMFA\"";
     public const string VerifyMfaLine = "\"Command\":\"VerifyMFA\"";
     public const string SubmitMfaLine = "\"Command\":\"SubmitMFA\"";
+    public const string RemoveMfaLine = "\"Command\":\"RemoveMFA\"";
     // DataClient.ExternalAuthLogin sends this command.
     public const string ExternalAuthLine = "\"Command\":\"ExternalAuth\"";
 
@@ -80,6 +78,18 @@ public static class IntegrationHelpers
             return reply != null;
         });
         return reply!;
+    }
+
+    /// <summary>
+    /// Run send, wait until the UI sends a new command line containing uiLineFragment, and return ZET's reply to it.
+    /// </summary>
+    public static JObject SendAndWaitForZetReply(AppiumSession s, string uiLineFragment, Action send)
+    {
+        int sentBefore = UiCmdLineCount(s.Relay!, uiLineFragment);
+        send();
+        WaitUntil(s, $"the UI sends {uiLineFragment}", ControllerTimeout,
+            () => UiCmdLineCount(s.Relay!, uiLineFragment) > sentBefore);
+        return WaitForZetReplyTo(s, uiLineFragment);
     }
 
     /// <summary>
@@ -187,19 +197,6 @@ public static class IntegrationHelpers
     }
 
     /// <summary>
-    /// Add an identity through Add Identity, With URL, against a controller with no ext-jwt signers, asserting what
-    /// ZET's EnrollUrlIdentityToNone does. Returns ZET's identity needs_ext_login event.
-    /// </summary>
-    public static JObject AddIdentityByUrl(AppiumSession s, string url)
-    {
-        EnterControllerUrl(s, url);
-        return JoinEnrolledToNone(s);
-    }
-
-    // AddIdentitySignerChoice's title. The dialog is collapsed, so out of the UIA tree, until the app opens it.
-    public static readonly By EnrollChoiceTitle = By.XPath("//*[@Name='Configure Enrollment']");
-
-    /// <summary>
     /// Click Join Network on the URL dialog, then wait until the app either sends AddIdentity or opens the enrollment
     /// choice dialog instead. Returns whether the choice dialog opened.
     /// </summary>
@@ -207,11 +204,13 @@ public static class IntegrationHelpers
     {
         int addsBefore = UiCmdLineCount(s.Relay!, AddIdentityLine);
         WaitForId(s, "JoinNetworkBtn").Click();
-        // The app looks up the controller's ext-jwt signers before it does either.
+        // The app looks up the controller's ext-jwt signers before it does either. The dialog is collapsed, so out of
+        // the UIA tree, until the app opens it. Not an XPath, because a whole-tree XPath polled through the signer GET
+        // loads the UI thread for seconds.
         WaitUntil(s, "the UI sends AddIdentity or opens the enrollment choice", ControllerTimeout,
             () => UiCmdLineCount(s.Relay!, AddIdentityLine) > addsBefore
-                || s.Driver.FindElements(EnrollChoiceTitle).Count > 0);
-        return s.Driver.FindElements(EnrollChoiceTitle).Count > 0;
+                || FindByAccessibilityId(s, "AddIdentitySignerPicker") != null);
+        return UiCmdLineCount(s.Relay!, AddIdentityLine) == addsBefore;
     }
 
     /// <summary>Click Join Network on the URL dialog and assert the app sends AddIdentity with no enrollment choice.</summary>
@@ -225,9 +224,9 @@ public static class IntegrationHelpers
     public static readonly By SignerPickerLabel = By.XPath("//*[@Name='Identity Provider']");
 
     /// <summary>Enter the controller URL and click Join Network, asserting the enrollment choice dialog opens.</summary>
-    public static async Task OpenEnrollChoice(AppiumSession s)
+    public static void OpenEnrollChoice(AppiumSession s)
     {
-        await PrepareTestWindow(s);
+        PrepareTestWindow(s);
         EnterControllerUrl(s, Quickstart.UiControllerUrl);
         Assert.True(JoinOpensEnrollChoice(s), "the app sent AddIdentity without offering the enrollment choice");
     }
@@ -255,10 +254,7 @@ public static class IntegrationHelpers
     {
         // Both dialogs have a JoinNetworkBtn, and the URL dialog's stays in the tree until its fade out collapses it.
         WaitForGone(s, By.XPath("//*[@AutomationId='ControllerURL']"));
-        int addsBefore = UiCmdLineCount(s.Relay!, AddIdentityLine);
-        WaitForId(s, "JoinNetworkBtn").Click();
-        WaitUntil(s, "the UI sends AddIdentity", ControllerTimeout,
-            () => UiCmdLineCount(s.Relay!, AddIdentityLine) > addsBefore);
+        SendAndWaitForZetReply(s, AddIdentityLine, () => WaitForId(s, "JoinNetworkBtn").Click());
         return EnrollmentUrlFromReply(s);
     }
 
@@ -292,12 +288,6 @@ public static class IntegrationHelpers
         }
     }
 
-    /// <summary>ZET's AssertValidUrlEnrolledIdentityFile for enroll-to-cert, which checks what the JWT one does.</summary>
-    public static void AssertUrlEnrolledToCertIdentityFile(string path) => AssertJwtEnrolledIdentityFile(path);
-
-    /// <summary>ZET's AssertValidUrlEnrolledIdentityFile for enroll-to-token, which checks what the none one does.</summary>
-    public static void AssertUrlEnrolledToTokenIdentityFile(string path) => AssertUrlEnrolledToNoneIdentityFile(path);
-
     // One row at a time, and its name is the controller's, which comes from a dex claim.
     public static readonly By ExtAuthRequiredIcon = By.XPath("//*[@AutomationId='ExtAuthRequired']");
 
@@ -309,11 +299,7 @@ public static class IntegrationHelpers
     {
         // The browser opened for an earlier IdP URL can cover the icon, and the click is a real mouse click.
         CloseBrowsers();
-        int loginsBefore = UiCmdLineCount(s.Relay!, ExternalAuthLine);
-        ClickAt(s, WaitFor(s, ExtAuthRequiredIcon));
-        WaitUntil(s, "the UI sends ExternalAuth", ControllerTimeout,
-            () => UiCmdLineCount(s.Relay!, ExternalAuthLine) > loginsBefore);
-        JObject reply = WaitForZetReplyTo(s, ExternalAuthLine);
+        JObject reply = SendAndWaitForZetReply(s, ExternalAuthLine, () => ClickAt(s, WaitFor(s, ExtAuthRequiredIcon)));
         Assert.Equal(0, (int?)reply["Code"]);
         string? url = (string?)reply["Data"]?["url"];
         Assert.False(string.IsNullOrEmpty(url), $"ExternalAuth reply has no Data.url: {reply}");
@@ -337,22 +323,6 @@ public static class IntegrationHelpers
     {
         JoinWithoutEnrollChoice(s);
         return EnrollmentUrlFromReply(s);
-    }
-
-    /// <summary>
-    /// Deny the IdP login ZET is waiting on and wait for ZET to fail the AddIdentity. An abandoned login holds ZET's
-    /// loopback callback for 60s, and the next enrollment's code then lands on it and fails with "Invalid code_verifier".
-    /// </summary>
-    public static async Task DenyEnrollment(AppiumSession s, string authUrl)
-    {
-        await Dex.DenyIdPFlowAsync(authUrl);
-        // ZET answers the AddIdentity a second time when the login ends.
-        WaitUntil(s, "ZET fails the denied AddIdentity", ControllerTimeout, () =>
-        {
-            IReadOnlyList<RelayIpcServer.RecordedLine> recorded = s.Relay!.Recorded;
-            return recorded.Skip(LatestUiCmdLine(recorded, AddIdentityLine) + 1)
-                .Count(r => r.From == "zet" && r.Pipe == "cmd" && r.Line.Contains("\"Success\":false")) == 1;
-        });
     }
 
     private static string EnrollmentUrlFromReply(AppiumSession s)
@@ -467,9 +437,7 @@ public static class IntegrationHelpers
         JObject added = AddIdentity(fixture, s, identityName);
         Assert.True((bool?)added["Id"]!["MfaEnabled"] == false, $"MFA is enabled before EnableMFA: {added}");
         WaitForZetEventAfter(s, AddIdentityLine, "\"Op\":\"controller\",\"Action\":\"connected\"");
-        OpenIdentityDetails(s, identityName);
-        ClickAt(s, WaitFor(s, By.XPath("//*[@AutomationId='IdentityMFA']//*[@AutomationId='ToggleField']")));
-        WaitForController(s, By.XPath("//*[@AutomationId='SetupCode']"), "the MFA setup dialog opens");
+        OpenMfaSetup(s, identityName);
         ClickAt(s, WaitForId(s, "SecretButton"));
         string secret = WaitForId(s, "SecretCode").Text;
         WaitForId(s, "SetupCode").SendKeys(Totp.Compute(secret, DateTimeOffset.UtcNow));
@@ -482,18 +450,33 @@ public static class IntegrationHelpers
         return new MfaEnrollment(secret, recoveryCodes);
     }
 
-    /// <summary>The asserts ZET's EnrollAndVerifyMFA makes from EnableMFA on, once the recovery codes show.</summary>
-    public static void AssertMfaEnrollmentVerified(AppiumSession s)
+    // Identity details' MFA switch.
+    public static readonly By MfaToggle = By.XPath("//*[@AutomationId='IdentityMFA']//*[@AutomationId='ToggleField']");
+
+    /// <summary>Open the identity's details and click its MFA switch, until the setup dialog asks for a code.</summary>
+    public static void OpenMfaSetup(AppiumSession s, string identityName)
+    {
+        OpenIdentityDetails(s, identityName);
+        ClickAt(s, WaitFor(s, MfaToggle));
+        WaitForController(s, By.XPath("//*[@AutomationId='SetupCode']"), "the MFA setup dialog opens");
+    }
+
+    /// <summary>
+    /// The asserts ZET's EnrollAndVerifyMFA makes from EnableMFA on, once the recovery codes show. Returns ZET's mfa
+    /// enrollment_challenge event.
+    /// </summary>
+    public static JObject AssertMfaEnrollmentVerified(AppiumSession s)
     {
         JObject enable = ZetReplyTo(s.Relay!, EnableMfaLine);
         Assert.Equal(0, (int?)enable["Code"]);
         Assert.False(string.IsNullOrEmpty((string?)enable["Data"]!["ProvisioningUrl"]), $"EnableMFA reply has no ProvisioningUrl: {enable}");
         Assert.NotEmpty(enable["Data"]!["RecoveryCodes"]!.Values<string>());
         Assert.True((bool?)enable["Data"]!["IsVerified"] == false, $"EnableMFA reply is verified before VerifyMFA: {enable}");
-        AssertMfaEventSucceeded(s, EnableMfaLine, "enrollment_challenge");
+        JObject challenge = AssertMfaEventSucceeded(s, EnableMfaLine, "enrollment_challenge");
         Assert.Equal(0, (int?)ZetReplyTo(s.Relay!, VerifyMfaLine)["Code"]);
         AssertMfaAuthenticated(s, VerifyMfaLine);
         AssertMfaEventSucceeded(s, VerifyMfaLine, "enrollment_verification");
+        return challenge;
     }
 
     /// <summary>
@@ -519,45 +502,40 @@ public static class IntegrationHelpers
         WaitForController(s, InIdentityRow(identityName, "MfaRequired"), "the row asks to authenticate");
     }
 
-    /// <summary>Submit code from the row's MFA prompt, saving the typed code as step.</summary>
-    public static void SubmitFromRow(AppiumSession s, string name, string step, string identityName, string code)
+    /// <summary>Submit code from the row's MFA prompt, saving the typed code as step. Returns ZET's SubmitMFA reply.</summary>
+    public static JObject SubmitFromRow(AppiumSession s, string name, string step, string identityName, string code)
     {
         ClickAt(s, WaitFor(s, InIdentityRow(identityName, "MfaRequired")));
         WaitForId(s, "AuthCode").SendKeys(code);
         SaveStep(s, name, step);
-        WaitForId(s, "AuthButton").Click();
+        return SendAndWaitForZetReply(s, SubmitMfaLine, () => WaitForId(s, "AuthButton").Click());
     }
 
     /// <summary>
     /// Submit code from the row's MFA prompt, wait for ZET to clear the lock, and assert what ZET's reauth tests do
     /// after a SubmitMFA that succeeds.
     /// </summary>
-    public static async Task AuthenticateFromRow(AppiumSession s, string name, string step, string identityName,
+    public static void AuthenticateFromRow(AppiumSession s, string name, string step, string identityName,
         string code)
     {
-        SubmitFromRow(s, name, step, identityName, code);
-        // Lets the SubmitMFA reply and ZET's mfa_auth_status event land before UIA polling loads the UI thread.
-        await Task.Delay(1000);
-
-        // Clears on ZET's mfa_auth_status event.
-        WaitUntil(s, "the row stops asking to authenticate", ControllerTimeout,
-            () => s.Driver.FindElements(InIdentityRow(identityName, "MfaRequired")).Count == 0);
-        Assert.Equal(0, (int?)ZetReplyTo(s.Relay!, SubmitMfaLine)["Code"]);
-        AssertMfaAuthenticated(s, SubmitMfaLine);
+        // Waits on the relay first, so no UIA polling loads the UI thread while the reply and event land.
+        Assert.Equal(0, (int?)SubmitFromRow(s, name, step, identityName, code)["Code"]);
         AssertMfaEventSucceeded(s, SubmitMfaLine, "mfa_auth_status");
+        AssertMfaAuthenticated(s, SubmitMfaLine);
+        // Clears on ZET's mfa_auth_status event.
+        WaitForGone(s, InIdentityRow(identityName, "MfaRequired"));
     }
 
     /// <summary>
     /// Submit code from the row's MFA prompt, assert ZET rejects it and the prompt stays open, and return the
     /// capture taken while the failure blurb shows.
     /// </summary>
-    public static async Task<byte[]> RejectFromRow(AppiumSession s, string name, string step, string identityName,
+    public static byte[] RejectFromRow(AppiumSession s, string name, string step, string identityName,
         string code)
     {
-        SubmitFromRow(s, name, step, identityName, code);
         // MFAScreen keeps the prompt open and shows "Authentication Failed" on a failed SubmitMFA reply. The capture is
         // timed from the reply, since finding the blurb through UIA can take most of its 2.5s.
-        JObject reply = WaitForZetReplyTo(s, SubmitMfaLine);
+        JObject reply = SubmitFromRow(s, name, step, identityName, code);
         byte[] png = Capture(s);
         Assert.Equal(500, (int?)reply["Code"]);
         Assert.Contains("the token provided was invalid", (string?)reply["Error"]);

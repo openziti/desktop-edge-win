@@ -21,28 +21,21 @@ public class RemoveIdentityTests
     [Fact(Timeout = 120000)]
     public async Task WithIdentifierFromEvent()
     {
-        Trace.Begin();
         string name = nameof(WithIdentifierFromEvent);
         const string identityName = "test_remove_id";
         string identityFile = AddedIdentityFile(_fixture);
 
         await using AppiumSession s = await LaunchAsync(_fixture, name);
         AddIdentity(_fixture, s, identityName);
-        await Trace.Settle(350);
-        SaveStep(s, name, "01-identity-added");
-        await VerifyScreen(Capture(s), "identity-added");
+        await VerifyStep(Capture(s), name, "01-identity-added");
 
         OpenIdentityDetails(s, identityName);
         ClickAt(s, WaitFor(s, By.XPath("//*[@AutomationId='ForgetIdentityButton']")));
-        await Trace.Settle(300);
-        SaveStep(s, name, "02-forget-confirm");
-        await VerifyScreen(Capture(s), "forget-confirm");
+        await VerifyStep(Capture(s), name, "02-forget-confirm");
 
         ClickAt(s, WaitFor(s, By.XPath("//*[@AutomationId='ConfirmButton']")));
         WaitForGone(s, By.XPath($"//Text[@Name='{identityName}']"));
-        await Trace.Settle(300);
-        SaveStep(s, name, "03-identity-forgotten");
-        await VerifyScreen(Capture(s), "identity-forgotten");
+        await VerifyStep(Capture(s), name, "03-identity-forgotten");
         Assert.Equal(0, (int?)ZetReplyTo(s.Relay!, "\"Command\":\"RemoveIdentity\"")["Code"]);
         Assert.Equal(0, IdentityRowCount(s));
         Assert.False(File.Exists(identityFile), $"identity file should be removed after forget: {identityFile}");

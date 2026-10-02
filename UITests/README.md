@@ -83,7 +83,7 @@ UITests\run-ui-tests.ps1 -OpenGallery
 UITests\run-ui-tests.ps1 -SkipBuild -OpenGallery
 ```
 
-Other switches: `-Category` or `-Filter` to run a subset, `-Trace` for per-step timing lines, `-AutoVerify` and
+Other switches: `-Category` or `-Filter` to run a subset, `-AutoVerify` and
 `-ResetBaselines` for screenshot baselines.
 
 ### Visual baselines (Verify / AutoVerify)
@@ -185,10 +185,9 @@ UITests/
       IpcPipes.cs                        <-- pipe accept loop shared by the mock and the relay
       Fixtures/*.json                    <-- canned status payloads
     Tests/
-      TestHelpers.cs                     <-- WaitFor / ById / Capture / SaveStep / OpenMainMenu
+      TestHelpers.cs                     <-- WaitFor / WaitForId / Capture / VerifyStep / OpenMainMenu
       TestLifecycleLog.cs                <-- xUnit attribute that logs START/DONE per test
       FixtureBuilder.cs                  <-- programmatic JObject builders (50-identity status, ...)
-      LandingSession.cs                  <-- shared-session IClassFixture
       SmokeTests.cs                      <-- state-changing + alt-fixture + visual tests
       IntegrationFixture.cs              <-- starts the quickstart and ZET once per class
       <ZetFile>Tests.cs                  <-- UI twins of ZET integration tests; elevated, -Category Integration only
@@ -264,6 +263,3 @@ A full pass currently takes ~40-60 seconds. Where the time goes:
 - WAD session attach: ~1.5s per test.
 - WPF process startup: ~1s per test.
 - Driver.Quit() teardown: ~0.5s per test.
-
-The `ServiceTests` share a single session via `LandingSession` (`IClassFixture`). Further speedups would require sharing sessions across alt-fixture tests
-(harder, since each test needs different IPC payloads -- mock would need a hot-swap status API).

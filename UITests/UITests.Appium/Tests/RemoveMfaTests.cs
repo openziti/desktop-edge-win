@@ -24,7 +24,7 @@ public class RemoveMfaTests
     private static void OpenRemovalPrompt(AppiumSession s, string identityName)
     {
         OpenIdentityDetails(s, identityName);
-        ClickAt(s, WaitFor(s, By.XPath("//*[@AutomationId='IdentityMFA']//*[@AutomationId='ToggleField']")));
+        ClickAt(s, WaitFor(s, MfaToggle));
         WaitForId(s, "AuthCode");
     }
 
@@ -34,46 +34,33 @@ public class RemoveMfaTests
         await using AppiumSession s = await LaunchAsync(_fixture, name);
         MfaEnrollment enrollment = AddIdentityAndEnrollMfa(_fixture, s, identityName);
         OpenRemovalPrompt(s, identityName);
-        await Trace.Settle(350);
-        SaveStep(s, name, "01-remove-code-prompt");
-        await VerifyScreen(Capture(s), "remove-code-prompt", name);
+        await VerifyStep(Capture(s), name, "01-remove-code-prompt");
         // RemoveMFA only goes out once a code is submitted.
-        Assert.False(UiSent(s.Relay!, "RemoveMFA"));
+        Assert.Equal(0, UiCmdLineCount(s.Relay!, RemoveMfaLine));
 
         WaitForId(s, "AuthCode").SendKeys(pickCode(enrollment));
         SaveStep(s, name, "02-code-typed");
-        WaitForId(s, "AuthButton").Click();
-        // IsMFAEnabled clears and the "MFA disabled" blurb shows on ZET's enrollment_remove event, not on the reply.
-        // The capture is timed from the event, since finding the blurb through UIA can take most of its 2.5s.
-        AssertMfaEventSucceeded(s, "\"Command\":\"RemoveMFA\"", "enrollment_remove");
-        byte[] removed = Capture(s);
-        SaveStep(removed, name, "03-removed-details");
-        await VerifyScreen(removed, "removed-details", name);
-        WaitForGone(s, By.XPath("//*[@AutomationId='AuthCode']"));
-        JObject reply = ZetReplyTo(s.Relay!, "\"Command\":\"RemoveMFA\"");
+        JObject reply = SendAndWaitForZetReply(s, RemoveMfaLine, () => WaitForId(s, "AuthButton").Click());
         Assert.Equal(0, (int?)reply["Code"]);
+        // The "MFA disabled" blurb shows on ZET's enrollment_remove event, not on the reply.
+        AssertMfaEventSucceeded(s, RemoveMfaLine, "enrollment_remove");
+        await VerifyStep(Capture(s), name, "03-removed-details");
+        WaitForGone(s, By.XPath("//*[@AutomationId='AuthCode']"));
     }
 
     [Fact(Timeout = 180000)]
-    public async Task RemoveAcceptsValidTotp()
-    {
-        Trace.Begin();
+    public async Task RemoveAcceptsValidTotp() =>
         await RemoveAccepts(nameof(RemoveAcceptsValidTotp), "test_mfa_remove_valid_totp",
             e => Totp.Compute(e.Secret, DateTimeOffset.UtcNow));
-    }
 
     [Fact(Timeout = 180000)]
-    public async Task RemoveAcceptsRecoveryCode()
-    {
-        Trace.Begin();
+    public async Task RemoveAcceptsRecoveryCode() =>
         await RemoveAccepts(nameof(RemoveAcceptsRecoveryCode), "test_mfa_remove_recovery_code",
             e => e.RecoveryCodes[0]);
-    }
 
     [Fact(Timeout = 180000)]
     public async Task RemoveRejectsInvalidTotp()
     {
-        Trace.Begin();
         string name = nameof(RemoveRejectsInvalidTotp);
         const string identityName = "test_mfa_remove_invalid_totp";
 
@@ -82,13 +69,9 @@ public class RemoveMfaTests
         OpenRemovalPrompt(s, identityName);
         WaitForId(s, "AuthCode").SendKeys("000000");
         SaveStep(s, name, "01-code-typed");
-        WaitForId(s, "AuthButton").Click();
-        // MFAScreen shows "Authentication Failed" on the failed reply. The capture is timed from the reply, since
-        // finding the blurb through UIA can take most of its 2.5s.
-        JObject reply = WaitForZetReplyTo(s, "\"Command\":\"RemoveMFA\"");
-        byte[] rejected = Capture(s);
-        SaveStep(rejected, name, "02-after-rejection");
-        await VerifyScreen(rejected, "after-rejection", name);
+        // MFAScreen shows "Authentication Failed" on the failed reply.
+        JObject reply = SendAndWaitForZetReply(s, RemoveMfaLine, () => WaitForId(s, "AuthButton").Click());
+        await VerifyStep(Capture(s), name, "02-after-rejection");
 
         Assert.Equal(500, (int?)reply["Code"]);
         Assert.Contains("the token provided was invalid", (string?)reply["Error"]);

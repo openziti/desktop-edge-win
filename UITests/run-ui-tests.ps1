@@ -24,7 +24,6 @@ param(
     [string]   $Filter,           # passthrough: --filter "<expr>" e.g. "FullyQualifiedName~Sort"
     [string[]] $Category,         # e.g. -Category MainScreen,Sort, ORed into the filter
     [string[]] $ResetBaselines,   # globs like 'Visual_*' deleted first, so -AutoVerify rewrites them
-    [switch]   $Trace,            # sets ZDEW_TEST_TRACE=1 for per-step timing lines
     [switch]   $OpenGallery
 )
 
@@ -152,7 +151,6 @@ foreach ($pattern in $ResetBaselines) {
 $runLog = [System.Collections.Generic.List[string]]::new()
 try {
     if ($AutoVerify) { $env:ZDEW_AUTO_VERIFY = "1" }
-    if ($Trace) { $env:ZDEW_TEST_TRACE = "1" }
     Write-Host "==> dotnet test $(if ($Filter) { "--filter $Filter" })"
     $dotnetTestArgs = @(
         $testCsproj,
@@ -175,7 +173,6 @@ try {
 } finally {
     # the script runs in the caller's session, so a leaked value auto-accepts baselines on every later run
     Remove-Item Env:ZDEW_AUTO_VERIFY -ErrorAction SilentlyContinue
-    Remove-Item Env:ZDEW_TEST_TRACE -ErrorAction SilentlyContinue
     if ($startedAppium -and $appiumProc -and -not $appiumProc.HasExited) {
         Write-Host "==> stopping appium (pid $($appiumProc.Id))"
         try { Stop-Process -Id $appiumProc.Id -Force -ErrorAction SilentlyContinue } catch {}
