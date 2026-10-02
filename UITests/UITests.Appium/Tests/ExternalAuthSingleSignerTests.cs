@@ -220,44 +220,117 @@ public class ExternalAuthSingleSignerTests
         });
     }
 
-    /// <summary>ZET's completeEnrollToCert through the URL dialog.</summary>
-    private static async Task CompleteEnrollToCert(AppiumSession s, string identityName)
+    [Fact(Timeout = 120000)]
+    public async Task EnrollToNoneThenCertRejected()
+    {
+        string name = nameof(EnrollToNoneThenCertRejected);
+        await WithWorkingSigner(_fixture, Quickstart.EnrollToNone, async () =>
+        {
+            await using AppiumSession s = await LaunchAsync(_fixture, name);
+            PrepareTestWindow(s);
+            EnterControllerUrl(s, Quickstart.UiControllerUrl);
+            string identityFile = (string)JoinEnrolledToNone(s)["Id"]!["Identifier"]!;
+
+            _fixture.Quickstart.UpdateExtJwtSigner(IntegrationFixture.WorkingSignerName,
+                Quickstart.EnrollToNone with { ToCert = true });
+            await AssertSameNameRejected(s, name, "01-add-failure-blurb");
+            AssertSentEnrollMode(s, "cert");
+            AssertUrlEnrolledToNoneIdentityFile(identityFile);
+        });
+    }
+
+    [Fact(Timeout = 120000)]
+    public async Task EnrollToCertThenNoneRejected()
+    {
+        string name = nameof(EnrollToCertThenNoneRejected);
+        await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToCert = true }, async () =>
+        {
+            await using AppiumSession s = await LaunchAsync(_fixture, name);
+            string identityFile = await CompleteEnrollToCert(s, "test_ext_auth_cert_then_none");
+
+            _fixture.Quickstart.UpdateExtJwtSigner(IntegrationFixture.WorkingSignerName, Quickstart.EnrollToNone);
+            await AssertSameNameRejected(s, name, "01-add-failure-blurb");
+            Assert.Null((string?)UiCommand(s.Relay!, AddIdentityLine)["Data"]!["EnrollMode"]);
+            AssertJwtEnrolledIdentityFile(identityFile);
+        });
+    }
+
+    [Fact(Timeout = 120000)]
+    public async Task EnrollToCertThenTokenRejected()
+    {
+        string name = nameof(EnrollToCertThenTokenRejected);
+        await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToCert = true }, async () =>
+        {
+            await using AppiumSession s = await LaunchAsync(_fixture, name);
+            string identityFile = await CompleteEnrollToCert(s, "test_ext_auth_cert_then_token");
+
+            _fixture.Quickstart.UpdateExtJwtSigner(IntegrationFixture.WorkingSignerName,
+                Quickstart.EnrollToNone with { ToToken = true });
+            await AssertSameNameRejected(s, name, "01-add-failure-blurb");
+            AssertSentEnrollMode(s, "token");
+            AssertJwtEnrolledIdentityFile(identityFile);
+        });
+    }
+
+    [Fact(Timeout = 150000)]
+    public async Task EnrollToTokenThenCertRejected()
+    {
+        string name = nameof(EnrollToTokenThenCertRejected);
+        await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToToken = true }, async () =>
+        {
+            await using AppiumSession s = await LaunchAsync(_fixture, name);
+            string identityFile = await CompleteEnrollToToken(s, "test_ext_auth_token_then_cert");
+
+            _fixture.Quickstart.UpdateExtJwtSigner(IntegrationFixture.WorkingSignerName,
+                Quickstart.EnrollToNone with { ToCert = true });
+            await AssertSameNameRejected(s, name, "01-add-failure-blurb");
+            AssertSentEnrollMode(s, "cert");
+            AssertUrlEnrolledToNoneIdentityFile(identityFile);
+        });
+    }
+
+    /// <summary>ZET's completeEnrollToCert through the URL dialog. Returns the identity file.</summary>
+    private static async Task<string> CompleteEnrollToCert(AppiumSession s, string identityName)
     {
         PrepareTestWindow(s);
         EnterControllerUrl(s, Quickstart.UiControllerUrl);
-        await FinishEnrollToCert(s, identityName, JoinToEnrollmentUrl(s));
+        return await FinishEnrollToCert(s, identityName, JoinToEnrollmentUrl(s));
     }
 
-    /// <summary>ZET's completeEnrollToCert from ZET's AddIdentity reply on.</summary>
-    private static async Task FinishEnrollToCert(AppiumSession s, string identityName, string authUrl)
+    /// <summary>ZET's completeEnrollToCert from ZET's AddIdentity reply on. Returns the identity file.</summary>
+    private static async Task<string> FinishEnrollToCert(AppiumSession s, string identityName, string authUrl)
     {
         await Dex.DriveIdPFlowAsync(authUrl, $"{identityName}@test.com");
-        JObject added = AssertEnrollmentAdded(s, AddIdentityLine);
+        string identityFile = (string)AssertEnrollmentAdded(s, AddIdentityLine)["Id"]!["Identifier"]!;
         // ZET's AssertValidUrlEnrolledIdentityFile for enroll-to-cert checks what the JWT one does.
-        AssertJwtEnrolledIdentityFile((string)added["Id"]!["Identifier"]!);
+        AssertJwtEnrolledIdentityFile(identityFile);
         WaitUntil(s, "the enrolled identity shows on the landing list", ControllerTimeout,
             () => IdentityRowCount(s) == 1);
+        return identityFile;
     }
 
-    /// <summary>ZET's completeEnrollToToken through the URL dialog, then the row's login.</summary>
-    private static async Task CompleteEnrollToToken(AppiumSession s, string identityName)
+    /// <summary>ZET's completeEnrollToToken through the URL dialog, then the row's login. Returns the identity file.</summary>
+    private static async Task<string> CompleteEnrollToToken(AppiumSession s, string identityName)
     {
         PrepareTestWindow(s);
         EnterControllerUrl(s, Quickstart.UiControllerUrl);
-        await FinishEnrollToToken(s, identityName, JoinToEnrollmentUrl(s));
+        return await FinishEnrollToToken(s, identityName, JoinToEnrollmentUrl(s));
     }
 
-    /// <summary>ZET's completeEnrollToToken from ZET's AddIdentity reply on, then the row's login.</summary>
-    private static async Task FinishEnrollToToken(AppiumSession s, string identityName, string enrollUrl)
+    /// <summary>
+    /// ZET's completeEnrollToToken from ZET's AddIdentity reply on, then the row's login. Returns the identity file.
+    /// </summary>
+    private static async Task<string> FinishEnrollToToken(AppiumSession s, string identityName, string enrollUrl)
     {
         await Dex.DriveIdPFlowAsync(enrollUrl, $"{identityName}@test.com");
         WaitForNeedsExtLogin(s, AddIdentityLine);
         string loginUrl = LoginFromRow(s);
         await Dex.DriveIdPFlowAsync(loginUrl, $"{identityName}@test.com");
-        JObject added = AssertEnrollmentAdded(s, ExternalAuthLine);
+        string identityFile = (string)AssertEnrollmentAdded(s, ExternalAuthLine)["Id"]!["Identifier"]!;
         // ZET's AssertValidUrlEnrolledIdentityFile for enroll-to-token checks what the none one does.
-        AssertUrlEnrolledToNoneIdentityFile((string)added["Id"]!["Identifier"]!);
+        AssertUrlEnrolledToNoneIdentityFile(identityFile);
         WaitForRowLoggedIn(s);
+        return identityFile;
     }
 
     private static void WaitForRowLoggedIn(AppiumSession s) =>

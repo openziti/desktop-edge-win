@@ -272,6 +272,22 @@ public static class IntegrationHelpers
         return needsLogin;
     }
 
+    /// <summary>
+    /// Enter the controller URL again and click Join Network, asserting ZET rejects the add as a duplicate: the UI names
+    /// every identity from a URL host_port, so a second add from the same URL always collides with the first.
+    /// </summary>
+    public static async Task AssertSameNameRejected(AppiumSession s, string name, string step)
+    {
+        EnterControllerUrl(s, Quickstart.UiControllerUrl);
+        JObject reply = SendAndWaitForZetReply(s, AddIdentityLine, () => WaitForId(s, "JoinNetworkBtn").Click());
+        // The blurb shows on the reply and hides 2.5s later.
+        await VerifyStep(Capture(s), name, step);
+        // The blurb shows no detail from ZET, so only the reply proves why the add failed.
+        Assert.Equal(500, (int?)reply["Code"]);
+        Assert.Contains("identity exists with the same name", (string?)reply["Error"]);
+        Assert.Equal(1, IdentityRowCount(s));
+    }
+
     /// <summary>Runs <paramref name="body"/> with the working signer set to <paramref name="enrollment"/>.</summary>
     public static async Task WithWorkingSigner(IntegrationFixture fixture, Quickstart.SignerEnrollment enrollment,
         Func<Task> body)

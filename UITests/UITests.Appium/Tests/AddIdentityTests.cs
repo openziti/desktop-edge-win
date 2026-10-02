@@ -130,12 +130,6 @@ public class AddIdentityTests
         EnterControllerUrl(s, Quickstart.UiControllerUrl);
         JoinEnrolledToNone(s);
         SaveStep(s, name, "01-identity-needs-ext-login");
-
-        EnterControllerUrl(s, Quickstart.UiControllerUrl);
-        JObject reply = SendAndWaitForZetReply(s, AddIdentityLine, () => WaitForId(s, "JoinNetworkBtn").Click());
-        await VerifyStep(Capture(s), name, "02-add-failure-blurb");
-        Assert.Equal(500, (int?)reply["Code"]);
-        Assert.Contains("identity exists with the same name", (string?)reply["Error"]);
-        Assert.Equal(1, IdentityRowCount(s));
+        await AssertSameNameRejected(s, name, "02-add-failure-blurb");
     }
 }
