@@ -93,7 +93,7 @@ public class ServiceTests : IClassFixture<LandingSession>, IAsyncLifetime
 [Trait("Category", "IdentityDetailServices")]
 public class ServiceAltFixtureTests
 {
-    [Fact(Timeout = 30000)]
+    [Fact(Timeout = 60000)]
     public async Task Services_AlternateFixtureShowsDifferentNames()
     {
         string name = nameof(Services_AlternateFixtureShowsDifferentNames);

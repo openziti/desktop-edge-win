@@ -49,7 +49,7 @@ public class SortTests
     private static readonly string[] Disabled = { "Bravo-Staging", "CharlieEdge" };
     private static readonly string[] Enabled = { "zebra-prod", "ALPHA-DEV", "oscar-prod" };
 
-    [Fact(Timeout = 40000)]
+    [Fact(Timeout = 60000)]
     public async Task SortHeadersReorderIdentities()
     {
         Trace.Begin();

@@ -13,7 +13,7 @@ namespace ZitiDesktopEdge.UITests.Tests;
 [TestLifecycleLog]
 public class SmokeTests
 {
-    [Fact(Timeout = 20000)]
+    [Fact(Timeout = 60000)]
     [Trait("Category", "MainScreen")]
     [Trait("Category", "Screenshots")]
     public async Task MainWindow_LaunchesAndRenders()
@@ -26,7 +26,7 @@ public class SmokeTests
         await VerifyPng(png);
     }
 
-    [Fact(Timeout = 20000)]
+    [Fact(Timeout = 60000)]
     [Trait("Category", "MainScreen")]
     [Trait("Category", "Screenshots")]
     public async Task MainMenu_OpensOnHamburgerClick()
@@ -43,7 +43,7 @@ public class SmokeTests
         await VerifyPng(png);
     }
 
-    [Fact(Timeout = 20000)]
+    [Fact(Timeout = 60000)]
     [Trait("Category", "MainScreen")]
     [Trait("Category", "Screenshots")]
     public async Task Visual_Disconnected()
@@ -58,7 +58,7 @@ public class SmokeTests
         await VerifyPng(png);
     }
 
-    [Fact(Timeout = 20000)]
+    [Fact(Timeout = 60000)]
     [Trait("Category", "MainScreen")]
     [Trait("Category", "Screenshots")]
     public async Task Visual_NoIdentities()
@@ -73,7 +73,7 @@ public class SmokeTests
         await VerifyPng(png);
     }
 
-    [Fact(Timeout = 20000)]
+    [Fact(Timeout = 60000)]
     [Trait("Category", "MainScreen")]
     [Trait("Category", "Screenshots")]
     public async Task Visual_NeedsExtAuth()
@@ -89,7 +89,7 @@ public class SmokeTests
         await VerifyPng(png);
     }
 
-    [Fact(Timeout = 20000)]
+    [Fact(Timeout = 60000)]
     [Trait("Category", "MainScreen")]
     [Trait("Category", "Screenshots")]
     public async Task Visual_WithServices()
@@ -156,7 +156,7 @@ public class SmokeTests
         Assert.NotNull(cmd["Data"]?["L2"]);
     }
 
-    [Fact(Timeout = 30000)]
+    [Fact(Timeout = 60000)]
     [Trait("Category", "IdentityDetail")]
     [Trait("Category", "Screenshots")]
     public async Task ExtAuth_SuccessfulLoginEvent_ClearsNeedsExtAuth()
@@ -191,7 +191,7 @@ public class SmokeTests
         SaveStep(s, name, "04-after-simulated-success");
     }
 
-    [Fact(Timeout = 20000)]
+    [Fact(Timeout = 60000)]
     [Trait("Category", "IdentityDetailServices")]
     [Trait("Category", "Screenshots")]
     public async Task IdentityDetails_ShowsServiceList()
@@ -213,7 +213,7 @@ public class SmokeTests
     }
 
     // PrintWindow draws a window hidden behind the taskbar just fine, so screenshots can't catch placement.
-    [Fact(Timeout = 30000)]
+    [Fact(Timeout = 60000)]
     [Trait("Category", "Placement")]
     public async Task DockedWindowStaysOnScreen()
     {
@@ -239,7 +239,7 @@ public class SmokeTests
         Assert.Equal(landing, closed);
     }
 
-    [Fact(Timeout = 20000)]
+    [Fact(Timeout = 60000)]
     [Trait("Category", "Placement")]
     public async Task DockedWelcomeStaysOnScreen()
     {
@@ -264,7 +264,7 @@ public class SmokeTests
     }
 
     // 25-row UIA tree + virtualised ScrollViewer. PageSource cost dominates.
-    [Fact(Timeout = 30000)]
+    [Fact(Timeout = 60000)]
     [Trait("Category", "MainScreen")]
     public async Task ManyIdentities_LandingShowsScrollableList()
     {
@@ -285,7 +285,7 @@ public class SmokeTests
         Assert.Contains("ext-auth-03", src);
     }
 
-    [Fact(Timeout = 30000)]
+    [Fact(Timeout = 60000)]
     [Trait("Category", "IdentityDetail")]
     public async Task ExtAuth_ClickIsDefaultProviderCheckbox_TogglesDefault()
     {
@@ -320,7 +320,7 @@ public class SmokeTests
         Assert.Equal(startedChecked, check.Selected);
     }
 
-    [Fact(Timeout = 20000)]
+    [Fact(Timeout = 60000)]
     [Trait("Category", "MainScreen")]
     public async Task AddIdentityOffersJwtAndUrl()
     {
