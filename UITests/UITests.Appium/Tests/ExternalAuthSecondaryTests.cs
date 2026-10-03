@@ -8,6 +8,8 @@ namespace ZitiDesktopEdge.UITests.Tests;
 /// <summary>
 /// UI twin of TestExternalAuthSecondary in ziti-tunnel-sdk-c tests/integration/external_auth_test.go. The identity
 /// enrolls with its JWT, and its auth policy also requires a login to the working signer before it connects.
+/// A subtest that moves its identity to another auth policy never moves it back, as in ZET, because each identity
+/// belongs to one subtest.
 /// </summary>
 [TestLifecycleLog]
 [Trait("Category", "Integration")]
@@ -76,6 +78,39 @@ public class ExternalAuthSecondaryTests
             WaitForConnected(s);
             AssertGrantedServices(s, ExternalAuthLine, new[] { "test_ext_auth_attr_user_svc" });
             await VerifyStep(Capture(s), name, "04-identity-reconnected");
+        }
+        finally
+        {
+            CloseBrowsers();
+        }
+    }
+
+    [Fact(Timeout = 150000)]
+    public async Task SecondaryExtJwtPolicyAddedAsksForLogin()
+    {
+        string name = nameof(SecondaryExtJwtPolicyAddedAsksForLogin);
+        const string identityName = "test_ext_auth_secondary_policy_added";
+
+        try
+        {
+            await using AppiumSession s = await LaunchAsync(_fixture, name);
+            PrepareTestWindow(s);
+            AddIdentity(_fixture, s, identityName);
+            WaitForZetEventAfter(s, AddIdentityLine, "\"Op\":\"controller\",\"Action\":\"connected\"");
+            await VerifyStep(Capture(s), name, "01-identity-connected");
+
+            _fixture.Quickstart.SetIdentityAuthPolicy(identityName, SecondaryPolicy);
+            // ZET's DisableEnableIdentity from the row.
+            ClickAt(s, WaitFor(s, InIdentityRow(identityName, "ToggleSwitch")));
+            WaitForController(s, ToggleStatus(identityName, "DISABLED"), $"{identityName} shows DISABLED");
+            ClickAt(s, WaitFor(s, InIdentityRow(identityName, "ToggleSwitch")));
+            WaitForNeedsExtLogin(s, OnLine);
+            await VerifyStep(Capture(s), name, "02-policy-added-needs-ext-login");
+
+            await Dex.DriveIdPFlowAsync(LoginFromRow(s), $"{identityName}@test.com");
+            WaitForConnected(s);
+            AssertGrantedServices(s, ExternalAuthLine, new[] { "test_ext_auth_attr_user_svc" });
+            await VerifyStep(Capture(s), name, "03-identity-reconnected");
         }
         finally
         {
