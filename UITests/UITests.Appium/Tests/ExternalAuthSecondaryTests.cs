@@ -118,6 +118,40 @@ public class ExternalAuthSecondaryTests
         }
     }
 
+    [Fact(Timeout = 150000)]
+    public async Task SecondaryExtJwtPolicyRemovedConnectsWithoutLogin()
+    {
+        string name = nameof(SecondaryExtJwtPolicyRemovedConnectsWithoutLogin);
+        const string identityName = "test_ext_auth_secondary_policy_removed";
+
+        try
+        {
+            await using AppiumSession s = await LaunchAsync(_fixture, name);
+            AddIdentityNeedingLogin(s, identityName);
+            await VerifyStep(Capture(s), name, "01-identity-needs-ext-login");
+            await Dex.DriveIdPFlowAsync(LoginFromRow(s), $"{identityName}@test.com");
+            WaitForConnected(s);
+            await VerifyStep(Capture(s), name, "02-identity-connected");
+
+            _fixture.Quickstart.SetIdentityAuthPolicy(identityName, "Default");
+            // ZET's DisableEnableIdentity from the row.
+            ClickAt(s, WaitFor(s, InIdentityRow(identityName, "ToggleSwitch")));
+            WaitForController(s, ToggleStatus(identityName, "DISABLED"), $"{identityName} shows DISABLED");
+            WaitForZetEventAfter(s, OffLine, "\"Op\":\"controller\",\"Action\":\"disconnected\"");
+            ClickAt(s, WaitFor(s, InIdentityRow(identityName, "ToggleSwitch")));
+            WaitForZetEventAfter(s, OnLine, "\"Op\":\"controller\",\"Action\":\"connected\"");
+            WaitForController(s, ToggleStatus(identityName, "ENABLED"), $"{identityName} shows ENABLED");
+            AssertGrantedServices(s, OnLine, new[] { "test_ext_auth_attr_user_svc" });
+            Assert.DoesNotContain(s.Driver.FindElements(ExtAuthRequiredIcon), e => e.Displayed);
+            await VerifyStep(Capture(s), name, "03-reconnected-without-login");
+        }
+        finally
+        {
+            CloseBrowsers();
+        }
+    }
+
+    private const string OffLine = "\"OnOff\":false";
     private const string OnLine = "\"OnOff\":true";
 
     /// <summary>
