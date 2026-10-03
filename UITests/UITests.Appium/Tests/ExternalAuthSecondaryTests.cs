@@ -34,28 +34,79 @@ public class ExternalAuthSecondaryTests
         try
         {
             await using AppiumSession s = await LaunchAsync(_fixture, name);
-            PrepareTestWindow(s);
-            WriteTestJwt(_fixture.Quickstart.GetJwtFromController(identityName));
-            JObject reply = SendAndWaitForZetReply(s, AddIdentityLine, () => ClickAddIdentityWithJwt(s));
-            Assert.Equal(0, (int?)reply["Code"]);
-            JObject needsLogin = WaitForNeedsExtLogin(s, AddIdentityLine);
-            // ZET's needs_ext_login carries no Services key until the login.
-            Assert.Null(needsLogin["Id"]!["Services"]);
+            JObject needsLogin = AddIdentityNeedingLogin(s, identityName);
             await VerifyStep(Capture(s), name, "01-identity-needs-ext-login");
 
-            string loginUrl = LoginFromRow(s);
-            await Dex.DriveIdPFlowAsync(loginUrl, $"{identityName}@test.com");
+            await Dex.DriveIdPFlowAsync(LoginFromRow(s), $"{identityName}@test.com");
             AssertEnrollmentAdded(s, ExternalAuthLine);
-            WaitForZetEventAfter(s, ExternalAuthLine, "\"Op\":\"controller\",\"Action\":\"connected\"");
+            WaitForConnected(s);
             AssertJwtEnrolledIdentityFile((string)needsLogin["Id"]!["Identifier"]!);
             AssertGrantedServices(s, ExternalAuthLine, new[] { "test_ext_auth_attr_user_svc" });
-            WaitUntil(s, "the row stops asking for external auth", ControllerTimeout,
-                () => !s.Driver.FindElements(ExtAuthRequiredIcon).Any(e => e.Displayed));
             await VerifyStep(Capture(s), name, "02-identity-connected");
         }
         finally
         {
             CloseBrowsers();
         }
+    }
+
+    [Fact(Timeout = 150000)]
+    public async Task SecondaryExtJwtReauthAsksForLogin()
+    {
+        string name = nameof(SecondaryExtJwtReauthAsksForLogin);
+        const string identityName = "test_ext_auth_secondary_reauth";
+
+        try
+        {
+            await using AppiumSession s = await LaunchAsync(_fixture, name);
+            AddIdentityNeedingLogin(s, identityName);
+            await Dex.DriveIdPFlowAsync(LoginFromRow(s), $"{identityName}@test.com");
+            WaitForConnected(s);
+            await VerifyStep(Capture(s), name, "01-identity-connected");
+
+            // ZET's DisableEnableIdentity from the row.
+            ClickAt(s, WaitFor(s, InIdentityRow(identityName, "ToggleSwitch")));
+            WaitForController(s, ToggleStatus(identityName, "DISABLED"), $"{identityName} shows DISABLED");
+            await VerifyStep(Capture(s), name, "02-identity-disabled");
+            ClickAt(s, WaitFor(s, InIdentityRow(identityName, "ToggleSwitch")));
+            WaitForNeedsExtLogin(s, OnLine);
+            await VerifyStep(Capture(s), name, "03-reauth-needs-ext-login");
+
+            await Dex.DriveIdPFlowAsync(LoginFromRow(s), $"{identityName}@test.com");
+            WaitForConnected(s);
+            AssertGrantedServices(s, ExternalAuthLine, new[] { "test_ext_auth_attr_user_svc" });
+            await VerifyStep(Capture(s), name, "04-identity-reconnected");
+        }
+        finally
+        {
+            CloseBrowsers();
+        }
+    }
+
+    private const string OnLine = "\"OnOff\":true";
+
+    /// <summary>
+    /// Add identityName with its JWT from the controller, until ZET asks for its secondary login. Returns ZET's
+    /// needs_ext_login event.
+    /// </summary>
+    private JObject AddIdentityNeedingLogin(AppiumSession s, string identityName)
+    {
+        // The browser the login opens takes focus, and a docked window hides when it loses focus.
+        PrepareTestWindow(s);
+        WriteTestJwt(_fixture.Quickstart.GetJwtFromController(identityName));
+        JObject reply = SendAndWaitForZetReply(s, AddIdentityLine, () => ClickAddIdentityWithJwt(s));
+        Assert.Equal(0, (int?)reply["Code"]);
+        JObject needsLogin = WaitForNeedsExtLogin(s, AddIdentityLine);
+        // ZET's needs_ext_login carries no Services key until the login.
+        Assert.Null(needsLogin["Id"]!["Services"]);
+        return needsLogin;
+    }
+
+    /// <summary>Wait for ZET's controller connected after the latest login, until the row stops asking for it.</summary>
+    private static void WaitForConnected(AppiumSession s)
+    {
+        WaitForZetEventAfter(s, ExternalAuthLine, "\"Op\":\"controller\",\"Action\":\"connected\"");
+        WaitUntil(s, "the row stops asking for external auth", ControllerTimeout,
+            () => !s.Driver.FindElements(ExtAuthRequiredIcon).Any(e => e.Displayed));
     }
 }
