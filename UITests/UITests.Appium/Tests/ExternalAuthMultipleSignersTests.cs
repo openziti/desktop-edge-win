@@ -111,6 +111,60 @@ public class ExternalAuthMultipleSignersTests
         });
     }
 
+    /// <summary>
+    /// UI only, with no ZET subtest: ZET's enrollToCert subtests already send a provider. With two cert-capable signers
+    /// the enrollment choice dialog asks for one, Join does nothing until one is picked, and AddIdentity names it.
+    /// </summary>
+    [Fact(Timeout = 120000)]
+    public async Task EnrollToCertThroughPickedSigner()
+    {
+        string name = nameof(EnrollToCertThroughPickedSigner);
+        await WithExtraSigners(async _ =>
+        {
+            // Extra signer A can't finish a login, it only makes the picker show.
+            _fixture.Quickstart.UpdateExtJwtSigner(ExtraSignerA, Quickstart.EnrollToNone with { ToCert = true });
+            await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToCert = true }, async () =>
+            {
+                await using AppiumSession s = await LaunchAsync(_fixture, name);
+                OpenEnrollChoice(s);
+                WaitFor(s, SignerPickerLabel);
+                // Neither signer can enroll to both, so there is no mode to pick.
+                Assert.Empty(s.Driver.FindElements(UserSessionRadio));
+                await VerifyStep(Capture(s), name, "01-signer-choice");
+
+                AssertJoinIgnoredWithoutSigner(s);
+
+                ClickUntil(s, By.XPath("//*[@AutomationId='SignerPicker']"), SignerPickerItems);
+                await VerifyStep(CaptureWithPopups(s), name, "02-signer-list");
+                // An item bound through DisplayMemberPath has no UIA Name of its own, only its TextBlock does.
+                ClickAt(s, WaitFor(s,
+                    By.XPath($"//ListItem[.//Text[@Name='{IntegrationFixture.WorkingSignerName}']]")));
+                WaitForGone(s, SignerPickerItems);
+                await VerifyStep(Capture(s), name, "03-signer-picked");
+
+                await FinishEnrollToCert(s, "test_ext_auth_cert_picked", JoinFromEnrollChoice(s));
+                JObject sent = UiCommand(s.Relay!, AddIdentityLine);
+                Assert.Equal("cert", (string?)sent["Data"]!["EnrollMode"]);
+                Assert.Equal(IntegrationFixture.WorkingSignerName, (string?)sent["Data"]!["Provider"]);
+                await VerifyStep(Capture(s), name, "04-identity-enrolled");
+            });
+        });
+    }
+
+    private static readonly By SignerPickerItems = By.XPath("//ListItem");
+
+    private static void AssertJoinIgnoredWithoutSigner(AppiumSession s)
+    {
+        // Both dialogs have a JoinNetworkBtn, and the URL dialog's stays in the tree until its fade out collapses it.
+        WaitForGone(s, By.XPath("//*[@AutomationId='ControllerURL']"));
+        int addsBefore = UiCmdLineCount(s.Relay!, AddIdentityLine);
+        WaitForId(s, "JoinNetworkBtn").Click();
+        // Nothing marks an ignored click, so the wait is fixed: AddIdentity follows Join within milliseconds.
+        Thread.Sleep(1000);
+        Assert.Equal(addsBefore, UiCmdLineCount(s.Relay!, AddIdentityLine));
+        WaitFor(s, SignerPickerLabel);
+    }
+
     // The UI names a URL identity host_port until a controller event names it.
     private const string UrlIdentityName = "127.0.0.1_11280";
 

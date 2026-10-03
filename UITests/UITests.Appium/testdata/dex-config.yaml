@@ -134,3 +134,8 @@ staticPasswords:
     hash: *password
     username: test_restart_ext
     userID: test_restart_ext
+  # UI only, for EnrollToCertThroughPickedSigner. Keep below when recopying ZET's file.
+  - email: test_ext_auth_cert_picked@test.com
+    hash: *password
+    username: test_ext_auth_cert_picked
+    userID: test_ext_auth_cert_picked

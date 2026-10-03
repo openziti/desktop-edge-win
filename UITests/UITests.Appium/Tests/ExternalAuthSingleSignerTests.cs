@@ -350,18 +350,6 @@ public class ExternalAuthSingleSignerTests
         return await FinishEnrollToCert(s, identityName, JoinToEnrollmentUrl(s));
     }
 
-    /// <summary>ZET's completeEnrollToCert from ZET's AddIdentity reply on. Returns the identity file.</summary>
-    private static async Task<string> FinishEnrollToCert(AppiumSession s, string identityName, string authUrl)
-    {
-        await Dex.DriveIdPFlowAsync(authUrl, $"{identityName}@test.com");
-        string identityFile = (string)AssertEnrollmentAdded(s, AddIdentityLine)["Id"]!["Identifier"]!;
-        // ZET's AssertValidUrlEnrolledIdentityFile for enroll-to-cert checks what the JWT one does.
-        AssertJwtEnrolledIdentityFile(identityFile);
-        WaitUntil(s, "the enrolled identity shows on the landing list", ControllerTimeout,
-            () => IdentityRowCount(s) == 1);
-        return identityFile;
-    }
-
     /// <summary>ZET's completeEnrollToToken through the URL dialog, then the row's login. Returns the identity file.</summary>
     private static async Task<string> CompleteEnrollToToken(AppiumSession s, string identityName)
     {
