@@ -43,6 +43,7 @@ public class SmokeTests
 
     [Fact(Timeout = 60000)]
     [Trait("Category", "MainScreen")]
+    [Trait("Category", "Screenshots")]
     public async Task AddIdentityOffersJwtAndUrl()
     {
         string name = nameof(AddIdentityOffersJwtAndUrl);
@@ -51,9 +52,9 @@ public class SmokeTests
         WaitForId(s, "ConnectLabel");
         // AddIdAreaButton has no UIA peer. Its "ADD" label does, and the click bubbles up to it.
         ClickUntil(s, By.XPath("//Text[@Name='ADD']"), By.XPath("//MenuItem"));
-        // The ContextMenu is a popup with its own window, which the window capture never draws, so no baseline.
         string[] items = s.Driver.FindElements(By.XPath("//MenuItem")).Select(item => item.GetAttribute("Name")).ToArray();
         Assert.Equal(new[] { "With JWT", "With URL" }, items);
+        await VerifyPng(CaptureWithPopups(s));
     }
 
     [Fact(Timeout = 60000)]
