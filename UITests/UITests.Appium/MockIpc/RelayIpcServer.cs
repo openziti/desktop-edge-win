@@ -113,7 +113,10 @@ public sealed class RelayIpcServer : IAsyncDisposable
             {
                 lock (_recordedLock) _recorded.Add(new RecordedLine(from, pipe, line, DateTime.UtcNow));
                 JObject json = JObject.Parse(line);
-                if (from == "ui") Step.LogSent(json);
+                if (from == "ui") Step.UiSent(json);
+                else if (pipe == "cmd") Step.ZetReplied(json);
+                // metrics arrives every few seconds and would bury the step lines
+                else if ((string?)json["Op"] != "metrics") Step.ZetEvent(json);
                 // Not cancellable: a cancelled delay would fault the pump instead of ending it.
                 if (pipe == "event" && (string?)json["Action"] == "mfa_auth_status")
                     await Task.Delay(MfaAuthStatusDelay);

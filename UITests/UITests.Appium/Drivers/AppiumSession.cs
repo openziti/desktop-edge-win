@@ -125,6 +125,15 @@ internal static class Win32Window
 
     public const uint SPI_GETWORKAREA = 0x0030;
 
+    [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+    public static extern bool SystemParametersInfo(uint uiAction, uint uiParam, out int pvParam, uint fWinIni);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+    public static extern bool SystemParametersInfo(uint uiAction, uint uiParam, IntPtr pvParam, uint fWinIni);
+
+    public const uint SPI_GETCOMBOBOXANIMATION = 0x1004;
+    public const uint SPI_SETCOMBOBOXANIMATION = 0x1005;
+
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public struct POINT { public int X, Y; }
 
@@ -381,15 +390,37 @@ public sealed class AppiumSession : IAsyncDisposable
     }
 
     private readonly uint _savedCaretBlinkTime;
+    private readonly bool _savedComboBoxSlide;
 
     private AppiumSession(WindowsDriver driver, MockIpcServer mock, RelayIpcServer? relay, ProcessOutputLog ui,
-        uint savedCaretBlinkTime)
+        uint savedCaretBlinkTime, bool savedComboBoxSlide)
     {
         Driver = driver;
         Mock = mock;
         Relay = relay;
         _ui = ui;
         _savedCaretBlinkTime = savedCaretBlinkTime;
+        _savedComboBoxSlide = savedComboBoxSlide;
+    }
+
+    /// <summary>
+    /// Stop ComboBox dropdowns sliding open and return the setting to restore. With the slide, the first item's text
+    /// drew in one of two ClearType variants per run (CI run 37139050554). Session-wide until logoff.
+    /// </summary>
+    private static bool StopComboBoxSlide()
+    {
+        if (!Win32Window.SystemParametersInfo(Win32Window.SPI_GETCOMBOBOXANIMATION, 0, out int saved, 0))
+            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(),
+                "SystemParametersInfo(SPI_GETCOMBOBOXANIMATION) failed");
+        SetComboBoxSlide(false);
+        return saved != 0;
+    }
+
+    private static void SetComboBoxSlide(bool slide)
+    {
+        if (!Win32Window.SystemParametersInfo(Win32Window.SPI_SETCOMBOBOXANIMATION, 0, new IntPtr(slide ? 1 : 0), 0))
+            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(),
+                $"SystemParametersInfo(SPI_SETCOMBOBOXANIMATION, {slide}) failed");
     }
 
     /// <summary>
@@ -456,6 +487,7 @@ public sealed class AppiumSession : IAsyncDisposable
         RelayIpcServer? relay, string uiLogPath)
     {
         uint savedCaretBlinkTime = StopCaretBlink();
+        bool savedComboBoxSlide = StopComboBoxSlide();
         ProcessStartInfo psi = new ProcessStartInfo
         {
             FileName = exePath,
@@ -511,6 +543,7 @@ public sealed class AppiumSession : IAsyncDisposable
             KillIfRunning(uiProc);
             ui.Dispose();
             SetCaretBlinkTime(savedCaretBlinkTime);
+            SetComboBoxSlide(savedComboBoxSlide);
             await mock.DisposeAsync();
             if (relay != null) await relay.DisposeAsync();
             if (hwnd == IntPtr.Zero)
@@ -519,7 +552,7 @@ public sealed class AppiumSession : IAsyncDisposable
         }
 
         Step.Log($"attached Appium to the app's window {hwnd}");
-        return new AppiumSession(driver, mock, relay, ui, savedCaretBlinkTime);
+        return new AppiumSession(driver, mock, relay, ui, savedCaretBlinkTime, savedComboBoxSlide);
     }
 
     private static void KillIfRunning(Process process)
@@ -546,6 +579,7 @@ public sealed class AppiumSession : IAsyncDisposable
         Driver.Dispose();
         KillIfRunning(_uiProcess);
         SetCaretBlinkTime(_savedCaretBlinkTime);
+        SetComboBoxSlide(_savedComboBoxSlide);
         await Mock.DisposeAsync();
         if (Relay != null) await Relay.DisposeAsync();
         // Kill returns before the process is gone. The next test's launch must not overlap a dying UI.

@@ -146,7 +146,7 @@ public sealed class MockIpcServer : IAsyncDisposable
         {
             JObject req = JObject.Parse(line);
             lock (_recvLock) _received.Add(req);
-            Step.LogSent(req);
+            Step.UiSent(req);
             // serialized inside the lock: the Status reply holds _landingStatus itself
             lock (_landingStatusLock)
                 return new Answer(BuildReply(req, eventsAfterReply).ToString(Formatting.None), eventsAfterReply);
