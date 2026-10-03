@@ -23,7 +23,7 @@ public sealed class MockIpcServer : IAsyncDisposable
     private readonly object _recvLock = new();
     private readonly List<JObject> _received = new();
     private readonly List<JObject> _receivedMonitor = new();
-    // One queue per connected event client, like ZET broadcasting to every client. Pushes with no client connected wait
+    // One queue per connected event client, since every client gets every event. Pushes with no client connected wait
     // in _pendingEvents for the next one.
     private readonly List<Channel<JObject>> _eventClients = new();
     private readonly List<JObject> _pendingEvents = new();
@@ -89,7 +89,7 @@ public sealed class MockIpcServer : IAsyncDisposable
         _landingStatus = landingStatus;
     }
 
-    /// <summary>Case-insensitive, like ZET's identifier lookups. Call under _landingStatusLock.</summary>
+    /// <summary>Case-insensitive. Call under _landingStatusLock.</summary>
     private JObject? FindIdentity(string identifier) =>
         (_landingStatus["Identities"] as JArray)?
             .OfType<JObject>()
@@ -146,7 +146,7 @@ public sealed class MockIpcServer : IAsyncDisposable
         {
             JObject req = JObject.Parse(line);
             lock (_recvLock) _received.Add(req);
-            Step.Log($"app sent {req["Command"]} to the mock");
+            Step.LogSent(req);
             // serialized inside the lock: the Status reply holds _landingStatus itself
             lock (_landingStatusLock)
                 return new Answer(BuildReply(req, eventsAfterReply).ToString(Formatting.None), eventsAfterReply);
@@ -308,7 +308,7 @@ public sealed class MockIpcServer : IAsyncDisposable
         using (srv)
         using (StreamWriter writer = new StreamWriter(srv, new UTF8Encoding(false)) { AutoFlush = true, NewLine = "\n" })
         {
-            // Like ZET, a new event client gets exactly one status message (ipc_event.c on_events_client).
+            // A new event client gets exactly one status message (ipc_event.c on_events_client).
             JObject statusPush;
             lock (_landingStatusLock) statusPush = new JObject { ["Op"] = "status", ["Status"] = _landingStatus.DeepClone() };
             await writer.WriteLineAsync(statusPush.ToString(Formatting.None));

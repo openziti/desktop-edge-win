@@ -200,7 +200,7 @@ public class ExternalAuthMultipleSignersTests
         }
     }
 
-    // Like ZET's, the extra signers' issuer and JWKS point nowhere: only the working signer can log in.
+    // The extra signers' issuer and JWKS point nowhere: only the working signer can log in.
     private Quickstart.ExtJwtSigner ExtraSigner(string signerName, string clientId) =>
         new(signerName, $"{Dex.IssuerUrl}-{signerName}", $"{_fixture.Dex.JwksUri}-{signerName}", clientId);
 

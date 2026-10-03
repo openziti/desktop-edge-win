@@ -7,8 +7,8 @@ using static ZitiDesktopEdge.UITests.Tests.TestHelpers;
 namespace ZitiDesktopEdge.UITests.Tests;
 
 /// <summary>
-/// UI twin of TestExternalAuthSingleSigner in ziti-tunnel-sdk-c tests/integration/external_auth_test.go. Like ZET's
-/// test, each twin reads the IdP URL from ZET's reply and drives dex over HTTP, so the browser the app opens for that
+/// UI twin of TestExternalAuthSingleSigner in ziti-tunnel-sdk-c tests/integration/external_auth_test.go. Each
+/// twin reads the IdP URL from ZET's reply and drives dex over HTTP, so the browser the app opens for that
 /// URL is closed unused. Each twin detaches the window first, because that browser takes focus and a docked window
 /// hides when it loses focus.
 /// </summary>
