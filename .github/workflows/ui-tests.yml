@@ -1,0 +1,220 @@
+name: UI Tests
+
+# The workflow only checks out, restores caches and calls the UITests scripts, so a run reproduces locally with the same
+# commands. The windows-latest image already ships the .NET 9 SDK and Node.js the scripts need.
+
+on:
+  # Manual run against any branch.
+  workflow_dispatch:
+  # On release rather than every push, to save CI minutes.
+  release:
+    types: [published]
+  pull_request:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One group per ref: Pages deployments from release-next queue instead of overlapping, and PRs don't wait on each other.
+concurrency:
+  group: ui-tests-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ui-tests:
+    name: Mock
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      TIER: Mock
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # ci-install.ps1 pins the Appium and driver versions, so its hash is the key. npm installs Appium under the
+      # prefix ci-install.ps1 is given and Appium installs its driver under ~/.appium.
+      - name: Restore Appium
+        uses: actions/cache@v6
+        with:
+          path: |
+            ${{ runner.temp }}/appium-npm
+            ~/.appium
+          key: appium-${{ runner.os }}-${{ hashFiles('UITests/ci-install.ps1') }}
+
+      # packages/ holds the packages.config projects' packages, ~/.nuget/packages the PackageReference ones.
+      - name: Restore NuGet packages
+        uses: actions/cache@v6
+        with:
+          path: |
+            packages
+            ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.config', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Build + run UI tests
+        shell: pwsh
+        run: |
+          ./UITests/ci-install.ps1 -SetDisplayResolution -NpmPrefix (Join-Path $env:RUNNER_TEMP 'appium-npm')
+          ./UITests/run-ui-tests.ps1 -Tier $env:TIER
+
+      # Logs and screenshots only: the integration homes under TestResults also hold keys, databases and identity files.
+      - &upload-results
+        name: Upload test results and logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ui-test-results-${{ env.TIER }}
+          overwrite: true
+          path: |
+            UITests/TestResults/report.md
+            UITests/TestResults/gallery.html
+            UITests/TestResults/run-output.txt
+            UITests/TestResults/results.trx
+            UITests/TestResults/baselines/
+            UITests/TestResults/captures/
+            UITests/TestResults/screenshots/
+            UITests/TestResults/logs/
+            UITests/TestResults/integration*/zet/*.log
+            UITests/TestResults/integration*/quickstart/*.log
+            UITests/TestResults/integration*/idp/logs/*.log
+          if-no-files-found: warn
+          retention-days: 30
+
+  # A quickstart of ziti's stable release and the ziti-edge-tunnel release the installer ships. The runner is elevated,
+  # which ZET's TUN needs. Each run-ui-tests.ps1 integration tier gets a runner of its own.
+  integration-ui-tests:
+    name: ${{ matrix.title }}
+    runs-on: windows-latest
+    timeout-minutes: 60
+    env:
+      TIER: ${{ matrix.tier }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - title: Integration external auth
+            tier: IntegrationExtAuth
+          - title: Integration MFA
+            tier: IntegrationMfa
+          - title: Integration
+            tier: Integration
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Restore Appium
+        uses: actions/cache@v6
+        with:
+          path: |
+            ${{ runner.temp }}/appium-npm
+            ~/.appium
+          key: appium-${{ runner.os }}-${{ hashFiles('UITests/ci-install.ps1') }}
+
+      - name: Restore NuGet packages
+        uses: actions/cache@v6
+        with:
+          path: |
+            packages
+            ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.config', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      # fetch-dex.ps1 pins the dex version, so its hash is the key.
+      - name: Restore dex
+        id: dex-cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/dex/dex.exe
+          key: dex-${{ runner.os }}-${{ hashFiles('UITests/fetch-dex.ps1') }}
+
+      # Only fetch-dex.ps1 needs Go. It sets GOTOOLCHAIN=auto, so any Go downloads the toolchain dex's go.mod asks for.
+      - name: Set up Go
+        if: steps.dex-cache.outputs.cache-hit != 'true'
+        uses: actions/setup-go@v7
+        with:
+          go-version: stable
+          cache: false
+
+      - name: Resolve ziti
+        uses: openziti/ziti/setup-cli@main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          version: stable
+
+      - name: Build + run integration UI tests
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ./UITests/ci-install.ps1 -SetDisplayResolution -NpmPrefix (Join-Path $env:RUNNER_TEMP 'appium-npm')
+          ./UITests/run-integration-ci.ps1 -ToolsDir $env:RUNNER_TEMP `
+            -ZitiBin (Join-Path $env:RUNNER_TEMP 'ziti-cli' 'bin' 'ziti.exe') -GhToken $env:GH_TOKEN `
+            -Tier $env:TIER
+
+      - *upload-results
+
+  # One report and one gallery over every tier's artifact, which hold logs and screenshots only.
+  report:
+    name: Report
+    needs: [ui-tests, integration-ui-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    outputs:
+      gallery-uploaded: ${{ steps.upload-pages.outcome }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # Each artifact lands in UITests/TestResults/<artifact name>.
+      - name: Download test results
+        uses: actions/download-artifact@v8
+        with:
+          pattern: ui-test-results-*
+          path: UITests/TestResults
+
+      # Only release-next deploys the gallery to Pages, so elsewhere the rows carry no links.
+      - name: Write report and gallery
+        shell: pwsh
+        env:
+          GALLERY_URL: ${{ github.ref == 'refs/heads/release-next' && format('https://{0}.github.io/{1}/', github.repository_owner, github.event.repository.name) || '' }}
+        run: |
+          ./UITests/write-ui-test-report.ps1 -ResultsDir UITests/TestResults -GalleryUrl $env:GALLERY_URL -Tiers ([ordered]@{
+              Mock               = 'ui-test-results-Mock'
+              IntegrationExtAuth = 'ui-test-results-IntegrationExtAuth'
+              IntegrationMfa     = 'ui-test-results-IntegrationMfa'
+              Integration        = 'ui-test-results-Integration'
+          })
+          Get-Content UITests/TestResults/report.md | Add-Content $env:GITHUB_STEP_SUMMARY
+
+      # The gallery links into each tier's folder, so the whole directory goes up. It holds only the logs-only tier artifacts.
+      - name: Upload merged report and gallery
+        uses: actions/upload-artifact@v7
+        with:
+          name: ui-test-report
+          path: UITests/TestResults
+          if-no-files-found: error
+
+      # The github-pages environment only accepts release-next, so elsewhere this and deploy-pages are skipped.
+      - name: Upload Pages artifact (gallery for browsing)
+        id: upload-pages
+        if: github.ref == 'refs/heads/release-next'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: UITests/TestResults
+
+  deploy-pages:
+    needs: report
+    if: always() && needs.report.outputs.gallery-uploaded == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

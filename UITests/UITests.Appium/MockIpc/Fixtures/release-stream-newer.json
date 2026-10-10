@@ -1,0 +1,11 @@
+{
+  "name": "99.0.0.0",
+  "tag_name": "99.0.0.0",
+  "published_at": "2099-01-01T00:00:00Z",
+  "assets": [
+    {
+      "name": "Ziti.Desktop.Edge.Client-99.0.0.0.exe",
+      "browser_download_url": "http://127.0.0.1:47380/Ziti.Desktop.Edge.Client-99.0.0.0.exe"
+    }
+  ]
+}
