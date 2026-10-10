@@ -160,7 +160,7 @@
                             <ColumnDefinition Width="61*"/>
                         </Grid.ColumnDefinitions>
                         <Rectangle Margin="10,10,10,10" Fill="#070826" RadiusY="10" RadiusX="10" Grid.ColumnSpan="3"></Rectangle>
-                        <ListView x:Name="ServiceList" VirtualizingPanel.IsVirtualizing="True"
+                        <ListView x:Name="ServiceList" VirtualizingPanel.IsVirtualizing="True" UseLayoutRounding="True"
                                   ScrollViewer.IsDeferredScrollingEnabled="True"
                                   ScrollViewer.ScrollChanged="Scrolled"
                                   VirtualizingPanel.VirtualizationMode="Recycling"
