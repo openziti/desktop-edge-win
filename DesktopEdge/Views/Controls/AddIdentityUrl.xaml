@@ -21,6 +21,7 @@
              xmlns:local="clr-namespace:ZitiDesktopEdge"
              mc:Ignorable="d"
              MaxWidth="400"
+             UseLayoutRounding="True"
              d:Width="400"
 >
 	<UserControl.Resources>

@@ -14,6 +14,7 @@
 	limitations under the License.
 */
 
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -96,7 +97,7 @@ namespace ZitiDesktopEdge {
 
             ExternalJwtSignerListResponse parsed = JsonConvert.DeserializeObject<ExternalJwtSignerListResponse>(signersResponseBody, DeserializationSettings);
             if (parsed?.Data != null) {
-                foreach (ExternalJwtSigner signer in parsed.Data) {
+                foreach (ExternalJwtSigner signer in parsed.Data.OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase)) {
                     Signers.Add(signer);
                 }
             }

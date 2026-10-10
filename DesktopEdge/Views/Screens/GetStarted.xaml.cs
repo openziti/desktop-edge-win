@@ -32,9 +32,6 @@ namespace ZitiDesktopEdge {
         /// <summary>Raised when the user clicks the inline "Add by URL" link.</summary>
         public event EventHandler AddUrlRequested;
 
-        /// <summary>Raised when the user explicitly dismisses the welcome screen (Close button or X).</summary>
-        public event EventHandler ClosedByUser;
-
         public GetStarted() {
             InitializeComponent();
             ViewModel = new GetStartedViewModel();
@@ -48,12 +45,10 @@ namespace ZitiDesktopEdge {
 
         private void CloseButton_Click(object sender, MouseButtonEventArgs e) {
             ViewModel.Close();
-            ClosedByUser?.Invoke(this, EventArgs.Empty);
         }
 
         private void CloseImage_MouseUp(object sender, MouseButtonEventArgs e) {
             ViewModel.Close();
-            ClosedByUser?.Invoke(this, EventArgs.Empty);
         }
 
         private void Logo_MouseDown(object sender, MouseButtonEventArgs e) {

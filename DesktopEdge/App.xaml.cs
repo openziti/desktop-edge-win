@@ -42,6 +42,11 @@ namespace ZitiDesktopEdge {
 
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         private static Mutex _mutex = null;
+#if DEBUG
+        internal static readonly bool UiTestMode = Environment.GetEnvironmentVariable("ZDEW_UI_TEST") == "1";
+#else
+        internal static readonly bool UiTestMode = false;
+#endif
 
         protected override void OnSessionEnding(SessionEndingCancelEventArgs e) {
             base.OnSessionEnding(e);

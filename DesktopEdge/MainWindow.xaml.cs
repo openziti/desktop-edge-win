@@ -67,7 +67,6 @@ namespace ZitiDesktopEdge {
         private int _right = 75;
         private int _left = 75;
         private int _top = 30;
-        private int defaultHeight = 600;
         public int NotificationsShownCount = 0;
         private double _maxHeight = 805d;
         public string CurrentIcon = "white";
@@ -193,6 +192,7 @@ namespace ZitiDesktopEdge {
                         await ShowBlurbAsync("Provided code could not be verified", "");
                     }
                 } else if (mfa.Action == "enrollment_remove") {
+                    // A failed removal also arrives as the RemoveMFA reply, which MFAScreen reports.
                     if (mfa.Successful) {
                         var found = identities.Find(id => id.Identifier == mfa.Identifier);
                         for (int i = 0; i < identities.Count; i++) {
@@ -213,8 +213,6 @@ namespace ZitiDesktopEdge {
                         }
                         if (this.IdentityMenu.Identity != null && this.IdentityMenu.Identity.Identifier == mfa.Identifier) this.IdentityMenu.Identity = found;
                         await ShowBlurbAsync("MFA disabled, access may be limited", "");
-                    } else {
-                        await ShowBlurbAsync("MFA Removal Failed", "");
                     }
                 } else if (mfa.Action == "mfa_auth_status") {
                     var found = identities.Find(id => id.Identifier == mfa.Identifier);
@@ -375,7 +373,10 @@ namespace ZitiDesktopEdge {
         /// <param name="sender">The animation</param>
         /// <param name="e">The event</param>
         private void ModalHideComplete(object sender, EventArgs e) {
-            ModalBg.Visibility = Visibility.Collapsed;
+            // A replaced fade's clock keeps running, so this fires even after ShowModal reopened it.
+            if (ModalBg.Opacity == 0) {
+                ModalBg.Visibility = Visibility.Collapsed;
+            }
         }
         private void CloseJoinByUrl(bool isComplete, UserControl sender) {
             AnimateDialogOut(sender);
@@ -389,7 +390,10 @@ namespace ZitiDesktopEdge {
             DoubleAnimation animation = new DoubleAnimation(0, TimeSpan.FromSeconds(.3));
             ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(0, 0, 0, 0), TimeSpan.FromSeconds(.3));
             animation.Completed += (s, e) => {
-                sender.Visibility = Visibility.Collapsed;
+                // A replaced fade's clock keeps running, so this fires even after a reopen below replaced it.
+                if (sender.Opacity == 0) {
+                    sender.Visibility = Visibility.Collapsed;
+                }
             };
             sender.BeginAnimation(Grid.OpacityProperty, animation);
             sender.BeginAnimation(Grid.MarginProperty, animateThick);
@@ -434,6 +438,10 @@ namespace ZitiDesktopEdge {
         private MainViewModel props = null;
         public MainWindow() {
             InitializeComponent();
+            if (App.UiTestMode) {
+                // PrintWindow drops alpha, so over a transparent background the drop shadow captures as solid black.
+                this.Background = System.Windows.Media.Brushes.White;
+            }
 
             props = new MainViewModel();
             DataContext = props;
@@ -443,7 +451,10 @@ namespace ZitiDesktopEdge {
             SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
             string nlogFile = Path.Combine(ExecutionDirectory, ThisAssemblyName + "-log.config");
 
-            ToastNotificationManagerCompat.OnActivated += ToastNotificationManagerCompat_OnActivated;
+            // Subscribing registers a COM activator under HKCU, which UI test runs must not leave behind.
+            if (!App.UiTestMode) {
+                ToastNotificationManagerCompat.OnActivated += ToastNotificationManagerCompat_OnActivated;
+            }
 
             bool byFile = false;
             if (File.Exists(nlogFile)) {
@@ -766,13 +777,9 @@ namespace ZitiDesktopEdge {
         }
 
         /// <summary>
-        /// Reopen the welcome screen and expand the window to fit it. Bypasses the
-        /// session-dismissal flag in the VM.
+        /// Reopen the welcome screen. Bypasses the session-dismissal flag in the VM.
         /// </summary>
         public void ShowWelcomeScreen() {
-            // Clear any in-flight close-animation clock so our imperative Height write sticks.
-            this.BeginAnimation(HeightProperty, null);
-            this.Height = defaultHeight + GetStartedExtraHeight;
             GetStartedScreen.ViewModel.Show();
         }
 
@@ -830,28 +837,12 @@ namespace ZitiDesktopEdge {
             }
         }
 
-        private const double GetStartedExtraHeight = 120;
-
         private void GetStartedScreen_AddJwt(object sender, EventArgs e) {
             AddIdentity_Click(sender, new RoutedEventArgs());
         }
 
         private void GetStartedScreen_AddUrl(object sender, EventArgs e) {
             ShowJoinByUrl();
-        }
-
-        private void GetStartedScreen_ClosedByUser(object sender, EventArgs e) {
-            var anim = new DoubleAnimation(defaultHeight, TimeSpan.FromSeconds(0.22)) {
-                FillBehavior = FillBehavior.Stop,
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
-            };
-            anim.Completed += (s, ev) => {
-                // Release the animation clock so future imperative Height writes take effect,
-                // and lock in the final value to avoid a one-frame snap.
-                this.BeginAnimation(HeightProperty, null);
-                this.Height = defaultHeight;
-            };
-            this.BeginAnimation(HeightProperty, anim);
         }
 
         /// <summary>
@@ -953,6 +944,12 @@ namespace ZitiDesktopEdge {
         }
 
         async private void MainWindow_Loaded(object sender, RoutedEventArgs e) {
+
+            if (App.UiTestMode) {
+                // Process.MainWindowHandle skips owned windows, and ShowInTaskbar=False gives this one a hidden owner.
+                this.ShowInTaskbar = true;
+                this.Activate();
+            }
 
             Window window = Window.GetWindow(App.Current.MainWindow);
             ZitiDesktopEdge.App app = (ZitiDesktopEdge.App)App.Current;
@@ -1485,7 +1482,9 @@ namespace ZitiDesktopEdge {
                 logger.Info("StartZitiService");
                 var r = await monitorClient.StartServiceAsync(TimeSpan.FromSeconds(60));
                 if (r.Code != 0) {
-                    logger.Debug("ERROR: {0} : {1}", r.Message, r.Error);
+                    logger.Error("the monitor failed to start the data service. Message:{Message}, Error:{Error}", r.Message, r.Error);
+                    HideLoad();
+                    ShowError("Error Starting Service", r.Error);
                 } else {
                     logger.Info("Service started!");
                     CloseErrorButton.Click -= StartZitiService;
@@ -1503,7 +1502,6 @@ namespace ZitiDesktopEdge {
                 ShowError("Unexpected Error", "Code 2:" + ex.Message);
             }
             CloseErrorButton.IsEnabled = true;
-            // HideLoad();
         }
 
         private void ShowServiceNotStarted() {
@@ -1960,11 +1958,11 @@ namespace ZitiDesktopEdge {
         }
 
         private void updateViewWithIdentity(Identity id) {
+            // Takes MFA state from every status: ZET flips MfaEnabled to true after a failed EnableMFA on a legacy auth controller.
             var zid = ZitiIdentity.FromClient(id);
             var found = identities.Find(fid => fid.Identifier == id.Identifier);
             if(found != null) {
                 identities.Remove(found);
-                zid.IsMFAEnabled = found.IsMFAEnabled;
             }
             identities.Add(zid);
         }
@@ -2058,11 +2056,6 @@ namespace ZitiDesktopEdge {
                     GetStartedScreen.ViewModel.Hide(); // if there's any identities close the get started screen
                 }
                 if (ids.Length > 0 && serviceClient.Connected) {
-                    double height = defaultHeight + (ids.Length * 60);
-                    if (height > _maxHeight) {
-                        height = _maxHeight;
-                    }
-                    this.Height = height;
                     MainMenu.IdentitiesButton.Visibility = Visibility.Visible;
                     foreach (var id in ids) {
                         IdentityItem idItem = new IdentityItem();
@@ -2095,8 +2088,6 @@ namespace ZitiDesktopEdge {
                     }
                     IdListScroller.Visibility = Visibility.Visible;
                 } else {
-                    // Make room for the welcome screen when it's about to show.
-                    this.Height = defaultHeight + (GetStartedScreen.ViewModel.IsOpen ? GetStartedExtraHeight : 0);
                     MainMenu.IdentitiesButton.Visibility = Visibility.Collapsed;
                     IdListScroller.Visibility = Visibility.Collapsed;
 
@@ -2164,23 +2155,25 @@ namespace ZitiDesktopEdge {
         private void SetLocation() {
             var desktopWorkingArea = SystemParameters.WorkArea;
             double renderedHeight = MainView.ActualHeight;
+            // Not ActualWidth: the window's left edge must not move when identity details or the welcome screen widen it.
+            double widestWidth = (double)FindResource("MaxWindowWidth");
 
             Rectangle trayRectangle = WinAPI.GetTrayRectangle();
             if (trayRectangle.Top < 20) {
                 this.Position = "Top";
                 this.Top = desktopWorkingArea.Top + _top;
-                this.Left = desktopWorkingArea.Right - this.Width - _right;
+                this.Left = desktopWorkingArea.Right - widestWidth - _right;
             } else if (trayRectangle.Left < 20) {
                 this.Position = "Left";
                 this.Left = _left;
                 this.Top = desktopWorkingArea.Bottom - this.ActualHeight - 75;
             } else if (desktopWorkingArea.Right == (double)trayRectangle.Left) {
                 this.Position = "Right";
-                this.Left = desktopWorkingArea.Right - this.Width - 20;
+                this.Left = desktopWorkingArea.Right - widestWidth - 20;
                 this.Top = desktopWorkingArea.Bottom - renderedHeight - 75;
             } else {
                 this.Position = "Bottom";
-                this.Left = desktopWorkingArea.Right - this.Width - 75;
+                this.Left = desktopWorkingArea.Right - widestWidth - 75;
                 this.Top = desktopWorkingArea.Bottom - renderedHeight;
             }
         }
@@ -2189,6 +2182,10 @@ namespace ZitiDesktopEdge {
             if (_isAttached) {
                 SetLocation();
             }
+        }
+
+        private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e) {
+            Placement();
         }
 
         private void OpenIdentity(ZitiIdentity identity) {
@@ -2250,18 +2247,26 @@ namespace ZitiDesktopEdge {
         }
 
         private async void AddIdentity_Click(object sender, RoutedEventArgs e) {
-            UIModel.HideOnLostFocus = false;
-            OpenFileDialog jwtDialog = new OpenFileDialog();
-            UIModel.HideOnLostFocus = true;
-            jwtDialog.DefaultExt = ".jwt";
-            jwtDialog.Filter = "Ziti Identities (*.jwt)|*.jwt";
+            // Appium can't reliably drive the OS OpenFileDialog, so under ZDEW_UI_TEST the JWT comes from the file the
+            // test writes to %TEMP%\zdew-test-add-identity.jwt.
+            string chosenPath = null;
+            if (App.UiTestMode) {
+                chosenPath = Path.Combine(Path.GetTempPath(), "zdew-test-add-identity.jwt");
+            } else {
+                UIModel.HideOnLostFocus = false;
+                OpenFileDialog jwtDialog = new OpenFileDialog();
+                UIModel.HideOnLostFocus = true;
+                jwtDialog.DefaultExt = ".jwt";
+                jwtDialog.Filter = "Ziti Identities (*.jwt)|*.jwt";
+                if (jwtDialog.ShowDialog() == true) chosenPath = jwtDialog.FileName;
+            }
 
-            if (jwtDialog.ShowDialog() == true) {
+            if (chosenPath != null) {
                 ShowLoad("Adding Identity", "Please wait while the identity is added");
-                string fileContent = File.ReadAllText(jwtDialog.FileName);
+                string fileContent = File.ReadAllText(chosenPath);
                 EnrollIdentifierPayload payload = new EnrollIdentifierPayload();
                 payload.UseKeychain = false;
-                string jwtFile = Path.GetFileName(jwtDialog.FileName);
+                string jwtFile = Path.GetFileName(chosenPath);
                 payload.IdentityFilename = Path.GetFileNameWithoutExtension(jwtFile);
                 payload.JwtContent = fileContent.Trim();
                 string[] jwtParts = fileContent?.Split('.');
@@ -2275,14 +2280,16 @@ namespace ZitiDesktopEdge {
                         ""aud"": [""invalid""],
                         ""em"": ""invalid""
                     }";
+                    dynamic jsonObj;
                     try {
-                        jsonString = Encoding.UTF8.GetString(Convert.FromBase64String(PadBase64(jwtParts[1])));
+                        string decoded = Encoding.UTF8.GetString(Convert.FromBase64String(PadBase64(jwtParts[1])));
                         // Deserialize JSON into a dynamic object
+                        jsonObj = JsonConvert.DeserializeObject(decoded);
+                        jsonString = decoded;
                     } catch {
-                        //any exceptions means this is not json... set the jsonString to something that represents the failure
+                        //any exceptions means this is not json... parse the jsonString that represents the failure instead
+                        jsonObj = JsonConvert.DeserializeObject(jsonString);
                     }
-
-                    dynamic jsonObj = JsonConvert.DeserializeObject(jsonString);
 #if DEBUG
                     Console.WriteLine(jsonString);
                     // Access properties dynamically
@@ -2294,15 +2301,13 @@ namespace ZitiDesktopEdge {
 #endif
                     try {
                         switch ($"{jsonObj.em}") {
-                            case "ottca":
-                                With3rdPartyCA_Click(sender, e);
-                                break;
                             case "network":
                                 await AddId(payload);
                                 break;
                             case "ott":
                                 await AddId(payload);
                                 break;
+                            case "ottca":
                             case "ca":
                                 AddIdentityBy3rdPartyCA.Payload = payload;
                                 ShowJoinWith3rdPartyCA();
@@ -2320,6 +2325,7 @@ namespace ZitiDesktopEdge {
                 } else {
                     // invalid jwt
                     logger.Error("JWT is invalid? {}", fileContent);
+                    ShowError("JWT Invalid", "The file selected is not a valid JWT");
                 }
             } else {
                 logger.Debug("user closed jwt dialog without selecting a file. nbd.");
@@ -2340,6 +2346,8 @@ namespace ZitiDesktopEdge {
 
         private void InitializeTimer(int millisAgoStarted) {
             StopTunnelUptimeTimer();
+            // Screen captures compare pixel for pixel, so the connected time stays at 00:00:00.
+            if (App.UiTestMode) return;
             _startDate = DateTime.Now.Subtract(new TimeSpan(0, 0, 0, 0, millisAgoStarted));
             _tunnelUptimeTimer = new System.Windows.Forms.Timer();
             _tunnelUptimeTimer.Interval = 100;
@@ -2356,7 +2364,8 @@ namespace ZitiDesktopEdge {
                 ShowLoad("Disabling Service", "Please wait for the service to stop.");
                 var r = await monitorClient.StopServiceAsync();
                 if (r.Code != 0) {
-                    logger.Warn("ERROR: Error:{0}, Message:{1}", r.Error, r.Message);
+                    logger.Error("the monitor failed to stop the data service. Message:{Message}, Error:{Error}", r.Message, r.Error);
+                    ShowError("Error Disabling Service", r.Error);
                 } else {
                     logger.Info("Service stopped!");
                     SetNotifyIcon("white");
@@ -2584,11 +2593,6 @@ namespace ZitiDesktopEdge {
 
         void WithUrl_Click(object sender, RoutedEventArgs e) {
             ShowJoinByUrl();
-        }
-        void With3rdPartyCA_Click(object sender, RoutedEventArgs e) {
-            if (!UIUtils.IsLeftClick(e)) return;
-            if (!UIUtils.MouseUpForMouseDown(e)) return;
-            ShowJoinWith3rdPartyCA();
         }
 
         void OnNeedsSignerChoiceAction(AddIdentityViewModel vm, UserControl toClose) {

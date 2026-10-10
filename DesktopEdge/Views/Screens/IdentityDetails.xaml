@@ -21,7 +21,7 @@
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
              xmlns:local="clr-namespace:ZitiDesktopEdge"
              mc:Ignorable="d"
-             MaxWidth="{StaticResource MaxWindowWidth}"
+             Width="{StaticResource MaxWindowWidth}"
              x:Name="IdentityArea"
              d:DesignHeight="500" d:DesignWidth="450" IsVisibleChanged="VisibilityChanged">
     <UserControl.Resources>
@@ -127,6 +127,7 @@
                                VerticalAlignment="Center"
                     />
                     <Image Grid.Column="2"
+                           AutomationProperties.AutomationId="IdentityDetailsClose"
                            Cursor="Hand"
                            Source="/Assets/Images/x.png"
                            Width="20" Height="20"
@@ -163,7 +164,7 @@
                                   ScrollViewer.IsDeferredScrollingEnabled="True"
                                   ScrollViewer.ScrollChanged="Scrolled"
                                   VirtualizingPanel.VirtualizationMode="Recycling"
-                                  ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                   Focusable="False" IsManipulationEnabled="False"
                                   BorderThickness="0" Background="Transparent"
                                   Margin="15,15,15,15"
@@ -194,7 +195,7 @@
                                 <DataTemplate>
                                     <Grid Height="32">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="225"/>
+                                            <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="30"/>
                                             <ColumnDefinition Width="100"/>
                                             <ColumnDefinition x:Name="TimerColumn" Width="20" />
@@ -202,7 +203,7 @@
                                             <ColumnDefinition x:Name="DetailColumn" Width="20" />
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Orientation="Vertical" Height="30" Grid.Column="0" VerticalAlignment="Center">
-                                            <TextBlock Name="MainLabel" Style="{StaticResource HeaderTextBlock}"
+                                            <TextBlock Name="MainLabel" Style="{StaticResource HeaderTextBlock}" TextTrimming="CharacterEllipsis"
                                                        Text="{Binding Name}"
                                             />
                                             <TextBlock Name="MainEdit" Style="{StaticResource RowTextBlock}"
@@ -408,7 +409,7 @@
         <Rectangle x:Name="ModalBg" Margin="10,10,10,10" Fill="Black" RadiusY="10" RadiusX="10" Opacity="0" Visibility="Collapsed" MouseDown="Window_MouseDown"></Rectangle>
 
         <!-- Expended Detail Modal for Details pop up on service list -->
-        <Grid x:Name="DetailsArea" Visibility="Collapsed" Height="450" Margin="0,0,0,0">
+        <Grid x:Name="DetailsArea" Visibility="Collapsed" Height="450" Margin="0,0,0,0" UseLayoutRounding="True">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"></ColumnDefinition>
             </Grid.ColumnDefinitions>
