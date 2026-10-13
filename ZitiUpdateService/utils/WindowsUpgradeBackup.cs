@@ -41,7 +41,7 @@ namespace ZitiUpdateService.Utils {
                 try {
                     RestoreFolder(destination, backupFolder);
                 } catch (Exception ex) {
-                    // Runs in a static initializer, an escaped exception would kill the service.
+                    // Log only, so a failed restore doesn't stop the monitor service from starting.
                     Logger.Error(ex, "failed restoring backup files from {0}", backupFolder);
                 }
             }

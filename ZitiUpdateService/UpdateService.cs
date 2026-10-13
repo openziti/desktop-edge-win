@@ -46,7 +46,7 @@ namespace ZitiUpdateService {
     public partial class UpdateService : ServiceBase {
         private const string betaStreamMarkerFile = "use-beta-stream.txt";
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-        private static Settings CurrentSettings = new Settings(true);
+        private readonly Settings CurrentSettings;
 
         public bool IsBeta {
             get {
@@ -92,9 +92,10 @@ namespace ZitiUpdateService {
         private System.Threading.Timer _startupPollTimer;
         private int _startupPollAttempts;
 
-        public UpdateService() {
+        public UpdateService(string settingsFolder) {
             InitializeComponent();
 
+            CurrentSettings = new Settings(true, settingsFolder);
             try {
                 CurrentSettings.Load();
             } catch {

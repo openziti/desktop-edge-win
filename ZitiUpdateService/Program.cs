@@ -16,7 +16,9 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Security.Principal;
 using System.ServiceProcess;
 using NLog;
 using NLog.Config;
@@ -31,7 +33,7 @@ namespace ZitiUpdateService {
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
-        static void Main() {
+        static void Main(string[] args) {
             var asm = Assembly.GetExecutingAssembly();
             var logname = asm.GetName().Name;
 
@@ -69,33 +71,52 @@ namespace ZitiUpdateService {
             Logger.Info("    -       file: {0}", nlogFile);
             Logger.Info("========================================================================");
 
-            UpdateService updateSvc = new UpdateService();
+            // the SCM hands start arguments to OnStart, not Main, so an argument here means it was started from the command line
+            bool runningFromCli = args.Length > 0;
+#if DEBUG
+            bool nosvc = true;
+            //bool nosvc = false;
+#else
+            bool nosvc = runningFromCli;
+#endif
+            string settingsFolder;
+            if (runningFromCli) {
+                settingsFolder = args[0];
+                // checked before UpdateService is constructed, since its constructor rewrites settings.json
+                if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) {
+                    Logger.Error("starting ziti-monitor from the command line requires administrator rights, run it from an elevated terminal");
+                    Environment.ExitCode = 1;
+                    return;
+                }
+                if (!Directory.Exists(settingsFolder)) {
+                    Logger.Error("settings folder {0} does not exist", settingsFolder);
+                    Environment.ExitCode = 1;
+                    return;
+                }
+                ServiceController service = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == "ziti-monitor");
+                if (service != null && service.Status != ServiceControllerStatus.Stopped) {
+                    Logger.Error("the ziti-monitor service is {0}, stop it before starting ziti-monitor from the command line", service.Status);
+                    Environment.ExitCode = 1;
+                    return;
+                }
+            } else {
+                settingsFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "NetFoundry", "ZitiUpdateService");
+            }
+            UpdateService updateSvc = new UpdateService(settingsFolder);
             updateSvc.AutoLog = true;
             try {
-#if DEBUG
-                bool nosvc = true;
-                //bool nosvc = false;
-
                 if (nosvc) {
-                    Logger.Info("  - RUNNING AS DEBUG");
+                    Logger.Info("  - RUNNING WITHOUT THE SERVICE CONTROL MANAGER");
                     updateSvc.Debug();
                     updateSvc.WaitForCompletion();
-                    Logger.Info("  - RUNNING AS DEBUG COMPLETE");
+                    Logger.Info("  - RUNNING WITHOUT THE SERVICE CONTROL MANAGER COMPLETE");
                 } else {
                     ServiceBase[] ServicesToRun = new ServiceBase[]
                     {
                         updateSvc
                     };
-                    Logger.Info("RUNNING AS DEBUG SERVICE");
                     ServiceBase.Run(ServicesToRun);
                 }
-#else
-				ServiceBase[] ServicesToRun = new ServiceBase[]
-				{
-					updateSvc
-				};
-				ServiceBase.Run(ServicesToRun);
-#endif
             } catch (Exception e) {
                 Logger.Error("Unexpected exception: {0}", e);
             }
