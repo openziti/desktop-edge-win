@@ -45,9 +45,9 @@ namespace ZitiUpdateService.Utils {
 
         public event System.EventHandler<ControllerEvent> OnConfigurationChange;
 
-        internal Settings(bool doInit) {
+        internal Settings(bool doInit, string folder) {
             if (doInit) {
-                init();
+                init(folder);
             }
             AlivenessChecksBeforeAction = DefaultAlivenessChecks;
             MaintenanceWindowStart = null; // null = any time (no window restriction)
@@ -62,8 +62,7 @@ namespace ZitiUpdateService.Utils {
         public Settings() {
         }
 
-        private void init() {
-            string folder = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData), "NetFoundry", "ZitiUpdateService");
+        private void init(string folder) {
             string file = "settings.json";
             Location = Path.Combine(folder, file);
             Directory.CreateDirectory(folder);
