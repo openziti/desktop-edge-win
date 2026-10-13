@@ -15,6 +15,7 @@
 */
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -93,9 +94,10 @@ namespace ZitiUpdateService {
                     Environment.ExitCode = 1;
                     return;
                 }
-                ServiceController service = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == "ziti-monitor");
-                if (service != null && service.Status != ServiceControllerStatus.Stopped) {
-                    Logger.Error("the ziti-monitor service is {0}, stop it before starting ziti-monitor from the command line", service.Status);
+                Process thisProcess = Process.GetCurrentProcess();
+                Process runningMonitor = Process.GetProcessesByName(thisProcess.ProcessName).FirstOrDefault(p => p.Id != thisProcess.Id);
+                if (runningMonitor != null) {
+                    Logger.Error("ziti-monitor is already running as process {0}, stop the ziti-monitor service or that process before starting ziti-monitor from the command line", runningMonitor.Id);
                     Environment.ExitCode = 1;
                     return;
                 }
