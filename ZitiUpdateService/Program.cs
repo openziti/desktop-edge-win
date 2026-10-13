@@ -19,7 +19,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Security.Principal;
 using System.ServiceProcess;
 using NLog;
 using NLog.Config;
@@ -76,7 +75,6 @@ namespace ZitiUpdateService {
             bool runningFromCli = args.Length > 0;
 #if DEBUG
             bool nosvc = true;
-            //bool nosvc = false;
 #else
             bool nosvc = runningFromCli;
 #endif
@@ -84,11 +82,6 @@ namespace ZitiUpdateService {
             if (runningFromCli) {
                 settingsFolder = args[0];
                 // checked before UpdateService is constructed, since its constructor rewrites settings.json
-                if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) {
-                    Logger.Error("starting ziti-monitor from the command line requires administrator rights, run it from an elevated terminal");
-                    Environment.ExitCode = 1;
-                    return;
-                }
                 if (!Directory.Exists(settingsFolder)) {
                     Logger.Error("settings folder {0} does not exist", settingsFolder);
                     Environment.ExitCode = 1;
