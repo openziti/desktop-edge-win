@@ -425,9 +425,31 @@ public sealed class Quickstart : IAsyncDisposable
             if (DateTime.UtcNow > deadline) break;
             await Task.Delay(ReadyPollInterval);
         }
+        string goroutines = DumpGoroutines();
         throw new TimeoutException(
             $"quickstart never reached {waitingFor} in {ReadyTimeout.TotalSeconds}s. Last CLI exit {last.ExitCode}, " +
-            $"stdout: {last.Stdout} stderr: {last.Stderr}. Log: {_process.LogPath}");
+            $"stdout: {last.Stdout} stderr: {last.Stderr}. Log: {_process.LogPath}. Goroutines: {goroutines}");
+    }
+
+    /// <summary>
+    /// Write the quickstart's goroutine stacks beside its log. `--app-addr` dials its agent socket directly, since
+    /// `--pid` goes through the socket scan a hung `agent cluster init` may be stuck in. A dump that times out means
+    /// the agent's accept loop is stuck too.
+    /// </summary>
+    private string DumpGoroutines()
+    {
+        string path = Path.Combine(Home, "goroutines.log");
+        string socket = Path.Combine(_tempDir, $"gops-agent.{_process.Id}.sock");
+        try
+        {
+            CliResult result = Run("agent", "stack", "--app-addr", $"unix:{socket}");
+            File.WriteAllText(path, $"exit {result.ExitCode}\n{result.Stdout}\n{result.Stderr}");
+        }
+        catch (TimeoutException ex)
+        {
+            File.WriteAllText(path, ex.Message);
+        }
+        return path;
     }
 
     private static bool HasLeader(CliResult result)

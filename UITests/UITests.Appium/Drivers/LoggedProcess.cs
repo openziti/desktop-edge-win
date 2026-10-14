@@ -14,6 +14,7 @@ public sealed class LoggedProcess : IAsyncDisposable
 
     public string LogPath => _output.LogPath;
     public bool HasExited => _output.Process.HasExited;
+    public int Id => _output.Process.Id;
 
     private LoggedProcess(ProcessOutputLog output)
     {
