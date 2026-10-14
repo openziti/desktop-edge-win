@@ -270,14 +270,19 @@ public class MonitorTests
         SelectComboItem(s, "MaintenanceWindowEndCombo", "05:00");
         ClickAt(s, WaitForId(s, "SaveSettingsButton"));
 
-        WaitForBlurb(s, "Settings Saved.", SettingsWriteTimeout);
-        DateTime savedAtUtc = MonitorReplyAtUtc(name, "SetMaintenanceWindow");
+        // Captured before the asserts below, which take long enough that the blurb hides first.
+        DateTime? savedAtUtc = null;
+        WaitUntil(s, "the app reads the monitor's SetMaintenanceWindow reply", SettingsWriteTimeout, () =>
+        {
+            savedAtUtc = MonitorReplyAtUtc(name, "SetMaintenanceWindow");
+            return savedAtUtc != null;
+        });
+        await VerifyStep(CaptureBlurb(s, savedAtUtc!.Value), name, "02-saved-blurb");
         MaintenanceWindow saved = WaitForSavedWindowChange(s, seeded);
         Assert.Equal(new MaintenanceWindow(2, 5, Frequency.Weekly, 3, null, MonthlyMode.ByDate, null), saved);
         // Save Settings sends the URL too, and the monitor fetches it before saving it.
         Assert.Equal(1, releaseStream.Requests);
         Assert.Equal(releaseStream.Url, (string?)SavedSettings()?["AutomaticUpdateURL"]);
-        await VerifyStep(CaptureBlurb(s, savedAtUtc), name, "02-saved-blurb");
     }
 
     private static async Task RequestUpdate(string name)

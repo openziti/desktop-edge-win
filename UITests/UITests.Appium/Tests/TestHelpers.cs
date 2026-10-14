@@ -159,8 +159,9 @@ public static class TestHelpers
     /// <summary>
     /// When the app received the monitor's reply to the latest command it sent the monitor with this Op. The monitor
     /// pipes have no relay, so ui.log is the only record of it, and a UIA poll can see the result over a second later.
+    /// Null until ui.log has both the command and its reply.
     /// </summary>
-    public static DateTime MonitorReplyAtUtc(string testName, string op)
+    public static DateTime? MonitorReplyAtUtc(string testName, string op)
     {
         string path = UiLogPath(testName);
         string[] lines;
@@ -169,9 +170,9 @@ public static class TestHelpers
             lines = reader.ReadToEnd().Split('\n');
         int sent = Array.FindLastIndex(lines,
             l => l.Contains("UI-MonitorClient-send-monitor:") && l.Contains($"\"Op\":\"{op}\""));
-        if (sent < 0) throw new InvalidOperationException($"ui.log has no {op} sent to the monitor: {path}");
+        if (sent < 0) return null;
         int reply = Array.FindIndex(lines, sent + 1, l => l.Contains("UI-MonitorClient-read-monitor:"));
-        if (reply < 0) throw new InvalidOperationException($"ui.log has no monitor reply after its {op}: {path}");
+        if (reply < 0) return null;
         return UiLogLineLocalTime(lines[reply], path).ToUniversalTime();
     }
 
@@ -357,8 +358,10 @@ public static class TestHelpers
         DateTime start = DateTime.UtcNow;
         DateTime deadline = start + timeout;
         int lastMatchCount = 0;
-        while (DateTime.UtcNow < deadline)
+        bool retryAfterOverrun = false;
+        while (DateTime.UtcNow < deadline || retryAfterOverrun)
         {
+            DateTime lookupStart = DateTime.UtcNow;
             try
             {
                 ReadOnlyCollection<AppiumElement> els = s.Driver.FindElements(by);
@@ -370,6 +373,9 @@ public static class TestHelpers
                 }
             }
             catch (StaleElementReferenceException) { /* retry */ }
+            // A UIA search that fails with HRESULT 0x80040201 comes back from WinAppDriver as an empty list after about
+            // 25s, so a lookup that outlasted the whole timeout gets one more try.
+            retryAfterOverrun = !retryAfterOverrun && DateTime.UtcNow - lookupStart > timeout;
             Thread.Sleep(40);
         }
         string diagnostics = SaveTimeoutDiagnostics(s);
