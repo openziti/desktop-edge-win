@@ -1,5 +1,4 @@
-using System.ComponentModel;
-using System.Runtime.InteropServices;
+using System.Reflection;
 using System.Text;
 
 namespace ZitiDesktopEdge.UITests.Drivers;
@@ -17,18 +16,44 @@ public static class ExplorerWindows
     public static IReadOnlyList<TopLevelWindow> Open() =>
         AppiumSession.TopLevelWindows().Where(w => ClassName(w.Handle) == FolderWindowClass).ToList();
 
-    /// <summary>Close window and wait for it to go.</summary>
+    /// <summary>
+    /// Close window through the shell once it has opened its folder, and wait for it to go. A window still starting
+    /// up (titled "File Explorer") can drop a WM_CLOSE, and is not in the shell's window list until it has a folder.
+    /// </summary>
     public static void Close(TopLevelWindow window, TimeSpan timeout)
     {
-        if (!Win32Window.PostMessage(window.Handle, Win32Window.WM_CLOSE, IntPtr.Zero, IntPtr.Zero))
-            throw new Win32Exception(Marshal.GetLastWin32Error(), $"posting WM_CLOSE to Explorer window '{window.Title}' failed");
         DateTime deadline = DateTime.UtcNow + timeout;
+        object? folderWindow = ShellWindow(window.Handle);
+        while (folderWindow == null)
+        {
+            if (DateTime.UtcNow > deadline)
+                throw new TimeoutException($"Explorer window '{window.Title}' never opened a folder within {timeout.TotalSeconds}s");
+            Thread.Sleep(PollInterval);
+            folderWindow = ShellWindow(window.Handle);
+        }
+        folderWindow.GetType().InvokeMember("Quit", BindingFlags.InvokeMethod, null, folderWindow, null);
         while (Win32Window.IsWindow(window.Handle))
         {
             if (DateTime.UtcNow > deadline)
-                throw new TimeoutException($"Explorer window '{window.Title}' stayed open {timeout.TotalSeconds}s after WM_CLOSE");
+                throw new TimeoutException($"Explorer window '{window.Title}' stayed open {timeout.TotalSeconds}s after Quit");
             Thread.Sleep(PollInterval);
         }
+    }
+
+    /// <summary>The shell's InternetExplorer automation object for the folder window hWnd, or null if it has none yet.</summary>
+    private static object? ShellWindow(IntPtr hWnd)
+    {
+        Type shellType = Type.GetTypeFromProgID("Shell.Application", true)!;
+        object shell = Activator.CreateInstance(shellType)!;
+        object windows = shellType.InvokeMember("Windows", BindingFlags.InvokeMethod, null, shell, null)!;
+        int count = (int)windows.GetType().InvokeMember("Count", BindingFlags.GetProperty, null, windows, null)!;
+        for (int i = 0; i < count; i++)
+        {
+            object? item = windows.GetType().InvokeMember("Item", BindingFlags.InvokeMethod, null, windows, new object[] { i });
+            if (item != null && Convert.ToInt64(item.GetType().InvokeMember("HWND", BindingFlags.GetProperty, null, item, null)) == hWnd.ToInt64())
+                return item;
+        }
+        return null;
     }
 
     private static string ClassName(IntPtr hWnd)

@@ -176,11 +176,6 @@ internal static class Win32Window
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder lpClassName, int nMaxCount);
 
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
-
-    public const uint WM_CLOSE = 0x0010;
-
     [DllImport("user32.dll")]
     public static extern bool IsWindow(IntPtr hWnd);
 
