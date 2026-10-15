@@ -82,7 +82,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-  # A quickstart of ziti's stable release and the ziti-edge-tunnel release the installer ships. The runner is elevated,
+  # A quickstart of a pinned ziti release and the ziti-edge-tunnel release the installer ships. The runner is elevated,
   # which ZET's TUN needs. Each run-ui-tests.ps1 integration tier gets a runner of its own.
   integration-ui-tests:
     name: ${{ matrix.title }}
@@ -145,7 +145,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          version: stable
+          version: v2.1.0-pre2
 
       - name: Build + run integration UI tests
         shell: pwsh
