@@ -24,6 +24,8 @@ public class MonitorTests
     private const string UnreachableUrl = "http://127.0.0.1:47381/stable.json";
     // The monitor runs systeminfo, netstat and the other system info commands one after another.
     private static readonly TimeSpan FeedbackTimeout = TimeSpan.FromSeconds(120);
+    // On the GitHub runner Explorer sometimes leaves the window open more than 5s after Quit.
+    private static readonly TimeSpan ExplorerCloseTimeout = TimeSpan.FromSeconds(30);
     // The monitor reloads policy 500ms after the last registry change WMI reports.
     private static readonly TimeSpan PolicyReloadTimeout = TimeSpan.FromSeconds(10);
     private const string PolicyKeyPath = @"SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service";
@@ -206,7 +208,8 @@ public class MonitorTests
             return explorer != null;
         });
         Step.Log($"the app opened Explorer window '{explorer!.Title}'");
-        ExplorerWindows.Close(explorer, SettingsWriteTimeout);
+        ExplorerWindows.Quit(explorer, SettingsWriteTimeout);
+        WaitUntil(s, "the Explorer window closes", ExplorerCloseTimeout, () => !ExplorerWindows.IsOpen(explorer));
         string bundle = Assert.Single(Bundles(monitorLogs).Except(bundlesBefore));
         try
         {

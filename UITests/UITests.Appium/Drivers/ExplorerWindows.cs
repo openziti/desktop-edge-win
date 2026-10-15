@@ -17,10 +17,10 @@ public static class ExplorerWindows
         AppiumSession.TopLevelWindows().Where(w => ClassName(w.Handle) == FolderWindowClass).ToList();
 
     /// <summary>
-    /// Close window through the shell once it has opened its folder, and wait for it to go. A window still starting
-    /// up (titled "File Explorer") can drop a WM_CLOSE, and is not in the shell's window list until it has a folder.
+    /// Ask the shell to close window once it has opened its folder, which is when it joins the shell's window list.
+    /// Explorer closes it some time later.
     /// </summary>
-    public static void Close(TopLevelWindow window, TimeSpan timeout)
+    public static void Quit(TopLevelWindow window, TimeSpan timeout)
     {
         DateTime deadline = DateTime.UtcNow + timeout;
         object? folderWindow = ShellWindow(window.Handle);
@@ -32,13 +32,9 @@ public static class ExplorerWindows
             folderWindow = ShellWindow(window.Handle);
         }
         folderWindow.GetType().InvokeMember("Quit", BindingFlags.InvokeMethod, null, folderWindow, null);
-        while (Win32Window.IsWindow(window.Handle))
-        {
-            if (DateTime.UtcNow > deadline)
-                throw new TimeoutException($"Explorer window '{window.Title}' stayed open {timeout.TotalSeconds}s after Quit");
-            Thread.Sleep(PollInterval);
-        }
     }
+
+    public static bool IsOpen(TopLevelWindow window) => Win32Window.IsWindow(window.Handle);
 
     /// <summary>The shell's InternetExplorer automation object for the folder window hWnd, or null if it has none yet.</summary>
     private static object? ShellWindow(IntPtr hWnd)
