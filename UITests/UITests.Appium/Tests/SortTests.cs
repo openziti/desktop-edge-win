@@ -35,7 +35,9 @@ public class SortTests
         return Flipped(first);
     }
 
-    [Fact(Timeout = 60000)]
+    // The body takes about 30s, and the class order changes between runs, so when this test runs first it also pays
+    // the app's cold first launch, which takes up to 30s on a runner.
+    [Fact(Timeout = 120000)]
     public async Task SortHeadersReorderIdentities()
     {
         string name = nameof(SortHeadersReorderIdentities);
