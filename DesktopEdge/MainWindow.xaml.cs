@@ -2509,12 +2509,21 @@ namespace ZitiDesktopEdge {
                 Blurb.Content = message;
                 _blurbUrl = url;
                 BlurbArea.Visibility = Visibility.Visible;
+#if UI_TESTS
+                // The suite screenshots the blurb before it hides, so it shows at once instead of fading in. Clearing the
+                // animations stops a previous blurb's hide fade from overriding these values.
+                BlurbArea.BeginAnimation(Grid.OpacityProperty, null);
+                BlurbArea.BeginAnimation(Grid.MarginProperty, null);
+                BlurbArea.Opacity = 1;
+                BlurbArea.Margin = new Thickness(15, 0, 15, 15);
+#else
                 BlurbArea.Opacity = 0;
                 BlurbArea.Margin = new Thickness(0, 0, 0, 0);
                 DoubleAnimation animation = new DoubleAnimation(1, TimeSpan.FromSeconds(.3));
                 ThicknessAnimation animateThick = new ThicknessAnimation(new Thickness(15, 0, 15, 15), TimeSpan.FromSeconds(.3));
                 BlurbArea.BeginAnimation(Grid.OpacityProperty, animation);
                 BlurbArea.BeginAnimation(Grid.MarginProperty, animateThick);
+#endif
                 await Task.Delay(2500);
                 HideBlurb();
             } catch(Exception e) {

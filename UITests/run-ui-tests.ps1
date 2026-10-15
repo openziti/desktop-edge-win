@@ -102,8 +102,9 @@ if (-not $SkipBuild) {
 
     $msbuild = Find-MSBuild
     # Debug only: Release enforces single-instance (App.xaml.cs), so each test's launch would hand off to the last one.
+    # UiTests defines UI_TESTS in DesktopEdge, which drops the blurb's fade-in the baselines race against.
     Write-Host "==> msbuild Debug ($msbuild)"
-    & $msbuild $solution "/p:Configuration=Debug" /v:minimal /nologo
+    & $msbuild $solution "/p:Configuration=Debug" "/p:UiTests=true" /v:minimal /nologo
     if ($LASTEXITCODE -ne 0) { throw "msbuild failed" }
 }
 

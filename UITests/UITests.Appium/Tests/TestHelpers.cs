@@ -50,9 +50,9 @@ public static class TestHelpers
     // fails StableCapture's frame match and is waited out there.
     private const int HoverFadeSettleMs = 400;
 
-    // WPF keeps redrawing a blurb's text after its 0.3s fade ends, until about 1.1s after it shows, in steps slow
-    // enough that two frames 200ms apart can match mid change. Well under 2.5s, when the blurb starts hiding.
-    private const int BlurbSettleMs = 1500;
+    // A UI_TESTS build shows the blurb without fading it in, and its frames stop changing by 0.82s after the relay line
+    // in the VM. Leaves StableCapture room on a slower runner before the blurb starts hiding at 2.5s.
+    private const int BlurbSettleMs = 1000;
 
     // Longer than a frame, so an animation still running changes the next capture.
     private const int StableFrameGapMs = 200;
