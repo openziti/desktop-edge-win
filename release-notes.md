@@ -1,12 +1,21 @@
 # Release 2.11.8.0
 ## What's New
-n/a
+* updated to ziti-edge-tunnel v1.19.1
+* [Issue 1094](https://github.com/openziti/desktop-edge-win/issues/1094) - ziti-monitor can run from the command line without the service control manager with `ZitiUpdateService.exe <settings folder>`. It refuses to start when the folder does not exist or another ziti-monitor process is running
 
 ## Bugs fixed
 * [Issue 1091](https://github.com/openziti/desktop-edge-win/issues/1091) - Adding an identity by URL with an ext-jwt signer that only has enroll to cert enabled enrolls to a certificate instead of asking for an enroll mode
+* [Issue 1088](https://github.com/openziti/desktop-edge-win/issues/1088) - The UI no longer freezes when "Check for updates" finds a critical update, and clicking Update Now during the 30 second countdown no longer starts a second install
+* [PR 1070](https://github.com/openziti/desktop-edge-win/pull/1070) - ziti-monitor's minidumps now carry thread info and module headers so they can be symbolized, are named for why they were taken (`stalled`, `hung-on-stop`, `did-not-exit`), and a failed dump no longer overwrites the previous one
 
 ## Other changes
 n/a
+
+## Dependencies
+* ziti-tunneler: v1.19.1
+* ziti-sdk:      1.19.2
+* tlsuv:         v0.44.0[OpenSSL 3.6.3 9 Jun 2026]
+* tlsuv:         v0.44.0[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.11.7.0
 ## What's New
