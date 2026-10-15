@@ -51,7 +51,7 @@ public static class TestHelpers
     private const int HoverFadeSettleMs = 400;
 
     // A UI_TESTS build shows the blurb without fading it in, and its frames stop changing by 0.82s after the relay line
-    // in the VM. Leaves StableCapture room on a slower runner before the blurb starts hiding at 2.5s.
+    // in the VM. Leaves StableCapture room on a slower runner before the blurb starts hiding at 5s.
     private const int BlurbSettleMs = 1000;
 
     // Longer than a frame, so an animation still running changes the next capture.
