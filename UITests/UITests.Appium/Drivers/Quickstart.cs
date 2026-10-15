@@ -29,24 +29,18 @@ public sealed class Quickstart : IAsyncDisposable
     // writing the same file mid-read makes quickstart exit on "unexpected end of JSON input".
     private string CliConfigDir => Path.Combine(Home, "harness-cli-config");
     private readonly string _zitiBin;
-    private readonly string _tempDir;
     private readonly LoggedProcess _process;
 
-    private Quickstart(string zitiBin, string home, string tempDir, LoggedProcess process)
+    private Quickstart(string zitiBin, string home, LoggedProcess process)
     {
         _zitiBin = zitiBin;
         Home = home;
-        _tempDir = tempDir;
         _process = process;
     }
 
     public static async Task<Quickstart> StartAsync(string zitiBin, string home)
     {
         Directory.CreateDirectory(home);
-        // ziti v2.0.6's `agent cluster init --pid` reads every gops-agent socket in the temp dir with no deadline, so
-        // one left by an earlier quickstart can hang it. Its own temp dir leaves it only its own socket. Not under
-        // home: the socket path must fit AF_UNIX's 108 chars, and a checkout's TestResults path can be too deep.
-        string tempDir = Directory.CreateTempSubdirectory("zdew-qs-").FullName;
         if (Directory.Exists(ThirdPartyPkiRoot)) Directory.Delete(ThirdPartyPkiRoot, true);
         LoggedProcess process = LoggedProcess.Start(zitiBin,
             new[]
@@ -59,11 +53,10 @@ public sealed class Quickstart : IAsyncDisposable
             {
                 ["ZITI_CONFIG_DIR"] = Path.Combine(home, "quickstart-cli-config"),
                 ["PFXLOG_NO_JSON"] = "true",
-                ["TMP"] = tempDir,
             },
             Path.Combine(home, "quickstart.log"));
 
-        Quickstart quickstart = new Quickstart(zitiBin, home, tempDir, process);
+        Quickstart quickstart = new Quickstart(zitiBin, home, process);
         try
         {
             await quickstart.WaitUntilReadyAsync();
@@ -439,7 +432,7 @@ public sealed class Quickstart : IAsyncDisposable
     private string DumpGoroutines()
     {
         string path = Path.Combine(Home, "goroutines.log");
-        string socket = Path.Combine(_tempDir, $"gops-agent.{_process.Id}.sock");
+        string socket = Path.Combine(Path.GetTempPath(), $"gops-agent.{_process.Id}.sock");
         try
         {
             CliResult result = Run("agent", "stack", "--app-addr", $"unix:{socket}");
@@ -493,9 +486,5 @@ public sealed class Quickstart : IAsyncDisposable
         return new CliResult(p.ExitCode, stdout.Result, stderr.Result);
     }
 
-    public async ValueTask DisposeAsync()
-    {
-        await _process.DisposeAsync();
-        Directory.Delete(_tempDir, true);
-    }
+    public async ValueTask DisposeAsync() => await _process.DisposeAsync();
 }
