@@ -42,18 +42,7 @@ public sealed class Quickstart : IAsyncDisposable
     {
         Directory.CreateDirectory(home);
         if (Directory.Exists(ThirdPartyPkiRoot)) Directory.Delete(ThirdPartyPkiRoot, true);
-        LoggedProcess process = LoggedProcess.Start(zitiBin,
-            new[]
-            {
-                "edge", "quickstart", $"--home={home}",
-                "--ctrl-address=localhost", $"--ctrl-port={CtrlPort}",
-                "--router-address=localhost", $"--router-port={RouterPort}",
-            },
-            new Dictionary<string, string>
-            {
-                ["ZITI_CONFIG_DIR"] = Path.Combine(home, "quickstart-cli-config"),
-                ["PFXLOG_NO_JSON"] = "true",
-            },
+        LoggedProcess process = LoggedProcess.Start(zitiBin, QuickstartArgs(home), QuickstartEnvironment(home),
             Path.Combine(home, "quickstart.log"));
 
         Quickstart quickstart = new Quickstart(zitiBin, home, process);
@@ -68,6 +57,40 @@ public sealed class Quickstart : IAsyncDisposable
         }
         return quickstart;
     }
+
+    /// <summary>
+    /// Generate the quickstart's config without running it, strip OIDC from it so clients take the legacy auth path,
+    /// then start it. Quickstart has no switch for that.
+    /// </summary>
+    public static async Task<Quickstart> StartWithoutOidcAsync(string zitiBin, string home)
+    {
+        Directory.CreateDirectory(home);
+        List<string> args = new List<string>(QuickstartArgs(home)) { "--configure-and-exit" };
+        await using (LoggedProcess configure = LoggedProcess.Start(zitiBin, args, QuickstartEnvironment(home),
+                         Path.Combine(home, "configure.log")))
+        {
+            int exitCode = await configure.WaitForExitAsync(ReadyTimeout);
+            if (exitCode != 0)
+                throw new InvalidOperationException(
+                    $"ziti {string.Join(" ", args)} exited {exitCode}. Log {configure.LogPath}:\n{configure.ReadLog()}");
+        }
+
+        string[] configs = await StripOidcAsync(home);
+        return await StartAdvertisingOidcAsync(zitiBin, home, configs, false);
+    }
+
+    private static string[] QuickstartArgs(string home) => new[]
+    {
+        "edge", "quickstart", $"--home={home}",
+        "--ctrl-address=localhost", $"--ctrl-port={CtrlPort}",
+        "--router-address=localhost", $"--router-port={RouterPort}",
+    };
+
+    private static Dictionary<string, string> QuickstartEnvironment(string home) => new Dictionary<string, string>
+    {
+        ["ZITI_CONFIG_DIR"] = Path.Combine(home, "quickstart-cli-config"),
+        ["PFXLOG_NO_JSON"] = "true",
+    };
 
     /// <summary>
     /// Create the entities declared in a `ziti ops import` file. The importer skips entities that already exist, which
@@ -271,38 +294,20 @@ public sealed class Quickstart : IAsyncDisposable
 
     // Its presence sends clients down the OIDC auth path instead of legacy api sessions.
     private const string OidcAuthCapability = "OIDC_AUTH";
-    // Beside each ctrl.yaml, the config as it was before RestartWithoutOidcAsync stripped it.
+    // Beside each ctrl.yaml, the config as it was before StripOidcAsync stripped it.
     private const string WithOidcSuffix = ".with-oidc";
 
-    /// <summary>
-    /// Stop this controller, strip OIDC from its config so clients take the legacy auth path, and start it again in the
-    /// same home. Quickstart has no switch for it. Run after the fixture import, which needs the OIDC endpoints.
-    /// </summary>
+    /// <summary>Stop this controller, strip OIDC from its config again, and start it in the same home.</summary>
     public async Task<Quickstart> RestartWithoutOidcAsync()
     {
         // Router enrollment writes the key and cert its config points at, so a restart before then fails.
         await WaitForRouterOnlineAsync();
         await DisposeAsync();
-        string[] configs = Directory.GetFiles(Home, "ctrl.yaml", SearchOption.AllDirectories);
-        if (configs.Length == 0) throw new FileNotFoundException($"no ctrl.yaml under {Home}");
-        foreach (string config in configs)
-        {
-            File.Copy(config, config + WithOidcSuffix, true);
-            await File.WriteAllLinesAsync(config, WithoutOidc(await File.ReadAllLinesAsync(config), config));
-        }
-
-        Quickstart restarted = await StartAsync(_zitiBin, Home);
-        IReadOnlyList<string> capabilities = await restarted.CapabilitiesAsync();
-        if (capabilities.Contains(OidcAuthCapability))
-        {
-            await restarted.DisposeAsync();
-            throw new InvalidOperationException(
-                $"the controller still advertises {OidcAuthCapability} after OIDC was stripped from {string.Join(", ", configs)}: [{string.Join(", ", capabilities)}]");
-        }
-        return restarted;
+        string[] configs = await StripOidcAsync(Home);
+        return await StartAdvertisingOidcAsync(_zitiBin, Home, configs, false);
     }
 
-    /// <summary>Stop this controller, put back the configs RestartWithoutOidcAsync stripped, and start it again.</summary>
+    /// <summary>Stop this controller, put back the configs StripOidcAsync stripped, and start it again.</summary>
     public async Task<Quickstart> RestartWithOidcAsync()
     {
         await DisposeAsync();
@@ -310,16 +315,35 @@ public sealed class Quickstart : IAsyncDisposable
         if (saved.Length == 0)
             throw new FileNotFoundException($"no ctrl.yaml{WithOidcSuffix} under {Home}, so OIDC was never stripped");
         foreach (string copy in saved) File.Copy(copy, copy[..^WithOidcSuffix.Length], true);
+        return await StartAdvertisingOidcAsync(_zitiBin, Home, saved, true);
+    }
 
-        Quickstart restarted = await StartAsync(_zitiBin, Home);
-        IReadOnlyList<string> capabilities = await restarted.CapabilitiesAsync();
-        if (!capabilities.Contains(OidcAuthCapability))
+    /// <summary>Save each ctrl.yaml beside itself and strip OIDC from it. Returns the stripped paths.</summary>
+    private static async Task<string[]> StripOidcAsync(string home)
+    {
+        string[] configs = Directory.GetFiles(home, "ctrl.yaml", SearchOption.AllDirectories);
+        if (configs.Length == 0) throw new FileNotFoundException($"no ctrl.yaml under {home}");
+        foreach (string config in configs)
         {
-            await restarted.DisposeAsync();
-            throw new InvalidOperationException(
-                $"the controller does not advertise {OidcAuthCapability} after restoring {string.Join(", ", saved)}: [{string.Join(", ", capabilities)}]");
+            File.Copy(config, config + WithOidcSuffix, true);
+            await File.WriteAllLinesAsync(config, WithoutOidc(await File.ReadAllLinesAsync(config), config));
         }
-        return restarted;
+        return configs;
+    }
+
+    /// <summary>Start the quickstart and fail unless its OIDC_AUTH capability matches expectOidc.</summary>
+    private static async Task<Quickstart> StartAdvertisingOidcAsync(string zitiBin, string home,
+        IReadOnlyList<string> configs, bool expectOidc)
+    {
+        Quickstart quickstart = await StartAsync(zitiBin, home);
+        IReadOnlyList<string> capabilities = await quickstart.CapabilitiesAsync();
+        if (capabilities.Contains(OidcAuthCapability) != expectOidc)
+        {
+            await quickstart.DisposeAsync();
+            throw new InvalidOperationException(
+                $"the controller's {OidcAuthCapability} is {!expectOidc} after editing {string.Join(", ", configs)}, expected {expectOidc}: [{string.Join(", ", capabilities)}]");
+        }
+        return quickstart;
     }
 
     /// <summary>

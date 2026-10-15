@@ -98,6 +98,8 @@ jobs:
             tier: IntegrationExtAuth
           - title: Integration MFA
             tier: IntegrationMfa
+          - title: Integration legacy auth
+            tier: IntegrationLegacyAuth
           - title: Integration
             tier: Integration
 
@@ -184,10 +186,11 @@ jobs:
           GALLERY_URL: ${{ github.ref == 'refs/heads/release-next' && format('https://{0}.github.io/{1}/', github.repository_owner, github.event.repository.name) || '' }}
         run: |
           ./UITests/write-ui-test-report.ps1 -ResultsDir UITests/TestResults -GalleryUrl $env:GALLERY_URL -Tiers ([ordered]@{
-              Mock               = 'ui-test-results-Mock'
-              IntegrationExtAuth = 'ui-test-results-IntegrationExtAuth'
-              IntegrationMfa     = 'ui-test-results-IntegrationMfa'
-              Integration        = 'ui-test-results-Integration'
+              Mock                  = 'ui-test-results-Mock'
+              IntegrationExtAuth    = 'ui-test-results-IntegrationExtAuth'
+              IntegrationMfa        = 'ui-test-results-IntegrationMfa'
+              IntegrationLegacyAuth = 'ui-test-results-IntegrationLegacyAuth'
+              Integration           = 'ui-test-results-Integration'
           })
           Get-Content UITests/TestResults/report.md | Add-Content $env:GITHUB_STEP_SUMMARY
 

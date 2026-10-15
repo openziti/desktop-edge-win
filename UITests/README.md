@@ -91,12 +91,13 @@ Other switches: `-Tier`, `-Category` or `-Filter` to run a subset, `-AutoVerify`
 `-Tier` picks the same slice of the suite a CI job runs, and a run with no `-Tier`, `-Category` or `-Filter` is
 `Mock`. Two ZDEW windows can't share one desktop, so each integration tier needs a machine of its own.
 
-| Tier                 | Tests                                                    |
-| -------------------- | -------------------------------------------------------- |
-| `Mock`               | Every test outside `Integration`, monitor tier included  |
-| `IntegrationExtAuth` | `ExternalAuth*` classes                                  |
-| `IntegrationMfa`     | `LegacyAuth*`, `Mfa*` and `RemoveMfa*` classes           |
-| `Integration`        | Every other `Integration` test                           |
+| Tier                    | Tests                                                    |
+| ----------------------- | -------------------------------------------------------- |
+| `Mock`                  | Every test outside `Integration`, monitor tier included  |
+| `IntegrationExtAuth`    | `ExternalAuth*` classes                                  |
+| `IntegrationMfa`        | `Mfa*` and `RemoveMfa*` classes                          |
+| `IntegrationLegacyAuth` | `LegacyAuth*` classes                                    |
+| `Integration`           | Every other `Integration` test                           |
 
 ### Visual baselines (Verify / AutoVerify)
 

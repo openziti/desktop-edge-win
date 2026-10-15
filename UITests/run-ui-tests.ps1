@@ -21,7 +21,7 @@ param(
     [int]      $AppiumPort    = 4723,
     [switch]   $SkipBuild,
     [switch]   $AutoVerify,       # sets ZDEW_AUTO_VERIFY=1, which accepts new baselines
-    [ValidateSet('Mock', 'IntegrationExtAuth', 'IntegrationMfa', 'Integration')]
+    [ValidateSet('Mock', 'IntegrationExtAuth', 'IntegrationMfa', 'IntegrationLegacyAuth', 'Integration')]
     [string]   $Tier,             # a named slice of the suite, the same one CI runs per job, Mock when nothing is given
     [string]   $Filter,           # passthrough: --filter "<expr>" e.g. "FullyQualifiedName~Sort"
     [string[]] $Category,         # e.g. -Category MainScreen,Sort, ORed into the filter
@@ -33,10 +33,12 @@ param(
 # windows can't share one desktop, so the integration tests split into tiers that each get a machine of their own.
 $integrationExcludes = "FullyQualifiedName!~.ExternalAuth&FullyQualifiedName!~.LegacyAuth&FullyQualifiedName!~.Mfa&FullyQualifiedName!~.RemoveMfa"
 $tierFilters = @{
-    Mock               = "Category!=Integration"
-    IntegrationExtAuth = "Category=Integration&FullyQualifiedName~.ExternalAuth"
-    IntegrationMfa     = "Category=Integration&(FullyQualifiedName~.LegacyAuth|FullyQualifiedName~.Mfa|FullyQualifiedName~.RemoveMfa)"
-    Integration        = "Category=Integration&$integrationExcludes"
+    Mock                  = "Category!=Integration"
+    IntegrationExtAuth    = "Category=Integration&FullyQualifiedName~.ExternalAuth"
+    # LegacyAuthMfaTests has a RemoveMfa* method, which ~.RemoveMfa would match.
+    IntegrationMfa        = "Category=Integration&FullyQualifiedName!~.LegacyAuth&(FullyQualifiedName~.Mfa|FullyQualifiedName~.RemoveMfa)"
+    IntegrationLegacyAuth = "Category=Integration&FullyQualifiedName~.LegacyAuth"
+    Integration           = "Category=Integration&$integrationExcludes"
 }
 
 if (@($Tier, $Filter, ($Category -join ',')).Where({ $_ }).Count -gt 1) {

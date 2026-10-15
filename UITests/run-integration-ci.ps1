@@ -14,7 +14,7 @@ param(
     [Parameter(Mandatory)] [string] $ToolsDir,
     [Parameter(Mandatory)] [string] $ZitiBin,
     [Parameter(Mandatory)] [string] $GhToken,
-    [Parameter(Mandatory)] [ValidateSet('IntegrationExtAuth', 'IntegrationMfa', 'Integration')] [string] $Tier
+    [Parameter(Mandatory)] [ValidateSet('IntegrationExtAuth', 'IntegrationMfa', 'IntegrationLegacyAuth', 'Integration')] [string] $Tier
 )
 
 $ErrorActionPreference = "Stop"

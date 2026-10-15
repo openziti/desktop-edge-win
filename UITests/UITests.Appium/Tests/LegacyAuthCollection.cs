@@ -12,7 +12,8 @@ public sealed class LegacyAuthFixture : IntegrationFixture
     {
     }
 
-    protected override Task<Quickstart> ApplyAuthModeAsync(Quickstart quickstart) => quickstart.RestartWithoutOidcAsync();
+    protected override Task<Quickstart> StartQuickstartAsync(string zitiBin, string home) =>
+        Quickstart.StartWithoutOidcAsync(zitiBin, home);
 
     /// <summary>Restart the controller with OIDC, as an admin migrating off legacy auth would. RestoreLegacyAuthAsync undoes it.</summary>
     public Task MigrateToOidcAsync() => ReplaceQuickstartAsync(q => q.RestartWithOidcAsync());

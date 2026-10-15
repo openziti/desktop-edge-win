@@ -32,12 +32,12 @@ public class IntegrationFixture : IAsyncLifetime
         Home = Path.Combine(TestHelpers.RepoRoot(), "UITests", "TestResults", homeName);
     }
 
-    /// <summary>The controller ZET runs against, once the fixture is imported.</summary>
-    protected virtual Task<Quickstart> ApplyAuthModeAsync(Quickstart quickstart) => Task.FromResult(quickstart);
+    protected virtual Task<Quickstart> StartQuickstartAsync(string zitiBin, string home) =>
+        Quickstart.StartAsync(zitiBin, home);
 
     public async Task InitializeAsync()
     {
-        _quickstart = await Quickstart.StartAsync(RequiredBinary("ZITI_BIN"), Path.Combine(Home, "quickstart"));
+        _quickstart = await StartQuickstartAsync(RequiredBinary("ZITI_BIN"), Path.Combine(Home, "quickstart"));
         _dex = await Dex.StartAsync(RequiredBinary("IDP_BIN"),
             Path.Combine(AppContext.BaseDirectory, "testdata", "dex-config.yaml"), Path.Combine(Home, "idp"));
         // A CA left by a crashed run goes first, because ziti 1.6's ops import fails against an OS-trusted controller,
@@ -48,7 +48,6 @@ public class IntegrationFixture : IAsyncLifetime
         // Starts enroll-to-none, and every test that changes it restores that.
         _workingSignerId = _quickstart.CreateExtJwtSigner(
             new Quickstart.ExtJwtSigner(WorkingSignerName, Dex.IssuerUrl, _dex.JwksUri, Dex.ClientIdWorks));
-        _quickstart = await ApplyAuthModeAsync(_quickstart);
         _caTrusted = true;
         try
         {

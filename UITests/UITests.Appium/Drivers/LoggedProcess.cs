@@ -39,6 +39,21 @@ public sealed class LoggedProcess : IAsyncDisposable
 
     public string ReadLog() => _output.ReadLog();
 
+    /// <summary>Wait for a process that exits on its own and return its exit code.</summary>
+    public async Task<int> WaitForExitAsync(TimeSpan timeout)
+    {
+        using CancellationTokenSource cts = new CancellationTokenSource(timeout);
+        try
+        {
+            await _output.Process.WaitForExitAsync(cts.Token);
+        }
+        catch (OperationCanceledException ex)
+        {
+            throw new TimeoutException($"process {Id} still running after {timeout.TotalSeconds}s. Log: {LogPath}", ex);
+        }
+        return _output.Process.ExitCode;
+    }
+
     // A restart disposes the old process before its owner is replaced, and the owner's dispose must not throw then.
     private bool _disposed;
 
