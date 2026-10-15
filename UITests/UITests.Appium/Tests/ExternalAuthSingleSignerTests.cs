@@ -49,6 +49,7 @@ public class ExternalAuthSingleSignerTests
             JObject added = AssertEnrollmentAdded(s, ExternalAuthLine);
             AssertUrlEnrolledToNoneIdentityFile((string)added["Id"]!["Identifier"]!);
             WaitForRowLoggedIn(s);
+            WaitForRowNamed(s, identityName);
             await VerifyStep(Capture(s), name, "02-identity-enrolled");
         }
         finally
@@ -392,8 +393,4 @@ public class ExternalAuthSingleSignerTests
     private static void WaitForRowLoggedIn(AppiumSession s) =>
         WaitUntil(s, "the row no longer asks for external auth", ControllerTimeout,
             () => !s.Driver.FindElements(ExtAuthRequiredIcon).Any(e => e.Displayed));
-
-    // A Label's UIA Name is its whole Content, even when the row truncates it.
-    private static void WaitForRowNamed(AppiumSession s, string identityName) =>
-        WaitForController(s, By.XPath($"//*[@Name='{identityName}']"), $"the row is named {identityName}");
 }

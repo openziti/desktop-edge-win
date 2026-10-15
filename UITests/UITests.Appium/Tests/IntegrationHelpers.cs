@@ -501,6 +501,11 @@ public static class IntegrationHelpers
     public static void WaitForController(AppiumSession s, By by, string description) =>
         WaitUntil(s, description, ControllerTimeout, () => s.Driver.FindElements(by).Any(e => e.Displayed));
 
+    // ZET names the row after the identity file until a later identity added event carries the controller's name.
+    // A Label's UIA Name is its whole Content, even when the row truncates it.
+    public static void WaitForRowNamed(AppiumSession s, string identityName) =>
+        WaitForController(s, By.XPath($"//*[@Name='{identityName}']"), $"the row is named {identityName}");
+
     /// <summary>
     /// Empty the fixture's ZET and launch the app against it, recording to captures\testName and logging to
     /// logs\testName.

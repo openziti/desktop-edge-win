@@ -58,6 +58,7 @@ public class ExternalAuthMultipleSignersTests
             AssertUrlEnrolledToNoneIdentityFile((string)added["Id"]!["Identifier"]!);
             WaitUntil(s, "the row stops asking for external auth", ControllerTimeout,
                 () => !s.Driver.FindElements(ExtAuthRequiredIcon).Any(e => e.Displayed));
+            WaitForRowNamed(s, identityName);
             await VerifyStep(Capture(s), name, "05-identity-enrolled");
         });
     }
@@ -95,6 +96,7 @@ public class ExternalAuthMultipleSignersTests
                     AssertUrlEnrolledToNoneIdentityFile((string)added["Id"]!["Identifier"]!);
                     WaitUntil(s, "the row stops asking for external auth", ControllerTimeout,
                         () => !s.Driver.FindElements(ExtAuthRequiredIcon).Any(e => e.Displayed));
+                    WaitForRowNamed(s, identityName);
                     await VerifyStep(Capture(s), name, "03-identity-enrolled");
                 }
                 finally
