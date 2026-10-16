@@ -599,7 +599,8 @@ public sealed class AppiumSession : IAsyncDisposable
                     AutomationName = "Windows",
                 };
                 opts.AddAdditionalAppiumOption("appTopLevelWindow", "0x" + hwnd.ToInt64().ToString("X"));
-                opts.AddAdditionalAppiumOption("newCommandTimeout", 60);
+                // Above the longest wait that polls Win32 only: the feedback test waits up to 150s on Explorer.
+                opts.AddAdditionalAppiumOption("newCommandTimeout", 180);
                 opts.AddAdditionalAppiumOption("wadUrl", WinAppDriverUrl);
                 driver = new WindowsDriver(AppiumServer, opts);
             }
