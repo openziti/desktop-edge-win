@@ -368,7 +368,7 @@ public static class TestHelpers
         int clicks = 0;
         while (DateTime.UtcNow < deadline)
         {
-            ClickAt(s, WaitFor(s, target));
+            ClickAtUnconfirmed(s, WaitFor(s, target), target);
             clicks++;
             // Long enough for a slow animation, so a registered click is never repeated.
             DateTime probe = DateTime.UtcNow.AddMilliseconds(1500);
@@ -557,6 +557,23 @@ public static class TestHelpers
     }
 
     /// <summary>
+    /// <see cref="ClickAt"/> for a caller whose condition then decides whether the click landed. WinAppDriver can fail a
+    /// click with a bare "unknown error" after about 3s, without the app ever receiving it and with no reason given.
+    /// </summary>
+    private static void ClickAtUnconfirmed(AppiumSession s, IWebElement el, By target)
+    {
+        try
+        {
+            ClickAt(s, el);
+        }
+        // Only the base type: its subclasses, such as a stale or missing element, name the cause and still throw.
+        catch (WebDriverException ex) when (ex.GetType() == typeof(WebDriverException))
+        {
+            Step.Log($"WinAppDriver failed the click on {target}, the condition decides whether it landed: {ex.Message}");
+        }
+    }
+
+    /// <summary>
     /// The active sort column and its arrow. Only one SortByXArrow is visible at a time, and collapsed ones are not in
     /// the tree, so one union XPath finds it in a single round trip.
     /// </summary>
@@ -627,7 +644,7 @@ public static class TestHelpers
         {
             IWebElement? shown = s.Driver.FindElements(target).FirstOrDefault(e => e.Displayed);
             if (shown == null) return;
-            ClickAt(s, shown);
+            ClickAtUnconfirmed(s, shown, target);
             clicks++;
             DateTime probe = DateTime.UtcNow.AddMilliseconds(2000);
             while (DateTime.UtcNow < probe)

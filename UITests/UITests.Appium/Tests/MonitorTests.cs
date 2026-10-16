@@ -299,7 +299,8 @@ public class MonitorTests
         WaitForId(s, "TriggerUpdateButton");
         await VerifyStep(s, Masked(s, Capture(s), windowCombos), name, "01-update-offered");
 
-        ClickAt(s, WaitForId(s, "TriggerUpdateButton"));
+        ClickUntil(s, ById("TriggerUpdateButton"), "the update request starts",
+            () => TextById(s, "CheckForUpdateStatus") != "An update is available: 99.0.0.0");
         WaitForText(s, "CheckForUpdateStatus", "Update scheduled for maintenance window", UpdateCheckTimeout);
         await VerifyStep(s, Masked(s, Capture(s), windowCombos), name, "02-update-now-clicked-outside-window");
 
