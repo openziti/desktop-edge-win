@@ -319,7 +319,6 @@ public static class IntegrationHelpers
     /// <summary>Enter the controller URL and click Join Network, asserting the enrollment choice dialog opens.</summary>
     public static void OpenEnrollChoice(AppiumSession s)
     {
-        PrepareTestWindow(s);
         EnterControllerUrl(s, Quickstart.UiControllerUrl);
         Assert.True(JoinOpensEnrollChoice(s), "the app sent AddIdentity without offering the enrollment choice");
     }
@@ -509,7 +508,8 @@ public static class IntegrationHelpers
 
     /// <summary>
     /// Empty the fixture's ZET and launch the app against it, recording to captures\testName and logging to
-    /// logs\testName.
+    /// logs\testName. The window is detached, because a docked window hides whenever another window takes focus (the
+    /// browser an IdP login opens, an Open dialog, or one the test never sees) and leaves UIA only MainUI.
     /// </summary>
     public static async Task<AppiumSession> LaunchAsync(IntegrationFixture fixture, string testName)
     {
@@ -523,6 +523,7 @@ public static class IntegrationHelpers
         {
             WaitForId(launched, "ConnectLabel");
             DismissWelcome(launched);
+            PrepareTestWindow(launched);
         });
     }
 

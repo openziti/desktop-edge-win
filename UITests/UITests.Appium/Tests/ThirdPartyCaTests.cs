@@ -239,8 +239,7 @@ public class ThirdPartyCaTests
     {
         IntPtr? dialog = null;
         // Clicked again only when no dialog opened, since WinAppDriver can drop a click. A first Open dialog can outlast
-        // the probe, and the docked window hides its Browse button before the dialog shows, so a retry clicks only a
-        // displayed button and otherwise keeps polling for the dialog.
+        // the probe, so a retry clicks only a displayed button and otherwise keeps polling for the dialog.
         WaitUntil(s, $"the '{title}' dialog opens", FileDialogOpenProbe * 2 + TimeSpan.FromSeconds(10), () =>
         {
             dialog = FileOpenDialog.Find(s.ProcessId, title);

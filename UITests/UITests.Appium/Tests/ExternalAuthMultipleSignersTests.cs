@@ -33,7 +33,6 @@ public class ExternalAuthMultipleSignersTests
         await WithExtraSigners(async _ =>
         {
             await using AppiumSession s = await LaunchAsync(_fixture, name);
-            PrepareTestWindow(s);
             EnterControllerUrl(s, Quickstart.UiControllerUrl);
             JObject needsLogin = JoinEnrolledToNone(s);
             List<string> providers = needsLogin["Id"]!["ExtAuthProviders"]!.Select(p => (string)p!).ToList();
@@ -78,7 +77,6 @@ public class ExternalAuthMultipleSignersTests
                 try
                 {
                     await using AppiumSession s = await LaunchAsync(_fixture, name);
-                    PrepareTestWindow(s);
                     EnterControllerUrl(s, Quickstart.UiControllerUrl);
                     JObject needsLogin = JoinEnrolledToNone(s);
                     List<string> providers = needsLogin["Id"]!["ExtAuthProviders"]!.Select(p => (string)p!).ToList();

@@ -8,8 +8,7 @@ namespace ZitiDesktopEdge.UITests.Tests;
 
 /// <summary>
 /// Each test reads the IdP URL from ZET's reply and drives dex over HTTP, so the browser the app opens for that URL is
-/// closed unused. Each test detaches the window first, because that browser takes focus and a docked window hides
-/// when it loses focus.
+/// closed unused.
 /// </summary>
 [TestLifecycleLog]
 [Trait("Category", "Integration")]
@@ -35,7 +34,6 @@ public class ExternalAuthSingleSignerTests
         try
         {
             await using AppiumSession s = await LaunchAsync(_fixture, name);
-            PrepareTestWindow(s);
             EnterControllerUrl(s, Quickstart.UiControllerUrl);
             JoinEnrolledToNone(s);
             // The working signer enrolls to neither, so the app sends no mode.
@@ -69,7 +67,6 @@ public class ExternalAuthSingleSignerTests
         try
         {
             await using AppiumSession s = await LaunchAsync(_fixture, name);
-            PrepareTestWindow(s);
             EnterControllerUrl(s, Quickstart.UiControllerUrl);
             JoinEnrolledToNone(s);
 
@@ -247,7 +244,6 @@ public class ExternalAuthSingleSignerTests
         await WithWorkingSigner(_fixture, Quickstart.EnrollToNone, async () =>
         {
             await using AppiumSession s = await LaunchAsync(_fixture, name);
-            PrepareTestWindow(s);
             EnterControllerUrl(s, Quickstart.UiControllerUrl);
             string identityFile = (string)JoinEnrolledToNone(s)["Id"]!["Identifier"]!;
 
@@ -317,7 +313,6 @@ public class ExternalAuthSingleSignerTests
         await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToCert = true, AuthPolicy = TotpPolicy }, async () =>
         {
             await using AppiumSession s = await LaunchAsync(_fixture, name);
-            PrepareTestWindow(s);
             EnterControllerUrl(s, Quickstart.UiControllerUrl);
             await LogInAtIdP(s, JoinToEnrollmentUrl(s), $"{identityName}@test.com");
             // A partial auth sends no identity added event, so the identifier comes from the mfa event.
@@ -335,7 +330,6 @@ public class ExternalAuthSingleSignerTests
         await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToToken = true, AuthPolicy = TotpPolicy }, async () =>
         {
             await using AppiumSession s = await LaunchAsync(_fixture, name);
-            PrepareTestWindow(s);
             EnterControllerUrl(s, Quickstart.UiControllerUrl);
             await LogInAtIdP(s, JoinToEnrollmentUrl(s), $"{identityName}@test.com");
             string identityFile = (string)WaitForNeedsExtLogin(s, AddIdentityLine)["Id"]!["Identifier"]!;
@@ -361,7 +355,6 @@ public class ExternalAuthSingleSignerTests
     /// <summary>Enroll to cert through the URL dialog. Returns the identity file.</summary>
     private static async Task<string> CompleteEnrollToCert(AppiumSession s, string identityName)
     {
-        PrepareTestWindow(s);
         EnterControllerUrl(s, Quickstart.UiControllerUrl);
         return await FinishEnrollToCert(s, identityName, JoinToEnrollmentUrl(s));
     }
@@ -369,7 +362,6 @@ public class ExternalAuthSingleSignerTests
     /// <summary>Enroll to token through the URL dialog, then the row's login. Returns the identity file.</summary>
     private static async Task<string> CompleteEnrollToToken(AppiumSession s, string identityName)
     {
-        PrepareTestWindow(s);
         EnterControllerUrl(s, Quickstart.UiControllerUrl);
         return await FinishEnrollToToken(s, identityName, JoinToEnrollmentUrl(s));
     }

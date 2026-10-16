@@ -92,7 +92,6 @@ public class ExternalAuthSecondaryTests
         try
         {
             await using AppiumSession s = await LaunchAsync(_fixture, name);
-            PrepareTestWindow(s);
             AddIdentity(_fixture, s, identityName);
             WaitForZetEventAfter(s, AddIdentityLine, ControllerConnectedEvent);
             await VerifyStep(s, Capture(s), name, "01-identity-connected");
@@ -151,8 +150,6 @@ public class ExternalAuthSecondaryTests
     /// </summary>
     private JObject AddIdentityNeedingLogin(AppiumSession s, string identityName)
     {
-        // The browser the login opens takes focus, and a docked window hides when it loses focus.
-        PrepareTestWindow(s);
         WriteTestJwt(_fixture.Quickstart.GetJwtFromController(identityName));
         JObject reply = SendAndWaitForZetReply(s, AddIdentityLine, () => ClickAddIdentityWithJwt(s));
         Assert.Equal(0, (int?)reply["Code"]);
