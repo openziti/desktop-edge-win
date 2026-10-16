@@ -527,15 +527,14 @@ public static class IntegrationHelpers
     }
 
     /// <summary>
-    /// The controller's address on each identity row, with its version once ZET has it, and in identity details'
-    /// Network field. An identity added by URL that still waits for its external login shows no address in either.
+    /// The controller's address and version on each identity row, and its address in identity details' Network field.
     /// </summary>
     private static IReadOnlyList<VaryingText> ControllerText(string controllerVersion) => new[]
     {
         new VaryingText(By.XPath("//*[@AutomationId='IdUrl']"),
-            new Regex($"^({Quickstart.ZtApiPattern}( at {Regex.Escape(controllerVersion)})?)?$")),
+            new Regex($"^{Quickstart.ZtApiPattern} at {Regex.Escape(controllerVersion)}$")),
         new VaryingText(By.XPath("//*[@AutomationId='IdServer']//*[@AutomationId='MainEdit']"),
-            new Regex($"^({Quickstart.ZtApiPattern})?$")),
+            new Regex($"^{Quickstart.ZtApiPattern}$")),
     };
 
     /// <summary>

@@ -248,8 +248,10 @@ public static class TestHelpers
         byte[] receivedPng = ReadAll(received);
         byte[] verifiedPng = ReadAll(verified);
         DateTime deadline = DateTime.UtcNow + VaryingTextTimeout;
+        int lookups = 0;
         while (true)
         {
+            lookups++;
             try
             {
                 IReadOnlyList<ShownText> skipped = ShownVaryingText(s, windowOffset);
@@ -257,7 +259,7 @@ public static class TestHelpers
                     skipped.Select(shown => shown.Bounds).ToList());
                 if (result.IsEqual || s.VaryingText.Count == 0 || DateTime.UtcNow >= deadline)
                 {
-                    Step.Log("skipped varying text ["
+                    Step.Log($"skipped varying text after {lookups} lookups ["
                         + string.Join(", ", skipped.Select(shown => $"'{shown.Text}' at {shown.Bounds}")) + "]");
                     return result;
                 }
@@ -273,7 +275,7 @@ public static class TestHelpers
     /// <summary>
     /// Assert the text of every element of the session's <see cref="AppiumSession.VaryingText"/> on screen, and return
     /// it with its bounds in a capture that drew the window at windowOffset. UIA lists a replaced row's elements for a
-    /// while at a zero size, which are left out.
+    /// while at a zero size, which are left out. Empty text is left out too, so the baseline compares it.
     /// </summary>
     private static IReadOnlyList<ShownText> ShownVaryingText(AppiumSession s, Size windowOffset)
     {
@@ -283,9 +285,9 @@ public static class TestHelpers
             foreach (AppiumElement element in s.Driver.FindElements(varying.Elements))
             {
                 Rectangle area = new Rectangle(Point.Add(element.Location, windowOffset), element.Size);
-                if (area.Width > 0 && area.Height > 0)
+                string text = element.Text;
+                if (area.Width > 0 && area.Height > 0 && text.Length > 0)
                 {
-                    string text = element.Text;
                     Assert.Matches(varying.Expected, text);
                     shown.Add(new ShownText(text, area));
                 }
