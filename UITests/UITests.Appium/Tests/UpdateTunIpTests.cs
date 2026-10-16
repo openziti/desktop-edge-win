@@ -101,7 +101,7 @@ public class UpdateTunIpTests
             await using AppiumSession s = await LaunchAsync(_fixture, name);
             JObject reply = await SaveValues(s, name, ValidIp, SavedPrefixLength);
             Assert.Equal(0, (int?)reply["Code"]);
-            await VerifyStep(CaptureBlurbOnReply(s, UpdateInterfaceConfigLine), name, "02-saved-blurb");
+            await VerifyStep(s, CaptureBlurbOnReply(s, UpdateInterfaceConfigLine), name, "02-saved-blurb");
             // ZET replies before it saves config.json.
             WaitUntil(s, "ZET saves the new tun IP", TimeSpan.FromSeconds(2), () =>
             {
@@ -131,7 +131,7 @@ public class UpdateTunIpTests
         JObject reply = await SaveValues(s, name, ip, prefixLength);
         Assert.Equal(500, (int?)reply["Code"]);
         Assert.Equal(zetError, (string?)reply["Error"]);
-        await VerifyStep(CaptureBlurbOnReply(s, UpdateInterfaceConfigLine), name, "02-rejected-blurb");
+        await VerifyStep(s, CaptureBlurbOnReply(s, UpdateInterfaceConfigLine), name, "02-rejected-blurb");
     }
 
     /// <summary>Enter ip and prefixLength on Tunnel Config and Save, returning ZET's reply.</summary>
@@ -144,7 +144,7 @@ public class UpdateTunIpTests
 
         TypeUntil(s, ById("ConfigIpNew"), ip);
         SelectMask(s, prefixLength);
-        await VerifyStep(Capture(s), name, "01-values-entered");
+        await VerifyStep(s, Capture(s), name, "01-values-entered");
 
         JObject reply = SendAndWaitForZetReply(s, UpdateInterfaceConfigLine,
             () => WaitFor(s, By.XPath("//*[@Name='Save']")).Click());

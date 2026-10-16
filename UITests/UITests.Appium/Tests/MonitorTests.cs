@@ -125,7 +125,7 @@ public class MonitorTests
             WaitForText(s, "CheckForUpdateStatus", "FAILURE: Unable to connect to the remote server",
                 UpdateCheckTimeout);
             Assert.Null(FindByAccessibilityId(s, "TriggerUpdateButton"));
-            await VerifyStep(Capture(s), name, "01-check-failed");
+            await VerifyStep(s, Capture(s), name, "01-check-failed");
         });
     }
 
@@ -165,7 +165,7 @@ public class MonitorTests
             await using (AppiumSession s = await LaunchOnAutomaticUpgrades(name))
             {
                 Assert.Equal("ENABLED", WaitForLabelChange(s, "DISABLED"));
-                await VerifyStep(Capture(s), name, "01-defaults");
+                await VerifyStep(s, Capture(s), name, "01-defaults");
             }
             // The monitor writes settings.json on every start, and it restores only a file missing from the live folder.
             WriteSettings(null);
@@ -179,7 +179,7 @@ public class MonitorTests
                 Assert.Equal("Wednesday", TextById(s, "MaintenanceWindowDayOfWeekCombo"));
                 Assert.Equal(releaseStream.Url, TextById(s, "UpdateUrl"));
                 Assert.Equal("ENABLED", TextById(s, "AutomaticUpgradesToggleLabel"));
-                await VerifyStep(Capture(s), name, "02-restored");
+                await VerifyStep(s, Capture(s), name, "02-restored");
                 JObject restored = SavedSettings()!;
                 Assert.Equal(backedUp, MaintenanceWindow.From(restored));
                 Assert.Equal(releaseStream.Url, (string?)restored["AutomaticUpdateURL"]);
@@ -244,7 +244,7 @@ public class MonitorTests
         await using AppiumSession s = await LaunchOnAutomaticUpgrades(name);
         // The label starts as DISABLED in XAML, so any other text can only come from the monitor's status event.
         Assert.Equal("ENABLED", WaitForLabelChange(s, "DISABLED"));
-        await VerifyStep(Capture(s), name, "01-automatic-upgrades-enabled");
+        await VerifyStep(s, Capture(s), name, "01-automatic-upgrades-enabled");
 
         ClickAt(s, WaitForId(s, "AutomaticUpgradesToggle"));
         WaitForBlurb(s, "Automatic upgrades DISABLED", SettingsWriteTimeout);
@@ -265,7 +265,7 @@ public class MonitorTests
         Assert.Equal("04:00", TextById(s, "MaintenanceWindowEndCombo"));
         Assert.Equal("Daily", TextById(s, "MaintenanceWindowFrequencyCombo"));
         Assert.Equal(releaseStream.Url, TextById(s, "UpdateUrl"));
-        await VerifyStep(Capture(s), name, "01-seeded-window");
+        await VerifyStep(s, Capture(s), name, "01-seeded-window");
 
         SelectComboItem(s, "MaintenanceWindowFrequencyCombo", "Weekly");
         SelectComboItem(s, "MaintenanceWindowDayOfWeekCombo", "Wednesday");
@@ -280,7 +280,7 @@ public class MonitorTests
             savedAtUtc = MonitorReplyAtUtc(name, "SetMaintenanceWindow");
             return savedAtUtc != null;
         });
-        await VerifyStep(CaptureBlurb(s, savedAtUtc!.Value), name, "02-saved-blurb");
+        await VerifyStep(s, CaptureBlurb(s, savedAtUtc!.Value), name, "02-saved-blurb");
         MaintenanceWindow saved = WaitForSavedWindowChange(s, seeded);
         Assert.Equal(new MaintenanceWindow(2, 5, Frequency.Weekly, 3, null, MonthlyMode.ByDate, null), saved);
         // Save Settings sends the URL too, and the monitor fetches it before saving it.
@@ -297,11 +297,11 @@ public class MonitorTests
             () => TextById(s, "CheckForUpdateStatus") != "");
         WaitForText(s, "CheckForUpdateStatus", "An update is available: 99.0.0.0", UpdateCheckTimeout);
         WaitForId(s, "TriggerUpdateButton");
-        await VerifyStep(Masked(s, Capture(s), windowCombos), name, "01-update-offered");
+        await VerifyStep(s, Masked(s, Capture(s), windowCombos), name, "01-update-offered");
 
         ClickAt(s, WaitForId(s, "TriggerUpdateButton"));
         WaitForText(s, "CheckForUpdateStatus", "Update scheduled for maintenance window", UpdateCheckTimeout);
-        await VerifyStep(Masked(s, Capture(s), windowCombos), name, "02-update-now-clicked-outside-window");
+        await VerifyStep(s, Masked(s, Capture(s), windowCombos), name, "02-update-now-clicked-outside-window");
 
         // BackArrow is a StackPanel, which has no automation peer, so the click goes to its label.
         By back = By.XPath("//*[@Name='Back']");
@@ -309,7 +309,7 @@ public class MonitorTests
         ClickUntil(s, back, ById("ForceUpdate"));
         Assert.Equal("Update scheduled for maintenance window", TextById(s, "UpdateTimeLeft"));
         Assert.Equal("Update Now", TextById(s, "ForceUpdate"));
-        await VerifyStep(Capture(s), name, "03-main-menu-update-scheduled");
+        await VerifyStep(s, Capture(s), name, "03-main-menu-update-scheduled");
     }
 
     private static async Task SaveBadUpdateUrls(string name, ReleaseStreamServer releaseStream)
@@ -319,18 +319,18 @@ public class MonitorTests
 
         // UIA reports the monitor's \n line breaks as \r\n.
         SaveRejectedUrl(s, releaseStream, "not-a-url", "The url supplied is invalid: \r\nnot-a-url\r\n");
-        await VerifyStep(Capture(s), name, "01-not-a-url-rejected");
+        await VerifyStep(s, Capture(s), name, "01-not-a-url-rejected");
         CloseError(s, releaseStream);
 
         string refused = SaveRejectedUrl(s, releaseStream, UnreachableUrl, null);
         Assert.StartsWith("Unable to connect to the remote server:", refused);
-        await VerifyStep(Capture(s), name, "02-unreachable-url-rejected");
+        await VerifyStep(s, Capture(s), name, "02-unreachable-url-rejected");
         CloseError(s, releaseStream);
 
         // Only typed into the box, never saved, since saving it would fetch the production stream.
         ClickAt(s, WaitForId(s, "ResetUrlButton"));
         WaitForText(s, "UpdateUrl", "https://get.openziti.io/zdew/stable.json", AppResponseTimeout);
-        await VerifyStep(Capture(s), name, "03-reset-to-default-url");
+        await VerifyStep(s, Capture(s), name, "03-reset-to-default-url");
     }
 
     /// <summary>
@@ -370,7 +370,7 @@ public class MonitorTests
         Assert.False(WaitForId(s, "MaintenanceWindowStartCombo").Enabled);
         Assert.Null(FindByAccessibilityId(s, "ResetUrlButton"));
         Assert.Null(FindByAccessibilityId(s, "SaveSettingsButton"));
-        await VerifyStep(Capture(s), name, "01-locked-by-policy");
+        await VerifyStep(s, Capture(s), name, "01-locked-by-policy");
 
         Registry.LocalMachine.DeleteSubKey(PolicyKeyPath);
         WaitForText(s, "UpdateUrl", UnreachableUrl, PolicyReloadTimeout);
@@ -381,7 +381,7 @@ public class MonitorTests
         Assert.True(WaitForId(s, "UpdateUrl").Enabled);
         Assert.True(WaitForId(s, "MaintenanceWindowStartCombo").Enabled);
         WaitForId(s, "SaveSettingsButton");
-        await VerifyStep(Capture(s), name, "02-policy-removed");
+        await VerifyStep(s, Capture(s), name, "02-policy-removed");
     }
 
     private static async Task<AppiumSession> LaunchOnMainMenu(string name)

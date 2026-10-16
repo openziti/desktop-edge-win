@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OpenQA.Selenium;
@@ -372,7 +373,7 @@ public static class IntegrationHelpers
     {
         EnterControllerUrl(s, Quickstart.UiControllerUrl);
         JObject reply = SendAndWaitForZetReply(s, AddIdentityLine, () => WaitForId(s, "JoinNetworkBtn").Click());
-        await VerifyStep(CaptureBlurbOnReply(s, AddIdentityLine), name, step);
+        await VerifyStep(s, CaptureBlurbOnReply(s, AddIdentityLine), name, step);
         // The blurb shows no detail from ZET, so only the reply proves why the add failed.
         Assert.Equal(500, (int?)reply["Code"]);
         Assert.Contains("identity exists with the same name", (string?)reply["Error"]);
@@ -515,6 +516,7 @@ public static class IntegrationHelpers
         await fixture.Zet.RemoveAllIdentitiesAsync();
         AppiumSession s = await AppiumSession.LaunchAgainstZetAsync(DefaultExePath(),
             IntegrationFixture.ZetDiscriminator,
+            ControllerText(await fixture.Quickstart.ControllerVersionAsync()),
             Path.Combine(RepoRoot(), "UITests", "TestResults", "captures", $"{testName}.jsonl"),
             UiLogPath(testName));
         return await PrepareOrDispose(s, launched =>
@@ -523,6 +525,18 @@ public static class IntegrationHelpers
             DismissWelcome(launched);
         });
     }
+
+    /// <summary>
+    /// The controller's address on each identity row, with its version once ZET has it, and in identity details'
+    /// Network field. An identity added by URL that still waits for its external login shows no address in either.
+    /// </summary>
+    private static IReadOnlyList<VaryingText> ControllerText(string controllerVersion) => new[]
+    {
+        new VaryingText(By.XPath("//*[@AutomationId='IdUrl']"),
+            new Regex($"^({Quickstart.ZtApiPattern}( at {Regex.Escape(controllerVersion)})?)?$")),
+        new VaryingText(By.XPath("//*[@AutomationId='IdServer']//*[@AutomationId='MainEdit']"),
+            new Regex($"^({Quickstart.ZtApiPattern})?$")),
+    };
 
     /// <summary>
     /// Add an identity from the imported fixture through Add Identity, With JWT.

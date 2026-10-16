@@ -38,10 +38,10 @@ public class MfaAuthPolicyTests
         WaitForZetEventAfter(s, OnLine, MfaAuthChallengeEvent);
         AssertNoZetEventAfter(s, OnLine, MfaEnrollmentRequiredEvent, NoChallengeQuiet);
         Assert.Empty(s.Driver.FindElements(InIdentityRow(identityName, "MfaSetupNeeded")));
-        await VerifyStep(Capture(s), name, "01-authenticate-row");
+        await VerifyStep(s, Capture(s), name, "01-authenticate-row");
 
         AuthenticateFromRow(s, name, "02-code-typed", identityName, Totp.Compute(enrollment.Secret, DateTimeOffset.UtcNow));
-        await VerifyStep(Capture(s), name, "03-authenticated-row");
+        await VerifyStep(s, Capture(s), name, "03-authenticated-row");
     }
 
     [Fact(Timeout = 180000)]
@@ -68,7 +68,7 @@ public class MfaAuthPolicyTests
         AssertNoZetEventAfter(s, VerifyMfaLine, MfaEnrollmentRequiredEvent, TimeSpan.Zero);
         Assert.Empty(s.Driver.FindElements(InIdentityRow(identityName, "MfaRequired")));
         Assert.Empty(s.Driver.FindElements(InIdentityRow(identityName, "MfaSetupNeeded")));
-        await VerifyStep(Capture(s), name, "01-policy-added-row");
+        await VerifyStep(s, Capture(s), name, "01-policy-added-row");
     }
 
     [Fact(Timeout = 120000)]
@@ -88,6 +88,6 @@ public class MfaAuthPolicyTests
         WaitForController(s, InIdentityRow(identityName, "MfaSetupNeeded"), "the row asks to set up MFA");
         AssertNoZetEventAfter(s, OnLine, MfaAuthChallengeEvent, NoChallengeQuiet);
         Assert.Empty(s.Driver.FindElements(InIdentityRow(identityName, "MfaRequired")));
-        await VerifyStep(Capture(s), name, "01-setup-needed-row");
+        await VerifyStep(s, Capture(s), name, "01-setup-needed-row");
     }
 }

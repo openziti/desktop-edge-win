@@ -44,16 +44,16 @@ public class SetLogLevelTests
         await using AppiumSession s = await LaunchAsync(_fixture, name);
         OpenMainMenu(s);
         ClickUntil(s, By.XPath("//*[@Name='Advanced Settings']"), By.XPath("//*[@Name='Set Logging Level']"));
-        await VerifyStep(Capture(s), name, "01-advanced-settings");
+        await VerifyStep(s, Capture(s), name, "01-advanced-settings");
 
         ClickUntil(s, By.XPath("//*[@Name='Set Logging Level']"), ById("LogTrace"));
-        await VerifyStep(Capture(s), name, "02-log-level-menu");
+        await VerifyStep(s, Capture(s), name, "02-log-level-menu");
         string startLevelId = CheckedLevelId(s);
         Assert.NotEqual("LogTrace", startLevelId);
 
         WaitForId(s, "LogTrace").Click();
         WaitFor(s, LevelChecked("LogTrace"));
-        await VerifyStep(Capture(s), name, "03-trace-set");
+        await VerifyStep(s, Capture(s), name, "03-trace-set");
         // The UI discards ZET's reply to SetLogLevel, so a checked Trace alone proves nothing about ZET.
         JObject reply = ZetReplyTo(s.Relay!, "\"Level\":\"trace\"");
         Assert.True((bool?)reply["Success"] == true, $"ZET rejected SetLogLevel trace: {reply}");

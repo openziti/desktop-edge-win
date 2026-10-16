@@ -29,7 +29,7 @@ public class MfaRecoveryCodesTests
         MfaEnrollment enrollment = EnrollMfaToRecoveryCodes(_fixture, s, identityName);
         ClickAt(s, WaitFor(s, By.XPath("//Text[@Name='Regenerate']")));
         WaitForId(s, "AuthCode");
-        await VerifyStep(Capture(s), name, "01-regenerate-prompt");
+        await VerifyStep(s, Capture(s), name, "01-regenerate-prompt");
 
         TypeUntil(s, ById("AuthCode"), Totp.Compute(enrollment.Secret, DateTimeOffset.UtcNow));
         SaveStep(s, name, "02-code-typed");
@@ -40,7 +40,7 @@ public class MfaRecoveryCodesTests
         List<string> newCodes = reply["Data"]!["RecoveryCodes"]!.Values<string>().Select(code => code!).ToList();
         WaitForRecoveryCodes(s, newCodes);
         Assert.Empty(newCodes.Intersect(enrollment.RecoveryCodes));
-        await VerifyStep(MaskedCentered(s, Capture(s), RecoveryCodeBoxes, RecoveryCodeMaskWidth, RecoveryDialogBackground),
+        await VerifyStep(s, MaskedCentered(s, Capture(s), RecoveryCodeBoxes, RecoveryCodeMaskWidth, RecoveryDialogBackground),
             name, "03-new-recovery-codes");
 
         ClickUntilGone(s, ById("CloseBlack"));
@@ -52,6 +52,6 @@ public class MfaRecoveryCodesTests
         TriggerReauthChallenge(s, identityName);
         byte[] rejected = RejectFromRow(s, name, "05-old-code-typed", identityName, enrollment.RecoveryCodes[0]);
         // The recovery code differs every run.
-        await VerifyStep(Masked(s, rejected, ById("AuthCode")), name, "06-after-rejection");
+        await VerifyStep(s, Masked(s, rejected, ById("AuthCode")), name, "06-after-rejection");
     }
 }

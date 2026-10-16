@@ -40,13 +40,13 @@ public class ThirdPartyCaTests
 
         await using AppiumSession s = await LaunchAsync(_fixture, name);
         OpenCaDialog(s, caJwt);
-        await VerifyStep(Capture(s), name, "01-ca-dialog");
+        await VerifyStep(s, Capture(s), name, "01-ca-dialog");
         ChooseCertFiles(s, cert);
-        await VerifyStep(Capture(s), name, "02-files-chosen");
+        await VerifyStep(s, Capture(s), name, "02-files-chosen");
         JObject reply = Join(s, cert);
         Assert.Equal(0, (int?)reply["Code"]);
         WaitForEnrolledRow(s, AutocaIdentityName(caName, commonName));
-        await VerifyStep(Capture(s), name, "03-enrolled");
+        await VerifyStep(s, Capture(s), name, "03-enrolled");
         AssertIdentityFileKeepsCertPaths(cert);
     }
 
@@ -63,12 +63,12 @@ public class ThirdPartyCaTests
 
         await using AppiumSession s = await LaunchAsync(_fixture, name);
         OpenCaDialog(s, ottcaJwt);
-        await VerifyStep(Capture(s), name, "01-ca-dialog");
+        await VerifyStep(s, Capture(s), name, "01-ca-dialog");
         ChooseCertFiles(s, cert);
         JObject reply = Join(s, cert);
         Assert.Equal(0, (int?)reply["Code"]);
         WaitForEnrolledRow(s, identityName);
-        await VerifyStep(Capture(s), name, "02-enrolled");
+        await VerifyStep(s, Capture(s), name, "02-enrolled");
         AssertIdentityFileKeepsCertPaths(cert);
     }
 
@@ -177,7 +177,7 @@ public class ThirdPartyCaTests
         string zetError)
     {
         JObject reply = Join(s, cert);
-        await VerifyStep(CaptureBlurbOnReply(s, AddIdentityLine), name, step);
+        await VerifyStep(s, CaptureBlurbOnReply(s, AddIdentityLine), name, step);
         // The blurb shows no detail from ZET, so only the reply proves why the add failed.
         Assert.Equal(500, (int?)reply["Code"]);
         Assert.Contains(zetError, (string?)reply["Error"]);

@@ -399,20 +399,43 @@ public sealed class Quickstart : IAsyncDisposable
     /// <summary>The capabilities the client API advertises, which decide the auth path clients take.</summary>
     private async Task<IReadOnlyList<string>> CapabilitiesAsync()
     {
+        JObject data = await ClientVersionAsync();
+        JArray capabilities = data["capabilities"] as JArray
+            ?? throw new InvalidOperationException($"GET {ClientVersionUrl} returned no data.capabilities: {data}");
+        return capabilities.Values<string>().Select(c => c!).ToList();
+    }
+
+    /// <summary>The controller's version, as ZET reports it in an identity's ControllerVersion.</summary>
+    public async Task<string> ControllerVersionAsync()
+    {
+        JObject data = await ClientVersionAsync();
+        return (string?)data["version"]
+            ?? throw new InvalidOperationException($"GET {ClientVersionUrl} returned no data.version: {data}");
+    }
+
+    /// <summary>
+    /// The address ZET reports in an identity's ztAPI: quickstart's localhost, or 127.0.0.1 for an identity added by
+    /// URL. From ziti 2.1 the enrollment response names the client API path, so the address can carry it, and an
+    /// identity enrolled to a cert through an external signer reports the bare address with a trailing slash.
+    /// </summary>
+    public static string ZtApiPattern => $@"https://(localhost|127\.0\.0\.1):{CtrlPort}(/|/edge/client/v1)?";
+
+    private static string ClientVersionUrl => $"https://localhost:{CtrlPort}/edge/client/v1/version";
+
+    private static async Task<JObject> ClientVersionAsync()
+    {
         // Only reads our own localhost controller, whose root CA is not trusted yet.
         using HttpClientHandler handler = new HttpClientHandler
         {
             ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
         };
         using HttpClient http = new HttpClient(handler) { Timeout = CommandTimeout };
-        string url = $"https://localhost:{CtrlPort}/edge/client/v1/version";
-        using HttpResponseMessage response = await http.GetAsync(url);
+        using HttpResponseMessage response = await http.GetAsync(ClientVersionUrl);
         string body = await response.Content.ReadAsStringAsync();
         if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"GET {url} returned {(int)response.StatusCode}: {body}");
-        JArray capabilities = JObject.Parse(body)["data"]?["capabilities"] as JArray
-            ?? throw new InvalidOperationException($"GET {url} returned no data.capabilities: {body}");
-        return capabilities.Values<string>().Select(c => c!).ToList();
+            throw new InvalidOperationException($"GET {ClientVersionUrl} returned {(int)response.StatusCode}: {body}");
+        return JObject.Parse(body)["data"] as JObject
+            ?? throw new InvalidOperationException($"GET {ClientVersionUrl} returned no data: {body}");
     }
 
     /// <summary>

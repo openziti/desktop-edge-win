@@ -24,11 +24,11 @@ public class MfaReauthenticationTests
         await using AppiumSession s = await LaunchAsync(_fixture, name);
         MfaEnrollment enrollment = AddIdentityAndEnrollMfa(_fixture, s, identityName);
         TriggerReauthChallenge(s, identityName);
-        await VerifyStep(Capture(s), name, "01-authenticate-row");
+        await VerifyStep(s, Capture(s), name, "01-authenticate-row");
 
         AuthenticateFromRow(s, name, "02-code-typed", identityName, pickCode(enrollment));
         // The mfa_auth_status event reopens details because enrollment opened them for this identity.
-        await VerifyStep(Capture(s), name, "03-authenticated-details");
+        await VerifyStep(s, Capture(s), name, "03-authenticated-details");
     }
 
     [Fact(Timeout = 180000)]
@@ -56,7 +56,7 @@ public class MfaReauthenticationTests
         TriggerReauthChallenge(s, identityName);
         byte[] rejected = RejectFromRow(s, name, "02-code-reused", identityName, recoveryCode);
         // The recovery code differs every run.
-        await VerifyStep(Masked(s, rejected, ById("AuthCode")), name, "03-after-rejection");
+        await VerifyStep(s, Masked(s, rejected, ById("AuthCode")), name, "03-after-rejection");
     }
 
     [Fact(Timeout = 180000)]
@@ -69,6 +69,6 @@ public class MfaReauthenticationTests
         AddIdentityAndEnrollMfa(_fixture, s, identityName);
         TriggerReauthChallenge(s, identityName);
         byte[] rejected = RejectFromRow(s, name, "01-code-typed", identityName, "000000");
-        await VerifyStep(rejected, name, "02-after-rejection");
+        await VerifyStep(s, rejected, name, "02-after-rejection");
     }
 }

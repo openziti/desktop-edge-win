@@ -72,10 +72,10 @@ public class LegacyAuthMfaTests
         MfaEnrollment enrollment = AddIdentityAndEnrollMfa(_fixture, s, identityName);
 
         await RestartToCodePrompt(s, identityName);
-        await VerifyStep(Capture(s), name, "01-authenticate-row");
+        await VerifyStep(s, Capture(s), name, "01-authenticate-row");
 
         AuthenticateToList(s, name, "02-code-typed", identityName, Totp.Compute(enrollment.Secret, DateTimeOffset.UtcNow));
-        await VerifyStep(Capture(s), name, "03-authenticated-row");
+        await VerifyStep(s, Capture(s), name, "03-authenticated-row");
     }
 
     /// <summary>A toggle never reloads config.json, so the prompt comes from what the running ZET holds.</summary>
@@ -160,7 +160,7 @@ public class LegacyAuthMfaTests
         AssertNoZetEventAfter(s, SubmitMfaLine, MfaAuthChallengeEvent, TimeSpan.FromSeconds(12));
         AssertNoZetEventAfter(s, SubmitMfaLine, MfaEnrollmentRequiredEvent, TimeSpan.FromSeconds(1));
         Assert.Empty(s.Driver.FindElements(InIdentityRow(identityName, "MfaRequired")));
-        await VerifyStep(Capture(s), name, "02-still-authenticated-row");
+        await VerifyStep(s, Capture(s), name, "02-still-authenticated-row");
     }
 
     [Fact(Timeout = 180000)]
@@ -195,11 +195,11 @@ public class LegacyAuthMfaTests
         Assert.Empty(s.Driver.FindElements(InIdentityRow(enrolledName, "MfaSetupNeeded")));
         Assert.Empty(s.Driver.FindElements(InIdentityRow(plainName, "MfaRequired")));
         Assert.Empty(s.Driver.FindElements(InIdentityRow(plainName, "MfaSetupNeeded")));
-        await VerifyStep(Capture(s), name, "01-restarted-rows");
+        await VerifyStep(s, Capture(s), name, "01-restarted-rows");
 
         AuthenticateToList(s, name, "02-code-typed", enrolledName, Totp.Compute(enrollment.Secret, DateTimeOffset.UtcNow));
         Assert.Empty(s.Driver.FindElements(InIdentityRow(plainName, "MfaRequired")));
-        await VerifyStep(Capture(s), name, "03-authenticated-rows");
+        await VerifyStep(s, Capture(s), name, "03-authenticated-rows");
     }
 
     /// <summary>Rewrite config.json so the identity file at identifier reads as never enrolled. ZET must be stopped.</summary>
@@ -237,7 +237,7 @@ public class LegacyAuthMfaTests
         JObject identity = StatusIdentity(WaitForZetEventFrom(s, restarted, StatusEvent), identityName);
         Assert.True((bool?)identity["MfaEnabled"] == false, $"status after the restart should list MFA not enrolled: {identity}");
         WaitForController(s, InIdentityRow(identityName, "MfaSetupNeeded"), "the row asks to set up MFA");
-        await VerifyStep(Capture(s), name, "01-setup-needed-row");
+        await VerifyStep(s, Capture(s), name, "01-setup-needed-row");
 
         JObject enable = SendAndWaitForZetReply(s, EnableMfaLine,
             () => ClickAt(s, WaitFor(s, InIdentityRow(identityName, "MfaSetupNeeded"))));
@@ -248,10 +248,10 @@ public class LegacyAuthMfaTests
         byte[] setupFailed = CaptureBlurbOnEvent(s, EnableMfaLine, MfaEnrollmentChallengeEvent);
         WaitForController(s, InIdentityRow(identityName, "MfaRequired"), "the row asks to authenticate");
         Assert.Empty(s.Driver.FindElements(InIdentityRow(identityName, "MfaSetupNeeded")));
-        await VerifyStep(setupFailed, name, "02-setup-failed-blurb");
+        await VerifyStep(s, setupFailed, name, "02-setup-failed-blurb");
 
         AuthenticateToList(s, name, "03-code-typed", identityName, Totp.Compute(enrollment.Secret, DateTimeOffset.UtcNow));
-        await VerifyStep(Capture(s), name, "04-authenticated-row");
+        await VerifyStep(s, Capture(s), name, "04-authenticated-row");
     }
 
     /// <summary>MFA an admin removed on the controller, while config.json still says enrolled.</summary>
@@ -275,7 +275,7 @@ public class LegacyAuthMfaTests
         Assert.True((bool?)identity["MfaNeeded"] == false, $"status after the restart should owe no MFA: {identity}");
         Assert.Empty(s.Driver.FindElements(InIdentityRow(identityName, "MfaRequired")));
         Assert.Empty(s.Driver.FindElements(InIdentityRow(identityName, "MfaSetupNeeded")));
-        await VerifyStep(Capture(s), name, "01-restarted-row");
+        await VerifyStep(s, Capture(s), name, "01-restarted-row");
     }
 
     [Fact(Timeout = 180000)]
@@ -304,7 +304,7 @@ public class LegacyAuthMfaTests
         AssertNoZetEventAfter(s, RemoveMfaLine, MfaEnrollmentRequiredEvent, TimeSpan.FromSeconds(1));
         Assert.Empty(s.Driver.FindElements(InIdentityRow(identityName, "MfaRequired")));
         Assert.Empty(s.Driver.FindElements(InIdentityRow(identityName, "MfaSetupNeeded")));
-        await VerifyStep(Capture(s), name, "02-restarted-row");
+        await VerifyStep(s, Capture(s), name, "02-restarted-row");
     }
 
     /// <summary>
@@ -325,10 +325,10 @@ public class LegacyAuthMfaTests
         try
         {
             await RestartToCodePrompt(s, identityName);
-            await VerifyStep(Capture(s), name, "01-authenticate-row");
+            await VerifyStep(s, Capture(s), name, "01-authenticate-row");
 
             AuthenticateToList(s, name, "02-code-typed", identityName, Totp.Compute(enrollment.Secret, DateTimeOffset.UtcNow));
-            await VerifyStep(Capture(s), name, "03-authenticated-row");
+            await VerifyStep(s, Capture(s), name, "03-authenticated-row");
             Assert.True(_fixture.Quickstart.IdentityMfaEnabled(identityName),
                 $"controller says {identityName} is not enrolled after the OIDC migration");
             WaitForPersistedMfaEnabled(s, _fixture, AddedIdentityFile(_fixture), true);

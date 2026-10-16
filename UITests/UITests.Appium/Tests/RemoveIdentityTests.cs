@@ -26,15 +26,15 @@ public class RemoveIdentityTests
 
         await using AppiumSession s = await LaunchAsync(_fixture, name);
         AddIdentity(_fixture, s, identityName);
-        await VerifyStep(Capture(s), name, "01-identity-added");
+        await VerifyStep(s, Capture(s), name, "01-identity-added");
 
         OpenIdentityDetails(s, identityName);
         ClickAt(s, WaitFor(s, ById("ForgetIdentityButton")));
-        await VerifyStep(Capture(s), name, "02-forget-confirm");
+        await VerifyStep(s, Capture(s), name, "02-forget-confirm");
 
         ClickAt(s, WaitFor(s, ById("ConfirmButton")));
         WaitForGone(s, By.XPath($"//Text[@Name='{identityName}']"));
-        await VerifyStep(Capture(s), name, "03-identity-forgotten");
+        await VerifyStep(s, Capture(s), name, "03-identity-forgotten");
         Assert.Equal(0, (int?)ZetReplyTo(s.Relay!, "\"Command\":\"RemoveIdentity\"")["Code"]);
         Assert.Equal(0, IdentityRowCount(s));
         Assert.False(File.Exists(identityFile), $"identity file should be removed after forget: {identityFile}");

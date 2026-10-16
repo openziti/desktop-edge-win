@@ -42,7 +42,7 @@ public class ExternalAuthSingleSignerTests
             JObject sent = UiCommand(s.Relay!, AddIdentityLine);
             Assert.Null((string?)sent["Data"]!["EnrollMode"]);
             WaitForController(s, ExtAuthRequiredIcon, "the row asks for external auth");
-            await VerifyStep(Capture(s), name, "01-identity-needs-ext-login");
+            await VerifyStep(s, Capture(s), name, "01-identity-needs-ext-login");
 
             string loginUrl = LoginFromRow(s);
             await LogInAtIdP(s, loginUrl, $"{identityName}@test.com");
@@ -50,7 +50,7 @@ public class ExternalAuthSingleSignerTests
             AssertUrlEnrolledToNoneIdentityFile((string)added["Id"]!["Identifier"]!);
             WaitForRowLoggedIn(s);
             WaitForRowNamed(s, identityName);
-            await VerifyStep(Capture(s), name, "02-identity-enrolled");
+            await VerifyStep(s, Capture(s), name, "02-identity-enrolled");
         }
         finally
         {
@@ -76,7 +76,7 @@ public class ExternalAuthSingleSignerTests
             string loginUrl = LoginFromRow(s);
             await LogInAtIdP(s, loginUrl, $"{identityName}@test.com");
             WaitForZetEventAfter(s, ExternalAuthLine, ControllerDisconnectedEvent);
-            await VerifyStep(Capture(s), name, "01-login-rejected");
+            await VerifyStep(s, Capture(s), name, "01-login-rejected");
         }
         finally
         {
@@ -175,21 +175,21 @@ public class ExternalAuthSingleSignerTests
             await CompleteEnrollToCert(s, "test_ext_auth_multi_attr_selector");
             AssertGrantedServices(s, AddIdentityLine, new[] { userService, adminService });
             WaitUntil(s, "the row's service count reads 2", ControllerTimeout, () => TextById(s, "ServiceCount") == "2");
-            await VerifyStep(Capture(s), name, "01-identity-with-services");
+            await VerifyStep(s, Capture(s), name, "01-identity-with-services");
 
             // The only row, opened without its name: the controller names it after dex's encoded subject claim.
             ClickUntil(s, By.XPath("//Custom[@ClassName='IdentityItem']"), ById("IdentityDetailsClose"));
             WaitFor(s, By.XPath($"//*[@Name='{userService}']"));
             WaitFor(s, By.XPath($"//*[@Name='{adminService}']"));
-            await VerifyStep(Capture(s), name, "02-service-list");
+            await VerifyStep(s, Capture(s), name, "02-service-list");
 
             TypeUntil(s, By.XPath("//*[@AutomationId='FilterServices']//Edit"), "admin");
             WaitForGone(s, By.XPath($"//*[@Name='{userService}']"));
-            await VerifyStep(Capture(s), name, "03-filtered");
+            await VerifyStep(s, Capture(s), name, "03-filtered");
 
             ClickAt(s, WaitFor(s, By.XPath("//Image[@AutomationId='DetailIcon']")));
             Assert.Equal(adminService, WaitForId(s, "DetailName").Text);
-            await VerifyStep(Capture(s), name, "04-service-panel");
+            await VerifyStep(s, Capture(s), name, "04-service-panel");
         });
     }
 
@@ -215,7 +215,7 @@ public class ExternalAuthSingleSignerTests
             await using AppiumSession s = await LaunchAsync(_fixture, name);
             OpenEnrollChoice(s);
             ChooseDeviceCertificate(s);
-            await VerifyStep(Capture(s), name, "01-enroll-choice-device-certificate");
+            await VerifyStep(s, Capture(s), name, "01-enroll-choice-device-certificate");
             await FinishEnrollToCert(s, "test_ext_auth_cert_both", JoinFromEnrollChoice(s));
             AssertSentEnrollMode(s, "cert");
         });
@@ -233,7 +233,7 @@ public class ExternalAuthSingleSignerTests
             Assert.False(WaitFor(s, DeviceCertificateRadio).Selected, "Device certificate is selected by default");
             // One signer, so there is no provider to pick.
             Assert.Empty(s.Driver.FindElements(SignerPickerLabel));
-            await VerifyStep(Capture(s), name, "01-enroll-choice");
+            await VerifyStep(s, Capture(s), name, "01-enroll-choice");
 
             await FinishEnrollToToken(s, "test_ext_auth_token_both", JoinFromEnrollChoice(s));
             AssertSentEnrollMode(s, "token");
@@ -355,7 +355,7 @@ public class ExternalAuthSingleSignerTests
         WaitForController(s, ById("MfaSetupNeeded"), "the row asks to set up MFA");
         Assert.DoesNotContain(s.Driver.FindElements(ExtAuthRequiredIcon), e => e.Displayed);
         Assert.Equal(1, IdentityRowCount(s));
-        await VerifyStep(Capture(s), name, "01-setup-needed-row");
+        await VerifyStep(s, Capture(s), name, "01-setup-needed-row");
     }
 
     /// <summary>Enroll to cert through the URL dialog. Returns the identity file.</summary>

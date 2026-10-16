@@ -38,7 +38,7 @@ public class SettingsUpgradeTests
                 WaitForId(s, "SortByName");
                 // App.config's defaults, as long as no older version folder holds a sort for Upgrade to copy.
                 Assert.Equal(("Name", "▲"), ActiveSortArrow(s));
-                await VerifyStep(Capture(s), name, "01-defaults");
+                await VerifyStep(s, Capture(s), name, "01-defaults");
             }
             string currentConfig = Assert.Single(AppUserConfig.ReadConfigs(current).Keys);
             File.Delete(currentConfig);
@@ -49,14 +49,14 @@ public class SettingsUpgradeTests
             Assert.Equal(("Services", "▼"), ActiveSortArrow(upgraded));
             // Services descending puts the identity needing ext auth below every connected one.
             Assert.Equal("CharlieEdge", ListedNames(upgraded).Last());
-            await VerifyStep(Capture(upgraded), name, "02-upgraded-sort");
+            await VerifyStep(upgraded, Capture(upgraded), name, "02-upgraded-sort");
 
             OpenIdentityDetails(upgraded, "CharlieEdge");
             IWebElement defaultProvider = WaitFor(upgraded,
                 By.XPath($"//List[@AutomationId='ProviderList']/ListItem[@Name='{previous.DefaultProvider}']"));
             Assert.True(defaultProvider.Selected, $"{previous.DefaultProvider} is not selected in Configured Providers");
             Assert.True(WaitForId(upgraded, "IsDefaultProvider").Selected, "Default provider? is not ticked");
-            await VerifyStep(Capture(upgraded), name, "03-default-provider");
+            await VerifyStep(upgraded, Capture(upgraded), name, "03-default-provider");
             CloseIdentityDetails(upgraded);
 
             // With a default provider the click logs in to it, where two providers and none would open a menu.

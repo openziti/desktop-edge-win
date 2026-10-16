@@ -26,17 +26,17 @@ public class IdentityOnOffTests
         await using AppiumSession s = await LaunchAsync(_fixture, name);
         AddIdentity(_fixture, s, identityName);
         WaitFor(s, ToggleStatus(identityName, "ENABLED"));
-        await VerifyStep(Capture(s), name, "01-added-enabled");
+        await VerifyStep(s, Capture(s), name, "01-added-enabled");
 
         ToggleOff(s, identityName);
         WaitForController(s, ToggleStatus(identityName, "DISABLED"), $"{identityName} shows DISABLED");
-        await VerifyStep(Capture(s), name, "02-toggled-off");
+        await VerifyStep(s, Capture(s), name, "02-toggled-off");
         Assert.Equal(0, (int?)ZetReplyTo(s.Relay!, OffLine)["Code"]);
         WaitForZetEventAfter(s, OffLine, ControllerDisconnectedEvent);
 
         ToggleOn(s, identityName);
         WaitForController(s, ToggleStatus(identityName, "ENABLED"), $"{identityName} shows ENABLED");
-        await VerifyStep(Capture(s), name, "03-toggled-on");
+        await VerifyStep(s, Capture(s), name, "03-toggled-on");
         Assert.Equal(0, (int?)ZetReplyTo(s.Relay!, OnLine)["Code"]);
         JObject on = WaitForZetEventAfter(s, OnLine, IdentityAddedEvent);
         Assert.True((bool?)on["Id"]!["Active"] == true, $"ZET's identity added event is not active after on: {on}");

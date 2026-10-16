@@ -214,14 +214,93 @@ public static class TestHelpers
 
     /// <summary>
     /// Save png as step stepName and compare it to its baseline, &lt;class&gt;.&lt;test&gt;_&lt;screen&gt;.verified.png,
-    /// where screen is stepName without its "NN-" order prefix. One journey can check several screens this way.
+    /// where screen is stepName without its "NN-" order prefix. One journey can check several screens this way. The
+    /// session's <see cref="AppiumSession.VaryingText"/> is asserted instead, so await it before the screen changes.
     /// </summary>
-    public static SettingsTask VerifyStep(byte[] png, string testName, string stepName)
+    public static SettingsTask VerifyStep(AppiumSession s, byte[] png, string testName, string stepName) =>
+        VerifyStepAt(s, Size.Empty, png, testName, stepName);
+
+    /// <summary><see cref="VerifyStep"/> for a <see cref="CaptureWithPopups"/>, while its popups are still open.</summary>
+    public static SettingsTask VerifyPopupStep(AppiumSession s, byte[] png, string testName, string stepName) =>
+        VerifyStepAt(s, s.WindowOffsetWithPopups(), png, testName, stepName);
+
+    private static SettingsTask VerifyStepAt(AppiumSession s, Size windowOffset, byte[] png, string testName,
+        string stepName)
     {
         SaveStep(png, testName, stepName);
         string screen = stepName.Substring(stepName.IndexOf('-') + 1);
         Step.Log($"comparing {testName}_{screen} to its baseline");
-        return ComparedToBaseline(Verify(png, "png").UseMethodName($"{testName}_{screen}"));
+        return ComparedToBaseline(Verify(png, "png").UseMethodName($"{testName}_{screen}"),
+            (received, verified) => CompareSkippingVaryingText(s, windowOffset, received, verified));
+    }
+
+    // UIA has lagged a rebuilt identity row by up to 6s.
+    private static readonly TimeSpan VaryingTextTimeout = TimeSpan.FromSeconds(10);
+
+    /// <summary>
+    /// <see cref="CompareChangedPixels"/> with the session's <see cref="AppiumSession.VaryingText"/> skipped. After the
+    /// app rebuilds an identity row, UIA can leave out the new row's elements for seconds, so while the comparison
+    /// fails the lookup repeats until <see cref="VaryingTextTimeout"/>.
+    /// </summary>
+    private static async Task<CompareResult> CompareSkippingVaryingText(AppiumSession s, Size windowOffset,
+        Stream received, Stream verified)
+    {
+        byte[] receivedPng = ReadAll(received);
+        byte[] verifiedPng = ReadAll(verified);
+        DateTime deadline = DateTime.UtcNow + VaryingTextTimeout;
+        while (true)
+        {
+            try
+            {
+                IReadOnlyList<ShownText> skipped = ShownVaryingText(s, windowOffset);
+                CompareResult result = CompareChangedPixels(receivedPng, verifiedPng,
+                    skipped.Select(shown => shown.Bounds).ToList());
+                if (result.IsEqual || s.VaryingText.Count == 0 || DateTime.UtcNow >= deadline)
+                {
+                    Step.Log("skipped varying text ["
+                        + string.Join(", ", skipped.Select(shown => $"'{shown.Text}' at {shown.Bounds}")) + "]");
+                    return result;
+                }
+            }
+            // The row was rebuilt during the lookup.
+            catch (StaleElementReferenceException) when (DateTime.UtcNow < deadline)
+            {
+            }
+            await Task.Delay(500);
+        }
+    }
+
+    /// <summary>
+    /// Assert the text of every element of the session's <see cref="AppiumSession.VaryingText"/> on screen, and return
+    /// it with its bounds in a capture that drew the window at windowOffset. UIA lists a replaced row's elements for a
+    /// while at a zero size, which are left out.
+    /// </summary>
+    private static IReadOnlyList<ShownText> ShownVaryingText(AppiumSession s, Size windowOffset)
+    {
+        List<ShownText> shown = new List<ShownText>();
+        foreach (VaryingText varying in s.VaryingText)
+        {
+            foreach (AppiumElement element in s.Driver.FindElements(varying.Elements))
+            {
+                Rectangle area = new Rectangle(Point.Add(element.Location, windowOffset), element.Size);
+                if (area.Width > 0 && area.Height > 0)
+                {
+                    string text = element.Text;
+                    Assert.Matches(varying.Expected, text);
+                    shown.Add(new ShownText(text, area));
+                }
+            }
+        }
+        return shown;
+    }
+
+    private sealed record ShownText(string Text, Rectangle Bounds);
+
+    private static byte[] ReadAll(Stream stream)
+    {
+        using MemoryStream copy = new MemoryStream();
+        stream.CopyTo(copy);
+        return copy.ToArray();
     }
 
     /// <summary>
@@ -587,7 +666,8 @@ public static class TestHelpers
     {
         Step.Log($"comparing {testName} to its baseline");
         WriteReviewScreenshot(Path.Combine(RepoRoot(), "UITests", "TestResults", "screenshots"), $"{testName}.png", png);
-        return ComparedToBaseline(Verify(png, "png"));
+        return ComparedToBaseline(Verify(png, "png"), (received, verified) =>
+            Task.FromResult(CompareChangedPixels(ReadAll(received), ReadAll(verified), Array.Empty<Rectangle>())));
     }
 
     /// <summary>
@@ -671,28 +751,37 @@ public static class TestHelpers
     private const double MaxChangedPixels = 50;
 
     /// <summary>
-    /// Fails on more than MaxChangedPixels pixels off by more than PixelColorTolerance. An average metric like Fuzz
-    /// passes a changed line of text, because a local change barely moves an average over the whole capture.
+    /// Fails on more than MaxChangedPixels pixels off by more than PixelColorTolerance, outside skipped. An average
+    /// metric like Fuzz passes a changed line of text, because a local change barely moves an average over the whole
+    /// capture. Skipped areas are blanked in both images in memory only, so the files keep them.
     /// </summary>
-    private static Task<CompareResult> CompareChangedPixels(Stream received, Stream verified,
-        IReadOnlyDictionary<string, object> context)
+    private static CompareResult CompareChangedPixels(byte[] received, byte[] verified, IReadOnlyList<Rectangle> skipped)
     {
         using MagickImage receivedImage = new MagickImage(received);
         using MagickImage verifiedImage = new MagickImage(verified);
         if (receivedImage.Width != verifiedImage.Width || receivedImage.Height != verifiedImage.Height)
-            return Task.FromResult(CompareResult.NotEqual(
-                $"the capture is {receivedImage.Width}x{receivedImage.Height}, the baseline {verifiedImage.Width}x{verifiedImage.Height}"));
+            return CompareResult.NotEqual(
+                $"the capture is {receivedImage.Width}x{receivedImage.Height}, the baseline {verifiedImage.Width}x{verifiedImage.Height}");
+        foreach (Rectangle area in skipped)
+        {
+            Blank(receivedImage, area);
+            Blank(verifiedImage, area);
+        }
         receivedImage.ColorFuzz = PixelColorTolerance;
         double changed = receivedImage.Compare(verifiedImage, ErrorMetric.Absolute);
         if (changed > MaxChangedPixels)
-            return Task.FromResult(CompareResult.NotEqual(
-                $"{changed} pixels differ from the baseline by more than {PixelColorTolerance}, the limit is {MaxChangedPixels}"));
-        return Task.FromResult(CompareResult.Equal);
+            return CompareResult.NotEqual(
+                $"{changed} pixels differ from the baseline by more than {PixelColorTolerance}, the limit is {MaxChangedPixels}");
+        return CompareResult.Equal;
     }
 
-    private static SettingsTask ComparedToBaseline(SettingsTask task)
+    private static void Blank(MagickImage image, Rectangle area) =>
+        image.Draw(new DrawableFillColor(MagickColors.Black),
+            new DrawableRectangle(area.Left, area.Top, area.Right - 1, area.Bottom - 1));
+
+    private static SettingsTask ComparedToBaseline(SettingsTask task, Func<Stream, Stream, Task<CompareResult>> compare)
     {
-        task = task.UseStreamComparer(CompareChangedPixels);
+        task = task.UseStreamComparer((received, verified, _) => compare(received, verified));
         if (Environment.GetEnvironmentVariable("ZDEW_AUTO_VERIFY") == "1")
         {
             task = task.AutoVerify();

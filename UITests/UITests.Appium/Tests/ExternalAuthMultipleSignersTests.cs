@@ -40,16 +40,16 @@ public class ExternalAuthMultipleSignersTests
             Assert.Subset(new HashSet<string>(providers),
                 new HashSet<string> { IntegrationFixture.WorkingSignerName, ExtraSignerA, ExtraSignerB });
             WaitForController(s, ExtAuthRequiredIcon, "the row asks for external auth");
-            await VerifyStep(Capture(s), name, "01-identity-needs-ext-login");
+            await VerifyStep(s, Capture(s), name, "01-identity-needs-ext-login");
 
             OpenProviderMenu(s, providers);
-            await VerifyStep(CaptureWithPopups(s), name, "02-provider-menu");
+            await VerifyPopupStep(s, CaptureWithPopups(s), name, "02-provider-menu");
 
             // The first click outside the menu only closes it, which ClickUntil retries past.
             OpenIdentityDetails(s, UrlIdentityName);
-            await VerifyStep(Capture(s), name, "03-provider-list");
+            await VerifyStep(s, Capture(s), name, "03-provider-list");
             SetDefaultProvider(s, IntegrationFixture.WorkingSignerName);
-            await VerifyStep(Capture(s), name, "04-default-provider");
+            await VerifyStep(s, Capture(s), name, "04-default-provider");
             CloseIdentityDetails(s);
 
             string loginUrl = LoginFromRowWithDefault(s, IntegrationFixture.WorkingSignerName);
@@ -59,7 +59,7 @@ public class ExternalAuthMultipleSignersTests
             WaitUntil(s, "the row stops asking for external auth", ControllerTimeout,
                 () => !s.Driver.FindElements(ExtAuthRequiredIcon).Any(e => e.Displayed));
             WaitForRowNamed(s, identityName);
-            await VerifyStep(Capture(s), name, "05-identity-enrolled");
+            await VerifyStep(s, Capture(s), name, "05-identity-enrolled");
         });
     }
 
@@ -85,10 +85,10 @@ public class ExternalAuthMultipleSignersTests
                     Assert.Subset(new HashSet<string>(providers),
                         new HashSet<string> { IntegrationFixture.WorkingSignerName, ExtraSignerA, ExtraSignerB });
                     WaitForController(s, ExtAuthRequiredIcon, "the row asks for external auth");
-                    await VerifyStep(Capture(s), name, "01-identity-needs-ext-login");
+                    await VerifyStep(s, Capture(s), name, "01-identity-needs-ext-login");
 
                     OpenProviderMenu(s, providers);
-                    await VerifyStep(CaptureWithPopups(s), name, "02-provider-menu");
+                    await VerifyPopupStep(s, CaptureWithPopups(s), name, "02-provider-menu");
 
                     string loginUrl = LoginFromProviderMenu(s, IntegrationFixture.WorkingSignerName);
                     await LogInAtIdP(s, loginUrl, $"{identityName}@test.com");
@@ -97,7 +97,7 @@ public class ExternalAuthMultipleSignersTests
                     WaitUntil(s, "the row stops asking for external auth", ControllerTimeout,
                         () => !s.Driver.FindElements(ExtAuthRequiredIcon).Any(e => e.Displayed));
                     WaitForRowNamed(s, identityName);
-                    await VerifyStep(Capture(s), name, "03-identity-enrolled");
+                    await VerifyStep(s, Capture(s), name, "03-identity-enrolled");
                 }
                 finally
                 {
@@ -131,23 +131,23 @@ public class ExternalAuthMultipleSignersTests
                 WaitFor(s, SignerPickerLabel);
                 // Neither signer can enroll to both, so there is no mode to pick.
                 Assert.Empty(s.Driver.FindElements(UserSessionRadio));
-                await VerifyStep(Capture(s), name, "01-signer-choice");
+                await VerifyStep(s, Capture(s), name, "01-signer-choice");
 
                 AssertJoinIgnoredWithoutSigner(s);
 
                 ClickUntil(s, ById("SignerPicker"), SignerPickerItems);
-                await VerifyStep(CaptureWithPopups(s), name, "02-signer-list");
+                await VerifyPopupStep(s, CaptureWithPopups(s), name, "02-signer-list");
                 // An item bound through DisplayMemberPath has no UIA Name of its own, only its TextBlock does.
                 ClickAt(s, WaitFor(s,
                     By.XPath($"//ListItem[.//Text[@Name='{IntegrationFixture.WorkingSignerName}']]")));
                 WaitForGone(s, SignerPickerItems);
-                await VerifyStep(Capture(s), name, "03-signer-picked");
+                await VerifyStep(s, Capture(s), name, "03-signer-picked");
 
                 await FinishEnrollToCert(s, "test_ext_auth_cert_picked", JoinFromEnrollChoice(s));
                 JObject sent = UiCommand(s.Relay!, AddIdentityLine);
                 Assert.Equal("cert", (string?)sent["Data"]!["EnrollMode"]);
                 Assert.Equal(IntegrationFixture.WorkingSignerName, (string?)sent["Data"]!["Provider"]);
-                await VerifyStep(Capture(s), name, "04-identity-enrolled");
+                await VerifyStep(s, Capture(s), name, "04-identity-enrolled");
             });
         });
     }

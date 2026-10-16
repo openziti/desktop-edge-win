@@ -34,12 +34,12 @@ public class MfaEnrollmentTests
         Assert.Equal(0, (int?)ZetReplyTo(s.Relay!, AddIdentityLine)["Code"]);
         WaitForZetEventAfter(s, AddIdentityLine, MfaEnrollmentRequiredEvent);
         SortByNameAscending(s);
-        await VerifyStep(Capture(s), name, "01-setup-needed-row");
+        await VerifyStep(s, Capture(s), name, "01-setup-needed-row");
 
         // The QR dialog opens on ZET's enrollment_challenge event, not on the EnableMFA reply.
         ClickAt(s, WaitFor(s, InIdentityRow(AddedIdentityFileName, "MfaSetupNeeded")));
         WaitForController(s, ById("SetupCode"), "the MFA setup dialog opens");
-        await VerifyStep(Masked(s, Capture(s), ById("MFAImage")), name, "02-mfa-qr-dialog");
+        await VerifyStep(s, Masked(s, Capture(s), ById("MFAImage")), name, "02-mfa-qr-dialog");
 
         ClickAt(s, WaitForId(s, "SecretButton"));
         string secret = WaitForId(s, "SecretCode").Text;
@@ -50,14 +50,14 @@ public class MfaEnrollmentTests
         // The baseline masks the codes, so their text is checked against the enrollment_challenge event the app took
         // them from.
         WaitForRecoveryCodes(s, ChallengeRecoveryCodes(AssertMfaEnrollmentVerified(s)));
-        await VerifyStep(MaskedCentered(s, Capture(s), RecoveryCodeBoxes, RecoveryCodeMaskWidth, RecoveryDialogBackground),
+        await VerifyStep(s, MaskedCentered(s, Capture(s), RecoveryCodeBoxes, RecoveryCodeMaskWidth, RecoveryDialogBackground),
             name, "03-mfa-recovery-codes");
 
         ClickUntilGone(s, ById("CloseBlack"));
         // Fully authenticated now, so ZET's added event renames the row to the controller name.
         WaitForController(s, By.XPath($"//Text[@Name='{identityName}']"), $"the row shows {identityName}");
         WaitForGone(s, InIdentityRow(identityName, "MfaSetupNeeded"));
-        await VerifyStep(Capture(s), name, "04-enrolled-row");
+        await VerifyStep(s, Capture(s), name, "04-enrolled-row");
         Assert.Empty(s.Driver.FindElements(InIdentityRow(identityName, "MfaRequired")));
     }
 
@@ -80,7 +80,7 @@ public class MfaEnrollmentTests
         // raises the blurb.
         const string verificationEvent = "\"Op\":\"mfa\",\"Action\":\"enrollment_verification\"";
         WaitForZetEventAfter(s, VerifyMfaLine, verificationEvent);
-        await VerifyStep(CaptureBlurbOnEvent(s, VerifyMfaLine, verificationEvent), name, "02-after-rejection");
+        await VerifyStep(s, CaptureBlurbOnEvent(s, VerifyMfaLine, verificationEvent), name, "02-after-rejection");
         Assert.Empty(s.Driver.FindElements(ById("SetupCode")));
         Assert.Equal(500, (int?)reply["Code"]);
         Assert.Contains("the token provided was invalid", (string?)reply["Error"]);

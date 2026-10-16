@@ -36,14 +36,14 @@ public class ExternalAuthSecondaryTests
         {
             await using AppiumSession s = await LaunchAsync(_fixture, name);
             JObject needsLogin = AddIdentityNeedingLogin(s, identityName);
-            await VerifyStep(Capture(s), name, "01-identity-needs-ext-login");
+            await VerifyStep(s, Capture(s), name, "01-identity-needs-ext-login");
 
             await LogInAtIdP(s, LoginFromRow(s), $"{identityName}@test.com");
             AssertEnrollmentAdded(s, ExternalAuthLine);
             WaitForConnected(s);
             AssertJwtEnrolledIdentityFile((string)needsLogin["Id"]!["Identifier"]!);
             AssertGrantedServices(s, ExternalAuthLine, new[] { "test_ext_auth_attr_user_svc" });
-            await VerifyStep(Capture(s), name, "02-identity-connected");
+            await VerifyStep(s, Capture(s), name, "02-identity-connected");
         }
         finally
         {
@@ -63,19 +63,19 @@ public class ExternalAuthSecondaryTests
             AddIdentityNeedingLogin(s, identityName);
             await LogInAtIdP(s, LoginFromRow(s), $"{identityName}@test.com");
             WaitForConnected(s);
-            await VerifyStep(Capture(s), name, "01-identity-connected");
+            await VerifyStep(s, Capture(s), name, "01-identity-connected");
 
             ToggleOff(s, identityName);
             WaitForController(s, ToggleStatus(identityName, "DISABLED"), $"{identityName} shows DISABLED");
-            await VerifyStep(Capture(s), name, "02-identity-disabled");
+            await VerifyStep(s, Capture(s), name, "02-identity-disabled");
             ToggleOn(s, identityName);
             WaitForNeedsExtLogin(s, OnLine);
-            await VerifyStep(Capture(s), name, "03-reauth-needs-ext-login");
+            await VerifyStep(s, Capture(s), name, "03-reauth-needs-ext-login");
 
             await LogInAtIdP(s, LoginFromRow(s), $"{identityName}@test.com");
             WaitForConnected(s);
             AssertGrantedServices(s, ExternalAuthLine, new[] { "test_ext_auth_attr_user_svc" });
-            await VerifyStep(Capture(s), name, "04-identity-reconnected");
+            await VerifyStep(s, Capture(s), name, "04-identity-reconnected");
         }
         finally
         {
@@ -95,17 +95,17 @@ public class ExternalAuthSecondaryTests
             PrepareTestWindow(s);
             AddIdentity(_fixture, s, identityName);
             WaitForZetEventAfter(s, AddIdentityLine, ControllerConnectedEvent);
-            await VerifyStep(Capture(s), name, "01-identity-connected");
+            await VerifyStep(s, Capture(s), name, "01-identity-connected");
 
             _fixture.Quickstart.SetIdentityAuthPolicy(identityName, SecondaryPolicy);
             ToggleOffAndOn(s, identityName);
             WaitForNeedsExtLogin(s, OnLine);
-            await VerifyStep(Capture(s), name, "02-policy-added-needs-ext-login");
+            await VerifyStep(s, Capture(s), name, "02-policy-added-needs-ext-login");
 
             await LogInAtIdP(s, LoginFromRow(s), $"{identityName}@test.com");
             WaitForConnected(s);
             AssertGrantedServices(s, ExternalAuthLine, new[] { "test_ext_auth_attr_user_svc" });
-            await VerifyStep(Capture(s), name, "03-identity-reconnected");
+            await VerifyStep(s, Capture(s), name, "03-identity-reconnected");
         }
         finally
         {
@@ -123,10 +123,10 @@ public class ExternalAuthSecondaryTests
         {
             await using AppiumSession s = await LaunchAsync(_fixture, name);
             AddIdentityNeedingLogin(s, identityName);
-            await VerifyStep(Capture(s), name, "01-identity-needs-ext-login");
+            await VerifyStep(s, Capture(s), name, "01-identity-needs-ext-login");
             await LogInAtIdP(s, LoginFromRow(s), $"{identityName}@test.com");
             WaitForConnected(s);
-            await VerifyStep(Capture(s), name, "02-identity-connected");
+            await VerifyStep(s, Capture(s), name, "02-identity-connected");
 
             _fixture.Quickstart.SetIdentityAuthPolicy(identityName, "Default");
             ToggleOff(s, identityName);
@@ -137,7 +137,7 @@ public class ExternalAuthSecondaryTests
             WaitForController(s, ToggleStatus(identityName, "ENABLED"), $"{identityName} shows ENABLED");
             AssertGrantedServices(s, OnLine, new[] { "test_ext_auth_attr_user_svc" });
             Assert.DoesNotContain(s.Driver.FindElements(ExtAuthRequiredIcon), e => e.Displayed);
-            await VerifyStep(Capture(s), name, "03-reconnected-without-login");
+            await VerifyStep(s, Capture(s), name, "03-reconnected-without-login");
         }
         finally
         {

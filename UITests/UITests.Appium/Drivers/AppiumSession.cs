@@ -2,7 +2,9 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
+using OpenQA.Selenium;
 using OpenQA.Selenium.Appium;
 using OpenQA.Selenium.Appium.Windows;
 using ZitiDesktopEdge.UITests.MockIpc;
@@ -194,6 +196,13 @@ public sealed record TopLevelWindow(IntPtr Handle, int ProcessId, string Process
 public sealed record ProcessOrigin(int ProcessId, int ParentProcessId, string ParentName, string CreationDate,
     string CommandLine);
 
+/// <summary>
+/// Elements whose text differs between controllers, such as the controller's address and version, so a baseline cannot
+/// hold them.
+/// A baseline comparison asserts their text matches Expected and skips their bounds.
+/// </summary>
+public sealed record VaryingText(By Elements, Regex Expected);
+
 public sealed class AppiumSession : IAsyncDisposable
 {
     /// <summary>Ceiling for MainWindowHandle to appear after Process.Start, sized for a slow first launch.</summary>
@@ -209,6 +218,8 @@ public sealed class AppiumSession : IAsyncDisposable
     public RelayIpcServer? Relay { get; }
     /// <summary>Set only by LaunchAgainstMonitorAsync, where Mock serves just the data pipes.</summary>
     public MonitorProcess? Monitor { get; }
+    /// <summary>Empty except from LaunchAgainstZetAsync: the mock's identities show the same text every run.</summary>
+    public IReadOnlyList<VaryingText> VaryingText { get; }
     private readonly ProcessOutputLog _ui;
     private Process UiProcess => _ui.Process;
 
@@ -267,18 +278,15 @@ public sealed class AppiumSession : IAsyncDisposable
     /// <summary>
     /// <see cref="CaptureWindow"/> with the app's visible popup windows (a ContextMenu is one) drawn over it where they
     /// sit on screen, on a white canvas that grows to hold them. A popup's transparent corners capture black, because
-    /// PrintWindow forces alpha to 255. Element locations no longer match the capture's origin, so masks don't apply.
+    /// PrintWindow forces alpha to 255. Element locations are offset by <see cref="WindowOffsetWithPopups"/>, so masks
+    /// don't apply.
     /// </summary>
     public byte[] CaptureWindowWithPopups()
     {
         Rectangle window = WindowBounds();
         MoveCursorOffWindow(window);
-        // Drawn bottom up, so a popup above another stays on top.
-        List<TopLevelWindow> popups = TopLevelWindows()
-            .Where(w => w.ProcessId == UiProcess.Id && w.Handle != WindowHandle).Reverse().ToList();
-        if (popups.Count == 0)
-            throw new InvalidOperationException($"the app (pid {UiProcess.Id}) shows no popup window to capture");
-        Rectangle canvas = popups.Aggregate(window, (bounds, popup) => Rectangle.Union(bounds, popup.Bounds));
+        List<TopLevelWindow> popups = Popups();
+        Rectangle canvas = PopupCanvas(window, popups);
         using Bitmap bitmap = new Bitmap(canvas.Width, canvas.Height, PixelFormat.Format32bppArgb);
         using (Graphics graphics = Graphics.FromImage(bitmap))
         {
@@ -293,6 +301,30 @@ public sealed class AppiumSession : IAsyncDisposable
         bitmap.Save(png, ImageFormat.Png);
         return png.ToArray();
     }
+
+    /// <summary>
+    /// Where <see cref="CaptureWindowWithPopups"/> draws the window while the same popups are open: its canvas grows
+    /// left and up for a popup past the window's edge.
+    /// </summary>
+    public Size WindowOffsetWithPopups()
+    {
+        Rectangle window = WindowBounds();
+        Rectangle canvas = PopupCanvas(window, Popups());
+        return new Size(window.X - canvas.X, window.Y - canvas.Y);
+    }
+
+    /// <summary>The app's visible popup windows, bottom up, so one drawn above another stays on top.</summary>
+    private List<TopLevelWindow> Popups()
+    {
+        List<TopLevelWindow> popups = TopLevelWindows()
+            .Where(w => w.ProcessId == UiProcess.Id && w.Handle != WindowHandle).Reverse().ToList();
+        if (popups.Count == 0)
+            throw new InvalidOperationException($"the app (pid {UiProcess.Id}) shows no popup window");
+        return popups;
+    }
+
+    private static Rectangle PopupCanvas(Rectangle window, IEnumerable<TopLevelWindow> popups) =>
+        popups.Aggregate(window, (bounds, popup) => Rectangle.Union(bounds, popup.Bounds));
 
     private static Bitmap PrintedWindow(IntPtr handle, Size size)
     {
@@ -396,12 +428,13 @@ public sealed class AppiumSession : IAsyncDisposable
     private readonly bool _savedComboBoxSlide;
 
     private AppiumSession(WindowsDriver driver, MockIpcServer mock, RelayIpcServer? relay, MonitorProcess? monitor,
-        ProcessOutputLog ui, uint savedCaretBlinkTime, bool savedComboBoxSlide)
+        IReadOnlyList<VaryingText> varyingText, ProcessOutputLog ui, uint savedCaretBlinkTime, bool savedComboBoxSlide)
     {
         Driver = driver;
         Mock = mock;
         Relay = relay;
         Monitor = monitor;
+        VaryingText = varyingText;
         _ui = ui;
         _savedCaretBlinkTime = savedCaretBlinkTime;
         _savedComboBoxSlide = savedComboBoxSlide;
@@ -463,7 +496,7 @@ public sealed class AppiumSession : IAsyncDisposable
         MockIpcServer mock = new MockIpcServer(prefix, landingStatus);
         mock.Start();
 
-        return await AttachAsync(exePath, prefix, mock, null, null, uiLogPath);
+        return await AttachAsync(exePath, prefix, mock, null, null, Array.Empty<VaryingText>(), uiLogPath);
     }
 
     /// <summary>
@@ -472,7 +505,7 @@ public sealed class AppiumSession : IAsyncDisposable
     /// attach Appium to its window.
     /// </summary>
     public static async Task<AppiumSession> LaunchAgainstZetAsync(string exePath, string zetDiscriminator,
-        string capturePath, string uiLogPath)
+        IReadOnlyList<VaryingText> controllerText, string capturePath, string uiLogPath)
     {
         RequireExe(exePath);
         string prefix = NewPipePrefix();
@@ -481,7 +514,7 @@ public sealed class AppiumSession : IAsyncDisposable
         await relay.StartAsync();
         mock.StartMonitorPipes();
 
-        return await AttachAsync(exePath, prefix, mock, relay, null, uiLogPath);
+        return await AttachAsync(exePath, prefix, mock, relay, null, controllerText, uiLogPath);
     }
 
     /// <summary>
@@ -509,7 +542,7 @@ public sealed class AppiumSession : IAsyncDisposable
         }
         Step.Log($"started the monitor, its log is {monitorLogPath}");
 
-        return await AttachAsync(exePath, prefix, mock, null, monitor, uiLogPath);
+        return await AttachAsync(exePath, prefix, mock, null, monitor, Array.Empty<VaryingText>(), uiLogPath);
     }
 
     private static void RequireExe(string exePath)
@@ -522,7 +555,7 @@ public sealed class AppiumSession : IAsyncDisposable
     private static string NewPipePrefix() => $"zdew-test-{Guid.NewGuid():N}-";
 
     private static async Task<AppiumSession> AttachAsync(string exePath, string prefix, MockIpcServer mock,
-        RelayIpcServer? relay, MonitorProcess? monitor, string uiLogPath)
+        RelayIpcServer? relay, MonitorProcess? monitor, IReadOnlyList<VaryingText> varyingText, string uiLogPath)
     {
         uint savedCaretBlinkTime = StopCaretBlink();
         bool savedComboBoxSlide = StopComboBoxSlide();
@@ -592,7 +625,7 @@ public sealed class AppiumSession : IAsyncDisposable
         }
 
         Step.Log($"attached Appium to the app's window {hwnd}");
-        return new AppiumSession(driver, mock, relay, monitor, ui, savedCaretBlinkTime, savedComboBoxSlide);
+        return new AppiumSession(driver, mock, relay, monitor, varyingText, ui, savedCaretBlinkTime, savedComboBoxSlide);
     }
 
     private static void KillIfRunning(Process process)

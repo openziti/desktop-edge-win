@@ -32,7 +32,7 @@ public class AddIdentityTests
 
         // AddIdentity left the same JWT in the file the app reads.
         JObject reply = SendAndWaitForZetReply(s, AddIdentityLine, () => ClickAddIdentityWithJwt(s));
-        await VerifyStep(CaptureBlurbOnReply(s, AddIdentityLine), name, "02-add-failure-blurb");
+        await VerifyStep(s, CaptureBlurbOnReply(s, AddIdentityLine), name, "02-add-failure-blurb");
         // The blurb shows no detail from ZET, so only the reply proves why the add failed.
         Assert.Equal(500, (int?)reply["Code"]);
         Assert.Contains("identity exists with the same name", (string?)reply["Error"]);
@@ -52,7 +52,7 @@ public class AddIdentityTests
         WriteTestJwt(jwt);
         ClickAddIdentityWithJwt(s);
         WaitFor(s, JwtInvalidError);
-        await VerifyStep(Capture(s), name, "01-jwt-invalid");
+        await VerifyStep(s, Capture(s), name, "01-jwt-invalid");
         Assert.Equal(0, UiCmdLineCount(s.Relay!, AddIdentityLine));
         Assert.Equal(0, IdentityRowCount(s));
     }
@@ -68,7 +68,7 @@ public class AddIdentityTests
         _fixture.Quickstart.DeleteIdentity(identityName);
         WriteTestJwt(jwt);
         JObject reply = SendAndWaitForZetReply(s, AddIdentityLine, () => ClickAddIdentityWithJwt(s));
-        await VerifyStep(CaptureBlurbOnReply(s, AddIdentityLine), name, "01-add-failure-blurb");
+        await VerifyStep(s, CaptureBlurbOnReply(s, AddIdentityLine), name, "01-add-failure-blurb");
         Assert.Equal(500, (int?)reply["Code"]);
         Assert.Contains("JWT not accepted by controller", (string?)reply["Error"]);
         Assert.Equal(0, IdentityRowCount(s));
@@ -81,7 +81,7 @@ public class AddIdentityTests
 
         await using AppiumSession s = await LaunchAsync(_fixture, name);
         EnterControllerUrl(s, Quickstart.UiControllerUrl);
-        await VerifyStep(Capture(s), name, "01-url-entered");
+        await VerifyStep(s, Capture(s), name, "01-url-entered");
         JoinEnrolledToNone(s);
     }
 
@@ -92,7 +92,7 @@ public class AddIdentityTests
 
         await using AppiumSession s = await LaunchAsync(_fixture, name);
         EnterControllerUrl(s, "not-a-url");
-        await VerifyStep(Capture(s), name, "01-url-invalid");
+        await VerifyStep(s, Capture(s), name, "01-url-invalid");
         // The app validates the URL itself, so ZET never sees this one.
         Assert.False(WaitForId(s, "JoinNetworkBtn").Enabled, "Join Network is enabled for a malformed URL");
         Assert.Equal(0, UiCmdLineCount(s.Relay!, AddIdentityLine));
@@ -109,7 +109,7 @@ public class AddIdentityTests
         WaitForId(s, "JoinNetworkBtn").Click();
         // The app's ext-jwt signer discovery fails before it sends anything to ZET, so only the blurb marks the time.
         WaitForBlurb(s, "Unexpected error accessing URL", ControllerTimeout);
-        await VerifyStep(Capture(s), name, "01-url-access-error-blurb");
+        await VerifyStep(s, Capture(s), name, "01-url-access-error-blurb");
         Assert.Equal(0, UiCmdLineCount(s.Relay!, AddIdentityLine));
         Assert.Equal(0, IdentityRowCount(s));
     }
