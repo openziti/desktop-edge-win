@@ -19,7 +19,7 @@
     <!-- Match the version in ZitiUpdateService/packages.config so we don't trip MSB3277
          on the .NET FW reference unification. Bump both together. -->
     <PackageReference Include="NLog" Version="6.1.2" />
-    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="8.0.0" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="8.0.2" />
   </ItemGroup>
 
   <ItemGroup>
