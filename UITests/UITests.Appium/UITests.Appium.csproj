@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- The Windows SDK version brings the WinRT projections AppToasts clears toast history with. -->
+    <TargetFramework>net9.0-windows10.0.17763.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>ZitiDesktopEdge.UITests</RootNamespace>
+    <AssemblyName>UITests.Appium</AssemblyName>
+    <!-- Tests honor the Timeout token through TestHelpers.Pause, which the analyzer only looks for in the test body. -->
+    <NoWarn>$(NoWarn);xUnit1069</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Appium.WebDriver" Version="5.0.0" />
+    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="15.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="System.Drawing.Common" Version="9.0.0" />
+    <PackageReference Include="System.Management" Version="9.0.0" />
+    <PackageReference Include="xunit.v3" Version="4.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="MockIpc\Fixtures\*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\fixture.json;testdata\dex-config.yaml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

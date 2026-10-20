@@ -1,0 +1,423 @@
+{
+  "authPolicies": [
+    {
+      "name": "test_mfa_totp_policy",
+      "primary": {
+        "cert": { "allowExpiredCerts": false, "allowed": true },
+        "extJwt": { "allowed": true, "allowedSigners": [] },
+        "updb": { "allowed": false, "lockoutDurationMinutes": 0, "maxAttempts": 5, "minPasswordLength": 5, "requireMixedCase": false, "requireNumberChar": false, "requireSpecialChar": false }
+      },
+      "secondary": { "requireTotp": true },
+      "tags": {}
+    },
+    {
+      "name": "test_ext_auth_secondary_policy",
+      "primary": {
+        "cert": { "allowExpiredCerts": false, "allowed": true },
+        "extJwt": { "allowed": false, "allowedSigners": [] },
+        "updb": { "allowed": false, "lockoutDurationMinutes": 0, "maxAttempts": 5, "minPasswordLength": 5, "requireMixedCase": false, "requireNumberChar": false, "requireSpecialChar": false }
+      },
+      "secondary": { "requireTotp": false },
+      "tags": {}
+    }
+  ],
+  "identities": [
+    {
+      "name": "test_tpca_ottca_user1",
+      "isAdmin": false,
+      "authPolicy": "@Default"
+    },
+    {
+      "name": "test_app_info",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_restart_jwt",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_restart_mfa",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_restart_inactive",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_restart_ext",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "externalId": "test_restart_ext@test.com"
+    },
+    {
+      "name": "test_mfa_enable_totp_policy",
+      "isAdmin": false,
+      "authPolicy": "@test_mfa_totp_policy",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_cli_enroll",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_mfa_policy_required_enrolled",
+      "isAdmin": false,
+      "authPolicy": "@test_mfa_totp_policy",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_mfa_policy_added_enrolled",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_mfa_policy_added_unenrolled",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_mfa_verify_invalid_totp",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_legacy_mfa_restart_prompt",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_legacy_mfa_toggle_prompt",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_legacy_mfa_repeat_restart",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_legacy_mfa_restart_recovery",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_legacy_mfa_quiet_after_code",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_legacy_mfa_pair_enrolled",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_legacy_mfa_pair_plain",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_legacy_mfa_removed_then_restart",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_legacy_mfa_admin_removed",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_legacy_mfa_oidc_migration",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_legacy_mfa_restart_state",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_legacy_mfa_corrupted_state",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_mfa_reauth_valid_totp",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_mfa_reauth_recovery_code",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_mfa_reauth_reused_recovery_code",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_mfa_reauth_invalid_totp",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_mfa_get_codes",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_mfa_get_codes_invalid",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_mfa_regenerate_codes",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_mfa_exhaust_recovery_codes",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_mfa_remove_valid_totp",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_mfa_remove_recovery_code",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_mfa_remove_invalid_totp",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_remove_id",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_on_off",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_add_id_happy",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_add_id_dup_name",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_add_id_deleted",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_add_id_slash",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_add_id_dotdot",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_add_id_long_name",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_keychain_enroll",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_keychain_forget",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_keychain_reenroll",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_url_enroll_after_jwt",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_config_survives_windows_upgrade",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_existing_config_wins_over_backup",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_restore_only_copies_missing_files",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_ext_auth_none_happy",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "externalId": "test_ext_auth_none_happy@test.com"
+    },
+    {
+      "name": "test_ext_auth_invalid_provider",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "externalId": "test_ext_auth_invalid_provider@test.com"
+    },
+    {
+      "name": "test_ext_auth_multi_default",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "externalId": "test_ext_auth_multi_default@test.com"
+    },
+    {
+      "name": "test_ext_auth_secondary_happy",
+      "isAdmin": false,
+      "authPolicy": "@test_ext_auth_secondary_policy",
+      "externalId": "test_ext_auth_secondary_happy@test.com",
+      "roleAttributes": ["ziti-user"],
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_ext_auth_secondary_reauth",
+      "isAdmin": false,
+      "authPolicy": "@test_ext_auth_secondary_policy",
+      "externalId": "test_ext_auth_secondary_reauth@test.com",
+      "roleAttributes": ["ziti-user"],
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_ext_auth_secondary_policy_added",
+      "isAdmin": false,
+      "authPolicy": "@Default",
+      "externalId": "test_ext_auth_secondary_policy_added@test.com",
+      "roleAttributes": ["ziti-user"],
+      "enrollment": { "ott": true }
+    },
+    {
+      "name": "test_ext_auth_secondary_policy_removed",
+      "isAdmin": false,
+      "authPolicy": "@test_ext_auth_secondary_policy",
+      "externalId": "test_ext_auth_secondary_policy_removed@test.com",
+      "roleAttributes": ["ziti-user"],
+      "enrollment": { "ott": true }
+    }
+  ],
+  "configs": [
+    {
+      "name": "test_ext_auth_attr_user_intercept",
+      "configType": "@intercept.v1",
+      "data": {
+        "protocols": ["tcp"],
+        "addresses": ["attr-user.ziti"],
+        "portRanges": [{ "low": 80, "high": 80 }]
+      }
+    },
+    {
+      "name": "test_ext_auth_attr_admin_intercept",
+      "configType": "@intercept.v1",
+      "data": {
+        "protocols": ["tcp"],
+        "addresses": ["attr-admin.ziti"],
+        "portRanges": [{ "low": 80, "high": 80 }]
+      }
+    }
+  ],
+  "services": [
+    {
+      "name": "test_ext_auth_attr_user_svc",
+      "encryptionRequired": true,
+      "configs": ["@test_ext_auth_attr_user_intercept"]
+    },
+    {
+      "name": "test_ext_auth_attr_admin_svc",
+      "encryptionRequired": true,
+      "configs": ["@test_ext_auth_attr_admin_intercept"]
+    }
+  ],
+  "servicePolicies": [
+    {
+      "name": "test_ext_auth_attr_user_dial",
+      "type": "Dial",
+      "semantic": "AnyOf",
+      "identityRoles": ["#ziti-user"],
+      "serviceRoles": ["@test_ext_auth_attr_user_svc"]
+    },
+    {
+      "name": "test_ext_auth_attr_admin_dial",
+      "type": "Dial",
+      "semantic": "AnyOf",
+      "identityRoles": ["#ziti-admin"],
+      "serviceRoles": ["@test_ext_auth_attr_admin_svc"]
+    }
+  ]
+}
