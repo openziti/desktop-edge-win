@@ -20,7 +20,8 @@ internal static class ChildProcessKiller
     static ChildProcessKiller()
     {
         _job = CreateJobObject(IntPtr.Zero, null);
-        if (_job == IntPtr.Zero) return;
+        if (_job == IntPtr.Zero)
+            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), "CreateJobObject failed");
 
         JOBOBJECT_BASIC_LIMIT_INFORMATION limits = new JOBOBJECT_BASIC_LIMIT_INFORMATION
         {
@@ -33,14 +34,14 @@ internal static class ChildProcessKiller
         try
         {
             Marshal.StructureToPtr(extended, buf, false);
-            SetInformationJobObject(_job, JobObjectExtendedLimitInformation, buf, (uint)len);
+            if (!SetInformationJobObject(_job, JobObjectExtendedLimitInformation, buf, (uint)len))
+                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), "SetInformationJobObject(JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE) failed");
         }
         finally { Marshal.FreeHGlobal(buf); }
     }
 
     public static void Adopt(Process child)
     {
-        if (_job == IntPtr.Zero) return;
         try
         {
             if (!AssignProcessToJobObject(_job, child.Handle))
@@ -86,10 +87,10 @@ internal static class ChildProcessKiller
         public UIntPtr PeakProcessMemoryUsed, PeakJobMemoryUsed;
     }
 
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern IntPtr CreateJobObject(IntPtr lpJobAttributes, string? lpName);
 
-    [DllImport("kernel32.dll")]
+    [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool SetInformationJobObject(IntPtr hJob, int infoType, IntPtr lpInfo, uint cbInfo);
 
     [DllImport("kernel32.dll", SetLastError = true)]
@@ -171,6 +172,13 @@ internal static class Win32Window
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder lpClassName, int nMaxCount);
 
+    public static string ClassName(IntPtr hWnd)
+    {
+        System.Text.StringBuilder name = new System.Text.StringBuilder(64);
+        GetClassName(hWnd, name, name.Capacity);
+        return name.ToString();
+    }
+
     [DllImport("user32.dll")]
     public static extern bool IsWindow(IntPtr hWnd);
 
@@ -202,7 +210,7 @@ public sealed class AppiumSession : IAsyncDisposable
     public WindowsDriver Driver { get; }
     public MockIpcServer Mock { get; }
     public RelayIpcServer? Relay { get; }
-    public MonitorProcess? Monitor { get; }
+    private readonly MonitorProcess? _monitor;
     // Empty except from LaunchAgainstZetAsync: the mock's identities show the same text every run.
     public IReadOnlyList<VaryingText> VaryingText { get; }
     private readonly ProcessOutputLog _ui;
@@ -396,7 +404,7 @@ public sealed class AppiumSession : IAsyncDisposable
         Driver = driver;
         Mock = mock;
         Relay = relay;
-        Monitor = monitor;
+        _monitor = monitor;
         VaryingText = varyingText;
         _ui = ui;
         _savedCaretBlinkTime = savedCaretBlinkTime;
@@ -429,6 +437,9 @@ public sealed class AppiumSession : IAsyncDisposable
         SetCaretBlinkTime(Win32Window.INFINITE);
         return saved;
     }
+
+    // Opening a common file dialog resets the session's caret blink time to the user's setting.
+    public void StopCaretBlinkAgain() => SetCaretBlinkTime(Win32Window.INFINITE);
 
     private static void SetCaretBlinkTime(uint blinkTime)
     {
@@ -502,73 +513,81 @@ public sealed class AppiumSession : IAsyncDisposable
     {
         uint savedCaretBlinkTime = StopCaretBlink();
         bool savedComboBoxSlide = StopComboBoxSlide();
-        ProcessStartInfo psi = new ProcessStartInfo
+        ProcessOutputLog? ui = null;
+        try
         {
-            FileName = exePath,
-            UseShellExecute = false,
-            CreateNoWindow = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            WorkingDirectory = Path.GetDirectoryName(exePath)!,
-        };
-        psi.EnvironmentVariables["ZDEW_UI_TEST"] = "1";
-        psi.EnvironmentVariables["ZDEW_IPC_PIPE_PREFIX"] = prefix;
-        ProcessOutputLog ui = ProcessOutputLog.Start(psi, uiLogPath);
-        Process uiProc = ui.Process;
-        Step.Log($"started the app (pid {uiProc.Id}), its log is {uiLogPath}");
-
-        // MainWindowHandle can lag WaitForInputIdle, so poll after it.
-        IntPtr hwnd = IntPtr.Zero;
-        DateTime windowDeadline = DateTime.UtcNow + LaunchWindowTimeout;
-        await Task.Run(() => uiProc.WaitForInputIdle((int)LaunchWindowTimeout.TotalMilliseconds));
-        while (hwnd == IntPtr.Zero && DateTime.UtcNow < windowDeadline)
-        {
-            uiProc.Refresh();
-            hwnd = uiProc.MainWindowHandle;
-            if (hwnd == IntPtr.Zero) await Task.Delay(WindowPollIntervalMs);
-        }
-
-        WindowsDriver? driver = null;
-        Exception? lastErr = null;
-        DateTime driverDeadline = DateTime.UtcNow + LaunchWindowTimeout;
-        while (hwnd != IntPtr.Zero && driver == null && DateTime.UtcNow < driverDeadline)
-        {
-            try
+            ProcessStartInfo psi = new ProcessStartInfo
             {
-                AppiumOptions opts = new AppiumOptions
+                FileName = exePath,
+                UseShellExecute = false,
+                CreateNoWindow = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                WorkingDirectory = Path.GetDirectoryName(exePath)!,
+            };
+            psi.EnvironmentVariables["ZDEW_UI_TEST"] = "1";
+            psi.EnvironmentVariables["ZDEW_IPC_PIPE_PREFIX"] = prefix;
+            ui = ProcessOutputLog.Start(psi, uiLogPath);
+            Process uiProc = ui.Process;
+            Step.Log($"started the app (pid {uiProc.Id}), its log is {uiLogPath}");
+
+            // MainWindowHandle can lag WaitForInputIdle, so poll after it.
+            IntPtr hwnd = IntPtr.Zero;
+            DateTime windowDeadline = DateTime.UtcNow + LaunchWindowTimeout;
+            await Task.Run(() => uiProc.WaitForInputIdle((int)LaunchWindowTimeout.TotalMilliseconds));
+            while (hwnd == IntPtr.Zero && DateTime.UtcNow < windowDeadline)
+            {
+                uiProc.Refresh();
+                hwnd = uiProc.MainWindowHandle;
+                if (hwnd == IntPtr.Zero) await Task.Delay(WindowPollIntervalMs);
+            }
+            if (hwnd == IntPtr.Zero)
+                throw new TimeoutException($"ZDEW's main window never appeared within {LaunchWindowTimeout} of Process.Start. Log: {uiLogPath}");
+
+            WindowsDriver? driver = null;
+            Exception? lastErr = null;
+            DateTime driverDeadline = DateTime.UtcNow + LaunchWindowTimeout;
+            while (driver == null && DateTime.UtcNow < driverDeadline)
+            {
+                try
                 {
-                    PlatformName = "Windows",
-                    AutomationName = "Windows",
-                };
-                opts.AddAdditionalAppiumOption("appTopLevelWindow", "0x" + hwnd.ToInt64().ToString("X"));
-                // Above the longest wait that polls Win32 only: the feedback test waits up to 150s on Explorer.
-                opts.AddAdditionalAppiumOption("newCommandTimeout", 180);
-                opts.AddAdditionalAppiumOption("wadUrl", WinAppDriverUrl);
-                driver = new WindowsDriver(AppiumServer, opts);
+                    AppiumOptions opts = new AppiumOptions
+                    {
+                        PlatformName = "Windows",
+                        AutomationName = "Windows",
+                    };
+                    opts.AddAdditionalAppiumOption("appTopLevelWindow", "0x" + hwnd.ToInt64().ToString("X"));
+                    // Above the longest wait that polls Win32 only: the feedback test waits up to 150s on Explorer.
+                    opts.AddAdditionalAppiumOption("newCommandTimeout", 180);
+                    opts.AddAdditionalAppiumOption("wadUrl", WinAppDriverUrl);
+                    driver = new WindowsDriver(AppiumServer, opts);
+                }
+                catch (Exception ex)
+                {
+                    lastErr = ex;
+                    await Task.Delay(DriverInitBackoffMs);
+                }
             }
-            catch (Exception ex)
-            {
-                lastErr = ex;
-                await Task.Delay(DriverInitBackoffMs);
-            }
-        }
+            if (driver == null)
+                throw new InvalidOperationException($"Appium could not attach to ZDEW window within {LaunchWindowTimeout}. Last error: {lastErr?.Message}. Log: {uiLogPath}", lastErr);
 
-        if (driver == null)
+            Step.Log($"attached Appium to the app's window {hwnd}");
+            return new AppiumSession(driver, mock, relay, monitor, varyingText, ui, savedCaretBlinkTime, savedComboBoxSlide);
+        }
+        catch
         {
-            KillIfRunning(uiProc);
-            ui.Dispose();
+            if (ui != null)
+            {
+                KillIfRunning(ui.Process);
+                ui.Dispose();
+            }
             SetCaretBlinkTime(savedCaretBlinkTime);
             SetComboBoxSlide(savedComboBoxSlide);
             if (monitor != null) await monitor.DisposeAsync();
             await mock.DisposeAsync();
             if (relay != null) await relay.DisposeAsync();
-            if (hwnd == IntPtr.Zero)
-                throw new TimeoutException($"ZDEW's main window never appeared within {LaunchWindowTimeout} of Process.Start. Log: {uiLogPath}");
-            throw new InvalidOperationException($"Appium could not attach to ZDEW window within {LaunchWindowTimeout}. Last error: {lastErr?.Message}. Log: {uiLogPath}", lastErr);
+            throw;
         }
-
-        Step.Log($"attached Appium to the app's window {hwnd}");
-        return new AppiumSession(driver, mock, relay, monitor, varyingText, ui, savedCaretBlinkTime, savedComboBoxSlide);
     }
 
     private static void KillIfRunning(Process process)
@@ -596,14 +615,14 @@ public sealed class AppiumSession : IAsyncDisposable
         KillIfRunning(UiProcess);
         SetCaretBlinkTime(_savedCaretBlinkTime);
         SetComboBoxSlide(_savedComboBoxSlide);
-        // Before the mock, or the monitor logs its ZET as crashed.
-        if (Monitor != null) await Monitor.DisposeAsync();
-        await Mock.DisposeAsync();
-        if (Relay != null) await Relay.DisposeAsync();
         // Kill returns before the process is gone. The next test's launch must not overlap a dying UI.
         if (!UiProcess.WaitForExit(10000))
             throw new TimeoutException($"UI process {UiProcess.Id} still running 10s after Kill. Log: {_ui.LogPath}");
         AppToasts.Clear(UiProcess.StartInfo.FileName);
         _ui.Dispose();
+        // Before the mock, or the monitor logs its ZET as crashed.
+        if (_monitor != null) await _monitor.DisposeAsync();
+        await Mock.DisposeAsync();
+        if (Relay != null) await Relay.DisposeAsync();
     }
 }

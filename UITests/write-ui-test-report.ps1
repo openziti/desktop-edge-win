@@ -190,7 +190,7 @@ function Format-Gallery([string] $ResultsDir, [string[]] $TierNames, [string[]] 
   .none { color:#7a7b8e; font-style:italic; font-size:13px; padding:8px 0; }
 </style></head><body>
 <h1>ZDEW UI Tests Gallery</h1>
-<div class="meta">Generated $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss'). $($Results.Count) test(s) total.$missing Side-by-side: <b>baseline</b> is the accepted .verified.png; <b>latest run</b> is the screenshot from this run.</div>
+<div class="meta">Generated $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss'). $($Results.Count) test(s) total.$missing Side-by-side: <b>baseline</b> is the accepted .verified.png, and <b>latest run</b> is the screenshot from this run.</div>
 $($cards.ToString())
 </body></html>
 "@

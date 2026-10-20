@@ -107,10 +107,6 @@
   <PropertyGroup>
     <ApplicationIcon>..\ziti.ico</ApplicationIcon>
   </PropertyGroup>
-  <!-- set by UITests\run-ui-tests.ps1 only -->
-  <PropertyGroup Condition=" '$(UiTests)' == 'true' ">
-    <DefineConstants>$(DefineConstants);UI_TESTS</DefineConstants>
-  </PropertyGroup>
   <ItemGroup>
     <Reference Include="PresentationFramework.Aero2" />
     <Reference Include="System" />

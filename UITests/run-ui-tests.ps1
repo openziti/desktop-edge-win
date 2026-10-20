@@ -64,7 +64,7 @@ function Find-MSBuild {
     if (-not (Test-Path $vswhere)) {
         $vswhere = "$env:ProgramFiles\Microsoft Visual Studio\Installer\vswhere.exe"
     }
-    if (-not (Test-Path $vswhere)) { throw "vswhere.exe not found; install Visual Studio Build Tools" }
+    if (-not (Test-Path $vswhere)) { throw "vswhere.exe not found. Install Visual Studio Build Tools." }
     $found = & $vswhere -latest -prerelease -products * `
         -requires Microsoft.Component.MSBuild `
         -find "MSBuild\**\Bin\MSBuild.exe" | Select-Object -First 1
@@ -94,41 +94,21 @@ if (-not $SkipBuild) {
 
     $msbuild = Find-MSBuild
     # Debug only: Release enforces single-instance (App.xaml.cs), so each test's launch would hand off to the last one.
-    # UiTests defines UI_TESTS in DesktopEdge, which drops the blurb's fade-in the baselines race against.
     Write-Host "==> msbuild Debug ($msbuild)"
-    & $msbuild $solution "/p:Configuration=Debug" "/p:UiTests=true" /v:minimal /nologo
+    & $msbuild $solution "/p:Configuration=Debug" /v:minimal /nologo
     if ($LASTEXITCODE -ne 0) { throw "msbuild failed" }
 }
 
 $appiumProc = $null
-$startedAppium = $false
 if (-not (Test-PortListening $AppiumPort)) {
     $appiumCmd = Get-Command appium.cmd -ErrorAction SilentlyContinue
-    if (-not $appiumCmd) { $appiumCmd = Get-Command appium.exe -ErrorAction SilentlyContinue }
-    if (-not $appiumCmd) {
-        $any = Get-Command appium -ErrorAction SilentlyContinue
-        if ($any) {
-            $cmdSibling = Join-Path (Split-Path $any.Source) "appium.cmd"
-            if (Test-Path $cmdSibling) {
-                $appiumCmd = [pscustomobject]@{ Source = $cmdSibling }
-            }
-        }
-    }
-    if (-not $appiumCmd) {
-        throw @"
-'appium' not found on PATH. Install it once with:
-    npm install -g appium
-    appium driver install --source=npm appium-windows-driver
-Then re-run this script.
-"@
-    }
+    if (-not $appiumCmd) { throw "appium.cmd is not on PATH. Install it with $(Join-Path $uiTestsDir 'ci-install.ps1')." }
     Write-Host "==> starting appium on port $AppiumPort ($($appiumCmd.Source))"
     $appiumProc = Start-Process -FilePath $appiumCmd.Source `
         -ArgumentList @("--base-path=/", "--port=$AppiumPort") `
         -PassThru -WindowStyle Hidden `
         -RedirectStandardOutput (Join-Path $uiTestsDir "appium.stdout.log") `
         -RedirectStandardError  (Join-Path $uiTestsDir "appium.stderr.log")
-    $startedAppium = $true
 
     $deadline = (Get-Date).AddSeconds(30)
     while ((Get-Date) -lt $deadline -and -not (Test-PortListening $AppiumPort)) {
@@ -138,7 +118,7 @@ Then re-run this script.
         throw "Appium did not start listening on port $AppiumPort within 30s. See appium.stdout.log / appium.stderr.log."
     }
 } else {
-    Write-Host "==> appium already listening on $AppiumPort -- reusing"
+    Write-Host "==> appium already listening on $AppiumPort, reusing"
 }
 
 # Started here because the windows driver kills a WinAppDriver it spawned that misses a fixed 10s /status deadline.
@@ -175,7 +155,7 @@ if (-not (Test-PortListening $winAppDriverPort)) {
     }
     Write-Host "==> WinAppDriver answered $winAppDriverStatusUrl"
 } else {
-    Write-Host "==> WinAppDriver already listening on $winAppDriverPort -- reusing"
+    Write-Host "==> WinAppDriver already listening on $winAppDriverPort, reusing"
 }
 
 $resultsDir = Join-Path $uiTestsDir "TestResults"
@@ -240,9 +220,9 @@ try {
 } finally {
     # the script runs in the caller's session, so a leaked value auto-accepts baselines on every later run
     Remove-Item Env:ZDEW_AUTO_VERIFY -ErrorAction SilentlyContinue
-    if ($startedAppium -and $appiumProc -and -not $appiumProc.HasExited) {
+    if ($appiumProc -and -not $appiumProc.HasExited) {
         Write-Host "==> stopping appium (pid $($appiumProc.Id))"
-        try { Stop-Process -Id $appiumProc.Id -Force -ErrorAction SilentlyContinue } catch {}
+        Stop-Process -Id $appiumProc.Id -Force -ErrorAction SilentlyContinue
     }
     if ($winAppDriverProc -and -not $winAppDriverProc.HasExited) {
         Write-Host "==> stopping WinAppDriver (pid $($winAppDriverProc.Id))"
@@ -253,26 +233,19 @@ try {
 New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
 $runLog -join "`n" | Set-Content -LiteralPath $runLogPath -Encoding utf8
 # Its log holds WinAppDriver's own error text, which Selenium reduces to "An unknown error occurred in the remote end".
-if ($startedAppium) {
-    $appiumLogDir = Join-Path $resultsDir "logs"
-    New-Item -ItemType Directory -Force -Path $appiumLogDir | Out-Null
-    Copy-Item -LiteralPath (Join-Path $uiTestsDir "appium.stdout.log"), (Join-Path $uiTestsDir "appium.stderr.log") -Destination $appiumLogDir
+$logDir = Join-Path $resultsDir "logs"
+New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+if ($appiumProc) {
+    Copy-Item -LiteralPath (Join-Path $uiTestsDir "appium.stdout.log"), (Join-Path $uiTestsDir "appium.stderr.log") -Destination $logDir
 }
 if ($winAppDriverProc) {
-    $winAppDriverLogDir = Join-Path $resultsDir "logs"
-    New-Item -ItemType Directory -Force -Path $winAppDriverLogDir | Out-Null
-    Copy-Item -LiteralPath (Join-Path $uiTestsDir "winappdriver.stdout.log"), (Join-Path $uiTestsDir "winappdriver.stderr.log") -Destination $winAppDriverLogDir
+    Copy-Item -LiteralPath (Join-Path $uiTestsDir "winappdriver.stdout.log"), (Join-Path $uiTestsDir "winappdriver.stderr.log") -Destination $logDir
 }
 
 # Copied into TestResults so the gallery has no ..\ paths and works from GitHub Pages.
 $galleryBaselineDir = Join-Path $resultsDir "baselines"
 New-Item -ItemType Directory -Force -Path $galleryBaselineDir | Out-Null
-if (Test-Path $baselinesDir) {
-    Get-ChildItem $baselinesDir -Filter "*.verified.png" -ErrorAction SilentlyContinue |
-        ForEach-Object { Copy-Item $_.FullName $galleryBaselineDir -Force }
-    Get-ChildItem $baselinesDir -Filter "*.received.png" -ErrorAction SilentlyContinue |
-        ForEach-Object { Copy-Item $_.FullName $galleryBaselineDir -Force }
-}
+Copy-Item -Path (Join-Path $baselinesDir "*.verified.png"), (Join-Path $baselinesDir "*.received.png") -Destination $galleryBaselineDir
 
 $tierLabel = if ($Tier) { $Tier } else { $Filter }
 & (Join-Path $uiTestsDir "write-ui-test-report.ps1") -ResultsDir $resultsDir -Tiers ([ordered]@{ $tierLabel = "." }) `

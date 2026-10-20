@@ -104,8 +104,13 @@ public sealed class RelayIpcServer : IAsyncDisposable
 
             if (!string.IsNullOrWhiteSpace(line))
             {
+                JObject json;
+                try { json = JObject.Parse(line); }
+                catch (JsonReaderException ex)
+                {
+                    throw new InvalidDataException($"{from} sent a line on the {pipe} pipe that is not JSON: {line}", ex);
+                }
                 lock (_recordedLock) _recorded.Add(new RecordedLine(from, pipe, line, DateTime.UtcNow));
-                JObject json = JObject.Parse(line);
                 if (from == "ui") Step.Sent(sender, json);
                 else if (pipe == "cmd") Step.ZetReplied(json);
                 // metrics arrives every few seconds and would bury the step lines
@@ -142,13 +147,7 @@ public sealed class RelayIpcServer : IAsyncDisposable
         StringBuilder capture = new StringBuilder();
         foreach (RecordedLine r in Recorded)
         {
-            JToken message;
-            try { message = JToken.Parse(r.Line); }
-            catch (JsonReaderException ex)
-            {
-                throw new InvalidDataException($"{r.From} sent a line on the {r.Pipe} pipe that is not JSON: {r.Line}", ex);
-            }
-            JObject entry = new JObject { ["from"] = r.From, ["pipe"] = r.Pipe, ["message"] = message };
+            JObject entry = new JObject { ["from"] = r.From, ["pipe"] = r.Pipe, ["message"] = JObject.Parse(r.Line) };
             capture.Append(entry.ToString(Formatting.None)).Append('\n');
         }
         Directory.CreateDirectory(Path.GetDirectoryName(CapturePath)!);
