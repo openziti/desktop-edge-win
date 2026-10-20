@@ -178,7 +178,14 @@ public sealed class Dex : IAsyncDisposable
     {
         Dictionary<string, string> attrs = new();
         foreach (Match m in AttrRe.Matches(tag))
-            attrs[m.Groups[1].Value.ToLowerInvariant()] = m.Groups[2].Success && m.Groups[2].Value != "" ? m.Groups[2].Value : m.Groups[3].Value;
+        {
+            string value;
+            if (m.Groups[2].Success && m.Groups[2].Value != "")
+                value = m.Groups[2].Value;
+            else
+                value = m.Groups[3].Value;
+            attrs[m.Groups[1].Value.ToLowerInvariant()] = value;
+        }
         return attrs;
     }
 
@@ -203,7 +210,12 @@ public sealed class Dex : IAsyncDisposable
         }
     }
 
-    private static string Truncate(string s) => s.Length <= 200 ? s : s[..200] + "...";
+    private static string Truncate(string s)
+    {
+        if (s.Length <= 200)
+            return s;
+        return s[..200] + "...";
+    }
 
     public ValueTask DisposeAsync() => _process.DisposeAsync();
 }

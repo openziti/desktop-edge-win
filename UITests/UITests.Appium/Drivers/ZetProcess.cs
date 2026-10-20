@@ -81,7 +81,9 @@ public sealed class ZetProcess : IAsyncDisposable
     public Task RemoveAllIdentitiesAsync() => OnPipeAsync(async (reader, writer) =>
     {
         JObject status = await SendAsync(reader, writer, new JObject { ["Command"] = "Status" });
-        JArray identities = status["Data"]?["Identities"] as JArray ?? new JArray();
+        if (status["Data"]?["Identities"] is not JArray identities)
+            throw new InvalidOperationException(
+                $"ziti-edge-tunnel's Status reply has no Data.Identities array: {status.ToString(Formatting.None)}");
         foreach (JObject id in identities.OfType<JObject>())
         {
             await SendAsync(reader, writer, new JObject

@@ -239,10 +239,12 @@ public class MonitorTests
         }
     }
 
-    private static IReadOnlySet<string> Bundles(string monitorLogs) =>
-        Directory.Exists(monitorLogs)
-            ? Directory.GetFiles(monitorLogs, "*.zip", SearchOption.TopDirectoryOnly).ToHashSet()
-            : new HashSet<string>();
+    private static IReadOnlySet<string> Bundles(string monitorLogs)
+    {
+        if (!Directory.Exists(monitorLogs))
+            return new HashSet<string>();
+        return Directory.GetFiles(monitorLogs, "*.zip", SearchOption.TopDirectoryOnly).ToHashSet();
+    }
 
     private static async Task ToggleAutomaticUpgrades(string name)
     {
@@ -458,8 +460,10 @@ public class MonitorTests
         WaitUntil(s, $"the monitor saves a maintenance window other than {previous}", SettingsWriteTimeout, () =>
         {
             JObject? settings = SavedSettings();
-            saved = settings == null ? null : MaintenanceWindow.From(settings);
-            return saved != null && saved != previous;
+            if (settings == null)
+                return false;
+            saved = MaintenanceWindow.From(settings);
+            return saved != previous;
         });
         return saved!;
     }
@@ -468,7 +472,11 @@ public class MonitorTests
     private static async Task WithSettings(byte[]? start, Func<Task> test)
     {
         string path = MonitorProcess.SettingsPath();
-        byte[]? original = File.Exists(path) ? File.ReadAllBytes(path) : null;
+        byte[]? original;
+        if (File.Exists(path))
+            original = File.ReadAllBytes(path);
+        else
+            original = null;
         WriteSettings(start);
         try
         {

@@ -18,13 +18,22 @@ public class SortTests
     private static void AssertLeads(List<string> order, string[] group) =>
         Assert.Equal(group.Order(), order.Take(group.Length).Order());
 
-    private static string Flipped(string arrow) => arrow == "▲" ? "▼" : "▲";
+    private static string Flipped(string arrow)
+    {
+        if (arrow == "▲")
+            return "▼";
+        return "▲";
+    }
 
     // SetSort puts a newly chosen column in descending order and flips the active one.
     private static string ClickTwice(AppiumSession s, IWebElement header, string column)
     {
         (string activeColumn, string activeArrow) = ActiveSortArrow(s);
-        string first = activeColumn == column ? Flipped(activeArrow) : "▼";
+        string first;
+        if (activeColumn == column)
+            first = Flipped(activeArrow);
+        else
+            first = "▼";
         ClickSortHeader(s, header, (column, first));
         ClickSortHeader(s, header, (column, Flipped(first)));
         return Flipped(first);
@@ -45,7 +54,12 @@ public class SortTests
         string statusArrow = ClickTwice(s, statusHeader, "Status");
         SaveStep(s, name, "01-after-status-x2");
         // Status sorts by enabled state, and ascending puts disabled identities first.
-        AssertLeads(ListedNames(s), statusArrow == "▲" ? Disabled : Enabled);
+        string[] leading;
+        if (statusArrow == "▲")
+            leading = Disabled;
+        else
+            leading = Enabled;
+        AssertLeads(ListedNames(s), leading);
 
         Assert.Equal("▲", ClickTwice(s, servicesHeader, "Services"));
         SaveStep(s, name, "02-after-services-x2");

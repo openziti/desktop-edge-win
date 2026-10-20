@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Security.Cryptography.X509Certificates;
 
 namespace ZitiDesktopEdge.UITests.Drivers;
 
@@ -9,14 +8,6 @@ public static class OsCaTrust
     // The quickstart root CA always has CN=root-ca.
     private const string RootCaName = "root-ca";
     private static readonly TimeSpan CertutilTimeout = TimeSpan.FromSeconds(30);
-
-    // Not a controller probe, which would miss a CA left by a crashed run whose quickstart had different keys.
-    public static bool IsInstalled()
-    {
-        using X509Store store = new X509Store(StoreName.Root, StoreLocation.LocalMachine);
-        store.Open(OpenFlags.ReadOnly);
-        return store.Certificates.Find(X509FindType.FindBySubjectDistinguishedName, $"CN={RootCaName}", false).Count > 0;
-    }
 
     public static void Install(string certPath) => RunCertutil("-addstore", "-f", "Root", certPath);
 

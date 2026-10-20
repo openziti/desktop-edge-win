@@ -56,7 +56,11 @@ public class UpdateTunIpTests
     // The dropdown shows 15 of its 32 rows around the current mask, so a far row stays offscreen until Home or End.
     private static void SelectMask(AppiumSession s, int prefixLength)
     {
-        string jump = prefixLength <= 15 ? Keys.Home : Keys.End;
+        string jump;
+        if (prefixLength <= 15)
+            jump = Keys.Home;
+        else
+            jump = Keys.End;
         ClickUntil(s, ById("ConfigMaskNew"), By.XPath("//ListItem[@IsOffscreen='False']"));
         // Scoped to the ComboBox, these XPaths walk its rows instead of the whole UIA tree.
         IWebElement combo = WaitForId(s, "ConfigMaskNew");

@@ -179,7 +179,9 @@ public sealed class MockIpcServer : IAsyncDisposable
         {
             // A failed stop still kills ziti-edge-tunnel before the monitor replies (ServiceActions.StopService).
             StopDataPipes();
-            return failure == null ? new JObject { ["Code"] = 0, ["Message"] = "Stopped" } : FailedServiceAction(failure);
+            if (failure != null)
+                return FailedServiceAction(failure);
+            return new JObject { ["Code"] = 0, ["Message"] = "Stopped" };
         }
         if (op == "Start")
         {

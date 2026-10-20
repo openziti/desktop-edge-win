@@ -2,7 +2,6 @@ using System.Collections.ObjectModel;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using ImageMagick;
 using ImageMagick.Drawing;
@@ -50,7 +49,8 @@ public static class TestHelpers
 
     // Longer than a frame, so an animation still running changes the next capture.
     private const int StableFrameGapMs = 200;
-    private const int StableFrameTimeoutMs = 2000;
+    // A count, not a time limit, so a slow runner gets as many comparisons as a fast one.
+    private const int StableFrameMaxCaptures = 10;
 
     // xUnit cancels this token when a test passes its Timeout but cannot stop the thread, so test-side waits end here.
     public static void Pause(TimeSpan delay)
@@ -88,26 +88,23 @@ public static class TestHelpers
 
     private static byte[] StableCapture(Func<byte[]> capture)
     {
-        DateTime deadline = DateTime.UtcNow.AddMilliseconds(StableFrameTimeoutMs);
+        DateTime start = DateTime.UtcNow;
         byte[] previous = capture();
-        int captures = 1;
-        while (true)
+        for (int captures = 2; captures <= StableFrameMaxCaptures; captures++)
         {
             Pause(StableFrameGapMs);
             byte[] current = capture();
-            captures++;
             if (current.AsSpan().SequenceEqual(previous))
             {
                 if (captures > 2)
                     Step.Log($"the window settled after {captures} captures");
                 return current;
             }
-            if (DateTime.UtcNow > deadline)
-                throw new TimeoutException(
-                    $"the window kept changing for {StableFrameTimeoutMs}ms after the settle " +
-                    $"({captures} captures {StableFrameGapMs}ms apart, no two in a row matched)");
             previous = current;
         }
+        throw new InvalidOperationException(
+            $"the window kept changing over {StableFrameMaxCaptures} captures {StableFrameGapMs}ms apart " +
+            $"({(DateTime.UtcNow - start).TotalMilliseconds:F0}ms after the settle, no two in a row matched)");
     }
 
     // The app names an added identity after its JWT file, and ZET shows that until an event carries the controller's.
@@ -453,6 +450,19 @@ public static class TestHelpers
         throw new TimeoutException($"Timed out after {timeout.TotalSeconds}s waiting until {description}. {diagnostics}");
     }
 
+    private static string WindowLine(TopLevelWindow w, IntPtr appWindow)
+    {
+        string foreground;
+        if (w.IsForeground)
+            foreground = "*";
+        else
+            foreground = " ";
+        string line = $"{foreground} {w.Handle} pid={w.ProcessId} {w.ProcessName} {w.Bounds} '{w.Title}'";
+        if (w.Handle == appWindow)
+            return line + " (app under test)";
+        return line;
+    }
+
     public static string SaveTimeoutDiagnostics(AppiumSession s)
     {
         string stamp = DateTime.UtcNow.ToString("HHmmss-fff");
@@ -462,9 +472,7 @@ public static class TestHelpers
             Directory.CreateDirectory(dir);
             File.WriteAllText(Path.Combine(dir, $"{stamp}-page-source.xml"), s.Driver.PageSource);
             File.WriteAllLines(Path.Combine(dir, $"{stamp}-windows.txt"),
-                AppiumSession.TopLevelWindows().Select(w =>
-                    $"{(w.IsForeground ? "*" : " ")} {w.Handle} pid={w.ProcessId} {w.ProcessName} {w.Bounds} '{w.Title}'" +
-                    (w.Handle == s.WindowHandle ? " (app under test)" : ""))
+                AppiumSession.TopLevelWindows().Select(w => WindowLine(w, s.WindowHandle))
                 .Prepend($"app under test {s.WindowHandle} visible={s.IsWindowVisible}, * marks the foreground window")
                 .Concat(AppiumSession.ProcessOrigins("ZitiDesktopEdge.exe").Select(p =>
                     $"ZitiDesktopEdge pid={p.ProcessId} started={p.CreationDate} parent={p.ParentProcessId} {p.ParentName} '{p.CommandLine}'")));
@@ -604,7 +612,7 @@ public static class TestHelpers
     public static void CloseIdentityDetails(AppiumSession s) =>
         ClickUntilGone(s, ById("IdentityDetailsClose"));
 
-    public static Task VerifyPng(byte[] png, [CallerMemberName] string testName = "")
+    public static Task VerifyPng(byte[] png, string testName)
     {
         WriteReviewScreenshot(Path.Combine(RepoRoot(), "UITests", "TestResults", "screenshots"), $"{testName}.png", png);
         return CompareToBaseline(testName, png,
