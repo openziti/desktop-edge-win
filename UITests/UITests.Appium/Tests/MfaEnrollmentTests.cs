@@ -40,13 +40,8 @@ public class MfaEnrollmentTests
         WaitForController(s, ById("SetupCode"), "the MFA setup dialog opens");
         await VerifyStep(s, Masked(s, Capture(s), ById("MFAImage")), name, "02-mfa-qr-dialog");
 
-        ClickAt(s, WaitForId(s, "SecretButton"));
-        string secret = WaitForId(s, "SecretCode").Text;
-        TypeUntil(s, ById("SetupCode"), Totp.Compute(secret, DateTimeOffset.UtcNow));
-        SendAndWaitForZetReply(s, VerifyMfaLine, () => WaitForId(s, "AuthSetupButton").Click());
-
-        // The baseline masks the codes, so their text is checked against the enrollment_challenge event.
-        WaitForRecoveryCodes(s, ChallengeRecoveryCodes(AssertMfaEnrollmentVerified(s)));
+        // The baseline masks the codes, so CompleteMfaSetup checks their text against the enrollment_challenge event.
+        CompleteMfaSetup(s);
         await VerifyStep(s, MaskedCentered(s, Capture(s), RecoveryCodeBoxes, RecoveryCodeMaskWidth, RecoveryDialogBackground),
             name, "03-mfa-recovery-codes");
 

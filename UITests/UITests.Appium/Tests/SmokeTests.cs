@@ -22,7 +22,7 @@ public class SmokeTests
         await using AppiumSession session = await AppiumSession.LaunchAsync(DefaultExePath(),
             Fixture("landing-status.json"), UiLogPath(nameof(MainWindow_LaunchesAndRenders)));
         WaitForId(session, "ConnectLabel");
-        await VerifyPng(Capture(session));
+        await VerifyPng(Capture(session), nameof(MainWindow_LaunchesAndRenders));
     }
 
     [Fact(Timeout = 60000)]
@@ -35,7 +35,7 @@ public class SmokeTests
         WaitForId(session, "ConnectLabel");
         OpenMainMenu(session);
         WaitFor(session, By.XPath("//*[@Name='Identities']"));
-        await VerifyPng(Capture(session));
+        await VerifyPng(Capture(session), nameof(MainMenu_OpensOnHamburgerClick));
     }
 
     [Fact(Timeout = 60000)]
@@ -51,7 +51,7 @@ public class SmokeTests
         ClickUntil(s, By.XPath("//Text[@Name='ADD']"), By.XPath("//MenuItem"));
         string[] items = s.Driver.FindElements(By.XPath("//MenuItem")).Select(item => item.GetAttribute("Name")).ToArray();
         Assert.Equal(new[] { "With JWT", "With URL" }, items);
-        await VerifyPng(CaptureWithPopups(s));
+        await VerifyPng(CaptureWithPopups(s), nameof(AddIdentityOffersJwtAndUrl));
     }
 
     [Fact(Timeout = 60000)]
@@ -62,7 +62,7 @@ public class SmokeTests
         await using AppiumSession session = await AppiumSession.LaunchAsync(
             DefaultExePath(), Fixture("disconnected.json"), UiLogPath(nameof(Visual_Disconnected)));
         WaitForId(session, "ConnectLabel");
-        await VerifyPng(Capture(session));
+        await VerifyPng(Capture(session), nameof(Visual_Disconnected));
     }
 
     [Fact(Timeout = 60000)]
@@ -73,7 +73,7 @@ public class SmokeTests
         await using AppiumSession session = await AppiumSession.LaunchAsync(
             DefaultExePath(), Fixture("no-identities.json"), UiLogPath(nameof(Visual_NoIdentities)));
         WaitForId(session, "ConnectLabel");
-        await VerifyPng(Capture(session));
+        await VerifyPng(Capture(session), nameof(Visual_NoIdentities));
     }
 
     // PrintWindow draws a window hidden behind the taskbar just fine, so screenshots can't catch placement.

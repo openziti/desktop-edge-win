@@ -77,23 +77,5 @@ public static class FixtureBuilder
         return o;
     }
 
-    private static JObject SkeletonStatus() => new JObject
-    {
-        ["Active"] = true,
-        ["Duration"] = 0,
-        ["StartTime"] = "2026-05-12T00:00:00.000000Z",
-        ["Identities"] = new JArray(),
-        ["IpInfo"] = new JObject { ["Ip"] = "100.150.0.0", ["Subnet"] = "255.255.0.0", ["MTU"] = 65535, ["DNS"] = "100.150.0.1" },
-        ["LogLevel"] = "info",
-        ["ServiceVersion"] = new JObject { ["Version"] = "v0.0.0-mock", ["BuildDate"] = "Mock" },
-        ["TunIpv4"] = "100.150.0.0",
-        ["TunIpv4Mask"] = 16,
-        ["AddDns"] = false,
-        ["ApiPageSize"] = 25,
-        ["TunName"] = "ziti-tun-mock",
-        ["L2Enabled"] = false,
-        ["PcapInterface"] = "",
-        ["TapInfo"] = new JObject(),
-        ["ConfigDir"] = "c:\\fake\\ids",
-    };
+    private static JObject SkeletonStatus() => TestHelpers.Fixture("no-identities.json");
 }

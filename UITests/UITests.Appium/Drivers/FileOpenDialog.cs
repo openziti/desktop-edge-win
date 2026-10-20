@@ -99,9 +99,11 @@ public static class FileOpenDialog
         if (combo == IntPtr.Zero)
             throw new InvalidOperationException("the Open dialog has no File name ComboBoxEx32");
         IntPtr inner = FindWindowEx(combo, IntPtr.Zero, "ComboBox", null);
-        IntPtr edit = inner == IntPtr.Zero ? IntPtr.Zero : FindWindowEx(inner, IntPtr.Zero, "Edit", null);
+        if (inner == IntPtr.Zero)
+            throw new InvalidOperationException("the Open dialog's File name ComboBoxEx32 has no ComboBox");
+        IntPtr edit = FindWindowEx(inner, IntPtr.Zero, "Edit", null);
         if (edit == IntPtr.Zero)
-            throw new InvalidOperationException("the Open dialog's File name ComboBoxEx32 has no ComboBox with an Edit");
+            throw new InvalidOperationException("the Open dialog's File name ComboBox has no Edit");
         return edit;
     }
 

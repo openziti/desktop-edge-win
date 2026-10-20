@@ -236,6 +236,8 @@ public class ExternalAuthMultipleSignersTests
     private static string MenuItemName(string header)
     {
         int marker = header.IndexOf('_');
-        return marker < 0 ? header : header.Remove(marker, 1);
+        if (marker < 0)
+            return header;
+        return header.Remove(marker, 1);
     }
 }

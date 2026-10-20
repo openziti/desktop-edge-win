@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Net;
+using System.Security.Authentication;
 using Newtonsoft.Json.Linq;
 
 namespace ZitiDesktopEdge.UITests.Drivers;
@@ -394,6 +396,21 @@ public sealed class Quickstart : IAsyncDisposable
             throw new InvalidOperationException($"GET {ClientVersionUrl} returned {(int)response.StatusCode}: {body}");
         return JObject.Parse(body)["data"] as JObject
             ?? throw new InvalidOperationException($"GET {ClientVersionUrl} returned no data: {body}");
+    }
+
+    // Whether the controller's TLS chain verifies against the OS trust store.
+    public static async Task<bool> CaTrustedAsync()
+    {
+        using HttpClient http = new HttpClient { Timeout = CommandTimeout };
+        try
+        {
+            using HttpResponseMessage response = await http.GetAsync($"https://localhost:{CtrlPort}/version");
+            return response.StatusCode == HttpStatusCode.OK;
+        }
+        catch (HttpRequestException e) when (e.InnerException is AuthenticationException)
+        {
+            return false;
+        }
     }
 
     // Until a raft leader is elected the controller rejects every model update with CLUSTER_NO_LEADER.

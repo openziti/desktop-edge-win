@@ -13,7 +13,7 @@ public static class IntegrationHelpers
     // Steps that wait on a controller round trip, well past the mock's instant replies.
     public static readonly TimeSpan ControllerTimeout = TimeSpan.FromSeconds(30);
 
-    /// <summary>ZET's config.json, or null while a read lands mid-write.</summary>
+    /// <summary>ZET's config.json, or null before ZET first saves it or while a read lands mid-write.</summary>
     public static JObject? SavedZetConfig(IntegrationFixture fixture)
     {
         try
@@ -125,16 +125,21 @@ public static class IntegrationHelpers
         return WaitForZetReplyTo(s, uiLineFragment);
     }
 
-    public static JObject WaitForZetEventAfter(AppiumSession s, string uiLineFragment, string eventFragment)
+    private static JObject WaitForZetEvent(AppiumSession s, string description,
+        Func<IReadOnlyList<RelayIpcServer.RecordedLine>, RelayIpcServer.RecordedLine?> findEvent)
     {
         RelayIpcServer.RecordedLine? found = null;
-        WaitUntil(s, $"ZET sends an event containing {eventFragment} after {uiLineFragment}", ControllerTimeout, () =>
+        WaitUntil(s, description, ControllerTimeout, () =>
         {
-            found = FindZetEventAfter(s.Relay!.Recorded, uiLineFragment, eventFragment);
+            found = findEvent(s.Relay!.Recorded);
             return found != null;
         });
         return JObject.Parse(found!.Line);
     }
+
+    public static JObject WaitForZetEventAfter(AppiumSession s, string uiLineFragment, string eventFragment) =>
+        WaitForZetEvent(s, $"ZET sends an event containing {eventFragment} after {uiLineFragment}",
+            recorded => FindZetEventAfter(recorded, uiLineFragment, eventFragment));
 
     public static void AssertNoZetEventAfter(AppiumSession s, string uiLineFragment, string eventFragment,
         TimeSpan quiet)
@@ -162,16 +167,9 @@ public static class IntegrationHelpers
         return before;
     }
 
-    public static JObject WaitForZetEventFrom(AppiumSession s, int fromLine, string eventFragment)
-    {
-        RelayIpcServer.RecordedLine? found = null;
-        WaitUntil(s, $"ZET sends an event containing {eventFragment} from relay line {fromLine}", ControllerTimeout, () =>
-        {
-            found = FindZetEventFrom(s.Relay!.Recorded, fromLine, eventFragment);
-            return found != null;
-        });
-        return JObject.Parse(found!.Line);
-    }
+    public static JObject WaitForZetEventFrom(AppiumSession s, int fromLine, string eventFragment) =>
+        WaitForZetEvent(s, $"ZET sends an event containing {eventFragment} from relay line {fromLine}",
+            recorded => FindZetEventFrom(recorded, fromLine, eventFragment));
 
     public static JObject StatusIdentity(JObject status, string identityName) =>
         StatusIdentityOrNull(status, identityName)
@@ -497,6 +495,11 @@ public static class IntegrationHelpers
         Assert.True((bool?)added["Id"]!["MfaEnabled"] == false, $"MFA is enabled before EnableMFA: {added}");
         WaitForZetEventAfter(s, AddIdentityLine, ControllerConnectedEvent);
         OpenMfaSetup(s, identityName);
+        return CompleteMfaSetup(s);
+    }
+
+    public static MfaEnrollment CompleteMfaSetup(AppiumSession s)
+    {
         ClickAt(s, WaitForId(s, "SecretButton"));
         string secret = WaitForId(s, "SecretCode").Text;
         TypeUntil(s, ById("SetupCode"), Totp.Compute(secret, DateTimeOffset.UtcNow));
@@ -558,16 +561,11 @@ public static class IntegrationHelpers
         WaitForZetEventAfter(s, AddIdentityLine, MfaEnrollmentRequiredEvent);
         ClickAt(s, WaitFor(s, InIdentityRow(AddedIdentityFileName, "MfaSetupNeeded")));
         WaitForController(s, ById("SetupCode"), "the MFA setup dialog opens");
-        ClickAt(s, WaitForId(s, "SecretButton"));
-        string secret = WaitForId(s, "SecretCode").Text;
-        TypeUntil(s, ById("SetupCode"), Totp.Compute(secret, DateTimeOffset.UtcNow));
-        SendAndWaitForZetReply(s, VerifyMfaLine, () => WaitForId(s, "AuthSetupButton").Click());
-        List<string> codes = ChallengeRecoveryCodes(AssertMfaEnrollmentVerified(s));
-        WaitForRecoveryCodes(s, codes);
+        MfaEnrollment enrollment = CompleteMfaSetup(s);
         ClickUntilGone(s, ById("CloseBlack"));
         WaitForController(s, By.XPath($"//Text[@Name='{identityName}']"), $"the row shows {identityName}");
         SortByNameAscending(s);
-        return new MfaEnrollment(secret, codes);
+        return enrollment;
     }
 
     // The app's UI thread can stall for seconds before it handles a click.

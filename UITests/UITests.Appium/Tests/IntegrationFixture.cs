@@ -38,7 +38,7 @@ public class IntegrationFixture : IAsyncLifetime
         _dex = await Dex.StartAsync(RequiredBinary("IDP_BIN"),
             Path.Combine(AppContext.BaseDirectory, "testdata", "dex-config.yaml"), Path.Combine(Home, "idp"));
         // ziti 1.6's ops import fails against an OS-trusted controller, so a leftover CA goes before the import.
-        if (OsCaTrust.IsInstalled()) OsCaTrust.Remove();
+        if (await Quickstart.CaTrustedAsync()) OsCaTrust.Remove();
         // Recopy when ziti-tunnel-sdk-c's tests/integration/testdata/fixture.json changes.
         _quickstart.ImportFixture(Path.Combine(AppContext.BaseDirectory, "testdata", "fixture.json"));
         // Starts enroll-to-none, and every test that changes it restores that.
@@ -54,7 +54,7 @@ public class IntegrationFixture : IAsyncLifetime
         {
             _caTrusted = false;
             // A failed install may have added nothing, and certutil -delstore fails when nothing matches.
-            if (OsCaTrust.IsInstalled()) OsCaTrust.Remove();
+            if (await Quickstart.CaTrustedAsync()) OsCaTrust.Remove();
             throw;
         }
     }
