@@ -26,6 +26,7 @@ using Newtonsoft.Json;
 using NLog;
 
 using ZitiDesktopEdge.DataStructures;
+using ZitiDesktopEdge.Server;
 
 /// <summary>
 /// The implementation will abstract away the setup of the communication to
@@ -113,8 +114,8 @@ namespace ZitiDesktopEdge.ServiceClient {
         }
 
         // ziti edge tunnel
-        private const string DefaultIpcPipe = @"ziti-edge-tunnel.sock";
-        private const string DefaultEventPipe = @"ziti-edge-tunnel-event.sock";
+        private static readonly string DefaultIpcPipe = IPCServer.PipePrefix + @"ziti-edge-tunnel.sock";
+        private static readonly string DefaultEventPipe = IPCServer.PipePrefix + @"ziti-edge-tunnel-event.sock";
 
         private string ipcPipe;
         private string eventPipe;

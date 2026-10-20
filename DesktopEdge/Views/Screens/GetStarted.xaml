@@ -21,7 +21,7 @@
              xmlns:vm="clr-namespace:ZitiDesktopEdge.ViewModels"
              xmlns:local="clr-namespace:ZitiDesktopEdge"
              mc:Ignorable="d"
-             MaxWidth="{StaticResource MaxWindowWidth}"
+             Width="{StaticResource MaxWindowWidth}"
              Visibility="{Binding Visibility}"
              d:DataContext="{d:DesignInstance Type=vm:GetStartedViewModel, IsDesignTimeCreatable=True}"
              d:DesignHeight="640"
@@ -75,7 +75,7 @@
         <!-- Dark theme backdrop -->
         <Rectangle Margin="10,10,10,10" RadiusX="12" RadiusY="12" ClipToBounds="True">
             <Rectangle.Fill>
-                <SolidColorBrush Color="{StaticResource DarkBackground}" Opacity="0.97"/>
+                <SolidColorBrush Color="{StaticResource DarkBackground}"/>
             </Rectangle.Fill>
             <Rectangle.Stroke>
                 <SolidColorBrush Color="White" Opacity="0.4"/>
