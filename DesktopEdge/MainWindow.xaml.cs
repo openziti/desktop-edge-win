@@ -1958,7 +1958,6 @@ namespace ZitiDesktopEdge {
         }
 
         private void updateViewWithIdentity(Identity id) {
-            // Takes MFA state from every status: ZET flips MfaEnabled to true after a failed EnableMFA on a legacy auth controller.
             var zid = ZitiIdentity.FromClient(id);
             var found = identities.Find(fid => fid.Identifier == id.Identifier);
             if(found != null) {
@@ -2247,26 +2246,18 @@ namespace ZitiDesktopEdge {
         }
 
         private async void AddIdentity_Click(object sender, RoutedEventArgs e) {
-            // Appium can't reliably drive the OS OpenFileDialog, so under ZDEW_UI_TEST the JWT comes from the file the
-            // test writes to %TEMP%\zdew-test-add-identity.jwt.
-            string chosenPath = null;
-            if (App.UiTestMode) {
-                chosenPath = Path.Combine(Path.GetTempPath(), "zdew-test-add-identity.jwt");
-            } else {
-                UIModel.HideOnLostFocus = false;
-                OpenFileDialog jwtDialog = new OpenFileDialog();
-                UIModel.HideOnLostFocus = true;
-                jwtDialog.DefaultExt = ".jwt";
-                jwtDialog.Filter = "Ziti Identities (*.jwt)|*.jwt";
-                if (jwtDialog.ShowDialog() == true) chosenPath = jwtDialog.FileName;
-            }
+            UIModel.HideOnLostFocus = false;
+            OpenFileDialog jwtDialog = new OpenFileDialog();
+            UIModel.HideOnLostFocus = true;
+            jwtDialog.DefaultExt = ".jwt";
+            jwtDialog.Filter = "Ziti Identities (*.jwt)|*.jwt";
 
-            if (chosenPath != null) {
+            if (jwtDialog.ShowDialog() == true) {
                 ShowLoad("Adding Identity", "Please wait while the identity is added");
-                string fileContent = File.ReadAllText(chosenPath);
+                string fileContent = File.ReadAllText(jwtDialog.FileName);
                 EnrollIdentifierPayload payload = new EnrollIdentifierPayload();
                 payload.UseKeychain = false;
-                string jwtFile = Path.GetFileName(chosenPath);
+                string jwtFile = Path.GetFileName(jwtDialog.FileName);
                 payload.IdentityFilename = Path.GetFileNameWithoutExtension(jwtFile);
                 payload.JwtContent = fileContent.Trim();
                 string[] jwtParts = fileContent?.Split('.');
@@ -2509,16 +2500,18 @@ namespace ZitiDesktopEdge {
                 Blurb.Content = message;
                 _blurbUrl = url;
                 BlurbArea.Visibility = Visibility.Visible;
-#if UI_TESTS
-                // The suite screenshots the blurb before it hides, so it shows at once, without fading in, and stays
-                // long enough for a slow runner. Clearing the animations stops a previous blurb's hide fade from
-                // overriding these values.
-                BlurbArea.BeginAnimation(Grid.OpacityProperty, null);
-                BlurbArea.BeginAnimation(Grid.MarginProperty, null);
-                BlurbArea.Opacity = 1;
-                BlurbArea.Margin = new Thickness(15, 0, 15, 15);
-                await Task.Delay(5000);
-#else
+                if (App.UiTestMode) {
+                    // The suite screenshots the blurb before it hides, so it shows at once, without fading in, and stays
+                    // long enough for a slow runner. Clearing the animations stops a previous blurb's hide fade from
+                    // overriding these values.
+                    BlurbArea.BeginAnimation(Grid.OpacityProperty, null);
+                    BlurbArea.BeginAnimation(Grid.MarginProperty, null);
+                    BlurbArea.Opacity = 1;
+                    BlurbArea.Margin = new Thickness(15, 0, 15, 15);
+                    await Task.Delay(5000);
+                    HideBlurb();
+                    return;
+                }
                 BlurbArea.Opacity = 0;
                 BlurbArea.Margin = new Thickness(0, 0, 0, 0);
                 DoubleAnimation animation = new DoubleAnimation(1, TimeSpan.FromSeconds(.3));
@@ -2526,7 +2519,6 @@ namespace ZitiDesktopEdge {
                 BlurbArea.BeginAnimation(Grid.OpacityProperty, animation);
                 BlurbArea.BeginAnimation(Grid.MarginProperty, animateThick);
                 await Task.Delay(2500);
-#endif
                 HideBlurb();
             } catch(Exception e) {
                 logger.Error(e);

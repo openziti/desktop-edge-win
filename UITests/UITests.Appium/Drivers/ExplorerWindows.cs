@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Text;
 
 namespace ZitiDesktopEdge.UITests.Drivers;
 
@@ -10,7 +9,7 @@ public static class ExplorerWindows
     private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(100);
 
     public static IReadOnlyList<TopLevelWindow> Open() =>
-        AppiumSession.TopLevelWindows().Where(w => ClassName(w.Handle) == FolderWindowClass).ToList();
+        AppiumSession.TopLevelWindows().Where(w => Win32Window.ClassName(w.Handle) == FolderWindowClass).ToList();
 
     // A window joins the shell's window list only once it opened its folder. Explorer closes it some time later.
     public static void Quit(TopLevelWindow window, TimeSpan timeout)
@@ -42,12 +41,5 @@ public static class ExplorerWindows
                 return item;
         }
         return null;
-    }
-
-    private static string ClassName(IntPtr hWnd)
-    {
-        StringBuilder name = new StringBuilder(64);
-        Win32Window.GetClassName(hWnd, name, name.Capacity);
-        return name.ToString();
     }
 }

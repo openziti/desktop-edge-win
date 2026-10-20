@@ -113,12 +113,33 @@ public static class TestHelpers
     // The app names an added identity after its JWT file, and ZET shows that until an event carries the controller's.
     public const string AddedIdentityFileName = "zdew-test-add-identity";
 
-    /// <summary>Under ZDEW_UI_TEST the app reads the JWT to add from here instead of opening a file dialog.</summary>
     private static string TestJwtPath => Path.Combine(Path.GetTempPath(), $"{AddedIdentityFileName}.jwt");
 
     public static void WriteTestJwt(string jwt) => File.WriteAllText(TestJwtPath, jwt);
 
-    public static void ClickAddIdentityWithJwt(AppiumSession s) => ClickAddIdentityMenuItem(s, "With JWT");
+    public static void ClickAddIdentityWithJwt(AppiumSession s)
+    {
+        ClickAddIdentityMenuItem(s, "With JWT");
+        ChooseFile(s, "Open", TestJwtPath);
+    }
+
+    private static readonly TimeSpan FileDialogTimeout = TimeSpan.FromSeconds(15);
+    // A first Open dialog can take over 15s to appear.
+    private static readonly TimeSpan FileDialogOpenTimeout = TimeSpan.FromSeconds(40);
+
+    /// <summary>Chooses <paramref name="path"/> in the Open dialog titled <paramref name="title"/> a click just opened.</summary>
+    public static void ChooseFile(AppiumSession s, string title, string path)
+    {
+        IntPtr? dialog = null;
+        // No WinAppDriver query until the dialog is up: one sent while it opens can lose the session's window.
+        WaitUntil(s, $"the '{title}' dialog is ready", FileDialogOpenTimeout, () =>
+        {
+            dialog = FileOpenDialog.Find(s.ProcessId, title);
+            return dialog != null && FileOpenDialog.IsReady(dialog.Value);
+        });
+        FileOpenDialog.Choose(dialog!.Value, path, FileDialogTimeout);
+        s.StopCaretBlinkAgain();
+    }
 
     public static void ClickAddIdentityWithUrl(AppiumSession s) => ClickAddIdentityMenuItem(s, "With URL");
 

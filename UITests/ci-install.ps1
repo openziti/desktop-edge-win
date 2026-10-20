@@ -1,7 +1,7 @@
 #requires -Version 7.0
 <#
     Installs Appium, appium-windows-driver and WinAppDriver for the UI tests, skipping any already installed.
-    Needs node and npm on PATH, the .NET 9 SDK and MSBuild.
+    Needs node and npm on PATH.
 #>
 [CmdletBinding()]
 param(
@@ -45,9 +45,9 @@ if ($installedDrivers.windows) {
     if ($LASTEXITCODE -ne 0) { throw "appium driver install appium-windows-driver failed" }
 }
 
-$wad1 = "C:\Program Files (x86)\Windows Application Driver\WinAppDriver.exe"
-$wad2 = "C:\Program Files\Windows Application Driver\WinAppDriver.exe"
-if ((Test-Path $wad1) -or (Test-Path $wad2)) {
+# run-ui-tests.ps1 starts it from this path.
+$winAppDriverExe = "${env:ProgramFiles(x86)}\Windows Application Driver\WinAppDriver.exe"
+if (Test-Path -LiteralPath $winAppDriverExe) {
     Write-Host "==> WinAppDriver already installed"
 } else {
     Write-Host "==> installing WinAppDriver v$WadVersion"
@@ -55,8 +55,8 @@ if ((Test-Path $wad1) -or (Test-Path $wad2)) {
     $url = "https://github.com/microsoft/WinAppDriver/releases/download/v$WadVersion/WindowsApplicationDriver_$WadVersion.msi"
     Invoke-WebRequest $url -OutFile $msi -UseBasicParsing
     Start-Process msiexec.exe -ArgumentList "/i", $msi, "/quiet", "/norestart" -Wait
-    if (-not ((Test-Path $wad1) -or (Test-Path $wad2))) {
-        throw "WinAppDriver install did not produce WinAppDriver.exe at either Program Files location"
+    if (-not (Test-Path -LiteralPath $winAppDriverExe)) {
+        throw "WinAppDriver install did not produce $winAppDriverExe"
     }
     Write-Host "==> WinAppDriver installed"
 }

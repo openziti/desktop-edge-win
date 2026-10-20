@@ -13,9 +13,6 @@ public class ThirdPartyCaTests
     private static readonly By CaDialogTitle = By.XPath("//Text[@Name='3rd Party Certificate']");
     // The certificate's Browse button has no x:Name.
     private static readonly By BrowseCertButton = By.XPath("//Button[@Name='Browse' and not(@AutomationId='BrowseKeyBtn')]");
-    private static readonly TimeSpan FileDialogTimeout = TimeSpan.FromSeconds(15);
-    // A first Open dialog can take over 15s to appear.
-    private static readonly TimeSpan FileDialogOpenTimeout = TimeSpan.FromSeconds(40);
 
     private readonly IntegrationFixture _fixture;
 
@@ -212,10 +209,12 @@ public class ThirdPartyCaTests
 
     private static void ChooseCertFiles(AppiumSession s, Quickstart.ClientCert cert)
     {
-        ChooseFile(s, BrowseCertButton, "Select Certificate File", cert.CertPath);
+        ClickAt(s, WaitFor(s, BrowseCertButton));
+        ChooseFile(s, "Select Certificate File", cert.CertPath);
         WaitUntil(s, "the certificate box shows the chosen file", TimeSpan.FromSeconds(5),
             () => TextById(s, "CertificateFile") == cert.CertPath);
-        ChooseFile(s, ById("BrowseKeyBtn"), "Select Key File", cert.KeyPath);
+        ClickAt(s, WaitFor(s, ById("BrowseKeyBtn")));
+        ChooseFile(s, "Select Key File", cert.KeyPath);
         WaitUntil(s, "the key box shows the chosen file", TimeSpan.FromSeconds(5),
             () => TextById(s, "KeyFile") == cert.KeyPath);
     }
@@ -227,18 +226,5 @@ public class ThirdPartyCaTests
         Assert.Equal(cert.CertPath, (string?)sent["Data"]!["Certificate"]);
         Assert.Equal(cert.KeyPath, (string?)sent["Data"]!["Key"]);
         return reply;
-    }
-
-    private static void ChooseFile(AppiumSession s, By browse, string title, string path)
-    {
-        ClickAt(s, WaitFor(s, browse));
-        IntPtr? dialog = null;
-        // No WinAppDriver query until the dialog is up: one sent while it opens can lose the session's window.
-        WaitUntil(s, $"the '{title}' dialog is ready", FileDialogOpenTimeout, () =>
-        {
-            dialog = FileOpenDialog.Find(s.ProcessId, title);
-            return dialog != null && FileOpenDialog.IsReady(dialog.Value);
-        });
-        FileOpenDialog.Choose(dialog!.Value, path, FileDialogTimeout);
     }
 }

@@ -36,7 +36,7 @@ public static class FileOpenDialog
             throw new Win32Exception(Marshal.GetLastWin32Error(), "posting Open to the Open dialog failed");
 
         DateTime deadline = DateTime.UtcNow + timeout;
-        while (IsWindow(dialog))
+        while (Win32Window.IsWindow(dialog))
         {
             if (DateTime.UtcNow > deadline)
                 throw new TimeoutException(
@@ -61,7 +61,7 @@ public static class FileOpenDialog
         bool found = false;
         EnumChildWindows(parent, (child, _) =>
         {
-            found = ClassName(child) == className;
+            found = Win32Window.ClassName(child) == className;
             return !found;
         }, IntPtr.Zero);
         return found;
@@ -72,7 +72,7 @@ public static class FileOpenDialog
         List<string> texts = new List<string>();
         EnumChildWindows(parent, (child, _) =>
         {
-            if (ClassName(child) == "Static" && WindowText(child).Length > 0)
+            if (Win32Window.ClassName(child) == "Static" && WindowText(child).Length > 0)
                 texts.Add(WindowText(child));
             return true;
         }, IntPtr.Zero);
@@ -91,7 +91,7 @@ public static class FileOpenDialog
         IntPtr combo = IntPtr.Zero;
         EnumChildWindows(dialog, (child, _) =>
         {
-            if (GetDlgCtrlID(child) != FileNameComboId || ClassName(child) != "ComboBoxEx32")
+            if (GetDlgCtrlID(child) != FileNameComboId || Win32Window.ClassName(child) != "ComboBoxEx32")
                 return true;
             combo = child;
             return false;
@@ -105,13 +105,6 @@ public static class FileOpenDialog
         return edit;
     }
 
-    private static string ClassName(IntPtr hWnd)
-    {
-        StringBuilder name = new StringBuilder(64);
-        GetClassName(hWnd, name, name.Capacity);
-        return name.ToString();
-    }
-
     private delegate bool EnumChildProc(IntPtr hWnd, IntPtr lParam);
 
     [DllImport("user32.dll")]
@@ -119,9 +112,6 @@ public static class FileOpenDialog
 
     [DllImport("user32.dll")]
     private static extern int GetDlgCtrlID(IntPtr hWnd);
-
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr FindWindowEx(IntPtr hWndParent, IntPtr hWndChildAfter, string lpszClass, string? lpszWindow);
@@ -134,9 +124,6 @@ public static class FileOpenDialog
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
-
-    [DllImport("user32.dll")]
-    private static extern bool IsWindow(IntPtr hWnd);
 
     [DllImport("user32.dll")]
     private static extern bool IsWindowEnabled(IntPtr hWnd);

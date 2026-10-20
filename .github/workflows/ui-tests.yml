@@ -6,20 +6,18 @@ name: UI Tests
 on:
   # Manual run against any branch.
   workflow_dispatch:
-  # On release rather than every push, to save CI minutes.
+  # A full release, published as one or promoted from a beta, so the Pages gallery tracks Latest.
   release:
-    types: [published]
+    types: [released]
   pull_request:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
-# One group per ref: Pages deployments from release-next queue instead of overlapping, and PRs don't wait on each other.
+# A new run of the same PR or branch cancels the older one.
 concurrency:
-  group: ui-tests-${{ github.ref }}
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   ui-tests:
@@ -35,7 +33,8 @@ jobs:
 
       # ci-install.ps1 pins the Appium and driver versions, so its hash is the key. npm installs Appium under the
       # prefix ci-install.ps1 is given and Appium installs its driver under ~/.appium.
-      - name: Restore Appium
+      - &restore-appium
+        name: Restore Appium
         uses: actions/cache@v6
         with:
           path: |
@@ -44,7 +43,8 @@ jobs:
           key: appium-${{ runner.os }}-${{ hashFiles('UITests/ci-install.ps1') }}
 
       # packages/ holds the packages.config projects' packages, ~/.nuget/packages the PackageReference ones.
-      - name: Restore NuGet packages
+      - &restore-nuget
+        name: Restore NuGet packages
         uses: actions/cache@v6
         with:
           path: |
@@ -107,22 +107,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Restore Appium
-        uses: actions/cache@v6
-        with:
-          path: |
-            ${{ runner.temp }}/appium-npm
-            ~/.appium
-          key: appium-${{ runner.os }}-${{ hashFiles('UITests/ci-install.ps1') }}
+      - *restore-appium
 
-      - name: Restore NuGet packages
-        uses: actions/cache@v6
-        with:
-          path: |
-            packages
-            ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.config', '**/*.csproj') }}
-          restore-keys: nuget-${{ runner.os }}-
+      - *restore-nuget
 
       # fetch-dex.ps1 pins the dex version, so its hash is the key.
       - name: Restore dex
@@ -179,11 +166,11 @@ jobs:
           pattern: ui-test-results-*
           path: UITests/TestResults
 
-      # Only release-next deploys the gallery to Pages, so elsewhere the rows carry no links.
+      # Only release runs deploy the gallery to Pages, so other runs' rows carry no links.
       - name: Write report and gallery
         shell: pwsh
         env:
-          GALLERY_URL: ${{ github.ref == 'refs/heads/release-next' && format('https://{0}.github.io/{1}/', github.repository_owner, github.event.repository.name) || '' }}
+          GALLERY_URL: ${{ github.event_name == 'release' && format('https://{0}.github.io/{1}/', github.repository_owner, github.event.repository.name) || '' }}
         run: |
           ./UITests/write-ui-test-report.ps1 -ResultsDir UITests/TestResults -GalleryUrl $env:GALLERY_URL -Tiers ([ordered]@{
               Mock                  = 'ui-test-results-Mock'
@@ -202,18 +189,25 @@ jobs:
           path: UITests/TestResults
           if-no-files-found: error
 
-      # The github-pages environment only accepts release-next, so elsewhere this and deploy-pages are skipped.
+      # Pages shows the Latest release's gallery, so this and deploy-pages run on releases only.
       - name: Upload Pages artifact (gallery for browsing)
         id: upload-pages
-        if: github.ref == 'refs/heads/release-next'
+        if: github.event_name == 'release'
         uses: actions/upload-pages-artifact@v5
         with:
           path: UITests/TestResults
 
   deploy-pages:
+    # Runs on different refs share the one Pages site, so their deploys queue.
+    concurrency:
+      group: ui-tests-pages
+      cancel-in-progress: false
     needs: report
     if: always() && needs.report.outputs.gallery-uploaded == 'success'
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
