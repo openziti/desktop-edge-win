@@ -184,7 +184,8 @@ namespace ZitiDesktopEdge {
             if (state.PendingUpdate.TimeLeft > 0) {
                 UpdateTimeLeft.Content = $"Automatic update to {state.PendingUpdate.Version} will occur on or after {state.PendingUpdate.InstallTime.ToString("g")}";
                 UpdateTimeLeft.Visibility = Visibility.Visible;
-                CheckForUpdateStatus.Content = $"update {state.PendingUpdate.Version} is available";
+                // Matches the monitor's DoUpdateCheck reply, which races this notification to set the same label.
+                CheckForUpdateStatus.Content = $"An update is available: {state.PendingUpdate.Version}";
                 CheckForUpdateStatus.Visibility = Visibility.Visible;
             }
             SetAutomaticUpgradesState();
