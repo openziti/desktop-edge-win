@@ -211,12 +211,10 @@ public class ThirdPartyCaTests
     {
         ClickAt(s, WaitFor(s, BrowseCertButton));
         ChooseFile(s, "Select Certificate File", cert.CertPath);
-        WaitUntil(s, "the certificate box shows the chosen file", TimeSpan.FromSeconds(5),
-            () => TextById(s, "CertificateFile") == cert.CertPath);
+        WaitForText(s, "CertificateFile", cert.CertPath, AppResponseTimeout);
         ClickAt(s, WaitFor(s, ById("BrowseKeyBtn")));
         ChooseFile(s, "Select Key File", cert.KeyPath);
-        WaitUntil(s, "the key box shows the chosen file", TimeSpan.FromSeconds(5),
-            () => TextById(s, "KeyFile") == cert.KeyPath);
+        WaitForText(s, "KeyFile", cert.KeyPath, AppResponseTimeout);
     }
 
     private static JObject Join(AppiumSession s, Quickstart.ClientCert cert)

@@ -26,7 +26,7 @@ public class IntegrationFixture : IAsyncLifetime
 
     protected IntegrationFixture(string homeName)
     {
-        Home = Path.Combine(TestHelpers.RepoRoot(), "UITests", "TestResults", homeName);
+        Home = Path.Combine(TestHelpers.TestResultsDir(), homeName);
     }
 
     protected virtual Task<Quickstart> StartQuickstartAsync(string zitiBin, string home) =>

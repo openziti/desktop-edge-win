@@ -31,6 +31,8 @@ public static class TestHelpers
     public static string RepoRoot() =>
         Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
 
+    public static string TestResultsDir() => Path.Combine(RepoRoot(), "UITests", "TestResults");
+
     public static string DefaultExePath() =>
         Path.Combine(RepoRoot(), "DesktopEdge", "bin", "Debug", "ZitiDesktopEdge.exe");
 
@@ -156,13 +158,22 @@ public static class TestHelpers
     public static string IdentityRowXPath(string identityName) =>
         $"//Custom[@ClassName='IdentityItem' and .//Text[@Name='{identityName}']]";
 
+    public static readonly By IdentityRows = By.XPath("//Custom[@ClassName='IdentityItem']");
+
     // Not row-scoped: only one row shows it, and the integration tier's row name comes from a dex claim.
     public static readonly By ExtAuthRequiredIcon = ById("ExtAuthRequired");
 
     public static By ById(string automationId) => new ByAutomationId(automationId);
 
+    public static By ErrorTitle(string text) => By.XPath($"//*[@AutomationId='ErrorTitle' and @Name='{text}']");
+
+    public static readonly By CloseErrorButton = By.XPath("//Button[@Name='Close Error']");
+
+    public static readonly By WelcomeClose =
+        By.XPath("//*[@AutomationId='GetStartedScreen']//*[@AutomationId='CloseButton']");
+
     public static string UiLogPath(string testName) =>
-        Path.Combine(RepoRoot(), "UITests", "TestResults", "logs", testName, "ui.log");
+        Path.Combine(TestResultsDir(), "logs", testName, "ui.log");
 
     // The monitor pipes have no relay, so ui.log is the only record of the reply.
     public static DateTime? MonitorReplyAtUtc(string testName, string op)
@@ -195,11 +206,11 @@ public static class TestHelpers
     }
 
     public static string MonitorLogPath(string testName) =>
-        Path.Combine(RepoRoot(), "UITests", "TestResults", "logs", testName, "monitor.log");
+        Path.Combine(TestResultsDir(), "logs", testName, "monitor.log");
 
     public static void SaveStep(byte[] png, string testName, string stepName)
     {
-        WriteReviewScreenshot(Path.Combine(RepoRoot(), "UITests", "TestResults", "screenshots", testName),
+        WriteReviewScreenshot(Path.Combine(TestResultsDir(), "screenshots", testName),
             $"{stepName}.png", png);
         Step.Log($"saved step {testName}/{stepName}");
     }
@@ -388,6 +399,9 @@ public static class TestHelpers
     public static string TextById(AppiumSession s, string id) =>
         s.Driver.FindElements(ById(id)).FirstOrDefault()?.Text ?? "";
 
+    public static void WaitForText(AppiumSession s, string id, string text, TimeSpan timeout) =>
+        WaitUntil(s, $"{id} shows {text}", timeout, () => TextById(s, id) == text);
+
     // An added identity's row can take about 5s to render.
     private static readonly TimeSpan ElementTimeout = TimeSpan.FromSeconds(6);
 
@@ -466,7 +480,7 @@ public static class TestHelpers
     public static string SaveTimeoutDiagnostics(AppiumSession s)
     {
         string stamp = DateTime.UtcNow.ToString("HHmmss-fff");
-        string dir = Path.Combine(RepoRoot(), "UITests", "TestResults", "screenshots", "timeouts");
+        string dir = Path.Combine(TestResultsDir(), "screenshots", "timeouts");
         try
         {
             Directory.CreateDirectory(dir);
@@ -542,7 +556,7 @@ public static class TestHelpers
             "SortByStatusArrow" => "Status",
             "SortByNameArrow" => "Name",
             "SortByServicesArrow" => "Services",
-            _ => "",
+            _ => throw new InvalidOperationException($"the sort arrow XPath matched an element with AutomationId '{id}'"),
         };
         return (col, el.Text ?? "");
     }
@@ -554,13 +568,13 @@ public static class TestHelpers
         IdNameThenName.Matches(s.Driver.PageSource).Select(m => m.Groups[1].Value).ToList();
 
     // The sort persists in user.config, so it would leak between tests into baselines.
-    public static void SortByNameAscending(AppiumSession s)
+    public static void SortAscending(AppiumSession s, string column)
     {
-        IWebElement nameHeader = WaitForId(s, "SortByName");
-        if (ActiveSortArrow(s).column != "Name")
-            ClickSortHeader(s, nameHeader, ("Name", "▼"));
+        IWebElement header = WaitForId(s, $"SortBy{column}");
+        if (ActiveSortArrow(s).column != column)
+            ClickSortHeader(s, header, (column, "▼"));
         if (ActiveSortArrow(s).arrow != "▲")
-            ClickSortHeader(s, nameHeader, ("Name", "▲"));
+            ClickSortHeader(s, header, (column, "▲"));
     }
 
     // Never retried: a second click flips the direction again.
@@ -602,9 +616,8 @@ public static class TestHelpers
 
     public static void DismissWelcome(AppiumSession s)
     {
-        By closeXPath = By.XPath("//*[@AutomationId='GetStartedScreen']//*[@AutomationId='CloseButton']");
-        ClickAt(s, WaitFor(s, closeXPath));
-        WaitForGone(s, closeXPath);
+        ClickAt(s, WaitFor(s, WelcomeClose));
+        WaitForGone(s, WelcomeClose);
         // A hidden docked window drops every child from the tree too, so check the landing page shows.
         WaitFor(s, By.XPath("//Text[@Name='MAIN']"));
     }
@@ -614,7 +627,7 @@ public static class TestHelpers
 
     public static Task VerifyPng(byte[] png, string testName)
     {
-        WriteReviewScreenshot(Path.Combine(RepoRoot(), "UITests", "TestResults", "screenshots"), $"{testName}.png", png);
+        WriteReviewScreenshot(Path.Combine(TestResultsDir(), "screenshots"), $"{testName}.png", png);
         return CompareToBaseline(testName, png,
             verified => Task.FromResult(CompareChangedPixels(png, verified, Array.Empty<Rectangle>())));
     }

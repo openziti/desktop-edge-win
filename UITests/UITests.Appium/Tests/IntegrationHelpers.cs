@@ -36,7 +36,7 @@ public static class IntegrationHelpers
     }
 
     public static int IdentityRowCount(AppiumSession s) =>
-        s.Driver.FindElements(By.XPath("//Custom[@ClassName='IdentityItem']")).Count;
+        s.Driver.FindElements(IdentityRows).Count;
 
     public static By ToggleStatus(string identityName, string status) => By.XPath(
         $"{IdentityRowXPath(identityName)}//*[@AutomationId='ToggleStatus' and @Name='{status}']");
@@ -278,7 +278,7 @@ public static class IntegrationHelpers
     {
         IWebElement deviceCertificate = WaitFor(s, DeviceCertificateRadio);
         ClickAt(s, deviceCertificate);
-        WaitUntil(s, "Device certificate is selected", TimeSpan.FromSeconds(5), () => deviceCertificate.Selected);
+        WaitUntil(s, "Device certificate is selected", AppResponseTimeout, () => deviceCertificate.Selected);
         Assert.False(WaitFor(s, UserSessionRadio).Selected, "User session stayed selected");
     }
 
@@ -433,7 +433,7 @@ public static class IntegrationHelpers
         AppiumSession s = await AppiumSession.LaunchAgainstZetAsync(DefaultExePath(),
             IntegrationFixture.ZetDiscriminator,
             ControllerText(await fixture.Quickstart.ControllerVersionAsync()),
-            Path.Combine(RepoRoot(), "UITests", "TestResults", "captures", $"{testName}.jsonl"),
+            Path.Combine(TestResultsDir(), "captures", $"{testName}.jsonl"),
             UiLogPath(testName));
         return await PrepareOrDispose(s, launched =>
         {
@@ -461,7 +461,7 @@ public static class IntegrationHelpers
         JObject added = WaitForZetEventAfter(s, AddIdentityLine, IdentityAddedEvent);
         Assert.True((bool?)added["Id"]!["Active"] == true, $"ZET's identity added event is not active: {added}");
         AssertJwtEnrolledIdentityFile(AddedIdentityFile(fixture));
-        SortByNameAscending(s);
+        SortAscending(s, "Name");
         return added;
     }
 
@@ -564,7 +564,7 @@ public static class IntegrationHelpers
         MfaEnrollment enrollment = CompleteMfaSetup(s);
         ClickUntilGone(s, ById("CloseBlack"));
         WaitForController(s, By.XPath($"//Text[@Name='{identityName}']"), $"the row shows {identityName}");
-        SortByNameAscending(s);
+        SortAscending(s, "Name");
         return enrollment;
     }
 

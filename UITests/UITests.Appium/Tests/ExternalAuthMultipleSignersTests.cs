@@ -208,7 +208,7 @@ public class ExternalAuthMultipleSignersTests
         IWebElement isDefault = WaitForId(s, "IsDefaultProvider");
         Assert.False(isDefault.Selected, "a default provider was already set before the test ticked it");
         ClickAt(s, isDefault);
-        WaitUntil(s, "the default provider checkbox is ticked", TimeSpan.FromSeconds(5), () => isDefault.Selected);
+        WaitUntil(s, "the default provider checkbox is ticked", AppResponseTimeout, () => isDefault.Selected);
     }
 
     private static string LoginFromRowWithDefault(AppiumSession s, string provider)

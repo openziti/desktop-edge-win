@@ -167,11 +167,11 @@ public class ExternalAuthSingleSignerTests
             await using AppiumSession s = await LaunchAsync(_fixture, name);
             await CompleteEnrollToCert(s, "test_ext_auth_multi_attr_selector");
             AssertGrantedServices(s, AddIdentityLine, new[] { userService, adminService });
-            WaitUntil(s, "the row's service count reads 2", ControllerTimeout, () => TextById(s, "ServiceCount") == "2");
+            WaitForText(s, "ServiceCount", "2", ControllerTimeout);
             await VerifyStep(s, Capture(s), name, "01-identity-with-services");
 
             // The only row, opened without its name: the controller names it after dex's encoded subject claim.
-            ClickUntil(s, By.XPath("//Custom[@ClassName='IdentityItem']"), ById("IdentityDetailsClose"));
+            ClickUntil(s, IdentityRows, ById("IdentityDetailsClose"));
             WaitFor(s, By.XPath($"//*[@Name='{userService}']"));
             WaitFor(s, By.XPath($"//*[@Name='{adminService}']"));
             await VerifyStep(s, Capture(s), name, "02-service-list");

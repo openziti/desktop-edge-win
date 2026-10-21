@@ -32,7 +32,7 @@ public class MfaEnrollmentTests
         WaitForController(s, InIdentityRow(AddedIdentityFileName, "MfaSetupNeeded"), "the row asks to set up MFA");
         Assert.Equal(0, (int?)WaitForZetReplyTo(s, AddIdentityLine)["Code"]);
         WaitForZetEventAfter(s, AddIdentityLine, MfaEnrollmentRequiredEvent);
-        SortByNameAscending(s);
+        SortAscending(s, "Name");
         await VerifyStep(s, Capture(s), name, "01-setup-needed-row");
 
         // The QR dialog opens on ZET's enrollment_challenge event, not on the EnableMFA reply.

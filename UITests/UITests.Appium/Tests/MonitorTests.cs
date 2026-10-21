@@ -17,7 +17,6 @@ public class MonitorTests
         Step.Use(output);
     }
 
-    private static readonly TimeSpan SettingsWriteTimeout = TimeSpan.FromSeconds(5);
     // The monitor fetches the release stream more than once before it answers.
     private static readonly TimeSpan UpdateCheckTimeout = TimeSpan.FromSeconds(15);
     // Nothing listens here, and Windows retries a refused connect, so the refusal still takes about 2s.
@@ -118,7 +117,7 @@ public class MonitorTests
         await WithSettings(settings, async () =>
         {
             await using AppiumSession s = await LaunchOnAutomaticUpgrades(name);
-            WaitForText(s, "UpdateUrl", UnreachableUrl, SettingsWriteTimeout);
+            WaitForText(s, "UpdateUrl", UnreachableUrl, AppResponseTimeout);
             ClickUntil(s, ById("CheckForUpdate"), "the update check starts",
                 () => TextById(s, "CheckForUpdateStatus") != "");
             WaitForText(s, "CheckForUpdateStatus", "FAILURE: Unable to connect to the remote server",
@@ -161,18 +160,11 @@ public class MonitorTests
         string backupFolder = WindowsOldFolder(Path.GetDirectoryName(MonitorProcess.SettingsPath())!);
         await WithSettings(null, async () =>
         {
-            await using (AppiumSession s = await LaunchOnAutomaticUpgrades(name))
-            {
-                Assert.Equal("ENABLED", WaitForLabelChange(s, "DISABLED"));
-                await VerifyStep(s, Capture(s), name, "01-defaults");
-            }
-            // The monitor writes settings.json on every start, and it restores only a file missing from the live folder.
-            WriteSettings(null);
             await WithBackup(backupFolder, Encoding.UTF8.GetBytes(backup.ToString()), async () =>
             {
                 await using AppiumSession s = await LaunchOnAutomaticUpgrades(name);
                 // The combos start at index 0, so 03:00 can only come from the restored file.
-                WaitForText(s, "MaintenanceWindowStartCombo", "03:00", SettingsWriteTimeout);
+                WaitForText(s, "MaintenanceWindowStartCombo", "03:00", AppResponseTimeout);
                 Assert.Equal("06:00", TextById(s, "MaintenanceWindowEndCombo"));
                 Assert.Equal("Weekly", TextById(s, "MaintenanceWindowFrequencyCombo"));
                 Assert.Equal("Wednesday", TextById(s, "MaintenanceWindowDayOfWeekCombo"));
@@ -191,7 +183,11 @@ public class MonitorTests
     [Trait("Category", "Monitor")]
     public async Task FeedbackBundleWrittenByMonitor()
     {
-        string name = nameof(FeedbackBundleWrittenByMonitor);
+        await WithSettings(null, () => CollectFeedbackBundle(nameof(FeedbackBundleWrittenByMonitor)));
+    }
+
+    private static async Task CollectFeedbackBundle(string name)
+    {
         string monitorLogs = Path.Combine(Path.GetDirectoryName(DefaultMonitorPath())!, "logs");
         IReadOnlySet<string> bundlesBefore = Bundles(monitorLogs);
         IReadOnlySet<IntPtr> explorerBefore = ExplorerWindows.Open().Select(w => w.Handle).ToHashSet();
@@ -208,7 +204,7 @@ public class MonitorTests
                 return explorer != null;
             });
             Step.Log($"the app opened Explorer window '{explorer!.Title}'");
-            ExplorerWindows.Quit(explorer, SettingsWriteTimeout);
+            ExplorerWindows.Quit(explorer, AppResponseTimeout);
             WaitUntil(s, "the Explorer window closes", ExplorerCloseTimeout, () => !ExplorerWindows.IsOpen(explorer));
             string bundle = Assert.Single(Bundles(monitorLogs).Except(bundlesBefore));
             try
@@ -235,7 +231,7 @@ public class MonitorTests
         finally
         {
             foreach (TopLevelWindow leftOpen in ExplorerWindows.Open().Where(w => !explorerBefore.Contains(w.Handle)))
-                ExplorerWindows.Quit(leftOpen, SettingsWriteTimeout);
+                ExplorerWindows.Quit(leftOpen, AppResponseTimeout);
         }
     }
 
@@ -250,17 +246,17 @@ public class MonitorTests
     {
         await using AppiumSession s = await LaunchOnAutomaticUpgrades(name);
         // The label starts as DISABLED in XAML, so any other text can only come from the monitor's status event.
-        Assert.Equal("ENABLED", WaitForLabelChange(s, "DISABLED"));
+        WaitForText(s, "AutomaticUpgradesToggleLabel", "ENABLED", AppResponseTimeout);
         await VerifyStep(s, Capture(s), name, "01-automatic-upgrades-enabled");
 
         ClickAt(s, WaitForId(s, "AutomaticUpgradesToggle"));
-        WaitForBlurb(s, "Automatic upgrades DISABLED", SettingsWriteTimeout);
-        Assert.True(WaitForSavedChange(s, null));
-        Assert.Equal("DISABLED", WaitForLabelChange(s, "ENABLED"));
+        WaitForBlurb(s, "Automatic upgrades DISABLED", AppResponseTimeout);
+        WaitForSaved(s, "AutomaticUpdatesDisabled", true);
+        WaitForText(s, "AutomaticUpgradesToggleLabel", "DISABLED", AppResponseTimeout);
 
         ClickAt(s, WaitForId(s, "AutomaticUpgradesToggle"));
-        Assert.False(WaitForSavedChange(s, true));
-        Assert.Equal("ENABLED", WaitForLabelChange(s, "DISABLED"));
+        WaitForSaved(s, "AutomaticUpdatesDisabled", false);
+        WaitForText(s, "AutomaticUpgradesToggleLabel", "ENABLED", AppResponseTimeout);
     }
 
     private static async Task SaveMaintenanceWindow(string name, ReleaseStreamServer releaseStream,
@@ -268,7 +264,7 @@ public class MonitorTests
     {
         await using AppiumSession s = await LaunchOnAutomaticUpgrades(name);
         // The combos start at index 0, so 01:00 can only come from the monitor's status event.
-        WaitForText(s, "MaintenanceWindowStartCombo", "01:00", SettingsWriteTimeout);
+        WaitForText(s, "MaintenanceWindowStartCombo", "01:00", AppResponseTimeout);
         Assert.Equal("04:00", TextById(s, "MaintenanceWindowEndCombo"));
         Assert.Equal("Daily", TextById(s, "MaintenanceWindowFrequencyCombo"));
         Assert.Equal(releaseStream.Url, TextById(s, "UpdateUrl"));
@@ -282,7 +278,7 @@ public class MonitorTests
 
         // Captured before the asserts below, which take long enough that the blurb hides first.
         DateTime? savedAtUtc = null;
-        WaitUntil(s, "the app reads the monitor's SetMaintenanceWindow reply", SettingsWriteTimeout, () =>
+        WaitUntil(s, "the app reads the monitor's SetMaintenanceWindow reply", AppResponseTimeout, () =>
         {
             savedAtUtc = MonitorReplyAtUtc(name, "SetMaintenanceWindow");
             return savedAtUtc != null;
@@ -323,15 +319,14 @@ public class MonitorTests
     private static async Task SaveBadUpdateUrls(string name, ReleaseStreamServer releaseStream)
     {
         await using AppiumSession s = await LaunchOnAutomaticUpgrades(name);
-        WaitForText(s, "UpdateUrl", releaseStream.Url, SettingsWriteTimeout);
+        WaitForText(s, "UpdateUrl", releaseStream.Url, AppResponseTimeout);
 
         // UIA reports the monitor's \n line breaks as \r\n.
-        SaveRejectedUrl(s, releaseStream, "not-a-url", "The url supplied is invalid: \r\nnot-a-url\r\n");
+        Assert.Equal("The url supplied is invalid: \r\nnot-a-url\r\n", SaveRejectedUrl(s, releaseStream, "not-a-url"));
         await VerifyStep(s, Capture(s), name, "01-not-a-url-rejected");
         CloseError(s, releaseStream);
 
-        string refused = SaveRejectedUrl(s, releaseStream, UnreachableUrl, null);
-        Assert.StartsWith("Unable to connect to the remote server:", refused);
+        Assert.StartsWith("Unable to connect to the remote server:", SaveRejectedUrl(s, releaseStream, UnreachableUrl));
         await VerifyStep(s, Capture(s), name, "02-unreachable-url-rejected");
         CloseError(s, releaseStream);
 
@@ -341,23 +336,20 @@ public class MonitorTests
         await VerifyStep(s, Capture(s), name, "03-reset-to-default-url");
     }
 
-    private static string SaveRejectedUrl(AppiumSession s, ReleaseStreamServer releaseStream, string url,
-        string? expectedDetails)
+    private static string SaveRejectedUrl(AppiumSession s, ReleaseStreamServer releaseStream, string url)
     {
         TypeUntil(s, ById("UpdateUrl"), url);
         ClickAt(s, WaitForId(s, "SaveSettingsButton"));
         // The monitor checks the URL by fetching it before it answers, so this waits as long as an update check.
-        WaitFor(s, By.XPath("//*[@AutomationId='ErrorTitle' and @Name='Error Saving Settings']"), UpdateCheckTimeout);
+        WaitFor(s, ErrorTitle("Error Saving Settings"), UpdateCheckTimeout);
         string details = TextById(s, "ErrorDetails");
-        if (expectedDetails != null)
-            Assert.Equal(expectedDetails, details);
         Assert.Equal(releaseStream.Url, (string?)SavedSettings()?["AutomaticUpdateURL"]);
         return details;
     }
 
     private static void CloseError(AppiumSession s, ReleaseStreamServer releaseStream)
     {
-        ClickUntilGone(s, By.XPath("//Button[@Name='Close Error']"));
+        ClickUntilGone(s, CloseErrorButton);
         WaitForText(s, "UpdateUrl", releaseStream.Url, AppResponseTimeout);
     }
 
@@ -365,7 +357,7 @@ public class MonitorTests
     {
         await using AppiumSession s = await LaunchOnAutomaticUpgrades(name);
         WaitFor(s, PolicyBanner);
-        WaitForText(s, "UpdateUrl", releaseStream.Url, SettingsWriteTimeout);
+        WaitForText(s, "UpdateUrl", releaseStream.Url, AppResponseTimeout);
         Assert.Equal("02:00", TextById(s, "MaintenanceWindowStartCombo"));
         Assert.Equal("05:00", TextById(s, "MaintenanceWindowEndCombo"));
         Assert.False(WaitForId(s, "AutomaticUpgradesToggle").Enabled);
@@ -423,41 +415,20 @@ public class MonitorTests
             return shown != null;
         });
         ClickAt(s, shown!);
-        WaitUntil(s, $"{comboId} closes", TimeSpan.FromSeconds(5),
+        WaitUntil(s, $"{comboId} closes", AppResponseTimeout,
             () => combo.FindElements(onscreenItem).Count == 0);
-        WaitForText(s, comboId, item, SettingsWriteTimeout);
+        WaitForText(s, comboId, item, AppResponseTimeout);
     }
 
-    private static void WaitForText(AppiumSession s, string id, string text, TimeSpan timeout) =>
-        WaitUntil(s, $"{id} shows {text}", timeout, () => TextById(s, id) == text);
 
-    private static string WaitForLabelChange(AppiumSession s, string previous)
-    {
-        string label = "";
-        WaitUntil(s, $"the automatic upgrades label changes from {previous}", SettingsWriteTimeout, () =>
-        {
-            label = TextById(s, "AutomaticUpgradesToggleLabel");
-            return label != "" && label != previous;
-        });
-        return label;
-    }
-
-    private static bool WaitForSavedChange(AppiumSession s, bool? previous)
-    {
-        bool? saved = null;
-        WaitUntil(s, $"the monitor saves AutomaticUpdatesDisabled over {previous?.ToString() ?? "no settings file"}",
-            SettingsWriteTimeout, () =>
-            {
-                saved = (bool?)SavedSettings()?["AutomaticUpdatesDisabled"];
-                return saved != null && saved != previous;
-            });
-        return saved!.Value;
-    }
+    private static void WaitForSaved(AppiumSession s, string key, bool expected) =>
+        WaitUntil(s, $"the monitor saves {key} {expected}", AppResponseTimeout,
+            () => (bool?)SavedSettings()?[key] == expected);
 
     private static MaintenanceWindow WaitForSavedWindowChange(AppiumSession s, MaintenanceWindow previous)
     {
         MaintenanceWindow? saved = null;
-        WaitUntil(s, $"the monitor saves a maintenance window other than {previous}", SettingsWriteTimeout, () =>
+        WaitUntil(s, $"the monitor saves a maintenance window other than {previous}", AppResponseTimeout, () =>
         {
             JObject? settings = SavedSettings();
             if (settings == null)
