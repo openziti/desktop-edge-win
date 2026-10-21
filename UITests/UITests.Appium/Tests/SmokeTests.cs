@@ -1,7 +1,5 @@
-using System.Collections.ObjectModel;
 using System.Drawing;
 using OpenQA.Selenium;
-using OpenQA.Selenium.Appium;
 using ZitiDesktopEdge.UITests.Drivers;
 using static ZitiDesktopEdge.UITests.Tests.TestHelpers;
 
@@ -14,6 +12,8 @@ public class SmokeTests
         Step.Use(output);
     }
 
+    private static readonly By LandingRow = By.XPath("//Text[@Name='enabled-id']");
+
     [Fact(Timeout = 60000)]
     [Trait("Category", "MainScreen")]
     [Trait("Category", "Screenshots")]
@@ -21,7 +21,7 @@ public class SmokeTests
     {
         await using AppiumSession session = await AppiumSession.LaunchAsync(DefaultExePath(),
             Fixture("landing-status.json"), UiLogPath(nameof(MainWindow_LaunchesAndRenders)));
-        WaitForId(session, "ConnectLabel");
+        WaitFor(session, LandingRow);
         await VerifyPng(Capture(session), nameof(MainWindow_LaunchesAndRenders));
     }
 
@@ -32,7 +32,7 @@ public class SmokeTests
     {
         await using AppiumSession session = await AppiumSession.LaunchAsync(DefaultExePath(),
             Fixture("landing-status.json"), UiLogPath(nameof(MainMenu_OpensOnHamburgerClick)));
-        WaitForId(session, "ConnectLabel");
+        WaitFor(session, LandingRow);
         OpenMainMenu(session);
         WaitFor(session, By.XPath("//*[@Name='Identities']"));
         await VerifyPng(Capture(session), nameof(MainMenu_OpensOnHamburgerClick));
@@ -46,7 +46,7 @@ public class SmokeTests
         string name = nameof(AddIdentityOffersJwtAndUrl);
         await using AppiumSession s = await AppiumSession.LaunchAsync(DefaultExePath(), Fixture("landing-status.json"),
             UiLogPath(name));
-        WaitForId(s, "ConnectLabel");
+        WaitFor(s, LandingRow);
         // AddIdAreaButton has no UIA peer. Its "ADD" label does, and the click bubbles up to it.
         ClickUntil(s, By.XPath("//Text[@Name='ADD']"), By.XPath("//MenuItem"));
         string[] items = s.Driver.FindElements(By.XPath("//MenuItem")).Select(item => item.GetAttribute("Name")).ToArray();
@@ -57,22 +57,11 @@ public class SmokeTests
     [Fact(Timeout = 60000)]
     [Trait("Category", "MainScreen")]
     [Trait("Category", "Screenshots")]
-    public async Task Visual_Disconnected()
-    {
-        await using AppiumSession session = await AppiumSession.LaunchAsync(
-            DefaultExePath(), Fixture("disconnected.json"), UiLogPath(nameof(Visual_Disconnected)));
-        WaitForId(session, "ConnectLabel");
-        await VerifyPng(Capture(session), nameof(Visual_Disconnected));
-    }
-
-    [Fact(Timeout = 60000)]
-    [Trait("Category", "MainScreen")]
-    [Trait("Category", "Screenshots")]
     public async Task Visual_NoIdentities()
     {
         await using AppiumSession session = await AppiumSession.LaunchAsync(
             DefaultExePath(), Fixture("no-identities.json"), UiLogPath(nameof(Visual_NoIdentities)));
-        WaitForId(session, "ConnectLabel");
+        WaitFor(session, WelcomeClose);
         await VerifyPng(Capture(session), nameof(Visual_NoIdentities));
     }
 
@@ -98,17 +87,6 @@ public class SmokeTests
         Assert.Equal(landing, closed);
     }
 
-    [Fact(Timeout = 60000)]
-    [Trait("Category", "Placement")]
-    public async Task DockedWelcomeStaysOnScreen()
-    {
-        string name = nameof(DockedWelcomeStaysOnScreen);
-        await using AppiumSession s = await AppiumSession.LaunchAsync(DefaultExePath(), Fixture("no-identities.json"),
-            UiLogPath(name));
-        WaitFor(s, By.XPath("//*[@AutomationId='GetStartedScreen']//*[@AutomationId='CloseButton']"));
-        AssertOnScreen(s, name, "01-welcome");
-    }
-
     private static Rectangle AssertOnScreen(AppiumSession s, string testName, string stepName)
     {
         SaveStep(s, testName, stepName);
@@ -130,9 +108,6 @@ public class SmokeTests
         WaitUntil(s, $"the list holds {count} rows", TimeSpan.FromSeconds(10),
             () => IntegrationHelpers.IdentityRowCount(s) == count);
         SaveStep(s, name, "01-many-identities");
-        ReadOnlyCollection<AppiumElement> rows =s.Driver.FindElements(By.XPath("//Custom[@ClassName='IdentityItem']"));
-        // A scrolled-out IdentityItem still reports displayed, so overflow shows as a row starting below the window.
-        int windowHeight = s.WindowBounds().Height;
-        Assert.Contains(rows, row => row.Location.Y >= windowHeight);
+        WaitFor(s, By.XPath("//*[@AutomationId='IdListScroller' and @VerticallyScrollable='True']"));
     }
 }

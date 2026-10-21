@@ -1,4 +1,3 @@
-using OpenQA.Selenium;
 using ZitiDesktopEdge.UITests.Drivers;
 using static ZitiDesktopEdge.UITests.Tests.TestHelpers;
 
@@ -12,33 +11,6 @@ public class SortTests
         Step.Use(output);
     }
 
-    private static readonly string[] Disabled = { "Bravo-Staging", "CharlieEdge" };
-    private static readonly string[] Enabled = { "zebra-prod", "ALPHA-DEV", "oscar-prod" };
-
-    private static void AssertLeads(List<string> order, string[] group) =>
-        Assert.Equal(group.Order(), order.Take(group.Length).Order());
-
-    private static string Flipped(string arrow)
-    {
-        if (arrow == "▲")
-            return "▼";
-        return "▲";
-    }
-
-    // SetSort puts a newly chosen column in descending order and flips the active one.
-    private static string ClickTwice(AppiumSession s, IWebElement header, string column)
-    {
-        (string activeColumn, string activeArrow) = ActiveSortArrow(s);
-        string first;
-        if (activeColumn == column)
-            first = Flipped(activeArrow);
-        else
-            first = "▼";
-        ClickSortHeader(s, header, (column, first));
-        ClickSortHeader(s, header, (column, Flipped(first)));
-        return Flipped(first);
-    }
-
     // About 30s of body, plus up to 30s of cold first app launch when the shuffled class order runs this first.
     [Fact(Timeout = 120000)]
     public async Task SortHeadersReorderIdentities()
@@ -46,29 +18,22 @@ public class SortTests
         string name = nameof(SortHeadersReorderIdentities);
         await using AppiumSession s = await AppiumSession.LaunchAsync(DefaultExePath(), FixtureBuilder.SortableMixed(),
             UiLogPath(name));
-        IWebElement statusHeader = WaitForId(s, "SortByStatus");
-        IWebElement servicesHeader = WaitForId(s, "SortByServices");
-        IWebElement nameHeader = WaitForId(s, "SortByName");
+        SortAscending(s, "Name");
 
-        // The sort persists in the user's user.config between runs, so the Status direction depends on where it starts.
-        string statusArrow = ClickTwice(s, statusHeader, "Status");
+        SortAscending(s, "Status");
         SaveStep(s, name, "01-after-status-x2");
-        // Status sorts by enabled state, and ascending puts disabled identities first.
-        string[] leading;
-        if (statusArrow == "▲")
-            leading = Disabled;
-        else
-            leading = Enabled;
-        AssertLeads(ListedNames(s), leading);
+        // Status sorts by enabled state, and ascending puts the two disabled identities first.
+        Assert.Equal(new[] { "Bravo-Staging", "CharlieEdge" }, ListedNames(s).Take(2).Order());
 
-        Assert.Equal("▲", ClickTwice(s, servicesHeader, "Services"));
+        SortAscending(s, "Services");
         SaveStep(s, name, "02-after-services-x2");
         // Services sorts by auth state first, so ascending leads with CharlieEdge, the only one needing ext auth.
         Assert.Equal("CharlieEdge", ListedNames(s)[0]);
 
-        Assert.Equal("▲", ClickTwice(s, nameHeader, "Name"));
+        ClickSortHeader(s, WaitForId(s, "SortByName"), ("Name", "▼"));
+        Assert.Equal(new[] { "zebra-prod", "oscar-prod", "CharlieEdge", "Bravo-Staging", "ALPHA-DEV" }, ListedNames(s));
+        ClickSortHeader(s, WaitForId(s, "SortByName"), ("Name", "▲"));
         SaveStep(s, name, "03-after-name-x2");
-        // Name ascending ignores case.
         Assert.Equal(new[] { "ALPHA-DEV", "Bravo-Staging", "CharlieEdge", "oscar-prod", "zebra-prod" }, ListedNames(s));
     }
 }

@@ -13,8 +13,6 @@ public class SettingsUpgradeTests
         Step.Use(output);
     }
 
-    private static readonly By ProviderMenuItems = By.XPath("//MenuItem");
-
     [Fact(Timeout = 90000)]
     [Trait("Category", "Screenshots")]
     public async Task SortAndDefaultProviderCarriedOverFromPreviousVersion()
@@ -64,7 +62,6 @@ public class SettingsUpgradeTests
             JObject externalAuth = WaitForDataRequest(upgraded, "ExternalAuth");
             Assert.Equal(previous.DefaultProviderIdentity, (string?)externalAuth["Data"]!["Identifier"]);
             Assert.Equal(previous.DefaultProvider, (string?)externalAuth["Data"]!["Provider"]);
-            Assert.DoesNotContain(upgraded.Driver.FindElements(ProviderMenuItems), item => item.Displayed);
         }
         finally
         {

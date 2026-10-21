@@ -13,7 +13,6 @@ public class ConnectButtonTests
     }
 
     private static By ConnectLabel(string text) => By.XPath($"//*[@AutomationId='ConnectLabel' and @Name='{text}']");
-    private static By ErrorTitle(string text) => By.XPath($"//*[@AutomationId='ErrorTitle' and @Name='{text}']");
 
     // Collapsed with the loading overlay, so it is in the tree only while the overlay shows.
     private static readonly By LoadingTitle = ById("LoadingTitle");
@@ -71,7 +70,7 @@ public class ConnectButtonTests
         Assert.Equal(failure + ":", TextById(s, "ErrorDetails"));
         await VerifyStep(s, Capture(s), name, "01-stop-failed");
 
-        ClickUntilGone(s, By.XPath("//Button[@Name='Close Error']"));
+        ClickUntilGone(s, CloseErrorButton);
         ClickUntilMonitorGets(s, ConnectImage, "Start");
         WaitFor(s, ErrorTitle("Error Starting Service"));
         WaitForGone(s, LoadingTitle);

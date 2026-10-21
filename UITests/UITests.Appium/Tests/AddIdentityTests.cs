@@ -10,7 +10,7 @@ namespace ZitiDesktopEdge.UITests.Tests;
 [Collection(IntegrationCollection.Name)]
 public class AddIdentityTests
 {
-    private static readonly By JwtInvalidError = By.XPath("//*[@AutomationId='ErrorTitle' and @Name='JWT Invalid']");
+    private static readonly By JwtInvalidError = ErrorTitle("JWT Invalid");
 
     private readonly IntegrationFixture _fixture;
 

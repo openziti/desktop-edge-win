@@ -79,7 +79,7 @@ public class UpdateTunIpTests
             return false;
         });
         ClickAt(s, row!);
-        WaitUntil(s, "the mask dropdown closes", TimeSpan.FromSeconds(5),
+        WaitUntil(s, "the mask dropdown closes", AppResponseTimeout,
             () => combo.FindElements(onscreenItem).Count == 0);
     }
 
