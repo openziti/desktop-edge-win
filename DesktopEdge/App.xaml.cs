@@ -43,6 +43,8 @@ namespace ZitiDesktopEdge {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         private static Mutex _mutex = null;
 
+        public string EnrollmentLink { get; private set; }
+
         protected override void OnSessionEnding(SessionEndingCancelEventArgs e) {
             base.OnSessionEnding(e);
         }
@@ -63,6 +65,8 @@ namespace ZitiDesktopEdge {
                 ManagedSettingsViewModel policyViewModel = new ManagedSettingsViewModel();
                 policyViewModel.ApplyState(policyState);
                 Current.Properties["ManagedSettingsViewModel"] = policyViewModel;
+
+                EnrollmentLink = Array.Find(e.Args, EnrollmentLinkReader.IsEnrollmentLink);
 
                 const string appName = "Ziti Desktop Edge";
 
@@ -86,7 +90,11 @@ namespace ZitiDesktopEdge {
                             return;
 
                         using (StreamWriter writer = new StreamWriter(client)) {
-                            writer.Write("showscreen");
+                            if (EnrollmentLink != null) {
+                                writer.Write(EnrollmentLink);
+                            } else {
+                                writer.Write("showscreen");
+                            }
                             writer.Flush();
                         }
                     }
