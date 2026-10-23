@@ -22,7 +22,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
-using System.Windows.Threading;
 using Windows.Web.Http;
 using ZitiDesktopEdge.DataStructures;
 
@@ -146,22 +145,6 @@ namespace ZitiDesktopEdge {
                 ControllerURL.Focus();
                 ControllerURL.SelectAll();
             }), System.Windows.Threading.DispatcherPriority.Loaded);
-        }
-
-        public void PrepareForLink(Uri controller) {
-            ControllerURL.Text = controller.AbsoluteUri;
-            Dispatcher.BeginInvoke(new Action(() => {
-                JoinNetworkBtn.Disable();
-                Focusable = true;
-                Focus();
-                DispatcherTimer arm = new DispatcherTimer();
-                arm.Interval = TimeSpan.FromSeconds(1);
-                arm.Tick += (s, e) => {
-                    arm.Stop();
-                    UpdateUrlValidity();
-                };
-                arm.Start();
-            }), DispatcherPriority.Loaded);
         }
 
         private static string TryReadHttpUrlFromClipboard() {
