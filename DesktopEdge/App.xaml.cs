@@ -15,6 +15,7 @@
 */
 
 using System;
+using System.ComponentModel;
 using System.Text;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -32,6 +33,7 @@ using Ziti.Desktop.Edge.Utils;
 using ZitiDesktopEdge.ViewModels;
 using System.Reflection;
 using ZitiDesktopEdge.Utility;
+using ZitiDesktopEdge.Native;
 
 namespace ZitiDesktopEdge {
     /// <summary>
@@ -88,6 +90,12 @@ namespace ZitiDesktopEdge {
 
                         if (!client.IsConnected)
                             return;
+
+                        try {
+                            NativeMethods.LetPipeServerComeForward(client);
+                        } catch (Win32Exception ex) {
+                            logger.Warn(ex, "could not let the running instance come forward");
+                        }
 
                         using (StreamWriter writer = new StreamWriter(client)) {
                             if (EnrollmentLink != null) {

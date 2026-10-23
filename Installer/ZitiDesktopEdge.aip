@@ -357,6 +357,7 @@
     <ROW Registry="AI_ExePath" Root="-1" Key="Software\Caphyon\Advanced Installer\LZMA\[ProductCode]\[ProductVersion]" Name="AI_ExePath" Value="[AI_SETUPEXEPATH]" Component_="AI_ExePath"/>
     <ROW Registry="AdvancedInstaller" Root="-1" Key="Software\Caphyon\Advanced Installer" Name="\"/>
     <ROW Registry="Caphyon" Root="-1" Key="Software\Caphyon" Name="\"/>
+    <ROW Registry="Classes" Root="2" Key="Software\Classes" Name="\"/>
     <ROW Registry="LZMA" Root="-1" Key="Software\Caphyon\Advanced Installer\LZMA" Name="\"/>
     <ROW Registry="Manufacturer" Root="-1" Key="Software\[Manufacturer]" Name="\"/>
     <ROW Registry="Path" Root="-1" Key="Software\[Manufacturer]\[ProductName]" Name="Path" Value="[APPDIR]" Component_="ProductInformation"/>
@@ -364,7 +365,15 @@
     <ROW Registry="ProductName" Root="-1" Key="Software\[Manufacturer]\[ProductName]" Name="\"/>
     <ROW Registry="ProductVersion" Root="-1" Key="Software\Caphyon\Advanced Installer\LZMA\[ProductCode]\[ProductVersion]" Name="\"/>
     <ROW Registry="Software" Root="-1" Key="Software" Name="\"/>
+    <ROW Registry="Software_1" Root="2" Key="Software" Name="\"/>
+    <ROW Registry="URLProtocol" Root="2" Key="Software\Classes\ziti" Name="URL Protocol" Component_="ZitiDesktopEdge.exe"/>
     <ROW Registry="Version" Root="-1" Key="Software\[Manufacturer]\[ProductName]" Name="Version" Value="[ProductVersion]" Component_="ProductInformation"/>
+    <ROW Registry="command" Root="2" Key="Software\Classes\ziti\shell\open\command" Name="\"/>
+    <ROW Registry="open" Root="2" Key="Software\Classes\ziti\shell\open" Name="\"/>
+    <ROW Registry="shell" Root="2" Key="Software\Classes\ziti\shell" Name="\"/>
+    <ROW Registry="ziti" Root="2" Key="Software\Classes\ziti" Name="\"/>
+    <ROW Registry="ziti_Command" Root="2" Key="Software\Classes\ziti\shell\open\command" Value="&quot;[APPDIR]ZitiDesktopEdge.exe&quot; &quot;%1&quot;" Component_="ZitiDesktopEdge.exe"/>
+    <ROW Registry="ziti_Default" Root="2" Key="Software\Classes\ziti" Value="URL:Ziti Protocol" Component_="ZitiDesktopEdge.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiServConfigComponent">
     <ROW MsiServiceConfig="ServiceName" Name="ziti-monitor" Event="1" ConfigType="3" Argument="1" Component_="ZitiUpdateService.exe"/>

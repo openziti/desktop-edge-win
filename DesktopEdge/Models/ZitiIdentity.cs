@@ -21,6 +21,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Ziti.Desktop.Edge.Utils;
 using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.ServiceClient;
 
@@ -285,9 +286,13 @@ namespace ZitiDesktopEdge.Models {
                 AuthInProgress = true;
                 ExternalAuthLoginResponse resp = await client.ExternalAuthLogin(Identifier, provider);
                 if (resp?.Error == null) {
-                    if (resp?.Data?.url != null) {
+                    if (HttpUrl.IsValid(resp?.Data?.url)) {
                         logger.Info("beginning external auth using url: {}", resp.Data?.url);
                         Process.Start(resp.Data.url);
+                    } else if (resp?.Data?.url != null) {
+                        logger.Warn("refusing external auth url {url}: not http or https", resp.Data.url);
+                        AuthInProgress = false;
+                        errMsg = "External authentication could not start. The external auth URL is invalid. Inform your network administrator.";
                     } else {
                         AuthInProgress = false;
                         errMsg = "External authentication could not start. No URL was returned to login. Inform your network administrator.";

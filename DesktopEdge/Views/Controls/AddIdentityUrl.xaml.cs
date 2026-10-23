@@ -24,6 +24,7 @@ using System.Windows.Input;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using Windows.Web.Http;
+using Ziti.Desktop.Edge.Utils;
 using ZitiDesktopEdge.DataStructures;
 
 namespace ZitiDesktopEdge {
@@ -169,8 +170,7 @@ namespace ZitiDesktopEdge {
                 if (!Clipboard.ContainsText()) return null;
                 string text = Clipboard.GetText()?.Trim();
                 if (string.IsNullOrEmpty(text)) return null;
-                if (Uri.TryCreate(text, UriKind.Absolute, out Uri uri)
-                    && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)) {
+                if (HttpUrl.IsValid(text)) {
                     return text;
                 }
                 return null;
