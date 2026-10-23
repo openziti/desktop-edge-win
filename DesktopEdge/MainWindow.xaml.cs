@@ -300,18 +300,6 @@ namespace ZitiDesktopEdge {
             ShowModal();
             AddIdentityByURL.PrepareForEntry();
         }
-
-        private void ShowJoinByLink(string text) {
-            Uri controller = EnrollmentLinkReader.GetControllerUrl(text);
-            if (controller == null) {
-                ShowError("Unable to add identity", "The link is not a valid enrollment link");
-                return;
-            }
-            logger.Info("opening enrollment link for controller {controller}", controller);
-            AnimateDialogIn(AddIdentityByURL);
-            ShowModal();
-            AddIdentityByURL.PrepareForLink(controller);
-        }
         
         private void AnimateDialogIn(UserControl dialog) {
             dialog.Opacity = 0;
@@ -962,9 +950,6 @@ namespace ZitiDesktopEdge {
         private void App_ReceiveString(string obj) {
             Console.WriteLine(obj);
             BringWindowForward();
-            if (EnrollmentLinkReader.IsEnrollmentLink(obj)) {
-                ShowJoinByLink(obj);
-            }
         }
 
         async private void MainWindow_Loaded(object sender, RoutedEventArgs e) {
@@ -972,9 +957,6 @@ namespace ZitiDesktopEdge {
             Window window = Window.GetWindow(App.Current.MainWindow);
             ZitiDesktopEdge.App app = (ZitiDesktopEdge.App)App.Current;
             app.ReceiveString += App_ReceiveString;
-            if (app.EnrollmentLink != null) {
-                App_ReceiveString(app.EnrollmentLink);
-            }
 
             // add a new service client
             serviceClient = new DataClient("UI-DataClient");
