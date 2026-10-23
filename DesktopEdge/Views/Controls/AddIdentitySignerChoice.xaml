@@ -28,8 +28,8 @@
                 CornerRadius="10"
                 Padding="10" />
         <StackPanel Margin="5,10,5,10">
-            <Label Content="Configure Enrollment" Foreground="White" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold" />
-            <Label Content="Choose how this identity connects to the network" Foreground="White" Opacity="0.7" FontSize="12" HorizontalAlignment="Center" Margin="0,0,0,10" />
+            <Label Content="{Binding Header}" Foreground="White" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold" />
+            <TextBlock Text="{Binding Subtitle}" Foreground="White" Opacity="0.7" FontSize="12" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" Margin="5,5,5,15" />
 
             <Label Content="Identity Provider"
                    Foreground="White" Opacity="0.7" FontSize="12"

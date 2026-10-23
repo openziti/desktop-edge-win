@@ -22,10 +22,10 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
-using System.Windows.Threading;
 using Windows.Web.Http;
 using Ziti.Desktop.Edge.Utils;
 using ZitiDesktopEdge.DataStructures;
+using ZitiDesktopEdge.Models;
 
 namespace ZitiDesktopEdge {
     public partial class AddIdentityUrl : UserControl {
@@ -130,6 +130,7 @@ namespace ZitiDesktopEdge {
         /// </summary>
         public void PrepareForEntry() {
             string clipboardUrl = TryReadHttpUrlFromClipboard();
+            AddIdentityViewModel.Link = null;
             ControllerURL.Text = clipboardUrl ?? AddIdentityViewModel.UrlPlaceholder;
             // Defer BOTH the validity refresh and the focus/select to Loaded priority. Two
             // reasons:
@@ -149,20 +150,15 @@ namespace ZitiDesktopEdge {
             }), System.Windows.Threading.DispatcherPriority.Loaded);
         }
 
-        public void PrepareForLink(Uri controller) {
-            ControllerURL.Text = controller.AbsoluteUri;
-            Dispatcher.BeginInvoke(new Action(() => {
-                JoinNetworkBtn.Disable();
-                Focusable = true;
-                Focus();
-                DispatcherTimer arm = new DispatcherTimer();
-                arm.Interval = TimeSpan.FromSeconds(1);
-                arm.Tick += (s, e) => {
-                    arm.Stop();
-                    UpdateUrlValidity();
-                };
-                arm.Start();
-            }), DispatcherPriority.Loaded);
+        public async void PrepareForLink(EnrollmentLink link) {
+            ControllerURL.Text = link.Controller.AbsoluteUri;
+            if (!IsUrlSyntacticallyValid()) {
+                this.OnClose?.Invoke(false, this);
+                await ((MainWindow)Application.Current.MainWindow).ShowBlurbAsync("Invalid or unreachable host name", "");
+                return;
+            }
+            AddIdentityViewModel.Link = link;
+            JoinNetworkUrl(null, null);
         }
 
         private static string TryReadHttpUrlFromClipboard() {

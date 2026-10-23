@@ -302,15 +302,17 @@ namespace ZitiDesktopEdge {
         }
 
         private void ShowJoinByLink(string text) {
-            Uri controller = EnrollmentLinkReader.GetControllerUrl(text);
-            if (controller == null) {
+            if (ModalBg.Visibility == Visibility.Visible) {
+                logger.Warn("ignoring enrollment link while a dialog is open");
+                return;
+            }
+            EnrollmentLink link = EnrollmentLinkReader.GetEnrollmentLink(text);
+            if (link == null) {
                 ShowError("Unable to add identity", "The link is not a valid enrollment link");
                 return;
             }
-            logger.Info("opening enrollment link for controller {controller}", controller);
-            AnimateDialogIn(AddIdentityByURL);
-            ShowModal();
-            AddIdentityByURL.PrepareForLink(controller);
+            logger.Info("opening enrollment link for controller {controller}, provider {provider}, type {type}", link.Controller, link.Provider, link.EnrollTo);
+            AddIdentityByURL.PrepareForLink(link);
         }
         
         private void AnimateDialogIn(UserControl dialog) {
@@ -2238,7 +2240,7 @@ namespace ZitiDesktopEdge {
                         } else {
                             logger.Warn("refusing external auth url {url}: not http or https", createdId.Url);
                             HideLoad();
-                            await ShowBlurbAsync("Unexpected error when adding identity!", "The external auth URL is invalid");
+                            await ShowBlurbAsync("The external auth URL is invalid", "");
                         }
                         return;
                     }
@@ -2617,6 +2619,8 @@ namespace ZitiDesktopEdge {
 
         void OnNeedsSignerChoiceAction(AddIdentityViewModel vm, UserControl toClose) {
             // Swap dialogs without touching the modal overlay so the main window stays dimmed.
+            // An enrollment link has no URL dialog open, so it dims here.
+            if (ModalBg.Visibility != Visibility.Visible) ShowModal();
             AnimateDialogOut(toClose);
             AddIdentitySignerPicker.Prepare(vm);
             AnimateDialogIn(AddIdentitySignerPicker);
