@@ -157,6 +157,7 @@ namespace ZitiDesktopEdge {
                 await ((MainWindow)Application.Current.MainWindow).ShowBlurbAsync("Invalid or unreachable host name", "");
                 return;
             }
+            AddIdentityViewModel.Reset();
             AddIdentityViewModel.Link = link;
             if (link.Jwt != null) {
                 AddIdentityViewModel.IdentityFilename = link.Controller.Host + "_" + link.Controller.Port;
