@@ -16,7 +16,9 @@
 
 using System;
 using System.Collections.Specialized;
+using System.Text;
 using System.Web;
+using Newtonsoft.Json;
 using NLog;
 using ZitiDesktopEdge.Models;
 
@@ -36,6 +38,18 @@ namespace Ziti.Desktop.Edge.Utils {
                 return null;
             }
             NameValueCollection query = HttpUtility.ParseQueryString(link.Query);
+            string jwt;
+            if (!TryGetOptional(query, "jwt", out jwt)) return null;
+            if (jwt != null) {
+                if (query.GetValues("controller") != null) {
+                    Logger.Warn("enrollment link cannot have both a controller and a jwt");
+                    return null;
+                }
+                if (query.Count > 1) Logger.Warn("enrollment link with a jwt ignores its other parameters");
+                Uri issuer = GetNetworkJwtIssuer(jwt);
+                if (issuer == null) return null;
+                return new EnrollmentLink { Controller = issuer, Jwt = jwt };
+            }
             string[] controllers = query.GetValues("controller");
             if (controllers == null || controllers.Length != 1) {
                 Logger.Warn("enrollment link needs exactly one controller");
@@ -59,6 +73,34 @@ namespace Ziti.Desktop.Edge.Utils {
                 return null;
             }
             return new EnrollmentLink { Controller = controller, Provider = provider, EnrollTo = enrollTo };
+        }
+
+        private static Uri GetNetworkJwtIssuer(string jwt) {
+            string[] parts = jwt.Split('.');
+            if (parts.Length != 3) {
+                Logger.Warn("enrollment link jwt does not have three parts");
+                return null;
+            }
+            string base64 = parts[1].Replace('-', '+').Replace('_', '/');
+            string padded = base64.PadRight(base64.Length + (4 - base64.Length % 4) % 4, '=');
+            NetworkJwtClaims claims;
+            try {
+                claims = JsonConvert.DeserializeObject<NetworkJwtClaims>(Encoding.UTF8.GetString(Convert.FromBase64String(padded)));
+            } catch (Exception e) when (e is FormatException || e is JsonException) {
+                Logger.Warn(e, "enrollment link jwt claims are not base64url JSON");
+                return null;
+            }
+            Uri issuer;
+            if (claims == null || claims.Em != "network" || !Uri.TryCreate(claims.Iss, UriKind.Absolute, out issuer) || issuer.Scheme != Uri.UriSchemeHttps) {
+                Logger.Warn("enrollment link jwt is not a network JWT from an https controller");
+                return null;
+            }
+            return issuer;
+        }
+
+        private class NetworkJwtClaims {
+            public string Iss { get; set; }
+            public string Em { get; set; }
         }
 
         private static bool TryGetOptional(NameValueCollection query, string name, out string value) {

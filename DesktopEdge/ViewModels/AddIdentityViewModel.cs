@@ -187,6 +187,7 @@ namespace ZitiDesktopEdge {
         public EnrollIdentifierPayload BuildEnrollPayload() {
             return new EnrollIdentifierPayload {
                 ControllerURL = ControllerBaseUrl,
+                JwtContent = _link?.Jwt,
                 IdentityFilename = IdentityFilename,
                 EnrollMode = PayloadEnrollMode(),
                 Provider = PayloadProvider(),

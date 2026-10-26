@@ -158,6 +158,11 @@ namespace ZitiDesktopEdge {
                 return;
             }
             AddIdentityViewModel.Link = link;
+            if (link.Jwt != null) {
+                AddIdentityViewModel.IdentityFilename = link.Controller.Host + "_" + link.Controller.Port;
+                OnNeedsSignerChoice?.Invoke(AddIdentityViewModel, this);
+                return;
+            }
             JoinNetworkUrl(null, null);
         }
 
