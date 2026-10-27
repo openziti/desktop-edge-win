@@ -286,11 +286,11 @@ namespace ZitiDesktopEdge.Models {
                 AuthInProgress = true;
                 ExternalAuthLoginResponse resp = await client.ExternalAuthLogin(Identifier, provider);
                 if (resp?.Error == null) {
-                    if (HttpUrl.IsValid(resp?.Data?.url)) {
+                    if (HttpsUrl.IsValid(resp?.Data?.url)) {
                         logger.Info("beginning external auth using url: {}", resp.Data?.url);
                         Process.Start(resp.Data.url);
                     } else if (resp?.Data?.url != null) {
-                        logger.Warn("refusing external auth url {url}: not http or https", resp.Data.url);
+                        logger.Warn("refusing external auth url {url}: not https", resp.Data.url);
                         AuthInProgress = false;
                         errMsg = "External authentication could not start. The external auth URL is invalid. Inform your network administrator.";
                     } else {

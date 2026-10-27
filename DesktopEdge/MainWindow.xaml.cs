@@ -2235,10 +2235,10 @@ namespace ZitiDesktopEdge {
                     // External-auth enrollment: zet returns an auth URL instead of a full identity.
                     // Launch the browser; zet will emit a normal identity event once the user signs in.
                     if (!string.IsNullOrEmpty(createdId.Url)) {
-                        if (HttpUrl.IsValid(createdId.Url)) {
+                        if (HttpsUrl.IsValid(createdId.Url)) {
                             System.Diagnostics.Process.Start(createdId.Url);
                         } else {
-                            logger.Warn("refusing external auth url {url}: not http or https", createdId.Url);
+                            logger.Warn("refusing external auth url {url}: not https", createdId.Url);
                             HideLoad();
                             await ShowBlurbAsync("The external auth URL is invalid", "");
                         }

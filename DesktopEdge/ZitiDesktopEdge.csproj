@@ -145,7 +145,7 @@
     <Compile Include="Models\ManagedSettingsState.cs" />
     <Compile Include="Models\ViewState.cs" />
     <Compile Include="Utils\EnrollmentLinkReader.cs" />
-    <Compile Include="Utils\HttpUrl.cs" />
+    <Compile Include="Utils\HttpsUrl.cs" />
     <Compile Include="Utils\ManagedSettingsReader.cs" />
     <Compile Include="ViewModels\ManagedSettingsViewModel.cs" />
     <Compile Include="ViewModels\AddIdentityViewModel.cs" />

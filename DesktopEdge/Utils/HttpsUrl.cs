@@ -17,10 +17,9 @@
 using System;
 
 namespace Ziti.Desktop.Edge.Utils {
-    internal static class HttpUrl {
+    internal static class HttpsUrl {
         internal static bool IsValid(string text) {
-            return Uri.TryCreate(text, UriKind.Absolute, out Uri uri)
-                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+            return Uri.TryCreate(text, UriKind.Absolute, out Uri uri) && uri.Scheme == Uri.UriSchemeHttps;
         }
     }
 }
