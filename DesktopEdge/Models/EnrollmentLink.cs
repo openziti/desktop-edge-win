@@ -19,11 +19,10 @@ using System;
 namespace ZitiDesktopEdge.Models {
     /// <summary>
     /// A ziti://enroll link. Provider and EnrollTo ("cert" or "token") are optional answers used instead of asking,
-    /// when the network offers them. Jwt is a network JWT whose issuer is Controller.
+    /// when the network offers them.
     /// </summary>
     public class EnrollmentLink {
         public Uri Controller { get; set; }
-        public string Jwt { get; set; }
         public string Provider { get; set; }
         public string EnrollTo { get; set; }
     }
