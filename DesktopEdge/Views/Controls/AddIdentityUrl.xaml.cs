@@ -23,6 +23,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
 using Windows.Web.Http;
+using Ziti.Desktop.Edge.Utils;
 using ZitiDesktopEdge.DataStructures;
 using ZitiDesktopEdge.Models;
 
@@ -105,12 +106,9 @@ namespace ZitiDesktopEdge {
         }
 
         private bool IsUrlSyntacticallyValid() {
-            try {
-                Uri ctrl = new Uri(ControllerURL.Text);
-                return ctrl.Host.Contains(".") && ctrl.Host.Length >= 3;
-            } catch {
-                return false;
-            }
+            if (!HttpsUrl.IsValid(ControllerURL.Text)) return false;
+            Uri ctrl = new Uri(ControllerURL.Text);
+            return ctrl.Host.Contains(".") && ctrl.Host.Length >= 3;
         }
 
         private void ExecuteClose(object sender, MouseButtonEventArgs e) {
@@ -123,12 +121,12 @@ namespace ZitiDesktopEdge {
         }
 
         /// <summary>
-        /// Reset the textbox for a fresh entry: if the clipboard holds an http(s) URL, paste it;
+        /// Reset the textbox for a fresh entry: if the clipboard holds an https URL, paste it;
         /// otherwise restore the placeholder. Either way, focus the field and select all so the
         /// first keystroke replaces it.
         /// </summary>
         public void PrepareForEntry() {
-            string clipboardUrl = TryReadHttpUrlFromClipboard();
+            string clipboardUrl = TryReadHttpsUrlFromClipboard();
             AddIdentityViewModel.Link = null;
             ControllerURL.Text = clipboardUrl ?? AddIdentityViewModel.UrlPlaceholder;
             // Defer BOTH the validity refresh and the focus/select to Loaded priority. Two
@@ -161,13 +159,12 @@ namespace ZitiDesktopEdge {
             JoinNetworkUrl(null, null);
         }
 
-        private static string TryReadHttpUrlFromClipboard() {
+        private static string TryReadHttpsUrlFromClipboard() {
             try {
                 if (!Clipboard.ContainsText()) return null;
                 string text = Clipboard.GetText()?.Trim();
                 if (string.IsNullOrEmpty(text)) return null;
-                if (Uri.TryCreate(text, UriKind.Absolute, out Uri uri)
-                    && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)) {
+                if (HttpsUrl.IsValid(text)) {
                     return text;
                 }
                 return null;
