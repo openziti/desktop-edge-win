@@ -300,6 +300,20 @@ namespace ZitiDesktopEdge {
             ShowModal();
             AddIdentityByURL.PrepareForEntry();
         }
+
+        private void ShowJoinByLink(string text) {
+            if (ModalBg.Visibility == Visibility.Visible) {
+                logger.Warn("ignoring enrollment link while a dialog is open");
+                return;
+            }
+            EnrollmentLink link = EnrollmentLinkReader.GetEnrollmentLink(text);
+            if (link == null) {
+                ShowError("Unable to add identity", "The link is not a valid enrollment link");
+                return;
+            }
+            logger.Info("opening enrollment link for controller {controller}, provider {provider}, type {type}", link.Controller, link.Provider, link.EnrollTo);
+            AddIdentityByURL.PrepareForLink(link);
+        }
         
         private void AnimateDialogIn(UserControl dialog) {
             dialog.Opacity = 0;
@@ -950,6 +964,9 @@ namespace ZitiDesktopEdge {
         private void App_ReceiveString(string obj) {
             Console.WriteLine(obj);
             BringWindowForward();
+            if (EnrollmentLinkReader.IsEnrollmentLink(obj)) {
+                ShowJoinByLink(obj);
+            }
         }
 
         async private void MainWindow_Loaded(object sender, RoutedEventArgs e) {
@@ -957,6 +974,9 @@ namespace ZitiDesktopEdge {
             Window window = Window.GetWindow(App.Current.MainWindow);
             ZitiDesktopEdge.App app = (ZitiDesktopEdge.App)App.Current;
             app.ReceiveString += App_ReceiveString;
+            if (app.EnrollmentLink != null) {
+                App_ReceiveString(app.EnrollmentLink);
+            }
 
             // add a new service client
             serviceClient = new DataClient("UI-DataClient");
@@ -2215,7 +2235,13 @@ namespace ZitiDesktopEdge {
                     // External-auth enrollment: zet returns an auth URL instead of a full identity.
                     // Launch the browser; zet will emit a normal identity event once the user signs in.
                     if (!string.IsNullOrEmpty(createdId.Url)) {
-                        System.Diagnostics.Process.Start(createdId.Url);
+                        if (HttpsUrl.IsValid(createdId.Url)) {
+                            System.Diagnostics.Process.Start(createdId.Url);
+                        } else {
+                            logger.Warn("refusing external auth url {url}: not https", createdId.Url);
+                            HideLoad();
+                            await ShowBlurbAsync("The external auth URL is invalid", "");
+                        }
                         return;
                     }
                     var zid = ZitiIdentity.FromClient(createdId);
@@ -2593,6 +2619,8 @@ namespace ZitiDesktopEdge {
 
         void OnNeedsSignerChoiceAction(AddIdentityViewModel vm, UserControl toClose) {
             // Swap dialogs without touching the modal overlay so the main window stays dimmed.
+            // An enrollment link has no URL dialog open, so it dims here.
+            if (ModalBg.Visibility != Visibility.Visible) ShowModal();
             AnimateDialogOut(toClose);
             AddIdentitySignerPicker.Prepare(vm);
             AnimateDialogIn(AddIdentitySignerPicker);

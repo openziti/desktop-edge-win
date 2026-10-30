@@ -15,6 +15,7 @@
 */
 
 using System;
+using System.ComponentModel;
 using System.Text;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -32,6 +33,7 @@ using Ziti.Desktop.Edge.Utils;
 using ZitiDesktopEdge.ViewModels;
 using System.Reflection;
 using ZitiDesktopEdge.Utility;
+using ZitiDesktopEdge.Native;
 
 namespace ZitiDesktopEdge {
     /// <summary>
@@ -42,6 +44,8 @@ namespace ZitiDesktopEdge {
 
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         private static Mutex _mutex = null;
+
+        public string EnrollmentLink { get; private set; }
 
         protected override void OnSessionEnding(SessionEndingCancelEventArgs e) {
             base.OnSessionEnding(e);
@@ -64,6 +68,8 @@ namespace ZitiDesktopEdge {
                 policyViewModel.ApplyState(policyState);
                 Current.Properties["ManagedSettingsViewModel"] = policyViewModel;
 
+                EnrollmentLink = Array.Find(e.Args, EnrollmentLinkReader.IsEnrollmentLink);
+
                 const string appName = "Ziti Desktop Edge";
 
                 bool createdNew;
@@ -85,8 +91,18 @@ namespace ZitiDesktopEdge {
                         if (!client.IsConnected)
                             return;
 
+                        try {
+                            NativeMethods.LetPipeServerComeForward(client);
+                        } catch (Win32Exception ex) {
+                            logger.Warn(ex, "could not let the running instance come forward");
+                        }
+
                         using (StreamWriter writer = new StreamWriter(client)) {
-                            writer.Write("showscreen");
+                            if (EnrollmentLink != null) {
+                                writer.Write(EnrollmentLink);
+                            } else {
+                                writer.Write("showscreen");
+                            }
                             writer.Flush();
                         }
                     }
