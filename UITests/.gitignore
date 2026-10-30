@@ -8,6 +8,9 @@ TestResults/
 # Only written on a baseline mismatch, for local review.
 *.received.png
 
+# Pulled by pull-baselines.ps1 from the release zip that baselines-zip names.
+*.verified.png
+
 # Appium server stdout/stderr captured by run-ui-tests.ps1
 appium.stdout.log
 appium.stderr.log

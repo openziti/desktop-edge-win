@@ -101,8 +101,23 @@ Other switches: `-Tier`, `-Category` or `-Filter` to run a subset, `-AutoVerify`
 
 ### Visual baselines (AutoVerify)
 
+Baselines are not committed. They live in zips on the `uitest-baselines` release, and `UITests\baselines-zip` names
+the one a commit tests against. Every CI run pulls that zip first, and so does a local run:
+
+```powershell
+UITests\pull-baselines.ps1 -Repo openziti/desktop-edge-win
+```
+
 A run leaves `.verified.png` baselines alone. A screenshot that differs past the ImageMagick tolerance fails and
-writes a `.received.png` beside its baseline for review. After an intentional UI change, accept new baselines:
+writes a `.received.png` beside its baseline for review, and a test with no baseline yet fails the same way.
+
+After an intentional UI change or a new test, run the UI Tests workflow by hand on the branch with
+`regenerate_baselines` checked. Every tier runs with `-AutoVerify` on the current zip, and once all pass the Publish
+baselines job uploads `baselines-<version>-<commit>.zip`, holding the changed and new screens beside the untouched
+ones, so other branches keep their zip. The run's summary names the zip: write that name to `UITests\baselines-zip`
+and commit it with the change.
+
+To accept baselines locally for a try-out (CI never sees them):
 
 ```powershell
 # Regenerate everything
@@ -169,7 +184,7 @@ After a run, `UITests\TestResults\` contains:
 | `run-output.txt`             | The console log without the wire-protocol JSON (the console keeps it).     |
 | `screenshots\<TestName>\*.png` | Per-step captures saved by tests that use `SaveStep`.                     |
 
-Baselines (committed to git for diff reviews) live next to the test source files:
+Baselines live next to the test source files:
 
 ```
 UITests\UITests.Appium\Tests\SmokeTests.<Name>.verified.png

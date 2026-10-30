@@ -6,6 +6,11 @@ name: UI Tests
 on:
   # Manual run against any branch.
   workflow_dispatch:
+    inputs:
+      regenerate_baselines:
+        description: Accept changed and new screenshots and upload them as a new baselines zip
+        type: boolean
+        default: false
   # A full release, published as one or promoted from a beta, so the Pages gallery tracks Latest.
   release:
     types: [released]
@@ -13,6 +18,9 @@ on:
 
 permissions:
   contents: read
+
+env:
+  REGENERATE_BASELINES: ${{ inputs.regenerate_baselines == true }}
 
 # A new run of the same PR or branch cancels the older one.
 concurrency:
@@ -53,11 +61,16 @@ jobs:
           key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.config', '**/*.csproj') }}
           restore-keys: nuget-${{ runner.os }}-
 
+      - &pull-baselines
+        name: Pull baselines
+        shell: pwsh
+        run: ./UITests/pull-baselines.ps1 -Repo ${{ github.repository }}
+
       - name: Build + run UI tests
         shell: pwsh
         run: |
           ./UITests/ci-install.ps1 -SetDisplayResolution -NpmPrefix (Join-Path $env:RUNNER_TEMP 'appium-npm')
-          ./UITests/run-ui-tests.ps1 -Tier $env:TIER
+          ./UITests/run-ui-tests.ps1 -Tier $env:TIER -AutoVerify:($env:REGENERATE_BASELINES -eq 'true')
 
       # Logs and screenshots only: the integration homes under TestResults also hold keys, databases and identity files.
       - &upload-results
@@ -134,6 +147,8 @@ jobs:
         with:
           version: v2.1.0-pre2
 
+      - *pull-baselines
+
       - name: Build + run integration UI tests
         shell: pwsh
         env:
@@ -142,9 +157,38 @@ jobs:
           ./UITests/ci-install.ps1 -SetDisplayResolution -NpmPrefix (Join-Path $env:RUNNER_TEMP 'appium-npm')
           ./UITests/run-integration-ci.ps1 -ToolsDir $env:RUNNER_TEMP `
             -ZitiBin (Join-Path $env:RUNNER_TEMP 'ziti-cli' 'bin' 'ziti.exe') -GhToken $env:GH_TOKEN `
-            -Tier $env:TIER
+            -Tier $env:TIER -AutoVerify:($env:REGENERATE_BASELINES -eq 'true')
 
       - *upload-results
+
+  # Skipped when any tier failed, so a zip never misses a tier's screens.
+  publish-baselines:
+    name: Publish baselines
+    needs: [ui-tests, integration-ui-tests]
+    if: inputs.regenerate_baselines
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - *pull-baselines
+
+      - name: Download test results
+        uses: actions/download-artifact@v8
+        with:
+          pattern: ui-test-results-*
+          path: UITests/TestResults
+
+      - name: Publish baselines
+        shell: pwsh
+        run: |
+          [string] $zipName = ./UITests/publish-baselines.ps1 -Repo ${{ github.repository }} `
+            -GhToken ${{ secrets.GITHUB_TOKEN }} -TierBaselinesDirs (Get-ChildItem UITests/TestResults/*/baselines -Directory).FullName `
+            -Commit ${{ github.sha }}
+          "Uploaded ``$zipName``. Write that name to ``UITests/baselines-zip`` and commit it." | Add-Content $env:GITHUB_STEP_SUMMARY
 
   # One report and one gallery over every tier's artifact, which hold logs and screenshots only.
   report:

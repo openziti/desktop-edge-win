@@ -11,7 +11,8 @@ param(
     [Parameter(Mandatory)] [string] $ToolsDir,
     [Parameter(Mandatory)] [string] $ZitiBin,
     [Parameter(Mandatory)] [string] $GhToken,
-    [Parameter(Mandatory)] [ValidateSet('IntegrationExtAuth', 'IntegrationMfa', 'IntegrationLegacyAuth', 'Integration')] [string] $Tier
+    [Parameter(Mandatory)] [ValidateSet('IntegrationExtAuth', 'IntegrationMfa', 'IntegrationLegacyAuth', 'Integration')] [string] $Tier,
+    [switch] $AutoVerify
 )
 
 $ErrorActionPreference = "Stop"
@@ -38,5 +39,5 @@ if (-not (Test-Path -LiteralPath (Join-Path $dexDir "dex.exe"))) {
 $env:ZET_BIN = Join-Path $zetDir "ziti-edge-tunnel.exe"
 $env:ZITI_BIN = $ZitiBin
 $env:IDP_BIN = Join-Path $dexDir "dex.exe"
-& (Join-Path $PSScriptRoot "run-ui-tests.ps1") -Tier $Tier
+& (Join-Path $PSScriptRoot "run-ui-tests.ps1") -Tier $Tier -AutoVerify:$AutoVerify
 exit $LASTEXITCODE
