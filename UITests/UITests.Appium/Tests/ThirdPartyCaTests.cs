@@ -10,10 +10,6 @@ namespace ZitiDesktopEdge.UITests.Tests;
 [Collection(IntegrationCollection.Name)]
 public class ThirdPartyCaTests
 {
-    private static readonly By CaDialogTitle = By.XPath("//Text[@Name='3rd Party Certificate']");
-    // The certificate's Browse button has no x:Name.
-    private static readonly By BrowseCertButton = By.XPath("//Button[@Name='Browse' and not(@AutomationId='BrowseKeyBtn')]");
-
     private readonly IntegrationFixture _fixture;
 
     public ThirdPartyCaTests(IntegrationFixture fixture, ITestOutputHelper output)
@@ -32,15 +28,15 @@ public class ThirdPartyCaTests
         Quickstart.ClientCert cert = _fixture.Quickstart.CreateClientCert(caName, commonName, Array.Empty<string>());
         string caJwt = await _fixture.Quickstart.GetCaJwtAsync(caId);
 
-        await using AppiumSession s = await LaunchAsync(_fixture, name);
-        OpenCaDialog(s, caJwt);
-        await VerifyStep(s, Capture(s), name, "01-ca-dialog");
-        ChooseCertFiles(s, cert);
-        await VerifyStep(s, Capture(s), name, "02-files-chosen");
-        JObject reply = Join(s, cert);
+        await using AppiumSession session = await LaunchAsync(_fixture, name);
+        OpenCaDialog(session, caJwt);
+        await VerifyStep(session, Capture(session), name, "01-ca-dialog");
+        ChooseCertFiles(session, cert);
+        await VerifyStep(session, Capture(session), name, "02-files-chosen");
+        JObject reply = Join(session, cert);
         Assert.Equal(0, (int?)reply["Code"]);
-        WaitForEnrolledRow(s, AutocaIdentityName(caName, commonName));
-        await VerifyStep(s, Capture(s), name, "03-enrolled");
+        WaitForEnrolledRow(session, AutocaIdentityName(caName, commonName));
+        await VerifyStep(session, Capture(session), name, "03-enrolled");
         AssertIdentityFileKeepsCertPaths(cert);
     }
 
@@ -52,17 +48,27 @@ public class ThirdPartyCaTests
         // Created by the fixture import, so the controller already holds it under this name.
         const string identityName = "test_tpca_ottca_user1";
         _fixture.Quickstart.CreateThirdPartyCa(caName, Array.Empty<string>());
-        string ottcaJwt = _fixture.Quickstart.CreateOttCaEnrollment(identityName, caName);
+        string enrollmentId = _fixture.Quickstart.RunChecked("edge", "create", "enrollment", "ottca", identityName, caName)
+            .Stdout.Trim();
+        Quickstart.CliResult enrollmentList =
+            _fixture.Quickstart.RunChecked("edge", "list", "enrollments", $"id=\"{enrollmentId}\"", "-j");
+        JArray enrollments = JObject.Parse(enrollmentList.Stdout)["data"] as JArray ?? new JArray();
+        if (enrollments.Count != 1)
+            throw new InvalidOperationException(
+                $"expected exactly one enrollment {enrollmentId}, found {enrollments.Count}. stdout: {enrollmentList.Stdout}");
+        string? ottcaJwt = (string?)enrollments[0]["jwt"];
+        if (string.IsNullOrEmpty(ottcaJwt))
+            throw new InvalidOperationException($"enrollment {enrollmentId} has no jwt. stdout: {enrollmentList.Stdout}");
         Quickstart.ClientCert cert = _fixture.Quickstart.CreateClientCert(caName, identityName, Array.Empty<string>());
 
-        await using AppiumSession s = await LaunchAsync(_fixture, name);
-        OpenCaDialog(s, ottcaJwt);
-        await VerifyStep(s, Capture(s), name, "01-ca-dialog");
-        ChooseCertFiles(s, cert);
-        JObject reply = Join(s, cert);
+        await using AppiumSession session = await LaunchAsync(_fixture, name);
+        OpenCaDialog(session, ottcaJwt);
+        await VerifyStep(session, Capture(session), name, "01-ca-dialog");
+        ChooseCertFiles(session, cert);
+        JObject reply = Join(session, cert);
         Assert.Equal(0, (int?)reply["Code"]);
-        WaitForEnrolledRow(s, identityName);
-        await VerifyStep(s, Capture(s), name, "02-enrolled");
+        WaitForEnrolledRow(session, identityName);
+        await VerifyStep(session, Capture(session), name, "02-enrolled");
         AssertIdentityFileKeepsCertPaths(cert);
     }
 
@@ -86,15 +92,15 @@ public class ThirdPartyCaTests
         Quickstart.ClientCert cert = _fixture.Quickstart.CreateClientCert(caName, commonName, Array.Empty<string>());
         string caJwt = await _fixture.Quickstart.GetCaJwtAsync(caId);
 
-        await using AppiumSession s = await LaunchAsync(_fixture, name);
-        Enroll(s, caJwt, cert, AutocaIdentityName(caName, commonName));
-        SaveStep(s, name, "01-enrolled");
+        await using AppiumSession session = await LaunchAsync(_fixture, name);
+        Enroll(session, caJwt, cert, AutocaIdentityName(caName, commonName));
+        SaveStep(session, name, "01-enrolled");
 
         // The app names the identity after the JWT file, so the same JWT again always reuses the first one's name.
-        OpenCaDialog(s, caJwt);
-        ChooseCertFiles(s, cert);
-        await AssertJoinRejected(s, name, "02-add-failure-blurb", cert, "identity exists with the same name");
-        Assert.Equal(1, IdentityRowCount(s));
+        OpenCaDialog(session, caJwt);
+        ChooseCertFiles(session, cert);
+        await AssertJoinRejected(session, name, "02-add-failure-blurb", cert, "identity exists with the same name");
+        Assert.Equal(1, IdentityRowCount(session));
     }
 
     [Fact(Timeout = 120000)]
@@ -107,20 +113,20 @@ public class ThirdPartyCaTests
         Quickstart.ClientCert cert = _fixture.Quickstart.CreateClientCert(caName, commonName, Array.Empty<string>());
         string caJwt = await _fixture.Quickstart.GetCaJwtAsync(caId);
 
-        await using AppiumSession s = await LaunchAsync(_fixture, name);
-        Enroll(s, caJwt, cert, AutocaIdentityName(caName, commonName));
-        SaveStep(s, name, "01-enrolled");
+        await using AppiumSession session = await LaunchAsync(_fixture, name);
+        Enroll(session, caJwt, cert, AutocaIdentityName(caName, commonName));
+        SaveStep(session, name, "01-enrolled");
 
         // Forgetting frees the name in ZET, while the controller keeps the identity that holds the cert.
-        OpenIdentityDetails(s, AutocaIdentityName(caName, commonName));
-        ClickAt(s, WaitFor(s, ById("ForgetIdentityButton")));
-        ClickAt(s, WaitFor(s, ById("ConfirmButton")));
-        WaitUntil(s, "the forgotten identity leaves the landing list", ControllerTimeout, () => IdentityRowCount(s) == 0);
+        OpenIdentityDetails(session, AutocaIdentityName(caName, commonName));
+        ClickAt(session, WaitFor(session, ById("ForgetIdentityButton")));
+        ClickAt(session, WaitFor(session, ById("ConfirmButton")));
+        WaitUntil(session, "the forgotten identity leaves the landing list", ControllerTimeout, () => IdentityRowCount(session) == 0);
 
-        OpenCaDialog(s, caJwt);
-        ChooseCertFiles(s, cert);
-        await AssertJoinRejected(s, name, "02-add-failure-blurb", cert, "certificate already in use");
-        AssertNoNewIdentity(s);
+        OpenCaDialog(session, caJwt);
+        ChooseCertFiles(session, cert);
+        await AssertJoinRejected(session, name, "02-add-failure-blurb", cert, "certificate already in use");
+        AssertNoNewIdentity(session);
     }
 
     [Fact(Timeout = 90000)]
@@ -159,68 +165,68 @@ public class ThirdPartyCaTests
     private async Task AssertFirstJoinRejected(string name, string caId, Quickstart.ClientCert cert, string zetError)
     {
         string caJwt = await _fixture.Quickstart.GetCaJwtAsync(caId);
-        await using AppiumSession s = await LaunchAsync(_fixture, name);
-        OpenCaDialog(s, caJwt);
-        ChooseCertFiles(s, cert);
-        await AssertJoinRejected(s, name, "01-add-failure-blurb", cert, zetError);
-        AssertNoNewIdentity(s);
+        await using AppiumSession session = await LaunchAsync(_fixture, name);
+        OpenCaDialog(session, caJwt);
+        ChooseCertFiles(session, cert);
+        await AssertJoinRejected(session, name, "01-add-failure-blurb", cert, zetError);
+        AssertNoNewIdentity(session);
     }
 
-    private static async Task AssertJoinRejected(AppiumSession s, string name, string step, Quickstart.ClientCert cert,
+    private static async Task AssertJoinRejected(AppiumSession session, string name, string step, Quickstart.ClientCert cert,
         string zetError)
     {
-        JObject reply = Join(s, cert);
-        await VerifyStep(s, CaptureBlurbOnReply(s, AddIdentityLine), name, step);
-        // The blurb shows no detail from ZET, so only the reply proves why the add failed.
+        JObject reply = Join(session, cert);
+        await VerifyStep(session, CaptureBlurbOnReply(session, AddIdentityLine), name, step);
         Assert.Equal(500, (int?)reply["Code"]);
         Assert.Contains(zetError, (string?)reply["Error"]);
     }
 
-    private void AssertNoNewIdentity(AppiumSession s)
+    private void AssertNoNewIdentity(AppiumSession session)
     {
-        Assert.Equal(0, IdentityRowCount(s));
+        Assert.Equal(0, IdentityRowCount(session));
         string identityFile = AddedIdentityFile(_fixture);
         Assert.False(File.Exists(identityFile), $"ZET wrote an identity file for a rejected add: {identityFile}");
     }
 
-    private static void Enroll(AppiumSession s, string caJwt, Quickstart.ClientCert cert, string identityName)
+    private static void Enroll(AppiumSession session, string caJwt, Quickstart.ClientCert cert, string identityName)
     {
-        OpenCaDialog(s, caJwt);
-        ChooseCertFiles(s, cert);
-        Assert.Equal(0, (int?)Join(s, cert)["Code"]);
-        WaitForEnrolledRow(s, identityName);
+        OpenCaDialog(session, caJwt);
+        ChooseCertFiles(session, cert);
+        Assert.Equal(0, (int?)Join(session, cert)["Code"]);
+        WaitForEnrolledRow(session, identityName);
     }
 
     private static string AutocaIdentityName(string caName, string commonName) => $"{caName}-{commonName}";
 
-    private static void WaitForEnrolledRow(AppiumSession s, string identityName)
+    private static void WaitForEnrolledRow(AppiumSession session, string identityName)
     {
-        AssertEnrollmentAdded(s, AddIdentityLine);
-        WaitForZetEventAfter(s, AddIdentityLine, ControllerConnectedEvent);
-        WaitForController(s, By.XPath($"//Text[@Name='{identityName}']"), "the CA identity shows on the landing list");
+        AssertEnrollmentAdded(session, AddIdentityLine);
+        WaitForZetEventAfter(session, AddIdentityLine, ControllerConnectedEvent);
+        WaitForController(session, By.XPath($"//Text[@Name='{identityName}']"), "the CA identity shows on the landing list");
     }
 
-    private static void OpenCaDialog(AppiumSession s, string caJwt)
+    private static void OpenCaDialog(AppiumSession session, string caJwt)
     {
         WriteTestJwt(caJwt);
-        ClickAddIdentityWithJwt(s);
-        WaitFor(s, CaDialogTitle);
+        ClickAddIdentityWithJwt(session);
+        WaitFor(session, By.XPath("//Text[@Name='3rd Party Certificate']"));
     }
 
-    private static void ChooseCertFiles(AppiumSession s, Quickstart.ClientCert cert)
+    private static void ChooseCertFiles(AppiumSession session, Quickstart.ClientCert cert)
     {
-        ClickAt(s, WaitFor(s, BrowseCertButton));
-        ChooseFile(s, "Select Certificate File", cert.CertPath);
-        WaitForText(s, "CertificateFile", cert.CertPath, AppResponseTimeout);
-        ClickAt(s, WaitFor(s, ById("BrowseKeyBtn")));
-        ChooseFile(s, "Select Key File", cert.KeyPath);
-        WaitForText(s, "KeyFile", cert.KeyPath, AppResponseTimeout);
+        // The certificate's Browse button has no x:Name.
+        ClickAt(session, WaitFor(session, By.XPath("//Button[@Name='Browse' and not(@AutomationId='BrowseKeyBtn')]")));
+        FileOpenDialog.Choose(session, "Select Certificate File", cert.CertPath);
+        WaitForText(session, "CertificateFile", cert.CertPath, AppResponseTimeout);
+        ClickAt(session, WaitFor(session, ById("BrowseKeyBtn")));
+        FileOpenDialog.Choose(session, "Select Key File", cert.KeyPath);
+        WaitForText(session, "KeyFile", cert.KeyPath, AppResponseTimeout);
     }
 
-    private static JObject Join(AppiumSession s, Quickstart.ClientCert cert)
+    private static JObject Join(AppiumSession session, Quickstart.ClientCert cert)
     {
-        JObject reply = SendAndWaitForZetReply(s, AddIdentityLine, () => WaitForId(s, "JoinNetworkBtn").Click());
-        JObject sent = UiCommand(s.Relay!, AddIdentityLine);
+        JObject reply = SendAndWaitForZetReply(session, AddIdentityLine, () => WaitForId(session, "JoinNetworkBtn").Click());
+        JObject sent = UiCommand(session.Relay!, AddIdentityLine);
         Assert.Equal(cert.CertPath, (string?)sent["Data"]!["Certificate"]);
         Assert.Equal(cert.KeyPath, (string?)sent["Data"]!["Key"]);
         return reply;

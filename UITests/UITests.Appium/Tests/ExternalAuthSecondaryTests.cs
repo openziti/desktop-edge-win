@@ -8,7 +8,7 @@ namespace ZitiDesktopEdge.UITests.Tests;
 // Each identity belongs to one test, so a test that moves it to another auth policy never moves it back.
 [Trait("Category", "Integration")]
 [Collection(IntegrationCollection.Name)]
-public class ExternalAuthSecondaryTests
+public class ExternalAuthSecondaryTests : IDisposable
 {
     private const string SecondaryPolicy = "test_ext_auth_secondary_policy";
 
@@ -19,8 +19,11 @@ public class ExternalAuthSecondaryTests
         Step.Use(output);
         _fixture = fixture;
         // Setting it again is a no-op.
-        _fixture.Quickstart.SetAuthPolicySecondaryExtJwtSigner(SecondaryPolicy, _fixture.WorkingSignerId);
+        _fixture.Quickstart.RunChecked("edge", "update", "auth-policy", SecondaryPolicy,
+            "--secondary-req-ext-jwt-signer", _fixture.WorkingSignerId);
     }
+
+    public void Dispose() => CloseBrowsers();
 
     [Fact(Timeout = 120000)]
     public async Task SecondaryExtJwtCompletes()
@@ -28,23 +31,16 @@ public class ExternalAuthSecondaryTests
         string name = nameof(SecondaryExtJwtCompletes);
         const string identityName = "test_ext_auth_secondary_happy";
 
-        try
-        {
-            await using AppiumSession s = await LaunchAsync(_fixture, name);
-            JObject needsLogin = AddIdentityNeedingLogin(s, identityName);
-            await VerifyStep(s, Capture(s), name, "01-identity-needs-ext-login");
+        await using AppiumSession session = await LaunchAsync(_fixture, name);
+        JObject needsLogin = AddIdentityNeedingLogin(session, identityName);
+        await VerifyStep(session, Capture(session), name, "01-identity-needs-ext-login");
 
-            await LogInAtIdP(s, LoginFromRow(s), $"{identityName}@test.com");
-            AssertEnrollmentAdded(s, ExternalAuthLine);
-            WaitForConnected(s);
-            AssertJwtEnrolledIdentityFile((string)needsLogin["Id"]!["Identifier"]!);
-            AssertGrantedServices(s, ExternalAuthLine, new[] { "test_ext_auth_attr_user_svc" });
-            await VerifyStep(s, Capture(s), name, "02-identity-connected");
-        }
-        finally
-        {
-            CloseBrowsers();
-        }
+        await LogInAtIdP(session, LoginFromRow(session), $"{identityName}@test.com");
+        AssertEnrollmentAdded(session, ExternalAuthLine);
+        WaitForConnected(session);
+        AssertJwtEnrolledIdentityFile((string)needsLogin["Id"]!["Identifier"]!);
+        AssertGrantedServices(session, ExternalAuthLine, new[] { "test_ext_auth_attr_user_svc" });
+        await VerifyStep(session, Capture(session), name, "02-identity-connected");
     }
 
     [Fact(Timeout = 150000)]
@@ -53,30 +49,23 @@ public class ExternalAuthSecondaryTests
         string name = nameof(SecondaryExtJwtReauthAsksForLogin);
         const string identityName = "test_ext_auth_secondary_reauth";
 
-        try
-        {
-            await using AppiumSession s = await LaunchAsync(_fixture, name);
-            AddIdentityNeedingLogin(s, identityName);
-            await LogInAtIdP(s, LoginFromRow(s), $"{identityName}@test.com");
-            WaitForConnected(s);
-            await VerifyStep(s, Capture(s), name, "01-identity-connected");
+        await using AppiumSession session = await LaunchAsync(_fixture, name);
+        AddIdentityNeedingLogin(session, identityName);
+        await LogInAtIdP(session, LoginFromRow(session), $"{identityName}@test.com");
+        WaitForConnected(session);
+        await VerifyStep(session, Capture(session), name, "01-identity-connected");
 
-            ToggleOff(s, identityName);
-            WaitForController(s, ToggleStatus(identityName, "DISABLED"), $"{identityName} shows DISABLED");
-            await VerifyStep(s, Capture(s), name, "02-identity-disabled");
-            ToggleOn(s, identityName);
-            WaitForNeedsExtLogin(s, OnLine);
-            await VerifyStep(s, Capture(s), name, "03-reauth-needs-ext-login");
+        ToggleOff(session, identityName);
+        WaitForController(session, ToggleStatus(identityName, "DISABLED"), $"{identityName} shows DISABLED");
+        await VerifyStep(session, Capture(session), name, "02-identity-disabled");
+        ToggleOn(session, identityName);
+        WaitForNeedsExtLogin(session, OnLine);
+        await VerifyStep(session, Capture(session), name, "03-reauth-needs-ext-login");
 
-            await LogInAtIdP(s, LoginFromRow(s), $"{identityName}@test.com");
-            WaitForConnected(s);
-            AssertGrantedServices(s, ExternalAuthLine, new[] { "test_ext_auth_attr_user_svc" });
-            await VerifyStep(s, Capture(s), name, "04-identity-reconnected");
-        }
-        finally
-        {
-            CloseBrowsers();
-        }
+        await LogInAtIdP(session, LoginFromRow(session), $"{identityName}@test.com");
+        WaitForConnected(session);
+        AssertGrantedServices(session, ExternalAuthLine, new[] { "test_ext_auth_attr_user_svc" });
+        await VerifyStep(session, Capture(session), name, "04-identity-reconnected");
     }
 
     [Fact(Timeout = 150000)]
@@ -85,27 +74,20 @@ public class ExternalAuthSecondaryTests
         string name = nameof(SecondaryExtJwtPolicyAddedAsksForLogin);
         const string identityName = "test_ext_auth_secondary_policy_added";
 
-        try
-        {
-            await using AppiumSession s = await LaunchAsync(_fixture, name);
-            AddIdentity(_fixture, s, identityName);
-            WaitForZetEventAfter(s, AddIdentityLine, ControllerConnectedEvent);
-            await VerifyStep(s, Capture(s), name, "01-identity-connected");
+        await using AppiumSession session = await LaunchAsync(_fixture, name);
+        AddIdentity(_fixture, session, identityName);
+        WaitForZetEventAfter(session, AddIdentityLine, ControllerConnectedEvent);
+        await VerifyStep(session, Capture(session), name, "01-identity-connected");
 
-            _fixture.Quickstart.SetIdentityAuthPolicy(identityName, SecondaryPolicy);
-            ToggleOffAndOn(s, identityName);
-            WaitForNeedsExtLogin(s, OnLine);
-            await VerifyStep(s, Capture(s), name, "02-policy-added-needs-ext-login");
+        _fixture.Quickstart.SetIdentityAuthPolicy(identityName, SecondaryPolicy);
+        ToggleOffAndOn(session, identityName);
+        WaitForNeedsExtLogin(session, OnLine);
+        await VerifyStep(session, Capture(session), name, "02-policy-added-needs-ext-login");
 
-            await LogInAtIdP(s, LoginFromRow(s), $"{identityName}@test.com");
-            WaitForConnected(s);
-            AssertGrantedServices(s, ExternalAuthLine, new[] { "test_ext_auth_attr_user_svc" });
-            await VerifyStep(s, Capture(s), name, "03-identity-reconnected");
-        }
-        finally
-        {
-            CloseBrowsers();
-        }
+        await LogInAtIdP(session, LoginFromRow(session), $"{identityName}@test.com");
+        WaitForConnected(session);
+        AssertGrantedServices(session, ExternalAuthLine, new[] { "test_ext_auth_attr_user_svc" });
+        await VerifyStep(session, Capture(session), name, "03-identity-reconnected");
     }
 
     [Fact(Timeout = 150000)]
@@ -114,47 +96,39 @@ public class ExternalAuthSecondaryTests
         string name = nameof(SecondaryExtJwtPolicyRemovedConnectsWithoutLogin);
         const string identityName = "test_ext_auth_secondary_policy_removed";
 
-        try
-        {
-            await using AppiumSession s = await LaunchAsync(_fixture, name);
-            AddIdentityNeedingLogin(s, identityName);
-            await VerifyStep(s, Capture(s), name, "01-identity-needs-ext-login");
-            await LogInAtIdP(s, LoginFromRow(s), $"{identityName}@test.com");
-            WaitForConnected(s);
-            await VerifyStep(s, Capture(s), name, "02-identity-connected");
+        await using AppiumSession session = await LaunchAsync(_fixture, name);
+        AddIdentityNeedingLogin(session, identityName);
+        await VerifyStep(session, Capture(session), name, "01-identity-needs-ext-login");
+        await LogInAtIdP(session, LoginFromRow(session), $"{identityName}@test.com");
+        WaitForConnected(session);
+        await VerifyStep(session, Capture(session), name, "02-identity-connected");
 
-            _fixture.Quickstart.SetIdentityAuthPolicy(identityName, "Default");
-            ToggleOff(s, identityName);
-            WaitForController(s, ToggleStatus(identityName, "DISABLED"), $"{identityName} shows DISABLED");
-            WaitForZetEventAfter(s, OffLine, ControllerDisconnectedEvent);
-            ToggleOn(s, identityName);
-            WaitForZetEventAfter(s, OnLine, ControllerConnectedEvent);
-            WaitForController(s, ToggleStatus(identityName, "ENABLED"), $"{identityName} shows ENABLED");
-            AssertGrantedServices(s, OnLine, new[] { "test_ext_auth_attr_user_svc" });
-            Assert.DoesNotContain(s.Driver.FindElements(ExtAuthRequiredIcon), e => e.Displayed);
-            await VerifyStep(s, Capture(s), name, "03-reconnected-without-login");
-        }
-        finally
-        {
-            CloseBrowsers();
-        }
+        _fixture.Quickstart.SetIdentityAuthPolicy(identityName, "Default");
+        ToggleOff(session, identityName);
+        WaitForController(session, ToggleStatus(identityName, "DISABLED"), $"{identityName} shows DISABLED");
+        WaitForZetEventAfter(session, OffLine, ControllerDisconnectedEvent);
+        ToggleOn(session, identityName);
+        WaitForZetEventAfter(session, OnLine, ControllerConnectedEvent);
+        WaitForController(session, ToggleStatus(identityName, "ENABLED"), $"{identityName} shows ENABLED");
+        AssertGrantedServices(session, OnLine, new[] { "test_ext_auth_attr_user_svc" });
+        Assert.DoesNotContain(session.Driver.FindElements(ExtAuthRequiredIcon), icon => icon.Displayed);
+        await VerifyStep(session, Capture(session), name, "03-reconnected-without-login");
     }
 
-    private JObject AddIdentityNeedingLogin(AppiumSession s, string identityName)
+    private JObject AddIdentityNeedingLogin(AppiumSession session, string identityName)
     {
         WriteTestJwt(_fixture.Quickstart.GetJwtFromController(identityName));
-        JObject reply = SendAndWaitForZetReply(s, AddIdentityLine, () => ClickAddIdentityWithJwt(s));
+        JObject reply = SendAndWaitForZetReply(session, AddIdentityLine, () => ClickAddIdentityWithJwt(session));
         Assert.Equal(0, (int?)reply["Code"]);
-        JObject needsLogin = WaitForNeedsExtLogin(s, AddIdentityLine);
-        // ZET's needs_ext_login carries no Services key until the login.
+        JObject needsLogin = WaitForNeedsExtLogin(session, AddIdentityLine);
         Assert.Null(needsLogin["Id"]!["Services"]);
         return needsLogin;
     }
 
-    private static void WaitForConnected(AppiumSession s)
+    private static void WaitForConnected(AppiumSession session)
     {
-        WaitForZetEventAfter(s, ExternalAuthLine, ControllerConnectedEvent);
-        WaitUntil(s, "the row stops asking for external auth", ControllerTimeout,
-            () => !s.Driver.FindElements(ExtAuthRequiredIcon).Any(e => e.Displayed));
+        WaitForZetEventAfter(session, ExternalAuthLine, ControllerConnectedEvent);
+        WaitUntil(session, "the row stops asking for external auth", ControllerTimeout,
+            () => !session.Driver.FindElements(ExtAuthRequiredIcon).Any(icon => icon.Displayed));
     }
 }

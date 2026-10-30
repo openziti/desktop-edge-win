@@ -8,8 +8,6 @@ namespace ZitiDesktopEdge.UITests.Drivers;
 
 public sealed class ZetProcess : IAsyncDisposable
 {
-    // Outside the installed ZET's default 100.64.0.1/10, so both can tunnel at once.
-    private const string DnsRange = "100.150.0.1/16";
     private static readonly TimeSpan PipeTimeout = TimeSpan.FromSeconds(30);
 
     public string IdentityDir { get; }
@@ -37,44 +35,40 @@ public sealed class ZetProcess : IAsyncDisposable
         string identityDir = Path.Combine(home, "identities");
         Directory.CreateDirectory(identityDir);
         LoggedProcess process = LoggedProcess.Start(zetPath,
-            new[] { "run", "-I", identityDir, "-P", discriminator, "-d", DnsRange },
+            // -d is outside the installed ZET's default 100.64.0.1/10, so both can tunnel at once.
+            new[] { "run", "-I", identityDir, "-P", discriminator, "-d", "100.150.0.1/16" },
             new Dictionary<string, string>(),
             Path.Combine(home, "ziti-edge-tunnel.log"));
 
-        ZetProcess zet = new ZetProcess(process, "ziti-edge-tunnel.sock." + discriminator, identityDir);
+        string ipcPipeName = "ziti-edge-tunnel.sock." + discriminator;
         try
         {
-            await zet.WaitForPipeAsync(zet._ipcPipeName);
+            using NamedPipeClientStream probe = new NamedPipeClientStream(".", ipcPipeName, PipeDirection.InOut,
+                PipeOptions.Asynchronous);
+            Task connect = probe.ConnectAsync((int)PipeTimeout.TotalMilliseconds);
+            while (!connect.IsCompleted)
+            {
+                if (process.HasExited)
+                    throw new InvalidOperationException(
+                        $"ziti-edge-tunnel exited before opening pipe '{ipcPipeName}'. Log {process.LogPath}:\n{process.ReadLog()}");
+                await Task.WhenAny(connect, Task.Delay(250));
+            }
+            try
+            {
+                await connect;
+            }
+            catch (TimeoutException ex)
+            {
+                throw new TimeoutException(
+                    $"ziti-edge-tunnel opened no pipe '{ipcPipeName}' in {PipeTimeout.TotalSeconds}s. Log: {process.LogPath}", ex);
+            }
         }
         catch
         {
-            await zet.DisposeAsync();
+            await process.DisposeAsync();
             throw;
         }
-        return zet;
-    }
-
-    private async Task WaitForPipeAsync(string pipeName)
-    {
-        using NamedPipeClientStream probe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut,
-            PipeOptions.Asynchronous);
-        Task connect = probe.ConnectAsync((int)PipeTimeout.TotalMilliseconds);
-        while (!connect.IsCompleted)
-        {
-            if (_process.HasExited)
-                throw new InvalidOperationException(
-                    $"ziti-edge-tunnel exited before opening pipe '{pipeName}'. Log {_process.LogPath}:\n{_process.ReadLog()}");
-            await Task.WhenAny(connect, Task.Delay(250));
-        }
-        try
-        {
-            await connect;
-        }
-        catch (TimeoutException ex)
-        {
-            throw new TimeoutException(
-                $"ziti-edge-tunnel opened no pipe '{pipeName}' in {PipeTimeout.TotalSeconds}s. Log: {_process.LogPath}", ex);
-        }
+        return new ZetProcess(process, ipcPipeName, identityDir);
     }
 
     // So a test that failed before forgetting its identity doesn't fail the next one too.

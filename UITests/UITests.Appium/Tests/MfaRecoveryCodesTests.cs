@@ -25,33 +25,33 @@ public class MfaRecoveryCodesTests
         string name = nameof(GenerateMfaCodesReplacesOldSet);
         const string identityName = "test_mfa_regenerate_codes";
 
-        await using AppiumSession s = await LaunchAsync(_fixture, name);
-        MfaEnrollment enrollment = EnrollMfaToRecoveryCodes(_fixture, s, identityName);
-        ClickAt(s, WaitFor(s, By.XPath("//Text[@Name='Regenerate']")));
-        WaitForId(s, "AuthCode");
-        await VerifyStep(s, Capture(s), name, "01-regenerate-prompt");
+        await using AppiumSession session = await LaunchAsync(_fixture, name);
+        MfaEnrollment enrollment = EnrollMfaToRecoveryCodes(_fixture, session, identityName);
+        ClickAt(session, WaitFor(session, By.XPath("//Text[@Name='Regenerate']")));
+        WaitForId(session, "AuthCode");
+        await VerifyStep(session, Capture(session), name, "01-regenerate-prompt");
 
-        TypeUntil(s, ById("AuthCode"), Totp.Compute(enrollment.Secret, DateTimeOffset.UtcNow));
-        SaveStep(s, name, "02-code-typed");
-        JObject reply = SendAndWaitForZetReply(s, "\"Command\":\"GenerateMFACodes\"",
-            () => WaitForId(s, "AuthButton").Click());
-        // MainWindow.DoClose reopens the codes dialog with the GenerateMFACodes reply's codes.
+        TypeUntil(session, ById("AuthCode"), Totp.Compute(enrollment.Secret, DateTimeOffset.UtcNow));
+        SaveStep(session, name, "02-code-typed");
+        JObject reply = SendAndWaitForZetReply(session, "\"Command\":\"GenerateMFACodes\"",
+            () => WaitForId(session, "AuthButton").Click());
         Assert.Equal(0, (int?)reply["Code"]);
         List<string> newCodes = reply["Data"]!["RecoveryCodes"]!.Values<string>().Select(code => code!).ToList();
-        WaitForRecoveryCodes(s, newCodes);
+        // MainWindow.DoClose reopens the codes dialog with the GenerateMFACodes reply's codes.
+        WaitForRecoveryCodes(session, newCodes);
         Assert.Empty(newCodes.Intersect(enrollment.RecoveryCodes));
-        await VerifyStep(s, MaskedCentered(s, Capture(s), RecoveryCodeBoxes, RecoveryCodeMaskWidth, RecoveryDialogBackground),
+        await VerifyStep(session, MaskedCentered(session, Capture(session), RecoveryCodeBoxes, RecoveryCodeMaskWidth, RecoveryDialogBackground),
             name, "03-new-recovery-codes");
 
-        ClickUntilGone(s, ById("CloseBlack"));
-        CloseIdentityDetails(s);
-        TriggerReauthChallenge(s, identityName);
-        AuthenticateFromRow(s, name, "04-new-code-typed", identityName, newCodes[0]);
-        CloseIdentityDetails(s);
+        ClickUntilGone(session, ById("CloseBlack"));
+        CloseIdentityDetails(session);
+        TriggerReauthChallenge(session, identityName);
+        AuthenticateFromRow(session, name, "04-new-code-typed", identityName, newCodes[0]);
+        CloseIdentityDetails(session);
 
-        TriggerReauthChallenge(s, identityName);
-        byte[] rejected = RejectFromRow(s, name, "05-old-code-typed", identityName, enrollment.RecoveryCodes[0]);
+        TriggerReauthChallenge(session, identityName);
+        byte[] rejected = RejectFromRow(session, name, "05-old-code-typed", identityName, enrollment.RecoveryCodes[0]);
         // The recovery code differs every run.
-        await VerifyStep(s, Masked(s, rejected, ById("AuthCode")), name, "06-after-rejection");
+        await VerifyStep(session, Masked(session, rejected, ById("AuthCode")), name, "06-after-rejection");
     }
 }

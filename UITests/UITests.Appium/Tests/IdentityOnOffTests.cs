@@ -23,23 +23,23 @@ public class IdentityOnOffTests
         string name = nameof(TogglesActiveState);
         const string identityName = "test_on_off";
 
-        await using AppiumSession s = await LaunchAsync(_fixture, name);
-        AddIdentity(_fixture, s, identityName);
-        WaitFor(s, ToggleStatus(identityName, "ENABLED"));
-        await VerifyStep(s, Capture(s), name, "01-added-enabled");
+        await using AppiumSession session = await LaunchAsync(_fixture, name);
+        AddIdentity(_fixture, session, identityName);
+        WaitFor(session, ToggleStatus(identityName, "ENABLED"));
+        await VerifyStep(session, Capture(session), name, "01-added-enabled");
 
-        ToggleOff(s, identityName);
-        WaitForController(s, ToggleStatus(identityName, "DISABLED"), $"{identityName} shows DISABLED");
-        await VerifyStep(s, Capture(s), name, "02-toggled-off");
-        Assert.Equal(0, (int?)WaitForZetReplyTo(s, OffLine)["Code"]);
-        WaitForZetEventAfter(s, OffLine, ControllerDisconnectedEvent);
+        ToggleOff(session, identityName);
+        WaitForController(session, ToggleStatus(identityName, "DISABLED"), $"{identityName} shows DISABLED");
+        await VerifyStep(session, Capture(session), name, "02-toggled-off");
+        Assert.Equal(0, (int?)WaitForZetReplyTo(session, OffLine)["Code"]);
+        WaitForZetEventAfter(session, OffLine, ControllerDisconnectedEvent);
 
-        ToggleOn(s, identityName);
-        WaitForController(s, ToggleStatus(identityName, "ENABLED"), $"{identityName} shows ENABLED");
-        await VerifyStep(s, Capture(s), name, "03-toggled-on");
-        Assert.Equal(0, (int?)WaitForZetReplyTo(s, OnLine)["Code"]);
-        JObject on = WaitForZetEventAfter(s, OnLine, IdentityAddedEvent);
-        Assert.True((bool?)on["Id"]!["Active"] == true, $"ZET's identity added event is not active after on: {on}");
-        WaitForZetEventAfter(s, OnLine, ControllerConnectedEvent);
+        ToggleOn(session, identityName);
+        WaitForController(session, ToggleStatus(identityName, "ENABLED"), $"{identityName} shows ENABLED");
+        await VerifyStep(session, Capture(session), name, "03-toggled-on");
+        Assert.Equal(0, (int?)WaitForZetReplyTo(session, OnLine)["Code"]);
+        JObject identityAddedEvent = WaitForZetEventAfter(session, OnLine, IdentityAddedEvent);
+        Assert.True((bool?)identityAddedEvent["Id"]!["Active"] == true, $"ZET's identity added event is not active after on: {identityAddedEvent}");
+        WaitForZetEventAfter(session, OnLine, ControllerConnectedEvent);
     }
 }

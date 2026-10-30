@@ -5,17 +5,14 @@ namespace ZitiDesktopEdge.UITests.Drivers;
 // URL enrollment has no JWT to vouch for the controller, so signer discovery and ZET fall back to OS trust.
 public static class OsCaTrust
 {
-    // The quickstart root CA always has CN=root-ca.
-    private const string RootCaName = "root-ca";
     private static readonly TimeSpan CertutilTimeout = TimeSpan.FromSeconds(30);
 
-    public static void Install(string certPath) => RunCertutil("-addstore", "-f", "Root", certPath);
+    // The quickstart root CA always has CN=root-ca.
+    public static void Remove() => RunCertutil("-delstore", "Root", "root-ca");
 
-    public static void Remove() => RunCertutil("-delstore", "Root", RootCaName);
-
-    private static void RunCertutil(params string[] args)
+    public static void RunCertutil(params string[] args)
     {
-        ProcessStartInfo psi = new ProcessStartInfo
+        ProcessStartInfo startInfo = new ProcessStartInfo
         {
             FileName = "certutil",
             UseShellExecute = false,
@@ -23,19 +20,19 @@ public static class OsCaTrust
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         };
-        foreach (string arg in args) psi.ArgumentList.Add(arg);
+        foreach (string argument in args) startInfo.ArgumentList.Add(argument);
 
         string command = "certutil " + string.Join(" ", args);
-        using Process p = Process.Start(psi) ?? throw new InvalidOperationException($"{command} did not start");
-        Task<string> stdout = p.StandardOutput.ReadToEndAsync();
-        Task<string> stderr = p.StandardError.ReadToEndAsync();
-        if (!p.WaitForExit(CertutilTimeout))
+        using Process certutil = Process.Start(startInfo) ?? throw new InvalidOperationException($"{command} did not start");
+        Task<string> stdout = certutil.StandardOutput.ReadToEndAsync();
+        Task<string> stderr = certutil.StandardError.ReadToEndAsync();
+        if (!certutil.WaitForExit(CertutilTimeout))
         {
-            p.Kill(entireProcessTree: true);
+            certutil.Kill(entireProcessTree: true);
             throw new TimeoutException($"{command} still running after {CertutilTimeout.TotalSeconds}s");
         }
-        if (p.ExitCode != 0)
+        if (certutil.ExitCode != 0)
             throw new InvalidOperationException(
-                $"{command} exited {p.ExitCode}. stdout: {stdout.Result} stderr: {stderr.Result}");
+                $"{command} exited {certutil.ExitCode}. stdout: {stdout.Result} stderr: {stderr.Result}");
     }
 }

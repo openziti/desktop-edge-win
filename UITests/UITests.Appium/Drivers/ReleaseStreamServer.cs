@@ -29,7 +29,38 @@ public sealed class ReleaseStreamServer : IAsyncDisposable
             "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n" +
             $"Content-Length: {body.Length}\r\nConnection: close{HeadEnd}");
         _response = head.Concat(body).ToArray();
-        _serving = ServeAsync();
+        _serving = Task.Run(async () =>
+        {
+            while (true)
+            {
+                TcpClient client;
+                try
+                {
+                    client = await _listener.AcceptTcpClientAsync(_stop.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+                using (client)
+                {
+                    NetworkStream stream = client.GetStream();
+                    // The monitor only sends GETs, which carry no body.
+                    StringBuilder head = new StringBuilder();
+                    byte[] buffer = new byte[1024];
+                    while (!head.ToString().Contains(HeadEnd))
+                    {
+                        int read = await stream.ReadAsync(buffer, _stop.Token);
+                        if (read == 0)
+                            throw new IOException($"the client closed the connection mid request after: {head}");
+                        head.Append(Encoding.ASCII.GetString(buffer, 0, read));
+                    }
+                    Step.Log($"release stream server answered {head.ToString().Split("\r\n")[0]}");
+                    await stream.WriteAsync(_response, _stop.Token);
+                    Interlocked.Increment(ref _requests);
+                }
+            }
+        });
     }
 
     public static ReleaseStreamServer Start(string json)
@@ -44,45 +75,6 @@ public sealed class ReleaseStreamServer : IAsyncDisposable
             throw new InvalidOperationException($"the release stream server could not listen on 127.0.0.1:{Port}", ex);
         }
         return new ReleaseStreamServer(listener, json);
-    }
-
-    private async Task ServeAsync()
-    {
-        while (true)
-        {
-            TcpClient client;
-            try
-            {
-                client = await _listener.AcceptTcpClientAsync(_stop.Token);
-            }
-            catch (OperationCanceledException)
-            {
-                return;
-            }
-            using (client)
-            {
-                NetworkStream stream = client.GetStream();
-                string head = await ReadHeadAsync(stream);
-                Step.Log($"release stream server answered {head.Split("\r\n")[0]}");
-                await stream.WriteAsync(_response, _stop.Token);
-                Interlocked.Increment(ref _requests);
-            }
-        }
-    }
-
-    // The monitor only sends GETs, which carry no body.
-    private async Task<string> ReadHeadAsync(NetworkStream stream)
-    {
-        StringBuilder head = new StringBuilder();
-        byte[] buffer = new byte[1024];
-        while (!head.ToString().Contains(HeadEnd))
-        {
-            int read = await stream.ReadAsync(buffer, _stop.Token);
-            if (read == 0)
-                throw new IOException($"the client closed the connection mid request after: {head}");
-            head.Append(Encoding.ASCII.GetString(buffer, 0, read));
-        }
-        return head.ToString();
     }
 
     public async ValueTask DisposeAsync()

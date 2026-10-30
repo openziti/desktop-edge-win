@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
+using static ZitiDesktopEdge.UITests.Tests.TestHelpers;
 
 namespace ZitiDesktopEdge.UITests.Drivers;
 
@@ -14,80 +15,31 @@ public static class FileOpenDialog
     private const uint WmGetText = 0x000D;
     private const uint WmCommand = 0x0111;
     private const uint GwEnabledPopup = 6;
-    private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(100);
 
-    public static IntPtr? Find(int processId, string title) =>
-        AppiumSession.TopLevelWindows().FirstOrDefault(w => w.ProcessId == processId && w.Title == title)?.Handle;
-
-    // The window and its title come before the folder view, and a path set or Open posted before that can be lost.
-    public static bool IsReady(IntPtr dialog) =>
-        Win32Window.IsWindowVisible(dialog) && IsWindowEnabled(dialog) && HasDescendant(dialog, "SHELLDLL_DefView");
-
-    public static void Choose(IntPtr dialog, string path, TimeSpan timeout)
+    /// <summary>Chooses <paramref name="path"/> in the Open dialog titled <paramref name="title"/> a click just opened.</summary>
+    public static void Choose(AppiumSession session, string title, string path)
     {
-        IntPtr edit = FileNameEdit(dialog);
-        SendMessage(edit, WmSetText, IntPtr.Zero, path);
-        StringBuilder typed = new StringBuilder(path.Length + 1);
-        SendMessage(edit, WmGetText, (IntPtr)typed.Capacity, typed);
-        if (typed.ToString() != path)
-            throw new InvalidOperationException($"the Open dialog's File name box reads '{typed}' after setting '{path}'");
-        // Posted, since Open runs the dialog's own validation before it returns.
-        if (!PostMessage(dialog, WmCommand, (IntPtr)IdOk, IntPtr.Zero))
-            throw new Win32Exception(Marshal.GetLastWin32Error(), "posting Open to the Open dialog failed");
-
-        DateTime deadline = DateTime.UtcNow + timeout;
-        while (Win32Window.IsWindow(dialog))
+        IntPtr? shownDialog = null;
+        // No WinAppDriver query until the dialog is up: one sent while it opens can lose the session's window.
+        // A first Open dialog can take over 15s to appear.
+        WaitUntil(session, $"the '{title}' dialog is ready", TimeSpan.FromSeconds(40), () =>
         {
-            if (DateTime.UtcNow > deadline)
-                throw new TimeoutException(
-                    $"the Open dialog stayed open {timeout.TotalSeconds}s after Open with '{path}': {State(dialog, edit)}");
-            Thread.Sleep(PollInterval);
-        }
-    }
+            shownDialog = AppiumSession.TopLevelWindows()
+                .FirstOrDefault(window => window.ProcessId == session.ProcessId && window.Title == title)?.Handle;
+            if (shownDialog == null || !Win32Window.IsWindowVisible(shownDialog.Value) || !IsWindowEnabled(shownDialog.Value))
+                return false;
+            // The window and its title come before the folder view, and a path set or Open posted before that can
+            // be lost.
+            bool hasFolderView = false;
+            EnumChildWindows(shownDialog.Value, (child, _) =>
+            {
+                hasFolderView = Win32Window.ClassName(child) == "SHELLDLL_DefView";
+                return !hasFolderView;
+            }, IntPtr.Zero);
+            return hasFolderView;
+        });
+        IntPtr dialog = shownDialog!.Value;
 
-    private static string State(IntPtr dialog, IntPtr edit)
-    {
-        IntPtr popup = GetWindow(dialog, GwEnabledPopup);
-        string popupState;
-        if (popup == IntPtr.Zero || popup == dialog)
-            popupState = "no popup";
-        else
-            popupState = $"popup '{WindowText(popup)}' reads '{string.Join(" ", StaticTexts(popup))}'";
-        return $"File name box '{WindowText(edit)}', dialog enabled {IsWindowEnabled(dialog)}, {popupState}";
-    }
-
-    private static bool HasDescendant(IntPtr parent, string className)
-    {
-        bool found = false;
-        EnumChildWindows(parent, (child, _) =>
-        {
-            found = Win32Window.ClassName(child) == className;
-            return !found;
-        }, IntPtr.Zero);
-        return found;
-    }
-
-    private static IReadOnlyList<string> StaticTexts(IntPtr parent)
-    {
-        List<string> texts = new List<string>();
-        EnumChildWindows(parent, (child, _) =>
-        {
-            if (Win32Window.ClassName(child) == "Static" && WindowText(child).Length > 0)
-                texts.Add(WindowText(child));
-            return true;
-        }, IntPtr.Zero);
-        return texts;
-    }
-
-    private static string WindowText(IntPtr hWnd)
-    {
-        StringBuilder text = new StringBuilder(1024);
-        SendMessage(hWnd, WmGetText, (IntPtr)text.Capacity, text);
-        return text.ToString();
-    }
-
-    private static IntPtr FileNameEdit(IntPtr dialog)
-    {
         IntPtr combo = IntPtr.Zero;
         EnumChildWindows(dialog, (child, _) =>
         {
@@ -104,7 +56,54 @@ public static class FileOpenDialog
         IntPtr edit = FindWindowEx(inner, IntPtr.Zero, "Edit", null);
         if (edit == IntPtr.Zero)
             throw new InvalidOperationException("the Open dialog's File name ComboBox has no Edit");
-        return edit;
+
+        SendMessage(edit, WmSetText, IntPtr.Zero, path);
+        StringBuilder typed = new StringBuilder(path.Length + 1);
+        SendMessage(edit, WmGetText, (IntPtr)typed.Capacity, typed);
+        if (typed.ToString() != path)
+            throw new InvalidOperationException($"the Open dialog's File name box reads '{typed}' after setting '{path}'");
+        // Posted, since Open runs the dialog's own validation before it returns.
+        if (!PostMessage(dialog, WmCommand, (IntPtr)IdOk, IntPtr.Zero))
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "posting Open to the Open dialog failed");
+
+        TimeSpan timeout = TimeSpan.FromSeconds(15);
+        DateTime deadline = DateTime.UtcNow + timeout;
+        while (Win32Window.IsWindow(dialog))
+        {
+            if (DateTime.UtcNow > deadline)
+            {
+                IntPtr popup = GetWindow(dialog, GwEnabledPopup);
+                string popupState;
+                if (popup == IntPtr.Zero || popup == dialog)
+                {
+                    popupState = "no popup";
+                }
+                else
+                {
+                    List<string> staticTexts = new List<string>();
+                    EnumChildWindows(popup, (child, _) =>
+                    {
+                        if (Win32Window.ClassName(child) == "Static" && WindowText(child).Length > 0)
+                            staticTexts.Add(WindowText(child));
+                        return true;
+                    }, IntPtr.Zero);
+                    popupState = $"popup '{WindowText(popup)}' reads '{string.Join(" ", staticTexts)}'";
+                }
+                throw new TimeoutException(
+                    $"the Open dialog stayed open {timeout.TotalSeconds}s after Open with '{path}': " +
+                    $"File name box '{WindowText(edit)}', dialog enabled {IsWindowEnabled(dialog)}, {popupState}");
+            }
+            Thread.Sleep(TimeSpan.FromMilliseconds(100));
+        }
+        // Opening a common file dialog resets the session's caret blink time to the user's setting.
+        AppiumSession.SetCaretBlinkTime(Win32Window.INFINITE);
+    }
+
+    private static string WindowText(IntPtr handle)
+    {
+        StringBuilder text = new StringBuilder(1024);
+        SendMessage(handle, WmGetText, (IntPtr)text.Capacity, text);
+        return text.ToString();
     }
 
     private delegate bool EnumChildProc(IntPtr hWnd, IntPtr lParam);

@@ -10,14 +10,12 @@ public sealed class Quickstart : IAsyncDisposable
 {
     // Off the quickstart defaults of 1280 and 3022, so a developer's own quickstart can keep running.
     private const int CtrlPort = 11280;
-    private const int RouterPort = 13022;
     private const string AdminUser = "admin";
     private const string AdminPassword = "admin";
     private static readonly TimeSpan ReadyTimeout = TimeSpan.FromSeconds(120);
     private static readonly TimeSpan CommandTimeout = TimeSpan.FromSeconds(30);
-    private static readonly TimeSpan ReadyPollInterval = TimeSpan.FromSeconds(1);
 
-    private sealed record CliResult(int ExitCode, string Stdout, string Stderr);
+    public sealed record CliResult(int ExitCode, string Stdout, string Stderr);
 
     public string Home { get; }
     public string RootCaPath => Path.Combine(Home, "pki", "root-ca", "certs", "root-ca.cert");
@@ -25,27 +23,39 @@ public sealed class Quickstart : IAsyncDisposable
     public static string UiControllerUrl => $"https://127.0.0.1:{CtrlPort}";
     // Quickstart rewrites its own ziti-cli.json while running, and a login writing it mid-read makes quickstart exit.
     private string CliConfigDir => Path.Combine(Home, "harness-cli-config");
-    private readonly string _zitiBin;
+    private readonly string _zitiExePath;
     private readonly LoggedProcess _process;
 
-    private Quickstart(string zitiBin, string home, LoggedProcess process)
+    private Quickstart(string zitiExePath, string home, LoggedProcess process)
     {
-        _zitiBin = zitiBin;
+        _zitiExePath = zitiExePath;
         Home = home;
         _process = process;
     }
 
-    public static async Task<Quickstart> StartAsync(string zitiBin, string home)
+    public static async Task<Quickstart> StartAsync(string zitiExePath, string home)
     {
         Directory.CreateDirectory(home);
         if (Directory.Exists(ThirdPartyPkiRoot)) Directory.Delete(ThirdPartyPkiRoot, true);
-        LoggedProcess process = LoggedProcess.Start(zitiBin, QuickstartArgs(home), QuickstartEnvironment(home),
+        LoggedProcess process = LoggedProcess.Start(zitiExePath, QuickstartArgs(home), QuickstartEnvironment(home),
             Path.Combine(home, "quickstart.log"));
 
-        Quickstart quickstart = new Quickstart(zitiBin, home, process);
+        Quickstart quickstart = new Quickstart(zitiExePath, home, process);
         try
         {
-            await quickstart.WaitUntilReadyAsync();
+            DateTime deadline = DateTime.UtcNow + ReadyTimeout;
+            await quickstart.PollAsync(deadline, "admin login",
+                () => quickstart.Run("edge", "login", $"https://localhost:{CtrlPort}", "-u", AdminUser, "-p", AdminPassword,
+                    "--yes"),
+                result => result.ExitCode == 0);
+            // Until a raft leader is elected the controller rejects every model update with CLUSTER_NO_LEADER.
+            await quickstart.PollAsync(deadline, "a cluster leader", () => quickstart.Run("ops", "cluster", "list", "-j"),
+                result =>
+                {
+                    if (result.ExitCode != 0) return false;
+                    JArray members = JObject.Parse(result.Stdout)["data"] as JArray ?? new JArray();
+                    return members.OfType<JObject>().Any(member => (bool?)member["leader"] == true);
+                });
         }
         catch
         {
@@ -56,11 +66,11 @@ public sealed class Quickstart : IAsyncDisposable
     }
 
     // Quickstart has no switch to turn OIDC off, so its generated config is edited before the first start.
-    public static async Task<Quickstart> StartWithoutOidcAsync(string zitiBin, string home)
+    public static async Task<Quickstart> StartWithoutOidcAsync(string zitiExePath, string home)
     {
         Directory.CreateDirectory(home);
         List<string> args = new List<string>(QuickstartArgs(home)) { "--configure-and-exit" };
-        await using (LoggedProcess configure = LoggedProcess.Start(zitiBin, args, QuickstartEnvironment(home),
+        await using (LoggedProcess configure = LoggedProcess.Start(zitiExePath, args, QuickstartEnvironment(home),
                          Path.Combine(home, "configure.log")))
         {
             int exitCode = await configure.WaitForExitAsync(ReadyTimeout);
@@ -70,14 +80,14 @@ public sealed class Quickstart : IAsyncDisposable
         }
 
         string[] configs = await StripOidcAsync(home);
-        return await StartAdvertisingOidcAsync(zitiBin, home, configs, false);
+        return await StartAdvertisingOidcAsync(zitiExePath, home, configs, false);
     }
 
     private static string[] QuickstartArgs(string home) => new[]
     {
         "edge", "quickstart", $"--home={home}",
         "--ctrl-address=localhost", $"--ctrl-port={CtrlPort}",
-        "--router-address=localhost", $"--router-port={RouterPort}",
+        "--router-address=localhost", "--router-port=13022",
     };
 
     private static Dictionary<string, string> QuickstartEnvironment(string home) => new Dictionary<string, string>
@@ -108,11 +118,11 @@ public sealed class Quickstart : IAsyncDisposable
 
     private JObject ListSingleIdentity(string name)
     {
-        CliResult result = RunChecked("edge", "list", "identities", $"name=\"{name}\"", "-j");
-        JArray identities = JObject.Parse(result.Stdout)["data"] as JArray ?? new JArray();
+        CliResult identityListing = RunChecked("edge", "list", "identities", $"name=\"{name}\"", "-j");
+        JArray identities = JObject.Parse(identityListing.Stdout)["data"] as JArray ?? new JArray();
         if (identities.Count != 1)
             throw new InvalidOperationException(
-                $"expected exactly one identity named {name}, found {identities.Count}. stdout: {result.Stdout}");
+                $"expected exactly one identity named {name}, found {identities.Count}. stdout: {identityListing.Stdout}");
         return (JObject)identities[0];
     }
 
@@ -162,21 +172,6 @@ public sealed class Quickstart : IAsyncDisposable
 
     public void DeleteExtJwtSigner(string name) => RunChecked("edge", "delete", "ext-jwt-signer", name);
 
-    public void CreateAuthPolicyForExtJwt(string name, IReadOnlyList<string> signerIds)
-    {
-        List<string> args = new() { "edge", "create", "auth-policy", name, "--primary-ext-jwt-allowed" };
-        foreach (string id in signerIds) args.AddRange(new[] { "--primary-ext-jwt-allowed-signers", id });
-        RunChecked(args.ToArray());
-    }
-
-    public void DeleteAuthPolicy(string name) => RunChecked("edge", "delete", "auth-policy", name);
-
-    public void SetAuthPolicySecondaryExtJwtSigner(string policy, string signerId) =>
-        RunChecked("edge", "update", "auth-policy", policy, "--secondary-req-ext-jwt-signer", signerId);
-
-    public void CreateIdentityWithExternalId(string name, string externalId, string authPolicy) =>
-        RunChecked("edge", "create", "identity", name, "--external-id", externalId, "-P", authPolicy);
-
     public void SetIdentityAuthPolicy(string name, string authPolicy) =>
         RunChecked("edge", "update", "identity", name, "-P", authPolicy);
 
@@ -197,16 +192,16 @@ public sealed class Quickstart : IAsyncDisposable
         args.AddRange(createCaFlags);
         string id = RunChecked(args.ToArray()).Stdout.Trim();
 
-        CliResult list = RunChecked("edge", "list", "cas", $"name=\"{name}\"", "-j");
-        JArray cas = JObject.Parse(list.Stdout)["data"] as JArray ?? new JArray();
-        if (cas.Count != 1)
-            throw new InvalidOperationException($"expected exactly one ca named {name}, found {cas.Count}. stdout: {list.Stdout}");
-        string? token = (string?)cas[0]["verificationToken"];
+        CliResult caListing = RunChecked("edge", "list", "cas", $"name=\"{name}\"", "-j");
+        JArray namedCas = JObject.Parse(caListing.Stdout)["data"] as JArray ?? new JArray();
+        if (namedCas.Count != 1)
+            throw new InvalidOperationException($"expected exactly one ca named {name}, found {namedCas.Count}. stdout: {caListing.Stdout}");
+        string? token = (string?)namedCas[0]["verificationToken"];
         if (string.IsNullOrEmpty(token))
-            throw new InvalidOperationException($"ca {name} has no verificationToken. stdout: {list.Stdout}");
+            throw new InvalidOperationException($"ca {name} has no verificationToken. stdout: {caListing.Stdout}");
 
-        ClientCert verify = CreateClientCert(name, token, Array.Empty<string>());
-        RunChecked("edge", "verify", "ca", name, "--cert", verify.CertPath);
+        ClientCert verificationCert = CreateClientCert(name, token, Array.Empty<string>());
+        RunChecked("edge", "verify", "ca", name, "--cert", verificationCert.CertPath);
         return id;
     }
 
@@ -221,20 +216,6 @@ public sealed class Quickstart : IAsyncDisposable
         RunChecked(args.ToArray());
         return new ClientCert(Path.Combine(ThirdPartyPkiRoot, caName, "certs", $"{commonName}.cert"),
             Path.Combine(ThirdPartyPkiRoot, caName, "keys", $"{commonName}.key"));
-    }
-
-    public string CreateOttCaEnrollment(string identityName, string caName)
-    {
-        string enrollmentId = RunChecked("edge", "create", "enrollment", "ottca", identityName, caName).Stdout.Trim();
-        CliResult list = RunChecked("edge", "list", "enrollments", $"id=\"{enrollmentId}\"", "-j");
-        JArray enrollments = JObject.Parse(list.Stdout)["data"] as JArray ?? new JArray();
-        if (enrollments.Count != 1)
-            throw new InvalidOperationException(
-                $"expected exactly one enrollment {enrollmentId}, found {enrollments.Count}. stdout: {list.Stdout}");
-        string? jwt = (string?)enrollments[0]["jwt"];
-        if (string.IsNullOrEmpty(jwt))
-            throw new InvalidOperationException($"enrollment {enrollmentId} has no jwt. stdout: {list.Stdout}");
-        return jwt;
     }
 
     // Through the management API, since no ziti CLI verb prints a CA's JWT.
@@ -257,11 +238,11 @@ public sealed class Quickstart : IAsyncDisposable
     private static async Task<string> AdminSessionAsync(HttpClient http)
     {
         JObject credentials = new JObject { ["username"] = AdminUser, ["password"] = AdminPassword };
-        using HttpResponseMessage auth = await http.PostAsync("/edge/management/v1/authenticate?method=password",
+        using HttpResponseMessage authResp = await http.PostAsync("/edge/management/v1/authenticate?method=password",
             new StringContent(credentials.ToString(), System.Text.Encoding.UTF8, "application/json"));
-        string authBody = await auth.Content.ReadAsStringAsync();
-        if (!auth.IsSuccessStatusCode)
-            throw new InvalidOperationException($"admin authenticate returned {(int)auth.StatusCode}: {authBody}");
+        string authBody = await authResp.Content.ReadAsStringAsync();
+        if (!authResp.IsSuccessStatusCode)
+            throw new InvalidOperationException($"admin authenticate returned {(int)authResp.StatusCode}: {authBody}");
         return (string?)JObject.Parse(authBody)["data"]?["token"]
             ?? throw new InvalidOperationException($"admin authenticate returned no data.token: {authBody}");
     }
@@ -273,10 +254,16 @@ public sealed class Quickstart : IAsyncDisposable
     public async Task<Quickstart> RestartWithoutOidcAsync()
     {
         // Router enrollment writes the key and cert its config points at, so a restart before then fails.
-        await WaitForRouterOnlineAsync();
+        await PollAsync(DateTime.UtcNow + ReadyTimeout, "an online router", () => Run("edge", "list", "edge-routers", "-j"),
+            result =>
+            {
+                if (result.ExitCode != 0) return false;
+                JArray routers = JObject.Parse(result.Stdout)["data"] as JArray ?? new JArray();
+                return routers.OfType<JObject>().Any(router => (bool?)router["isOnline"] == true);
+            });
         await DisposeAsync();
         string[] configs = await StripOidcAsync(Home);
-        return await StartAdvertisingOidcAsync(_zitiBin, Home, configs, false);
+        return await StartAdvertisingOidcAsync(_zitiExePath, Home, configs, false);
     }
 
     public async Task<Quickstart> RestartWithOidcAsync()
@@ -286,9 +273,10 @@ public sealed class Quickstart : IAsyncDisposable
         if (saved.Length == 0)
             throw new FileNotFoundException($"no ctrl.yaml{WithOidcSuffix} under {Home}, so OIDC was never stripped");
         foreach (string copy in saved) File.Copy(copy, copy[..^WithOidcSuffix.Length], true);
-        return await StartAdvertisingOidcAsync(_zitiBin, Home, saved, true);
+        return await StartAdvertisingOidcAsync(_zitiExePath, Home, saved, true);
     }
 
+    // ziti 2.0+ binds OIDC on its own unless edge.api.disableOidcAutoBinding is set.
     private static async Task<string[]> StripOidcAsync(string home)
     {
         string[] configs = Directory.GetFiles(home, "ctrl.yaml", SearchOption.AllDirectories);
@@ -296,16 +284,47 @@ public sealed class Quickstart : IAsyncDisposable
         foreach (string config in configs)
         {
             File.Copy(config, config + WithOidcSuffix, true);
-            await File.WriteAllLinesAsync(config, WithoutOidc(await File.ReadAllLinesAsync(config), config));
+            List<string> stripped = new();
+            int bindingIndent = -1;
+            bool inEdge = false;
+            bool autoBindingSet = false;
+            bool bindingRemoved = false;
+            foreach (string line in await File.ReadAllLinesAsync(config))
+            {
+                int indent = line.Length - line.TrimStart(' ').Length;
+                if (bindingIndent >= 0 && line.Trim().Length > 0 && indent > bindingIndent) continue;
+                bindingIndent = -1;
+                if (line.Trim() == "- binding: edge-oidc")
+                {
+                    bindingIndent = indent;
+                    bindingRemoved = true;
+                    continue;
+                }
+                stripped.Add(line);
+                if (line == "edge:") inEdge = true;
+                else if (inEdge && line == "  api:")
+                {
+                    stripped.Add("    disableOidcAutoBinding: true");
+                    autoBindingSet = true;
+                    inEdge = false;
+                }
+            }
+            if (!bindingRemoved || !autoBindingSet)
+                throw new InvalidDataException(
+                    $"{config} has no edge-oidc binding ({bindingRemoved}) or no edge.api section ({autoBindingSet})");
+            await File.WriteAllLinesAsync(config, stripped);
         }
         return configs;
     }
 
-    private static async Task<Quickstart> StartAdvertisingOidcAsync(string zitiBin, string home,
+    private static async Task<Quickstart> StartAdvertisingOidcAsync(string zitiExePath, string home,
         IReadOnlyList<string> configs, bool expectOidc)
     {
-        Quickstart quickstart = await StartAsync(zitiBin, home);
-        IReadOnlyList<string> capabilities = await quickstart.CapabilitiesAsync();
+        Quickstart quickstart = await StartAsync(zitiExePath, home);
+        JObject data = await ClientVersionAsync();
+        JArray capabilityArray = data["capabilities"] as JArray
+            ?? throw new InvalidOperationException($"GET {ClientVersionUrl} returned no data.capabilities: {data}");
+        List<string> capabilities = capabilityArray.Values<string>().Select(capability => capability!).ToList();
         if (capabilities.Contains(OidcAuthCapability) != expectOidc)
         {
             await quickstart.DisposeAsync();
@@ -313,61 +332,6 @@ public sealed class Quickstart : IAsyncDisposable
                 $"the controller's {OidcAuthCapability} is {!expectOidc} after editing {string.Join(", ", configs)}, expected {expectOidc}: [{string.Join(", ", capabilities)}]");
         }
         return quickstart;
-    }
-
-    // ziti 2.0+ binds OIDC on its own unless edge.api.disableOidcAutoBinding is set.
-    private static List<string> WithoutOidc(IReadOnlyList<string> lines, string path)
-    {
-        List<string> result = new();
-        int bindingIndent = -1;
-        bool inEdge = false;
-        bool autoBindingSet = false;
-        bool bindingRemoved = false;
-        foreach (string line in lines)
-        {
-            int indent = line.Length - line.TrimStart(' ').Length;
-            if (bindingIndent >= 0 && line.Trim().Length > 0 && indent > bindingIndent) continue;
-            bindingIndent = -1;
-            if (line.Trim() == "- binding: edge-oidc")
-            {
-                bindingIndent = indent;
-                bindingRemoved = true;
-                continue;
-            }
-            result.Add(line);
-            if (line == "edge:") inEdge = true;
-            else if (inEdge && line == "  api:")
-            {
-                result.Add("    disableOidcAutoBinding: true");
-                autoBindingSet = true;
-                inEdge = false;
-            }
-        }
-        if (!bindingRemoved || !autoBindingSet)
-            throw new InvalidDataException(
-                $"{path} has no edge-oidc binding ({bindingRemoved}) or no edge.api section ({autoBindingSet})");
-        return result;
-    }
-
-    private async Task WaitForRouterOnlineAsync()
-    {
-        DateTime deadline = DateTime.UtcNow + ReadyTimeout;
-        await PollAsync(deadline, "an online router", () => Run("edge", "list", "edge-routers", "-j"), HasOnlineRouter);
-    }
-
-    private static bool HasOnlineRouter(CliResult result)
-    {
-        if (result.ExitCode != 0) return false;
-        JArray routers = JObject.Parse(result.Stdout)["data"] as JArray ?? new JArray();
-        return routers.OfType<JObject>().Any(r => (bool?)r["isOnline"] == true);
-    }
-
-    private async Task<IReadOnlyList<string>> CapabilitiesAsync()
-    {
-        JObject data = await ClientVersionAsync();
-        JArray capabilities = data["capabilities"] as JArray
-            ?? throw new InvalidOperationException($"GET {ClientVersionUrl} returned no data.capabilities: {data}");
-        return capabilities.Values<string>().Select(c => c!).ToList();
     }
 
     public async Task<string> ControllerVersionAsync()
@@ -407,20 +371,10 @@ public sealed class Quickstart : IAsyncDisposable
             using HttpResponseMessage response = await http.GetAsync($"https://localhost:{CtrlPort}/version");
             return response.StatusCode == HttpStatusCode.OK;
         }
-        catch (HttpRequestException e) when (e.InnerException is AuthenticationException)
+        catch (HttpRequestException ex) when (ex.InnerException is AuthenticationException)
         {
             return false;
         }
-    }
-
-    // Until a raft leader is elected the controller rejects every model update with CLUSTER_NO_LEADER.
-    private async Task WaitUntilReadyAsync()
-    {
-        DateTime deadline = DateTime.UtcNow + ReadyTimeout;
-        await PollAsync(deadline, "admin login",
-            () => Run("edge", "login", $"https://localhost:{CtrlPort}", "-u", AdminUser, "-p", AdminPassword, "--yes"),
-            r => r.ExitCode == 0);
-        await PollAsync(deadline, "a cluster leader", () => Run("ops", "cluster", "list", "-j"), HasLeader);
     }
 
     private async Task<CliResult> PollAsync(DateTime deadline, string waitingFor, Func<CliResult> attempt,
@@ -435,20 +389,13 @@ public sealed class Quickstart : IAsyncDisposable
             last = attempt();
             if (done(last)) return last;
             if (DateTime.UtcNow > deadline) break;
-            await Task.Delay(ReadyPollInterval);
+            await Task.Delay(TimeSpan.FromSeconds(1));
         }
         throw new TimeoutException(
             $"quickstart never reached {waitingFor} in {ReadyTimeout.TotalSeconds}s. Log: {_process.LogPath}");
     }
 
-    private static bool HasLeader(CliResult result)
-    {
-        if (result.ExitCode != 0) return false;
-        JArray members = JObject.Parse(result.Stdout)["data"] as JArray ?? new JArray();
-        return members.OfType<JObject>().Any(m => (bool?)m["leader"] == true);
-    }
-
-    private CliResult RunChecked(params string[] args)
+    public CliResult RunChecked(params string[] args)
     {
         CliResult result = Run(args);
         if (result.ExitCode != 0)
@@ -459,27 +406,27 @@ public sealed class Quickstart : IAsyncDisposable
 
     private CliResult Run(params string[] args)
     {
-        ProcessStartInfo psi = new ProcessStartInfo
+        ProcessStartInfo startInfo = new ProcessStartInfo
         {
-            FileName = _zitiBin,
+            FileName = _zitiExePath,
             UseShellExecute = false,
             CreateNoWindow = true,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         };
-        foreach (string arg in args) psi.ArgumentList.Add(arg);
-        psi.Environment["ZITI_CONFIG_DIR"] = CliConfigDir;
+        foreach (string argument in args) startInfo.ArgumentList.Add(argument);
+        startInfo.Environment["ZITI_CONFIG_DIR"] = CliConfigDir;
 
         string command = "ziti " + string.Join(" ", args);
-        using Process p = Process.Start(psi) ?? throw new InvalidOperationException($"{command} did not start");
-        Task<string> stdout = p.StandardOutput.ReadToEndAsync();
-        Task<string> stderr = p.StandardError.ReadToEndAsync();
-        if (!p.WaitForExit(CommandTimeout))
+        using Process ziti = Process.Start(startInfo) ?? throw new InvalidOperationException($"{command} did not start");
+        Task<string> stdout = ziti.StandardOutput.ReadToEndAsync();
+        Task<string> stderr = ziti.StandardError.ReadToEndAsync();
+        if (!ziti.WaitForExit(CommandTimeout))
         {
-            p.Kill(entireProcessTree: true);
+            ziti.Kill(entireProcessTree: true);
             throw new TimeoutException($"{command} still running after {CommandTimeout.TotalSeconds}s");
         }
-        return new CliResult(p.ExitCode, stdout.Result, stderr.Result);
+        return new CliResult(ziti.ExitCode, stdout.Result, stderr.Result);
     }
 
     public async ValueTask DisposeAsync() => await _process.DisposeAsync();

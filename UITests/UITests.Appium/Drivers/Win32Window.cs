@@ -78,10 +78,10 @@ internal static class Win32Window
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder lpClassName, int nMaxCount);
 
-    public static string ClassName(IntPtr hWnd)
+    public static string ClassName(IntPtr handle)
     {
         System.Text.StringBuilder name = new System.Text.StringBuilder(64);
-        GetClassName(hWnd, name, name.Capacity);
+        GetClassName(handle, name, name.Capacity);
         return name.ToString();
     }
 

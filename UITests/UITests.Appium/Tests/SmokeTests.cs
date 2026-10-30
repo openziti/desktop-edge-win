@@ -44,14 +44,14 @@ public class SmokeTests
     public async Task AddIdentityOffersJwtAndUrl()
     {
         string name = nameof(AddIdentityOffersJwtAndUrl);
-        await using AppiumSession s = await AppiumSession.LaunchAsync(DefaultExePath(), Fixture("landing-status.json"),
+        await using AppiumSession session = await AppiumSession.LaunchAsync(DefaultExePath(), Fixture("landing-status.json"),
             UiLogPath(name));
-        WaitFor(s, LandingRow);
+        WaitFor(session, LandingRow);
         // AddIdAreaButton has no UIA peer. Its "ADD" label does, and the click bubbles up to it.
-        ClickUntil(s, By.XPath("//Text[@Name='ADD']"), By.XPath("//MenuItem"));
-        string[] items = s.Driver.FindElements(By.XPath("//MenuItem")).Select(item => item.GetAttribute("Name")).ToArray();
+        ClickUntil(session, By.XPath("//Text[@Name='ADD']"), By.XPath("//MenuItem"));
+        string[] items = session.Driver.FindElements(By.XPath("//MenuItem")).Select(item => item.GetAttribute("Name")).ToArray();
         Assert.Equal(new[] { "With JWT", "With URL" }, items);
-        await VerifyPng(CaptureWithPopups(s), nameof(AddIdentityOffersJwtAndUrl));
+        await VerifyPng(CaptureWithPopups(session), nameof(AddIdentityOffersJwtAndUrl));
     }
 
     [Fact(Timeout = 60000)]
@@ -72,25 +72,25 @@ public class SmokeTests
     {
         string name = nameof(DockedWindowStaysOnScreen);
         // 5 rows nearly fill IdList.MaxHeight yet stay in view in any sort, as OpenIdentityDetails needs.
-        await using AppiumSession s = await AppiumSession.LaunchAsync(DefaultExePath(),
+        await using AppiumSession session = await AppiumSession.LaunchAsync(DefaultExePath(),
             FixtureBuilder.ManyMixedIdentities(count: 5), UiLogPath(name));
-        WaitFor(s, By.XPath("//Text[@Name='enabled-00']"));
-        Rectangle landing = AssertOnScreen(s, name, "01-landing");
+        WaitFor(session, By.XPath("//Text[@Name='enabled-00']"));
+        Rectangle landing = AssertOnScreen(session, name, "01-landing");
 
-        OpenIdentityDetails(s, "enabled-00");
-        Rectangle details = AssertOnScreen(s, name, "02-identity-details");
+        OpenIdentityDetails(session, "enabled-00");
+        Rectangle details = AssertOnScreen(session, name, "02-identity-details");
         Assert.True(details.Width > landing.Width, $"identity details {details} should be wider than landing {landing}");
         Assert.Equal(landing.Left, details.Left);
 
-        CloseIdentityDetails(s);
-        Rectangle closed = AssertOnScreen(s, name, "03-details-closed");
+        CloseIdentityDetails(session);
+        Rectangle closed = AssertOnScreen(session, name, "03-details-closed");
         Assert.Equal(landing, closed);
     }
 
-    private static Rectangle AssertOnScreen(AppiumSession s, string testName, string stepName)
+    private static Rectangle AssertOnScreen(AppiumSession session, string testName, string stepName)
     {
-        SaveStep(s, testName, stepName);
-        Rectangle window = s.WindowBounds();
+        SaveStep(session, testName, stepName);
+        Rectangle window = session.WindowBounds();
         Rectangle workArea = AppiumSession.WorkArea();
         Assert.True(workArea.Contains(window), $"{stepName}: window {window} is not inside the work area {workArea}");
         return window;
@@ -103,11 +103,11 @@ public class SmokeTests
         string name = nameof(ManyIdentities_LandingShowsScrollableList);
         // 25 rows is far past the 4-5 visible.
         const int count = 25;
-        await using AppiumSession s = await AppiumSession.LaunchAsync(DefaultExePath(),
+        await using AppiumSession session = await AppiumSession.LaunchAsync(DefaultExePath(),
             FixtureBuilder.ManyMixedIdentities(count), UiLogPath(name));
-        WaitUntil(s, $"the list holds {count} rows", TimeSpan.FromSeconds(10),
-            () => IntegrationHelpers.IdentityRowCount(s) == count);
-        SaveStep(s, name, "01-many-identities");
-        WaitFor(s, By.XPath("//*[@AutomationId='IdListScroller' and @VerticallyScrollable='True']"));
+        WaitUntil(session, $"the list holds {count} rows", TimeSpan.FromSeconds(10),
+            () => IntegrationHelpers.IdentityRowCount(session) == count);
+        SaveStep(session, name, "01-many-identities");
+        WaitFor(session, By.XPath("//*[@AutomationId='IdListScroller' and @VerticallyScrollable='True']"));
     }
 }

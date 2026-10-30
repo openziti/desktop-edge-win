@@ -11,8 +11,6 @@ public sealed class RelayIpcServer : IAsyncDisposable
     public sealed record RecordedLine(string From, string Pipe, string Line, DateTime ReceivedAtUtc);
 
     private static readonly TimeSpan ZetConnectTimeout = TimeSpan.FromSeconds(5);
-    // ZET's usual gap: an mfa_auth_status handled before its SubmitMFA reply leaves the MFA lock stuck.
-    private static readonly TimeSpan MfaAuthStatusDelay = TimeSpan.FromMilliseconds(35);
 
     public string PipePrefix { get; }
     public string ZetDiscriminator { get; }
@@ -22,7 +20,7 @@ public sealed class RelayIpcServer : IAsyncDisposable
     private string ZetIpcPipeName => "ziti-edge-tunnel.sock." + ZetDiscriminator;
     private string ZetEventPipeName => "ziti-edge-tunnel-event.sock." + ZetDiscriminator;
 
-    private readonly CancellationTokenSource _cts = new();
+    private readonly CancellationTokenSource _shutdown = new();
     private readonly List<Task> _serverLoops = new();
     private readonly List<RecordedLine> _recorded = new();
     private readonly object _recordedLock = new();
@@ -44,46 +42,42 @@ public sealed class RelayIpcServer : IAsyncDisposable
     public async Task StartAsync()
     {
         // Fail before the UI launches: a ZET that isn't running otherwise only shows up as a UI that never connects.
-        using (NamedPipeClientStream probe = await ConnectToZetAsync(ZetIpcPipeName, PipeDirection.InOut, _cts.Token)) { }
+        using (NamedPipeClientStream probe = await ConnectToZetAsync(ZetIpcPipeName, PipeDirection.InOut, _shutdown.Token)) { }
 
         _serverLoops.Add(Task.Run(() => IpcPipes.AcceptLoopAsync(DataIpcPipeName, PipeDirection.InOut,
-            RelayCommandClientAsync, _cts.Token)));
+            async (ui, ct) =>
+            {
+                try
+                {
+                    using (ui)
+                    using (NamedPipeClientStream zet = await ConnectToZetAsync(ZetIpcPipeName, PipeDirection.InOut, ct))
+                    {
+                        Task toZet = PumpAsync(ui, zet, "ui", IpcPipes.ClientProcessName(ui), "cmd", ct);
+                        Task toUi = PumpAsync(zet, ui, "zet", "ZET", "cmd", ct);
+                        await Task.WhenAny(toZet, toUi);
+                    }
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    lock (_faultsLock) _faults.Add(ex);
+                }
+            }, _shutdown.Token)));
         _serverLoops.Add(Task.Run(() => IpcPipes.AcceptLoopAsync(DataEventPipeName, PipeDirection.Out,
-            RelayEventClientAsync, _cts.Token)));
-    }
-
-    private async Task RelayCommandClientAsync(NamedPipeServerStream ui, CancellationToken ct)
-    {
-        try
-        {
-            using (ui)
-            using (NamedPipeClientStream zet = await ConnectToZetAsync(ZetIpcPipeName, PipeDirection.InOut, ct))
+            async (ui, ct) =>
             {
-                Task toZet = PumpAsync(ui, zet, "ui", IpcPipes.ClientProcessName(ui), "cmd", ct);
-                Task toUi = PumpAsync(zet, ui, "zet", "ZET", "cmd", ct);
-                await Task.WhenAny(toZet, toUi);
-            }
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            lock (_faultsLock) _faults.Add(ex);
-        }
-    }
-
-    private async Task RelayEventClientAsync(NamedPipeServerStream ui, CancellationToken ct)
-    {
-        try
-        {
-            using (ui)
-            using (NamedPipeClientStream zet = await ConnectToZetAsync(ZetEventPipeName, PipeDirection.In, ct))
-            {
-                await PumpAsync(zet, ui, "zet", "ZET", "event", ct);
-            }
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            lock (_faultsLock) _faults.Add(ex);
-        }
+                try
+                {
+                    using (ui)
+                    using (NamedPipeClientStream zet = await ConnectToZetAsync(ZetEventPipeName, PipeDirection.In, ct))
+                    {
+                        await PumpAsync(zet, ui, "zet", "ZET", "event", ct);
+                    }
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    lock (_faultsLock) _faults.Add(ex);
+                }
+            }, _shutdown.Token)));
     }
 
     private async Task PumpAsync(Stream source, Stream target, string from, string sender, string pipe,
@@ -112,12 +106,13 @@ public sealed class RelayIpcServer : IAsyncDisposable
                 }
                 lock (_recordedLock) _recorded.Add(new RecordedLine(from, pipe, line, DateTime.UtcNow));
                 if (from == "ui") Step.Sent(sender, json);
-                else if (pipe == "cmd") Step.ZetReplied(json);
+                else if (pipe == "cmd") Step.Log($"ZET: reply Success:{json["Success"]} Code:{json["Code"]}");
                 // metrics arrives every few seconds and would bury the step lines
-                else if ((string?)json["Op"] != "metrics") Step.ZetEvent(json);
+                else if ((string?)json["Op"] != "metrics") Step.Log($"ZET: event {json["Op"]} {json["Action"]}");
+                // ZET's usual gap: an mfa_auth_status handled before its SubmitMFA reply leaves the MFA lock stuck.
                 // Not cancellable: a cancelled delay would fault the pump instead of ending it.
                 if (pipe == "event" && (string?)json["Action"] == "mfa_auth_status")
-                    await Task.Delay(MfaAuthStatusDelay);
+                    await Task.Delay(TimeSpan.FromMilliseconds(35));
             }
             try { await writer.WriteLineAsync(line); }
             catch (Exception ex) when (ex is IOException or ObjectDisposedException) { return; }
@@ -142,26 +137,24 @@ public sealed class RelayIpcServer : IAsyncDisposable
         return pipe;
     }
 
-    private async Task WriteCaptureAsync()
+    public async ValueTask DisposeAsync()
     {
+        _shutdown.Cancel();
+        await Task.WhenAll(_serverLoops).WaitAsync(TimeSpan.FromSeconds(2));
+        _shutdown.Dispose();
+
+        // Written before faults are raised, so a failed run still leaves its recording.
         StringBuilder capture = new StringBuilder();
-        foreach (RecordedLine r in Recorded)
+        foreach (RecordedLine recorded in Recorded)
         {
-            JObject entry = new JObject { ["from"] = r.From, ["pipe"] = r.Pipe, ["message"] = JObject.Parse(r.Line) };
+            JObject entry = new JObject
+            {
+                ["from"] = recorded.From, ["pipe"] = recorded.Pipe, ["message"] = JObject.Parse(recorded.Line),
+            };
             capture.Append(entry.ToString(Formatting.None)).Append('\n');
         }
         Directory.CreateDirectory(Path.GetDirectoryName(CapturePath)!);
         await File.WriteAllTextAsync(CapturePath, capture.ToString());
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        _cts.Cancel();
-        await Task.WhenAll(_serverLoops).WaitAsync(TimeSpan.FromSeconds(2));
-        _cts.Dispose();
-
-        // Written before faults are raised, so a failed run still leaves its recording.
-        await WriteCaptureAsync();
 
         Exception[] faults;
         lock (_faultsLock) faults = _faults.ToArray();

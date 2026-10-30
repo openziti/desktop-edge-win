@@ -9,10 +9,9 @@ namespace ZitiDesktopEdge.UITests.Tests;
 // Tests drive dex over HTTP from ZET's IdP URL, so the browser the app opens for it is closed unused.
 [Trait("Category", "Integration")]
 [Collection(IntegrationCollection.Name)]
-public class ExternalAuthSingleSignerTests
+public class ExternalAuthSingleSignerTests : IDisposable
 {
     private const string TotpPolicy = "test_mfa_totp_policy";
-    private const string EnrollmentRequiredEvent = "\"Op\":\"mfa\",\"Action\":\"enrollment_required\"";
 
     private readonly IntegrationFixture _fixture;
 
@@ -22,35 +21,29 @@ public class ExternalAuthSingleSignerTests
         _fixture = fixture;
     }
 
+    public void Dispose() => CloseBrowsers();
+
     [Fact(Timeout = 120000)]
     public async Task EnrollToNoneCompletes()
     {
         string name = nameof(EnrollToNoneCompletes);
         const string identityName = "test_ext_auth_none_happy";
 
-        try
-        {
-            await using AppiumSession s = await LaunchAsync(_fixture, name);
-            EnterControllerUrl(s, Quickstart.UiControllerUrl);
-            JoinEnrolledToNone(s);
-            // The working signer enrolls to neither, so the app sends no mode.
-            JObject sent = UiCommand(s.Relay!, AddIdentityLine);
-            Assert.Null((string?)sent["Data"]!["EnrollMode"]);
-            WaitForController(s, ExtAuthRequiredIcon, "the row asks for external auth");
-            await VerifyStep(s, Capture(s), name, "01-identity-needs-ext-login");
+        await using AppiumSession session = await LaunchAsync(_fixture, name);
+        EnterControllerUrl(session, Quickstart.UiControllerUrl);
+        JoinEnrolledToNone(session);
+        JObject sent = UiCommand(session.Relay!, AddIdentityLine);
+        Assert.Null((string?)sent["Data"]!["EnrollMode"]);
+        WaitForController(session, ExtAuthRequiredIcon, "the row asks for external auth");
+        await VerifyStep(session, Capture(session), name, "01-identity-needs-ext-login");
 
-            string loginUrl = LoginFromRow(s);
-            await LogInAtIdP(s, loginUrl, $"{identityName}@test.com");
-            JObject added = AssertEnrollmentAdded(s, ExternalAuthLine);
-            AssertUrlEnrolledToNoneIdentityFile((string)added["Id"]!["Identifier"]!);
-            WaitForRowLoggedIn(s);
-            WaitForRowNamed(s, identityName);
-            await VerifyStep(s, Capture(s), name, "02-identity-enrolled");
-        }
-        finally
-        {
-            CloseBrowsers();
-        }
+        string loginUrl = LoginFromRow(session);
+        await LogInAtIdP(session, loginUrl, $"{identityName}@test.com");
+        JObject identityAddedEvent = AssertEnrollmentAdded(session, ExternalAuthLine);
+        AssertUrlEnrolledToNoneIdentityFile((string)identityAddedEvent["Id"]!["Identifier"]!);
+        WaitForRowLoggedIn(session);
+        WaitForRowNamed(session, identityName);
+        await VerifyStep(session, Capture(session), name, "02-identity-enrolled");
     }
 
     [Fact(Timeout = 120000)]
@@ -60,21 +53,14 @@ public class ExternalAuthSingleSignerTests
         // No controller identity has this external id, so dex accepts the login and the controller rejects it.
         const string identityName = "test_ext_auth_unknown_identity";
 
-        try
-        {
-            await using AppiumSession s = await LaunchAsync(_fixture, name);
-            EnterControllerUrl(s, Quickstart.UiControllerUrl);
-            JoinEnrolledToNone(s);
+        await using AppiumSession session = await LaunchAsync(_fixture, name);
+        EnterControllerUrl(session, Quickstart.UiControllerUrl);
+        JoinEnrolledToNone(session);
 
-            string loginUrl = LoginFromRow(s);
-            await LogInAtIdP(s, loginUrl, $"{identityName}@test.com");
-            WaitForZetEventAfter(s, ExternalAuthLine, ControllerDisconnectedEvent);
-            await VerifyStep(s, Capture(s), name, "01-login-rejected");
-        }
-        finally
-        {
-            CloseBrowsers();
-        }
+        string loginUrl = LoginFromRow(session);
+        await LogInAtIdP(session, loginUrl, $"{identityName}@test.com");
+        WaitForZetEventAfter(session, ExternalAuthLine, ControllerDisconnectedEvent);
+        await VerifyStep(session, Capture(session), name, "01-login-rejected");
     }
 
     [Fact(Timeout = 120000)]
@@ -83,10 +69,10 @@ public class ExternalAuthSingleSignerTests
         string name = nameof(EnrollToCertCompletes);
         await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToCert = true }, async () =>
         {
-            await using AppiumSession s = await LaunchAsync(_fixture, name);
+            await using AppiumSession session = await LaunchAsync(_fixture, name);
             // One cert-only signer, so the app skips the enrollment choice (openziti/desktop-edge-win#1092).
-            await CompleteEnrollToCert(s, "test_ext_auth_cert_happy");
-            AssertSentEnrollMode(s, "cert");
+            await CompleteEnrollToCert(session, "test_ext_auth_cert_happy");
+            AssertSentEnrollMode(session, "cert");
         });
     }
 
@@ -97,10 +83,10 @@ public class ExternalAuthSingleSignerTests
         const string identityName = "test_ext_auth_name_selector";
         await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToCert = true, NameSelector = "/email" }, async () =>
         {
-            await using AppiumSession s = await LaunchAsync(_fixture, name);
-            await CompleteEnrollToCert(s, identityName);
-            WaitForIdentityNamed(s, AddIdentityLine, $"{identityName}@test.com");
-            WaitForRowNamed(s, $"{identityName}@test.com");
+            await using AppiumSession session = await LaunchAsync(_fixture, name);
+            await CompleteEnrollToCert(session, identityName);
+            WaitForIdentityNamed(session, AddIdentityLine, $"{identityName}@test.com");
+            WaitForRowNamed(session, $"{identityName}@test.com");
         });
     }
 
@@ -110,10 +96,10 @@ public class ExternalAuthSingleSignerTests
         string name = nameof(EnrollToTokenCompletes);
         await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToToken = true }, async () =>
         {
-            await using AppiumSession s = await LaunchAsync(_fixture, name);
+            await using AppiumSession session = await LaunchAsync(_fixture, name);
             // One token-only signer, so the app skips the enrollment choice (openziti/desktop-edge-win#1092).
-            await CompleteEnrollToToken(s, "test_ext_auth_token_happy");
-            AssertSentEnrollMode(s, "token");
+            await CompleteEnrollToToken(session, "test_ext_auth_token_happy");
+            AssertSentEnrollMode(session, "token");
         });
     }
 
@@ -124,10 +110,10 @@ public class ExternalAuthSingleSignerTests
         const string identityName = "test_ext_auth_token_name_selector";
         await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToToken = true, NameSelector = "/email" }, async () =>
         {
-            await using AppiumSession s = await LaunchAsync(_fixture, name);
-            await CompleteEnrollToToken(s, identityName);
-            WaitForIdentityNamed(s, ExternalAuthLine, $"{identityName}@test.com");
-            WaitForRowNamed(s, $"{identityName}@test.com");
+            await using AppiumSession session = await LaunchAsync(_fixture, name);
+            await CompleteEnrollToToken(session, identityName);
+            WaitForIdentityNamed(session, ExternalAuthLine, $"{identityName}@test.com");
+            WaitForRowNamed(session, $"{identityName}@test.com");
         });
     }
 
@@ -137,9 +123,9 @@ public class ExternalAuthSingleSignerTests
         string name = nameof(EnrollToCertUsesAttrClaimSelector);
         await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToCert = true, AttrSelector = "/groups" }, async () =>
         {
-            await using AppiumSession s = await LaunchAsync(_fixture, name);
-            await CompleteEnrollToCert(s, "test_ext_auth_attr_selector");
-            AssertGrantedServices(s, AddIdentityLine, new[] { "test_ext_auth_attr_user_svc" });
+            await using AppiumSession session = await LaunchAsync(_fixture, name);
+            await CompleteEnrollToCert(session, "test_ext_auth_attr_selector");
+            AssertGrantedServices(session, AddIdentityLine, new[] { "test_ext_auth_attr_user_svc" });
         });
     }
 
@@ -149,9 +135,9 @@ public class ExternalAuthSingleSignerTests
         string name = nameof(EnrollToTokenUsesAttrClaimSelector);
         await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToToken = true, AttrSelector = "/groups" }, async () =>
         {
-            await using AppiumSession s = await LaunchAsync(_fixture, name);
-            await CompleteEnrollToToken(s, "test_ext_auth_token_attr_selector");
-            AssertGrantedServices(s, ExternalAuthLine, new[] { "test_ext_auth_attr_user_svc" });
+            await using AppiumSession session = await LaunchAsync(_fixture, name);
+            await CompleteEnrollToToken(session, "test_ext_auth_token_attr_selector");
+            AssertGrantedServices(session, ExternalAuthLine, new[] { "test_ext_auth_attr_user_svc" });
         });
     }
 
@@ -164,25 +150,25 @@ public class ExternalAuthSingleSignerTests
         const string adminService = "test_ext_auth_attr_admin_svc";
         await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToCert = true, AttrSelector = "/groups" }, async () =>
         {
-            await using AppiumSession s = await LaunchAsync(_fixture, name);
-            await CompleteEnrollToCert(s, "test_ext_auth_multi_attr_selector");
-            AssertGrantedServices(s, AddIdentityLine, new[] { userService, adminService });
-            WaitForText(s, "ServiceCount", "2", ControllerTimeout);
-            await VerifyStep(s, Capture(s), name, "01-identity-with-services");
+            await using AppiumSession session = await LaunchAsync(_fixture, name);
+            await CompleteEnrollToCert(session, "test_ext_auth_multi_attr_selector");
+            AssertGrantedServices(session, AddIdentityLine, new[] { userService, adminService });
+            WaitForText(session, "ServiceCount", "2", ControllerTimeout);
+            await VerifyStep(session, Capture(session), name, "01-identity-with-services");
 
             // The only row, opened without its name: the controller names it after dex's encoded subject claim.
-            ClickUntil(s, IdentityRows, ById("IdentityDetailsClose"));
-            WaitFor(s, By.XPath($"//*[@Name='{userService}']"));
-            WaitFor(s, By.XPath($"//*[@Name='{adminService}']"));
-            await VerifyStep(s, Capture(s), name, "02-service-list");
+            ClickUntil(session, IdentityRows, ById("IdentityDetailsClose"));
+            WaitFor(session, By.XPath($"//*[@Name='{userService}']"));
+            WaitFor(session, By.XPath($"//*[@Name='{adminService}']"));
+            await VerifyStep(session, Capture(session), name, "02-service-list");
 
-            TypeUntil(s, By.XPath("//*[@AutomationId='FilterServices']//Edit"), "admin");
-            WaitForGone(s, By.XPath($"//*[@Name='{userService}']"));
-            await VerifyStep(s, Capture(s), name, "03-filtered");
+            TypeUntil(session, By.XPath("//*[@AutomationId='FilterServices']//Edit"), "admin");
+            WaitForGone(session, By.XPath($"//*[@Name='{userService}']"));
+            await VerifyStep(session, Capture(session), name, "03-filtered");
 
-            ClickAt(s, WaitFor(s, By.XPath("//Image[@AutomationId='DetailIcon']")));
-            Assert.Equal(adminService, WaitForId(s, "DetailName").Text);
-            await VerifyStep(s, Capture(s), name, "04-service-panel");
+            ClickAt(session, WaitFor(session, By.XPath("//Image[@AutomationId='DetailIcon']")));
+            Assert.Equal(adminService, WaitForId(session, "DetailName").Text);
+            await VerifyStep(session, Capture(session), name, "04-service-panel");
         });
     }
 
@@ -192,9 +178,9 @@ public class ExternalAuthSingleSignerTests
         string name = nameof(EnrollToTokenUsesMultipleAttrClaims);
         await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToToken = true, AttrSelector = "/groups" }, async () =>
         {
-            await using AppiumSession s = await LaunchAsync(_fixture, name);
-            await CompleteEnrollToToken(s, "test_ext_auth_token_multi_attr_selector");
-            AssertGrantedServices(s, ExternalAuthLine,
+            await using AppiumSession session = await LaunchAsync(_fixture, name);
+            await CompleteEnrollToToken(session, "test_ext_auth_token_multi_attr_selector");
+            AssertGrantedServices(session, ExternalAuthLine,
                 new[] { "test_ext_auth_attr_user_svc", "test_ext_auth_attr_admin_svc" });
         });
     }
@@ -205,12 +191,15 @@ public class ExternalAuthSingleSignerTests
         string name = nameof(BothEnabledEnrollToCertCompletes);
         await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToCert = true, ToToken = true }, async () =>
         {
-            await using AppiumSession s = await LaunchAsync(_fixture, name);
-            OpenEnrollChoice(s);
-            ChooseDeviceCertificate(s);
-            await VerifyStep(s, Capture(s), name, "01-enroll-choice-device-certificate");
-            await FinishEnrollToCert(s, "test_ext_auth_cert_both", JoinFromEnrollChoice(s));
-            AssertSentEnrollMode(s, "cert");
+            await using AppiumSession session = await LaunchAsync(_fixture, name);
+            OpenEnrollChoice(session);
+            IWebElement deviceCertificate = WaitFor(session, DeviceCertificateRadio);
+            ClickAt(session, deviceCertificate);
+            WaitUntil(session, "Device certificate is selected", AppResponseTimeout, () => deviceCertificate.Selected);
+            Assert.False(WaitFor(session, UserSessionRadio).Selected, "User session stayed selected");
+            await VerifyStep(session, Capture(session), name, "01-enroll-choice-device-certificate");
+            await FinishEnrollToCert(session, "test_ext_auth_cert_both", JoinFromEnrollChoice(session));
+            AssertSentEnrollMode(session, "cert");
         });
     }
 
@@ -220,16 +209,15 @@ public class ExternalAuthSingleSignerTests
         string name = nameof(BothEnabledEnrollToTokenCompletes);
         await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToCert = true, ToToken = true }, async () =>
         {
-            await using AppiumSession s = await LaunchAsync(_fixture, name);
-            OpenEnrollChoice(s);
-            Assert.True(WaitFor(s, UserSessionRadio).Selected, "User session is not the default enrollment");
-            Assert.False(WaitFor(s, DeviceCertificateRadio).Selected, "Device certificate is selected by default");
-            // One signer, so there is no provider to pick.
-            Assert.Empty(s.Driver.FindElements(SignerPickerLabel));
-            await VerifyStep(s, Capture(s), name, "01-enroll-choice");
+            await using AppiumSession session = await LaunchAsync(_fixture, name);
+            OpenEnrollChoice(session);
+            Assert.True(WaitFor(session, UserSessionRadio).Selected, "User session is not the default enrollment");
+            Assert.False(WaitFor(session, DeviceCertificateRadio).Selected, "Device certificate is selected by default");
+            Assert.Empty(session.Driver.FindElements(SignerPickerLabel));
+            await VerifyStep(session, Capture(session), name, "01-enroll-choice");
 
-            await FinishEnrollToToken(s, "test_ext_auth_token_both", JoinFromEnrollChoice(s));
-            AssertSentEnrollMode(s, "token");
+            await FinishEnrollToToken(session, "test_ext_auth_token_both", JoinFromEnrollChoice(session));
+            AssertSentEnrollMode(session, "token");
         });
     }
 
@@ -239,14 +227,14 @@ public class ExternalAuthSingleSignerTests
         string name = nameof(EnrollToNoneThenCertRejected);
         await WithWorkingSigner(_fixture, Quickstart.EnrollToNone, async () =>
         {
-            await using AppiumSession s = await LaunchAsync(_fixture, name);
-            EnterControllerUrl(s, Quickstart.UiControllerUrl);
-            string identityFile = (string)JoinEnrolledToNone(s)["Id"]!["Identifier"]!;
+            await using AppiumSession session = await LaunchAsync(_fixture, name);
+            EnterControllerUrl(session, Quickstart.UiControllerUrl);
+            string identityFile = (string)JoinEnrolledToNone(session)["Id"]!["Identifier"]!;
 
             _fixture.Quickstart.UpdateExtJwtSigner(IntegrationFixture.WorkingSignerName,
                 Quickstart.EnrollToNone with { ToCert = true });
-            await AssertSameNameRejected(s, name, "01-add-failure-blurb");
-            AssertSentEnrollMode(s, "cert");
+            await AssertSameNameRejected(session, name, "01-add-failure-blurb");
+            AssertSentEnrollMode(session, "cert");
             AssertUrlEnrolledToNoneIdentityFile(identityFile);
         });
     }
@@ -257,12 +245,12 @@ public class ExternalAuthSingleSignerTests
         string name = nameof(EnrollToCertThenNoneRejected);
         await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToCert = true }, async () =>
         {
-            await using AppiumSession s = await LaunchAsync(_fixture, name);
-            string identityFile = await CompleteEnrollToCert(s, "test_ext_auth_cert_then_none");
+            await using AppiumSession session = await LaunchAsync(_fixture, name);
+            string identityFile = await CompleteEnrollToCert(session, "test_ext_auth_cert_then_none");
 
             _fixture.Quickstart.UpdateExtJwtSigner(IntegrationFixture.WorkingSignerName, Quickstart.EnrollToNone);
-            await AssertSameNameRejected(s, name, "01-add-failure-blurb");
-            Assert.Null((string?)UiCommand(s.Relay!, AddIdentityLine)["Data"]!["EnrollMode"]);
+            await AssertSameNameRejected(session, name, "01-add-failure-blurb");
+            Assert.Null((string?)UiCommand(session.Relay!, AddIdentityLine)["Data"]!["EnrollMode"]);
             AssertJwtEnrolledIdentityFile(identityFile);
         });
     }
@@ -273,13 +261,13 @@ public class ExternalAuthSingleSignerTests
         string name = nameof(EnrollToCertThenTokenRejected);
         await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToCert = true }, async () =>
         {
-            await using AppiumSession s = await LaunchAsync(_fixture, name);
-            string identityFile = await CompleteEnrollToCert(s, "test_ext_auth_cert_then_token");
+            await using AppiumSession session = await LaunchAsync(_fixture, name);
+            string identityFile = await CompleteEnrollToCert(session, "test_ext_auth_cert_then_token");
 
             _fixture.Quickstart.UpdateExtJwtSigner(IntegrationFixture.WorkingSignerName,
                 Quickstart.EnrollToNone with { ToToken = true });
-            await AssertSameNameRejected(s, name, "01-add-failure-blurb");
-            AssertSentEnrollMode(s, "token");
+            await AssertSameNameRejected(session, name, "01-add-failure-blurb");
+            AssertSentEnrollMode(session, "token");
             AssertJwtEnrolledIdentityFile(identityFile);
         });
     }
@@ -290,13 +278,13 @@ public class ExternalAuthSingleSignerTests
         string name = nameof(EnrollToTokenThenCertRejected);
         await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToToken = true }, async () =>
         {
-            await using AppiumSession s = await LaunchAsync(_fixture, name);
-            string identityFile = await CompleteEnrollToToken(s, "test_ext_auth_token_then_cert");
+            await using AppiumSession session = await LaunchAsync(_fixture, name);
+            string identityFile = await CompleteEnrollToToken(session, "test_ext_auth_token_then_cert");
 
             _fixture.Quickstart.UpdateExtJwtSigner(IntegrationFixture.WorkingSignerName,
                 Quickstart.EnrollToNone with { ToCert = true });
-            await AssertSameNameRejected(s, name, "01-add-failure-blurb");
-            AssertSentEnrollMode(s, "cert");
+            await AssertSameNameRejected(session, name, "01-add-failure-blurb");
+            AssertSentEnrollMode(session, "cert");
             AssertUrlEnrolledToNoneIdentityFile(identityFile);
         });
     }
@@ -308,13 +296,13 @@ public class ExternalAuthSingleSignerTests
         const string identityName = "test_ext_auth_enroll_auth_policy";
         await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToCert = true, AuthPolicy = TotpPolicy }, async () =>
         {
-            await using AppiumSession s = await LaunchAsync(_fixture, name);
-            EnterControllerUrl(s, Quickstart.UiControllerUrl);
-            await LogInAtIdP(s, JoinToEnrollmentUrl(s), $"{identityName}@test.com");
+            await using AppiumSession session = await LaunchAsync(_fixture, name);
+            EnterControllerUrl(session, Quickstart.UiControllerUrl);
+            await LogInAtIdP(session, JoinToEnrollmentUrl(session), $"{identityName}@test.com");
             // A partial auth sends no identity added event, so the identifier comes from the mfa event.
-            JObject mfa = WaitForZetEventAfter(s, AddIdentityLine, EnrollmentRequiredEvent);
-            await AssertRowNeedsMfaSetup(s, name);
-            AssertJwtEnrolledIdentityFile((string)mfa["Identifier"]!);
+            JObject enrollmentRequiredEvent = WaitForZetEventAfter(session, AddIdentityLine, MfaEnrollmentRequiredEvent);
+            await AssertRowNeedsMfaSetup(session, name);
+            AssertJwtEnrolledIdentityFile((string)enrollmentRequiredEvent["Identifier"]!);
         });
     }
 
@@ -325,52 +313,52 @@ public class ExternalAuthSingleSignerTests
         const string identityName = "test_ext_auth_token_enroll_auth_policy";
         await WithWorkingSigner(_fixture, Quickstart.EnrollToNone with { ToToken = true, AuthPolicy = TotpPolicy }, async () =>
         {
-            await using AppiumSession s = await LaunchAsync(_fixture, name);
-            EnterControllerUrl(s, Quickstart.UiControllerUrl);
-            await LogInAtIdP(s, JoinToEnrollmentUrl(s), $"{identityName}@test.com");
-            string identityFile = (string)WaitForNeedsExtLogin(s, AddIdentityLine)["Id"]!["Identifier"]!;
-            await LogInAtIdP(s, LoginFromRow(s), $"{identityName}@test.com");
-            WaitForZetEventAfter(s, ExternalAuthLine, EnrollmentRequiredEvent);
-            await AssertRowNeedsMfaSetup(s, name);
+            await using AppiumSession session = await LaunchAsync(_fixture, name);
+            EnterControllerUrl(session, Quickstart.UiControllerUrl);
+            await LogInAtIdP(session, JoinToEnrollmentUrl(session), $"{identityName}@test.com");
+            string identityFile = (string)WaitForNeedsExtLogin(session, AddIdentityLine)["Id"]!["Identifier"]!;
+            await LogInAtIdP(session, LoginFromRow(session), $"{identityName}@test.com");
+            WaitForZetEventAfter(session, ExternalAuthLine, MfaEnrollmentRequiredEvent);
+            await AssertRowNeedsMfaSetup(session, name);
             AssertUrlEnrolledToNoneIdentityFile(identityFile);
         });
     }
 
     // The row asks to set up MFA only while NeedsExtAuth is false, MfaNeeded true and MfaEnabled false.
-    private static async Task AssertRowNeedsMfaSetup(AppiumSession s, string name)
+    private static async Task AssertRowNeedsMfaSetup(AppiumSession session, string name)
     {
-        WaitForController(s, ById("MfaSetupNeeded"), "the row asks to set up MFA");
-        Assert.DoesNotContain(s.Driver.FindElements(ExtAuthRequiredIcon), e => e.Displayed);
-        Assert.Equal(1, IdentityRowCount(s));
-        await VerifyStep(s, Capture(s), name, "01-setup-needed-row");
+        WaitForController(session, ById("MfaSetupNeeded"), "the row asks to set up MFA");
+        Assert.DoesNotContain(session.Driver.FindElements(ExtAuthRequiredIcon), icon => icon.Displayed);
+        Assert.Equal(1, IdentityRowCount(session));
+        await VerifyStep(session, Capture(session), name, "01-setup-needed-row");
     }
 
-    private static async Task<string> CompleteEnrollToCert(AppiumSession s, string identityName)
+    private static async Task<string> CompleteEnrollToCert(AppiumSession session, string identityName)
     {
-        EnterControllerUrl(s, Quickstart.UiControllerUrl);
-        return await FinishEnrollToCert(s, identityName, JoinToEnrollmentUrl(s));
+        EnterControllerUrl(session, Quickstart.UiControllerUrl);
+        return await FinishEnrollToCert(session, identityName, JoinToEnrollmentUrl(session));
     }
 
-    private static async Task<string> CompleteEnrollToToken(AppiumSession s, string identityName)
+    private static async Task<string> CompleteEnrollToToken(AppiumSession session, string identityName)
     {
-        EnterControllerUrl(s, Quickstart.UiControllerUrl);
-        return await FinishEnrollToToken(s, identityName, JoinToEnrollmentUrl(s));
+        EnterControllerUrl(session, Quickstart.UiControllerUrl);
+        return await FinishEnrollToToken(session, identityName, JoinToEnrollmentUrl(session));
     }
 
-    private static async Task<string> FinishEnrollToToken(AppiumSession s, string identityName, string enrollUrl)
+    private static async Task<string> FinishEnrollToToken(AppiumSession session, string identityName, string enrollUrl)
     {
-        await LogInAtIdP(s, enrollUrl, $"{identityName}@test.com");
-        WaitForNeedsExtLogin(s, AddIdentityLine);
-        string loginUrl = LoginFromRow(s);
-        await LogInAtIdP(s, loginUrl, $"{identityName}@test.com");
-        string identityFile = (string)AssertEnrollmentAdded(s, ExternalAuthLine)["Id"]!["Identifier"]!;
+        await LogInAtIdP(session, enrollUrl, $"{identityName}@test.com");
+        WaitForNeedsExtLogin(session, AddIdentityLine);
+        string loginUrl = LoginFromRow(session);
+        await LogInAtIdP(session, loginUrl, $"{identityName}@test.com");
+        string identityFile = (string)AssertEnrollmentAdded(session, ExternalAuthLine)["Id"]!["Identifier"]!;
         // An enroll-to-token identity file holds what an enroll-to-none one does.
         AssertUrlEnrolledToNoneIdentityFile(identityFile);
-        WaitForRowLoggedIn(s);
+        WaitForRowLoggedIn(session);
         return identityFile;
     }
 
-    private static void WaitForRowLoggedIn(AppiumSession s) =>
-        WaitUntil(s, "the row no longer asks for external auth", ControllerTimeout,
-            () => !s.Driver.FindElements(ExtAuthRequiredIcon).Any(e => e.Displayed));
+    private static void WaitForRowLoggedIn(AppiumSession session) =>
+        WaitUntil(session, "the row no longer asks for external auth", ControllerTimeout,
+            () => !session.Driver.FindElements(ExtAuthRequiredIcon).Any(icon => icon.Displayed));
 }

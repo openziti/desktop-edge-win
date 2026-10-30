@@ -21,15 +21,15 @@ internal static class ChildProcessKiller
         };
         JOBOBJECT_EXTENDED_LIMIT_INFORMATION extended = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION { BasicLimitInformation = limits };
 
-        int len = Marshal.SizeOf(extended);
-        IntPtr buf = Marshal.AllocHGlobal(len);
+        int extendedSize = Marshal.SizeOf(extended);
+        IntPtr unmanagedExtended = Marshal.AllocHGlobal(extendedSize);
         try
         {
-            Marshal.StructureToPtr(extended, buf, false);
-            if (!SetInformationJobObject(_job, JobObjectExtendedLimitInformation, buf, (uint)len))
+            Marshal.StructureToPtr(extended, unmanagedExtended, false);
+            if (!SetInformationJobObject(_job, JobObjectExtendedLimitInformation, unmanagedExtended, (uint)extendedSize))
                 throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), "SetInformationJobObject(JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE) failed");
         }
-        finally { Marshal.FreeHGlobal(buf); }
+        finally { Marshal.FreeHGlobal(unmanagedExtended); }
     }
 
     public static void Adopt(Process child)

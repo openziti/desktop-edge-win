@@ -29,8 +29,8 @@ public class IntegrationFixture : IAsyncLifetime
         Home = Path.Combine(TestHelpers.TestResultsDir(), homeName);
     }
 
-    protected virtual Task<Quickstart> StartQuickstartAsync(string zitiBin, string home) =>
-        Quickstart.StartAsync(zitiBin, home);
+    protected virtual Task<Quickstart> StartQuickstartAsync(string zitiExePath, string home) =>
+        Quickstart.StartAsync(zitiExePath, home);
 
     public async ValueTask InitializeAsync()
     {
@@ -47,7 +47,7 @@ public class IntegrationFixture : IAsyncLifetime
         _caTrusted = true;
         try
         {
-            OsCaTrust.Install(_quickstart.RootCaPath);
+            OsCaTrust.RunCertutil("-addstore", "-f", "Root", _quickstart.RootCaPath);
             _zet = await StartZetAsync();
         }
         catch

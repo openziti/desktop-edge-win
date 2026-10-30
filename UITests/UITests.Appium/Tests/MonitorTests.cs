@@ -1,5 +1,7 @@
+using System.Globalization;
 using System.IO.Compression;
 using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.Win32;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -21,12 +23,6 @@ public class MonitorTests
     private static readonly TimeSpan UpdateCheckTimeout = TimeSpan.FromSeconds(15);
     // Nothing listens here, and Windows retries a refused connect, so the refusal still takes about 2s.
     private const string UnreachableUrl = "http://127.0.0.1:47381/stable.json";
-    // The monitor runs systeminfo, netstat and the other system info commands one after another.
-    private static readonly TimeSpan FeedbackTimeout = TimeSpan.FromSeconds(120);
-    // On the GitHub runner Explorer sometimes leaves the window open more than 5s after Quit.
-    private static readonly TimeSpan ExplorerCloseTimeout = TimeSpan.FromSeconds(30);
-    // The monitor reloads policy 500ms after the last registry change WMI reports.
-    private static readonly TimeSpan PolicyReloadTimeout = TimeSpan.FromSeconds(10);
     private const string PolicyKeyPath = @"SOFTWARE\Policies\NetFoundry\Ziti Desktop Edge for Windows\ziti-monitor-service";
     private static readonly By PolicyBanner = By.XPath("//*[contains(@Name, 'Managed by your organization')]");
 
@@ -63,7 +59,22 @@ public class MonitorTests
     {
         string name = nameof(AutomaticUpgradesToggleSavedByMonitor);
         // No file means the monitor starts from defaults, so automatic upgrades start enabled.
-        await WithSettings(null, () => ToggleAutomaticUpgrades(name));
+        await WithSettings(null, async () =>
+        {
+            await using AppiumSession session = await LaunchOnAutomaticUpgrades(name);
+            // The label starts as DISABLED in XAML, so any other text can only come from the monitor's status event.
+            WaitForText(session, "AutomaticUpgradesToggleLabel", "ENABLED", AppResponseTimeout);
+            await VerifyStep(session, Capture(session), name, "01-automatic-upgrades-enabled");
+
+            ClickAt(session, WaitForId(session, "AutomaticUpgradesToggle"));
+            WaitForBlurb(session, "Automatic upgrades DISABLED", AppResponseTimeout);
+            WaitForSaved(session, "AutomaticUpdatesDisabled", true);
+            WaitForText(session, "AutomaticUpgradesToggleLabel", "DISABLED", AppResponseTimeout);
+
+            ClickAt(session, WaitForId(session, "AutomaticUpgradesToggle"));
+            WaitForSaved(session, "AutomaticUpdatesDisabled", false);
+            WaitForText(session, "AutomaticUpgradesToggleLabel", "ENABLED", AppResponseTimeout);
+        });
     }
 
     [Fact(Timeout = 90000)]
@@ -76,7 +87,68 @@ public class MonitorTests
             Fixture("release-stream-older.json").ToString());
         MaintenanceWindow seeded = new MaintenanceWindow(1, 4, Frequency.Daily, null, null, MonthlyMode.ByDate, null);
         byte[] settings = Encoding.UTF8.GetBytes(seeded.ToSettings(releaseStream.Url).ToString());
-        await WithSettings(settings, () => SaveMaintenanceWindow(name, releaseStream, seeded));
+        await WithSettings(settings, async () =>
+        {
+            await using AppiumSession session = await LaunchOnAutomaticUpgrades(name);
+            // The combos start at index 0, so 01:00 can only come from the monitor's status event.
+            WaitForText(session, "MaintenanceWindowStartCombo", "01:00", AppResponseTimeout);
+            Assert.Equal("04:00", TextById(session, "MaintenanceWindowEndCombo"));
+            Assert.Equal("Daily", TextById(session, "MaintenanceWindowFrequencyCombo"));
+            Assert.Equal(releaseStream.Url, TextById(session, "UpdateUrl"));
+            await VerifyStep(session, Capture(session), name, "01-seeded-window");
+
+            SelectComboItem(session, "MaintenanceWindowFrequencyCombo", "Weekly");
+            SelectComboItem(session, "MaintenanceWindowDayOfWeekCombo", "Wednesday");
+            SelectComboItem(session, "MaintenanceWindowStartCombo", "02:00");
+            SelectComboItem(session, "MaintenanceWindowEndCombo", "05:00");
+            ClickAt(session, WaitForId(session, "SaveSettingsButton"));
+
+            // Captured before the asserts below, which take long enough that the blurb hides first.
+            // The monitor pipes have no relay, so ui.log is the only record of the reply.
+            string uiLogPath = UiLogPath(name);
+            DateTime? savedAtUtc = null;
+            WaitUntil(session, "the app reads the monitor's SetMaintenanceWindow reply", AppResponseTimeout, () =>
+            {
+                string[] lines;
+                using (FileStream uiLog = new FileStream(uiLogPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (StreamReader reader = new StreamReader(uiLog))
+                    lines = reader.ReadToEnd().Split('\n');
+                int sent = Array.FindLastIndex(lines, line => line.Contains("UI-MonitorClient-send-monitor:")
+                    && line.Contains("\"Op\":\"SetMaintenanceWindow\""));
+                if (sent < 0) return false;
+                int reply = Array.FindIndex(lines, sent + 1, line => line.Contains("UI-MonitorClient-read-monitor:"));
+                if (reply < 0) return false;
+                // The layout depends on whether the machine has the app installed. Both are local time, the Z included.
+                Match configured = Regex.Match(lines[reply], @"^\[(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3})Z\]");
+                Match nlogDefault = Regex.Match(lines[reply], @"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{4})\|");
+                DateTime replyAtLocal;
+                if (configured.Success)
+                    replyAtLocal = DateTime.ParseExact(configured.Groups[1].Value, "yyyy-MM-ddTHH:mm:ss.fff",
+                        CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal);
+                else if (nlogDefault.Success)
+                    replyAtLocal = DateTime.ParseExact(nlogDefault.Groups[1].Value, "yyyy-MM-dd HH:mm:ss.ffff",
+                        CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal);
+                else
+                    throw new FormatException(
+                        $"ui.log line has no timestamp in a known layout: '{lines[reply]}' in {uiLogPath}");
+                savedAtUtc = replyAtLocal.ToUniversalTime();
+                return true;
+            });
+            await VerifyStep(session, CaptureBlurb(session, savedAtUtc!.Value), name, "02-saved-blurb");
+            MaintenanceWindow? saved = null;
+            WaitUntil(session, $"the monitor saves a maintenance window other than {seeded}", AppResponseTimeout, () =>
+            {
+                JObject? savedSettings = SavedSettings();
+                if (savedSettings == null)
+                    return false;
+                saved = MaintenanceWindow.From(savedSettings);
+                return saved != seeded;
+            });
+            Assert.Equal(new MaintenanceWindow(2, 5, Frequency.Weekly, 3, null, MonthlyMode.ByDate, null), saved);
+            // Save Settings sends the URL too, and the monitor fetches it before saving it.
+            Assert.Equal(1, releaseStream.Requests);
+            Assert.Equal(releaseStream.Url, (string?)SavedSettings()?["AutomaticUpdateURL"]);
+        });
     }
 
     [Fact(Timeout = 120000)]
@@ -92,7 +164,30 @@ public class MonitorTests
         MaintenanceWindow seeded = new MaintenanceWindow(start, (start + 1) % 24, Frequency.Daily, null, null,
             MonthlyMode.ByDate, null);
         byte[] settings = Encoding.UTF8.GetBytes(seeded.ToSettings(releaseStream.Url).ToString());
-        await WithSettings(settings, () => RequestUpdate(name));
+        await WithSettings(settings, async () =>
+        {
+            await using AppiumSession session = await LaunchOnAutomaticUpgrades(name);
+            // The window hours follow the time of day the test runs.
+            By[] windowCombos = { ById("MaintenanceWindowStartCombo"), ById("MaintenanceWindowEndCombo") };
+            ClickUntil(session, ById("CheckForUpdate"), "the update check starts",
+                () => TextById(session, "CheckForUpdateStatus") != "");
+            WaitForText(session, "CheckForUpdateStatus", "An update is available: 99.0.0.0", UpdateCheckTimeout);
+            WaitForId(session, "TriggerUpdateButton");
+            await VerifyStep(session, Masked(session, Capture(session), windowCombos), name, "01-update-offered");
+
+            ClickUntil(session, ById("TriggerUpdateButton"), "the update request starts",
+                () => TextById(session, "CheckForUpdateStatus") != "An update is available: 99.0.0.0");
+            WaitForText(session, "CheckForUpdateStatus", "Update scheduled for maintenance window", UpdateCheckTimeout);
+            await VerifyStep(session, Masked(session, Capture(session), windowCombos), name, "02-update-now-clicked-outside-window");
+
+            // BackArrow is a StackPanel, which has no automation peer, so the click goes to its label.
+            By back = By.XPath("//*[@Name='Back']");
+            ClickUntil(session, back, By.XPath("//*[@Name='Configure Automatic Upgrades']"));
+            ClickUntil(session, back, ById("ForceUpdate"));
+            Assert.Equal("Update scheduled for maintenance window", TextById(session, "UpdateTimeLeft"));
+            Assert.Equal("Update Now", TextById(session, "ForceUpdate"));
+            await VerifyStep(session, Capture(session), name, "03-main-menu-update-scheduled");
+        });
     }
 
     [Fact(Timeout = 120000)]
@@ -104,7 +199,25 @@ public class MonitorTests
         await using ReleaseStreamServer releaseStream = ReleaseStreamServer.Start(
             Fixture("release-stream-older.json").ToString());
         byte[] settings = Encoding.UTF8.GetBytes(new JObject { ["AutomaticUpdateURL"] = releaseStream.Url }.ToString());
-        await WithSettings(settings, () => SaveBadUpdateUrls(name, releaseStream));
+        await WithSettings(settings, async () =>
+        {
+            await using AppiumSession session = await LaunchOnAutomaticUpgrades(name);
+            WaitForText(session, "UpdateUrl", releaseStream.Url, AppResponseTimeout);
+
+            // UIA reports the monitor's \n line breaks as \r\n.
+            Assert.Equal("The url supplied is invalid: \r\nnot-a-url\r\n", SaveRejectedUrl(session, releaseStream, "not-a-url"));
+            await VerifyStep(session, Capture(session), name, "01-not-a-url-rejected");
+            CloseError(session, releaseStream);
+
+            Assert.StartsWith("Unable to connect to the remote server:", SaveRejectedUrl(session, releaseStream, UnreachableUrl));
+            await VerifyStep(session, Capture(session), name, "02-unreachable-url-rejected");
+            CloseError(session, releaseStream);
+
+            // Only typed into the box, never saved, since saving it would fetch the production stream.
+            ClickAt(session, WaitForId(session, "ResetUrlButton"));
+            WaitForText(session, "UpdateUrl", "https://get.openziti.io/zdew/stable.json", AppResponseTimeout);
+            await VerifyStep(session, Capture(session), name, "03-reset-to-default-url");
+        });
     }
 
     [Fact(Timeout = 90000)]
@@ -116,14 +229,14 @@ public class MonitorTests
         byte[] settings = Encoding.UTF8.GetBytes(new JObject { ["AutomaticUpdateURL"] = UnreachableUrl }.ToString());
         await WithSettings(settings, async () =>
         {
-            await using AppiumSession s = await LaunchOnAutomaticUpgrades(name);
-            WaitForText(s, "UpdateUrl", UnreachableUrl, AppResponseTimeout);
-            ClickUntil(s, ById("CheckForUpdate"), "the update check starts",
-                () => TextById(s, "CheckForUpdateStatus") != "");
-            WaitForText(s, "CheckForUpdateStatus", "FAILURE: Unable to connect to the remote server",
+            await using AppiumSession session = await LaunchOnAutomaticUpgrades(name);
+            WaitForText(session, "UpdateUrl", UnreachableUrl, AppResponseTimeout);
+            ClickUntil(session, ById("CheckForUpdate"), "the update check starts",
+                () => TextById(session, "CheckForUpdateStatus") != "");
+            WaitForText(session, "CheckForUpdateStatus", "FAILURE: Unable to connect to the remote server",
                 UpdateCheckTimeout);
-            Assert.Null(FindByAccessibilityId(s, "TriggerUpdateButton"));
-            await VerifyStep(s, Capture(s), name, "01-check-failed");
+            Assert.Null(FindByAccessibilityId(session, "TriggerUpdateButton"));
+            await VerifyStep(session, Capture(session), name, "01-check-failed");
         });
     }
 
@@ -138,13 +251,52 @@ public class MonitorTests
         // Different from the policy's values, so the screen shows which one wins.
         MaintenanceWindow local = new MaintenanceWindow(1, 4, Frequency.Daily, null, null, MonthlyMode.ByDate, null);
         byte[] settings = Encoding.UTF8.GetBytes(local.ToSettings(UnreachableUrl).ToString());
-        Dictionary<string, object> policy = new Dictionary<string, object>
+        await WithSettings(settings, async () =>
         {
-            ["AutomaticUpdateURL"] = releaseStream.Url,
-            ["MaintenanceWindowStart"] = 2,
-            ["MaintenanceWindowEnd"] = 5,
-        };
-        await WithSettings(settings, () => WithPolicy(policy, () => ShowPolicyLock(name, releaseStream)));
+            // Writing under HKLM needs an elevated run.
+            if (KeyExists(PolicyKeyPath))
+                throw new InvalidOperationException($@"HKLM\{PolicyKeyPath} already exists, so it may be a real policy");
+            string topCreated = PolicyKeyPath;
+            while (!KeyExists(topCreated[..topCreated.LastIndexOf('\\')]))
+                topCreated = topCreated[..topCreated.LastIndexOf('\\')];
+            using (RegistryKey key = Registry.LocalMachine.CreateSubKey(PolicyKeyPath))
+            {
+                key.SetValue("AutomaticUpdateURL", releaseStream.Url);
+                key.SetValue("MaintenanceWindowStart", 2);
+                key.SetValue("MaintenanceWindowEnd", 5);
+            }
+            try
+            {
+                await using AppiumSession session = await LaunchOnAutomaticUpgrades(name);
+                WaitFor(session, PolicyBanner);
+                WaitForText(session, "UpdateUrl", releaseStream.Url, AppResponseTimeout);
+                Assert.Equal("02:00", TextById(session, "MaintenanceWindowStartCombo"));
+                Assert.Equal("05:00", TextById(session, "MaintenanceWindowEndCombo"));
+                Assert.False(WaitForId(session, "AutomaticUpgradesToggle").Enabled);
+                Assert.False(WaitForId(session, "UpdateUrl").Enabled);
+                Assert.False(WaitForId(session, "MaintenanceWindowStartCombo").Enabled);
+                Assert.Null(FindByAccessibilityId(session, "ResetUrlButton"));
+                Assert.Null(FindByAccessibilityId(session, "SaveSettingsButton"));
+                await VerifyStep(session, Capture(session), name, "01-locked-by-policy");
+
+                Registry.LocalMachine.DeleteSubKey(PolicyKeyPath);
+                // The monitor reloads policy 500ms after the last registry change WMI reports.
+                WaitForText(session, "UpdateUrl", UnreachableUrl, TimeSpan.FromSeconds(10));
+                WaitForGone(session, PolicyBanner);
+                Assert.Equal("01:00", TextById(session, "MaintenanceWindowStartCombo"));
+                Assert.Equal("04:00", TextById(session, "MaintenanceWindowEndCombo"));
+                Assert.True(WaitForId(session, "AutomaticUpgradesToggle").Enabled);
+                Assert.True(WaitForId(session, "UpdateUrl").Enabled);
+                Assert.True(WaitForId(session, "MaintenanceWindowStartCombo").Enabled);
+                WaitForId(session, "SaveSettingsButton");
+                await VerifyStep(session, Capture(session), name, "02-policy-removed");
+            }
+            finally
+            {
+                // The test may have deleted the policy key itself.
+                Registry.LocalMachine.DeleteSubKeyTree(topCreated, throwOnMissingSubKey: false);
+            }
+        });
     }
 
     [Fact(Timeout = 150000)]
@@ -157,25 +309,45 @@ public class MonitorTests
             Fixture("release-stream-older.json").ToString());
         MaintenanceWindow backedUp = new MaintenanceWindow(3, 6, Frequency.Weekly, 3, null, MonthlyMode.ByDate, null);
         JObject backup = backedUp.ToSettings(releaseStream.Url);
-        string backupFolder = WindowsOldFolder(Path.GetDirectoryName(MonitorProcess.SettingsPath())!);
+        // The same path the monitor's restore reads.
+        string liveFolder = Path.GetDirectoryName(MonitorProcess.SettingsPath())!;
+        string systemDrive = Path.GetPathRoot(Environment.GetFolderPath(Environment.SpecialFolder.Windows))!;
+        string backupFolder = Path.Combine(systemDrive, "Windows.old", liveFolder.Substring(Path.GetPathRoot(liveFolder)!.Length));
         await WithSettings(null, async () =>
         {
-            await WithBackup(backupFolder, Encoding.UTF8.GetBytes(backup.ToString()), async () =>
+            if (Directory.Exists(backupFolder))
+                throw new InvalidOperationException($"{backupFolder} already exists, so it may hold a real upgrade backup");
+            List<string> created = new List<string>();
+            for (string? folder = backupFolder; folder != null && !Directory.Exists(folder);
+                 folder = Path.GetDirectoryName(folder))
+                created.Add(folder);
+            string backupFile = Path.Combine(backupFolder, "settings.json");
+            Directory.CreateDirectory(backupFolder);
+            File.WriteAllBytes(backupFile, Encoding.UTF8.GetBytes(backup.ToString()));
+            try
             {
-                await using AppiumSession s = await LaunchOnAutomaticUpgrades(name);
+                await using AppiumSession session = await LaunchOnAutomaticUpgrades(name);
                 // The combos start at index 0, so 03:00 can only come from the restored file.
-                WaitForText(s, "MaintenanceWindowStartCombo", "03:00", AppResponseTimeout);
-                Assert.Equal("06:00", TextById(s, "MaintenanceWindowEndCombo"));
-                Assert.Equal("Weekly", TextById(s, "MaintenanceWindowFrequencyCombo"));
-                Assert.Equal("Wednesday", TextById(s, "MaintenanceWindowDayOfWeekCombo"));
-                Assert.Equal(releaseStream.Url, TextById(s, "UpdateUrl"));
-                Assert.Equal("ENABLED", TextById(s, "AutomaticUpgradesToggleLabel"));
-                await VerifyStep(s, Capture(s), name, "02-restored");
+                WaitForText(session, "MaintenanceWindowStartCombo", "03:00", AppResponseTimeout);
+                Assert.Equal("06:00", TextById(session, "MaintenanceWindowEndCombo"));
+                Assert.Equal("Weekly", TextById(session, "MaintenanceWindowFrequencyCombo"));
+                Assert.Equal("Wednesday", TextById(session, "MaintenanceWindowDayOfWeekCombo"));
+                Assert.Equal(releaseStream.Url, TextById(session, "UpdateUrl"));
+                Assert.Equal("ENABLED", TextById(session, "AutomaticUpgradesToggleLabel"));
+                await VerifyStep(session, Capture(session), name, "02-restored");
                 JObject restored = SavedSettings()!;
                 Assert.Equal(backedUp, MaintenanceWindow.From(restored));
                 Assert.Equal(releaseStream.Url, (string?)restored["AutomaticUpdateURL"]);
                 Assert.False(Directory.Exists(backupFolder));
-            });
+            }
+            finally
+            {
+                if (File.Exists(backupFile))
+                    File.Delete(backupFile);
+                // Deepest first, and the monitor removes backupFolder itself once it has restored the file.
+                foreach (string folder in created.Where(Directory.Exists))
+                    Directory.Delete(folder);
+            }
         });
     }
 
@@ -183,56 +355,57 @@ public class MonitorTests
     [Trait("Category", "Monitor")]
     public async Task FeedbackBundleWrittenByMonitor()
     {
-        await WithSettings(null, () => CollectFeedbackBundle(nameof(FeedbackBundleWrittenByMonitor)));
-    }
-
-    private static async Task CollectFeedbackBundle(string name)
-    {
-        string monitorLogs = Path.Combine(Path.GetDirectoryName(DefaultMonitorPath())!, "logs");
-        IReadOnlySet<string> bundlesBefore = Bundles(monitorLogs);
-        IReadOnlySet<IntPtr> explorerBefore = ExplorerWindows.Open().Select(w => w.Handle).ToHashSet();
-        await using AppiumSession s = await LaunchOnMainMenu(name);
-        try
+        string name = nameof(FeedbackBundleWrittenByMonitor);
+        await WithSettings(null, async () =>
         {
-            ClickAt(s, WaitFor(s, By.XPath("//*[@Name='Feedback']")));
-            WaitFor(s, By.XPath("//*[@Name='Collecting Information']"));
-            // The app opens Explorer on the bundle only once the monitor has answered, so the zip is complete by then.
-            TopLevelWindow? explorer = null;
-            WaitUntil(s, "the app opens an Explorer window", FeedbackTimeout, () =>
-            {
-                explorer = ExplorerWindows.Open().FirstOrDefault(w => !explorerBefore.Contains(w.Handle));
-                return explorer != null;
-            });
-            Step.Log($"the app opened Explorer window '{explorer!.Title}'");
-            ExplorerWindows.Quit(explorer, AppResponseTimeout);
-            WaitUntil(s, "the Explorer window closes", ExplorerCloseTimeout, () => !ExplorerWindows.IsOpen(explorer));
-            string bundle = Assert.Single(Bundles(monitorLogs).Except(bundlesBefore));
+            string monitorLogs = Path.Combine(Path.GetDirectoryName(DefaultMonitorPath())!, "logs");
+            IReadOnlySet<string> bundlesBefore = Bundles(monitorLogs);
+            IReadOnlySet<IntPtr> explorerBefore = ExplorerWindows.Open().Select(window => window.Handle).ToHashSet();
+            await using AppiumSession session = await LaunchOnMainMenu(name);
             try
             {
-                WaitForGone(s, By.XPath("//*[@Name='Collecting Information']"));
-                JObject dump = Assert.Single(s.Mock.ReceivedDataRequests, r => (string?)r["Command"] == "ZitiDump");
-                Assert.Equal(Path.Combine(Path.GetDirectoryName(DefaultExePath())!, "logs", "service"),
-                    (string?)dump["Data"]?["DumpPath"]);
-                using ZipArchive zip = ZipFile.OpenRead(bundle);
-                HashSet<string> entries = zip.Entries.Select(e => e.FullName.Replace('\\', '/')).ToHashSet();
-                Assert.Subset(entries, new HashSet<string>
+                ClickAt(session, WaitFor(session, By.XPath("//*[@Name='Feedback']")));
+                WaitFor(session, By.XPath("//*[@Name='Collecting Information']"));
+                // The app opens Explorer on the bundle only once the monitor has answered, so the zip is complete by then.
+                // The monitor runs systeminfo, netstat and the other system info commands one after another.
+                TopLevelWindow? explorer = null;
+                WaitUntil(session, "the app opens an Explorer window", TimeSpan.FromSeconds(120), () =>
                 {
-                    "ZitiMonitorService/ZitiUpdateService.log", "ipconfig.all.txt", "systeminfo.txt", "dnsCache.txt",
-                    "externalIP.txt", "tasklist.txt", "network-routes.txt", "netstat.txt", "NrptRule.txt",
-                    "NrptPolicy.txt",
+                    explorer = ExplorerWindows.Open().FirstOrDefault(window => !explorerBefore.Contains(window.Handle));
+                    return explorer != null;
                 });
+                Step.Log($"the app opened Explorer window '{explorer!.Title}'");
+                ExplorerWindows.Quit(explorer, AppResponseTimeout);
+                // Explorer can keep a window open for more than 5s after Quit.
+                WaitUntil(session, "the Explorer window closes", TimeSpan.FromSeconds(30), () => !Win32Window.IsWindow(explorer.Handle));
+                string bundle = Assert.Single(Bundles(monitorLogs).Except(bundlesBefore));
+                try
+                {
+                    WaitForGone(session, By.XPath("//*[@Name='Collecting Information']"));
+                    JObject dumpRequest = Assert.Single(session.Mock.ReceivedDataRequests, request => (string?)request["Command"] == "ZitiDump");
+                    Assert.Equal(Path.Combine(Path.GetDirectoryName(DefaultExePath())!, "logs", "service"),
+                        (string?)dumpRequest["Data"]?["DumpPath"]);
+                    using ZipArchive bundleArchive = ZipFile.OpenRead(bundle);
+                    HashSet<string> entries = bundleArchive.Entries.Select(entry => entry.FullName.Replace('\\', '/')).ToHashSet();
+                    Assert.Subset(entries, new HashSet<string>
+                    {
+                        "ZitiMonitorService/ZitiUpdateService.log", "ipconfig.all.txt", "systeminfo.txt", "dnsCache.txt",
+                        "externalIP.txt", "tasklist.txt", "network-routes.txt", "netstat.txt", "NrptRule.txt",
+                        "NrptPolicy.txt",
+                    });
+                }
+                finally
+                {
+                    // It holds the machine's system info.
+                    File.Delete(bundle);
+                }
             }
             finally
             {
-                // It holds the machine's system info.
-                File.Delete(bundle);
+                foreach (TopLevelWindow leftOpen in ExplorerWindows.Open().Where(window => !explorerBefore.Contains(window.Handle)))
+                    ExplorerWindows.Quit(leftOpen, AppResponseTimeout);
             }
-        }
-        finally
-        {
-            foreach (TopLevelWindow leftOpen in ExplorerWindows.Open().Where(w => !explorerBefore.Contains(w.Handle)))
-                ExplorerWindows.Quit(leftOpen, AppResponseTimeout);
-        }
+        });
     }
 
     private static IReadOnlySet<string> Bundles(string monitorLogs)
@@ -242,202 +415,68 @@ public class MonitorTests
         return Directory.GetFiles(monitorLogs, "*.zip", SearchOption.TopDirectoryOnly).ToHashSet();
     }
 
-    private static async Task ToggleAutomaticUpgrades(string name)
+    private static string SaveRejectedUrl(AppiumSession session, ReleaseStreamServer releaseStream, string url)
     {
-        await using AppiumSession s = await LaunchOnAutomaticUpgrades(name);
-        // The label starts as DISABLED in XAML, so any other text can only come from the monitor's status event.
-        WaitForText(s, "AutomaticUpgradesToggleLabel", "ENABLED", AppResponseTimeout);
-        await VerifyStep(s, Capture(s), name, "01-automatic-upgrades-enabled");
-
-        ClickAt(s, WaitForId(s, "AutomaticUpgradesToggle"));
-        WaitForBlurb(s, "Automatic upgrades DISABLED", AppResponseTimeout);
-        WaitForSaved(s, "AutomaticUpdatesDisabled", true);
-        WaitForText(s, "AutomaticUpgradesToggleLabel", "DISABLED", AppResponseTimeout);
-
-        ClickAt(s, WaitForId(s, "AutomaticUpgradesToggle"));
-        WaitForSaved(s, "AutomaticUpdatesDisabled", false);
-        WaitForText(s, "AutomaticUpgradesToggleLabel", "ENABLED", AppResponseTimeout);
-    }
-
-    private static async Task SaveMaintenanceWindow(string name, ReleaseStreamServer releaseStream,
-        MaintenanceWindow seeded)
-    {
-        await using AppiumSession s = await LaunchOnAutomaticUpgrades(name);
-        // The combos start at index 0, so 01:00 can only come from the monitor's status event.
-        WaitForText(s, "MaintenanceWindowStartCombo", "01:00", AppResponseTimeout);
-        Assert.Equal("04:00", TextById(s, "MaintenanceWindowEndCombo"));
-        Assert.Equal("Daily", TextById(s, "MaintenanceWindowFrequencyCombo"));
-        Assert.Equal(releaseStream.Url, TextById(s, "UpdateUrl"));
-        await VerifyStep(s, Capture(s), name, "01-seeded-window");
-
-        SelectComboItem(s, "MaintenanceWindowFrequencyCombo", "Weekly");
-        SelectComboItem(s, "MaintenanceWindowDayOfWeekCombo", "Wednesday");
-        SelectComboItem(s, "MaintenanceWindowStartCombo", "02:00");
-        SelectComboItem(s, "MaintenanceWindowEndCombo", "05:00");
-        ClickAt(s, WaitForId(s, "SaveSettingsButton"));
-
-        // Captured before the asserts below, which take long enough that the blurb hides first.
-        DateTime? savedAtUtc = null;
-        WaitUntil(s, "the app reads the monitor's SetMaintenanceWindow reply", AppResponseTimeout, () =>
-        {
-            savedAtUtc = MonitorReplyAtUtc(name, "SetMaintenanceWindow");
-            return savedAtUtc != null;
-        });
-        await VerifyStep(s, CaptureBlurb(s, savedAtUtc!.Value), name, "02-saved-blurb");
-        MaintenanceWindow saved = WaitForSavedWindowChange(s, seeded);
-        Assert.Equal(new MaintenanceWindow(2, 5, Frequency.Weekly, 3, null, MonthlyMode.ByDate, null), saved);
-        // Save Settings sends the URL too, and the monitor fetches it before saving it.
-        Assert.Equal(1, releaseStream.Requests);
-        Assert.Equal(releaseStream.Url, (string?)SavedSettings()?["AutomaticUpdateURL"]);
-    }
-
-    private static async Task RequestUpdate(string name)
-    {
-        await using AppiumSession s = await LaunchOnAutomaticUpgrades(name);
-        // The window hours follow the time of day the test runs.
-        By[] windowCombos = { ById("MaintenanceWindowStartCombo"), ById("MaintenanceWindowEndCombo") };
-        ClickUntil(s, ById("CheckForUpdate"), "the update check starts",
-            () => TextById(s, "CheckForUpdateStatus") != "");
-        WaitForText(s, "CheckForUpdateStatus", "An update is available: 99.0.0.0", UpdateCheckTimeout);
-        WaitForId(s, "TriggerUpdateButton");
-        await VerifyStep(s, Masked(s, Capture(s), windowCombos), name, "01-update-offered");
-
-        ClickUntil(s, ById("TriggerUpdateButton"), "the update request starts",
-            () => TextById(s, "CheckForUpdateStatus") != "An update is available: 99.0.0.0");
-        WaitForText(s, "CheckForUpdateStatus", "Update scheduled for maintenance window", UpdateCheckTimeout);
-        await VerifyStep(s, Masked(s, Capture(s), windowCombos), name, "02-update-now-clicked-outside-window");
-
-        // BackArrow is a StackPanel, which has no automation peer, so the click goes to its label.
-        By back = By.XPath("//*[@Name='Back']");
-        ClickUntil(s, back, By.XPath("//*[@Name='Configure Automatic Upgrades']"));
-        ClickUntil(s, back, ById("ForceUpdate"));
-        Assert.Equal("Update scheduled for maintenance window", TextById(s, "UpdateTimeLeft"));
-        Assert.Equal("Update Now", TextById(s, "ForceUpdate"));
-        await VerifyStep(s, Capture(s), name, "03-main-menu-update-scheduled");
-    }
-
-    private static async Task SaveBadUpdateUrls(string name, ReleaseStreamServer releaseStream)
-    {
-        await using AppiumSession s = await LaunchOnAutomaticUpgrades(name);
-        WaitForText(s, "UpdateUrl", releaseStream.Url, AppResponseTimeout);
-
-        // UIA reports the monitor's \n line breaks as \r\n.
-        Assert.Equal("The url supplied is invalid: \r\nnot-a-url\r\n", SaveRejectedUrl(s, releaseStream, "not-a-url"));
-        await VerifyStep(s, Capture(s), name, "01-not-a-url-rejected");
-        CloseError(s, releaseStream);
-
-        Assert.StartsWith("Unable to connect to the remote server:", SaveRejectedUrl(s, releaseStream, UnreachableUrl));
-        await VerifyStep(s, Capture(s), name, "02-unreachable-url-rejected");
-        CloseError(s, releaseStream);
-
-        // Only typed into the box, never saved, since saving it would fetch the production stream.
-        ClickAt(s, WaitForId(s, "ResetUrlButton"));
-        WaitForText(s, "UpdateUrl", "https://get.openziti.io/zdew/stable.json", AppResponseTimeout);
-        await VerifyStep(s, Capture(s), name, "03-reset-to-default-url");
-    }
-
-    private static string SaveRejectedUrl(AppiumSession s, ReleaseStreamServer releaseStream, string url)
-    {
-        TypeUntil(s, ById("UpdateUrl"), url);
-        ClickAt(s, WaitForId(s, "SaveSettingsButton"));
+        TypeUntil(session, ById("UpdateUrl"), url);
+        ClickAt(session, WaitForId(session, "SaveSettingsButton"));
         // The monitor checks the URL by fetching it before it answers, so this waits as long as an update check.
-        WaitFor(s, ErrorTitle("Error Saving Settings"), UpdateCheckTimeout);
-        string details = TextById(s, "ErrorDetails");
+        WaitFor(session, ErrorTitle("Error Saving Settings"), UpdateCheckTimeout);
+        string details = TextById(session, "ErrorDetails");
         Assert.Equal(releaseStream.Url, (string?)SavedSettings()?["AutomaticUpdateURL"]);
         return details;
     }
 
-    private static void CloseError(AppiumSession s, ReleaseStreamServer releaseStream)
+    private static void CloseError(AppiumSession session, ReleaseStreamServer releaseStream)
     {
-        ClickUntilGone(s, CloseErrorButton);
-        WaitForText(s, "UpdateUrl", releaseStream.Url, AppResponseTimeout);
-    }
-
-    private static async Task ShowPolicyLock(string name, ReleaseStreamServer releaseStream)
-    {
-        await using AppiumSession s = await LaunchOnAutomaticUpgrades(name);
-        WaitFor(s, PolicyBanner);
-        WaitForText(s, "UpdateUrl", releaseStream.Url, AppResponseTimeout);
-        Assert.Equal("02:00", TextById(s, "MaintenanceWindowStartCombo"));
-        Assert.Equal("05:00", TextById(s, "MaintenanceWindowEndCombo"));
-        Assert.False(WaitForId(s, "AutomaticUpgradesToggle").Enabled);
-        Assert.False(WaitForId(s, "UpdateUrl").Enabled);
-        Assert.False(WaitForId(s, "MaintenanceWindowStartCombo").Enabled);
-        Assert.Null(FindByAccessibilityId(s, "ResetUrlButton"));
-        Assert.Null(FindByAccessibilityId(s, "SaveSettingsButton"));
-        await VerifyStep(s, Capture(s), name, "01-locked-by-policy");
-
-        Registry.LocalMachine.DeleteSubKey(PolicyKeyPath);
-        WaitForText(s, "UpdateUrl", UnreachableUrl, PolicyReloadTimeout);
-        WaitForGone(s, PolicyBanner);
-        Assert.Equal("01:00", TextById(s, "MaintenanceWindowStartCombo"));
-        Assert.Equal("04:00", TextById(s, "MaintenanceWindowEndCombo"));
-        Assert.True(WaitForId(s, "AutomaticUpgradesToggle").Enabled);
-        Assert.True(WaitForId(s, "UpdateUrl").Enabled);
-        Assert.True(WaitForId(s, "MaintenanceWindowStartCombo").Enabled);
-        WaitForId(s, "SaveSettingsButton");
-        await VerifyStep(s, Capture(s), name, "02-policy-removed");
+        ClickUntilGone(session, CloseErrorButton);
+        WaitForText(session, "UpdateUrl", releaseStream.Url, AppResponseTimeout);
     }
 
     private static async Task<AppiumSession> LaunchOnMainMenu(string name)
     {
-        AppiumSession s = await AppiumSession.LaunchAgainstMonitorAsync(DefaultExePath(),
-            DefaultMonitorPath(), Fixture("landing-status.json"), UiLogPath(name), MonitorLogPath(name));
-        return await PrepareOrDispose(s, session =>
+        AppiumSession session = await AppiumSession.LaunchAgainstMonitorAsync(DefaultExePath(),
+            DefaultMonitorPath(), Fixture("landing-status.json"), UiLogPath(name),
+            Path.Combine(TestResultsDir(), "logs", name, "monitor.log"));
+        return await PrepareOrDispose(session, launched =>
         {
-            WaitForId(session, "ConnectLabel");
-            PrepareTestWindow(session);
-            OpenMainMenu(session);
+            WaitForId(launched, "ConnectLabel");
+            PrepareTestWindow(launched);
+            OpenMainMenu(launched);
         });
     }
 
     private static async Task<AppiumSession> LaunchOnAutomaticUpgrades(string name)
     {
-        AppiumSession s = await LaunchOnMainMenu(name);
-        return await PrepareOrDispose(s, session =>
+        AppiumSession session = await LaunchOnMainMenu(name);
+        return await PrepareOrDispose(session, launched =>
         {
-            ClickUntil(session, By.XPath("//*[@Name='Advanced Settings']"),
+            ClickUntil(launched, By.XPath("//*[@Name='Advanced Settings']"),
                 By.XPath("//*[@Name='Configure Automatic Upgrades']"));
-            ClickUntil(session, By.XPath("//*[@Name='Configure Automatic Upgrades']"), ById("AutomaticUpgradesToggle"));
+            ClickUntil(launched, By.XPath("//*[@Name='Configure Automatic Upgrades']"), ById("AutomaticUpgradesToggle"));
         });
     }
 
-    private static void SelectComboItem(AppiumSession s, string comboId, string item)
+    private static void SelectComboItem(AppiumSession session, string comboId, string item)
     {
         // Scoped to the combo, so another combo's item with the same name never matches, and the search stays fast.
-        IWebElement combo = WaitForId(s, comboId);
+        IWebElement combo = WaitForId(session, comboId);
         By onscreenItem = By.XPath(".//ListItem[@IsOffscreen='False']");
         By row = By.XPath($".//ListItem[@Name='{item}']");
         IWebElement? shown = null;
-        ClickUntil(s, ById(comboId), $"{comboId} lists {item}", () =>
+        ClickUntil(session, ById(comboId), $"{comboId} lists {item}", () =>
         {
-            shown = combo.FindElements(row).FirstOrDefault(e => e.Displayed);
+            shown = combo.FindElements(row).FirstOrDefault(element => element.Displayed);
             return shown != null;
         });
-        ClickAt(s, shown!);
-        WaitUntil(s, $"{comboId} closes", AppResponseTimeout,
+        ClickAt(session, shown!);
+        WaitUntil(session, $"{comboId} closes", AppResponseTimeout,
             () => combo.FindElements(onscreenItem).Count == 0);
-        WaitForText(s, comboId, item, AppResponseTimeout);
+        WaitForText(session, comboId, item, AppResponseTimeout);
     }
 
-
-    private static void WaitForSaved(AppiumSession s, string key, bool expected) =>
-        WaitUntil(s, $"the monitor saves {key} {expected}", AppResponseTimeout,
+    private static void WaitForSaved(AppiumSession session, string key, bool expected) =>
+        WaitUntil(session, $"the monitor saves {key} {expected}", AppResponseTimeout,
             () => (bool?)SavedSettings()?[key] == expected);
-
-    private static MaintenanceWindow WaitForSavedWindowChange(AppiumSession s, MaintenanceWindow previous)
-    {
-        MaintenanceWindow? saved = null;
-        WaitUntil(s, $"the monitor saves a maintenance window other than {previous}", AppResponseTimeout, () =>
-        {
-            JObject? settings = SavedSettings();
-            if (settings == null)
-                return false;
-            saved = MaintenanceWindow.From(settings);
-            return saved != previous;
-        });
-        return saved!;
-    }
 
     // The put back runs after test disposes its monitor, so nothing overwrites it.
     private static async Task WithSettings(byte[]? start, Func<Task> test)
@@ -456,62 +495,6 @@ public class MonitorTests
         finally
         {
             WriteSettings(original);
-        }
-    }
-
-    // The same path the monitor's restore reads.
-    private static string WindowsOldFolder(string liveFolder)
-    {
-        string systemDrive = Path.GetPathRoot(Environment.GetFolderPath(Environment.SpecialFolder.Windows))!;
-        return Path.Combine(systemDrive, "Windows.old", liveFolder.Substring(Path.GetPathRoot(liveFolder)!.Length));
-    }
-
-    private static async Task WithBackup(string backupFolder, byte[] content, Func<Task> test)
-    {
-        if (Directory.Exists(backupFolder))
-            throw new InvalidOperationException($"{backupFolder} already exists, so it may hold a real upgrade backup");
-        List<string> created = new List<string>();
-        for (string? folder = backupFolder; folder != null && !Directory.Exists(folder);
-             folder = Path.GetDirectoryName(folder))
-            created.Add(folder);
-        string backupFile = Path.Combine(backupFolder, "settings.json");
-        Directory.CreateDirectory(backupFolder);
-        File.WriteAllBytes(backupFile, content);
-        try
-        {
-            await test();
-        }
-        finally
-        {
-            if (File.Exists(backupFile))
-                File.Delete(backupFile);
-            // Deepest first, and the monitor removes backupFolder itself once it has restored the file.
-            foreach (string folder in created.Where(Directory.Exists))
-                Directory.Delete(folder);
-        }
-    }
-
-    // Writing under HKLM needs an elevated run.
-    private static async Task WithPolicy(IReadOnlyDictionary<string, object> values, Func<Task> test)
-    {
-        if (KeyExists(PolicyKeyPath))
-            throw new InvalidOperationException($@"HKLM\{PolicyKeyPath} already exists, so it may be a real policy");
-        string topCreated = PolicyKeyPath;
-        while (!KeyExists(topCreated[..topCreated.LastIndexOf('\\')]))
-            topCreated = topCreated[..topCreated.LastIndexOf('\\')];
-        using (RegistryKey key = Registry.LocalMachine.CreateSubKey(PolicyKeyPath))
-        {
-            foreach ((string name, object value) in values)
-                key.SetValue(name, value);
-        }
-        try
-        {
-            await test();
-        }
-        finally
-        {
-            // The test may have deleted the policy key itself.
-            Registry.LocalMachine.DeleteSubKeyTree(topCreated, throwOnMissingSubKey: false);
         }
     }
 

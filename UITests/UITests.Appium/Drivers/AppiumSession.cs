@@ -15,9 +15,6 @@ namespace ZitiDesktopEdge.UITests.Drivers;
 public sealed record TopLevelWindow(IntPtr Handle, int ProcessId, string ProcessName, string Title, Rectangle Bounds,
     bool IsForeground);
 
-public sealed record ProcessOrigin(int ProcessId, int ParentProcessId, string ParentName, string CreationDate,
-    string CommandLine);
-
 // Text that differs between controllers: a baseline asserts it matches Expected and skips its bounds.
 public sealed record VaryingText(By Elements, Regex Expected);
 
@@ -25,10 +22,6 @@ public sealed class AppiumSession : IAsyncDisposable
 {
     // Sized for a slow first launch.
     public static readonly TimeSpan LaunchWindowTimeout = TimeSpan.FromSeconds(60);
-
-    private const int WindowPollIntervalMs = 40;
-
-    private const int DriverInitBackoffMs = 80;
 
     public WindowsDriver Driver { get; }
     public MockIpcServer Mock { get; }
@@ -45,30 +38,21 @@ public sealed class AppiumSession : IAsyncDisposable
 
     public bool IsWindowVisible => Win32Window.IsWindowVisible(WindowHandle);
 
-    // The top stays at or below 0 because an off-screen area swallows clicks.
-    public void MoveWindowBy(int dx, int dy)
-    {
-        Rectangle r = WindowBounds();
-        int top = Math.Max(0, r.Top + dy);
-        Win32Window.SetWindowPos(WindowHandle, IntPtr.Zero, r.Left + dx, top, r.Width, r.Height,
-            Win32Window.SWP_NOZORDER | Win32Window.SWP_NOACTIVATE);
-    }
-
     // Includes the transparent drop shadow margin.
     public Rectangle WindowBounds()
     {
-        if (!Win32Window.GetWindowRect(WindowHandle, out Win32Window.RECT r))
+        if (!Win32Window.GetWindowRect(WindowHandle, out Win32Window.RECT windowRect))
             throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(),
                 $"GetWindowRect failed for window handle {WindowHandle}");
-        return r.ToRectangle();
+        return windowRect.ToRectangle();
     }
 
     public static Rectangle WorkArea()
     {
-        if (!Win32Window.SystemParametersInfo(Win32Window.SPI_GETWORKAREA, 0, out Win32Window.RECT r, 0))
+        if (!Win32Window.SystemParametersInfo(Win32Window.SPI_GETWORKAREA, 0, out Win32Window.RECT workArea, 0))
             throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(),
                 "SystemParametersInfo(SPI_GETWORKAREA) failed");
-        return r.ToRectangle();
+        return workArea.ToRectangle();
     }
 
     // PrintWindow forces alpha to 255, which is why test mode gives the window a white background.
@@ -93,7 +77,7 @@ public sealed class AppiumSession : IAsyncDisposable
         using (Graphics graphics = Graphics.FromImage(bitmap))
         {
             graphics.Clear(Color.White);
-            foreach ((IntPtr handle, Rectangle bounds) in popups.Select(p => (p.Handle, p.Bounds)).Prepend((WindowHandle, window)))
+            foreach ((IntPtr handle, Rectangle bounds) in popups.Select(popup => (popup.Handle, popup.Bounds)).Prepend((WindowHandle, window)))
             {
                 using Bitmap printed = PrintedWindow(handle, bounds.Size);
                 graphics.DrawImage(printed, bounds.X - canvas.X, bounds.Y - canvas.Y);
@@ -115,7 +99,7 @@ public sealed class AppiumSession : IAsyncDisposable
     private List<TopLevelWindow> Popups()
     {
         List<TopLevelWindow> popups = TopLevelWindows()
-            .Where(w => w.ProcessId == UiProcess.Id && w.Handle != WindowHandle).Reverse().ToList();
+            .Where(window => window.ProcessId == UiProcess.Id && window.Handle != WindowHandle).Reverse().ToList();
         if (popups.Count == 0)
             throw new InvalidOperationException($"the app (pid {UiProcess.Id}) shows no popup window");
         return popups;
@@ -128,10 +112,10 @@ public sealed class AppiumSession : IAsyncDisposable
     {
         Bitmap bitmap = new Bitmap(size.Width, size.Height, PixelFormat.Format32bppArgb);
         using Graphics graphics = Graphics.FromImage(bitmap);
-        IntPtr hdc = graphics.GetHdc();
-        bool printed = Win32Window.PrintWindow(handle, hdc, Win32Window.PW_RENDERFULLCONTENT);
+        IntPtr deviceContext = graphics.GetHdc();
+        bool printed = Win32Window.PrintWindow(handle, deviceContext, Win32Window.PW_RENDERFULLCONTENT);
         int printError = Marshal.GetLastWin32Error();
-        graphics.ReleaseHdc(hdc);
+        graphics.ReleaseHdc(deviceContext);
         if (!printed)
         {
             bitmap.Dispose();
@@ -140,66 +124,37 @@ public sealed class AppiumSession : IAsyncDisposable
         return bitmap;
     }
 
-    public static byte[] CaptureDesktop()
-    {
-        Rectangle screen = new Rectangle(0, 0, Win32Window.GetSystemMetrics(Win32Window.SM_CXSCREEN),
-            Win32Window.GetSystemMetrics(Win32Window.SM_CYSCREEN));
-        using Bitmap bitmap = new Bitmap(screen.Width, screen.Height, PixelFormat.Format32bppArgb);
-        using (Graphics graphics = Graphics.FromImage(bitmap))
-            graphics.CopyFromScreen(screen.Location, Point.Empty, screen.Size);
-        using MemoryStream png = new MemoryStream();
-        bitmap.Save(png, ImageFormat.Png);
-        return png.ToArray();
-    }
-
     // Top of the z-order first.
     public static IReadOnlyList<TopLevelWindow> TopLevelWindows()
     {
         IntPtr foreground = Win32Window.GetForegroundWindow();
         List<IntPtr> handles = new List<IntPtr>();
-        if (!Win32Window.EnumWindows((hWnd, _) => { handles.Add(hWnd); return true; }, IntPtr.Zero))
+        if (!Win32Window.EnumWindows((handle, _) => { handles.Add(handle); return true; }, IntPtr.Zero))
             throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), "EnumWindows failed");
-        return handles.Where(Win32Window.IsWindowVisible).Select(hWnd =>
+        return handles.Where(Win32Window.IsWindowVisible).Select(handle =>
         {
             System.Text.StringBuilder title = new System.Text.StringBuilder(256);
-            Win32Window.GetWindowText(hWnd, title, title.Capacity);
-            Win32Window.GetWindowThreadProcessId(hWnd, out uint pid);
-            Win32Window.GetWindowRect(hWnd, out Win32Window.RECT r);
-            return new TopLevelWindow(hWnd, (int)pid, ProcessName((int)pid), title.ToString(),
-                r.ToRectangle(), hWnd == foreground);
-        }).ToList();
-    }
-
-    // imageName includes the extension, e.g. "ZitiDesktopEdge.exe".
-    public static IReadOnlyList<ProcessOrigin> ProcessOrigins(string imageName)
-    {
-        using System.Management.ManagementObjectSearcher searcher = new System.Management.ManagementObjectSearcher(
-            $"SELECT ProcessId, ParentProcessId, CreationDate, CommandLine FROM Win32_Process WHERE Name = '{imageName}'");
-        using System.Management.ManagementObjectCollection found = searcher.Get();
-        return found.Cast<System.Management.ManagementObject>().Select(p =>
-        {
-            int parent = (int)(uint)p["ParentProcessId"];
-            return new ProcessOrigin((int)(uint)p["ProcessId"], parent, ProcessName(parent),
-                (string?)p["CreationDate"] ?? "", (string?)p["CommandLine"] ?? "");
+            Win32Window.GetWindowText(handle, title, title.Capacity);
+            Win32Window.GetWindowThreadProcessId(handle, out uint pid);
+            Win32Window.GetWindowRect(handle, out Win32Window.RECT windowRect);
+            return new TopLevelWindow(handle, (int)pid, ProcessName((int)pid), title.ToString(),
+                windowRect.ToRectangle(), handle == foreground);
         }).ToList();
     }
 
     // A window's process can exit while the list is built.
-    private static string ProcessName(int pid)
+    public static string ProcessName(int pid)
     {
         try
         {
-            using Process p = Process.GetProcessById(pid);
-            return p.ProcessName;
+            using Process process = Process.GetProcessById(pid);
+            return process.ProcessName;
         }
         catch (ArgumentException)
         {
             return "(exited)";
         }
     }
-
-    // Long enough for WPF to take the mouse leave. A hover fade back (StyledButton's runs 0.3s) takes longer.
-    private const int HoverClearMs = 250;
 
     public void MoveCursorOffWindow() => MoveCursorOffWindow(WindowBounds());
 
@@ -215,7 +170,8 @@ public sealed class AppiumSession : IAsyncDisposable
         if (!Win32Window.SetCursorPos(workArea.Left, workArea.Top))
             throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(),
                 $"SetCursorPos({workArea.Left}, {workArea.Top}) failed");
-        Thread.Sleep(HoverClearMs);
+        // Long enough for WPF to take the mouse leave. A hover fade back (StyledButton's runs 0.3s) takes longer.
+        Thread.Sleep(250);
     }
 
     private readonly uint _savedCaretBlinkTime;
@@ -234,16 +190,6 @@ public sealed class AppiumSession : IAsyncDisposable
         _savedComboBoxSlide = savedComboBoxSlide;
     }
 
-    // So a capture never lands mid-slide. Session-wide until logoff, so the caller restores it.
-    private static bool StopComboBoxSlide()
-    {
-        if (!Win32Window.SystemParametersInfo(Win32Window.SPI_GETCOMBOBOXANIMATION, 0, out int saved, 0))
-            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(),
-                "SystemParametersInfo(SPI_GETCOMBOBOXANIMATION) failed");
-        SetComboBoxSlide(false);
-        return saved != 0;
-    }
-
     private static void SetComboBoxSlide(bool slide)
     {
         if (!Win32Window.SystemParametersInfo(Win32Window.SPI_SETCOMBOBOXANIMATION, 0, new IntPtr(Convert.ToInt32(slide)), 0))
@@ -251,30 +197,12 @@ public sealed class AppiumSession : IAsyncDisposable
                 $"SystemParametersInfo(SPI_SETCOMBOBOXANIMATION, {slide}) failed");
     }
 
-    // So captures always draw the caret. Session-wide until logoff, so the caller restores it.
-    private static uint StopCaretBlink()
-    {
-        uint saved = Win32Window.GetCaretBlinkTime();
-        if (saved == 0)
-            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), "GetCaretBlinkTime failed");
-        SetCaretBlinkTime(Win32Window.INFINITE);
-        return saved;
-    }
-
-    // Opening a common file dialog resets the session's caret blink time to the user's setting.
-    public void StopCaretBlinkAgain() => SetCaretBlinkTime(Win32Window.INFINITE);
-
-    private static void SetCaretBlinkTime(uint blinkTime)
+    public static void SetCaretBlinkTime(uint blinkTime)
     {
         if (!Win32Window.SetCaretBlinkTime(blinkTime))
             throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(),
                 $"SetCaretBlinkTime({blinkTime}) failed");
     }
-
-    private static readonly Uri AppiumServer = new Uri("http://127.0.0.1:4723/");
-
-    // run-ui-tests.ps1 starts this WinAppDriver, so the windows driver never spawns its own.
-    private const string WinAppDriverUrl = "http://127.0.0.1:4724/wd/hub";
 
     public static async Task<AppiumSession> LaunchAsync(string exePath, JObject landingStatus, string uiLogPath)
     {
@@ -334,12 +262,21 @@ public sealed class AppiumSession : IAsyncDisposable
     private static async Task<AppiumSession> AttachAsync(string exePath, string prefix, MockIpcServer mock,
         RelayIpcServer? relay, MonitorProcess? monitor, IReadOnlyList<VaryingText> varyingText, string uiLogPath)
     {
-        uint savedCaretBlinkTime = StopCaretBlink();
-        bool savedComboBoxSlide = StopComboBoxSlide();
+        // So captures always draw the caret. Session-wide until logoff, so the session restores it.
+        uint savedCaretBlinkTime = Win32Window.GetCaretBlinkTime();
+        if (savedCaretBlinkTime == 0)
+            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), "GetCaretBlinkTime failed");
+        SetCaretBlinkTime(Win32Window.INFINITE);
+        // So a capture never lands mid-slide. Session-wide until logoff, so the session restores it.
+        if (!Win32Window.SystemParametersInfo(Win32Window.SPI_GETCOMBOBOXANIMATION, 0, out int savedSlide, 0))
+            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(),
+                "SystemParametersInfo(SPI_GETCOMBOBOXANIMATION) failed");
+        bool savedComboBoxSlide = savedSlide != 0;
+        SetComboBoxSlide(false);
         ProcessOutputLog? ui = null;
         try
         {
-            ProcessStartInfo psi = new ProcessStartInfo
+            ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = exePath,
                 UseShellExecute = false,
@@ -348,53 +285,54 @@ public sealed class AppiumSession : IAsyncDisposable
                 RedirectStandardError = true,
                 WorkingDirectory = Path.GetDirectoryName(exePath)!,
             };
-            psi.EnvironmentVariables["ZDEW_UI_TEST"] = "1";
-            psi.EnvironmentVariables["ZDEW_IPC_PIPE_PREFIX"] = prefix;
-            ui = ProcessOutputLog.Start(psi, uiLogPath);
-            Process uiProc = ui.Process;
-            Step.Log($"started the app (pid {uiProc.Id}), its log is {uiLogPath}");
+            startInfo.EnvironmentVariables["ZDEW_UI_TEST"] = "1";
+            startInfo.EnvironmentVariables["ZDEW_IPC_PIPE_PREFIX"] = prefix;
+            ui = ProcessOutputLog.Start(startInfo, uiLogPath);
+            Process uiProcess = ui.Process;
+            Step.Log($"started the app (pid {uiProcess.Id}), its log is {uiLogPath}");
 
             // MainWindowHandle can lag WaitForInputIdle, so poll after it.
-            IntPtr hwnd = IntPtr.Zero;
+            IntPtr mainWindow = IntPtr.Zero;
             DateTime windowDeadline = DateTime.UtcNow + LaunchWindowTimeout;
-            await Task.Run(() => uiProc.WaitForInputIdle((int)LaunchWindowTimeout.TotalMilliseconds));
-            while (hwnd == IntPtr.Zero && DateTime.UtcNow < windowDeadline)
+            await Task.Run(() => uiProcess.WaitForInputIdle((int)LaunchWindowTimeout.TotalMilliseconds));
+            while (mainWindow == IntPtr.Zero && DateTime.UtcNow < windowDeadline)
             {
-                uiProc.Refresh();
-                hwnd = uiProc.MainWindowHandle;
-                if (hwnd == IntPtr.Zero) await Task.Delay(WindowPollIntervalMs);
+                uiProcess.Refresh();
+                mainWindow = uiProcess.MainWindowHandle;
+                if (mainWindow == IntPtr.Zero) await Task.Delay(40);
             }
-            if (hwnd == IntPtr.Zero)
+            if (mainWindow == IntPtr.Zero)
                 throw new TimeoutException($"ZDEW's main window never appeared within {LaunchWindowTimeout} of Process.Start. Log: {uiLogPath}");
 
             WindowsDriver? driver = null;
-            Exception? lastErr = null;
+            Exception? lastAttachError = null;
             DateTime driverDeadline = DateTime.UtcNow + LaunchWindowTimeout;
             while (driver == null && DateTime.UtcNow < driverDeadline)
             {
                 try
                 {
-                    AppiumOptions opts = new AppiumOptions
+                    AppiumOptions options = new AppiumOptions
                     {
                         PlatformName = "Windows",
                         AutomationName = "Windows",
                     };
-                    opts.AddAdditionalAppiumOption("appTopLevelWindow", "0x" + hwnd.ToInt64().ToString("X"));
+                    options.AddAdditionalAppiumOption("appTopLevelWindow", "0x" + mainWindow.ToInt64().ToString("X"));
                     // Above the longest wait that polls Win32 only: the feedback test waits up to 150s on Explorer.
-                    opts.AddAdditionalAppiumOption("newCommandTimeout", 180);
-                    opts.AddAdditionalAppiumOption("wadUrl", WinAppDriverUrl);
-                    driver = new WindowsDriver(AppiumServer, opts);
+                    options.AddAdditionalAppiumOption("newCommandTimeout", 180);
+                    // run-ui-tests.ps1 starts this WinAppDriver, so the windows driver never spawns its own.
+                    options.AddAdditionalAppiumOption("wadUrl", "http://127.0.0.1:4724/wd/hub");
+                    driver = new WindowsDriver(new Uri("http://127.0.0.1:4723/"), options);
                 }
                 catch (Exception ex)
                 {
-                    lastErr = ex;
-                    await Task.Delay(DriverInitBackoffMs);
+                    lastAttachError = ex;
+                    await Task.Delay(80);
                 }
             }
             if (driver == null)
-                throw new InvalidOperationException($"Appium could not attach to ZDEW window within {LaunchWindowTimeout}. Last error: {lastErr?.Message}. Log: {uiLogPath}", lastErr);
+                throw new InvalidOperationException($"Appium could not attach to ZDEW window within {LaunchWindowTimeout}. Last error: {lastAttachError?.Message}. Log: {uiLogPath}", lastAttachError);
 
-            Step.Log($"attached Appium to the app's window {hwnd}");
+            Step.Log($"attached Appium to the app's window {mainWindow}");
             return new AppiumSession(driver, mock, relay, monitor, varyingText, ui, savedCaretBlinkTime, savedComboBoxSlide);
         }
         catch

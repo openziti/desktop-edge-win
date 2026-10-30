@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Xml.Linq;
 using Newtonsoft.Json.Linq;
 using OpenQA.Selenium;
 using ZitiDesktopEdge.UITests.Drivers;
@@ -19,7 +21,8 @@ public class SettingsUpgradeTests
     {
         string name = nameof(SortAndDefaultProviderCarriedOverFromPreviousVersion);
         string exePath = DefaultExePath();
-        Version current = AppUserConfig.SettingsVersion(exePath);
+        // The app sets no informational version, so its settings directory is named for the assembly version.
+        Version current = AssemblyName.GetAssemblyName(exePath).Version!;
         // CharlieEdge is SortableMixed's only identity needing ext auth, offered keycloak and auth0.
         UserSettings previous = new UserSettings("Services", "Descending", @"c:\fake\ids\CharlieEdge.json", "auth0");
         JObject status = FixtureBuilder.SortableMixed();
@@ -31,16 +34,39 @@ public class SettingsUpgradeTests
         {
             foreach (string path in originals.Keys) File.Delete(path);
             // With no user.config for its version, the app saves a fresh one, which is how the test finds its directory.
-            await using (AppiumSession s = await AppiumSession.LaunchAsync(exePath, status, UiLogPath(name)))
+            await using (AppiumSession session = await AppiumSession.LaunchAsync(exePath, status, UiLogPath(name)))
             {
-                WaitForId(s, "SortByName");
+                WaitForId(session, "SortByName");
                 // App.config's defaults, as long as no older version folder holds a sort for Upgrade to copy.
-                Assert.Equal(("Name", "▲"), ActiveSortArrow(s));
-                await VerifyStep(s, Capture(s), name, "01-defaults");
+                Assert.Equal(("Name", "▲"), ActiveSortArrow(session));
+                await VerifyStep(session, Capture(session), name, "01-defaults");
             }
             string currentConfig = Assert.Single(AppUserConfig.ReadConfigs(current).Keys);
             File.Delete(currentConfig);
-            seededDir = AppUserConfig.SeedPreviousVersion(currentConfig, current, previous);
+            // Settings.Upgrade copies from the highest version below current, so the seed goes there and no real
+            // version directory can sit between them.
+            Version previousVersion;
+            if (current.Revision > 0)
+                previousVersion = new Version(current.Major, current.Minor, current.Build, current.Revision - 1);
+            else if (current.Build > 0)
+                previousVersion = new Version(current.Major, current.Minor, current.Build - 1, int.MaxValue);
+            else
+                throw new NotSupportedException($"no previous version to seed below {current}");
+            string exeDir = Path.GetDirectoryName(Path.GetDirectoryName(currentConfig)!)!;
+            string versionDir = Path.Combine(exeDir, previousVersion.ToString());
+            if (Directory.Exists(versionDir))
+                throw new InvalidOperationException($"{versionDir} already exists: delete it, it is left from an earlier run");
+            Directory.CreateDirectory(versionDir);
+            seededDir = versionDir;
+            new XDocument(new XElement("configuration", new XElement("userSettings",
+                new XElement("ZitiDesktopEdge.Properties.Settings",
+                    StringSetting("SortOption", previous.SortOption),
+                    StringSetting("SortDirection", previous.SortDirection),
+                    StringSetting("SettingsUpgradeRequired", "False"),
+                    new XElement("setting", new XAttribute("name", "DefaultProviders"), new XAttribute("serializeAs", "Xml"),
+                        new XElement("value", new XElement("ArrayOfString", new XElement("string",
+                            previous.DefaultProviderIdentity + AppUserConfig.ProviderDelimiter + previous.DefaultProvider))))))))
+                .Save(Path.Combine(versionDir, "user.config"));
 
             await using AppiumSession upgraded = await AppiumSession.LaunchAsync(exePath, status, UiLogPath(name));
             WaitForId(upgraded, "SortByName");
@@ -59,25 +85,25 @@ public class SettingsUpgradeTests
 
             // With a default provider the click logs in to it, where two providers and none would open a menu.
             ClickAt(upgraded, WaitFor(upgraded, ExtAuthRequiredIcon));
-            JObject externalAuth = WaitForDataRequest(upgraded, "ExternalAuth");
-            Assert.Equal(previous.DefaultProviderIdentity, (string?)externalAuth["Data"]!["Identifier"]);
+            JObject? externalAuth = null;
+            WaitUntil(upgraded, "the app sends ExternalAuth", AppResponseTimeout, () =>
+            {
+                externalAuth = upgraded.Mock.ReceivedDataRequests
+                    .FirstOrDefault(request => (string?)request["Command"] == "ExternalAuth");
+                return externalAuth != null;
+            });
+            Assert.Equal(previous.DefaultProviderIdentity, (string?)externalAuth!["Data"]!["Identifier"]);
             Assert.Equal(previous.DefaultProvider, (string?)externalAuth["Data"]!["Provider"]);
         }
         finally
         {
             if (seededDir != null) Directory.Delete(seededDir, true);
-            AppUserConfig.RestoreConfigs(current, originals);
+            foreach (string path in AppUserConfig.ReadConfigs(current).Keys) File.Delete(path);
+            foreach ((string path, byte[] bytes) in originals) File.WriteAllBytes(path, bytes);
         }
     }
 
-    private static JObject WaitForDataRequest(AppiumSession s, string command)
-    {
-        JObject? request = null;
-        WaitUntil(s, $"the app sends {command}", AppResponseTimeout, () =>
-        {
-            request = s.Mock.ReceivedDataRequests.FirstOrDefault(r => (string?)r["Command"] == command);
-            return request != null;
-        });
-        return request!;
-    }
+    private static XElement StringSetting(string name, string value) =>
+        new XElement("setting", new XAttribute("name", name), new XAttribute("serializeAs", "String"),
+            new XElement("value", value));
 }

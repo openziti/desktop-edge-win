@@ -13,17 +13,30 @@ internal static class IpcPipes
     {
         while (!ct.IsCancellationRequested)
         {
-            NamedPipeServerStream srv = CreateServerPipe(pipeName, direction);
-            try { await srv.WaitForConnectionAsync(ct); }
-            catch (OperationCanceledException) { srv.Dispose(); return; }
+            NamedPipeServerStream pipe;
+            try
+            {
+                pipe = new NamedPipeServerStream(
+                    pipeName,
+                    direction,
+                    NamedPipeServerStream.MaxAllowedServerInstances,
+                    PipeTransmissionMode.Byte,
+                    PipeOptions.Asynchronous);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                throw new IOException($"Test IPC could not create pipe '{pipeName}': {ex.Message}", ex);
+            }
+            try { await pipe.WaitForConnectionAsync(ct); }
+            catch (OperationCanceledException) { pipe.Dispose(); return; }
 
-            _ = Task.Run(() => handler(srv, ct), ct);
+            _ = Task.Run(() => handler(pipe, ct), ct);
         }
     }
 
-    public static string ClientProcessName(NamedPipeServerStream srv)
+    public static string ClientProcessName(NamedPipeServerStream pipe)
     {
-        if (!GetNamedPipeClientProcessId(srv.SafePipeHandle, out uint pid))
+        if (!GetNamedPipeClientProcessId(pipe.SafePipeHandle, out uint pid))
             throw new Win32Exception(Marshal.GetLastWin32Error(), "GetNamedPipeClientProcessId failed");
         using Process client = Process.GetProcessById((int)pid);
         return client.ProcessName;
@@ -31,21 +44,4 @@ internal static class IpcPipes
 
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool GetNamedPipeClientProcessId(SafePipeHandle pipe, out uint clientProcessId);
-
-    private static NamedPipeServerStream CreateServerPipe(string pipeName, PipeDirection direction)
-    {
-        try
-        {
-            return new NamedPipeServerStream(
-                pipeName,
-                direction,
-                NamedPipeServerStream.MaxAllowedServerInstances,
-                PipeTransmissionMode.Byte,
-                PipeOptions.Asynchronous);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            throw new IOException($"Test IPC could not create pipe '{pipeName}': {ex.Message}", ex);
-        }
-    }
 }

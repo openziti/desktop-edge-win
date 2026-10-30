@@ -20,8 +20,8 @@ public class ConnectButtonTests
     private static readonly By Stop = By.XPath("//Text[@Name='STOP']");
     private static readonly By ConnectImage = ById("ConnectImage");
 
-    private static void ClickUntilMonitorGets(AppiumSession s, By target, string op) =>
-        ClickUntil(s, target, $"the monitor gets {op}", () => s.Mock.ReceivedMonitorRequests.Any(r => (string?)r["Op"] == op));
+    private static void ClickUntilMonitorGets(AppiumSession session, By target, string operation) =>
+        ClickUntil(session, target, $"the monitor gets {operation}", () => session.Mock.ReceivedMonitorRequests.Any(request => (string?)request["Op"] == operation));
 
     [Fact(Timeout = 60000)]
     [Trait("Category", "MainScreen")]
@@ -29,26 +29,26 @@ public class ConnectButtonTests
     public async Task DisconnectStopsAndConnectStartsTheService()
     {
         string name = nameof(DisconnectStopsAndConnectStartsTheService);
-        await using AppiumSession s = await AppiumSession.LaunchAsync(DefaultExePath(), Fixture("landing-status.json"),
+        await using AppiumSession session = await AppiumSession.LaunchAsync(DefaultExePath(), Fixture("landing-status.json"),
             UiLogPath(name));
-        WaitFor(s, ConnectLabel("Tap to Disconnect"));
-        WaitFor(s, By.XPath(IdentityRowXPath("enabled-id")));
+        WaitFor(session, ConnectLabel("Tap to Disconnect"));
+        WaitFor(session, By.XPath(IdentityRowXPath("enabled-id")));
 
-        ClickUntilMonitorGets(s, Stop, "Stop");
-        WaitFor(s, ConnectLabel("Tap to Connect"));
-        WaitForGone(s, LoadingTitle);
-        Assert.Single(s.Mock.ReceivedMonitorRequests, r => (string?)r["Op"] == "Stop" && (string?)r["Action"] == "Normal");
-        Assert.Empty(s.Driver.FindElements(By.XPath(IdentityRowXPath("enabled-id"))));
-        await VerifyStep(s, Capture(s), name, "01-service-stopped");
+        ClickUntilMonitorGets(session, Stop, "Stop");
+        WaitFor(session, ConnectLabel("Tap to Connect"));
+        WaitForGone(session, LoadingTitle);
+        Assert.Single(session.Mock.ReceivedMonitorRequests, request => (string?)request["Op"] == "Stop" && (string?)request["Action"] == "Normal");
+        Assert.Empty(session.Driver.FindElements(By.XPath(IdentityRowXPath("enabled-id"))));
+        await VerifyStep(session, Capture(session), name, "01-service-stopped");
 
-        ClickUntilMonitorGets(s, ConnectImage, "Start");
+        ClickUntilMonitorGets(session, ConnectImage, "Start");
         // The UI's data client retries its pipe every 2.5s, so the reconnect lands after the Start reply.
-        WaitFor(s, ConnectLabel("Tap to Disconnect"));
-        WaitFor(s, By.XPath(IdentityRowXPath("enabled-id")));
-        WaitForGone(s, LoadingTitle);
-        JObject start = Assert.Single(s.Mock.ReceivedMonitorRequests, r => (string?)r["Op"] == "Start");
+        WaitFor(session, ConnectLabel("Tap to Disconnect"));
+        WaitFor(session, By.XPath(IdentityRowXPath("enabled-id")));
+        WaitForGone(session, LoadingTitle);
+        JObject start = Assert.Single(session.Mock.ReceivedMonitorRequests, request => (string?)request["Op"] == "Start");
         Assert.Equal("Normal", (string?)start["Action"]);
-        await VerifyStep(s, Capture(s), name, "02-service-started");
+        await VerifyStep(session, Capture(session), name, "02-service-started");
     }
 
     [Fact(Timeout = 60000)]
@@ -59,22 +59,22 @@ public class ConnectButtonTests
         string name = nameof(FailedStopAndStartShowTheMonitorError);
         // What ServiceController.WaitForStatus throws when the ziti service misses the monitor's wait.
         const string failure = "Time out has expired and the operation has not been completed.";
-        await using AppiumSession s = await AppiumSession.LaunchAsync(DefaultExePath(), Fixture("landing-status.json"),
+        await using AppiumSession session = await AppiumSession.LaunchAsync(DefaultExePath(), Fixture("landing-status.json"),
             UiLogPath(name));
-        WaitFor(s, ConnectLabel("Tap to Disconnect"));
-        s.Mock.ServiceActionFailure = failure;
+        WaitFor(session, ConnectLabel("Tap to Disconnect"));
+        session.Mock.ServiceActionFailure = failure;
 
-        ClickUntilMonitorGets(s, Stop, "Stop");
-        WaitFor(s, ErrorTitle("Error Disabling Service"));
-        WaitForGone(s, LoadingTitle);
-        Assert.Equal(failure + ":", TextById(s, "ErrorDetails"));
-        await VerifyStep(s, Capture(s), name, "01-stop-failed");
+        ClickUntilMonitorGets(session, Stop, "Stop");
+        WaitFor(session, ErrorTitle("Error Disabling Service"));
+        WaitForGone(session, LoadingTitle);
+        Assert.Equal(failure + ":", TextById(session, "ErrorDetails"));
+        await VerifyStep(session, Capture(session), name, "01-stop-failed");
 
-        ClickUntilGone(s, CloseErrorButton);
-        ClickUntilMonitorGets(s, ConnectImage, "Start");
-        WaitFor(s, ErrorTitle("Error Starting Service"));
-        WaitForGone(s, LoadingTitle);
-        Assert.Equal(failure + ":", TextById(s, "ErrorDetails"));
-        await VerifyStep(s, Capture(s), name, "02-start-failed");
+        ClickUntilGone(session, CloseErrorButton);
+        ClickUntilMonitorGets(session, ConnectImage, "Start");
+        WaitFor(session, ErrorTitle("Error Starting Service"));
+        WaitForGone(session, LoadingTitle);
+        Assert.Equal(failure + ":", TextById(session, "ErrorDetails"));
+        await VerifyStep(session, Capture(session), name, "02-start-failed");
     }
 }

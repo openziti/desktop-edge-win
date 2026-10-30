@@ -25,32 +25,28 @@ public class MfaEnrollmentTests
         string name = nameof(EnrollCompletesWithTotpRequiredPolicy);
         const string identityName = "test_mfa_enable_totp_policy";
 
-        await using AppiumSession s = await LaunchAsync(_fixture, name);
+        await using AppiumSession session = await LaunchAsync(_fixture, name);
         WriteTestJwt(_fixture.Quickstart.GetJwtFromController(identityName));
-        ClickAddIdentityWithJwt(s);
-        // Partially authenticated until TOTP is enrolled, so ZET sends no added event and the row keeps the file name.
-        WaitForController(s, InIdentityRow(AddedIdentityFileName, "MfaSetupNeeded"), "the row asks to set up MFA");
-        Assert.Equal(0, (int?)WaitForZetReplyTo(s, AddIdentityLine)["Code"]);
-        WaitForZetEventAfter(s, AddIdentityLine, MfaEnrollmentRequiredEvent);
-        SortAscending(s, "Name");
-        await VerifyStep(s, Capture(s), name, "01-setup-needed-row");
+        ClickAddIdentityWithJwt(session);
+        WaitForController(session, InIdentityRow(AddedIdentityFileName, "MfaSetupNeeded"), "the row asks to set up MFA");
+        Assert.Equal(0, (int?)WaitForZetReplyTo(session, AddIdentityLine)["Code"]);
+        WaitForZetEventAfter(session, AddIdentityLine, MfaEnrollmentRequiredEvent);
+        SortAscending(session, "Name");
+        await VerifyStep(session, Capture(session), name, "01-setup-needed-row");
 
-        // The QR dialog opens on ZET's enrollment_challenge event, not on the EnableMFA reply.
-        ClickAt(s, WaitFor(s, InIdentityRow(AddedIdentityFileName, "MfaSetupNeeded")));
-        WaitForController(s, ById("SetupCode"), "the MFA setup dialog opens");
-        await VerifyStep(s, Masked(s, Capture(s), ById("MFAImage")), name, "02-mfa-qr-dialog");
+        ClickAt(session, WaitFor(session, InIdentityRow(AddedIdentityFileName, "MfaSetupNeeded")));
+        WaitForController(session, ById("SetupCode"), "the MFA setup dialog opens");
+        await VerifyStep(session, Masked(session, Capture(session), ById("MFAImage")), name, "02-mfa-qr-dialog");
 
-        // The baseline masks the codes, so CompleteMfaSetup checks their text against the enrollment_challenge event.
-        CompleteMfaSetup(s);
-        await VerifyStep(s, MaskedCentered(s, Capture(s), RecoveryCodeBoxes, RecoveryCodeMaskWidth, RecoveryDialogBackground),
+        CompleteMfaSetup(session);
+        await VerifyStep(session, MaskedCentered(session, Capture(session), RecoveryCodeBoxes, RecoveryCodeMaskWidth, RecoveryDialogBackground),
             name, "03-mfa-recovery-codes");
 
-        ClickUntilGone(s, ById("CloseBlack"));
-        // Fully authenticated now, so ZET's added event renames the row to the controller name.
-        WaitForController(s, By.XPath($"//Text[@Name='{identityName}']"), $"the row shows {identityName}");
-        WaitForGone(s, InIdentityRow(identityName, "MfaSetupNeeded"));
-        await VerifyStep(s, Capture(s), name, "04-enrolled-row");
-        Assert.Empty(s.Driver.FindElements(InIdentityRow(identityName, "MfaRequired")));
+        ClickUntilGone(session, ById("CloseBlack"));
+        WaitForController(session, By.XPath($"//Text[@Name='{identityName}']"), $"the row shows {identityName}");
+        WaitForGone(session, InIdentityRow(identityName, "MfaSetupNeeded"));
+        await VerifyStep(session, Capture(session), name, "04-enrolled-row");
+        Assert.Empty(session.Driver.FindElements(InIdentityRow(identityName, "MfaRequired")));
     }
 
     [Fact(Timeout = 120000)]
@@ -59,20 +55,19 @@ public class MfaEnrollmentTests
         string name = nameof(EnrollRejectsInvalidTotp);
         const string identityName = "test_mfa_verify_invalid_totp";
 
-        await using AppiumSession s = await LaunchAsync(_fixture, name);
-        AddIdentity(_fixture, s, identityName);
-        WaitForZetEventAfter(s, AddIdentityLine, ControllerConnectedEvent);
-        OpenMfaSetup(s, identityName);
-        Assert.Equal(0, (int?)WaitForZetReplyTo(s, EnableMfaLine)["Code"]);
-        TypeUntil(s, ById("SetupCode"), "000000");
-        SaveStep(s, name, "01-invalid-code-typed");
-        JObject reply = SendAndWaitForZetReply(s, VerifyMfaLine, () => WaitForId(s, "AuthSetupButton").Click());
+        await using AppiumSession session = await LaunchAsync(_fixture, name);
+        AddIdentity(_fixture, session, identityName);
+        WaitForZetEventAfter(session, AddIdentityLine, ControllerConnectedEvent);
+        OpenMfaSetup(session, identityName);
+        Assert.Equal(0, (int?)WaitForZetReplyTo(session, EnableMfaLine)["Code"]);
+        TypeUntil(session, ById("SetupCode"), "000000");
+        SaveStep(session, name, "01-invalid-code-typed");
+        JObject reply = SendAndWaitForZetReply(session, VerifyMfaLine, () => WaitForId(session, "AuthSetupButton").Click());
 
-        // ZET's failed enrollment_verification event raises the blurb, and MFAScreen closes the setup dialog.
         const string verificationEvent = "\"Op\":\"mfa\",\"Action\":\"enrollment_verification\"";
-        WaitForZetEventAfter(s, VerifyMfaLine, verificationEvent);
-        await VerifyStep(s, CaptureBlurbOnEvent(s, VerifyMfaLine, verificationEvent), name, "02-after-rejection");
-        Assert.Empty(s.Driver.FindElements(ById("SetupCode")));
+        WaitForZetEventAfter(session, VerifyMfaLine, verificationEvent);
+        await VerifyStep(session, CaptureBlurbOnEvent(session, VerifyMfaLine, verificationEvent), name, "02-after-rejection");
+        Assert.Empty(session.Driver.FindElements(ById("SetupCode")));
         Assert.Equal(500, (int?)reply["Code"]);
         Assert.Contains("the token provided was invalid", (string?)reply["Error"]);
     }

@@ -8,7 +8,7 @@ public static class FixtureBuilder
     public static JObject SortableMixed()
     {
         JObject status = SkeletonStatus();
-        JArray arr = (JArray)status["Identities"]!;
+        JArray identities = (JArray)status["Identities"]!;
         JObject[] entries = new[]
         {
             Identity("zebra-prod",    active: true,  mfaEnabled: false, mfaNeeded: false, needsExtAuth: false),
@@ -17,25 +17,25 @@ public static class FixtureBuilder
             Identity("oscar-prod",    active: true,  mfaEnabled: false, mfaNeeded: false, needsExtAuth: false),
             Identity("CharlieEdge",   active: false, mfaEnabled: false, mfaNeeded: false, needsExtAuth: true),
         };
-        foreach (JObject e in entries) arr.Add(e);
+        foreach (JObject entry in entries) identities.Add(entry);
         return status;
     }
 
     public static JObject ManyMixedIdentities(int count)
     {
         JObject status = SkeletonStatus();
-        JArray arr = (JArray)status["Identities"]!;
+        JArray identities = (JArray)status["Identities"]!;
 
-        for (int i = 0; i < count; i++)
+        for (int index = 0; index < count; index++)
         {
-            JObject id = (i % 4) switch
+            JObject identity = (index % 4) switch
             {
-                0 => Identity($"enabled-{i:D2}", active: true, mfaEnabled: false, mfaNeeded: false, needsExtAuth: false),
-                1 => Identity($"disabled-{i:D2}", active: false, mfaEnabled: false, mfaNeeded: false, needsExtAuth: false),
-                2 => Identity($"mfa-required-{i:D2}", active: true, mfaEnabled: true, mfaNeeded: true, needsExtAuth: false),
-                _ => Identity($"ext-auth-{i:D2}", active: true, mfaEnabled: false, mfaNeeded: false, needsExtAuth: true),
+                0 => Identity($"enabled-{index:D2}", active: true, mfaEnabled: false, mfaNeeded: false, needsExtAuth: false),
+                1 => Identity($"disabled-{index:D2}", active: false, mfaEnabled: false, mfaNeeded: false, needsExtAuth: false),
+                2 => Identity($"mfa-required-{index:D2}", active: true, mfaEnabled: true, mfaNeeded: true, needsExtAuth: false),
+                _ => Identity($"ext-auth-{index:D2}", active: true, mfaEnabled: false, mfaNeeded: false, needsExtAuth: true),
             };
-            arr.Add(id);
+            identities.Add(identity);
         }
         return status;
     }
@@ -47,7 +47,7 @@ public static class FixtureBuilder
         bool mfaNeeded,
         bool needsExtAuth)
     {
-        JObject o = new JObject
+        JObject identity = new JObject
         {
             ["Name"] = name,
             ["Identifier"] = $"c:\\fake\\ids\\{name}.json",
@@ -70,11 +70,11 @@ public static class FixtureBuilder
         };
         if (needsExtAuth)
         {
-            o["ExtAuthProviders"] = new JArray("keycloak", "auth0");
-            o["Config"] = new JObject { ["ztAPI"] = "https://controller.example", ["ztAPIs"] = new JArray("https://controller.example") };
-            o["ControllerVersion"] = "v2.0.0-mock";
+            identity["ExtAuthProviders"] = new JArray("keycloak", "auth0");
+            identity["Config"] = new JObject { ["ztAPI"] = "https://controller.example", ["ztAPIs"] = new JArray("https://controller.example") };
+            identity["ControllerVersion"] = "v2.0.0-mock";
         }
-        return o;
+        return identity;
     }
 
     private static JObject SkeletonStatus() => TestHelpers.Fixture("no-identities.json");

@@ -4,17 +4,30 @@ namespace ZitiDesktopEdge.UITests.MockIpc;
 
 public static class Totp
 {
-    private const string Base32Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-    private const int PeriodSeconds = 30;
     private const int Digits = 6;
 
     public static string Compute(string base32Secret, DateTimeOffset utc)
     {
-        long counter = utc.ToUnixTimeSeconds() / PeriodSeconds;
+        string base32Text = base32Secret.TrimEnd('=').ToUpperInvariant();
+        List<byte> key = new List<byte>((base32Text.Length * 5 + 7) / 8);
+        int buffer = 0, bits = 0;
+        foreach (char symbol in base32Text)
+        {
+            int symbolValue = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".IndexOf(symbol);
+            if (symbolValue < 0)
+                throw new FormatException($"'{symbol}' is not a base32 character in secret '{base32Secret}'");
+            buffer = (buffer << 5) | symbolValue;
+            bits += 5;
+            if (bits >= 8)
+            {
+                bits -= 8;
+                key.Add((byte)((buffer >> bits) & 0xFF));
+            }
+        }
+        long counter = utc.ToUnixTimeSeconds() / 30;
         byte[] counterBytes = new byte[8];
-        for (int i = 7; i >= 0; i--) { counterBytes[i] = (byte)(counter & 0xFF); counter >>= 8; }
-        byte[] key = Base32Decode(base32Secret);
-        using HMACSHA1 hmac = new HMACSHA1(key);
+        for (int byteIndex = 7; byteIndex >= 0; byteIndex--) { counterBytes[byteIndex] = (byte)(counter & 0xFF); counter >>= 8; }
+        using HMACSHA1 hmac = new HMACSHA1(key.ToArray());
         byte[] hash = hmac.ComputeHash(counterBytes);
         int offset = hash[hash.Length - 1] & 0x0F;
         int binary = ((hash[offset] & 0x7F) << 24)
@@ -23,26 +36,5 @@ public static class Totp
                    | (hash[offset + 3] & 0xFF);
         int otp = binary % (int)Math.Pow(10, Digits);
         return otp.ToString(new string('0', Digits));
-    }
-
-    private static byte[] Base32Decode(string s)
-    {
-        string text = s.TrimEnd('=').ToUpperInvariant();
-        List<byte> bytes = new List<byte>((text.Length * 5 + 7) / 8);
-        int buffer = 0, bits = 0;
-        foreach (char c in text)
-        {
-            int v = Base32Alphabet.IndexOf(c);
-            if (v < 0)
-                throw new FormatException($"'{c}' is not a base32 character in secret '{s}'");
-            buffer = (buffer << 5) | v;
-            bits += 5;
-            if (bits >= 8)
-            {
-                bits -= 8;
-                bytes.Add((byte)((buffer >> bits) & 0xFF));
-            }
-        }
-        return bytes.ToArray();
     }
 }

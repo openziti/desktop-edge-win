@@ -25,10 +25,4 @@ public static class Step
         else
             Log($"{sender}: sending {command["Command"]} for \"{identifier}\"");
     }
-
-    public static void ZetReplied(JObject reply) =>
-        Log($"ZET: reply Success:{reply["Success"]} Code:{reply["Code"]}");
-
-    public static void ZetEvent(JObject evt) =>
-        Log($"ZET: event {evt["Op"]} {evt["Action"]}");
 }

@@ -1,7 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Globalization;
+using System.Management;
 using System.Text.RegularExpressions;
 using ImageMagick;
 using ImageMagick.Drawing;
@@ -15,17 +15,18 @@ namespace ZitiDesktopEdge.UITests.Tests;
 
 public static class TestHelpers
 {
-    /// <summary>Moving the window up by this clears the tray's default position.</summary>
-    public const int TestWindowMoveUpPx = 150;
-
     // Once per session, since detaching collapses DetachButton. Never resize: that turns off SizeToContent.
-    public static void PrepareTestWindow(AppiumSession s)
+    public static void PrepareTestWindow(AppiumSession session)
     {
-        OpenMainMenu(s);
+        OpenMainMenu(session);
         By detach = ById("DetachButton");
-        ClickAt(s, WaitFor(s, detach));
-        WaitForGone(s, detach);
-        s.MoveWindowBy(0, -TestWindowMoveUpPx);
+        ClickAt(session, WaitFor(session, detach));
+        WaitForGone(session, detach);
+        // Moving up 150px clears the tray's default position. The top stays at or below 0 because an off-screen area
+        // swallows clicks.
+        Rectangle bounds = session.WindowBounds();
+        Win32Window.SetWindowPos(session.WindowHandle, IntPtr.Zero, bounds.Left, Math.Max(0, bounds.Top - 150),
+            bounds.Width, bounds.Height, Win32Window.SWP_NOZORDER | Win32Window.SWP_NOACTIVATE);
     }
 
     public static string RepoRoot() =>
@@ -43,12 +44,6 @@ public static class TestHelpers
     public static JObject Fixture(string fileName) =>
         JObject.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "MockIpc", "Fixtures", fileName)));
 
-    // StyledButton's hover darkening fades back over 0.3s after the cursor leaves.
-    private const int HoverFadeSettleMs = 400;
-
-    // The blurb's frames settle about 0.8s after the relay line, and it starts hiding at 5s.
-    private const int BlurbSettleMs = 1000;
-
     // Longer than a frame, so an animation still running changes the next capture.
     private const int StableFrameGapMs = 200;
     // A count, not a time limit, so a slow runner gets as many comparisons as a fast one.
@@ -64,26 +59,28 @@ public static class TestHelpers
 
     public static void Pause(int milliseconds) => Pause(TimeSpan.FromMilliseconds(milliseconds));
 
-    public static byte[] Capture(AppiumSession s) => SettledCapture(s, s.CaptureWindow);
+    public static byte[] Capture(AppiumSession session) => SettledCapture(session, session.CaptureWindow);
 
-    public static byte[] CaptureWithPopups(AppiumSession s) => SettledCapture(s, s.CaptureWindowWithPopups);
+    public static byte[] CaptureWithPopups(AppiumSession session) => SettledCapture(session, session.CaptureWindowWithPopups);
 
-    private static byte[] SettledCapture(AppiumSession s, Func<byte[]> capture)
+    private static byte[] SettledCapture(AppiumSession session, Func<byte[]> capture)
     {
         // Before the settle, so the hover fade back on the element a click left the cursor over ends inside it.
-        s.MoveCursorOffWindow();
-        Pause(HoverFadeSettleMs);
+        session.MoveCursorOffWindow();
+        // StyledButton's hover darkening fades back over 0.3s after the cursor leaves.
+        Pause(400);
         return StableCapture(capture);
     }
 
     // Settles from shownAtUtc, not now, because a WinAppDriver click can return after ZET already replied.
-    public static byte[] CaptureBlurb(AppiumSession s, DateTime shownAtUtc)
+    public static byte[] CaptureBlurb(AppiumSession session, DateTime shownAtUtc)
     {
-        s.MoveCursorOffWindow();
-        TimeSpan settleLeft = shownAtUtc.AddMilliseconds(BlurbSettleMs) - DateTime.UtcNow;
+        session.MoveCursorOffWindow();
+        // The blurb's frames settle about 0.8s after the relay line, and it starts hiding at 5s.
+        TimeSpan settleLeft = shownAtUtc.AddMilliseconds(1000) - DateTime.UtcNow;
         if (settleLeft > TimeSpan.Zero)
             Pause(settleLeft);
-        byte[] png = StableCapture(s.CaptureWindow);
+        byte[] png = StableCapture(session.CaptureWindow);
         Step.Log($"the blurb capture settled {(DateTime.UtcNow - shownAtUtc).TotalMilliseconds:F0}ms after the relay line");
         return png;
     }
@@ -116,40 +113,20 @@ public static class TestHelpers
 
     public static void WriteTestJwt(string jwt) => File.WriteAllText(TestJwtPath, jwt);
 
-    public static void ClickAddIdentityWithJwt(AppiumSession s)
+    public static void ClickAddIdentityWithJwt(AppiumSession session)
     {
-        ClickAddIdentityMenuItem(s, "With JWT");
-        ChooseFile(s, "Open", TestJwtPath);
+        ClickAddIdentityMenuItem(session, "With JWT");
+        FileOpenDialog.Choose(session, "Open", TestJwtPath);
     }
 
-    private static readonly TimeSpan FileDialogTimeout = TimeSpan.FromSeconds(15);
-    // A first Open dialog can take over 15s to appear.
-    private static readonly TimeSpan FileDialogOpenTimeout = TimeSpan.FromSeconds(40);
-
-    /// <summary>Chooses <paramref name="path"/> in the Open dialog titled <paramref name="title"/> a click just opened.</summary>
-    public static void ChooseFile(AppiumSession s, string title, string path)
-    {
-        IntPtr? dialog = null;
-        // No WinAppDriver query until the dialog is up: one sent while it opens can lose the session's window.
-        WaitUntil(s, $"the '{title}' dialog is ready", FileDialogOpenTimeout, () =>
-        {
-            dialog = FileOpenDialog.Find(s.ProcessId, title);
-            return dialog != null && FileOpenDialog.IsReady(dialog.Value);
-        });
-        FileOpenDialog.Choose(dialog!.Value, path, FileDialogTimeout);
-        s.StopCaretBlinkAgain();
-    }
-
-    public static void ClickAddIdentityWithUrl(AppiumSession s) => ClickAddIdentityMenuItem(s, "With URL");
-
-    private static void ClickAddIdentityMenuItem(AppiumSession s, string menuItem)
+    public static void ClickAddIdentityMenuItem(AppiumSession session, string menuItem)
     {
         // AddIdAreaButton has no UIA peer. Its "ADD" label does, and the MouseLeftButtonUp bubbles up to it.
-        IWebElement addText = WaitFor(s, By.XPath("//Text[@Name='ADD']"));
-        ClickAt(s, addText);
+        IWebElement addText = WaitFor(session, By.XPath("//Text[@Name='ADD']"));
+        ClickAt(session, addText);
 
-        IWebElement item = WaitFor(s, By.XPath($"//*[@Name='{menuItem}']"));
-        ClickAt(s, item);
+        IWebElement item = WaitFor(session, By.XPath($"//*[@Name='{menuItem}']"));
+        ClickAt(session, item);
     }
 
     public static By InIdentityRow(string identityName, string automationId) =>
@@ -175,39 +152,6 @@ public static class TestHelpers
     public static string UiLogPath(string testName) =>
         Path.Combine(TestResultsDir(), "logs", testName, "ui.log");
 
-    // The monitor pipes have no relay, so ui.log is the only record of the reply.
-    public static DateTime? MonitorReplyAtUtc(string testName, string op)
-    {
-        string path = UiLogPath(testName);
-        string[] lines;
-        using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-        using (StreamReader reader = new StreamReader(fs))
-            lines = reader.ReadToEnd().Split('\n');
-        int sent = Array.FindLastIndex(lines,
-            l => l.Contains("UI-MonitorClient-send-monitor:") && l.Contains($"\"Op\":\"{op}\""));
-        if (sent < 0) return null;
-        int reply = Array.FindIndex(lines, sent + 1, l => l.Contains("UI-MonitorClient-read-monitor:"));
-        if (reply < 0) return null;
-        return UiLogLineLocalTime(lines[reply], path).ToUniversalTime();
-    }
-
-    // The layout depends on whether the machine has the app installed. Both are local time, the Z included.
-    private static DateTime UiLogLineLocalTime(string line, string path)
-    {
-        Match configured = Regex.Match(line, @"^\[(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3})Z\]");
-        if (configured.Success)
-            return DateTime.ParseExact(configured.Groups[1].Value, "yyyy-MM-ddTHH:mm:ss.fff",
-                CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal);
-        Match nlogDefault = Regex.Match(line, @"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{4})\|");
-        if (nlogDefault.Success)
-            return DateTime.ParseExact(nlogDefault.Groups[1].Value, "yyyy-MM-dd HH:mm:ss.ffff",
-                CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal);
-        throw new FormatException($"ui.log line has no timestamp in a known layout: '{line}' in {path}");
-    }
-
-    public static string MonitorLogPath(string testName) =>
-        Path.Combine(TestResultsDir(), "logs", testName, "monitor.log");
-
     public static void SaveStep(byte[] png, string testName, string stepName)
     {
         WriteReviewScreenshot(Path.Combine(TestResultsDir(), "screenshots", testName),
@@ -215,76 +159,65 @@ public static class TestHelpers
         Step.Log($"saved step {testName}/{stepName}");
     }
 
-    public static void SaveStep(AppiumSession s, string testName, string stepName) =>
-        SaveStep(Capture(s), testName, stepName);
+    public static void SaveStep(AppiumSession session, string testName, string stepName) =>
+        SaveStep(Capture(session), testName, stepName);
 
     // Await it before the screen changes: the comparison looks up VaryingText on the live window.
-    public static Task VerifyStep(AppiumSession s, byte[] png, string testName, string stepName) =>
-        VerifyStepAt(s, Size.Empty, png, testName, stepName);
+    public static Task VerifyStep(AppiumSession session, byte[] png, string testName, string stepName) =>
+        VerifyStepAt(session, Size.Empty, png, testName, stepName);
 
     // Call while the popups are still open, since their offset and VaryingText are read from the live window.
-    public static Task VerifyPopupStep(AppiumSession s, byte[] png, string testName, string stepName) =>
-        VerifyStepAt(s, s.WindowOffsetWithPopups(), png, testName, stepName);
+    public static Task VerifyPopupStep(AppiumSession session, byte[] png, string testName, string stepName) =>
+        VerifyStepAt(session, session.WindowOffsetWithPopups(), png, testName, stepName);
 
-    private static Task VerifyStepAt(AppiumSession s, Size windowOffset, byte[] png, string testName,
+    private static Task VerifyStepAt(AppiumSession session, Size windowOffset, byte[] png, string testName,
         string stepName)
     {
         SaveStep(png, testName, stepName);
         string screen = stepName.Substring(stepName.IndexOf('-') + 1);
-        return CompareToBaseline($"{testName}_{screen}", png,
-            verified => CompareSkippingVaryingText(s, windowOffset, png, verified));
-    }
-
-    // UIA has lagged a rebuilt identity row by up to 6s.
-    private static readonly TimeSpan VaryingTextTimeout = TimeSpan.FromSeconds(10);
-
-    // UIA can leave out a rebuilt row's elements for seconds, so the lookup repeats while the comparison fails.
-    private static async Task<BaselineComparison> CompareSkippingVaryingText(AppiumSession s, Size windowOffset,
-        byte[] receivedPng, byte[] verifiedPng)
-    {
-        DateTime deadline = DateTime.UtcNow + VaryingTextTimeout;
-        int lookups = 0;
-        while (true)
+        // UIA can leave out a rebuilt row's elements for seconds, so the lookup repeats while the comparison fails.
+        return CompareToBaseline($"{testName}_{screen}", png, async verified =>
         {
-            lookups++;
-            try
+            // UIA has lagged a rebuilt identity row by up to 6s.
+            DateTime deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+            int lookups = 0;
+            while (true)
             {
-                IReadOnlyList<ShownText> skipped = ShownVaryingText(s, windowOffset);
-                BaselineComparison result = CompareChangedPixels(receivedPng, verifiedPng,
-                    skipped.Select(shown => shown.Bounds).ToList());
-                if (result.Matches || s.VaryingText.Count == 0 || DateTime.UtcNow >= deadline)
+                lookups++;
+                try
                 {
-                    Step.Log($"skipped varying text after {lookups} lookups ["
-                        + string.Join(", ", skipped.Select(shown => $"'{shown.Text}' at {shown.Bounds}")) + "]");
-                    return result;
+                    // UIA lists a replaced row's elements at zero size for a while. Empty text is left for the
+                    // baseline to compare.
+                    List<ShownText> skipped = new List<ShownText>();
+                    foreach (VaryingText varying in session.VaryingText)
+                    {
+                        foreach (AppiumElement element in session.Driver.FindElements(varying.Elements))
+                        {
+                            Rectangle area = new Rectangle(Point.Add(element.Location, windowOffset), element.Size);
+                            string text = element.Text;
+                            if (area.Width > 0 && area.Height > 0 && text.Length > 0)
+                            {
+                                Assert.Matches(varying.Expected, text);
+                                skipped.Add(new ShownText(text, area));
+                            }
+                        }
+                    }
+                    BaselineComparison result = CompareChangedPixels(png, verified,
+                        skipped.Select(shown => shown.Bounds).ToList());
+                    if (result.Matches || session.VaryingText.Count == 0 || DateTime.UtcNow >= deadline)
+                    {
+                        Step.Log($"skipped varying text after {lookups} lookups ["
+                            + string.Join(", ", skipped.Select(shown => $"'{shown.Text}' at {shown.Bounds}")) + "]");
+                        return result;
+                    }
                 }
-            }
-            // The row was rebuilt during the lookup.
-            catch (StaleElementReferenceException) when (DateTime.UtcNow < deadline)
-            {
-            }
-            await Task.Delay(500, TestContext.Current.CancellationToken);
-        }
-    }
-
-    // UIA lists a replaced row's elements at zero size for a while. Empty text is left for the baseline to compare.
-    private static IReadOnlyList<ShownText> ShownVaryingText(AppiumSession s, Size windowOffset)
-    {
-        List<ShownText> shown = new List<ShownText>();
-        foreach (VaryingText varying in s.VaryingText)
-        {
-            foreach (AppiumElement element in s.Driver.FindElements(varying.Elements))
-            {
-                Rectangle area = new Rectangle(Point.Add(element.Location, windowOffset), element.Size);
-                string text = element.Text;
-                if (area.Width > 0 && area.Height > 0 && text.Length > 0)
+                // The row was rebuilt during the lookup.
+                catch (StaleElementReferenceException) when (DateTime.UtcNow < deadline)
                 {
-                    Assert.Matches(varying.Expected, text);
-                    shown.Add(new ShownText(text, area));
                 }
+                await Task.Delay(500, TestContext.Current.CancellationToken);
             }
-        }
-        return shown;
+        });
     }
 
     private sealed record ShownText(string Text, Rectangle Bounds);
@@ -304,18 +237,18 @@ public static class TestHelpers
     }
 
     // No test's await using holds the session yet, so a throw would leave its app open over every later test.
-    public static async Task<AppiumSession> PrepareOrDispose(AppiumSession s, Action<AppiumSession> prepare)
+    public static async Task<AppiumSession> PrepareOrDispose(AppiumSession session, Action<AppiumSession> prepare)
     {
         try
         {
-            prepare(s);
-            return s;
+            prepare(session);
+            return session;
         }
         catch (Exception prepareError)
         {
             try
             {
-                await s.DisposeAsync();
+                await session.DisposeAsync();
             }
             catch (Exception disposeError)
             {
@@ -326,22 +259,22 @@ public static class TestHelpers
     }
 
     // The "MAIN" text's click bubbles to the StackPanel's ShowMenu handler.
-    public static void OpenMainMenu(AppiumSession s) =>
-        ClickUntil(s, By.XPath("//Text[@Name='MAIN']"), By.XPath("//*[@Name='Advanced Settings']"));
+    public static void OpenMainMenu(AppiumSession session) =>
+        ClickUntil(session, By.XPath("//Text[@Name='MAIN']"), By.XPath("//*[@Name='Advanced Settings']"));
 
     // A count, not a deadline: one slow lookup plus a failed click can take over 6s on a CI runner.
     private const int MaxClicks = 4;
 
     // Navigation clicks only: WPF can drop a WinAppDriver click, and a retried toggle flips twice.
-    public static void ClickUntil(AppiumSession s, By target, By expected) =>
-        ClickUntil(s, target, $"{expected} is displayed", () => IsDisplayed(s, expected));
+    public static void ClickUntil(AppiumSession session, By target, By expected) =>
+        ClickUntil(session, target, $"{expected} is displayed", () => IsDisplayed(session, expected));
 
-    public static void ClickUntil(AppiumSession s, By target, string description, Func<bool> condition)
+    public static void ClickUntil(AppiumSession session, By target, string description, Func<bool> condition)
     {
         int clicks = 0;
         while (clicks < MaxClicks)
         {
-            ClickAtUnconfirmed(s, WaitFor(s, target), target);
+            ClickAtUnconfirmed(session, WaitFor(session, target), target);
             clicks++;
             // Long enough for a slow animation, so a registered click is never repeated.
             DateTime probe = DateTime.UtcNow.AddMilliseconds(1500);
@@ -355,23 +288,23 @@ public static class TestHelpers
                 Pause(40);
             }
         }
-        string diagnostics = SaveTimeoutDiagnostics(s);
+        string diagnostics = SaveTimeoutDiagnostics(session);
         throw new TimeoutException($"Timed out waiting until {description} after {clicks} clicks on {target}. {diagnostics}");
     }
 
     // WinAppDriver can drop keystrokes.
-    public static void TypeUntil(AppiumSession s, By box, string text)
+    public static void TypeUntil(AppiumSession session, By box, string text)
     {
         const int maxAttempts = 3;
         string typed = "";
         for (int attempt = 1; attempt <= maxAttempts; attempt++)
         {
-            IWebElement el = WaitFor(s, box);
+            IWebElement textBox = WaitFor(session, box);
             // IWebElement.Clear() doesn't reliably fire WPF's TextChanged.
-            el.SendKeys(Keys.Control + "a" + Keys.Control);
-            el.SendKeys(Keys.Delete);
-            el.SendKeys(text);
-            typed = el.Text;
+            textBox.SendKeys(Keys.Control + "a" + Keys.Control);
+            textBox.SendKeys(Keys.Delete);
+            textBox.SendKeys(text);
+            typed = textBox.Text;
             if (typed == text)
             {
                 Step.Log($"typed into {box} ({attempt} attempts)");
@@ -379,16 +312,16 @@ public static class TestHelpers
             }
             Step.Log($"typed '{text}' into {box} but it reads '{typed}', retyping");
         }
-        string diagnostics = SaveTimeoutDiagnostics(s);
+        string diagnostics = SaveTimeoutDiagnostics(session);
         throw new InvalidOperationException(
             $"{box} read '{typed}' instead of '{text}' after {maxAttempts} attempts. {diagnostics}");
     }
 
-    private static bool IsDisplayed(AppiumSession s, By by)
+    private static bool IsDisplayed(AppiumSession session, By target)
     {
         try
         {
-            return s.Driver.FindElements(by).Any(e => e.Displayed);
+            return session.Driver.FindElements(target).Any(element => element.Displayed);
         }
         catch (StaleElementReferenceException)
         {
@@ -396,18 +329,16 @@ public static class TestHelpers
         }
     }
 
-    public static string TextById(AppiumSession s, string id) =>
-        s.Driver.FindElements(ById(id)).FirstOrDefault()?.Text ?? "";
+    public static string TextById(AppiumSession session, string id) =>
+        session.Driver.FindElements(ById(id)).FirstOrDefault()?.Text ?? "";
 
-    public static void WaitForText(AppiumSession s, string id, string text, TimeSpan timeout) =>
-        WaitUntil(s, $"{id} shows {text}", timeout, () => TextById(s, id) == text);
+    public static void WaitForText(AppiumSession session, string id, string text, TimeSpan timeout) =>
+        WaitUntil(session, $"{id} shows {text}", timeout, () => TextById(session, id) == text);
 
     // An added identity's row can take about 5s to render.
-    private static readonly TimeSpan ElementTimeout = TimeSpan.FromSeconds(6);
+    public static IWebElement WaitFor(AppiumSession session, By target) => WaitFor(session, target, TimeSpan.FromSeconds(6));
 
-    public static IWebElement WaitFor(AppiumSession s, By by) => WaitFor(s, by, ElementTimeout);
-
-    public static IWebElement WaitFor(AppiumSession s, By by, TimeSpan timeout)
+    public static IWebElement WaitFor(AppiumSession session, By target, TimeSpan timeout)
     {
         // FindElements, not FindElement: a miss that throws across WinAppDriver's HTTP boundary costs about 500ms.
         DateTime start = DateTime.UtcNow;
@@ -419,12 +350,12 @@ public static class TestHelpers
             DateTime lookupStart = DateTime.UtcNow;
             try
             {
-                ReadOnlyCollection<AppiumElement> els = s.Driver.FindElements(by);
-                lastMatchCount = els.Count;
-                if (els.Count > 0 && els[0].Displayed)
+                ReadOnlyCollection<AppiumElement> matches = session.Driver.FindElements(target);
+                lastMatchCount = matches.Count;
+                if (matches.Count > 0 && matches[0].Displayed)
                 {
-                    Step.Log($"saw {by} after {(DateTime.UtcNow - start).TotalMilliseconds:F0}ms");
-                    return els[0];
+                    Step.Log($"saw {target} after {(DateTime.UtcNow - start).TotalMilliseconds:F0}ms");
+                    return matches[0];
                 }
             }
             catch (StaleElementReferenceException) { }
@@ -432,18 +363,18 @@ public static class TestHelpers
             retryAfterOverrun = !retryAfterOverrun && DateTime.UtcNow - lookupStart > timeout;
             Pause(40);
         }
-        string diagnostics = SaveTimeoutDiagnostics(s);
+        string diagnostics = SaveTimeoutDiagnostics(session);
         throw new TimeoutException(
-            $"Timed out waiting for {by} after {timeout.TotalMilliseconds}ms ({lastMatchCount} matched on the last try but none displayed). {diagnostics}");
+            $"Timed out waiting for {target} after {timeout.TotalMilliseconds}ms ({lastMatchCount} matched on the last try but none displayed). {diagnostics}");
     }
 
     // The app usually answers a click within a second, and sometimes takes several.
     public static readonly TimeSpan AppResponseTimeout = TimeSpan.FromSeconds(5);
 
-    public static void WaitForGone(AppiumSession s, By by) =>
-        WaitUntil(s, $"{by} is gone", AppResponseTimeout, () => s.Driver.FindElements(by).Count == 0);
+    public static void WaitForGone(AppiumSession session, By target) =>
+        WaitUntil(session, $"{target} is gone", AppResponseTimeout, () => session.Driver.FindElements(target).Count == 0);
 
-    public static void WaitUntil(AppiumSession s, string description, TimeSpan timeout, Func<bool> condition)
+    public static void WaitUntil(AppiumSession session, string description, TimeSpan timeout, Func<bool> condition)
     {
         DateTime start = DateTime.UtcNow;
         DateTime deadline = start + timeout;
@@ -460,38 +391,52 @@ public static class TestHelpers
             catch (StaleElementReferenceException) { }
             Pause(50);
         }
-        string diagnostics = SaveTimeoutDiagnostics(s);
+        string diagnostics = SaveTimeoutDiagnostics(session);
         throw new TimeoutException($"Timed out after {timeout.TotalSeconds}s waiting until {description}. {diagnostics}");
     }
 
-    private static string WindowLine(TopLevelWindow w, IntPtr appWindow)
-    {
-        string foreground;
-        if (w.IsForeground)
-            foreground = "*";
-        else
-            foreground = " ";
-        string line = $"{foreground} {w.Handle} pid={w.ProcessId} {w.ProcessName} {w.Bounds} '{w.Title}'";
-        if (w.Handle == appWindow)
-            return line + " (app under test)";
-        return line;
-    }
-
-    public static string SaveTimeoutDiagnostics(AppiumSession s)
+    public static string SaveTimeoutDiagnostics(AppiumSession session)
     {
         string stamp = DateTime.UtcNow.ToString("HHmmss-fff");
         string dir = Path.Combine(TestResultsDir(), "screenshots", "timeouts");
         try
         {
             Directory.CreateDirectory(dir);
-            File.WriteAllText(Path.Combine(dir, $"{stamp}-page-source.xml"), s.Driver.PageSource);
+            File.WriteAllText(Path.Combine(dir, $"{stamp}-page-source.xml"), session.Driver.PageSource);
+            using ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT ProcessId, ParentProcessId, " +
+                "CreationDate, CommandLine FROM Win32_Process WHERE Name = 'ZitiDesktopEdge.exe'");
+            using ManagementObjectCollection processes = searcher.Get();
             File.WriteAllLines(Path.Combine(dir, $"{stamp}-windows.txt"),
-                AppiumSession.TopLevelWindows().Select(w => WindowLine(w, s.WindowHandle))
-                .Prepend($"app under test {s.WindowHandle} visible={s.IsWindowVisible}, * marks the foreground window")
-                .Concat(AppiumSession.ProcessOrigins("ZitiDesktopEdge.exe").Select(p =>
-                    $"ZitiDesktopEdge pid={p.ProcessId} started={p.CreationDate} parent={p.ParentProcessId} {p.ParentName} '{p.CommandLine}'")));
-            File.WriteAllBytes(Path.Combine(dir, $"{stamp}-desktop.png"), AppiumSession.CaptureDesktop());
-            File.WriteAllBytes(Path.Combine(dir, $"{stamp}-window.png"), s.CaptureWindow());
+                AppiumSession.TopLevelWindows().Select(window =>
+                {
+                    string foreground;
+                    if (window.IsForeground)
+                        foreground = "*";
+                    else
+                        foreground = " ";
+                    string line = $"{foreground} {window.Handle} pid={window.ProcessId} {window.ProcessName} {window.Bounds} '{window.Title}'";
+                    if (window.Handle == session.WindowHandle)
+                        return line + " (app under test)";
+                    return line;
+                })
+                .Prepend($"app under test {session.WindowHandle} visible={session.IsWindowVisible}, * marks the foreground window")
+                .Concat(processes.Cast<ManagementObject>().Select(process =>
+                {
+                    int parent = (int)(uint)process["ParentProcessId"];
+                    return $"ZitiDesktopEdge pid={(int)(uint)process["ProcessId"]} started={(string?)process["CreationDate"] ?? ""} " +
+                        $"parent={parent} {AppiumSession.ProcessName(parent)} '{(string?)process["CommandLine"] ?? ""}'";
+                })));
+            Rectangle screen = new Rectangle(0, 0, Win32Window.GetSystemMetrics(Win32Window.SM_CXSCREEN),
+                Win32Window.GetSystemMetrics(Win32Window.SM_CYSCREEN));
+            using (Bitmap desktop = new Bitmap(screen.Width, screen.Height, PixelFormat.Format32bppArgb))
+            using (MemoryStream desktopPng = new MemoryStream())
+            {
+                using (Graphics graphics = Graphics.FromImage(desktop))
+                    graphics.CopyFromScreen(screen.Location, Point.Empty, screen.Size);
+                desktop.Save(desktopPng, ImageFormat.Png);
+                File.WriteAllBytes(Path.Combine(dir, $"{stamp}-desktop.png"), desktopPng.ToArray());
+            }
+            File.WriteAllBytes(Path.Combine(dir, $"{stamp}-window.png"), session.CaptureWindow());
             return $"Diagnostics saved as {dir}\\{stamp}-*.";
         }
         catch (Exception ex) when (ex is WebDriverException or IOException or System.ComponentModel.Win32Exception
@@ -501,38 +446,38 @@ public static class TestHelpers
         }
     }
 
-    public static IWebElement WaitForId(AppiumSession s, string id) =>
-        WaitFor(s, ById(id));
+    public static IWebElement WaitForId(AppiumSession session, string id) =>
+        WaitFor(session, ById(id));
 
     // A touch tap reaches WPF elements with no UIA Invoke pattern, and WinAppDriver's actions take only pen and touch.
-    public static void ClickAt(AppiumSession s, IWebElement el)
+    public static void ClickAt(AppiumSession session, IWebElement element)
     {
         try
         {
-            el.Click();
+            element.Click();
             return;
         }
         catch (ElementNotInteractableException)
         {
         }
 
-        int cx = el.Location.X + (el.Size.Width / 2);
-        int cy = el.Location.Y + (el.Size.Height / 2);
+        int centerX = element.Location.X + (element.Size.Width / 2);
+        int centerY = element.Location.Y + (element.Size.Height / 2);
         PointerInputDevice touch = new PointerInputDevice(PointerKind.Touch, "touch-click");
-        ActionSequence seq = new ActionSequence(touch, 0);
-        seq.AddAction(touch.CreatePointerMove(CoordinateOrigin.Viewport, cx, cy, TimeSpan.Zero));
-        seq.AddAction(touch.CreatePointerDown(MouseButton.Touch));
-        seq.AddAction(touch.CreatePause(TimeSpan.FromMilliseconds(40)));
-        seq.AddAction(touch.CreatePointerUp(MouseButton.Touch));
-        ((IActionExecutor)s.Driver).PerformActions(new List<ActionSequence> { seq });
+        ActionSequence tap = new ActionSequence(touch, 0);
+        tap.AddAction(touch.CreatePointerMove(CoordinateOrigin.Viewport, centerX, centerY, TimeSpan.Zero));
+        tap.AddAction(touch.CreatePointerDown(MouseButton.Touch));
+        tap.AddAction(touch.CreatePause(TimeSpan.FromMilliseconds(40)));
+        tap.AddAction(touch.CreatePointerUp(MouseButton.Touch));
+        ((IActionExecutor)session.Driver).PerformActions(new List<ActionSequence> { tap });
     }
 
     // WinAppDriver can fail a click with a bare "unknown error" after about 3s, so the caller's condition decides.
-    private static void ClickAtUnconfirmed(AppiumSession s, IWebElement el, By target)
+    private static void ClickAtUnconfirmed(AppiumSession session, IWebElement element, By target)
     {
         try
         {
-            ClickAt(s, el);
+            ClickAt(session, element);
         }
         // Only the base type: its subclasses, such as a stale or missing element, name the cause and still throw.
         catch (WebDriverException ex) when (ex.GetType() == typeof(WebDriverException))
@@ -542,67 +487,66 @@ public static class TestHelpers
     }
 
     // Collapsed arrows are out of the tree, so one union XPath finds the active one in a single round trip.
-    public static (string column, string arrow) ActiveSortArrow(AppiumSession s)
+    public static (string column, string arrow) ActiveSortArrow(AppiumSession session)
     {
-        ReadOnlyCollection<AppiumElement> arrows = s.Driver.FindElements(By.XPath(
+        ReadOnlyCollection<AppiumElement> arrows = session.Driver.FindElements(By.XPath(
             "//*[@AutomationId='SortByStatusArrow'] | " +
             "//*[@AutomationId='SortByNameArrow'] | " +
             "//*[@AutomationId='SortByServicesArrow']"));
         if (arrows.Count == 0) return ("", "");
-        AppiumElement el = arrows[0];
-        string id = el.GetAttribute("AutomationId") ?? "";
-        string col = id switch
+        AppiumElement activeArrow = arrows[0];
+        string id = activeArrow.GetAttribute("AutomationId") ?? "";
+        string column = id switch
         {
             "SortByStatusArrow" => "Status",
             "SortByNameArrow" => "Name",
             "SortByServicesArrow" => "Services",
             _ => throw new InvalidOperationException($"the sort arrow XPath matched an element with AutomationId '{id}'"),
         };
-        return (col, el.Text ?? "");
+        return (column, activeArrow.Text ?? "");
     }
 
     // WinAppDriver's page source writes AutomationId before Name.
-    private static readonly Regex IdNameThenName = new Regex("AutomationId=\"IdName\"[^>]*?\\bName=\"([^\"]+)\"");
-
-    public static List<string> ListedNames(AppiumSession s) =>
-        IdNameThenName.Matches(s.Driver.PageSource).Select(m => m.Groups[1].Value).ToList();
+    public static List<string> ListedNames(AppiumSession session) =>
+        Regex.Matches(session.Driver.PageSource, "AutomationId=\"IdName\"[^>]*?\\bName=\"([^\"]+)\"")
+            .Select(match => match.Groups[1].Value).ToList();
 
     // The sort persists in user.config, so it would leak between tests into baselines.
-    public static void SortAscending(AppiumSession s, string column)
+    public static void SortAscending(AppiumSession session, string column)
     {
-        IWebElement header = WaitForId(s, $"SortBy{column}");
-        if (ActiveSortArrow(s).column != column)
-            ClickSortHeader(s, header, (column, "▼"));
-        if (ActiveSortArrow(s).arrow != "▲")
-            ClickSortHeader(s, header, (column, "▲"));
+        IWebElement header = WaitForId(session, $"SortBy{column}");
+        if (ActiveSortArrow(session).column != column)
+            ClickSortHeader(session, header, (column, "▼"));
+        if (ActiveSortArrow(session).arrow != "▲")
+            ClickSortHeader(session, header, (column, "▲"));
     }
 
     // Never retried: a second click flips the direction again.
-    public static void ClickSortHeader(AppiumSession s, IWebElement header, (string column, string arrow) expected)
+    public static void ClickSortHeader(AppiumSession session, IWebElement header, (string column, string arrow) expected)
     {
-        ClickAt(s, header);
-        WaitUntil(s, $"the list sorts by {expected.column} {expected.arrow}", AppResponseTimeout,
-            () => ActiveSortArrow(s) == expected);
+        ClickAt(session, header);
+        WaitUntil(session, $"the list sorts by {expected.column} {expected.arrow}", AppResponseTimeout,
+            () => ActiveSortArrow(session) == expected);
     }
 
     // Not IdName: every IdentityItem row has one too, so it shows before details opens.
-    public static void OpenIdentityDetails(AppiumSession s, string identityName) =>
-        ClickUntil(s, By.XPath(IdentityRowXPath(identityName)), ById("IdentityDetailsClose"));
+    public static void OpenIdentityDetails(AppiumSession session, string identityName) =>
+        ClickUntil(session, By.XPath(IdentityRowXPath(identityName)), ById("IdentityDetailsClose"));
 
     // The UIA tree can take 700-1700ms to drop a closed element, hence the 2s probe.
-    public static void ClickUntilGone(AppiumSession s, By target)
+    public static void ClickUntilGone(AppiumSession session, By target)
     {
         int clicks = 0;
         while (clicks < MaxClicks)
         {
-            IWebElement? shown = s.Driver.FindElements(target).FirstOrDefault(e => e.Displayed);
+            IWebElement? shown = session.Driver.FindElements(target).FirstOrDefault(element => element.Displayed);
             if (shown == null) return;
-            ClickAtUnconfirmed(s, shown, target);
+            ClickAtUnconfirmed(session, shown, target);
             clicks++;
             DateTime probe = DateTime.UtcNow.AddMilliseconds(2000);
             while (DateTime.UtcNow < probe)
             {
-                if (!IsDisplayed(s, target))
+                if (!IsDisplayed(session, target))
                 {
                     Step.Log($"clicked {target} until it was gone ({clicks} clicks)");
                     return;
@@ -610,20 +554,12 @@ public static class TestHelpers
                 Pause(40);
             }
         }
-        string diagnostics = SaveTimeoutDiagnostics(s);
+        string diagnostics = SaveTimeoutDiagnostics(session);
         throw new TimeoutException($"{target} still shown after {clicks} clicks. {diagnostics}");
     }
 
-    public static void DismissWelcome(AppiumSession s)
-    {
-        ClickAt(s, WaitFor(s, WelcomeClose));
-        WaitForGone(s, WelcomeClose);
-        // A hidden docked window drops every child from the tree too, so check the landing page shows.
-        WaitFor(s, By.XPath("//Text[@Name='MAIN']"));
-    }
-
-    public static void CloseIdentityDetails(AppiumSession s) =>
-        ClickUntilGone(s, ById("IdentityDetailsClose"));
+    public static void CloseIdentityDetails(AppiumSession session) =>
+        ClickUntilGone(session, ById("IdentityDetailsClose"));
 
     public static Task VerifyPng(byte[] png, string testName)
     {
@@ -632,37 +568,35 @@ public static class TestHelpers
             verified => Task.FromResult(CompareChangedPixels(png, verified, Array.Empty<Rectangle>())));
     }
 
-    public static byte[] Masked(AppiumSession s, byte[] png, params By[] masks) =>
-        PaintedOver(png, masks.SelectMany(mask => MaskElements(s, mask)).Select(el => new Rectangle(el.Location, el.Size)),
+    public static byte[] Masked(AppiumSession session, byte[] png, params By[] masks) =>
+        PaintedOver(png, masks.SelectMany(mask => MaskElements(session, mask)).Select(element => new Rectangle(element.Location, element.Size)),
             Brushes.Gray);
 
     // A fixed width wider than any text, since the element sizes to its per-run text and its bounds would change.
-    public static byte[] MaskedCentered(AppiumSession s, byte[] png, By mask, int width, Brush background) =>
-        PaintedOver(png, MaskElements(s, mask).Select(el =>
-            new Rectangle(el.Location.X + (el.Size.Width / 2) - (width / 2), el.Location.Y, width, el.Size.Height)),
+    public static byte[] MaskedCentered(AppiumSession session, byte[] png, By mask, int width, Brush background) =>
+        PaintedOver(png, MaskElements(session, mask).Select(element =>
+            new Rectangle(element.Location.X + (element.Size.Width / 2) - (width / 2), element.Location.Y, width, element.Size.Height)),
             background);
 
-    private static ReadOnlyCollection<AppiumElement> MaskElements(AppiumSession s, By mask)
+    private static ReadOnlyCollection<AppiumElement> MaskElements(AppiumSession session, By mask)
     {
-        ReadOnlyCollection<AppiumElement> found = s.Driver.FindElements(mask);
-        if (found.Count == 0)
+        ReadOnlyCollection<AppiumElement> masked = session.Driver.FindElements(mask);
+        if (masked.Count == 0)
             throw new NoSuchElementException($"mask {mask} matched no element, so its value would reach the baseline");
-        return found;
+        return masked;
     }
 
     // Not XPath: an XPath lookup walks the whole tree, and a blurb shows for only 2.5s.
-    public static bool BlurbShows(AppiumSession s, string text) =>
-        FindByAccessibilityId(s, "Blurb")?.GetAttribute("Name") == text;
-
-    public static void WaitForBlurb(AppiumSession s, string text, TimeSpan timeout) =>
-        WaitUntil(s, $"the blurb says '{text}'", timeout, () => BlurbShows(s, text));
+    public static void WaitForBlurb(AppiumSession session, string text, TimeSpan timeout) =>
+        WaitUntil(session, $"the blurb says '{text}'", timeout,
+            () => FindByAccessibilityId(session, "Blurb")?.GetAttribute("Name") == text);
 
     // Not FindElements: WinAppDriver's AccessibilityId FindElements can add an element with an empty ID, which throws.
-    public static AppiumElement? FindByAccessibilityId(AppiumSession s, string automationId)
+    public static AppiumElement? FindByAccessibilityId(AppiumSession session, string automationId)
     {
         try
         {
-            return s.Driver.FindElement(MobileBy.AccessibilityId(automationId));
+            return session.Driver.FindElement(MobileBy.AccessibilityId(automationId));
         }
         catch (NoSuchElementException)
         {

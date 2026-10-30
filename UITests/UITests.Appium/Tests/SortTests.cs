@@ -16,24 +16,24 @@ public class SortTests
     public async Task SortHeadersReorderIdentities()
     {
         string name = nameof(SortHeadersReorderIdentities);
-        await using AppiumSession s = await AppiumSession.LaunchAsync(DefaultExePath(), FixtureBuilder.SortableMixed(),
+        await using AppiumSession session = await AppiumSession.LaunchAsync(DefaultExePath(), FixtureBuilder.SortableMixed(),
             UiLogPath(name));
-        SortAscending(s, "Name");
+        SortAscending(session, "Name");
 
-        SortAscending(s, "Status");
-        SaveStep(s, name, "01-after-status-x2");
+        SortAscending(session, "Status");
+        SaveStep(session, name, "01-after-status-x2");
         // Status sorts by enabled state, and ascending puts the two disabled identities first.
-        Assert.Equal(new[] { "Bravo-Staging", "CharlieEdge" }, ListedNames(s).Take(2).Order());
+        Assert.Equal(new[] { "Bravo-Staging", "CharlieEdge" }, ListedNames(session).Take(2).Order());
 
-        SortAscending(s, "Services");
-        SaveStep(s, name, "02-after-services-x2");
+        SortAscending(session, "Services");
+        SaveStep(session, name, "02-after-services-x2");
         // Services sorts by auth state first, so ascending leads with CharlieEdge, the only one needing ext auth.
-        Assert.Equal("CharlieEdge", ListedNames(s)[0]);
+        Assert.Equal("CharlieEdge", ListedNames(session)[0]);
 
-        ClickSortHeader(s, WaitForId(s, "SortByName"), ("Name", "▼"));
-        Assert.Equal(new[] { "zebra-prod", "oscar-prod", "CharlieEdge", "Bravo-Staging", "ALPHA-DEV" }, ListedNames(s));
-        ClickSortHeader(s, WaitForId(s, "SortByName"), ("Name", "▲"));
-        SaveStep(s, name, "03-after-name-x2");
-        Assert.Equal(new[] { "ALPHA-DEV", "Bravo-Staging", "CharlieEdge", "oscar-prod", "zebra-prod" }, ListedNames(s));
+        ClickSortHeader(session, WaitForId(session, "SortByName"), ("Name", "▼"));
+        Assert.Equal(new[] { "zebra-prod", "oscar-prod", "CharlieEdge", "Bravo-Staging", "ALPHA-DEV" }, ListedNames(session));
+        ClickSortHeader(session, WaitForId(session, "SortByName"), ("Name", "▲"));
+        SaveStep(session, name, "03-after-name-x2");
+        Assert.Equal(new[] { "ALPHA-DEV", "Bravo-Staging", "CharlieEdge", "oscar-prod", "zebra-prod" }, ListedNames(session));
     }
 }

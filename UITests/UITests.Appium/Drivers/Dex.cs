@@ -24,9 +24,9 @@ public sealed class Dex : IAsyncDisposable
     // ZET's loopback can take a moment to bind after it returns the auth URL.
     private static readonly TimeSpan LoopbackTimeout = TimeSpan.FromSeconds(5);
 
-    private static readonly Regex FormRe = new(@"<form([^>]*)>(.*?)</form>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
-    private static readonly Regex InputRe = new(@"<input\b([^>]*)>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
-    private static readonly Regex AttrRe = new(@"([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*=\s*(?:""([^""]*)""|'([^']*)')", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+    private static readonly Regex FormPattern = new(@"<form([^>]*)>(.*?)</form>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+    private static readonly Regex InputPattern = new(@"<input\b([^>]*)>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+    private static readonly Regex AttributePattern = new(@"([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*=\s*(?:""([^""]*)""|'([^']*)')", RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
     private sealed record LoginForm(string Action, IReadOnlyDictionary<string, string> Fields);
 
@@ -39,9 +39,9 @@ public sealed class Dex : IAsyncDisposable
         JwksUri = jwksUri;
     }
 
-    public static async Task<Dex> StartAsync(string dexBin, string configPath, string home)
+    public static async Task<Dex> StartAsync(string dexExePath, string configPath, string home)
     {
-        LoggedProcess process = LoggedProcess.Start(dexBin, new[] { "serve", configPath },
+        LoggedProcess process = LoggedProcess.Start(dexExePath, new[] { "serve", configPath },
             new Dictionary<string, string>(), Path.Combine(home, "logs", "dex.log"));
         try
         {
@@ -111,7 +111,7 @@ public sealed class Dex : IAsyncDisposable
         Uri current = new Uri(postUrl, posted.Headers.Location
             ?? throw new InvalidOperationException($"login POST to {postUrl} returned no Location"));
 
-        for (int i = 0; i < MaxHops; i++)
+        for (int hops = 0; hops < MaxHops; hops++)
         {
             if (IsLoopbackCallback(current))
             {
@@ -119,11 +119,11 @@ public sealed class Dex : IAsyncDisposable
                 Step.Log($"logged in to dex as {email} and sent the code to {current.GetLeftPart(UriPartial.Path)}");
                 return;
             }
-            using HttpResponseMessage hop = await client.GetAsync(current);
-            if (hop.StatusCode != HttpStatusCode.SeeOther && hop.StatusCode != HttpStatusCode.Found)
-                throw new InvalidOperationException($"expected a redirect at {current}, got status {(int)hop.StatusCode}");
-            current = new Uri(current, hop.Headers.Location
-                ?? throw new InvalidOperationException($"no Location at {current} (status {(int)hop.StatusCode})"));
+            using HttpResponseMessage redirect = await client.GetAsync(current);
+            if (redirect.StatusCode != HttpStatusCode.SeeOther && redirect.StatusCode != HttpStatusCode.Found)
+                throw new InvalidOperationException($"expected a redirect at {current}, got status {(int)redirect.StatusCode}");
+            current = new Uri(current, redirect.Headers.Location
+                ?? throw new InvalidOperationException($"no Location at {current} (status {(int)redirect.StatusCode})"));
         }
         throw new InvalidOperationException($"the IdP redirect chain did not reach the loopback callback in {MaxHops} hops, last {current}");
     }
@@ -131,7 +131,7 @@ public sealed class Dex : IAsyncDisposable
     private static async Task<Uri> FollowRedirectsTo200Async(HttpClient client, Uri start)
     {
         Uri current = start;
-        for (int i = 0; i < MaxHops; i++)
+        for (int hops = 0; hops < MaxHops; hops++)
         {
             using HttpResponseMessage resp = await client.GetAsync(current);
             int status = (int)resp.StatusCode;
@@ -144,53 +144,53 @@ public sealed class Dex : IAsyncDisposable
 
     private static LoginForm ParseLoginForm(string body, string email)
     {
-        foreach (Match f in FormRe.Matches(body))
+        foreach (Match formMatch in FormPattern.Matches(body))
         {
-            Dictionary<string, string> formAttrs = ParseTagAttributes(f.Groups[1].Value);
+            Dictionary<string, string> formAttributes = ParseTagAttributes(formMatch.Groups[1].Value);
             Dictionary<string, string> fields = new();
-            string? passField = null;
+            string? passwordField = null;
             string? userField = null;
-            foreach (Match input in InputRe.Matches(f.Groups[2].Value))
+            foreach (Match input in InputPattern.Matches(formMatch.Groups[2].Value))
             {
-                Dictionary<string, string> a = ParseTagAttributes(input.Groups[1].Value);
-                if (!a.TryGetValue("name", out string? name) || name == "") continue;
+                Dictionary<string, string> inputAttributes = ParseTagAttributes(input.Groups[1].Value);
+                if (!inputAttributes.TryGetValue("name", out string? name) || name == "") continue;
                 // Hidden state is HTML-escaped, and posting it escaped makes dex answer 400.
-                fields[name] = WebUtility.HtmlDecode(a.GetValueOrDefault("value", ""));
-                switch (a.GetValueOrDefault("type", "").ToLowerInvariant())
+                fields[name] = WebUtility.HtmlDecode(inputAttributes.GetValueOrDefault("value", ""));
+                switch (inputAttributes.GetValueOrDefault("type", "").ToLowerInvariant())
                 {
                     case "password":
-                        passField = name;
+                        passwordField = name;
                         break;
                     case "" or "text" or "email" or "tel":
                         userField ??= name;
                         break;
                 }
             }
-            if (passField == null) continue;
-            fields[passField] = Password;
+            if (passwordField == null) continue;
+            fields[passwordField] = Password;
             if (userField != null) fields[userField] = email;
-            return new LoginForm(WebUtility.HtmlDecode(formAttrs.GetValueOrDefault("action", "")), fields);
+            return new LoginForm(WebUtility.HtmlDecode(formAttributes.GetValueOrDefault("action", "")), fields);
         }
         throw new InvalidOperationException($"no login form with a password field found in: {Truncate(body)}");
     }
 
     private static Dictionary<string, string> ParseTagAttributes(string tag)
     {
-        Dictionary<string, string> attrs = new();
-        foreach (Match m in AttrRe.Matches(tag))
+        Dictionary<string, string> attributes = new();
+        foreach (Match attributeMatch in AttributePattern.Matches(tag))
         {
             string value;
-            if (m.Groups[2].Success && m.Groups[2].Value != "")
-                value = m.Groups[2].Value;
+            if (attributeMatch.Groups[2].Success && attributeMatch.Groups[2].Value != "")
+                value = attributeMatch.Groups[2].Value;
             else
-                value = m.Groups[3].Value;
-            attrs[m.Groups[1].Value.ToLowerInvariant()] = value;
+                value = attributeMatch.Groups[3].Value;
+            attributes[attributeMatch.Groups[1].Value.ToLowerInvariant()] = value;
         }
-        return attrs;
+        return attributes;
     }
 
-    private static bool IsLoopbackCallback(Uri u) =>
-        u.AbsolutePath == "/auth/callback" && (u.Host == "localhost" || u.Host == "127.0.0.1" || u.Host == "[::1]");
+    private static bool IsLoopbackCallback(Uri redirect) =>
+        redirect.AbsolutePath == "/auth/callback" && (redirect.Host == "localhost" || redirect.Host == "127.0.0.1" || redirect.Host == "[::1]");
 
     private static async Task HitLoopbackAsync(HttpClient client, Uri loopback)
     {
@@ -210,11 +210,11 @@ public sealed class Dex : IAsyncDisposable
         }
     }
 
-    private static string Truncate(string s)
+    private static string Truncate(string text)
     {
-        if (s.Length <= 200)
-            return s;
-        return s[..200] + "...";
+        if (text.Length <= 200)
+            return text;
+        return text[..200] + "...";
     }
 
     public ValueTask DisposeAsync() => _process.DisposeAsync();

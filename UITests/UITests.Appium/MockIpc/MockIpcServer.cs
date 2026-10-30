@@ -16,27 +16,27 @@ public sealed class MockIpcServer : IAsyncDisposable
 
     public string? ServiceActionFailure { get; set; }
 
-    private readonly CancellationTokenSource _cts = new();
+    private readonly CancellationTokenSource _shutdown = new();
     private readonly List<Task> _serverLoops = new();
     private readonly object _dataLock = new();
     // Replaced on every Stop, since a cancelled source can't be reused for the next Start.
-    private CancellationTokenSource _dataCts = new();
-    private readonly List<CancellationTokenSource> _stoppedDataCts = new();
+    private CancellationTokenSource _dataPipesShutdown = new();
+    private readonly List<CancellationTokenSource> _stoppedDataPipes = new();
     private readonly List<Task> _dataLoops = new();
     // Never mutated, so concurrent serialization from the IPC and event threads is safe.
     private readonly JObject _landingStatus;
-    private readonly object _recvLock = new();
+    private readonly object _receivedLock = new();
     private readonly List<JObject> _receivedMonitor = new();
     private readonly List<JObject> _receivedData = new();
 
     public IReadOnlyList<JObject> ReceivedMonitorRequests
     {
-        get { lock (_recvLock) return _receivedMonitor.ToArray(); }
+        get { lock (_receivedLock) return _receivedMonitor.ToArray(); }
     }
 
     public IReadOnlyList<JObject> ReceivedDataRequests
     {
-        get { lock (_recvLock) return _receivedData.ToArray(); }
+        get { lock (_receivedLock) return _receivedData.ToArray(); }
     }
 
     public MockIpcServer(string pipePrefix, JObject landingStatus)
@@ -55,45 +55,109 @@ public sealed class MockIpcServer : IAsyncDisposable
     {
         lock (_dataLock)
         {
-            CancellationToken ct = _dataCts.Token;
+            CancellationToken dataPipesToken = _dataPipesShutdown.Token;
             _dataLoops.Add(Task.Run(() => IpcPipes.AcceptLoopAsync(DataIpcPipeName, PipeDirection.InOut,
-                (srv, t) =>
+                (ui, ct) =>
                 {
-                    string sender = IpcPipes.ClientProcessName(srv);
-                    return ServeRequestsAsync(srv, line => AnswerDataRequest(sender, line), t);
-                }, ct)));
+                    string sender = IpcPipes.ClientProcessName(ui);
+                    return ServeRequestsAsync(ui, line =>
+                    {
+                        try
+                        {
+                            JObject request = JObject.Parse(line);
+                            Step.Sent(sender, request);
+                            lock (_receivedLock) _receivedData.Add(request);
+                            string command = (string?)request["Command"] ?? "";
+                            if (command == "Status")
+                                return new JObject { ["Success"] = true, ["Code"] = 0, ["Data"] = _landingStatus }.ToString(Formatting.None);
+                            // Writes no dump files, so a feedback bundle carries none.
+                            if (command == "ZitiDump")
+                                return new JObject { ["Success"] = true, ["Code"] = 0 }.ToString(Formatting.None);
+                            // Fail loudly so a command the mock does not model shows up in the test instead of passing silently.
+                            return new JObject { ["Success"] = false, ["Code"] = 500, ["Error"] = $"mock IPC has no handler for command '{command}'" }.ToString(Formatting.None);
+                        }
+                        catch (Exception ex)
+                        {
+                            return new JObject { ["Success"] = false, ["Code"] = 1, ["Error"] = ex.Message }.ToString(Formatting.None);
+                        }
+                    }, ct);
+                }, dataPipesToken)));
             _dataLoops.Add(Task.Run(() => IpcPipes.AcceptLoopAsync(DataEventPipeName, PipeDirection.Out,
-                HandleDataEventClientAsync, ct)));
-        }
-    }
-
-    private void StopDataPipes()
-    {
-        lock (_dataLock)
-        {
-            _dataCts.Cancel();
-            _stoppedDataCts.Add(_dataCts);
-            _dataCts = new CancellationTokenSource();
+                async (ui, ct) =>
+                {
+                    using (ui)
+                    using (StreamWriter writer = new StreamWriter(ui, new UTF8Encoding(false)) { AutoFlush = true, NewLine = "\n" })
+                    {
+                        // A new event client gets exactly one status message (ipc_event.c on_events_client).
+                        JObject statusPush = new JObject { ["Op"] = "status", ["Status"] = _landingStatus.DeepClone() };
+                        await writer.WriteLineAsync(statusPush.ToString(Formatting.None));
+                        try { await Task.Delay(Timeout.Infinite, ct); }
+                        catch (OperationCanceledException) { }
+                    }
+                }, dataPipesToken)));
         }
     }
 
     public void StartMonitorPipes()
     {
         _serverLoops.Add(Task.Run(() => IpcPipes.AcceptLoopAsync(MonitorIpcPipeName, PipeDirection.InOut,
-            (srv, ct) => ServeRequestsAsync(srv, AnswerMonitorRequest, ct), _cts.Token)));
+            (ui, ct) => ServeRequestsAsync(ui, line =>
+            {
+                try
+                {
+                    JObject request = JObject.Parse(line);
+                    lock (_receivedLock) _receivedMonitor.Add(request);
+                    string operation = (string?)request["Op"] ?? "";
+                    // The monitor's ServiceActions reply once the ziti service reaches the state, with that state as the Message.
+                    string? failure = ServiceActionFailure;
+                    if (operation == "Stop" && (string?)request["Action"] == "Normal")
+                    {
+                        // A failed stop still kills ziti-edge-tunnel before the monitor replies (ServiceActions.StopService).
+                        lock (_dataLock)
+                        {
+                            _dataPipesShutdown.Cancel();
+                            _stoppedDataPipes.Add(_dataPipesShutdown);
+                            _dataPipesShutdown = new CancellationTokenSource();
+                        }
+                        if (failure != null)
+                            return FailedServiceAction(failure).ToString(Formatting.None);
+                        return new JObject { ["Code"] = 0, ["Message"] = "Stopped" }.ToString(Formatting.None);
+                    }
+                    if (operation == "Start")
+                    {
+                        if (failure != null)
+                            return FailedServiceAction(failure).ToString(Formatting.None);
+                        StartDataPipes();
+                        return new JObject { ["Code"] = 0, ["Message"] = "Running" }.ToString(Formatting.None);
+                    }
+                    // A Code 0 reply keeps the UI moving for every op the tests drive.
+                    return new JObject { ["Code"] = 0, ["Message"] = $"mock accepted Op={operation}", ["Op"] = operation }.ToString(Formatting.None);
+                }
+                catch (Exception ex)
+                {
+                    return new JObject { ["Code"] = 1, ["Message"] = ex.Message }.ToString(Formatting.None);
+                }
+            }, ct), _shutdown.Token)));
         // The UI connects to the monitor's event pipe but the tests never push monitor events.
         _serverLoops.Add(Task.Run(() => IpcPipes.AcceptLoopAsync(MonitorEventPipeName, PipeDirection.InOut,
-            HoldOpenAsync, _cts.Token)));
+            async (ui, ct) =>
+            {
+                using (ui)
+                {
+                    try { await Task.Delay(Timeout.Infinite, ct); }
+                    catch (OperationCanceledException) { }
+                }
+            }, _shutdown.Token)));
     }
 
-    private static async Task ServeRequestsAsync(NamedPipeServerStream srv, Func<string, string> answer,
+    private static async Task ServeRequestsAsync(NamedPipeServerStream pipe, Func<string, string> answer,
         CancellationToken ct)
     {
-        using (srv)
-        using (StreamReader reader = new StreamReader(srv, new UTF8Encoding(false), false, 16 * 1024, leaveOpen: true))
-        using (StreamWriter writer = new StreamWriter(srv, new UTF8Encoding(false)) { AutoFlush = true, NewLine = "\n" })
+        using (pipe)
+        using (StreamReader reader = new StreamReader(pipe, new UTF8Encoding(false), false, 16 * 1024, leaveOpen: true))
+        using (StreamWriter writer = new StreamWriter(pipe, new UTF8Encoding(false)) { AutoFlush = true, NewLine = "\n" })
         {
-            while (srv.IsConnected && !ct.IsCancellationRequested)
+            while (pipe.IsConnected && !ct.IsCancellationRequested)
             {
                 string? line;
                 try { line = await reader.ReadLineAsync().WaitAsync(ct); }
@@ -106,98 +170,6 @@ public sealed class MockIpcServer : IAsyncDisposable
         }
     }
 
-    private string AnswerDataRequest(string sender, string line)
-    {
-        try
-        {
-            JObject req = JObject.Parse(line);
-            Step.Sent(sender, req);
-            lock (_recvLock) _receivedData.Add(req);
-            return BuildReply(req).ToString(Formatting.None);
-        }
-        catch (Exception ex)
-        {
-            return new JObject { ["Success"] = false, ["Code"] = 1, ["Error"] = ex.Message }.ToString(Formatting.None);
-        }
-    }
-
-    private string AnswerMonitorRequest(string line)
-    {
-        try
-        {
-            JObject req = JObject.Parse(line);
-            lock (_recvLock) _receivedMonitor.Add(req);
-            return BuildMonitorReply(req).ToString(Formatting.None);
-        }
-        catch (Exception ex)
-        {
-            return new JObject { ["Code"] = 1, ["Message"] = ex.Message }.ToString(Formatting.None);
-        }
-    }
-
-    private static async Task HoldOpenAsync(NamedPipeServerStream srv, CancellationToken ct)
-    {
-        using (srv)
-        {
-            try { await Task.Delay(Timeout.Infinite, ct); }
-            catch (OperationCanceledException) { }
-        }
-    }
-
-    private JObject BuildReply(JObject req)
-    {
-        string command = (string?)req["Command"] ?? "";
-        if (command == "Status")
-            return new JObject { ["Success"] = true, ["Code"] = 0, ["Data"] = _landingStatus };
-        // Writes no dump files, so a feedback bundle carries none.
-        if (command == "ZitiDump")
-            return new JObject { ["Success"] = true, ["Code"] = 0 };
-        // Fail loudly so a command the mock does not model shows up in the test instead of passing silently.
-        return new JObject { ["Success"] = false, ["Code"] = 500, ["Error"] = $"mock IPC has no handler for command '{command}'" };
-    }
-
-    private async Task HandleDataEventClientAsync(NamedPipeServerStream srv, CancellationToken ct)
-    {
-        using (srv)
-        using (StreamWriter writer = new StreamWriter(srv, new UTF8Encoding(false)) { AutoFlush = true, NewLine = "\n" })
-        {
-            // A new event client gets exactly one status message (ipc_event.c on_events_client).
-            JObject statusPush = new JObject { ["Op"] = "status", ["Status"] = _landingStatus.DeepClone() };
-            await writer.WriteLineAsync(statusPush.ToString(Formatting.None));
-            try { await Task.Delay(Timeout.Infinite, ct); }
-            catch (OperationCanceledException) { }
-        }
-    }
-
-    private JObject BuildMonitorReply(JObject req)
-    {
-        // A Code 0 reply keeps the UI moving for every op the tests drive.
-        string op = (string?)req["Op"] ?? "";
-        // The monitor's ServiceActions reply once the ziti service reaches the state, with that state as the Message.
-        string? failure = ServiceActionFailure;
-        if (op == "Stop" && (string?)req["Action"] == "Normal")
-        {
-            // A failed stop still kills ziti-edge-tunnel before the monitor replies (ServiceActions.StopService).
-            StopDataPipes();
-            if (failure != null)
-                return FailedServiceAction(failure);
-            return new JObject { ["Code"] = 0, ["Message"] = "Stopped" };
-        }
-        if (op == "Start")
-        {
-            if (failure != null)
-                return FailedServiceAction(failure);
-            StartDataPipes();
-            return new JObject { ["Code"] = 0, ["Message"] = "Running" };
-        }
-        return new JObject
-        {
-            ["Code"] = 0,
-            ["Message"] = $"mock accepted Op={op}",
-            ["Op"] = op,
-        };
-    }
-
     // IPCServer.processMessageAsync's reply when a ServiceActions call throws with no inner exception.
     private static JObject FailedServiceAction(string exceptionMessage) => new JObject
     {
@@ -208,17 +180,17 @@ public sealed class MockIpcServer : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        _cts.Cancel();
+        _shutdown.Cancel();
         Task[] dataLoops;
         lock (_dataLock)
         {
-            _dataCts.Cancel();
+            _dataPipesShutdown.Cancel();
             dataLoops = _dataLoops.ToArray();
         }
         // Loops return on cancel, so anything thrown here is a real pipe fault from earlier in the test.
         await Task.WhenAll(_serverLoops.Concat(dataLoops)).WaitAsync(TimeSpan.FromSeconds(2));
-        _cts.Dispose();
-        _dataCts.Dispose();
-        foreach (CancellationTokenSource stopped in _stoppedDataCts) stopped.Dispose();
+        _shutdown.Dispose();
+        _dataPipesShutdown.Dispose();
+        foreach (CancellationTokenSource stopped in _stoppedDataPipes) stopped.Dispose();
     }
 }

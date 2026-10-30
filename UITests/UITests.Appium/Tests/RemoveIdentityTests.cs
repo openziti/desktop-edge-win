@@ -24,19 +24,19 @@ public class RemoveIdentityTests
         const string identityName = "test_remove_id";
         string identityFile = AddedIdentityFile(_fixture);
 
-        await using AppiumSession s = await LaunchAsync(_fixture, name);
-        AddIdentity(_fixture, s, identityName);
-        await VerifyStep(s, Capture(s), name, "01-identity-added");
+        await using AppiumSession session = await LaunchAsync(_fixture, name);
+        AddIdentity(_fixture, session, identityName);
+        await VerifyStep(session, Capture(session), name, "01-identity-added");
 
-        OpenIdentityDetails(s, identityName);
-        ClickAt(s, WaitFor(s, ById("ForgetIdentityButton")));
-        await VerifyStep(s, Capture(s), name, "02-forget-confirm");
+        OpenIdentityDetails(session, identityName);
+        ClickAt(session, WaitFor(session, ById("ForgetIdentityButton")));
+        await VerifyStep(session, Capture(session), name, "02-forget-confirm");
 
-        ClickAt(s, WaitFor(s, ById("ConfirmButton")));
-        WaitForGone(s, By.XPath($"//Text[@Name='{identityName}']"));
-        await VerifyStep(s, Capture(s), name, "03-identity-forgotten");
-        Assert.Equal(0, (int?)WaitForZetReplyTo(s, "\"Command\":\"RemoveIdentity\"")["Code"]);
-        Assert.Equal(0, IdentityRowCount(s));
+        ClickAt(session, WaitFor(session, ById("ConfirmButton")));
+        WaitForGone(session, By.XPath($"//Text[@Name='{identityName}']"));
+        await VerifyStep(session, Capture(session), name, "03-identity-forgotten");
+        Assert.Equal(0, (int?)WaitForZetReplyTo(session, "\"Command\":\"RemoveIdentity\"")["Code"]);
+        Assert.Equal(0, IdentityRowCount(session));
         Assert.False(File.Exists(identityFile), $"identity file should be removed after forget: {identityFile}");
     }
 }

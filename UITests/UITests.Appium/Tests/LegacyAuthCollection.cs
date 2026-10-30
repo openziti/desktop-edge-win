@@ -9,12 +9,12 @@ public sealed class LegacyAuthFixture : IntegrationFixture
     {
     }
 
-    protected override Task<Quickstart> StartQuickstartAsync(string zitiBin, string home) =>
-        Quickstart.StartWithoutOidcAsync(zitiBin, home);
+    protected override Task<Quickstart> StartQuickstartAsync(string zitiExePath, string home) =>
+        Quickstart.StartWithoutOidcAsync(zitiExePath, home);
 
-    public Task MigrateToOidcAsync() => ReplaceQuickstartAsync(q => q.RestartWithOidcAsync());
+    public Task MigrateToOidcAsync() => ReplaceQuickstartAsync(quickstart => quickstart.RestartWithOidcAsync());
 
-    public Task RestoreLegacyAuthAsync() => ReplaceQuickstartAsync(q => q.RestartWithoutOidcAsync());
+    public Task RestoreLegacyAuthAsync() => ReplaceQuickstartAsync(quickstart => quickstart.RestartWithoutOidcAsync());
 }
 
 // Collections run one after another, so this reuses IntegrationCollection's ports and ZET pipe after it stops.

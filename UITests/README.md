@@ -69,7 +69,7 @@ Toast notifications from other apps (Teams, Slack, Outlook) can steal focus mid-
 flaky failures. Screenshots aren't affected (`Capture` draws the window itself with Win32 PrintWindow), but
 input synthesis can be. Toggle Do Not Disturb on for the duration of a test run:
 
-- Windows 11: Win+N -> click the bell icon, choose Do Not Disturb.
+- Windows 11: press Win+N, click the bell icon, and choose Do Not Disturb.
 
 ## How to run
 
@@ -217,7 +217,7 @@ UITests/
       Step.cs                            <-- step lines, printed live under the running test
       FixtureBuilder.cs                  <-- programmatic JObject builders (50-identity status, ...)
       SmokeTests.cs                      <-- state-changing + alt-fixture + visual tests
-      IntegrationFixture.cs              <-- starts the quickstart and ZET once per class
+      IntegrationFixture.cs              <-- starts the quickstart and ZET once per collection
       <ZetFile>Tests.cs                  <-- UI tests against a real ZET and controller; elevated, -Category Integration only
   TestResults/                            <-- regenerated every run; safe to delete
 ```
@@ -227,20 +227,17 @@ UITests/
 1. Anything that mutates UI state, opens a screen, or uses an alt fixture goes in `SmokeTests` (own session).
 
 2. Use the helpers in `TestHelpers`:
-   - `WaitForId(s, "X")` -- polls UIA tree for AutomationId
-   - `WaitFor(s, By.XPath("//Text[@Name='Y']"))` -- polls by any XPath
-   - `OpenMainMenu(s)` -- robust hamburger click with retry
-   - `Capture(s)` -- byte[] PNG of the window
-   - `SaveStep(s, testName, "01-before")` -- writes to `TestResults\screenshots\<testName>\01-before.png`
+   - `WaitForId(s, "X")`: polls the UIA tree for an AutomationId
+   - `WaitFor(s, By.XPath("//Text[@Name='Y']"))`: polls by any XPath
+   - `OpenMainMenu(s)`: hamburger click with retry
+   - `Capture(s)`: byte[] PNG of the window
+   - `SaveStep(s, testName, "01-before")`: writes to `TestResults\screenshots\<testName>\01-before.png`
      so the gallery renders it inline.
-   - `VerifyPng(png)` -- compares the capture with its committed baseline, also drops the latest run into
+   - `VerifyPng(png, testName)`: compares the capture with its pulled baseline, also drops the latest run into
      `TestResults\screenshots\` for the gallery's single-shot column.
 
-3. Always tag with `[Fact(Timeout = 20000)]`. Anything that genuinely needs longer (multi-hop menu
-   navigation, alt-fixture loads, the Sort walkthrough) should bump per-test to 30000 (or 40000
-   for `SortHeadersReorderIdentities`) and include a comment explaining why. Limits are about twice a local
-   run because the GitHub Windows runner is that much slower. Untagged tests can hang the whole
-   suite.
+3. Always tag with `[Fact(Timeout = ...)]`, since an untagged test can hang the whole suite. Set it to about twice a
+   local run, because the GitHub Windows runner is that much slower.
 
 4. Service commands (MonitorClient channel, `Op`/`Action` shape) are in `s.Mock.ReceivedMonitorRequests`.
 
@@ -260,23 +257,12 @@ UITests/
 
 ## ZDEW source changes the test harness depends on
 
-The tests rely on a handful of small env-var-gated hooks in the product code. These ship in the
-binary but are inert unless the env var is set:
+Two environment variables switch on test hooks in the product code. Both are read only in a Debug build, which is why
+the suite runs one, and a Release build compiles them out:
 
-- `ZDEW_UI_TEST=1` -- sets `ShowInTaskbar=true` and activates the window so Appium can attach without
-  driving the system tray icon. Also disables window transparency + chrome for clean screenshots, and skips toast
-  activation registration so test runs don't write COM activator entries to HKCU.
-- `ZDEW_IPC_PIPE_PREFIX=<prefix>` -- prefixes both pipe names (`ziti-edge-tunnel.sock` and
-  `OpenZiti\ziti-monitor\ipc`) so the test mock can host pipes without colliding with a running
-  production service.
-
-Search for these strings in `DesktopEdge/MainWindow.xaml.cs` and `ZitiDesktopEdge.Client/` to see
-exactly where they branch.
-
-## Tweaking speed
-
-A full pass currently takes ~40-60 seconds. Where the time goes:
-
-- WAD session attach: ~1.5s per test.
-- WPF process startup: ~1s per test.
-- Driver.Quit() teardown: ~0.5s per test.
+- `ZDEW_UI_TEST=1` (`App.UiTestMode` in `DesktopEdge/App.xaml.cs`): shows the window in the taskbar and activates it,
+  so Appium attaches without the tray icon. It also paints a white background for captures, freezes the connected
+  time at 00:00:00, shows blurbs without a fade, and skips the toast COM activator registration under HKCU. Search
+  `DesktopEdge/MainWindow.xaml.cs` for `App.UiTestMode` to see each branch.
+- `ZDEW_IPC_PIPE_PREFIX=<prefix>` (`IPCServer.PipePrefix` in `ZitiDesktopEdge.Client/Server/IPCServer.cs`):
+  prefixes the four pipe names, so the mock or relay hosts its pipes beside a running production service.

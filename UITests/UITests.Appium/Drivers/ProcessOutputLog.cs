@@ -18,12 +18,12 @@ public sealed class ProcessOutputLog : IDisposable
         LogPath = logPath;
     }
 
-    public static ProcessOutputLog Start(ProcessStartInfo psi, string logPath)
+    public static ProcessOutputLog Start(ProcessStartInfo startInfo, string logPath)
     {
-        if (psi.UseShellExecute || !psi.RedirectStandardOutput || !psi.RedirectStandardError)
+        if (startInfo.UseShellExecute || !startInfo.RedirectStandardOutput || !startInfo.RedirectStandardError)
             throw new ArgumentException(
-                $"{psi.FileName} needs UseShellExecute=false and stdout and stderr redirected to log to {logPath}",
-                nameof(psi));
+                $"{startInfo.FileName} needs UseShellExecute=false and stdout and stderr redirected to log to {logPath}",
+                nameof(startInfo));
 
         Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
         // Appends, so a restarted process keeps its earlier lines. run-ui-tests.ps1 empties TestResults per run.
@@ -31,31 +31,31 @@ public sealed class ProcessOutputLog : IDisposable
         {
             AutoFlush = true,
         };
-        Process p = Process.Start(psi) ?? throw new InvalidOperationException($"{psi.FileName} did not start");
-        ChildProcessKiller.Adopt(p);
+        Process started = Process.Start(startInfo) ?? throw new InvalidOperationException($"{startInfo.FileName} did not start");
+        ChildProcessKiller.Adopt(started);
 
-        ProcessOutputLog logged = new ProcessOutputLog(p, log, logPath);
-        p.OutputDataReceived += logged.OnOutput;
-        p.ErrorDataReceived += logged.OnOutput;
-        p.BeginOutputReadLine();
-        p.BeginErrorReadLine();
+        ProcessOutputLog logged = new ProcessOutputLog(started, log, logPath);
+        started.OutputDataReceived += logged.OnOutput;
+        started.ErrorDataReceived += logged.OnOutput;
+        started.BeginOutputReadLine();
+        started.BeginErrorReadLine();
         return logged;
     }
 
-    private void OnOutput(object sender, DataReceivedEventArgs e)
+    private void OnOutput(object sender, DataReceivedEventArgs output)
     {
-        if (e.Data == null) return;
+        if (output.Data == null) return;
         lock (_logLock)
         {
             // a grandchild that inherited the pipe can still write after the process itself exited
-            if (!_closed) _log.WriteLine(e.Data);
+            if (!_closed) _log.WriteLine(output.Data);
         }
     }
 
     public string ReadLog()
     {
-        using FileStream fs = new FileStream(LogPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-        using StreamReader reader = new StreamReader(fs);
+        using FileStream logFile = new FileStream(LogPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        using StreamReader reader = new StreamReader(logFile);
         return reader.ReadToEnd();
     }
 

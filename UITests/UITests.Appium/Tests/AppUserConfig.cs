@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Xml.Linq;
 
 namespace ZitiDesktopEdge.UITests.Tests;
@@ -10,7 +9,7 @@ public sealed record UserSettings(string SortOption, string SortDirection, strin
 public static class AppUserConfig
 {
     // ZitiIdentity.ProviderDelimiter: each DefaultProviders entry is "<identity file>|-|<provider>".
-    private const string ProviderDelimiter = "|-|";
+    public const string ProviderDelimiter = "|-|";
 
     private static string Root() =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ZitiDesktopEdge");
@@ -34,9 +33,6 @@ public static class AppUserConfig
         }
     }
 
-    // The app sets no informational version, so its settings directory is named for the assembly version.
-    public static Version SettingsVersion(string exePath) => AssemblyName.GetAssemblyName(exePath).Version!;
-
     /// <summary>One user.config per exe path the app has run from.</summary>
     public static Dictionary<string, byte[]> ReadConfigs(Version version)
     {
@@ -45,43 +41,5 @@ public static class AppUserConfig
             .Select(exeDir => Path.Combine(exeDir, version.ToString(), "user.config"))
             .Where(File.Exists)
             .ToDictionary(path => path, File.ReadAllBytes);
-    }
-
-    public static void RestoreConfigs(Version version, IReadOnlyDictionary<string, byte[]> originals)
-    {
-        foreach (string path in ReadConfigs(version).Keys) File.Delete(path);
-        foreach ((string path, byte[] bytes) in originals) File.WriteAllBytes(path, bytes);
-    }
-
-    /// <summary>Settings.Upgrade copies from the version just below current, so the seed goes there.</summary>
-    public static string SeedPreviousVersion(string currentConfig, Version current, UserSettings settings)
-    {
-        string exeDir = Path.GetDirectoryName(Path.GetDirectoryName(currentConfig)!)!;
-        string versionDir = Path.Combine(exeDir, PreviousVersion(current).ToString());
-        if (Directory.Exists(versionDir))
-            throw new InvalidOperationException($"{versionDir} already exists: delete it, it is left from an earlier run");
-        Directory.CreateDirectory(versionDir);
-        new XDocument(new XElement("configuration", new XElement("userSettings",
-            new XElement("ZitiDesktopEdge.Properties.Settings",
-                StringSetting("SortOption", settings.SortOption),
-                StringSetting("SortDirection", settings.SortDirection),
-                StringSetting("SettingsUpgradeRequired", "False"),
-                new XElement("setting", new XAttribute("name", "DefaultProviders"), new XAttribute("serializeAs", "Xml"),
-                    new XElement("value", new XElement("ArrayOfString", new XElement("string",
-                        settings.DefaultProviderIdentity + ProviderDelimiter + settings.DefaultProvider))))))))
-            .Save(Path.Combine(versionDir, "user.config"));
-        return versionDir;
-    }
-
-    private static XElement StringSetting(string name, string value) =>
-        new XElement("setting", new XAttribute("name", name), new XAttribute("serializeAs", "String"),
-            new XElement("value", value));
-
-    /// <summary>The highest version below current, so no real version directory can sit between them.</summary>
-    private static Version PreviousVersion(Version current)
-    {
-        if (current.Revision > 0) return new Version(current.Major, current.Minor, current.Build, current.Revision - 1);
-        if (current.Build > 0) return new Version(current.Major, current.Minor, current.Build - 1, int.MaxValue);
-        throw new NotSupportedException($"no previous version to seed below {current}");
     }
 }

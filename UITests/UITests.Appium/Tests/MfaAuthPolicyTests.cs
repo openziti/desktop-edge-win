@@ -1,4 +1,5 @@
 using Newtonsoft.Json.Linq;
+using OpenQA.Selenium;
 using ZitiDesktopEdge.UITests.Drivers;
 using ZitiDesktopEdge.UITests.MockIpc;
 using static ZitiDesktopEdge.UITests.Tests.IntegrationHelpers;
@@ -27,18 +28,29 @@ public class MfaAuthPolicyTests
         string name = nameof(ReauthUnderTotpRequiredPolicyAsksForCode);
         const string identityName = "test_mfa_policy_required_enrolled";
 
-        await using AppiumSession s = await LaunchAsync(_fixture, name);
-        MfaEnrollment enrollment = AddIdentityAndEnrollMfaUnderPolicy(_fixture, s, identityName);
+        await using AppiumSession session = await LaunchAsync(_fixture, name);
+        WriteTestJwt(_fixture.Quickstart.GetJwtFromController(identityName));
+        Step.Log($"adding {identityName}, whose auth policy requires TOTP");
+        ClickAddIdentityWithJwt(session);
+        // Partially authenticated until TOTP is enrolled, so the row keeps the file name until then.
+        WaitForController(session, InIdentityRow(AddedIdentityFileName, "MfaSetupNeeded"), "the row asks to set up MFA");
+        Assert.Equal(0, (int?)WaitForZetReplyTo(session, AddIdentityLine)["Code"]);
+        WaitForZetEventAfter(session, AddIdentityLine, MfaEnrollmentRequiredEvent);
+        ClickAt(session, WaitFor(session, InIdentityRow(AddedIdentityFileName, "MfaSetupNeeded")));
+        WaitForController(session, ById("SetupCode"), "the MFA setup dialog opens");
+        MfaEnrollment enrollment = CompleteMfaSetup(session);
+        ClickUntilGone(session, ById("CloseBlack"));
+        WaitForController(session, By.XPath($"//Text[@Name='{identityName}']"), $"the row shows {identityName}");
+        SortAscending(session, "Name");
 
-        // Already enrolled, so the policy asks for a code, not for another enrollment.
-        TriggerReauthChallenge(s, identityName);
-        WaitForZetEventAfter(s, OnLine, MfaAuthChallengeEvent);
-        AssertNoZetEventAfter(s, OnLine, MfaEnrollmentRequiredEvent, NoChallengeQuiet);
-        Assert.Empty(s.Driver.FindElements(InIdentityRow(identityName, "MfaSetupNeeded")));
-        await VerifyStep(s, Capture(s), name, "01-authenticate-row");
+        TriggerReauthChallenge(session, identityName);
+        WaitForZetEventAfter(session, OnLine, MfaAuthChallengeEvent);
+        AssertNoZetEventAfter(session, OnLine, MfaEnrollmentRequiredEvent, NoChallengeQuiet);
+        Assert.Empty(session.Driver.FindElements(InIdentityRow(identityName, "MfaSetupNeeded")));
+        await VerifyStep(session, Capture(session), name, "01-authenticate-row");
 
-        AuthenticateFromRow(s, name, "02-code-typed", identityName, Totp.Compute(enrollment.Secret, DateTimeOffset.UtcNow));
-        await VerifyStep(s, Capture(s), name, "03-authenticated-row");
+        AuthenticateFromRow(session, name, "02-code-typed", identityName, Totp.Compute(enrollment.Secret, DateTimeOffset.UtcNow));
+        await VerifyStep(session, Capture(session), name, "03-authenticated-row");
     }
 
     [Fact(Timeout = 180000)]
@@ -47,9 +59,9 @@ public class MfaAuthPolicyTests
         string name = nameof(PolicyAddedForEnrolledIdentityKeepsWorking);
         const string identityName = "test_mfa_policy_added_enrolled";
 
-        await using AppiumSession s = await LaunchAsync(_fixture, name);
-        AddIdentityAndEnrollMfa(_fixture, s, identityName);
-        string identifier = (string)WaitForZetEventAfter(s, AddIdentityLine, IdentityAddedEvent)["Id"]!["Identifier"]!;
+        await using AppiumSession session = await LaunchAsync(_fixture, name);
+        AddIdentityAndEnrollMfa(_fixture, session, identityName);
+        string identifier = (string)WaitForZetEventAfter(session, AddIdentityLine, IdentityAddedEvent)["Id"]!["Identifier"]!;
 
         _fixture.Quickstart.SetIdentityAuthPolicy(identityName, TotpRequiredPolicy);
         // The UI never sends RefreshIdentity, so the harness does, standing in for ZET's own refresh.
@@ -60,12 +72,11 @@ public class MfaAuthPolicyTests
         });
         Assert.True((bool?)refresh["Success"] == true, $"RefreshIdentity failed: {refresh}");
 
-        // The session already satisfies the new policy.
-        AssertNoZetEventAfter(s, VerifyMfaLine, MfaAuthChallengeEvent, NoChallengeQuiet);
-        AssertNoZetEventAfter(s, VerifyMfaLine, MfaEnrollmentRequiredEvent, TimeSpan.Zero);
-        Assert.Empty(s.Driver.FindElements(InIdentityRow(identityName, "MfaRequired")));
-        Assert.Empty(s.Driver.FindElements(InIdentityRow(identityName, "MfaSetupNeeded")));
-        await VerifyStep(s, Capture(s), name, "01-policy-added-row");
+        AssertNoZetEventAfter(session, VerifyMfaLine, MfaAuthChallengeEvent, NoChallengeQuiet);
+        AssertNoZetEventAfter(session, VerifyMfaLine, MfaEnrollmentRequiredEvent, TimeSpan.Zero);
+        Assert.Empty(session.Driver.FindElements(InIdentityRow(identityName, "MfaRequired")));
+        Assert.Empty(session.Driver.FindElements(InIdentityRow(identityName, "MfaSetupNeeded")));
+        await VerifyStep(session, Capture(session), name, "01-policy-added-row");
     }
 
     [Fact(Timeout = 120000)]
@@ -74,17 +85,16 @@ public class MfaAuthPolicyTests
         string name = nameof(PolicyAddedForUnenrolledIdentityAsksToEnroll);
         const string identityName = "test_mfa_policy_added_unenrolled";
 
-        await using AppiumSession s = await LaunchAsync(_fixture, name);
-        AddIdentity(_fixture, s, identityName);
-        WaitForZetEventAfter(s, AddIdentityLine, ControllerConnectedEvent);
+        await using AppiumSession session = await LaunchAsync(_fixture, name);
+        AddIdentity(_fixture, session, identityName);
+        WaitForZetEventAfter(session, AddIdentityLine, ControllerConnectedEvent);
 
         _fixture.Quickstart.SetIdentityAuthPolicy(identityName, TotpRequiredPolicy);
-        ToggleOffAndOn(s, identityName);
-        // Never enrolled, so it can no longer satisfy its policy and is asked to enroll.
-        WaitForZetEventAfter(s, OnLine, MfaEnrollmentRequiredEvent);
-        WaitForController(s, InIdentityRow(identityName, "MfaSetupNeeded"), "the row asks to set up MFA");
-        AssertNoZetEventAfter(s, OnLine, MfaAuthChallengeEvent, NoChallengeQuiet);
-        Assert.Empty(s.Driver.FindElements(InIdentityRow(identityName, "MfaRequired")));
-        await VerifyStep(s, Capture(s), name, "01-setup-needed-row");
+        ToggleOffAndOn(session, identityName);
+        WaitForZetEventAfter(session, OnLine, MfaEnrollmentRequiredEvent);
+        WaitForController(session, InIdentityRow(identityName, "MfaSetupNeeded"), "the row asks to set up MFA");
+        AssertNoZetEventAfter(session, OnLine, MfaAuthChallengeEvent, NoChallengeQuiet);
+        Assert.Empty(session.Driver.FindElements(InIdentityRow(identityName, "MfaRequired")));
+        await VerifyStep(session, Capture(session), name, "01-setup-needed-row");
     }
 }
