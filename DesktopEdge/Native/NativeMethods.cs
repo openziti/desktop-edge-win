@@ -18,10 +18,12 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.IO.Pipes;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 namespace ZitiDesktopEdge.Native {
 
@@ -47,6 +49,22 @@ namespace ZitiDesktopEdge.Native {
                 [MarshalAs(UnmanagedType.U4)] FileMode creationDisposition,
                 [MarshalAs(UnmanagedType.U4)] uint flagsAndAttributes,
                 IntPtr templateFile);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool GetNamedPipeServerProcessId(SafePipeHandle pipe, out uint serverProcessId);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool AllowSetForegroundWindow(uint processId);
+
+        public static void LetPipeServerComeForward(PipeStream pipe) {
+            uint serverProcessId;
+            if (!GetNamedPipeServerProcessId(pipe.SafePipeHandle, out serverProcessId))
+                throw new Win32Exception();
+            if (!AllowSetForegroundWindow(serverProcessId))
+                throw new Win32Exception();
+        }
 
         public static string GetFinalPathName(string path) {
             var h = CreateFile(path,

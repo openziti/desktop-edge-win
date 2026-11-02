@@ -1,3 +1,13 @@
+# Release 2.12.0.0
+## What's New
+* [Issue 1101](https://github.com/openziti/desktop-edge-win/issues/1101) - The installer registers the `ziti` URL scheme. A `ziti://enroll?controller=<https URL>` link opens add identity with URL for that controller, and the optional `provider` and `type=cert|token` skip those choices when the network offers them. Nothing is enrolled until the user clicks Join Network
+
+## Bugs fixed
+n/a
+
+## Other changes
+* Non-https external auth URLs are refused, and add by URL only accepts https controller URLs
+
 # Release 2.11.8.0
 ## What's New
 * updated to ziti-edge-tunnel v1.19.1

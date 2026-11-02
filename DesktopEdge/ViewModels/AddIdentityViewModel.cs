@@ -22,8 +22,10 @@ using System.Windows;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using NLog;
 
 using ZitiDesktopEdge.DataStructures;
+using ZitiDesktopEdge.Models;
 
 namespace ZitiDesktopEdge {
     public class ExternalJwtSigner {
@@ -36,6 +38,8 @@ namespace ZitiDesktopEdge {
         private ExternalJwtSigner _selectedSigner;
         private string _enrollMode;
         private bool _showSignerPicker;
+        private EnrollmentLink _link;
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         public string UrlPlaceholder { get; } = "https://controller.url";
         public string ControllerBaseUrl { get; set; }
@@ -49,6 +53,7 @@ namespace ZitiDesktopEdge {
                 _showSignerPicker = value;
                 OnPropertyChanged(nameof(ShowSignerPicker));
                 OnPropertyChanged(nameof(SignerPickerVisibility));
+                OnPropertyChanged(nameof(Header));
             }
         }
 
@@ -58,9 +63,10 @@ namespace ZitiDesktopEdge {
             get { return _selectedSigner; }
             set {
                 _selectedSigner = value;
-                EnrollMode = ShowEnrollModeRadios ? "user-session" : null;
+                EnrollMode = InitialEnrollMode();
                 OnPropertyChanged(nameof(SelectedSigner));
                 OnPropertyChanged(nameof(EnrollModeRadiosVisibility));
+                OnPropertyChanged(nameof(Header));
             }
         }
 
@@ -84,11 +90,36 @@ namespace ZitiDesktopEdge {
             set { if (value) EnrollMode = "device-certificate"; }
         }
 
-        public bool ShowEnrollModeRadios => _selectedSigner != null && _selectedSigner.EnrollToCertEnabled && _selectedSigner.EnrollToTokenEnabled;
+        private bool SignerAllowsBoth => _selectedSigner != null && _selectedSigner.EnrollToCertEnabled && _selectedSigner.EnrollToTokenEnabled;
+
+        public bool ShowEnrollModeRadios => SignerAllowsBoth && _link?.EnrollTo == null;
 
         public Visibility EnrollModeRadiosVisibility => ShowEnrollModeRadios ? Visibility.Visible : Visibility.Collapsed;
 
-        public bool ShowEnrollmentChoices => ShowSignerPicker || ShowEnrollModeRadios;
+        public EnrollmentLink Link {
+            get { return _link; }
+            set {
+                _link = value;
+                OnPropertyChanged(nameof(Link));
+                OnPropertyChanged(nameof(Subtitle));
+            }
+        }
+
+        public string Subtitle {
+            get {
+                if (_link == null) return "Choose how this identity connects to the network";
+                return "Join the network at " + _link.Controller.Authority + "?";
+            }
+        }
+
+        public string Header {
+            get {
+                if (ShowSignerPicker || ShowEnrollModeRadios) return "Configure Enrollment";
+                return "Join Network";
+            }
+        }
+
+        public bool ShowEnrollmentChoices => ShowSignerPicker || ShowEnrollModeRadios || _link != null;
 
         public void LoadSigners(string signersResponseBody) {
             Signers.Clear();
@@ -102,8 +133,37 @@ namespace ZitiDesktopEdge {
             }
 
             List<ExternalJwtSigner> capable = Signers.Where(s => s.EnrollToCertEnabled || s.EnrollToTokenEnabled).ToList();
-            if (capable.Count == 1) SelectedSigner = capable[0];
-            ShowSignerPicker = capable.Count > 1;
+            ExternalJwtSigner linkSigner = FindLinkSigner(capable);
+            if (capable.Count == 1) {
+                SelectedSigner = capable[0];
+            } else if (linkSigner != null) {
+                SelectedSigner = linkSigner;
+            }
+            ShowSignerPicker = capable.Count > 1 && linkSigner == null;
+        }
+
+        private ExternalJwtSigner FindLinkSigner(List<ExternalJwtSigner> capable) {
+            if (_link?.Provider == null) return null;
+            ExternalJwtSigner signer = capable.FirstOrDefault(s => s.Name == _link.Provider);
+            if (signer == null) {
+                logger.Warn("enrollment link provider {provider} is not offered by the network", _link.Provider);
+            }
+            return signer;
+        }
+
+        private string InitialEnrollMode() {
+            if (!SignerAllowsBoth) {
+                WarnIfLinkTypeNotOffered();
+                return null;
+            }
+            if (_link?.EnrollTo == "cert") return "device-certificate";
+            return "user-session";
+        }
+
+        private void WarnIfLinkTypeNotOffered() {
+            if (_selectedSigner == null || _link?.EnrollTo == null) return;
+            if (_link.EnrollTo == PayloadEnrollMode()) return;
+            logger.Warn("enrollment link type {type} is not offered by provider {provider}", _link.EnrollTo, _selectedSigner.Name);
         }
 
         public void Reset() {
@@ -111,6 +171,7 @@ namespace ZitiDesktopEdge {
             SelectedSigner = null;
             EnrollMode = null;
             ShowSignerPicker = false;
+            Link = null;
             ControllerBaseUrl = null;
             IdentityFilename = null;
         }
@@ -144,7 +205,8 @@ namespace ZitiDesktopEdge {
         }
 
         private string PayloadProvider() {
-            return _showSignerPicker ? _selectedSigner?.Name : null;
+            if (Signers.Count(s => s.EnrollToCertEnabled || s.EnrollToTokenEnabled) < 2) return null;
+            return _selectedSigner?.Name;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
