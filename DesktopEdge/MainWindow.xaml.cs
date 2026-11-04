@@ -992,6 +992,7 @@ namespace ZitiDesktopEdge {
             serviceClient.OnNotificationEvent += ServiceClient_OnNotificationEvent;
             serviceClient.OnControllerEvent += ServiceClient_OnControllerEvent;
             serviceClient.OnAuthenticationEvent += ServiceClient_OnAuthenticationEvent;
+            serviceClient.OnPostureStatusEvent += ServiceClient_OnPostureStatusEvent;
             serviceClient.OnCommunicationError += ServiceClient_OnCommunicationError;
             Application.Current.Properties.Add("ServiceClient", serviceClient);
 
@@ -1041,6 +1042,36 @@ namespace ZitiDesktopEdge {
                     }));
                 }
             }
+        }
+
+        private void ServiceClient_OnPostureStatusEvent(object sender, PostureStatusEvent e) {
+            if (e.QueryType != "MFA" || e.MfaExpiring != true) {
+                return;
+            }
+            this.Dispatcher.Invoke(() => {
+                ZitiIdentity expiringIdentity = identities.Find(identity => identity.Identifier == e.Identifier);
+                if (expiringIdentity == null) {
+                    logger.Warn("MFA posture status for {identifier} but no identity has that identifier", e.Identifier);
+                    return;
+                }
+                List<ZitiService> timedServices = expiringIdentity.Services.Where(service => service.Timeout > 0).ToList();
+                if (timedServices.Count == 0) {
+                    logger.Warn("MFA posture status for {identifier} is expiring but none of its services has a timeout", e.Identifier);
+                    return;
+                }
+                string timeLeftText = TimeSpan.FromSeconds(timedServices.Min(service => service.TimeoutCalculated)).ToString(@"h\:mm\:ss");
+                string displayName;
+                if (string.IsNullOrEmpty(expiringIdentity.Name)) {
+                    displayName = expiringIdentity.Identifier;
+                } else {
+                    displayName = expiringIdentity.Name;
+                }
+                ToastButton button = new ToastButton()
+                    .SetContent("Authenticate")
+                    .AddArgument("action", "mfa-auth")
+                    .AddArgument("identifier", expiringIdentity.Identifier);
+                _notificationThrottle.Queue(expiringIdentity.Identifier, $"{displayName} services will time out in {timeLeftText}.", button);
+            });
         }
 
         private void ServiceClient_OnCommunicationError(object sender, Exception e) {
@@ -1659,7 +1690,7 @@ namespace ZitiDesktopEdge {
         /// <summary>
         /// If an identity gets added late, execute this.
         /// 
-        /// Do not update services for identity events
+        /// Do not add or remove services for identity events
         /// </summary>
         /// <param name="sender">The sending service</param>
         /// <param name="e">The identity event</param>
@@ -1729,6 +1760,23 @@ namespace ZitiDesktopEdge {
                         LoadIdentities(true);
                     }
                 } else if (e.Action == "updated") {
+                    ZitiIdentity updatedIdentity = identities.Find(identity => identity.Identifier == e.Id.Identifier);
+                    if (updatedIdentity != null) {
+                        updatedIdentity.IsMFAEnabled = e.Id.MfaEnabled;
+                        updatedIdentity.IsMFANeeded = e.Id.MfaNeeded;
+                        updatedIdentity.LastUpdatedTime = zid.LastUpdatedTime;
+                        // only identity "updated" events carry each service's MFA TimeoutRemaining, which a new code resets
+                        foreach (ZitiService service in updatedIdentity.Services) {
+                            ZitiService updatedService = zid.Services.Find(zidService => zidService.Name == service.Name);
+                            if (updatedService != null) {
+                                service.TimeUpdated = zid.LastUpdatedTime;
+                                service.TimeoutRemaining = updatedService.TimeoutRemaining;
+                            }
+                        }
+                        if (updatedIdentity.IsMFANeeded) {
+                            QueueMfaNotification(updatedIdentity);
+                        }
+                    }
                     //this indicates that all updates have been sent to the UI... wait for 2 seconds then trigger any ui updates needed
                     await Task.Delay(2000);
                     LoadIdentities(true);
@@ -1823,6 +1871,7 @@ namespace ZitiDesktopEdge {
 
         private void addService(ZitiIdentity found, Service added) {
             ZitiService zs = new ZitiService(added);
+            zs.TimeUpdated = found.LastUpdatedTime;
             var svc = found.Services.Find(s => s.Name == zs.Name);
             if (svc == null) {
                 logger.Debug("Service Added: " + zs.Name);
@@ -1984,7 +2033,6 @@ namespace ZitiDesktopEdge {
             var found = identities.Find(fid => fid.Identifier == id.Identifier);
             if(found != null) {
                 identities.Remove(found);
-                zid.IsMFAEnabled = found.IsMFAEnabled;
             }
             identities.Add(zid);
         }

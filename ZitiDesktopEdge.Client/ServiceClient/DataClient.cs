@@ -53,6 +53,7 @@ namespace ZitiDesktopEdge.ServiceClient {
         public event EventHandler<NotificationEvent> OnNotificationEvent;
         public event EventHandler<ControllerEvent> OnControllerEvent;
         public event EventHandler<AuthenticationEvent> OnAuthenticationEvent;
+        public event EventHandler<PostureStatusEvent> OnPostureStatusEvent;
 
         protected override void ShutdownEvent(StatusEvent e) {
             Logger.Debug("Clean shutdown detected from ziti");
@@ -489,6 +490,10 @@ namespace ZitiDesktopEdge.ServiceClient {
                         Logger.Debug("Authentication event received");
                         AuthenticationEvent authEvent = serializer.Deserialize<AuthenticationEvent>(jsonReader);
                         OnAuthenticationEvent?.Invoke(this, authEvent);
+                        break;
+                    case "posturestatus":
+                        PostureStatusEvent postureStatusEvent = serializer.Deserialize<PostureStatusEvent>(jsonReader);
+                        OnPostureStatusEvent?.Invoke(this, postureStatusEvent);
                         break;
                     default:
                         Logger.Debug("unexpected operation! " + evt.Op);
