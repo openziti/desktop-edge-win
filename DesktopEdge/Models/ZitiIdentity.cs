@@ -59,6 +59,21 @@ namespace ZitiDesktopEdge.Models {
         }
         public int MinTimeout { get; set; }
         public int MaxTimeout { get; set; }
+        public bool HasMfaTimeout {
+            get { return Services.Any(service => service.Timeout > 0); }
+        }
+        public int MfaSecondsLeft {
+            get { return Services.Where(service => service.Timeout > 0).Min(service => service.TimeoutCalculated); }
+        }
+
+        public static string MfaTimeLeftText(int totalSeconds) {
+            if (totalSeconds >= 3600) {
+                return $"{totalSeconds / 3600}:{totalSeconds % 3600 / 60:D2}:{totalSeconds % 60:D2}";
+            } else {
+                return $"{totalSeconds / 60}:{totalSeconds % 60:D2}";
+            }
+        }
+
         public DateTime LastUpdatedTime { get; set; }
         public string TimeoutMessage { get; set; }
         public bool WasNotified { get; set; }

@@ -627,6 +627,12 @@ namespace ZitiDesktopEdge.DataStructures {
         public string Identifier { get; set; }
     }
 
+    public class PostureStatusEvent : ActionEvent {
+        public string Identifier { get; set; }
+        public string QueryType { get; set; }
+        public bool? MfaExpiring { get; set; }
+    }
+
     public class MfaRecoveryCodes {
         public string[] RecoveryCodes { get; set; }
         public string Identifier { get; set; }
