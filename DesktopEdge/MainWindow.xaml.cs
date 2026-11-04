@@ -1054,10 +1054,12 @@ namespace ZitiDesktopEdge {
                     logger.Warn("MFA posture status for {identifier} but no identity has that identifier", e.Identifier);
                     return;
                 }
-                if (!expiringIdentity.HasMfaTimeout) {
+                List<ZitiService> timedServices = expiringIdentity.Services.Where(service => service.Timeout > 0).ToList();
+                if (timedServices.Count == 0) {
                     logger.Warn("MFA posture status for {identifier} is expiring but none of its services has a timeout", e.Identifier);
                     return;
                 }
+                string timeLeftText = TimeSpan.FromSeconds(timedServices.Min(service => service.TimeoutCalculated)).ToString(@"h\:mm\:ss");
                 string displayName;
                 if (string.IsNullOrEmpty(expiringIdentity.Name)) {
                     displayName = expiringIdentity.Identifier;
@@ -1068,7 +1070,7 @@ namespace ZitiDesktopEdge {
                     .SetContent("Authenticate")
                     .AddArgument("action", "mfa-auth")
                     .AddArgument("identifier", expiringIdentity.Identifier);
-                _notificationThrottle.Queue(expiringIdentity.Identifier, $"{displayName} services will time out in {ZitiIdentity.MfaTimeLeftText(expiringIdentity.MfaSecondsLeft)}.", button);
+                _notificationThrottle.Queue(expiringIdentity.Identifier, $"{displayName} services will time out in {timeLeftText}.", button);
             });
         }
 
@@ -1688,7 +1690,7 @@ namespace ZitiDesktopEdge {
         /// <summary>
         /// If an identity gets added late, execute this.
         /// 
-        /// Do not update services for identity events
+        /// Do not add or remove services for identity events
         /// </summary>
         /// <param name="sender">The sending service</param>
         /// <param name="e">The identity event</param>
@@ -1763,7 +1765,14 @@ namespace ZitiDesktopEdge {
                         updatedIdentity.IsMFAEnabled = e.Id.MfaEnabled;
                         updatedIdentity.IsMFANeeded = e.Id.MfaNeeded;
                         updatedIdentity.LastUpdatedTime = zid.LastUpdatedTime;
-                        updatedIdentity.Services = zid.Services;
+                        // only identity "updated" events carry each service's MFA TimeoutRemaining, which a new code resets
+                        foreach (ZitiService service in updatedIdentity.Services) {
+                            ZitiService updatedService = zid.Services.Find(zidService => zidService.Name == service.Name);
+                            if (updatedService != null) {
+                                service.TimeUpdated = zid.LastUpdatedTime;
+                                service.TimeoutRemaining = updatedService.TimeoutRemaining;
+                            }
+                        }
                         if (updatedIdentity.IsMFANeeded) {
                             QueueMfaNotification(updatedIdentity);
                         }
@@ -1862,6 +1871,7 @@ namespace ZitiDesktopEdge {
 
         private void addService(ZitiIdentity found, Service added) {
             ZitiService zs = new ZitiService(added);
+            zs.TimeUpdated = found.LastUpdatedTime;
             var svc = found.Services.Find(s => s.Name == zs.Name);
             if (svc == null) {
                 logger.Debug("Service Added: " + zs.Name);
