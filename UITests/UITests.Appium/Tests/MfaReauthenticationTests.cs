@@ -70,4 +70,24 @@ public class MfaReauthenticationTests
         byte[] rejected = RejectFromRow(session, name, "01-code-typed", identityName, "000000");
         await VerifyStep(session, rejected, name, "02-after-rejection");
     }
+
+    [Fact(Timeout = 180000)]
+    public async Task RestartWithTotpSatisfiesPosture()
+    {
+        string name = nameof(RestartWithTotpSatisfiesPosture);
+        const string identityName = "test_mfa_posture_restart_client";
+        const string serviceName = "test_mfa_posture_restart_svc";
+
+        await using AppiumSession session = await LaunchAsync(_fixture, name);
+        MfaEnrollment enrollment = AddIdentityAndEnrollMfa(_fixture, session, identityName);
+        await RestartZet(_fixture, session);
+        WaitForController(session, InIdentityRow(identityName, "MfaRequired"), "the row asks to authenticate");
+        await VerifyStep(session, Capture(session), name, "01-authenticate-row");
+
+        int beforeCode = session.Relay!.Recorded.Count;
+        AuthenticateFromRow(session, name, "02-code-typed", identityName, Totp.Compute(enrollment.Secret, DateTimeOffset.UtcNow));
+        WaitForId(session, "IdentityDetailsClose");
+        AssertMfaCheckStaysFailingUnderOidc(session, beforeCode, serviceName);
+        await VerifyStep(session, Capture(session), name, "03-failing-check-details");
+    }
 }

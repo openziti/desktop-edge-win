@@ -65,6 +65,26 @@ public class LegacyAuthMfaTests
         await VerifyStep(session, Capture(session), name, "03-authenticated-row");
     }
 
+    [Fact(Timeout = 180000)]
+    public async Task RestartWithTotpSatisfiesPosture()
+    {
+        string name = nameof(RestartWithTotpSatisfiesPosture);
+        const string identityName = "test_mfa_posture_restart_client";
+        const string serviceName = "test_mfa_posture_restart_svc";
+
+        await using AppiumSession session = await LaunchAsync(_fixture, name);
+        MfaEnrollment enrollment = AddIdentityAndEnrollMfa(_fixture, session, identityName);
+        await RestartToCodePrompt(session, identityName);
+        await VerifyStep(session, Capture(session), name, "01-authenticate-row");
+
+        int beforeCode = session.Relay!.Recorded.Count;
+        AuthenticateToList(session, name, "02-code-typed", identityName, Totp.Compute(enrollment.Secret, DateTimeOffset.UtcNow));
+        WaitForMfaCheck(session, beforeCode, serviceName, true);
+        OpenIdentityDetails(session, identityName);
+        WaitForGone(session, WarnIcon);
+        await VerifyStep(session, Capture(session), name, "03-passing-check-details");
+    }
+
     /// <summary>A toggle never reloads config.json, so the prompt comes from what the running ZET holds.</summary>
     [Fact(Timeout = 180000)]
     public async Task DisableEnableOffersCodePromptForEnrolledIdentity()

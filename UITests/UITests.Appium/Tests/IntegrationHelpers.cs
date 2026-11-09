@@ -62,6 +62,7 @@ public static class IntegrationHelpers
     public const string MfaAuthChallengeEvent = "\"Op\":\"mfa\",\"Action\":\"auth_challenge\"";
     public const string StatusEvent = "\"Op\":\"status\"";
     public const string MfaEnrollmentRequiredEvent = "\"Op\":\"mfa\",\"Action\":\"enrollment_required\"";
+    public const string BulkServiceUpdatedEvent = "\"Op\":\"bulkservice\",\"Action\":\"updated\"";
 
     private static int LatestUiCmdLine(IReadOnlyList<RelayIpcServer.RecordedLine> recorded, string uiLineFragment)
     {
@@ -367,7 +368,7 @@ public static class IntegrationHelpers
 
     public static void AssertGrantedServices(AppiumSession session, string uiLineFragment, IReadOnlyList<string> expected)
     {
-        JObject bulkServiceEvent = WaitForZetEventAfter(session, uiLineFragment, "\"Op\":\"bulkservice\",\"Action\":\"updated\"");
+        JObject bulkServiceEvent = WaitForZetEventAfter(session, uiLineFragment, BulkServiceUpdatedEvent);
         List<string> granted = bulkServiceEvent["AddedServices"]!.Select(service => (string)service["Name"]!).ToList();
         Assert.Equal(expected.OrderBy(serviceName => serviceName), granted.OrderBy(serviceName => serviceName));
     }
@@ -523,6 +524,70 @@ public static class IntegrationHelpers
         MfaEnrollment enrollment = EnrollMfaToRecoveryCodes(fixture, session, identityName);
         ClickUntilGone(session, ById("CloseBlack"));
         CloseIdentityDetails(session);
+        return enrollment;
+    }
+
+    // Identity details' per-service warning, shown while the service is inaccessible with a failing posture check.
+    public static readonly By WarnIcon = By.XPath("//*[@AutomationId='WarnIcon']");
+
+    public static bool MfaCheckReported(AppiumSession session, int fromLine, string serviceName, bool isPassing) =>
+        session.Relay!.Recorded.Skip(fromLine)
+            .Where(line => line.From == "zet" && line.Pipe == "event" && line.Line.Contains(BulkServiceUpdatedEvent))
+            .Select(line => JObject.Parse(line.Line)["AddedServices"]!.Children<JObject>())
+            .Any(services => services
+                .Where(service => (string?)service["Name"] == serviceName)
+                .SelectMany(service => service["PostureChecks"]!.Children<JObject>())
+                .Any(check => (string?)check["QueryType"] == "MFA" && (bool?)check["IsPassing"] == isPassing));
+
+    public static void WaitForMfaCheck(AppiumSession session, int fromLine, string serviceName, bool isPassing) =>
+        WaitUntil(session, $"ZET reports {serviceName}'s MFA posture check with IsPassing {isPassing}", ControllerTimeout,
+            () => MfaCheckReported(session, fromLine, serviceName, isPassing));
+
+    // Under OIDC the controller never passes the MFA check (openziti/ziti#4558), so identity details' warning has to
+    // outlast ZET's 10 s service refresh.
+    public static void AssertMfaCheckStaysFailingUnderOidc(AppiumSession session, int fromLine, string serviceName)
+    {
+        WaitForController(session, WarnIcon, $"identity details warns that {serviceName} fails its posture check");
+        for (DateTime end = DateTime.UtcNow.AddSeconds(15); DateTime.UtcNow < end; Pause(1000))
+        {
+            Assert.False(MfaCheckReported(session, fromLine, serviceName, true),
+                $"ZET reports {serviceName}'s MFA posture check passing under OIDC: openziti/ziti#4558 is fixed, " +
+                "so expect the warning to clear as the LegacyAuth tests do");
+            Assert.True(session.Driver.FindElements(WarnIcon).Count > 0,
+                $"the warning on {serviceName} cleared under OIDC: openziti/ziti#4558 is fixed, " +
+                "so expect it to clear as the LegacyAuth tests do");
+        }
+    }
+
+    // Ends in identity details, on serviceName's warning.
+    public static async Task AddIdentityAndFailNewMfaCheck(IntegrationFixture fixture, AppiumSession session, string name,
+        string identityName, string serviceName)
+    {
+        AddIdentity(fixture, session, identityName);
+        AssertGrantedServices(session, AddIdentityLine, new[] { serviceName });
+        OpenIdentityDetails(session, identityName);
+        Assert.Empty(session.Driver.FindElements(WarnIcon));
+        await VerifyStep(session, Capture(session), name, "01-no-check-details");
+        CloseIdentityDetails(session);
+
+        int beforeCheck = session.Relay!.Recorded.Count;
+        fixture.Quickstart.CreateMfaPostureCheck("test_posture_added_mfa_check", "test-posture-added-mfa");
+        WaitForMfaCheck(session, beforeCheck, serviceName, false);
+        WaitForController(session, InIdentityRow(identityName, "MfaSetupNeeded"), "the row asks to set up MFA");
+        Assert.Empty(session.Driver.FindElements(InIdentityRow(identityName, "MfaRequired")));
+        await VerifyStep(session, Capture(session), name, "02-setup-needed-row");
+        OpenIdentityDetails(session, identityName);
+        WaitForController(session, WarnIcon, $"identity details warns that {serviceName} fails its posture check");
+        await VerifyStep(session, Capture(session), name, "03-failing-check-details");
+    }
+
+    // Starts and ends in identity details.
+    public static MfaEnrollment EnrollMfaFromDetails(AppiumSession session)
+    {
+        ClickAt(session, WaitFor(session, MfaToggle));
+        WaitForController(session, ById("SetupCode"), "the MFA setup dialog opens");
+        MfaEnrollment enrollment = CompleteMfaSetup(session);
+        ClickUntilGone(session, ById("CloseBlack"));
         return enrollment;
     }
 

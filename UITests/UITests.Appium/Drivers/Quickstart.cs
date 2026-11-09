@@ -175,6 +175,9 @@ public sealed class Quickstart : IAsyncDisposable
     public void SetIdentityAuthPolicy(string name, string authPolicy) =>
         RunChecked("edge", "update", "identity", name, "-P", authPolicy);
 
+    public void CreateMfaPostureCheck(string name, string attribute) =>
+        RunChecked("edge", "create", "posture-check", "mfa", name, "-a", attribute);
+
     // Fixed, because captured CA dialogs show these paths. StartAsync empties it: `ziti pki` won't overwrite a CA.
     private static readonly string ThirdPartyPkiRoot = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "zdew-ui-test", "third-party-pki");
