@@ -166,7 +166,8 @@ namespace ZitiDesktopEdge.Models {
                     if(!zid.HasServiceFailingPostureCheck && service.HasFailingPostureCheck()) {
                         zid.HasServiceFailingPostureCheck = true;
                     }
-                    if (service != null && service.PostureChecks != null && service.PostureChecks.Any(p => !p.IsPassing && p.QueryType == "MFA")) {
+                    // Under OIDC the MFA check stays failing after a valid code (openziti/ziti#4558), so once enrolled only ZET's MfaNeeded decides.
+                    if (!zid.IsMFAEnabled && service != null && service.PostureChecks != null && service.PostureChecks.Any(p => !p.IsPassing && p.QueryType == "MFA")) {
                         zid.IsMFANeeded = true;
                     }
                 }

@@ -1763,7 +1763,7 @@ namespace ZitiDesktopEdge {
                     ZitiIdentity updatedIdentity = identities.Find(identity => identity.Identifier == e.Id.Identifier);
                     if (updatedIdentity != null) {
                         updatedIdentity.IsMFAEnabled = e.Id.MfaEnabled;
-                        updatedIdentity.IsMFANeeded = e.Id.MfaNeeded;
+                        updatedIdentity.IsMFANeeded = zid.IsMFANeeded;
                         updatedIdentity.LastUpdatedTime = zid.LastUpdatedTime;
                         // only identity "updated" events carry each service's MFA TimeoutRemaining, which a new code resets
                         foreach (ZitiService service in updatedIdentity.Services) {
