@@ -1881,7 +1881,7 @@ namespace ZitiDesktopEdge {
                     found.HasServiceFailingPostureCheck = true;
 
                     foreach (var service in found.Services) {
-                        if (service != null && service.PostureChecks != null && service.PostureChecks.Any(p => !p.IsPassing && p.QueryType == "MFA")) {
+                        if (!found.IsMFAEnabled && service != null && service.PostureChecks != null && service.PostureChecks.Any(p => !p.IsPassing && p.QueryType == "MFA")) {
                             found.IsMFANeeded = true;
                             QueueMfaNotification(found);
                         }
