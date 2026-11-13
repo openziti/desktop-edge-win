@@ -90,8 +90,9 @@ foreach ($p in $testProjects) {
 
     $dotnetArgs = @('test', $p.FullName, '--configuration', $Configuration)
 
-    # Combine user-supplied filter with CI's standard skip list.
-    $ciSkip = 'FullyQualifiedName!~SignedFilesTest'
+    # Skip just the two broken SignedFilesTest cases (expired cert / hardcoded local path). We used
+    # to skip the whole class, but TestPlantedCertIsRejected lives there too and needs to run in CI.
+    $ciSkip = '(FullyQualifiedName!~TestOpenZitiSigner2022)&(FullyQualifiedName!~TestOpenZitiSigner2024)'
     $effectiveFilter = if ($CiMode -and $Filter) {
         "($Filter)&($ciSkip)"
     } elseif ($CiMode) {

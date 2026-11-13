@@ -44,17 +44,12 @@ using ZitiUpdateService.Checkers.PeFile;
 
 namespace ZitiUpdateService {
     public partial class UpdateService : ServiceBase {
+        // Old beta-channel marker. The channel comes from the update URL now (AutomaticUpdateURL
+        // policy / settings.json), so this file does nothing. Kept only so startup can delete a
+        // leftover copy.
         private const string betaStreamMarkerFile = "use-beta-stream.txt";
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private readonly Settings CurrentSettings;
-
-        public bool IsBeta {
-            get {
-                return File.Exists(Path.Combine(exeLocation, betaStreamMarkerFile));
-            }
-            private set { }
-        }
-
 
         private System.Timers.Timer _updateTimer = new System.Timers.Timer();
         private SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
@@ -182,7 +177,7 @@ namespace ZitiUpdateService {
                 Message = "Configuration Changed",
                 Type = "Status",
                 Status = ServiceActions.ServiceStatus(),
-                ReleaseStream = IsBeta ? "beta" : "stable",
+                ReleaseStream = "stable",
             };
             ApplyEffectiveSettings(evt);
             LogStatusEvent("config change", evt);
@@ -530,7 +525,7 @@ namespace ZitiUpdateService {
             UpdateCheck check = getCheck(assemblyVersion);
 
             r.Code = check.Avail;
-            r.ReleaseStream = IsBeta ? "beta" : "stable";
+            r.ReleaseStream = "stable";
             switch (r.Code) {
                 case -1:
                     r.Message = $"An update is available: {check.GetNextVersion()}";
@@ -573,32 +568,21 @@ namespace ZitiUpdateService {
         }
 
         private void SetReleaseStream(string stream) {
-            if (PolicySettings.IsLocked("AutomaticUpdateURL")) {
-                Logger.Warn("UpdateStreamURL is managed by Group Policy, SetReleaseStream rejected");
-                return;
-            }
-            string markerFile = Path.Combine(exeLocation, betaStreamMarkerFile);
-            if (stream == "beta") {
-                if (IsBeta) {
-                    Logger.Debug("already using beta stream. No action taken");
-                } else {
-                    Logger.Info("Setting update service to use beta stream!");
-                    using (File.Create(markerFile)) {
+            Logger.Info("SetReleaseStream('{0}') ignored: the beta marker is retired; channel is set by the update URL", stream);
+            RemoveRetiredBetaMarker();
+        }
 
-                    }
-                    AccessUtils.GrantAccessToFile(markerFile); //allow anyone to delete this manually if need be...
-                    Logger.Debug("added marker file: {0}", markerFile);
+        // Older builds wrote use-beta-stream.txt into the install dir. Delete any leftover so it
+        // doesn't linger on upgraded machines.
+        private void RemoveRetiredBetaMarker() {
+            try {
+                string markerFile = Path.Combine(exeLocation, betaStreamMarkerFile);
+                if (File.Exists(markerFile)) {
+                    File.Delete(markerFile);
+                    Logger.Info("removed retired beta marker file: {0}", markerFile);
                 }
-            } else {
-                if (!IsBeta) {
-                    Logger.Debug("already using release stream. No action taken");
-                } else {
-                    Logger.Info("Setting update service to use release stream!");
-                    if (File.Exists(markerFile)) {
-                        File.Delete(markerFile);
-                        Logger.Debug("removed marker file: {0}", markerFile);
-                    }
-                }
+            } catch (Exception e) {
+                Logger.Warn(e, "could not remove retired beta marker file: {0}", e.Message);
             }
         }
 
@@ -872,10 +856,14 @@ namespace ZitiUpdateService {
             addLogsFolder(Path.Combine(logs, "ZitiMonitorService"));
             addLogsFolder(Path.Combine(logs, "service"));
 
-            AccessUtils.GrantAccessToFile(Path.Combine(exeLocation, "ZitiUpdateService.exe.config")); //allow anyone to change the config file
-            AccessUtils.GrantAccessToFile(Path.Combine(exeLocation, "ZitiUpdateService-log.config")); //allow anyone to change the log file config
-            AccessUtils.GrantAccessToFile(Path.Combine(exeLocation, "ZitiDesktopEdge.exe.config")); //allow anyone to change the config file
-            AccessUtils.GrantAccessToFile(Path.Combine(exeLocation, "ZitiDesktopEdge-log.config")); //allow anyone to change the log file config
+            // These are read by the LocalSystem service, so they have to stay admin-only. Strip the old
+            // Authenticated Users grant here so machines set up by an earlier build get cleaned up.
+            AccessUtils.RemoveAuthenticatedUsersAccess(Path.Combine(exeLocation, "ZitiUpdateService.exe.config"));
+            AccessUtils.RemoveAuthenticatedUsersAccess(Path.Combine(exeLocation, "ZitiUpdateService-log.config"));
+            AccessUtils.RemoveAuthenticatedUsersAccess(Path.Combine(exeLocation, "ZitiDesktopEdge.exe.config"));
+            AccessUtils.RemoveAuthenticatedUsersAccess(Path.Combine(exeLocation, "ZitiDesktopEdge-log.config"));
+
+            RemoveRetiredBetaMarker();
 
             zetHealthcheck.Interval = zetHealthcheckInterval * 1000;
             zetHealthcheck.Elapsed += zitiEdgeTunnelAlivenessCheck;
@@ -958,7 +946,7 @@ namespace ZitiUpdateService {
                     Message = "Success",
                     Type = "Status",
                     Status = ServiceActions.ServiceStatus(),
-                    ReleaseStream = IsBeta ? "beta" : "stable",
+                    ReleaseStream = "stable",
                 };
                 ApplyEffectiveSettings(status);
                 LogStatusEvent("new client connected", status);
@@ -1137,7 +1125,7 @@ namespace ZitiUpdateService {
                 Message = "InstallationUpdate",
                 Type = "Notification",
                 Status = ServiceActions.ServiceStatus(),
-                ReleaseStream = IsBeta ? "beta" : "stable",
+                ReleaseStream = "stable",
                 ZDEVersion = version,
             };
             ApplyEffectiveSettings(info);
@@ -1559,7 +1547,7 @@ namespace ZitiUpdateService {
                     Message = "SERVICE DOWN",
                     Type = "Status",
                     Status = ServiceActions.ServiceStatus(),
-                    ReleaseStream = IsBeta ? "beta" : "stable",
+                    ReleaseStream = "stable",
                 };
                 ApplyEffectiveSettings(status);
                 EventRegistry.SendEventToConsumers(status);

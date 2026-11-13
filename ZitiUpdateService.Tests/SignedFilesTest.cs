@@ -41,5 +41,17 @@ namespace ZitiUpdateService.Tests {
 			// this should NOT throw an exception...
 			new SignedFileValidator(new_zdew).Verify();
 		}
+
+		// The fixture carries a real public OpenZiti cert (no private key) in an unsigned attribute but
+		// is signed by a different key. We should reject it on the bad signature, before the CRL fetch,
+		// so this test needs no network.
+		[TestMethod]
+		public void TestPlantedCertIsRejected() {
+			var fixture = Path.Combine(exeloc, "TestFiles", "invalid-signature.exe");
+			Assert.IsTrue(File.Exists(fixture), $"fixture missing: {fixture}");
+			Assert.ThrowsException<CryptographicException>(
+				() => new SignedFileValidator(fixture).Verify(),
+				"validator accepted a file whose OpenZiti signature does not verify");
+		}
 	}
 }

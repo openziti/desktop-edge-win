@@ -23,6 +23,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Test fixture: an exe carrying a real public OpenZiti cert in an unsigned attribute but signed
+         by a different key. SignedFileValidator should reject it. -->
+    <None Include="TestFiles\invalid-signature.exe" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\ZitiUpdateService\ZitiUpdateService.csproj" />
   </ItemGroup>
 

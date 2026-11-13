@@ -159,21 +159,17 @@ namespace ZitiUpdateService.Checkers.PeFile {
                                 innerCms.CheckHash();
                                 if (innerCms.SignerInfos.Count > 0) {
                                     SignerInfo innerSignerInfo = innerCms.SignerInfos[0];
+                                    // Check the signature only (not the chain) -- that proves the signer holds the
+                                    // private key. The root is checked separately in VerifyTrust below, since the
+                                    // OpenZiti root isn't in the machine store. If the signature doesn't verify, skip
+                                    // the cert; don't fall through and trust it. (Passing false here would also check
+                                    // the chain, which fails for our own certs because of that untrusted root.)
                                     try {
-                                        innerSignerInfo.CheckSignature(false);
-                                    } catch (CryptographicException) {
-                                        if (innerSignerInfo.Certificate.Thumbprint == oldKnownThumbprint) {
-                                            //special handling for the known 'old' NetFoundry signing certificate, now expired...
-                                            //TODO: remove this code after 2021
-                                            //just allow this one error
-                                            Logger.Warn("Ignoring timestamp validity issue for the existing code signing certificate. Subject: {0}, Thumbprint: {1}", innerSignerInfo.Certificate.Subject, innerSignerInfo.Certificate.Thumbprint);
-                                        } else {
-                                            if (IsCertificateOpenZitiVerifies(innerSignerInfo.Certificate)) {
-                                                Logger.Debug("Certificate {} from {} is not one needed to be verified", innerSignerInfo.Certificate.SubjectName, innerSignerInfo.Certificate.Issuer);
-                                            } else {
-                                                throw;
-                                            }
-                                        }
+                                        innerSignerInfo.CheckSignature(true);
+                                    } catch (CryptographicException e) {
+                                        Logger.Warn("Skipping a certificate whose signature does not verify. Subject: {0}, Thumbprint: {1}, Error: {2}",
+                                            innerSignerInfo.Certificate?.Subject, innerSignerInfo.Certificate?.Thumbprint, e.Message);
+                                        continue;
                                     }
 
                                     if (VerifyTrust(SystemCAs, expectedRootCa, innerSignerInfo.Certificate).Result) {

@@ -52,19 +52,28 @@ namespace ZitiUpdateService {
             }
         }
 
-        public static void GrantAccessToFile(string path) {
+        /// <summary>
+        /// Drops any explicit Authenticated Users rule from a file and turns inheritance back on, so
+        /// the file goes back to the Program Files default (admins only).
+        ///
+        /// Older versions granted Authenticated Users Modify on the service's .config / NLog files.
+        /// Not re-granting isn't enough -- the ACE is already on disk from a prior run -- so run this at
+        /// startup to clean up machines provisioned by an older build.
+        /// </summary>
+        public static void RemoveAuthenticatedUsersAccess(string path) {
             try {
                 if (!File.Exists(path)) {
                     return;
                 }
-                Logger.Debug("granting access permissions to file: {path}", path);
                 FileSecurity sec = File.GetAccessControl(path);
-                // Using this instead of the "Everyone" string means we work on non-English systems.
-                SecurityIdentifier everyone = new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null);
-                sec.AddAccessRule(new FileSystemAccessRule(everyone, FileSystemRights.Modify | FileSystemRights.Delete | FileSystemRights.Synchronize, InheritanceFlags.None, PropagationFlags.None, AccessControlType.Allow));
+                SecurityIdentifier authenticatedUsers = new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null);
+                sec.PurgeAccessRules(authenticatedUsers);
+                // false = unprotect, so it inherits the parent DACL again
+                sec.SetAccessRuleProtection(false, true);
                 File.SetAccessControl(path, sec);
+                Logger.Debug("removed Authenticated Users access from file: {0}", path);
             } catch (Exception e) {
-                Logger.Error(e, "Unexpected error when setting directory security: {0}", e.Message);
+                Logger.Error(e, "Unexpected error when tightening file security on {0}: {1}", path, e.Message);
             }
         }
     }
