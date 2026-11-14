@@ -1,13 +1,20 @@
 # Release 2.12.0.0
 ## What's New
+* updated to ziti-edge-tunnel v1.22.1
 * [Issue 1101](https://github.com/openziti/desktop-edge-win/issues/1101) - The installer registers the `ziti` URL scheme. A `ziti://enroll?controller=<https URL>` link opens add identity with URL for that controller, and the optional `provider` and `type=cert|token` skip those choices when the network offers them. Nothing is enrolled until the user clicks Join Network
 * [Issue 1103](https://github.com/openziti/desktop-edge-win/issues/1103) - The MFA lock and the service timeout countdowns follow ziti-edge-tunnel's identity updates, and a toast warns before services time out
 
 ## Bugs fixed
-n/a
+* ziti-monitor rejects an update unless its signature verifies, and its config and NLog files are writable only by administrators
 
 ## Other changes
 * Non-https external auth URLs are refused, and add by URL only accepts https controller URLs
+
+## Dependencies
+* ziti-tunneler: v1.22.1
+* ziti-sdk:      1.22.1
+* tlsuv:         v0.46.3[OpenSSL 3.6.5 29 Sep 2026]
+* tlsuv:         v0.46.3[win32crypto(CNG): ncrypt[1.0] ]
 
 # Release 2.11.8.0
 ## What's New
