@@ -1,6 +1,7 @@
 # Release 2.12.0.0
 ## What's New
 * [Issue 1101](https://github.com/openziti/desktop-edge-win/issues/1101) - The installer registers the `ziti` URL scheme. A `ziti://enroll?controller=<https URL>` link opens add identity with URL for that controller, and the optional `provider` and `type=cert|token` skip those choices when the network offers them. Nothing is enrolled until the user clicks Join Network
+* [Issue 1103](https://github.com/openziti/desktop-edge-win/issues/1103) - The MFA lock and the service timeout countdowns follow ziti-edge-tunnel's identity updates, and a toast warns before services time out
 
 ## Bugs fixed
 n/a
