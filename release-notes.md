@@ -1,3 +1,20 @@
+# Release 2.12.1.0
+## What's New
+n/a
+
+## Bugs fixed
+* The add identity dialogs no longer vanish when reopened while they are closing
+* A correct MFA code unlocks the identity instead of leaving it marked as needing MFA
+* A failed MFA removal shows one error instead of two
+* Failing to start or stop the data service shows an error instead of only logging it
+* Opening a file that is not a valid JWT shows an error instead of doing nothing
+* An `ottca` JWT goes to the same 3rd party CA enrollment as a `ca` JWT
+* Check for updates and the update notification show the same update available text
+* The identity details card keeps one width instead of following the length of the network URL
+
+## Other changes
+* The external auth signer list is sorted by name
+
 # Release 2.12.0.0
 ## What's New
 * updated to ziti-edge-tunnel v1.22.1

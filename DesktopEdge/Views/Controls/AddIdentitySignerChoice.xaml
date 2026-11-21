@@ -21,6 +21,7 @@
              xmlns:local="clr-namespace:ZitiDesktopEdge"
              mc:Ignorable="d"
              MaxWidth="400"
+             UseLayoutRounding="True"
              d:Width="400">
     <Grid Margin="0" Height="Auto" VerticalAlignment="Center">
         <Border Background="{StaticResource DarkBackgroundBrush}"
@@ -43,6 +44,7 @@
                       Visibility="{Binding SignerPickerVisibility}"
                       Background="White" Foreground="Black"
                       FontSize="12" Padding="8,2"
+                      TextOptions.TextFormattingMode="Display"
                       HorizontalAlignment="Center" HorizontalContentAlignment="Center"
                       Width="200" Margin="0,0,0,15" />
 
